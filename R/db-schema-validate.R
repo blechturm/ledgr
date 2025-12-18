@@ -163,7 +163,6 @@ ledgr_validate_schema <- function(con) {
 
   begin_rollback <- function() {
     DBI::dbExecute(con, "BEGIN TRANSACTION")
-    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
   }
 
   runs_insert_status_ok <- function(status_value) {
@@ -202,6 +201,7 @@ ledgr_validate_schema <- function(con) {
     )
 
     begin_rollback()
+    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
     ok <- tryCatch(
       {
         DBI::dbExecute(con, sql, params = unname(vals))
@@ -235,6 +235,7 @@ ledgr_validate_schema <- function(con) {
     feature_name <- "x"
 
     begin_rollback()
+    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
     DBI::dbExecute(
       con,
       "
@@ -270,6 +271,7 @@ ledgr_validate_schema <- function(con) {
     ts_utc <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
 
     begin_rollback()
+    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
     DBI::dbExecute(
       con,
       "
