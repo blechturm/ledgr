@@ -38,7 +38,6 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
   config_json <- canonical_json(cfg)
   cfg_hash <- config_hash(cfg)
-  data_hash <- ledgr_data_hash(con, instrument_ids, start_ts_utc, end_ts_utc)
 
   if (is.null(run_id)) {
     if (!is.null(cfg$run_id) && is.character(cfg$run_id) && length(cfg$run_id) == 1 && nzchar(cfg$run_id) && !is.na(cfg$run_id)) {
@@ -46,7 +45,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     } else {
       run_id <- paste0(
         "run_",
-        substr(digest::digest(paste0(cfg_hash, ":", data_hash, ":", seed), algo = "sha256"), 1, 16)
+        substr(digest::digest(paste0(cfg_hash, ":", seed), algo = "sha256"), 1, 16)
       )
     }
   }
@@ -87,40 +86,106 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         engine_version,
         config_json,
         cfg_hash,
-        data_hash,
+        NA_character_,
         "CREATED",
         NA_character_
       )
     )
   } else {
     stored_cfg_hash <- run_row$config_hash[[1]]
-    stored_data_hash <- run_row$data_hash[[1]]
     if (!identical(stored_cfg_hash, cfg_hash)) {
       rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
-    }
-    if (!identical(stored_data_hash, data_hash)) {
-      rlang::abort("Refusing to resume: data_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
     }
     if (identical(run_row$status[[1]], "DONE")) {
       return(list(run_id = run_id, db_path = db_path))
     }
 
-    last_ts <- DBI::dbGetQuery(
-      con,
-      "SELECT MAX(ts_utc) AS last_ts FROM ledger_events WHERE run_id = ?",
-      params = list(run_id)
-    )$last_ts[[1]]
-
-    if (!is.na(last_ts)) {
-      resume_ts <- ledgr_normalize_ts_utc(last_ts)
-    }
-
+    # v0.1.0 conservative resume: restart deterministically from start_ts_utc after
+    # deleting any previously written tail rows to avoid alternate-reality outputs.
+    resume_ts <- ledgr_normalize_ts_utc(start_ts_utc)
     resume_posix <- as.POSIXct(resume_ts, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
     DBI::dbWithTransaction(con, {
+      DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
       DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
       DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
     })
   }
+
+  fail_run <- function(msg) {
+    DBI::dbExecute(
+      con,
+      "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
+      params = list("FAILED", msg, run_id)
+    )
+    rlang::abort(msg, class = "ledgr_run_failed")
+  }
+
+  # Validate run-relevant bars subset is sane per spec (v0.1.0 fail-loud).
+  validate_bars_subset <- function() {
+    start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
+    end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
+    start_str <- sub("Z$", "", sub("T", " ", start_iso))
+    end_str <- sub("Z$", "", sub("T", " ", end_iso))
+    ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
+
+    counts <- DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT instrument_id, COUNT(*) AS n ",
+        "FROM bars ",
+        "WHERE instrument_id IN (", ids_sql, ") ",
+        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
+        "GROUP BY instrument_id"
+      ),
+      params = list(start_str, end_str)
+    )
+
+    if (nrow(counts) != length(instrument_ids) || any(counts$n < 2)) {
+      rlang::abort("Bars must include at least 2 rows per instrument in the requested range.", class = "ledgr_bad_bars")
+    }
+
+    bars <- DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT instrument_id, ts_utc, open, high, low, close ",
+        "FROM bars ",
+        "WHERE instrument_id IN (", ids_sql, ") ",
+        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
+        "ORDER BY instrument_id, ts_utc"
+      ),
+      params = list(start_str, end_str)
+    )
+    if (nrow(bars) == 0) rlang::abort("No bars found for requested universe/time range.", class = "ledgr_bad_bars")
+
+    bad <- which(
+      !(bars$high >= pmax(bars$open, bars$close, bars$low, na.rm = TRUE)) |
+        !(bars$low <= pmin(bars$open, bars$close, bars$high, na.rm = TRUE))
+    )
+    if (length(bad) > 0) {
+      rlang::abort("Bars contain an OHLC violation (high/low bounds).", class = "ledgr_bad_bars")
+    }
+
+    invisible(TRUE)
+  }
+
+  data_hash <- tryCatch(
+    {
+      validate_bars_subset()
+      ledgr_data_hash(con, instrument_ids, start_ts_utc, end_ts_utc)
+    },
+    error = function(e) {
+      fail_run(conditionMessage(e))
+    }
+  )
+
+  if (is_resume) {
+    stored_data_hash <- run_row$data_hash[[1]]
+    if (!identical(stored_data_hash, data_hash)) {
+      fail_run("Refusing to resume: data_hash does not match stored run.")
+    }
+  }
+
+  DBI::dbExecute(con, "UPDATE runs SET data_hash = ? WHERE run_id = ?", params = list(data_hash, run_id))
 
   feature_defs <- ledgr_feature_defs_from_config(cfg)
   if (length(feature_defs) > 0) {
@@ -247,6 +312,10 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
             spread_bps = cfg$fill_model$spread_bps,
             commission_fixed = cfg$fill_model$commission_fixed
           )
+
+          if (inherits(fill, "ledgr_fill_none") && is.character(fill$warn_code) && identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
+            warning("LEDGR_LAST_BAR_NO_FILL", call. = FALSE)
+          }
 
           write_res <- ledgr_write_fill_events(con, run_id, fill, event_seq_start = next_event_seq)
           if (inherits(write_res, "ledgr_ledger_write_result") && identical(write_res$status, "WROTE")) {
