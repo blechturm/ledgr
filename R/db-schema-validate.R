@@ -89,6 +89,15 @@ ledgr_validate_schema <- function(con) {
         unrealized_pnl = "DOUBLE"
       ),
       pk = c("run_id", "ts_utc")
+    ),
+    strategy_state = list(
+      columns = c(
+        run_id = "TEXT",
+        ts_utc = "TEXT",
+        state_json = "TEXT"
+      ),
+      pk = c("run_id", "ts_utc"),
+      not_null = c("run_id", "ts_utc", "state_json")
     )
   )
 

@@ -212,9 +212,19 @@ ledgr_create_schema <- function(con) {
     )
   "
 
+  ddl_strategy_state <- "
+    CREATE TABLE IF NOT EXISTS strategy_state (
+      run_id TEXT NOT NULL,
+      ts_utc TEXT NOT NULL,
+      state_json TEXT NOT NULL,
+      PRIMARY KEY (run_id, ts_utc)
+    )
+  "
+
   DBI::dbExecute(con, ddl_instruments)
   DBI::dbExecute(con, ddl_features)
   DBI::dbExecute(con, ddl_equity_curve)
+  DBI::dbExecute(con, ddl_strategy_state)
 
   if (!runs_is_compliant()) {
     if (table_exists("runs")) {
@@ -326,6 +336,11 @@ ledgr_create_schema <- function(con) {
     add_column_if_missing("equity_curve", "equity", "DOUBLE")
     add_column_if_missing("equity_curve", "realized_pnl", "DOUBLE")
     add_column_if_missing("equity_curve", "unrealized_pnl", "DOUBLE")
+  }
+
+  # strategy_state: ensure exists (no destructive migration)
+  if (!table_exists("strategy_state")) {
+    DBI::dbExecute(con, ddl_strategy_state)
   }
 
   invisible(TRUE)

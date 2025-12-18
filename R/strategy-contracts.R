@@ -163,3 +163,24 @@ BadMutatingStrategy <- R6::R6Class(
     }
   )
 )
+
+StatePrevStrategy <- R6::R6Class(
+  "StatePrevStrategy",
+  inherit = LedgrStrategy,
+  private = list(
+    on_pulse_impl = function(ctx) {
+      prev <- ctx$state_prev
+
+      step <- 1L
+      if (!is.null(prev)) {
+        if (!is.list(prev) || is.null(prev$step) || !is.numeric(prev$step) || length(prev$step) != 1 || is.na(prev$step) || !is.finite(prev$step)) {
+          rlang::abort("StatePrevStrategy requires ctx$state_prev$step as a finite numeric scalar.", class = "ledgr_invalid_strategy")
+        }
+        step <- as.integer(prev$step) + 1L
+      }
+
+      targets <- stats::setNames(rep(as.numeric(step), length(ctx$universe)), ctx$universe)
+      list(targets = targets, state_update = list(step = as.integer(step)))
+    }
+  )
+)

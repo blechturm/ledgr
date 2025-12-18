@@ -6,6 +6,7 @@ ledgr_pulse_context <- function(run_id,
                                 positions = numeric(),
                                 cash,
                                 equity,
+                                state_prev = NULL,
                                 safety_state = "GREEN") {
   ctx <- list(
     run_id = run_id,
@@ -16,6 +17,7 @@ ledgr_pulse_context <- function(run_id,
     positions = positions,
     cash = cash,
     equity = equity,
+    state_prev = state_prev,
     safety_state = safety_state
   )
 
@@ -143,10 +145,16 @@ ledgr_validate_pulse_context <- function(ctx) {
     rlang::abort("PulseContext `equity` must be a finite numeric scalar.", class = "ledgr_invalid_pulse_context")
   }
 
+  if (!is.null(ctx$state_prev)) {
+    if (!(is.list(ctx$state_prev) || (is.character(ctx$state_prev) && length(ctx$state_prev) == 1))) {
+      rlang::abort("PulseContext `state_prev` must be NULL or a JSON-safe list (or JSON string).", class = "ledgr_invalid_pulse_context")
+    }
+    invisible(canonical_json(ctx$state_prev))
+  }
+
   if (!is.character(ctx$safety_state) || length(ctx$safety_state) != 1 || is.na(ctx$safety_state) || !nzchar(ctx$safety_state)) {
     rlang::abort("PulseContext `safety_state` must be a non-empty character scalar.", class = "ledgr_invalid_pulse_context")
   }
 
   invisible(TRUE)
 }
-

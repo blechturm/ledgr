@@ -3,6 +3,8 @@
 export(ledgr_backtest_run)
 export(ledgr_create_schema)
 export(ledgr_data_hash)
+export(ledgr_db_init)
+export(ledgr_state_reconstruct)
 export(ledgr_validate_schema)
 importFrom(DBI,dbConnect)
 importFrom(R6,R6Class)

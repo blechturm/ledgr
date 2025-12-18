@@ -1,7 +1,7 @@
 ledgr_validate_config <- function(config) {
   if (is.character(config) && length(config) == 1 && !is.na(config)) {
     config <- tryCatch(
-      jsonlite::fromJSON(config, simplifyVector = FALSE),
+      jsonlite::fromJSON(config, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
       error = function(e) {
         rlang::abort("`config` is not valid JSON.", class = "ledgr_invalid_config")
       }

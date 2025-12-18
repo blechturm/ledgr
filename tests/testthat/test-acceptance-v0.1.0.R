@@ -1,15 +1,11 @@
 # Acceptance suite for v0.1.0 (Given/When/Then style)
 
 testthat::test_that("AT1: schema initialization creates required tables", {
-  instrument_ids <- c("AAA", "BBB")
-  ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00")
-  bars <- ledgr_test_make_bars(instrument_ids, ts_utc)
-  db_path <- ledgr_test_make_db(instrument_ids, ts_utc, bars_df = bars, shuffle = TRUE)
+  db_path <- tempfile(fileext = ".duckdb")
+  con <- ledgr_db_init(db_path)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
-  h <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(h$con, h$drv), add = TRUE)
-
-  testthat::expect_error(ledgr_validate_schema(h$con), NA)
+  testthat::expect_error(ledgr_validate_schema(con), NA)
 })
 
 testthat::test_that("AT2: run registration stores hashes and reaches DONE", {
@@ -151,7 +147,13 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
   on.exit(ledgr_test_close_duckdb(h$con, h$drv), add = TRUE)
 
   eq <- ledgr_test_fetch_equity_curve_core(h$con, run_id)
-  testthat::expect_true(nrow(eq) >= 1)
+  testthat::expect_equal(nrow(eq), length(ts_utc))
+  testthat::expect_identical(eq$ts_utc, c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z"))
+
+  reconstructed <- ledgr_state_reconstruct(run_id, h$con)
+  testthat::expect_true(is.list(reconstructed))
+  testthat::expect_true(all(c("positions", "cash", "pnl", "equity_curve") %in% names(reconstructed)))
+  testthat::expect_equal(reconstructed$equity_curve, eq)
 
   testthat::expect_true(all(diff(as.POSIXct(eq$ts_utc, tz = "UTC")) > 0))
 
@@ -197,21 +199,14 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
     ),
     fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
     features = list(enabled = TRUE, defs = list(list(id = "sma_2"))),
-    strategy = list(
-      id = "ts_rule",
-      params = list(
-        cutover_ts_utc = "2020-01-02T00:00:00Z",
-        targets_before = c(AAA = 1),
-        targets_after = c(AAA = 2)
-      )
-    )
+    strategy = list(id = "state_prev", params = list())
   )
 
   run_id <- "at8-run-1"
   ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
   gc()
   Sys.sleep(0.05)
-  ledgr_backtest_run(cfg, run_id = run_id)
+  testthat::expect_warning(ledgr_backtest_run(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
 
   gc()
   Sys.sleep(0.05)
@@ -225,11 +220,16 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   ledger_resume <- ledgr_test_fetch_ledger_core(h1$con, run_id)
   feat_resume <- ledgr_test_fetch_features_core(h1$con, run_id)
   eq_resume <- ledgr_test_fetch_equity_curve_core(h1$con, run_id)
+  st_resume <- DBI::dbGetQuery(
+    h1$con,
+    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
+    params = list(run_id)
+  )
 
   db_clean <- ledgr_test_make_db(instrument_ids, ts_utc, bars_df = bars, shuffle = TRUE)
   cfg_clean <- cfg
   cfg_clean$db_path <- db_clean
-  ledgr_backtest_run(cfg_clean, run_id = run_id)
+  testthat::expect_warning(ledgr_backtest_run(cfg_clean, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
 
   gc()
   Sys.sleep(0.05)
@@ -240,10 +240,16 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   ledger_clean <- ledgr_test_fetch_ledger_core(h2$con, run_id)
   feat_clean <- ledgr_test_fetch_features_core(h2$con, run_id)
   eq_clean <- ledgr_test_fetch_equity_curve_core(h2$con, run_id)
+  st_clean <- DBI::dbGetQuery(
+    h2$con,
+    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
+    params = list(run_id)
+  )
 
   testthat::expect_equal(ledger_resume, ledger_clean)
   testthat::expect_equal(feat_resume, feat_clean)
   testthat::expect_equal(eq_resume, eq_clean)
+  testthat::expect_equal(st_resume, st_clean)
 })
 
 testthat::test_that("last-bar policy warns and produces no fill event", {

@@ -1,4 +1,4 @@
-ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = NULL) {
+ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = NULL, use_transaction = TRUE) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
@@ -14,6 +14,10 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
       ),
       class = "ledgr_ledger_write_result"
     ))
+  }
+
+  if (!is.logical(use_transaction) || length(use_transaction) != 1 || is.na(use_transaction)) {
+    rlang::abort("`use_transaction` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
 
   if (!inherits(fill_intent, "ledgr_fill_intent") || !is.list(fill_intent)) {
@@ -81,7 +85,7 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
     )
   )
 
-  DBI::dbWithTransaction(con, {
+  do_write <- function() {
     event_seq <- event_seq_start
     if (is.null(event_seq)) {
       event_seq <- DBI::dbGetQuery(
@@ -137,6 +141,11 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
       ),
       class = "ledgr_ledger_write_result"
     )
-  })
-}
+  }
 
+  if (isTRUE(use_transaction)) {
+    DBI::dbWithTransaction(con, do_write())
+  } else {
+    do_write()
+  }
+}

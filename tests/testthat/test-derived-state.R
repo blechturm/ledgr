@@ -1,4 +1,4 @@
-insert_test_run_ds <- function(con, run_id, initial_cash) {
+insert_test_run_ds <- function(con, run_id, cfg) {
   DBI::dbExecute(
     con,
     "
@@ -17,7 +17,7 @@ insert_test_run_ds <- function(con, run_id, initial_cash) {
       run_id,
       as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
       "0.1.0",
-      "{}",
+      canonical_json(cfg),
       "config-hash",
       "data-hash",
       "CREATED",
@@ -67,7 +67,20 @@ testthat::test_that("derived state reconstructs positions, cash, and equity_curv
 
   run_id <- "run-derived-1"
   initial_cash <- 1000
-  insert_test_run_ds(con, run_id, initial_cash)
+  cfg <- list(
+    db_path = ":memory:",
+    engine = list(seed = 1L, tz = "UTC"),
+    universe = list(instrument_ids = c("AAA")),
+    backtest = list(
+      start_ts_utc = "2020-01-02T00:00:00Z",
+      end_ts_utc = "2020-01-03T00:00:00Z",
+      pulse = "EOD",
+      initial_cash = initial_cash
+    ),
+    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 1),
+    strategy = list(id = "hold_zero")
+  )
+  insert_test_run_ds(con, run_id, cfg)
 
   DBI::dbAppendTable(con, "instruments", data.frame(instrument_id = "AAA"))
   insert_bars_for_ts(con, "AAA", "2020-01-02 00:00:00", close = 101)
@@ -122,14 +135,36 @@ testthat::test_that("empty ledger produces empty equity_curve and preserves init
 
   run_id <- "run-derived-empty"
   initial_cash <- 500
-  insert_test_run_ds(con, run_id, initial_cash)
+  cfg <- list(
+    db_path = ":memory:",
+    engine = list(seed = 1L, tz = "UTC"),
+    universe = list(instrument_ids = c("AAA", "BBB")),
+    backtest = list(
+      start_ts_utc = "2020-01-01T00:00:00Z",
+      end_ts_utc = "2020-01-03T00:00:00Z",
+      pulse = "EOD",
+      initial_cash = initial_cash
+    ),
+    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+    strategy = list(id = "hold_zero")
+  )
+  insert_test_run_ds(con, run_id, cfg)
+
+  DBI::dbExecute(con, "INSERT INTO instruments (instrument_id) VALUES ('AAA'), ('BBB')")
+  for (ts in c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00")) {
+    insert_bars_for_ts(con, "AAA", ts, close = 1)
+    insert_bars_for_ts(con, "BBB", ts, close = 2)
+  }
 
   ds <- ledgr:::ledgr_rebuild_derived_state(con, run_id, initial_cash = initial_cash)
   testthat::expect_equal(length(ds$positions), 0L)
   testthat::expect_equal(ds$cash, initial_cash)
 
   eq <- read_equity_curve(con, run_id)
-  testthat::expect_equal(nrow(eq), 0L)
+  testthat::expect_equal(nrow(eq), 3L)
+  testthat::expect_true(all(eq$cash == initial_cash))
+  testthat::expect_true(all(eq$positions_value == 0))
+  testthat::expect_true(all(eq$equity == initial_cash))
 })
 
 testthat::test_that("rebuild failure does not delete existing equity_curve rows", {
@@ -139,18 +174,34 @@ testthat::test_that("rebuild failure does not delete existing equity_curve rows"
 
   run_id <- "run-derived-err"
   initial_cash <- 100
-  insert_test_run_ds(con, run_id, initial_cash)
+  cfg <- list(
+    db_path = ":memory:",
+    engine = list(seed = 1L, tz = "UTC"),
+    universe = list(instrument_ids = c("AAA")),
+    backtest = list(
+      start_ts_utc = "2020-01-02T00:00:00Z",
+      end_ts_utc = "2020-01-03T00:00:00Z",
+      pulse = "EOD",
+      initial_cash = initial_cash
+    ),
+    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+    strategy = list(id = "hold_zero")
+  )
+  insert_test_run_ds(con, run_id, cfg)
 
   DBI::dbAppendTable(con, "instruments", data.frame(instrument_id = "AAA"))
-  # Intentionally do NOT insert bars for the fill timestamp.
+  insert_bars_for_ts(con, "AAA", "2020-01-02 00:00:00", close = 10)
+  insert_bars_for_ts(con, "AAA", "2020-01-03 00:00:00", close = 10)
 
-  fill_buy <- ledgr:::ledgr_fill_next_open(
-    desired_qty_delta = 1,
-    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
-    spread_bps = 0,
-    commission_fixed = 0
+  # Insert an invalid ledger event (missing required meta_json fields) to force rebuild to fail.
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, meta_json, event_seq)
+    VALUES ('bad_00000001', ?, TIMESTAMP '2020-01-02 00:00:00', 'FILL', '{}', 1)
+    ",
+    params = list(run_id)
   )
-  ledgr:::ledgr_write_fill_events(con, run_id, fill_buy, event_seq_start = 1L)
 
   # Seed an existing derived row to ensure we don't delete it on failure.
   DBI::dbExecute(
@@ -168,7 +219,7 @@ testthat::test_that("rebuild failure does not delete existing equity_curve rows"
 
   testthat::expect_error(
     ledgr:::ledgr_rebuild_derived_state(con, run_id, initial_cash = initial_cash),
-    class = "ledgr_missing_bars"
+    class = "ledgr_invalid_ledger_meta"
   )
 
   eq <- read_equity_curve(con, run_id)
