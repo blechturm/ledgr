@@ -13,5 +13,5 @@ ledgr_create_schema(con)
 Invisibly returns \code{TRUE} on success.
 }
 \description{
-Creates all required v0.1.0 tables. Safe to call multiple times.
+Creates all required v0.1.0 tables and forward-migrates older schemas.
 }

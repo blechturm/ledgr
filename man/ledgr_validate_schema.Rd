@@ -13,6 +13,6 @@ ledgr_validate_schema(con)
 Invisibly returns \code{TRUE} on success.
 }
 \description{
-Validates required tables, columns, types, NOT NULL constraints, primary
-keys, UNIQUE(run_id, event_seq), and the \code{runs.status} CHECK constraint.
+Validates required tables, columns, types, primary keys, UNIQUE constraints,
+and required behavioral constraints.
 }

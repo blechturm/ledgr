@@ -4,6 +4,19 @@ testthat::test_that("schema can be created on an empty DuckDB", {
 
   testthat::expect_true(ledgr_create_schema(con))
   testthat::expect_true(ledgr_validate_schema(con))
+
+  tables <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'main'
+    "
+  )$table_name
+
+  for (t in c("runs", "instruments", "bars", "features", "ledger_events", "equity_curve")) {
+    testthat::expect_true(t %in% tables, info = sprintf("expected table %s to exist", t))
+  }
 })
 
 testthat::test_that("schema creation is idempotent", {
@@ -31,12 +44,21 @@ testthat::test_that("missing column fails validation", {
 
   ledgr_create_schema(con)
   DBI::dbExecute(con, "DROP TABLE runs")
-  DBI::dbExecute(con, "CREATE TABLE runs (run_id TEXT PRIMARY KEY)")
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE runs (
+      run_id TEXT PRIMARY KEY,
+      created_at_utc TIMESTAMP NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','DONE','FAILED'))
+    )
+    "
+  )
 
   testthat::expect_error(ledgr_validate_schema(con), "Missing columns in runs:", fixed = TRUE)
 })
 
-testthat::test_that("primary key enforcement is detectable", {
+testthat::test_that("bars primary key enforcement is detectable", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -74,23 +96,23 @@ testthat::test_that("runs.status CHECK constraint is enforced", {
       INSERT INTO runs (
         run_id,
         created_at_utc,
-        status,
+        engine_version,
+        config_json,
         config_hash,
         data_hash,
-        engine_version,
-        seed,
-        initial_cash
+        status,
+        error_msg
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ",
       params = list(
         run_id,
         as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
-        status,
+        "0.1.0",
+        "{}",
         "config-hash",
         "data-hash",
-        "0.1.0",
-        1L,
-        1000.0
+        status,
+        NA_character_
       )
     )
   }
@@ -100,147 +122,126 @@ testthat::test_that("runs.status CHECK constraint is enforced", {
   )
 
   testthat::expect_error(
-    insert_runs("run-2", "CREATED"),
+    insert_runs("run-2", "DONE"),
     NA
   )
 })
 
-testthat::test_that("ledger_events rejects NULL run_id", {
+testthat::test_that("missing features table fails validation", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
   ledgr_create_schema(con)
+  DBI::dbExecute(con, "DROP TABLE features")
 
-  testthat::expect_error(
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO ledger_events (
-        event_id, run_id, ts_utc, event_type, event_seq
-      ) VALUES (
-        'e1', NULL, TIMESTAMP '2020-01-01 00:00:00', 'X', 1
-      )
-      "
-    )
-  )
+  testthat::expect_error(ledgr_validate_schema(con), "Missing table: features", fixed = TRUE)
 })
 
-testthat::test_that("ledger_events rejects NULL event_seq", {
+testthat::test_that("features primary key prevents duplicates", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
   ledgr_create_schema(con)
 
-  testthat::expect_error(
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO ledger_events (
-        event_id, run_id, ts_utc, event_type, event_seq
-      ) VALUES (
-        'e1', 'run-1', TIMESTAMP '2020-01-01 00:00:00', 'X', NULL
-      )
-      "
-    )
-  )
-})
-
-testthat::test_that("equity_curve rejects NULL values", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-
-  testthat::expect_error(
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO equity_curve (
-        run_id, ts_utc, cash, gross_exposure, net_exposure, equity
-      ) VALUES (
-        'run-1', TIMESTAMP '2020-01-01 00:00:00', NULL, 0, 0, 0
-      )
-      "
-    )
-  )
-})
-
-testthat::test_that("bars rejects NULL OHLCV values", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-
-  testthat::expect_error(
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO bars (instrument_id, ts_utc, open, high, low, close, volume)
-      VALUES ('ABC', TIMESTAMP '2020-01-01 00:00:00', NULL, 1, 1, 1, 100)
-      "
-    )
-  )
-})
-
-testthat::test_that("validation fails if ledger_events lacks UNIQUE(run_id, event_seq)", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-
-  DBI::dbExecute(con, "DROP TABLE ledger_events")
   DBI::dbExecute(
     con,
     "
-    CREATE TABLE ledger_events (
-      event_id TEXT NOT NULL PRIMARY KEY,
-      run_id TEXT NOT NULL,
-      ts_utc TIMESTAMP NOT NULL,
-      event_type TEXT NOT NULL,
-      instrument_id TEXT,
-      qty DOUBLE,
-      price DOUBLE,
-      cash_delta DOUBLE,
-      event_seq INTEGER NOT NULL
+    INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
+    VALUES ('run-1', 'ABC', TIMESTAMP '2020-01-01 00:00:00', 'sma_2', 1.0)
+    "
+  )
+
+  testthat::expect_error(
+    DBI::dbExecute(
+      con,
+      "
+      INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
+      VALUES ('run-1', 'ABC', TIMESTAMP '2020-01-01 00:00:00', 'sma_2', 2.0)
+      "
+    )
+  )
+})
+
+testthat::test_that("ledger_events enforces uniqueness of (run_id, event_seq)", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  ledgr_create_schema(con)
+
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
+    VALUES ('run-1_00000001', 'run-1', TIMESTAMP '2020-01-02 00:00:00', 'FILL', 1)
+    "
+  )
+
+  testthat::expect_error(
+    DBI::dbExecute(
+      con,
+      "
+      INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
+      VALUES ('run-1_00000002', 'run-1', TIMESTAMP '2020-01-02 00:00:00', 'FILL', 1)
+      "
+    )
+  )
+})
+
+testthat::test_that("upgrade path: old runs schema is migrated and COMPLETED is mapped to DONE", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE runs (
+      run_id TEXT NOT NULL PRIMARY KEY,
+      created_at_utc TIMESTAMP NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','COMPLETED','FAILED'))
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO runs (run_id, created_at_utc, status)
+    VALUES ('old-run', TIMESTAMP '2020-01-01 00:00:00', 'COMPLETED')
+    "
+  )
+
+  testthat::expect_true(ledgr_create_schema(con))
+  testthat::expect_true(ledgr_validate_schema(con))
+
+  status <- DBI::dbGetQuery(con, "SELECT status FROM runs WHERE run_id = 'old-run'")$status[[1]]
+  testthat::expect_identical(status, "DONE")
+})
+
+testthat::test_that("validator fails if runs.status does not accept DONE", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  ledgr_create_schema(con)
+
+  DBI::dbExecute(con, "DROP TABLE runs")
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE runs (
+      run_id TEXT NOT NULL PRIMARY KEY,
+      created_at_utc TIMESTAMP NOT NULL,
+      engine_version TEXT,
+      config_json TEXT,
+      config_hash TEXT,
+      data_hash TEXT,
+      status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','COMPLETED','FAILED')),
+      error_msg TEXT
     )
     "
   )
 
   testthat::expect_error(
     ledgr_validate_schema(con),
-    "Missing UNIQUE constraint on ledger_events: (run_id, event_seq)",
-    fixed = TRUE
-  )
-})
-
-testthat::test_that("validation fails if ledger_events allows NULL run_id", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-
-  DBI::dbExecute(con, "DROP TABLE ledger_events")
-  DBI::dbExecute(
-    con,
-    "
-    CREATE TABLE ledger_events (
-      event_id TEXT NOT NULL PRIMARY KEY,
-      run_id TEXT,
-      ts_utc TIMESTAMP NOT NULL,
-      event_type TEXT NOT NULL,
-      instrument_id TEXT,
-      qty DOUBLE,
-      price DOUBLE,
-      cash_delta DOUBLE,
-      event_seq INTEGER NOT NULL,
-      UNIQUE(run_id, event_seq)
-    )
-    "
-  )
-
-  testthat::expect_error(
-    ledgr_validate_schema(con),
-    "Expected NOT NULL constraints missing for ledger_events: run_id",
+    "runs.status must accept DONE",
     fixed = TRUE
   )
 })

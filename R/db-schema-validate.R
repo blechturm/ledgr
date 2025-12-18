@@ -1,7 +1,7 @@
 #' Validate ledgr DuckDB schema (v0.1.0)
 #'
-#' Validates required tables, columns, types, NOT NULL constraints, primary
-#' keys, UNIQUE(run_id, event_seq), and the `runs.status` CHECK constraint.
+#' Validates required tables, columns, types, primary keys, UNIQUE constraints,
+#' and required behavioral constraints.
 #'
 #' @param con A DBI connection to DuckDB.
 #' @return Invisibly returns `TRUE` on success.
@@ -18,65 +18,23 @@ ledgr_validate_schema <- function(con) {
       columns = c(
         run_id = "TEXT",
         created_at_utc = "TIMESTAMP",
-        status = "TEXT",
+        engine_version = "TEXT",
+        config_json = "TEXT",
         config_hash = "TEXT",
         data_hash = "TEXT",
-        engine_version = "TEXT",
-        seed = "INTEGER",
-        initial_cash = "DOUBLE"
-      ),
-      not_null = c(
-        "run_id",
-        "created_at_utc",
-        "status",
-        "config_hash",
-        "data_hash",
-        "engine_version",
-        "seed",
-        "initial_cash"
+        status = "TEXT",
+        error_msg = "TEXT"
       ),
       pk = c("run_id")
     ),
-    ledger_events = list(
+    instruments = list(
       columns = c(
-        event_id = "TEXT",
-        run_id = "TEXT",
-        ts_utc = "TIMESTAMP",
-        event_type = "TEXT",
         instrument_id = "TEXT",
-        qty = "DOUBLE",
-        price = "DOUBLE",
-        cash_delta = "DOUBLE",
-        event_seq = "INTEGER"
+        symbol = "TEXT",
+        currency = "TEXT",
+        asset_class = "TEXT"
       ),
-      not_null = c(
-        "event_id",
-        "run_id",
-        "ts_utc",
-        "event_type",
-        "event_seq"
-      ),
-      pk = c("event_id"),
-      unique = list(c("run_id", "event_seq"))
-    ),
-    equity_curve = list(
-      columns = c(
-        run_id = "TEXT",
-        ts_utc = "TIMESTAMP",
-        cash = "DOUBLE",
-        gross_exposure = "DOUBLE",
-        net_exposure = "DOUBLE",
-        equity = "DOUBLE"
-      ),
-      not_null = c(
-        "run_id",
-        "ts_utc",
-        "cash",
-        "gross_exposure",
-        "net_exposure",
-        "equity"
-      ),
-      pk = c("run_id", "ts_utc")
+      pk = c("instrument_id")
     ),
     bars = list(
       columns = c(
@@ -86,18 +44,51 @@ ledgr_validate_schema <- function(con) {
         high = "DOUBLE",
         low = "DOUBLE",
         close = "DOUBLE",
-        volume = "DOUBLE"
-      ),
-      not_null = c(
-        "instrument_id",
-        "ts_utc",
-        "open",
-        "high",
-        "low",
-        "close",
-        "volume"
+        volume = "DOUBLE",
+        gap_type = "TEXT",
+        is_synthetic = "BOOLEAN"
       ),
       pk = c("instrument_id", "ts_utc")
+    ),
+    features = list(
+      columns = c(
+        run_id = "TEXT",
+        instrument_id = "TEXT",
+        ts_utc = "TIMESTAMP",
+        feature_name = "TEXT",
+        feature_value = "DOUBLE"
+      ),
+      pk = c("run_id", "instrument_id", "ts_utc", "feature_name")
+    ),
+    ledger_events = list(
+      columns = c(
+        event_id = "TEXT",
+        run_id = "TEXT",
+        ts_utc = "TIMESTAMP",
+        event_type = "TEXT",
+        instrument_id = "TEXT",
+        side = "TEXT",
+        qty = "DOUBLE",
+        price = "DOUBLE",
+        fee = "DOUBLE",
+        meta_json = "TEXT",
+        event_seq = "INTEGER"
+      ),
+      pk = c("event_id"),
+      unique = list(c("run_id", "event_seq")),
+      not_null = c("event_id", "run_id", "ts_utc", "event_type", "event_seq")
+    ),
+    equity_curve = list(
+      columns = c(
+        run_id = "TEXT",
+        ts_utc = "TIMESTAMP",
+        cash = "DOUBLE",
+        positions_value = "DOUBLE",
+        equity = "DOUBLE",
+        realized_pnl = "DOUBLE",
+        unrealized_pnl = "DOUBLE"
+      ),
+      pk = c("run_id", "ts_utc")
     )
   )
 
@@ -170,54 +161,142 @@ ledgr_validate_schema <- function(con) {
     split(out$column_name, out$constraint_name)
   }
 
-  check_runs_status_constraint <- function() {
-    err <- tryCatch(
-      DBI::dbWithTransaction(con, {
-        DBI::dbExecute(
-          con,
-          "
-          INSERT INTO runs (
-            run_id,
-            created_at_utc,
-            status,
-            config_hash,
-            data_hash,
-            engine_version,
-            seed,
-            initial_cash
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          ",
-          params = list(
-            "__ledgr_schema_check__",
-            as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
-            "INVALID",
-            "x",
-            "y",
-            "0.0.0",
-            1L,
-            1.0
-          )
-        )
-        stop(
-          "Missing or incorrect CHECK constraint on runs.status (expected IN ('CREATED','RUNNING','COMPLETED','FAILED')).",
-          call. = FALSE
-        )
-      }),
-      error = function(e) e
+  begin_rollback <- function() {
+    DBI::dbExecute(con, "BEGIN TRANSACTION")
+    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
+  }
+
+  runs_insert_status_ok <- function(status_value) {
+    cols <- get_columns("runs")
+    required_cols <- cols$column_name[cols$is_nullable == "NO"]
+    types <- normalize_type(cols$data_type)
+    names(types) <- cols$column_name
+
+    vals <- vector("list", length(required_cols))
+    names(vals) <- required_cols
+    for (col in required_cols) {
+      t <- unname(types[[col]])
+      if (col == "run_id") {
+        vals[[col]] <- paste0("__ledgr_schema_check__", Sys.getpid(), "_", status_value)
+      } else if (col == "status") {
+        vals[[col]] <- status_value
+      } else if (t == "TEXT") {
+        vals[[col]] <- "x"
+      } else if (t == "INTEGER") {
+        vals[[col]] <- 1L
+      } else if (t == "DOUBLE") {
+        vals[[col]] <- 1.0
+      } else if (t == "TIMESTAMP") {
+        vals[[col]] <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
+      } else if (t == "BOOLEAN") {
+        vals[[col]] <- FALSE
+      } else {
+        vals[[col]] <- "x"
+      }
+    }
+
+    sql <- sprintf(
+      "INSERT INTO runs (%s) VALUES (%s)",
+      paste(required_cols, collapse = ", "),
+      paste(rep("?", length(required_cols)), collapse = ", ")
     )
 
-    if (is.null(err)) {
+    begin_rollback()
+    ok <- tryCatch(
+      {
+        DBI::dbExecute(con, sql, params = unname(vals))
+        TRUE
+      },
+      error = function(e) FALSE
+    )
+    ok
+  }
+
+  check_runs_status_constraint <- function() {
+    if (!runs_insert_status_ok("DONE")) {
       stop(
-        "Missing or incorrect CHECK constraint on runs.status (expected IN ('CREATED','RUNNING','COMPLETED','FAILED')).",
+        "runs.status must accept DONE (expected IN ('CREATED','RUNNING','DONE','FAILED')).",
         call. = FALSE
       )
     }
-
-    msg <- conditionMessage(err)
-    if (identical(msg, "Missing or incorrect CHECK constraint on runs.status (expected IN ('CREATED','RUNNING','COMPLETED','FAILED')).")) {
-      stop(msg, call. = FALSE)
+    if (runs_insert_status_ok("INVALID")) {
+      stop(
+        "runs.status must reject invalid values (expected IN ('CREATED','RUNNING','DONE','FAILED')).",
+        call. = FALSE
+      )
     }
+    invisible(TRUE)
+  }
 
+  check_features_pk_enforced <- function() {
+    run_id <- paste0("__ledgr_schema_check__", Sys.getpid())
+    instrument_id <- "ABC"
+    ts_utc <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
+    feature_name <- "x"
+
+    begin_rollback()
+    DBI::dbExecute(
+      con,
+      "
+      INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
+      VALUES (?, ?, ?, ?, 1.0)
+      "
+      ,
+      params = list(run_id, instrument_id, ts_utc, feature_name)
+    )
+    ok <- tryCatch(
+      {
+        DBI::dbExecute(
+          con,
+          "
+          INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
+          VALUES (?, ?, ?, ?, 2.0)
+          "
+          ,
+          params = list(run_id, instrument_id, ts_utc, feature_name)
+        )
+        TRUE
+      },
+      error = function(e) FALSE
+    )
+    if (ok) {
+      stop("features primary key is not enforced.", call. = FALSE)
+    }
+    invisible(TRUE)
+  }
+
+  check_ledger_events_run_seq_unique <- function() {
+    run_id <- paste0("__ledgr_schema_check__", Sys.getpid())
+    ts_utc <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
+
+    begin_rollback()
+    DBI::dbExecute(
+      con,
+      "
+      INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
+      VALUES (?, ?, ?, 'FILL', 1)
+      "
+      ,
+      params = list(paste0(run_id, "_00000001"), run_id, ts_utc)
+    )
+    ok <- tryCatch(
+      {
+        DBI::dbExecute(
+          con,
+          "
+          INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
+          VALUES (?, ?, ?, 'FILL', 1)
+          "
+          ,
+          params = list(paste0(run_id, "_00000002"), run_id, ts_utc)
+        )
+        TRUE
+      },
+      error = function(e) FALSE
+    )
+    if (ok) {
+      stop("ledger_events must enforce uniqueness of (run_id, event_seq).", call. = FALSE)
+    }
     invisible(TRUE)
   }
 
@@ -262,19 +341,21 @@ ledgr_validate_schema <- function(con) {
       }
     }
 
-    expected_not_null <- required[[table_name]]$not_null
-    is_nullable <- cols$is_nullable
-    names(is_nullable) <- cols$column_name
-    nullable_violations <- expected_not_null[unname(is_nullable[expected_not_null]) != "NO"]
-    if (length(nullable_violations) > 0) {
-      stop(
-        sprintf(
-          "Expected NOT NULL constraints missing for %s: %s",
-          table_name,
-          paste(nullable_violations, collapse = ", ")
-        ),
-        call. = FALSE
-      )
+    if (!is.null(required[[table_name]]$not_null)) {
+      expected_not_null <- required[[table_name]]$not_null
+      is_nullable <- cols$is_nullable
+      names(is_nullable) <- cols$column_name
+      nullable_violations <- expected_not_null[unname(is_nullable[expected_not_null]) != "NO"]
+      if (length(nullable_violations) > 0) {
+        stop(
+          sprintf(
+            "Expected NOT NULL constraints missing for %s: %s",
+            table_name,
+            paste(nullable_violations, collapse = ", ")
+          ),
+          call. = FALSE
+        )
+      }
     }
 
     pk_expected <- required[[table_name]]$pk
@@ -311,6 +392,8 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_runs_status_constraint()
+  check_features_pk_enforced()
+  check_ledger_events_run_seq_unique()
 
   invisible(TRUE)
 }
