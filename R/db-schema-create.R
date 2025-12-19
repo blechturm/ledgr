@@ -142,6 +142,7 @@ ledgr_create_schema <- function(con) {
       config_json TEXT,
       config_hash TEXT,
       data_hash TEXT,
+      snapshot_id TEXT,
       status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','DONE','FAILED')),
       error_msg TEXT
     )
@@ -221,10 +222,53 @@ ledgr_create_schema <- function(con) {
     )
   "
 
+  ddl_snapshots <- "
+    CREATE TABLE IF NOT EXISTS snapshots (
+      snapshot_id TEXT NOT NULL PRIMARY KEY,
+      status TEXT NOT NULL CHECK (status IN ('CREATED','SEALED','FAILED')),
+      created_at_utc TIMESTAMP NOT NULL,
+      sealed_at_utc TIMESTAMP,
+      snapshot_hash TEXT,
+      meta_json TEXT,
+      error_msg TEXT
+    )
+  "
+
+  ddl_snapshot_instruments <- "
+    CREATE TABLE IF NOT EXISTS snapshot_instruments (
+      snapshot_id TEXT NOT NULL,
+      instrument_id TEXT NOT NULL,
+      symbol TEXT,
+      currency TEXT,
+      asset_class TEXT,
+      multiplier DOUBLE,
+      tick_size DOUBLE,
+      meta_json TEXT,
+      PRIMARY KEY (snapshot_id, instrument_id)
+    )
+  "
+
+  ddl_snapshot_bars <- "
+    CREATE TABLE IF NOT EXISTS snapshot_bars (
+      snapshot_id TEXT NOT NULL,
+      instrument_id TEXT NOT NULL,
+      ts_utc TIMESTAMP NOT NULL,
+      open DOUBLE NOT NULL,
+      high DOUBLE NOT NULL,
+      low DOUBLE NOT NULL,
+      close DOUBLE NOT NULL,
+      volume DOUBLE,
+      PRIMARY KEY (snapshot_id, instrument_id, ts_utc)
+    )
+  "
+
   DBI::dbExecute(con, ddl_instruments)
   DBI::dbExecute(con, ddl_features)
   DBI::dbExecute(con, ddl_equity_curve)
   DBI::dbExecute(con, ddl_strategy_state)
+  DBI::dbExecute(con, ddl_snapshots)
+  DBI::dbExecute(con, ddl_snapshot_instruments)
+  DBI::dbExecute(con, ddl_snapshot_bars)
 
   if (!runs_is_compliant()) {
     if (table_exists("runs")) {
@@ -243,7 +287,7 @@ ledgr_create_schema <- function(con) {
         "NULL"
       }
 
-      target_cols <- c("run_id", "created_at_utc", "engine_version", "config_json", "config_hash", "data_hash", "status", "error_msg")
+      target_cols <- c("run_id", "created_at_utc", "engine_version", "config_json", "config_hash", "data_hash", "snapshot_id", "status", "error_msg")
       insert_sql <- sprintf(
         "INSERT INTO runs_new (%s) SELECT %s FROM runs",
         paste(target_cols, collapse = ", "),
@@ -254,6 +298,11 @@ ledgr_create_schema <- function(con) {
     } else {
       DBI::dbExecute(con, ddl_runs)
     }
+  }
+
+  # v0.1.1: runs.snapshot_id is optional and must be nullable.
+  if (table_exists("runs")) {
+    add_column_if_missing("runs", "snapshot_id", "TEXT")
   }
 
   # instruments: ensure required columns exist (no destructive migration)
@@ -342,6 +391,66 @@ ledgr_create_schema <- function(con) {
   if (!table_exists("strategy_state")) {
     DBI::dbExecute(con, ddl_strategy_state)
   }
+
+  # snapshots: ensure exists (no destructive migration)
+  if (!table_exists("snapshots")) {
+    DBI::dbExecute(con, ddl_snapshots)
+  } else {
+    add_column_if_missing("snapshots", "sealed_at_utc", "TIMESTAMP")
+    add_column_if_missing("snapshots", "snapshot_hash", "TEXT")
+    add_column_if_missing("snapshots", "meta_json", "TEXT")
+    add_column_if_missing("snapshots", "error_msg", "TEXT")
+  }
+
+  if (!table_exists("snapshot_instruments")) {
+    DBI::dbExecute(con, ddl_snapshot_instruments)
+  } else {
+    add_column_if_missing("snapshot_instruments", "symbol", "TEXT")
+    add_column_if_missing("snapshot_instruments", "currency", "TEXT")
+    add_column_if_missing("snapshot_instruments", "asset_class", "TEXT")
+    add_column_if_missing("snapshot_instruments", "multiplier", "DOUBLE")
+    add_column_if_missing("snapshot_instruments", "tick_size", "DOUBLE")
+    add_column_if_missing("snapshot_instruments", "meta_json", "TEXT")
+  }
+
+  if (!table_exists("snapshot_bars")) {
+    DBI::dbExecute(con, ddl_snapshot_bars)
+  } else {
+    add_column_if_missing("snapshot_bars", "volume", "DOUBLE")
+  }
+
+  # Best-effort immutability enforcement for SEALED snapshots (DuckDB trigger support varies by build).
+  # If triggers are unsupported, this is a no-op and must be enforced by ledgr write-paths (later tickets).
+  try(
+    DBI::dbExecute(
+      con,
+      "
+      CREATE TRIGGER IF NOT EXISTS ledgr_block_snapshot_bars_write
+      BEFORE INSERT OR UPDATE OR DELETE ON snapshot_bars
+      FOR EACH ROW
+      WHEN (SELECT status FROM snapshots WHERE snapshot_id = COALESCE(NEW.snapshot_id, OLD.snapshot_id)) = 'SEALED'
+      BEGIN
+        SELECT RAISE(ABORT, 'LEDGR_SNAPSHOT_IMMUTABLE');
+      END;
+      "
+    ),
+    silent = TRUE
+  )
+  try(
+    DBI::dbExecute(
+      con,
+      "
+      CREATE TRIGGER IF NOT EXISTS ledgr_block_snapshot_instruments_write
+      BEFORE INSERT OR UPDATE OR DELETE ON snapshot_instruments
+      FOR EACH ROW
+      WHEN (SELECT status FROM snapshots WHERE snapshot_id = COALESCE(NEW.snapshot_id, OLD.snapshot_id)) = 'SEALED'
+      BEGIN
+        SELECT RAISE(ABORT, 'LEDGR_SNAPSHOT_IMMUTABLE');
+      END;
+      "
+    ),
+    silent = TRUE
+  )
 
   invisible(TRUE)
 }

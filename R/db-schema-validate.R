@@ -22,6 +22,7 @@ ledgr_validate_schema <- function(con) {
         config_json = "TEXT",
         config_hash = "TEXT",
         data_hash = "TEXT",
+        snapshot_id = "TEXT",
         status = "TEXT",
         error_msg = "TEXT"
       ),
@@ -98,6 +99,47 @@ ledgr_validate_schema <- function(con) {
       ),
       pk = c("run_id", "ts_utc"),
       not_null = c("run_id", "ts_utc", "state_json")
+    ),
+    snapshots = list(
+      columns = c(
+        snapshot_id = "TEXT",
+        status = "TEXT",
+        created_at_utc = "TIMESTAMP",
+        sealed_at_utc = "TIMESTAMP",
+        snapshot_hash = "TEXT",
+        meta_json = "TEXT",
+        error_msg = "TEXT"
+      ),
+      pk = c("snapshot_id"),
+      not_null = c("snapshot_id", "status", "created_at_utc")
+    ),
+    snapshot_instruments = list(
+      columns = c(
+        snapshot_id = "TEXT",
+        instrument_id = "TEXT",
+        symbol = "TEXT",
+        currency = "TEXT",
+        asset_class = "TEXT",
+        multiplier = "DOUBLE",
+        tick_size = "DOUBLE",
+        meta_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "instrument_id"),
+      not_null = c("snapshot_id", "instrument_id")
+    ),
+    snapshot_bars = list(
+      columns = c(
+        snapshot_id = "TEXT",
+        instrument_id = "TEXT",
+        ts_utc = "TIMESTAMP",
+        open = "DOUBLE",
+        high = "DOUBLE",
+        low = "DOUBLE",
+        close = "DOUBLE",
+        volume = "DOUBLE"
+      ),
+      pk = c("snapshot_id", "instrument_id", "ts_utc"),
+      not_null = c("snapshot_id", "instrument_id", "ts_utc", "open", "high", "low", "close")
     )
   )
 
@@ -234,6 +276,45 @@ ledgr_validate_schema <- function(con) {
         call. = FALSE
       )
     }
+    invisible(TRUE)
+  }
+
+  check_snapshots_status_constraint <- function() {
+    snapshot_id <- paste0("__ledgr_schema_check__", Sys.getpid())
+    created_at <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
+    insert_ok <- function(status_value) {
+      begin_rollback()
+      on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
+      tryCatch(
+        {
+          DBI::dbExecute(
+            con,
+            "
+            INSERT INTO snapshots (snapshot_id, status, created_at_utc)
+            VALUES (?, ?, ?)
+            ",
+            params = list(snapshot_id, status_value, created_at)
+          )
+          TRUE
+        },
+        error = function(e) FALSE
+      )
+    }
+
+    if (isTRUE(insert_ok("INVALID"))) {
+      stop(
+        "snapshots.status must reject invalid values (expected IN ('CREATED','SEALED','FAILED')).",
+        call. = FALSE
+      )
+    }
+
+    if (!isTRUE(insert_ok("SEALED"))) {
+      stop(
+        "snapshots.status must accept SEALED (expected IN ('CREATED','SEALED','FAILED')).",
+        call. = FALSE
+      )
+    }
+
     invisible(TRUE)
   }
 
@@ -403,6 +484,7 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_runs_status_constraint()
+  check_snapshots_status_constraint()
   check_features_pk_enforced()
   check_ledger_events_run_seq_unique()
 

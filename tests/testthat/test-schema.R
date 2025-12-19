@@ -268,6 +268,7 @@ testthat::test_that("validator fails if runs.status does not accept DONE", {
       config_json TEXT,
       config_hash TEXT,
       data_hash TEXT,
+      snapshot_id TEXT,
       status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','COMPLETED','FAILED')),
       error_msg TEXT
     )
