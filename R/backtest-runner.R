@@ -30,6 +30,16 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   initial_cash <- as.numeric(cfg$backtest$initial_cash)
   seed <- as.integer(cfg$engine$seed)
 
+  snapshot_id <- NULL
+  if (!is.null(cfg$data) && is.list(cfg$data) && identical(cfg$data$source, "snapshot")) {
+    snapshot_id <- cfg$data$snapshot_id
+  }
+  if (!is.null(snapshot_id)) {
+    if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {
+      rlang::abort("config$data$snapshot_id must be a non-empty string when data.source == 'snapshot'.", class = "ledgr_invalid_config")
+    }
+  }
+
   set.seed(seed)
 
   opened <- ledgr_open_duckdb_with_retry(db_path)
@@ -63,13 +73,14 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
   run_row <- DBI::dbGetQuery(
     con,
-    "SELECT run_id, status, config_hash, data_hash FROM runs WHERE run_id = ?",
+    "SELECT run_id, status, config_hash, data_hash, snapshot_id FROM runs WHERE run_id = ?",
     params = list(run_id)
   )
 
   is_resume <- nrow(run_row) > 0
 
   if (!is_resume) {
+    run_snapshot_id <- if (is.null(snapshot_id)) NA_character_ else snapshot_id
     DBI::dbExecute(
       con,
       "
@@ -80,9 +91,10 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         config_json,
         config_hash,
         data_hash,
+        snapshot_id,
         status,
         error_msg
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ",
       params = list(
         run_id,
@@ -91,6 +103,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         config_json,
         cfg_hash,
         NA_character_,
+        run_snapshot_id,
         "CREATED",
         NA_character_
       )
@@ -100,18 +113,144 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     if (!identical(stored_cfg_hash, cfg_hash)) {
       rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
     }
+    stored_snapshot_id <- run_row$snapshot_id[[1]]
+    if (!is.null(snapshot_id)) {
+      if (!is.character(stored_snapshot_id) || length(stored_snapshot_id) != 1 || is.na(stored_snapshot_id) || !nzchar(stored_snapshot_id)) {
+        rlang::abort("Refusing to resume: stored run has no snapshot_id.", class = "ledgr_run_hash_mismatch")
+      }
+      if (!identical(stored_snapshot_id, snapshot_id)) {
+        rlang::abort("Refusing to resume: snapshot_id does not match stored run.", class = "ledgr_run_hash_mismatch")
+      }
+    }
     if (identical(run_row$status[[1]], "DONE")) {
       return(list(run_id = run_id, db_path = db_path))
     }
   }
 
-  fail_run <- function(msg) {
+  fail_run <- function(msg, class = "ledgr_run_failed") {
     DBI::dbExecute(
       con,
       "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
       params = list("FAILED", msg, run_id)
     )
-    rlang::abort(msg, class = "ledgr_run_failed")
+    rlang::abort(msg, class = class)
+  }
+
+  # v0.1.1 snapshot integration:
+  # - verify snapshot status SEALED
+  # - tamper detection: recompute hash and compare
+  # - enforce universe subset and coverage
+  # - create TEMP VIEW instruments/bars so v0.1.0 pipeline reads snapshot data
+  if (!is.null(snapshot_id)) {
+    snap <- DBI::dbGetQuery(
+      con,
+      "SELECT status, snapshot_hash FROM snapshots WHERE snapshot_id = ?",
+      params = list(snapshot_id)
+    )
+    if (nrow(snap) != 1) {
+      fail_run(sprintf("Snapshot not found: %s", snapshot_id), class = "LEDGR_SNAPSHOT_NOT_FOUND")
+    }
+    if (!identical(snap$status[[1]], "SEALED")) {
+      fail_run(
+        sprintf("LEDGR_SNAPSHOT_NOT_SEALED: snapshot status must be SEALED for backtests (got %s).", snap$status[[1]]),
+        class = "LEDGR_SNAPSHOT_NOT_SEALED"
+      )
+    }
+    stored_snapshot_hash <- snap$snapshot_hash[[1]]
+    if (!is.character(stored_snapshot_hash) || length(stored_snapshot_hash) != 1 || is.na(stored_snapshot_hash) || !nzchar(stored_snapshot_hash)) {
+      fail_run("LEDGR_SNAPSHOT_NOT_SEALED: SEALED snapshot is missing snapshot_hash.", class = "LEDGR_SNAPSHOT_NOT_SEALED")
+    }
+
+    recomputed <- ledgr_snapshot_hash(con, snapshot_id)
+    if (!identical(recomputed, stored_snapshot_hash)) {
+      fail_run("LEDGR_SNAPSHOT_CORRUPTED: stored snapshot_hash does not match recomputed hash.", class = "LEDGR_SNAPSHOT_CORRUPTED")
+    }
+
+    ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
+    missing_inst <- DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT u.instrument_id FROM (SELECT UNNEST([", ids_sql, "]) AS instrument_id) u ",
+        "LEFT JOIN snapshot_instruments si ON si.instrument_id = u.instrument_id AND si.snapshot_id = ? ",
+        "WHERE si.instrument_id IS NULL"
+      ),
+      params = list(snapshot_id)
+    )$instrument_id
+    if (length(missing_inst) > 0) {
+      fail_run(
+        sprintf("LEDGR_SNAPSHOT_COVERAGE_ERROR: universe instruments not present in snapshot_instruments: %s", paste(missing_inst, collapse = ", ")),
+        class = "LEDGR_SNAPSHOT_COVERAGE_ERROR"
+      )
+    }
+
+    start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
+    end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
+    start_str <- sub("Z$", "", sub("T", " ", start_iso))
+    end_str <- sub("Z$", "", sub("T", " ", end_iso))
+
+    pulses <- DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT DISTINCT ts_utc FROM snapshot_bars ",
+        "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") ",
+        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
+        "ORDER BY ts_utc"
+      ),
+      params = list(snapshot_id, start_str, end_str)
+    )$ts_utc
+    if (length(pulses) == 0) {
+      fail_run("LEDGR_SNAPSHOT_COVERAGE_ERROR: no bars found in snapshot for requested universe/time range.", class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
+    }
+
+    coverage <- DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT instrument_id, COUNT(*) AS n ",
+        "FROM snapshot_bars ",
+        "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") ",
+        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
+        "GROUP BY instrument_id"
+      ),
+      params = list(snapshot_id, start_str, end_str)
+    )
+    if (nrow(coverage) != length(instrument_ids) || any(as.integer(coverage$n) < length(pulses))) {
+      missing_ids <- setdiff(instrument_ids, as.character(coverage$instrument_id))
+      msg <- "LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
+      if (length(missing_ids) > 0) {
+        msg <- paste0(msg, " Missing instruments: ", paste(missing_ids, collapse = ", "), ".")
+      }
+      fail_run(msg, class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
+    }
+
+    # Snapshot-backed sourcing via TEMP VIEWs that shadow v0.1.0 tables.
+    try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.instruments"), silent = TRUE)
+    try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.bars"), silent = TRUE)
+
+    DBI::dbExecute(
+      con,
+      paste0(
+        "CREATE TEMP VIEW instruments AS ",
+        "SELECT instrument_id, symbol, currency, asset_class ",
+        "FROM snapshot_instruments ",
+        "WHERE snapshot_id = ", DBI::dbQuoteString(con, snapshot_id), " ",
+        "AND instrument_id IN (", ids_sql, ")"
+      )
+    )
+    DBI::dbExecute(
+      con,
+      paste0(
+        "CREATE TEMP VIEW bars AS ",
+        "SELECT instrument_id, ts_utc, open, high, low, close, volume, ",
+        "CAST('NONE' AS TEXT) AS gap_type, CAST(FALSE AS BOOLEAN) AS is_synthetic ",
+        "FROM snapshot_bars ",
+        "WHERE snapshot_id = ", DBI::dbQuoteString(con, snapshot_id), " ",
+        "AND instrument_id IN (", ids_sql, ") ",
+        "AND ts_utc >= CAST(", DBI::dbQuoteString(con, start_str), " AS TIMESTAMP) ",
+        "AND ts_utc <= CAST(", DBI::dbQuoteString(con, end_str), " AS TIMESTAMP)"
+      )
+    )
+
+    DBI::dbExecute(con, "UPDATE runs SET snapshot_id = ? WHERE run_id = ?", params = list(snapshot_id, run_id))
   }
 
   # Validate run-relevant bars subset is sane per spec (v0.1.0 fail-loud).

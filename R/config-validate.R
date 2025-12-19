@@ -137,5 +137,23 @@ ledgr_validate_config <- function(config) {
   strategy_id <- cfg_get(c("strategy", "id"))
   assert_scalar_chr(strategy_id, "strategy.id")
 
+  # v0.1.1 snapshot integration: config$data$source == "snapshot" requires
+  # config$data$snapshot_id.
+  if (!is.null(config$data) && is.list(config$data)) {
+    data_source <- config$data$source
+    snapshot_id <- config$data$snapshot_id
+
+    if (!is.null(data_source)) {
+      assert_scalar_chr(data_source, "data.source")
+      if (!identical(data_source, "snapshot")) {
+        rlang::abort("Config field data.source must be 'snapshot' when provided.", class = "ledgr_invalid_config")
+      }
+    }
+
+    if (!is.null(snapshot_id) || identical(data_source, "snapshot")) {
+      assert_scalar_chr(snapshot_id, "data.snapshot_id")
+    }
+  }
+
   invisible(TRUE)
 }
