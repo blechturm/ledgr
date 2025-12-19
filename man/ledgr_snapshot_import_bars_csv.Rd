@@ -23,8 +23,8 @@ ledgr_snapshot_import_bars_csv(
 
 \item{instruments_csv_path}{Optional path to instruments CSV.}
 
-\item{auto_generate_instruments}{If TRUE and instruments_csv_path is NULL,
-auto-generate instruments from bars.instrument_id.}
+\item{auto_generate_instruments}{If TRUE and \code{instruments_csv_path} is NULL,
+auto-generate instruments from bars.}
 
 \item{encoding}{File encoding (default \code{"UTF-8"}).}
 
@@ -34,11 +34,24 @@ auto-generate instruments from bars.instrument_id.}
 Invisibly returns \code{TRUE} on success.
 }
 \description{
-Imports EOD bars into \code{snapshot_bars} for a snapshot in status \code{CREATED}.
-Optionally imports instruments from CSV, or auto-generates them from bars.
+Imports EOD bars into \code{snapshot_bars} for a snapshot in status \code{CREATED}
+(snapshot mutability rule). Optionally imports instruments from CSV, or
+auto-generates them from bars.
 }
 \details{
-CSV contract (v0.1.1 spec §6.1): required columns \code{instrument_id}, \code{ts_utc},
-\code{open}, \code{high}, \code{low}, \code{close}; optional \code{volume}. Values are rounded to 8
-decimals on import.
+CSV contract (v0.1.1 spec section 6.1):
+\itemize{
+\item Required columns: \code{instrument_id}, \code{ts_utc}, \code{open}, \code{high}, \code{low}, \code{close}
+\item Optional columns: \code{volume} (defaults to \code{NA})
+\item Timestamp format: ISO8601 UTC with trailing \code{Z}, e.g. \verb{2020-01-01T00:00:00Z}
+\item Encoding: UTF-8 (BOM tolerated and stripped)
+\item Rounding: OHLCV are rounded to 8 decimals on import
+}
+
+Errors:
+\itemize{
+\item \code{LEDGR_SNAPSHOT_NOT_FOUND} if \code{snapshot_id} does not exist.
+\item \code{LEDGR_SNAPSHOT_NOT_MUTABLE} if snapshot status is not \code{CREATED}.
+\item \code{LEDGR_CSV_FORMAT_ERROR} on CSV contract/parse violations or duplicate PKs.
+}
 }

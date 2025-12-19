@@ -1,11 +1,18 @@
 #' List snapshots (v0.1.1)
 #'
 #' Returns snapshot metadata plus computed row counts for bars and instruments.
+#' This function does not mutate the database.
+#'
+#' Timestamps are returned as ISO8601 UTC strings with trailing `Z`.
 #'
 #' @param con A DBI connection to DuckDB.
 #' @param status Optional status filter (NULL for all, or one/more of
 #'   `CREATED`, `SEALED`, `FAILED`).
 #' @return A data.frame with snapshot metadata and counts.
+#' @details
+#' Errors:
+#' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
+#' - `ledgr_invalid_args` if `status` is not NULL or contains invalid values.
 #' @export
 ledgr_snapshot_list <- function(con, status = NULL) {
   if (!DBI::dbIsValid(con)) {

@@ -1,6 +1,6 @@
 Package: ledgr
 Title: Event-Sourced Trading Framework Skeleton
-Version: 0.0.0.9000
+Version: 0.1.1
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",

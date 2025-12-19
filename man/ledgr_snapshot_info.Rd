@@ -20,3 +20,13 @@ bar_count, instrument_count, meta_json, error_msg.
 Returns snapshot metadata plus computed row counts for bars and instruments.
 This function does not mutate the database.
 }
+\details{
+Timestamps are returned as ISO8601 UTC strings with trailing \code{Z}.
+
+Errors:
+\itemize{
+\item \code{ledgr_invalid_con} if \code{con} is not a valid DBI connection.
+\item \code{ledgr_invalid_args} if \code{snapshot_id} is not a non-empty character scalar.
+\item \code{LEDGR_SNAPSHOT_NOT_FOUND} if \code{snapshot_id} does not exist.
+}
+}

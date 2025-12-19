@@ -28,9 +28,21 @@ Invisibly returns \code{TRUE} on success.
 }
 \description{
 Imports instrument metadata into \code{snapshot_instruments} for a snapshot in
-status \code{CREATED}.
+status \code{CREATED} (snapshot mutability rule).
 }
 \details{
-CSV contract (v0.1.1 spec §6.2): required columns \code{instrument_id}, \code{symbol};
-optional \code{currency}, \code{asset_class}, \code{multiplier}, \code{tick_size} with defaults.
+CSV contract (v0.1.1 spec section 6.2):
+\itemize{
+\item Required columns: \code{instrument_id}, \code{symbol}
+\item Optional columns (defaults): \code{currency} (\code{"USD"}), \code{asset_class} (\code{"EQUITY"}),
+\code{multiplier} (\code{1.0}), \code{tick_size} (\code{0.01})
+\item Encoding: UTF-8 (BOM tolerated and stripped)
+}
+
+Errors:
+\itemize{
+\item \code{LEDGR_SNAPSHOT_NOT_FOUND} if \code{snapshot_id} does not exist.
+\item \code{LEDGR_SNAPSHOT_NOT_MUTABLE} if snapshot status is not \code{CREATED}.
+\item \code{LEDGR_CSV_FORMAT_ERROR} on CSV contract/parse violations or duplicate PKs.
+}
 }

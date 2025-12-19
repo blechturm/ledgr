@@ -1,21 +1,30 @@
 #' Import snapshot bars from CSV (v0.1.1)
 #'
-#' Imports EOD bars into `snapshot_bars` for a snapshot in status `CREATED`.
-#' Optionally imports instruments from CSV, or auto-generates them from bars.
+#' Imports EOD bars into `snapshot_bars` for a snapshot in status `CREATED`
+#' (snapshot mutability rule). Optionally imports instruments from CSV, or
+#' auto-generates them from bars.
 #'
-#' CSV contract (v0.1.1 spec §6.1): required columns `instrument_id`, `ts_utc`,
-#' `open`, `high`, `low`, `close`; optional `volume`. Values are rounded to 8
-#' decimals on import.
+#' CSV contract (v0.1.1 spec section 6.1):
+#' - Required columns: `instrument_id`, `ts_utc`, `open`, `high`, `low`, `close`
+#' - Optional columns: `volume` (defaults to `NA`)
+#' - Timestamp format: ISO8601 UTC with trailing `Z`, e.g. `2020-01-01T00:00:00Z`
+#' - Encoding: UTF-8 (BOM tolerated and stripped)
+#' - Rounding: OHLCV are rounded to 8 decimals on import
 #'
 #' @param con A DBI connection to DuckDB.
 #' @param snapshot_id Snapshot id (must exist and be status `CREATED`).
 #' @param bars_csv_path Path to bars CSV.
 #' @param instruments_csv_path Optional path to instruments CSV.
-#' @param auto_generate_instruments If TRUE and instruments_csv_path is NULL,
-#'   auto-generate instruments from bars.instrument_id.
+#' @param auto_generate_instruments If TRUE and `instruments_csv_path` is NULL,
+#'   auto-generate instruments from bars.
 #' @param encoding File encoding (default `"UTF-8"`).
 #' @param validate Validation mode (default `"fail_fast"`).
 #' @return Invisibly returns `TRUE` on success.
+#' @details
+#' Errors:
+#' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
+#' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if snapshot status is not `CREATED`.
+#' - `LEDGR_CSV_FORMAT_ERROR` on CSV contract/parse violations or duplicate PKs.
 #' @export
 ledgr_snapshot_import_bars_csv <- function(con,
                                           snapshot_id,

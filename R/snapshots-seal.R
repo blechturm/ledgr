@@ -3,9 +3,19 @@
 #' Transitions a snapshot from `CREATED` to `SEALED` and stores a deterministic
 #' `snapshot_hash` in a single DuckDB transaction.
 #'
+#' Snapshot mutability rule: sealing is only allowed while status is `CREATED`.
+#' After sealing, snapshot write operations must be rejected by ledgr code paths.
+#'
 #' @param con A DBI connection to DuckDB.
 #' @param snapshot_id Snapshot id (must exist and be status `CREATED`).
 #' @return The computed snapshot hash (character(1)).
+#' @details
+#' Errors:
+#' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
+#' - `LEDGR_SNAPSHOT_ALREADY_SEALED` if the snapshot is already `SEALED`.
+#' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if the snapshot status is not `CREATED`.
+#' - `LEDGR_SNAPSHOT_EMPTY` if there are 0 bars or 0 instruments.
+#' - `LEDGR_SNAPSHOT_SEAL_FAILED` on hashing/transaction failures (snapshot is marked `FAILED`).
 #' @export
 ledgr_snapshot_seal <- function(con, snapshot_id) {
   if (!DBI::dbIsValid(con)) {

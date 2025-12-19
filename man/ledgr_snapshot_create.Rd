@@ -20,6 +20,16 @@ The snapshot_id (character(1)).
 Creates a row in \code{snapshots} with status \code{CREATED}. Does not import any data.
 }
 \details{
+Snapshot mutability rule: snapshots are mutable only while their status is
+\code{CREATED} (imports/seal will fail for \code{SEALED} and \code{FAILED} snapshots).
+
 If \code{snapshot_id} is \code{NULL}, generates an id of the form
-\verb{snapshot_\{YYYYmmdd_HHMMSS\}_\{4-hex\}} (spec v0.1.1 §3.1).
+\verb{snapshot_\{YYYYmmdd_HHMMSS\}_\{4-hex\}} (v0.1.1 spec, appendix A section 3.1).
+
+Timestamps are stored in UTC and normalized to ISO8601 \code{...Z} form.
+
+Errors:
+\itemize{
+\item \code{ledgr_snapshot_exists} if \code{snapshot_id} already exists.
+}
 }

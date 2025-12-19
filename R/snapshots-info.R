@@ -3,11 +3,18 @@
 #' Returns snapshot metadata plus computed row counts for bars and instruments.
 #' This function does not mutate the database.
 #'
+#' Timestamps are returned as ISO8601 UTC strings with trailing `Z`.
+#'
 #' @param con A DBI connection to DuckDB.
 #' @param snapshot_id Snapshot id (must exist).
 #' @return A 1-row data.frame with:
 #'   snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
 #'   bar_count, instrument_count, meta_json, error_msg.
+#' @details
+#' Errors:
+#' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
+#' - `ledgr_invalid_args` if `snapshot_id` is not a non-empty character scalar.
+#' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
 #' @export
 ledgr_snapshot_info <- function(con, snapshot_id) {
   if (!DBI::dbIsValid(con)) {
@@ -76,4 +83,3 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
     "error_msg"
   ), drop = FALSE]
 }
-

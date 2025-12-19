@@ -86,7 +86,7 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     block_hashes
   }
 
-  # Spec v0.1.1 §7.3: per-chunk sha256, final = sha256(concat(chunk_hashes)).
+  # Spec v0.1.1 section 7.3: per-chunk sha256, final = sha256(concat(chunk_hashes)).
   # Notes:
   # - `chunk_size` controls DB fetch size (performance), not the hashing block
   #   size. Hash blocks are always 10,000 rows so the output is invariant to

@@ -2,13 +2,21 @@
 #'
 #' Creates a row in `snapshots` with status `CREATED`. Does not import any data.
 #'
+#' Snapshot mutability rule: snapshots are mutable only while their status is
+#' `CREATED` (imports/seal will fail for `SEALED` and `FAILED` snapshots).
+#'
 #' If `snapshot_id` is `NULL`, generates an id of the form
-#' `snapshot_{YYYYmmdd_HHMMSS}_{4-hex}` (spec v0.1.1 §3.1).
+#' `snapshot_{YYYYmmdd_HHMMSS}_{4-hex}` (v0.1.1 spec, appendix A section 3.1).
+#'
+#' Timestamps are stored in UTC and normalized to ISO8601 `...Z` form.
 #'
 #' @param con A DBI connection to DuckDB.
 #' @param snapshot_id Optional snapshot identifier.
 #' @param meta Optional JSON-safe metadata list (stored as canonical JSON).
 #' @return The snapshot_id (character(1)).
+#' @details
+#' Errors:
+#' - `ledgr_snapshot_exists` if `snapshot_id` already exists.
 #' @export
 ledgr_snapshot_create <- function(con, snapshot_id = NULL, meta = NULL) {
   if (!DBI::dbIsValid(con)) {
@@ -67,7 +75,15 @@ ledgr_snapshot_id_generate <- function(created_at_iso) {
     rlang::abort("Internal error: created_at_iso must be a non-empty character scalar.", class = "ledgr_internal_error")
   }
 
-  ts <- gsub("[-:]", "", sub("^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$", "\\1\\2\\3_\\4\\5\\6", created_at_iso))
+  ts <- gsub(
+    "[-:]",
+    "",
+    sub(
+      "^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$",
+      "\\1\\2\\3_\\4\\5\\6",
+      created_at_iso
+    )
+  )
 
   env <- ledgr_snapshot_id_state_env()
   env$counter <- env$counter + 1L
@@ -86,4 +102,3 @@ ledgr_snapshot_id_state_env <- local({
   e$counter <- 0L
   function() e
 })
-

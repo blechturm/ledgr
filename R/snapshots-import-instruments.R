@@ -1,10 +1,13 @@
 #' Import snapshot instruments from CSV (v0.1.1)
 #'
 #' Imports instrument metadata into `snapshot_instruments` for a snapshot in
-#' status `CREATED`.
+#' status `CREATED` (snapshot mutability rule).
 #'
-#' CSV contract (v0.1.1 spec §6.2): required columns `instrument_id`, `symbol`;
-#' optional `currency`, `asset_class`, `multiplier`, `tick_size` with defaults.
+#' CSV contract (v0.1.1 spec section 6.2):
+#' - Required columns: `instrument_id`, `symbol`
+#' - Optional columns (defaults): `currency` (`"USD"`), `asset_class` (`"EQUITY"`),
+#'   `multiplier` (`1.0`), `tick_size` (`0.01`)
+#' - Encoding: UTF-8 (BOM tolerated and stripped)
 #'
 #' @param con A DBI connection to DuckDB.
 #' @param snapshot_id Snapshot id (must exist and be status `CREATED`).
@@ -12,6 +15,11 @@
 #' @param encoding File encoding (default `"UTF-8"`).
 #' @param strict If `TRUE`, fail loud on any contract violation.
 #' @return Invisibly returns `TRUE` on success.
+#' @details
+#' Errors:
+#' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
+#' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if snapshot status is not `CREATED`.
+#' - `LEDGR_CSV_FORMAT_ERROR` on CSV contract/parse violations or duplicate PKs.
 #' @export
 ledgr_snapshot_import_instruments_csv <- function(con,
                                                  snapshot_id,

@@ -18,3 +18,16 @@ The computed snapshot hash (character(1)).
 Transitions a snapshot from \code{CREATED} to \code{SEALED} and stores a deterministic
 \code{snapshot_hash} in a single DuckDB transaction.
 }
+\details{
+Snapshot mutability rule: sealing is only allowed while status is \code{CREATED}.
+After sealing, snapshot write operations must be rejected by ledgr code paths.
+
+Errors:
+\itemize{
+\item \code{LEDGR_SNAPSHOT_NOT_FOUND} if \code{snapshot_id} does not exist.
+\item \code{LEDGR_SNAPSHOT_ALREADY_SEALED} if the snapshot is already \code{SEALED}.
+\item \code{LEDGR_SNAPSHOT_NOT_MUTABLE} if the snapshot status is not \code{CREATED}.
+\item \code{LEDGR_SNAPSHOT_EMPTY} if there are 0 bars or 0 instruments.
+\item \code{LEDGR_SNAPSHOT_SEAL_FAILED} on hashing/transaction failures (snapshot is marked \code{FAILED}).
+}
+}
