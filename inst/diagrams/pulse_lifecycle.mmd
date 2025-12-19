@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant R as Runner
+    participant DB as DuckDB
+    participant S as Strategy
+
+    loop Each pulse timestamp T
+        Note over R,S: Observation epoch (T)
+        R->>DB: SELECT bars WHERE ts_utc = T
+        DB-->>R: DataFrame (OHLCV)
+        R->>DB: SELECT bars WHERE ts_utc ∈ [start, T] (for features)
+        DB-->>R: Bars window
+        R->>DB: DELETE/INSERT features WHERE ts_utc = T
+        R->>DB: SELECT strategy_state WHERE ts_utc < T (latest)
+        DB-->>R: state_prev (optional)
+        R->>R: Construct PulseContext(bars, features, positions, cash, state_prev)
+        R->>S: strategy$on_pulse(ctx)
+        S-->>R: StrategyResult(targets, state_update)
+        alt state_update present
+            R->>DB: INSERT INTO strategy_state (ts_utc = T)
+        end
+
+        Note over R,DB: Execution epoch (next bar open)
+        loop Each instrument_id
+            R->>DB: SELECT next bar open WHERE ts_utc > T LIMIT 1
+            DB-->>R: Next bar open (ts_utc = T+1)
+            R->>R: Simulate fill with spread + commission
+            R->>DB: INSERT INTO ledger_events (FILL, ts_utc = T+1)
+        end
+    end
+
+    Note over R,DB: End of run
+    R->>DB: Rebuild derived state (equity_curve, etc.) from ledger_events

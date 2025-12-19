@@ -1,0 +1,63 @@
+erDiagram
+    snapshots ||--o{ snapshot_instruments : "contains"
+    snapshots ||--o{ snapshot_bars : "contains"
+    runs ||--o{ ledger_events : "generates"
+    runs ||--o{ equity_curve : "produces"
+    runs ||--o{ strategy_state : "persists"
+    runs ||--o{ features : "computes"
+    runs }o--|| snapshots : "sources from"
+    
+    snapshots {
+        string snapshot_id PK
+        enum status "CREATED|SEALED|FAILED"
+        timestamp created_at_utc
+        timestamp sealed_at_utc
+        string snapshot_hash "SHA256"
+        text meta_json
+        text error_msg
+    }
+    
+    snapshot_bars {
+        string snapshot_id PK,FK
+        string instrument_id PK
+        timestamp ts_utc PK
+        numeric open "8 decimals"
+        numeric high "8 decimals"
+        numeric low "8 decimals"
+        numeric close "8 decimals"
+        numeric volume "8 decimals"
+    }
+    
+    runs {
+        string run_id PK
+        string snapshot_id FK "nullable"
+        enum status "CREATED|RUNNING|DONE|FAILED"
+        string config_hash "SHA256"
+        string data_hash "SHA256"
+        text config_json
+        text error_msg
+    }
+    
+    ledger_events {
+        string event_id PK
+        string run_id FK
+        int event_seq "unique per run"
+        timestamp ts_utc
+        enum event_type "FILL"
+        string instrument_id
+        enum side "BUY|SELL"
+        numeric qty
+        numeric price
+        numeric fee
+        text meta_json "includes deltas"
+    }
+    
+    equity_curve {
+        string run_id PK,FK
+        timestamp ts_utc PK
+        numeric cash
+        numeric positions_value
+        numeric equity
+        numeric realized_pnl
+        numeric unrealized_pnl
+    }

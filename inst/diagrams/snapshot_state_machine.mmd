@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> CREATED: ledgr_snapshot_create()
+    CREATED --> SEALED: ledgr_snapshot_seal() [success]
+    CREATED --> FAILED: ledgr_snapshot_seal() [error]
+    SEALED --> [*]
+    FAILED --> [*]
+    
+    note right of SEALED
+        Hash computed and stored.
+        Snapshot becomes immutable.
+    end note
+    
+    note right of FAILED
+        Error stored in error_msg.
+        Can be deleted and recreated.
+    end note

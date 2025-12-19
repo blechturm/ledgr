@@ -1,0 +1,24 @@
+graph TD
+    subgraph "Provenance Spine (v0.1.1)"
+        A[Raw CSV Data] --> B[ledgr_snapshot_import]
+        B --> C{Validation & Rounding}
+        C -->|Pass| D[CREATED Snapshot]
+        C -->|Fail| X[Error: CSV Format]
+        D --> E[ledgr_snapshot_seal]
+        E --> F{Hash Computation}
+        F -->|Success| G[SEALED Snapshot + SHA256]
+        F -->|Failure| Y[Status: FAILED]
+    end
+
+    subgraph "Execution Spine (v0.1.0)"
+        G --> H[Runner Hash Verification]
+        H -->|Match| I[Pulse Loop]
+        H -->|Mismatch| Z[Error: Corrupted]
+        I --> J[Strategy: on_pulse]
+        J --> K[Fill Simulation]
+        K --> L[Append-Only Ledger]
+        L --> M{Resume?}
+        M -->|Yes| N[Load Last State]
+        M -->|No| O[Complete]
+        N --> I
+    end

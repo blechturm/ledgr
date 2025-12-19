@@ -1,0 +1,16 @@
+graph TD
+    A[ledgr Error] --> B[Integrity Errors]
+    A --> C[Contract Errors]
+    A --> D[Logic Errors]
+    
+    B --> B1[LEDGR_SNAPSHOT_CORRUPTED]
+    B --> B2[LEDGR_SNAPSHOT_HASH_FAILED]
+    
+    C --> C1[LEDGR_SNAPSHOT_COVERAGE_ERROR]
+    C --> C2[LEDGR_SNAPSHOT_NOT_SEALED]
+    C --> C3[LEDGR_SNAPSHOT_EMPTY]
+    C --> C4[LEDGR_CSV_FORMAT_ERROR]
+    
+    D --> D1[ledgr_feature_lookahead_detected]
+    D --> D2[ledgr_run_hash_mismatch]
+    D --> D3[ledgr_strategy_mutation]
