@@ -38,11 +38,22 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
 
   fmt_num <- function(x) {
     if (is.null(x)) return(NA_character_)
-    if (is.character(x)) return(x)
+    if (is.atomic(x) && length(x) == 1 && is.na(x)) return(NA_character_)
+
+    if (is.character(x)) {
+      parsed <- suppressWarnings(as.numeric(x))
+      if (!is.na(parsed) && is.finite(parsed)) {
+        return(sprintf("%.8f", round(parsed, 8)))
+      }
+      return(x)
+    }
+
     x <- as.numeric(x)
     if (is.na(x)) return(NA_character_)
-    if (!is.finite(x)) rlang::abort("Non-finite numeric encountered while hashing snapshot.", class = "ledgr_invalid_state")
-    sprintf("%.17g", x)
+    if (!is.finite(x)) {
+      rlang::abort("Non-finite numeric encountered while hashing snapshot.", class = "ledgr_invalid_state")
+    }
+    sprintf("%.8f", round(x, 8))
   }
 
   token <- function(x) {
