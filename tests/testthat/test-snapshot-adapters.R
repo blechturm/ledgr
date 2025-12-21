@@ -11,12 +11,25 @@ test_that("ledgr_snapshot_from_df creates a sealed snapshot", {
   expect_equal(snap$metadata$n_instruments, 2L)
   expect_equal(snap$metadata$start_date, "2020-01-01T00:00:00Z")
   expect_equal(snap$metadata$end_date, "2020-12-31T00:00:00Z")
+
+  con <- ledgr_db_init(snap$db_path)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  info <- ledgr_snapshot_info(con, snap$snapshot_id)
+  meta <- jsonlite::fromJSON(info$meta_json[[1]], simplifyVector = TRUE)
+  expect_equal(meta$data_hash, snap$metadata$data_hash)
 })
 
 test_that("ledgr_snapshot_from_df validates required columns", {
   bad <- test_bars
   bad$close <- NULL
   expect_error(ledgr_snapshot_from_df(bad), "bars_df missing required column")
+})
+
+test_that("ledgr_snapshot_from_df validates snapshot_id format", {
+  expect_error(
+    ledgr_snapshot_from_df(test_bars, snapshot_id = "bad_id"),
+    "snapshot_YYYYmmdd_HHMMSS_XXXX"
+  )
 })
 
 test_that("ledgr_snapshot_from_csv delegates to df adapter", {
@@ -32,6 +45,32 @@ test_that("ledgr_snapshot_from_csv delegates to df adapter", {
 
   expect_s3_class(snap, "ledgr_snapshot")
   expect_true(file.exists(snap$db_path))
+})
+
+test_that("ledgr_snapshot_from_yahoo works offline with CSV fixture", {
+  skip_if_not_installed("quantmod")
+
+  fixture_path <- system.file("testdata", "yahoo_mock.csv", package = "ledgr")
+  if (!nzchar(fixture_path)) {
+    skip("Yahoo mock fixture not found.")
+  }
+
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snap <- ledgr_snapshot_from_yahoo(
+    symbols = "yahoo_mock",
+    from = "2020-01-01",
+    to = "2020-01-05",
+    db_path = db_path,
+    src = "csv",
+    dir = dirname(fixture_path)
+  )
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  expect_s3_class(snap, "ledgr_snapshot")
+  expect_equal(snap$metadata$n_bars, 5L)
+  expect_equal(snap$metadata$n_instruments, 1L)
 })
 
 test_that("ledgr_yahoo_extract_bars uses named columns", {

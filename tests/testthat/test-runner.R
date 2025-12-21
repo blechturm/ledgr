@@ -75,6 +75,17 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
   testthat::expect_equal(n_state, 3L)
 })
 
+testthat::test_that("ledgr_backtest delegates to ledgr_run", {
+  db_path <- make_runner_fixture_db()
+  cfg <- base_runner_config(db_path)
+  run_id <- "run-wrapper-1"
+
+  out <- ledgr_backtest(cfg, run_id = run_id)
+  out2 <- ledgr:::ledgr_run(cfg, run_id = run_id)
+
+  testthat::expect_identical(out, out2)
+})
+
 testthat::test_that("runner resume appends ledger events without duplicate event_seq and rebuilds tail", {
   db_path <- make_runner_fixture_db()
 

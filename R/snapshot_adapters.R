@@ -19,6 +19,8 @@ ledgr_snapshot_from_df <- function(bars_df,
     rlang::abort("`bars_df` must be a data.frame (or tibble).", class = "ledgr_invalid_args")
   }
 
+  ledgr_validate_snapshot_id(snapshot_id)
+
   required_cols <- c("ts_utc", "instrument_id", "open", "high", "low", "close")
   missing <- setdiff(required_cols, names(bars_df))
   if (length(missing) > 0) {
@@ -37,13 +39,69 @@ ledgr_snapshot_from_df <- function(bars_df,
     rlang::abort("bars_df `instrument_id` must be non-empty strings.", class = "ledgr_invalid_args")
   }
 
-  ts_utc <- vapply(bars_df$ts_utc, iso_utc, character(1))
+  ts_raw <- bars_df$ts_utc
+  ts_posix <- NULL
+  if (inherits(ts_raw, "POSIXt")) {
+    ts_posix <- as.POSIXct(ts_raw, tz = "UTC")
+    if (length(ts_posix) != length(ts_raw) || anyNA(ts_posix)) {
+      rlang::abort("bars_df `ts_utc` must be valid POSIXt values.", class = "ledgr_invalid_args")
+    }
+    ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  } else if (inherits(ts_raw, "Date")) {
+    if (length(ts_raw) == 0 || anyNA(ts_raw)) {
+      rlang::abort("bars_df `ts_utc` must be valid Date values.", class = "ledgr_invalid_args")
+    }
+    ts_posix <- as.POSIXct(ts_raw, tz = "UTC")
+    ts_utc <- sprintf("%sT00:00:00Z", format(ts_raw, "%Y-%m-%d"))
+  } else if (is.character(ts_raw)) {
+    if (anyNA(ts_raw) || any(!nzchar(ts_raw))) {
+      rlang::abort("bars_df `ts_utc` must be non-empty timestamps.", class = "ledgr_invalid_args")
+    }
+    pat_date <- "^\\d{4}-\\d{2}-\\d{2}$"
+    pat_dt <- "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
+    pat_dt_z <- "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+
+    if (all(grepl(pat_date, ts_raw))) {
+      d <- as.Date(ts_raw, format = "%Y-%m-%d")
+      if (anyNA(d)) {
+        rlang::abort("bars_df `ts_utc` contains invalid dates.", class = "ledgr_invalid_args")
+      }
+      ts_posix <- as.POSIXct(d, tz = "UTC")
+      ts_utc <- sprintf("%sT00:00:00Z", format(d, "%Y-%m-%d"))
+    } else if (all(grepl(pat_dt_z, ts_raw))) {
+      ts_posix <- as.POSIXct(ts_raw, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+      if (anyNA(ts_posix)) {
+        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+      }
+      ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    } else if (all(grepl(pat_dt, ts_raw))) {
+      ts_posix <- as.POSIXct(ts_raw, tz = "UTC", format = "%Y-%m-%dT%H:%M:%S")
+      if (anyNA(ts_posix)) {
+        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+      }
+      ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    } else {
+      ts_utc <- vapply(ts_raw, iso_utc, character(1))
+      ts_posix <- as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+      if (anyNA(ts_posix)) {
+        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+      }
+    }
+  } else {
+    ts_utc <- vapply(ts_raw, iso_utc, character(1))
+    ts_posix <- as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+    if (anyNA(ts_posix)) {
+      rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+    }
+  }
 
   open <- suppressWarnings(as.numeric(bars_df$open))
   high <- suppressWarnings(as.numeric(bars_df$high))
   low <- suppressWarnings(as.numeric(bars_df$low))
   close <- suppressWarnings(as.numeric(bars_df$close))
-  if (anyNA(open) || anyNA(high) || anyNA(low) || anyNA(close)) {
+  if (anyNA(open) || anyNA(high) || anyNA(low) || anyNA(close) ||
+      any(!is.finite(open), na.rm = TRUE) || any(!is.finite(high), na.rm = TRUE) ||
+      any(!is.finite(low), na.rm = TRUE) || any(!is.finite(close), na.rm = TRUE)) {
     rlang::abort("bars_df OHLC columns must be finite numeric values.", class = "ledgr_invalid_args")
   }
 
@@ -56,6 +114,12 @@ ledgr_snapshot_from_df <- function(bars_df,
   } else {
     rep(NA_real_, length(open))
   }
+
+  open <- round(open, digits = 8L)
+  high <- round(high, digits = 8L)
+  low <- round(low, digits = 8L)
+  close <- round(close, digits = 8L)
+  volume <- round(volume, digits = 8L)
 
   max_ohlc <- pmax(open, close, low, na.rm = TRUE)
   min_ohlc <- pmin(open, close, high, na.rm = TRUE)
@@ -79,6 +143,7 @@ ledgr_snapshot_from_df <- function(bars_df,
     volume = volume[ord],
     stringsAsFactors = FALSE
   )
+  ts_posix <- ts_posix[ord]
 
   if (is.null(db_path)) {
     db_path <- tempfile(pattern = "ledgr_", fileext = ".duckdb")
@@ -87,12 +152,8 @@ ledgr_snapshot_from_df <- function(bars_df,
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
 
-  bars_csv_path <- tempfile(fileext = ".csv")
-  on.exit(unlink(bars_csv_path), add = TRUE)
-  utils::write.csv(bars_out, bars_csv_path, row.names = FALSE)
-
-  instruments_csv_path <- NULL
   meta_updates <- NULL
+  inst_out <- NULL
   if (!is.null(instruments_df)) {
     if (!is.data.frame(instruments_df)) {
       rlang::abort("`instruments_df` must be a data.frame (or tibble).", class = "ledgr_invalid_args")
@@ -107,6 +168,14 @@ ledgr_snapshot_from_df <- function(bars_df,
     }
     if (anyDuplicated(inst_id)) {
       rlang::abort("instruments_df contains duplicate instrument_id values.", class = "ledgr_invalid_args")
+    }
+
+    missing_inst <- setdiff(unique(instrument_id), inst_id)
+    if (length(missing_inst) > 0) {
+      rlang::abort(
+        sprintf("bars_df references instruments not present in instruments_df: %s", paste(missing_inst, collapse = ", ")),
+        class = "ledgr_invalid_args"
+      )
     }
 
     symbol <- if ("symbol" %in% names(instruments_df)) as.character(instruments_df$symbol) else inst_id
@@ -128,26 +197,12 @@ ledgr_snapshot_from_df <- function(bars_df,
       rep(0.01, length(inst_id))
     }
 
-    if (anyNA(multiplier) || any(!is.finite(multiplier))) {
+    if (anyNA(multiplier) || any(!is.finite(multiplier), na.rm = TRUE)) {
       rlang::abort("instruments_df `multiplier` must be finite when provided.", class = "ledgr_invalid_args")
     }
-    if (anyNA(tick_size) || any(!is.finite(tick_size))) {
+    if (anyNA(tick_size) || any(!is.finite(tick_size), na.rm = TRUE)) {
       rlang::abort("instruments_df `tick_size` must be finite when provided.", class = "ledgr_invalid_args")
     }
-
-    inst_out <- data.frame(
-      instrument_id = inst_id,
-      symbol = symbol,
-      currency = currency,
-      asset_class = asset_class,
-      multiplier = multiplier,
-      tick_size = tick_size,
-      stringsAsFactors = FALSE
-    )
-
-    instruments_csv_path <- tempfile(fileext = ".csv")
-    on.exit(unlink(instruments_csv_path), add = TRUE)
-    utils::write.csv(inst_out, instruments_csv_path, row.names = FALSE)
 
     if ("meta_json" %in% names(instruments_df)) {
       meta_updates <- as.character(instruments_df$meta_json)
@@ -165,6 +220,29 @@ ledgr_snapshot_from_df <- function(bars_df,
         character(1)
       )
     }
+
+    ord_inst <- order(inst_id)
+    inst_out <- data.frame(
+      instrument_id = inst_id[ord_inst],
+      symbol = symbol[ord_inst],
+      currency = currency[ord_inst],
+      asset_class = asset_class[ord_inst],
+      multiplier = multiplier[ord_inst],
+      tick_size = tick_size[ord_inst],
+      stringsAsFactors = FALSE
+    )
+    if (!is.null(meta_updates)) meta_updates <- meta_updates[ord_inst]
+  } else {
+    inst_id <- sort(unique(bars_out$instrument_id))
+    inst_out <- data.frame(
+      instrument_id = inst_id,
+      symbol = inst_id,
+      currency = rep("USD", length(inst_id)),
+      asset_class = rep("EQUITY", length(inst_id)),
+      multiplier = rep(1.0, length(inst_id)),
+      tick_size = rep(0.01, length(inst_id)),
+      stringsAsFactors = FALSE
+    )
   }
 
   con <- NULL
@@ -181,18 +259,62 @@ ledgr_snapshot_from_df <- function(bars_df,
     add = TRUE
   )
 
-  con <- ledgr_db_init(db_path)
-  drv <- attr(con, "ledgr_duckdb_drv")
+  if (identical(db_path, ":memory:") || !file.exists(db_path)) {
+    drv <- duckdb::duckdb()
+    con <- DBI::dbConnect(drv, dbdir = db_path)
+    attr(con, "ledgr_duckdb_drv") <- drv
+    ledgr_create_schema(con)
+  } else {
+    con <- ledgr_db_init(db_path)
+    drv <- attr(con, "ledgr_duckdb_drv")
+  }
 
-  snapshot_id <- ledgr_snapshot_create(con, snapshot_id = snapshot_id)
+  snapshot_id <- ledgr_snapshot_create(con, snapshot_id = snapshot_id, meta = list())
 
-  ledgr_snapshot_import_bars_csv(
-    con = con,
-    snapshot_id = snapshot_id,
-    bars_csv_path = bars_csv_path,
-    instruments_csv_path = instruments_csv_path,
-    auto_generate_instruments = is.null(instruments_df)
+  inst_db <- data.frame(
+    snapshot_id = rep(snapshot_id, nrow(inst_out)),
+    instrument_id = inst_out$instrument_id,
+    symbol = inst_out$symbol,
+    currency = inst_out$currency,
+    asset_class = inst_out$asset_class,
+    multiplier = as.numeric(inst_out$multiplier),
+    tick_size = as.numeric(inst_out$tick_size),
+    meta_json = rep(NA_character_, nrow(inst_out)),
+    stringsAsFactors = FALSE
   )
+
+  bars_db <- data.frame(
+    snapshot_id = rep(snapshot_id, nrow(bars_out)),
+    instrument_id = bars_out$instrument_id,
+    ts_utc = ts_posix,
+    open = bars_out$open,
+    high = bars_out$high,
+    low = bars_out$low,
+    close = bars_out$close,
+    volume = bars_out$volume,
+    stringsAsFactors = FALSE
+  )
+
+  DBI::dbWithTransaction(con, {
+    tryCatch(
+      DBI::dbAppendTable(con, "snapshot_instruments", inst_db),
+      error = function(e) {
+        rlang::abort(
+          sprintf("Instrument insert failed (likely duplicate PKs): %s", conditionMessage(e)),
+          class = "ledgr_invalid_args"
+        )
+      }
+    )
+    tryCatch(
+      DBI::dbAppendTable(con, "snapshot_bars", bars_db),
+      error = function(e) {
+        rlang::abort(
+          sprintf("Bars insert failed (likely duplicate PKs): %s", conditionMessage(e)),
+          class = "ledgr_invalid_args"
+        )
+      }
+    )
+  })
 
   if (!is.null(meta_updates)) {
     for (i in seq_along(meta_updates)) {
@@ -200,38 +322,55 @@ ledgr_snapshot_from_df <- function(bars_df,
         DBI::dbExecute(
           con,
           "UPDATE snapshot_instruments SET meta_json = ? WHERE snapshot_id = ? AND instrument_id = ?",
-          params = list(meta_updates[[i]], snapshot_id, inst_id[[i]])
+          params = list(meta_updates[[i]], snapshot_id, inst_out$instrument_id[[i]])
         )
       }
     }
   }
 
-  ledgr_snapshot_seal(con, snapshot_id)
-
-  info <- ledgr_snapshot_info(con, snapshot_id)
-  range <- DBI::dbGetQuery(
+  DBI::dbExecute(
     con,
-    "SELECT MIN(ts_utc) AS start_date, MAX(ts_utc) AS end_date FROM snapshot_bars WHERE snapshot_id = ?",
-    params = list(snapshot_id)
+    paste0(
+      "CREATE OR REPLACE TEMP VIEW bars AS ",
+      "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
+      "FROM snapshot_bars ",
+      "WHERE snapshot_id = ",
+      DBI::dbQuoteString(con, snapshot_id)
+    )
+  )
+  on.exit(suppressWarnings(try(DBI::dbExecute(con, "DROP VIEW bars"), silent = TRUE)), add = TRUE)
+
+  data_hash <- ledgr_data_hash(
+    con,
+    sort(unique(bars_out$instrument_id)),
+    min(ts_posix),
+    max(ts_posix)
   )
 
-  start_date <- if (nrow(range) == 1 && !is.na(range$start_date[[1]])) {
-    ledgr_normalize_ts_utc(range$start_date[[1]])
-  } else {
-    NA_character_
-  }
-  end_date <- if (nrow(range) == 1 && !is.na(range$end_date[[1]])) {
-    ledgr_normalize_ts_utc(range$end_date[[1]])
-  } else {
-    NA_character_
-  }
+  ledgr_snapshot_seal(con, snapshot_id)
+
+  created_at <- DBI::dbGetQuery(
+    con,
+    "SELECT created_at_utc FROM snapshots WHERE snapshot_id = ?",
+    params = list(snapshot_id)
+  )$created_at_utc[[1]]
+
+  start_date <- ledgr_normalize_ts_utc(min(ts_posix))
+  end_date <- ledgr_normalize_ts_utc(max(ts_posix))
 
   metadata <- list(
-    n_bars = as.integer(info$bar_count[[1]]),
-    n_instruments = as.integer(info$instrument_count[[1]]),
+    n_bars = as.integer(nrow(bars_out)),
+    n_instruments = as.integer(nrow(inst_out)),
     start_date = start_date,
     end_date = end_date,
-    created_at = info$created_at_utc[[1]]
+    created_at = ledgr_normalize_ts_utc(created_at),
+    data_hash = data_hash
+  )
+
+  DBI::dbExecute(
+    con,
+    "UPDATE snapshots SET meta_json = ? WHERE snapshot_id = ?",
+    params = list(canonical_json(metadata), snapshot_id)
   )
 
   new_ledgr_snapshot(db_path = db_path, snapshot_id = snapshot_id, metadata = metadata)
@@ -249,6 +388,7 @@ ledgr_snapshot_from_df <- function(bars_df,
 ledgr_snapshot_from_csv <- function(csv_path,
                                     db_path = NULL,
                                     snapshot_id = NULL) {
+  ledgr_validate_snapshot_id(snapshot_id)
   bars_df <- ledgr_read_csv_strict(csv_path, encoding = "UTF-8", strict = TRUE)
   ledgr_snapshot_from_df(bars_df = bars_df, db_path = db_path, snapshot_id = snapshot_id)
 }
@@ -320,6 +460,8 @@ ledgr_snapshot_from_yahoo <- function(symbols,
     rlang::abort("`symbols` must be a non-empty character vector.", class = "ledgr_invalid_args")
   }
 
+  ledgr_validate_snapshot_id(snapshot_id)
+
   from_date <- as.Date(iso_utc(from))
   to_date <- as.Date(iso_utc(to))
   if (is.na(from_date) || is.na(to_date)) {
@@ -339,4 +481,19 @@ ledgr_snapshot_from_yahoo <- function(symbols,
 
   bars_df <- do.call(rbind, bars_list)
   ledgr_snapshot_from_df(bars_df = bars_df, db_path = db_path, snapshot_id = snapshot_id)
+}
+
+ledgr_validate_snapshot_id <- function(snapshot_id) {
+  if (is.null(snapshot_id)) return(invisible(TRUE))
+  if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {
+    rlang::abort("`snapshot_id` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  pattern <- "^snapshot_[0-9]{8}_[0-9]{6}_[0-9a-f]{4}$"
+  if (!grepl(pattern, snapshot_id)) {
+    rlang::abort(
+      "`snapshot_id` must match 'snapshot_YYYYmmdd_HHMMSS_XXXX' (lowercase hex).",
+      class = "ledgr_invalid_args"
+    )
+  }
+  invisible(TRUE)
 }

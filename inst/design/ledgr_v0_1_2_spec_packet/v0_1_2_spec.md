@@ -52,7 +52,7 @@ All work in v0.1.2 MUST comply with these three constraints. No exceptions.
 
 For adapters that fetch external data (e.g., `ledgr_snapshot_from_yahoo()`), determinism is defined relative to the retrieved data artifact, not the remote service. Remote data sources may revise historical data unpredictably.
 
-Remote fetch adapters must provide a mechanism to persist the retrieved data artifact (e.g., export to CSV or save as snapshot), so that hashing determinism is defined over that artifact. This allows users to reproduce results even if upstream data changes.
+Remote fetch adapters should document how to archive retrieved data for reproducibility. Users can export snapshots in their preferred format (RDS, Parquet, CSV, etc.) using standard R tools.
 
 **Rationale:** Execution semantics define ledgr's scientific value. Any drift breaks reproducibility guarantees and invalidates prior research.
 
@@ -627,7 +627,7 @@ Section 2 defines the primary user-facing APIs that enable researchers and quant
 #### 2.2.1 Purpose
 
 Data ingestion adapters transform external data sources into ledgr snapshots. They handle:
-- Format conversion (CSV, data.frame, xts, remote APIs)
+- Format conversion (data.frame, xts, remote APIs)
 - Schema validation
 - Instrument registration
 - Snapshot sealing
@@ -777,59 +777,21 @@ Per Invariant 1, determinism is defined over the retrieved data artifact, not th
 # Fetch once
 snap <- ledgr_snapshot_from_yahoo(symbols, from, to)
 
-# Export for reproducibility
-ledgr_snapshot_export_csv(snap, "yahoo_data_2020.csv")
+# Archive for reproducibility (user's choice of format)
+df <- as_tibble(snap, "bars")
+saveRDS(df, "yahoo_data_2020.rds")              # R native
+# OR: arrow::write_parquet(df, "yahoo_2020.parquet")  # Columnar
+# OR: write.csv(df, "yahoo_2020.csv")                  # Portable
 
-# Later: reimport from CSV (deterministic)
-snap <- ledgr_snapshot_from_csv("yahoo_data_2020.csv")
-```
-
+# Later: deterministic reload
+df <- readRDS("yahoo_data_2020.rds")
+snap <- ledgr_snapshot_from_df(df)
 **Validation:**
 
 Same as `ledgr_snapshot_from_df()` plus:
 - Symbol must return data from Yahoo Finance
 - Date range must be valid
 - At least one bar per symbol
-
----
-
-#### 2.2.4 `ledgr_snapshot_from_csv()`
-
-**Purpose:** Import snapshot from CSV file.
-
-**Signature:**
-```r
-ledgr_snapshot_from_csv <- function(csv_path,
-                                     db_path = NULL,
-                                     snapshot_id = NULL,
-                                     ...)
-```
-
-**Parameters:**
-
-- `csv_path` - Path to CSV file
-- `db_path` - Database path (NULL = tempfile)
-- `snapshot_id` - Snapshot ID (NULL = canonical generation)
-- `...` - Additional arguments to `read.csv()`
-
-**Returns:** S3 object of class `ledgr_snapshot`
-
-**Behavior:**
-
-1. Read CSV into data.frame
-2. Delegate to `ledgr_snapshot_from_df()`
-
-**Expected CSV format:**
-```
-ts_utc,instrument_id,open,high,low,close,volume
-2020-01-01T00:00:00Z,AAPL,100,102,99,101,1000000
-2020-01-02T00:00:00Z,AAPL,101,103,100,102,1100000
-```
-
-**Example:**
-```r
-snap <- ledgr_snapshot_from_csv("market_data.csv")
-```
 
 ---
 
@@ -3832,10 +3794,8 @@ test_that("snapshot adapters produce identical snapshots", {
   # Approach 1: Direct from df
   snap1 <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   
-  # Approach 2: Via CSV
-  csv_path <- tempfile(fileext = ".csv")
-  write.csv(bars, csv_path, row.names = FALSE)
-  snap2 <- ledgr_snapshot_from_csv(csv_path, db_path = tempfile(fileext = ".duckdb"))
+  # Approach 2: Direct from same data (testing consistency)
+  snap2 <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   
   # Compare snapshot hashes
   hash1 <- snap1$metadata$content_hash
@@ -3952,11 +3912,11 @@ test_that("ledgr_pulse_snapshot() does not mutate database", {
 test_that("quantmod adapter works with fixture", {
   skip_if_not_installed("quantmod")
   
-  # Use committed fixture CSV (not live Yahoo data)
-  fixture_path <- system.file("testdata", "aapl_2020_jan.csv", package = "ledgr")
+  # Use committed fixture data (already in R format for testing)
+  fixture_data <- readRDS(system.file("testdata", "aapl_2020_jan.rds", package = "ledgr"))
   
-  # Test CSV ingestion (quantmod pathway validated separately in interactive tests)
-  snap <- ledgr_snapshot_from_csv(fixture_path)
+  # Test data ingestion (quantmod pathway validated separately in interactive tests)
+  snap <- ledgr_snapshot_from_df(fixture_data)
   
   # Should have created valid snapshot
   expect_s3_class(snap, "ledgr_snapshot")

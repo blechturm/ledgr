@@ -63,6 +63,51 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     as.character(x)
   }
 
+  fmt_ts_utc_vec <- function(x) {
+    if (inherits(x, "POSIXt")) {
+      return(format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
+    }
+    if (is.character(x)) {
+      return(x)
+    }
+    if (is.null(x)) {
+      return(NA_character_)
+    }
+    as.character(x)
+  }
+
+  fmt_num_vec <- function(x) {
+    if (is.null(x)) return(NA_character_)
+
+    if (is.character(x)) {
+      parsed <- suppressWarnings(as.numeric(x))
+      out <- x
+      ok <- !is.na(parsed) & is.finite(parsed)
+      out[ok] <- sprintf("%.8f", round(parsed[ok], 8))
+      out[is.na(out)] <- NA_character_
+      return(out)
+    }
+
+    x_num <- as.numeric(x)
+    bad <- !is.na(x_num) & !is.finite(x_num)
+    if (any(bad)) {
+      rlang::abort("Non-finite numeric encountered while hashing snapshot.", class = "ledgr_invalid_state")
+    }
+    out <- rep(NA_character_, length(x_num))
+    ok <- !is.na(x_num)
+    if (any(ok)) {
+      out[ok] <- sprintf("%.8f", round(x_num[ok], 8))
+    }
+    out
+  }
+
+  token_vec <- function(x) {
+    if (is.null(x)) return("null")
+    out <- as.character(x)
+    out[is.na(out)] <- "NA"
+    out
+  }
+
   hash_block_size <- 10000L
 
   hash_query_streaming <- function(sql, params, row_to_lines) {
@@ -114,22 +159,17 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     ",
     params = list(snapshot_id),
     row_to_lines = function(df) {
-      n <- nrow(df)
-      out <- character(n)
-      for (i in seq_len(n)) {
-        out[[i]] <- paste(
-          token(df$instrument_id[[i]]),
-          token(df$symbol[[i]]),
-          token(df$currency[[i]]),
-          token(df$asset_class[[i]]),
-          token(fmt_num(df$multiplier[[i]])),
-          token(fmt_num(df$tick_size[[i]])),
-          token(df$meta_json[[i]]),
-          sep = "|"
-        )
-        out[[i]] <- paste0(out[[i]], "\n")
-      }
-      out
+      lines <- paste(
+        token_vec(df$instrument_id),
+        token_vec(df$symbol),
+        token_vec(df$currency),
+        token_vec(df$asset_class),
+        token_vec(fmt_num_vec(df$multiplier)),
+        token_vec(fmt_num_vec(df$tick_size)),
+        token_vec(df$meta_json),
+        sep = "|"
+      )
+      paste0(lines, "\n")
     }
   )
 
@@ -142,22 +182,17 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     ",
     params = list(snapshot_id),
     row_to_lines = function(df) {
-      n <- nrow(df)
-      out <- character(n)
-      for (i in seq_len(n)) {
-        out[[i]] <- paste(
-          token(df$instrument_id[[i]]),
-          token(fmt_ts_utc(df$ts_utc[[i]])),
-          token(fmt_num(df$open[[i]])),
-          token(fmt_num(df$high[[i]])),
-          token(fmt_num(df$low[[i]])),
-          token(fmt_num(df$close[[i]])),
-          token(fmt_num(df$volume[[i]])),
-          sep = "|"
-        )
-        out[[i]] <- paste0(out[[i]], "\n")
-      }
-      out
+      lines <- paste(
+        token_vec(df$instrument_id),
+        token_vec(fmt_ts_utc_vec(df$ts_utc)),
+        token_vec(fmt_num_vec(df$open)),
+        token_vec(fmt_num_vec(df$high)),
+        token_vec(fmt_num_vec(df$low)),
+        token_vec(fmt_num_vec(df$close)),
+        token_vec(fmt_num_vec(df$volume)),
+        sep = "|"
+      )
+      paste0(lines, "\n")
     }
   )
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Date:** December 20, 2025  
-**Total Tickets:** 42  
+**Total Tickets:** 41  
 **Estimated Duration:** 5 weeks  
 
 ---
@@ -158,35 +158,6 @@ Implement data.frame → snapshot adapter.
 - Integration test: df → snapshot → backtest
 
 **Spec Reference:** Section 2.2.2
-
----
-
-### LDG-105: Implement `ledgr_snapshot_from_csv()`
-**Priority:** 🟠 P1  
-**Effort:** 0.5 days  
-**Dependencies:** LDG-104  
-
-**Description:**
-Implement CSV → snapshot adapter (thin wrapper).
-
-**Tasks:**
-1. Add to `R/snapshot_adapters.R`
-2. Read CSV via `read.csv()`
-3. Delegate to `ledgr_snapshot_from_df()`
-4. Handle read errors gracefully
-
-**Acceptance Criteria:**
-- [ ] Reads valid CSVs
-- [ ] Delegates to `ledgr_snapshot_from_df()`
-- [ ] Error messages for missing files, bad formats
-- [ ] 100% test coverage
-
-**Test Requirements:**
-- Unit test with fixture CSV
-- Error test for missing file
-- Integration test matches `ledgr_snapshot_from_df()` output
-
-**Spec Reference:** Section 2.2.4
 
 ---
 
@@ -1068,7 +1039,7 @@ End-to-end integration test covering full workflow.
 
 **Tasks:**
 1. Create `tests/testthat/test-integration-full.R`
-2. Workflow: CSV → snapshot → indicators → backtest → metrics → plot
+2. Workflow: Data loading → snapshot → indicators → backtest → metrics → plot
 3. Verify all components work together
 4. Check for memory leaks, connection leaks
 
@@ -1115,12 +1086,12 @@ Verify all tests pass on Windows CI.
 
 ## Summary Statistics
 
-**Total Tickets:** 42  
-**Estimated Total Effort:** ~35 days (7 weeks calendar time with parallelization)
+**Total Tickets:** 41  
+**Estimated Total Effort:** ~34.5 days (7 weeks calendar time with parallelization)
 
 **By Priority:**
 - 🔴 P0 (Blocker): 9 tickets
-- 🟠 P1 (Critical): 19 tickets
+- 🟠 P1 (Critical): 18 tickets
 - 🟡 P2 (Important): 12 tickets
 - 🟢 P3 (Nice to have): 2 tickets
 
@@ -1149,7 +1120,7 @@ LDG-101 → LDG-102 → LDG-103 → LDG-104 → LDG-107 → LDG-201 → LDG-301 
 ### Parallelization Opportunities
 
 **Week 1:**
-- LDG-104, LDG-105, LDG-106 can be developed in parallel after LDG-103
+- LDG-104, LDG-106 can be developed in parallel after LDG-103
 - LDG-108 can start after LDG-107
 
 **Week 2:**

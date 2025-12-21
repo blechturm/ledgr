@@ -3,6 +3,7 @@ testthat::test_that("exported API surface is locked (v0.1.2)", {
 
   expected <- sort(c(
     "iso_utc",
+    "ledgr_backtest",
     "ledgr_backtest_run",
     "ledgr_create_schema",
     "ledgr_data_hash",
