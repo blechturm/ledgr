@@ -1,1331 +1,4730 @@
-# ledgr v0.1.2 Specification — The Clarity Milestone
+# ledgr v0.1.2 Specification - Section 1: UX Principles & Invariants
 
-**Version:** 1.0.0  
-**Status:** Ready for Implementation  
-**Scope Gate:** Documentation, demonstrations, and developer onboarding. **No changes to core execution, hashing, or database schema.**
-
----
-
-## 0. Executive Summary
-
-ledgr v0.1.2 transforms the "Infrastructure-First" foundation into a **comprehensible, navigable, and verifiable framework**. This milestone provides:
-
-1. **Visual Mental Models**: Architecture diagrams showing the dual-spine design
-2. **Killer Feature Demos**: Proving crash recovery, tamper detection, and lookahead prevention
-3. **Role-Based Documentation**: API guides for Librarians, Researchers, Auditors, and Developers
-4. **Design Rationales**: Explaining *why* event sourcing, immutable snapshots, and 8-decimal precision
-5. **Test Infrastructure Guide**: Teaching contributors the spec-driven acceptance test approach
-
-**Target Audience:**
-- Quantitative researchers adopting ledgr for systematic backtesting
-- Financial data engineers implementing provenance workflows
-- Package contributors extending ledgr with custom strategies/features
-- Auditors verifying backtest correctness
+**Document Version:** 2.0.2  
+**Author:** Max Thomasberger  
+**Date:** December 20, 2025  
+**Release Type:** User Experience Milestone  
+**Status:** Draft for Review
 
 ---
 
-## 1. Hard Invariants (v0.1.2)
+## Section 1: UX Principles & Invariants
 
-| ID | Invariant | Rationale |
-|----|-----------|-----------|
-| **I15** | **Semantic Freeze** | No changes to core execution, hashing, or database schema. Ensures v0.1.1 correctness is not regressed. |
-| **I16** | **Real Data Priority** | Demos must use real-world financial data (e.g., Yahoo Finance) where possible. Synthetic fixtures only for unit tests. |
-| **I17** | **Inference Only** | ML demonstrations use pre-trained models. ledgr does not implement training logic. |
-| **I18** | **Deterministic Interruption** | Resilience tests use `max_pulses` boundaries to ensure byte-perfect reproducibility upon resume. |
-| **I19** | **No Performance Regressions** | Documentation must not introduce performance overhead. All demos run in <60 seconds on standard hardware. |
+### 1.1 Release Philosophy
 
----
+**v0.1.2 is a UX release, not a feature release.**
 
-## 2. Architecture Visualization
+The v0.1.1 release established ledgr's core guarantees:
+- Event-sourced execution with full audit trails
+- Tamper-resistant data provenance via snapshot hashing
+- Deterministic state reconstruction
+- Production-grade reliability (all acceptance tests passing)
 
-### 2.1 The "Dual-Spine" Conceptual Model
+**The system is deterministic, resumable, and auditable. The experience is low-level.**
 
-This diagram distinguishes the **Data Provenance workflow** (v0.1.1) from the **Backtest Execution workflow** (v0.1.0).
+v0.1.2 addresses this by providing high-level APIs that make ledgr accessible to researchers, quants, and data scientists who need reproducible backtests but shouldn't need to understand DBI, schema design, or configuration JSON.
 
-```mermaid
-graph TD
-    subgraph "Provenance Spine (v0.1.1)"
-        A[Raw CSV Data] --> B[ledgr_snapshot_import]
-        B --> C{Validation & Rounding}
-        C -->|Pass| D[CREATED Snapshot]
-        C -->|Fail| X[Error: CSV Format]
-        D --> E[ledgr_snapshot_seal]
-        E --> F{Hash Computation}
-        F -->|Success| G[SEALED Snapshot + SHA256]
-        F -->|Failure| Y[Status: FAILED]
-    end
-
-    subgraph "Execution Spine (v0.1.0)"
-        G --> H[Runner Hash Verification]
-        H -->|Match| I[Pulse Loop]
-        H -->|Mismatch| Z[Error: Corrupted]
-        I --> J[Strategy: on_pulse]
-        J --> K[Fill Simulation]
-        K --> L[Append-Only Ledger]
-        L --> M{Resume?}
-        M -->|Yes| N[Load Last State]
-        M -->|No| O[Complete]
-        N --> I
-    end
-```
-
-**Key Insight:** The hash computed at seal (G) becomes the **tamper detection checkpoint** at verification (H).
+**Critical constraint:** This UX improvement MUST NOT compromise the guarantees that define ledgr's value proposition.
 
 ---
 
-### 2.2 The Pulse Lifecycle Sequence
+### 1.2 Three Hard Invariants (Non-Negotiable)
 
-This sequence diagram maps the internal pulse logic in `R/backtest-runner.R`.
+All work in v0.1.2 MUST comply with these three constraints. No exceptions.
 
-```mermaid
-sequenceDiagram
-    participant R as Runner
-    participant DB as DuckDB (Snapshot)
-    participant S as Strategy
-    participant L as Ledger (Events)
+#### 🔒 **Invariant 1: No New Execution Semantics**
 
-    Note over R,L: Pulse T (Observation Epoch)
-    R->>DB: SELECT bars WHERE ts_utc = T
-    DB-->>R: DataFrame (OHLCV)
-    R->>DB: SELECT features WHERE ts_utc = T
-    DB-->>R: DataFrame (Features)
-    R->>R: Construct PulseContext(bars, features, positions, cash)
-    R->>S: strategy$on_pulse(ctx)
-    S-->>R: StrategyResult(targets, state_update)
-    
-    Note over R,L: Pulse T+1 (Execution Epoch)
-    R->>DB: SELECT open WHERE ts_utc = T+1
-    DB-->>R: Next bar prices
-    R->>R: Calculate target_gap = targets - positions
-    R->>R: Simulate fills with spread + commission
-    R->>L: INSERT INTO ledger_events (FILL)
-    R->>DB: INSERT INTO strategy_state (state_json)
-    R->>DB: Rebuild equity_curve from ledger
-```
+> **v0.1.2 MUST NOT change pulse ordering, fill logic, ledger writes, snapshot hashing, or state reconstruction semantics.**
 
-**Critical Separation:** Strategies observe data at time T but execute trades at T+1 open, preventing lookahead bias.
+**What this means:**
+- The execution engine from v0.1.1 remains canonical
+- All new APIs are wrappers or post-processing
+- Zero behavioral changes to core backtesting logic
+- No modifications to event sourcing or ledger structure
+
+**Enforcement:**
+- All v0.1.1 acceptance tests (AT1-AT12) MUST pass unchanged
+- Snapshot hashes MUST be identical for identical data artifacts
+- Ledger event order MUST be identical for identical runs
+- State reconstruction MUST produce identical results
+
+**Data provenance note for remote adapters:**
+
+For adapters that fetch external data (e.g., `ledgr_snapshot_from_yahoo()`), determinism is defined relative to the retrieved data artifact, not the remote service. Remote data sources may revise historical data unpredictably.
+
+Remote fetch adapters must provide a mechanism to persist the retrieved data artifact (e.g., export to CSV or save as snapshot), so that hashing determinism is defined over that artifact. This allows users to reproduce results even if upstream data changes.
+
+**Rationale:** Execution semantics define ledgr's scientific value. Any drift breaks reproducibility guarantees and invalidates prior research.
 
 ---
 
-### 2.3 Database Entity-Relationship Diagram
+#### 🔒 **Invariant 2: Interactive Tools Are Read-Only**
 
-```mermaid
-erDiagram
-    snapshots ||--o{ snapshot_instruments : "contains"
-    snapshots ||--o{ snapshot_bars : "contains"
-    runs ||--o{ ledger_events : "generates"
-    runs ||--o{ equity_curve : "produces"
-    runs ||--o{ strategy_state : "persists"
-    runs ||--o{ features : "computes"
-    runs }o--|| snapshots : "sources from"
-    
-    snapshots {
-        string snapshot_id PK
-        enum status "CREATED|SEALED|FAILED"
-        timestamp created_at_utc
-        timestamp sealed_at_utc
-        string snapshot_hash "SHA256"
-        text meta_json
-        text error_msg
-    }
-    
-    snapshot_bars {
-        string snapshot_id PK,FK
-        string instrument_id PK
-        timestamp ts_utc PK
-        numeric open "8 decimals"
-        numeric high "8 decimals"
-        numeric low "8 decimals"
-        numeric close "8 decimals"
-        numeric volume "8 decimals"
-    }
-    
-    runs {
-        string run_id PK
-        string snapshot_id FK "nullable"
-        enum status "CREATED|RUNNING|DONE|FAILED"
-        string config_hash "SHA256"
-        string data_hash "SHA256"
-        text config_json
-        text error_msg
-    }
-    
-    ledger_events {
-        string event_id PK
-        string run_id FK
-        int event_seq "unique per run"
-        timestamp ts_utc
-        enum event_type "FILL"
-        string instrument_id
-        enum side "BUY|SELL"
-        numeric qty
-        numeric price
-        numeric fee
-        text meta_json "includes deltas"
-    }
-    
-    equity_curve {
-        string run_id PK,FK
-        timestamp ts_utc PK
-        numeric cash
-        numeric positions_value
-        numeric equity
-        numeric realized_pnl
-        numeric unrealized_pnl
-    }
-```
+> **`ledgr_indicator_dev()` and `ledgr_pulse_snapshot()` MUST NOT mutate any persistent ledgr tables.**
 
-**Key Relationships:**
-- `runs.snapshot_id` → `snapshots.snapshot_id`: Links execution to sealed data source
-- `ledger_events.event_seq`: Gapless integer sequence enabling crash recovery
-- `strategy_state.ts_utc`: Persistence checkpoints for resume
+**What this means:**
+- Interactive development tools are lenses for exploration
+- They read from snapshots and construct temporary views
+- They never execute strategies or record events
+- They never modify persistent database state
 
----
+**Enforcement:**
 
-### 2.4 State Machine Diagrams
+**No persistent writes:** Interactive tools MUST NOT modify any persistent ledgr tables (`snapshots`, `snapshot_bars`, `snapshot_instruments`, `runs`, `ledger_events`, `strategy_state`, etc.).
 
-#### Snapshot Lifecycle
-```mermaid
-stateDiagram-v2
-    [*] --> CREATED: ledgr_snapshot_create()
-    CREATED --> SEALED: ledgr_snapshot_seal() [success]
-    CREATED --> FAILED: ledgr_snapshot_seal() [error]
-    SEALED --> [*]
-    FAILED --> [*]
-    
-    note right of SEALED
-        Hash computed and stored.
-        Snapshot becomes immutable.
-    end note
-    
-    note right of FAILED
-        Error stored in error_msg.
-        Can be deleted and recreated.
-    end note
-```
+**TEMP allowed:** They MAY create `TEMP VIEW` or `TEMP TABLE` objects on the connection for query convenience.
 
-#### Run Lifecycle
-```mermaid
-stateDiagram-v2
-    [*] --> CREATED: ledgr_backtest_run() [init]
-    CREATED --> RUNNING: Pulse loop starts
-    RUNNING --> RUNNING: Each pulse completes
-    RUNNING --> DONE: All pulses complete
-    RUNNING --> FAILED: Error encountered
-    DONE --> [*]
-    FAILED --> [*]
-    
-    note right of RUNNING
-        Strategy state persisted
-        after each pulse.
-        Resume deletes tail.
-    end note
-```
+**Connection hygiene:** Interactive tools MUST either:
+- Clean up any `TEMP` objects they create before returning, OR
+- Use a dedicated connection created internally and closed on exit
 
----
+**No side-effecting PRAGMAs:** They MUST NOT change database settings that would affect subsequent runs on the same connection (or MUST reset them before returning).
 
-## 3. The "Level 0" Learning Roadmap (Demos)
+**Test enforcement:**
 
-Demos are sequenced to **prove competitive advantages first**, then teach internals.
+Test enforcement verifies that persistent ledgr tables remain unchanged by comparing row counts and content fingerprints before and after calling interactive tools.
 
-### Step 1: "The Phoenix Test" (Resilience Mastery) ⭐ KILLER FEATURE
-
-**Goal:** Prove that event sourcing enables deterministic crash recovery.
-
-**Scenario:**
-1. Start backtest with 100 pulses, `max_pulses = 50`
-2. System stops at pulse 50 (simulated crash)
-3. Resume with same `run_id`, no `max_pulses` limit
-4. Verify gapless `event_seq` and identical final equity
-
-**Expected Outcome:**
 ```r
-# Initial run
-cfg <- list(..., backtest = list(...))
-ledgr:::ledgr_backtest_run_internal(cfg, run_id = "phoenix", control = list(max_pulses = 50))
+# Capture state of persistent tables before calling tool
+persistent_tables <- c("snapshots", "snapshot_bars", "snapshot_instruments", 
+                       "runs", "ledger_events", "strategy_state")
 
-# After "crash" - resume
-ledgr_backtest_run(cfg, run_id = "phoenix")  # Completes remaining 50 pulses
+counts_before <- sapply(persistent_tables, function(tbl) {
+  DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+})
 
-# Verification
-events <- dbGetQuery(con, "SELECT event_seq FROM ledger_events WHERE run_id = 'phoenix' ORDER BY event_seq")
-stopifnot(identical(events$event_seq, 1:N))  # Gapless sequence
+# Call interactive tool
+dev <- ledgr_indicator_dev(snapshot, "AAPL", "2020-06-15", lookback = 50)
+
+# Verify no persistent table mutations
+counts_after <- sapply(persistent_tables, function(tbl) {
+  DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+})
+
+stopifnot(identical(counts_before, counts_after))
 ```
 
-**Why This Matters:** Most backtesting systems lose state on crash. ledgr recovers deterministically from the last `strategy_state` checkpoint.
+TEMP objects are ignored by this test. Interactive tools may create and clean up temporary views/tables as needed for query convenience.
+
+**Rationale:** Interactive tools enable experimentation. If they can mutate state, they become execution paths that bypass governance and audit trails.
 
 ---
 
-### Step 2: "The Fortress Defense" (Security Mastery) ⭐ KILLER FEATURE
+#### 🔒 **Invariant 3: One Canonical Execution Engine**
 
-**Goal:** Prove that sealed snapshots detect post-seal tampering.
+> **All user-facing APIs MUST compile to the same internal execution path used in v0.1.1.**
 
-**Scenario:**
-1. Import data, seal snapshot (hash stored: `abc123...`)
-2. Manually edit `snapshot_bars.close` using SQL
-3. Attempt to run backtest from tampered snapshot
-4. System rejects with `LEDGR_SNAPSHOT_CORRUPTED`
+**What this means:**
+- `ledgr_backtest()` is a thin wrapper that constructs config → calls `ledgr_run()`
+- No alternate runners
+- No execution logic duplication
+- All execution flows through the same tested, audited engine
 
-**Expected Outcome:**
+**Enforcement:**
+
+**Single entrypoint:** `ledgr_backtest()` MUST call exactly one internal execution function (the canonical `ledgr_run()` or its direct successor).
+
+**No additional writes:** `ledgr_backtest()` MUST NOT perform any database writes beyond what the canonical engine already performs.
+
+**Equivalence tests:** Given identical inputs, `ledgr_backtest()` and direct `ledgr_run()` calls MUST produce semantically equivalent results.
+
+**Config equivalence:** `ledgr_backtest()` must compile inputs into the same canonical config object that `ledgr_run()` expects. Equivalence is defined over the canonicalized configuration stored in the database, not raw input lists.
+
+**Test enforcement for config equivalence:**
 ```r
-# 1. Create and seal snapshot
-snap_id <- ledgr_snapshot_create(con)
-ledgr_snapshot_import_bars_csv(con, snap_id, "bars.csv", auto_generate_instruments = TRUE)
-hash_original <- ledgr_snapshot_seal(con, snap_id)  # "abc123..."
+# Direct approach: build config explicitly
+config <- ledgr_config(
+  snapshot = snap,
+  universe = c("AAPL", "MSFT"),
+  strategy = my_strategy,
+  backtest = ledgr_backtest_config(start = "2020-01-01", end = "2020-12-31")
+)
+result_direct <- ledgr_run(config)
 
-# 2. Tamper with data
-dbExecute(con, "UPDATE snapshot_bars SET close = close + 100 WHERE snapshot_id = ?", params = list(snap_id))
+# Wrapper approach: high-level API
+result_wrapper <- ledgr_backtest(
+  snapshot = snap,
+  strategy = my_strategy,
+  universe = c("AAPL", "MSFT"),
+  start = "2020-01-01",
+  end = "2020-12-31"
+)
 
-# 3. Attempt backtest
-cfg <- list(data = list(source = "snapshot", snapshot_id = snap_id), ...)
-tryCatch(
-  ledgr_backtest_run(cfg),
-  LEDGR_SNAPSHOT_CORRUPTED = function(e) {
-    cat("✓ Tamper detected:", conditionMessage(e), "\n")
-    # Expected: "Hash mismatch. Expected abc123..., got def456..."
-  }
+# Compare canonicalized configs from database
+config_direct <- DBI::dbGetQuery(con, 
+  "SELECT config_json FROM runs WHERE run_id = ?", 
+  params = list(result_direct$run_id))[[1]]
+
+config_wrapper <- DBI::dbGetQuery(con,
+  "SELECT config_json FROM runs WHERE run_id = ?",
+  params = list(result_wrapper$run_id))[[1]]
+
+# Parse and compare (ignoring run_id, timestamps)
+cfg1 <- jsonlite::fromJSON(config_direct)
+cfg2 <- jsonlite::fromJSON(config_wrapper)
+
+# Remove non-semantic fields
+cfg1$run_id <- cfg2$run_id <- NULL
+cfg1$created_at <- cfg2$created_at <- NULL
+
+stopifnot(identical(cfg1, cfg2))
+```
+
+**Ledger equivalence:** Ledger events must be identical in count, ordering, and semantic content, but may differ in `run_id` and `created_at` timestamps.
+
+**Test enforcement for ledger equivalence:**
+```r
+# Fetch ledger events from both runs
+events_direct <- DBI::dbGetQuery(con,
+  "SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee 
+   FROM ledger_events 
+   WHERE run_id = ? 
+   ORDER BY event_seq",
+  params = list(result_direct$run_id))
+
+events_wrapper <- DBI::dbGetQuery(con,
+  "SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee 
+   FROM ledger_events 
+   WHERE run_id = ? 
+   ORDER BY event_seq",
+  params = list(result_wrapper$run_id))
+
+# Compare semantic content (excluding run_id, created_at)
+stopifnot(identical(events_direct, events_wrapper))
+
+# Final equity must match
+stopifnot(abs(result_direct$final_equity - result_wrapper$final_equity) < 1e-10)
+```
+
+**Rationale:** Multiple execution paths fragment semantics, double test surface, and create inconsistent guarantees. There is one way to run a backtest.
+
+---
+
+### 1.3 Hexagonal Architecture as Design Discipline
+
+**ledgr adopts hexagonal architecture (ports & adapters) as an API boundary discipline.**
+
+```
+┌─────────────────────────────────────────┐
+│         ledgr Core Fortress             │
+│                                         │
+│   Event Sourcing │ State Management    │
+│   Snapshot System │ Execution Engine    │
+│   Ledger │ Position Tracking            │
+│                                         │
+└──────────────┬──────────────────────────┘
+               │
+               │ Stable Ports (Interfaces)
+               │
+    ┌──────────┼──────────┬──────────┐
+    │          │          │          │
+┌───▼────┐ ┌──▼─────┐ ┌──▼────┐ ┌───▼────┐
+│Data    │ │Indicator│ │Metrics│ │Broker  │
+│Adapters│ │Adapters │ │Adapters│ │Adapters│
+└───┬────┘ └───┬────┘ └───┬───┘ └───┬────┘
+    │          │          │          │
+┌───▼────┐ ┌──▼─────┐ ┌──▼────┐ ┌───▼────┐
+│quantmod│ │TTR     │ │Custom │ │IBrokers│
+│(Yahoo/ │ │Custom  │ │Metrics│ │Alpaca  │
+│FRED/   │ │        │ │        │ │        │
+│Quandl) │ │        │ │        │ │        │
+└────────┘ └────────┘ └───────┘ └────────┘
+```
+
+**Key principles:**
+
+1. **Core is isolated** - External dependencies never touch execution logic
+2. **Ports are stable** - Adapter interfaces define contracts
+3. **Adapters are pluggable** - Users bring their own data/indicators/brokers
+4. **Core has no opinions** - TTR vs. custom indicators: core doesn't care
+
+**In v0.1.2, this manifests as:**
+- Data ingestion adapters (`ledgr_snapshot_from_*`)
+- Indicator adapters (`ledgr_adapter_r`, `ledgr_adapter_csv`)
+- Post-hoc metric computation (basic built-in metrics only)
+- Broker adapters (deferred to v0.2.0+)
+
+**This is NOT a refactor** - internal modules remain as-is. This is an API discipline that defines how external integrations connect to ledgr.
+
+---
+
+### 1.4 Orchestration Philosophy
+
+**ledgr does not compete with R quant packages. It orchestrates them.**
+
+The R quantitative finance ecosystem is mature:
+- **quantmod** - Market data fetching (Yahoo/FRED/Quandl via adapters)
+- **TTR** - 50+ technical indicators (SMA, RSI, MACD, etc.)
+- **PerformanceAnalytics** - 100+ risk/return metrics (deferred to v0.1.3)
+- **xts/zoo** - Time series infrastructure
+- **IBrokers** - Interactive Brokers integration (deferred to v0.3.0)
+
+**ledgr's unique value is NOT reimplementing these.**
+
+**ledgr's unique value IS:**
+1. **Event sourcing** - Full audit trail from data → decisions → trades
+2. **Data provenance** - Tamper detection via cryptographic hashing
+3. **Reproducibility** - Deterministic state reconstruction
+4. **Production path** - Same code runs in backtest, paper, production
+
+**Integration strategy:**
+- ✅ Provide adapters for existing packages (quantmod, TTR)
+- ✅ Build minimal infrastructure (registry, wrappers)
+- ✅ Let domain experts maintain their packages
+- ❌ Avoid reimplementing indicators, metrics, data fetchers
+
+**Benefits:**
+- Faster time-to-market (leverage existing work)
+- Better quality (battle-tested packages)
+- Lower maintenance burden (community maintains upstream)
+- Ecosystem goodwill (complementary, not competitive)
+
+**Example:**
+```r
+# Don't build 100 indicators
+# Instead: make TTR's 50 indicators easy to use
+
+rsi_14 <- ledgr_adapter_r(TTR::RSI, "rsi_14", 14L, n = 14)
+# ^ One-liner access to battle-tested TTR implementation
+```
+
+---
+
+### 1.5 What v0.1.2 IS
+
+**v0.1.2 is:**
+
+✅ **High-level API layer** - `ledgr_backtest()`, `ledgr_snapshot_from_*()`  
+✅ **Tidy outputs** - S3 objects with `summary()`, `print()`, `plot()`, `as_tibble()`  
+✅ **Interactive development** - `ledgr_indicator_dev()`, `ledgr_pulse_snapshot()` for exploration  
+✅ **Indicator infrastructure** - Registry, adapters, minimal built-ins  
+✅ **R ecosystem integration** - quantmod data, TTR indicators  
+✅ **Developer experience** - Reduce time-to-first-backtest from 30 min → 5 min  
+
+**Target users:**
+- Researchers who need reproducibility but shouldn't need to know SQL
+- Quants migrating from Backtesting.py or VectorBT
+- Data scientists familiar with tidyverse conventions
+
+**Concrete UX requirements for migration:**
+
+Users coming from Backtesting.py expect:
+- `print(bt)` shows key results without SQL
+- `plot(bt)` yields an equity curve + drawdown visualization
+- `bt$equity_curve` or `as_tibble(bt, "equity")` returns a tibble
+- Strategy development without class boilerplate (functional strategies work)
+
+**Success criteria:**
+- New user runs first backtest in <5 minutes
+- Strategy development is interactive (not blind coding)
+- Results are tidy (not SQL queries)
+- Zero boilerplate for simple use cases
+
+---
+
+### 1.6 What v0.1.2 IS NOT
+
+**v0.1.2 is NOT:**
+
+❌ **A refactor** - Internal modules remain unchanged  
+❌ **Feature-complete** - Many capabilities deferred to v0.1.3+  
+❌ **An indicator library** - Use TTR (50+ indicators) via adapters  
+❌ **A metrics engine** - Basic metrics only; PerformanceAnalytics in v0.1.3  
+❌ **A paper trading system** - Live data adapters deferred to v0.2.0  
+❌ **A production runtime** - Broker adapters deferred to v0.3.0  
+
+**Explicitly out of scope:**
+- Walk-forward optimization (v0.2.0)
+- Parameter tuning algorithms (user's responsibility)
+- Python indicator bridges (unnecessary - R has everything)
+- TradingView API integration (doesn't exist)
+- Live trading capabilities (v0.3.0)
+- Comprehensive documentation (v0.1.3)
+- PerformanceAnalytics integration (v0.1.3)
+
+**Why defer these?**
+
+Each deferred item is either:
+1. **Requires the v0.1.2 UX foundation** (docs showcasing improved UX)
+2. **Requires adapters designed but not implemented** (paper/live trading)
+3. **Out of scope entirely** (optimization algorithms are user's domain)
+
+---
+
+### 1.7 Dependency Strategy
+
+**v0.1.2 aims to introduce no new heavy dependencies in Imports.**
+
+**Current hard dependencies (Imports):**
+- **DBI** - Database interface abstraction
+- **duckdb** - Embedded analytical database
+- **jsonlite** - JSON parsing (already present in v0.1.1)
+- **digest** - Cryptographic hashing (already present in v0.1.1)
+- **rlang** - Utilities (already present in v0.1.1)
+
+**New in v0.1.2 (Imports):**
+- **tibble** - Tidy data frames
+- **ggplot2** - Visualization
+
+**Soft dependencies (Suggests):**
+- **quantmod** - Market data fetching (optional, graceful degradation)
+- **TTR** - Technical indicators (optional, graceful degradation)
+- **xts** - Time series interoperability (optional)
+- **testthat** - Testing
+- **knitr, rmarkdown** - Documentation
+
+**Policy:**
+- New UX APIs MUST NOT introduce additional heavy Imports beyond tibble and ggplot2
+- All external quant packages (quantmod, TTR, PerformanceAnalytics) live in Suggests
+- Integration code fails gracefully with helpful install messages
+
+**Graceful degradation example:**
+```r
+snap <- ledgr_snapshot_from_yahoo(...)
+#> Error: quantmod package required
+#> Install with: install.packages("quantmod")
+```
+
+Users install what they need, when they need it.
+
+**Rationale:**
+1. **Security** - Smaller attack surface
+2. **Stability** - Fewer breaking change risks
+3. **Choice** - Users pick their tools
+4. **Maintenance** - Less to maintain
+
+---
+
+### 1.8 Why DuckDB (Not SQLite)
+
+**ledgr uses DuckDB as its embedded database.**
+
+**Rationale:**
+
+DuckDB is optimized for analytical queries, window functions, and columnar scans. ledgr's workload is predominantly analytical:
+- Aggregate trades from ledger events
+- Compute equity curves using window functions (`SUM(...) OVER (ORDER BY ...)`)
+- Calculate metrics via aggregations over returns
+- Query historical bars with time-range filters
+
+**DuckDB provides:**
+- Columnar storage (better for time series data)
+- Full SQL:2011 support (including advanced window functions)
+- Excellent compression (smaller snapshot files)
+- Vectorized execution (batch processing)
+- Modern analytical query optimization
+
+**Still embeddable:**
+- Single-file database
+- In-process execution
+- No server needed
+- Zero-copy reads
+
+**Future benefits:**
+- Can query Parquet files directly (v0.2.0+)
+- Efficient storage for large market data
+- Better performance for complex analytical queries
+
+---
+
+### 1.9 Version Roadmap Context
+
+**Where v0.1.2 fits:**
+
+```
+v0.1.1 (COMPLETE)
+├─ Event sourcing + ledger
+├─ Snapshot system + tamper detection
+├─ Deterministic execution
+├─ All acceptance tests passing
+└─ Low-level API only
+
+v0.1.2 (THIS RELEASE) - UX Milestone
+├─ High-level API (ledgr_backtest)
+├─ Tidy S3 objects
+├─ Interactive development tools
+├─ Indicator infrastructure
+├─ R ecosystem integration (quantmod, TTR)
+└─ Basic visualization
+
+v0.1.3 (NEXT) - Documentation
+├─ Comprehensive vignettes
+├─ API documentation
+├─ pkgdown website
+├─ Tutorial content
+├─ PerformanceAnalytics integration
+└─ Migration guides
+
+v0.2.0 (FUTURE) - Paper Trading
+├─ Live data adapters
+├─ Paper trading mode
+├─ Walk-forward optimization
+└─ Advanced metrics
+
+v0.3.0 (FUTURE) - Production Trading
+├─ Broker adapters (IB, Alpaca)
+├─ Risk management layer
+├─ Order management
+├─ Monitoring & alerts
+└─ Production hardening
+```
+
+**v0.1.2 is the foundation** for all future work. Get UX right now, or documentation (v0.1.3) and paper trading (v0.2.0) suffer.
+
+---
+
+### 1.10 Testing Philosophy for v0.1.2
+
+**All new code MUST satisfy:**
+
+1. **Zero regressions** - All v0.1.1 tests pass unchanged
+2. **Wrapper verification** - `ledgr_backtest()` produces identical results to `ledgr_run()`
+3. **Read-only guarantees** - Interactive tools never write to persistent tables
+4. **Determinism** - Snapshot hashes identical for identical data artifacts
+5. **Direct test coverage** - All new public-facing functions have unit tests and at least one integration test
+
+**Test categories:**
+
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| **Regression** | v0.1.1 still works | AT1-AT12 unchanged |
+| **Equivalence** | Wrappers match core | `ledgr_backtest()` ≡ `ledgr_run()` |
+| **Isolation** | Interactive tools safe | `ledgr_indicator_dev()` has no persistent side effects |
+| **Integration** | Adapters work | `snapshot_from_yahoo()` → valid snapshot |
+| **UX** | User-facing quality | Error messages, print output |
+
+---
+
+### 1.11 Success Metrics
+
+**v0.1.2 succeeds if:**
+
+**Quantitative:**
+- ✅ Time-to-first-backtest: <5 minutes (down from 30+)
+- ✅ Lines of user code: <10 lines for simple backtest (down from 50+)
+- ✅ All v0.1.1 tests pass (zero regressions)
+- ✅ All new public APIs have direct test coverage
+
+**Qualitative:**
+- ✅ User can develop strategy interactively
+- ✅ Results feel "tidy" (tibbles, S3 methods)
+- ✅ README and examples demonstrate improved UX
+- ✅ Architecture sets foundation for v0.2.0/v0.3.0
+
+**User feedback targets:**
+- "Finally! I can use ledgr without reading the internals"
+- "Interactive development is a game-changer"
+- "The tidyverse integration feels natural"
+
+---
+
+### 1.12 Non-Goals (Explicit)
+
+**v0.1.2 will NOT:**
+
+❌ Modify execution semantics  
+❌ Refactor internal modules  
+❌ Add paper trading  
+❌ Add live trading  
+❌ Implement optimization algorithms  
+❌ Bridge to Python indicators  
+❌ Integrate TradingView  
+❌ Build 100+ indicators  
+❌ Integrate PerformanceAnalytics (deferred to v0.1.3)  
+❌ Provide comprehensive documentation (that's v0.1.3)  
+
+**If a feature isn't listed in Section 2-4 of this spec, it's out of scope.**
+
+---
+
+## End of Section 1
+
+**Next sections will define:**
+- Section 2: High-Level API Contract
+- Section 3: Indicator Infrastructure
+- Section 4: Metrics & Visualization
+- Section 5: Implementation Constraints
+- Section 6: Testing Requirements
+- Section 7: Deferred Features
+
+---
+
+**Document status:** Section 1 peer-reviewed and approved. All critical enforceability issues resolved. Ready to proceed to Section 2.
+
+**Changelog from v2.0.1:**
+- Fixed Invariant 2 test enforcement (persistent table mutation checks)
+- Fixed Invariant 3 config equivalence (canonicalized comparison)
+- Fixed Invariant 3 ledger equivalence (modulo run_id/timestamps)
+- Added data provenance note for remote adapters
+- Standardized function names (full `ledgr_*` prefix)
+- Updated qualitative success metric (README vs. comprehensive docs)
+- Minor consistency improvements
+
+
+# ledgr v0.1.2 Specification - Sections 2-4: API Contracts (CORRECTED)
+
+**Document Version:** 2.1.0  
+**Author:** Max Thomasberger  
+**Date:** December 20, 2025  
+**Release Type:** User Experience Milestone  
+**Status:** Draft for Review  
+**Changelog:** Peer review corrections applied - see end of document
+
+---
+
+## Preamble: Core Assumptions from v0.1.1
+
+### Database Schema
+
+Sections 2-4 assume the following tables exist in v0.1.1:
+
+**Snapshot tables:**
+- `snapshots` - Snapshot metadata
+- `snapshot_bars` - Historical OHLCV data
+- `snapshot_instruments` - Instrument definitions
+
+**Execution tables:**
+- `runs` - Backtest run metadata
+- `ledger_events` - Event-sourced ledger
+- `equity_curve` - Pre-computed equity/cash/positions per pulse
+- `features` - Pre-computed feature values per pulse
+
+### Timestamp Format
+
+**Internal representation:** ISO 8601 UTC strings (`"2020-01-01T00:00:00Z"`)
+
+**User input:** Flexible formats accepted (Date objects, "2020-01-01", ISO strings)
+
+**Normalization:** All timestamps converted to ISO 8601 UTC before storage/queries
+
+### Connection Lifecycle Policy
+
+**Default pattern:** Lazy connection (recommended)
+- Objects store `db_path` + identifiers
+- Connections opened on-demand via internal `ledgr_db_connect(db_path)`
+- Connections closed explicitly or via finalizers
+
+**For interactive tools:** Dedicated connection created internally, closed on tool exit
+
+**Windows consideration:** Lazy connections avoid file lock issues when passing objects between functions
+
+---
+
+## Section 2: High-Level API Contract
+
+### 2.1 Overview
+
+Section 2 defines the primary user-facing APIs that enable researchers and quants to run backtests without understanding ledgr's internal architecture.
+
+**Design principle:** All APIs in this section are **wrappers** that compile user inputs into canonical configurations and delegate to the v0.1.1 execution engine. No new execution semantics.
+
+**Compliance:** All APIs MUST satisfy Invariants 1, 2, and 3 from Section 1.
+
+---
+
+### 2.2 Data Ingestion Adapters
+
+#### 2.2.1 Purpose
+
+Data ingestion adapters transform external data sources into ledgr snapshots. They handle:
+- Format conversion (CSV, data.frame, xts, remote APIs)
+- Schema validation
+- Instrument registration
+- Snapshot sealing
+
+**Key constraint:** Adapters MUST produce snapshots that are indistinguishable from manually-constructed snapshots. The snapshot format is canonical.
+
+---
+
+#### 2.2.2 `ledgr_snapshot_from_df()`
+
+**Purpose:** Create snapshot from in-memory data.frame or tibble.
+
+**Signature:**
+```r
+ledgr_snapshot_from_df <- function(bars_df,
+                                    instruments_df = NULL,
+                                    db_path = NULL,
+                                    snapshot_id = NULL)
+```
+
+**Parameters:**
+
+- `bars_df` - data.frame with columns:
+  - `ts_utc` (character, ISO 8601 format or convertible)
+  - `instrument_id` (character)
+  - `open`, `high`, `low`, `close` (numeric)
+  - `volume` (numeric, optional)
+
+- `instruments_df` - Optional data.frame with columns:
+  - `instrument_id` (character)
+  - `metadata` (list-column, optional)
+  - If NULL, auto-generate from unique `bars_df$instrument_id`
+
+- `db_path` - Path to database file
+  - If NULL, create tempfile in `tempdir()`
+  - If specified, database persists at that path
+
+- `snapshot_id` - Snapshot identifier
+  - If NULL, use v0.1.1 canonical generation (timestamp-based)
+  - If specified, must be unique within database
+
+**Returns:** S3 object of class `ledgr_snapshot`
+
+**Behavior:**
+
+1. Validate `bars_df` schema (required columns, types)
+2. Normalize timestamps to ISO 8601 UTC
+3. Create or open database at `db_path`
+4. Delegate to v0.1.1 `ledgr_snapshot_create()` for canonical ID generation
+5. Import bars via `ledgr_snapshot_import_bars()`
+6. Register instruments (auto-generate or use `instruments_df`)
+7. Seal snapshot (compute hash, mark immutable)
+8. Return `ledgr_snapshot` object (stores path + ID, not open connection)
+
+**Example:**
+```r
+bars <- tibble::tibble(
+  ts_utc = c("2020-01-01", "2020-01-02"),
+  instrument_id = c("AAPL", "AAPL"),
+  open = c(100, 101),
+  high = c(102, 103),
+  low = c(99, 100),
+  close = c(101, 102),
+  volume = c(1000000, 1100000)
+)
+
+snap <- ledgr_snapshot_from_df(bars)
+#> ledgr_snapshot: 2 bars, 1 instrument
+#> Database: /tmp/RtmpXXXX/ledgr_20251220_103045.duckdb
+#> Snapshot ID: snapshot_20251220_103045
+```
+
+**Validation:**
+- All required columns present
+- `ts_utc` parseable to datetime
+- Numeric columns finite (no NA/NaN/Inf unless explicitly supported)
+- No duplicate (ts_utc, instrument_id) pairs
+- Bars ordered chronologically per instrument
+
+**Error handling:**
+```r
+snap <- ledgr_snapshot_from_df(bad_data)
+#> Error: bars_df missing required column: 'close'
+#> Required columns: ts_utc, instrument_id, open, high, low, close
+```
+
+---
+
+#### 2.2.3 `ledgr_snapshot_from_yahoo()`
+
+**Purpose:** Fetch data from Yahoo Finance via quantmod and create snapshot.
+
+**Signature:**
+```r
+ledgr_snapshot_from_yahoo <- function(symbols,
+                                       from,
+                                       to,
+                                       db_path = NULL,
+                                       snapshot_id = NULL,
+                                       ...)
+```
+
+**Parameters:**
+
+- `symbols` - Character vector of ticker symbols
+- `from` - Start date (character, Date, or POSIXct)
+- `to` - End date (character, Date, or POSIXct)
+- `db_path` - Database path (NULL = tempfile)
+- `snapshot_id` - Snapshot ID (NULL = canonical generation)
+- `...` - Additional arguments passed to `quantmod::getSymbols()`
+
+**Returns:** S3 object of class `ledgr_snapshot`
+
+**Behavior:**
+
+1. Check for quantmod package (fail gracefully if missing)
+2. Fetch each symbol via `quantmod::getSymbols()`
+3. Convert xts → data.frame
+4. Normalize timestamps to ISO 8601 UTC
+5. Combine into single bars_df
+6. Delegate to `ledgr_snapshot_from_df()`
+
+**Example:**
+```r
+snap <- ledgr_snapshot_from_yahoo(
+  symbols = c("AAPL", "MSFT"),
+  from = "2020-01-01",
+  to = "2020-12-31"
+)
+#> Fetching AAPL...
+#> Fetching MSFT...
+#> ledgr_snapshot: 504 bars, 2 instruments
+```
+
+**Graceful degradation:**
+```r
+snap <- ledgr_snapshot_from_yahoo(...)
+#> Error: quantmod package required
+#> Install with: install.packages("quantmod")
+```
+
+**Data provenance note:**
+
+Per Invariant 1, determinism is defined over the retrieved data artifact, not the remote service. Users should export snapshots to ensure reproducibility:
+
+```r
+# Fetch once
+snap <- ledgr_snapshot_from_yahoo(symbols, from, to)
+
+# Export for reproducibility
+ledgr_snapshot_export_csv(snap, "yahoo_data_2020.csv")
+
+# Later: reimport from CSV (deterministic)
+snap <- ledgr_snapshot_from_csv("yahoo_data_2020.csv")
+```
+
+**Validation:**
+
+Same as `ledgr_snapshot_from_df()` plus:
+- Symbol must return data from Yahoo Finance
+- Date range must be valid
+- At least one bar per symbol
+
+---
+
+#### 2.2.4 `ledgr_snapshot_from_csv()`
+
+**Purpose:** Import snapshot from CSV file.
+
+**Signature:**
+```r
+ledgr_snapshot_from_csv <- function(csv_path,
+                                     db_path = NULL,
+                                     snapshot_id = NULL,
+                                     ...)
+```
+
+**Parameters:**
+
+- `csv_path` - Path to CSV file
+- `db_path` - Database path (NULL = tempfile)
+- `snapshot_id` - Snapshot ID (NULL = canonical generation)
+- `...` - Additional arguments to `read.csv()`
+
+**Returns:** S3 object of class `ledgr_snapshot`
+
+**Behavior:**
+
+1. Read CSV into data.frame
+2. Delegate to `ledgr_snapshot_from_df()`
+
+**Expected CSV format:**
+```
+ts_utc,instrument_id,open,high,low,close,volume
+2020-01-01T00:00:00Z,AAPL,100,102,99,101,1000000
+2020-01-02T00:00:00Z,AAPL,101,103,100,102,1100000
+```
+
+**Example:**
+```r
+snap <- ledgr_snapshot_from_csv("market_data.csv")
+```
+
+---
+
+#### 2.2.5 `ledgr_snapshot` S3 Class
+
+**Structure (lazy connection pattern):**
+```r
+structure(
+  list(
+    db_path = "/path/to/db.duckdb",
+    snapshot_id = "snapshot_20251220_103045",
+    metadata = list(
+      n_bars = 504L,
+      n_instruments = 2L,
+      start_date = "2020-01-01T00:00:00Z",
+      end_date = "2020-12-31T00:00:00Z",
+      created_at = "2025-12-20T10:30:45Z"
+    ),
+    # Private: connection opened on-demand
+    .con = NULL
+  ),
+  class = "ledgr_snapshot"
 )
 ```
 
-**Why This Matters:** Financial data integrity is critical. The SHA256 hash proves the snapshot hasn't been modified since sealing.
+**Connection management:**
 
----
-
-### Step 3: "The Lookahead Trap" (Correctness Mastery) ⭐ KILLER FEATURE
-
-**Goal:** Prove that the feature engine detects lookahead bias.
-
-**Scenario:**
-1. Create a "cheating" feature that references `window[n + 1]` (future data)
-2. Register feature and run backtest
-3. System aborts with `ledgr_feature_lookahead_detected`
-
-**Implementation:**
+Connections are opened lazily via internal helper:
 ```r
-# Malicious feature: uses tomorrow's return
-cheating_feature <- list(
-  id = "future_return",
-  requires_bars = 2L,
-  stable_after = 2L,
-  fn = function(window) {
-    # WRONG: window$close[2] is "today", window$close[1] is "yesterday"
-    # But we're computing this AT bar 1, so bar 2 is the FUTURE
-    (window$close[2] - window$close[1]) / window$close[1]
-  }
-)
-
-cfg <- list(
-  features = list(enabled = TRUE, defs = list(cheating_feature)),
-  ...
-)
-
-# Expected: Error during feature validation
-tryCatch(
-  ledgr_backtest_run(cfg),
-  ledgr_feature_lookahead_detected = function(e) {
-    cat("✓ Lookahead detected:", conditionMessage(e), "\n")
-  }
-)
-```
-
-**Why This Matters:** Lookahead bias is the #1 cause of backtest overfitting. ledgr's feature contract enforces causal ordering.
-
----
-
-### Step 4: "Manual Pulse" (Conceptual Mastery)
-
-**Goal:** Understand the strategy interface by manually constructing a `PulseContext`.
-
-**Scenario:**
-1. Create a minimal pulse context with 2 instruments
-2. Manually call `strategy$on_pulse(ctx)`
-3. Inspect the returned targets
-
-**Implementation:**
-```r
-# Mock data
-bars <- data.frame(
-  instrument_id = c("AAA", "BBB"),
-  ts_utc = rep("2020-01-02T00:00:00Z", 2),
-  open = c(100, 200),
-  high = c(101, 201),
-  low = c(99, 199),
-  close = c(100.5, 199.8),
-  volume = c(1000, 2000)
-)
-
-ctx <- ledgr:::ledgr_pulse_context(
-  run_id = "manual-demo",
-  ts_utc = "2020-01-02T00:00:00Z",
-  universe = c("AAA", "BBB"),
-  bars = bars,
-  features = data.frame(),
-  positions = setNames(c(0, 0), c("AAA", "BBB")),
-  cash = 100000,
-  equity = 100000,
-  safety_state = "GREEN"
-)
-
-# Call strategy
-strat <- ledgr:::EchoStrategy$new(params = list(targets = c(AAA = 10, BBB = 5)))
-result <- strat$on_pulse(ctx)
-
-print(result$targets)  # Named vector: AAA=10, BBB=5
-```
-
-**Why This Matters:** Understanding `PulseContext` is essential for strategy development.
-
----
-
-### Step 5: "Real-World Provenance" (Data Mastery)
-
-**Goal:** Transform messy Yahoo Finance data into a sealed, auditable snapshot.
-
-**Scenario:**
-1. Fetch gold futures data via `quantmod::getSymbols()`
-2. Export to CSV with proper timestamp formatting
-3. Import to ledgr and seal
-4. Verify hash and metadata
-
-**Implementation:**
-```r
-library(quantmod)
-
-# 1. Fetch real data
-getSymbols("GC=F", src = "yahoo", from = "2020-01-01", to = "2020-12-31")
-gold <- as.data.frame(`GC=F`)
-gold$ts_utc <- format(index(`GC=F`), "%Y-%m-%dT%H:%M:%SZ")
-gold$instrument_id <- "GOLD_FUTURE"
-
-# 2. Export to CSV
-write.csv(gold[, c("instrument_id", "ts_utc", "GC=F.Open", "GC=F.High", "GC=F.Low", "GC=F.Close", "GC=F.Volume")],
-          "gold_2020.csv", row.names = FALSE)
-
-# 3. Import and seal
-con <- ledgr_db_init("gold_backtest.duckdb")
-snap_id <- ledgr_snapshot_create(con, meta = list(source = "Yahoo Finance", symbol = "GC=F"))
-ledgr_snapshot_import_bars_csv(con, snap_id, "gold_2020.csv", auto_generate_instruments = TRUE)
-hash <- ledgr_snapshot_seal(con, snap_id)
-
-cat("Snapshot sealed with hash:", hash, "\n")
-```
-
-**Why This Matters:** Real financial data is messy. This workflow shows how to "harden" it into a reproducible artifact.
-
----
-
-### Step 6: "The Accounting Audit" (Integrity Mastery)
-
-**Goal:** Manually verify that the ledger correctly implements FIFO cost-basis accounting.
-
-**Scenario:**
-1. Run a simple backtest with 3 trades (BUY, BUY, SELL)
-2. Query the ledger events
-3. Manually reconstruct cash balance using SQL
-4. Verify it matches `equity_curve.cash`
-
-**Implementation:**
-```r
-# 1. Run backtest (omitted for brevity - see test-acceptance-v0.1.0.R AT5/AT6)
-
-# 2. Query ledger
-ledger <- dbGetQuery(con, "
-  SELECT ts_utc, instrument_id, side, qty, price, fee, meta_json
-  FROM ledger_events
-  WHERE run_id = ?
-  ORDER BY event_seq
-", params = list(run_id))
-
-# 3. Manual reconciliation
-initial_cash <- 100000
-cash_balance <- initial_cash
-
-for (i in 1:nrow(ledger)) {
-  meta <- jsonlite::fromJSON(ledger$meta_json[i])
-  cash_balance <- cash_balance + meta$cash_delta
-  cat(sprintf("Event %d: side=%s, cash_delta=%.2f, balance=%.2f\n",
-              i, ledger$side[i], meta$cash_delta, cash_balance))
+# Internal function (not exported)
+ledgr_db_connect <- function(db_path) {
+  DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
 }
 
-# 4. Verify against equity_curve
-final_cash <- dbGetQuery(con, "
-  SELECT cash FROM equity_curve
-  WHERE run_id = ?
-  ORDER BY ts_utc DESC
-  LIMIT 1
-", params = list(run_id))$cash
-
-stopifnot(abs(cash_balance - final_cash) < 1e-6)
-cat("✓ Manual reconciliation matches equity_curve\n")
+# Used internally when queries needed
+get_connection <- function(snapshot) {
+  if (is.null(snapshot$.con) || !DBI::dbIsValid(snapshot$.con)) {
+    snapshot$.con <- ledgr_db_connect(snapshot$db_path)
+  }
+  snapshot$.con
+}
 ```
 
-**Why This Matters:** Proves that `equity_curve` is derived correctly from the append-only ledger.
-
-**Critical Detail:** Penny-perfect reconciliation is only possible because of the **Snapshot Rounding Policy (R8)** from v0.1.1, which rounds all OHLCV values to 8 decimals at import. Without this, floating-point drift would make exact matching impossible across platforms.
-
----
-
-## 4. API Documentation (Role-Based Vignettes)
-
-### 4.1 The Data Librarian (Snapshot API)
-
-**Persona:** A data engineer responsible for maintaining historical market data with provenance guarantees.
-
-**Workflow:**
+**Explicit close method:**
 ```r
-# 1. Create snapshot
-snap_id <- ledgr_snapshot_create(
-  con,
-  snapshot_id = "snapshot_20250101_000000_abcd",  # Optional explicit ID
-  meta = list(source = "Bloomberg", version = "1.2", ingestion_date = "2025-01-01")
-)
+#' Close snapshot database connection
+#' @export
+ledgr_snapshot_close <- function(snapshot) {
+  if (!is.null(snapshot$.con) && DBI::dbIsValid(snapshot$.con)) {
+    DBI::dbDisconnect(snapshot$.con)
+    snapshot$.con <- NULL
+  }
+  invisible(snapshot)
+}
 
-# 2. Import instruments (optional - can auto-generate from bars)
-ledgr_snapshot_import_instruments_csv(con, snap_id, "instruments.csv")
-
-# 3. Import bars
-ledgr_snapshot_import_bars_csv(
-  con,
-  snapshot_id = snap_id,
-  bars_csv_path = "bars.csv",
-  instruments_csv_path = NULL,          # Already imported
-  auto_generate_instruments = FALSE,
-  validate = "fail_fast"                # Stop on first error
-)
-
-# 4. Seal (makes immutable + computes hash)
-hash <- ledgr_snapshot_seal(con, snap_id)
-cat("Snapshot sealed. SHA256:", hash, "\n")
-
-# 5. Discovery
-ledgr_snapshot_list(con, status = "SEALED")  # List all sealed snapshots
-ledgr_snapshot_info(con, snap_id)            # Detailed metadata
+#' @export
+close.ledgr_snapshot <- function(con, ...) {
+  ledgr_snapshot_close(con)
+}
 ```
 
-**Key Contracts:**
-- **I11 (Referential Integrity):** Bars cannot reference instruments not in `snapshot_instruments`
-- **I10 (OHLC Validation):** `low ≤ open, close ≤ high` enforced at import
-- **I13 (Immutability):** After seal, any write attempt triggers `LEDGR_SNAPSHOT_NOT_MUTABLE`
+**Methods:**
 
----
-
-### 4.2 The Quant Researcher (Strategy API)
-
-**Persona:** A quantitative researcher developing systematic trading strategies.
-
-**Minimum Strategy Implementation:**
 ```r
-MyStrategy <- R6::R6Class("MyStrategy",
-  inherit = ledgr:::LedgrStrategy,
+#' @export
+print.ledgr_snapshot <- function(x, ...) {
+  cat("ledgr_snapshot\n")
+  cat("==============\n")
+  cat("Bars:        ", x$metadata$n_bars, "\n")
+  cat("Instruments: ", x$metadata$n_instruments, "\n")
+  cat("Date Range:  ", x$metadata$start_date, "to", x$metadata$end_date, "\n")
+  cat("Database:    ", x$db_path, "\n")
+  cat("Snapshot ID: ", substr(x$snapshot_id, 1, 32), "...\n")
   
-  public = list(
-    initialize = function(params = list()) {
-      # Called once at backtest start
-      # Use params to configure the strategy
-      private$params <- params
-    },
+  # Connection status
+  if (!is.null(x$.con) && DBI::dbIsValid(x$.con)) {
+    cat("Connection:   Open\n")
+  } else {
+    cat("Connection:   Closed (opens on-demand)\n")
+  }
+  
+  invisible(x)
+}
+
+#' @export
+summary.ledgr_snapshot <- function(object, ...) {
+  # Open connection if needed
+  con <- get_connection(object)
+  
+  # Show per-instrument statistics
+  stats <- DBI::dbGetQuery(con, "
+    SELECT 
+      instrument_id,
+      COUNT(*) as n_bars,
+      MIN(ts_utc) as start_date,
+      MAX(ts_utc) as end_date
+    FROM snapshot_bars
+    WHERE snapshot_id = ?
+    GROUP BY instrument_id
+  ", params = list(object$snapshot_id))
+  
+  print(object)
+  cat("\nPer-Instrument Summary:\n")
+  print(stats)
+  invisible(object)
+}
+```
+
+**Lifecycle notes:**
+
+- Lazy connections avoid Windows file lock issues
+- Users can explicitly close via `ledgr_snapshot_close(snap)`
+- Connections auto-close on R session exit (finalizers)
+- Passing snapshots between functions is safe (no stale connections)
+
+---
+
+### 2.3 Main Backtest API
+
+#### 2.3.1 `ledgr_backtest()`
+
+**Purpose:** High-level backtest execution wrapper.
+
+**Critical constraint:** This function MUST be a thin wrapper per Invariant 3. It constructs a canonical config and calls `ledgr_run()`. No execution logic.
+
+**Signature:**
+```r
+ledgr_backtest <- function(snapshot,
+                            strategy,
+                            universe,
+                            start = NULL,
+                            end = NULL,
+                            initial_cash = 100000,
+                            features = list(),
+                            fill_model = NULL,
+                            db_path = NULL,
+                            run_id = NULL)
+```
+
+**Parameters:**
+
+- `snapshot` - `ledgr_snapshot` object (ONLY accepted type)
+- `strategy` - Strategy function or R6 object
+  - Function: `function(ctx) -> named numeric vector`
+  - R6: Object with `$on_pulse(ctx)` method
+- `universe` - Character vector of instrument IDs
+- `start` - Start timestamp (NULL = snapshot start)
+- `end` - End timestamp (NULL = snapshot end)
+- `initial_cash` - Starting capital (numeric)
+- `features` - List of `ledgr_indicator` objects
+- `fill_model` - Fill model config (NULL = instant fill)
+- `db_path` - Database for run ledger (NULL = snapshot DB)
+- `run_id` - Run identifier (NULL = auto-generate)
+
+**Returns:** S3 object of class `ledgr_backtest`
+
+**Implementation contract:**
+
+```r
+ledgr_backtest <- function(...) {
+  # 1. VALIDATE inputs (fail fast)
+  # 2. BUILD canonical config (exactly as ledgr_config() would)
+  # 3. CALL ledgr_run(config)
+  # 4. WRAP result in ledgr_backtest S3 class
+  # 5. RETURN
+  
+  # NO execution logic
+  # NO database writes beyond what ledgr_run() does
+  # NO special cases
+}
+```
+
+**Pseudo-implementation:**
+```r
+ledgr_backtest <- function(snapshot, strategy, universe, start, end, 
+                            initial_cash = 100000, features = list(), 
+                            fill_model = NULL, db_path = NULL, run_id = NULL) {
+  
+  # Validate
+  stopifnot(inherits(snapshot, "ledgr_snapshot"))
+  stopifnot(is.character(universe), length(universe) > 0)
+  
+  # Build canonical config
+  config <- ledgr_config(
+    snapshot = snapshot,
+    universe = universe,
+    strategy = strategy,
+    backtest = ledgr_backtest_config(
+      start = start %||% snapshot$metadata$start_date,
+      end = end %||% snapshot$metadata$end_date,
+      initial_cash = initial_cash
+    ),
+    features = features,
+    fill_model = fill_model %||% ledgr_fill_model_instant(),
+    db_path = db_path %||% snapshot$db_path,
+    run_id = run_id
+  )
+  
+  # Call canonical engine (ONLY execution path)
+  result <- ledgr_run(config)
+  
+  # Wrap in S3 class for tidy methods
+  structure(
+    result,
+    class = c("ledgr_backtest", class(result))
+  )
+}
+```
+
+**Example usage:**
+```r
+# Simple backtest
+bt <- ledgr_backtest(
+  snapshot = snap,
+  strategy = my_strategy,
+  universe = c("AAPL", "MSFT"),
+  start = "2020-01-01",
+  end = "2020-12-31"
+)
+
+# With features
+bt <- ledgr_backtest(
+  snapshot = snap,
+  strategy = my_strategy,
+  universe = c("AAPL", "MSFT"),
+  start = "2020-01-01",
+  end = "2020-12-31",
+  features = list(
+    ledgr_ind_sma(50),
+    ledgr_ind_rsi(14)
+  )
+)
+```
+
+**Equivalence guarantee:**
+
+Per Invariant 3, these two approaches MUST produce identical results:
+
+```r
+# Approach 1: Direct config
+config <- ledgr_config(...)
+result1 <- ledgr_run(config)
+
+# Approach 2: Wrapper
+result2 <- ledgr_backtest(...)
+
+# Must be equivalent (modulo run_id)
+stopifnot(identical_modulo_run_id(result1, result2))
+```
+
+---
+
+#### 2.3.2 Functional Strategy Interface
+
+**Purpose:** Allow users to write strategies as simple functions without R6 boilerplate.
+
+**Strategy function contract:**
+
+A strategy function receives a context object and returns target positions:
+
+```r
+my_strategy <- function(ctx) {
+  # ctx contains:
+  #   $bars         - Latest OHLCV data (data.frame, ONE ROW PER INSTRUMENT)
+  #   $features     - Computed feature values (data.frame)
+  #   $positions    - Current positions (named numeric vector)
+  #   $cash         - Available cash (numeric scalar)
+  #   $equity       - Total equity (numeric scalar)
+  #   $ts_utc       - Current timestamp (character, ISO 8601)
+  
+  # Returns: Named numeric vector of TARGET positions
+  # Units: SHARES/CONTRACTS (integer-like numeric)
+  # Fractional shares: FORBIDDEN (round/floor in strategy logic)
+  
+  c(AAPL = 100, MSFT = 50)
+}
+```
+
+**Context object schemas:**
+
+**`ctx$bars` structure:**
+- One row per instrument in universe
+- Columns: `instrument_id`, `ts_utc`, `open`, `high`, `low`, `close`, `volume`
+- Represents CURRENT bar (not historical window)
+
+**`ctx$features` structure:**
+- One row per (instrument, feature) pair
+- Columns: `instrument_id`, `feature_name`, `feature_value`
+- All requested features for current timestamp
+
+**Target positions specification:**
+
+- **Units:** Shares or contracts (numeric)
+- **Fractional shares:** Not supported - use `floor()` or `round()` in strategy
+- **Negative values:** Short positions (if supported by configuration)
+- **Zero:** Flat/exit position
+- **Missing instruments:** Assumed zero (exit)
+
+**Implementation note:**
+
+Functional strategies are wrapped internally into R6 objects that ledgr's execution engine expects. This wrapper is transparent to users.
+
+```r
+# Internal wrapper (not user-facing)
+ledgr_strategy_fn <- function(fn) {
+  R6::R6Class("FunctionalStrategy",
+    public = list(
+      on_pulse = function(ctx) {
+        fn(ctx)
+      }
+    )
+  )$new()
+}
+```
+
+**Example:**
+```r
+# Moving average crossover strategy
+sma_crossover <- function(ctx) {
+  # Extract close price for AAPL
+  aapl_close <- ctx$bars$close[ctx$bars$instrument_id == "AAPL"]
+  
+  # Extract features
+  sma_50 <- ctx$features$feature_value[
+    ctx$features$instrument_id == "AAPL" & 
+    ctx$features$feature_name == "sma_50"
+  ]
+  sma_200 <- ctx$features$feature_value[
+    ctx$features$instrument_id == "AAPL" & 
+    ctx$features$feature_name == "sma_200"
+  ]
+  
+  # Generate signal
+  if (sma_50 > sma_200) {
+    # Calculate position size (example: use 50% of equity)
+    target_value <- 0.5 * ctx$equity
+    target_shares <- floor(target_value / aapl_close)
+    c(AAPL = target_shares)
+  } else {
+    c(AAPL = 0)  # Flat
+  }
+}
+
+bt <- ledgr_backtest(
+  snapshot = snap,
+  strategy = sma_crossover,  # Just pass the function
+  universe = "AAPL",
+  features = list(ledgr_ind_sma(50), ledgr_ind_sma(200))
+)
+```
+
+---
+
+### 2.4 `ledgr_backtest` S3 Class
+
+#### 2.4.1 Object Structure
+
+```r
+structure(
+  list(
+    run_id = "run_abc123",
+    db_path = "/path/to/db.duckdb",
+    config = <canonical config>,
     
-    on_pulse = function(ctx) {
-      # Called at each decision pulse
-      # ctx is a ledgr_pulse_context object
-      
-      # Access current state
-      bars <- ctx$bars          # data.frame with OHLCV for all instruments
-      features <- ctx$features  # data.frame with computed features
-      positions <- ctx$positions  # named numeric vector
-      cash <- ctx$cash
-      
-      # Access previous state (if persisted)
-      state_prev <- ctx$state_prev  # list or NULL
-      
-      # Emit decision
-      targets <- setNames(
-        c(10, 5),  # Target quantities (non-negative integers)
-        c("AAA", "BBB")
-      )
-      
-      # Persist state for next pulse
-      state_update <- list(
-        last_signal = "BUY",
-        confidence = 0.75
-      )
-      
-      list(targets = targets, state_update = state_update)
-    }
+    # Private: connection opened on-demand
+    .con = NULL
   ),
+  class = c("ledgr_backtest", "ledgr_run")
+)
+```
+
+**No caching:** Results computed on-demand each method call (metrics are cheap to compute).
+
+**Connection management:** Same lazy pattern as `ledgr_snapshot`.
+
+---
+
+#### 2.4.2 `print.ledgr_backtest()`
+
+**Purpose:** Concise summary suitable for console.
+
+```r
+#' @export
+print.ledgr_backtest <- function(x, ...) {
+  cat("ledgr Backtest Results\n")
+  cat("======================\n\n")
   
-  private = list(
-    params = NULL
+  cat("Run ID:        ", x$run_id, "\n")
+  cat("Universe:      ", paste(x$config$universe, collapse = ", "), "\n")
+  cat("Date Range:    ", x$config$backtest$start, "to", x$config$backtest$end, "\n")
+  cat("Initial Cash:  ", sprintf("$%.2f", x$config$backtest$initial_cash), "\n")
+  
+  # Compute final equity from equity_curve table
+  con <- get_connection(x)
+  final_equity <- DBI::dbGetQuery(con, "
+    SELECT equity 
+    FROM equity_curve 
+    WHERE run_id = ? 
+    ORDER BY pulse_seq DESC 
+    LIMIT 1
+  ", params = list(x$run_id))[[1]]
+  
+  cat("Final Equity:  ", sprintf("$%.2f", final_equity), "\n")
+  
+  pnl <- final_equity - x$config$backtest$initial_cash
+  pnl_pct <- (pnl / x$config$backtest$initial_cash) * 100
+  
+  cat("P&L:           ", sprintf("$%.2f (%.2f%%)", pnl, pnl_pct), "\n\n")
+  
+  cat("Use summary(bt) for detailed metrics\n")
+  cat("Use plot(bt) for equity curve visualization\n")
+  
+  invisible(x)
+}
+```
+
+**Example output:**
+```
+ledgr Backtest Results
+======================
+
+Run ID:         run_abc123
+Universe:       AAPL, MSFT
+Date Range:     2020-01-01T00:00:00Z to 2020-12-31T00:00:00Z
+Initial Cash:   $100000.00
+Final Equity:   $125430.50
+P&L:            $25430.50 (25.43%)
+
+Use summary(bt) for detailed metrics
+Use plot(bt) for equity curve visualization
+```
+
+---
+
+#### 2.4.3 `summary.ledgr_backtest()`
+
+**Purpose:** Detailed performance metrics.
+
+**Signature:**
+```r
+#' @export
+summary.ledgr_backtest <- function(object, metrics = "standard", ...)
+```
+
+**Parameters:**
+- `object` - `ledgr_backtest` object
+- `metrics` - Which metrics to compute:
+  - `"standard"` - Basic built-in metrics (ONLY option in v0.1.2)
+  - Other values error with helpful message
+
+**Behavior:**
+
+1. Compute metrics (no caching - cheap to recompute)
+2. Display formatted output
+3. Return invisibly
+
+**Example output:**
+```r
+summary(bt)
+
+ledgr Backtest Summary
+======================
+
+Performance Metrics:
+  Total Return:        25.43%
+  Annualized Return:   23.10%
+  Max Drawdown:        -12.45%
+  
+Risk Metrics:
+  Volatility (annual): 18.50%
+  
+Trade Statistics:
+  Total Trades:        24
+  Win Rate:            62.50%
+  Avg Trade:           $1059.60
+  
+Exposure:
+  Time in Market:      78.30%
+```
+
+**Implementation:**
+```r
+summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
+  
+  # Only "standard" supported in v0.1.2
+  if (!identical(metrics, "standard")) {
+    stop(
+      "Only metrics='standard' supported in v0.1.2\n",
+      "Advanced metrics (PerformanceAnalytics integration) available in v0.1.3"
+    )
+  }
+  
+  # Compute metrics (fresh each time, no caching)
+  computed <- ledgr_compute_metrics(object, metrics = "standard")
+  
+  # Display
+  cat("ledgr Backtest Summary\n")
+  cat("======================\n\n")
+  
+  cat("Performance Metrics:\n")
+  cat(sprintf("  Total Return:        %.2f%%\n", computed$total_return * 100))
+  cat(sprintf("  Annualized Return:   %.2f%%\n", computed$annualized_return * 100))
+  cat(sprintf("  Max Drawdown:        %.2f%%\n", computed$max_drawdown * 100))
+  
+  cat("\nRisk Metrics:\n")
+  cat(sprintf("  Volatility (annual): %.2f%%\n", computed$volatility * 100))
+  
+  cat("\nTrade Statistics:\n")
+  cat(sprintf("  Total Trades:        %d\n", computed$n_trades))
+  
+  if (computed$n_trades > 0) {
+    cat(sprintf("  Win Rate:            %.2f%%\n", computed$win_rate * 100))
+    cat(sprintf("  Avg Trade:           $%.2f\n", computed$avg_trade))
+  } else {
+    cat("  Win Rate:            N/A (no trades)\n")
+    cat("  Avg Trade:           N/A (no trades)\n")
+  }
+  
+  cat("\nExposure:\n")
+  cat(sprintf("  Time in Market:      %.2f%%\n", computed$time_in_market * 100))
+  
+  invisible(object)
+}
+```
+
+---
+
+#### 2.4.4 `as_tibble.ledgr_backtest()`
+
+**Purpose:** Extract data as tidy tibbles.
+
+**Signature:**
+```r
+#' @export
+as_tibble.ledgr_backtest <- function(x, what = "equity", ...)
+```
+
+**Parameters:**
+- `x` - `ledgr_backtest` object
+- `what` - Which data to extract:
+  - `"equity"` - Equity curve (default)
+  - `"fills"` - Fill history
+  - `"ledger"` - Raw ledger events
+
+**No mutation:** Computes and returns fresh data each call.
+
+**Examples:**
+```r
+# Equity curve
+equity <- as_tibble(bt, "equity")
+# tibble: ts_utc, equity, cash, positions_value, drawdown
+
+# Fills
+fills <- as_tibble(bt, "fills")
+# tibble: ts_utc, instrument_id, side, qty, price, fee, realized_pnl
+
+# Ledger events
+ledger <- as_tibble(bt, "ledger")
+# tibble: event_seq, ts_utc, event_type, instrument_id, ...
+```
+
+**Implementation:**
+```r
+as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
+  
+  what <- match.arg(what, c("equity", "fills", "ledger"))
+  
+  con <- get_connection(x)
+  
+  switch(what,
+    equity = {
+      # Read from equity_curve table (already computed by engine)
+      eq <- tibble::as_tibble(DBI::dbGetQuery(con, "
+        SELECT ts_utc, equity, cash, positions_value
+        FROM equity_curve
+        WHERE run_id = ?
+        ORDER BY pulse_seq
+      ", params = list(x$run_id)))
+      
+      # Add drawdown
+      eq$running_max <- cummax(eq$equity)
+      eq$drawdown <- (eq$equity / eq$running_max - 1) * 100
+      
+      eq
+    },
+    fills = {
+      ledgr_extract_fills(x)
+    },
+    ledger = {
+      tibble::as_tibble(DBI::dbGetQuery(con, "
+        SELECT * FROM ledger_events
+        WHERE run_id = ?
+        ORDER BY event_seq
+      ", params = list(x$run_id)))
+    }
+  )
+}
+```
+
+---
+
+#### 2.4.5 Accessor Methods
+
+**Direct component access:**
+```r
+# Users can access via methods (no cached fields in object)
+equity <- as_tibble(bt, "equity")
+fills <- as_tibble(bt, "fills")
+metrics <- ledgr_compute_metrics(bt)
+```
+
+**Helper functions:**
+```r
+# Get specific metrics
+ledgr_get_metric <- function(bt, metric_name) {
+  metrics <- ledgr_compute_metrics(bt)
+  metrics[[metric_name]]
+}
+
+# Example
+sharpe <- ledgr_get_metric(bt, "sharpe_ratio")  # Not in v0.1.2, but pattern shown
+```
+
+---
+
+### 2.5 Error Handling & Validation
+
+#### 2.5.1 Input Validation
+
+All high-level APIs MUST validate inputs and fail fast with helpful messages:
+
+```r
+# Bad snapshot
+bt <- ledgr_backtest(snapshot = "not_a_snapshot", ...)
+#> Error: 'snapshot' must be a ledgr_snapshot object
+#> Create with: ledgr_snapshot_from_yahoo() or ledgr_snapshot_from_df()
+
+# Empty universe
+bt <- ledgr_backtest(snapshot = snap, universe = character(0), ...)
+#> Error: 'universe' must contain at least one instrument
+
+# Invalid date range
+bt <- ledgr_backtest(snap, strategy, universe, start = "2025-01-01", end = "2020-01-01")
+#> Error: 'start' must be before 'end'
+
+# Instrument not in snapshot
+bt <- ledgr_backtest(snap, strategy, universe = c("AAPL", "INVALID"), ...)
+#> Error: Instruments not found in snapshot: INVALID
+#> Available instruments: AAPL, MSFT, GOOGL
+```
+
+#### 2.5.2 Strategy Errors
+
+Strategy execution errors MUST be caught and reported with context:
+
+```r
+bad_strategy <- function(ctx) {
+  stop("Oops!")
+}
+
+bt <- ledgr_backtest(snap, bad_strategy, ...)
+#> Error in strategy execution at 2020-03-15T00:00:00Z:
+#>   Oops!
+#> 
+#> Context:
+#>   Run ID: run_abc123
+#>   Pulse: 45 of 252
+#> 
+#> Debug with: ledgr_pulse_snapshot(snap, "2020-03-15T00:00:00Z")
+```
+
+---
+
+## Section 3: Indicator Infrastructure
+
+### 3.1 Overview
+
+Section 3 defines the indicator system: construction, registration, interactive development, and adapters.
+
+**Design principles:**
+1. **Pure functions** - Indicators are stateless computations
+2. **Registry pattern** - Discoverable, reusable
+3. **Adapter-based** - Easy integration with TTR, quantmod, custom code
+4. **Interactive development** - Test indicators on frozen time windows
+
+**Compliance:** All indicator tools MUST satisfy Invariant 2 (read-only interactive tools).
+
+---
+
+### 3.2 Indicator Contract
+
+#### 3.2.1 `ledgr_indicator()`
+
+**Purpose:** Construct an indicator object.
+
+**Signature:**
+```r
+ledgr_indicator <- function(id, 
+                             fn, 
+                             requires_bars,
+                             params = list())
+```
+
+**Parameters:**
+
+- `id` - Unique identifier (character)
+- `fn` - Indicator function: `function(window) -> numeric | list`
+  - `window` is a data.frame with columns: `ts_utc`, `open`, `high`, `low`, `close`, `volume`
+  - Returns single numeric value OR named list for multi-value indicators
+- `requires_bars` - Minimum lookback period (integer)
+- `params` - Named list of parameters (for documentation/serialization)
+
+**Returns:** Object of class `ledgr_indicator`
+
+**Contract for `fn` (purity requirements):**
+
+```r
+# Purity constraints:
+# - NO side effects (no database writes, no file I/O, no global state mutation)
+# - NO access to external data AT EXECUTION TIME
+# - Deterministic (same input → same output)
+# - May close over preloaded data IF immutable and declared in params
+
+my_indicator_fn <- function(window) {
+  # window is a data.frame
+  # Rows are chronologically ordered (oldest first)
+  # Last row is the current bar
+  
+  close_prices <- window$close
+  
+  # Compute indicator value
+  result <- mean(close_prices)
+  
+  # Return single value
+  return(result)
+}
+```
+
+**Preloaded data closures (allowed):**
+
+Indicators MAY close over immutable preloaded data (e.g., CSV loaded at construction time), provided:
+1. Data is immutable (never modified after loading)
+2. Data source is declared in `params` for provenance
+
+Example:
+```r
+# CSV loaded at construction time
+vendor_data <- read.csv("vendor_signals.csv")
+
+vendor_fn <- function(window) {
+  current_ts <- window$ts_utc[nrow(window)]
+  vendor_data$value[vendor_data$ts_utc == current_ts]
+}
+
+vendor_indicator <- ledgr_indicator(
+  id = "vendor_signal",
+  fn = vendor_fn,
+  requires_bars = 1L,
+  params = list(
+    data_source = "vendor_signals.csv",
+    loaded_at = Sys.time()
   )
 )
 ```
 
-**Critical Constraints:**
-1. **No Side Effects:** Strategies must be pure functions of `ctx`
-2. **No Lookahead:** Cannot access future data (enforced by feature engine)
-3. **Non-Negative Targets:** All target quantities ≥ 0
-4. **Universe Coverage:** Must return targets for all instruments in `ctx$universe`
-
----
-
-### 4.3 The Auditor (Reconstruction API)
-
-**Persona:** A compliance officer verifying backtest correctness.
-
-**Workflow:**
+**Multi-value indicators:**
 ```r
-# 1. Reconstruct portfolio state from ledger
-state <- ledgr_state_reconstruct(run_id, con)
-
-# state$positions: Named vector of final positions
-# state$cash: Final cash balance
-# state$pnl: List with realized_pnl, unrealized_pnl
-# state$equity_curve: Full time-series (same as equity_curve table)
-
-# 2. Verify snapshot provenance
-snapshot_info <- ledgr_snapshot_info(con, snapshot_id)
-stopifnot(snapshot_info$status == "SEALED")
-cat("Data sourced from:", snapshot_info$meta_json, "\n")
-
-# 3. Verify run configuration
-run_cfg <- dbGetQuery(con, "SELECT config_json FROM runs WHERE run_id = ?", params = list(run_id))
-cfg <- jsonlite::fromJSON(run_cfg$config_json)
-print(cfg$strategy)  # Confirm strategy used
-
-# 4. Export ledger for external audit
-ledger <- dbGetQuery(con, "
-  SELECT event_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json
-  FROM ledger_events
-  WHERE run_id = ?
-  ORDER BY event_seq
-", params = list(run_id))
-
-write.csv(ledger, "audit_ledger.csv", row.names = FALSE)
+bollinger_bands <- function(window) {
+  sma <- mean(window$close)
+  sd <- sd(window$close)
+  
+  # Return named list
+  list(
+    bb_mid = sma,
+    bb_upper = sma + 2 * sd,
+    bb_lower = sma - 2 * sd
+  )
+}
 ```
 
-**Audit Guarantees:**
-- **Append-Only Ledger:** Events cannot be modified after writing
-- **Gapless event_seq:** Proves no events were deleted
-- **Hash Verification:** Snapshot hash proves data integrity
-
----
-
-### 4.4 The Package Developer (Extension API)
-
-**Persona:** A contributor extending ledgr with custom features, strategies, or infrastructure improvements.
-
-**Critical Prerequisites:**
-1. **Understand Hard Invariants (I1-I18):** Review Sections 1 and v0.1.1 spec for architectural constraints
-2. **Run Full Test Suite:** `devtools::check()` must pass before submitting PRs
-3. **Follow Spec-Driven Development:** Write acceptance test BEFORE implementing (see Section 7)
-
-#### 4.4.1 Custom Feature Development
-
-**Feature Contract:**
+**Example:**
 ```r
-my_feature <- list(
-  id = "my_indicator",                    # Unique identifier
-  requires_bars = 10L,                    # Minimum lookback window
-  stable_after = 10L,                     # When feature becomes non-NA
-  fn = function(window_bars_df) {
-    # window_bars_df: Last N bars for ONE instrument
-    # Columns: ts_utc, open, high, low, close, volume
-    # Rows ordered chronologically (oldest first)
+# Simple moving average
+sma_20 <- ledgr_indicator(
+  id = "sma_20",
+  fn = function(window) mean(window$close),
+  requires_bars = 20L,
+  params = list(n = 20)
+)
+
+# RSI
+rsi_14 <- ledgr_indicator(
+  id = "rsi_14",
+  fn = function(window) {
+    changes <- diff(window$close)
+    gains <- pmax(changes, 0)
+    losses <- abs(pmin(changes, 0))
     
-    # Compute feature value (scalar numeric or NA)
-    if (nrow(window_bars_df) < 10) return(NA_real_)
+    avg_gain <- mean(tail(gains, 14))
+    avg_loss <- mean(tail(losses, 14))
     
-    mean(window_bars_df$close)
+    if (avg_loss == 0) return(100)
+    
+    rs <- avg_gain / avg_loss
+    100 - (100 / (1 + rs))
   },
-  params = list()                         # Optional parameters
+  requires_bars = 15L,
+  params = list(n = 14)
 )
 ```
 
-**Testing Custom Features:**
+---
+
+#### 3.2.2 Indicator Execution
+
+**Critical constraint:** Indicators are executed ONLY within the canonical pulse loop by the existing feature engine. They are NOT executed during strategy runtime (except via interactive tools for exploration).
+
+**Execution flow:**
+
+1. Pulse loop reaches timestamp T
+2. Feature engine identifies required indicators
+3. For each indicator:
+   - Fetch historical window (last N bars where `ts_utc <= T`)
+   - Call `indicator$fn(window)`
+   - Store result in `features` table
+4. Pass features to strategy via `ctx$features`
+
+**No lookahead:** The window contains only bars with `ts_utc <= T`. The indicator cannot see future data.
+
+**No state:** Each indicator call is independent. No values are cached between pulses (engine may cache computed features in DB, but that's transparent to indicator).
+
+---
+
+### 3.3 Indicator Registry
+
+#### 3.3.1 Purpose
+
+The registry enables:
+- Discoverability (`ledgr_list_indicators()`)
+- Reusability (define once, use many times)
+- Sharing (community can publish indicator packages)
+
+**Implementation:** Global environment (not user-facing).
+
+**Serialization note:** At backtest execution time, indicators are serialized into run config (ID + params + function fingerprint), not stored as registry pointers. This ensures reproducibility even if registry contents change.
+
+---
+
+#### 3.3.2 `ledgr_register_indicator()`
+
+**Signature:**
 ```r
-# Use the built-in lookahead checker
-bars <- data.frame(
-  ts_utc = seq.POSIXt(as.POSIXct("2020-01-01", tz = "UTC"), by = "day", length.out = 20),
-  close = 100 + rnorm(20)
-)
-
-ledgr:::ledgr_check_no_lookahead(
-  my_feature,
-  bars,
-  horizons = c(1L, 5L)  # Test shifting by 1 and 5 bars
-)
-# If passes: feature is causal
-# If fails: throws ledgr_feature_lookahead_detected
+ledgr_register_indicator <- function(indicator, name = NULL)
 ```
 
-#### 4.4.2 Acceptance Test Pattern
+**Parameters:**
+- `indicator` - `ledgr_indicator` object
+- `name` - Registry name (defaults to `indicator$id`)
 
-**Template** (following AT1-AT12 style):
-```r
-testthat::test_that("MY_FEATURE: computes correctly and has no lookahead", {
-  # Given: Test data
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(con)
-  
-  # When: Feature is computed
-  cfg <- list(
-    features = list(enabled = TRUE, defs = list(my_feature)),
-    ...
-  )
-  
-  run_id <- "test-my-feature"
-  ledgr_backtest_run(cfg, run_id = run_id)
-  
-  # Then: Verify output
-  features <- dbGetQuery(con, "
-    SELECT feature_value 
-    FROM features 
-    WHERE run_id = ? AND feature_name = 'my_indicator'
-    ORDER BY ts_utc
-  ", params = list(run_id))
-  
-  testthat::expect_true(all(!is.na(features$feature_value[10:nrow(features)])))  # Stable after 10
-  testthat::expect_true(all(is.na(features$feature_value[1:9])))                 # NA during warmup
-})
-```
-
----
-
-## 5. Design Rationales ("Why" Narratives)
-
-### 5.1 Why Event Sourcing?
-
-**Problem:** Traditional backtesting systems store final portfolio state but lose the history of how that state was reached.
-
-**Solution:** ledgr stores **every decision and fill event** in an append-only ledger.
-
-**Benefits:**
-1. **Deterministic Replay:** Given the same config + data, replay produces identical results
-2. **Crash Recovery:** Resume from last `strategy_state` checkpoint (see Phoenix Test)
-3. **Auditability:** Full trade history for compliance and debugging
-4. **Cost-Basis Tracking:** FIFO accounting implemented by replaying ledger events
-
-**Trade-off:** Slightly higher storage costs (~100 bytes per trade event) vs. immense debugging value.
-
----
-
-### 5.2 Why Immutable Snapshots?
-
-**Problem:** If historical data changes after a backtest, results become unreproducible.
-
-**Solution:** Snapshot sealing computes a SHA256 hash of all bars + instrument metadata. Any modification breaks the hash.
-
-**Benefits:**
-1. **Reproducibility:** Same snapshot always produces same results
-2. **Tamper Detection:** Runner verifies hash before each backtest (see Fortress Test)
-3. **Versioning:** Multiple snapshots can coexist (e.g., "raw_2020", "adjusted_2020")
-4. **Provenance:** `meta_json` documents data source and transformations
-
-**Trade-off:** Cannot update sealed snapshots. Must create new snapshot for corrections.
-
----
-
-### 5.3 Why 8 Decimals?
-
-**Problem:** Floating-point precision varies across platforms (IEEE 754 implementations differ subtly).
-
-**Solution:** All OHLCV values are rounded to 8 decimals at import **and** when hashing.
-
-**Benefits:**
-1. **Cross-Platform Determinism:** Hashes match on Windows/Linux/macOS
-2. **Financial Precision:** 8 decimals is sufficient for most assets (e.g., 0.00000001 BTC)
-3. **Efficient Storage:** DECIMAL(16,8) in DuckDB is compact
-4. **Consistent Hashing:** `sprintf("%.8f", round(x, 8))` eliminates floating-point drift
-
-**Trade-off:** Loses ultra-high-precision data (e.g., nanosecond timestamps). Future versions may parameterize precision.
-
----
-
-### 5.4 Why Append-Only Ledger?
-
-**Problem:** Modifiable trade history enables "backtest hacking" (retroactively changing losing trades).
-
-**Solution:** `ledger_events` table enforces:
-- Primary key on `(run_id, event_seq)` prevents duplicates
-- `event_seq` is a gapless integer sequence
-- No UPDATE or DELETE operations (only INSERT)
-
-**Benefits:**
-1. **Immutability:** Once written, events cannot be altered
-2. **Gap Detection:** Missing `event_seq` values prove tampering
-3. **Crash Recovery:** Resume fills gaps in sequence (see Phoenix Test)
-4. **Audit Trail:** Full history for regulatory compliance
-
-**Trade-off:** Cannot "correct" historical trades. Must delete entire run and re-run.
-
----
-
-## 6. Error Taxonomy & Recovery Guide
-
-### 6.1 Integrity Errors (Corruption Detected)
-
-| Error Class | Trigger | Recovery |
-|-------------|---------|----------|
-| `LEDGR_SNAPSHOT_CORRUPTED` | Hash mismatch at runner verification | Re-import from source CSV or restore backup snapshot |
-| `LEDGR_SNAPSHOT_HASH_FAILED` | Hash computation error during seal | Check for corrupted DuckDB file; recreate snapshot |
+**Returns:** Invisible indicator
 
 **Example:**
 ```r
-tryCatch(
-  ledgr_backtest_run(cfg),
-  LEDGR_SNAPSHOT_CORRUPTED = function(e) {
-    cat("Data integrity compromised. Expected hash:", e$expected, "\n")
-    cat("Actual hash:", e$actual, "\n")
-    # Recovery: Restore snapshot from backup or re-import
-  }
+my_sma <- ledgr_indicator(
+  id = "sma_50",
+  fn = function(window) mean(window$close),
+  requires_bars = 50L
 )
+
+ledgr_register_indicator(my_sma)
+
+# Now available globally
+sma <- ledgr_get_indicator("sma_50")
 ```
 
 ---
 
-### 6.2 Contract Errors (Validation Failed)
+#### 3.3.3 `ledgr_get_indicator()`
 
-| Error Class | Trigger | Recovery |
-|-------------|---------|----------|
-| `LEDGR_SNAPSHOT_COVERAGE_ERROR` | Missing bars for an instrument in requested date range | Fix data gaps or adjust backtest date range |
-| `LEDGR_SNAPSHOT_NOT_SEALED` | Attempted to run backtest from unsealed snapshot | Call `ledgr_snapshot_seal(con, snapshot_id)` |
-| `LEDGR_SNAPSHOT_NOT_MUTABLE` | Attempted import to sealed snapshot | Create new snapshot |
-| `LEDGR_SNAPSHOT_EMPTY` | Attempted seal with 0 bars or 0 instruments | Import data before sealing |
-| `LEDGR_CSV_FORMAT_ERROR` | CSV missing required columns or invalid timestamps | Fix CSV schema (see Section 4.1) |
+**Signature:**
+```r
+ledgr_get_indicator <- function(name)
+```
+
+**Parameters:**
+- `name` - Indicator name (character)
+
+**Returns:** `ledgr_indicator` object
+
+**Error handling:**
+```r
+ind <- ledgr_get_indicator("nonexistent")
+#> Error: Indicator 'nonexistent' not found in registry
+#> Available indicators: sma_50, sma_200, rsi_14, ema_12, ema_26
+#> 
+#> Register custom indicators with:
+#>   ledgr_register_indicator(my_indicator)
+```
+
+---
+
+#### 3.3.4 `ledgr_list_indicators()`
+
+**Signature:**
+```r
+ledgr_list_indicators <- function(pattern = NULL)
+```
+
+**Parameters:**
+- `pattern` - Optional regex filter
+
+**Returns:** Character vector of indicator names
 
 **Example:**
 ```r
-tryCatch(
-  ledgr_snapshot_seal(con, snap_id),
-  LEDGR_SNAPSHOT_EMPTY = function(e) {
-    cat("Cannot seal empty snapshot. Import data first.\n")
-    # Recovery: Import bars/instruments
-  }
-)
+ledgr_list_indicators()
+#> [1] "sma_50"    "sma_200"   "ema_12"    "ema_26"    "rsi_14"    "return_1"
+
+ledgr_list_indicators("^sma")
+#> [1] "sma_50"  "sma_200"
 ```
 
 ---
 
-### 6.3 Logic Errors (Runtime Constraint Violations)
+### 3.4 Interactive Development Tools
 
-| Error Class | Trigger | Recovery |
-|-------------|---------|----------|
-| `ledgr_feature_lookahead_detected` | Feature accesses future data (fails no-lookahead test) | Rewrite feature to only use `window[1:current_row]` |
-| `ledgr_run_hash_mismatch` | Attempted resume with different config | Start new run with new `run_id` |
-| `ledgr_invalid_ledger_meta` | Malformed `meta_json` in ledger event | Database corruption; delete run and re-run |
-| `ledgr_strategy_mutation` | Strategy modified `self` during `on_pulse()` | Make strategy pure; use `state_update` for persistence |
+#### 3.4.1 Purpose
 
-**Example:**
+Interactive development tools allow users to:
+- Explore historical data windows
+- Test indicator logic interactively
+- Debug strategy decisions
+- Develop indicators without blind coding
+
+**Critical constraint:** Per Invariant 2, these tools are READ-ONLY. They never execute strategies within the engine runtime or write to the database.
+
+**Execution clarification:** Interactive tools MAY execute indicator functions in-memory for exploration purposes, but they never write computed features to the database and never run the strategy runtime engine.
+
+---
+
+#### 3.4.2 `ledgr_indicator_dev()`
+
+**Purpose:** Create an interactive development session for indicator testing.
+
+**Signature:**
 ```r
-tryCatch(
-  ledgr_backtest_run(cfg),
-  ledgr_feature_lookahead_detected = function(e) {
-    cat("Feature uses future data:", e$feature_id, "\n")
-    cat("Failed at horizon:", e$horizon, "\n")
-    # Recovery: Inspect feature$fn, ensure it only uses historical window
-  }
-)
+ledgr_indicator_dev <- function(snapshot,
+                                 instrument_id,
+                                 ts_utc,
+                                 lookback = 50L)
 ```
 
----
+**Parameters:**
+- `snapshot` - `ledgr_snapshot` object
+- `instrument_id` - Instrument to analyze
+- `ts_utc` - End timestamp for window
+- `lookback` - Number of bars to include
 
-### 6.4 Error Hierarchy Diagram
+**Returns:** Object of class `ledgr_indicator_dev`
 
-```mermaid
-graph TD
-    A[ledgr Error] --> B[Integrity Errors]
-    A --> C[Contract Errors]
-    A --> D[Logic Errors]
-    
-    B --> B1[LEDGR_SNAPSHOT_CORRUPTED]
-    B --> B2[LEDGR_SNAPSHOT_HASH_FAILED]
-    
-    C --> C1[LEDGR_SNAPSHOT_COVERAGE_ERROR]
-    C --> C2[LEDGR_SNAPSHOT_NOT_SEALED]
-    C --> C3[LEDGR_SNAPSHOT_EMPTY]
-    C --> C4[LEDGR_CSV_FORMAT_ERROR]
-    
-    D --> D1[ledgr_feature_lookahead_detected]
-    D --> D2[ledgr_run_hash_mismatch]
-    D --> D3[ledgr_strategy_mutation]
-```
+**Behavior:**
 
----
+1. Open dedicated database connection (internal, closed on exit)
+2. Query snapshot database for historical bars (READ ONLY)
+3. Construct window data.frame
+4. Return object with helper methods
 
-## 7. Test Infrastructure Guide (For Contributors)
-
-### 7.1 The Spec-Driven Approach
-
-ledgr follows a **specification-first testing methodology**:
-
-1. **Write Spec:** Define acceptance criteria (e.g., "AT7: Tamper detection fails loud")
-2. **Write Test:** Implement Given/When/Then test case
-3. **Implement:** Write production code to pass test
-4. **Verify:** Run `devtools::check()` to confirm
-
-**Rationale:** Specs prevent implementation drift and serve as executable documentation.
-
----
-
-### 7.2 Acceptance Test Template
-
-**Naming Convention:** `AT{N}: {Short description}`
+**NO database writes. NO strategy execution. NO persistent state mutation. Pure lens.**
 
 **Structure:**
 ```r
-testthat::test_that("AT{N}: {Short description}", {
-  # GIVEN: Setup preconditions
-  db_path <- tempfile(fileext = ".duckdb")
-  con <- ledgr_db_init(db_path)
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+structure(
+  list(
+    window = <data.frame>,
+    instrument_id = "AAPL",
+    ts_utc = "2020-06-15T00:00:00Z",
+    lookback = 50L,
+    
+    # Private: dedicated connection for this session
+    .con = <DBI connection>,
+    
+    # Helper methods (all read-only, in-memory execution)
+    test = function(fn) { ... },
+    test_dates = function(fn, dates) { ... },
+    plot = function() { ... }
+  ),
+  class = "ledgr_indicator_dev"
+)
+```
+
+**Connection lifecycle:**
+
+Dedicated connection created internally, closed when object finalized or explicitly via:
+```r
+close.ledgr_indicator_dev <- function(x, ...) {
+  if (!is.null(x$.con) && DBI::dbIsValid(x$.con)) {
+    DBI::dbDisconnect(x$.con)
+    x$.con <- NULL
+  }
+  invisible(x)
+}
+```
+
+**Example usage:**
+```r
+# Create development session
+dev <- ledgr_indicator_dev(
+  snapshot = snap,
+  instrument_id = "AAPL",
+  ts_utc = "2020-06-15T00:00:00Z",
+  lookback = 50
+)
+
+# Explore data
+View(dev$window)
+
+# Develop indicator logic interactively
+close_prices <- dev$window$close
+my_avg <- mean(close_prices)
+
+# Test as function (in-memory execution, no DB writes)
+my_fn <- function(window) mean(window$close)
+dev$test(my_fn)
+#> Result: 142.35
+
+# Test on multiple dates
+results <- dev$test_dates(my_fn, dates = c(
+  "2020-01-15",
+  "2020-03-15",
+  "2020-06-15"
+))
+#>         date   value
+#> 1 2020-01-15 135.20
+#> 2 2020-03-15 128.45
+#> 3 2020-06-15 142.35
+
+# Visualize
+dev$plot()  # Line chart of close prices
+
+# Clean up (optional - finalizer handles this)
+close(dev)
+```
+
+**Print method:**
+```r
+print.ledgr_indicator_dev <- function(x, ...) {
+  cat("ledgr Indicator Development Session\n")
+  cat("===================================\n\n")
+  cat("Instrument:  ", x$instrument_id, "\n")
+  cat("End Date:    ", x$ts_utc, "\n")
+  cat("Lookback:    ", x$lookback, "bars\n")
+  cat("Window:      ", x$window$ts_utc[1], "to", 
+                       x$window$ts_utc[nrow(x$window)], "\n\n")
+  cat("Available:\n")
+  cat("  $window       - Historical OHLCV data (data.frame)\n")
+  cat("  $test(fn)     - Test function on current window\n")
+  cat("  $test_dates() - Test on multiple dates\n")
+  cat("  $plot()       - Visualize window\n")
+  invisible(x)
+}
+```
+
+**Implementation of helper methods:**
+```r
+# $test() - Run function on current window (in-memory, no DB writes)
+test = function(fn) {
+  result <- fn(self$window)
+  cat("Result:", result, "\n")
+  invisible(result)
+}
+
+# $test_dates() - Test on multiple dates (each gets its own query)
+test_dates = function(fn, dates) {
+  results <- lapply(dates, function(date) {
+    # Create new dev session for each date (uses same connection)
+    dev_temp <- ledgr_indicator_dev(
+      snapshot = private$snapshot,  # Stored internally
+      instrument_id = self$instrument_id,
+      ts_utc = date,
+      lookback = self$lookback
+    )
+    
+    value <- fn(dev_temp$window)
+    close(dev_temp)  # Clean up
+    
+    list(date = date, value = value)
+  })
   
-  # Create test data
-  snapshot_id <- ledgr_snapshot_create(con)
-  # ... import bars ...
-  ledgr_snapshot_seal(con, snapshot_id)
-  
-  # WHEN: Execute action
-  cfg <- list(
-    data = list(source = "snapshot", snapshot_id = snapshot_id),
-    # ... minimal config ...
+  do.call(rbind, lapply(results, as.data.frame))
+}
+
+# $plot() - Visualize window (base R graphics)
+plot = function() {
+  plot(as.Date(self$window$ts_utc), self$window$close,
+       type = "l",
+       xlab = "Date",
+       ylab = "Close Price",
+       main = sprintf("%s - Window ending %s", 
+                      self$instrument_id, self$ts_utc))
+}
+```
+
+**Read-only enforcement:**
+
+No methods perform database writes. Complies with Invariant 2 test criteria (persistent table row counts unchanged).
+
+---
+
+#### 3.4.3 `ledgr_pulse_snapshot()`
+
+**Purpose:** Freeze a moment in time for interactive strategy development.
+
+**Signature:**
+```r
+ledgr_pulse_snapshot <- function(snapshot,
+                                  universe,
+                                  ts_utc,
+                                  features = list(),
+                                  initial_cash = 100000,
+                                  positions = NULL)
+```
+
+**Parameters:**
+- `snapshot` - `ledgr_snapshot` object
+- `universe` - Character vector of instruments
+- `ts_utc` - Timestamp to freeze at
+- `features` - List of `ledgr_indicator` objects to compute
+- `initial_cash` - Mock cash balance
+- `positions` - Mock current positions (NULL = flat)
+
+**Returns:** Object of class `ledgr_pulse_context`
+
+**Behavior:**
+
+1. Open dedicated connection (internal, closed on exit)
+2. Query bars for all instruments in universe at `ts_utc`
+3. Compute feature values in-memory (execute indicator functions, but don't write to DB)
+4. Construct context object (same structure as runtime `ctx`)
+5. Return for interactive exploration
+
+**NO strategy execution within engine. NO database writes. Pure lens with in-memory feature computation.**
+
+**Structure (matches runtime context):**
+```r
+structure(
+  list(
+    ts_utc = "2020-06-15T00:00:00Z",
+    universe = c("AAPL", "MSFT"),
+    bars = <data.frame>,        # Latest OHLCV for each instrument
+    features = <data.frame>,    # Computed feature values (in-memory)
+    positions = c(AAPL = 0, MSFT = 0),
+    cash = 100000,
+    equity = 100000,
+    
+    # Private: dedicated connection
+    .con = <DBI connection>
+  ),
+  class = "ledgr_pulse_context"
+)
+```
+
+**Example usage:**
+```r
+# Freeze a moment in time
+ctx <- ledgr_pulse_snapshot(
+  snapshot = snap,
+  universe = c("AAPL", "MSFT"),
+  ts_utc = "2020-06-15T00:00:00Z",
+  features = list(
+    ledgr_ind_sma(50),
+    ledgr_ind_rsi(14)
   )
+)
+
+# Explore interactively
+View(ctx$bars)
+View(ctx$features)
+
+# Develop strategy logic
+aapl_close <- ctx$bars$close[ctx$bars$instrument_id == "AAPL"]
+aapl_sma50 <- ctx$features$feature_value[
+  ctx$features$instrument_id == "AAPL" & 
+  ctx$features$feature_name == "sma_50"
+]
+
+if (aapl_close > aapl_sma50) {
+  signal <- "BUY"
+} else {
+  signal <- "SELL"
+}
+
+# Once logic works, wrap as strategy function
+my_strategy <- function(ctx) {
+  # Paste working code here
+  aapl_close <- ctx$bars$close[ctx$bars$instrument_id == "AAPL"]
+  aapl_sma50 <- ctx$features$feature_value[
+    ctx$features$instrument_id == "AAPL" & 
+    ctx$features$feature_name == "sma_50"
+  ]
   
-  # THEN: Assert postconditions
-  testthat::expect_error(
-    ledgr_backtest_run(cfg, run_id = "test-run"),
-    class = "EXPECTED_ERROR_CLASS"
+  if (aapl_close > aapl_sma50) {
+    c(AAPL = 100, MSFT = 0)
+  } else {
+    c(AAPL = 0, MSFT = 100)
+  }
+}
+
+# Clean up (optional - finalizer handles this)
+close(ctx)
+```
+
+**Print method:**
+```r
+print.ledgr_pulse_context <- function(x, ...) {
+  cat("ledgr Pulse Context\n")
+  cat("==================\n\n")
+  cat("Timestamp:   ", x$ts_utc, "\n")
+  cat("Universe:    ", paste(x$universe, collapse = ", "), "\n")
+  cat("Cash:        ", sprintf("$%.2f", x$cash), "\n")
+  cat("Equity:      ", sprintf("$%.2f", x$equity), "\n\n")
+  
+  cat("Positions:\n")
+  for (inst in names(x$positions)) {
+    cat(sprintf("  %s: %d shares\n", inst, x$positions[inst]))
+  }
+  
+  cat("\nData available:\n")
+  cat("  $bars      - Latest OHLCV (", nrow(x$bars), " instruments)\n")
+  cat("  $features  - Computed features (", nrow(x$features), " values)\n")
+  cat("  $positions - Current positions\n")
+  cat("  $cash      - Available cash\n")
+  cat("  $equity    - Total equity\n")
+  
+  invisible(x)
+}
+```
+
+**Read-only enforcement:**
+
+This function queries the database and executes indicator functions in-memory, but never writes features to DB or runs strategy runtime. Compliance with Invariant 2 enforced via test suite.
+
+---
+
+### 3.5 Built-In Indicators (Minimal Set)
+
+#### 3.5.1 Purpose
+
+Ship 4 indicators to prove the pattern works. Users access 50+ more via TTR adapter.
+
+**Built-ins:**
+1. `ledgr_ind_sma()` - Simple Moving Average
+2. `ledgr_ind_ema()` - Exponential Moving Average
+3. `ledgr_ind_rsi()` - Relative Strength Index
+4. `ledgr_ind_returns()` - Returns
+
+**Note:** `stable_after` parameter removed from v0.1.2 to keep minimal. First few bars may yield NA for some indicators (expected behavior).
+
+---
+
+#### 3.5.2 `ledgr_ind_sma()`
+
+```r
+#' Simple Moving Average
+#' @param n Window size
+#' @export
+ledgr_ind_sma <- function(n) {
+  ledgr_indicator(
+    id = sprintf("sma_%d", n),
+    fn = function(window) {
+      mean(window$close)
+    },
+    requires_bars = as.integer(n),
+    params = list(n = n)
   )
-  
-  # Verify database state
-  row <- DBI::dbGetQuery(con, "SELECT status FROM runs WHERE run_id = 'test-run'")
-  testthat::expect_equal(row$status, "FAILED")
-})
+}
 ```
 
----
-
-### 7.3 Test Data Fixtures
-
-**Helper Functions** (see `tests/testthat/helper-fixtures.R`):
-
+**Auto-registered on package load:**
 ```r
-# 1. Create test database with instruments + bars
-db_path <- ledgr_test_make_db(
-  instrument_ids = c("AAA", "BBB"),
-  ts_utc = c("2020-01-01 00:00:00", "2020-01-02 00:00:00"),
-  bars_df = bars,
-  shuffle = TRUE  # Test insertion-order independence
-)
-
-# 2. Fetch outputs for comparison
-ledger <- ledgr_test_fetch_ledger_core(con, run_id)
-features <- ledgr_test_fetch_features_core(con, run_id)
-equity <- ledgr_test_fetch_equity_curve_core(con, run_id)
-
-# 3. Normalize timestamps for assertions
-ts_normalized <- ledgr_test_norm_ts("2020-01-01T00:00:00Z")
-```
-
----
-
-### 7.4 Coverage Targets
-
-**Current Coverage (v0.1.1):**
-- Acceptance tests: **24/24** (AT1-AT12 for v0.1.0 + v0.1.1)
-- Unit tests: **~85% line coverage**
-- Critical paths: **100% coverage** (ledger writer, hash computation, seal logic)
-
-**v0.1.2 Goal:**
-- Add adversarial tests (concurrent seal, large datasets, SQL injection attempts)
-- Maintain 100% coverage on critical paths
-- Document test strategy in this spec
-
----
-
-### 7.5 Running Tests
-
-```bash
-# Full test suite
-R CMD check --as-cran
-
-# Specific test file
-testthat::test_file("tests/testthat/test-acceptance-v0.1.1.R")
-
-# Single test
-testthat::test_that("AT7: Tamper detection", { ... })
-
-# With coverage report
-covr::package_coverage()
-```
-
----
-
-## 8. Performance & Scale Characteristics
-
-### 8.1 Tested Scale (v0.1.1)
-
-| Dimension | Tested Limit | Performance |
-|-----------|--------------|-------------|
-| Bars per snapshot | 250,000 | Import: ~2-3s, Seal: ~5-10s |
-| Instruments per snapshot | 100 | Linear scaling |
-| Pulses per backtest | 1,000 | ~0.5-1s per pulse (incl. feature computation) |
-| Features per pulse | 10 | ~0.1-0.2s per feature |
-| Ledger events per run | 10,000 | Negligible overhead |
-
-**Hardware:** Consumer laptop (Intel i7, 16 GB RAM, SSD)
-
----
-
-### 8.2 Memory Profile
-
-| Component | Memory Usage | Notes |
-|-----------|--------------|-------|
-| Snapshot hash | ~2-3 MB peak | Streaming (10K row chunks) |
-| CSV import | ~50-100 MB | Single-shot (entire CSV in memory) |
-| Pulse loop | ~10-20 MB | Per-pulse allocation |
-| DuckDB connection | ~50 MB baseline | Shared across operations |
-
-**Critical:** Hash computation uses streaming to avoid loading entire snapshot into RAM.
-
----
-
-### 8.3 Known Bottlenecks
-
-1. **CSV Import (FINDING 7):** Single-shot load. For >1M rows, consider chunked reading (future enhancement).
-2. **Hash Computation (FINDING 4):** Currently happens inside transaction. Can be moved outside for large snapshots.
-3. **Feature Computation:** Per-instrument loop. Parallelization possible (future enhancement).
-
----
-
-### 8.4 Scaling Recommendations
-
-**For datasets >500K bars:**
-- Use `chunk_size = 5000` in `ledgr_snapshot_hash()` (default: 10000)
-- Consider splitting into multiple snapshots by time period
-- Monitor DuckDB file size (snapshots are not compressed)
-
-**For >50 instruments:**
-- Feature computation becomes bottleneck
-- Consider disabling features (`features$enabled = FALSE`) for exploratory runs
-- Use multi-core parallelization (future v0.2.0 feature)
-
----
-
-## 9. Migration Guide (v0.1.0 → v0.1.1)
-
-### 9.1 Schema Changes
-
-**Added Tables:**
-- `snapshots`: Snapshot metadata
-- `snapshot_instruments`: Instrument definitions per snapshot
-- `snapshot_bars`: OHLCV data per snapshot
-
-**Modified Tables:**
-- `runs`: Added `snapshot_id` column (nullable, foreign key to `snapshots`)
-
-**Backward Compatibility:**
-- v0.1.0 databases auto-migrate on first `ledgr_create_schema()` call
-- Existing runs remain valid (snapshot_id = NULL)
-- `COMPLETED` status auto-migrated to `DONE`
-
----
-
-### 9.2 API Changes
-
-**Config Structure:**
-
-v0.1.0 (deprecated but still works):
-```r
-cfg <- list(
-  db_path = "backtest.duckdb",
-  universe = list(instrument_ids = c("AAA", "BBB")),
-  # Data implicit: runner reads from `bars` and `instruments` tables
-  ...
-)
-```
-
-v0.1.1 (recommended):
-```r
-cfg <- list(
-  db_path = "backtest.duckdb",
-  data = list(source = "snapshot", snapshot_id = "snapshot_20250101_000000_abcd"),
-  universe = list(instrument_ids = c("AAA", "BBB")),
-  ...
-)
-```
-
-**Migration Steps:**
-1. Export existing `bars` and `instruments` tables to CSV
-2. Import to a new snapshot using v0.1.1 API
-3. Seal snapshot
-4. Update configs to reference `snapshot_id`
-
----
-
-### 9.3 Breaking Changes
-
-**None.** v0.1.1 is fully backward compatible with v0.1.0 configs.
-
----
-
-## 10. FAQ & Gotchas
-
-### 10.1 Windows DuckDB File Locking
-
-**Problem:** On Windows, DuckDB files remain locked even after `dbDisconnect()`.
-
-**Solution:**
-```r
-drv <- duckdb::duckdb()
-con <- DBI::dbConnect(drv, dbdir = db_path)
-
-# ... work ...
-
-DBI::dbDisconnect(con, shutdown = TRUE)
-duckdb::duckdb_shutdown(drv)  # CRITICAL on Windows
-gc()
-Sys.sleep(0.05)  # Allow OS to release file handle
-```
-
-**Test Helper:** Use `ledgr_test_open_duckdb()` and `ledgr_test_close_duckdb()` in tests.
-
----
-
-### 10.2 Timezone Handling (Always UTC)
-
-**Rule:** All timestamps must be in UTC with `Z` suffix (ISO 8601).
-
-**Correct:**
-```
-2020-01-01T00:00:00Z  ✓
-```
-
-**Incorrect:**
-```
-2020-01-01T00:00:00    ✗ (no Z)
-2020-01-01 00:00:00    ✗ (wrong format)
-2020-01-01T05:00:00+05:00  ✗ (not UTC)
-```
-
-**Conversion:**
-```r
-iso_utc <- function(x) {
-  format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+.onLoad <- function(libname, pkgname) {
+  ledgr_register_indicator(ledgr_ind_sma(50), "sma_50")
+  ledgr_register_indicator(ledgr_ind_sma(200), "sma_200")
+  # ...
 }
 ```
 
 ---
 
-### 10.3 Why 8 Decimals (Not Arbitrary Precision)?
+#### 3.5.3 `ledgr_ind_ema()`
 
-**Rationale:** See Section 5.3 (Design Rationales).
-
-**TL;DR:** Cross-platform deterministic hashing requires fixed precision. 8 decimals is sufficient for most financial assets.
-
-**If You Need More Precision:** Fork ledgr and parameterize the rounding policy. Future versions may support this.
-
----
-
-### 10.4 Resume Behavior (Deletes Tail, Not Additive)
-
-**Misconception:** Resume appends new events after the last event.
-
-**Reality:** Resume **deletes** all events, features, equity_curve rows after the last `strategy_state` checkpoint, then re-runs.
-
-**Rationale:** Ensures deterministic replay if strategy logic changed between runs.
-
-**Example:**
-```
-Initial run: 100 pulses, crashes at pulse 50
-Resume: Deletes rows for pulses 51-100, then re-runs from pulse 51
-```
-
----
-
-### 10.5 Empty Snapshots Cannot Be Sealed
-
-**Error:** `LEDGR_SNAPSHOT_EMPTY` if you call `ledgr_snapshot_seal()` before importing data.
-
-**Solution:** Always import bars (and optionally instruments) before sealing.
-
-**Correct Order:**
 ```r
-snap_id <- ledgr_snapshot_create(con)
-ledgr_snapshot_import_bars_csv(con, snap_id, "bars.csv", auto_generate_instruments = TRUE)
-ledgr_snapshot_seal(con, snap_id)  # Now OK
+#' Exponential Moving Average
+#' @param n Window size
+#' @export
+ledgr_ind_ema <- function(n) {
+  ledgr_indicator(
+    id = sprintf("ema_%d", n),
+    fn = function(window) {
+      alpha <- 2 / (n + 1)
+      ema <- window$close[1]
+      
+      for (i in 2:nrow(window)) {
+        ema <- alpha * window$close[i] + (1 - alpha) * ema
+      }
+      
+      ema
+    },
+    requires_bars = as.integer(n + 1),  # Need at least n+1 bars
+    params = list(n = n)
+  )
+}
+```
+
+**Note:** First `n` values will be warming up. This is acceptable for v0.1.2.
+
+---
+
+#### 3.5.4 `ledgr_ind_rsi()`
+
+```r
+#' Relative Strength Index
+#' @param n Window size (default 14)
+#' @export
+ledgr_ind_rsi <- function(n = 14L) {
+  ledgr_indicator(
+    id = sprintf("rsi_%d", n),
+    fn = function(window) {
+      changes <- diff(window$close)
+      gains <- pmax(changes, 0)
+      losses <- abs(pmin(changes, 0))
+      
+      avg_gain <- mean(tail(gains, n))
+      avg_loss <- mean(tail(losses, n))
+      
+      if (avg_loss == 0) return(100)
+      
+      rs <- avg_gain / avg_loss
+      100 - (100 / (1 + rs))
+    },
+    requires_bars = as.integer(n + 1),
+    params = list(n = n)
+  )
+}
 ```
 
 ---
 
-## 11. Task Breakdown & Implementation Timeline
+#### 3.5.5 `ledgr_ind_returns()`
 
-### Phase 1: Foundation Docs (Week 1)
-
-| Ticket | Task | Deliverable | Owner |
-|--------|------|-------------|-------|
-| **T1.1** | Finalize Mermaid diagrams | SVG exports of all diagrams (Sections 2.1-2.4) | Docs |
-| **T1.2** | Write Design Rationales | Section 5 (4 "Why" narratives) | Docs |
-| **T1.3** | Document Performance Characteristics | Section 8 (scale limits, memory profile) | Docs |
-| **T1.4** | Write Migration Guide | Section 9 (v0.1.0 → v0.1.1) | Docs |
-
-**Acceptance:** All diagrams render in `pkgdown`, rationales are <500 words each, performance data is reproducible.
-
----
-
-### Phase 2: User Journeys (Week 2)
-
-| Ticket | Task | Deliverable | Owner |
-|--------|------|-------------|-------|
-| **T2.1** | Write Data Librarian vignette | Section 4.1 as R Markdown (.Rmd) vignette | Docs |
-| **T2.2** | Write Quant Researcher vignette | Section 4.2 as R Markdown (.Rmd) vignette | Docs |
-| **T2.3** | Write Auditor vignette | Section 4.3 as R Markdown (.Rmd) vignette | Docs |
-| **T2.4** | Write Package Developer guide | Section 4.4 as R Markdown (.Rmd) vignette | Docs |
-
-**Acceptance:** Each vignette is an executable .Rmd file in `vignettes/` directory, includes runnable code examples, vignettes pass `R CMD check`, can be rendered via `pkgdown` for future website generation.
-
----
-
-### Phase 3: Killer Demos (Week 3)
-
-| Ticket | Task | Deliverable | Owner |
-|--------|------|-------------|-------|
-| **T3.1** | Implement Phoenix Test demo | Section 3, Step 1 (crash/resume) as .Rmd | Docs + Dev |
-| **T3.2** | Implement Fortress Defense demo | Section 3, Step 2 (tamper detection) as .Rmd | Docs + Dev |
-| **T3.3** | Implement Lookahead Trap demo | Section 3, Step 3 (constraint enforcement) as .Rmd | Docs + Dev |
-| **T3.4** | Implement Accounting Audit demo | Section 3, Step 6 (FIFO verification) as .Rmd | Docs + Dev |
-
-**Acceptance:** All demos are executable .Rmd files, run in <60 seconds, produce expected error/output, documented in vignettes directory.
-
----
-
-### Phase 4: Practical Workflows (Week 4)
-
-| Ticket | Task | Deliverable | Owner |
-|--------|------|-------------|-------|
-| **T4.1** | Yahoo Finance → ledgr workflow | Section 3, Step 5 (real data) as .Rmd | Docs |
-| **T4.2** | ML strategy integration (XGBoost) | New vignette (inference-only) as .Rmd | Docs + Dev |
-| **T4.3** | Manual Pulse tutorial | Section 3, Step 4 (conceptual) as .Rmd | Docs |
-| **T4.4** | Error taxonomy reference | Section 6 (hierarchy + recovery) as .Rmd | Docs |
-
-**Acceptance:** Workflows tested on at least 2 real datasets (gold, equity), ML demo uses pre-trained model from disk, all deliverables are executable .Rmd vignettes.
-
----
-
-### Phase 5: Test Infrastructure (Week 5)
-
-| Ticket | Task | Deliverable | Owner |
-|--------|------|-------------|-------|
-| **T5.1** | Document acceptance test pattern | Section 7.2 (template) | Docs |
-| **T5.2** | Document test fixtures | Section 7.3 (helper functions) | Docs |
-| **T5.3** | Add adversarial tests | New tests in `test-adversarial.R` | Dev |
-| **T5.4** | Coverage report | Section 7.4 (update metrics) | Dev |
-
-**Acceptance:** Test infrastructure guide allows new contributor to write compliant acceptance test in <30 minutes.
-
----
-
-### Phase 6: Polish & Review (Week 6)
-
-| Ticket | Task | Deliverable | Owner |
-|--------|------|-------------|-------|
-| **T6.1** | Proofread all vignettes | Grammar, code correctness | Docs |
-| **T6.2** | Render pkgdown site | Full website with all docs | Docs |
-| **T6.3** | Internal review | Feedback from 2+ reviewers | Team |
-| **T6.4** | Tag v0.1.2 | GitHub release + CRAN submission prep | Release |
-
-**Acceptance:** Zero TODO/FIXME markers in docs, all code examples run without errors, site renders without warnings.
-
----
-
-## 12. Success Criteria (v0.1.2)
-
-| Criterion | Metric | Target |
-|-----------|--------|--------|
-| **Comprehension** | Time for new user to run first backtest from scratch | <30 minutes |
-| **Adoption** | GitHub stars / downloads | +50% vs. v0.1.1 |
-| **Contributions** | New contributor can submit compliant PR | <2 hours onboarding |
-| **Correctness** | Zero documentation bugs reported in first month | 0 |
-| **Performance** | All demos run in <60 seconds | 100% compliance |
-
----
-
-## 13. Non-Goals (Explicitly Out of Scope)
-
-| Non-Goal | Rationale | Future Milestone |
-|----------|-----------|------------------|
-| **Full pkgdown website** | v0.1.2 focuses on vignettes; website can be auto-generated later | v0.1.3 |
-| **Live brokerage adapters** | Production trading is a separate concern | v0.3.0 |
-| **GPU-accelerated features** | Optimization, not documentation | v0.2.0 |
-| **Multi-core parallelization** | Performance, not clarity | v0.2.0 |
-| **Web UI for backtesting** | Tooling, not core functionality | v0.4.0 |
-
----
-
-## 14. Appendices
-
-### Appendix A: Glossary
-
-| Term | Definition |
-|------|------------|
-| **Pulse** | A decision point in the backtest (typically daily close) |
-| **Snapshot** | Immutable, versioned dataset with SHA256 hash |
-| **Ledger** | Append-only log of all trade events |
-| **Event Sourcing** | Storing state changes as events, not final state |
-| **Tamper Detection** | Hash verification preventing data modification |
-| **Lookahead Bias** | Using future data to make past decisions (forbidden) |
-| **FIFO** | First-In-First-Out cost-basis accounting |
-| **Resume** | Continue interrupted backtest from last checkpoint |
-
----
-
-### Appendix B: References
-
-1. [Event Sourcing Pattern](https://martinfowler.com/eaaDev/EventSourcing.html) - Martin Fowler
-2. [IEEE 754 Floating Point Standard](https://en.wikipedia.org/wiki/IEEE_754)
-3. [ISO 8601 Date/Time Format](https://en.wikipedia.org/wiki/ISO_8601)
-4. [DuckDB Documentation](https://duckdb.org/docs/)
-5. [R6 Object System](https://r6.r-lib.org/)
-6. [testthat Package](https://testthat.r-lib.org/)
-
----
-
-### Appendix C: Diagram Source Files
-
-All Mermaid diagrams are version-controlled in `inst/diagrams/`:
-- `dual_spine.mmd`
-- `pulse_lifecycle.mmd`
-- `database_erd.mmd`
-- `snapshot_state_machine.mmd`
-- `run_state_machine.mmd`
-- `error_hierarchy.mmd`
-
-**Export to SVG:**
-```bash
-mmdc -i inst/diagrams/dual_spine.mmd -o inst/diagrams/dual_spine.svg
+```r
+#' Simple Returns
+#' @param n Periods back (default 1)
+#' @export
+ledgr_ind_returns <- function(n = 1L) {
+  ledgr_indicator(
+    id = sprintf("return_%d", n),
+    fn = function(window) {
+      current <- window$close[nrow(window)]
+      previous <- window$close[nrow(window) - n]
+      (current - previous) / previous
+    },
+    requires_bars = as.integer(n + 1),
+    params = list(n = n)
+  )
+}
 ```
 
 ---
 
-## 15. Changelog (Spec Revisions)
+### 3.6 Indicator Adapters
 
-| Version | Date | Changes | Reviewer |
-|---------|------|---------|----------|
-| 1.1.0 | 2025-12-19 | Incorporated feedback: Enhanced Developer persona with invariants/testthat guidance, specified .Rmd format for all vignettes, added R8 reference in Accounting Audit demo, fixed author name to Max Thomasberger | Claude |
-| 1.0.0 | 2025-12-19 | Initial complete spec with all critical additions | Claude |
-| 0.9.0 | 2025-12-19 | Draft for review (missing crash/resume, tamper demos) | Max |
+#### 3.6.1 `ledgr_adapter_r()`
+
+**Purpose:** Wrap R package functions (TTR, quantmod) as ledgr indicators.
+
+**Signature:**
+```r
+ledgr_adapter_r <- function(pkg_fn, 
+                             id, 
+                             requires_bars, 
+                             ...)
+```
+
+**Parameters:**
+- `pkg_fn` - Function from R package (e.g., `TTR::RSI`)
+- `id` - Indicator ID
+- `requires_bars` - Lookback period
+- `...` - Arguments passed to `pkg_fn`
+
+**Returns:** `ledgr_indicator` object
+
+**Implementation:**
+```r
+ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
+  
+  # Capture arguments
+  args <- list(...)
+  
+  ledgr_indicator(
+    id = id,
+    fn = function(window) {
+      # Call package function with window$close
+      result <- do.call(pkg_fn, c(list(window$close), args))
+      
+      # Return last value (most recent)
+      tail(result, 1)
+    },
+    requires_bars = as.integer(requires_bars),
+    params = args
+  )
+}
+```
+
+**Example usage:**
+```r
+library(TTR)
+
+# Wrap TTR indicators
+rsi <- ledgr_adapter_r(TTR::RSI, "ttr_rsi_14", 14L, n = 14)
+sma <- ledgr_adapter_r(TTR::SMA, "ttr_sma_50", 50L, n = 50)
+macd <- ledgr_adapter_r(TTR::MACD, "ttr_macd", 26L)
+
+# Register
+ledgr_register_indicator(rsi)
+ledgr_register_indicator(sma)
+
+# Use in backtest
+bt <- ledgr_backtest(
+  snapshot = snap,
+  strategy = my_strategy,
+  universe = "AAPL",
+  features = list(
+    ledgr_get_indicator("ttr_rsi_14"),
+    ledgr_get_indicator("ttr_sma_50")
+  )
+)
+```
+
+**Graceful degradation:**
+```r
+rsi <- ledgr_adapter_r(TTR::RSI, ...)
+#> Error: TTR package required
+#> Install with: install.packages("TTR")
+```
 
 ---
 
-## 16. Sign-Off
+#### 3.6.2 `ledgr_adapter_csv()`
 
-**Spec Author:** Max Thomasberger  
-**Reviewer:** Claude (Anthropic)  
-**Approval Date:** 2025-12-19  
-**Target Release:** Q1 2026  
+**Purpose:** Import pre-computed indicator values from CSV.
 
-**Status:** ✅ **APPROVED FOR IMPLEMENTATION**
+**Signature:**
+```r
+ledgr_adapter_csv <- function(csv_path, 
+                               value_col, 
+                               date_col = "ts_utc",
+                               instrument_col = "instrument_id",
+                               id)
+```
+
+**Parameters:**
+- `csv_path` - Path to CSV file
+- `value_col` - Column name with indicator values
+- `date_col` - Column name with timestamps (default: "ts_utc")
+- `instrument_col` - Column name with instrument IDs (default: "instrument_id")
+- `id` - Indicator ID
+
+**Returns:** `ledgr_indicator` object
+
+**Required CSV format:**
+```
+ts_utc,instrument_id,signal_value
+2020-01-01T00:00:00Z,AAPL,0.45
+2020-01-01T00:00:00Z,MSFT,0.38
+2020-01-02T00:00:00Z,AAPL,0.52
+2020-01-02T00:00:00Z,MSFT,0.41
+```
+
+**Minimum columns:** `ts_utc`, `instrument_id`, `<value_col>`
+
+**Implementation:**
+```r
+ledgr_adapter_csv <- function(csv_path, value_col, date_col = "ts_utc", 
+                               instrument_col = "instrument_id", id) {
+  
+  # Load CSV once (at construction time - preloaded closure)
+  indicator_data <- read.csv(csv_path)
+  
+  # Validate
+  required <- c(date_col, instrument_col, value_col)
+  missing <- setdiff(required, names(indicator_data))
+  
+  if (length(missing) > 0) {
+    stop(sprintf(
+      "CSV missing required columns: %s\nFound: %s",
+      paste(missing, collapse = ", "),
+      paste(names(indicator_data), collapse = ", ")
+    ))
+  }
+  
+  ledgr_indicator(
+    id = id,
+    fn = function(window) {
+      # window has instrument_id column (from v0.1.1 feature engine)
+      current_ts <- window$ts_utc[nrow(window)]
+      current_inst <- window$instrument_id[nrow(window)]
+      
+      # Lookup by BOTH timestamp AND instrument
+      idx <- which(
+        indicator_data[[date_col]] == current_ts & 
+        indicator_data[[instrument_col]] == current_inst
+      )
+      
+      if (length(idx) == 0) {
+        warning(sprintf(
+          "No value found for %s/%s in %s",
+          current_inst, current_ts, csv_path
+        ))
+        return(NA)
+      }
+      
+      indicator_data[[value_col]][idx[1]]
+    },
+    requires_bars = 1L,  # Pre-computed, no lookback needed
+    params = list(
+      csv_path = csv_path,
+      value_col = value_col,
+      date_col = date_col,
+      instrument_col = instrument_col
+    )
+  )
+}
+```
+
+**Usage:**
+```r
+vendor_signal <- ledgr_adapter_csv(
+  csv_path = "vendor_alpha.csv",
+  value_col = "signal_value",
+  id = "vendor_alpha"
+)
+
+bt <- ledgr_backtest(
+  snapshot = snap,
+  strategy = my_strategy,
+  universe = c("AAPL", "MSFT"),
+  features = list(vendor_signal)
+)
+```
 
 ---
 
-**END OF SPECIFICATION**
+## Section 4: Metrics & Visualization
+
+### 4.1 Overview
+
+Section 4 defines performance metrics computation and visualization.
+
+**Design principles:**
+1. **Post-hoc only** - Metrics are computed AFTER backtest completes
+2. **Never influence execution** - Metrics read from ledger/equity tables, never affect strategy
+3. **Basic built-ins** - Ship minimal set, defer advanced metrics to v0.1.3
+
+**Compliance:** Metrics MUST NOT violate Invariant 1 (no execution semantics changes).
+
+---
+
+### 4.2 Fill Extraction
+
+#### 4.2.1 `ledgr_extract_fills()`
+
+**Purpose:** Extract all fill events from ledger with FIFO-computed realized P&L.
+
+**Renamed from:** `ledgr_aggregate_trades()` (previous name was misleading - these are fills, not aggregated round-trip trades)
+
+**Signature:**
+```r
+ledgr_extract_fills <- function(bt)
+```
+
+**Parameters:**
+- `bt` - `ledgr_backtest` object
+
+**Returns:** Tibble with columns:
+- `ts_utc` - Fill timestamp
+- `instrument_id` - Instrument
+- `side` - "BUY" or "SELL"
+- `qty` - Quantity
+- `price` - Execution price
+- `fee` - Transaction fee
+- `realized_pnl` - Realized profit/loss (FIFO, 0 for opening fills)
+
+**Implementation:**
+
+```r
+ledgr_extract_fills <- function(bt) {
+  
+  con <- get_connection(bt)
+  
+  # Extract ALL fill events
+  ledger <- DBI::dbGetQuery(con, "
+    SELECT 
+      ts_utc,
+      instrument_id,
+      side,
+      qty,
+      price,
+      fee,
+      meta_json
+    FROM ledger_events
+    WHERE run_id = ? 
+      AND event_type IN ('FILL', 'FILL_PARTIAL')
+    ORDER BY event_seq
+  ", params = list(bt$run_id))
+  
+  # Parse meta_json to extract realized_pnl
+  ledger$meta <- lapply(ledger$meta_json, jsonlite::fromJSON)
+  ledger$realized_pnl <- sapply(ledger$meta, function(m) {
+    m$realized_pnl %||% 0
+  })
+  
+  # Return ALL fills (not just closes)
+  tibble::tibble(
+    ts_utc = ledger$ts_utc,
+    instrument_id = ledger$instrument_id,
+    side = ledger$side,
+    qty = ledger$qty,
+    price = ledger$price,
+    fee = ledger$fee,
+    realized_pnl = ledger$realized_pnl
+  )
+}
+```
+
+**Note:** Round-trip trade aggregation (grouping fills into complete trades) deferred to v0.2.0.
+
+**Rationale:**
+
+FIFO (First-In-First-Out) accounting:
+- Already implemented in `ledger_events.meta_json` from v0.1.1
+- Tax-compliant (standard cost basis method)
+- Works for all strategy types (long-only, long-short, always-in-market)
+- Simple to extract from ledger (no additional computation)
+
+---
+
+### 4.3 Performance Metrics
+
+#### 4.3.1 `ledgr_compute_metrics()`
+
+**Purpose:** Compute performance metrics from backtest results.
+
+**Signature:**
+```r
+ledgr_compute_metrics <- function(bt, metrics = "standard")
+```
+
+**Parameters:**
+- `bt` - `ledgr_backtest` object
+- `metrics` - Which metrics to compute:
+  - `"standard"` - Basic built-in metrics (ONLY option in v0.1.2)
+  - Other values error with helpful message
+
+**Returns:** Named list of metric values
+
+**Implementation:**
+
+```r
+ledgr_compute_metrics <- function(bt, metrics = "standard") {
+  
+  # Only "standard" supported in v0.1.2
+  if (!identical(metrics, "standard")) {
+    stop(
+      "Only metrics='standard' supported in v0.1.2\n",
+      "Advanced metrics (PerformanceAnalytics integration) available in v0.1.3"
+    )
+  }
+  
+  con <- get_connection(bt)
+  
+  # Get equity curve from pre-computed table
+  equity <- DBI::dbGetQuery(con, "
+    SELECT ts_utc, equity, cash, positions_value
+    FROM equity_curve
+    WHERE run_id = ?
+    ORDER BY pulse_seq
+  ", params = list(bt$run_id))
+  
+  # Get fills
+  fills <- ledgr_extract_fills(bt)
+  
+  # Compute returns (use simple returns, handle NAs)
+  returns <- c(NA, diff(equity$equity) / equity$equity[-length(equity$equity)])
+  returns <- returns[!is.na(returns)]  # Remove first NA
+  
+  # Standard metrics with zero guards
+  list(
+    # Returns
+    total_return = (equity$equity[nrow(equity)] / equity$equity[1]) - 1,
+    annualized_return = compute_annualized_return(equity),
+    
+    # Risk
+    volatility = if (length(returns) > 1) sd(returns, na.rm = TRUE) * sqrt(252) else NA,
+    max_drawdown = compute_max_drawdown(equity$equity),
+    
+    # Trade statistics (with zero guards)
+    n_trades = nrow(fills),
+    win_rate = if (nrow(fills) > 0) sum(fills$realized_pnl > 0) / nrow(fills) else NA,
+    avg_trade = if (nrow(fills) > 0) mean(fills$realized_pnl) else NA,
+    
+    # Exposure (computed from positions_value)
+    time_in_market = compute_time_in_market(equity)
+  )
+}
+```
+
+**Helper functions:**
+
+```r
+compute_annualized_return <- function(equity) {
+  # Days in backtest
+  days <- as.numeric(difftime(
+    as.Date(equity$ts_utc[nrow(equity)]),
+    as.Date(equity$ts_utc[1]),
+    units = "days"
+  ))
+  
+  if (days <= 0) return(NA)
+  
+  years <- days / 365.25
+  
+  total_return <- (equity$equity[nrow(equity)] / equity$equity[1]) - 1
+  
+  if (years <= 0) return(NA)
+  
+  (1 + total_return)^(1 / years) - 1
+}
+
+compute_max_drawdown <- function(equity_values) {
+  running_max <- cummax(equity_values)
+  drawdown <- (equity_values / running_max) - 1
+  min(drawdown)
+}
+
+compute_time_in_market <- function(equity) {
+  # Computed from positions_value column (already in equity_curve table)
+  # Fraction of pulses with non-zero position value
+  mean(abs(equity$positions_value) > 1e-6)
+}
+```
+
+**Metrics included in v0.1.2:**
+
+| Metric | Description | Zero-guard |
+|--------|-------------|------------|
+| `total_return` | Total return (%) | N/A |
+| `annualized_return` | Annualized return (%) | Returns NA if days <= 0 |
+| `volatility` | Annualized volatility (%) | Returns NA if < 2 returns |
+| `max_drawdown` | Maximum drawdown (%) | N/A |
+| `n_trades` | Total number of fills | N/A |
+| `win_rate` | % of profitable fills | Returns NA if no trades |
+| `avg_trade` | Average realized P&L per fill | Returns NA if no trades |
+| `time_in_market` | Fraction of time with positions | N/A |
+
+**Advanced metrics (Sharpe, Sortino, Calmar, VaR, CVaR, etc.) deferred to v0.1.3 via PerformanceAnalytics integration.**
+
+---
+
+#### 4.3.2 Equity Curve Computation
+
+**Purpose:** Extract equity curve from v0.1.1 pre-computed `equity_curve` table.
+
+**Signature:**
+```r
+ledgr_compute_equity_curve <- function(bt)
+```
+
+**Implementation:**
+
+```r
+ledgr_compute_equity_curve <- function(bt) {
+  
+  con <- get_connection(bt)
+  
+  # Read from equity_curve table (already computed by v0.1.1 engine)
+  equity <- DBI::dbGetQuery(con, "
+    SELECT ts_utc, equity, cash, positions_value
+    FROM equity_curve
+    WHERE run_id = ?
+    ORDER BY pulse_seq
+  ", params = list(bt$run_id))
+  
+  # Compute drawdown columns
+  equity$running_max <- cummax(equity$equity)
+  equity$drawdown <- (equity$equity / equity$running_max - 1) * 100
+  
+  tibble::as_tibble(equity)
+}
+```
+
+**Note:** v0.1.1 engine already computes and stores equity curve during backtest execution. This function just reads it and adds drawdown columns.
+
+---
+
+### 4.4 Visualization
+
+#### 4.4.1 `plot.ledgr_backtest()`
+
+**Purpose:** Visualize backtest results using ggplot2.
+
+**Signature:**
+```r
+#' @export
+plot.ledgr_backtest <- function(x, ..., type = "equity")
+```
+
+**Parameters:**
+- `x` - `ledgr_backtest` object
+- `...` - Additional arguments (unused)
+- `type` - Plot type:
+  - `"equity"` - Equity curve + drawdown (default)
+  - `"trades"` - Trade distribution (deferred to v0.1.3)
+  - `"returns"` - Returns histogram (deferred to v0.1.3)
+
+**Implementation for equity plot:**
+
+```r
+plot.ledgr_backtest <- function(x, ..., type = "equity") {
+  
+  type <- match.arg(type, c("equity", "trades", "returns"))
+  
+  if (type != "equity") {
+    stop(sprintf("Plot type '%s' not yet implemented in v0.1.2", type))
+  }
+  
+  # Get equity curve
+  eq <- as_tibble(x, "equity")
+  eq$date <- as.Date(eq$ts_utc)
+  
+  # Equity curve plot (use ggplot2 defaults for colors)
+  p1 <- ggplot2::ggplot(eq, ggplot2::aes(x = date, y = equity)) +
+    ggplot2::geom_line(size = 1) +
+    ggplot2::labs(
+      title = "Equity Curve",
+      x = NULL,
+      y = "Equity ($)"
+    ) +
+    ggplot2::theme_minimal()
+  
+  # Drawdown plot (use ggplot2 defaults for colors)
+  p2 <- ggplot2::ggplot(eq, ggplot2::aes(x = date, y = drawdown)) +
+    ggplot2::geom_area(alpha = 0.6) +
+    ggplot2::labs(
+      title = "Drawdown",
+      x = "Date",
+      y = "Drawdown (%)"
+    ) +
+    ggplot2::theme_minimal()
+  
+  # Combine plots if gridExtra available
+  if (requireNamespace("gridExtra", quietly = TRUE)) {
+    gridExtra::grid.arrange(p1, p2, ncol = 1)
+  } else {
+    # Fallback: show equity only
+    print(p1)
+    message(
+      "\nShowing equity curve only.\n",
+      "Install 'gridExtra' for combined equity + drawdown plot:\n",
+      "  install.packages('gridExtra')"
+    )
+  }
+  
+  invisible(x)
+}
+```
+
+**Example usage:**
+
+```r
+plot(bt)
+```
+
+Produces:
+- If `gridExtra` available: Two-panel plot (equity + drawdown)
+- If not: Single equity curve with helpful message
+
+**Layout:**
+- Top panel: Line chart of equity over time
+- Bottom panel: Area chart of drawdown (negative values)
+
+**Colors:** Uses ggplot2 default color scheme (not hardcoded)
+
+**Additional plot types deferred to v0.1.3**
+
+---
+
+### 4.5 Post-Hoc Guarantee
+
+**Critical constraint:** All metrics and visualizations MUST be computed post-hoc from ledger/equity tables. They MUST NOT influence execution.
+
+**Enforcement:**
+
+1. Metrics read from `ledger_events` and `equity_curve` tables (read-only)
+2. Equity curve read from pre-computed table (read-only)
+3. Fills extracted from ledger (read-only)
+4. No writes to database during metric/visualization computation
+5. No feedback loop to strategy execution
+
+**Test:**
+
+```r
+# Compute metrics
+metrics1 <- ledgr_compute_metrics(bt)
+
+# Re-compute (should be identical)
+metrics2 <- ledgr_compute_metrics(bt)
+
+stopifnot(identical(metrics1, metrics2))
+
+# Metrics don't affect ledger
+con <- get_connection(bt)
+ledger_before <- nrow(DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = ?", 
+                                       params = list(bt$run_id)))
+metrics <- ledgr_compute_metrics(bt)
+ledger_after <- nrow(DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = ?",
+                                      params = list(bt$run_id)))
+
+stopifnot(ledger_before == ledger_after)
+```
+
+---
+
+## End of Sections 2-4 (CORRECTED)
+
+**Summary:**
+
+- **Section 2:** High-level API contract (data ingestion, `ledgr_backtest()`, S3 methods)
+  - Lazy connections, canonical ID generation, no caching
+- **Section 3:** Indicator infrastructure (construction, registry, interactive dev, adapters)
+  - Preloaded closures allowed, stable_after removed, adapter_csv fixed
+- **Section 4:** Metrics & visualization (fill extraction, basic metrics, ggplot2)
+  - Fills not trades, zero guards, equity_curve table usage
+
+**Next sections:**
+- Section 5: Implementation Constraints
+- Section 6: Testing Requirements
+- Section 7: Deferred Features
+
+---
+
+## Changelog (v2.1.0 from v2.0.2)
+
+### Critical Fixes
+
+**Section 2:**
+1. **2.2.2** - Removed digest-based snapshot_id generation; use v0.1.1 canonical behavior
+2. **2.2.5** - Changed to lazy connection pattern; added `ledgr_snapshot_close()` method
+3. **2.3.1** - Removed "or database connection" option; accept only `ledgr_snapshot`
+4. **2.3.2** - Added explicit specifications for target positions (shares/contracts) and context schemas
+5. **2.4** - Removed caching; methods compute fresh data each call
+6. **2.4.4** - Fixed `as_tibble()` to not mutate object
+
+**Section 3:**
+7. **3.2.1** - Fixed purity wording: "no external data AT EXECUTION TIME"; preloaded closures allowed
+8. **3.4.2** - Clarified interactive tools may execute indicator functions in-memory but never write to DB
+9. **3.5** - Removed `stable_after` parameter entirely from v0.1.2
+10. **3.6.2** - Fixed `adapter_csv()` to require `instrument_id` column and lookup by both timestamp AND instrument
+
+**Section 4:**
+11. **4.2** - Renamed to `ledgr_extract_fills()`; returns ALL fills, not aggregated trades
+12. **4.3.1** - Only accept `metrics="standard"`; added zero guards for win_rate, avg_trade
+13. **4.3.1** - Fixed returns computation with `na.rm=TRUE`
+14. **4.3.1** - Fixed `time_in_market` to compute from `positions_value` not fills
+15. **4.3.2** - Fixed to read from `equity_curve` table directly (not window function over ledger)
+16. **4.4.1** - Removed color specifications; use ggplot2 defaults
+17. **4.4.1** - Made `gridExtra` optional with graceful fallback
+
+### Additions
+
+18. **Preamble** - Added schema assumptions, timestamp format policy, connection lifecycle policy
+19. **2.2.5** - Added connection lifecycle notes and Windows file lock considerations
+20. **3.4** - Added dedicated connection management for interactive tools
+21. **4.3.1** - Added comprehensive zero guards and NA handling
+
+### Approved
+
+This corrected specification is ready for implementation and testing.
+
+# ledgr v0.1.2 Specification - Sections 5-7: Constraints, Testing & Deferrals (CORRECTED)
+
+**Document Version:** 2.2.0  
+**Author:** Max Thomasberger  
+**Date:** December 20, 2025  
+**Release Type:** User Experience Milestone  
+**Status:** Draft for Review  
+**Changelog:** Critical correctness fixes from peer review
+
+---
+
+## Section 5: Implementation Constraints
+
+### 5.1 Overview
+
+Section 5 defines the rules and patterns that all v0.1.2 code MUST follow to maintain compliance with the three hard invariants from Section 1.
+
+**Purpose:** Provide implementers with concrete guidance on how to write code that satisfies the specification without violating constraints.
+
+**Scope:** These constraints apply to ALL new code in v0.1.2. Existing v0.1.1 code remains unchanged.
+
+---
+
+### 5.2 Wrapper Function Constraints
+
+**Rule:** High-level wrapper functions MUST delegate to canonical v0.1.1 implementations.
+
+#### 5.2.1 `ledgr_backtest()` Implementation Pattern
+
+**Required structure:**
+
+```r
+ledgr_backtest <- function(...user_params...) {
+  # Phase 1: VALIDATE inputs
+  # - Type checking
+  # - Range checking
+  # - Existence checking
+  # Early return with helpful errors
+  
+  # Phase 2: BUILD canonical config
+  # - Use existing ledgr_config() builder
+  # - Use existing sub-builders (ledgr_backtest_config, etc.)
+  # - NO timestamp normalization here (done in builders)
+  # - No new config structures
+  
+  # Phase 3: CALL canonical engine
+  result <- ledgr_run(config)
+  
+  # Phase 4: WRAP result
+  # - Add S3 class
+  # - NO additional computation
+  # - NO database writes
+  
+  # Phase 5: RETURN
+  return(result)
+}
+```
+
+**Critical normalization constraint:**
+
+> **Timestamp normalization MUST occur exactly once, in a single canonical place.**
+>
+> If `ledgr_config()` already normalizes timestamps, wrappers MUST NOT normalize again. If builders do not normalize, create a shared helper function used by ALL entrypoints.
+>
+> Double normalization or inconsistent normalization between entrypoints violates Invariant 3.
+
+**Forbidden patterns:**
+
+```r
+# ❌ WRONG - Don't normalize if builder already does
+ledgr_backtest <- function(..., start, end, ...) {
+  start <- iso_utc(start)  # Double normalization if ledgr_config() also does this
+  end <- iso_utc(end)
+  
+  config <- ledgr_config(...)  # Already normalizes internally
+}
+
+# ❌ WRONG - Don't create alternate execution path
+ledgr_backtest <- function(...) {
+  if (simple_case) {
+    # Special fast path
+    run_simplified_engine(...)
+  } else {
+    ledgr_run(...)
+  }
+}
+
+# ❌ WRONG - Don't add execution logic
+ledgr_backtest <- function(...) {
+  result <- ledgr_run(...)
+  
+  # Recompute some fills with different logic
+  result$trades <- custom_trade_aggregation(result)
+  
+  return(result)
+}
+
+# ❌ WRONG - Don't write to database
+ledgr_backtest <- function(...) {
+  result <- ledgr_run(...)
+  
+  # Store summary in new table
+  DBI::dbExecute(con, "INSERT INTO backtest_summaries ...")
+  
+  return(result)
+}
+```
+
+**Correct pattern:**
+
+```r
+# ✅ CORRECT - Pure wrapper (assumes ledgr_config() handles normalization)
+ledgr_backtest <- function(snapshot, strategy, universe, start, end, 
+                            initial_cash = 100000, features = list(), 
+                            fill_model = NULL, db_path = NULL, run_id = NULL) {
+  
+  # Validate
+  if (!inherits(snapshot, "ledgr_snapshot")) {
+    stop("'snapshot' must be a ledgr_snapshot object")
+  }
+  
+  if (length(universe) == 0) {
+    stop("'universe' must contain at least one instrument")
+  }
+  
+  # Build config (normalization happens in builders)
+  config <- ledgr_config(
+    snapshot = snapshot,
+    universe = universe,
+    strategy = strategy,
+    backtest = ledgr_backtest_config(
+      start = start %||% snapshot$metadata$start_date,
+      end = end %||% snapshot$metadata$end_date,
+      initial_cash = initial_cash
+    ),
+    features = features,
+    fill_model = fill_model %||% ledgr_fill_model_instant(),
+    db_path = db_path %||% snapshot$db_path,
+    run_id = run_id
+  )
+  
+  # Call engine
+  result <- ledgr_run(config)
+  
+  # Wrap
+  structure(result, class = c("ledgr_backtest", class(result)))
+}
+```
+
+**Test enforcement:**
+
+```r
+test_that("ledgr_backtest is a pure wrapper", {
+  # Setup
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Direct config approach
+  config <- ledgr_config(
+    snapshot = snap,
+    universe = c("TEST_A", "TEST_B"),
+    strategy = test_strategy,
+    backtest = ledgr_backtest_config(start = "2020-01-01", end = "2020-12-31")
+  )
+  result_direct <- ledgr_run(config)
+  
+  # Wrapper approach
+  result_wrapper <- ledgr_backtest(
+    snapshot = snap,
+    strategy = test_strategy,
+    universe = c("TEST_A", "TEST_B"),
+    start = "2020-01-01",
+    end = "2020-12-31"
+  )
+  
+  # Compare observable outputs (not config, which may have internal differences)
+  # 1. Ledger events must be semantically identical
+  events1 <- get_ledger_events(result_direct$run_id)
+  events2 <- get_ledger_events(result_wrapper$run_id)
+  
+  # Remove run_id and timestamps for comparison
+  compare_cols <- c("event_seq", "event_type", "instrument_id", "side", "qty", "price", "fee")
+  
+  expect_equal(nrow(events1), nrow(events2))
+  expect_identical(events1[, compare_cols], events2[, compare_cols])
+  
+  # 2. Final equity must match
+  eq1 <- get_final_equity(result_direct$run_id)
+  eq2 <- get_final_equity(result_wrapper$run_id)
+  
+  expect_equal(eq1, eq2, tolerance = 1e-10)
+})
+
+# Helper functions for tests (define these in test utilities)
+get_ledger_events <- function(run_id) {
+  con <- get_test_connection()
+  DBI::dbGetQuery(con, "
+    SELECT * FROM ledger_events 
+    WHERE run_id = ? 
+    ORDER BY event_seq
+  ", params = list(run_id))
+}
+
+get_final_equity <- function(run_id) {
+  con <- get_test_connection()
+  DBI::dbGetQuery(con, "
+    SELECT equity FROM equity_curve 
+    WHERE run_id = ? 
+    ORDER BY pulse_seq DESC 
+    LIMIT 1
+  ", params = list(run_id))[[1]]
+}
+```
+
+---
+
+#### 5.2.2 Data Ingestion Adapter Pattern
+
+**Required structure:**
+
+```r
+ledgr_snapshot_from_<source> <- function(...source_params...) {
+  # Phase 1: VALIDATE source availability
+  # - Check for required packages
+  # - Fail gracefully with install instructions
+  
+  # Phase 2: FETCH data
+  # - Use source-specific API
+  # - Handle source errors
+  
+  # Phase 3: NORMALIZE format
+  # - Convert to standard data.frame
+  # - Extract columns BY NAME (not position)
+  # - Normalize timestamps to ISO 8601 UTC
+  # - Validate schema
+  
+  # Phase 4: DELEGATE to canonical ingestion
+  ledgr_snapshot_from_df(bars_df, ...)
+}
+```
+
+**Example (corrected column extraction):**
+
+```r
+ledgr_snapshot_from_yahoo <- function(symbols, from, to, db_path = NULL, 
+                                       snapshot_id = NULL, ...) {
+  
+  # Validate package availability
+  if (!requireNamespace("quantmod", quietly = TRUE)) {
+    stop(
+      "quantmod package required\n",
+      "Install with: install.packages('quantmod')"
+    )
+  }
+  
+  # Fetch data
+  all_bars <- list()
+  
+  for (symbol in symbols) {
+    message("Fetching ", symbol, "...")
+    
+    tryCatch({
+      data <- quantmod::getSymbols(
+        symbol, 
+        from = from, 
+        to = to,
+        auto.assign = FALSE,
+        ...
+      )
+      
+      # Extract by NAME suffix (Yahoo returns SYMBOL.Open, SYMBOL.High, etc.)
+      col_names <- colnames(data)
+      
+      bars <- data.frame(
+        ts_utc = format(zoo::index(data), "%Y-%m-%dT%H:%M:%SZ"),
+        instrument_id = symbol,
+        open = as.numeric(data[, grep("\\.Open$", col_names)]),
+        high = as.numeric(data[, grep("\\.High$", col_names)]),
+        low = as.numeric(data[, grep("\\.Low$", col_names)]),
+        close = as.numeric(data[, grep("\\.Close$", col_names)]),
+        volume = as.numeric(data[, grep("\\.Volume$", col_names)])
+      )
+      
+      all_bars[[symbol]] <- bars
+      
+    }, error = function(e) {
+      stop(sprintf("Failed to fetch %s: %s", symbol, e$message))
+    })
+  }
+  
+  # Combine
+  bars_df <- do.call(rbind, all_bars)
+  
+  # Delegate to canonical ingestion
+  ledgr_snapshot_from_df(bars_df, db_path = db_path, snapshot_id = snapshot_id)
+}
+```
+
+---
+
+### 5.3 Pure Indicator Function Constraints
+
+**Rule:** Indicator functions MUST be pure, deterministic, and side-effect-free.
+
+#### 5.3.1 Required Properties
+
+**Determinism:**
+- Same input → same output
+- No randomness (no `runif()`, `rnorm()`, etc.)
+- No system state (no `Sys.time()`, `Sys.getenv()`)
+
+**No side effects:**
+- No file I/O (no `write.csv()`, `saveRDS()`)
+- No database writes (no `DBI::dbExecute()`)
+- No global state mutation (no `<<-` assignment)
+- No printing/messaging during execution (no `print()`, `message()`)
+
+**No external data access at execution time:**
+- No web requests (no `httr::GET()`)
+- No reading from disk during execution (loading at construction OK)
+- Window parameter is the ONLY data source
+
+**Allowed exception - Preloaded closures:**
+
+Indicators MAY close over immutable data loaded at construction time, provided:
+1. Data is loaded ONCE at indicator construction
+2. Data is never modified after loading
+3. Data source is declared in `params` for provenance
+4. **`params` contains only DETERMINISTIC, STABLE values** (no `Sys.time()`)
+
+```r
+# ✅ ALLOWED - Data loaded at construction with deterministic provenance
+vendor_data <- read.csv("signals.csv")
+data_hash <- digest::digest(vendor_data)  # Deterministic fingerprint
+
+vendor_indicator <- ledgr_indicator(
+  id = "vendor_signal",
+  fn = function(window) {
+    # Closure over vendor_data (immutable)
+    current_ts <- window$ts_utc[nrow(window)]
+    current_inst <- window$instrument_id[nrow(window)]
+    vendor_data$value[
+      vendor_data$ts_utc == current_ts & 
+      vendor_data$instrument_id == current_inst
+    ]
+  },
+  requires_bars = 1L,
+  params = list(
+    data_source = "signals.csv",
+    data_hash = data_hash  # Deterministic provenance
+  )
+)
+
+# ❌ FORBIDDEN - Sys.time() in params (non-deterministic)
+bad_indicator <- ledgr_indicator(
+  id = "bad",
+  fn = function(window) { ... },
+  requires_bars = 10L,
+  params = list(
+    loaded_at = Sys.time()  # Non-deterministic, violates fingerprinting
+  )
+)
+
+# ❌ FORBIDDEN - Reading at execution time
+bad_indicator <- ledgr_indicator(
+  id = "bad",
+  fn = function(window) {
+    # Reads file every execution
+    data <- read.csv("signals.csv")
+    # ...
+  }
+)
+```
+
+**Note on metadata:** If non-deterministic metadata is needed for debugging (e.g., load time), store it outside `params` in a separate field like `indicator$meta` that is NOT used for fingerprinting.
+
+---
+
+#### 5.3.2 Test Enforcement
+
+**Determinism test:**
+
+```r
+test_that("indicator is deterministic", {
+  window <- data.frame(
+    ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+    instrument_id = c("TEST_A", "TEST_A"),
+    open = c(100, 101),
+    high = c(102, 103),
+    low = c(99, 100),
+    close = c(101, 102),
+    volume = c(1000, 1100)
+  )
+  
+  indicator <- ledgr_ind_sma(2)
+  
+  result1 <- indicator$fn(window)
+  result2 <- indicator$fn(window)
+  result3 <- indicator$fn(window)
+  
+  expect_identical(result1, result2)
+  expect_identical(result2, result3)
+})
+```
+
+**No side effects test:**
+
+```r
+test_that("indicator has no side effects", {
+  window <- test_window_data
+  indicator <- ledgr_ind_rsi(14)
+  
+  # Should produce no output
+  expect_silent(indicator$fn(window))
+  
+  # Static check: forbid <<- assignment
+  fn_body <- deparse(indicator$fn)
+  expect_false(any(grepl("<<-", fn_body, fixed = TRUE)),
+               info = "Indicator function contains <<- assignment")
+})
+```
+
+---
+
+### 5.4 Read-Only Interactive Tool Constraints
+
+**Rule:** Interactive tools MUST NOT modify persistent database state.
+
+#### 5.4.1 Implementation Pattern (Environment-Backed)
+
+**Required structure:**
+
+```r
+ledgr_<interactive_tool> <- function(...) {
+  # Phase 1: CREATE dedicated connection
+  con <- ledgr_db_connect(db_path)
+  
+  # Phase 2: QUERY database (read-only)
+  # - Use SELECT queries only
+  # - May create TEMP VIEW/TABLE for convenience
+  
+  # Phase 3: CREATE environment-backed object
+  e <- new.env(parent = emptyenv())
+  
+  # Store data in environment
+  e$data <- query_results
+  e$.con <- con
+  e$.private <- list(...)  # Private fields
+  
+  # Phase 4: SET UP cleanup via finalizer
+  reg.finalizer(e, function(env) {
+    if (!is.null(env$.con) && DBI::dbIsValid(env$.con)) {
+      DBI::dbDisconnect(env$.con)
+    }
+  }, onexit = TRUE)
+  
+  # Phase 5: SET class and RETURN
+  class(e) <- "ledgr_<tool_name>"
+  e
+}
+```
+
+**Example (corrected finalizer pattern):**
+
+```r
+ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L) {
+  
+  # Open dedicated connection
+  con <- ledgr_db_connect(snapshot$db_path)
+  
+  # Query historical window (READ ONLY)
+  window <- DBI::dbGetQuery(con, "
+    SELECT ts_utc, instrument_id, open, high, low, close, volume
+    FROM snapshot_bars
+    WHERE snapshot_id = ? 
+      AND instrument_id = ? 
+      AND ts_utc <= ?
+    ORDER BY ts_utc DESC
+    LIMIT ?
+  ", params = list(snapshot$snapshot_id, instrument_id, ts_utc, lookback))
+  
+  # Reverse to chronological order
+  window <- window[rev(seq_len(nrow(window))), ]
+  
+  # Create environment-backed object
+  e <- new.env(parent = emptyenv())
+  
+  # Store data
+  e$window <- window
+  e$instrument_id <- instrument_id
+  e$ts_utc <- ts_utc
+  e$lookback <- lookback
+  e$.con <- con
+  e$.snapshot <- snapshot  # For test_dates() helper
+  
+  # Set up cleanup finalizer
+  reg.finalizer(e, function(env) {
+    if (!is.null(env$.con) && DBI::dbIsValid(env$.con)) {
+      DBI::dbDisconnect(env$.con)
+      env$.con <- NULL
+    }
+  }, onexit = TRUE)
+  
+  # Set class
+  class(e) <- "ledgr_indicator_dev"
+  
+  e
+}
+
+# Explicit close method
+close.ledgr_indicator_dev <- function(x, ...) {
+  if (!is.null(x$.con) && DBI::dbIsValid(x$.con)) {
+    DBI::dbDisconnect(x$.con)
+    x$.con <- NULL
+  }
+  invisible(x)
+}
+
+# Helper methods access environment fields
+test.ledgr_indicator_dev <- function(x, fn) {
+  result <- fn(x$window)
+  cat("Result:", result, "\n")
+  invisible(result)
+}
+
+test_dates.ledgr_indicator_dev <- function(x, fn, dates) {
+  results <- lapply(dates, function(date) {
+    # Create new dev session for each date
+    temp_dev <- ledgr_indicator_dev(
+      snapshot = x$.snapshot,
+      instrument_id = x$instrument_id,
+      ts_utc = date,
+      lookback = x$lookback
+    )
+    value <- fn(temp_dev$window)
+    close(temp_dev)
+    list(date = date, value = value)
+  })
+  do.call(rbind, lapply(results, as.data.frame))
+}
+
+plot.ledgr_indicator_dev <- function(x, ...) {
+  plot(as.Date(x$window$ts_utc), x$window$close,
+       type = "l", xlab = "Date", ylab = "Close Price",
+       main = sprintf("%s - Window ending %s", x$instrument_id, x$ts_utc))
+}
+
+# Print method
+print.ledgr_indicator_dev <- function(x, ...) {
+  cat("ledgr Indicator Development Session\n")
+  cat("===================================\n\n")
+  cat("Instrument:  ", x$instrument_id, "\n")
+  cat("End Date:    ", x$ts_utc, "\n")
+  cat("Lookback:    ", x$lookback, "bars\n")
+  cat("Window:      ", x$window$ts_utc[1], "to", 
+                       x$window$ts_utc[nrow(x$window)], "\n\n")
+  cat("Available:\n")
+  cat("  $window       - Historical OHLCV data (data.frame)\n")
+  cat("  test(fn)      - Test function on current window\n")
+  cat("  test_dates()  - Test on multiple dates\n")
+  cat("  plot()        - Visualize window\n")
+  invisible(x)
+}
+```
+
+---
+
+#### 5.4.2 Test Enforcement
+
+**Persistent table mutation test:**
+
+```r
+test_that("interactive tool does not mutate persistent tables", {
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Capture state of persistent tables
+  con <- ledgr_db_connect(snap$db_path)
+  persistent_tables <- c("snapshots", "snapshot_bars", "snapshot_instruments")
+  
+  counts_before <- sapply(persistent_tables, function(tbl) {
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+  })
+  
+  DBI::dbDisconnect(con)
+  
+  # Call interactive tool
+  dev <- ledgr_indicator_dev(snap, "TEST_A", "2020-06-15", lookback = 50)
+  
+  # Use tool methods
+  test(dev, function(w) mean(w$close))
+  plot(dev)
+  
+  # Clean up
+  close(dev)
+  
+  # Verify no persistent mutations
+  con <- ledgr_db_connect(snap$db_path)
+  counts_after <- sapply(persistent_tables, function(tbl) {
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+  })
+  
+  DBI::dbDisconnect(con)
+  ledgr_snapshot_close(snap)
+  
+  expect_identical(counts_before, counts_after)
+})
+```
+
+**Note:** TEMP object cleanup tests are fragile with DuckDB and have been removed. The persistent table mutation test is sufficient to enforce Invariant 2.
+
+---
+
+### 5.5 Database Connection Hygiene
+
+**Rule:** Manage connection lifecycle explicitly to avoid resource leaks.
+
+#### 5.5.1 Lazy Connection Pattern (Preferred)
+
+**For snapshot and backtest objects:**
+
+```r
+# Store path, not connection
+structure(
+  list(
+    db_path = "/path/to/db.duckdb",
+    snapshot_id = "...",
+    .con = NULL  # Opened on-demand
+  ),
+  class = "ledgr_snapshot"
+)
+
+# Internal helper (not exported)
+get_connection <- function(snapshot) {
+  if (is.null(snapshot$.con) || !DBI::dbIsValid(snapshot$.con)) {
+    snapshot$.con <- DBI::dbConnect(duckdb::duckdb(), dbdir = snapshot$db_path)
+  }
+  snapshot$.con
+}
+
+# Use in methods
+print.ledgr_snapshot <- function(x, ...) {
+  con <- get_connection(x)  # Opens if needed
+  # Query database
+  # ...
+}
+```
+
+**Benefits:**
+- Avoids Windows file lock issues
+- Safe to pass objects between functions
+- Connections auto-close on session exit
+
+---
+
+#### 5.5.2 Dedicated Connection Pattern (For Interactive Tools)
+
+**For tools that need isolated connections:**
+
+```r
+ledgr_tool <- function(...) {
+  # Create dedicated connection
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+  
+  # Create environment-backed object
+  e <- new.env(parent = emptyenv())
+  e$.con <- con
+  # ... other fields
+  
+  # Set up finalizer
+  reg.finalizer(e, function(env) {
+    if (!is.null(env$.con) && DBI::dbIsValid(env$.con)) {
+      DBI::dbDisconnect(env$.con)
+    }
+  }, onexit = TRUE)
+  
+  class(e) <- "ledgr_tool"
+  e
+}
+
+# Provide explicit close
+close.ledgr_tool <- function(x, ...) {
+  if (!is.null(x$.con) && DBI::dbIsValid(x$.con)) {
+    DBI::dbDisconnect(x$.con)
+    x$.con <- NULL
+  }
+  invisible(x)
+}
+```
+
+---
+
+#### 5.5.3 Connection Hygiene Test
+
+**Functional test (more reliable than leak counting):**
+
+```r
+test_that("connections can be opened and closed repeatedly", {
+  # Create temp database
+  db_path <- tempfile(fileext = ".duckdb")
+  
+  # Open/close cycle (should not leak or lock)
+  for (i in 1:10) {
+    con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+    DBI::dbExecute(con, "CREATE TABLE IF NOT EXISTS test (x INT)")
+    DBI::dbDisconnect(con)
+  }
+  
+  # Should be able to delete (not locked on Windows)
+  expect_true(file.exists(db_path))
+  
+  # Give OS time to release lock
+  Sys.sleep(0.1)
+  
+  # Should not error (file not locked)
+  expect_silent(unlink(db_path))
+})
+```
+
+---
+
+### 5.6 Error Handling Patterns
+
+**Rule:** Fail fast with helpful, actionable error messages.
+
+#### 5.6.1 Input Validation Errors
+
+**Pattern:**
+
+```r
+validate_input <- function(snapshot, universe, ...) {
+  # Check type
+  if (!inherits(snapshot, "ledgr_snapshot")) {
+    stop(
+      "'snapshot' must be a ledgr_snapshot object\n",
+      "Create with: ledgr_snapshot_from_yahoo() or ledgr_snapshot_from_df()"
+    )
+  }
+  
+  # Check non-empty
+  if (length(universe) == 0) {
+    stop("'universe' must contain at least one instrument")
+  }
+  
+  # Check existence
+  con <- get_connection(snapshot)
+  available <- DBI::dbGetQuery(con, "
+    SELECT DISTINCT instrument_id FROM snapshot_bars WHERE snapshot_id = ?
+  ", params = list(snapshot$snapshot_id))$instrument_id
+  
+  missing <- setdiff(universe, available)
+  if (length(missing) > 0) {
+    stop(sprintf(
+      "Instruments not found in snapshot: %s\nAvailable: %s",
+      paste(missing, collapse = ", "),
+      paste(available, collapse = ", ")
+    ))
+  }
+}
+```
+
+---
+
+#### 5.6.2 Strategy Execution Errors
+
+**Pattern:**
+
+```r
+tryCatch({
+  target_positions <- strategy(ctx)
+}, error = function(e) {
+  stop(sprintf(
+    "Error in strategy execution at %s:\n  %s\n\nContext:\n  Run ID: %s\n  Pulse: %d of %d\n\nDebug with: ledgr_pulse_snapshot(snapshot, '%s')",
+    ctx$ts_utc,
+    e$message,
+    run_id,
+    pulse_num,
+    total_pulses,
+    ctx$ts_utc
+  ))
+})
+```
+
+---
+
+#### 5.6.3 Graceful Package Dependency Errors
+
+**Pattern:**
+
+```r
+check_package <- function(pkg_name, install_cmd) {
+  if (!requireNamespace(pkg_name, quietly = TRUE)) {
+    stop(sprintf(
+      "%s package required\nInstall with: %s",
+      pkg_name,
+      install_cmd
+    ))
+  }
+}
+
+# Usage
+ledgr_snapshot_from_yahoo <- function(...) {
+  check_package("quantmod", "install.packages('quantmod')")
+  # ...
+}
+```
+
+---
+
+### 5.7 Timestamp Normalization
+
+**Rule:** Accept flexible input, normalize to ISO 8601 UTC internally.
+
+#### 5.7.1 Normalization Function
+
+**Accepted formats (strict):**
+- ISO 8601: `"2020-01-01T00:00:00Z"` or `"2020-01-01T12:34:56Z"`
+- Date-only: `"2020-01-01"` (interpreted as 00:00:00 UTC)
+- R Date objects
+- R POSIXct objects (converted to UTC)
+
+**Rejected formats:**
+- Locale-dependent strings (e.g., `"01/02/2020"`)
+- Ambiguous formats
+
+```r
+# Internal helper (not exported)
+iso_utc <- function(ts) {
+  # POSIXct - convert to UTC
+  if (inherits(ts, "POSIXct")) {
+    # Force UTC interpretation (no lubridate dependency)
+    if (attr(ts, "tzone") != "UTC") {
+      ts <- as.POSIXct(format(ts, tz = "UTC"), tz = "UTC")
+    }
+    return(format(ts, "%Y-%m-%dT%H:%M:%SZ"))
+  }
+  
+  # Date object
+  if (inherits(ts, "Date")) {
+    return(sprintf("%sT00:00:00Z", as.character(ts)))
+  }
+  
+  # Character strings
+  if (is.character(ts)) {
+    # Already ISO format with Z
+    if (grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", ts)) {
+      return(ts)
+    }
+    
+    # Date-only format YYYY-MM-DD
+    if (grepl("^\\d{4}-\\d{2}-\\d{2}$", ts)) {
+      return(sprintf("%sT00:00:00Z", ts))
+    }
+    
+    # ISO without Z
+    if (grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$", ts)) {
+      return(paste0(ts, "Z"))
+    }
+    
+    # Reject other formats
+    stop(sprintf(
+      "Unsupported timestamp format: %s\nAccepted formats:\n  - ISO 8601: '2020-01-01T00:00:00Z'\n  - Date-only: '2020-01-01'\n  - R Date/POSIXct objects",
+      ts
+    ))
+  }
+  
+  stop(sprintf("Cannot normalize timestamp of type: %s", class(ts)[1]))
+}
+```
+
+**Usage:**
+
+```r
+# In config builders (NOT in wrappers if builders already normalize)
+ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
+  list(
+    start = iso_utc(start),
+    end = iso_utc(end),
+    initial_cash = initial_cash
+  )
+}
+```
+
+---
+
+## Section 6: Testing Requirements
+
+### 6.1 Overview
+
+Section 6 defines the testing requirements for v0.1.2 to ensure compliance with invariants and specification correctness.
+
+**Testing philosophy:**
+1. **Zero regressions** - All v0.1.1 tests must pass unchanged
+2. **Wrapper correctness** - New APIs must be equivalent to canonical paths
+3. **Isolation** - Interactive tools must not mutate state
+4. **Integration** - Adapters must produce valid results
+
+---
+
+### 6.2 Test Categories
+
+#### 6.2.1 Regression Tests (Priority: CRITICAL)
+
+**Purpose:** Ensure v0.1.2 does not break v0.1.1 functionality.
+
+**Requirement:** ALL v0.1.1 acceptance tests (AT1-AT12) MUST pass unchanged.
+
+**Test suite:**
+
+```r
+# tests/testthat/test-regression.R
+
+test_that("v0.1.1 acceptance tests pass", {
+  # Run each acceptance test as a separate test
+  # (Better granularity than source())
+  
+  # AT1: Snapshot creation
+  source("tests/acceptance/test-AT1-snapshot-creation.R")
+  
+  # AT2-AT12: Similar pattern
+  # ...
+  
+  # All should pass without modification
+})
+```
+
+**Enforcement:** CI/CD pipeline MUST run v0.1.1 test suite on every commit as first step. Fail fast on regression.
+
+---
+
+#### 6.2.2 Equivalence Tests (Priority: CRITICAL)
+
+**Purpose:** Verify high-level APIs produce identical results to low-level APIs.
+
+**Invariant 3 enforcement:**
+
+```r
+# tests/testthat/test-equivalence.R
+
+test_that("ledgr_backtest() equivalent to ledgr_run()", {
+  # Setup
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Approach 1: Direct config
+  config <- ledgr_config(
+    snapshot = snap,
+    universe = c("TEST_A", "TEST_B"),
+    strategy = test_strategy,
+    backtest = ledgr_backtest_config(
+      start = "2020-01-01",
+      end = "2020-12-31",
+      initial_cash = 100000
+    )
+  )
+  result_direct <- ledgr_run(config)
+  
+  # Approach 2: Wrapper
+  result_wrapper <- ledgr_backtest(
+    snapshot = snap,
+    strategy = test_strategy,
+    universe = c("TEST_A", "TEST_B"),
+    start = "2020-01-01",
+    end = "2020-12-31",
+    initial_cash = 100000
+  )
+  
+  # Compare ledger events (FULL comparison, not subset)
+  con <- get_connection(snap)
+  
+  events1 <- DBI::dbGetQuery(con, "
+    SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee
+    FROM ledger_events
+    WHERE run_id = ?
+    ORDER BY event_seq
+  ", params = list(result_direct$run_id))
+  
+  events2 <- DBI::dbGetQuery(con, "
+    SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee
+    FROM ledger_events
+    WHERE run_id = ?
+    ORDER BY event_seq
+  ", params = list(result_wrapper$run_id))
+  
+  # Compare all semantic fields
+  expect_equal(nrow(events1), nrow(events2))
+  expect_identical(events1$event_seq, events2$event_seq)
+  expect_identical(events1$ts_utc, events2$ts_utc)
+  expect_identical(events1$event_type, events2$event_type)
+  expect_identical(events1$instrument_id, events2$instrument_id)
+  expect_identical(events1$side, events2$side)
+  expect_equal(events1$qty, events2$qty, tolerance = 1e-10)
+  expect_equal(events1$price, events2$price, tolerance = 1e-10)
+  expect_equal(events1$fee, events2$fee, tolerance = 1e-10)
+  
+  # Compare final equity
+  eq1 <- DBI::dbGetQuery(con, "
+    SELECT equity FROM equity_curve WHERE run_id = ? ORDER BY pulse_seq DESC LIMIT 1
+  ", params = list(result_direct$run_id))[[1]]
+  
+  eq2 <- DBI::dbGetQuery(con, "
+    SELECT equity FROM equity_curve WHERE run_id = ? ORDER BY pulse_seq DESC LIMIT 1
+  ", params = list(result_wrapper$run_id))[[1]]
+  
+  expect_equal(eq1, eq2, tolerance = 1e-10)
+  
+  # Cleanup
+  ledgr_snapshot_close(snap)
+})
+
+test_that("snapshot adapters produce identical snapshots", {
+  # Create bars data.frame
+  bars <- test_bars_df
+  
+  # Approach 1: Direct from df
+  snap1 <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  
+  # Approach 2: Via CSV
+  csv_path <- tempfile(fileext = ".csv")
+  write.csv(bars, csv_path, row.names = FALSE)
+  snap2 <- ledgr_snapshot_from_csv(csv_path, db_path = tempfile(fileext = ".duckdb"))
+  
+  # Compare snapshot hashes
+  hash1 <- snap1$metadata$content_hash
+  hash2 <- snap2$metadata$content_hash
+  
+  expect_equal(hash1, hash2)
+  
+  # Cleanup
+  ledgr_snapshot_close(snap1)
+  ledgr_snapshot_close(snap2)
+  unlink(csv_path)
+})
+```
+
+---
+
+#### 6.2.3 Isolation Tests (Priority: CRITICAL)
+
+**Purpose:** Verify interactive tools do not mutate persistent state.
+
+**Invariant 2 enforcement:**
+
+```r
+# tests/testthat/test-isolation.R
+
+test_that("ledgr_indicator_dev() does not mutate database", {
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Capture persistent table state
+  con <- ledgr_db_connect(snap$db_path)
+  persistent_tables <- c("snapshots", "snapshot_bars", "snapshot_instruments")
+  
+  counts_before <- sapply(persistent_tables, function(tbl) {
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+  })
+  
+  DBI::dbDisconnect(con)
+  
+  # Create dev session
+  dev <- ledgr_indicator_dev(snap, "TEST_A", "2020-06-15", lookback = 50)
+  
+  # Use all methods
+  test(dev, function(w) mean(w$close))
+  test_dates(dev, function(w) mean(w$close), dates = c("2020-01-15", "2020-03-15"))
+  plot(dev)
+  
+  # Close
+  close(dev)
+  
+  # Verify no mutations
+  con <- ledgr_db_connect(snap$db_path)
+  counts_after <- sapply(persistent_tables, function(tbl) {
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+  })
+  
+  DBI::dbDisconnect(con)
+  ledgr_snapshot_close(snap)
+  
+  expect_identical(counts_before, counts_after)
+})
+
+test_that("ledgr_pulse_snapshot() does not mutate database", {
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Capture state
+  con <- ledgr_db_connect(snap$db_path)
+  persistent_tables <- c("snapshots", "snapshot_bars", "snapshot_instruments")
+  
+  counts_before <- sapply(persistent_tables, function(tbl) {
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+  })
+  
+  DBI::dbDisconnect(con)
+  
+  # Create pulse snapshot
+  ctx <- ledgr_pulse_snapshot(
+    snapshot = snap,
+    universe = c("TEST_A", "TEST_B"),
+    ts_utc = "2020-06-15",
+    features = list(ledgr_ind_sma(50))
+  )
+  
+  # Access fields
+  _ <- ctx$bars
+  _ <- ctx$features
+  
+  # Close
+  close(ctx)
+  
+  # Verify no mutations
+  con <- ledgr_db_connect(snap$db_path)
+  counts_after <- sapply(persistent_tables, function(tbl) {
+    DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) FROM %s", tbl))[[1]]
+  })
+  
+  DBI::dbDisconnect(con)
+  ledgr_snapshot_close(snap)
+  
+  expect_identical(counts_before, counts_after)
+})
+```
+
+---
+
+#### 6.2.4 Integration Tests (Priority: HIGH)
+
+**Purpose:** Verify adapters work end-to-end.
+
+**Use fixture data (not live):**
+
+```r
+# tests/testthat/test-integration.R
+
+test_that("quantmod adapter works with fixture", {
+  skip_if_not_installed("quantmod")
+  
+  # Use committed fixture CSV (not live Yahoo data)
+  fixture_path <- system.file("testdata", "aapl_2020_jan.csv", package = "ledgr")
+  
+  # Test CSV ingestion (quantmod pathway validated separately in interactive tests)
+  snap <- ledgr_snapshot_from_csv(fixture_path)
+  
+  # Should have created valid snapshot
+  expect_s3_class(snap, "ledgr_snapshot")
+  expect_true(file.exists(snap$db_path))
+  
+  # Should have data
+  expect_true(snap$metadata$n_bars > 0)
+  expect_equal(snap$metadata$n_instruments, 1L)
+  
+  # Can run backtest
+  bt <- ledgr_backtest(
+    snapshot = snap,
+    strategy = function(ctx) c(AAPL = 100),
+    universe = "AAPL"
+  )
+  
+  expect_s3_class(bt, "ledgr_backtest")
+  
+  # Cleanup
+  ledgr_snapshot_close(snap)
+})
+
+# Separate: live Yahoo test (interactive only, not in CI)
+test_that("quantmod adapter works with live Yahoo", {
+  skip_if_offline()
+  skip_on_cran()
+  skip_on_ci()
+  
+  # Real Yahoo fetch (can break due to API changes, adjustments, etc.)
+  snap <- ledgr_snapshot_from_yahoo(
+    symbols = "AAPL",
+    from = "2020-01-01",
+    to = "2020-01-31"
+  )
+  
+  expect_s3_class(snap, "ledgr_snapshot")
+  expect_true(snap$metadata$n_bars > 0)
+  
+  ledgr_snapshot_close(snap)
+})
+
+test_that("TTR adapter works", {
+  skip_if_not_installed("TTR")
+  
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Wrap TTR indicator
+  rsi <- ledgr_adapter_r(TTR::RSI, "ttr_rsi", 14L, n = 14)
+  
+  # Should create valid indicator
+  expect_s3_class(rsi, "ledgr_indicator")
+  expect_equal(rsi$requires_bars, 14L)
+  
+  # Should work in backtest
+  bt <- ledgr_backtest(
+    snapshot = snap,
+    strategy = function(ctx) c(TEST_A = 100),
+    universe = "TEST_A",
+    features = list(rsi)
+  )
+  
+  expect_s3_class(bt, "ledgr_backtest")
+  
+  # Cleanup
+  ledgr_snapshot_close(snap)
+})
+```
+
+---
+
+#### 6.2.5 Unit Tests (Priority: HIGH)
+
+**Purpose:** Test individual functions in isolation.
+
+```r
+# tests/testthat/test-unit.R
+
+test_that("iso_utc() normalizes timestamps correctly", {
+  # Date object
+  expect_equal(iso_utc(as.Date("2020-01-01")), "2020-01-01T00:00:00Z")
+  
+  # POSIXct
+  ts <- as.POSIXct("2020-01-01 12:34:56", tz = "UTC")
+  expect_equal(iso_utc(ts), "2020-01-01T12:34:56Z")
+  
+  # String formats
+  expect_equal(iso_utc("2020-01-01"), "2020-01-01T00:00:00Z")
+  expect_equal(iso_utc("2020-01-01T00:00:00Z"), "2020-01-01T00:00:00Z")
+  expect_equal(iso_utc("2020-01-01T12:34:56"), "2020-01-01T12:34:56Z")
+  
+  # Reject unsupported formats
+  expect_error(iso_utc("01/02/2020"), "Unsupported timestamp format")
+})
+
+test_that("ledgr_indicator validates inputs", {
+  expect_error(
+    ledgr_indicator(id = "", fn = mean, requires_bars = 10),
+    "id"
+  )
+  
+  expect_error(
+    ledgr_indicator(id = "test", fn = "not_a_function", requires_bars = 10),
+    "fn.*function"
+  )
+  
+  expect_error(
+    ledgr_indicator(id = "test", fn = mean, requires_bars = -1),
+    "requires_bars"
+  )
+})
+
+test_that("ledgr_extract_fills() handles empty ledger", {
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Create backtest with no trades
+  bt <- ledgr_backtest(
+    snapshot = snap,
+    strategy = function(ctx) c(TEST_A = 0),  # Never trade
+    universe = "TEST_A"
+  )
+  
+  fills <- ledgr_extract_fills(bt)
+  
+  expect_s3_class(fills, "tbl_df")
+  expect_equal(nrow(fills), 0)
+  
+  # Cleanup
+  ledgr_snapshot_close(snap)
+})
+
+test_that("ledgr_compute_metrics() handles no trades gracefully", {
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  # Backtest with no trades
+  bt <- ledgr_backtest(
+    snapshot = snap,
+    strategy = function(ctx) c(TEST_A = 0),
+    universe = "TEST_A"
+  )
+  
+  metrics <- ledgr_compute_metrics(bt)
+  
+  expect_equal(metrics$n_trades, 0)
+  expect_true(is.na(metrics$win_rate))
+  expect_true(is.na(metrics$avg_trade))
+  
+  # Cleanup
+  ledgr_snapshot_close(snap)
+})
+```
+
+---
+
+#### 6.2.6 UX Tests (Priority: MEDIUM)
+
+**Purpose:** Verify error messages and print output quality.
+
+```r
+# tests/testthat/test-ux.R
+
+test_that("print methods produce clean output", {
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  output <- capture.output(print(snap))
+  
+  expect_true(any(grepl("ledgr_snapshot", output)))
+  expect_true(any(grepl("Bars:", output)))
+  expect_true(any(grepl("Instruments:", output)))
+  
+  ledgr_snapshot_close(snap)
+})
+
+test_that("error messages are helpful", {
+  expect_error(
+    ledgr_backtest(
+      snapshot = "not_a_snapshot",
+      strategy = function(ctx) c(),
+      universe = "TEST"
+    ),
+    "ledgr_snapshot object.*Create with"
+  )
+  
+  snap <- ledgr_snapshot_from_df(test_bars)
+  
+  expect_error(
+    ledgr_backtest(
+      snapshot = snap,
+      strategy = function(ctx) c(),
+      universe = character(0)
+    ),
+    "at least one instrument"
+  )
+  
+  ledgr_snapshot_close(snap)
+})
+```
+
+---
+
+### 6.3 Coverage Requirements
+
+**Minimum coverage targets:**
+
+| Category | Coverage Target | Priority |
+|----------|----------------|----------|
+| High-level APIs | 100% | CRITICAL |
+| Interactive tools | 100% | CRITICAL |
+| Adapters | 90% | HIGH |
+| Helper functions | 80% | MEDIUM |
+| Print/summary methods | 70% | MEDIUM |
+
+**Measurement:**
+
+```r
+# Use covr package
+library(covr)
+
+cov <- package_coverage()
+print(cov)
+
+# Fail CI if below threshold
+total_cov <- percent_coverage(cov)
+if (total_cov < 80) {
+  stop(sprintf("Coverage %.1f%% below required 80%%", total_cov))
+}
+```
+
+---
+
+### 6.4 Test Execution Order
+
+**CI/CD Pipeline:**
+
+1. **Regression tests** (v0.1.1 acceptance) - MUST PASS FIRST
+2. **Unit tests** - Fast feedback
+3. **Equivalence tests** - Verify wrapper correctness
+4. **Isolation tests** - Verify read-only guarantee
+5. **Integration tests** - End-to-end workflows
+6. **UX tests** - Error messages and output quality
+
+**Fail fast:** Stop pipeline on first failure in critical tests (regression, equivalence, isolation).
+
+---
+
+### 6.5 Test Data
+
+**Standard test fixtures (CORRECTED):**
+
+```r
+# tests/testthat/fixtures/test_bars.R
+
+# Set seed FIRST (before any randomness)
+set.seed(12345)
+
+# Define date range
+dates <- seq.Date(as.Date("2020-01-01"), as.Date("2020-12-31"), by = "day")
+n_days <- length(dates)  # 366 (2020 is leap year)
+
+# Define instruments
+instruments <- c("TEST_A", "TEST_B")
+
+# Create panel structure (cartesian product: 732 rows total)
+test_bars <- expand.grid(
+  date = dates,
+  instrument_id = instruments,
+  stringsAsFactors = FALSE
+)
+
+# Sort by instrument, then date
+test_bars <- test_bars[order(test_bars$instrument_id, test_bars$date), ]
+
+# Generate per-instrument random walks
+test_bars$open <- NA
+test_bars$high <- NA
+test_bars$low <- NA
+test_bars$close <- NA
+test_bars$volume <- NA
+
+for (inst in instruments) {
+  idx <- test_bars$instrument_id == inst
+  n <- sum(idx)
+  
+  # Random walk for prices
+  returns <- rnorm(n, mean = 0.0005, sd = 0.02)
+  prices <- 100 * cumprod(1 + returns)
+  
+  test_bars$open[idx] <- prices
+  test_bars$close[idx] <- prices * (1 + rnorm(n, 0, 0.005))
+  test_bars$high[idx] <- pmax(test_bars$open[idx], test_bars$close[idx]) * (1 + abs(rnorm(n, 0, 0.01)))
+  test_bars$low[idx] <- pmin(test_bars$open[idx], test_bars$close[idx]) * (1 - abs(rnorm(n, 0, 0.01)))
+  test_bars$volume[idx] <- round(rnorm(n, 1000000, 200000))
+}
+
+# Add ISO timestamps
+test_bars$ts_utc <- sprintf("%sT00:00:00Z", test_bars$date)
+
+# Final structure (732 rows: 366 days × 2 instruments)
+test_bars <- test_bars[, c("ts_utc", "instrument_id", "open", "high", "low", "close", "volume")]
+
+# Verify structure
+stopifnot(nrow(test_bars) == 732)
+stopifnot(length(unique(test_bars$instrument_id)) == 2)
+stopifnot(all(table(test_bars$instrument_id) == 366))
+```
+
+**Example strategy:**
+
+```r
+# Simple buy-and-hold
+test_strategy <- function(ctx) {
+  c(TEST_A = 100, TEST_B = 50)
+}
+```
+
+---
+
+## Section 7: Deferred Features
+
+### 7.1 Overview
+
+Section 7 explicitly defines what is OUT OF SCOPE for v0.1.2 and when deferred features will be delivered.
+
+**Purpose:** Prevent scope creep and set clear expectations.
+
+---
+
+### 7.2 Deferred to v0.1.3 (Documentation Release)
+
+**Target:** Q1 2026
+
+#### 7.2.1 Comprehensive Documentation
+
+**What:**
+- Full vignettes (5+):
+  - "Getting Started with ledgr"
+  - "Developing Custom Indicators"
+  - "Using Technical Indicators (TTR Integration)"
+  - "Interactive Strategy Development"
+  - "ledgr and the R Ecosystem"
+- pkgdown website with full API documentation
+- Tutorial videos
+- Migration guides (from Backtesting.py, quantstrat)
+
+**Why deferred:**
+- v0.1.2 UX must be complete before documenting it
+- Writing vignettes for poor UX is counterproductive
+- Documentation showcases the improved v0.1.2 experience
+
+**What ships in v0.1.2:**
+- README with quickstart example
+- Function documentation (roxygen)
+- Vignette outlines (structure only)
+
+---
+
+#### 7.2.2 PerformanceAnalytics Integration
+
+**What:**
+- `ledgr_metrics_pa()` function
+- 100+ advanced metrics:
+  - Sharpe Ratio, Sortino Ratio, Calmar Ratio
+  - Information Ratio, Treynor Ratio
+  - VaR, CVaR, Expected Shortfall
+  - Omega Ratio, Kappa Ratios
+  - Upside/Downside capture
+- Integration with `chart.RiskReturnScatter()` and other PA visualizations
+
+**Why deferred:**
+- v0.1.2 has basic metrics (8) sufficient for initial release
+- PA integration requires careful API design
+- Documentation should show PA integration examples
+
+**What ships in v0.1.2:**
+- Basic metrics: total_return, annualized_return, volatility, max_drawdown, win_rate, avg_trade, n_trades, time_in_market
+- Note in docs: "Advanced metrics via PerformanceAnalytics in v0.1.3"
+
+---
+
+#### 7.2.3 Advanced Visualizations
+
+**What:**
+- Trade distribution plots
+- Returns histogram
+- Rolling Sharpe ratio
+- Interactive plots (plotly)
+- Multi-backtest comparison plots
+
+**Why deferred:**
+- v0.1.2 has basic equity + drawdown plot
+- Advanced viz requires more complex ggplot2/plotly code
+- Should be documented with examples
+
+**What ships in v0.1.2:**
+- `plot.ledgr_backtest()` with equity curve + drawdown
+- Note: Additional plot types coming in v0.1.3
+
+---
+
+#### 7.2.4 xts Conversion Utilities
+
+**What:**
+- `as_xts.ledgr_backtest()` method
+- Seamless integration with xts/zoo workflows
+- PerformanceAnalytics compatibility
+
+**Why deferred:**
+- Low priority for initial release
+- Requires testing against PA expectations
+
+**What ships in v0.1.2:**
+- tibble outputs only
+- Note: xts conversion in v0.1.3
+
+---
+
+### 7.3 Deferred to v0.2.0 (Paper Trading)
+
+**Target:** Q2 2026
+
+#### 7.3.1 Live Data Adapters
+
+**What:**
+- `ledgr_data_yahoo_live()` - Real-time Yahoo Finance
+- `ledgr_data_ib_live()` - Interactive Brokers feed
+- `ledgr_data_alpaca_live()` - Alpaca Markets feed
+- Streaming data ingestion
+
+**Why deferred:**
+- v0.1.2 is backtest-only
+- Live data requires different architecture (streaming)
+- Paper trading prerequisite
+
+**What ships in v0.1.2:**
+- Historical snapshot adapters only
+- Architecture supports future live adapters
+
+---
+
+#### 7.3.2 Paper Trading Mode
+
+**What:**
+- `ledgr_run_live()` function
+- Mode: `"paper"` (live data + simulated fills)
+- Real-time strategy execution
+- Position reconciliation
+- Monitoring dashboard
+
+**Why deferred:**
+- v0.1.2 focuses on backtest UX
+- Paper trading requires live data adapters
+- Needs production-hardening
+
+**What ships in v0.1.2:**
+- Backtest mode only
+- Architecture designed for future paper/live modes
+
+---
+
+#### 7.3.3 Walk-Forward Optimization
+
+**What:**
+- `ledgr_walk_forward()` function
+- Train/test period management
+- Out-of-sample validation
+- Result aggregation across folds
+
+**Why deferred:**
+- Complex feature requiring solid backtest foundation
+- Users can implement manually in v0.1.2
+- Needs careful API design
+
+**What ships in v0.1.2:**
+- Manual walk-forward possible via loops
+- Vision documented in spec
+
+---
+
+#### 7.3.4 Benchmark Comparison
+
+**What:**
+- `ledgr_compare()` function
+- Alpha, Beta, Information Ratio computation
+- Relative performance metrics
+- Benchmark visualization
+
+**Why deferred:**
+- Requires multiple backtest comparison infrastructure
+- PerformanceAnalytics dependency
+
+**What ships in v0.1.2:**
+- Single backtest metrics only
+
+---
+
+#### 7.3.5 Round-Trip Trade Aggregation
+
+**What:**
+- `ledgr_aggregate_trades_roundtrip()` function
+- Entry-to-exit trade grouping
+- Hold time analysis
+- Win/loss streaks
+
+**Why deferred:**
+- Complex aggregation logic
+- v0.1.2 has FIFO fill extraction (sufficient)
+- Needs user feedback on desired semantics
+
+**What ships in v0.1.2:**
+- `ledgr_extract_fills()` with realized P&L
+
+---
+
+### 7.4 Deferred to v0.3.0 (Production Trading)
+
+**Target:** Q3 2026
+
+#### 7.4.1 Broker Adapters
+
+**What:**
+- `ledgr_broker_ib()` - Interactive Brokers
+- `ledgr_broker_alpaca()` - Alpaca Markets
+- `ledgr_broker_tdameritrade()` - TD Ameritrade
+- Order submission, cancellation, amendment
+- Fill confirmations
+- Position queries
+
+**Why deferred:**
+- Requires paper trading validation first
+- High-risk (real money)
+- Regulatory considerations
+
+**What ships in v0.1.2:**
+- Simulated broker only
+
+---
+
+#### 7.4.2 Risk Management Layer
+
+**What:**
+- Position size limits
+- Maximum drawdown circuit breakers
+- Daily loss limits
+- Concentration limits
+- Kill switches
+
+**Why deferred:**
+- Production-critical feature
+- Needs extensive testing
+- Regulatory requirements
+
+**What ships in v0.1.2:**
+- No risk management (backtest only)
+
+---
+
+#### 7.4.3 Order Management
+
+**What:**
+- Partial fill handling
+- Order rejections
+- Amendment workflows
+- Order lifecycle tracking
+
+**Why deferred:**
+- Complex state management
+- Production-critical
+- Broker-specific nuances
+
+**What ships in v0.1.2:**
+- Instant fills only (backtest)
+
+---
+
+#### 7.4.4 Monitoring & Alerting
+
+**What:**
+- Slack/email notifications
+- Performance dashboards
+- Error alerting
+- Position monitoring
+
+**Why deferred:**
+- Production infrastructure
+- Not needed for backtesting
+
+**What ships in v0.1.2:**
+- Console output only
+
+---
+
+#### 7.4.5 Production Hardening
+
+**What:**
+- Circuit breakers
+- Automatic retries
+- Failover mechanisms
+- Logging infrastructure
+- Audit trail enhancements
+
+**Why deferred:**
+- Production deployment requirement
+- Extensive testing needed
+
+**What ships in v0.1.2:**
+- Event sourcing foundation ready
+
+---
+
+### 7.5 Out of Scope (Not Planned)
+
+#### 7.5.1 Parameter Optimization Algorithms
+
+**What users might expect:**
+- Genetic algorithms
+- Grid search
+- Bayesian optimization
+- Built-in optimizers
+
+**Why out of scope:**
+- Users bring their own optimizers
+- ledgr provides fast backtest primitive
+- Optimization is user's domain
+- Many excellent R packages exist (GA, rgenoud, etc.)
+
+**What ledgr provides:**
+- Fast backtesting for optimization loops
+- Helper: `ledgr_generate_folds()` for walk-forward (v0.2.0)
+- Users control optimization strategy
+
+---
+
+#### 7.5.2 Python Indicator Bridges
+
+**What users might expect:**
+- Direct ta-lib integration
+- Python function execution from R
+
+**Why out of scope:**
+- R has equivalent indicators (TTR)
+- reticulate adds complexity
+- Missing indicators can be ported to R (usually <30 min)
+- Community can build extension packages
+
+**What ledgr provides:**
+- Indicator adapter pattern
+- Easy to port Python indicators to R
+- Documentation on equivalence
+
+---
+
+#### 7.5.3 TradingView Integration
+
+**What users might expect:**
+- Pine Script execution
+- Direct TradingView API
+
+**Why out of scope:**
+- No official TradingView API for executing Pine strategies server-side
+- Pine Script is client-side language only
+- Web scraping violates TOS
+
+**What ledgr provides:**
+- CSV adapter for manual TradingView exports
+- Conversion guide (Pine Script → R)
+- Function equivalence table
+
+---
+
+#### 7.5.4 Machine Learning Model Integration
+
+**What users might expect:**
+- Built-in ML models
+- Auto-fitting models
+- Model selection
+
+**Why out of scope:**
+- Users bring their own models
+- R has excellent ML packages (caret, tidymodels, etc.)
+- Models are just indicators (via adapter)
+
+**What ledgr provides:**
+- Indicators can wrap ML predictions
+- CSV adapter for pre-computed predictions
+- Integration via standard interfaces
+
+---
+
+#### 7.5.5 High-Frequency Trading Support
+
+**What users might expect:**
+- Tick-level data
+- Microsecond timestamps
+- Order book simulation
+
+**Why out of scope:**
+- ledgr targets daily/intraday strategies
+- HFT requires specialized infrastructure
+- DuckDB is OLAP-optimized, not tick-level
+
+**What ledgr provides:**
+- Minute-level data support
+- Extension point for custom data adapters
+
+---
+
+### 7.6 Deferral Rationale Summary
+
+| Feature | Version | Rationale |
+|---------|---------|-----------|
+| **Comprehensive docs** | v0.1.3 | Need good UX to document |
+| **PerformanceAnalytics** | v0.1.3 | Advanced metrics, needs careful integration |
+| **Advanced viz** | v0.1.3 | Basic plot sufficient for v0.1.2 |
+| **Live data adapters** | v0.2.0 | Paper trading prerequisite |
+| **Paper trading** | v0.2.0 | Requires live data + validation |
+| **Walk-forward** | v0.2.0 | Complex, users can do manually in v0.1.2 |
+| **Broker adapters** | v0.3.0 | Requires paper trading validation |
+| **Risk management** | v0.3.0 | Production-critical, extensive testing |
+| **Production hardening** | v0.3.0 | Production deployment requirement |
+| **Optimization algos** | Never | User's responsibility |
+| **Python bridges** | Never | R has equivalents |
+| **TradingView API** | Never | Doesn't exist for server-side execution |
+| **ML integration** | Never | Users bring models |
+| **HFT support** | Never | Wrong use case |
+
+---
+
+## End of Sections 5-7 (CORRECTED)
+
+**Summary:**
+
+- **Section 5:** Implementation constraints (how to write compliant code)
+- **Section 6:** Testing requirements (what must be tested and how)
+- **Section 7:** Deferred features (clear scope boundaries)
+
+**Complete v0.1.2 Specification:**
+- Section 1: UX Principles & Invariants ✅
+- Section 2: High-Level API Contract ✅
+- Section 3: Indicator Infrastructure ✅
+- Section 4: Metrics & Visualization ✅
+- Section 5: Implementation Constraints ✅ (CORRECTED)
+- Section 6: Testing Requirements ✅ (CORRECTED)
+- Section 7: Deferred Features ✅
+
+---
+
+## Changelog (v2.2.0 from v2.1.0)
+
+### Critical Fixes
+
+**Section 5:**
+1. **5.2.1** - Added normalization constraint (single canonical place, no double normalization)
+2. **5.2.1** - Fixed equivalence test to compare observable outputs, not configs
+3. **5.2.2** - Fixed quantmod column extraction (by name, not position)
+4. **5.3.1** - Removed `Sys.time()` from params (violates determinism)
+5. **5.3.1** - Clarified params must be deterministic for fingerprinting
+6. **5.3.2** - Fixed side-effects test (use `expect_silent()`, not `capture_messages()`)
+7. **5.4.1** - Fixed finalizer pattern (environment-backed, not list-based)
+8. **5.4.2** - Removed fragile TEMP cleanup test
+9. **5.5.3** - Replaced connection leak test with functional hygiene test
+10. **5.7.1** - Fixed timestamp parsing (strict formats, no locale dependence, no lubridate)
+
+**Section 6:**
+11. **6.2.2** - Strengthened equivalence tests (compare all fields including ts_utc, fee)
+12. **6.2.4** - Fixed integration test (use fixture CSV, mark live test as interactive-only)
+13. **6.5** - Fixed test fixture (set.seed() BEFORE randomness, correct panel structure: 732 rows)
+
+### Approved
+
+This corrected specification addresses all critical correctness issues and is ready for CI/CD implementation.
+
+**Status:** APPROVED FOR IMPLEMENTATION
