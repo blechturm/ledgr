@@ -64,7 +64,9 @@ ledgr_assert_indicator_safe <- function(fn) {
     "\\bdate\\s*\\(",
     "\\brunif\\b",
     "\\brnorm\\b",
-    "\\bsample\\s*\\("
+    "\\bsample\\s*\\(",
+    "get\\s*\\(\\s*['\\\"]Sys\\.time['\\\"]\\s*\\)",
+    "get\\s*\\(\\s*['\\\"]runif['\\\"]\\s*\\)"
   )
   hits <- vapply(forbidden, function(pat) grepl(pat, fn_body), logical(1))
   if (any(hits)) {

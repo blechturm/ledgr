@@ -158,6 +158,26 @@ ledgr_backtest_open <- function(bt) {
   list(con = state$con, opened_new = TRUE)
 }
 
+ledgr_fills_close <- function(res, con = NULL) {
+  if (is.null(res)) return(invisible(TRUE))
+  if (!inherits(res, "DBIResult")) {
+    rlang::abort("`res` must be a DBIResult from ledgr_extract_fills(lazy = TRUE).", class = "ledgr_invalid_args")
+  }
+
+  temp_table <- attr(res, "ledgr_temp_table", exact = TRUE)
+  if (is.null(con)) {
+    con <- tryCatch(DBI::dbGetConnection(res), error = function(e) NULL)
+  }
+
+  if (DBI::dbIsValid(res)) {
+    DBI::dbClearResult(res)
+  }
+  if (!is.null(con) && !is.null(temp_table)) {
+    DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table))
+  }
+  invisible(TRUE)
+}
+
 ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
   start_iso <- iso_utc(start)
   end_iso <- iso_utc(end)
@@ -288,7 +308,7 @@ ledgr_backtest_equity <- function(con, run_id) {
   )
 }
 
-ledgr_extract_fills <- function(bt) {
+ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   con <- get_connection(bt)
   total_rows <- DBI::dbGetQuery(
     con,
@@ -304,12 +324,22 @@ ledgr_extract_fills <- function(bt) {
     return(tibble::tibble())
   }
 
-  cap <- as.integer(ceiling(total_rows * 1.2))
-  DBI::dbExecute(con, "DROP TABLE IF EXISTS temp_fills_accumulation")
+  if (!is.numeric(stream_threshold) || length(stream_threshold) != 1 || is.na(stream_threshold)) {
+    rlang::abort("`stream_threshold` must be a finite numeric scalar.", class = "ledgr_invalid_args")
+  }
+  stream_threshold <- as.integer(stream_threshold)
+
+  if (total_rows > stream_threshold) {
+    lazy <- TRUE
+  }
+
+  temp_table <- paste0("temp_fills_", paste(sample(c(letters, LETTERS, 0:9), 12, replace = TRUE), collapse = ""))
+  DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table))
   DBI::dbExecute(
     con,
-    "
-    CREATE TEMP TABLE temp_fills_accumulation (
+    sprintf(
+      "
+    CREATE TEMP TABLE %s (
       ts_utc TIMESTAMP,
       instrument_id TEXT,
       side TEXT,
@@ -319,8 +349,17 @@ ledgr_extract_fills <- function(bt) {
       realized_pnl DOUBLE,
       action TEXT
     )
-    "
+    ",
+      temp_table
+    )
   )
+
+  if (!is.logical(lazy) || length(lazy) != 1 || is.na(lazy)) {
+    rlang::abort("`lazy` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  if (!lazy) {
+    on.exit(DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table)), add = TRUE)
+  }
 
   res <- DBI::dbSendQuery(
     con,
@@ -397,15 +436,41 @@ ledgr_extract_fills <- function(bt) {
       net_pos <- if (nrow(lots) > 0) sum(lots$qty) else 0
       if (side_norm == "BUY_TO_COVER" && net_pos >= 0) {
         warning(
-          sprintf("[%s:%d] Intent Mismatch: BUY_TO_COVER ignored for Long position", inst, rows$event_seq[[i]]),
+          sprintf("[%s:%d] Semantic Violation: BUY_TO_COVER rejected (currently Long)", inst, rows$event_seq[[i]]),
           call. = FALSE
         )
+        out_idx <- out_idx + 1L
+        out_rows[[out_idx]] <- data.frame(
+          ts_utc = rows$ts_utc[[i]],
+          instrument_id = inst,
+          side = side,
+          qty = qty,
+          price = price,
+          fee = rows$fee[[i]],
+          realized_pnl = NA_real_,
+          action = NA_character_,
+          stringsAsFactors = FALSE
+        )
+        next
       }
       if (side_norm == "SELL_SHORT" && net_pos <= 0) {
         warning(
-          sprintf("[%s:%d] Intent Mismatch: SELL_SHORT ignored for Short position", inst, rows$event_seq[[i]]),
+          sprintf("[%s:%d] Semantic Violation: SELL_SHORT rejected (currently Short)", inst, rows$event_seq[[i]]),
           call. = FALSE
         )
+        out_idx <- out_idx + 1L
+        out_rows[[out_idx]] <- data.frame(
+          ts_utc = rows$ts_utc[[i]],
+          instrument_id = inst,
+          side = side,
+          qty = qty,
+          price = price,
+          fee = rows$fee[[i]],
+          realized_pnl = NA_real_,
+          action = NA_character_,
+          stringsAsFactors = FALSE
+        )
+        next
       }
 
       remaining <- qty
@@ -524,11 +589,21 @@ ledgr_extract_fills <- function(bt) {
 
     if (out_idx > 0) {
       chunk_df <- do.call(rbind, out_rows[seq_len(out_idx)])
-      DBI::dbAppendTable(con, "temp_fills_accumulation", chunk_df)
+      DBI::dbAppendTable(con, temp_table, chunk_df)
     }
   }
 
-  tibble::as_tibble(DBI::dbGetQuery(con, "SELECT * FROM temp_fills_accumulation"))
+  if (isTRUE(lazy)) {
+    res <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s", temp_table))
+    attr(res, "ledgr_temp_table") <- temp_table
+    return(res)
+  }
+
+  if (total_rows > stream_threshold) {
+    warning("Large fill set materialized (N > threshold). Consider lazy = TRUE for performance.", call. = FALSE)
+  }
+
+  tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s", temp_table)))
 }
 
 compute_annualized_return <- function(equity, bars_per_year) {
@@ -610,17 +685,8 @@ snap_to_frequency <- function(median_seconds) {
   if (distance < 0.2) {
     return(standard$bars_per_year[[idx]])
   }
-  ledgr_log_frequency(raw)
-  raw
-}
-
-ledgr_log_frequency <- function(raw) {
-  if (!exists(".ledgr_metrics_log", envir = .GlobalEnv, inherits = FALSE)) {
-    assign(".ledgr_metrics_log", new.env(parent = emptyenv()), envir = .GlobalEnv)
-  }
-  env <- get(".ledgr_metrics_log", envir = .GlobalEnv, inherits = FALSE)
-  env$bars_per_year_raw <- raw
-  invisible(TRUE)
+  message(sprintf("Frequency snap fallback to 252 (raw=%.2f).", raw))
+  252
 }
 
 ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {

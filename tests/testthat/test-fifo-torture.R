@@ -44,9 +44,15 @@ testthat::test_that("FIFO lot engine handles stress sequences", {
     config = list(data = list(snapshot_id = "snap_fifo"))
   )
 
-  fills <- ledgr:::ledgr_extract_fills(bt)
+  fills <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 100000L)
 
-  realized_seq_a <- fills$realized_pnl[fills$instrument_id == "SEQ_A"]
+  seq_a <- fills[fills$instrument_id == "SEQ_A", , drop = FALSE]
+  flip_rows <- seq_a[seq_a$side == "SELL", , drop = FALSE]
+  testthat::expect_equal(nrow(flip_rows), 2L)
+  testthat::expect_equal(flip_rows$action, c("CLOSE", "OPEN"))
+  testthat::expect_equal(flip_rows$realized_pnl, c(200, 0))
+
+  realized_seq_a <- seq_a$realized_pnl
   testthat::expect_equal(realized_seq_a, c(0, 200, 0, 150))
 
   realized_seq_b <- fills$realized_pnl[fills$instrument_id == "SEQ_B"]
