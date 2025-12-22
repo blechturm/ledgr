@@ -103,20 +103,31 @@ ledgr_adapter_csv <- function(csv_path,
 
   values <- indicator_data[[value_col]]
   names(values) <- key
+  data_hash <- digest::digest(indicator_data, algo = "sha256")
+  na_value <- if (is.numeric(values)) NA_real_ else NA
 
   ledgr_indicator(
     id = id,
     fn = function(window) {
       current_ts <- iso_utc(window$ts_utc[nrow(window)])
       current_inst <- as.character(window$instrument_id[nrow(window)])
-      values[[paste(current_ts, current_inst, sep = "||")]]
+      key <- paste(current_ts, current_inst, sep = "||")
+      if (!key %in% names(values)) {
+        warning(
+          sprintf("No CSV value for ts_utc=%s instrument_id=%s.", current_ts, current_inst),
+          call. = FALSE
+        )
+        return(na_value)
+      }
+      values[[key]]
     },
     requires_bars = 1L,
     params = list(
       csv_path = csv_path,
       value_col = value_col,
       date_col = date_col,
-      instrument_col = instrument_col
+      instrument_col = instrument_col,
+      data_hash = data_hash
     )
   )
 }

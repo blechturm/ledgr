@@ -21,16 +21,44 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   opened <- ledgr_open_dedicated_snapshot(snapshot)
   con <- opened$con
 
-  window <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT instrument_id, ts_utc, open, high, low, close, volume
-    FROM snapshot_bars
-    WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc <= ?
-    ORDER BY ts_utc DESC
-    LIMIT ?
-    ",
-    params = list(snapshot$snapshot_id, instrument_id, ts_norm, as.integer(lookback))
+  e <- new.env(parent = emptyenv())
+  e$instrument_id <- instrument_id
+  e$ts_utc <- ts_norm
+  e$lookback <- as.integer(lookback)
+  e$.snapshot <- opened$snapshot
+  e$.con <- con
+
+  reg.finalizer(
+    e,
+    function(env) {
+      if (!is.null(env$.snapshot)) {
+        ledgr_snapshot_close(env$.snapshot)
+      }
+      env$.con <- NULL
+      env$.snapshot <- NULL
+      invisible(TRUE)
+    },
+    onexit = TRUE
+  )
+
+  window <- tryCatch(
+    {
+      DBI::dbGetQuery(
+        con,
+        "
+        SELECT instrument_id, ts_utc, open, high, low, close, volume
+        FROM snapshot_bars
+        WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc <= ?
+        ORDER BY ts_utc DESC
+        LIMIT ?
+        ",
+        params = list(snapshot$snapshot_id, instrument_id, ts_norm, as.integer(lookback))
+      )
+    },
+    error = function(err) {
+      ledgr_snapshot_close(opened$snapshot)
+      stop(err)
+    }
   )
 
   if (nrow(window) == 0) {
@@ -40,14 +68,7 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
 
   window <- window[rev(seq_len(nrow(window))), , drop = FALSE]
   window$ts_utc <- vapply(window$ts_utc, iso_utc, character(1))
-
-  e <- new.env(parent = emptyenv())
   e$window <- window
-  e$instrument_id <- instrument_id
-  e$ts_utc <- ts_norm
-  e$lookback <- as.integer(lookback)
-  e$.snapshot <- opened$snapshot
-  e$.con <- con
 
   e$test <- function(fn) {
     if (!is.function(fn)) {
@@ -69,19 +90,6 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
     )
     invisible(NULL)
   }
-
-  reg.finalizer(
-    e,
-    function(env) {
-      if (!is.null(env$.snapshot)) {
-        ledgr_snapshot_close(env$.snapshot)
-      }
-      env$.con <- NULL
-      env$.snapshot <- NULL
-      invisible(TRUE)
-    },
-    onexit = TRUE
-  )
 
   structure(e, class = "ledgr_indicator_dev")
 }
@@ -151,14 +159,9 @@ ledgr_pulse_snapshot <- function(snapshot,
   opened <- ledgr_open_dedicated_snapshot(snapshot)
   con <- opened$con
 
-  bars <- ledgr_fetch_latest_bars(con, snapshot$snapshot_id, universe, ts_norm)
-  features_df <- ledgr_compute_pulse_features(con, snapshot$snapshot_id, universe, ts_norm, features)
-
   e <- new.env(parent = emptyenv())
   e$ts_utc <- ts_norm
   e$universe <- universe
-  e$bars <- bars
-  e$features <- features_df
   e$positions <- positions
   e$cash <- as.numeric(initial_cash)
   e$equity <- as.numeric(initial_cash)
@@ -177,6 +180,28 @@ ledgr_pulse_snapshot <- function(snapshot,
     },
     onexit = TRUE
   )
+
+  bars <- tryCatch(
+    {
+      ledgr_fetch_latest_bars(con, snapshot$snapshot_id, universe, ts_norm)
+    },
+    error = function(err) {
+      ledgr_snapshot_close(opened$snapshot)
+      stop(err)
+    }
+  )
+  features_df <- tryCatch(
+    {
+      ledgr_compute_pulse_features(con, snapshot$snapshot_id, universe, ts_norm, features)
+    },
+    error = function(err) {
+      ledgr_snapshot_close(opened$snapshot)
+      stop(err)
+    }
+  )
+
+  e$bars <- bars
+  e$features <- features_df
 
   structure(e, class = "ledgr_pulse_context")
 }
@@ -207,9 +232,7 @@ ledgr_fetch_latest_bars <- function(con, snapshot_id, universe, ts_utc) {
       "
       SELECT instrument_id, ts_utc, open, high, low, close, volume
       FROM snapshot_bars
-      WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc <= ?
-      ORDER BY ts_utc DESC
-      LIMIT 1
+      WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc = ?
       ",
       params = list(snapshot_id, inst, ts_utc)
     )
