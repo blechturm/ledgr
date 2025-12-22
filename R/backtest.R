@@ -293,7 +293,7 @@ ledgr_extract_fills <- function(bt) {
   res <- DBI::dbSendQuery(
     con,
     "
-    SELECT ts_utc, instrument_id, side, qty, price, fee, meta_json
+    SELECT event_seq, ts_utc, instrument_id, side, qty, price, fee, meta_json
     FROM ledger_events
     WHERE run_id = ? AND event_type IN ('FILL', 'FILL_PARTIAL')
     ORDER BY event_seq
@@ -324,9 +324,9 @@ ledgr_extract_fills <- function(bt) {
       }
 
       side_norm <- toupper(side)
-      if (side_norm %in% c("BUY", "COVER")) {
+      if (side_norm %in% c("BUY", "COVER", "BUY_TO_COVER")) {
         direction <- 1L
-      } else if (side_norm %in% c("SELL", "SHORT")) {
+      } else if (side_norm %in% c("SELL", "SHORT", "SELL_SHORT")) {
         direction <- -1L
       } else {
         realized[[i]] <- NA_real_
@@ -393,8 +393,20 @@ ledgr_extract_fills <- function(bt) {
           if (is.na(meta_val)) {
             warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
             realized[[i]] <- NA_real_
-          } else if (abs(meta_val - realized_fill) > 1e-6) {
-            warning("FIFO Mismatch Detected", call. = FALSE)
+          } else {
+            tol <- max(1e-6, 1e-7 * abs(meta_val))
+            if (abs(meta_val - realized_fill) > tol) {
+              warning(
+                sprintf(
+                  "[%s:%d] FIFO Mismatch: Expected %.8f, Found %.8f",
+                  inst,
+                  rows$event_seq[[i]],
+                  realized_fill,
+                  meta_val
+                ),
+                call. = FALSE
+              )
+            }
           }
         }
       }
@@ -469,10 +481,23 @@ ledgr_estimate_bars_per_year <- function(bt, equity) {
   median_seconds <- suppressWarnings(as.numeric(median_seconds))
   if (!is.finite(median_seconds) || median_seconds <= 0) return(fallback)
 
-  seconds_per_year <- 365.25 * 24 * 3600
-  bars_per_year <- seconds_per_year / median_seconds
+  bars_per_year <- snap_to_frequency(median_seconds)
   if (!is.finite(bars_per_year) || bars_per_year <= 0) return(fallback)
   bars_per_year
+}
+
+snap_to_frequency <- function(median_seconds) {
+  if (!is.numeric(median_seconds) || length(median_seconds) != 1 || !is.finite(median_seconds) || median_seconds <= 0) {
+    return(NA_real_)
+  }
+
+  standard <- data.frame(
+    seconds = c(60, 300, 900, 3600, 86400, 604800),
+    bars_per_year = c(525600, 105120, 35040, 8760, 252, 52),
+    stringsAsFactors = FALSE
+  )
+  idx <- which.min(abs(standard$seconds - median_seconds))
+  standard$bars_per_year[[idx]]
 }
 
 ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
