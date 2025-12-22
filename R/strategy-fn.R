@@ -5,7 +5,11 @@ ledgr_register_strategy_fn <- function(fn) {
   if (!is.function(fn)) {
     rlang::abort("`strategy` must be a function or object with $on_pulse().", class = "ledgr_invalid_args")
   }
-  key <- suppressWarnings(digest::digest(fn, algo = "sha256"))
+  key_payload <- list(
+    body = deparse(fn),
+    formals = names(formals(fn))
+  )
+  key <- digest::digest(key_payload, algo = "sha256")
   assign(key, fn, envir = ledgr_strategy_registry)
   key
 }

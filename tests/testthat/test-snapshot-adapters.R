@@ -32,6 +32,17 @@ test_that("ledgr_snapshot_from_df validates snapshot_id format", {
   )
 })
 
+test_that("ledgr_snapshot_from_df requires chronological bars per instrument", {
+  bad <- test_bars
+  idx <- which(bad$instrument_id == "TEST_A")
+  bad[idx, ] <- bad[rev(idx), ]
+
+  expect_error(
+    ledgr_snapshot_from_df(bad),
+    "chronological"
+  )
+})
+
 test_that("ledgr_snapshot_from_csv delegates to df adapter", {
   csv_path <- tempfile(fileext = ".csv")
   on.exit(unlink(csv_path), add = TRUE)

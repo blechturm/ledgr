@@ -12,6 +12,7 @@ new_ledgr_snapshot <- function(db_path, snapshot_id, metadata = list()) {
   state <- new.env(parent = emptyenv())
   state$con <- NULL
   state$drv <- NULL
+  ledgr_snapshot_register_finalizer(state)
 
   structure(
     list(
@@ -24,12 +25,34 @@ new_ledgr_snapshot <- function(db_path, snapshot_id, metadata = list()) {
   )
 }
 
+ledgr_snapshot_register_finalizer <- function(state) {
+  reg.finalizer(
+    state,
+    function(env) {
+      con <- env$con
+      drv <- env$drv
+      if (!is.null(con) && DBI::dbIsValid(con)) {
+        suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
+      }
+      if (!is.null(drv)) {
+        suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
+      }
+      env$con <- NULL
+      env$drv <- NULL
+      invisible(TRUE)
+    },
+    onexit = TRUE
+  )
+  invisible(state)
+}
+
 snapshot_state <- function(snapshot) {
   state <- snapshot$.state
   if (is.null(state) || !is.environment(state)) {
     state <- new.env(parent = emptyenv())
     state$con <- NULL
     state$drv <- NULL
+    ledgr_snapshot_register_finalizer(state)
     snapshot$.state <- state
   }
   state

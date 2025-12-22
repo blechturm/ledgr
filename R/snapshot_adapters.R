@@ -127,23 +127,33 @@ ledgr_snapshot_from_df <- function(bars_df,
     rlang::abort("bars_df contains an OHLC violation (high/low bounds).", class = "ledgr_invalid_args")
   }
 
+  for (inst in unique(instrument_id)) {
+    idx <- which(instrument_id == inst)
+    if (length(idx) > 1) {
+      if (any(diff(ts_posix[idx]) < 0)) {
+        rlang::abort(
+          "bars_df must be chronological per instrument (non-decreasing ts_utc).",
+          class = "ledgr_invalid_args"
+        )
+      }
+    }
+  }
+
   key <- paste0(instrument_id, "\n", ts_utc)
   if (anyDuplicated(key)) {
     rlang::abort("bars_df contains duplicate (instrument_id, ts_utc) rows.", class = "ledgr_invalid_args")
   }
 
-  ord <- order(instrument_id, ts_utc)
   bars_out <- data.frame(
-    instrument_id = instrument_id[ord],
-    ts_utc = ts_utc[ord],
-    open = open[ord],
-    high = high[ord],
-    low = low[ord],
-    close = close[ord],
-    volume = volume[ord],
+    instrument_id = instrument_id,
+    ts_utc = ts_utc,
+    open = open,
+    high = high,
+    low = low,
+    close = close,
+    volume = volume,
     stringsAsFactors = FALSE
   )
-  ts_posix <- ts_posix[ord]
 
   if (is.null(db_path)) {
     db_path <- tempfile(pattern = "ledgr_", fileext = ".duckdb")
@@ -347,8 +357,6 @@ ledgr_snapshot_from_df <- function(bars_df,
     max(ts_posix)
   )
 
-  ledgr_snapshot_seal(con, snapshot_id)
-
   created_at <- DBI::dbGetQuery(
     con,
     "SELECT created_at_utc FROM snapshots WHERE snapshot_id = ?",
@@ -372,6 +380,8 @@ ledgr_snapshot_from_df <- function(bars_df,
     "UPDATE snapshots SET meta_json = ? WHERE snapshot_id = ?",
     params = list(canonical_json(metadata), snapshot_id)
   )
+
+  ledgr_snapshot_seal(con, snapshot_id)
 
   new_ledgr_snapshot(db_path = db_path, snapshot_id = snapshot_id, metadata = metadata)
 }
