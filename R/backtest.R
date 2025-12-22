@@ -305,33 +305,100 @@ ledgr_extract_fills <- function(bt) {
     return(tibble::as_tibble(rows))
   }
 
-  realized <- vapply(
-    rows$meta_json,
-    function(x) {
-      if (is.null(x) || (is.atomic(x) && length(x) == 1 && is.na(x))) return(0)
-      meta <- tryCatch(jsonlite::fromJSON(x, simplifyVector = TRUE), error = function(e) NULL)
-      if (is.null(meta) || is.null(meta$realized_pnl)) return(0)
-      val <- suppressWarnings(as.numeric(meta$realized_pnl))
-      if (is.na(val)) 0 else val
-    },
-    numeric(1)
-  )
+  fifo <- new.env(parent = emptyenv())
+  realized <- numeric(nrow(rows))
+
+  for (i in seq_len(nrow(rows))) {
+    inst <- as.character(rows$instrument_id[[i]])
+    side <- as.character(rows$side[[i]])
+    qty <- suppressWarnings(as.numeric(rows$qty[[i]]))
+    price <- suppressWarnings(as.numeric(rows$price[[i]]))
+
+    if (is.na(qty) || qty <= 0 || is.na(price)) {
+      realized[[i]] <- NA_real_
+      next
+    }
+
+    side_norm <- toupper(side)
+    if (side_norm %in% c("BUY", "COVER")) {
+      direction <- 1L
+    } else if (side_norm %in% c("SELL", "SHORT")) {
+      direction <- -1L
+    } else {
+      realized[[i]] <- NA_real_
+      next
+    }
+
+    key <- inst
+    lots <- if (exists(key, envir = fifo, inherits = FALSE)) {
+      get(key, envir = fifo, inherits = FALSE)
+    } else {
+      list()
+    }
+
+    remaining <- qty
+    realized_fill <- 0
+
+    if (direction > 0) {
+      while (remaining > 0 && length(lots) > 0 && lots[[1]]$qty < 0) {
+        lot <- lots[[1]]
+        cover_qty <- min(remaining, abs(lot$qty))
+        realized_fill <- realized_fill + (lot$price - price) * cover_qty
+        lot$qty <- lot$qty + cover_qty
+        remaining <- remaining - cover_qty
+        if (abs(lot$qty) < 1e-12) {
+          lots <- lots[-1]
+        } else {
+          lots[[1]] <- lot
+        }
+      }
+      if (remaining > 0) {
+        lots[[length(lots) + 1]] <- list(qty = remaining, price = price)
+      }
+    } else {
+      while (remaining > 0 && length(lots) > 0 && lots[[1]]$qty > 0) {
+        lot <- lots[[1]]
+        cover_qty <- min(remaining, lot$qty)
+        realized_fill <- realized_fill + (price - lot$price) * cover_qty
+        lot$qty <- lot$qty - cover_qty
+        remaining <- remaining - cover_qty
+        if (abs(lot$qty) < 1e-12) {
+          lots <- lots[-1]
+        } else {
+          lots[[1]] <- lot
+        }
+      }
+      if (remaining > 0) {
+        lots[[length(lots) + 1]] <- list(qty = -remaining, price = price)
+      }
+    }
+
+    assign(key, lots, envir = fifo)
+    realized[[i]] <- realized_fill
+
+    meta_raw <- rows$meta_json[[i]]
+    if (!is.null(meta_raw) && !(is.atomic(meta_raw) && length(meta_raw) == 1 && is.na(meta_raw))) {
+      meta <- tryCatch(jsonlite::fromJSON(meta_raw, simplifyVector = TRUE), error = function(e) e)
+      if (inherits(meta, "error")) {
+        warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
+        realized[[i]] <- NA_real_
+      }
+    }
+  }
 
   out <- rows[, c("ts_utc", "instrument_id", "side", "qty", "price", "fee"), drop = FALSE]
   out$realized_pnl <- realized
   tibble::as_tibble(out)
 }
 
-compute_annualized_return <- function(equity) {
+compute_annualized_return <- function(equity, bars_per_year) {
   if (!is.data.frame(equity) || nrow(equity) < 2) return(NA_real_)
+  if (!is.numeric(bars_per_year) || length(bars_per_year) != 1 || !is.finite(bars_per_year) || bars_per_year <= 0) {
+    return(NA_real_)
+  }
 
-  days <- as.numeric(difftime(
-    as.Date(equity$ts_utc[[nrow(equity)]]),
-    as.Date(equity$ts_utc[[1]]),
-    units = "days"
-  ))
-  if (!is.finite(days) || days <= 0) return(NA_real_)
-  years <- days / 365
+  n_periods <- nrow(equity) - 1
+  years <- n_periods / bars_per_year
   if (years <= 0) return(NA_real_)
 
   total_return <- (equity$equity[[nrow(equity)]] / equity$equity[[1]]) - 1
@@ -348,6 +415,40 @@ compute_max_drawdown <- function(equity_values) {
 compute_time_in_market <- function(equity) {
   if (!is.data.frame(equity) || nrow(equity) == 0) return(NA_real_)
   mean(abs(equity$positions_value) > 1e-6)
+}
+
+ledgr_estimate_bars_per_year <- function(bt, equity) {
+  fallback <- 252
+  if (!inherits(bt, "ledgr_backtest")) return(fallback)
+  if (!is.list(bt$config) || is.null(bt$config$data$snapshot_id)) return(fallback)
+
+  con <- get_connection(bt)
+  snapshot_id <- bt$config$data$snapshot_id
+  meta_json <- DBI::dbGetQuery(
+    con,
+    "SELECT meta_json FROM snapshots WHERE snapshot_id = ?",
+    params = list(snapshot_id)
+  )$meta_json[[1]]
+
+  if (is.null(meta_json) || is.na(meta_json) || !nzchar(meta_json)) return(fallback)
+  meta <- tryCatch(jsonlite::fromJSON(meta_json, simplifyVector = TRUE), error = function(e) NULL)
+  if (is.null(meta)) return(fallback)
+
+  n_bars <- suppressWarnings(as.numeric(meta$n_bars))
+  start_date <- meta$start_date
+  end_date <- meta$end_date
+  if (!is.finite(n_bars) || n_bars <= 0 || is.null(start_date) || is.null(end_date)) return(fallback)
+
+  start <- as.Date(start_date)
+  end <- as.Date(end_date)
+  if (is.na(start) || is.na(end) || end <= start) return(fallback)
+
+  years <- as.numeric(difftime(end, start, units = "days")) / 365.25
+  if (!is.finite(years) || years <= 0) return(fallback)
+
+  bars_per_year <- n_bars / years
+  if (!is.finite(bars_per_year) || bars_per_year <= 0) return(fallback)
+  bars_per_year
 }
 
 ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
@@ -371,11 +472,12 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
     cur <- equity$equity[-1]
     returns <- (cur / prev) - 1
   }
+  bars_per_year <- ledgr_estimate_bars_per_year(bt, equity)
 
   list(
     total_return = if (nrow(equity) > 0) (equity$equity[[nrow(equity)]] / equity$equity[[1]]) - 1 else NA_real_,
-    annualized_return = compute_annualized_return(equity),
-    volatility = if (length(returns) > 1) stats::sd(returns, na.rm = TRUE) * sqrt(252) else NA_real_,
+    annualized_return = compute_annualized_return(equity, bars_per_year),
+    volatility = if (length(returns) > 1) stats::sd(returns, na.rm = TRUE) * sqrt(bars_per_year) else NA_real_,
     max_drawdown = compute_max_drawdown(equity$equity),
     n_trades = nrow(fills),
     win_rate = if (nrow(fills) > 0) sum(fills$realized_pnl > 0, na.rm = TRUE) / nrow(fills) else NA_real_,
@@ -393,10 +495,19 @@ ledgr_compute_equity_curve <- function(bt) {
 
   equity$equity <- as.numeric(equity$equity)
   equity$running_max <- cummax(equity$equity)
-  equity$drawdown <- (equity$equity / equity$running_max - 1) * 100
+  equity$drawdown <- (equity$equity / equity$running_max - 1)
   tibble::as_tibble(equity)
 }
 
+#' Compute standard metrics from backtest results
+#'
+#' @param bt A `ledgr_backtest` object.
+#' @param metrics Only `"standard"` is supported in v0.1.2.
+#' @return Named list of metric values.
+#'
+#' @details
+#' `win_rate` uses a strict `> 0` realized P&L threshold (breakeven is not a win).
+#' @keywords internal
 ledgr_compute_metrics <- function(bt, metrics = "standard") {
   ledgr_compute_metrics_internal(bt, metrics = metrics)
 }
