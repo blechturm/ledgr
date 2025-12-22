@@ -813,6 +813,10 @@ ledgr_strategy_from_config <- function(cfg) {
   if (identical(id, "echo")) return(EchoStrategy$new(params = params))
   if (identical(id, "ts_rule")) return(TsRuleStrategy$new(params = params))
   if (identical(id, "state_prev")) return(StatePrevStrategy$new(params = params))
+  if (identical(id, "functional")) {
+    key <- params$strategy_key
+    return(ledgr_strategy_fn_from_key(key))
+  }
 
   rlang::abort(sprintf("Unknown strategy.id: %s", id), class = "ledgr_invalid_config")
 }

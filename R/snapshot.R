@@ -54,8 +54,14 @@ ledgr_snapshot_open <- function(snapshot) {
   list(con = state$con, opened_new = TRUE)
 }
 
-get_connection <- function(snapshot) {
-  ledgr_snapshot_open(snapshot)$con
+get_connection <- function(x) {
+  if (inherits(x, "ledgr_snapshot")) {
+    return(ledgr_snapshot_open(x)$con)
+  }
+  if (inherits(x, "ledgr_backtest")) {
+    return(ledgr_backtest_open(x)$con)
+  }
+  rlang::abort("`x` must be a ledgr_snapshot or ledgr_backtest object.", class = "ledgr_invalid_args")
 }
 
 #' Close snapshot database connection

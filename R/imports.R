@@ -5,5 +5,6 @@
 #' @importFrom digest digest
 #' @importFrom cli cli_abort
 #' @importFrom rlang abort
+#' @importFrom tibble as_tibble
 #' @keywords internal
 NULL

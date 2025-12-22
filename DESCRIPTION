@@ -21,7 +21,8 @@ Imports:
     duckdb,
     jsonlite,
     R6,
-    rlang
+    rlang,
+    tibble
 Suggests: 
     covr,
     testthat (>= 3.0.0),

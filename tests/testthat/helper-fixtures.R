@@ -61,7 +61,7 @@ get_ledger_events <- function(con, run_id) {
   DBI::dbGetQuery(
     con,
     "
-    SELECT ts_utc, instrument_id, side, qty, price, fee, meta_json, event_seq
+    SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json
     FROM ledger_events
     WHERE run_id = ?
     ORDER BY event_seq
