@@ -12,6 +12,7 @@ ledgr_ind_sma <- function(n) {
       mean(window$close)
     },
     requires_bars = as.integer(n),
+    stable_after = as.integer(n),
     params = list(n = n)
   )
 }
@@ -37,6 +38,7 @@ ledgr_ind_ema <- function(n) {
       ema
     },
     requires_bars = as.integer(n + 1),
+    stable_after = as.integer(n + 1),
     params = list(n = n)
   )
 }
@@ -65,6 +67,7 @@ ledgr_ind_rsi <- function(n = 14L) {
       100 - (100 / (1 + rs))
     },
     requires_bars = as.integer(n + 1),
+    stable_after = as.integer(n + 1),
     params = list(n = n)
   )
 }
@@ -85,6 +88,7 @@ ledgr_ind_returns <- function(n = 1L) {
       (current - previous) / previous
     },
     requires_bars = as.integer(n + 1),
+    stable_after = as.integer(n + 1),
     params = list(n = n)
   )
 }

@@ -55,7 +55,7 @@ testthat::test_that("successful seal flips status and stores hash + sealed_at_ut
   testthat::expect_true(is.na(row$error_msg[[1]]))
 })
 
-testthat::test_that("sealing twice errors and does not change the stored hash", {
+testthat::test_that("sealing twice returns stored hash and does not change it", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -63,7 +63,8 @@ testthat::test_that("sealing twice errors and does not change the stored hash", 
   make_snapshot_with_data_seal(con, snapshot_id)
 
   h1 <- ledgr_snapshot_seal(con, snapshot_id)
-  testthat::expect_error(ledgr_snapshot_seal(con, snapshot_id), class = "LEDGR_SNAPSHOT_ALREADY_SEALED")
+  h_again <- ledgr_snapshot_seal(con, snapshot_id)
+  testthat::expect_equal(h_again, h1)
 
   h2 <- DBI::dbGetQuery(
     con,

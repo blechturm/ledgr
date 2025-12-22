@@ -25,6 +25,7 @@ Imports:
     tibble
 Suggests: 
     covr,
+    nanotime,
     testthat (>= 3.0.0),
     withr,
     quantmod,

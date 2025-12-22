@@ -105,13 +105,6 @@ LedgrStrategy <- R6::R6Class(
           class = "ledgr_invalid_strategy_result"
         )
       }
-      if (any(targets < 0)) {
-        rlang::abort(
-          "`targets` must be non-negative quantities in v0.1.0 (shorting not enabled).",
-          class = "ledgr_invalid_strategy_result"
-        )
-      }
-
       state_update <- result$state_update
       if (!is.null(state_update)) {
         if (!(is.list(state_update) || (is.character(state_update) && length(state_update) == 1))) {

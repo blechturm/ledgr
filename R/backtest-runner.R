@@ -11,6 +11,35 @@ ledgr_backtest_run <- function(config, run_id = NULL) {
   ledgr_backtest_run_internal(config = config, run_id = run_id, control = list())
 }
 
+.ledgr_telemetry_registry <- new.env(parent = emptyenv())
+
+ledgr_time_now <- function() {
+  if (requireNamespace("nanotime", quietly = TRUE)) {
+    return(nanotime::nanotime())
+  }
+  proc.time()[[3]]
+}
+
+ledgr_time_elapsed <- function(start, end) {
+  if (inherits(start, "nanotime")) {
+    return(as.numeric(end - start) / 1e9)
+  }
+  as.numeric(end - start)
+}
+
+ledgr_store_run_telemetry <- function(run_id, telemetry) {
+  if (is.character(run_id) && length(run_id) == 1 && nzchar(run_id)) {
+    assign(run_id, telemetry, envir = .ledgr_telemetry_registry)
+  }
+  invisible(TRUE)
+}
+
+ledgr_get_run_telemetry <- function(run_id) {
+  if (!is.character(run_id) || length(run_id) != 1 || !nzchar(run_id)) return(NULL)
+  if (!exists(run_id, envir = .ledgr_telemetry_registry, inherits = FALSE)) return(NULL)
+  get(run_id, envir = .ledgr_telemetry_registry, inherits = FALSE)
+}
+
 ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list()) {
   ledgr_validate_config(config)
 
@@ -388,6 +417,22 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   DBI::dbExecute(con, "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?", params = list("RUNNING", NA_character_, run_id))
 
   processed <- 0L
+  total_pulses <- length(pulses) - start_idx + 1L
+  if (total_pulses < 0) total_pulses <- 0L
+  telemetry_cap <- total_pulses
+  if (is.finite(max_pulses)) {
+    telemetry_cap <- min(telemetry_cap, as.integer(max_pulses))
+  }
+  telemetry <- list(
+    t_state = if (telemetry_cap > 0) numeric(telemetry_cap) else numeric(0),
+    t_feats = if (telemetry_cap > 0) numeric(telemetry_cap) else numeric(0),
+    t_strat = if (telemetry_cap > 0) numeric(telemetry_cap) else numeric(0),
+    t_exec = if (telemetry_cap > 0) numeric(telemetry_cap) else numeric(0)
+  )
+  telemetry_idx <- 0L
+
+  current_state <- list(cash = as.numeric(initial_cash), positions = numeric(0))
+  last_event_seq_applied <- 0L
 
   run_ok <- tryCatch(
     {
@@ -396,6 +441,11 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
         ts <- pulses[[i]]
         ts_iso <- ledgr_normalize_ts_utc(ts)
+
+        t_state <- 0
+        t_feats <- 0
+        t_strat <- 0
+        t_exec <- 0
 
         DBI::dbWithTransaction(con, {
           bars <- DBI::dbGetQuery(
@@ -419,27 +469,45 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
             )
           }
 
+          t_state_start <- ledgr_time_now()
+          state_update <- ledgr_update_state_incremental(con, run_id, last_event_seq_applied, ts, current_state)
+          current_state <<- state_update$state
+          last_event_seq_applied <<- state_update$last_event_seq
+          t_state <<- ledgr_time_elapsed(t_state_start, ledgr_time_now())
+
           feat_df <- data.frame()
           if (length(feature_defs) > 0) {
+            t_feats_start <- ledgr_time_now()
             feat_df <- ledgr_features_at_pulse(con, run_id, instrument_ids, start_ts_utc, ts, feature_defs)
+            t_feats <<- ledgr_time_elapsed(t_feats_start, ledgr_time_now())
+          }
+
+          positions_value <- 0
+          if (!is.null(current_state$positions) && length(current_state$positions) > 0) {
+            close_by_id <- stats::setNames(as.numeric(bars$close), bars$instrument_id)
+            pos_ids <- intersect(names(current_state$positions), names(close_by_id))
+            if (length(pos_ids) > 0) {
+              positions_value <- sum(as.numeric(current_state$positions[pos_ids]) * close_by_id[pos_ids])
+            }
           }
 
           state_prev <- ledgr_strategy_state_prev(con, run_id, ts_iso)
 
-          st <- ledgr_state_asof(con, run_id, initial_cash, ts)
           ctx <- ledgr_pulse_context(
             run_id = run_id,
             ts_utc = ts_iso,
             universe = instrument_ids,
             bars = bars,
             features = feat_df,
-            positions = st$positions,
-            cash = st$cash,
-            equity = st$equity,
+            positions = current_state$positions,
+            cash = current_state$cash,
+            equity = current_state$cash + positions_value,
             state_prev = state_prev
           )
 
+          t_strat_start <- ledgr_time_now()
           result <- strategy$on_pulse(ctx)
+          t_strat <<- ledgr_time_elapsed(t_strat_start, ledgr_time_now())
           targets <- result$targets
 
           if (!is.null(result$state_update)) {
@@ -451,10 +519,11 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
             )
           }
 
+          t_exec_start <- ledgr_time_now()
           for (instrument_id in instrument_ids) {
             cur_qty <- 0
-            if (!is.null(st$positions) && length(st$positions) > 0 && instrument_id %in% names(st$positions)) {
-              cur_qty <- as.numeric(st$positions[[instrument_id]])
+            if (!is.null(current_state$positions) && length(current_state$positions) > 0 && instrument_id %in% names(current_state$positions)) {
+              cur_qty <- as.numeric(current_state$positions[[instrument_id]])
             }
             target_qty <- as.numeric(targets[[instrument_id]])
             delta <- target_qty - cur_qty
@@ -497,7 +566,16 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
               next_event_seq <- write_res$next_event_seq
             }
           }
+          t_exec <<- ledgr_time_elapsed(t_exec_start, ledgr_time_now())
         })
+
+        if (telemetry_idx < length(telemetry$t_state)) {
+          telemetry_idx <- telemetry_idx + 1L
+          telemetry$t_state[[telemetry_idx]] <- t_state
+          telemetry$t_feats[[telemetry_idx]] <- t_feats
+          telemetry$t_strat[[telemetry_idx]] <- t_strat
+          telemetry$t_exec[[telemetry_idx]] <- t_exec
+        }
 
         processed <- processed + 1L
       }
@@ -514,8 +592,17 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     }
   )
 
+  finalize_telemetry <- function() {
+    trimmed <- lapply(telemetry, function(x) {
+      if (telemetry_idx > 0) x[seq_len(telemetry_idx)] else numeric(0)
+    })
+    ledgr_store_run_telemetry(run_id, trimmed)
+    invisible(TRUE)
+  }
+
   if (isTRUE(run_ok) && is.finite(max_pulses) && processed >= max_pulses) {
     # Simulated interruption for tests.
+    finalize_telemetry()
     return(list(run_id = run_id, db_path = db_path))
   }
 
@@ -526,6 +613,8 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
     params = list("DONE", NA_character_, run_id)
   )
+
+  finalize_telemetry()
 
   list(run_id = run_id, db_path = db_path)
 }
@@ -630,16 +719,26 @@ ledgr_features_at_pulse <- function(con, run_id, instrument_ids, start_ts_utc, t
   }
 
   ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
+  max_lookback <- max(vapply(
+    feature_defs,
+    function(d) max(as.integer(d$requires_bars), as.integer(d$stable_after)),
+    integer(1)
+  ))
+
   bars <- DBI::dbGetQuery(
     con,
     paste0(
       "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
-      "FROM bars ",
-      "WHERE instrument_id IN (", ids_sql, ") ",
-      "AND ts_utc >= ? AND ts_utc <= ? ",
+      "FROM (",
+      "  SELECT instrument_id, ts_utc, open, high, low, close, volume, ",
+      "         ROW_NUMBER() OVER (PARTITION BY instrument_id ORDER BY ts_utc DESC) AS rn ",
+      "  FROM bars ",
+      "  WHERE instrument_id IN (", ids_sql, ") AND ts_utc <= ? AND ts_utc >= ?",
+      ") sub ",
+      "WHERE rn <= ? ",
       "ORDER BY instrument_id, ts_utc"
     ),
-    params = list(start_ts, ts_posix)
+    params = list(ts_posix, start_ts, as.integer(max_lookback))
   )
 
   if (nrow(bars) == 0) {
@@ -660,13 +759,13 @@ ledgr_features_at_pulse <- function(con, run_id, instrument_ids, start_ts_utc, t
     }
 
     for (def in feature_defs) {
-      values <- ledgr_compute_feature_series(b, def)
+      value <- ledgr_compute_feature_latest(b, def)
       out_rows[[idx]] <- list(
         run_id = run_id,
         instrument_id = instrument_id,
         ts_utc = ts_posix,
         feature_name = def$id,
-        feature_value = as.numeric(utils::tail(values, 1))
+        feature_value = as.numeric(value)
       )
       idx <- idx + 1L
     }
@@ -752,6 +851,46 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc) {
   )
 }
 
+ledgr_update_state_incremental <- function(con, run_id, last_event_seq, ts_utc, current_state) {
+  if (!is.list(current_state) || is.null(current_state$cash) || is.null(current_state$positions)) {
+    rlang::abort("`current_state` must include cash and positions.", class = "ledgr_invalid_args")
+  }
+
+  rows <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT event_seq, instrument_id, meta_json
+    FROM ledger_events
+    WHERE run_id = ? AND event_seq > ? AND ts_utc <= ?
+    ORDER BY event_seq
+    ",
+    params = list(run_id, as.integer(last_event_seq), ts_utc)
+  )
+
+  cash <- as.numeric(current_state$cash)
+  pos <- current_state$positions
+  if (!is.numeric(pos)) pos <- as.numeric(pos)
+  if (is.null(names(pos))) names(pos) <- character(0)
+
+  if (nrow(rows) > 0) {
+    for (i in seq_len(nrow(rows))) {
+      meta <- jsonlite::fromJSON(rows$meta_json[[i]], simplifyVector = FALSE)
+      cash <- cash + as.numeric(meta$cash_delta)
+      instrument_id <- rows$instrument_id[[i]]
+      if (!is.na(instrument_id) && nzchar(instrument_id)) {
+        if (is.null(names(pos)) || !(instrument_id %in% names(pos))) pos[instrument_id] <- 0
+        pos[instrument_id] <- pos[instrument_id] + as.numeric(meta$position_delta)
+      }
+    }
+    last_event_seq <- rows$event_seq[[nrow(rows)]]
+  }
+
+  list(
+    state = list(cash = cash, positions = pos),
+    last_event_seq = as.integer(last_event_seq)
+  )
+}
+
 ledgr_feature_defs_from_config <- function(cfg) {
   feats <- cfg$features
   if (is.null(feats) || is.null(feats$enabled) || !isTRUE(feats$enabled)) {
@@ -764,10 +903,10 @@ ledgr_feature_defs_from_config <- function(cfg) {
   }
 
   out <- list()
-  for (d in defs) {
-    if (!is.list(d)) {
-      rlang::abort("Each entry in features.defs must be a list.", class = "ledgr_invalid_config")
-    }
+    for (d in defs) {
+      if (!is.list(d)) {
+        rlang::abort("Each entry in features.defs must be a list.", class = "ledgr_invalid_config")
+      }
 
     id <- d$id
     if (is.null(id)) id <- d$name
@@ -795,8 +934,22 @@ ledgr_feature_defs_from_config <- function(cfg) {
       next
     }
 
-    rlang::abort(sprintf("Unknown feature id in config: %s", id), class = "ledgr_invalid_config")
-  }
+    if (exists("ledgr_get_indicator", mode = "function")) {
+      ind <- tryCatch(ledgr_get_indicator(id), error = function(e) NULL)
+      if (inherits(ind, "ledgr_indicator")) {
+        out[[length(out) + 1L]] <- list(
+          id = ind$id,
+          fn = ind$fn,
+          requires_bars = ind$requires_bars,
+          stable_after = if (is.null(d$stable_after)) ind$stable_after else d$stable_after,
+          params = d$params
+        )
+        next
+      }
+    }
+
+      rlang::abort(sprintf("Unknown feature id in config: %s", id), class = "ledgr_invalid_config")
+    }
 
   out
 }

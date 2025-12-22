@@ -108,7 +108,7 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
     rlang::abort("`bars_df` must include at least columns `ts_utc` and `close`.", class = "ledgr_invalid_feature_input")
   }
 
-  requires_bars <- as.integer(feature_def$requires_bars)
+  stable_after <- as.integer(feature_def$stable_after)
   fn <- feature_def$fn
   params <- feature_def$params
   if (is.null(params)) params <- list()
@@ -116,7 +116,7 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
   n <- nrow(bars_df)
   out <- rep(NA_real_, n)
   for (i in seq_len(n)) {
-    if (i < requires_bars) {
+    if (i < stable_after) {
       out[[i]] <- NA_real_
       next
     }
@@ -132,6 +132,38 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
     out[[i]] <- as.numeric(value)
   }
   out
+}
+
+ledgr_compute_feature_latest <- function(bars_df, feature_def) {
+  ledgr_validate_feature_def(feature_def)
+
+  if (!is.data.frame(bars_df) || nrow(bars_df) < 1) {
+    rlang::abort("`bars_df` must be a non-empty data.frame.", class = "ledgr_invalid_feature_input")
+  }
+  if (!all(c("ts_utc", "close") %in% names(bars_df))) {
+    rlang::abort("`bars_df` must include at least columns `ts_utc` and `close`.", class = "ledgr_invalid_feature_input")
+  }
+
+  stable_after <- as.integer(feature_def$stable_after)
+  fn <- feature_def$fn
+  params <- feature_def$params
+  if (is.null(params)) params <- list()
+
+  if (nrow(bars_df) < stable_after) return(NA_real_)
+
+  window <- bars_df
+  if (nrow(window) > stable_after) {
+    window <- utils::tail(window, stable_after)
+  }
+  value <- if (length(formals(fn)) >= 2) fn(window, params) else fn(window)
+  if (length(value) > 1) value <- value[[length(value)]]
+  if (!is.numeric(value) || length(value) != 1) {
+    rlang::abort(sprintf("Feature %s returned a non-numeric or non-scalar value.", feature_def$id), class = "ledgr_invalid_feature_output")
+  }
+  if (!is.na(value) && !is.finite(value)) {
+    rlang::abort(sprintf("Feature %s returned a non-finite value.", feature_def$id), class = "ledgr_invalid_feature_output")
+  }
+  as.numeric(value)
 }
 
 ledgr_check_no_lookahead <- function(feature_def, bars_df, horizons = c(1L, 3L)) {

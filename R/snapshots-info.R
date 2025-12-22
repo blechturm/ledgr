@@ -5,8 +5,8 @@
 #'
 #' Timestamps are returned as ISO8601 UTC strings with trailing `Z`.
 #'
-#' @param con A DBI connection to DuckDB.
-#' @param snapshot_id Snapshot id (must exist).
+#' @param con A DBI connection to DuckDB or a `ledgr_snapshot`.
+#' @param snapshot_id Snapshot id (must exist) when `con` is a connection.
 #' @return A 1-row data.frame with:
 #'   snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
 #'   bar_count, instrument_count, meta_json, error_msg.
@@ -17,6 +17,10 @@
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
 #' @export
 ledgr_snapshot_info <- function(con, snapshot_id) {
+  if (inherits(con, "ledgr_snapshot")) {
+    snapshot_id <- con$snapshot_id
+    con <- get_connection(con)
+  }
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }

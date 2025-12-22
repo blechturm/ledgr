@@ -25,8 +25,8 @@ test_that("ledgr_snapshot_from_df validates required columns", {
   expect_error(ledgr_snapshot_from_df(bad), "bars_df missing required column")
 })
 
-test_that("ledgr_snapshot_from_df validates snapshot_id format", {
-  expect_error(
+test_that("ledgr_snapshot_from_df warns on non-canonical snapshot_id format", {
+  expect_warning(
     ledgr_snapshot_from_df(test_bars, snapshot_id = "bad_id"),
     "snapshot_YYYYmmdd_HHMMSS_XXXX"
   )

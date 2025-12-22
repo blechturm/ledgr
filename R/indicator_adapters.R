@@ -44,6 +44,7 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
       utils::tail(result, 1)
     },
     requires_bars = as.integer(requires_bars),
+    stable_after = as.integer(requires_bars),
     params = args
   )
 }
@@ -122,6 +123,7 @@ ledgr_adapter_csv <- function(csv_path,
       values[[key]]
     },
     requires_bars = 1L,
+    stable_after = 1L,
     params = list(
       csv_path = csv_path,
       value_col = value_col,

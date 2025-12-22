@@ -6,9 +6,9 @@
 #' Snapshot mutability rule: sealing is only allowed while status is `CREATED`.
 #' After sealing, snapshot write operations must be rejected by ledgr code paths.
 #'
-#' @param con A DBI connection to DuckDB.
-#' @param snapshot_id Snapshot id (must exist and be status `CREATED`).
-#' @return The computed snapshot hash (character(1)).
+#' @param con A DBI connection to DuckDB or a `ledgr_snapshot`.
+#' @param snapshot_id Snapshot id (must exist and be status `CREATED`) when `con` is a connection.
+#' @return The computed snapshot hash (character(1)) or a list when called with a snapshot object.
 #' @details
 #' Errors:
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
@@ -18,6 +18,12 @@
 #' - `LEDGR_SNAPSHOT_SEAL_FAILED` on hashing/transaction failures (snapshot is marked `FAILED`).
 #' @export
 ledgr_snapshot_seal <- function(con, snapshot_id) {
+  snapshot_obj <- NULL
+  if (inherits(con, "ledgr_snapshot")) {
+    snapshot_obj <- con
+    snapshot_id <- con$snapshot_id
+    con <- get_connection(con)
+  }
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
@@ -36,7 +42,15 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   status <- snap$status[[1]]
   if (identical(status, "SEALED")) {
-    rlang::abort("LEDGR_SNAPSHOT_ALREADY_SEALED: snapshot is already SEALED.", class = "LEDGR_SNAPSHOT_ALREADY_SEALED")
+    hash <- snap$snapshot_hash[[1]]
+    if (!is.character(hash) || length(hash) != 1 || is.na(hash) || !nzchar(hash)) {
+      hash <- ledgr_snapshot_hash(con, snapshot_id)
+    }
+    if (!is.null(snapshot_obj)) {
+      snapshot_obj$metadata$snapshot_hash <- hash
+      return(invisible(list(hash = hash, snapshot = snapshot_obj)))
+    }
+    return(hash)
   }
   if (!identical(status, "CREATED")) {
     rlang::abort(
@@ -129,6 +143,11 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   DBI::dbExecute(con, "COMMIT")
   on.exit(NULL, add = FALSE)
+
+  if (!is.null(snapshot_obj)) {
+    snapshot_obj$metadata$snapshot_hash <- hash
+    return(invisible(list(hash = hash, snapshot = snapshot_obj)))
+  }
 
   hash
 }

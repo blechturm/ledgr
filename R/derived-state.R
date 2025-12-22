@@ -174,6 +174,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash) {
   positions <- numeric(0)
   lots <- list()
   realized_pnl <- 0
+  realized_comp <- 0
 
   event_idx <- 1L
   n_events <- nrow(events)
@@ -219,28 +220,52 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash) {
       rlang::abort("ledger_events.fee must be a finite numeric scalar >= 0 for FILL events.", class = "ledgr_invalid_ledger_event")
     }
 
+    if (is.null(lots[[instrument_id]])) lots[[instrument_id]] <<- list()
+    lot_list <- lots[[instrument_id]]
+
+    kahan_add <- function(delta) {
+      y <- delta - realized_comp
+      t <- realized_pnl + y
+      realized_comp <<- (t - realized_pnl) - y
+      realized_pnl <<- t
+    }
+
     if (side == "BUY") {
-      if (is.null(lots[[instrument_id]])) lots[[instrument_id]] <<- list()
-      lots[[instrument_id]][[length(lots[[instrument_id]]) + 1L]] <<- list(qty = qty, price = price)
-      realized_pnl <<- realized_pnl - fee
+      qty_to_buy <- qty
+      trade_pnl <- 0
+
+      while (qty_to_buy > 0 && length(lot_list) > 0 && as.numeric(lot_list[[1]]$qty) < 0) {
+        lot_qty <- abs(as.numeric(lot_list[[1]]$qty))
+        lot_price <- as.numeric(lot_list[[1]]$price)
+        take <- min(lot_qty, qty_to_buy)
+
+        trade_pnl <- trade_pnl + (lot_price - price) * take
+
+        lot_qty <- lot_qty - take
+        qty_to_buy <- qty_to_buy - take
+
+        if (lot_qty <= 0) {
+          lot_list <- lot_list[-1]
+        } else {
+          lot_list[[1]]$qty <- -lot_qty
+        }
+      }
+
+      if (qty_to_buy > 0) {
+        lot_list[[length(lot_list) + 1L]] <- list(qty = qty_to_buy, price = price)
+      }
+
+      lots[[instrument_id]] <<- lot_list
+      kahan_add(trade_pnl - fee)
       return(invisible(TRUE))
     }
 
     qty_to_sell <- qty
-    if (is.null(lots[[instrument_id]])) {
-      rlang::abort("SELL fill encountered with no existing lots (shorting not supported in v0.1.0).", class = "ledgr_invalid_ledger_event")
-    }
-    lot_list <- lots[[instrument_id]]
-    available <- sum(vapply(lot_list, function(l) as.numeric(l$qty), numeric(1)))
-    if (available + 1e-12 < qty_to_sell) {
-      rlang::abort("SELL fill exceeds available position (shorting not supported in v0.1.0).", class = "ledgr_invalid_ledger_event")
-    }
-
     trade_pnl <- 0
-    j <- 1L
-    while (qty_to_sell > 0 && j <= length(lot_list)) {
-      lot_qty <- as.numeric(lot_list[[j]]$qty)
-      lot_price <- as.numeric(lot_list[[j]]$price)
+
+    while (qty_to_sell > 0 && length(lot_list) > 0 && as.numeric(lot_list[[1]]$qty) > 0) {
+      lot_qty <- as.numeric(lot_list[[1]]$qty)
+      lot_price <- as.numeric(lot_list[[1]]$price)
       take <- min(lot_qty, qty_to_sell)
 
       trade_pnl <- trade_pnl + (price - lot_price) * take
@@ -248,13 +273,19 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash) {
       lot_qty <- lot_qty - take
       qty_to_sell <- qty_to_sell - take
 
-      lot_list[[j]]$qty <- lot_qty
-      j <- j + 1L
+      if (lot_qty <= 0) {
+        lot_list <- lot_list[-1]
+      } else {
+        lot_list[[1]]$qty <- lot_qty
+      }
     }
 
-    lot_list <- Filter(function(l) as.numeric(l$qty) > 0, lot_list)
+    if (qty_to_sell > 0) {
+      lot_list[[length(lot_list) + 1L]] <- list(qty = -qty_to_sell, price = price)
+    }
+
     lots[[instrument_id]] <<- lot_list
-    realized_pnl <<- realized_pnl + trade_pnl - fee
+    kahan_add(trade_pnl - fee)
     invisible(TRUE)
   }
 

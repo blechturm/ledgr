@@ -4,9 +4,10 @@
 #' @param fn Indicator function: function(window) -> numeric | list.
 #' @param requires_bars Minimum lookback period (integer).
 #' @param params Named list of deterministic parameters for fingerprinting.
+#' @param stable_after Number of bars after which the indicator output is stable.
 #'
 #' @return A `ledgr_indicator` object.
-ledgr_indicator <- function(id, fn, requires_bars, params = list()) {
+ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after = requires_bars) {
   if (!is.character(id) || length(id) != 1 || !nzchar(id)) {
     rlang::abort("`id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -18,6 +19,12 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list()) {
   }
   if (requires_bars < 1 || requires_bars %% 1 != 0) {
     rlang::abort("`requires_bars` must be an integer >= 1.", class = "ledgr_invalid_args")
+  }
+  if (!is.numeric(stable_after) || length(stable_after) != 1 || is.na(stable_after)) {
+    rlang::abort("`stable_after` must be a non-missing numeric scalar.", class = "ledgr_invalid_args")
+  }
+  if (stable_after < requires_bars || stable_after %% 1 != 0) {
+    rlang::abort("`stable_after` must be an integer >= requires_bars.", class = "ledgr_invalid_args")
   }
   if (!is.list(params)) {
     rlang::abort("`params` must be a named list.", class = "ledgr_invalid_args")
@@ -39,6 +46,7 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list()) {
       id = id,
       fn = fn,
       requires_bars = as.integer(requires_bars),
+      stable_after = as.integer(stable_after),
       params = params
     ),
     class = "ledgr_indicator"

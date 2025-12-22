@@ -500,9 +500,9 @@ ledgr_validate_snapshot_id <- function(snapshot_id) {
   }
   pattern <- "^snapshot_[0-9]{8}_[0-9]{6}_[0-9a-f]{4}$"
   if (!grepl(pattern, snapshot_id)) {
-    rlang::abort(
-      "`snapshot_id` must match 'snapshot_YYYYmmdd_HHMMSS_XXXX' (lowercase hex).",
-      class = "ledgr_invalid_args"
+    warning(
+      "`snapshot_id` does not match 'snapshot_YYYYmmdd_HHMMSS_XXXX'. Using a canonical format improves provenance.",
+      call. = FALSE
     )
   }
   invisible(TRUE)

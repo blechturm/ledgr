@@ -306,7 +306,19 @@ ledgr_config <- function(snapshot,
       commission_fixed = fill_model$commission_fixed
     ),
     features = if (length(features) > 0) {
-      list(enabled = TRUE, defs = features)
+      defs <- lapply(features, function(feat) {
+        if (inherits(feat, "ledgr_indicator")) {
+          ledgr_register_indicator(feat)
+          return(list(
+            id = feat$id,
+            params = feat$params,
+            requires_bars = feat$requires_bars,
+            stable_after = feat$stable_after
+          ))
+        }
+        feat
+      })
+      list(enabled = TRUE, defs = defs)
     } else {
       list(enabled = FALSE, defs = list())
     },
@@ -393,7 +405,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
     on.exit(DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table)), add = TRUE)
   }
 
-  res <- DBI::dbSendQuery(
+  ledger_res <- DBI::dbSendQuery(
     con,
     "
     SELECT event_seq, ts_utc, instrument_id, side, qty, price, fee, meta_json
@@ -403,13 +415,13 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
     ",
     params = list(bt$run_id)
   )
-  on.exit(DBI::dbClearResult(res), add = TRUE)
+  on.exit(DBI::dbClearResult(ledger_res), add = TRUE)
 
   fifo <- new.env(parent = emptyenv())
   fetch_size <- 50000L
 
   repeat {
-    rows <- DBI::dbFetch(res, n = fetch_size)
+    rows <- DBI::dbFetch(ledger_res, n = fetch_size)
     if (nrow(rows) == 0) break
 
     out_rows <- vector("list", nrow(rows) * 2L)
@@ -641,8 +653,8 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   }
 
   if (isTRUE(lazy)) {
-    res <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table))
-    return(new_ledgr_fills_cursor(res, temp_table, con))
+    fills_res <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table))
+    return(new_ledgr_fills_cursor(fills_res, temp_table, con))
   }
 
   if (total_rows > stream_threshold) {
@@ -781,6 +793,41 @@ ledgr_compute_equity_curve <- function(bt) {
   equity$running_max <- cummax(equity$equity)
   equity$drawdown <- (equity$equity / equity$running_max - 1)
   tibble::as_tibble(equity)
+}
+
+#' Summarize per-pulse telemetry timings (internal)
+#'
+#' @param bt A `ledgr_backtest` object.
+#' @return A tibble with mean/median/p99 timings per component.
+#' @keywords internal
+ledgr_backtest_bench <- function(bt) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
+
+  telemetry <- ledgr_get_run_telemetry(bt$run_id)
+  if (is.null(telemetry)) {
+    rlang::abort("No telemetry found for this run_id. Run ledgr_backtest() to capture telemetry.", class = "ledgr_invalid_args")
+  }
+
+  summarize_vec <- function(x) {
+    if (length(x) == 0) return(c(mean = NA_real_, median = NA_real_, p99 = NA_real_))
+    c(
+      mean = mean(x, na.rm = TRUE),
+      median = stats::median(x, na.rm = TRUE),
+      p99 = stats::quantile(x, 0.99, na.rm = TRUE, names = FALSE)
+    )
+  }
+
+  components <- c("t_state", "t_feats", "t_strat", "t_exec")
+  out <- lapply(components, function(name) summarize_vec(telemetry[[name]]))
+
+  tibble::tibble(
+    component = components,
+    mean = vapply(out, `[[`, numeric(1), "mean"),
+    median = vapply(out, `[[`, numeric(1), "median"),
+    p99 = vapply(out, `[[`, numeric(1), "p99")
+  )
 }
 
 #' Compute standard metrics from backtest results

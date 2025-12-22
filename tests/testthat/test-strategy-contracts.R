@@ -94,7 +94,7 @@ testthat::test_that("HoldZeroStrategy is deterministic and returns valid targets
   testthat::expect_true(all(out1$targets == 0))
 })
 
-testthat::test_that("EchoStrategy validates targets names and non-negativity", {
+testthat::test_that("EchoStrategy validates targets names", {
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
   bars <- data.frame(instrument_id = c("A", "B"), ts_utc = c(ts, ts), stringsAsFactors = FALSE)
@@ -115,7 +115,8 @@ testthat::test_that("EchoStrategy validates targets names and non-negativity", {
 
   bad_negative <- stats::setNames(c(-1, 0), c("A", "B"))
   strat_negative <- ledgr:::EchoStrategy$new(params = list(targets = bad_negative))
-  testthat::expect_error(strat_negative$on_pulse(ctx), "non-negative", ignore.case = TRUE)
+  out_negative <- strat_negative$on_pulse(ctx)
+  testthat::expect_identical(out_negative$targets, bad_negative)
 })
 
 testthat::test_that("mutation guardrail catches a mutating strategy", {

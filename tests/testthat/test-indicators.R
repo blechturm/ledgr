@@ -6,6 +6,7 @@ testthat::test_that("ledgr_indicator enforces deterministic params", {
     params = list(n = 2, label = "stable")
   )
   testthat::expect_s3_class(good, "ledgr_indicator")
+  testthat::expect_identical(good$stable_after, good$requires_bars)
 
   testthat::expect_error(
     ledgr:::ledgr_indicator(
@@ -13,6 +14,18 @@ testthat::test_that("ledgr_indicator enforces deterministic params", {
       fn = function(window) mean(window$close),
       requires_bars = 2L,
       params = list(loaded_at = Sys.time())
+    ),
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("ledgr_indicator enforces stable_after >= requires_bars", {
+  testthat::expect_error(
+    ledgr:::ledgr_indicator(
+      id = "bad_stable",
+      fn = function(window) mean(window$close),
+      requires_bars = 3L,
+      stable_after = 2L
     ),
     class = "ledgr_invalid_args"
   )
