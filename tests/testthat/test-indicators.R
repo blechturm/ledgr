@@ -18,6 +18,17 @@ testthat::test_that("ledgr_indicator enforces deterministic params", {
   )
 })
 
+testthat::test_that("indicator purity scan blocks non-deterministic calls", {
+  testthat::expect_error(
+    ledgr:::ledgr_indicator(
+      id = "bad_fn",
+      fn = function(window) Sys.time(),
+      requires_bars = 1L
+    ),
+    class = "ledgr_purity_violation"
+  )
+})
+
 testthat::test_that("indicator registry supports register/get/list", {
   ind <- ledgr:::ledgr_ind_sma(2)
   ledgr:::ledgr_register_indicator(ind, "test_sma_2")

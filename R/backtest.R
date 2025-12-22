@@ -290,6 +290,38 @@ ledgr_backtest_equity <- function(con, run_id) {
 
 ledgr_extract_fills <- function(bt) {
   con <- get_connection(bt)
+  total_rows <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT COUNT(*) AS n
+    FROM ledger_events
+    WHERE run_id = ? AND event_type IN ('FILL', 'FILL_PARTIAL')
+    ",
+    params = list(bt$run_id)
+  )$n[[1]]
+  total_rows <- as.integer(total_rows)
+  if (is.na(total_rows) || total_rows < 1L) {
+    return(tibble::tibble())
+  }
+
+  cap <- as.integer(ceiling(total_rows * 1.2))
+  DBI::dbExecute(con, "DROP TABLE IF EXISTS temp_fills_accumulation")
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TEMP TABLE temp_fills_accumulation (
+      ts_utc TIMESTAMP,
+      instrument_id TEXT,
+      side TEXT,
+      qty DOUBLE,
+      price DOUBLE,
+      fee DOUBLE,
+      realized_pnl DOUBLE,
+      action TEXT
+    )
+    "
+  )
+
   res <- DBI::dbSendQuery(
     con,
     "
@@ -303,14 +335,14 @@ ledgr_extract_fills <- function(bt) {
   on.exit(DBI::dbClearResult(res), add = TRUE)
 
   fifo <- new.env(parent = emptyenv())
-  chunks <- list()
   fetch_size <- 50000L
 
   repeat {
     rows <- DBI::dbFetch(res, n = fetch_size)
     if (nrow(rows) == 0) break
 
-    realized <- numeric(nrow(rows))
+    out_rows <- vector("list", nrow(rows) * 2L)
+    out_idx <- 0L
 
     for (i in seq_len(nrow(rows))) {
       inst <- as.character(rows$instrument_id[[i]])
@@ -319,7 +351,18 @@ ledgr_extract_fills <- function(bt) {
       price <- suppressWarnings(as.numeric(rows$price[[i]]))
 
       if (is.na(qty) || qty <= 0 || is.na(price)) {
-        realized[[i]] <- NA_real_
+        out_idx <- out_idx + 1L
+        out_rows[[out_idx]] <- data.frame(
+          ts_utc = rows$ts_utc[[i]],
+          instrument_id = inst,
+          side = side,
+          qty = qty,
+          price = price,
+          fee = rows$fee[[i]],
+          realized_pnl = NA_real_,
+          action = NA_character_,
+          stringsAsFactors = FALSE
+        )
         next
       }
 
@@ -329,7 +372,18 @@ ledgr_extract_fills <- function(bt) {
       } else if (side_norm %in% c("SELL", "SHORT", "SELL_SHORT")) {
         direction <- -1L
       } else {
-        realized[[i]] <- NA_real_
+        out_idx <- out_idx + 1L
+        out_rows[[out_idx]] <- data.frame(
+          ts_utc = rows$ts_utc[[i]],
+          instrument_id = inst,
+          side = side,
+          qty = qty,
+          price = price,
+          fee = rows$fee[[i]],
+          realized_pnl = NA_real_,
+          action = NA_character_,
+          stringsAsFactors = FALSE
+        )
         next
       }
 
@@ -340,45 +394,74 @@ ledgr_extract_fills <- function(bt) {
         data.frame(qty = numeric(), price = numeric(), stringsAsFactors = FALSE)
       }
 
+      net_pos <- if (nrow(lots) > 0) sum(lots$qty) else 0
+      if (side_norm == "BUY_TO_COVER" && net_pos >= 0) {
+        warning(
+          sprintf("[%s:%d] Intent Mismatch: BUY_TO_COVER ignored for Long position", inst, rows$event_seq[[i]]),
+          call. = FALSE
+        )
+      }
+      if (side_norm == "SELL_SHORT" && net_pos <= 0) {
+        warning(
+          sprintf("[%s:%d] Intent Mismatch: SELL_SHORT ignored for Short position", inst, rows$event_seq[[i]]),
+          call. = FALSE
+        )
+      }
+
       remaining <- qty
-      realized_fill <- 0
+      realized_close <- 0
+      close_qty <- 0
+      open_qty <- 0
 
       if (direction > 0) {
-        while (remaining > 0 && nrow(lots) > 0 && lots$qty[[1]] < 0) {
-          cover_qty <- min(remaining, abs(lots$qty[[1]]))
-          realized_fill <- realized_fill + (lots$price[[1]] - price) * cover_qty
-          lots$qty[[1]] <- lots$qty[[1]] + cover_qty
-          remaining <- remaining - cover_qty
-          if (abs(lots$qty[[1]]) < 1e-12) {
-            lots <- lots[-1, , drop = FALSE]
+        if (net_pos < 0) {
+          close_qty <- min(remaining, abs(net_pos))
+        }
+      } else if (net_pos > 0) {
+        close_qty <- min(remaining, net_pos)
+      }
+      open_qty <- remaining - close_qty
+
+      if (close_qty > 0) {
+        remaining_close <- close_qty
+        if (direction > 0) {
+          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] < 0) {
+            cover_qty <- min(remaining_close, abs(lots$qty[[1]]))
+            realized_close <- realized_close + (lots$price[[1]] - price) * cover_qty
+            lots$qty[[1]] <- lots$qty[[1]] + cover_qty
+            remaining_close <- remaining_close - cover_qty
+            if (abs(lots$qty[[1]]) < 1e-12) {
+              lots <- lots[-1, , drop = FALSE]
+            }
+          }
+        } else {
+          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] > 0) {
+            cover_qty <- min(remaining_close, lots$qty[[1]])
+            realized_close <- realized_close + (price - lots$price[[1]]) * cover_qty
+            lots$qty[[1]] <- lots$qty[[1]] - cover_qty
+            remaining_close <- remaining_close - cover_qty
+            if (abs(lots$qty[[1]]) < 1e-12) {
+              lots <- lots[-1, , drop = FALSE]
+            }
           }
         }
-        if (remaining > 0) {
+      }
+
+      if (open_qty > 0) {
+        if (direction > 0) {
           lots <- rbind(
             lots,
-            data.frame(qty = remaining, price = price, stringsAsFactors = FALSE)
+            data.frame(qty = open_qty, price = price, stringsAsFactors = FALSE)
           )
-        }
-      } else {
-        while (remaining > 0 && nrow(lots) > 0 && lots$qty[[1]] > 0) {
-          cover_qty <- min(remaining, lots$qty[[1]])
-          realized_fill <- realized_fill + (price - lots$price[[1]]) * cover_qty
-          lots$qty[[1]] <- lots$qty[[1]] - cover_qty
-          remaining <- remaining - cover_qty
-          if (abs(lots$qty[[1]]) < 1e-12) {
-            lots <- lots[-1, , drop = FALSE]
-          }
-        }
-        if (remaining > 0) {
+        } else {
           lots <- rbind(
             lots,
-            data.frame(qty = -remaining, price = price, stringsAsFactors = FALSE)
+            data.frame(qty = -open_qty, price = price, stringsAsFactors = FALSE)
           )
         }
       }
 
       assign(key, lots, envir = fifo)
-      realized[[i]] <- realized_fill
 
       meta_raw <- rows$meta_json[[i]]
       if (!is.null(meta_raw) &&
@@ -387,21 +470,19 @@ ledgr_extract_fills <- function(bt) {
         meta <- tryCatch(jsonlite::fromJSON(meta_raw, simplifyVector = TRUE), error = function(e) e)
         if (inherits(meta, "error")) {
           warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
-          realized[[i]] <- NA_real_
         } else if (!is.null(meta$realized_pnl)) {
           meta_val <- suppressWarnings(as.numeric(meta$realized_pnl))
           if (is.na(meta_val)) {
             warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
-            realized[[i]] <- NA_real_
           } else {
             tol <- max(1e-6, 1e-7 * abs(meta_val))
-            if (abs(meta_val - realized_fill) > tol) {
+            if (abs(meta_val - realized_close) > tol) {
               warning(
                 sprintf(
                   "[%s:%d] FIFO Mismatch: Expected %.8f, Found %.8f",
                   inst,
                   rows$event_seq[[i]],
-                  realized_fill,
+                  realized_close,
                   meta_val
                 ),
                 call. = FALSE
@@ -410,17 +491,44 @@ ledgr_extract_fills <- function(bt) {
           }
         }
       }
+
+      if (close_qty > 0) {
+        out_idx <- out_idx + 1L
+        out_rows[[out_idx]] <- data.frame(
+          ts_utc = rows$ts_utc[[i]],
+          instrument_id = inst,
+          side = side,
+          qty = close_qty,
+          price = price,
+          fee = rows$fee[[i]],
+          realized_pnl = realized_close,
+          action = "CLOSE",
+          stringsAsFactors = FALSE
+        )
+      }
+      if (open_qty > 0) {
+        out_idx <- out_idx + 1L
+        out_rows[[out_idx]] <- data.frame(
+          ts_utc = rows$ts_utc[[i]],
+          instrument_id = inst,
+          side = side,
+          qty = open_qty,
+          price = price,
+          fee = rows$fee[[i]],
+          realized_pnl = 0,
+          action = "OPEN",
+          stringsAsFactors = FALSE
+        )
+      }
     }
 
-    out <- rows[, c("ts_utc", "instrument_id", "side", "qty", "price", "fee"), drop = FALSE]
-    out$realized_pnl <- realized
-    chunks[[length(chunks) + 1]] <- out
+    if (out_idx > 0) {
+      chunk_df <- do.call(rbind, out_rows[seq_len(out_idx)])
+      DBI::dbAppendTable(con, "temp_fills_accumulation", chunk_df)
+    }
   }
 
-  if (length(chunks) == 0) {
-    return(tibble::tibble())
-  }
-  tibble::as_tibble(do.call(rbind, chunks))
+  tibble::as_tibble(DBI::dbGetQuery(con, "SELECT * FROM temp_fills_accumulation"))
 }
 
 compute_annualized_return <- function(equity, bars_per_year) {
@@ -496,8 +604,23 @@ snap_to_frequency <- function(median_seconds) {
     bars_per_year = c(525600, 105120, 35040, 8760, 252, 52),
     stringsAsFactors = FALSE
   )
+  raw <- (365.25 * 24 * 3600) / median_seconds
   idx <- which.min(abs(standard$seconds - median_seconds))
-  standard$bars_per_year[[idx]]
+  distance <- abs(standard$seconds[[idx]] - median_seconds) / standard$seconds[[idx]]
+  if (distance < 0.2) {
+    return(standard$bars_per_year[[idx]])
+  }
+  ledgr_log_frequency(raw)
+  raw
+}
+
+ledgr_log_frequency <- function(raw) {
+  if (!exists(".ledgr_metrics_log", envir = .GlobalEnv, inherits = FALSE)) {
+    assign(".ledgr_metrics_log", new.env(parent = emptyenv()), envir = .GlobalEnv)
+  }
+  env <- get(".ledgr_metrics_log", envir = .GlobalEnv, inherits = FALSE)
+  env$bars_per_year_raw <- raw
+  invisible(TRUE)
 }
 
 ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {

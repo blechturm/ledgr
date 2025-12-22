@@ -47,7 +47,7 @@ testthat::test_that("FIFO lot engine handles stress sequences", {
   fills <- ledgr:::ledgr_extract_fills(bt)
 
   realized_seq_a <- fills$realized_pnl[fills$instrument_id == "SEQ_A"]
-  testthat::expect_equal(realized_seq_a, c(0, 200, 150))
+  testthat::expect_equal(realized_seq_a, c(0, 200, 0, 150))
 
   realized_seq_b <- fills$realized_pnl[fills$instrument_id == "SEQ_B"]
   testthat::expect_equal(realized_seq_b, c(0, 0, 0, 55))

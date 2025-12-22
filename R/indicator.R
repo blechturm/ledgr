@@ -32,6 +32,7 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list()) {
     )
   }
   ledgr_assert_indicator_fn_pure(fn)
+  ledgr_assert_indicator_safe(fn)
 
   structure(
     list(
@@ -51,6 +52,23 @@ ledgr_assert_indicator_fn_pure <- function(fn) {
       "Indicator function contains global assignment (<<-), which violates purity.",
       class = "ledgr_invalid_args"
     )
+  }
+  invisible(TRUE)
+}
+
+ledgr_assert_indicator_safe <- function(fn) {
+  fn_body <- paste(deparse(fn), collapse = "\n")
+  forbidden <- c(
+    "\\bSys\\.time\\b",
+    "\\bSys\\.Date\\b",
+    "\\bdate\\s*\\(",
+    "\\brunif\\b",
+    "\\brnorm\\b",
+    "\\bsample\\s*\\("
+  )
+  hits <- vapply(forbidden, function(pat) grepl(pat, fn_body), logical(1))
+  if (any(hits)) {
+    rlang::abort("Indicator function uses non-deterministic calls.", class = "ledgr_purity_violation")
   }
   invisible(TRUE)
 }
