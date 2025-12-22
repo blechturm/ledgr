@@ -238,7 +238,7 @@ ledgr_fetch_latest_bars <- function(con, snapshot_id, universe, ts_utc) {
     )
     if (nrow(df) == 0) {
       rlang::abort(
-        sprintf("No bars available for instrument '%s' at or before ts_utc.", inst),
+        sprintf("No bars available for instrument '%s' at ts_utc.", inst),
         class = "ledgr_invalid_args"
       )
     }

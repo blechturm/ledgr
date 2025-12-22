@@ -89,3 +89,37 @@ testthat::test_that("ledgr_adapter_csv warns and returns NA on missing key", {
   )
   testthat::expect_true(is.na(result))
 })
+
+testthat::test_that("ledgr_adapter_csv returns NA_real_ for missing keys", {
+  tmp <- tempfile(fileext = ".csv")
+  on.exit(unlink(tmp), add = TRUE)
+
+  csv_df <- data.frame(
+    ts_utc = c("2020-01-01T00:00:00Z"),
+    instrument_id = c("TEST_A"),
+    signal = c("alpha"),
+    stringsAsFactors = FALSE
+  )
+  utils::write.csv(csv_df, tmp, row.names = FALSE)
+
+  ind <- ledgr:::ledgr_adapter_csv(
+    csv_path = tmp,
+    value_col = "signal",
+    id = "csv_signal"
+  )
+
+  window <- data.frame(
+    ts_utc = "2020-01-02T00:00:00Z",
+    instrument_id = "TEST_A",
+    open = 1,
+    high = 1,
+    low = 1,
+    close = 1,
+    volume = 1,
+    stringsAsFactors = FALSE
+  )
+
+  testthat::expect_warning(result <- ind$fn(window), "No CSV value")
+  testthat::expect_true(is.double(result))
+  testthat::expect_true(is.na(result))
+})

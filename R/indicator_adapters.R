@@ -104,7 +104,7 @@ ledgr_adapter_csv <- function(csv_path,
   values <- indicator_data[[value_col]]
   names(values) <- key
   data_hash <- digest::digest(indicator_data, algo = "sha256")
-  na_value <- if (is.numeric(values)) NA_real_ else NA
+  na_value <- NA_real_
 
   ledgr_indicator(
     id = id,

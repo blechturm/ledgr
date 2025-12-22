@@ -288,14 +288,14 @@ ledgr_backtest_equity <- function(con, run_id) {
   )
 }
 
-ledgr_extract_fills_internal <- function(bt) {
+ledgr_extract_fills <- function(bt) {
   con <- get_connection(bt)
   rows <- DBI::dbGetQuery(
     con,
     "
     SELECT ts_utc, instrument_id, side, qty, price, fee, meta_json
     FROM ledger_events
-    WHERE run_id = ? AND event_type = 'FILL'
+    WHERE run_id = ? AND event_type IN ('FILL', 'FILL_PARTIAL')
     ORDER BY event_seq
     ",
     params = list(bt$run_id)
@@ -308,10 +308,11 @@ ledgr_extract_fills_internal <- function(bt) {
   realized <- vapply(
     rows$meta_json,
     function(x) {
-      if (is.null(x) || (is.atomic(x) && length(x) == 1 && is.na(x))) return(NA_real_)
-      meta <- jsonlite::fromJSON(x, simplifyVector = TRUE)
-      if (is.null(meta$realized_pnl)) return(NA_real_)
-      as.numeric(meta$realized_pnl)
+      if (is.null(x) || (is.atomic(x) && length(x) == 1 && is.na(x))) return(0)
+      meta <- tryCatch(jsonlite::fromJSON(x, simplifyVector = TRUE), error = function(e) NULL)
+      if (is.null(meta) || is.null(meta$realized_pnl)) return(0)
+      val <- suppressWarnings(as.numeric(meta$realized_pnl))
+      if (is.na(val)) 0 else val
     },
     numeric(1)
   )
@@ -362,7 +363,7 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
   equity$equity <- as.numeric(equity$equity)
   equity$positions_value <- as.numeric(equity$positions_value)
 
-  fills <- ledgr_extract_fills_internal(bt)
+  fills <- ledgr_extract_fills(bt)
 
   returns <- numeric(0)
   if (nrow(equity) > 1) {
@@ -381,6 +382,23 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
     avg_trade = if (nrow(fills) > 0) mean(fills$realized_pnl, na.rm = TRUE) else NA_real_,
     time_in_market = compute_time_in_market(equity)
   )
+}
+
+ledgr_compute_equity_curve <- function(bt) {
+  con <- get_connection(bt)
+  equity <- ledgr_backtest_equity(con, bt$run_id)
+  if (nrow(equity) == 0) {
+    return(tibble::as_tibble(equity))
+  }
+
+  equity$equity <- as.numeric(equity$equity)
+  equity$running_max <- cummax(equity$equity)
+  equity$drawdown <- (equity$equity / equity$running_max - 1) * 100
+  tibble::as_tibble(equity)
+}
+
+ledgr_compute_metrics <- function(bt, metrics = "standard") {
+  ledgr_compute_metrics_internal(bt, metrics = metrics)
 }
 
 #' @export
@@ -432,7 +450,7 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
     rlang::abort("`object` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
 
-  computed <- ledgr_compute_metrics_internal(object, metrics = metrics)
+  computed <- ledgr_compute_metrics(object, metrics = metrics)
 
   cat("ledgr Backtest Summary\n")
   cat("======================\n\n")
@@ -473,15 +491,9 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
   switch(
     what,
     equity = {
-      eq <- ledgr_backtest_equity(con, x$run_id)
-      eq <- tibble::as_tibble(eq)
-      if (nrow(eq) > 0) {
-        eq$running_max <- cummax(eq$equity)
-        eq$drawdown <- (eq$equity / eq$running_max) - 1
-      }
-      eq
+      ledgr_compute_equity_curve(x)
     },
-    fills = ledgr_extract_fills_internal(x),
+    fills = ledgr_extract_fills(x),
     ledger = tibble::as_tibble(
       DBI::dbGetQuery(
         con,
