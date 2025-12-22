@@ -30,6 +30,7 @@ ledgr_backtest <- function(snapshot,
       class = "ledgr_invalid_args"
     )
   }
+  ledgr_snapshot_validate(snapshot)
 
   if (!is.character(universe) || length(universe) < 1 || anyNA(universe) || any(!nzchar(universe))) {
     rlang::abort("'universe' must contain at least one instrument.", class = "ledgr_invalid_args")
@@ -161,6 +162,10 @@ ledgr_backtest_open <- function(bt) {
 # Internal helper for cleaning up lazy fill streaming results.
 ledgr_fills_close <- function(res, con = NULL) {
   if (is.null(res)) return(invisible(TRUE))
+  if (inherits(res, "ledgr_fills_cursor")) {
+    state <- res$.state
+    return(ledgr_fills_close(state$res, con = state$con))
+  }
   if (!inherits(res, "DBIResult")) {
     rlang::abort("`res` must be a DBIResult from ledgr_extract_fills(lazy = TRUE).", class = "ledgr_invalid_args")
   }
@@ -177,6 +182,30 @@ ledgr_fills_close <- function(res, con = NULL) {
     DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table))
   }
   invisible(TRUE)
+}
+
+new_ledgr_fills_cursor <- function(res, temp_table, con) {
+  state <- new.env(parent = emptyenv())
+  state$res <- res
+  state$con <- con
+  state$temp_table <- temp_table
+  attr(res, "ledgr_temp_table") <- temp_table
+
+  reg.finalizer(
+    state,
+    function(env) {
+      if (!is.null(env$res) && DBI::dbIsValid(env$res)) {
+        DBI::dbClearResult(env$res)
+      }
+      if (!is.null(env$con) && !is.null(env$temp_table)) {
+        DBI::dbExecute(env$con, sprintf("DROP TABLE IF EXISTS %s", env$temp_table))
+      }
+      invisible(TRUE)
+    },
+    onexit = TRUE
+  )
+
+  structure(list(res = res, .state = state), class = "ledgr_fills_cursor")
 }
 
 ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
@@ -342,6 +371,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
     sprintf(
       "
     CREATE TEMP TABLE %s (
+      event_seq INTEGER,
       ts_utc TIMESTAMP,
       instrument_id TEXT,
       side TEXT,
@@ -394,6 +424,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
       if (is.na(qty) || qty <= 0 || is.na(price)) {
         out_idx <- out_idx + 1L
         out_rows[[out_idx]] <- data.frame(
+          event_seq = rows$event_seq[[i]],
           ts_utc = rows$ts_utc[[i]],
           instrument_id = inst,
           side = side,
@@ -415,6 +446,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
       } else {
         out_idx <- out_idx + 1L
         out_rows[[out_idx]] <- data.frame(
+          event_seq = rows$event_seq[[i]],
           ts_utc = rows$ts_utc[[i]],
           instrument_id = inst,
           side = side,
@@ -443,6 +475,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
         )
         out_idx <- out_idx + 1L
         out_rows[[out_idx]] <- data.frame(
+          event_seq = rows$event_seq[[i]],
           ts_utc = rows$ts_utc[[i]],
           instrument_id = inst,
           side = side,
@@ -450,7 +483,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
           price = price,
           fee = rows$fee[[i]],
           realized_pnl = NA_real_,
-          action = NA_character_,
+          action = "REJECTED",
           stringsAsFactors = FALSE
         )
         next
@@ -462,6 +495,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
         )
         out_idx <- out_idx + 1L
         out_rows[[out_idx]] <- data.frame(
+          event_seq = rows$event_seq[[i]],
           ts_utc = rows$ts_utc[[i]],
           instrument_id = inst,
           side = side,
@@ -469,7 +503,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
           price = price,
           fee = rows$fee[[i]],
           realized_pnl = NA_real_,
-          action = NA_character_,
+          action = "REJECTED",
           stringsAsFactors = FALSE
         )
         next
@@ -477,6 +511,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
 
       remaining <- qty
       realized_close <- 0
+      compensation <- 0
       close_qty <- 0
       open_qty <- 0
 
@@ -494,7 +529,11 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
         if (direction > 0) {
           while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] < 0) {
             cover_qty <- min(remaining_close, abs(lots$qty[[1]]))
-            realized_close <- realized_close + (lots$price[[1]] - price) * cover_qty
+            delta <- (lots$price[[1]] - price) * cover_qty
+            y <- delta - compensation
+            t <- realized_close + y
+            compensation <- (t - realized_close) - y
+            realized_close <- t
             lots$qty[[1]] <- lots$qty[[1]] + cover_qty
             remaining_close <- remaining_close - cover_qty
             if (abs(lots$qty[[1]]) < 1e-12) {
@@ -504,7 +543,11 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
         } else {
           while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] > 0) {
             cover_qty <- min(remaining_close, lots$qty[[1]])
-            realized_close <- realized_close + (price - lots$price[[1]]) * cover_qty
+            delta <- (price - lots$price[[1]]) * cover_qty
+            y <- delta - compensation
+            t <- realized_close + y
+            compensation <- (t - realized_close) - y
+            realized_close <- t
             lots$qty[[1]] <- lots$qty[[1]] - cover_qty
             remaining_close <- remaining_close - cover_qty
             if (abs(lots$qty[[1]]) < 1e-12) {
@@ -562,6 +605,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
       if (close_qty > 0) {
         out_idx <- out_idx + 1L
         out_rows[[out_idx]] <- data.frame(
+          event_seq = rows$event_seq[[i]],
           ts_utc = rows$ts_utc[[i]],
           instrument_id = inst,
           side = side,
@@ -576,6 +620,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
       if (open_qty > 0) {
         out_idx <- out_idx + 1L
         out_rows[[out_idx]] <- data.frame(
+          event_seq = rows$event_seq[[i]],
           ts_utc = rows$ts_utc[[i]],
           instrument_id = inst,
           side = side,
@@ -596,16 +641,15 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   }
 
   if (isTRUE(lazy)) {
-    res <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s", temp_table))
-    attr(res, "ledgr_temp_table") <- temp_table
-    return(res)
+    res <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table))
+    return(new_ledgr_fills_cursor(res, temp_table, con))
   }
 
   if (total_rows > stream_threshold) {
     warning("Large fill set materialized (N > threshold). Consider lazy = TRUE for performance.", call. = FALSE)
   }
 
-  tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s", temp_table)))
+  tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table)))
 }
 
 compute_annualized_return <- function(equity, bars_per_year) {

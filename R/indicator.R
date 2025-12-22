@@ -57,19 +57,9 @@ ledgr_assert_indicator_fn_pure <- function(fn) {
 }
 
 ledgr_assert_indicator_safe <- function(fn) {
-  fn_body <- paste(deparse(fn), collapse = "\n")
-  forbidden <- c(
-    "\\bSys\\.time\\b",
-    "\\bSys\\.Date\\b",
-    "\\bdate\\s*\\(",
-    "\\brunif\\b",
-    "\\brnorm\\b",
-    "\\bsample\\s*\\(",
-    "get\\s*\\(\\s*['\\\"]Sys\\.time['\\\"]\\s*\\)",
-    "get\\s*\\(\\s*['\\\"]runif['\\\"]\\s*\\)"
-  )
-  hits <- vapply(forbidden, function(pat) grepl(pat, fn_body), logical(1))
-  if (any(hits)) {
+  forbidden <- c("Sys.time", "Sys.Date", "date", "runif", "rnorm", "sample", "get", "eval", "assign", "Sys.getenv")
+  symbols <- all.names(body(fn), functions = TRUE, unique = TRUE)
+  if (any(symbols %in% forbidden)) {
     rlang::abort("Indicator function uses non-deterministic calls.", class = "ledgr_purity_violation")
   }
   invisible(TRUE)

@@ -28,5 +28,5 @@ testthat::test_that("ledgr_extract_fills returns handle when above threshold", {
 
   res <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 1L)
   on.exit(ledgr:::ledgr_fills_close(res), add = TRUE)
-  testthat::expect_true(inherits(res, "DBIResult"))
+  testthat::expect_true(inherits(res, "ledgr_fills_cursor"))
 })
