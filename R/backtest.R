@@ -290,7 +290,7 @@ ledgr_backtest_equity <- function(con, run_id) {
 
 ledgr_extract_fills <- function(bt) {
   con <- get_connection(bt)
-  rows <- DBI::dbGetQuery(
+  res <- DBI::dbSendQuery(
     con,
     "
     SELECT ts_utc, instrument_id, side, qty, price, fee, meta_json
@@ -300,95 +300,115 @@ ledgr_extract_fills <- function(bt) {
     ",
     params = list(bt$run_id)
   )
-
-  if (nrow(rows) == 0) {
-    return(tibble::as_tibble(rows))
-  }
+  on.exit(DBI::dbClearResult(res), add = TRUE)
 
   fifo <- new.env(parent = emptyenv())
-  realized <- numeric(nrow(rows))
+  chunks <- list()
+  fetch_size <- 50000L
 
-  for (i in seq_len(nrow(rows))) {
-    inst <- as.character(rows$instrument_id[[i]])
-    side <- as.character(rows$side[[i]])
-    qty <- suppressWarnings(as.numeric(rows$qty[[i]]))
-    price <- suppressWarnings(as.numeric(rows$price[[i]]))
+  repeat {
+    rows <- DBI::dbFetch(res, n = fetch_size)
+    if (nrow(rows) == 0) break
 
-    if (is.na(qty) || qty <= 0 || is.na(price)) {
-      realized[[i]] <- NA_real_
-      next
-    }
+    realized <- numeric(nrow(rows))
 
-    side_norm <- toupper(side)
-    if (side_norm %in% c("BUY", "COVER")) {
-      direction <- 1L
-    } else if (side_norm %in% c("SELL", "SHORT")) {
-      direction <- -1L
-    } else {
-      realized[[i]] <- NA_real_
-      next
-    }
+    for (i in seq_len(nrow(rows))) {
+      inst <- as.character(rows$instrument_id[[i]])
+      side <- as.character(rows$side[[i]])
+      qty <- suppressWarnings(as.numeric(rows$qty[[i]]))
+      price <- suppressWarnings(as.numeric(rows$price[[i]]))
 
-    key <- inst
-    lots <- if (exists(key, envir = fifo, inherits = FALSE)) {
-      get(key, envir = fifo, inherits = FALSE)
-    } else {
-      list()
-    }
-
-    remaining <- qty
-    realized_fill <- 0
-
-    if (direction > 0) {
-      while (remaining > 0 && length(lots) > 0 && lots[[1]]$qty < 0) {
-        lot <- lots[[1]]
-        cover_qty <- min(remaining, abs(lot$qty))
-        realized_fill <- realized_fill + (lot$price - price) * cover_qty
-        lot$qty <- lot$qty + cover_qty
-        remaining <- remaining - cover_qty
-        if (abs(lot$qty) < 1e-12) {
-          lots <- lots[-1]
-        } else {
-          lots[[1]] <- lot
-        }
-      }
-      if (remaining > 0) {
-        lots[[length(lots) + 1]] <- list(qty = remaining, price = price)
-      }
-    } else {
-      while (remaining > 0 && length(lots) > 0 && lots[[1]]$qty > 0) {
-        lot <- lots[[1]]
-        cover_qty <- min(remaining, lot$qty)
-        realized_fill <- realized_fill + (price - lot$price) * cover_qty
-        lot$qty <- lot$qty - cover_qty
-        remaining <- remaining - cover_qty
-        if (abs(lot$qty) < 1e-12) {
-          lots <- lots[-1]
-        } else {
-          lots[[1]] <- lot
-        }
-      }
-      if (remaining > 0) {
-        lots[[length(lots) + 1]] <- list(qty = -remaining, price = price)
-      }
-    }
-
-    assign(key, lots, envir = fifo)
-    realized[[i]] <- realized_fill
-
-    meta_raw <- rows$meta_json[[i]]
-    if (!is.null(meta_raw) && !(is.atomic(meta_raw) && length(meta_raw) == 1 && is.na(meta_raw))) {
-      meta <- tryCatch(jsonlite::fromJSON(meta_raw, simplifyVector = TRUE), error = function(e) e)
-      if (inherits(meta, "error")) {
-        warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
+      if (is.na(qty) || qty <= 0 || is.na(price)) {
         realized[[i]] <- NA_real_
+        next
+      }
+
+      side_norm <- toupper(side)
+      if (side_norm %in% c("BUY", "COVER")) {
+        direction <- 1L
+      } else if (side_norm %in% c("SELL", "SHORT")) {
+        direction <- -1L
+      } else {
+        realized[[i]] <- NA_real_
+        next
+      }
+
+      key <- inst
+      lots <- if (exists(key, envir = fifo, inherits = FALSE)) {
+        get(key, envir = fifo, inherits = FALSE)
+      } else {
+        data.frame(qty = numeric(), price = numeric(), stringsAsFactors = FALSE)
+      }
+
+      remaining <- qty
+      realized_fill <- 0
+
+      if (direction > 0) {
+        while (remaining > 0 && nrow(lots) > 0 && lots$qty[[1]] < 0) {
+          cover_qty <- min(remaining, abs(lots$qty[[1]]))
+          realized_fill <- realized_fill + (lots$price[[1]] - price) * cover_qty
+          lots$qty[[1]] <- lots$qty[[1]] + cover_qty
+          remaining <- remaining - cover_qty
+          if (abs(lots$qty[[1]]) < 1e-12) {
+            lots <- lots[-1, , drop = FALSE]
+          }
+        }
+        if (remaining > 0) {
+          lots <- rbind(
+            lots,
+            data.frame(qty = remaining, price = price, stringsAsFactors = FALSE)
+          )
+        }
+      } else {
+        while (remaining > 0 && nrow(lots) > 0 && lots$qty[[1]] > 0) {
+          cover_qty <- min(remaining, lots$qty[[1]])
+          realized_fill <- realized_fill + (price - lots$price[[1]]) * cover_qty
+          lots$qty[[1]] <- lots$qty[[1]] - cover_qty
+          remaining <- remaining - cover_qty
+          if (abs(lots$qty[[1]]) < 1e-12) {
+            lots <- lots[-1, , drop = FALSE]
+          }
+        }
+        if (remaining > 0) {
+          lots <- rbind(
+            lots,
+            data.frame(qty = -remaining, price = price, stringsAsFactors = FALSE)
+          )
+        }
+      }
+
+      assign(key, lots, envir = fifo)
+      realized[[i]] <- realized_fill
+
+      meta_raw <- rows$meta_json[[i]]
+      if (!is.null(meta_raw) &&
+        !(is.atomic(meta_raw) && length(meta_raw) == 1 && is.na(meta_raw)) &&
+        !(is.character(meta_raw) && length(meta_raw) == 1 && !nzchar(meta_raw))) {
+        meta <- tryCatch(jsonlite::fromJSON(meta_raw, simplifyVector = TRUE), error = function(e) e)
+        if (inherits(meta, "error")) {
+          warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
+          realized[[i]] <- NA_real_
+        } else if (!is.null(meta$realized_pnl)) {
+          meta_val <- suppressWarnings(as.numeric(meta$realized_pnl))
+          if (is.na(meta_val)) {
+            warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
+            realized[[i]] <- NA_real_
+          } else if (abs(meta_val - realized_fill) > 1e-6) {
+            warning("FIFO Mismatch Detected", call. = FALSE)
+          }
+        }
       }
     }
+
+    out <- rows[, c("ts_utc", "instrument_id", "side", "qty", "price", "fee"), drop = FALSE]
+    out$realized_pnl <- realized
+    chunks[[length(chunks) + 1]] <- out
   }
 
-  out <- rows[, c("ts_utc", "instrument_id", "side", "qty", "price", "fee"), drop = FALSE]
-  out$realized_pnl <- realized
-  tibble::as_tibble(out)
+  if (length(chunks) == 0) {
+    return(tibble::tibble())
+  }
+  tibble::as_tibble(do.call(rbind, chunks))
 }
 
 compute_annualized_return <- function(equity, bars_per_year) {
@@ -424,29 +444,33 @@ ledgr_estimate_bars_per_year <- function(bt, equity) {
 
   con <- get_connection(bt)
   snapshot_id <- bt$config$data$snapshot_id
-  meta_json <- DBI::dbGetQuery(
+
+  inst <- DBI::dbGetQuery(
     con,
-    "SELECT meta_json FROM snapshots WHERE snapshot_id = ?",
+    "SELECT instrument_id FROM snapshot_instruments WHERE snapshot_id = ? ORDER BY instrument_id LIMIT 1",
     params = list(snapshot_id)
-  )$meta_json[[1]]
+  )$instrument_id[[1]]
+  if (is.null(inst) || is.na(inst) || !nzchar(inst)) return(fallback)
 
-  if (is.null(meta_json) || is.na(meta_json) || !nzchar(meta_json)) return(fallback)
-  meta <- tryCatch(jsonlite::fromJSON(meta_json, simplifyVector = TRUE), error = function(e) NULL)
-  if (is.null(meta)) return(fallback)
+  median_seconds <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT median(diff_seconds) AS median_diff
+    FROM (
+      SELECT datediff('second', LAG(ts_utc) OVER (ORDER BY ts_utc), ts_utc) AS diff_seconds
+      FROM snapshot_bars
+      WHERE snapshot_id = ? AND instrument_id = ?
+    )
+    WHERE diff_seconds IS NOT NULL
+    ",
+    params = list(snapshot_id, inst)
+  )$median_diff[[1]]
 
-  n_bars <- suppressWarnings(as.numeric(meta$n_bars))
-  start_date <- meta$start_date
-  end_date <- meta$end_date
-  if (!is.finite(n_bars) || n_bars <= 0 || is.null(start_date) || is.null(end_date)) return(fallback)
+  median_seconds <- suppressWarnings(as.numeric(median_seconds))
+  if (!is.finite(median_seconds) || median_seconds <= 0) return(fallback)
 
-  start <- as.Date(start_date)
-  end <- as.Date(end_date)
-  if (is.na(start) || is.na(end) || end <= start) return(fallback)
-
-  years <- as.numeric(difftime(end, start, units = "days")) / 365.25
-  if (!is.finite(years) || years <= 0) return(fallback)
-
-  bars_per_year <- n_bars / years
+  seconds_per_year <- 365.25 * 24 * 3600
+  bars_per_year <- seconds_per_year / median_seconds
   if (!is.finite(bars_per_year) || bars_per_year <= 0) return(fallback)
   bars_per_year
 }
