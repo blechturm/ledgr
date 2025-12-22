@@ -158,6 +158,7 @@ ledgr_backtest_open <- function(bt) {
   list(con = state$con, opened_new = TRUE)
 }
 
+# Internal helper for cleaning up lazy fill streaming results.
 ledgr_fills_close <- function(res, con = NULL) {
   if (is.null(res)) return(invisible(TRUE))
   if (!inherits(res, "DBIResult")) {
@@ -333,6 +334,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
     lazy <- TRUE
   }
 
+  # Temp-table accumulation handles dynamic sizing; no R-side caps needed.
   temp_table <- paste0("temp_fills_", paste(sample(c(letters, LETTERS, 0:9), 12, replace = TRUE), collapse = ""))
   DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table))
   DBI::dbExecute(
