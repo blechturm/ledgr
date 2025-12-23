@@ -7,12 +7,12 @@
 ledgr_snapshot_seal(con, snapshot_id)
 }
 \arguments{
-\item{con}{A DBI connection to DuckDB.}
+\item{con}{A DBI connection to DuckDB or a \code{ledgr_snapshot}.}
 
-\item{snapshot_id}{Snapshot id (must exist and be status \code{CREATED}).}
+\item{snapshot_id}{Snapshot id (must exist and be status \code{CREATED}) when \code{con} is a connection.}
 }
 \value{
-The computed snapshot hash (character(1)).
+The computed snapshot hash (character(1)) or a list when called with a snapshot object.
 }
 \description{
 Transitions a snapshot from \code{CREATED} to \code{SEALED} and stores a deterministic

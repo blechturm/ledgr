@@ -10,7 +10,11 @@
 #' @param initial_cash Starting capital.
 #' @param features List of ledgr indicator definitions (optional).
 #' @param fill_model Fill model config (NULL = instant fill).
+#' @param execution_mode Execution mode ("db_live" or "audit_log").
+#' @param checkpoint_every Flush interval for audit_log mode.
 #' @param db_path Database path for the run ledger (NULL = snapshot DB).
+#' @param persist_features If FALSE, skip persisting per-pulse features to DuckDB.
+#' @param control Optional list of engine overrides (e.g., execution_mode).
 #' @param run_id Optional run identifier to resume or reuse.
 #' @return A `ledgr_backtest` object.
 #' @export
@@ -22,8 +26,13 @@ ledgr_backtest <- function(snapshot,
                            initial_cash = 100000,
                            features = list(),
                            fill_model = NULL,
+                           execution_mode = "audit_log",
+                           checkpoint_every = 10000L,
+                           persist_features = TRUE,
                            db_path = NULL,
+                           control = list(),
                            run_id = NULL) {
+  ledgr_set_preflight_start(ledgr_time_now())
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort(
       "'snapshot' must be a ledgr_snapshot object. Create with: ledgr_snapshot_from_df() or ledgr_snapshot_from_yahoo().",
@@ -39,9 +48,24 @@ ledgr_backtest <- function(snapshot,
     rlang::abort("'universe' must not contain duplicates.", class = "ledgr_invalid_args")
   }
 
+  if (!is.logical(persist_features) || length(persist_features) != 1 || is.na(persist_features)) {
+    rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+
   if (is.null(db_path)) db_path <- snapshot$db_path
   if (!is.character(db_path) || length(db_path) != 1 || is.na(db_path) || !nzchar(db_path)) {
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+
+  if (!is.character(execution_mode) || length(execution_mode) != 1 || is.na(execution_mode) || !nzchar(execution_mode)) {
+    rlang::abort("`execution_mode` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  if (!execution_mode %in% c("db_live", "audit_log")) {
+    rlang::abort("`execution_mode` must be \"db_live\" or \"audit_log\".", class = "ledgr_invalid_args")
+  }
+  if (!is.numeric(checkpoint_every) || length(checkpoint_every) != 1 || is.na(checkpoint_every) ||
+      !is.finite(checkpoint_every) || checkpoint_every < 1 || (checkpoint_every %% 1) != 0) {
+    rlang::abort("`checkpoint_every` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
 
   if (!is.null(run_id)) {
@@ -85,8 +109,12 @@ ledgr_backtest <- function(snapshot,
     strategy = strategy,
     backtest = ledgr_backtest_config(start = start, end = end, initial_cash = initial_cash),
     features = features,
+    persist_features = persist_features,
+    execution_mode = execution_mode,
+    checkpoint_every = checkpoint_every,
     fill_model = fill_model,
     db_path = db_path,
+    control = control,
     run_id = run_id
   )
 
@@ -263,8 +291,12 @@ ledgr_config <- function(snapshot,
                          strategy,
                          backtest,
                          features = list(),
+                         persist_features = TRUE,
+                         execution_mode = "audit_log",
+                         checkpoint_every = 10000L,
                          fill_model = NULL,
                          db_path = NULL,
+                         control = list(),
                          run_id = NULL) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
@@ -282,6 +314,39 @@ ledgr_config <- function(snapshot,
   if (!is.list(features)) {
     rlang::abort("`features` must be a list.", class = "ledgr_invalid_args")
   }
+  if (!is.logical(persist_features) || length(persist_features) != 1 || is.na(persist_features)) {
+    rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  if (!is.character(execution_mode) || length(execution_mode) != 1 || is.na(execution_mode) || !nzchar(execution_mode)) {
+    rlang::abort("`execution_mode` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  if (!execution_mode %in% c("db_live", "audit_log")) {
+    rlang::abort("`execution_mode` must be \"db_live\" or \"audit_log\".", class = "ledgr_invalid_args")
+  }
+  if (!is.numeric(checkpoint_every) || length(checkpoint_every) != 1 || is.na(checkpoint_every) ||
+      !is.finite(checkpoint_every) || checkpoint_every < 1 || (checkpoint_every %% 1) != 0) {
+    rlang::abort("`checkpoint_every` must be an integer >= 1.", class = "ledgr_invalid_args")
+  }
+  if (!is.list(control)) {
+    rlang::abort("`control` must be a list.", class = "ledgr_invalid_args")
+  }
+
+  if (!is.null(control$execution_mode)) {
+    execution_mode <- control$execution_mode
+    if (!is.character(execution_mode) || length(execution_mode) != 1 || is.na(execution_mode) || !nzchar(execution_mode)) {
+      rlang::abort("control$execution_mode must be a non-empty character scalar.", class = "ledgr_invalid_args")
+    }
+    if (!execution_mode %in% c("db_live", "audit_log")) {
+      rlang::abort("control$execution_mode must be \"db_live\" or \"audit_log\".", class = "ledgr_invalid_args")
+    }
+  }
+  if (!is.null(control$checkpoint_every)) {
+    checkpoint_every <- control$checkpoint_every
+    if (!is.numeric(checkpoint_every) || length(checkpoint_every) != 1 || is.na(checkpoint_every) ||
+        !is.finite(checkpoint_every) || checkpoint_every < 1 || (checkpoint_every %% 1) != 0) {
+      rlang::abort("control$checkpoint_every must be an integer >= 1.", class = "ledgr_invalid_args")
+    }
+  }
 
   if (is.null(fill_model)) fill_model <- ledgr_fill_model_instant()
   if (!is.list(fill_model)) {
@@ -292,7 +357,13 @@ ledgr_config <- function(snapshot,
 
   config <- list(
     db_path = db_path,
-    engine = list(seed = 1L, tz = "UTC"),
+    engine = list(
+      seed = 1L,
+      tz = "UTC",
+      execution_mode = execution_mode,
+      checkpoint_every = as.integer(checkpoint_every),
+      control = control
+    ),
     universe = list(instrument_ids = universe),
     backtest = list(
       start_ts_utc = backtest$start,
@@ -318,9 +389,9 @@ ledgr_config <- function(snapshot,
         }
         feat
       })
-      list(enabled = TRUE, defs = defs)
+      list(enabled = TRUE, defs = defs, persist = isTRUE(persist_features))
     } else {
-      list(enabled = FALSE, defs = list())
+      list(enabled = FALSE, defs = list(), persist = isTRUE(persist_features))
     },
     strategy = list(
       id = strat$id,
@@ -819,7 +890,7 @@ ledgr_backtest_bench <- function(bt) {
     )
   }
 
-  components <- c("t_state", "t_feats", "t_strat", "t_exec")
+  components <- c("t_pre", "t_post", "t_loop", "t_pulse", "t_bars", "t_ctx", "t_fill", "t_state", "t_feats", "t_strat", "t_exec")
   out <- lapply(components, function(name) summarize_vec(telemetry[[name]]))
 
   tibble::tibble(

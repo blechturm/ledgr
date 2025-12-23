@@ -1,4 +1,38 @@
+.ledgr_json_cache <- new.env(parent = emptyenv())
+.ledgr_json_cache_max <- 1024L
+.ledgr_json_cache$count <- 0L
+
+.ledgr_json_cache_get <- function(key) {
+  if (!exists(key, envir = .ledgr_json_cache, inherits = FALSE)) return(NULL)
+  get(key, envir = .ledgr_json_cache, inherits = FALSE)
+}
+
+.ledgr_json_cache_set <- function(key, value) {
+  assign(key, value, envir = .ledgr_json_cache)
+  .ledgr_json_cache$count <- .ledgr_json_cache$count + 1L
+  if (.ledgr_json_cache$count > .ledgr_json_cache_max) {
+    rm(list = ls(envir = .ledgr_json_cache, all.names = TRUE), envir = .ledgr_json_cache)
+    .ledgr_json_cache$count <- 0L
+  }
+  invisible(TRUE)
+}
+
+.ledgr_json_cache_key <- function(x) {
+  if (is.character(x) && length(x) == 1 && !is.na(x)) {
+    return(digest::digest(x, algo = "sha256"))
+  }
+  digest::digest(x, algo = "sha256")
+}
+
 canonical_json <- function(x) {
+  if (is.character(x) && length(x) == 1 && !is.na(x)) {
+    if (isTRUE(attr(x, "ledgr_canonical_json"))) return(unname(x))
+  }
+
+  cache_key <- .ledgr_json_cache_key(x)
+  cached <- .ledgr_json_cache_get(cache_key)
+  if (!is.null(cached)) return(cached)
+
   if (is.character(x) && length(x) == 1 && !is.na(x)) {
     x <- tryCatch(
       jsonlite::fromJSON(x, simplifyVector = FALSE),
@@ -77,12 +111,31 @@ canonical_json <- function(x) {
     )
   }
 
-  jsonlite::toJSON(
-    canonicalize(x),
-    auto_unbox = TRUE,
-    null = "null",
-    na = "null",
-    digits = NA,
-    pretty = FALSE
-  )
+  payload <- canonicalize(x)
+  out <- NULL
+  if (requireNamespace("yyjsonr", quietly = TRUE)) {
+    out <- tryCatch(
+      yyjsonr::write_json(payload),
+      error = function(e) NULL
+    )
+    if (!is.null(out) && is.raw(out)) {
+      out <- rawToChar(out)
+    }
+    if (!is.null(out) && (!is.character(out) || length(out) != 1)) {
+      out <- NULL
+    }
+  }
+  if (is.null(out)) {
+    out <- jsonlite::toJSON(
+      payload,
+      auto_unbox = TRUE,
+      null = "null",
+      na = "null",
+      digits = NA,
+      pretty = FALSE
+    )
+  }
+  attr(out, "ledgr_canonical_json") <- TRUE
+  .ledgr_json_cache_set(cache_key, out)
+  out
 }

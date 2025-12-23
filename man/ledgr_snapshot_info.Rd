@@ -7,9 +7,9 @@
 ledgr_snapshot_info(con, snapshot_id)
 }
 \arguments{
-\item{con}{A DBI connection to DuckDB.}
+\item{con}{A DBI connection to DuckDB or a \code{ledgr_snapshot}.}
 
-\item{snapshot_id}{Snapshot id (must exist).}
+\item{snapshot_id}{Snapshot id (must exist) when \code{con} is a connection.}
 }
 \value{
 A 1-row data.frame with:

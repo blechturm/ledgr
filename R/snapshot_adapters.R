@@ -127,16 +127,12 @@ ledgr_snapshot_from_df <- function(bars_df,
     rlang::abort("bars_df contains an OHLC violation (high/low bounds).", class = "ledgr_invalid_args")
   }
 
-  for (inst in unique(instrument_id)) {
-    idx <- which(instrument_id == inst)
-    if (length(idx) > 1) {
-      if (any(diff(ts_posix[idx]) < 0)) {
-        rlang::abort(
-          "bars_df must be chronological per instrument (non-decreasing ts_utc).",
-          class = "ledgr_invalid_args"
-        )
-      }
-    }
+  bad_order <- tapply(ts_posix, instrument_id, function(x) any(diff(x) < 0))
+  if (any(bad_order)) {
+    rlang::abort(
+      "bars_df must be chronological per instrument (non-decreasing ts_utc).",
+      class = "ledgr_invalid_args"
+    )
   }
 
   key <- paste0(instrument_id, "\n", ts_utc)
@@ -305,9 +301,40 @@ ledgr_snapshot_from_df <- function(bars_df,
     stringsAsFactors = FALSE
   )
 
+  inst_db$meta_json <- if (is.null(meta_updates)) rep(NA_character_, nrow(inst_db)) else meta_updates
+
+  bulk_copy_parquet <- function(df, table, select_sql) {
+    reg_name <- paste0("ledgr_ingest_", paste(sample(c(letters, LETTERS, 0:9), 12, replace = TRUE), collapse = ""))
+    tmp_path <- normalizePath(tempfile(pattern = "ledgr_ingest_", fileext = ".parquet"), winslash = "/", mustWork = FALSE)
+    duckdb::duckdb_register(con, reg_name, df)
+    on.exit(duckdb::duckdb_unregister(con, reg_name), add = TRUE)
+    on.exit(unlink(tmp_path, force = TRUE), add = TRUE)
+
+    DBI::dbExecute(
+      con,
+      sprintf("COPY (%s) TO '%s' (FORMAT PARQUET)", sprintf(select_sql, reg_name), tmp_path)
+    )
+    DBI::dbExecute(
+      con,
+      sprintf("COPY %s FROM '%s' (FORMAT PARQUET)", table, tmp_path)
+    )
+  }
+
   DBI::dbWithTransaction(con, {
     tryCatch(
-      DBI::dbAppendTable(con, "snapshot_instruments", inst_db),
+      bulk_copy_parquet(
+        inst_db,
+        "snapshot_instruments",
+        "SELECT CAST(snapshot_id AS TEXT) AS snapshot_id,
+                CAST(instrument_id AS TEXT) AS instrument_id,
+                CAST(symbol AS TEXT) AS symbol,
+                CAST(currency AS TEXT) AS currency,
+                CAST(asset_class AS TEXT) AS asset_class,
+                CAST(multiplier AS DOUBLE) AS multiplier,
+                CAST(tick_size AS DOUBLE) AS tick_size,
+                CAST(meta_json AS TEXT) AS meta_json
+         FROM %s"
+      ),
       error = function(e) {
         rlang::abort(
           sprintf("Instrument insert failed (likely duplicate PKs): %s", conditionMessage(e)),
@@ -316,7 +343,19 @@ ledgr_snapshot_from_df <- function(bars_df,
       }
     )
     tryCatch(
-      DBI::dbAppendTable(con, "snapshot_bars", bars_db),
+      bulk_copy_parquet(
+        bars_db,
+        "snapshot_bars",
+        "SELECT CAST(snapshot_id AS TEXT) AS snapshot_id,
+                CAST(instrument_id AS TEXT) AS instrument_id,
+                CAST(ts_utc AS TIMESTAMP) AS ts_utc,
+                CAST(open AS DOUBLE) AS open,
+                CAST(high AS DOUBLE) AS high,
+                CAST(low AS DOUBLE) AS low,
+                CAST(close AS DOUBLE) AS close,
+                CAST(volume AS DOUBLE) AS volume
+         FROM %s"
+      ),
       error = function(e) {
         rlang::abort(
           sprintf("Bars insert failed (likely duplicate PKs): %s", conditionMessage(e)),
@@ -326,17 +365,10 @@ ledgr_snapshot_from_df <- function(bars_df,
     )
   })
 
-  if (!is.null(meta_updates)) {
-    for (i in seq_along(meta_updates)) {
-      if (!is.na(meta_updates[[i]]) && nzchar(meta_updates[[i]])) {
-        DBI::dbExecute(
-          con,
-          "UPDATE snapshot_instruments SET meta_json = ? WHERE snapshot_id = ? AND instrument_id = ?",
-          params = list(meta_updates[[i]], snapshot_id, inst_out$instrument_id[[i]])
-        )
-      }
-    }
-  }
+  DBI::dbExecute(
+    con,
+    "CREATE INDEX IF NOT EXISTS idx_snapshot_bars_ts ON snapshot_bars(snapshot_id, ts_utc)"
+  )
 
   DBI::dbExecute(
     con,

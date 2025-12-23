@@ -78,7 +78,7 @@ ledgr_reconstruct_cash <- function(con, run_id, initial_cash) {
   cash
 }
 
-ledgr_rebuild_derived_state <- function(con, run_id, initial_cash) {
+ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transaction = TRUE) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
@@ -368,10 +368,18 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash) {
     }
   }
 
-  DBI::dbWithTransaction(con, {
+  if (!is.logical(use_transaction) || length(use_transaction) != 1 || is.na(use_transaction)) {
+    rlang::abort("`use_transaction` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  if (isTRUE(use_transaction)) {
+    DBI::dbWithTransaction(con, {
+      DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
+      DBI::dbAppendTable(con, "equity_curve", eq_df)
+    })
+  } else {
     DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
     DBI::dbAppendTable(con, "equity_curve", eq_df)
-  })
+  }
 
   structure(
     list(

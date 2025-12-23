@@ -156,6 +156,7 @@ ledgr_compute_feature_latest <- function(bars_df, feature_def) {
     window <- utils::tail(window, stable_after)
   }
   value <- if (length(formals(fn)) >= 2) fn(window, params) else fn(window)
+  if (is.null(value) || length(value) < 1) return(NA_real_)
   if (length(value) > 1) value <- value[[length(value)]]
   if (!is.numeric(value) || length(value) != 1) {
     rlang::abort(sprintf("Feature %s returned a non-numeric or non-scalar value.", feature_def$id), class = "ledgr_invalid_feature_output")
