@@ -34,6 +34,5 @@ Suggests:
     withr,
     quantmod,
     xts,
-    yyjsonr,
     zoo
 Config/testthat/edition: 3

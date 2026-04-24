@@ -112,29 +112,14 @@ canonical_json <- function(x) {
   }
 
   payload <- canonicalize(x)
-  out <- NULL
-  if (requireNamespace("yyjsonr", quietly = TRUE)) {
-    out <- tryCatch(
-      yyjsonr::write_json(payload),
-      error = function(e) NULL
-    )
-    if (!is.null(out) && is.raw(out)) {
-      out <- rawToChar(out)
-    }
-    if (!is.null(out) && (!is.character(out) || length(out) != 1)) {
-      out <- NULL
-    }
-  }
-  if (is.null(out)) {
-    out <- jsonlite::toJSON(
-      payload,
-      auto_unbox = TRUE,
-      null = "null",
-      na = "null",
-      digits = NA,
-      pretty = FALSE
-    )
-  }
+  out <- jsonlite::toJSON(
+    payload,
+    auto_unbox = TRUE,
+    null = "null",
+    na = "null",
+    digits = NA,
+    pretty = FALSE
+  )
   attr(out, "ledgr_canonical_json") <- TRUE
   .ledgr_json_cache_set(cache_key, out)
   out
