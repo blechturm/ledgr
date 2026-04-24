@@ -105,7 +105,7 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
       window_i$ts_utc <- vapply(window_i$ts_utc, iso_utc, character(1))
       fn(window_i)
     })
-    tibble::tibble(ts_utc = dates_norm, value = I(values))
+    tibble::tibble(ts_utc = dates_norm, value = ledgr_simplify_indicator_values(values))
   }
 
   e$plot <- function() {
@@ -249,6 +249,7 @@ ledgr_pulse_snapshot <- function(snapshot,
 
   e$bars <- bars
   e$features <- features_df
+  ledgr_attach_feature_helpers(e, features_df)
 
   structure(e, class = "ledgr_pulse_context")
 }
@@ -388,4 +389,20 @@ ledgr_compute_pulse_features <- function(con, snapshot_id, universe, ts_utc, fea
   out <- do.call(rbind, feature_rows)
   rownames(out) <- NULL
   out
+}
+
+ledgr_simplify_indicator_values <- function(values) {
+  is_scalar_atomic <- vapply(
+    values,
+    function(x) {
+      !is.null(x) && is.atomic(x) && !is.list(x) && length(x) == 1L
+    },
+    logical(1)
+  )
+
+  if (!all(is_scalar_atomic)) {
+    return(I(values))
+  }
+
+  unlist(values, recursive = FALSE, use.names = FALSE)
 }

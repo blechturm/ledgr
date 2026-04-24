@@ -22,7 +22,90 @@ ledgr_pulse_context <- function(run_id,
   )
 
   class(ctx) <- "ledgr_pulse_context"
+  ctx <- ledgr_attach_feature_helpers(ctx)
   ledgr_validate_pulse_context(ctx)
+  ctx
+}
+
+ledgr_feature_table_ready <- function(features) {
+  !is.null(features) &&
+    all(c("instrument_id", "feature_name", "feature_value") %in% names(features)) &&
+    length(features[["feature_value"]]) > 0
+}
+
+ledgr_feature_accessor <- function(features) {
+  force(features)
+
+  function(instrument_id, feature_name, default = NA_real_) {
+    if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
+      rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+    }
+    if (!is.character(feature_name) || length(feature_name) != 1L || is.na(feature_name) || !nzchar(feature_name)) {
+      rlang::abort("`feature_name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+    }
+    if (!ledgr_feature_table_ready(features)) return(default)
+
+    idx <- which(
+      as.character(features[["instrument_id"]]) == instrument_id &
+        as.character(features[["feature_name"]]) == feature_name
+    )
+    if (length(idx) == 0L) return(default)
+
+    features[["feature_value"]][[idx[[length(idx)]]]]
+  }
+}
+
+ledgr_features_wide <- function(features) {
+  if (!ledgr_feature_table_ready(features)) return(data.frame())
+
+  instrument_id <- as.character(features[["instrument_id"]])
+  feature_name <- as.character(features[["feature_name"]])
+  feature_value <- as.numeric(features[["feature_value"]])
+
+  valid <- !is.na(instrument_id) & nzchar(instrument_id) & !is.na(feature_name) & nzchar(feature_name)
+  if (!any(valid)) return(data.frame())
+
+  instrument_id <- instrument_id[valid]
+  feature_name <- feature_name[valid]
+  feature_value <- feature_value[valid]
+
+  instruments <- unique(instrument_id)
+  feature_names <- unique(feature_name)
+  values <- matrix(
+    NA_real_,
+    nrow = length(instruments),
+    ncol = length(feature_names),
+    dimnames = list(instruments, feature_names)
+  )
+
+  for (i in seq_along(feature_value)) {
+    values[instrument_id[[i]], feature_name[[i]]] <- feature_value[[i]]
+  }
+
+  out <- data.frame(instrument_id = instruments, stringsAsFactors = FALSE)
+  if ("ts_utc" %in% names(features)) {
+    ts_utc <- vapply(features[["ts_utc"]][valid], iso_utc, character(1))
+    out$ts_utc <- vapply(
+      instruments,
+      function(inst) ts_utc[which(instrument_id == inst)[[1]]],
+      character(1)
+    )
+  }
+
+  out <- cbind(out, as.data.frame(values, check.names = FALSE, stringsAsFactors = FALSE))
+  rownames(out) <- NULL
+  out
+}
+
+ledgr_attach_feature_helpers <- function(ctx, features = ctx$features) {
+  if (is.environment(ctx)) {
+    ctx$features_wide <- ledgr_features_wide(features)
+    ctx$feature <- ledgr_feature_accessor(features)
+    return(invisible(ctx))
+  }
+
+  ctx$features_wide <- ledgr_features_wide(features)
+  ctx$feature <- ledgr_feature_accessor(features)
   ctx
 }
 

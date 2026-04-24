@@ -27,13 +27,13 @@ devtools::install()
 library(ledgr)
 
 bars <- tibble::tibble(
-  instrument_id = rep("AAPL", 3),
-  ts_utc = as.POSIXct(c("2020-01-01", "2020-01-02", "2020-01-03"), tz = "UTC"),
-  open = c(100, 101, 102),
-  high = c(101, 102, 103),
-  low = c(99, 100, 101),
-  close = c(101, 102, 103),
-  volume = c(1000, 1000, 1000)
+  instrument_id = "AAPL",
+  ts_utc = as.POSIXct(c("2020-01-02", "2020-01-03", "2020-01-06", "2020-01-07", "2020-01-08"), tz = "UTC"),
+  open = c(100, 101, 102, 101, 103),
+  high = c(101, 102, 103, 104, 105),
+  low = c(99, 100, 100, 100, 102),
+  close = c(101, 102, 101, 103, 104),
+  volume = c(1000, 1100, 1050, 1200, 1300)
 )
 
 strategy <- function(ctx) {
@@ -43,16 +43,17 @@ strategy <- function(ctx) {
 bt <- ledgr_backtest(
   data = bars,
   strategy = strategy,
-  start = "2020-01-01",
-  end = "2020-01-03"
+  start = "2020-01-02",
+  end = "2020-01-07"
 )
 
 summary(bt)
-as_tibble(bt, "equity")
+tibble::as_tibble(bt, what = "equity")
 ```
 
 `ledgr_backtest(data = ...)` creates and seals a snapshot behind the scenes,
 then calls the same `ledgr_run()` pipeline used by explicit snapshot workflows.
+For a fuller interactive walkthrough, see `dev/ledgr_v0.1.2_new_api_demo.R`.
 
 ## Documentation
 

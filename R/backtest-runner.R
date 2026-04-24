@@ -858,6 +858,8 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     universe = instrument_ids,
     bars = if (isTRUE(use_bars_cache)) bars_df else empty_df,
     features = if (length(feature_defs) > 0) features_df else empty_df,
+    features_wide = empty_df,
+    feature = ledgr_feature_accessor(empty_df),
     positions = state_env$current$positions,
     cash = state_env$current$cash,
     equity = state_env$current$cash,
@@ -1092,6 +1094,8 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         ctx$ts_utc <- ts_iso
         ctx$bars <- bars
         ctx$features <- feat_df
+        ctx$features_wide <- ledgr_features_wide(feat_df)
+        ctx$feature <- ledgr_feature_accessor(feat_df)
         ctx$positions <- state$positions
         ctx$cash <- state$cash
         ctx$equity <- state$cash + positions_value

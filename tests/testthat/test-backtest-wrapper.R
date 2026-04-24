@@ -205,6 +205,9 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
   on.exit(close(ctx), add = TRUE)
   testthat::expect_true(is.data.frame(ctx$bars))
   testthat::expect_true(is.data.frame(ctx$features))
+  testthat::expect_true(is.function(ctx$feature))
+  testthat::expect_true(is.data.frame(ctx$features_wide))
+  testthat::expect_true("sma_2" %in% names(ctx$features_wide))
 
   data_frame_strategy <- function(ctx) {
     if (!is.data.frame(ctx$bars) || nrow(ctx$bars) != length(ctx$universe)) {
@@ -213,6 +216,22 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
     if (!is.data.frame(ctx$features) || !all(c("instrument_id", "feature_name", "feature_value") %in% names(ctx$features))) {
       stop("runtime features context is not data-frame compatible")
     }
+    if (!is.function(ctx$feature)) {
+      stop("runtime feature accessor is missing")
+    }
+    if (!is.data.frame(ctx$features_wide) || !("sma_2" %in% names(ctx$features_wide))) {
+      stop("runtime wide feature context is missing")
+    }
+
+    feature_value <- ctx$feature("TEST_A", "sma_2")
+    long_value <- ctx$features$feature_value[
+      ctx$features$instrument_id == "TEST_A" &
+        ctx$features$feature_name == "sma_2"
+    ][[1]]
+    if (!identical(feature_value, long_value)) {
+      stop("runtime feature accessor does not match long feature table")
+    }
+
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   }
 
