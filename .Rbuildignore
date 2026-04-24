@@ -1,4 +1,7 @@
 ^LICENSE\.md$
-^^\\.github$$
-^^docs$$
-^^_pkgdown\\.yml$$
+^\.github$
+^docs$
+^_pkgdown\.yml$
+^vignettes$
+^.*\.Rcheck$
+^.*\.tar\.gz$

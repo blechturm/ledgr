@@ -565,7 +565,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   next_event_seq <- as.integer(next_event_seq)
 
   fast_context <- control$fast_context
-  if (is.null(fast_context)) fast_context <- TRUE
+  if (is.null(fast_context)) fast_context <- FALSE
   if (!is.logical(fast_context) || length(fast_context) != 1 || is.na(fast_context)) {
     rlang::abort("`control$fast_context` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
@@ -2080,12 +2080,20 @@ ledgr_feature_defs_from_config <- function(cfg) {
     if (exists("ledgr_get_indicator", mode = "function")) {
       ind <- tryCatch(ledgr_get_indicator(id), error = function(e) NULL)
       if (inherits(ind, "ledgr_indicator")) {
+        current_fingerprint <- ledgr_indicator_fingerprint(ind)
+        if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {
+          rlang::abort(
+            sprintf("Registered indicator '%s' no longer matches the fingerprint stored in the run config.", id),
+            class = "ledgr_run_hash_mismatch"
+          )
+        }
         out[[length(out) + 1L]] <- list(
           id = ind$id,
           fn = ind$fn,
           requires_bars = ind$requires_bars,
           stable_after = if (is.null(d$stable_after)) ind$stable_after else d$stable_after,
-          params = d$params
+          params = if (is.null(d$params)) ind$params else d$params,
+          fingerprint = current_fingerprint
         )
         next
       }

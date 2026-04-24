@@ -43,18 +43,43 @@ testthat::test_that("indicator purity scan blocks non-deterministic calls", {
 })
 
 testthat::test_that("indicator registry supports register/get/list", {
-  ind <- ledgr:::ledgr_ind_sma(2)
-  ledgr:::ledgr_register_indicator(ind, "test_sma_2")
+  ind <- ledgr_ind_sma(2)
+  ledgr_register_indicator(ind, "test_sma_2", overwrite = TRUE)
 
-  fetched <- ledgr:::ledgr_get_indicator("test_sma_2")
+  fetched <- ledgr_get_indicator("test_sma_2")
   testthat::expect_s3_class(fetched, "ledgr_indicator")
   testthat::expect_identical(fetched$id, "sma_2")
-  testthat::expect_true("test_sma_2" %in% ledgr:::ledgr_list_indicators("^test_"))
+  testthat::expect_true("test_sma_2" %in% ledgr_list_indicators("^test_"))
 
   testthat::expect_error(
-    ledgr:::ledgr_get_indicator("missing_indicator"),
+    ledgr_get_indicator("missing_indicator"),
     class = "ledgr_invalid_args"
   )
+})
+
+testthat::test_that("indicator registry rejects silent overwrite", {
+  name <- "test_registry_duplicate"
+  ind_a <- ledgr_indicator(
+    id = "registry_dup_a",
+    fn = function(window) mean(window$close),
+    requires_bars = 2L,
+    params = list(kind = "a")
+  )
+  ind_b <- ledgr_indicator(
+    id = "registry_dup_b",
+    fn = function(window) sum(window$close),
+    requires_bars = 2L,
+    params = list(kind = "b")
+  )
+
+  ledgr_register_indicator(ind_a, name, overwrite = TRUE)
+  testthat::expect_silent(ledgr_register_indicator(ind_a, name))
+  testthat::expect_error(
+    ledgr_register_indicator(ind_b, name),
+    "already registered",
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_silent(ledgr_register_indicator(ind_b, name, overwrite = TRUE))
 })
 
 testthat::test_that("built-in indicators are deterministic and silent", {
@@ -71,10 +96,10 @@ testthat::test_that("built-in indicators are deterministic and silent", {
   )
 
   indicators <- list(
-    ledgr:::ledgr_ind_sma(5),
-    ledgr:::ledgr_ind_ema(5),
-    ledgr:::ledgr_ind_rsi(14),
-    ledgr:::ledgr_ind_returns(1)
+    ledgr_ind_sma(5),
+    ledgr_ind_ema(5),
+    ledgr_ind_rsi(14),
+    ledgr_ind_returns(1)
   )
 
   for (ind in indicators) {

@@ -15,4 +15,3 @@ A tibble with mean/median/p99 timings per component.
 \description{
 Summarize per-pulse telemetry timings (internal)
 }
-\keyword{internal}

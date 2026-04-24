@@ -4,10 +4,12 @@
 \alias{close.ledgr_pulse_context}
 \title{Close pulse context}
 \usage{
-\method{close}{ledgr_pulse_context}(x, ...)
+\method{close}{ledgr_pulse_context}(con, ...)
 }
 \arguments{
-\item{x}{A \code{ledgr_pulse_context} object.}
+\item{con}{A \code{ledgr_pulse_context} object.}
+
+\item{...}{Unused.}
 }
 \value{
 The input object, invisibly.

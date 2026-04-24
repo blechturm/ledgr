@@ -1,21 +1,21 @@
 Package: ledgr
-Title: Event-Sourced Trading Framework Skeleton
-Version: 0.1.1
+Title: Deterministic Event-Sourced Backtesting
+Version: 0.1.2
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",
       role = c("aut", "cre")
     )
-Description: Correctness-first, event-sourced building blocks for a trading
-    lifecycle, with an emphasis on reproducible state, auditing, and
-    testability. This repository currently contains scaffolding only; see
-    inst/design/ledgr_design_document.md for the design document.
+Description: Correctness-first, event-sourced backtesting for research
+    workflows, with deterministic replay, sealed data snapshots, no-lookahead
+    strategy execution, and ledger-derived results.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
     cli,
+    codetools,
     DBI,
     digest,
     duckdb,
@@ -25,9 +25,15 @@ Imports:
     tibble
 Suggests: 
     covr,
+    ggplot2,
+    gridExtra,
+    microbenchmark,
     nanotime,
     testthat (>= 3.0.0),
+    TTR,
     withr,
     quantmod,
+    xts,
+    yyjsonr,
     zoo
 Config/testthat/edition: 3

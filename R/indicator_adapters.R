@@ -6,7 +6,9 @@
 #' @param ... Additional arguments passed to the package function.
 #'
 #' @return A `ledgr_indicator` object.
+#' @export
 ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
+  pkg_fn_label <- NULL
   if (is.character(pkg_fn)) {
     if (length(pkg_fn) != 1 || is.na(pkg_fn) || !nzchar(pkg_fn) || !grepl("::", pkg_fn, fixed = TRUE)) {
       rlang::abort("`pkg_fn` must be a function or \"pkg::fn\" string.", class = "ledgr_invalid_args")
@@ -14,6 +16,7 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
     parts <- strsplit(pkg_fn, "::", fixed = TRUE)[[1]]
     pkg_name <- parts[[1]]
     fn_name <- parts[[2]]
+    pkg_fn_label <- pkg_fn
     if (!requireNamespace(pkg_name, quietly = TRUE)) {
       rlang::abort(
         sprintf("Package '%s' required for ledgr_adapter_r.", pkg_name),
@@ -25,6 +28,7 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
     rlang::abort("`pkg_fn` must be a function or \"pkg::fn\" string.", class = "ledgr_invalid_args")
   } else {
     env_name <- environmentName(environment(pkg_fn))
+    pkg_fn_label <- paste0(env_name, "::", ledgr_function_fingerprint(pkg_fn, include_captures = FALSE, label = "`pkg_fn`"))
     if (!is.null(env_name) && grepl("^namespace:", env_name)) {
       pkg_name <- sub("^namespace:", "", env_name)
       if (!requireNamespace(pkg_name, quietly = TRUE)) {
@@ -37,6 +41,14 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
   }
 
   args <- list(...)
+  params <- c(
+    list(
+      adapter = "r",
+      pkg_fn = pkg_fn_label,
+      pkg_fn_hash = ledgr_function_fingerprint(pkg_fn, include_captures = FALSE, label = "`pkg_fn`")
+    ),
+    args
+  )
   ledgr_indicator(
     id = id,
     fn = function(window) {
@@ -45,7 +57,7 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
     },
     requires_bars = as.integer(requires_bars),
     stable_after = as.integer(requires_bars),
-    params = args
+    params = params
   )
 }
 
@@ -58,6 +70,7 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
 #' @param id Indicator identifier.
 #'
 #' @return A `ledgr_indicator` object.
+#' @export
 ledgr_adapter_csv <- function(csv_path,
                               value_col,
                               date_col = "ts_utc",
@@ -125,6 +138,7 @@ ledgr_adapter_csv <- function(csv_path,
     requires_bars = 1L,
     stable_after = 1L,
     params = list(
+      adapter = "csv",
       csv_path = csv_path,
       value_col = value_col,
       date_col = date_col,

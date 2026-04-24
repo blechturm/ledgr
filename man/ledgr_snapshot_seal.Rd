@@ -28,6 +28,8 @@ Errors:
 \item \code{LEDGR_SNAPSHOT_ALREADY_SEALED} if the snapshot is already \code{SEALED}.
 \item \code{LEDGR_SNAPSHOT_NOT_MUTABLE} if the snapshot status is not \code{CREATED}.
 \item \code{LEDGR_SNAPSHOT_EMPTY} if there are 0 bars or 0 instruments.
+\item \code{LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY} if bars reference missing instruments.
+\item \code{LEDGR_SNAPSHOT_OHLC_INVALID} if OHLC bars are internally inconsistent.
 \item \code{LEDGR_SNAPSHOT_SEAL_FAILED} on hashing/transaction failures (snapshot is marked \code{FAILED}).
 }
 }

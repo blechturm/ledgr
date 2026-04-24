@@ -32,6 +32,9 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   testthat::expect_s3_class(fills, "tbl_df")
   testthat::expect_true("realized_pnl" %in% names(fills))
 
+  trades <- as_tibble(bt, type = "trades")
+  testthat::expect_s3_class(trades, "tbl_df")
+
   ledger <- as_tibble(bt, "ledger")
   testthat::expect_s3_class(ledger, "tbl_df")
   testthat::expect_true("event_seq" %in% names(ledger))

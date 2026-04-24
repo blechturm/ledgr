@@ -5,9 +5,9 @@
 \title{Run a backtest (v0.1.2)}
 \usage{
 ledgr_backtest(
-  snapshot,
+  snapshot = NULL,
   strategy,
-  universe,
+  universe = NULL,
   start = NULL,
   end = NULL,
   initial_cash = 1e+05,
@@ -18,15 +18,18 @@ ledgr_backtest(
   persist_features = TRUE,
   db_path = NULL,
   control = list(),
-  run_id = NULL
+  run_id = NULL,
+  data = NULL
 )
 }
 \arguments{
-\item{snapshot}{A \code{ledgr_snapshot} object.}
+\item{snapshot}{A \code{ledgr_snapshot} object, or a data frame for the data-first
+convenience path.}
 
 \item{strategy}{Strategy function or object with \verb{$on_pulse(ctx)} method.}
 
-\item{universe}{Character vector of instrument IDs.}
+\item{universe}{Character vector of instrument IDs. If \code{NULL}, it is inferred
+from the snapshot or data frame.}
 
 \item{start}{Start timestamp (NULL = snapshot start).}
 
@@ -49,6 +52,9 @@ ledgr_backtest(
 \item{control}{Optional list of engine overrides (e.g., execution_mode).}
 
 \item{run_id}{Optional run identifier to resume or reuse.}
+
+\item{data}{Optional data frame/tibble or \code{ledgr_snapshot}. Exactly one of
+\code{snapshot} and \code{data} may be supplied.}
 }
 \value{
 A \code{ledgr_backtest} object.

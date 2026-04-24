@@ -93,3 +93,139 @@ testthat::test_that("functional strategies must return targets for the full univ
     class = "ledgr_invalid_strategy_result"
   )
 })
+
+testthat::test_that("ledgr_backtest data-first path matches explicit snapshot workflow", {
+  db_path_data <- tempfile(fileext = ".duckdb")
+  db_path_explicit <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path_data), add = TRUE)
+  on.exit(unlink(db_path_explicit), add = TRUE)
+
+  bt_data <- ledgr_backtest(
+    data = test_bars,
+    strategy = test_strategy,
+    start = "2020-01-01",
+    end = "2020-12-31",
+    initial_cash = 100000,
+    db_path = db_path_data
+  )
+
+  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path_explicit)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+  bt_explicit <- ledgr_backtest(
+    snapshot = snap,
+    strategy = test_strategy,
+    universe = sort(unique(test_bars$instrument_id)),
+    start = "2020-01-01",
+    end = "2020-12-31",
+    initial_cash = 100000,
+    db_path = db_path_explicit
+  )
+
+  testthat::expect_identical(bt_data$config$universe$instrument_ids, sort(unique(test_bars$instrument_id)))
+
+  con_data <- ledgr:::get_connection(bt_data)
+  con_explicit <- ledgr:::get_connection(bt_explicit)
+  bars_count <- DBI::dbGetQuery(con_data, "SELECT COUNT(*) AS n FROM bars")$n[[1]]
+  testthat::expect_identical(as.integer(bars_count), 0L)
+
+  events_data <- get_ledger_events(con_data, bt_data$run_id)
+  events_explicit <- get_ledger_events(con_explicit, bt_explicit$run_id)
+  compare_cols <- c("event_seq", "ts_utc", "event_type", "instrument_id", "side", "qty", "price", "fee", "meta_json")
+  testthat::expect_identical(events_data[, compare_cols], events_explicit[, compare_cols])
+
+  eq_data <- ledgr_compute_equity_curve(bt_data)
+  eq_explicit <- ledgr_compute_equity_curve(bt_explicit)
+  testthat::expect_equal(eq_data$equity, eq_explicit$equity, tolerance = 1e-10)
+})
+
+testthat::test_that("ledgr_backtest source validation and inference are clear", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  testthat::expect_error(
+    ledgr_backtest(snapshot = snap, data = test_bars, strategy = test_strategy),
+    "exactly one data source",
+    class = "ledgr_invalid_args"
+  )
+
+  bt <- ledgr_backtest(
+    data = snap,
+    strategy = test_strategy,
+    start = "2020-01-01",
+    end = "2020-12-31",
+    db_path = db_path
+  )
+  testthat::expect_identical(bt$config$universe$instrument_ids, sort(unique(test_bars$instrument_id)))
+
+  bad_data <- test_bars
+  bad_data$instrument_id <- NULL
+  testthat::expect_error(
+    ledgr_backtest(data = bad_data, strategy = test_strategy, start = "2020-01-01", end = "2020-12-31"),
+    "instrument_id",
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("functional strategy fingerprints include captured values", {
+  target_qty <- 1
+  key_one <- ledgr:::ledgr_register_strategy_fn(function(ctx) {
+    stats::setNames(rep(target_qty, length(ctx$universe)), ctx$universe)
+  })
+
+  target_qty <- 2
+  key_two <- ledgr:::ledgr_register_strategy_fn(function(ctx) {
+    stats::setNames(rep(target_qty, length(ctx$universe)), ctx$universe)
+  })
+
+  testthat::expect_false(identical(key_one, key_two))
+
+  captured_time <- Sys.time()
+  testthat::expect_error(
+    ledgr:::ledgr_register_strategy_fn(function(ctx) {
+      captured_time
+      stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
+    }),
+    class = "ledgr_config_non_deterministic"
+  )
+})
+
+testthat::test_that("default runtime context is data-frame compatible with pulse snapshot context", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  universe <- c("TEST_A", "TEST_B")
+  ts_utc <- iso_utc(test_bars$ts_utc[[10]])
+  ctx <- ledgr_pulse_snapshot(snap, universe = universe, ts_utc = ts_utc, features = list(ledgr_ind_sma(2)))
+  on.exit(close(ctx), add = TRUE)
+  testthat::expect_true(is.data.frame(ctx$bars))
+  testthat::expect_true(is.data.frame(ctx$features))
+
+  data_frame_strategy <- function(ctx) {
+    if (!is.data.frame(ctx$bars) || nrow(ctx$bars) != length(ctx$universe)) {
+      stop("runtime bars context is not data-frame compatible")
+    }
+    if (!is.data.frame(ctx$features) || !all(c("instrument_id", "feature_name", "feature_value") %in% names(ctx$features))) {
+      stop("runtime features context is not data-frame compatible")
+    }
+    stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
+  }
+
+  testthat::expect_error(
+    ledgr_backtest(
+      snapshot = snap,
+      strategy = data_frame_strategy,
+      universe = universe,
+      start = "2020-01-01",
+      end = "2020-01-15",
+      features = list(ledgr_ind_sma(2)),
+      db_path = db_path
+    ),
+    NA
+  )
+})

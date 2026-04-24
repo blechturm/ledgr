@@ -6,6 +6,7 @@
 #' @param lookback Number of bars to include.
 #'
 #' @return A `ledgr_indicator_dev` object.
+#' @export
 ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
@@ -79,6 +80,34 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
     invisible(result)
   }
 
+  e$test_dates <- function(fn, dates) {
+    if (!is.function(fn)) {
+      rlang::abort("`fn` must be a function.", class = "ledgr_invalid_args")
+    }
+    if (length(dates) < 1) {
+      rlang::abort("`dates` must contain at least one timestamp.", class = "ledgr_invalid_args")
+    }
+    dates_norm <- vapply(dates, ledgr_normalize_ts_utc, character(1))
+    values <- lapply(dates_norm, function(date_norm) {
+      window_i <- DBI::dbGetQuery(
+        e$.con,
+        "
+        SELECT instrument_id, ts_utc, open, high, low, close, volume
+        FROM snapshot_bars
+        WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc <= ?
+        ORDER BY ts_utc DESC
+        LIMIT ?
+        ",
+        params = list(e$.snapshot$snapshot_id, e$instrument_id, date_norm, e$lookback)
+      )
+      if (nrow(window_i) == 0) return(NA_real_)
+      window_i <- window_i[rev(seq_len(nrow(window_i))), , drop = FALSE]
+      window_i$ts_utc <- vapply(window_i$ts_utc, iso_utc, character(1))
+      fn(window_i)
+    })
+    tibble::tibble(ts_utc = dates_norm, value = I(values))
+  }
+
   e$plot <- function() {
     plot(
       as.Date(e$window$ts_utc),
@@ -94,17 +123,34 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   structure(e, class = "ledgr_indicator_dev")
 }
 
-#' Close indicator development session
+#' Print an indicator development session
 #'
 #' @param x A `ledgr_indicator_dev` object.
+#' @param ... Unused.
 #' @return The input object, invisibly.
-close.ledgr_indicator_dev <- function(x, ...) {
-  if (is.environment(x) && !is.null(x$.snapshot)) {
-    ledgr_snapshot_close(x$.snapshot)
-    x$.con <- NULL
-    x$.snapshot <- NULL
-  }
+#' @export
+print.ledgr_indicator_dev <- function(x, ...) {
+  cat("ledgr Indicator Development Session\n")
+  cat("Instrument: ", x$instrument_id, "\n", sep = "")
+  cat("Window End: ", x$ts_utc, "\n", sep = "")
+  cat("Lookback:   ", x$lookback, "\n", sep = "")
+  cat("Rows:       ", nrow(x$window), "\n", sep = "")
   invisible(x)
+}
+
+#' Close indicator development session
+#'
+#' @param con A `ledgr_indicator_dev` object.
+#' @param ... Unused.
+#' @return The input object, invisibly.
+#' @export
+close.ledgr_indicator_dev <- function(con, ...) {
+  if (is.environment(con) && !is.null(con$.snapshot)) {
+    ledgr_snapshot_close(con$.snapshot)
+    con$.con <- NULL
+    con$.snapshot <- NULL
+  }
+  invisible(con)
 }
 
 #' Freeze a pulse snapshot for interactive strategy development
@@ -117,6 +163,7 @@ close.ledgr_indicator_dev <- function(x, ...) {
 #' @param positions Named numeric vector of positions (NULL = flat).
 #'
 #' @return A `ledgr_pulse_context` object.
+#' @export
 ledgr_pulse_snapshot <- function(snapshot,
                                  universe,
                                  ts_utc,
@@ -206,17 +253,34 @@ ledgr_pulse_snapshot <- function(snapshot,
   structure(e, class = "ledgr_pulse_context")
 }
 
-#' Close pulse context
+#' Print a pulse snapshot context
 #'
 #' @param x A `ledgr_pulse_context` object.
+#' @param ... Unused.
 #' @return The input object, invisibly.
-close.ledgr_pulse_context <- function(x, ...) {
-  if (is.environment(x) && !is.null(x$.snapshot)) {
-    ledgr_snapshot_close(x$.snapshot)
-    x$.con <- NULL
-    x$.snapshot <- NULL
-  }
+#' @export
+print.ledgr_pulse_context <- function(x, ...) {
+  cat("ledgr Pulse Snapshot\n")
+  cat("Timestamp: ", x$ts_utc, "\n", sep = "")
+  cat("Universe:  ", paste(x$universe, collapse = ", "), "\n", sep = "")
+  cat("Bars:      ", nrow(x$bars), "\n", sep = "")
+  cat("Features:  ", nrow(x$features), "\n", sep = "")
   invisible(x)
+}
+
+#' Close pulse context
+#'
+#' @param con A `ledgr_pulse_context` object.
+#' @param ... Unused.
+#' @return The input object, invisibly.
+#' @export
+close.ledgr_pulse_context <- function(con, ...) {
+  if (is.environment(con) && !is.null(con$.snapshot)) {
+    ledgr_snapshot_close(con$.snapshot)
+    con$.con <- NULL
+    con$.snapshot <- NULL
+  }
+  invisible(con)
 }
 
 ledgr_open_dedicated_snapshot <- function(snapshot) {

@@ -4,11 +4,11 @@
 \name{ledgr-package}
 \alias{ledgr}
 \alias{ledgr-package}
-\title{ledgr: Event-Sourced Trading Framework Skeleton}
+\title{ledgr: Deterministic Event-Sourced Backtesting}
 \description{
-Correctness-first, event-sourced scaffolding for a trading lifecycle.
-This package currently contains structure only; see
-\code{inst/design/ledgr_design_document.md} for the binding specification.
+Correctness-first, event-sourced backtesting with sealed data snapshots,
+deterministic replay, no-lookahead strategy execution, and ledger-derived
+results.
 }
 \author{
 \strong{Maintainer}: Max Thomasberger \email{31213680+blechturm@users.noreply.github.com}

@@ -2,8 +2,8 @@
 
 **Version:** 1.0.0  
 **Date:** December 20, 2025  
-**Total Tickets:** 43  
-**Estimated Duration:** 8 weeks  
+**Total Tickets:** 46
+**Estimated Duration:** 8-9 weeks
 
 ---
 
@@ -12,8 +12,8 @@
 Tickets are organized by week according to the v0.1.2 roadmap:
 - **Week 1:** High-Level API & Snapshot/Runner Correctness (12 tickets)
 - **Week 2:** Indicator Infrastructure (12 tickets)
-- **Week 3:** Trade Aggregation, Reconstruction & Basic Metrics (8 tickets)
-- **Week 4:** Visualization (2 tickets)
+- **Week 3:** Trade Aggregation, Reconstruction, Basic Metrics & Data-First UX (9 tickets)
+- **Week 4:** Visualization & Optional UX Helpers (3 tickets)
 - **Week 5:** Documentation Foundation, API Surface & Polish (9 tickets)
 
 ### Code Review Correctness Gates
@@ -37,6 +37,11 @@ release tickets cannot complete on top of known correctness gaps:
   default runtime contexts.
 - `LDG-308` sits in Week 3 before final integration because snapshot-backed
   runs must be reconstructable through the public API.
+- `LDG-113` sits after `LDG-308` because the data-first happy path must still
+  create sealed snapshots and reconstruct from the recorded snapshot source.
+- `LDG-214` is an optional UX-helper ticket. It may add explicit
+  `"LONG"`/`"FLAT"` signal authoring, but it must not change the core
+  StrategyResult contract or the runner.
 - `LDG-500` is the Week 5 release gate. It locks the exported v0.1.2 API and
   package-check hygiene before documentation, coverage, and CI verification.
 
@@ -480,11 +485,11 @@ Implement indicator constructor with purity validation.
 6. Document purity requirements in roxygen
 
 **Acceptance Criteria:**
-- [ ] Validates all inputs
-- [ ] Returns `ledgr_indicator` object
-- [ ] params checked for determinism
-- [ ] Clear error messages
-- [ ] 100% test coverage
+- [x] Validates all inputs
+- [x] Returns `ledgr_indicator` object
+- [x] params checked for determinism
+- [x] Clear error messages
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit tests for valid construction
@@ -512,11 +517,11 @@ Implement global indicator registry.
 6. Error handling for missing indicators
 
 **Acceptance Criteria:**
-- [ ] Registry persists across function calls
-- [ ] `get_indicator()` retrieves registered indicators
-- [ ] `list_indicators()` supports regex filtering
-- [ ] Helpful error for missing indicators
-- [ ] 100% test coverage
+- [x] Registry persists across function calls
+- [x] `get_indicator()` retrieves registered indicators
+- [x] `list_indicators()` supports regex filtering
+- [x] Helpful error for missing indicators
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit tests for register/get/list
@@ -544,11 +549,11 @@ Implement 4 built-in indicators: SMA, EMA, RSI, Returns.
 6. Register in `.onLoad()`
 
 **Acceptance Criteria:**
-- [ ] All 4 indicators implemented
-- [ ] Pure functions (no side effects)
-- [ ] Deterministic (same input → same output)
-- [ ] Auto-registered on package load
-- [ ] 100% test coverage
+- [x] All 4 indicators implemented
+- [x] Pure functions (no side effects)
+- [x] Deterministic (same input → same output)
+- [x] Auto-registered on package load
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Determinism tests for each indicator
@@ -577,11 +582,11 @@ Implement R package function wrapper adapter (for TTR).
 6. Graceful error if package missing
 
 **Acceptance Criteria:**
-- [ ] Wraps arbitrary R functions
-- [ ] Passes additional arguments correctly
-- [ ] Returns last value
-- [ ] Helpful error if package missing
-- [ ] 100% test coverage
+- [x] Wraps arbitrary R functions
+- [x] Passes additional arguments correctly
+- [x] Returns last value
+- [x] Helpful error if package missing
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit test with `mean()` (base R, always available)
@@ -609,12 +614,12 @@ Implement CSV pre-computed indicator adapter.
 6. Deterministic provenance in params (data hash)
 
 **Acceptance Criteria:**
-- [ ] Loads CSV once at construction
-- [ ] Validates required columns
-- [ ] Lookup by ts_utc AND instrument_id
-- [ ] Multi-instrument support
-- [ ] Deterministic params
-- [ ] 100% test coverage
+- [x] Loads CSV once at construction
+- [x] Validates required columns
+- [x] Lookup by ts_utc AND instrument_id
+- [x] Multi-instrument support
+- [x] Deterministic params
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit test with fixture CSV
@@ -647,12 +652,12 @@ Implement interactive indicator development tool (read-only).
 10. Implement `print()` method
 
 **Acceptance Criteria:**
-- [ ] Environment-backed object (not list)
-- [ ] Finalizer cleans up connection
-- [ ] All methods read-only
-- [ ] Helper methods work (test, test_dates, plot)
-- [ ] Explicit close() method
-- [ ] 100% test coverage
+- [x] Environment-backed object (not list)
+- [x] Finalizer cleans up connection
+- [x] All methods read-only
+- [x] Helper methods work (test, test_dates, plot)
+- [x] Explicit close() method
+- [x] 100% test coverage
 
 **Test Requirements:**
 - **CRITICAL:** Isolation test (no persistent table mutations)
@@ -682,12 +687,12 @@ Implement pulse context snapshot tool (read-only).
 7. Implement `print()` method
 
 **Acceptance Criteria:**
-- [ ] Environment-backed object
-- [ ] Queries database (read-only)
-- [ ] Computes features in-memory
-- [ ] No database writes
-- [ ] Finalizer cleans up
-- [ ] 100% test coverage
+- [x] Environment-backed object
+- [x] Queries database (read-only)
+- [x] Computes features in-memory
+- [x] No database writes
+- [x] Finalizer cleans up
+- [x] 100% test coverage
 
 **Test Requirements:**
 - **CRITICAL:** Isolation test (no persistent table mutations)
@@ -713,9 +718,9 @@ End-to-end test with TTR package.
 4. Verify results
 
 **Acceptance Criteria:**
-- [ ] Test skipped if TTR not installed
-- [ ] TTR indicator works in backtest
-- [ ] Results validated
+- [x] Test skipped if TTR not installed
+- [x] TTR indicator works in backtest
+- [x] Results validated
 
 **Test Requirements:**
 - Integration test (full backtest)
@@ -741,9 +746,9 @@ End-to-end test with CSV indicator.
 5. Verify indicator values match CSV
 
 **Acceptance Criteria:**
-- [ ] CSV adapter works in backtest
-- [ ] Multi-instrument CSV support verified
-- [ ] Results validated
+- [x] CSV adapter works in backtest
+- [x] Multi-instrument CSV support verified
+- [x] Results validated
 
 **Test Requirements:**
 - Integration test (full backtest)
@@ -769,10 +774,10 @@ Implement comprehensive purity tests for indicators.
 5. Apply to all built-in indicators
 
 **Acceptance Criteria:**
-- [ ] Determinism tests pass
-- [ ] No output/messages during execution
-- [ ] No `<<-` assignment detected
-- [ ] Tests run for all built-ins
+- [x] Determinism tests pass
+- [x] No output/messages during execution
+- [x] No `<<-` assignment detected
+- [x] Tests run for all built-ins
 
 **Test Requirements:**
 - Test each built-in indicator
@@ -803,11 +808,11 @@ stale deterministic run ID or replay different logic under the same config.
 6. Ensure DONE-run reuse compares the strengthened config hash
 
 **Acceptance Criteria:**
-- [ ] Two closures with different captured target values produce different strategy keys
-- [ ] Non-deterministic captured values fail before run creation
-- [ ] Indicator registry overwrite cannot silently change replay behavior
-- [ ] CSV adapter data changes alter the feature fingerprint
-- [ ] Reusing a run ID with changed strategy/indicator logic fails loud
+- [x] Two closures with different captured target values produce different strategy keys
+- [x] Non-deterministic captured values fail before run creation
+- [x] Indicator registry overwrite cannot silently change replay behavior
+- [x] CSV adapter data changes alter the feature fingerprint
+- [x] Reusing a run ID with changed strategy/indicator logic fails loud
 
 **Test Requirements:**
 - Unit test for closure-value strategy hashing
@@ -838,10 +843,10 @@ semantics, or the performance-optimized context must be explicit and opt-in.
 5. Document any performance-mode deviations in `control`
 
 **Acceptance Criteria:**
-- [ ] A strategy using data-frame `bars` semantics works in `ledgr_pulse_snapshot()`
-- [ ] The same strategy works in default `ledgr_backtest()`
-- [ ] Fast proxy mode is opt-in or API-compatible
-- [ ] Feature context shape is consistent between interactive and runtime modes
+- [x] A strategy using data-frame `bars` semantics works in `ledgr_pulse_snapshot()`
+- [x] The same strategy works in default `ledgr_backtest()`
+- [x] Fast proxy mode is opt-in or API-compatible
+- [x] Feature context shape is consistent between interactive and runtime modes
 
 **Test Requirements:**
 - Integration test: develop strategy against `ledgr_pulse_snapshot()` and run it unchanged
@@ -852,7 +857,7 @@ semantics, or the performance-optimized context must be explicit and opt-in.
 
 ---
 
-## Week 3: Trade Aggregation, Reconstruction & Basic Metrics
+## Week 3: Trade Aggregation, Reconstruction, Basic Metrics & Data-First UX
 
 ### LDG-301: Implement `ledgr_extract_fills()`
 **Priority:** 🟠 P1  
@@ -870,11 +875,11 @@ Extract fill events from ledger with FIFO realized P&L.
 5. Return tibble with proper columns
 
 **Acceptance Criteria:**
-- [ ] Returns all fills (realized_pnl may be 0)
-- [ ] Parses meta_json correctly
-- [ ] Returns tibble with required columns
-- [ ] Handles empty ledger (0 rows)
-- [ ] 100% test coverage
+- [x] Returns all fills (realized_pnl may be 0)
+- [x] Parses meta_json correctly
+- [x] Returns tibble with required columns
+- [x] Handles empty ledger (0 rows)
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit test with fills
@@ -900,10 +905,10 @@ Extract equity curve from v0.1.1 pre-computed table.
 4. Return tibble
 
 **Acceptance Criteria:**
-- [ ] Reads from equity_curve table
-- [ ] Computes running_max and drawdown
-- [ ] Returns tibble
-- [ ] 100% test coverage
+- [x] Reads from equity_curve table
+- [x] Computes running_max and drawdown
+- [x] Returns tibble
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit test with equity data
@@ -932,11 +937,11 @@ Implement 8 basic metrics with zero guards.
 7. Error on non-"standard" metrics
 
 **Acceptance Criteria:**
-- [ ] Computes all 8 metrics
-- [ ] Zero guards work (no division by zero)
-- [ ] NA handling correct
-- [ ] Errors on unsupported metrics
-- [ ] 100% test coverage
+- [x] Computes all 8 metrics
+- [x] Zero guards work (no division by zero)
+- [x] NA handling correct
+- [x] Errors on unsupported metrics
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit test with normal backtest
@@ -964,9 +969,9 @@ Implement metric computation helpers.
 5. All with proper NA/zero handling
 
 **Acceptance Criteria:**
-- [ ] Helpers work correctly
-- [ ] Handle edge cases (zero trades, single day, etc.)
-- [ ] 100% test coverage
+- [x] Helpers work correctly
+- [x] Handle edge cases (zero trades, single day, etc.)
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit tests for each helper
@@ -991,10 +996,10 @@ Wire metrics into summary method.
 4. Handle zero trades gracefully
 
 **Acceptance Criteria:**
-- [ ] Summary displays all 8 metrics
-- [ ] Formatting matches spec examples
-- [ ] Handles zero trades (shows NA)
-- [ ] 100% test coverage
+- [x] Summary displays all 8 metrics
+- [x] Formatting matches spec examples
+- [x] Handles zero trades (shows NA)
+- [x] 100% test coverage
 
 **Test Requirements:**
 - UX test for output format
@@ -1019,10 +1024,10 @@ Wire fills and equity extraction into as_tibble.
 4. Add "ledger" option (raw events)
 
 **Acceptance Criteria:**
-- [ ] All three options work
-- [ ] Returns tibbles
-- [ ] No object mutation
-- [ ] 100% test coverage
+- [x] All three options work
+- [x] Returns tibbles
+- [x] No object mutation
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Unit test for each option
@@ -1048,9 +1053,9 @@ Comprehensive edge case testing for zero trades.
 5. Test as_tibble returns empty fills
 
 **Acceptance Criteria:**
-- [ ] Zero-trade backtest doesn't error
-- [ ] Metrics handle gracefully
-- [ ] All methods work with zero trades
+- [x] Zero-trade backtest doesn't error
+- [x] Metrics handle gracefully
+- [x] All methods work with zero trades
 
 **Test Requirements:**
 - Edge case suite
@@ -1098,7 +1103,52 @@ snapshot source used during the original run, not from a legacy persistent
 
 ---
 
-## Week 4: Visualization
+### LDG-113: Add Data-First `ledgr_backtest()` Convenience Path
+**Priority:** 🟠 P1
+**Effort:** 1.5 days
+**Dependencies:** LDG-104, LDG-105, LDG-109, LDG-107, LDG-110, LDG-111, LDG-308
+
+**Description:**
+Add the no-thinking happy path for first-time users:
+`ledgr_backtest(data = bars, strategy = ..., start = ..., end = ...)`.
+The convenience path must hide snapshot and DuckDB setup from the happy path
+without creating a new execution path. Data-frame inputs must be converted into
+sealed snapshots, then run through the same `ledgr_config()` -> `ledgr_run()`
+pipeline as explicit snapshot workflows.
+
+**Tasks:**
+1. Extend `ledgr_backtest()` to accept exactly one source: `snapshot`, `data`
+   data frame/tibble, or `data` as a `ledgr_snapshot`
+2. For data-frame inputs, call `ledgr_snapshot_from_df()` internally before
+   building config
+3. If `db_path` is NULL for data-frame inputs, create a temporary DuckDB path in
+   `tempdir()` and use it for the implicit snapshot and run ledger
+4. Infer `universe` from `instrument_id` when omitted
+5. Keep explicit split-DB workflows on the snapshot path
+6. Preserve the single canonical execution path: snapshot -> config -> `ledgr_run()`
+7. Add clear errors for ambiguous calls (`snapshot` and `data` both provided)
+
+**Acceptance Criteria:**
+- [x] `ledgr_backtest(data = bars, strategy = fn, start = ..., end = ...)` runs without explicit DBI/snapshot setup
+- [x] Data-frame mode creates a sealed snapshot and validates `snapshot_hash`
+- [x] Data-frame mode produces equivalent ledger events, fills, and equity curve to the explicit snapshot workflow
+- [x] `data = ledgr_snapshot` behaves like `snapshot = ledgr_snapshot`
+- [x] `universe = NULL` infers instruments deterministically
+- [x] No bars are written directly to the legacy `bars` table
+- [x] No alternate execution path bypasses `ledgr_run()`
+
+**Test Requirements:**
+- Integration test: minimal data-frame happy path under 10 user-facing lines
+- Equivalence test: data-frame convenience path vs explicit `ledgr_snapshot_from_df()` + `ledgr_backtest(snapshot = ...)`
+- Unit test: ambiguous source arguments fail
+- Unit test: inferred universe is stable and sorted
+- Regression test: explicit snapshot/split-DB workflows still pass
+
+**Spec Reference:** Section 2.3.1, Section 5.2.1
+
+---
+
+## Week 4: Visualization & Optional UX Helpers
 
 ### LDG-401: Implement `plot.ledgr_backtest()` - Equity Curve
 **Priority:** 🟡 P2  
@@ -1119,13 +1169,13 @@ Implement equity curve visualization.
 8. Ensure `plot(bt)` works because `print.ledgr_backtest()` advertises it
 
 **Acceptance Criteria:**
-- [ ] Creates ggplot2 plot
-- [ ] `plot(bt)` dispatches to `plot.ledgr_backtest()` without base plot errors
-- [ ] Uses default theme colors
-- [ ] Shows equity + drawdown if gridExtra present
-- [ ] Graceful fallback if gridExtra missing
-- [ ] Helpful message about optional dependency
-- [ ] 100% test coverage
+- [x] Creates ggplot2 plot
+- [x] `plot(bt)` dispatches to `plot.ledgr_backtest()` without base plot errors
+- [x] Uses default theme colors
+- [x] Shows equity + drawdown if gridExtra present
+- [x] Graceful fallback if gridExtra missing
+- [x] Helpful message about optional dependency
+- [x] 100% test coverage
 
 **Test Requirements:**
 - Visual test (create plot, verify no errors)
@@ -1151,8 +1201,8 @@ Create visual regression tests for plots.
 4. Optional: vdiffr for visual regression
 
 **Acceptance Criteria:**
-- [ ] Plots generate without errors
-- [ ] Visual tests (if vdiffr used)
+- [x] Plots generate without errors
+- [x] Visual tests (if vdiffr used)
 
 **Test Requirements:**
 - Generate plot for various backtests
@@ -1162,12 +1212,48 @@ Create visual regression tests for plots.
 
 ---
 
+### LDG-214: Add Explicit Signal Strategy Convenience Wrapper
+**Priority:** 🟢 P3
+**Effort:** 1 day
+**Dependencies:** LDG-111, LDG-113, LDG-212
+
+**Description:**
+Optionally add a small helper for tutorial-style strategies that emit explicit
+signals such as `"LONG"` and `"FLAT"`. This must be an opt-in wrapper, not a
+new runner contract. Raw string returns from ordinary functional strategies
+must continue to fail `StrategyResult` validation.
+
+**Tasks:**
+1. Design `ledgr_signal_strategy(fn, long_qty = 1, flat_qty = 0)` or equivalent
+2. Define supported signal vocabulary and reject unknown signals fail-loud
+3. Map signals into full named numeric target vectors before runner validation
+4. Make multi-instrument behavior explicit and deterministic
+5. Reuse the shared StrategyResult validator from LDG-111
+6. Document that raw `"LONG"`/`"FLAT"` returns are invalid without this wrapper
+
+**Acceptance Criteria:**
+- [ ] Ordinary functional strategies returning `"LONG"` still fail with `ledgr_invalid_strategy_result`
+- [ ] Signal wrapper maps `"LONG"`/`"FLAT"` to full named numeric targets
+- [ ] Multi-instrument behavior is explicit and covered by tests
+- [ ] Wrapper output passes the same validator as R6 and functional strategies
+- [ ] No runner changes are required beyond accepting the wrapper's normal targets
+
+**Test Requirements:**
+- Unit test: raw `"LONG"` return fails without wrapper
+- Unit test: wrapper maps signals to named numeric targets
+- Unit test: unknown signal fails
+- Integration test: wrapped signal strategy runs through `ledgr_backtest(data = bars, ...)`
+
+**Spec Reference:** Section 2.3.2, Section 7.2.4
+
+---
+
 ## Week 5: Documentation Foundation, API Surface & Polish
 
 ### LDG-500: Export v0.1.2 API and Fix Package Check Hygiene
 **Priority:** 🔴 P0  
 **Effort:** 1.5 days  
-**Dependencies:** LDG-105, LDG-108, LDG-109, LDG-110, LDG-111, LDG-112, LDG-201, LDG-202, LDG-203, LDG-204, LDG-205, LDG-206, LDG-207, LDG-211, LDG-212, LDG-301, LDG-302, LDG-303, LDG-308, LDG-401, LDG-402  
+**Dependencies:** LDG-105, LDG-108, LDG-109, LDG-110, LDG-111, LDG-112, LDG-113, LDG-201, LDG-202, LDG-203, LDG-204, LDG-205, LDG-206, LDG-207, LDG-211, LDG-212, LDG-301, LDG-302, LDG-303, LDG-308, LDG-401, LDG-402
 
 **Description:**
 Lock the public v0.1.2 API surface and remove package-check hygiene issues
@@ -1185,12 +1271,12 @@ be callable without `ledgr:::` and advertised methods must dispatch normally.
 8. Update `DESCRIPTION`, `NEWS.md`, and package title/description from v0.1.1 scaffolding to v0.1.2
 
 **Acceptance Criteria:**
-- [ ] No v0.1.2 public API requires `ledgr:::`
-- [ ] Export lock test includes all intended v0.1.2 user-facing functions
-- [ ] `plot(bt)` dispatches through the registered S3 method
-- [ ] `R CMD check --no-manual --no-build-vignettes` has no warnings caused by undeclared imports, missing aliases, or unqualified functions
-- [ ] Optional missing Suggests skip gracefully in tests
-- [ ] Package metadata reports version 0.1.2 and no longer describes the package as scaffolding
+- [x] No v0.1.2 public API requires `ledgr:::`
+- [x] Export lock test includes all intended v0.1.2 user-facing functions
+- [x] `plot(bt)` dispatches through the registered S3 method
+- [x] `R CMD check --no-manual --no-build-vignettes` has no warnings caused by undeclared imports, missing aliases, or unqualified functions
+- [x] Optional missing Suggests skip gracefully in tests
+- [x] Package metadata reports version 0.1.2 and no longer describes the package as scaffolding
 
 **Test Requirements:**
 - API export lock test
@@ -1217,10 +1303,10 @@ Complete roxygen documentation for all exported functions.
 5. Generate man/ files
 
 **Acceptance Criteria:**
-- [ ] All exports documented
-- [ ] Examples run without errors
-- [ ] Parameters documented
-- [ ] Build passes R CMD check
+- [x] All exports documented
+- [x] Examples run without errors
+- [x] Parameters documented
+- [x] Build passes R CMD check
 
 **Test Requirements:**
 - Examples run successfully
@@ -1233,7 +1319,7 @@ Complete roxygen documentation for all exported functions.
 ### LDG-502: README with Quickstart
 **Priority:** 🟠 P1  
 **Effort:** 1 day  
-**Dependencies:** LDG-501, LDG-507  
+**Dependencies:** LDG-113, LDG-501, LDG-507
 
 **Description:**
 Create comprehensive README with quickstart example.
@@ -1247,10 +1333,10 @@ Create comprehensive README with quickstart example.
 6. Badge setup (CI, coverage, CRAN)
 
 **Acceptance Criteria:**
-- [ ] README clear and concise
-- [ ] Quickstart works
-- [ ] Installation instructions correct
-- [ ] Links valid
+- [x] README clear and concise
+- [x] Quickstart works
+- [x] Installation instructions correct
+- [x] Links valid
 
 **Test Requirements:**
 - Quickstart code runs
@@ -1263,7 +1349,7 @@ Create comprehensive README with quickstart example.
 ### LDG-503: Vignette Outlines
 **Priority:** 🟡 P2  
 **Effort:** 1 day  
-**Dependencies:** LDG-501  
+**Dependencies:** LDG-113, LDG-501
 
 **Description:**
 Create vignette structure (outlines only, full content in v0.1.3).
@@ -1277,13 +1363,18 @@ Create vignette structure (outlines only, full content in v0.1.3).
 3. Structure only (1-2 paragraphs + TOC per vignette)
 
 **Acceptance Criteria:**
-- [ ] Vignette files created
-- [ ] Structure defined
-- [ ] Note: "Full content in v0.1.3"
-- [ ] Build succeeds
+- [x] Vignette files created
+- [x] Structure defined
+- [x] Note: "Full content in v0.1.3"
+- [x] Build succeeds
 
 **Test Requirements:**
 - Vignettes build without errors
+
+**Implementation Note:** v0.1.2 uses Markdown outline files under `vignettes/`
+and excludes them from the built source package until pandoc-backed R Markdown
+vignettes are added in v0.1.3. Package build/check succeeds with the outlines
+kept in the repository.
 
 **Spec Reference:** Section 7.2.1
 
@@ -1304,10 +1395,10 @@ Audit all error messages for clarity and helpfulness.
 4. Test error messages
 
 **Acceptance Criteria:**
-- [ ] All errors have helpful messages
-- [ ] Installation instructions in package errors
-- [ ] "Create with: ..." suggestions where applicable
-- [ ] Error tests pass
+- [x] All errors have helpful messages
+- [x] Installation instructions in package errors
+- [x] "Create with: ..." suggestions where applicable
+- [x] Error tests pass
 
 **Test Requirements:**
 - UX tests for error messages
@@ -1320,7 +1411,7 @@ Audit all error messages for clarity and helpfulness.
 ### LDG-505: Regression Test Suite
 **Priority:** 🔴 P0  
 **Effort:** 1 day  
-**Dependencies:** LDG-105, LDG-109, LDG-110, LDG-111, LDG-112, LDG-211, LDG-212, LDG-308  
+**Dependencies:** LDG-105, LDG-109, LDG-110, LDG-111, LDG-112, LDG-113, LDG-211, LDG-212, LDG-308
 
 **Description:**
 Run full v0.1.1 acceptance test suite.
@@ -1332,9 +1423,9 @@ Run full v0.1.1 acceptance test suite.
 4. Add to CI as first step
 
 **Acceptance Criteria:**
-- [ ] All v0.1.1 tests pass
-- [ ] No modifications to test logic
-- [ ] CI runs regression first (fail fast)
+- [x] All v0.1.1 tests pass
+- [x] No modifications to test logic
+- [x] CI runs regression first (fail fast)
 
 **Test Requirements:**
 - AT1-AT12 pass
@@ -1378,14 +1469,14 @@ Generate coverage report and verify targets.
 ### LDG-507: Final Integration Test
 **Priority:** 🔴 P0  
 **Effort:** 1 day  
-**Dependencies:** LDG-208, LDG-209, LDG-212, LDG-308, LDG-401, LDG-500, LDG-504  
+**Dependencies:** LDG-113, LDG-208, LDG-209, LDG-212, LDG-308, LDG-401, LDG-500, LDG-504
 
 **Description:**
 End-to-end integration test covering full workflow.
 
 **Tasks:**
 1. Create `tests/testthat/test-integration-full.R`
-2. Workflow: Data loading → snapshot → indicators → backtest → metrics → plot
+2. Workflow: data-frame happy path → implicit snapshot → indicators → backtest → metrics → plot
 3. Verify all components work together
 4. Check for memory leaks, connection leaks
 
@@ -1466,25 +1557,25 @@ machine-readable project metadata.
 
 ## Summary Statistics
 
-**Total Tickets:** 44  
-**Estimated Total Effort:** ~49.5 days (8-9 weeks calendar time with parallelization)
+**Total Tickets:** 46
+**Estimated Total Effort:** ~52 days (8-9 weeks calendar time with parallelization)
 
 **By Priority:**
 - 🔴 P0 (Blocker): 15 tickets
-- 🟠 P1 (Critical): 19 tickets
+- 🟠 P1 (Critical): 20 tickets
 - 🟡 P2 (Important): 9 tickets
-- 🟢 P3 (Nice to have): 1 ticket
+- 🟢 P3 (Nice to have): 2 tickets
 
 **By Week:**
 - Week 1: 12 tickets (foundational + snapshot/runner correctness)
 - Week 2: 12 tickets (indicators + replay/context determinism)
-- Week 3: 8 tickets (fills, reconstruction, metrics)
-- Week 4: 2 tickets (visualization)
+- Week 3: 9 tickets (fills, reconstruction, metrics, data-first UX)
+- Week 4: 3 tickets (visualization + optional signal UX helper)
 - Week 5: 10 tickets (API surface, docs & polish)
 - Ongoing: Review-driven correctness gates are embedded in the DAG
 
 **Critical Path:**
-LDG-101 -> LDG-102 -> LDG-103 -> LDG-104 -> LDG-105/LDG-109 -> LDG-107 -> LDG-110/LDG-111/LDG-112 -> LDG-301 -> LDG-303 -> LDG-308 -> LDG-500 -> LDG-505 -> LDG-507 -> LDG-508
+LDG-101 -> LDG-102 -> LDG-103 -> LDG-104 -> LDG-105/LDG-109 -> LDG-107 -> LDG-110/LDG-111/LDG-112 -> LDG-301 -> LDG-303 -> LDG-308 -> LDG-113 -> LDG-500 -> LDG-505 -> LDG-507 -> LDG-508
 
 **Test Coverage Targets:**
 - Regression: 100% (v0.1.1 tests)
@@ -1515,6 +1606,10 @@ LDG-101 -> LDG-102 -> LDG-103 -> LDG-104 -> LDG-105/LDG-109 -> LDG-107 -> LDG-11
 - LDG-301, LDG-302 can be developed in parallel
 - LDG-304 parallel with LDG-303
 - LDG-308 can start once LDG-110 and LDG-302 are complete
+- LDG-113 can start after LDG-308 and should complete before documentation quickstarts
+
+**Week 4:**
+- LDG-214 can start after LDG-113 and LDG-212, but is optional and must not block visualization
 
 ### Risk Mitigation
 
@@ -1527,6 +1622,7 @@ LDG-101 -> LDG-102 -> LDG-103 -> LDG-104 -> LDG-105/LDG-109 -> LDG-107 -> LDG-11
 - LDG-211 (replay determinism and config hashing)
 - LDG-206, LDG-207 (finalizers can be tricky)
 - LDG-308 (public reconstruction must match snapshot runs)
+- LDG-113 (happy-path UX must not bypass snapshot guarantees)
 - LDG-303 (metrics edge cases)
 - LDG-500 (exports/package check can expose incomplete API decisions)
 - LDG-505 (regression - must pass)
@@ -1541,8 +1637,8 @@ LDG-101 -> LDG-102 -> LDG-103 -> LDG-104 -> LDG-105/LDG-109 -> LDG-107 -> LDG-11
 
 **Week 1 End:** High-level API working, snapshot integrity fixed, runner safety gates passing  
 **Week 2 End:** Indicators working, purity/replay/context determinism passing  
-**Week 3 End:** Fills, reconstruction, metrics, and zero-trade tests passing  
-**Week 4 End:** Plots working  
+**Week 3 End:** Fills, reconstruction, metrics, zero-trade tests, and data-first happy path passing
+**Week 4 End:** Plots working; optional signal wrapper only if it preserves the core StrategyResult contract
 **Week 5 End:** Public API locked, documentation complete, all tests/checks passing, ready to ship
 
 ---

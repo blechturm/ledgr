@@ -4,12 +4,14 @@
 \alias{ledgr_register_indicator}
 \title{Register an indicator in the global registry}
 \usage{
-ledgr_register_indicator(indicator, name = NULL)
+ledgr_register_indicator(indicator, name = NULL, overwrite = FALSE)
 }
 \arguments{
 \item{indicator}{A \code{ledgr_indicator} object.}
 
 \item{name}{Optional registry name (defaults to indicator id).}
+
+\item{overwrite}{Replace an existing registration with the same name.}
 }
 \value{
 The indicator, invisibly.

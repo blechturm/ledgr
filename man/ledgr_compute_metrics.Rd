@@ -20,4 +20,3 @@ Compute standard metrics from backtest results
 \details{
 \code{win_rate} uses a strict \verb{> 0} realized P&L threshold (breakeven is not a win).
 }
-\keyword{internal}

@@ -2,6 +2,7 @@
 #'
 #' @param n Window size.
 #' @return A `ledgr_indicator` object.
+#' @export
 ledgr_ind_sma <- function(n) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")
@@ -21,6 +22,7 @@ ledgr_ind_sma <- function(n) {
 #'
 #' @param n Window size.
 #' @return A `ledgr_indicator` object.
+#' @export
 ledgr_ind_ema <- function(n) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")
@@ -47,6 +49,7 @@ ledgr_ind_ema <- function(n) {
 #'
 #' @param n Window size (default 14).
 #' @return A `ledgr_indicator` object.
+#' @export
 ledgr_ind_rsi <- function(n = 14L) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")
@@ -58,8 +61,8 @@ ledgr_ind_rsi <- function(n = 14L) {
       gains <- pmax(changes, 0)
       losses <- abs(pmin(changes, 0))
 
-      avg_gain <- mean(tail(gains, n))
-      avg_loss <- mean(tail(losses, n))
+      avg_gain <- mean(utils::tail(gains, n))
+      avg_loss <- mean(utils::tail(losses, n))
 
       if (avg_loss == 0) return(100)
 
@@ -76,6 +79,7 @@ ledgr_ind_rsi <- function(n = 14L) {
 #'
 #' @param n Periods back (default 1).
 #' @return A `ledgr_indicator` object.
+#' @export
 ledgr_ind_returns <- function(n = 1L) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {
     rlang::abort("`n` must be an integer >= 1.", class = "ledgr_invalid_args")

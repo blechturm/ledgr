@@ -1,8 +1,8 @@
-#' ledgr: Event-Sourced Trading Framework Skeleton
+#' ledgr: Deterministic Event-Sourced Backtesting
 #'
-#' Correctness-first, event-sourced scaffolding for a trading lifecycle.
-#' This package currently contains structure only; see
-#' `inst/design/ledgr_design_document.md` for the binding specification.
+#' Correctness-first, event-sourced backtesting with sealed data snapshots,
+#' deterministic replay, no-lookahead strategy execution, and ledger-derived
+#' results.
 #'
 #' @keywords internal
 "_PACKAGE"

@@ -1,0 +1,35 @@
+name: R-CMD-check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  R-CMD-check:
+    runs-on: ubuntu-latest
+
+    env:
+      _R_CHECK_FORCE_SUGGESTS_: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - name: Install package for regression tests
+        run: R CMD INSTALL .
+
+      - name: Run v0.1.x acceptance tests first
+        run: |
+          Rscript -e "testthat::test_check('ledgr', filter = 'acceptance-v0.1')"
+
+      - name: Run R CMD check
+        run: |
+          Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-build-vignettes'), error_on = 'warning', check_dir = 'check')"

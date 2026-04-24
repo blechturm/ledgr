@@ -1,6 +1,6 @@
 # ledgr v0.1.2 Specification - Section 1: UX Principles & Invariants
 
-**Document Version:** 2.1.1  
+**Document Version:** 2.1.2
 **Author:** Max Thomasberger  
 **Date:** December 20, 2025  
 **Amendment Date:** April 24, 2026  
@@ -618,11 +618,15 @@ v0.3.0 (FUTURE) - Production Trading
 - Added Section 1.2.1 correctness amendments from branch `V0.1.2` review
 - Clarified inherited snapshot hashing, seal validation, reconstruction, replay,
   context, and public API contracts
+- Added UX amendment for data-first `ledgr_backtest(data = bars, ...)` while
+  preserving the single canonical execution path
+- Clarified that raw `"LONG"`/`"FLAT"` strategy returns are not core
+  StrategyResult values; signal-style helpers must be explicit wrappers
 
 
 # ledgr v0.1.2 Specification - Sections 2-4: API Contracts (CORRECTED)
 
-**Document Version:** 2.1.1  
+**Document Version:** 2.1.2
 **Author:** Max Thomasberger  
 **Date:** December 20, 2025  
 **Amendment Date:** April 24, 2026  
@@ -1024,34 +1028,67 @@ summary.ledgr_snapshot <- function(object, ...) {
 
 **Signature:**
 ```r
-ledgr_backtest <- function(snapshot,
+ledgr_backtest <- function(snapshot = NULL,
                             strategy,
-                            universe,
+                            universe = NULL,
                             start = NULL,
                             end = NULL,
                             initial_cash = 100000,
                             features = list(),
                             fill_model = NULL,
                             db_path = NULL,
-                            run_id = NULL)
+                            run_id = NULL,
+                            data = NULL)
 ```
 
 **Parameters:**
 
-- `snapshot` - `ledgr_snapshot` object (ONLY accepted type)
+- `snapshot` - `ledgr_snapshot` object (explicit snapshot mode)
+- `data` - Optional convenience input. Supported values:
+  - `data.frame`/tibble with OHLCV bars -> creates a sealed snapshot internally
+  - `ledgr_snapshot` -> treated the same as `snapshot`
 - `strategy` - Strategy function or R6 object
   - Function: `function(ctx) -> named numeric vector`
   - R6: Object with `$on_pulse(ctx)` method
-- `universe` - Character vector of instrument IDs
+- `universe` - Character vector of instrument IDs. If NULL in data-frame mode,
+  infer from `data$instrument_id`; if NULL in snapshot mode, infer all snapshot
+  instruments.
 - `start` - Start timestamp (NULL = snapshot start)
 - `end` - End timestamp (NULL = snapshot end)
 - `initial_cash` - Starting capital (numeric)
 - `features` - List of `ledgr_indicator` objects
 - `fill_model` - Fill model config (NULL = instant fill)
-- `db_path` - Database for run ledger (NULL = snapshot DB)
+- `db_path` - Database for run ledger. In explicit snapshot mode, NULL =
+  snapshot DB. In data-frame mode, NULL = temporary DuckDB in `tempdir()`.
 - `run_id` - Run identifier (NULL = auto-generate)
 
 **Returns:** S3 object of class `ledgr_backtest`
+
+**Input modes:**
+
+Exactly one data source is allowed:
+
+1. **Snapshot mode:** `ledgr_backtest(snapshot = snap, ...)`
+2. **Data-first mode:** `ledgr_backtest(data = bars, ...)`
+3. **Snapshot-as-data mode:** `ledgr_backtest(data = snap, ...)`
+
+Data-first mode is a convenience wrapper only. It MUST call
+`ledgr_snapshot_from_df()` to normalize, validate, seal, and hash the data
+before constructing the canonical run config. It MUST then call `ledgr_run()`
+through the same path as snapshot mode.
+
+Data-first mode MUST NOT:
+
+- write bars directly to the legacy `bars` table
+- skip snapshot sealing or hash validation
+- create a second execution engine
+- change fill, pulse, feature, or ledger semantics
+
+If `data` is a data frame and `db_path` is NULL, ledgr creates a temporary
+DuckDB database in `tempdir()` and uses it for the implicit snapshot and run
+ledger. If `db_path` is supplied, ledgr uses it for the implicit snapshot and
+run ledger. Users who need separate snapshot and run databases should create
+the snapshot explicitly and pass `snapshot = snap, db_path = run_db_path`.
 
 **Database provenance:**
 
@@ -1071,14 +1108,15 @@ database for backward compatibility. When `db_path` differs from
 ```r
 ledgr_backtest <- function(...) {
   # 1. VALIDATE inputs (fail fast)
-  # 2. BUILD canonical config (exactly as ledgr_config() would)
-  # 3. CALL ledgr_run(config)
-  # 4. WRAP result in ledgr_backtest S3 class
-  # 5. RETURN
+  # 2. IF data is a data.frame: ledgr_snapshot_from_df(data, ...)
+  # 3. BUILD canonical config (exactly as ledgr_config() would)
+  # 4. CALL ledgr_run(config)
+  # 5. WRAP result in ledgr_backtest S3 class
+  # 6. RETURN
   
   # NO execution logic
   # NO database writes beyond what ledgr_run() does
-  # NO special cases
+  # NO alternate data path around snapshots
 }
 ```
 
@@ -1122,7 +1160,29 @@ ledgr_backtest <- function(snapshot, strategy, universe, start, end,
 
 **Example usage:**
 ```r
-# Simple backtest
+# Minimal data-first backtest
+bars <- tibble::tibble(
+  ts_utc = as.POSIXct(c("2020-01-01", "2020-01-02"), tz = "UTC"),
+  instrument_id = "AAPL",
+  open = c(100, 101),
+  high = c(101, 102),
+  low = c(99, 100),
+  close = c(100, 101),
+  volume = c(1000, 1100)
+)
+
+hold_one <- function(ctx) {
+  stats::setNames(rep(1, length(ctx$universe)), ctx$universe)
+}
+
+bt <- ledgr_backtest(
+  data = bars,
+  strategy = hold_one,
+  start = "2020-01-01",
+  end = "2020-01-02"
+)
+
+# Explicit snapshot backtest
 bt <- ledgr_backtest(
   snapshot = snap,
   strategy = my_strategy,
@@ -1161,6 +1221,16 @@ result2 <- ledgr_backtest(...)
 stopifnot(identical_modulo_run_id(result1, result2))
 ```
 
+Data-first mode has the same equivalence requirement:
+
+```r
+snap <- ledgr_snapshot_from_df(bars, db_path = temp_db)
+manual <- ledgr_backtest(snapshot = snap, strategy = strategy, universe = universe)
+simple <- ledgr_backtest(data = bars, strategy = strategy, universe = universe)
+
+# Ledger events, fills, and equity curve must match, modulo generated ids/paths.
+```
+
 ---
 
 #### 2.3.2 Functional Strategy Interface
@@ -1174,6 +1244,7 @@ A strategy function receives a context object and returns target positions:
 ```r
 my_strategy <- function(ctx) {
   # ctx contains:
+  #   $universe     - Instrument IDs in run order
   #   $bars         - Latest OHLCV data (data.frame, ONE ROW PER INSTRUMENT)
   #   $features     - Computed feature values (data.frame)
   #   $positions    - Current positions (named numeric vector)
@@ -1219,6 +1290,31 @@ enabled by user control settings.
 - **Missing instruments:** Error (`ledgr_invalid_strategy_result`)
 - **Extra instruments:** Error (`ledgr_invalid_strategy_result`)
 - **Duplicate or unnamed targets:** Error (`ledgr_invalid_strategy_result`)
+
+**Signal shorthands are not core strategy output:**
+
+Raw string returns such as `"LONG"` or `"FLAT"` are intentionally not valid
+`StrategyResult` values in `ledgr_run()` or `ledgr_backtest()`. They are
+ambiguous for position size, multi-instrument universes, shorting, and cash
+sizing. A strategy that returns `"LONG"` directly MUST fail with
+`ledgr_invalid_strategy_result`.
+
+If ledgr provides a signal-oriented convenience helper, it MUST be explicit,
+for example:
+
+```r
+sig <- ledgr_signal_strategy(
+  function(ctx) {
+    if (ctx$bars$close[[1]] > mean(ctx$bars$close, na.rm = TRUE)) "LONG" else "FLAT"
+  },
+  long_qty = 1,
+  flat_qty = 0
+)
+```
+
+Such a helper MUST translate signals into a full named numeric target vector
+before the shared StrategyResult validator runs. It MUST NOT introduce a second
+strategy contract inside the runner.
 
 **Implementation note:**
 
@@ -2967,13 +3063,19 @@ stopifnot(ledger_before == ledger_after)
 28. **4.3.3** - Added snapshot-backed reconstruction contract
 29. **4.4.1** - Required `plot.ledgr_backtest()` S3 registration
 
+### v2.1.2 UX Amendments
+
+30. **2.3.1** - Added data-first `ledgr_backtest(data = bars, ...)` convenience mode that implicitly creates a sealed snapshot and still delegates to `ledgr_run()`
+31. **2.3.1** - Added equivalence requirement for data-first mode versus explicit snapshot workflows
+32. **2.3.2** - Clarified that raw signal strings such as `"LONG"`/`"FLAT"` are not valid core strategy outputs; signal helpers must map to full target vectors before validation
+
 ### Approved
 
 This corrected specification is ready for implementation and testing.
 
 # ledgr v0.1.2 Specification - Sections 5-7: Constraints, Testing & Deferrals (CORRECTED)
 
-**Document Version:** 2.2.1  
+**Document Version:** 2.2.2
 **Author:** Max Thomasberger  
 **Date:** December 20, 2025  
 **Amendment Date:** April 24, 2026  
@@ -3011,21 +3113,27 @@ ledgr_backtest <- function(...user_params...) {
   # - Existence checking
   # Early return with helpful errors
   
-  # Phase 2: BUILD canonical config
+  # Phase 2: RESOLVE data source
+  # - If data is a data.frame, call ledgr_snapshot_from_df()
+  # - If data/snapshot is a ledgr_snapshot, use it directly
+  # - Reject ambiguous calls that provide both data and snapshot
+  # - Do not write legacy bars directly
+
+  # Phase 3: BUILD canonical config
   # - Use existing ledgr_config() builder
   # - Use existing sub-builders (ledgr_backtest_config, etc.)
   # - NO timestamp normalization here (done in builders)
   # - No new config structures
   
-  # Phase 3: CALL canonical engine
+  # Phase 4: CALL canonical engine
   result <- ledgr_run(config)
   
-  # Phase 4: WRAP result
+  # Phase 5: WRAP result
   # - Add S3 class
   # - NO additional computation
   # - NO database writes
   
-  # Phase 5: RETURN
+  # Phase 6: RETURN
   return(result)
 }
 ```
@@ -3084,17 +3192,29 @@ ledgr_backtest <- function(...) {
 
 ```r
 # ✅ CORRECT - Pure wrapper (assumes ledgr_config() handles normalization)
-ledgr_backtest <- function(snapshot, strategy, universe, start, end, 
+ledgr_backtest <- function(snapshot = NULL, strategy, universe = NULL, start, end,
                             initial_cash = 100000, features = list(), 
-                            fill_model = NULL, db_path = NULL, run_id = NULL) {
+                            fill_model = NULL, db_path = NULL, run_id = NULL,
+                            data = NULL) {
   
-  # Validate
+  # Resolve exactly one source.
+  if (!is.null(snapshot) && !is.null(data)) {
+    stop("Provide only one of `snapshot` or `data`.")
+  }
+  if (!is.null(data) && inherits(data, "ledgr_snapshot")) {
+    snapshot <- data
+    data <- NULL
+  }
+  if (!is.null(data)) {
+    snapshot_db <- db_path %||% tempfile(fileext = ".duckdb")
+    snapshot <- ledgr_snapshot_from_df(data, db_path = snapshot_db)
+  }
   if (!inherits(snapshot, "ledgr_snapshot")) {
-    stop("'snapshot' must be a ledgr_snapshot object")
+    stop("Provide `snapshot` or data-frame `data`.")
   }
   
-  if (length(universe) == 0) {
-    stop("'universe' must contain at least one instrument")
+  if (is.null(universe)) {
+    universe <- infer_universe(snapshot)
   }
   
   # Build config (normalization happens in builders)
@@ -4515,7 +4635,27 @@ Section 7 explicitly defines what is OUT OF SCOPE for v0.1.2 and when deferred f
 
 ---
 
-#### 7.2.4 xts Conversion Utilities
+#### 7.2.4 Signal Strategy Convenience Helper
+
+**What:**
+- `ledgr_signal_strategy(fn, long_qty = 1, flat_qty = 0)` or equivalent
+- Allows explicit signal-style strategy authoring for simple tutorials
+- Maps `"LONG"`/`"FLAT"` outputs to full named numeric target vectors
+
+**Why deferred/optional:**
+- The core v0.1.2 strategy contract is already simple: return named numeric
+  targets
+- Raw string signals are ambiguous without an explicit sizing policy
+- Implementing this incorrectly would create a second strategy contract
+
+**What ships in v0.1.2:**
+- Raw `"LONG"`/`"FLAT"` returns are not valid `StrategyResult` values
+- If time permits, ship only an explicit helper that maps signals before the
+  shared StrategyResult validator runs
+
+---
+
+#### 7.2.5 xts Conversion Utilities
 
 **What:**
 - `as_xts.ledgr_backtest()` method
@@ -4862,7 +5002,7 @@ Section 7 explicitly defines what is OUT OF SCOPE for v0.1.2 and when deferred f
 
 ---
 
-## Changelog (v2.2.1 from v2.1.0)
+## Changelog (v2.2.2 from v2.1.0)
 
 ### Critical Fixes
 
@@ -4887,6 +5027,11 @@ Section 7 explicitly defines what is OUT OF SCOPE for v0.1.2 and when deferred f
 
 14. **5.2.1** - Added `snapshot_db_path` to wrapper/config examples so split snapshot DB/run DB semantics are explicit
 15. **6.2.2** - Updated snapshot adapter equivalence test to compare `snapshot_hash` across different snapshot IDs
+
+### v2.2.2 UX Amendments
+
+16. **5.2.1** - Added data source resolution phase for `ledgr_backtest()` so data-frame UX still routes through snapshot creation and canonical config
+17. **7.2.4** - Added deferred/optional signal strategy helper scope and kept raw signal returns out of the core StrategyResult contract
 
 ### Approved
 

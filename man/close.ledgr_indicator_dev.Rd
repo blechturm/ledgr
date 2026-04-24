@@ -4,10 +4,12 @@
 \alias{close.ledgr_indicator_dev}
 \title{Close indicator development session}
 \usage{
-\method{close}{ledgr_indicator_dev}(x, ...)
+\method{close}{ledgr_indicator_dev}(con, ...)
 }
 \arguments{
-\item{x}{A \code{ledgr_indicator_dev} object.}
+\item{con}{A \code{ledgr_indicator_dev} object.}
+
+\item{...}{Unused.}
 }
 \value{
 The input object, invisibly.

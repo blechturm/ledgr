@@ -13,7 +13,15 @@ testthat::test_that("ledgr_indicator_dev returns a read-only window", {
   testthat::expect_true(is.data.frame(dev$window))
   testthat::expect_equal(nrow(dev$window), 5L)
   testthat::expect_true(is.function(dev$test))
+  testthat::expect_true(is.function(dev$test_dates))
   testthat::expect_true(is.function(dev$plot))
+
+  results <- dev$test_dates(function(window) mean(window$close), dates = test_bars$ts_utc[8:10])
+  testthat::expect_s3_class(results, "tbl_df")
+  testthat::expect_equal(nrow(results), 3L)
+
+  printed <- capture.output(print(dev))
+  testthat::expect_true(any(grepl("Indicator Development", printed)))
 })
 
 testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
@@ -41,4 +49,7 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
   testthat::expect_equal(nrow(ctx$bars), length(universe))
   testthat::expect_true(is.data.frame(ctx$features))
   testthat::expect_true(all(c("ts_utc", "instrument_id", "feature_name", "feature_value") %in% names(ctx$features)))
+
+  printed <- capture.output(print(ctx))
+  testthat::expect_true(any(grepl("Pulse Snapshot", printed)))
 })

@@ -2,9 +2,11 @@
 #'
 #' Thin wrapper around the canonical engine entrypoint `ledgr_run()`.
 #'
-#' @param snapshot A `ledgr_snapshot` object.
+#' @param snapshot A `ledgr_snapshot` object, or a data frame for the data-first
+#'   convenience path.
 #' @param strategy Strategy function or object with `$on_pulse(ctx)` method.
-#' @param universe Character vector of instrument IDs.
+#' @param universe Character vector of instrument IDs. If `NULL`, it is inferred
+#'   from the snapshot or data frame.
 #' @param start Start timestamp (NULL = snapshot start).
 #' @param end End timestamp (NULL = snapshot end).
 #' @param initial_cash Starting capital.
@@ -16,11 +18,13 @@
 #' @param persist_features If FALSE, skip persisting per-pulse features to DuckDB.
 #' @param control Optional list of engine overrides (e.g., execution_mode).
 #' @param run_id Optional run identifier to resume or reuse.
+#' @param data Optional data frame/tibble or `ledgr_snapshot`. Exactly one of
+#'   `snapshot` and `data` may be supplied.
 #' @return A `ledgr_backtest` object.
 #' @export
-ledgr_backtest <- function(snapshot,
+ledgr_backtest <- function(snapshot = NULL,
                            strategy,
-                           universe,
+                           universe = NULL,
                            start = NULL,
                            end = NULL,
                            initial_cash = 100000,
@@ -31,8 +35,43 @@ ledgr_backtest <- function(snapshot,
                            persist_features = TRUE,
                            db_path = NULL,
                            control = list(),
-                           run_id = NULL) {
+                           run_id = NULL,
+                           data = NULL) {
   ledgr_set_preflight_start(ledgr_time_now())
+  if (!is.null(snapshot) && !is.null(data)) {
+    rlang::abort(
+      "Provide exactly one data source: `snapshot` or `data`, not both.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  if (is.null(snapshot) && is.null(data)) {
+    rlang::abort(
+      "Provide a `snapshot` or data frame via `data`. Create snapshots with ledgr_snapshot_from_df().",
+      class = "ledgr_invalid_args"
+    )
+  }
+
+  source <- if (!is.null(data)) data else snapshot
+  implicit_snapshot <- FALSE
+  if (inherits(source, "ledgr_snapshot")) {
+    snapshot <- source
+  } else if (is.data.frame(source)) {
+    if (is.null(db_path)) {
+      db_path <- tempfile("ledgr_backtest_", fileext = ".duckdb")
+    }
+    if (is.null(universe)) {
+      universe <- ledgr_infer_universe_from_data(source)
+    }
+    snapshot <- ledgr_snapshot_from_df(source, db_path = db_path)
+    implicit_snapshot <- TRUE
+    on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  } else {
+    rlang::abort(
+      "`snapshot`/`data` must be a ledgr_snapshot object or a data frame with OHLCV bars.",
+      class = "ledgr_invalid_args"
+    )
+  }
+
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort(
       "'snapshot' must be a ledgr_snapshot object. Create with: ledgr_snapshot_from_df() or ledgr_snapshot_from_yahoo().",
@@ -41,6 +80,9 @@ ledgr_backtest <- function(snapshot,
   }
   ledgr_snapshot_validate(snapshot)
 
+  if (is.null(universe)) {
+    universe <- ledgr_infer_universe_from_snapshot(snapshot)
+  }
   if (!is.character(universe) || length(universe) < 1 || anyNA(universe) || any(!nzchar(universe))) {
     rlang::abort("'universe' must contain at least one instrument.", class = "ledgr_invalid_args")
   }
@@ -108,7 +150,7 @@ ledgr_backtest <- function(snapshot,
       class = "ledgr_invalid_args"
     )
   }
-  if (!ledgr_same_db_path(db_path, snapshot$db_path)) {
+  if (!implicit_snapshot && !ledgr_same_db_path(db_path, snapshot$db_path)) {
     ledgr_snapshot_close(snapshot)
   }
 
@@ -134,6 +176,43 @@ ledgr_backtest <- function(snapshot,
     db_path = result$db_path,
     config = config
   )
+}
+
+ledgr_infer_universe_from_data <- function(data) {
+  if (!is.data.frame(data) || !("instrument_id" %in% names(data))) {
+    rlang::abort(
+      "`data` must include an `instrument_id` column so `universe` can be inferred.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  universe <- sort(unique(as.character(data$instrument_id)))
+  universe <- universe[!is.na(universe) & nzchar(universe)]
+  if (length(universe) < 1) {
+    rlang::abort("`data$instrument_id` must contain at least one non-empty instrument id.", class = "ledgr_invalid_args")
+  }
+  universe
+}
+
+ledgr_infer_universe_from_snapshot <- function(snapshot) {
+  con <- get_connection(snapshot)
+  universe <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT instrument_id
+    FROM snapshot_instruments
+    WHERE snapshot_id = ?
+    ORDER BY instrument_id
+    ",
+    params = list(snapshot$snapshot_id)
+  )$instrument_id
+  universe <- as.character(universe)
+  if (length(universe) < 1) {
+    rlang::abort(
+      "Cannot infer `universe`: snapshot contains no instruments.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  universe
 }
 
 ledgr_run <- function(config, run_id = NULL) {
@@ -208,9 +287,6 @@ ledgr_fills_close <- function(res, con = NULL) {
   }
 
   temp_table <- attr(res, "ledgr_temp_table", exact = TRUE)
-  if (is.null(con)) {
-    con <- tryCatch(DBI::dbGetConnection(res), error = function(e) NULL)
-  }
 
   if (DBI::dbIsValid(res)) {
     DBI::dbClearResult(res)
@@ -399,7 +475,8 @@ ledgr_config <- function(snapshot,
             id = feat$id,
             params = feat$params,
             requires_bars = feat$requires_bars,
-            stable_after = feat$stable_after
+            stable_after = feat$stable_after,
+            fingerprint = ledgr_indicator_fingerprint(feat)
           ))
         }
         feat
@@ -437,6 +514,13 @@ ledgr_backtest_equity <- function(con, run_id) {
   )
 }
 
+#' Extract fill events from a backtest
+#'
+#' @param bt A `ledgr_backtest` object.
+#' @param lazy If `TRUE`, return a streaming cursor instead of materializing all rows.
+#' @param stream_threshold Number of fill rows above which lazy mode is forced.
+#' @return A tibble of fill rows, or a `ledgr_fills_cursor` when `lazy = TRUE`.
+#' @export
 ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   con <- get_connection(bt)
   total_rows <- DBI::dbGetQuery(
@@ -874,6 +958,11 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
   )
 }
 
+#' Compute an equity curve from a backtest
+#'
+#' @param bt A `ledgr_backtest` object.
+#' @return A tibble containing equity, running maximum, and drawdown.
+#' @export
 ledgr_compute_equity_curve <- function(bt) {
   con <- get_connection(bt)
   equity <- ledgr_backtest_equity(con, bt$run_id)
@@ -891,7 +980,7 @@ ledgr_compute_equity_curve <- function(bt) {
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @return A tibble with mean/median/p99 timings per component.
-#' @keywords internal
+#' @export
 ledgr_backtest_bench <- function(bt) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
@@ -930,7 +1019,7 @@ ledgr_backtest_bench <- function(bt) {
 #'
 #' @details
 #' `win_rate` uses a strict `> 0` realized P&L threshold (breakeven is not a win).
-#' @keywords internal
+#' @export
 ledgr_compute_metrics <- function(bt, metrics = "standard") {
   ledgr_compute_metrics_internal(bt, metrics = metrics)
 }
@@ -1014,12 +1103,13 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
 }
 
 #' @export
-as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
+as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
   if (!inherits(x, "ledgr_backtest")) {
     rlang::abort("`x` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
 
-  what <- match.arg(what, c("equity", "fills", "ledger"))
+  if (!is.null(type)) what <- type
+  what <- match.arg(what, c("equity", "fills", "trades", "ledger"))
   con <- get_connection(x)
 
   switch(
@@ -1028,6 +1118,7 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
       ledgr_compute_equity_curve(x)
     },
     fills = ledgr_extract_fills(x),
+    trades = ledgr_extract_fills(x),
     ledger = tibble::as_tibble(
       DBI::dbGetQuery(
         con,
