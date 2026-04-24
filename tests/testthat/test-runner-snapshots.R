@@ -56,11 +56,14 @@ make_snapshot_runner_db <- function(status = "SEALED") {
   list(path = path, snapshot_id = snapshot_id)
 }
 
-runner_snapshot_config <- function(db_path, snapshot_id, universe_ids) {
+runner_snapshot_config <- function(db_path, snapshot_id, universe_ids, snapshot_db_path = NULL) {
+  data <- list(source = "snapshot", snapshot_id = snapshot_id)
+  if (!is.null(snapshot_db_path)) data$snapshot_db_path <- snapshot_db_path
+
   list(
     db_path = db_path,
     engine = list(seed = 1L, tz = "UTC"),
-    data = list(source = "snapshot", snapshot_id = snapshot_id),
+    data = data,
     universe = list(instrument_ids = universe_ids),
     backtest = list(
       start_ts_utc = "2020-01-01T00:00:00Z",
@@ -92,6 +95,37 @@ testthat::test_that("runner can use a SEALED snapshot and a subset universe; run
   testthat::expect_equal(nrow(run), 1L)
   testthat::expect_identical(run$status[[1]], "DONE")
   testthat::expect_identical(run$snapshot_id[[1]], fx$snapshot_id)
+})
+
+testthat::test_that("runner can use separate snapshot artifact and run ledger databases", {
+  fx <- make_snapshot_runner_db(status = "SEALED")
+  run_path <- tempfile(fileext = ".duckdb")
+  cfg <- runner_snapshot_config(
+    run_path,
+    fx$snapshot_id,
+    universe_ids = c("AAA"),
+    snapshot_db_path = fx$path
+  )
+
+  out <- ledgr_backtest_run(cfg, run_id = "run-snapshot-split-db")
+  testthat::expect_identical(out$db_path, run_path)
+  gc()
+  Sys.sleep(0.05)
+
+  drv <- duckdb::duckdb()
+  con <- DBI::dbConnect(drv, dbdir = run_path)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
+
+  run <- DBI::dbGetQuery(con, "SELECT status, snapshot_id FROM runs WHERE run_id = ?", params = list("run-snapshot-split-db"))
+  testthat::expect_equal(nrow(run), 1L)
+  testthat::expect_identical(run$status[[1]], "DONE")
+  testthat::expect_identical(run$snapshot_id[[1]], fx$snapshot_id)
+
+  snapshot_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM snapshots")$n[[1]]
+  equity_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM equity_curve WHERE run_id = ?", params = list("run-snapshot-split-db"))$n[[1]]
+  testthat::expect_equal(as.integer(snapshot_rows), 0L)
+  testthat::expect_gt(as.integer(equity_rows), 0L)
 })
 
 testthat::test_that("tamper detection fails loud when SEALED snapshot is mutated after seal", {

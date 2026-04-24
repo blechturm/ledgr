@@ -150,24 +150,9 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
   # - Combination rule: concatenate block-hashes from snapshot_instruments (in
   #   instrument_id order) followed by snapshot_bars (in instrument_id, ts_utc
   #   order), then sha256 over the concatenated string.
-  snap_chunk_hashes <- hash_query_streaming(
-    "
-    SELECT snapshot_id, meta_json
-    FROM snapshots
-    WHERE snapshot_id = ?
-    ORDER BY snapshot_id
-    ",
-    params = list(snapshot_id),
-    row_to_lines = function(df) {
-      lines <- paste(
-        token_vec(df$snapshot_id),
-        token_vec(df$meta_json),
-        sep = "|"
-      )
-      paste0(lines, "\n")
-    }
-  )
-
+  # - The hash identifies the snapshot artifact contents only. The envelope
+  #   row in `snapshots` is intentionally excluded so identical artifacts have
+  #   the same hash across snapshot ids and metadata.
   inst_chunk_hashes <- hash_query_streaming(
     "
     SELECT instrument_id, symbol, currency, asset_class, multiplier, tick_size, meta_json
@@ -214,7 +199,7 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     }
   )
 
-  digest::digest(paste0(c(snap_chunk_hashes, inst_chunk_hashes, bars_chunk_hashes), collapse = ""), algo = "sha256")
+  digest::digest(paste0(c(inst_chunk_hashes, bars_chunk_hashes), collapse = ""), algo = "sha256")
 }
 
 ledgr_snapshot_validate <- function(snapshot) {

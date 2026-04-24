@@ -191,3 +191,53 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   testthat::expect_identical(states$ts_utc, c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z", "2020-01-04T00:00:00Z"))
   testthat::expect_identical(as.integer(steps), c(1L, 2L, 3L, 4L))
 })
+
+testthat::test_that("db_live writes strategy_state only after pulse fill writes", {
+  db_path <- make_runner_fixture_db()
+  cfg <- base_runner_config(db_path)
+  cfg$engine$execution_mode <- "db_live"
+  cfg$features <- list(enabled = FALSE, defs = list())
+
+  ns <- asNamespace("ledgr")
+  original <- get("ledgr_write_fill_events", envir = ns, inherits = FALSE)
+  saw_state_before_fill <- FALSE
+  unlockBinding("ledgr_write_fill_events", ns)
+  assign(
+    "ledgr_write_fill_events",
+    function(con, run_id, fill_intent, event_seq_start = NULL, use_transaction = TRUE) {
+      state_rows <- DBI::dbGetQuery(
+        con,
+        "SELECT COUNT(*) AS n FROM strategy_state WHERE run_id = ?",
+        params = list(run_id)
+      )$n[[1]]
+      if (as.integer(state_rows) > 0L) saw_state_before_fill <<- TRUE
+      original(con, run_id, fill_intent, event_seq_start = event_seq_start, use_transaction = use_transaction)
+    },
+    envir = ns
+  )
+  lockBinding("ledgr_write_fill_events", ns)
+  on.exit(
+    {
+      unlockBinding("ledgr_write_fill_events", ns)
+      assign("ledgr_write_fill_events", original, envir = ns)
+      lockBinding("ledgr_write_fill_events", ns)
+    },
+    add = TRUE
+  )
+
+  run_id <- "run-db-live-state-order"
+  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
+  testthat::expect_false(saw_state_before_fill)
+  gc()
+  Sys.sleep(0.05)
+
+  drv <- duckdb::duckdb()
+  con <- DBI::dbConnect(drv, dbdir = db_path)
+  on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  state_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM strategy_state WHERE run_id = ?", params = list(run_id))$n[[1]]
+  fill_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
+  testthat::expect_equal(as.integer(state_rows), 1L)
+  testthat::expect_equal(as.integer(fill_rows), 1L)
+})

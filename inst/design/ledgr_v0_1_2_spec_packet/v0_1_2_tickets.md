@@ -2,19 +2,43 @@
 
 **Version:** 1.0.0  
 **Date:** December 20, 2025  
-**Total Tickets:** 41  
-**Estimated Duration:** 5 weeks  
+**Total Tickets:** 43  
+**Estimated Duration:** 8 weeks  
 
 ---
 
 ## Ticket Organization
 
 Tickets are organized by week according to the v0.1.2 roadmap:
-- **Week 1:** High-Level API (8 tickets)
-- **Week 2:** Indicator Infrastructure (10 tickets)
-- **Week 3:** Metrics & Visualization (9 tickets)
-- **Week 4:** Trade Aggregation & Basic Metrics (7 tickets)
-- **Week 5:** Documentation Foundation & Polish (8 tickets)
+- **Week 1:** High-Level API & Snapshot/Runner Correctness (12 tickets)
+- **Week 2:** Indicator Infrastructure (12 tickets)
+- **Week 3:** Trade Aggregation, Reconstruction & Basic Metrics (8 tickets)
+- **Week 4:** Visualization (2 tickets)
+- **Week 5:** Documentation Foundation, API Surface & Polish (9 tickets)
+
+### Code Review Correctness Gates
+
+The following tickets were added after the code review of branch `V0.1.2`.
+They are placed as gates in the DAG so later UX, metrics, documentation, and
+release tickets cannot complete on top of known correctness gaps:
+
+- `LDG-105` and `LDG-109` sit between snapshot adapters and the high-level
+  backtest wrapper. Snapshot hashes and sealed snapshot validity are part of the
+  data contract, so `LDG-107` must not be accepted until these are fixed.
+- `LDG-110`, `LDG-111`, and `LDG-112` sit immediately after `LDG-107` and block
+  trade aggregation, regression, and final integration. They harden run storage,
+  strategy result validation, and resume safety before downstream metrics read
+  ledger state.
+- `LDG-211` sits after the indicator registry/adapters and before adapter
+  integration tests. It prevents mutable in-memory registries from undermining
+  replay determinism.
+- `LDG-212` sits after interactive indicator/pulse tools and before final
+  integration/docs. It keeps interactive development contexts compatible with
+  default runtime contexts.
+- `LDG-308` sits in Week 3 before final integration because snapshot-backed
+  runs must be reconstructable through the public API.
+- `LDG-500` is the Week 5 release gate. It locks the exported v0.1.2 API and
+  package-check hygiene before documentation, coverage, and CI verification.
 
 **Priority Levels:**
 - 🔴 **P0 (Blocker):** Must complete before dependent work
@@ -24,7 +48,7 @@ Tickets are organized by week according to the v0.1.2 roadmap:
 
 ---
 
-## Week 1: High-Level API
+## Week 1: High-Level API & Snapshot/Runner Correctness
 
 ### LDG-101: Set Up Test Infrastructure
 **Priority:** 🔴 P0  
@@ -161,6 +185,78 @@ Implement data.frame → snapshot adapter.
 
 ---
 
+### LDG-105: Fix Snapshot Hash Determinism
+**Priority:** 🔴 P0  
+**Effort:** 1.5 days  
+**Dependencies:** LDG-104  
+
+**Description:**
+Make `snapshot_hash` deterministic over the imported data artifact, as required
+by the v0.1.1 snapshot contract. Identical normalized `snapshot_bars` and
+`snapshot_instruments` must produce the same hash even when snapshot IDs,
+creation timestamps, or non-data metadata differ.
+
+**Tasks:**
+1. Remove `snapshots.snapshot_id` and `snapshots.meta_json` from the hash input
+2. Hash only canonical `snapshot_instruments` and `snapshot_bars` rows
+3. Ensure adapter metadata such as `created_at` cannot affect `snapshot_hash`
+4. Update tests that currently expect hashes to include snapshot ID/metadata
+5. Add regression tests for identical imported data across different snapshot IDs
+6. Add tamper tests proving data-row changes still change the hash
+
+**Acceptance Criteria:**
+- [x] Identical normalized bars/instruments produce identical hashes across runs
+- [x] Different snapshot IDs do not change `snapshot_hash`
+- [x] Snapshot metadata changes do not change `snapshot_hash`
+- [x] Bars/instruments mutations still fail tamper verification
+- [x] Existing v0.1.1 snapshot regression tests are updated without weakening tamper detection
+
+**Test Requirements:**
+- Unit test: same data, different snapshot IDs -> equal hash
+- Unit test: same data, different metadata -> equal hash
+- Unit test: instrument mutation -> different hash
+- Unit test: bar mutation -> different hash
+
+**Spec Reference:** v0.1.1 Sections R2, 3.4, 4.1
+
+---
+
+### LDG-109: Enforce Seal-Time Snapshot Validation
+**Priority:** 🔴 P0  
+**Effort:** 1.5 days  
+**Dependencies:** LDG-104  
+
+**Description:**
+Make `ledgr_snapshot_seal()` the final integrity gate for snapshots. A snapshot
+must not be sealable if bars reference missing instruments or OHLC data violates
+the canonical high/low bounds, even if data was inserted directly or imported
+with validation disabled.
+
+**Tasks:**
+1. Add referential integrity validation inside `ledgr_snapshot_seal()`
+2. Add OHLC validation inside `ledgr_snapshot_seal()`
+3. Keep seal transition and hash write atomic in one DuckDB transaction
+4. Ensure failed seals leave snapshots unsealed and do not write `snapshot_hash`
+5. Use fail-loud error classes for invalid references and invalid OHLC rows
+6. Add direct-table-write tests that bypass import helpers
+
+**Acceptance Criteria:**
+- [x] Bars with unknown `instrument_id` cannot be sealed
+- [x] Invalid OHLC rows cannot be sealed
+- [x] Failed seal does not write `snapshot_hash`
+- [x] Failed seal does not transition to `SEALED`
+- [x] Valid snapshots still seal atomically
+
+**Test Requirements:**
+- Unit test: direct write with missing instrument fails seal
+- Unit test: direct write with `high < max(open, close, low)` fails seal
+- Unit test: direct write with `low > min(open, close, high)` fails seal
+- Unit test: valid snapshot seal still writes hash and status atomically
+
+**Spec Reference:** v0.1.1 Sections R4, 4.1, I11
+
+---
+
 ### LDG-106: Implement `ledgr_snapshot_from_yahoo()`
 **Priority:** 🟠 P1  
 **Effort:** 1.5 days  
@@ -198,7 +294,7 @@ Implement quantmod → snapshot adapter.
 ### LDG-107: Implement `ledgr_backtest()` Wrapper
 **Priority:** 🔴 P0  
 **Effort:** 2 days  
-**Dependencies:** LDG-104  
+**Dependencies:** LDG-104, LDG-105, LDG-109  
 
 **Description:**
 Implement high-level backtest wrapper (thin wrapper over `ledgr_run()`).
@@ -258,6 +354,110 @@ Implement S3 methods for `ledgr_backtest` objects.
 - Verify no object mutation
 
 **Spec Reference:** Section 2.4.2, 2.4.3, 2.4.4
+
+---
+
+### LDG-110: Define and Implement Split Snapshot/Run Database Semantics
+**Priority:** 🟠 P1  
+**Effort:** 2 days  
+**Dependencies:** LDG-107  
+
+**Description:**
+Resolve the documented `db_path` contract for `ledgr_backtest()`. If `db_path`
+is documented as the run-ledger database while the snapshot object carries its
+own `snapshot$db_path`, the runner must either support split databases or reject
+them explicitly. For v0.1.2, implement the documented split-DB behavior.
+
+**Tasks:**
+1. Preserve both `snapshot$db_path` and run-ledger `db_path` in canonical config
+2. Open the snapshot DB for read/validation and the run DB for run artifacts
+3. Verify sealed snapshot hash against the snapshot DB before running
+4. Materialize the runner's `bars` view from the snapshot source without assuming snapshot tables exist in the run DB
+5. Store enough provenance in `runs.config_json` to reopen both databases
+6. Add a fail-loud error if the snapshot DB is unavailable during run/reconstruction
+
+**Acceptance Criteria:**
+- [x] `ledgr_backtest(snapshot = snap, db_path = different_file)` runs successfully
+- [x] Run artifacts are written to the run DB, not the snapshot DB
+- [x] Snapshot hash verification still reads the original snapshot DB
+- [x] Config stores both paths deterministically
+- [x] Same-DB behavior remains backward compatible
+
+**Test Requirements:**
+- Integration test with separate snapshot DB and run DB
+- Regression test for existing same-DB workflows
+- Tamper test where the snapshot DB changes after run config creation
+
+**Spec Reference:** Section 2.3.1, 2.5.1
+
+---
+
+### LDG-111: Validate Functional Strategy Results
+**Priority:** 🔴 P0  
+**Effort:** 1 day  
+**Dependencies:** LDG-107  
+
+**Description:**
+Apply the same `StrategyResult` validation rules to functional strategies that
+already apply to R6 strategy objects. Functional strategy results must not
+silently omit instruments, include unknown instruments, duplicate targets, or
+return non-finite quantities.
+
+**Tasks:**
+1. Extract shared target validation from the R6 strategy contract
+2. Apply validation to functional strategy results inside the runner
+3. Require targets for every instrument in `ctx$universe`
+4. Reject targets outside the universe
+5. Reject unnamed, duplicated, missing, or non-finite targets
+6. Keep named numeric vector shorthand, but normalize through the shared validator
+
+**Acceptance Criteria:**
+- [x] Missing universe targets fail with `ledgr_invalid_strategy_result`
+- [x] Extra targets fail with `ledgr_invalid_strategy_result`
+- [x] Non-finite target quantities fail
+- [x] Valid functional strategies still work
+- [x] R6 and functional strategy validation behavior is identical
+
+**Test Requirements:**
+- Unit test: functional strategy missing one instrument fails
+- Unit test: functional strategy returns extra instrument fails
+- Unit test: NA/Inf target fails
+- Regression test: valid named numeric vector still passes
+
+**Spec Reference:** Section 2.3.2, 5.3.2
+
+---
+
+### LDG-112: Make `db_live` Resume Pulse-Atomic
+**Priority:** 🟠 P1  
+**Effort:** 1.5 days  
+**Dependencies:** LDG-107  
+
+**Description:**
+Fix resume semantics for `db_live` so a pulse is considered complete only after
+strategy state, fills, features, and equity output for that pulse are all
+durably written. A crash after `strategy_state` insertion must not cause resume
+to skip unfinished fills.
+
+**Tasks:**
+1. Define a pulse completion marker or derive completion from all required artifacts
+2. Move `strategy_state` write after fill persistence, or wrap the whole pulse in a transaction
+3. Update resume anchor to the last fully completed pulse
+4. Delete partial tail data from the first incomplete pulse
+5. Add crash-injection tests around state write/fill write boundaries
+
+**Acceptance Criteria:**
+- [x] Crash after strategy-state write but before fills does not skip the pulse
+- [x] Resume replays the incomplete pulse deterministically
+- [x] Completed pulses are not replayed unnecessarily
+- [x] `audit_log` resume behavior remains unchanged
+
+**Test Requirements:**
+- Simulated crash after `strategy_state` write in `db_live`
+- Simulated crash after partial fill persistence in `db_live`
+- Regression test for clean `db_live` resume
+
+**Spec Reference:** Section 5.4.2, v0.1.0 restart safety requirements
 
 ---
 
@@ -501,7 +701,7 @@ Implement pulse context snapshot tool (read-only).
 ### LDG-208: Integration Test - TTR Adapter
 **Priority:** 🟡 P2  
 **Effort:** 0.5 days  
-**Dependencies:** LDG-204  
+**Dependencies:** LDG-204, LDG-211  
 
 **Description:**
 End-to-end test with TTR package.
@@ -528,7 +728,7 @@ End-to-end test with TTR package.
 ### LDG-209: Integration Test - CSV Adapter
 **Priority:** 🟡 P2  
 **Effort:** 0.5 days  
-**Dependencies:** LDG-205  
+**Dependencies:** LDG-205, LDG-211  
 
 **Description:**
 End-to-end test with CSV indicator.
@@ -582,12 +782,82 @@ Implement comprehensive purity tests for indicators.
 
 ---
 
-## Week 3: Trade Aggregation & Basic Metrics
+### LDG-211: Make Registry-Backed Replay Deterministic
+**Priority:** 🟠 P1  
+**Effort:** 2 days  
+**Dependencies:** LDG-202, LDG-204, LDG-205, LDG-107  
+
+**Description:**
+Close determinism gaps caused by mutable in-memory strategy and indicator
+registries. A stored run config must fingerprint the executable strategy and
+indicator definitions strongly enough that a changed closure, changed default,
+changed adapter payload, or overwritten registry entry cannot silently reuse a
+stale deterministic run ID or replay different logic under the same config.
+
+**Tasks:**
+1. Include functional strategy closure environment/default values in strategy fingerprints where deterministic
+2. Fail loud when a functional strategy captures non-deterministic values
+3. Include indicator function body, params, stable window, and adapter data hash in feature config fingerprints
+4. Detect duplicate indicator registry names unless an explicit overwrite flag is provided
+5. Store resolved indicator fingerprints in `runs.config_json`
+6. Ensure DONE-run reuse compares the strengthened config hash
+
+**Acceptance Criteria:**
+- [ ] Two closures with different captured target values produce different strategy keys
+- [ ] Non-deterministic captured values fail before run creation
+- [ ] Indicator registry overwrite cannot silently change replay behavior
+- [ ] CSV adapter data changes alter the feature fingerprint
+- [ ] Reusing a run ID with changed strategy/indicator logic fails loud
+
+**Test Requirements:**
+- Unit test for closure-value strategy hashing
+- Unit test for duplicate indicator registration behavior
+- Integration test: changed registered indicator under same name changes config hash or errors
+- Regression test: unchanged deterministic strategy/indicators reuse the same run ID
+
+**Spec Reference:** Section 5.1, 5.3.1, 5.6
+
+---
+
+### LDG-212: Align Interactive and Runtime Pulse Contexts
+**Priority:** 🟠 P1  
+**Effort:** 1 day  
+**Dependencies:** LDG-206, LDG-207, LDG-111  
+
+**Description:**
+Make strategies developed with `ledgr_pulse_snapshot()` behave the same under
+the default runtime context. The public interactive context and default
+`ledgr_backtest()` context must expose compatible `bars` and `features`
+semantics, or the performance-optimized context must be explicit and opt-in.
+
+**Tasks:**
+1. Define the canonical strategy context schema for `bars` and `features`
+2. Make `ledgr_pulse_snapshot()` and default runtime contexts use that schema
+3. If a fast proxy remains, make it opt-in via `control$fast_context = TRUE`
+4. Add compatibility tests for `nrow()`, column indexing, and named column access
+5. Document any performance-mode deviations in `control`
+
+**Acceptance Criteria:**
+- [ ] A strategy using data-frame `bars` semantics works in `ledgr_pulse_snapshot()`
+- [ ] The same strategy works in default `ledgr_backtest()`
+- [ ] Fast proxy mode is opt-in or API-compatible
+- [ ] Feature context shape is consistent between interactive and runtime modes
+
+**Test Requirements:**
+- Integration test: develop strategy against `ledgr_pulse_snapshot()` and run it unchanged
+- Unit test for `bars` class/columns in runtime context
+- Unit test for `features` class/columns in runtime context
+
+**Spec Reference:** Section 3.4.3, 5.4.1
+
+---
+
+## Week 3: Trade Aggregation, Reconstruction & Basic Metrics
 
 ### LDG-301: Implement `ledgr_extract_fills()`
 **Priority:** 🟠 P1  
 **Effort:** 1.5 days  
-**Dependencies:** LDG-107  
+**Dependencies:** LDG-107, LDG-110, LDG-111, LDG-112  
 
 **Description:**
 Extract fill events from ledger with FIFO realized P&L.
@@ -792,6 +1062,42 @@ Comprehensive edge case testing for zero trades.
 
 ---
 
+### LDG-308: Reconstruct Snapshot-Backed Runs
+**Priority:** 🟠 P1  
+**Effort:** 2 days  
+**Dependencies:** LDG-110, LDG-302  
+
+**Description:**
+Make `ledgr_state_reconstruct()` work for v0.1.1/v0.1.2 snapshot-backed runs.
+The public reconstruction API must rebuild derived state from the same sealed
+snapshot source used during the original run, not from a legacy persistent
+`bars` table that may be empty.
+
+**Tasks:**
+1. Read snapshot provenance from `runs.config_json`
+2. Reopen the snapshot DB when it differs from the run DB
+3. Verify the snapshot hash before reconstructing
+4. Use `snapshot_bars` as the bar source for pulse calendars and mark-to-market
+5. Preserve support for legacy v0.1.0 runs that still use persistent `bars`
+6. Add clear errors when snapshot provenance or source data is unavailable
+
+**Acceptance Criteria:**
+- [x] `ledgr_state_reconstruct()` succeeds for a normal snapshot-backed backtest
+- [x] Reconstruction validates the sealed snapshot hash
+- [x] Reconstruction works when run DB and snapshot DB are separate
+- [x] Legacy v0.1.0 reconstruction still works
+- [x] Missing snapshot source fails loud with actionable guidance
+
+**Test Requirements:**
+- Integration test: snapshot backtest -> reconstruct -> equity matches run output
+- Integration test with separate snapshot DB/run DB
+- Tamper test: corrupted snapshot fails reconstruction
+- Regression test for legacy `bars` table reconstruction
+
+**Spec Reference:** v0.1.0 reconstruction API, v0.1.1 snapshot run contract
+
+---
+
 ## Week 4: Visualization
 
 ### LDG-401: Implement `plot.ledgr_backtest()` - Equity Curve
@@ -809,9 +1115,12 @@ Implement equity curve visualization.
 4. Equity curve (line)
 5. Drawdown (area)
 6. Two-panel if gridExtra available, else equity-only with message
+7. Register `S3method(plot, ledgr_backtest)` in `NAMESPACE`
+8. Ensure `plot(bt)` works because `print.ledgr_backtest()` advertises it
 
 **Acceptance Criteria:**
 - [ ] Creates ggplot2 plot
+- [ ] `plot(bt)` dispatches to `plot.ledgr_backtest()` without base plot errors
 - [ ] Uses default theme colors
 - [ ] Shows equity + drawdown if gridExtra present
 - [ ] Graceful fallback if gridExtra missing
@@ -853,12 +1162,49 @@ Create visual regression tests for plots.
 
 ---
 
-## Week 5: Documentation Foundation & Polish
+## Week 5: Documentation Foundation, API Surface & Polish
+
+### LDG-500: Export v0.1.2 API and Fix Package Check Hygiene
+**Priority:** 🔴 P0  
+**Effort:** 1.5 days  
+**Dependencies:** LDG-105, LDG-108, LDG-109, LDG-110, LDG-111, LDG-112, LDG-201, LDG-202, LDG-203, LDG-204, LDG-205, LDG-206, LDG-207, LDG-211, LDG-212, LDG-301, LDG-302, LDG-303, LDG-308, LDG-401, LDG-402  
+
+**Description:**
+Lock the public v0.1.2 API surface and remove package-check hygiene issues
+before documentation and release tasks. Implemented user-facing functions must
+be callable without `ledgr:::` and advertised methods must dispatch normally.
+
+**Tasks:**
+1. Export v0.1.2 public constructors, registries, adapters, indicators, metrics, fills, bench, and pulse tools
+2. Register S3 methods for `plot.ledgr_backtest()` and close methods for interactive contexts
+3. Update `test-api-exports.R` to lock the intended v0.1.2 public API
+4. Add missing imports or qualify calls flagged by `R CMD check`
+5. Add missing Suggests entries for optional packages referenced via `::`/`requireNamespace()`
+6. Remove use of unavailable APIs such as `DBI::dbGetConnection`, or guard them correctly
+7. Document `...` arguments in close-method Rd files
+8. Update `DESCRIPTION`, `NEWS.md`, and package title/description from v0.1.1 scaffolding to v0.1.2
+
+**Acceptance Criteria:**
+- [ ] No v0.1.2 public API requires `ledgr:::`
+- [ ] Export lock test includes all intended v0.1.2 user-facing functions
+- [ ] `plot(bt)` dispatches through the registered S3 method
+- [ ] `R CMD check --no-manual --no-build-vignettes` has no warnings caused by undeclared imports, missing aliases, or unqualified functions
+- [ ] Optional missing Suggests skip gracefully in tests
+- [ ] Package metadata reports version 0.1.2 and no longer describes the package as scaffolding
+
+**Test Requirements:**
+- API export lock test
+- Smoke tests using only exported functions
+- `R CMD check` run with `_R_CHECK_FORCE_SUGGESTS_=false`
+
+**Spec Reference:** Section 2.1, 7.2.1
+
+---
 
 ### LDG-501: Package Documentation (roxygen)
 **Priority:** 🟠 P1  
 **Effort:** 2 days  
-**Dependencies:** All code complete  
+**Dependencies:** LDG-500  
 
 **Description:**
 Complete roxygen documentation for all exported functions.
@@ -887,7 +1233,7 @@ Complete roxygen documentation for all exported functions.
 ### LDG-502: README with Quickstart
 **Priority:** 🟠 P1  
 **Effort:** 1 day  
-**Dependencies:** All code complete  
+**Dependencies:** LDG-501, LDG-507  
 
 **Description:**
 Create comprehensive README with quickstart example.
@@ -946,7 +1292,7 @@ Create vignette structure (outlines only, full content in v0.1.3).
 ### LDG-504: Error Message Audit
 **Priority:** 🟡 P2  
 **Effort:** 1 day  
-**Dependencies:** All code complete  
+**Dependencies:** LDG-500, LDG-501  
 
 **Description:**
 Audit all error messages for clarity and helpfulness.
@@ -974,7 +1320,7 @@ Audit all error messages for clarity and helpfulness.
 ### LDG-505: Regression Test Suite
 **Priority:** 🔴 P0  
 **Effort:** 1 day  
-**Dependencies:** All tests implemented  
+**Dependencies:** LDG-105, LDG-109, LDG-110, LDG-111, LDG-112, LDG-211, LDG-212, LDG-308  
 
 **Description:**
 Run full v0.1.1 acceptance test suite.
@@ -1001,7 +1347,7 @@ Run full v0.1.1 acceptance test suite.
 ### LDG-506: Coverage Report
 **Priority:** 🟡 P2  
 **Effort:** 0.5 days  
-**Dependencies:** All tests complete  
+**Dependencies:** LDG-505  
 
 **Description:**
 Generate coverage report and verify targets.
@@ -1032,7 +1378,7 @@ Generate coverage report and verify targets.
 ### LDG-507: Final Integration Test
 **Priority:** 🔴 P0  
 **Effort:** 1 day  
-**Dependencies:** All features complete  
+**Dependencies:** LDG-208, LDG-209, LDG-212, LDG-308, LDG-401, LDG-500, LDG-504  
 
 **Description:**
 End-to-end integration test covering full workflow.
@@ -1060,7 +1406,7 @@ End-to-end integration test covering full workflow.
 ### LDG-508: Windows CI Verification
 **Priority:** 🔴 P0  
 **Effort:** 0.5 days  
-**Dependencies:** All tests complete  
+**Dependencies:** LDG-505, LDG-506, LDG-507  
 
 **Description:**
 Verify all tests pass on Windows CI.
@@ -1084,27 +1430,61 @@ Verify all tests pass on Windows CI.
 
 ---
 
+### LDG-509: Add Agent-Ready Project Metadata
+**Priority:** P2  
+**Effort:** 1 day  
+**Dependencies:** LDG-500  
+
+**Description:**
+Make the repository easier for future coding agents and human handoffs to
+continue safely by turning the design contracts and ticket DAG into lightweight,
+machine-readable project metadata.
+
+**Tasks:**
+1. Add root `AGENTS.md` with repo-specific workflow rules and verification commands
+2. Add machine-readable ticket metadata (`tickets.yml`) for IDs, dependencies, files, and tests
+3. Add a compact contract index (`inst/design/contracts.md` or `inst/schemas/contracts.yml`)
+4. Add traceability conventions for tests (`LDG-XXX / spec section` in test names)
+5. Add ADR folder and starter ADRs for split DB semantics, registry overwrite policy, and closure fingerprinting
+6. Document expected R commands and local Windows R path assumptions
+
+**Acceptance Criteria:**
+- [ ] Future agents can identify the next unblocked ticket without parsing prose
+- [ ] Core contracts are discoverable in one compact file
+- [ ] Verification commands are documented
+- [ ] ADRs capture open/high-impact design decisions
+- [ ] Existing tests/docs continue to pass/check
+
+**Test Requirements:**
+- Static validation that `tickets.yml` contains all `LDG-*` ticket IDs
+- Static validation that ticket dependencies reference known IDs
+- Smoke check that commands in `AGENTS.md` are syntactically correct
+
+**Spec Reference:** Section 2.1.1, Section 6
+
+---
+
 ## Summary Statistics
 
-**Total Tickets:** 41  
-**Estimated Total Effort:** ~34.5 days (7 weeks calendar time with parallelization)
+**Total Tickets:** 44  
+**Estimated Total Effort:** ~49.5 days (8-9 weeks calendar time with parallelization)
 
 **By Priority:**
-- 🔴 P0 (Blocker): 9 tickets
-- 🟠 P1 (Critical): 18 tickets
-- 🟡 P2 (Important): 12 tickets
-- 🟢 P3 (Nice to have): 2 tickets
+- 🔴 P0 (Blocker): 15 tickets
+- 🟠 P1 (Critical): 19 tickets
+- 🟡 P2 (Important): 9 tickets
+- 🟢 P3 (Nice to have): 1 ticket
 
 **By Week:**
-- Week 1: 8 tickets (foundational)
-- Week 2: 10 tickets (indicators)
-- Week 3: 7 tickets (metrics)
+- Week 1: 12 tickets (foundational + snapshot/runner correctness)
+- Week 2: 12 tickets (indicators + replay/context determinism)
+- Week 3: 8 tickets (fills, reconstruction, metrics)
 - Week 4: 2 tickets (visualization)
-- Week 5: 8 tickets (docs & polish)
-- Ongoing: 7 test tickets (distributed across weeks)
+- Week 5: 10 tickets (API surface, docs & polish)
+- Ongoing: Review-driven correctness gates are embedded in the DAG
 
 **Critical Path:**
-LDG-101 → LDG-102 → LDG-103 → LDG-104 → LDG-107 → LDG-201 → LDG-301 → LDG-303 → LDG-505
+LDG-101 -> LDG-102 -> LDG-103 -> LDG-104 -> LDG-105/LDG-109 -> LDG-107 -> LDG-110/LDG-111/LDG-112 -> LDG-301 -> LDG-303 -> LDG-308 -> LDG-500 -> LDG-505 -> LDG-507 -> LDG-508
 
 **Test Coverage Targets:**
 - Regression: 100% (v0.1.1 tests)
@@ -1121,22 +1501,34 @@ LDG-101 → LDG-102 → LDG-103 → LDG-104 → LDG-107 → LDG-201 → LDG-301 
 
 **Week 1:**
 - LDG-104, LDG-106 can be developed in parallel after LDG-103
+- LDG-105 and LDG-109 can run in parallel after LDG-104
+- LDG-110, LDG-111, and LDG-112 can run in parallel after LDG-107
 - LDG-108 can start after LDG-107
 
 **Week 2:**
 - LDG-203, LDG-204, LDG-205 can be developed in parallel after LDG-201
 - LDG-206, LDG-207 can be developed in parallel
+- LDG-211 can start after LDG-202/204/205
+- LDG-212 can start after LDG-206/207 and LDG-111
 
 **Week 3:**
 - LDG-301, LDG-302 can be developed in parallel
 - LDG-304 parallel with LDG-303
+- LDG-308 can start once LDG-110 and LDG-302 are complete
 
 ### Risk Mitigation
 
 **High-Risk Tickets:**
+- LDG-105, LDG-109 (snapshot artifact integrity)
 - LDG-107 (core wrapper - must be pure)
+- LDG-110 (split database semantics)
+- LDG-111 (strategy validation changes affect fills)
+- LDG-112 (resume safety)
+- LDG-211 (replay determinism and config hashing)
 - LDG-206, LDG-207 (finalizers can be tricky)
+- LDG-308 (public reconstruction must match snapshot runs)
 - LDG-303 (metrics edge cases)
+- LDG-500 (exports/package check can expose incomplete API decisions)
 - LDG-505 (regression - must pass)
 
 **Mitigation:**
@@ -1147,11 +1539,11 @@ LDG-101 → LDG-102 → LDG-103 → LDG-104 → LDG-107 → LDG-201 → LDG-301 
 
 ### Review Checkpoints
 
-**Week 1 End:** High-level API working, equivalence tests passing  
-**Week 2 End:** Indicators working, purity tests passing  
-**Week 3 End:** Metrics working, zero-trade tests passing  
+**Week 1 End:** High-level API working, snapshot integrity fixed, runner safety gates passing  
+**Week 2 End:** Indicators working, purity/replay/context determinism passing  
+**Week 3 End:** Fills, reconstruction, metrics, and zero-trade tests passing  
 **Week 4 End:** Plots working  
-**Week 5 End:** Documentation complete, all tests passing, ready to ship
+**Week 5 End:** Public API locked, documentation complete, all tests/checks passing, ready to ship
 
 ---
 

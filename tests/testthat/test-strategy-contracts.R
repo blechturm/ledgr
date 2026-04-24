@@ -119,6 +119,26 @@ testthat::test_that("EchoStrategy validates targets names", {
   testthat::expect_identical(out_negative$targets, bad_negative)
 })
 
+testthat::test_that("shared target validation rejects extra and non-finite targets", {
+  universe <- c("A", "B")
+
+  valid <- ledgr:::ledgr_validate_strategy_targets(stats::setNames(c(2, 1), c("B", "A")), universe)
+  testthat::expect_identical(valid, stats::setNames(c(1, 2), universe))
+
+  testthat::expect_error(
+    ledgr:::ledgr_validate_strategy_targets(stats::setNames(c(0, 1, 2), c("A", "B", "C")), universe),
+    class = "ledgr_invalid_strategy_result"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_validate_strategy_targets(stats::setNames(c(0, Inf), universe), universe),
+    class = "ledgr_invalid_strategy_result"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_validate_strategy_targets(c(0, 1), universe),
+    class = "ledgr_invalid_strategy_result"
+  )
+})
+
 testthat::test_that("mutation guardrail catches a mutating strategy", {
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")

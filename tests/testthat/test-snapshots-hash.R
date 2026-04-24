@@ -52,7 +52,7 @@ testthat::test_that("snapshot hash is deterministic across repeated calls and ch
   testthat::expect_equal(h1, h3)
 })
 
-testthat::test_that("snapshot hash includes snapshot_id and metadata", {
+testthat::test_that("snapshot hash ignores snapshot_id and metadata", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
@@ -97,7 +97,15 @@ testthat::test_that("snapshot hash includes snapshot_id and metadata", {
 
   h1 <- ledgr:::ledgr_snapshot_hash(con, snapshot_id1, chunk_size = 2)
   h2 <- ledgr:::ledgr_snapshot_hash(con, snapshot_id2, chunk_size = 2)
-  testthat::expect_true(!identical(h1, h2))
+  testthat::expect_identical(h1, h2)
+
+  DBI::dbExecute(
+    con,
+    "UPDATE snapshots SET meta_json = ? WHERE snapshot_id = ?",
+    params = list('{"changed":true}', snapshot_id2)
+  )
+  h3 <- ledgr:::ledgr_snapshot_hash(con, snapshot_id2, chunk_size = 2)
+  testthat::expect_identical(h1, h3)
 })
 
 testthat::test_that("instrument changes affect snapshot hash", {
@@ -193,7 +201,7 @@ testthat::test_that("snapshot hashing uses 8-decimal numeric encoding (adversari
 
   h1 <- ledgr:::ledgr_snapshot_hash(con, s1, chunk_size = 1)
   h2 <- ledgr:::ledgr_snapshot_hash(con, s2, chunk_size = 1)
-  testthat::expect_true(!identical(h1, h2))
+  testthat::expect_identical(h1, h2)
 
   token <- function(x) {
     if (is.null(x)) return("null")
@@ -256,21 +264,9 @@ testthat::test_that("snapshot hashing uses 8-decimal numeric encoding (adversari
     sep = "|"
   )
 
-  snap <- DBI::dbGetQuery(
-    con,
-    "SELECT snapshot_id, meta_json FROM snapshots WHERE snapshot_id = ?",
-    params = list(s1)
-  )
-  snap_line <- paste(
-    token(snap$snapshot_id[[1]]),
-    token(snap$meta_json[[1]]),
-    sep = "|"
-  )
-
-  snap_block_hash <- digest::digest(paste0(snap_line, "\n"), algo = "sha256")
   inst_block_hash <- digest::digest(paste0(inst_line, "\n"), algo = "sha256")
   bars_block_hash <- digest::digest(paste0(bars_line, "\n"), algo = "sha256")
-  expected <- digest::digest(paste0(snap_block_hash, inst_block_hash, bars_block_hash), algo = "sha256")
+  expected <- digest::digest(paste0(inst_block_hash, bars_block_hash), algo = "sha256")
 
   testthat::expect_identical(h1, expected)
 })

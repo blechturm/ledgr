@@ -15,6 +15,8 @@
 #' - `LEDGR_SNAPSHOT_ALREADY_SEALED` if the snapshot is already `SEALED`.
 #' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if the snapshot status is not `CREATED`.
 #' - `LEDGR_SNAPSHOT_EMPTY` if there are 0 bars or 0 instruments.
+#' - `LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY` if bars reference missing instruments.
+#' - `LEDGR_SNAPSHOT_OHLC_INVALID` if OHLC bars are internally inconsistent.
 #' - `LEDGR_SNAPSHOT_SEAL_FAILED` on hashing/transaction failures (snapshot is marked `FAILED`).
 #' @export
 ledgr_snapshot_seal <- function(con, snapshot_id) {
@@ -76,6 +78,8 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
       class = "LEDGR_SNAPSHOT_EMPTY"
     )
   }
+
+  ledgr_snapshot_validate_for_seal(con, snapshot_id)
 
   seal_failed <- function(msg) {
     # Best-effort: mark CREATED snapshot as FAILED with error_msg (no partial seal).
@@ -150,4 +154,68 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
   }
 
   hash
+}
+
+ledgr_snapshot_validate_for_seal <- function(con, snapshot_id) {
+  missing_inst <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT DISTINCT b.instrument_id
+    FROM snapshot_bars b
+    LEFT JOIN snapshot_instruments i
+      ON i.snapshot_id = b.snapshot_id
+     AND i.instrument_id = b.instrument_id
+    WHERE b.snapshot_id = ?
+      AND i.instrument_id IS NULL
+    ORDER BY b.instrument_id
+    ",
+    params = list(snapshot_id)
+  )$instrument_id
+
+  if (length(missing_inst) > 0) {
+    rlang::abort(
+      sprintf(
+        "LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY: snapshot_bars references instruments absent from snapshot_instruments: %s",
+        paste(missing_inst, collapse = ", ")
+      ),
+      class = "LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY"
+    )
+  }
+
+  bad_ohlc <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT instrument_id, ts_utc
+    FROM snapshot_bars
+    WHERE snapshot_id = ?
+      AND NOT (
+        high >= open
+        AND high >= low
+        AND high >= close
+        AND low <= open
+        AND low <= high
+        AND low <= close
+      )
+    ORDER BY instrument_id, ts_utc
+    LIMIT 5
+    ",
+    params = list(snapshot_id)
+  )
+
+  if (nrow(bad_ohlc) > 0) {
+    examples <- paste(
+      paste0(
+        bad_ohlc$instrument_id,
+        "@",
+        format(as.POSIXct(bad_ohlc$ts_utc, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+      ),
+      collapse = ", "
+    )
+    rlang::abort(
+      sprintf("LEDGR_SNAPSHOT_OHLC_INVALID: snapshot_bars contains invalid OHLC rows: %s", examples),
+      class = "LEDGR_SNAPSHOT_OHLC_INVALID"
+    )
+  }
+
+  invisible(TRUE)
 }

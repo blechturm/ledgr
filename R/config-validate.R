@@ -153,6 +153,10 @@ ledgr_validate_config <- function(config) {
     if (!is.null(snapshot_id) || identical(data_source, "snapshot")) {
       assert_scalar_chr(snapshot_id, "data.snapshot_id")
     }
+
+    if (!is.null(config$data$snapshot_db_path)) {
+      assert_scalar_chr(config$data$snapshot_db_path, "data.snapshot_db_path")
+    }
   }
 
   invisible(TRUE)

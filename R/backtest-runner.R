@@ -189,6 +189,10 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
       rlang::abort("config$data$snapshot_id must be a non-empty string when data.source == 'snapshot'.", class = "ledgr_invalid_config")
     }
   }
+  snapshot_db_path <- NULL
+  if (!is.null(snapshot_id)) {
+    snapshot_db_path <- ledgr_snapshot_db_path_from_config(cfg, db_path)
+  }
 
   set.seed(seed)
 
@@ -292,6 +296,13 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   # - enforce universe subset and coverage
   # - create TEMP VIEW instruments/bars so v0.1.0 pipeline reads snapshot data
   if (!is.null(snapshot_id)) {
+    tryCatch(
+      ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, db_path),
+      error = function(e) {
+        fail_run(conditionMessage(e), class = "LEDGR_SNAPSHOT_SOURCE_ERROR")
+      }
+    )
+
     snap <- DBI::dbGetQuery(
       con,
       "SELECT status, snapshot_hash FROM snapshots WHERE snapshot_id = ?",
@@ -373,32 +384,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     }
 
     # Snapshot-backed sourcing via TEMP VIEWs that shadow v0.1.0 tables.
-    try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.instruments"), silent = TRUE)
-    try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.bars"), silent = TRUE)
-
-    DBI::dbExecute(
-      con,
-      paste0(
-        "CREATE TEMP VIEW instruments AS ",
-        "SELECT instrument_id, symbol, currency, asset_class ",
-        "FROM snapshot_instruments ",
-        "WHERE snapshot_id = ", DBI::dbQuoteString(con, snapshot_id), " ",
-        "AND instrument_id IN (", ids_sql, ")"
-      )
-    )
-    DBI::dbExecute(
-      con,
-      paste0(
-        "CREATE TEMP VIEW bars AS ",
-        "SELECT instrument_id, ts_utc, open, high, low, close, volume, ",
-        "CAST('NONE' AS TEXT) AS gap_type, CAST(FALSE AS BOOLEAN) AS is_synthetic ",
-        "FROM snapshot_bars ",
-        "WHERE snapshot_id = ", DBI::dbQuoteString(con, snapshot_id), " ",
-        "AND instrument_id IN (", ids_sql, ") ",
-        "AND ts_utc >= CAST(", DBI::dbQuoteString(con, start_str), " AS TIMESTAMP) ",
-        "AND ts_utc <= CAST(", DBI::dbQuoteString(con, end_str), " AS TIMESTAMP)"
-      )
-    )
+    ledgr_prepare_snapshot_runtime_views(con, snapshot_id, instrument_ids, start_ts_utc, end_ts_utc)
 
     DBI::dbExecute(con, "UPDATE runs SET snapshot_id = ? WHERE run_id = ?", params = list(snapshot_id, run_id))
   }
@@ -1126,8 +1112,9 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         if (!is.list(result) || is.null(result$targets)) {
           rlang::abort("Strategy must return a numeric targets vector or a list with `targets`.", class = "ledgr_invalid_strategy_result")
         }
-        targets <- result$targets
+        targets <- ledgr_validate_strategy_targets(result$targets, instrument_ids)
 
+        db_live_state_json <- NULL
         if (!is.null(result$state_update)) {
           state_json <- canonical_json(result$state_update)
           if (identical(execution_mode, "audit_log")) {
@@ -1143,11 +1130,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
             )
             state_prev_mem <<- result$state_update
           } else {
-            DBI::dbExecute(
-              con,
-              "INSERT INTO strategy_state (run_id, ts_utc, state_json) VALUES (?, ?, ?)",
-              params = list(run_id, ts_iso, state_json)
-            )
+            db_live_state_json <- state_json
           }
         }
 
@@ -1164,8 +1147,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
               }
             }
           }
-          target_qty <- as.numeric(targets[instrument_id])
-          if (is.na(target_qty)) target_qty <- 0
+          target_qty <- as.numeric(targets[[instrument_id]])
           delta <- target_qty - cur_qty
           if (delta == 0) next
 
@@ -1318,6 +1300,18 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
                 cost_basis_by_inst[[instrument_id]] <- 0
               }
             }
+          }
+        }
+        if (!is.null(db_live_state_json)) {
+          t_state_start <- time_start(sample_now)
+          DBI::dbExecute(
+            con,
+            "INSERT INTO strategy_state (run_id, ts_utc, state_json) VALUES (?, ?, ?)",
+            params = list(run_id, ts_iso, db_live_state_json)
+          )
+          if (sample_now) {
+            if (is.na(t_state)) t_state <- 0
+            t_state <- t_state + time_end(t_state_start, TRUE)
           }
         }
         if (sample_now) {

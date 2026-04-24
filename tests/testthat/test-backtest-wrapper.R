@@ -50,6 +50,8 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
   cfg_wrapper <- jsonlite::fromJSON(cfg_json_wrapper, simplifyVector = FALSE)
   cfg_direct$db_path <- NULL
   cfg_wrapper$db_path <- NULL
+  cfg_direct$data$snapshot_db_path <- NULL
+  cfg_wrapper$data$snapshot_db_path <- NULL
   testthat::expect_identical(
     ledgr:::canonical_json(cfg_direct),
     ledgr:::canonical_json(cfg_wrapper)
@@ -65,4 +67,29 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
   eq1 <- get_final_equity(con_direct, result_direct$run_id)
   eq2 <- get_final_equity(con_wrapper, result_wrapper$run_id)
   testthat::expect_equal(eq1, eq2, tolerance = 1e-10)
+})
+
+testthat::test_that("functional strategies must return targets for the full universe", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path, snapshot_id = "snapshot_20200101_000000_abcd")
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  missing_target_strategy <- function(ctx) {
+    c(TEST_A = 0)
+  }
+
+  testthat::expect_error(
+    ledgr_backtest(
+      snapshot = snap,
+      strategy = missing_target_strategy,
+      universe = c("TEST_A", "TEST_B"),
+      start = "2020-01-01",
+      end = "2020-12-31",
+      initial_cash = 100000,
+      db_path = db_path
+    ),
+    class = "ledgr_invalid_strategy_result"
+  )
 })

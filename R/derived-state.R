@@ -105,6 +105,44 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     rlang::abort("runs.config_json must include universe.instrument_ids as a non-empty character vector.", class = "ledgr_invalid_run")
   }
 
+  if (!is.null(cfg$data) && is.list(cfg$data) && identical(cfg$data$source, "snapshot")) {
+    snapshot_id <- cfg$data$snapshot_id
+    if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {
+      rlang::abort("runs.config_json must include data.snapshot_id for snapshot-backed reconstruction.", class = "ledgr_invalid_run")
+    }
+    run_db_path <- cfg$db_path
+    if (!is.character(run_db_path) || length(run_db_path) != 1 || is.na(run_db_path) || !nzchar(run_db_path)) {
+      rlang::abort("runs.config_json must include db_path for snapshot-backed reconstruction.", class = "ledgr_invalid_run")
+    }
+    snapshot_db_path <- ledgr_snapshot_db_path_from_config(cfg, run_db_path)
+    ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, run_db_path)
+
+    snap <- DBI::dbGetQuery(
+      con,
+      "SELECT status, snapshot_hash FROM snapshots WHERE snapshot_id = ?",
+      params = list(snapshot_id)
+    )
+    if (nrow(snap) != 1) {
+      rlang::abort(sprintf("Snapshot not found for reconstruction: %s", snapshot_id), class = "LEDGR_SNAPSHOT_NOT_FOUND")
+    }
+    if (!identical(snap$status[[1]], "SEALED")) {
+      rlang::abort(
+        sprintf("LEDGR_SNAPSHOT_NOT_SEALED: snapshot status must be SEALED for reconstruction (got %s).", snap$status[[1]]),
+        class = "LEDGR_SNAPSHOT_NOT_SEALED"
+      )
+    }
+    stored_snapshot_hash <- snap$snapshot_hash[[1]]
+    if (!is.character(stored_snapshot_hash) || length(stored_snapshot_hash) != 1 || is.na(stored_snapshot_hash) || !nzchar(stored_snapshot_hash)) {
+      rlang::abort("LEDGR_SNAPSHOT_NOT_SEALED: SEALED snapshot is missing snapshot_hash.", class = "LEDGR_SNAPSHOT_NOT_SEALED")
+    }
+    recomputed <- ledgr_snapshot_hash(con, snapshot_id)
+    if (!identical(recomputed, stored_snapshot_hash)) {
+      rlang::abort("LEDGR_SNAPSHOT_CORRUPTED: stored snapshot_hash does not match recomputed hash.", class = "LEDGR_SNAPSHOT_CORRUPTED")
+    }
+
+    ledgr_prepare_snapshot_runtime_views(con, snapshot_id, instrument_ids, start_ts_utc, end_ts_utc)
+  }
+
   pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
 
   events <- DBI::dbGetQuery(

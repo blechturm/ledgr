@@ -1,8 +1,9 @@
 # ledgr v0.1.2 Specification - Section 1: UX Principles & Invariants
 
-**Document Version:** 2.0.2  
+**Document Version:** 2.1.1  
 **Author:** Max Thomasberger  
 **Date:** December 20, 2025  
+**Amendment Date:** April 24, 2026  
 **Release Type:** User Experience Milestone  
 **Status:** Draft for Review
 
@@ -197,6 +198,59 @@ stopifnot(abs(result_direct$final_equity - result_wrapper$final_equity) < 1e-10)
 ```
 
 **Rationale:** Multiple execution paths fragment semantics, double test surface, and create inconsistent guarantees. There is one way to run a backtest.
+
+---
+
+### 1.2.1 Code Review Correctness Amendments
+
+The following amendments clarify the v0.1.2 contract after branch review. They
+do not add new execution semantics; they make inherited v0.1.0/v0.1.1 guarantees
+explicit where the UX layer could otherwise weaken them.
+
+**Snapshot artifact determinism:** `snapshot_hash` is defined only over the
+canonical imported data artifact: normalized `snapshot_instruments` rows and
+normalized `snapshot_bars` rows. It MUST NOT include `snapshot_id`,
+`snapshots.meta_json`, creation timestamps, or any adapter metadata that is not
+part of the imported data artifact. Identical normalized bars and instruments
+MUST produce identical hashes across runs and databases.
+
+**Seal-time integrity:** `ledgr_snapshot_seal()` is the final snapshot integrity
+gate. It MUST validate non-empty data, bar-to-instrument referential integrity,
+and OHLC high/low bounds before writing `snapshot_hash` or transitioning to
+`SEALED`. This applies even when data was inserted directly or imported with a
+fast/unchecked path.
+
+**Snapshot DB vs run ledger DB:** A `ledgr_snapshot` owns the immutable data
+source via `snapshot$db_path` and `snapshot$snapshot_id`. `ledgr_backtest(db_path
+= ...)` names the run-ledger database. If they differ, the engine MUST read and
+verify data from the snapshot DB while writing `runs`, `ledger_events`,
+`strategy_state`, `features`, and `equity_curve` to the run DB. The run config
+MUST persist enough provenance to reopen both.
+
+**Strategy result validation:** Functional strategies and R6 strategies share
+one `StrategyResult` contract. Target vectors MUST be named, finite numeric
+vectors containing exactly the run universe. Missing instruments, extra
+instruments, duplicate names, unnamed values, `NA`, `NaN`, and `Inf` MUST fail
+loudly. Missing targets MUST NOT be interpreted as implicit zero.
+
+**Replay determinism:** Stored run configs MUST fingerprint executable strategy
+and indicator definitions strongly enough that closure values, default
+arguments, adapter payload hashes, and registry overwrites cannot silently
+change replay behavior under the same config hash.
+
+**Context parity:** The default runtime strategy context and
+`ledgr_pulse_snapshot()` MUST expose compatible `bars` and `features` schemas.
+Performance proxy contexts are allowed only if they are API-compatible with the
+documented data-frame semantics or are explicitly opt-in.
+
+**Snapshot-backed reconstruction:** `ledgr_state_reconstruct()` MUST reconstruct
+snapshot-backed runs from the sealed snapshot source recorded in the run config,
+verify the snapshot hash before rebuilding, and remain backward-compatible with
+legacy runs that use persistent `bars`.
+
+**Public API contract:** Every user-facing v0.1.2 function documented in this
+spec MUST be exported and callable without `ledgr:::`. Advertised S3 methods,
+including `plot.ledgr_backtest()`, MUST be registered so base dispatch works.
 
 ---
 
@@ -560,12 +614,18 @@ v0.3.0 (FUTURE) - Production Trading
 - Updated qualitative success metric (README vs. comprehensive docs)
 - Minor consistency improvements
 
+**Changelog from v2.1.1 amendment:**
+- Added Section 1.2.1 correctness amendments from branch `V0.1.2` review
+- Clarified inherited snapshot hashing, seal validation, reconstruction, replay,
+  context, and public API contracts
+
 
 # ledgr v0.1.2 Specification - Sections 2-4: API Contracts (CORRECTED)
 
-**Document Version:** 2.1.0  
+**Document Version:** 2.1.1  
 **Author:** Max Thomasberger  
 **Date:** December 20, 2025  
+**Amendment Date:** April 24, 2026  
 **Release Type:** User Experience Milestone  
 **Status:** Draft for Review  
 **Changelog:** Peer review corrections applied - see end of document
@@ -619,6 +679,33 @@ Section 2 defines the primary user-facing APIs that enable researchers and quant
 **Design principle:** All APIs in this section are **wrappers** that compile user inputs into canonical configurations and delegate to the v0.1.1 execution engine. No new execution semantics.
 
 **Compliance:** All APIs MUST satisfy Invariants 1, 2, and 3 from Section 1.
+
+---
+
+#### 2.1.1 Public API Export Contract
+
+All user-facing functions documented in Sections 2-4 are part of the v0.1.2
+public API and MUST be exported. Tests MUST lock the export surface so examples
+and user workflows do not depend on `ledgr:::` internals.
+
+The v0.1.2 export surface includes, at minimum:
+
+- Snapshot UX: `ledgr_snapshot_from_df()`, `ledgr_snapshot_from_yahoo()`,
+  `ledgr_snapshot_close()`, and existing v0.1.1 snapshot functions
+- Backtest UX: `ledgr_backtest()`, `ledgr_extract_fills()`,
+  `ledgr_compute_equity_curve()`, `ledgr_compute_metrics()`,
+  `ledgr_backtest_bench()`
+- Indicator UX: `ledgr_indicator()`, `ledgr_register_indicator()`,
+  `ledgr_get_indicator()`, `ledgr_list_indicators()`, built-in indicators, and
+  adapter constructors
+- Interactive UX: `ledgr_indicator_dev()`, `ledgr_pulse_snapshot()`, and their
+  close methods
+- S3 methods: `print()`, `summary()`, `as_tibble()`, `plot()`, and `close()`
+  methods advertised by this spec
+
+Package checks MUST pass without warnings caused by missing exports, missing S3
+registrations, undeclared optional dependencies, undocumented method arguments,
+or unqualified base/recommended-package calls.
 
 ---
 
@@ -706,6 +793,24 @@ snap <- ledgr_snapshot_from_df(bars)
 - Numeric columns finite (no NA/NaN/Inf unless explicitly supported)
 - No duplicate (ts_utc, instrument_id) pairs
 - Bars ordered chronologically per instrument
+- OHLC bounds valid: `high >= max(open, low, close)` and
+  `low <= min(open, high, close)`
+- Every bar `instrument_id` exists in `snapshot_instruments` before sealing
+
+**Snapshot hash contract:**
+
+Adapters MUST NOT make snapshot hashes depend on adapter metadata. The sealed
+`snapshot_hash` is a deterministic fingerprint of canonical
+`snapshot_instruments` and `snapshot_bars` only. `snapshot_id`,
+`snapshots.meta_json`, creation timestamps, and `ledgr_snapshot` object metadata
+MUST NOT enter the hash input.
+
+**Seal contract:**
+
+`ledgr_snapshot_from_df()` delegates final immutability to
+`ledgr_snapshot_seal()`. Seal-time validation is mandatory even though adapters
+also validate inputs. Failed validation MUST leave the snapshot unsealed and
+MUST NOT write `snapshot_hash`.
 
 **Error handling:**
 ```r
@@ -948,6 +1053,19 @@ ledgr_backtest <- function(snapshot,
 
 **Returns:** S3 object of class `ledgr_backtest`
 
+**Database provenance:**
+
+`snapshot$db_path` is the immutable data-source database. `db_path` is the
+run-ledger database. When `db_path` is NULL, both roles use the snapshot
+database for backward compatibility. When `db_path` differs from
+`snapshot$db_path`, the engine MUST:
+
+1. Open the snapshot DB read-only or read-intent for snapshot validation and bars
+2. Verify the sealed `snapshot_hash` against the snapshot DB before running
+3. Write run artifacts only to the run-ledger DB
+4. Store both paths and `snapshot_id` in canonical config/run metadata
+5. Fail loudly if the recorded snapshot source is unavailable for run or replay
+
 **Implementation contract:**
 
 ```r
@@ -986,6 +1104,7 @@ ledgr_backtest <- function(snapshot, strategy, universe, start, end,
     ),
     features = features,
     fill_model = fill_model %||% ledgr_fill_model_instant(),
+    snapshot_db_path = snapshot$db_path,
     db_path = db_path %||% snapshot$db_path,
     run_id = run_id
   )
@@ -1082,17 +1201,30 @@ my_strategy <- function(ctx) {
 - Columns: `instrument_id`, `feature_name`, `feature_value`
 - All requested features for current timestamp
 
+The default runtime context and `ledgr_pulse_snapshot()` MUST expose compatible
+schemas for `bars` and `features`. User strategies that work against
+`ledgr_pulse_snapshot()` using data-frame semantics (`nrow()`, `$`, `[`, and
+column names) MUST work unchanged in `ledgr_backtest()` by default. Optimized
+proxy contexts are allowed only when they preserve this API or when explicitly
+enabled by user control settings.
+
 **Target positions specification:**
 
 - **Units:** Shares or contracts (numeric)
 - **Fractional shares:** Not supported - use `floor()` or `round()` in strategy
 - **Negative values:** Short positions (if supported by configuration)
 - **Zero:** Flat/exit position
-- **Missing instruments:** Assumed zero (exit)
+- **Completeness:** Target vector MUST include exactly one named finite numeric
+  value for every instrument in `ctx$universe`
+- **Missing instruments:** Error (`ledgr_invalid_strategy_result`)
+- **Extra instruments:** Error (`ledgr_invalid_strategy_result`)
+- **Duplicate or unnamed targets:** Error (`ledgr_invalid_strategy_result`)
 
 **Implementation note:**
 
 Functional strategies are wrapped internally into R6 objects that ledgr's execution engine expects. This wrapper is transparent to users.
+Functional strategies and R6 strategies MUST use the same `StrategyResult`
+validator. The engine MUST NOT treat missing targets as implicit zero.
 
 ```r
 # Internal wrapper (not user-facing)
@@ -1154,6 +1286,7 @@ structure(
   list(
     run_id = "run_abc123",
     db_path = "/path/to/db.duckdb",
+    snapshot_db_path = "/path/to/snapshot.duckdb",
     config = <canonical config>,
     
     # Private: connection opened on-demand
@@ -1637,6 +1770,21 @@ The registry enables:
 **Implementation:** Global environment (not user-facing).
 
 **Serialization note:** At backtest execution time, indicators are serialized into run config (ID + params + function fingerprint), not stored as registry pointers. This ensures reproducibility even if registry contents change.
+
+**Registry determinism rules:**
+
+- Registering an indicator under an existing name MUST fail unless the caller
+  explicitly requests overwrite.
+- The run config MUST store the resolved indicator fingerprint used for the run,
+  not just the registry name.
+- The fingerprint MUST include indicator ID, deterministic params, required
+  lookback, stable window, function body/formals, and adapter payload hashes
+  where applicable.
+- Reusing a `run_id` with a registry name that now resolves to different logic
+  MUST fail via config-hash mismatch rather than silently reusing stale results.
+- Functional strategy fingerprints follow the same principle: deterministic
+  closure/default values must affect the key; non-deterministic captured values
+  must fail before run creation.
 
 ---
 
@@ -2596,6 +2744,34 @@ ledgr_compute_equity_curve <- function(bt) {
 
 ---
 
+### 4.3.3 Snapshot-Backed State Reconstruction
+
+**Purpose:** Rebuild derived state for a run from event-sourced ledger artifacts
+and the same market data source used during execution.
+
+`ledgr_state_reconstruct(run_id, con)` remains a public core API. In v0.1.2 it
+MUST support both:
+
+1. Legacy v0.1.0 runs that read from persistent `bars`
+2. Snapshot-backed v0.1.1/v0.1.2 runs that read from sealed `snapshot_bars`
+
+**Snapshot-backed reconstruction contract:**
+
+- Read `snapshot_id` and snapshot database provenance from `runs.config_json`
+- Reopen the snapshot DB when it differs from the run-ledger DB
+- Recompute and verify `snapshot_hash` before rebuilding
+- Use the recorded sealed snapshot as the source for pulse calendars and
+  mark-to-market prices
+- Fail loudly if the snapshot source is missing, unsealed, or corrupted
+- Rebuilt `positions`, `cash`, `pnl`, and `equity_curve` MUST match the run's
+  derived artifacts for the same ledger
+
+**Rationale:** v0.1.2 high-level APIs make snapshot-backed runs the normal user
+path. Reconstruction that only reads a legacy `bars` table breaks the inherited
+deterministic replay guarantee.
+
+---
+
 ### 4.4 Visualization
 
 #### 4.4.1 `plot.ledgr_backtest()`
@@ -2607,6 +2783,10 @@ ledgr_compute_equity_curve <- function(bt) {
 #' @export
 plot.ledgr_backtest <- function(x, ..., type = "equity")
 ```
+
+The package MUST register `S3method(plot, ledgr_backtest)` so `plot(bt)`
+dispatches to this method. This is required because `print.ledgr_backtest()`
+advertises `plot(bt)` as the user-facing visualization entrypoint.
 
 **Parameters:**
 - `x` - `ledgr_backtest` object
@@ -2742,7 +2922,7 @@ stopifnot(ledger_before == ledger_after)
 
 ---
 
-## Changelog (v2.1.0 from v2.0.2)
+## Changelog (v2.1.1 from v2.0.2)
 
 ### Critical Fixes
 
@@ -2776,15 +2956,27 @@ stopifnot(ledger_before == ledger_after)
 20. **3.4** - Added dedicated connection management for interactive tools
 21. **4.3.1** - Added comprehensive zero guards and NA handling
 
+### v2.1.1 Code Review Amendments
+
+22. **1.2.1** - Added correctness amendment layer for snapshot hashing, seal validation, split DB semantics, strategy validation, replay determinism, context parity, reconstruction, and exports
+23. **2.1.1** - Added public API export contract
+24. **2.2.2** - Clarified artifact-only snapshot hashing and seal-time validation
+25. **2.3.1** - Clarified split snapshot DB/run ledger DB semantics
+26. **2.3.2** - Changed missing functional strategy targets from implicit zero to fail-loud validation
+27. **3.3.1** - Strengthened registry-backed replay determinism requirements
+28. **4.3.3** - Added snapshot-backed reconstruction contract
+29. **4.4.1** - Required `plot.ledgr_backtest()` S3 registration
+
 ### Approved
 
 This corrected specification is ready for implementation and testing.
 
 # ledgr v0.1.2 Specification - Sections 5-7: Constraints, Testing & Deferrals (CORRECTED)
 
-**Document Version:** 2.2.0  
+**Document Version:** 2.2.1  
 **Author:** Max Thomasberger  
 **Date:** December 20, 2025  
+**Amendment Date:** April 24, 2026  
 **Release Type:** User Experience Milestone  
 **Status:** Draft for Review  
 **Changelog:** Critical correctness fixes from peer review
@@ -2917,6 +3109,7 @@ ledgr_backtest <- function(snapshot, strategy, universe, start, end,
     ),
     features = features,
     fill_model = fill_model %||% ledgr_fill_model_instant(),
+    snapshot_db_path = snapshot$db_path,
     db_path = db_path %||% snapshot$db_path,
     run_id = run_id
   )
@@ -3787,26 +3980,33 @@ test_that("ledgr_backtest() equivalent to ledgr_run()", {
   ledgr_snapshot_close(snap)
 })
 
-test_that("snapshot adapters produce identical snapshots", {
+test_that("snapshot adapters produce identical data hashes", {
   # Create bars data.frame
   bars <- test_bars_df
   
-  # Approach 1: Direct from df
-  snap1 <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  # Approach 1: Direct from df with one snapshot_id
+  snap1 <- ledgr_snapshot_from_df(
+    bars,
+    db_path = tempfile(fileext = ".duckdb"),
+    snapshot_id = "snapshot_20250101_000000_aaaa"
+  )
   
-  # Approach 2: Direct from same data (testing consistency)
-  snap2 <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  # Approach 2: Same data with a different snapshot_id
+  snap2 <- ledgr_snapshot_from_df(
+    bars,
+    db_path = tempfile(fileext = ".duckdb"),
+    snapshot_id = "snapshot_20250101_000000_bbbb"
+  )
   
-  # Compare snapshot hashes
-  hash1 <- snap1$metadata$content_hash
-  hash2 <- snap2$metadata$content_hash
+  # Compare sealed snapshot hashes; IDs/metadata must not affect the artifact hash
+  hash1 <- ledgr_snapshot_info(snap1)$snapshot_hash
+  hash2 <- ledgr_snapshot_info(snap2)$snapshot_hash
   
   expect_equal(hash1, hash2)
   
   # Cleanup
   ledgr_snapshot_close(snap1)
   ledgr_snapshot_close(snap2)
-  unlink(csv_path)
 })
 ```
 
@@ -4662,7 +4862,7 @@ Section 7 explicitly defines what is OUT OF SCOPE for v0.1.2 and when deferred f
 
 ---
 
-## Changelog (v2.2.0 from v2.1.0)
+## Changelog (v2.2.1 from v2.1.0)
 
 ### Critical Fixes
 
@@ -4682,6 +4882,11 @@ Section 7 explicitly defines what is OUT OF SCOPE for v0.1.2 and when deferred f
 11. **6.2.2** - Strengthened equivalence tests (compare all fields including ts_utc, fee)
 12. **6.2.4** - Fixed integration test (use fixture CSV, mark live test as interactive-only)
 13. **6.5** - Fixed test fixture (set.seed() BEFORE randomness, correct panel structure: 732 rows)
+
+### v2.2.1 Code Review Amendments
+
+14. **5.2.1** - Added `snapshot_db_path` to wrapper/config examples so split snapshot DB/run DB semantics are explicit
+15. **6.2.2** - Updated snapshot adapter equivalence test to compare `snapshot_hash` across different snapshot IDs
 
 ### Approved
 

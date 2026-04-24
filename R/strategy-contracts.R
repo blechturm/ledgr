@@ -1,3 +1,51 @@
+ledgr_validate_strategy_targets <- function(targets, universe) {
+  if (!is.character(universe) || length(universe) < 1 || anyNA(universe) || any(!nzchar(universe))) {
+    rlang::abort("`universe` must be a non-empty character vector.", class = "ledgr_invalid_strategy_result")
+  }
+  if (anyDuplicated(universe)) {
+    rlang::abort("`universe` must not contain duplicates.", class = "ledgr_invalid_strategy_result")
+  }
+
+  if (!is.numeric(targets) || length(targets) < 1) {
+    rlang::abort(
+      "`targets` must be a non-empty named numeric vector (quantities).",
+      class = "ledgr_invalid_strategy_result"
+    )
+  }
+
+  target_names <- names(targets)
+  if (is.null(target_names) ||
+      length(target_names) != length(targets) ||
+      anyNA(target_names) ||
+      any(!nzchar(target_names)) ||
+      anyDuplicated(target_names)) {
+    rlang::abort(
+      "`targets` must be a named numeric vector with unique, non-empty names.",
+      class = "ledgr_invalid_strategy_result"
+    )
+  }
+  if (any(!is.finite(targets))) {
+    rlang::abort("`targets` must contain only finite numeric values.", class = "ledgr_invalid_strategy_result")
+  }
+
+  missing <- setdiff(universe, target_names)
+  extra <- setdiff(target_names, universe)
+  if (length(extra) > 0) {
+    rlang::abort(
+      sprintf("`targets` contains instruments outside universe: %s", paste(extra, collapse = ", ")),
+      class = "ledgr_invalid_strategy_result"
+    )
+  }
+  if (length(missing) > 0) {
+    rlang::abort(
+      sprintf("`targets` must include all instruments in universe; missing: %s", paste(missing, collapse = ", ")),
+      class = "ledgr_invalid_strategy_result"
+    )
+  }
+
+  targets[universe]
+}
+
 LedgrStrategy <- R6::R6Class(
   "LedgrStrategy",
   public = list(
@@ -74,37 +122,7 @@ LedgrStrategy <- R6::R6Class(
         )
       }
 
-      targets <- result$targets
-      if (!is.numeric(targets) || length(targets) < 1) {
-        rlang::abort(
-          "`targets` must be a non-empty named numeric vector (quantities).",
-          class = "ledgr_invalid_strategy_result"
-        )
-      }
-      if (is.null(names(targets)) || any(!nzchar(names(targets))) || anyDuplicated(names(targets))) {
-        rlang::abort(
-          "`targets` must be a named numeric vector with unique, non-empty names.",
-          class = "ledgr_invalid_strategy_result"
-        )
-      }
-      if (any(!is.finite(targets))) {
-        rlang::abort("`targets` must contain only finite numeric values.", class = "ledgr_invalid_strategy_result")
-      }
-
-      missing <- setdiff(ctx$universe, names(targets))
-      extra <- setdiff(names(targets), ctx$universe)
-      if (length(extra) > 0) {
-        rlang::abort(
-          sprintf("`targets` contains instruments outside universe: %s", paste(extra, collapse = ", ")),
-          class = "ledgr_invalid_strategy_result"
-        )
-      }
-      if (length(missing) > 0) {
-        rlang::abort(
-          sprintf("`targets` must include all instruments in universe; missing: %s", paste(missing, collapse = ", ")),
-          class = "ledgr_invalid_strategy_result"
-        )
-      }
+      ledgr_validate_strategy_targets(result$targets, ctx$universe)
       state_update <- result$state_update
       if (!is.null(state_update)) {
         if (!(is.list(state_update) || (is.character(state_update) && length(state_update) == 1))) {

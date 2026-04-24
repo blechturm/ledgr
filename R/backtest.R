@@ -56,6 +56,12 @@ ledgr_backtest <- function(snapshot,
   if (!is.character(db_path) || length(db_path) != 1 || is.na(db_path) || !nzchar(db_path)) {
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
+  if (!ledgr_same_db_path(db_path, snapshot$db_path) && identical(ledgr_db_path_key(snapshot$db_path), ":memory:")) {
+    rlang::abort(
+      "`db_path` cannot point to a separate run database when `snapshot` is backed by :memory:.",
+      class = "ledgr_invalid_args"
+    )
+  }
 
   if (!is.character(execution_mode) || length(execution_mode) != 1 || is.na(execution_mode) || !nzchar(execution_mode)) {
     rlang::abort("`execution_mode` must be a non-empty character scalar.", class = "ledgr_invalid_args")
@@ -101,6 +107,9 @@ ledgr_backtest <- function(snapshot,
       ),
       class = "ledgr_invalid_args"
     )
+  }
+  if (!ledgr_same_db_path(db_path, snapshot$db_path)) {
+    ledgr_snapshot_close(snapshot)
   }
 
   config <- ledgr_config(
@@ -223,10 +232,10 @@ new_ledgr_fills_cursor <- function(res, temp_table, con) {
     state,
     function(env) {
       if (!is.null(env$res) && DBI::dbIsValid(env$res)) {
-        DBI::dbClearResult(env$res)
+        suppressWarnings(try(DBI::dbClearResult(env$res), silent = TRUE))
       }
       if (!is.null(env$con) && !is.null(env$temp_table)) {
-        DBI::dbExecute(env$con, sprintf("DROP TABLE IF EXISTS %s", env$temp_table))
+        suppressWarnings(try(DBI::dbExecute(env$con, sprintf("DROP TABLE IF EXISTS %s", env$temp_table)), silent = TRUE))
       }
       invisible(TRUE)
     },
@@ -310,6 +319,12 @@ ledgr_config <- function(snapshot,
   if (is.null(db_path)) db_path <- snapshot$db_path
   if (!is.character(db_path) || length(db_path) != 1 || is.na(db_path) || !nzchar(db_path)) {
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  if (!ledgr_same_db_path(db_path, snapshot$db_path) && identical(ledgr_db_path_key(snapshot$db_path), ":memory:")) {
+    rlang::abort(
+      "`db_path` cannot point to a separate run database when `snapshot` is backed by :memory:.",
+      class = "ledgr_invalid_args"
+    )
   }
   if (!is.list(features)) {
     rlang::abort("`features` must be a list.", class = "ledgr_invalid_args")
@@ -399,7 +414,8 @@ ledgr_config <- function(snapshot,
     ),
     data = list(
       source = "snapshot",
-      snapshot_id = snapshot$snapshot_id
+      snapshot_id = snapshot$snapshot_id,
+      snapshot_db_path = snapshot$db_path
     )
   )
 
@@ -768,6 +784,11 @@ ledgr_estimate_bars_per_year <- function(bt, equity) {
 
   con <- get_connection(bt)
   snapshot_id <- bt$config$data$snapshot_id
+  if (!is.null(bt$config$data) && is.list(bt$config$data) && identical(bt$config$data$source, "snapshot")) {
+    run_db_path <- bt$config$db_path
+    snapshot_db_path <- ledgr_snapshot_db_path_from_config(bt$config, run_db_path)
+    ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, run_db_path)
+  }
 
   inst <- DBI::dbGetQuery(
     con,

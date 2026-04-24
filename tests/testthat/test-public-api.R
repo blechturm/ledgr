@@ -73,3 +73,116 @@ testthat::test_that("ledgr_state_reconstruct() returns derived artifacts and reb
   testthat::expect_equal(eq_rows, 3)
 })
 
+testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed runs", {
+  snapshot_path <- tempfile(fileext = ".duckdb")
+  run_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(snapshot_path), add = TRUE)
+  on.exit(unlink(run_path), add = TRUE)
+
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct(
+      c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00"),
+      tz = "UTC"
+    ),
+    open = c(100, 101, 102),
+    high = c(100, 101, 102),
+    low = c(100, 101, 102),
+    close = c(100, 101, 102),
+    volume = c(1, 1, 1),
+    stringsAsFactors = FALSE
+  )
+  snap <- ledgr_snapshot_from_df(bars, db_path = snapshot_path, snapshot_id = "snapshot_20200101_000000_abcd")
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  strat <- function(ctx) {
+    c(AAA = 1)
+  }
+  bt <- suppressWarnings(ledgr_backtest(
+    snapshot = snap,
+    strategy = strat,
+    universe = "AAA",
+    start = "2020-01-01",
+    end = "2020-01-03",
+    initial_cash = 1000,
+    db_path = run_path
+  ))
+  gc()
+  Sys.sleep(0.05)
+
+  drv <- duckdb::duckdb()
+  con <- DBI::dbConnect(drv, dbdir = run_path)
+  on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  run_bars <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM bars")$n[[1]]
+  testthat::expect_equal(as.integer(run_bars), 0L)
+
+  DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(bt$run_id))
+  out <- ledgr_state_reconstruct(bt$run_id, con)
+
+  testthat::expect_equal(nrow(out$equity_curve), 3L)
+  eq_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM equity_curve WHERE run_id = ?", params = list(bt$run_id))$n[[1]]
+  testthat::expect_equal(as.integer(eq_rows), 3L)
+  testthat::expect_equal(out$positions$qty[[1]], 1)
+})
+
+testthat::test_that("ledgr_state_reconstruct() rejects tampered snapshot sources", {
+  snapshot_path <- tempfile(fileext = ".duckdb")
+  run_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(snapshot_path), add = TRUE)
+  on.exit(unlink(run_path), add = TRUE)
+
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct(
+      c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00"),
+      tz = "UTC"
+    ),
+    open = c(100, 101, 102),
+    high = c(100, 101, 102),
+    low = c(100, 101, 102),
+    close = c(100, 101, 102),
+    volume = c(1, 1, 1),
+    stringsAsFactors = FALSE
+  )
+  snap <- ledgr_snapshot_from_df(bars, db_path = snapshot_path, snapshot_id = "snapshot_20200101_000000_abcd")
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  strat <- function(ctx) {
+    c(AAA = 1)
+  }
+  bt <- suppressWarnings(ledgr_backtest(
+    snapshot = snap,
+    strategy = strat,
+    universe = "AAA",
+    start = "2020-01-01",
+    end = "2020-01-03",
+    initial_cash = 1000,
+    db_path = run_path
+  ))
+  gc()
+  Sys.sleep(0.05)
+
+  snap_drv <- duckdb::duckdb()
+  snap_con <- DBI::dbConnect(snap_drv, dbdir = snapshot_path)
+  DBI::dbExecute(
+    snap_con,
+    "UPDATE snapshot_bars SET close = close + 1 WHERE snapshot_id = ? AND instrument_id = 'AAA'",
+    params = list(snap$snapshot_id)
+  )
+  DBI::dbDisconnect(snap_con, shutdown = TRUE)
+  duckdb::duckdb_shutdown(snap_drv)
+  gc()
+  Sys.sleep(0.05)
+
+  drv <- duckdb::duckdb()
+  con <- DBI::dbConnect(drv, dbdir = run_path)
+  on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  testthat::expect_error(
+    ledgr_state_reconstruct(bt$run_id, con),
+    class = "LEDGR_SNAPSHOT_CORRUPTED"
+  )
+})
