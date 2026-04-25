@@ -96,9 +96,88 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
     ",
     params = list(run_a, run_b)
   )
-  testthat::expect_equal(run_rows$run_id, c(run_a, run_b))
-  testthat::expect_identical(run_rows$status, c("DONE", "DONE"))
-  testthat::expect_true(all(is.na(run_rows$error_msg)))
+  at3_diagnostics <- function() {
+    direct_a_param <- DBI::dbGetQuery(
+      h$con,
+      "SELECT run_id, status, error_msg FROM runs WHERE run_id = ?",
+      params = list(run_a)
+    )
+    direct_b_param <- DBI::dbGetQuery(
+      h$con,
+      "SELECT run_id, status, error_msg FROM runs WHERE run_id = ?",
+      params = list(run_b)
+    )
+    direct_a_literal <- DBI::dbGetQuery(
+      h$con,
+      paste0(
+        "SELECT run_id, status, error_msg FROM runs WHERE run_id = ",
+        DBI::dbQuoteString(h$con, run_a)
+      )
+    )
+    direct_b_literal <- DBI::dbGetQuery(
+      h$con,
+      paste0(
+        "SELECT run_id, status, error_msg FROM runs WHERE run_id = ",
+        DBI::dbQuoteString(h$con, run_b)
+      )
+    )
+    all_runs <- DBI::dbGetQuery(
+      h$con,
+      "
+      SELECT run_id, status, error_msg, config_hash, data_hash
+      FROM runs
+      ORDER BY run_id
+      "
+    )
+    artifact_counts <- DBI::dbGetQuery(
+      h$con,
+      "
+      SELECT
+        r.run_id,
+        (SELECT COUNT(*) FROM ledger_events le WHERE le.run_id = r.run_id) AS ledger_n,
+        (SELECT COUNT(*) FROM features f WHERE f.run_id = r.run_id) AS features_n,
+        (SELECT COUNT(*) FROM equity_curve e WHERE e.run_id = r.run_id) AS equity_n
+      FROM runs r
+      ORDER BY r.run_id
+      "
+    )
+
+    paste(
+      "AT3 diagnostics:",
+      sprintf("R.version=%s", as.character(getRversion())),
+      sprintf("duckdb.version=%s", as.character(utils::packageVersion("duckdb"))),
+      sprintf("DBI.version=%s", as.character(utils::packageVersion("DBI"))),
+      sprintf("db_path=%s", db_path),
+      "out_a:",
+      paste(capture.output(str(out_a)), collapse = "\n"),
+      "out_b:",
+      paste(capture.output(str(out_b)), collapse = "\n"),
+      "run_rows IN (?, ?):",
+      paste(capture.output(print(run_rows)), collapse = "\n"),
+      "direct_a_param:",
+      paste(capture.output(print(direct_a_param)), collapse = "\n"),
+      "direct_b_param:",
+      paste(capture.output(print(direct_b_param)), collapse = "\n"),
+      "direct_a_literal:",
+      paste(capture.output(print(direct_a_literal)), collapse = "\n"),
+      "direct_b_literal:",
+      paste(capture.output(print(direct_b_literal)), collapse = "\n"),
+      "all_runs:",
+      paste(capture.output(print(all_runs)), collapse = "\n"),
+      "artifact_counts:",
+      paste(capture.output(print(artifact_counts)), collapse = "\n"),
+      sep = "\n"
+    )
+  }
+
+  run_diag <- NULL
+  if (!identical(as.character(run_rows$run_id), c(run_a, run_b))) {
+    run_diag <- at3_diagnostics()
+    testthat::fail(run_diag)
+  }
+  testthat::expect_equal(run_rows$run_id, c(run_a, run_b), info = run_diag)
+  testthat::expect_identical(run_rows$status, c("DONE", "DONE"), info = run_diag)
+  testthat::expect_true(all(is.na(run_rows$error_msg)), info = run_diag)
 
   ledger_a <- ledgr_test_fetch_ledger_core(h$con, run_a)
   ledger_b <- ledgr_test_fetch_ledger_core(h$con, run_b)

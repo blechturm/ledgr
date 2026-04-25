@@ -232,6 +232,19 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     "SELECT run_id, status, config_hash, data_hash, snapshot_id FROM runs WHERE run_id = ?",
     params = list(run_id)
   )
+  if (nrow(run_row) > 0) {
+    found_run_ids <- as.character(run_row$run_id)
+    if (length(found_run_ids) != 1L || !identical(found_run_ids[[1]], run_id)) {
+      rlang::abort(
+        sprintf(
+          "Run lookup returned unexpected run_id. Requested %s, got %s.",
+          run_id,
+          paste(found_run_ids, collapse = ", ")
+        ),
+        class = "ledgr_run_lookup_mismatch"
+      )
+    }
+  }
 
   is_resume <- nrow(run_row) > 0
 
@@ -264,6 +277,17 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         NA_character_
       )
     )
+    inserted_run <- DBI::dbGetQuery(
+      con,
+      "SELECT run_id FROM runs WHERE run_id = ?",
+      params = list(run_id)
+    )
+    if (nrow(inserted_run) != 1L || !identical(as.character(inserted_run$run_id[[1]]), run_id)) {
+      rlang::abort(
+        sprintf("Run registration verification failed for run_id=%s.", run_id),
+        class = "ledgr_run_registration_failed"
+      )
+    }
   } else {
     stored_cfg_hash <- run_row$config_hash[[1]]
     if (!identical(stored_cfg_hash, cfg_hash)) {
