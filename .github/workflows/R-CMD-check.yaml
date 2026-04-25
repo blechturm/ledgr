@@ -35,12 +35,9 @@ jobs:
             any::htmltools
           needs: check
 
-      - name: Install package for regression tests
-        run: R CMD INSTALL .
-
       - name: Run v0.1.x acceptance tests first
         run: |
-          Rscript -e "testthat::test_check('ledgr', filter = 'acceptance-v0.1')"
+          Rscript -e "testthat::test_local('.', filter = 'acceptance-v0.1', reporter = 'summary')"
 
       - name: Run R CMD check
         run: |
