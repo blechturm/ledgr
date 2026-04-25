@@ -1556,7 +1556,7 @@ Verify all tests pass on Windows CI.
 **Acceptance Criteria:**
 - [x] All tests pass on Windows
 - [x] No file lock errors
-- [ ] CI green on Windows (pending remote GitHub Actions run after push)
+- [x] CI green on Windows (GitHub Actions run `24928529779`)
 
 **Test Requirements:**
 - Windows CI passing

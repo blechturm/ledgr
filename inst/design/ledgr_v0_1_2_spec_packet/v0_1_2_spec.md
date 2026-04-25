@@ -5,7 +5,7 @@
 **Date:** December 20, 2025  
 **Amendment Date:** April 24, 2026  
 **Release Type:** User Experience Milestone  
-**Status:** Draft for Review
+**Status:** Approved for Release
 
 ---
 
@@ -631,7 +631,7 @@ v0.3.0 (FUTURE) - Production Trading
 **Date:** December 20, 2025  
 **Amendment Date:** April 24, 2026  
 **Release Type:** User Experience Milestone  
-**Status:** Draft for Review  
+**Status:** Approved for Release
 **Changelog:** Peer review corrections applied - see end of document
 
 ---
@@ -3071,7 +3071,7 @@ stopifnot(ledger_before == ledger_after)
 
 ### Approved
 
-This corrected specification is ready for implementation and testing.
+This corrected specification has been implemented and verified for the v0.1.2 release.
 
 # ledgr v0.1.2 Specification - Sections 5-7: Constraints, Testing & Deferrals (CORRECTED)
 
@@ -3080,7 +3080,7 @@ This corrected specification is ready for implementation and testing.
 **Date:** December 20, 2025  
 **Amendment Date:** April 24, 2026  
 **Release Type:** User Experience Milestone  
-**Status:** Draft for Review  
+**Status:** Approved for Release
 **Changelog:** Critical correctness fixes from peer review
 
 ---
@@ -5035,6 +5035,6 @@ Section 7 explicitly defines what is OUT OF SCOPE for v0.1.2 and when deferred f
 
 ### Approved
 
-This corrected specification addresses all critical correctness issues and is ready for CI/CD implementation.
+This corrected specification addresses all critical correctness issues and is implemented for the v0.1.2 release.
 
-**Status:** APPROVED FOR IMPLEMENTATION
+**Status:** APPROVED FOR RELEASE
