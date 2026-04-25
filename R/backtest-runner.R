@@ -889,6 +889,13 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     safety_state = "GREEN"
   )
   class(ctx) <- "ledgr_pulse_context"
+  ctx <- ledgr_update_pulse_context_helpers(
+    ctx,
+    bars = empty_df,
+    features = empty_df,
+    positions = state_env$current$positions,
+    universe = instrument_ids
+  )
 
   lot_map <- stats::setNames(vector("list", length(instrument_ids)), instrument_ids)
   cost_basis_by_inst <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
@@ -1116,12 +1123,17 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         ctx$ts_utc <- ts_iso
         ctx$bars <- bars
         ctx$features <- feat_df
-        ctx$features_wide <- ledgr_features_wide(feat_df)
-        ctx$feature <- ledgr_feature_accessor(feat_df)
         ctx$positions <- state$positions
         ctx$cash <- state$cash
         ctx$equity <- state$cash + positions_value
         ctx$state_prev <- state_prev
+        ctx <- ledgr_update_pulse_context_helpers(
+          ctx,
+          bars = bars,
+          features = feat_df,
+          positions = state$positions,
+          universe = instrument_ids
+        )
         if (sample_now) {
           t_ctx <- time_end(t_ctx_start, TRUE)
         }
@@ -1136,7 +1148,13 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
           result <- list(targets = result, state_update = NULL)
         }
         if (!is.list(result) || is.null(result$targets)) {
-          rlang::abort("Strategy must return a numeric targets vector or a list with `targets`.", class = "ledgr_invalid_strategy_result")
+          rlang::abort(
+            sprintf(
+              "Strategy must return %s or a list with `targets`.",
+              ledgr_strategy_targets_contract()
+            ),
+            class = "ledgr_invalid_strategy_result"
+          )
         }
         targets <- ledgr_validate_strategy_targets(result$targets, instrument_ids)
 

@@ -249,7 +249,13 @@ ledgr_pulse_snapshot <- function(snapshot,
 
   e$bars <- bars
   e$features <- features_df
-  ledgr_attach_feature_helpers(e, features_df)
+  ledgr_update_pulse_context_helpers(
+    e,
+    bars = bars,
+    features = features_df,
+    positions = e$positions,
+    universe = e$universe
+  )
 
   structure(e, class = "ledgr_pulse_context")
 }

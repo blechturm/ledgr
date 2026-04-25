@@ -1,0 +1,263 @@
+---
+output:
+  github_document:
+    toc: false
+    html_preview: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+options(width = 90)
+options(cli.unicode = FALSE)
+default_output_hook <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(
+  output = function(x, options) {
+    default_output_hook(gsub("[ \t]+(?=\n)", "", x, perl = TRUE), options)
+  }
+)
+```
+
+# ledgr
+
+ledgr is an event-sourced backtesting engine for R.
+
+It is designed for one thing: making backtests reproducible and auditable.
+
+Most backtesting tools compute results from full price arrays. ledgr records
+decisions and state changes as events, then derives trades, equity, and metrics
+from that ledger.
+
+```text
+data -> sealed snapshot -> pulses -> event ledger -> results
+```
+
+That means results come from recorded history, not from a hidden intermediate
+calculation. ledgr is not a live-trading system, broker adapter, or optimization
+framework.
+
+## Install
+
+```{r install, eval=FALSE}
+if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
+pak::pak("blechturm/ledgr")
+```
+
+Then attach ledgr and tibble. ledgr returns tidy tibbles for inspection, so it
+fits naturally into tidyverse-style workflows without requiring the full
+tidyverse in the first run.
+
+```{r attach}
+library(ledgr)
+library(tibble)
+```
+
+## First Backtest
+
+This first run creates two synthetic instruments, defines a target-position
+strategy, and runs one backtest. The data is deliberately generated in the
+example so the code works in a fresh R session without local files or network
+data.
+
+First create a small OHLCV data set:
+
+```{r create-bars}
+set.seed(20260425)
+calendar <- seq.Date(as.Date("2020-01-01"), as.Date("2020-02-14"), by = "day")
+dates <- calendar[!(weekdays(calendar) %in% c("Saturday", "Sunday"))]
+
+make_bars <- function(instrument_id, start_price, drift) {
+  n <- length(dates)
+  close <- start_price + cumsum(drift + stats::rnorm(n, mean = 0, sd = 0.35))
+  open <- c(start_price, close[-n])
+
+  data.frame(
+    ts_utc = as.POSIXct(dates, tz = "UTC"),
+    instrument_id = instrument_id,
+    open = round(open, 2),
+    high = round(pmax(open, close) + 0.45, 2),
+    low = round(pmin(open, close) - 0.45, 2),
+    close = round(close, 2),
+    volume = seq.int(1000L, 1000L + n - 1L),
+    stringsAsFactors = FALSE
+  )
+}
+
+bars <- rbind(
+  make_bars("AAA", start_price = 100, drift = 0.18),
+  make_bars("BBB", start_price = 80, drift = -0.04)
+)
+
+bars |> as_tibble() |> head(4)
+```
+
+Every ledgr strategy ultimately returns target holding amounts. This vector:
+
+```{r target-example}
+c(AAA = 10, BBB = 0)
+```
+
+means: hold 10 units of `AAA` and 0 units of `BBB`. Names matter because ledgr
+has to match each target to `ctx$universe`; values are numeric position
+quantities, not labels such as `"LONG"` or `"FLAT"`.
+
+Now define a strategy that reads the close price at the current pulse and
+returns target holdings for the full universe. `ctx$targets()` creates a flat
+target vector over `ctx$universe`; the strategy then changes only the holdings
+it wants to own:
+
+```{r define-strategy}
+strategy <- function(ctx) {
+  targets <- ctx$targets()
+
+  if (ctx$close("AAA") > 100.4) {
+    targets["AAA"] <- 10
+  }
+
+  if (ctx$close("BBB") > 80.0) {
+    targets["BBB"] <- 5
+  }
+
+  targets
+}
+```
+
+Run the backtest:
+
+```{r run-backtest}
+bt <- ledgr_backtest(
+  data = bars,
+  strategy = strategy,
+  start = min(bars$ts_utc),
+  end = max(bars$ts_utc),
+  initial_cash = 10000,
+  run_id = "readme-demo"
+)
+
+bt
+```
+
+Inspect the derived results:
+
+```{r inspect-results}
+summary(bt)
+bt |> as_tibble(what = "trades")
+```
+
+The numbers come from generated toy data. They validate the API path, not the
+strategy. Exact printed values can change after intentional engine changes. The
+important invariant is not the exact toy numbers; it is that the same data and
+same strategy produce the same ledger and equity curve.
+
+## Why ledgr?
+
+Most backtesting tools assume reproducibility. ledgr makes it testable.
+
+- Same data and the same strategy produce identical normalized ledger and
+  equity outputs.
+- All reported results come from the event ledger.
+- Sealed snapshot hashes let you detect when the input data changed.
+
+This matters because research often gets revisited months later. ledgr gives
+you a way to prove which data and strategy produced the result you are looking
+at.
+
+Many tools compute results from full price arrays. ledgr follows the sequential
+process more closely:
+
+- new data arrives;
+- the strategy sees one decision point in time, called a pulse;
+- positions and cash can change;
+- the system moves forward.
+
+At each pulse, the strategy only sees data available at that timestamp. Every
+state change is recorded as an event. The ledger is the source of truth; trades,
+equity, and metrics are derived views of that ledger.
+
+The first call to `ledgr_backtest(data = bars, ...)` created a sealed snapshot,
+then called the same canonical engine used by explicit snapshot workflows. We
+seal this data so you cannot accidentally lie to your future self.
+
+The quick ledger/equity count below confirms that the visible result is backed
+by recorded events and derived equity rows.
+
+```{r result-shape}
+c(
+  ledger_rows = nrow(bt |> as_tibble(what = "ledger")),
+  equity_rows = nrow(bt |> as_tibble(what = "equity"))
+)
+```
+
+## Trust Check: Determinism (Optional But Important)
+
+```{r determinism-check}
+normalize_result <- function(x) {
+  if ("run_id" %in% names(x)) x$run_id <- NULL
+  if ("event_id" %in% names(x)) x$event_id <- NULL
+
+  x[] <- lapply(x, function(col) {
+    if (inherits(col, "POSIXt")) {
+      format(as.POSIXct(col, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    } else if (is.numeric(col)) {
+      round(col, 10)
+    } else {
+      col
+    }
+  })
+
+  row.names(x) <- NULL
+  x
+}
+
+run_once <- function(run_id) {
+  bt <- ledgr_backtest(
+    data = bars,
+    strategy = strategy,
+    start = min(bars$ts_utc),
+    end = max(bars$ts_utc),
+    initial_cash = 10000,
+    run_id = run_id
+  )
+
+  list(
+    ledger = normalize_result(bt |> as_tibble(what = "ledger")),
+    equity = normalize_result(bt |> as_tibble(what = "equity"))
+  )
+}
+
+run_a <- run_once("readme-a")
+run_b <- run_once("readme-b")
+
+c(
+  same_ledger = identical(run_a$ledger, run_b$ledger),
+  same_equity = identical(run_a$equity, run_b$equity)
+)
+```
+
+The two runs use different run identifiers and different temporary databases.
+After identity columns are removed, the ledger and equity curve match exactly.
+That is the ledgr difference: replay is testable instead of assumed. If the
+sealed input data changes, the snapshot hash changes with it.
+
+## What To Try Next
+
+Good next edits are small and observable:
+
+- change the `AAA` or `BBB` target quantities in `strategy()`;
+- change the threshold values that trigger a position;
+- add an indicator such as `ledgr_ind_sma(5)`;
+- inspect a single decision point with `ledgr_pulse_snapshot()`.
+
+## Documentation
+
+```{r docs, eval=FALSE}
+help(package = "ledgr")
+utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
+```
+
+The v0.1.3 design packet is in `inst/design/ledgr_v0_1_3_spec_packet/`.
+The v0.1.2 packet records the engine and UX foundation this release builds on.
