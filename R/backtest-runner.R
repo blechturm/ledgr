@@ -200,6 +200,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   drv <- opened$drv
   con <- opened$con
   on.exit({
+    ledgr_checkpoint_duckdb(con)
     suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
     suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
   }, add = TRUE)

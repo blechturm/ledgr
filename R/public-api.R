@@ -23,6 +23,13 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
   stop(last_err)
 }
 
+ledgr_checkpoint_duckdb <- function(con) {
+  if (!is.null(con) && DBI::dbIsValid(con)) {
+    suppressWarnings(try(DBI::dbExecute(con, "CHECKPOINT"), silent = TRUE))
+  }
+  invisible(TRUE)
+}
+
 #' Initialize or open a ledgr DuckDB database (v0.1.0)
 #'
 #' Opens a DuckDB database at `db_path`, creates the v0.1.0 schema if needed,

@@ -439,6 +439,17 @@ Turn the v0.1.3 release gates into repeatable checks that run locally and in CI.
 - `tools/check-coverage.R`
 - `pkgdown::build_site()`
 
+**Ubuntu CI Debug Note (2026-04-25):**
+The pushed `v0.1.3` branch reproduced the Ubuntu Actions failure locally under
+WSL: AT3 returned the second run id but a fresh DuckDB connection could only see
+the first run's persisted rows. Generic DuckDB persistence worked, so the issue
+was in ledgr's run lifecycle. `ledgr_backtest_run_internal()` now checkpoints
+the DuckDB connection before disconnect/shutdown. The failing acceptance slice
+then passed under WSL and Windows with
+`testthat::test_local('.', filter = 'acceptance-v0.1|pulse-context-accessors|strategy-contracts|backtest-wrapper|indicator-tools', reporter = 'summary')`.
+The exact CI acceptance pre-check also passed under WSL with
+`pkgload::load_all('.', quiet = TRUE); testthat::test_local('.', filter = 'acceptance-v0.1', reporter = 'summary', load_package = 'none')`.
+
 **Spec Reference:** Section 3
 
 ---
