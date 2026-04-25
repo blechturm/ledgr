@@ -38,4 +38,35 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   ledger <- as_tibble(bt, "ledger")
   testthat::expect_s3_class(ledger, "tbl_df")
   testthat::expect_true("event_seq" %in% names(ledger))
+
+  bench <- ledgr_backtest_bench(bt)
+  testthat::expect_s3_class(bench, "tbl_df")
+  testthat::expect_true(all(c("component", "mean", "median", "p99") %in% names(bench)))
+
+  testthat::expect_error(
+    ledgr_compute_metrics(bt, metrics = "advanced"),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
+    ledgr_backtest_bench(list()),
+    class = "ledgr_invalid_backtest"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_backtest_open(list()),
+    class = "ledgr_invalid_backtest"
+  )
+  testthat::expect_error(
+    ledgr:::close.ledgr_backtest(list()),
+    class = "ledgr_invalid_backtest"
+  )
+
+  bt_without_telemetry <- ledgr:::new_ledgr_backtest("missing-telemetry", db_path, config = bt$config)
+  testthat::expect_error(
+    ledgr_backtest_bench(bt_without_telemetry),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(as_tibble(bt, "unknown"))
+  testthat::expect_error(ledgr:::summary.ledgr_backtest(list()), class = "ledgr_invalid_backtest")
+
+  testthat::expect_error(close(bt), NA)
 })
