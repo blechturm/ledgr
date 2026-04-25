@@ -74,12 +74,24 @@ ledgr_create_schema <- function(con) {
     types <- normalize_type(cols$data_type)
     names(types) <- cols$column_name
 
+    probe_run_id <- paste0("__ledgr_schema_check__", Sys.getpid(), "_", status_value)
+    cleanup_probe <- function() {
+      try(
+        DBI::dbExecute(con, "DELETE FROM runs WHERE run_id = ?", params = list(probe_run_id)),
+        silent = TRUE
+      )
+      invisible(TRUE)
+    }
+
+    cleanup_probe()
+    on.exit(cleanup_probe(), add = TRUE)
+
     vals <- vector("list", length(required_cols))
     names(vals) <- required_cols
     for (col in required_cols) {
       t <- unname(types[[col]])
       if (col == "run_id") {
-        vals[[col]] <- paste0("__ledgr_schema_check__", Sys.getpid(), "_", status_value)
+        vals[[col]] <- probe_run_id
       } else if (col == "status") {
         vals[[col]] <- status_value
       } else if (t == "TEXT") {
@@ -103,8 +115,6 @@ ledgr_create_schema <- function(con) {
       paste(rep("?", length(required_cols)), collapse = ", ")
     )
 
-    DBI::dbExecute(con, "BEGIN TRANSACTION")
-    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
     ok <- tryCatch(
       {
         DBI::dbExecute(con, sql, params = unname(vals))

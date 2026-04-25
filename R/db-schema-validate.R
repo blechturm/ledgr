@@ -212,8 +212,18 @@ ledgr_validate_schema <- function(con) {
     split(out$column_name, out$constraint_name)
   }
 
-  begin_rollback <- function() {
-    DBI::dbExecute(con, "BEGIN TRANSACTION")
+  schema_check_prefix <- paste0("__ledgr_schema_check__", Sys.getpid())
+
+  cleanup_probe_rows <- function(table_name, id_col, id_value) {
+    try(
+      DBI::dbExecute(
+        con,
+        sprintf("DELETE FROM %s WHERE %s = ?", table_name, id_col),
+        params = list(id_value)
+      ),
+      silent = TRUE
+    )
+    invisible(TRUE)
   }
 
   runs_insert_status_ok <- function(status_value) {
@@ -222,12 +232,16 @@ ledgr_validate_schema <- function(con) {
     types <- normalize_type(cols$data_type)
     names(types) <- cols$column_name
 
+    probe_run_id <- paste0(schema_check_prefix, "_runs_", status_value)
+    cleanup_probe_rows("runs", "run_id", probe_run_id)
+    on.exit(cleanup_probe_rows("runs", "run_id", probe_run_id), add = TRUE)
+
     vals <- vector("list", length(required_cols))
     names(vals) <- required_cols
     for (col in required_cols) {
       t <- unname(types[[col]])
       if (col == "run_id") {
-        vals[[col]] <- paste0("__ledgr_schema_check__", Sys.getpid(), "_", status_value)
+        vals[[col]] <- probe_run_id
       } else if (col == "status") {
         vals[[col]] <- status_value
       } else if (t == "TEXT") {
@@ -251,8 +265,6 @@ ledgr_validate_schema <- function(con) {
       paste(rep("?", length(required_cols)), collapse = ", ")
     )
 
-    begin_rollback()
-    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
     ok <- tryCatch(
       {
         DBI::dbExecute(con, sql, params = unname(vals))
@@ -280,11 +292,12 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_snapshots_status_constraint <- function() {
-    snapshot_id <- paste0("__ledgr_schema_check__", Sys.getpid())
     created_at <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
     insert_ok <- function(status_value) {
-      begin_rollback()
-      on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
+      snapshot_id <- paste0(schema_check_prefix, "_snapshots_", status_value)
+      cleanup_probe_rows("snapshots", "snapshot_id", snapshot_id)
+      on.exit(cleanup_probe_rows("snapshots", "snapshot_id", snapshot_id), add = TRUE)
+
       tryCatch(
         {
           DBI::dbExecute(
@@ -319,13 +332,14 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_features_pk_enforced <- function() {
-    run_id <- paste0("__ledgr_schema_check__", Sys.getpid())
+    run_id <- paste0(schema_check_prefix, "_features_pk")
     instrument_id <- "ABC"
     ts_utc <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
     feature_name <- "x"
 
-    begin_rollback()
-    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
+    cleanup_probe_rows("features", "run_id", run_id)
+    on.exit(cleanup_probe_rows("features", "run_id", run_id), add = TRUE)
+
     DBI::dbExecute(
       con,
       "
@@ -357,11 +371,12 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_ledger_events_run_seq_unique <- function() {
-    run_id <- paste0("__ledgr_schema_check__", Sys.getpid())
+    run_id <- paste0(schema_check_prefix, "_ledger_seq")
     ts_utc <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
 
-    begin_rollback()
-    on.exit(try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE), add = TRUE)
+    cleanup_probe_rows("ledger_events", "run_id", run_id)
+    on.exit(cleanup_probe_rows("ledger_events", "run_id", run_id), add = TRUE)
+
     DBI::dbExecute(
       con,
       "
