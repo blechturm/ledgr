@@ -18,6 +18,10 @@
 # Output files from R CMD check
 /*.Rcheck/
 
+# Coverage reports
+/coverage.html
+/lib/
+
 # RStudio files
 .Rproj.user/
 

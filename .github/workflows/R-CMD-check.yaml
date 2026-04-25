@@ -6,10 +6,18 @@ on:
 
 jobs:
   R-CMD-check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.config.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { os: ubuntu-latest, coverage: true }
+          - { os: windows-latest, coverage: false }
 
     env:
       _R_CHECK_FORCE_SUGGESTS_: "false"
+      LEDGR_COVERAGE_THRESHOLD: "80"
 
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +28,11 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            any::covr
+            any::DT
+            any::htmltools
           needs: check
 
       - name: Install package for regression tests
@@ -33,3 +45,14 @@ jobs:
       - name: Run R CMD check
         run: |
           Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-build-vignettes'), error_on = 'warning', check_dir = 'check')"
+
+      - name: Run coverage threshold
+        if: matrix.config.coverage
+        run: |
+          Rscript tools/check-coverage.R
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.config.coverage
+        with:
+          name: coverage-report
+          path: coverage.html

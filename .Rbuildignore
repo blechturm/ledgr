@@ -1,7 +1,10 @@
 ^LICENSE\.md$
+^AGENTS\.md$
 ^\.github$
 ^docs$
 ^_pkgdown\.yml$
 ^vignettes$
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
+^coverage\.html$
+^lib$

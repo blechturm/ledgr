@@ -275,6 +275,24 @@ ledgr_backtest_open <- function(bt) {
   list(con = state$con, opened_new = TRUE)
 }
 
+#' @export
+close.ledgr_backtest <- function(con, ...) {
+  if (!inherits(con, "ledgr_backtest")) {
+    rlang::abort("`con` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
+
+  state <- backtest_state(con)
+  if (!is.null(state$con) && DBI::dbIsValid(state$con)) {
+    suppressWarnings(try(DBI::dbDisconnect(state$con, shutdown = TRUE), silent = TRUE))
+  }
+  if (!is.null(state$drv)) {
+    suppressWarnings(try(duckdb::duckdb_shutdown(state$drv), silent = TRUE))
+  }
+  state$con <- NULL
+  state$drv <- NULL
+  invisible(con)
+}
+
 # Internal helper for cleaning up lazy fill streaming results.
 ledgr_fills_close <- function(res, con = NULL) {
   if (is.null(res)) return(invisible(TRUE))

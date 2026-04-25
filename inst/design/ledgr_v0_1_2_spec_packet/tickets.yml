@@ -1,0 +1,233 @@
+version: "0.1.2"
+source: "v0_1_2_tickets.md"
+tickets:
+  - id: LDG-101
+    title: "Set Up Test Infrastructure"
+    status: done
+    dependencies: []
+    tests: ["tests/testthat/helper-fixtures.R"]
+  - id: LDG-102
+    title: "Implement Timestamp Normalization Helper"
+    status: done
+    dependencies: [LDG-101]
+    tests: ["tests/testthat/test-timestamp.R"]
+  - id: LDG-103
+    title: "Implement ledgr_snapshot S3 Class"
+    status: done
+    dependencies: [LDG-101]
+    tests: ["tests/testthat/test-snapshot.R"]
+  - id: LDG-104
+    title: "Implement ledgr_snapshot_from_df"
+    status: done
+    dependencies: [LDG-102, LDG-103]
+    tests: ["tests/testthat/test-snapshots-create-list.R"]
+  - id: LDG-105
+    title: "Fix Snapshot Hash Determinism"
+    status: done
+    dependencies: [LDG-104]
+    tests: ["tests/testthat/test-snapshots-hash.R"]
+  - id: LDG-106
+    title: "Implement ledgr_snapshot_from_yahoo"
+    status: done
+    dependencies: [LDG-104]
+    tests: ["tests/testthat/test-snapshot-adapters.R"]
+  - id: LDG-107
+    title: "Implement ledgr_backtest Wrapper"
+    status: done
+    dependencies: [LDG-104]
+    tests: ["tests/testthat/test-backtest-wrapper.R"]
+  - id: LDG-108
+    title: "Implement ledgr_backtest S3 Methods"
+    status: done
+    dependencies: [LDG-107]
+    tests: ["tests/testthat/test-backtest-s3.R"]
+  - id: LDG-109
+    title: "Enforce Seal-Time Snapshot Validation"
+    status: done
+    dependencies: [LDG-104]
+    tests: ["tests/testthat/test-snapshots-seal.R"]
+  - id: LDG-110
+    title: "Define and Implement Split Snapshot/Run Database Semantics"
+    status: done
+    dependencies: [LDG-105, LDG-109]
+    tests: ["tests/testthat/test-runner-snapshots.R"]
+  - id: LDG-111
+    title: "Validate Functional Strategy Results"
+    status: done
+    dependencies: [LDG-107]
+    tests: ["tests/testthat/test-backtest-wrapper.R", "tests/testthat/test-strategy-contracts.R"]
+  - id: LDG-112
+    title: "Make db_live Resume Pulse-Atomic"
+    status: done
+    dependencies: [LDG-111]
+    tests: ["tests/testthat/test-runner.R"]
+  - id: LDG-113
+    title: "Add Data-First ledgr_backtest Convenience Path"
+    status: done
+    dependencies: [LDG-308]
+    tests: ["tests/testthat/test-backtest-wrapper.R"]
+  - id: LDG-201
+    title: "Implement ledgr_indicator Constructor"
+    status: done
+    dependencies: [LDG-101]
+    tests: ["tests/testthat/test-indicators.R"]
+  - id: LDG-202
+    title: "Implement Indicator Registry"
+    status: done
+    dependencies: [LDG-201]
+    tests: ["tests/testthat/test-indicators.R"]
+  - id: LDG-203
+    title: "Implement Built-In Indicators"
+    status: done
+    dependencies: [LDG-201, LDG-202]
+    tests: ["tests/testthat/test-indicators.R"]
+  - id: LDG-204
+    title: "Implement ledgr_adapter_r"
+    status: done
+    dependencies: [LDG-201]
+    tests: ["tests/testthat/test-indicator-adapters.R"]
+  - id: LDG-205
+    title: "Implement ledgr_adapter_csv"
+    status: done
+    dependencies: [LDG-201]
+    tests: ["tests/testthat/test-indicator-adapters.R"]
+  - id: LDG-206
+    title: "Implement ledgr_indicator_dev"
+    status: done
+    dependencies: [LDG-201, LDG-204, LDG-205]
+    tests: ["tests/testthat/test-indicator-tools.R"]
+  - id: LDG-207
+    title: "Implement ledgr_pulse_snapshot"
+    status: done
+    dependencies: [LDG-201, LDG-203]
+    tests: ["tests/testthat/test-indicator-tools.R"]
+  - id: LDG-208
+    title: "Integration Test TTR Adapter"
+    status: done
+    dependencies: [LDG-204]
+    tests: ["tests/testthat/test-indicator-adapters.R"]
+  - id: LDG-209
+    title: "Integration Test CSV Adapter"
+    status: done
+    dependencies: [LDG-205]
+    tests: ["tests/testthat/test-indicator-adapters.R"]
+  - id: LDG-210
+    title: "Purity Tests for Indicators"
+    status: done
+    dependencies: [LDG-203]
+    tests: ["tests/testthat/test-indicators.R"]
+  - id: LDG-211
+    title: "Make Registry-Backed Replay Deterministic"
+    status: done
+    dependencies: [LDG-202, LDG-204, LDG-205]
+    tests: ["tests/testthat/test-backtest-wrapper.R", "tests/testthat/test-indicator-adapters.R"]
+  - id: LDG-212
+    title: "Align Interactive and Runtime Pulse Contexts"
+    status: done
+    dependencies: [LDG-207, LDG-111]
+    tests: ["tests/testthat/test-backtest-wrapper.R", "tests/testthat/test-indicator-tools.R"]
+  - id: LDG-214
+    title: "Add Explicit Signal Strategy Convenience Wrapper"
+    status: done
+    dependencies: [LDG-111, LDG-113, LDG-212]
+    tests: ["tests/testthat/test-signal-strategy.R"]
+  - id: LDG-301
+    title: "Implement ledgr_extract_fills"
+    status: done
+    dependencies: [LDG-107]
+    tests: ["tests/testthat/test-derived-state.R"]
+  - id: LDG-302
+    title: "Implement ledgr_compute_equity_curve"
+    status: done
+    dependencies: [LDG-301]
+    tests: ["tests/testthat/test-derived-state.R"]
+  - id: LDG-303
+    title: "Implement Basic Metrics Computation"
+    status: done
+    dependencies: [LDG-302]
+    tests: ["tests/testthat/test-backtest-s3.R"]
+  - id: LDG-304
+    title: "Helper Functions for Metrics"
+    status: done
+    dependencies: [LDG-303]
+    tests: ["tests/testthat/test-backtest-s3.R"]
+  - id: LDG-305
+    title: "Update summary.ledgr_backtest with Metrics"
+    status: done
+    dependencies: [LDG-303, LDG-304]
+    tests: ["tests/testthat/test-backtest-s3.R"]
+  - id: LDG-306
+    title: "Update as_tibble with Fills/Equity"
+    status: done
+    dependencies: [LDG-301, LDG-302]
+    tests: ["tests/testthat/test-backtest-s3.R"]
+  - id: LDG-307
+    title: "Zero-Trade Edge Case Tests"
+    status: done
+    dependencies: [LDG-303, LDG-305, LDG-306]
+    tests: ["tests/testthat/test-metrics-zero-trades.R"]
+  - id: LDG-308
+    title: "Reconstruct Snapshot-Backed Runs"
+    status: done
+    dependencies: [LDG-110, LDG-301, LDG-302]
+    tests: ["tests/testthat/test-public-api.R"]
+  - id: LDG-401
+    title: "Implement plot.ledgr_backtest Equity Curve"
+    status: done
+    dependencies: [LDG-302]
+    tests: ["tests/testthat/test-plot.R"]
+  - id: LDG-402
+    title: "Plot Visual Tests"
+    status: done
+    dependencies: [LDG-401]
+    tests: ["tests/testthat/test-plot.R"]
+  - id: LDG-500
+    title: "Export v0.1.2 API and Fix Package Check Hygiene"
+    status: done
+    dependencies: [LDG-105, LDG-108, LDG-109, LDG-110, LDG-111, LDG-112, LDG-113, LDG-201, LDG-202, LDG-203, LDG-204, LDG-205, LDG-206, LDG-207, LDG-211, LDG-212, LDG-301, LDG-302, LDG-303, LDG-308, LDG-401, LDG-402]
+    tests: ["tests/testthat/test-api-exports.R"]
+  - id: LDG-501
+    title: "Package Documentation"
+    status: done
+    dependencies: [LDG-500]
+    tests: ["R CMD check"]
+  - id: LDG-502
+    title: "README with Quickstart"
+    status: done
+    dependencies: [LDG-113, LDG-501, LDG-507]
+    tests: ["README.md", "dev/ledgr_v0.1.2_new_api_demo.R"]
+  - id: LDG-503
+    title: "Vignette Outlines"
+    status: done
+    dependencies: [LDG-113, LDG-501]
+    tests: ["R CMD check"]
+  - id: LDG-504
+    title: "Error Message Audit"
+    status: done
+    dependencies: [LDG-500, LDG-501]
+    tests: ["tests/testthat"]
+  - id: LDG-505
+    title: "Regression Test Suite"
+    status: done
+    dependencies: [LDG-105, LDG-109, LDG-110, LDG-111, LDG-112, LDG-113, LDG-211, LDG-212, LDG-308]
+    tests: ["testthat::test_local"]
+  - id: LDG-506
+    title: "Coverage Report"
+    status: done
+    dependencies: [LDG-505]
+    tests: ["tools/check-coverage.R", ".github/workflows/R-CMD-check.yaml"]
+  - id: LDG-507
+    title: "Final Integration Test"
+    status: done
+    dependencies: [LDG-113, LDG-208, LDG-209, LDG-212, LDG-308, LDG-401, LDG-500, LDG-504]
+    tests: ["tests/testthat/test-integration-full.R"]
+  - id: LDG-508
+    title: "Windows CI Verification"
+    status: pending_remote_ci
+    dependencies: [LDG-505, LDG-506, LDG-507]
+    tests: [".github/workflows/R-CMD-check.yaml", "R CMD check on local Windows"]
+  - id: LDG-509
+    title: "Add Agent-Ready Project Metadata"
+    status: done
+    dependencies: [LDG-500]
+    tests: ["tests/testthat/test-project-metadata.R"]

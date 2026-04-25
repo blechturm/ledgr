@@ -88,9 +88,9 @@ Set up testing infrastructure and fixtures required for all subsequent work.
 **Acceptance Audit (2026-04-24):**
 `tests/testthat/test-fixtures.R` passes; `test_bars` has 732 rows and is
 deterministic from a seed set before random generation. Shared helpers live in
-`tests/testthat/helper-fixtures.R`. `covr::package_coverage()` runs locally
-and reports 77.99%; LDG-506 remains the release coverage target. CI now runs
-v0.1.x acceptance tests before full R CMD check.
+`tests/testthat/helper-fixtures.R`. `tools/check-coverage.R` now reports
+80.07% local coverage and enforces the LDG-506 80% total coverage gate in CI.
+CI runs v0.1.x acceptance tests before full R CMD check.
 
 **Spec Reference:** Section 6.5
 
@@ -1277,11 +1277,11 @@ must continue to fail `StrategyResult` validation.
 6. Document that raw `"LONG"`/`"FLAT"` returns are invalid without this wrapper
 
 **Acceptance Criteria:**
-- [ ] Ordinary functional strategies returning `"LONG"` still fail with `ledgr_invalid_strategy_result`
-- [ ] Signal wrapper maps `"LONG"`/`"FLAT"` to full named numeric targets
-- [ ] Multi-instrument behavior is explicit and covered by tests
-- [ ] Wrapper output passes the same validator as R6 and functional strategies
-- [ ] No runner changes are required beyond accepting the wrapper's normal targets
+- [x] Ordinary functional strategies returning `"LONG"` still fail with `ledgr_invalid_strategy_result`
+- [x] Signal wrapper maps `"LONG"`/`"FLAT"` to full named numeric targets
+- [x] Multi-instrument behavior is explicit and covered by tests
+- [x] Wrapper output passes the same validator as R6 and functional strategies
+- [x] No runner changes are required beyond accepting the wrapper's normal targets
 
 **Test Requirements:**
 - Unit test: raw `"LONG"` return fails without wrapper
@@ -1499,9 +1499,9 @@ Generate coverage report and verify targets.
 4. Add to CI
 
 **Acceptance Criteria:**
-- [ ] Coverage meets targets
-- [ ] HTML report generated
-- [ ] CI fails if below 80% total
+- [x] Coverage meets targets
+- [x] HTML report generated
+- [x] CI fails if below 80% total
 
 **Test Requirements:**
 - Coverage measured
@@ -1526,10 +1526,10 @@ End-to-end integration test covering full workflow.
 4. Check for memory leaks, connection leaks
 
 **Acceptance Criteria:**
-- [ ] Full workflow completes
-- [ ] No errors or warnings
-- [ ] Results validated
-- [ ] No resource leaks
+- [x] Full workflow completes
+- [x] No errors or warnings
+- [x] Results validated
+- [x] No resource leaks
 
 **Test Requirements:**
 - Full integration test
@@ -1554,9 +1554,9 @@ Verify all tests pass on Windows CI.
 4. Verify connection hygiene
 
 **Acceptance Criteria:**
-- [ ] All tests pass on Windows
-- [ ] No file lock errors
-- [ ] CI green on Windows
+- [x] All tests pass on Windows
+- [x] No file lock errors
+- [ ] CI green on Windows (pending remote GitHub Actions run after push)
 
 **Test Requirements:**
 - Windows CI passing
@@ -1585,11 +1585,11 @@ machine-readable project metadata.
 6. Document expected R commands and local Windows R path assumptions
 
 **Acceptance Criteria:**
-- [ ] Future agents can identify the next unblocked ticket without parsing prose
-- [ ] Core contracts are discoverable in one compact file
-- [ ] Verification commands are documented
-- [ ] ADRs capture open/high-impact design decisions
-- [ ] Existing tests/docs continue to pass/check
+- [x] Future agents can identify the next unblocked ticket without parsing prose
+- [x] Core contracts are discoverable in one compact file
+- [x] Verification commands are documented
+- [x] ADRs capture open/high-impact design decisions
+- [x] Existing tests/docs continue to pass/check
 
 **Test Requirements:**
 - Static validation that `tickets.yml` contains all `LDG-*` ticket IDs
