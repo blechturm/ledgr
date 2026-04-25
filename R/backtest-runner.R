@@ -199,8 +199,10 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   opened <- ledgr_open_duckdb_with_retry(db_path)
   drv <- opened$drv
   con <- opened$con
-  on.exit(suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE)), add = TRUE)
-  on.exit(suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE)), add = TRUE)
+  on.exit({
+    suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
+    suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
+  }, add = TRUE)
 
   ledgr_create_schema(con)
   ledgr_validate_schema(con)
@@ -847,10 +849,6 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     }
     invisible(TRUE)
   }
-  if (identical(execution_mode, "audit_log")) {
-    on.exit(try(flush_pending(), silent = TRUE), add = TRUE)
-  }
-
   empty_df <- data.frame()
   ctx <- list(
     run_id = run_id,

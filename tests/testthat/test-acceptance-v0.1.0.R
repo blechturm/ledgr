@@ -75,8 +75,10 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
 
   run_a <- "at3-a"
   run_b <- "at3-b"
-  ledgr_backtest_run(cfg, run_id = run_a)
-  ledgr_backtest_run(cfg, run_id = run_b)
+  out_a <- ledgr_backtest_run(cfg, run_id = run_a)
+  out_b <- ledgr_backtest_run(cfg, run_id = run_b)
+  testthat::expect_identical(out_a$run_id, run_a)
+  testthat::expect_identical(out_b$run_id, run_b)
 
   gc()
   Sys.sleep(0.05)
@@ -84,16 +86,33 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
   h <- ledgr_test_open_duckdb(db_path)
   on.exit(ledgr_test_close_duckdb(h$con, h$drv), add = TRUE)
 
+  run_rows <- DBI::dbGetQuery(
+    h$con,
+    "
+    SELECT run_id, status, error_msg
+    FROM runs
+    WHERE run_id IN (?, ?)
+    ORDER BY run_id
+    ",
+    params = list(run_a, run_b)
+  )
+  testthat::expect_equal(run_rows$run_id, c(run_a, run_b))
+  testthat::expect_identical(run_rows$status, c("DONE", "DONE"))
+  testthat::expect_true(all(is.na(run_rows$error_msg)))
+
   ledger_a <- ledgr_test_fetch_ledger_core(h$con, run_a)
   ledger_b <- ledgr_test_fetch_ledger_core(h$con, run_b)
+  testthat::expect_gt(nrow(ledger_b), 0L)
   testthat::expect_equal(ledger_a, ledger_b)
 
   feat_a <- ledgr_test_fetch_features_core(h$con, run_a)
   feat_b <- ledgr_test_fetch_features_core(h$con, run_b)
+  testthat::expect_gt(nrow(feat_b), 0L)
   testthat::expect_equal(feat_a, feat_b)
 
   eq_a <- ledgr_test_fetch_equity_curve_core(h$con, run_a)
   eq_b <- ledgr_test_fetch_equity_curve_core(h$con, run_b)
+  testthat::expect_gt(nrow(eq_b), 0L)
   testthat::expect_equal(eq_a, eq_b)
 })
 
