@@ -31,13 +31,14 @@ jobs:
           extra-packages: |
             any::rcmdcheck
             any::covr
+            any::pkgload
             any::DT
             any::htmltools
           needs: check
 
       - name: Run v0.1.x acceptance tests first
         run: |
-          Rscript -e "testthat::test_local('.', filter = 'acceptance-v0.1', reporter = 'summary')"
+          Rscript -e "pkgload::load_all('.', quiet = TRUE); testthat::test_local('.', filter = 'acceptance-v0.1', reporter = 'summary', load_package = 'none')"
 
       - name: Run R CMD check
         run: |

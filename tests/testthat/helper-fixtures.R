@@ -1,26 +1,5 @@
 ledgr_test_open_duckdb <- function(db_path, attempts = 50L, sleep_s = 0.05) {
-  attempts <- as.integer(attempts)
-  if (attempts < 1L) attempts <- 1L
-
-  last_err <- NULL
-  for (i in seq_len(attempts)) {
-    drv <- duckdb::duckdb()
-    out <- tryCatch(
-      {
-        con <- DBI::dbConnect(drv, dbdir = db_path)
-        list(con = con, drv = drv)
-      },
-      error = function(e) {
-        last_err <<- e
-        try(duckdb::duckdb_shutdown(drv), silent = TRUE)
-        NULL
-      }
-    )
-    if (!is.null(out)) return(out)
-    gc()
-    Sys.sleep(sleep_s)
-  }
-  stop(last_err)
+  ledgr_open_duckdb_with_retry(db_path, attempts = attempts, sleep_s = sleep_s)
 }
 
 ledgr_test_close_duckdb <- function(con, drv) {
@@ -89,8 +68,9 @@ get_final_equity <- function(con, run_id) {
 ledgr_test_make_db <- function(instrument_ids, ts_utc, bars_df, shuffle = FALSE) {
   db_path <- tempfile(fileext = ".duckdb")
 
-  drv <- duckdb::duckdb()
-  con <- DBI::dbConnect(drv, dbdir = db_path)
+  opened <- ledgr_test_open_duckdb(db_path)
+  con <- opened$con
+  drv <- opened$drv
   on.exit(ledgr_test_close_duckdb(con, drv), add = TRUE)
 
   ledgr_create_schema(con)
