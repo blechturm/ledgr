@@ -23,3 +23,7 @@ with trailing \code{Z}. Supported inputs are:
 \item \code{"YYYY-MM-DDTHH:MM:SSZ"}
 }
 }
+\examples{
+iso_utc("2020-01-01")
+iso_utc(as.POSIXct("2020-01-01 09:30:00", tz = "UTC"))
+}

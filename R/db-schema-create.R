@@ -4,6 +4,11 @@
 #'
 #' @param con A DBI connection to DuckDB.
 #' @return Invisibly returns `TRUE` on success.
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+#' ledgr_create_schema(con)
+#' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export
 ledgr_create_schema <- function(con) {
   if (!DBI::dbIsValid(con)) {

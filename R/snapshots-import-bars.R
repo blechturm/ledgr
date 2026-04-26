@@ -25,6 +25,26 @@
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
 #' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if snapshot status is not `CREATED`.
 #' - `LEDGR_CSV_FORMAT_ERROR` on CSV contract/parse violations or duplicate PKs.
+#'
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' con <- ledgr_db_init(db_path)
+#' snapshot_id <- ledgr_snapshot_create(
+#'   con,
+#'   snapshot_id = "snapshot_20200101_000000_abcd"
+#' )
+#' bars_csv <- tempfile(fileext = ".csv")
+#' utils::write.csv(data.frame(
+#'   instrument_id = "AAA",
+#'   ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+#'   open = c(100, 101),
+#'   high = c(101, 102),
+#'   low = c(99, 100),
+#'   close = c(100, 101),
+#'   volume = 1000
+#' ), bars_csv, row.names = FALSE)
+#' ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv)
+#' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export
 ledgr_snapshot_import_bars_csv <- function(con,
                                           snapshot_id,
@@ -175,4 +195,3 @@ ledgr_snapshot_import_bars_csv <- function(con,
 
   invisible(ok)
 }
-

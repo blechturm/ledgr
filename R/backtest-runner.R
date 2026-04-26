@@ -6,6 +6,18 @@
 #' @param config A config list (or JSON string) matching the v0.1.0 config contract.
 #' @param run_id Optional run identifier to resume or reuse.
 #' @return A list with `run_id` and `db_path`.
+#' @details
+#' This is the canonical low-level runner. Most users should call
+#' `ledgr_backtest()`, which builds the config and then delegates here. There is
+#' no exported config-construction helper in v0.1.3, so the example is
+#' illustrative only.
+#'
+#' @examples
+#' if (FALSE) {
+#'   # Most users should call ledgr_backtest(); it builds this config and calls
+#'   # ledgr_backtest_run() internally.
+#'   result <- ledgr_backtest_run(config, run_id = "manual-run")
+#' }
 #' @export
 ledgr_backtest_run <- function(config, run_id = NULL) {
   control <- list()

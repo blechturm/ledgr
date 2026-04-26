@@ -23,6 +23,24 @@ coding agents must preserve. The authoritative narrative remains in
 - Split snapshot/run DB mode must verify the source snapshot hash from the
   snapshot DB while writing run artifacts to the run DB.
 
+## Persistence Contract
+
+- Runner-owned DuckDB write connections must issue `CHECKPOINT` before
+  disconnect/shutdown when a later fresh connection is expected to read the
+  same database file.
+- Cross-connection read-back is part of the persistence contract: completed
+  runs and their `ledger_events`, `features`, and `equity_curve` rows must be
+  visible from a newly opened connection.
+
+## Canonical JSON Contract
+
+- Canonical JSON is produced by `canonical_json()`.
+- Named vectors and named lists are sorted by key before serialization.
+- Serialization uses `jsonlite::toJSON(auto_unbox = TRUE, null = "null",
+  na = "null", digits = NA, pretty = FALSE)`.
+- Config hashes, strategy-state JSON, snapshot metadata JSON, and ledger
+  `meta_json` must use this canonical path when deterministic identity matters.
+
 ## Strategy Contract
 
 - Strategy output is a full named numeric target vector, or a list containing
@@ -49,6 +67,13 @@ coding agents must preserve. The authoritative narrative remains in
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
   backtest object or persistent run state.
 - Metrics are descriptive only and must never feed back into strategy execution.
+- `ledgr_state_reconstruct()` is the public reconstruction entry point for a
+  run id and DBI connection. It delegates to the shared derived-state rebuild
+  path, which verifies snapshot-backed sources before rebuilding derived
+  artifacts.
+- `ledgr_extract_fills()` and `ledgr_compute_equity_curve()` are user-facing
+  read helpers over existing run artifacts; they must not become alternate
+  reconstruction implementations.
 
 ## Verification Contract
 

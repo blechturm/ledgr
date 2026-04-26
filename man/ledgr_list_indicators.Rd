@@ -15,3 +15,21 @@ Character vector of indicator names.
 \description{
 List registered indicators
 }
+\examples{
+local({
+  registry <- get(".ledgr_indicator_registry", asNamespace("ledgr"))
+  if (exists("example_list", envir = registry, inherits = FALSE)) {
+    rm(list = "example_list", envir = registry)
+  }
+  on.exit(if (exists("example_list", envir = registry, inherits = FALSE)) {
+    rm(list = "example_list", envir = registry)
+  }, add = TRUE)
+  ind <- ledgr_indicator(
+    id = "example_list",
+    fn = function(window) tail(window$close, 1),
+    requires_bars = 1
+  )
+  ledgr_register_indicator(ind)
+  ledgr_list_indicators("example")
+})
+}

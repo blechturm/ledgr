@@ -8,7 +8,7 @@ tickets:
     tests: ["README.Rmd", "README.md", "tools/check-readme-example.R"]
   - id: LDG-603
     title: "Exported Reference and @examples Audit"
-    status: pending
+    status: done
     dependencies: []
     tests: ["NAMESPACE", "man", "R CMD check"]
   - id: LDG-606
@@ -18,9 +18,9 @@ tickets:
     tests: ["tests/testthat/test-pulse-context-accessors.R", "tests/testthat/test-backtest-wrapper.R", "tests/testthat/test-indicator-tools.R", "README.Rmd"]
   - id: LDG-602
     title: "Getting Started Vignette and Historical Data Paths"
-    status: pending
+    status: done
     dependencies: [LDG-601, LDG-606]
-    tests: ["vignettes/getting-started.md", "pkgdown::build_site"]
+    tests: ["vignettes/getting-started.Rmd", "vignettes/getting-started.md", "pkgdown::build_site"]
   - id: LDG-605
     title: "Error Message Polish for Target Vectors"
     status: done
@@ -28,6 +28,6 @@ tickets:
     tests: ["tests/testthat/test-strategy-contracts.R", "tests/testthat/test-backtest-wrapper.R"]
   - id: LDG-604
     title: "Automation CI Gates and Cold Start Script"
-    status: pending
+    status: pending_remote_ci
     dependencies: [LDG-601, LDG-602, LDG-603, LDG-605, LDG-606]
-    tests: ["tools/check-readme-example.R", ".github/workflows/R-CMD-check.yaml", "tools/check-coverage.R"]
+    tests: ["tools/check-readme-example.R", ".github/workflows/R-CMD-check.yaml", ".github/workflows/pkgdown.yaml", "tools/check-coverage.R", "pkgdown::build_site", "inst/design/contracts.md"]

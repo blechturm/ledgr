@@ -1,3 +1,33 @@
+# ledgr 0.1.3
+
+- Reworked the README into a 5-minute installed-package path with runnable
+  synthetic data, rendered output, target-vector strategy examples, and an
+  explicit determinism trust check.
+- Added a getting-started vignette that walks through the research loop:
+  in-memory bars, strategy authoring, result inspection, pulse debugging,
+  indicators, Yahoo convenience data, CSV snapshots, and durable DuckDB
+  artifacts.
+- Added human-readable pulse context helpers for strategy code, including
+  `ctx$close()`, `ctx$position()`, `ctx$targets()`, and related OHLCV accessors.
+- Improved target-vector validation errors so unnamed, non-numeric, missing,
+  and extra instrument targets point users to the required contract: a named
+  numeric target vector with names matching `ctx$universe`.
+- Audited exported reference documentation and examples so public examples run
+  offline, use temporary files/databases, guard optional dependencies, and avoid
+  network access.
+- Added metric definitions to the reference documentation, including the
+  closed-trade meaning of win rate and average trade.
+- Added local and CI release gates for the README cold-start example,
+  acceptance tests, `rcmdcheck`, coverage, and pkgdown site builds.
+- Added a GitHub Pages pkgdown deployment workflow for publishing the package
+  site after the repository is made public.
+- Hardened DuckDB run persistence by checkpointing runner-owned write
+  connections before disconnect/shutdown, fixing cross-connection visibility on
+  Ubuntu CI.
+- Documented the longer-term experiment-store model: DuckDB files as durable
+  research artifacts, immutable run IDs, strategy identity, reproducibility
+  tiers, and future run discovery/comparison APIs.
+
 # ledgr 0.1.2
 
 - Added a data-first `ledgr_backtest(data = bars, ...)` convenience path that creates a sealed snapshot and then runs the canonical engine.

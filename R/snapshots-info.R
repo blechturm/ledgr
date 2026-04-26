@@ -15,6 +15,16 @@
 #' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
 #' - `ledgr_invalid_args` if `snapshot_id` is not a non-empty character scalar.
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
+#'
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' con <- ledgr_db_init(db_path)
+#' snapshot_id <- ledgr_snapshot_create(
+#'   con,
+#'   snapshot_id = "snapshot_20200101_000000_abcd"
+#' )
+#' ledgr_snapshot_info(con, snapshot_id)
+#' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export
 ledgr_snapshot_info <- function(con, snapshot_id) {
   if (inherits(con, "ledgr_snapshot")) {

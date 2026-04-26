@@ -223,7 +223,7 @@ tickets:
     tests: ["tests/testthat/test-integration-full.R"]
   - id: LDG-508
     title: "Windows CI Verification"
-    status: pending_remote_ci
+    status: done
     dependencies: [LDG-505, LDG-506, LDG-507]
     tests: [".github/workflows/R-CMD-check.yaml", "R CMD check on local Windows"]
   - id: LDG-509

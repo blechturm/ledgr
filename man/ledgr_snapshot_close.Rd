@@ -15,3 +15,16 @@ The input snapshot (invisibly).
 \description{
 Closes any open DuckDB connection held by a \code{ledgr_snapshot}.
 }
+\examples{
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+  instrument_id = "AAA",
+  open = 100,
+  high = 101,
+  low = 99,
+  close = 100,
+  volume = 1000
+)
+snapshot <- ledgr_snapshot_from_df(bars)
+ledgr_snapshot_close(snapshot)
+}

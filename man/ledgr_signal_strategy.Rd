@@ -26,3 +26,10 @@ strategies that emit explicit signals. It does not change the runner
 contract: the returned strategy maps signals to a full named numeric target
 vector before the shared StrategyResult validator runs.
 }
+\examples{
+strategy <- ledgr_signal_strategy(
+  function(ctx) c(AAA = "LONG"),
+  long_qty = 10
+)
+strategy(list(universe = "AAA"))
+}

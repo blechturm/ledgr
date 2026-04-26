@@ -120,8 +120,6 @@ Run the backtest:
 bt <- ledgr_backtest(
   data = bars,
   strategy = strategy,
-  start = min(bars$ts_utc),
-  end = max(bars$ts_utc),
   initial_cash = 10000,
   run_id = "readme-demo"
 )
@@ -246,8 +244,6 @@ run_once <- function(run_id) {
   bt <- ledgr_backtest(
     data = bars,
     strategy = strategy,
-    start = min(bars$ts_utc),
-    end = max(bars$ts_utc),
     initial_cash = 10000,
     run_id = run_id
   )

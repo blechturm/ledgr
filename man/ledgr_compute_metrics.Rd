@@ -18,5 +18,36 @@ Named list of metric values.
 Compute standard metrics from backtest results
 }
 \details{
-\code{win_rate} uses a strict \verb{> 0} realized P&L threshold (breakeven is not a win).
+Standard metrics are derived from the ledger and equity curve:
+\itemize{
+\item \code{total_return}: final equity divided by initial equity minus 1.
+\item \code{annualized_return}: geometric annualized return using the detected bar
+frequency, snapped to common frequencies such as daily or weekly.
+\item \code{volatility}: annualized standard deviation of period equity returns.
+\item \code{max_drawdown}: worst percentage decline from the running equity maximum.
+\item \code{n_trades}: number of ledger-derived fill rows.
+\item \code{win_rate}: share of fill rows with strict realized P&L \verb{> 0}; breakeven is
+not a win, and open-position gains remain in equity until closed.
+\item \code{avg_trade}: mean realized P&L across fill rows.
+\item \code{time_in_market}: share of equity timestamps with non-zero position value.
+}
+}
+\examples{
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+  instrument_id = "AAA",
+  open = c(100, 101, 102, 103),
+  high = c(101, 102, 103, 104),
+  low = c(99, 100, 101, 102),
+  close = c(100, 101, 102, 103),
+  volume = 1000
+)
+strategy <- function(ctx) {
+  targets <- ctx$targets()
+  targets["AAA"] <- 1
+  targets
+}
+bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+ledgr_compute_metrics(bt)
+close(bt)
 }

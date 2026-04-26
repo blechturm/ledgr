@@ -15,3 +15,7 @@ A \code{ledgr_indicator} object.
 \description{
 Simple Returns
 }
+\examples{
+window <- data.frame(close = c(100, 105))
+ledgr_ind_returns(1)$fn(window)
+}

@@ -26,15 +26,24 @@ jobs:
         with:
           use-public-rspm: true
 
+      - uses: r-lib/actions/setup-pandoc@v2
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
             any::rcmdcheck
             any::covr
             any::pkgload
+            any::pkgdown
+            any::knitr
+            any::rmarkdown
             any::DT
             any::htmltools
           needs: check
+
+      - name: Run README cold-start check
+        run: |
+          R --vanilla -f tools/check-readme-example.R
 
       - name: Run v0.1.x acceptance tests first
         run: |
@@ -43,6 +52,11 @@ jobs:
       - name: Run R CMD check
         run: |
           Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-build-vignettes'), error_on = 'warning', check_dir = 'check')"
+
+      - name: Build pkgdown site
+        if: runner.os == 'Linux'
+        run: |
+          Rscript -e "pkgdown::build_site(new_process = FALSE, install = FALSE)"
 
       - name: Run coverage threshold
         if: matrix.config.coverage

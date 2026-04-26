@@ -46,3 +46,18 @@ Errors:
 \item \code{LEDGR_CSV_FORMAT_ERROR} on CSV contract/parse violations or duplicate PKs.
 }
 }
+\examples{
+db_path <- tempfile(fileext = ".duckdb")
+con <- ledgr_db_init(db_path)
+snapshot_id <- ledgr_snapshot_create(
+  con,
+  snapshot_id = "snapshot_20200101_000000_abcd"
+)
+instruments_csv <- tempfile(fileext = ".csv")
+utils::write.csv(data.frame(
+  instrument_id = "AAA",
+  symbol = "AAA"
+), instruments_csv, row.names = FALSE)
+ledgr_snapshot_import_instruments_csv(con, snapshot_id, instruments_csv)
+DBI::dbDisconnect(con, shutdown = TRUE)
+}

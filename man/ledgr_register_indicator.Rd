@@ -19,3 +19,20 @@ The indicator, invisibly.
 \description{
 Register an indicator in the global registry
 }
+\examples{
+local({
+  registry <- get(".ledgr_indicator_registry", asNamespace("ledgr"))
+  if (exists("example_last_close", envir = registry, inherits = FALSE)) {
+    rm(list = "example_last_close", envir = registry)
+  }
+  on.exit(if (exists("example_last_close", envir = registry, inherits = FALSE)) {
+    rm(list = "example_last_close", envir = registry)
+  }, add = TRUE)
+  ind <- ledgr_indicator(
+    id = "example_last_close",
+    fn = function(window) tail(window$close, 1),
+    requires_bars = 1
+  )
+  ledgr_register_indicator(ind)
+})
+}

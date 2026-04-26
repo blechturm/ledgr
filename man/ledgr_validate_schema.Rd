@@ -16,3 +16,9 @@ Invisibly returns \code{TRUE} on success.
 Validates required tables, columns, types, primary keys, UNIQUE constraints,
 and required behavioral constraints.
 }
+\examples{
+db_path <- tempfile(fileext = ".duckdb")
+con <- ledgr_db_init(db_path)
+ledgr_validate_schema(con)
+DBI::dbDisconnect(con, shutdown = TRUE)
+}

@@ -17,3 +17,18 @@ The input object, invisibly.
 \description{
 Close indicator development session
 }
+\examples{
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+  instrument_id = "AAA",
+  open = 100:102,
+  high = 101:103,
+  low = 99:101,
+  close = 100:102,
+  volume = 1000
+)
+snapshot <- ledgr_snapshot_from_df(bars)
+dev <- ledgr_indicator_dev(snapshot, "AAA", "2020-01-03T00:00:00Z", lookback = 2)
+close(dev)
+ledgr_snapshot_close(snapshot)
+}

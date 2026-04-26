@@ -32,3 +32,25 @@ A \code{ledgr_pulse_context} object.
 \description{
 Freeze a pulse snapshot for interactive strategy development
 }
+\examples{
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+  instrument_id = "AAA",
+  open = 100:103,
+  high = 101:104,
+  low = 99:102,
+  close = 100:103,
+  volume = 1000
+)
+snapshot <- ledgr_snapshot_from_df(bars)
+pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = "AAA",
+  ts_utc = "2020-01-03T00:00:00Z",
+  features = list(ledgr_ind_sma(2))
+)
+pulse$close("AAA")
+pulse$feature("AAA", "sma_2")
+close(pulse)
+ledgr_snapshot_close(snapshot)
+}

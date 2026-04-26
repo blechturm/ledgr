@@ -15,3 +15,7 @@ A \code{ledgr_indicator} object.
 \description{
 Simple Moving Average
 }
+\examples{
+window <- data.frame(close = c(100, 101, 103))
+ledgr_ind_sma(3)$fn(window)
+}

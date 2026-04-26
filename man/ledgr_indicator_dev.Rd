@@ -21,3 +21,19 @@ A \code{ledgr_indicator_dev} object.
 \description{
 Interactive indicator development session
 }
+\examples{
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+  instrument_id = "AAA",
+  open = 100:104,
+  high = 101:105,
+  low = 99:103,
+  close = 100:104,
+  volume = 1000
+)
+snapshot <- ledgr_snapshot_from_df(bars)
+dev <- ledgr_indicator_dev(snapshot, "AAA", "2020-01-05T00:00:00Z", lookback = 3)
+dev$test(function(window) mean(window$close))
+close(dev)
+ledgr_snapshot_close(snapshot)
+}

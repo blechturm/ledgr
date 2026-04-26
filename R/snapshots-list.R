@@ -13,6 +13,13 @@
 #' Errors:
 #' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
 #' - `ledgr_invalid_args` if `status` is not NULL or contains invalid values.
+#'
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' con <- ledgr_db_init(db_path)
+#' ledgr_snapshot_create(con, snapshot_id = "snapshot_20200101_000000_abcd")
+#' ledgr_snapshot_list(con)
+#' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export
 ledgr_snapshot_list <- function(con, status = NULL) {
   if (!DBI::dbIsValid(con)) {

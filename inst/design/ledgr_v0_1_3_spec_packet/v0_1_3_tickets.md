@@ -295,6 +295,7 @@ strategy now uses `ctx$targets()` and `ctx$close()` instead of direct
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-601, LDG-606
+**Status:** done (accepted 2026-04-26)
 
 **Description:**
 Update the getting-started vignette so it teaches the public workflow in the
@@ -310,19 +311,73 @@ the strategy contract, then debug interactively.
 6. Clarify that reproducibility guarantees begin after data is sealed.
 7. State that live, streaming, paper-trading, and broker integrations are out
    of scope for v0.1.3.
+8. Keep `vignettes/getting-started.Rmd` as the editable source and render
+   `vignettes/getting-started.md` from it, matching the README workflow.
 
 **Acceptance Criteria:**
-- [ ] The vignette uses `as_tibble(bt, what = "trades")` and
+- [x] `vignettes/getting-started.Rmd` is the editable source and
+      `vignettes/getting-started.md` is rendered from it.
+- [x] The vignette uses `as_tibble(bt, what = "trades")` and
       `as_tibble(bt, what = "ledger")` correctly.
-- [ ] The three historical data paths are covered: in-memory, CSV snapshot,
+- [x] The three historical data paths are covered: in-memory, CSV snapshot,
       and Yahoo snapshot.
-- [ ] Yahoo examples are explicitly marked as convenience/non-deterministic.
-- [ ] Snapshot sealing is explained as the start of the auditable data contract.
-- [ ] The vignette does not imply support for live or streaming data.
+- [x] Yahoo examples are explicitly marked as convenience/non-deterministic.
+- [x] Snapshot sealing is explained as the start of the auditable data contract.
+- [x] The vignette does not imply support for live or streaming data.
 
 **Test Requirements:**
 - `R CMD check --no-manual --no-build-vignettes`
 - `pkgdown::build_site()` link check
+
+**Acceptance Audit (2026-04-25):**
+`vignettes/getting-started.Rmd` now owns the source for the getting-started
+vignette, and `vignettes/getting-started.md` is the rendered artifact. The
+rendered vignette is a step-by-step tutorial rather than a second README: it
+starts from the bar-data contract, writes a strategy, runs a backtest, then
+explains the pulse/target/event mental model after the user has seen it in
+action. It explains that omitted `start`/`end` uses the full data range, adds a
+small built-in SMA indicator example, interprets `trades`, `ledger`, and
+`equity`, plots the deterministic local run, debugs one concrete pulse, covers
+Yahoo as the prominent convenience path, moves to CSV snapshots for durable
+research, and shows how to choose an explicit DuckDB path for keeping snapshot
+and run artifacts. The
+examples use `ctx$targets()`, `ctx$close()`, `ctx$position()`,
+`as_tibble(bt, what = "trades")`, `as_tibble(bt, what = "ledger")`, and
+`as_tibble(bt, what = "equity")`. The live Yahoo chunk uses
+`library(quantmod)` and is left unevaluated in the rendered document because it
+requires network access and provider output can change. Scope boundaries are
+documented in prose so the user-facing vignette does not read like internal
+ticket metadata.
+
+Rendering `vignettes/getting-started.Rmd` against a temporary installed copy of
+the current package executed the primary, pulse-debugging, and CSV snapshot
+snippets and regenerated `vignettes/getting-started.md`. `pkgdown::build_site`
+completed after setting `RSTUDIO_PANDOC` to the bundled RStudio Pandoc path; it
+reported site metadata warnings due the missing `_pkgdown.yml`, but completed
+without failing the build. `R CMD check --no-manual --no-build-vignettes`
+passed under WSL after building the tarball and setting
+`_R_CHECK_FORCE_SUGGESTS_=false`, matching CI behavior.
+
+**Reopened Note (2026-04-25):**
+The Rmd/md source exists and the rendered examples execute, but the vignette is
+not yet release-ready as an onboarding document. The remaining work is
+narrative quality: reduce README overlap, improve sequencing around targets and
+pulses, make the Yahoo and explicit DuckDB artifact paths clearer, and keep the
+reader's mental model centered on the research loop rather than internal
+implementation details. Do not treat `LDG-602` as accepted until this narrative
+pass is complete.
+
+**Final Acceptance Note (2026-04-26):**
+The final narrative pass resolved the remaining onboarding issues identified in
+review. The vignette now explains why a profitable toy run can still show a 0%
+closed-trade win rate, states that close calls release DuckDB connections
+without deleting stable database files, writes CSV timestamps as explicit
+ISO8601 UTC strings, connects the explicit debugging snapshot back to the
+implicit snapshot created by `ledgr_backtest(data = ...)`, and uses a
+ticker-compatible Yahoo example strategy. The `github_document` output is
+intentional for v0.1.3 because the release target is GitHub/pkgdown
+documentation, not CRAN vignette submission; revisit this if preparing a CRAN
+release.
 
 **Spec Reference:** Sections 1/R2, 2.2
 
@@ -333,6 +388,7 @@ the strategy contract, then debug interactively.
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** None
+**Status:** done (accepted 2026-04-26)
 
 **Description:**
 Audit exported user-facing functions and make reference examples safe for CRAN,
@@ -349,16 +405,44 @@ offline use, and installed-package execution.
 7. Regenerate Rd files.
 
 **Acceptance Criteria:**
-- [ ] Every exported user-facing function has an example or documented omission.
-- [ ] Examples are offline-only and use temporary files/databases.
-- [ ] Optional packages are guarded with `requireNamespace(..., quietly = TRUE)`.
-- [ ] No example depends on network access, local repository files, or
+- [x] Every exported user-facing function has an example or documented omission.
+- [x] Examples are offline-only and use temporary files/databases.
+- [x] Optional packages are guarded with `requireNamespace(..., quietly = TRUE)`.
+- [x] No example depends on network access, local repository files, or
       `pkgload::load_all()`.
-- [ ] `R CMD check` runs examples without warnings.
+- [x] `R CMD check` runs examples without warnings from examples.
 
 **Test Requirements:**
 - `devtools::document()`
 - `R CMD check --no-manual --no-build-vignettes`
+
+**Acceptance Audit (2026-04-26):**
+All exported functions and S3 methods in `NAMESPACE` now have generated Rd
+topics with example blocks. The only example-free Rd topic is the package-level
+overview. Examples use generated data, `tempfile()` databases/files, and
+installed-package APIs; Yahoo access is shown only inside `if (FALSE)` because
+it requires network access and mutable vendor data. Optional plotting is guarded
+with `requireNamespace("ggplot2", quietly = TRUE)`.
+
+Metric definitions were added to `ledgr_compute_metrics()` and
+`summary.ledgr_backtest()` now points users there, including the closed-trade
+meaning of win rate and average trade. Documentation was regenerated with
+`roxygen2::roxygenise()`. Export/reference audit found
+`missing_topic = 0` and `missing_examples = 0`. Local Windows verification
+passed with `R CMD check --no-manual --no-build-vignettes ledgr_0.1.2.tar.gz`;
+the check reported `checking examples ... OK` and final `Status: OK`.
+Repository index warnings came from restricted network access and were not
+example failures.
+
+Follow-up review tightened the teaching quality of the examples: the low-level
+runner no longer shows `ledgr_backtest_run()` as a second call after
+`ledgr_backtest()`, `ledgr_data_hash()` is explicitly documented as a legacy
+raw-`bars` helper, `ledgr_state_reconstruct()` now points users to the
+higher-level result extractors before showing raw DBI usage, indicator registry
+examples clean up their temporary registrations, built-in indicator examples
+evaluate the indicator functions, and the pulse snapshot example reads the
+feature it computes. The follow-up check again passed with
+`R CMD check --no-manual --no-build-vignettes ledgr_0.1.2.tar.gz`.
 
 **Spec Reference:** Sections 1/R1, 1/R4, 3/Gate 2
 
@@ -410,6 +494,7 @@ tests passed with
 **Priority:** P0
 **Effort:** 1-2 days
 **Dependencies:** LDG-601, LDG-602, LDG-603, LDG-605, LDG-606
+**Status:** pending_remote_ci (local gates accepted 2026-04-26)
 
 **Description:**
 Turn the v0.1.3 release gates into repeatable checks that run locally and in CI.
@@ -422,22 +507,65 @@ Turn the v0.1.3 release gates into repeatable checks that run locally and in CI.
    existing coverage gate.
 5. Document cold-start commands for a fresh checkout on a different machine.
 6. Verify Ubuntu and Windows CI pass.
+7. Keep `inst/design/contracts.md` synchronized with the current persistence,
+   canonical JSON, and reconstruction contracts.
 
 **Acceptance Criteria:**
-- [ ] `R --vanilla -f tools/check-readme-example.R` passes.
+- [x] `R --vanilla -f tools/check-readme-example.R` passes.
 - [ ] `rcmdcheck::rcmdcheck(args = c("--no-manual", "--no-build-vignettes"),
       error_on = "warning", check_dir = "check")` passes.
-- [ ] `pkgdown::build_site()` completes with no broken internal links.
-- [ ] README deterministic validation follows spec requirement R3.
-- [ ] Cold-start documentation includes exact dependency-install and execution
+- [x] `pkgdown::build_site()` completes with no broken internal links.
+- [x] README deterministic validation follows spec requirement R3.
+- [x] Cold-start documentation includes exact dependency-install and execution
       commands.
 - [ ] CI is green on Ubuntu and Windows.
+- [x] `contracts.md` names the DuckDB checkpoint rule, canonical JSON
+      serializer, cross-connection read-back requirement, and
+      `ledgr_state_reconstruct()` delegation chain.
 
 **Test Requirements:**
 - `tools/check-readme-example.R`
 - `.github/workflows/R-CMD-check.yaml`
 - `tools/check-coverage.R`
 - `pkgdown::build_site()`
+
+**Local Acceptance Audit (2026-04-26):**
+`tools/check-readme-example.R` now installs the current checkout into a
+temporary library, executes the executable `README.Rmd` chunks with
+`knitr::knit()`, and fails if the README determinism proof does not produce
+identical normalized ledger and equity outputs. It also fails if `pkgload` is
+attached, preserving the installed-package semantics required by R1.
+
+The GitHub Actions workflow now runs the README cold-start check, the
+v0.1.x acceptance slice, `rcmdcheck`, `pkgdown::build_site()`, and the existing
+coverage threshold. It sets up Pandoc for the pkgdown build and keeps the
+coverage gate on Ubuntu. A minimal `_pkgdown.yml` and DESCRIPTION URL metadata
+were added so pkgdown metadata checks pass.
+
+A separate `.github/workflows/pkgdown.yaml` deployment workflow is staged for
+GitHub Pages. It builds the site on pushes to `main`, version tags, and manual
+dispatch, then uploads and deploys the `docs` artifact through GitHub Pages.
+This workflow becomes active after the repository is public and Pages source is
+set to GitHub Actions.
+
+Cold-start commands are documented in
+`inst/design/ledgr_v0_1_3_spec_packet/cold_start.md`, including dependency
+installation and the exact local gate commands.
+
+Local verification:
+- `R --vanilla -f tools/check-readme-example.R` passed.
+- `pkgdown::build_site(new_process = FALSE, install = FALSE)` passed locally
+  with local Pandoc configured.
+- `R CMD build --no-manual --no-build-vignettes .` passed.
+- `R CMD check --no-manual --no-build-vignettes ledgr_0.1.2.tar.gz` passed
+  with final `Status: OK`.
+- `Rscript tools/check-coverage.R` passed with 80.46% coverage.
+
+The exact `rcmdcheck::rcmdcheck(...)` local command is blocked on this Windows
+machine because Rtools is not installed/on PATH; `rcmdcheck` stops at its build
+tools probe before checking the package. The workflow runs the same command in
+CI, where build tools are expected to be available. LDG-604 remains
+`pending_remote_ci` until the Ubuntu and Windows Actions matrix passes.
 
 **Ubuntu CI Debug Note (2026-04-25):**
 The pushed `v0.1.3` branch reproduced the Ubuntu Actions failure locally under
@@ -449,6 +577,9 @@ then passed under WSL and Windows with
 `testthat::test_local('.', filter = 'acceptance-v0.1|pulse-context-accessors|strategy-contracts|backtest-wrapper|indicator-tools', reporter = 'summary')`.
 The exact CI acceptance pre-check also passed under WSL with
 `pkgload::load_all('.', quiet = TRUE); testthat::test_local('.', filter = 'acceptance-v0.1', reporter = 'summary', load_package = 'none')`.
+This is now captured as an implementation rule in `v0_1_3_spec.md`: any
+runner-owned DuckDB write connection must checkpoint before disconnect/shutdown
+when a later fresh connection is expected to read the same file.
 
 **Spec Reference:** Section 3
 
