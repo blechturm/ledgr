@@ -39,7 +39,7 @@ install.packages(c(
 ## 2. Run The README Cold-Start Check
 
 ```sh
-R --vanilla -f tools/check-readme-example.R
+Rscript --vanilla tools/check-readme-example.R
 ```
 
 This installs the current checkout into a temporary library, executes the
@@ -60,7 +60,7 @@ Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-build-vignettes')
 ## 5. Build The pkgdown Site
 
 ```sh
-Rscript -e "pkgdown::build_site(new_process = FALSE, install = FALSE)"
+Rscript -e "pkgdown::build_site(new_process = FALSE)"
 ```
 
 The deployment workflow is `.github/workflows/pkgdown.yaml`. It publishes to

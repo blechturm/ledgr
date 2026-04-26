@@ -43,7 +43,7 @@ jobs:
 
       - name: Run README cold-start check
         run: |
-          R --vanilla -f tools/check-readme-example.R
+          Rscript --vanilla tools/check-readme-example.R
 
       - name: Run v0.1.x acceptance tests first
         run: |
@@ -56,7 +56,7 @@ jobs:
       - name: Build pkgdown site
         if: runner.os == 'Linux'
         run: |
-          Rscript -e "pkgdown::build_site(new_process = FALSE, install = FALSE)"
+          Rscript -e "pkgdown::build_site(new_process = FALSE)"
 
       - name: Run coverage threshold
         if: matrix.config.coverage

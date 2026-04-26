@@ -42,7 +42,7 @@ jobs:
 
       - name: Build pkgdown site
         run: |
-          Rscript -e "pkgdown::build_site(new_process = FALSE, install = FALSE)"
+          Rscript -e "pkgdown::build_site(new_process = FALSE)"
 
       - uses: actions/configure-pages@v5
 
