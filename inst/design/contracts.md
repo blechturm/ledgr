@@ -45,6 +45,10 @@ coding agents must preserve. The authoritative narrative remains in
   snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
 - `ledgr_snapshot_list()` accepts either a DBI connection or a DuckDB file path.
   Path inputs are opened read-style for discovery and closed before returning.
+- `ledgr_data_hash()` is a legacy v0.1.0 helper for direct `bars` table
+  workflows. Snapshot-backed workflows should use sealed `snapshot_hash`
+  values. Internal run-resume and snapshot-adapter data-subset hashes must use
+  explicit internal helpers, not the exported legacy function.
 
 ## Persistence Contract
 

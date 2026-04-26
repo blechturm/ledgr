@@ -478,7 +478,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   data_hash <- tryCatch(
     {
       validate_bars_subset()
-      ledgr_data_hash(con, instrument_ids, start_ts_utc, end_ts_utc)
+      ledgr_run_data_subset_hash(con, instrument_ids, start_ts_utc, end_ts_utc)
     },
     error = function(e) {
       fail_run(conditionMessage(e))

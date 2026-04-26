@@ -216,12 +216,12 @@ breaking internal run and snapshot-adapter hash paths.
 7. Document the transition in `NEWS.md`.
 
 **Acceptance Criteria:**
-- [ ] Internal run and adapter paths no longer depend on ambiguous public
+- [x] Internal run and adapter paths no longer depend on ambiguous public
       legacy semantics.
-- [ ] Public docs explain that `ledgr_data_hash()` is legacy if it remains
+- [x] Public docs explain that `ledgr_data_hash()` is legacy if it remains
       exported.
-- [ ] Snapshot-backed workflows use snapshot hashes, not direct `bars` writes.
-- [ ] Any deprecation is reflected in `NEWS.md`.
+- [x] Snapshot-backed workflows use snapshot hashes, not direct `bars` writes.
+- [x] Any deprecation is reflected in `NEWS.md`.
 
 **Test Requirements:**
 - `tests/testthat/test-data-hash.R`

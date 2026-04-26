@@ -105,3 +105,35 @@ testthat::test_that("query ordering makes hash stable even if bars are inserted 
   hy <- ledgr_data_hash(con_y, c("A", "B"), "2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z")
   testthat::expect_identical(hx, hy)
 })
+
+testthat::test_that("internal run and adapter hash helpers preserve legacy hash semantics", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  ledgr_create_schema(con)
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO bars (instrument_id, ts_utc, open, high, low, close, volume)
+    VALUES
+      ('A', TIMESTAMP '2020-01-01 00:00:00', 1, 1, 1, 1, 100),
+      ('A', TIMESTAMP '2020-01-02 00:00:00', 2, 2, 2, 2, 200)
+    "
+  )
+
+  legacy <- ledgr_data_hash(con, "A", "2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z")
+  run_hash <- ledgr:::ledgr_run_data_subset_hash(con, "A", "2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z")
+  adapter_hash <- ledgr:::ledgr_snapshot_adapter_data_subset_hash(con, "A", "2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z")
+
+  testthat::expect_identical(run_hash, legacy)
+  testthat::expect_identical(adapter_hash, legacy)
+})
+
+testthat::test_that("modern R internals do not call the exported legacy data_hash helper", {
+  root <- testthat::test_path("..", "..")
+  r_files <- list.files(file.path(root, "R"), pattern = "\\.R$", full.names = TRUE)
+  r_files <- r_files[basename(r_files) != "data-hash.R"]
+  sources <- unlist(lapply(r_files, readLines, warn = FALSE), use.names = FALSE)
+
+  testthat::expect_false(any(grepl("ledgr_data_hash\\s*\\(", sources)))
+})

@@ -28,7 +28,7 @@ tickets:
     tests: ["tests/testthat/test-backtest-wrapper.R", "tests/testthat/test-config*.R", "acceptance-v0.1"]
   - id: LDG-705
     title: "Public ledgr_data_hash Deprecation and Internal Hash Split"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-701]
     tests: ["tests/testthat/test-data-hash.R", "snapshot adapter tests", "acceptance-v0.1"]

@@ -9,6 +9,8 @@
 - Made internal backtest configs an S3 `ledgr_config` object with validation
   and diagnostic printing, while keeping public workflows centered on
   `ledgr_backtest()`.
+- Marked `ledgr_data_hash()` as a legacy v0.1.0 helper and moved internal
+  run/snapshot-adapter hash call sites to explicitly named internal helpers.
 - Clarified v0.x compatibility policy, strategy reproducibility tiers,
   next-open fill semantics, and low-level API lifecycle notes in design and
   reference documentation.

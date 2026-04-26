@@ -9,8 +9,9 @@
 #' Missing values are represented as the literal string `NA`.
 #'
 #' @details
-#' This is a low-level v0.1.0 helper that hashes rows from the legacy `bars`
-#' table or view. v0.1.2 snapshot workflows should normally use
+#' This is a legacy v0.1.0 helper that hashes rows from the raw `bars` table or
+#' a compatible temporary view. It remains exported for compatibility with old
+#' low-level workflows, but modern snapshot-backed workflows should use
 #' `ledgr_snapshot_from_df()` or `ledgr_snapshot_from_csv()` and inspect the
 #' sealed snapshot hash with `ledgr_snapshot_info()`.
 #'
@@ -20,25 +21,74 @@
 #' @param end_ts_utc End timestamp (character ISO8601 `...Z` or POSIXt).
 #' @return A SHA-256 hex string.
 #' @examples
-#' # Low-level legacy-table example. For normal v0.1.2 workflows, prefer
-#' # ledgr_snapshot_from_df() and ledgr_snapshot_info().
 #' db_path <- tempfile(fileext = ".duckdb")
-#' con <- ledgr_db_init(db_path)
-#' DBI::dbAppendTable(con, "bars", data.frame(
-#'   instrument_id = "AAA",
+#' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
 #'   open = c(100, 101, 102),
 #'   high = c(101, 102, 103),
 #'   low = c(99, 100, 101),
 #'   close = c(100, 101, 102),
 #'   volume = c(1000, 1000, 1000)
-#' ))
-#' ledgr_data_hash(con, "AAA", "2020-01-01", "2020-01-03")
-#' DBI::dbDisconnect(con, shutdown = TRUE)
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+#' ledgr_snapshot_info(snapshot)$snapshot_hash
+#' ledgr_snapshot_close(snapshot)
+#'
+#' if (FALSE) {
+#'   # Legacy v0.1.0 workflows require rows in the raw bars table.
+#'   legacy_path <- tempfile(fileext = ".duckdb")
+#'   con <- ledgr_db_init(legacy_path)
+#'   DBI::dbAppendTable(con, "bars", bars)
+#'   ledgr_data_hash(con, "AAA", "2020-01-01", "2020-01-03")
+#'   DBI::dbDisconnect(con, shutdown = TRUE)
+#' }
 #' @export
 ledgr_data_hash <- function(con, instrument_ids, start_ts_utc, end_ts_utc) {
+  ledgr_hash_bars_subset(
+    con = con,
+    table_name = "bars",
+    instrument_ids = instrument_ids,
+    start_ts_utc = start_ts_utc,
+    end_ts_utc = end_ts_utc
+  )
+}
+
+ledgr_run_data_subset_hash <- function(con, instrument_ids, start_ts_utc, end_ts_utc) {
+  # This intentionally delegates to the same implementation as the snapshot
+  # adapter helper today. Keep the names separate so run-resume identity and
+  # adapter metadata can evolve independently.
+  ledgr_hash_bars_subset(
+    con = con,
+    table_name = "bars",
+    instrument_ids = instrument_ids,
+    start_ts_utc = start_ts_utc,
+    end_ts_utc = end_ts_utc
+  )
+}
+
+ledgr_snapshot_adapter_data_subset_hash <- function(con, instrument_ids, start_ts_utc, end_ts_utc) {
+  # See ledgr_run_data_subset_hash(): same algorithm, distinct responsibility.
+  ledgr_hash_bars_subset(
+    con = con,
+    table_name = "bars",
+    instrument_ids = instrument_ids,
+    start_ts_utc = start_ts_utc,
+    end_ts_utc = end_ts_utc
+  )
+}
+
+ledgr_hash_bars_subset <- function(con,
+                                   table_name,
+                                   instrument_ids,
+                                   start_ts_utc,
+                                   end_ts_utc) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
+  }
+  if (!is.character(table_name) || length(table_name) != 1 || is.na(table_name) || !nzchar(table_name) ||
+      !grepl("^[A-Za-z_][A-Za-z0-9_]*$", table_name)) {
+    rlang::abort("`table_name` must be a simple SQL identifier.", class = "ledgr_invalid_args")
   }
   if (!is.character(instrument_ids) || length(instrument_ids) < 1 || anyNA(instrument_ids) || any(!nzchar(instrument_ids))) {
     rlang::abort("`instrument_ids` must be a non-empty character vector of non-empty strings.", class = "ledgr_invalid_args")
@@ -97,10 +147,11 @@ ledgr_data_hash <- function(con, instrument_ids, start_ts_utc, end_ts_utc) {
   chunk_hashes <- character(0)
   chunk_hashes <- c(chunk_hashes, digest::digest(schema_header, algo = "sha256", serialize = FALSE))
 
+  table_sql <- as.character(DBI::dbQuoteIdentifier(con, table_name))
   ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
   sql <- paste0(
     "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
-    "FROM bars ",
+    "FROM ", table_sql, " ",
     "WHERE instrument_id IN (", ids_sql, ") ",
     "  AND ts_utc >= ? AND ts_utc <= ? ",
     "ORDER BY instrument_id, ts_utc"
