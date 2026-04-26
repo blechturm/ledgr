@@ -18,3 +18,34 @@ A list with \code{positions}, \code{cash}, \code{pnl}, and \code{equity_curve}.
 Rebuilds derived tables from the event-sourced ledger and bars, and returns
 the reconstructed state artifacts.
 }
+\details{
+This is the low-level reconstruction API. User-facing helpers such as
+\code{ledgr_compute_equity_curve()} and \code{as_tibble(bt, what = "equity")}
+delegate to the same ledger-derived state model without requiring users to
+manage a raw DBI connection.
+}
+\examples{
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+  instrument_id = "AAA",
+  open = c(100, 101, 102, 103),
+  high = c(101, 102, 103, 104),
+  low = c(99, 100, 101, 102),
+  close = c(100, 101, 102, 103),
+  volume = 1000
+)
+strategy <- function(ctx) {
+  targets <- ctx$targets()
+  targets["AAA"] <- 1
+  targets
+}
+bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+tibble::as_tibble(bt, what = "equity")
+
+# Low-level reconstruction requires an explicit DBI connection.
+con <- ledgr_db_init(bt$db_path)
+state <- ledgr_state_reconstruct(bt$run_id, con)
+state$positions
+DBI::dbDisconnect(con, shutdown = TRUE)
+close(bt)
+}

@@ -6,6 +6,9 @@
 #' @param ... Additional arguments passed to the package function.
 #'
 #' @return A `ledgr_indicator` object.
+#' @examples
+#' median_close <- ledgr_adapter_r(stats::median, id = "median_close", requires_bars = 3)
+#' median_close$id
 #' @export
 ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
   pkg_fn_label <- NULL
@@ -70,6 +73,15 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
 #' @param id Indicator identifier.
 #'
 #' @return A `ledgr_indicator` object.
+#' @examples
+#' csv_path <- tempfile(fileext = ".csv")
+#' utils::write.csv(data.frame(
+#'   ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+#'   instrument_id = "AAA",
+#'   my_value = c(1.5, 2.5)
+#' ), csv_path, row.names = FALSE)
+#' ind <- ledgr_adapter_csv(csv_path, value_col = "my_value", id = "my_csv_value")
+#' ind$id
 #' @export
 ledgr_adapter_csv <- function(csv_path,
                               value_col,

@@ -29,3 +29,17 @@ Validates schema, normalizes timestamps, creates a snapshot via v0.1.1
 functions, imports bars, seals the snapshot, and returns a lazy snapshot
 object.
 }
+\examples{
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+  instrument_id = "AAA",
+  open = c(100, 101, 102),
+  high = c(101, 102, 103),
+  low = c(99, 100, 101),
+  close = c(100, 101, 102),
+  volume = 1000
+)
+snapshot <- ledgr_snapshot_from_df(bars)
+ledgr_snapshot_info(snapshot)
+ledgr_snapshot_close(snapshot)
+}

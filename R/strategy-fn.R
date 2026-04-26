@@ -35,7 +35,10 @@ ledgr_strategy_fn_from_key <- function(key) {
         if (is.list(out) && !is.null(out$targets)) return(out)
         if (is.numeric(out)) return(list(targets = out, state_update = list()))
         rlang::abort(
-          "Functional strategies must return a named numeric vector (targets) or a list with `targets`.",
+          sprintf(
+            "Functional strategies must return %s or a list with `targets`.",
+            ledgr_strategy_targets_contract()
+          ),
           class = "ledgr_invalid_strategy_result"
         )
       }

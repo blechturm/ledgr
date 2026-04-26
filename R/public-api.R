@@ -23,6 +23,13 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
   stop(last_err)
 }
 
+ledgr_checkpoint_duckdb <- function(con) {
+  if (!is.null(con) && DBI::dbIsValid(con)) {
+    suppressWarnings(try(DBI::dbExecute(con, "CHECKPOINT"), silent = TRUE))
+  }
+  invisible(TRUE)
+}
+
 #' Initialize or open a ledgr DuckDB database (v0.1.0)
 #'
 #' Opens a DuckDB database at `db_path`, creates the v0.1.0 schema if needed,
@@ -30,6 +37,11 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
 #'
 #' @param db_path Path to a DuckDB database file (or `":memory:"`).
 #' @return A DBI connection.
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' con <- ledgr_db_init(db_path)
+#' ledgr_validate_schema(con)
+#' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export
 ledgr_db_init <- function(db_path) {
   if (!is.character(db_path) || length(db_path) != 1 || is.na(db_path) || !nzchar(db_path)) {
@@ -54,6 +66,36 @@ ledgr_db_init <- function(db_path) {
 #' @param run_id Run identifier.
 #' @param con A DBI connection to DuckDB.
 #' @return A list with `positions`, `cash`, `pnl`, and `equity_curve`.
+#' @details
+#' This is the low-level reconstruction API. User-facing helpers such as
+#' `ledgr_compute_equity_curve()` and `as_tibble(bt, what = "equity")`
+#' delegate to the same ledger-derived state model without requiring users to
+#' manage a raw DBI connection.
+#'
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' tibble::as_tibble(bt, what = "equity")
+#'
+#' # Low-level reconstruction requires an explicit DBI connection.
+#' con <- ledgr_db_init(bt$db_path)
+#' state <- ledgr_state_reconstruct(bt$run_id, con)
+#' state$positions
+#' DBI::dbDisconnect(con, shutdown = TRUE)
+#' close(bt)
 #' @export
 ledgr_state_reconstruct <- function(run_id, con) {
   if (!DBI::dbIsValid(con)) {

@@ -15,3 +15,7 @@ A \code{ledgr_indicator} object.
 \description{
 Relative Strength Index
 }
+\examples{
+window <- data.frame(close = c(100, 101, 102, 101))
+ledgr_ind_rsi(3)$fn(window)
+}

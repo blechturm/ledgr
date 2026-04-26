@@ -21,6 +21,24 @@
 #' @param data Optional data frame/tibble or `ledgr_snapshot`. Exactly one of
 #'   `snapshot` and `data` may be supplied.
 #' @return A `ledgr_backtest` object.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- if (ctx$close("AAA") > 100) 1 else 0
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' print(bt)
+#' close(bt)
 #' @export
 ledgr_backtest <- function(snapshot = NULL,
                            strategy,
@@ -275,6 +293,31 @@ ledgr_backtest_open <- function(bt) {
   list(con = state$con, opened_new = TRUE)
 }
 
+#' Close a backtest result connection
+#'
+#' Releases any open DuckDB connection held by a `ledgr_backtest` object. The
+#' underlying DuckDB file is not deleted.
+#'
+#' @param con A `ledgr_backtest` object.
+#' @param ... Unused.
+#' @return The input object, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102),
+#'   high = c(101, 102, 103),
+#'   low = c(99, 100, 101),
+#'   close = c(100, 101, 102),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' close(bt)
 #' @export
 close.ledgr_backtest <- function(con, ...) {
   if (!inherits(con, "ledgr_backtest")) {
@@ -538,6 +581,24 @@ ledgr_backtest_equity <- function(con, run_id) {
 #' @param lazy If `TRUE`, return a streaming cursor instead of materializing all rows.
 #' @param stream_threshold Number of fill rows above which lazy mode is forced.
 #' @return A tibble of fill rows, or a `ledgr_fills_cursor` when `lazy = TRUE`.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' ledgr_extract_fills(bt)
+#' close(bt)
 #' @export
 ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   con <- get_connection(bt)
@@ -980,6 +1041,24 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @return A tibble containing equity, running maximum, and drawdown.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' ledgr_compute_equity_curve(bt)
+#' close(bt)
 #' @export
 ledgr_compute_equity_curve <- function(bt) {
   con <- get_connection(bt)
@@ -994,10 +1073,32 @@ ledgr_compute_equity_curve <- function(bt) {
   tibble::as_tibble(equity)
 }
 
-#' Summarize per-pulse telemetry timings (internal)
+#' Summarize per-pulse telemetry timings
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @return A tibble with mean/median/p99 timings per component.
+#' @details
+#' This is a diagnostic helper for engine profiling. It only reports telemetry
+#' captured for runs executed in the current R session.
+#'
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102),
+#'   high = c(101, 102, 103),
+#'   low = c(99, 100, 101),
+#'   close = c(100, 101, 102),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' ledgr_backtest_bench(bt)
+#' close(bt)
 #' @export
 ledgr_backtest_bench <- function(bt) {
   if (!inherits(bt, "ledgr_backtest")) {
@@ -1036,12 +1137,64 @@ ledgr_backtest_bench <- function(bt) {
 #' @return Named list of metric values.
 #'
 #' @details
-#' `win_rate` uses a strict `> 0` realized P&L threshold (breakeven is not a win).
+#' Standard metrics are derived from the ledger and equity curve:
+#' - `total_return`: final equity divided by initial equity minus 1.
+#' - `annualized_return`: geometric annualized return using the detected bar
+#'   frequency, snapped to common frequencies such as daily or weekly.
+#' - `volatility`: annualized standard deviation of period equity returns.
+#' - `max_drawdown`: worst percentage decline from the running equity maximum.
+#' - `n_trades`: number of ledger-derived fill rows.
+#' - `win_rate`: share of fill rows with strict realized P&L `> 0`; breakeven is
+#'   not a win, and open-position gains remain in equity until closed.
+#' - `avg_trade`: mean realized P&L across fill rows.
+#' - `time_in_market`: share of equity timestamps with non-zero position value.
+#'
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' ledgr_compute_metrics(bt)
+#' close(bt)
 #' @export
 ledgr_compute_metrics <- function(bt, metrics = "standard") {
   ledgr_compute_metrics_internal(bt, metrics = metrics)
 }
 
+#' Print a backtest result
+#'
+#' @param x A `ledgr_backtest` object.
+#' @param ... Unused.
+#' @return The input object, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102),
+#'   high = c(101, 102, 103),
+#'   low = c(99, 100, 101),
+#'   close = c(100, 101, 102),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' print(bt)
+#' close(bt)
 #' @export
 print.ledgr_backtest <- function(x, ...) {
   if (!inherits(x, "ledgr_backtest")) {
@@ -1085,6 +1238,33 @@ print.ledgr_backtest <- function(x, ...) {
   invisible(x)
 }
 
+#' Summarize a backtest result
+#'
+#' Prints standard performance, risk, trade, and exposure metrics. See
+#' `ledgr_compute_metrics()` for metric definitions.
+#'
+#' @param object A `ledgr_backtest` object.
+#' @param metrics Only `"standard"` is supported in v0.1.2.
+#' @param ... Unused.
+#' @return The input object, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' summary(bt)
+#' close(bt)
 #' @export
 summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
   if (!inherits(object, "ledgr_backtest")) {
@@ -1120,6 +1300,33 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
   invisible(object)
 }
 
+#' Extract tidy backtest tables
+#'
+#' @param x A `ledgr_backtest` object.
+#' @param what Result table to extract: `"equity"`, `"trades"`, `"fills"`, or
+#'   `"ledger"`.
+#' @param ... Unused.
+#' @param type Deprecated alias for `what`.
+#' @return A tibble with the requested result table.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' tibble::as_tibble(bt, what = "trades")
+#' tibble::as_tibble(bt, what = "equity")
+#' close(bt)
 #' @export
 as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
   if (!inherits(x, "ledgr_backtest")) {

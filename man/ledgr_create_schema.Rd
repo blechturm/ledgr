@@ -15,3 +15,9 @@ Invisibly returns \code{TRUE} on success.
 \description{
 Creates all required v0.1.0 tables and forward-migrates older schemas.
 }
+\examples{
+db_path <- tempfile(fileext = ".duckdb")
+con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+ledgr_create_schema(con)
+DBI::dbDisconnect(con, shutdown = TRUE)
+}

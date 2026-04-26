@@ -29,3 +29,11 @@ A \code{ledgr_indicator} object.
 \description{
 Construct a ledgr indicator
 }
+\examples{
+last_close <- ledgr_indicator(
+  id = "last_close",
+  fn = function(window) tail(window$close, 1),
+  requires_bars = 1
+)
+last_close$id
+}

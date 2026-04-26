@@ -1,6 +1,6 @@
 Package: ledgr
 Title: Deterministic Event-Sourced Backtesting
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",
@@ -10,6 +10,8 @@ Description: Correctness-first, event-sourced backtesting for research
     workflows, with deterministic replay, sealed data snapshots, no-lookahead
     strategy execution, and ledger-derived results.
 License: MIT + file LICENSE
+URL: https://blechturm.github.io/ledgr, https://github.com/blechturm/ledgr
+BugReports: https://github.com/blechturm/ledgr/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

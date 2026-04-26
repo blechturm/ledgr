@@ -10,6 +10,9 @@
 #'
 #' @param x A timestamp to normalize.
 #' @return A length-1 character string in ISO 8601 UTC format.
+#' @examples
+#' iso_utc("2020-01-01")
+#' iso_utc(as.POSIXct("2020-01-01 09:30:00", tz = "UTC"))
 #' @export
 iso_utc <- function(x) {
   validate_hms <- function(ts_chr) {

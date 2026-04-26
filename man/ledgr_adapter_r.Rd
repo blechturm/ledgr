@@ -21,3 +21,7 @@ A \code{ledgr_indicator} object.
 \description{
 Adapt an R package function into a ledgr indicator
 }
+\examples{
+median_close <- ledgr_adapter_r(stats::median, id = "median_close", requires_bars = 3)
+median_close$id
+}

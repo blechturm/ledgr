@@ -15,3 +15,7 @@ A \code{ledgr_indicator} object.
 \description{
 Exponential Moving Average
 }
+\examples{
+window <- data.frame(close = c(100, 101, 103, 104))
+ledgr_ind_ema(3)$fn(window)
+}

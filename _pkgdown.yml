@@ -1,0 +1,60 @@
+url: https://blechturm.github.io/ledgr/
+
+template:
+  bootstrap: 5
+
+development:
+  mode: auto
+
+articles:
+  - title: Start
+    navbar: ~
+    contents:
+      - getting-started
+
+reference:
+  - title: Backtests
+    contents:
+      - ledgr_backtest
+      - print.ledgr_backtest
+      - summary.ledgr_backtest
+      - as_tibble.ledgr_backtest
+      - close.ledgr_backtest
+      - plot.ledgr_backtest
+      - ledgr_extract_fills
+      - ledgr_compute_equity_curve
+      - ledgr_compute_metrics
+      - ledgr_state_reconstruct
+  - title: Snapshots
+    contents:
+      - starts_with("ledgr_snapshot")
+      - print.ledgr_snapshot
+      - summary.ledgr_snapshot
+      - close.ledgr_snapshot
+  - title: Indicators
+    contents:
+      - starts_with("ledgr_ind_")
+      - ledgr_indicator
+      - ledgr_register_indicator
+      - ledgr_get_indicator
+      - ledgr_list_indicators
+      - ledgr_adapter_r
+      - ledgr_adapter_csv
+      - ledgr_indicator_dev
+      - print.ledgr_indicator_dev
+      - close.ledgr_indicator_dev
+  - title: Strategy Development
+    contents:
+      - ledgr_pulse_snapshot
+      - print.ledgr_pulse_context
+      - close.ledgr_pulse_context
+      - ledgr_signal_strategy
+  - title: Low-Level Utilities
+    contents:
+      - iso_utc
+      - ledgr_db_init
+      - ledgr_create_schema
+      - ledgr_validate_schema
+      - ledgr_data_hash
+      - ledgr_backtest_run
+      - ledgr_backtest_bench

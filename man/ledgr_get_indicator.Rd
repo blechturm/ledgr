@@ -15,3 +15,21 @@ A \code{ledgr_indicator} object.
 \description{
 Get an indicator by name
 }
+\examples{
+local({
+  registry <- get(".ledgr_indicator_registry", asNamespace("ledgr"))
+  if (exists("example_lookup", envir = registry, inherits = FALSE)) {
+    rm(list = "example_lookup", envir = registry)
+  }
+  on.exit(if (exists("example_lookup", envir = registry, inherits = FALSE)) {
+    rm(list = "example_lookup", envir = registry)
+  }, add = TRUE)
+  ind <- ledgr_indicator(
+    id = "example_lookup",
+    fn = function(window) tail(window$close, 1),
+    requires_bars = 1
+  )
+  ledgr_register_indicator(ind)
+  ledgr_get_indicator("example_lookup")$id
+})
+}

@@ -18,6 +18,27 @@
 #' - `LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY` if bars reference missing instruments.
 #' - `LEDGR_SNAPSHOT_OHLC_INVALID` if OHLC bars are internally inconsistent.
 #' - `LEDGR_SNAPSHOT_SEAL_FAILED` on hashing/transaction failures (snapshot is marked `FAILED`).
+#'
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' con <- ledgr_db_init(db_path)
+#' snapshot_id <- ledgr_snapshot_create(
+#'   con,
+#'   snapshot_id = "snapshot_20200101_000000_abcd"
+#' )
+#' bars_csv <- tempfile(fileext = ".csv")
+#' utils::write.csv(data.frame(
+#'   instrument_id = "AAA",
+#'   ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+#'   open = c(100, 101),
+#'   high = c(101, 102),
+#'   low = c(99, 100),
+#'   close = c(100, 101),
+#'   volume = 1000
+#' ), bars_csv, row.names = FALSE)
+#' ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv)
+#' ledgr_snapshot_seal(con, snapshot_id)
+#' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export
 ledgr_snapshot_seal <- function(con, snapshot_id) {
   snapshot_obj <- NULL

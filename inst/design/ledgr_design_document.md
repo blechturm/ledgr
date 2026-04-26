@@ -8,6 +8,157 @@ This document is a **binding system specification**. Anything not defined here m
 
 ---
 
+## 0. Product Model
+
+ledgr's long-term goal is one framework for the path from historical
+backtests to paper trading and eventually live trading.
+
+The v0.1.x product focus is narrower: build a reproducible experiment store for
+research backtests. This is a foundation layer, not the final product vision.
+The experiment store makes later paper/live modes safer because data identity,
+strategy identity, configuration, event history, and run artifacts are explicit
+before real-time execution is introduced.
+
+### 0.1 Experiment Store Foundation
+
+A DuckDB file is a ledgr experiment store.
+
+Inside an experiment store:
+
+- a snapshot is sealed input data;
+- `run_id` is an immutable experiment key;
+- a strategy plus explicit strategy parameters are the executable research
+  logic;
+- the ledger is recorded execution history;
+- trades, equity, summaries, and plots are derived views.
+
+Experiment identity is defined by:
+
+```text
+snapshot_hash
++ strategy_source_hash
++ strategy_params_hash
++ config_hash
++ ledgr_version
++ R_version
++ dependency_versions
+```
+
+If any component changes, the run is a different experiment.
+
+#### 0.1.1 Legacy Run Provenance
+
+Runs created before the v0.1.4 experiment-store schema are valid execution
+artifacts, but they do not carry full strategy provenance. They may have a
+`run_id`, config hash, data hash, ledger events, and derived views, but they do
+not have persisted strategy source text, strategy parameter identity, or a
+reproducibility tier.
+
+Future run-discovery APIs must not imply that those older runs are fully
+recoverable experiments. They should mark them as legacy/pre-provenance runs
+and expose the available artifacts honestly.
+
+### 0.2 Run Identity And Lifecycle
+
+`run_id` is immutable and must not be renamed. Human-readable names belong in a
+mutable label field. Grouping belongs in tags. Cleanup should prefer archiving
+runs over hard deletion so the audit trail remains intact.
+
+The intended experiment-store API layer is:
+
+- discover runs;
+- reopen an existing run without recomputation;
+- inspect run metadata and identity hashes;
+- label or archive runs;
+- compare runs;
+- recover stored strategy source where possible.
+
+Hard deletion is a maintenance operation and must be explicit, destructive, and
+separate from normal research cleanup.
+
+### 0.2.1 Experiment Store Schema Target
+
+The v0.1.4 experiment-store layer should make run discovery and reopening
+explicit rather than treating DuckDB as hidden infrastructure.
+
+Minimum persistent schema:
+
+```text
+runs
+- run_id
+- snapshot_id
+- snapshot_hash
+- config_hash
+- data_hash
+- strategy_source_hash
+- strategy_params_hash
+- ledgr_version
+- r_version
+- dependency_versions_json
+- label
+- archived
+- archived_at
+- archive_reason
+- created_at
+- status
+- error_msg
+
+run_strategy
+- run_id
+- strategy_type
+- strategy_source
+- strategy_capture_method
+- strategy_params_json
+- strategy_globals_json
+- reproducibility_level
+- reproducibility_notes_json
+```
+
+`ledgr_runs(db_path)` should expose a user-facing view over these tables rather
+than the raw schema. Minimum output columns:
+
+```text
+run_id
+label
+status
+archived
+snapshot_id
+created_at
+final_equity
+total_return
+max_drawdown
+n_trades
+strategy_source_hash
+strategy_params_hash
+ledgr_version
+reproducibility_level
+```
+
+`ledgr_open_run(db_path, run_id)` should return a `ledgr_backtest` handle for an
+existing run without recomputing it.
+
+### 0.3 Continuity Across Backtest, Paper, And Live
+
+Backtest, paper trading, and live trading must not become separate worlds. They
+should share the same event-sourced model and strategy contract, with different
+execution adapters and safety constraints.
+
+- Backtesting uses sealed snapshots and deterministic replay.
+- Paper trading uses live/persistent state with simulated or broker-paper
+  execution.
+- Live trading adds broker adapters, safety gates, idempotent order handling,
+  reconciliation, and operational controls.
+
+The common design principle is:
+
+```text
+same strategy contract
++ same event ledger model
++ different execution adapters
+```
+
+---
+
 ## 1. Core Design Principles
 
 1. **Correctness over performance** (for v0.x)
@@ -24,16 +175,20 @@ This document is a **binding system specification**. Anything not defined here m
 ## 2. System Scope (v0.x)
 
 **In scope**
-- Daily / EOD trading cadence (close → next open)
+- Discrete pulse-based trading
+- Default implementation: daily / EOD cadence (close -> next open)
+- Architecture: intraday-capable with explicit pulse semantics
 - Equities / ETFs (cash equity trading)
-- Rule‑based and ML‑based strategies
+- Rule-based and ML-based strategies
 - Backtesting, paper trading, live trading
 
 **Explicitly out of scope (documented limitations)**
-- High‑frequency / intraday execution
+- High-frequency execution
+- Production intraday adapters until explicit pulse scheduling and OMS
+  semantics are specified
 - Options, futures, crypto
-- Wash‑sale tax compliance (flagged, not enforced)
-- Full PIT corporate‑action adjustment (future work)
+- Wash-sale tax compliance (flagged, not enforced)
+- Full PIT corporate-action adjustment (future work)
 
 ---
 
@@ -50,7 +205,7 @@ State flows only through **explicit events** persisted to disk.
 
 ---
 
-## 4. Temporal Model (Hard‑coded for v0.1–v0.3)
+## 4. Temporal Model (Default EOD Profile For v0.1-v0.3)
 
 All internal timestamps are UTC.
 
@@ -183,6 +338,76 @@ A structured return object:
 - `actions` (optional): advisory requests (e.g. suggest cancel stale orders)
 
 The engine validates and executes results.
+
+---
+
+### 9.4 Strategy Identity
+
+For experiment-store workflows, strategy identity is part of run identity.
+
+Strategies may be authored as simple functions for onboarding, but durable
+research workflows should prefer explicit strategy parameters over hidden
+closure state:
+
+```r
+strategy <- function(ctx, params) {
+  targets <- ctx$targets()
+  if (ctx$close("AAA") > params$threshold) {
+    targets["AAA"] <- params$qty
+  }
+  targets
+}
+```
+
+The intended public API supports both:
+
+```r
+function(ctx)
+function(ctx, params)
+```
+
+The experiment store persists strategy source text and a corresponding hash.
+This enables inspection and partial recovery of strategy logic for
+reproducibility. It should record strategy source identity and parameter
+identity separately. Closures remain convenient, but explicit parameters are
+the preferred reproducibility boundary.
+
+#### 9.4.1 Reproducibility Tiers
+
+Strategy reproducibility must be explicit because storing source text alone does
+not guarantee executable replay.
+
+**Tier 1: fully reproducible**
+
+- Strategy is a self-contained `function(ctx, params)`.
+- All experiment parameters are JSON-safe `strategy_params`.
+- No unresolved globals are required.
+- No clocks, random calls, environment variables, open connections, or mutable
+  global state are referenced.
+
+**Tier 2: partially reproducible**
+
+- Strategy source text, source hash, and params are stored.
+- The strategy references package functions or external helpers.
+- Inspection is possible, but automatic replay may require the user to recreate
+  packages, helper functions, or external files.
+
+**Tier 3: not reproducible**
+
+- Strategy depends on mutable global state, open connections, random calls,
+  clocks, environment variables, or unsupported captured objects.
+- The run should fail before execution when this is detectable. If discovered
+  later, the run must be marked non-reproducible.
+
+`ledgr_run_info()` should expose:
+
+```text
+reproducibility_level
+reproducibility_notes
+unresolved_symbols
+strategy_source_hash
+strategy_params_hash
+```
 
 ---
 
@@ -346,4 +571,3 @@ These live in vignettes, README, or ops documentation.
 This document is **frozen for v0.3**.
 
 Further changes require a new versioned design document.
-

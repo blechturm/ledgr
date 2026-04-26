@@ -93,6 +93,18 @@ get_connection <- function(x) {
 #'
 #' @param snapshot A `ledgr_snapshot` object.
 #' @return The input snapshot (invisibly).
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+#'   instrument_id = "AAA",
+#'   open = 100,
+#'   high = 101,
+#'   low = 99,
+#'   close = 100,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_snapshot_close <- function(snapshot) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
@@ -115,11 +127,46 @@ ledgr_snapshot_close <- function(snapshot) {
   invisible(snapshot)
 }
 
+#' Close a snapshot connection
+#'
+#' @param con A `ledgr_snapshot` object.
+#' @param ... Unused.
+#' @return The input snapshot (invisibly).
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+#'   instrument_id = "AAA",
+#'   open = 100,
+#'   high = 101,
+#'   low = 99,
+#'   close = 100,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' close(snapshot)
 #' @export
 close.ledgr_snapshot <- function(con, ...) {
   ledgr_snapshot_close(con)
 }
 
+#' Print a snapshot
+#'
+#' @param x A `ledgr_snapshot` object.
+#' @param ... Unused.
+#' @return The input snapshot, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+#'   instrument_id = "AAA",
+#'   open = 100,
+#'   high = 101,
+#'   low = 99,
+#'   close = 100,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' print(snapshot)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 print.ledgr_snapshot <- function(x, ...) {
   meta <- x$metadata
@@ -148,6 +195,24 @@ print.ledgr_snapshot <- function(x, ...) {
   invisible(x)
 }
 
+#' Summarize a snapshot
+#'
+#' @param object A `ledgr_snapshot` object.
+#' @param ... Unused.
+#' @return The input snapshot, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101),
+#'   high = c(101, 102),
+#'   low = c(99, 100),
+#'   close = c(100, 101),
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' summary(snapshot)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 summary.ledgr_snapshot <- function(object, ...) {
   opened <- ledgr_snapshot_open(object)

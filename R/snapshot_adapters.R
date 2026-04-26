@@ -10,6 +10,19 @@
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
 #' @return A `ledgr_snapshot` object.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102),
+#'   high = c(101, 102, 103),
+#'   low = c(99, 100, 101),
+#'   close = c(100, 101, 102),
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' ledgr_snapshot_info(snapshot)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_snapshot_from_df <- function(bars_df,
                                    instruments_df = NULL,
@@ -426,6 +439,20 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
 #' @return A `ledgr_snapshot` object.
+#' @examples
+#' csv_path <- tempfile(fileext = ".csv")
+#' utils::write.csv(data.frame(
+#'   ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+#'   instrument_id = "AAA",
+#'   open = c(100, 101),
+#'   high = c(101, 102),
+#'   low = c(99, 100),
+#'   close = c(100, 101),
+#'   volume = 1000
+#' ), csv_path, row.names = FALSE)
+#' snapshot <- ledgr_snapshot_from_csv(csv_path)
+#' ledgr_snapshot_info(snapshot)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_snapshot_from_csv <- function(csv_path,
                                     db_path = NULL,
@@ -485,6 +512,16 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
 #' @param ... Additional arguments passed to `quantmod::getSymbols()`.
 #' @return A `ledgr_snapshot` object.
+#' @examples
+#' if (FALSE) {
+#'   # Requires quantmod and network access. Yahoo data can change over time.
+#'   snapshot <- ledgr_snapshot_from_yahoo(
+#'     symbols = c("AAPL", "MSFT"),
+#'     from = "2020-01-01",
+#'     to = "2020-02-01"
+#'   )
+#'   ledgr_snapshot_close(snapshot)
+#' }
 #' @export
 ledgr_snapshot_from_yahoo <- function(symbols,
                                       from,

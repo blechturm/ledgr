@@ -7,6 +7,13 @@
 #' @param stable_after Number of bars after which the indicator output is stable.
 #'
 #' @return A `ledgr_indicator` object.
+#' @examples
+#' last_close <- ledgr_indicator(
+#'   id = "last_close",
+#'   fn = function(window) tail(window$close, 1),
+#'   requires_bars = 1
+#' )
+#' last_close$id
 #' @export
 ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after = requires_bars) {
   if (!is.character(id) || length(id) != 1 || !nzchar(id)) {
@@ -217,6 +224,22 @@ ledgr_indicator_fingerprint <- function(indicator) {
 #' @param overwrite Replace an existing registration with the same name.
 #'
 #' @return The indicator, invisibly.
+#' @examples
+#' local({
+#'   registry <- get(".ledgr_indicator_registry", asNamespace("ledgr"))
+#'   if (exists("example_last_close", envir = registry, inherits = FALSE)) {
+#'     rm(list = "example_last_close", envir = registry)
+#'   }
+#'   on.exit(if (exists("example_last_close", envir = registry, inherits = FALSE)) {
+#'     rm(list = "example_last_close", envir = registry)
+#'   }, add = TRUE)
+#'   ind <- ledgr_indicator(
+#'     id = "example_last_close",
+#'     fn = function(window) tail(window$close, 1),
+#'     requires_bars = 1
+#'   )
+#'   ledgr_register_indicator(ind)
+#' })
 #' @export
 ledgr_register_indicator <- function(indicator, name = NULL, overwrite = FALSE) {
   if (!inherits(indicator, "ledgr_indicator")) {
@@ -252,6 +275,23 @@ ledgr_register_indicator <- function(indicator, name = NULL, overwrite = FALSE) 
 #' @param name Indicator name.
 #'
 #' @return A `ledgr_indicator` object.
+#' @examples
+#' local({
+#'   registry <- get(".ledgr_indicator_registry", asNamespace("ledgr"))
+#'   if (exists("example_lookup", envir = registry, inherits = FALSE)) {
+#'     rm(list = "example_lookup", envir = registry)
+#'   }
+#'   on.exit(if (exists("example_lookup", envir = registry, inherits = FALSE)) {
+#'     rm(list = "example_lookup", envir = registry)
+#'   }, add = TRUE)
+#'   ind <- ledgr_indicator(
+#'     id = "example_lookup",
+#'     fn = function(window) tail(window$close, 1),
+#'     requires_bars = 1
+#'   )
+#'   ledgr_register_indicator(ind)
+#'   ledgr_get_indicator("example_lookup")$id
+#' })
 #' @export
 ledgr_get_indicator <- function(name) {
   if (!is.character(name) || length(name) != 1 || !nzchar(name)) {
@@ -279,6 +319,23 @@ ledgr_get_indicator <- function(name) {
 #' @param pattern Optional regex filter for names.
 #'
 #' @return Character vector of indicator names.
+#' @examples
+#' local({
+#'   registry <- get(".ledgr_indicator_registry", asNamespace("ledgr"))
+#'   if (exists("example_list", envir = registry, inherits = FALSE)) {
+#'     rm(list = "example_list", envir = registry)
+#'   }
+#'   on.exit(if (exists("example_list", envir = registry, inherits = FALSE)) {
+#'     rm(list = "example_list", envir = registry)
+#'   }, add = TRUE)
+#'   ind <- ledgr_indicator(
+#'     id = "example_list",
+#'     fn = function(window) tail(window$close, 1),
+#'     requires_bars = 1
+#'   )
+#'   ledgr_register_indicator(ind)
+#'   ledgr_list_indicators("example")
+#' })
 #' @export
 ledgr_list_indicators <- function(pattern = NULL) {
   if (!is.null(pattern) && (!is.character(pattern) || length(pattern) != 1 || !nzchar(pattern))) {

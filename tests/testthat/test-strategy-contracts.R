@@ -107,11 +107,11 @@ testthat::test_that("EchoStrategy validates targets names", {
 
   bad_extra <- stats::setNames(c(0, 1, 2), c("A", "B", "C"))
   strat_extra <- ledgr:::EchoStrategy$new(params = list(targets = bad_extra))
-  testthat::expect_error(strat_extra$on_pulse(ctx), "outside universe", ignore.case = TRUE)
+  testthat::expect_error(strat_extra$on_pulse(ctx), "extra instruments: C", fixed = TRUE)
 
   bad_missing <- stats::setNames(c(1), c("A"))
   strat_missing <- ledgr:::EchoStrategy$new(params = list(targets = bad_missing))
-  testthat::expect_error(strat_missing$on_pulse(ctx), "must include all", ignore.case = TRUE)
+  testthat::expect_error(strat_missing$on_pulse(ctx), "missing instruments: B", fixed = TRUE)
 
   bad_negative <- stats::setNames(c(-1, 0), c("A", "B"))
   strat_negative <- ledgr:::EchoStrategy$new(params = list(targets = bad_negative))
@@ -119,22 +119,28 @@ testthat::test_that("EchoStrategy validates targets names", {
   testthat::expect_identical(out_negative$targets, bad_negative)
 })
 
-testthat::test_that("shared target validation rejects extra and non-finite targets", {
+testthat::test_that("shared target validation gives actionable contract errors", {
   universe <- c("A", "B")
 
   valid <- ledgr:::ledgr_validate_strategy_targets(stats::setNames(c(2, 1), c("B", "A")), universe)
   testthat::expect_identical(valid, stats::setNames(c(1, 2), universe))
 
   testthat::expect_error(
-    ledgr:::ledgr_validate_strategy_targets(stats::setNames(c(0, 1, 2), c("A", "B", "C")), universe),
+    ledgr:::ledgr_validate_strategy_targets(c(0, 1), universe),
+    "a named numeric target vector with names matching ctx$universe",
+    fixed = TRUE,
+    class = "ledgr_invalid_strategy_result"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_validate_strategy_targets(stats::setNames(c(0, 1), c("A", "C")), universe),
+    "missing instruments: B; extra instruments: C",
+    fixed = TRUE,
     class = "ledgr_invalid_strategy_result"
   )
   testthat::expect_error(
     ledgr:::ledgr_validate_strategy_targets(stats::setNames(c(0, Inf), universe), universe),
-    class = "ledgr_invalid_strategy_result"
-  )
-  testthat::expect_error(
-    ledgr:::ledgr_validate_strategy_targets(c(0, 1), universe),
+    "Target quantities must be finite",
+    fixed = TRUE,
     class = "ledgr_invalid_strategy_result"
   )
 })

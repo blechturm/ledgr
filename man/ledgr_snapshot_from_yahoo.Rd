@@ -33,3 +33,14 @@ A \code{ledgr_snapshot} object.
 Fetches historical data from Yahoo Finance via quantmod and delegates to
 \code{ledgr_snapshot_from_df()}.
 }
+\examples{
+if (FALSE) {
+  # Requires quantmod and network access. Yahoo data can change over time.
+  snapshot <- ledgr_snapshot_from_yahoo(
+    symbols = c("AAPL", "MSFT"),
+    from = "2020-01-01",
+    to = "2020-02-01"
+  )
+  ledgr_snapshot_close(snapshot)
+}
+}

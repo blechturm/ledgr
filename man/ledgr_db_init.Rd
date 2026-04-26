@@ -16,3 +16,9 @@ A DBI connection.
 Opens a DuckDB database at \code{db_path}, creates the v0.1.0 schema if needed,
 and validates it.
 }
+\examples{
+db_path <- tempfile(fileext = ".duckdb")
+con <- ledgr_db_init(db_path)
+ledgr_validate_schema(con)
+DBI::dbDisconnect(con, shutdown = TRUE)
+}

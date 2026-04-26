@@ -90,6 +90,27 @@ testthat::test_that("functional strategies must return targets for the full univ
       initial_cash = 100000,
       db_path = db_path
     ),
+    "a named numeric target vector with names matching ctx$universe",
+    fixed = TRUE,
+    class = "ledgr_invalid_strategy_result"
+  )
+
+  unnamed_target_strategy <- function(ctx) {
+    c(0, 0)
+  }
+
+  testthat::expect_error(
+    ledgr_backtest(
+      snapshot = snap,
+      strategy = unnamed_target_strategy,
+      universe = c("TEST_A", "TEST_B"),
+      start = "2020-01-01",
+      end = "2020-12-31",
+      initial_cash = 100000,
+      db_path = db_path
+    ),
+    "a named numeric target vector with names matching ctx$universe",
+    fixed = TRUE,
     class = "ledgr_invalid_strategy_result"
   )
 })

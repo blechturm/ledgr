@@ -6,6 +6,21 @@
 #' @param lookback Number of bars to include.
 #'
 #' @return A `ledgr_indicator_dev` object.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+#'   instrument_id = "AAA",
+#'   open = 100:104,
+#'   high = 101:105,
+#'   low = 99:103,
+#'   close = 100:104,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' dev <- ledgr_indicator_dev(snapshot, "AAA", "2020-01-05T00:00:00Z", lookback = 3)
+#' dev$test(function(window) mean(window$close))
+#' close(dev)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
@@ -128,6 +143,21 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
 #' @param x A `ledgr_indicator_dev` object.
 #' @param ... Unused.
 #' @return The input object, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = 100:102,
+#'   high = 101:103,
+#'   low = 99:101,
+#'   close = 100:102,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' dev <- ledgr_indicator_dev(snapshot, "AAA", "2020-01-03T00:00:00Z", lookback = 2)
+#' print(dev)
+#' close(dev)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 print.ledgr_indicator_dev <- function(x, ...) {
   cat("ledgr Indicator Development Session\n")
@@ -143,6 +173,20 @@ print.ledgr_indicator_dev <- function(x, ...) {
 #' @param con A `ledgr_indicator_dev` object.
 #' @param ... Unused.
 #' @return The input object, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = 100:102,
+#'   high = 101:103,
+#'   low = 99:101,
+#'   close = 100:102,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' dev <- ledgr_indicator_dev(snapshot, "AAA", "2020-01-03T00:00:00Z", lookback = 2)
+#' close(dev)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 close.ledgr_indicator_dev <- function(con, ...) {
   if (is.environment(con) && !is.null(con$.snapshot)) {
@@ -163,6 +207,27 @@ close.ledgr_indicator_dev <- function(con, ...) {
 #' @param positions Named numeric vector of positions (NULL = flat).
 #'
 #' @return A `ledgr_pulse_context` object.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = 100:103,
+#'   high = 101:104,
+#'   low = 99:102,
+#'   close = 100:103,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' pulse <- ledgr_pulse_snapshot(
+#'   snapshot,
+#'   universe = "AAA",
+#'   ts_utc = "2020-01-03T00:00:00Z",
+#'   features = list(ledgr_ind_sma(2))
+#' )
+#' pulse$close("AAA")
+#' pulse$feature("AAA", "sma_2")
+#' close(pulse)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_pulse_snapshot <- function(snapshot,
                                  universe,
@@ -249,7 +314,13 @@ ledgr_pulse_snapshot <- function(snapshot,
 
   e$bars <- bars
   e$features <- features_df
-  ledgr_attach_feature_helpers(e, features_df)
+  ledgr_update_pulse_context_helpers(
+    e,
+    bars = bars,
+    features = features_df,
+    positions = e$positions,
+    universe = e$universe
+  )
 
   structure(e, class = "ledgr_pulse_context")
 }
@@ -259,6 +330,21 @@ ledgr_pulse_snapshot <- function(snapshot,
 #' @param x A `ledgr_pulse_context` object.
 #' @param ... Unused.
 #' @return The input object, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+#'   instrument_id = "AAA",
+#'   open = 100,
+#'   high = 101,
+#'   low = 99,
+#'   close = 100,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' pulse <- ledgr_pulse_snapshot(snapshot, universe = "AAA", ts_utc = "2020-01-01T00:00:00Z")
+#' print(pulse)
+#' close(pulse)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 print.ledgr_pulse_context <- function(x, ...) {
   cat("ledgr Pulse Snapshot\n")
@@ -274,6 +360,20 @@ print.ledgr_pulse_context <- function(x, ...) {
 #' @param con A `ledgr_pulse_context` object.
 #' @param ... Unused.
 #' @return The input object, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+#'   instrument_id = "AAA",
+#'   open = 100,
+#'   high = 101,
+#'   low = 99,
+#'   close = 100,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' pulse <- ledgr_pulse_snapshot(snapshot, universe = "AAA", ts_utc = "2020-01-01T00:00:00Z")
+#' close(pulse)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 close.ledgr_pulse_context <- function(con, ...) {
   if (is.environment(con) && !is.null(con$.snapshot)) {

@@ -28,3 +28,10 @@ Errors:
 \item \code{ledgr_invalid_args} if \code{status} is not NULL or contains invalid values.
 }
 }
+\examples{
+db_path <- tempfile(fileext = ".duckdb")
+con <- ledgr_db_init(db_path)
+ledgr_snapshot_create(con, snapshot_id = "snapshot_20200101_000000_abcd")
+ledgr_snapshot_list(con)
+DBI::dbDisconnect(con, shutdown = TRUE)
+}

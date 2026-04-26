@@ -10,6 +10,9 @@ The roadmap is intentionally conservative and correctness‑first.
 
 ## Guiding Principles
 
+- Treat the v0.1.x experiment store as the foundation for, not a replacement
+  for, the long-term backtest -> paper -> live path
+
 - Ship **vertical slices**, not partial subsystems
 - Prefer **determinism and auditability** over speed
 - No live trading before paper trading is boring
@@ -114,6 +117,93 @@ The roadmap is intentionally conservative and correctness‑first.
 ### Definition of Done
 - Backtest replay does not depend on re‑downloading data
 - Data provenance is inspectable per run
+
+---
+
+## v0.1.2 - Snapshot Correctness And Research UX
+
+**Goal:** Make the backtest engine usable without weakening the v0.1.1
+reproducibility guarantees.
+
+### Scope
+- Data-first `ledgr_backtest()` convenience path
+- Functional strategy wrapper
+- Result views for trades, ledger, equity, summary, and plots
+- Interactive read-only pulse and indicator debugging tools
+- Cross-platform deterministic replay checks
+
+### Definition of Done
+- Simple research backtest runs from an in-memory data frame
+- Convenience APIs still use the canonical execution path
+- Snapshot hashing, sealing, no-lookahead, and event sourcing remain intact
+
+---
+
+## v0.1.3 - Onboarding Release
+
+**Goal:** Make a skeptical first-time user productive quickly while explaining
+the ledgr mental model.
+
+### Scope
+- README as executable front door
+- Getting-started vignette as guided tutorial
+- Clear target-vector and pulse-context strategy authoring docs
+- Offline-safe examples and package-site build checks
+
+### Definition of Done
+- README and vignette run from installed package code
+- The first backtest does not require manual DuckDB or snapshot setup
+- Documentation explains the difference between quick convenience paths and
+  durable research artifacts
+
+---
+
+## v0.1.4 - Experiment Store Core
+
+**Goal:** Make DuckDB experiment stores a first-class user concept.
+
+### Scope
+- `strategy_params` as explicit experiment identity
+- Strategy functions support `function(ctx)` and `function(ctx, params)`
+- Store strategy source text, strategy source hash, strategy parameter hash,
+  ledgr version, R version, and relevant dependency versions with each run
+- Mark runs created before the experiment-store schema as legacy/pre-provenance
+  artifacts rather than treating them as fully recoverable experiments
+- `ledgr_runs(db_path)` to discover runs
+- `ledgr_open_run(db_path, run_id)` to reopen a stored run without recomputing
+- `ledgr_run_info(db_path, run_id)` to inspect run identity and provenance
+- `ledgr_label_run(db_path, run_id, label)` for mutable human names
+- `ledgr_archive_run(db_path, run_id, reason = NULL)` for non-destructive cleanup
+
+### Definition of Done
+- One sealed snapshot can support multiple named experiments in the same DuckDB
+  file
+- `run_id` is documented and enforced as an immutable experiment key
+- Legacy/pre-provenance runs are discoverable and clearly labeled with their
+  missing provenance guarantees
+- Archived runs are hidden by default but remain auditable
+- Users can leave an R session and later rediscover and reopen stored runs
+
+---
+
+## v0.1.5 - Experiment Comparison And Strategy Recovery
+
+**Goal:** Let users compare experiments and recover strategy code where possible.
+
+### Scope
+- `ledgr_compare_runs(db_path, run_ids = NULL)` returning a compact comparison
+  table
+- `ledgr_extract_strategy(db_path, run_id, trust = FALSE)` or equivalent
+  recovery API
+- Deterministic capture of JSON-safe strategy parameters
+- Clear warnings for strategies that depend on unresolved external objects
+- Optional tagging API for grouping runs
+
+### Definition of Done
+- Users can compare final equity, return, drawdown, and trade count across runs
+- Self-contained functional strategies can be recovered from the experiment
+  store with an explicit trust boundary
+- Strategy parameters are visible, hashable, and reusable
 
 ---
 

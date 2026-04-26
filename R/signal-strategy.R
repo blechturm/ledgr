@@ -13,6 +13,12 @@
 #' @param short_qty Target quantity for `"SHORT"`.
 #'
 #' @return A strategy function suitable for `ledgr_backtest()`.
+#' @examples
+#' strategy <- ledgr_signal_strategy(
+#'   function(ctx) c(AAA = "LONG"),
+#'   long_qty = 10
+#' )
+#' strategy(list(universe = "AAA"))
 #' @export
 ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1) {
   if (!is.function(fn)) {

@@ -1,3 +1,7 @@
+ledgr_strategy_targets_contract <- function() {
+  "a named numeric target vector with names matching ctx$universe"
+}
+
 ledgr_validate_strategy_targets <- function(targets, universe) {
   if (!is.character(universe) || length(universe) < 1 || anyNA(universe) || any(!nzchar(universe))) {
     rlang::abort("`universe` must be a non-empty character vector.", class = "ledgr_invalid_strategy_result")
@@ -8,7 +12,11 @@ ledgr_validate_strategy_targets <- function(targets, universe) {
 
   if (!is.numeric(targets) || length(targets) < 1) {
     rlang::abort(
-      "`targets` must be a non-empty named numeric vector (quantities).",
+      sprintf(
+        "`targets` must be %s; got %s.",
+        ledgr_strategy_targets_contract(),
+        paste(class(targets), collapse = "/")
+      ),
       class = "ledgr_invalid_strategy_result"
     )
   }
@@ -20,25 +28,36 @@ ledgr_validate_strategy_targets <- function(targets, universe) {
       any(!nzchar(target_names)) ||
       anyDuplicated(target_names)) {
     rlang::abort(
-      "`targets` must be a named numeric vector with unique, non-empty names.",
+      sprintf(
+        "`targets` must be %s. Names must be unique, non-empty instrument IDs.",
+        ledgr_strategy_targets_contract()
+      ),
       class = "ledgr_invalid_strategy_result"
     )
   }
   if (any(!is.finite(targets))) {
-    rlang::abort("`targets` must contain only finite numeric values.", class = "ledgr_invalid_strategy_result")
+    rlang::abort(
+      sprintf(
+        "`targets` must be %s. Target quantities must be finite numeric values.",
+        ledgr_strategy_targets_contract()
+      ),
+      class = "ledgr_invalid_strategy_result"
+    )
   }
 
   missing <- setdiff(universe, target_names)
   extra <- setdiff(target_names, universe)
-  if (length(extra) > 0) {
-    rlang::abort(
-      sprintf("`targets` contains instruments outside universe: %s", paste(extra, collapse = ", ")),
-      class = "ledgr_invalid_strategy_result"
+  if (length(missing) > 0 || length(extra) > 0) {
+    details <- c(
+      if (length(missing) > 0) sprintf("missing instruments: %s", paste(missing, collapse = ", ")),
+      if (length(extra) > 0) sprintf("extra instruments: %s", paste(extra, collapse = ", "))
     )
-  }
-  if (length(missing) > 0) {
     rlang::abort(
-      sprintf("`targets` must include all instruments in universe; missing: %s", paste(missing, collapse = ", ")),
+      sprintf(
+        "`targets` must be %s; %s.",
+        ledgr_strategy_targets_contract(),
+        paste(details, collapse = "; ")
+      ),
       class = "ledgr_invalid_strategy_result"
     )
   }

@@ -19,3 +19,18 @@ A \code{ledgr_snapshot} object.
 \description{
 Reads a CSV file and delegates to \code{ledgr_snapshot_from_df()}.
 }
+\examples{
+csv_path <- tempfile(fileext = ".csv")
+utils::write.csv(data.frame(
+  ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+  instrument_id = "AAA",
+  open = c(100, 101),
+  high = c(101, 102),
+  low = c(99, 100),
+  close = c(100, 101),
+  volume = 1000
+), csv_path, row.names = FALSE)
+snapshot <- ledgr_snapshot_from_csv(csv_path)
+ledgr_snapshot_info(snapshot)
+ledgr_snapshot_close(snapshot)
+}

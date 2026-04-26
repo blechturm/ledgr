@@ -22,7 +22,7 @@ ledgr_pulse_context <- function(run_id,
   )
 
   class(ctx) <- "ledgr_pulse_context"
-  ctx <- ledgr_attach_feature_helpers(ctx)
+  ctx <- ledgr_update_pulse_context_helpers(ctx)
   ledgr_validate_pulse_context(ctx)
   ctx
 }
@@ -107,6 +107,218 @@ ledgr_attach_feature_helpers <- function(ctx, features = ctx$features) {
   ctx$features_wide <- ledgr_features_wide(features)
   ctx$feature <- ledgr_feature_accessor(features)
   ctx
+}
+
+ledgr_update_pulse_context_helpers <- function(ctx,
+                                               bars = ctx$bars,
+                                               features = ctx$features,
+                                               positions = ctx$positions,
+                                               universe = ctx$universe) {
+  ctx <- ledgr_ensure_pulse_context_accessors(ctx)
+  ctx <- ledgr_attach_feature_helpers(ctx, features)
+  ledgr_refresh_pulse_context_lookup(ctx, bars = bars, positions = positions, universe = universe)
+  ctx
+}
+
+ledgr_ensure_pulse_context_accessors <- function(ctx) {
+  lookup <- ctx$.pulse_lookup
+  if (!is.environment(lookup)) {
+    lookup <- new.env(parent = emptyenv())
+  }
+
+  bar <- function(id) ledgr_pulse_context_bar(lookup, id)
+  open <- function(id) ledgr_pulse_context_scalar(lookup, id, "open")
+  high <- function(id) ledgr_pulse_context_scalar(lookup, id, "high")
+  low <- function(id) ledgr_pulse_context_scalar(lookup, id, "low")
+  close <- function(id) ledgr_pulse_context_scalar(lookup, id, "close")
+  volume <- function(id) ledgr_pulse_context_scalar(lookup, id, "volume")
+  position <- function(id) ledgr_pulse_context_position(lookup, id)
+  targets <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
+
+  if (is.environment(ctx)) {
+    ctx$.pulse_lookup <- lookup
+    ctx$bar <- bar
+    ctx$open <- open
+    ctx$high <- high
+    ctx$low <- low
+    ctx$close <- close
+    ctx$volume <- volume
+    ctx$position <- position
+    ctx$targets <- targets
+    return(ctx)
+  }
+
+  ctx$.pulse_lookup <- lookup
+  ctx$bar <- bar
+  ctx$open <- open
+  ctx$high <- high
+  ctx$low <- low
+  ctx$close <- close
+  ctx$volume <- volume
+  ctx$position <- position
+  ctx$targets <- targets
+  ctx
+}
+
+ledgr_refresh_pulse_context_lookup <- function(ctx,
+                                               bars = ctx$bars,
+                                               positions = ctx$positions,
+                                               universe = ctx$universe) {
+  lookup <- ctx$.pulse_lookup
+  if (!is.environment(lookup)) {
+    rlang::abort("Pulse context accessors have not been initialized.", class = "ledgr_invalid_pulse_context")
+  }
+
+  universe <- as.character(universe)
+  lookup$bars <- bars
+  lookup$positions <- positions
+  lookup$universe <- universe
+  lookup$bar_index <- ledgr_pulse_context_bar_index(bars, universe)
+
+  invisible(ctx)
+}
+
+ledgr_pulse_context_nrows <- function(x) {
+  if (is.data.frame(x)) return(nrow(x))
+  if (!is.list(x) || length(x) == 0L) return(0L)
+  first <- x[[1L]]
+  if (is.null(first)) return(0L)
+  length(first)
+}
+
+ledgr_pulse_context_column <- function(bars, field) {
+  if (!is.list(bars) && !is.data.frame(bars)) {
+    rlang::abort("Pulse context `bars` must be a data.frame or list-like object.", class = "ledgr_invalid_pulse_context")
+  }
+  if (!(field %in% names(bars))) {
+    rlang::abort(
+      sprintf("Pulse context bars are missing required field `%s`.", field),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  bars[[field]]
+}
+
+ledgr_pulse_context_bar_index <- function(bars, universe) {
+  n <- ledgr_pulse_context_nrows(bars)
+  if (n == 0L) return(stats::setNames(integer(0), character(0)))
+
+  instrument_id <- as.character(ledgr_pulse_context_column(bars, "instrument_id"))
+  if (length(instrument_id) != n || anyNA(instrument_id) || any(!nzchar(instrument_id))) {
+    rlang::abort("Pulse context bars must include non-empty `instrument_id` values.", class = "ledgr_invalid_pulse_context")
+  }
+
+  bad <- setdiff(unique(instrument_id), universe)
+  if (length(bad) > 0L) {
+    rlang::abort(
+      sprintf(
+        "Pulse context bars contain instrument_ids not in universe: %s. Available ctx$universe: %s.",
+        paste(bad, collapse = ", "),
+        ledgr_pulse_context_universe_message(universe)
+      ),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+
+  duplicated_ids <- unique(instrument_id[duplicated(instrument_id)])
+  if (length(duplicated_ids) > 0L) {
+    rlang::abort(
+      sprintf("Pulse context bars contain duplicate rows for instrument_id: %s.", paste(duplicated_ids, collapse = ", ")),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+
+  stats::setNames(seq_len(n), instrument_id)
+}
+
+ledgr_pulse_context_universe_message <- function(universe) {
+  if (length(universe) == 0L) return("<empty>")
+  paste(universe, collapse = ", ")
+}
+
+ledgr_pulse_context_require_id <- function(lookup, id) {
+  if (!is.character(id) || length(id) != 1L || is.na(id) || !nzchar(id)) {
+    rlang::abort("`id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+
+  universe <- lookup$universe
+  if (is.null(universe)) universe <- character(0)
+  universe <- as.character(universe)
+  if (match(id, universe, nomatch = 0L) == 0L) {
+    rlang::abort(
+      sprintf(
+        "Unknown instrument_id '%s'. Available ctx$universe: %s.",
+        id,
+        ledgr_pulse_context_universe_message(universe)
+      ),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+
+  id
+}
+
+ledgr_pulse_context_row_index <- function(lookup, id) {
+  id <- ledgr_pulse_context_require_id(lookup, id)
+  bar_index <- lookup$bar_index
+  row_idx <- if (length(bar_index) == 0L) 0L else match(id, names(bar_index), nomatch = 0L)
+  if (row_idx == 0L) {
+    rlang::abort(
+      sprintf("No bar row for instrument_id '%s' in ctx$bars at the current pulse.", id),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  unname(as.integer(bar_index[[row_idx]]))
+}
+
+ledgr_pulse_context_bar <- function(lookup, id) {
+  row_idx <- ledgr_pulse_context_row_index(lookup, id)
+  bars <- lookup$bars
+
+  if (is.data.frame(bars)) {
+    out <- bars[row_idx, , drop = FALSE]
+    rownames(out) <- NULL
+    return(out)
+  }
+
+  out <- lapply(bars, function(column) column[row_idx])
+  out <- as.data.frame(out, stringsAsFactors = FALSE, optional = TRUE)
+  rownames(out) <- NULL
+  out
+}
+
+ledgr_pulse_context_scalar <- function(lookup, id, field) {
+  row_idx <- ledgr_pulse_context_row_index(lookup, id)
+  values <- ledgr_pulse_context_column(lookup$bars, field)
+  value <- values[[row_idx]]
+  if (!is.numeric(value)) {
+    rlang::abort(
+      sprintf("Pulse context bars field `%s` must be numeric.", field),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  unname(as.numeric(value))
+}
+
+ledgr_pulse_context_position <- function(lookup, id) {
+  id <- ledgr_pulse_context_require_id(lookup, id)
+  positions <- lookup$positions
+  if (is.null(positions) || length(positions) == 0L) return(0)
+  if (!is.numeric(positions) || is.null(names(positions))) {
+    rlang::abort("Pulse context `positions` must be a named numeric vector.", class = "ledgr_invalid_pulse_context")
+  }
+  idx <- match(id, names(positions), nomatch = 0L)
+  if (idx == 0L) return(0)
+  unname(as.numeric(positions[[idx]]))
+}
+
+ledgr_pulse_context_targets <- function(lookup, default = 0) {
+  if (!is.numeric(default) || length(default) != 1L || is.na(default) || !is.finite(default)) {
+    rlang::abort("`default` must be a finite numeric scalar.", class = "ledgr_invalid_args")
+  }
+  universe <- lookup$universe
+  if (is.null(universe)) universe <- character(0)
+  stats::setNames(rep(as.numeric(default), length(universe)), universe)
 }
 
 ledgr_normalize_ts_utc <- function(x) {

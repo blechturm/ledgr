@@ -10,6 +10,26 @@ ledgr_has_namespace <- function(pkg) {
 #' @param ... Unused.
 #' @param type Plot type. Only `"equity"` is supported in v0.1.2.
 #' @return A ggplot object, or a grid object when `gridExtra` is installed.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- 1
+#'   targets
+#' }
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' if (requireNamespace("ggplot2", quietly = TRUE)) {
+#'   plot(bt)
+#' }
+#' close(bt)
 #' @export
 plot.ledgr_backtest <- function(x, y = NULL, ..., type = "equity") {
   if (!inherits(x, "ledgr_backtest")) {
