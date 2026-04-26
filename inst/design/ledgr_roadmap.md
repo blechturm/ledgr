@@ -207,6 +207,38 @@ the ledgr mental model.
 
 ---
 
+## v0.1.6 - Lightweight Parameter Sweep Mode
+
+**Goal:** Let users run fast exploratory parameter sweeps without DuckDB
+persistence, with guaranteed numeric parity against full truth runs.
+
+### Key Constraint
+
+Sweep mode is not a separate engine. It is the same execution path with
+persistence disabled. Parity tests enforce this as a CI invariant. Any engine
+change that silently breaks sweep/truth agreement is a build failure.
+
+### Scope
+
+- `ledgr_sweep()` as the sweep entry point: same config contract as
+  `ledgr_backtest()`, no DuckDB artifact produced
+- Explicit public API boundary: which guarantees hold in sweep mode and which
+  do not (no run identity, no provenance, no ledger persistence)
+- Parity test suite: identical equity curves from `ledgr_sweep()` and
+  `ledgr_backtest()` on the same input fixture
+- Clear documentation of the intended workflow: sweep to shortlist, then
+  `ledgr_backtest()` for the candidates worth storing
+
+### Definition of Done
+
+- `ledgr_sweep()` and `ledgr_backtest()` produce numerically identical results
+  on the same input
+- Parity is enforced by CI, not by convention
+- The public API surface clearly communicates what sweep mode does and does not
+  guarantee
+
+---
+
 ## v0.2.0 — OMS Semantics (Simulation Only)
 
 **Goal:** Introduce realistic order lifecycle handling without a real broker.
