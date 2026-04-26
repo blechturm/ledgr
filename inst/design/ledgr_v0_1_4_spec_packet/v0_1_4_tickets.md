@@ -474,13 +474,13 @@ expanding-window fallback cost for custom indicators.
     is not adequate for `series_fn`.
 
 **Acceptance Criteria:**
-- [ ] Custom indicators with `series_fn` avoid the expanding-window loop.
-- [ ] Built-in indicators use the vectorized path.
-- [ ] `fn`-only indicators continue to work.
-- [ ] `series_fn` output length and alignment are validated.
-- [ ] Warmup `NaN` is normalized to `NA_real_`.
-- [ ] Indicator fingerprint changes when `series_fn` changes.
-- [ ] Any fallback behavior change is documented in `NEWS.md`.
+- [x] Custom indicators with `series_fn` avoid the expanding-window loop.
+- [x] Built-in indicators use the vectorized path.
+- [x] `fn`-only indicators continue to work.
+- [x] `series_fn` output length and alignment are validated.
+- [x] Warmup `NaN` is normalized to `NA_real_`.
+- [x] Indicator fingerprint changes when `series_fn` changes.
+- [x] Any fallback behavior change is documented in `NEWS.md`.
 
 **Test Requirements:**
 - `tests/testthat/test-indicators.R`

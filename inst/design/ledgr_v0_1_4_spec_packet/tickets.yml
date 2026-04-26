@@ -70,7 +70,7 @@ tickets:
     tests: ["README.Rmd", "vignettes/getting-started.Rmd", "R CMD check"]
   - id: LDG-712
     title: "Vectorized Indicator series_fn"
-    status: pending
+    status: done
     priority: P0
     dependencies: []
     tests: ["tests/testthat/test-indicators.R", "tests/testthat/test-features.R", "custom-indicators vignette if changed or created"]

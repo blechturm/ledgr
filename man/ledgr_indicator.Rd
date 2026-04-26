@@ -9,7 +9,8 @@ ledgr_indicator(
   fn,
   requires_bars,
   params = list(),
-  stable_after = requires_bars
+  stable_after = requires_bars,
+  series_fn = NULL
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ ledgr_indicator(
 \item{params}{Named list of deterministic parameters for fingerprinting.}
 
 \item{stable_after}{Number of bars after which the indicator output is stable.}
+
+\item{series_fn}{Optional vectorized indicator function:
+function(bars, params) -> numeric vector aligned to \code{bars}.}
 }
 \value{
 A \code{ledgr_indicator} object.

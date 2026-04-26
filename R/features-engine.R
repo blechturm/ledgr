@@ -31,6 +31,11 @@ ledgr_validate_feature_def <- function(feature_def) {
     rlang::abort(sprintf("feature_def$fn must be a function (feature: %s).", id), class = "ledgr_invalid_feature_def")
   }
 
+  series_fn <- feature_def$series_fn
+  if (!is.null(series_fn) && !is.function(series_fn)) {
+    rlang::abort(sprintf("feature_def$series_fn must be NULL or a function (feature: %s).", id), class = "ledgr_invalid_feature_def")
+  }
+
   params <- feature_def$params
   if (!is.null(params) && !is.list(params)) {
     rlang::abort(sprintf("feature_def$params must be a list (feature: %s).", id), class = "ledgr_invalid_feature_def")
@@ -79,6 +84,11 @@ ledgr_feature_sma_n <- function(n) {
       if (!is.numeric(closes)) closes <- as.numeric(closes)
       mean(utils::tail(closes, params$n))
     },
+    series_fn = function(bars_df, params = list(n = n)) {
+      closes <- bars_df$close
+      if (!is.numeric(closes)) closes <- as.numeric(closes)
+      ledgr_rolling_mean(closes, as.integer(params$n))
+    },
     params = list(n = n)
   )
 }
@@ -94,8 +104,117 @@ ledgr_feature_return_1 <- function() {
       if (length(closes) < 2) return(NA_real_)
       (closes[[length(closes)]] / closes[[length(closes) - 1L]]) - 1
     },
+    series_fn = function(bars_df, params = list()) {
+      closes <- bars_df$close
+      if (!is.numeric(closes)) closes <- as.numeric(closes)
+      out <- rep(NA_real_, length(closes))
+      if (length(closes) >= 2L) {
+        out[2:length(closes)] <- (closes[2:length(closes)] / closes[1:(length(closes) - 1L)]) - 1
+      }
+      out
+    },
     params = list()
   )
+}
+
+ledgr_rolling_mean <- function(x, n) {
+  x <- as.numeric(x)
+  n <- as.integer(n)
+  out <- rep(NA_real_, length(x))
+  if (length(x) < n) return(out)
+  cs <- c(0, cumsum(x))
+  idx <- n:length(x)
+  out[idx] <- (cs[idx + 1L] - cs[idx - n + 1L]) / n
+  out
+}
+
+ledgr_bounded_ema_series <- function(x, n) {
+  x <- as.numeric(x)
+  n <- as.integer(n)
+  stable_after <- n + 1L
+  out <- rep(NA_real_, length(x))
+  if (length(x) < stable_after) return(out)
+
+  alpha <- 2 / (n + 1)
+  decay <- 1 - alpha
+  weights <- c(
+    alpha * decay^(0:(stable_after - 2L)),
+    decay^(stable_after - 1L)
+  )
+  out <- as.numeric(stats::filter(x, filter = weights, sides = 1))
+  out[seq_len(stable_after - 1L)] <- NA_real_
+  out
+}
+
+ledgr_simple_rsi_series <- function(x, n) {
+  x <- as.numeric(x)
+  n <- as.integer(n)
+  out <- rep(NA_real_, length(x))
+  stable_after <- n + 1L
+  if (length(x) < stable_after) return(out)
+
+  changes <- diff(x)
+  gains <- pmax(changes, 0)
+  losses <- abs(pmin(changes, 0))
+  avg_gain <- ledgr_rolling_mean(gains, n)
+  avg_loss <- ledgr_rolling_mean(losses, n)
+
+  idx <- stable_after:length(x)
+  gain <- avg_gain[idx - 1L]
+  loss <- avg_loss[idx - 1L]
+  out[idx] <- ifelse(loss == 0, 100, 100 - (100 / (1 + gain / loss)))
+  out
+}
+
+ledgr_call_feature_series_fn <- function(series_fn, bars_df, params) {
+  if (length(formals(series_fn)) >= 2L) series_fn(bars_df, params) else series_fn(bars_df)
+}
+
+ledgr_call_feature_fn <- function(fn, bars_df, params) {
+  if (length(formals(fn)) >= 2L) fn(bars_df, params) else fn(bars_df)
+}
+
+ledgr_normalize_feature_series_output <- function(value, expected_n, stable_after, feature_id) {
+  if (!is.numeric(value) || !is.atomic(value) || !is.null(dim(value))) {
+    rlang::abort(sprintf("Feature %s returned a non-numeric or non-vector series.", feature_id), class = "ledgr_invalid_feature_output")
+  }
+  if (length(value) != expected_n) {
+    rlang::abort(
+      sprintf("Feature %s returned %d values; expected %d.", feature_id, length(value), expected_n),
+      class = "ledgr_invalid_feature_output"
+    )
+  }
+
+  value <- as.numeric(value)
+  stable_after <- as.integer(stable_after)
+  idx <- seq_along(value)
+  non_warmup <- idx >= stable_after
+  if (any(is.infinite(value) & non_warmup)) {
+    rlang::abort(sprintf("Feature %s returned infinite values.", feature_id), class = "ledgr_invalid_feature_output")
+  }
+  if (any(is.nan(value) & non_warmup)) {
+    rlang::abort(sprintf("Feature %s returned NaN outside the warmup period.", feature_id), class = "ledgr_invalid_feature_output")
+  }
+  if (any(is.na(value) & !is.nan(value) & non_warmup)) {
+    rlang::abort(sprintf("Feature %s returned NA outside the warmup period.", feature_id), class = "ledgr_invalid_feature_output")
+  }
+  value[is.nan(value)] <- NA_real_
+  if (stable_after > 1L && length(value) > 0L) {
+    value[seq_len(min(stable_after - 1L, length(value)))] <- NA_real_
+  }
+  value
+}
+
+ledgr_normalize_feature_scalar_output <- function(value, feature_id) {
+  if (is.null(value) || length(value) < 1L) return(NA_real_)
+  if (length(value) > 1L) value <- value[[length(value)]]
+  if (!is.numeric(value) || length(value) != 1L) {
+    rlang::abort(sprintf("Feature %s returned a non-numeric or non-scalar value.", feature_id), class = "ledgr_invalid_feature_output")
+  }
+  if (is.nan(value) || (!is.na(value) && !is.finite(value))) {
+    rlang::abort(sprintf("Feature %s returned a non-finite value.", feature_id), class = "ledgr_invalid_feature_output")
+  }
+  as.numeric(value)
 }
 
 ledgr_compute_feature_series <- function(bars_df, feature_def) {
@@ -110,26 +229,26 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
 
   stable_after <- as.integer(feature_def$stable_after)
   fn <- feature_def$fn
+  series_fn <- feature_def$series_fn
   params <- feature_def$params
   if (is.null(params)) params <- list()
 
   n <- nrow(bars_df)
+  if (!is.null(series_fn)) {
+    value <- ledgr_call_feature_series_fn(series_fn, bars_df, params)
+    return(ledgr_normalize_feature_series_output(value, n, stable_after, feature_def$id))
+  }
+
   out <- rep(NA_real_, n)
   for (i in seq_len(n)) {
     if (i < stable_after) {
       out[[i]] <- NA_real_
       next
     }
-    window <- bars_df[seq_len(i), , drop = FALSE]
-    value <- if (length(formals(fn)) >= 2) fn(window, params) else fn(window)
-    if (length(value) > 1) value <- value[[length(value)]]
-    if (!is.numeric(value) || length(value) != 1) {
-      rlang::abort(sprintf("Feature %s returned a non-numeric or non-scalar value.", feature_def$id), class = "ledgr_invalid_feature_output")
-    }
-    if (!is.na(value) && !is.finite(value)) {
-      rlang::abort(sprintf("Feature %s returned a non-finite value.", feature_def$id), class = "ledgr_invalid_feature_output")
-    }
-    out[[i]] <- as.numeric(value)
+    start_idx <- max(1L, i - stable_after + 1L)
+    window <- bars_df[start_idx:i, , drop = FALSE]
+    value <- ledgr_call_feature_fn(fn, window, params)
+    out[[i]] <- ledgr_normalize_feature_scalar_output(value, feature_def$id)
   }
   out
 }
@@ -155,16 +274,8 @@ ledgr_compute_feature_latest <- function(bars_df, feature_def) {
   if (nrow(window) > stable_after) {
     window <- utils::tail(window, stable_after)
   }
-  value <- if (length(formals(fn)) >= 2) fn(window, params) else fn(window)
-  if (is.null(value) || length(value) < 1) return(NA_real_)
-  if (length(value) > 1) value <- value[[length(value)]]
-  if (!is.numeric(value) || length(value) != 1) {
-    rlang::abort(sprintf("Feature %s returned a non-numeric or non-scalar value.", feature_def$id), class = "ledgr_invalid_feature_output")
-  }
-  if (!is.na(value) && !is.finite(value)) {
-    rlang::abort(sprintf("Feature %s returned a non-finite value.", feature_def$id), class = "ledgr_invalid_feature_output")
-  }
-  as.numeric(value)
+  value <- ledgr_call_feature_fn(fn, window, params)
+  ledgr_normalize_feature_scalar_output(value, feature_def$id)
 }
 
 ledgr_check_no_lookahead <- function(feature_def, bars_df, horizons = c(1L, 3L)) {

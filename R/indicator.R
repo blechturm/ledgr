@@ -5,6 +5,8 @@
 #' @param requires_bars Minimum lookback period (integer).
 #' @param params Named list of deterministic parameters for fingerprinting.
 #' @param stable_after Number of bars after which the indicator output is stable.
+#' @param series_fn Optional vectorized indicator function:
+#'   function(bars, params) -> numeric vector aligned to `bars`.
 #'
 #' @return A `ledgr_indicator` object.
 #' @examples
@@ -15,7 +17,7 @@
 #' )
 #' last_close$id
 #' @export
-ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after = requires_bars) {
+ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after = requires_bars, series_fn = NULL) {
   if (!is.character(id) || length(id) != 1 || !nzchar(id)) {
     rlang::abort("`id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -48,11 +50,19 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after
   }
   ledgr_assert_indicator_fn_pure(fn)
   ledgr_assert_indicator_safe(fn)
+  if (!is.null(series_fn)) {
+    if (!is.function(series_fn)) {
+      rlang::abort("`series_fn` must be NULL or a function.", class = "ledgr_invalid_args")
+    }
+    ledgr_assert_indicator_fn_pure(series_fn)
+    ledgr_assert_indicator_safe(series_fn)
+  }
 
   structure(
     list(
       id = id,
       fn = fn,
+      series_fn = series_fn,
       requires_bars = as.integer(requires_bars),
       stable_after = as.integer(stable_after),
       params = params
@@ -208,6 +218,11 @@ ledgr_indicator_fingerprint <- function(indicator) {
   payload <- list(
     id = indicator$id,
     fn = ledgr_function_fingerprint(indicator$fn, include_captures = FALSE, label = sprintf("indicator `%s`", indicator$id)),
+    series_fn = if (is.null(indicator$series_fn)) {
+      NULL
+    } else {
+      ledgr_function_fingerprint(indicator$series_fn, include_captures = FALSE, label = sprintf("indicator `%s` series_fn", indicator$id))
+    },
     requires_bars = indicator$requires_bars,
     stable_after = indicator$stable_after,
     params = ledgr_stable_payload(indicator$params, sprintf("indicator `%s` params", indicator$id))

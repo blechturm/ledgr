@@ -96,6 +96,15 @@ coding agents must preserve. The authoritative narrative remains in
   `ctx$bars` and long-table `ctx$features`.
 - Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
   views over `ctx$features`; they do not change feature computation semantics.
+- Indicators may provide an optional `series_fn(bars, params)` for full-series
+  precomputation. The input is one instrument's full bar series in ascending
+  time order, and the output must be a numeric vector aligned to `nrow(bars)`.
+- Feature warmup `NA_real_` and warmup `NaN` are normalized to `NA_real_`.
+  Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
+- Indicator fingerprints include `series_fn` when present. Changing `fn`,
+  `series_fn`, parameters, or warmup requirements changes the fingerprint.
+- Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
+  stable windows, not expanding full-history windows.
 - `ctx$targets()` creates a full named target vector initialized to flat
   positions. It is appropriate when the strategy wants unspecified instruments
   to go flat.

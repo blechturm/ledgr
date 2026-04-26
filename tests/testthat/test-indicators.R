@@ -40,6 +40,38 @@ testthat::test_that("indicator purity scan blocks non-deterministic calls", {
     ),
     class = "ledgr_purity_violation"
   )
+
+  testthat::expect_error(
+    ledgr:::ledgr_indicator(
+      id = "bad_series_fn",
+      fn = function(window) mean(window$close),
+      series_fn = function(bars, params) Sys.time(),
+      requires_bars = 1L
+    ),
+    class = "ledgr_purity_violation"
+  )
+})
+
+testthat::test_that("indicator fingerprint includes series_fn", {
+  ind_a <- ledgr_indicator(
+    id = "series_fingerprint",
+    fn = function(window) tail(window$close, 1),
+    series_fn = function(bars, params) bars$close,
+    requires_bars = 1L
+  )
+  ind_b <- ledgr_indicator(
+    id = "series_fingerprint",
+    fn = function(window) tail(window$close, 1),
+    series_fn = function(bars, params) bars$close * 2,
+    requires_bars = 1L
+  )
+
+  testthat::expect_s3_class(ind_a, "ledgr_indicator")
+  testthat::expect_true(is.function(ind_a$series_fn))
+  testthat::expect_false(identical(
+    ledgr:::ledgr_indicator_fingerprint(ind_a),
+    ledgr:::ledgr_indicator_fingerprint(ind_b)
+  ))
 })
 
 testthat::test_that("indicator registry supports register/get/list", {
@@ -103,12 +135,29 @@ testthat::test_that("built-in indicators are deterministic and silent", {
   )
 
   for (ind in indicators) {
-    result1 <- ind$fn(window)
-    result2 <- ind$fn(window)
+    values <- ledgr:::ledgr_compute_feature_series(window, ind)
+    latest_window <- utils::tail(window, ind$stable_after)
+    result1 <- ind$fn(latest_window)
+    result2 <- ind$fn(latest_window)
     testthat::expect_identical(result1, result2)
     testthat::expect_silent(ind$fn(window))
+    testthat::expect_length(values, nrow(window))
+    testthat::expect_equal(
+      values[[nrow(window)]],
+      result1,
+      tolerance = 1e-12
+    )
+    for (i in seq_along(values)) {
+      expected <- if (i < ind$stable_after) {
+        NA_real_
+      } else {
+        ind$fn(utils::tail(window[seq_len(i), , drop = FALSE], ind$stable_after))
+      }
+      testthat::expect_equal(values[[i]], expected, tolerance = 1e-12)
+    }
 
     fn_body <- deparse(ind$fn)
     testthat::expect_false(any(grepl("<<-", fn_body, fixed = TRUE)))
+    testthat::expect_true(is.function(ind$series_fn))
   }
 })

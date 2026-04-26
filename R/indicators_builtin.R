@@ -15,6 +15,9 @@ ledgr_ind_sma <- function(n) {
     fn = function(window) {
       mean(window$close)
     },
+    series_fn = function(bars, params) {
+      ledgr_rolling_mean(bars$close, as.integer(params$n))
+    },
     requires_bars = as.integer(n),
     stable_after = as.integer(n),
     params = list(n = n)
@@ -44,6 +47,10 @@ ledgr_ind_ema <- function(n) {
       }
 
       ema
+    },
+    series_fn = function(bars, params) {
+      n <- as.integer(params$n)
+      ledgr_bounded_ema_series(bars$close, n)
     },
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
@@ -78,6 +85,10 @@ ledgr_ind_rsi <- function(n = 14L) {
       rs <- avg_gain / avg_loss
       100 - (100 / (1 + rs))
     },
+    series_fn = function(bars, params) {
+      n <- as.integer(params$n)
+      ledgr_simple_rsi_series(bars$close, n)
+    },
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
     params = list(n = n)
@@ -102,6 +113,15 @@ ledgr_ind_returns <- function(n = 1L) {
       current <- window$close[nrow(window)]
       previous <- window$close[nrow(window) - n]
       (current - previous) / previous
+    },
+    series_fn = function(bars, params) {
+      n <- as.integer(params$n)
+      closes <- as.numeric(bars$close)
+      out <- rep(NA_real_, length(closes))
+      if (length(closes) <= n) return(out)
+      idx <- (n + 1L):length(closes)
+      out[idx] <- (closes[idx] - closes[idx - n]) / closes[idx - n]
+      out
     },
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),

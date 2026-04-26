@@ -11,6 +11,10 @@
   `ledgr_backtest()`.
 - Marked `ledgr_data_hash()` as a legacy v0.1.0 helper and moved internal
   run/snapshot-adapter hash call sites to explicitly named internal helpers.
+- Added optional vectorized indicator `series_fn` support for full-series
+  feature precomputation, including vectorized built-in indicators.
+- Changed fn-only custom indicator fallback from expanding full-history windows
+  to bounded stable windows to avoid accidental O(n^2) feature work.
 - Clarified v0.x compatibility policy, strategy reproducibility tiers,
   next-open fill semantics, and low-level API lifecycle notes in design and
   reference documentation.

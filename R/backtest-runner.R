@@ -2146,6 +2146,7 @@ ledgr_feature_defs_from_config <- function(cfg) {
         out[[length(out) + 1L]] <- list(
           id = ind$id,
           fn = ind$fn,
+          series_fn = ind$series_fn,
           requires_bars = ind$requires_bars,
           stable_after = if (is.null(d$stable_after)) ind$stable_after else d$stable_after,
           params = if (is.null(d$params)) ind$params else d$params,
