@@ -503,25 +503,25 @@ Add a session-scoped feature cache so repeated runs over the same snapshot and
 indicator fingerprint do not recompute the same feature series.
 
 **Tasks:**
-1. Define feature cache key:
+1. [x] Define feature cache key:
    `snapshot_hash + instrument_id + indicator_fingerprint + feature_engine_version`.
-2. Use `snapshot_hash`, not `snapshot_id`, as data identity.
-3. Include date range in the key only if the cache stores range-limited series.
-4. Implement a session-scoped cache.
-5. Add public `ledgr_clear_feature_cache()`.
-6. Add telemetry for feature cache hits and misses.
-7. Make precomputation check the cache before calling `series_fn`.
-8. Add tests proving `series_fn` is not called again on cache hit.
-9. Document that the cache is not persisted across R sessions.
+2. [x] Use `snapshot_hash`, not `snapshot_id`, as data identity.
+3. [x] Include date range in the key only if the cache stores range-limited series.
+4. [x] Implement a session-scoped cache.
+5. [x] Add public `ledgr_clear_feature_cache()`.
+6. [x] Add telemetry for feature cache hits and misses.
+7. [x] Make precomputation check the cache before calling `series_fn`.
+8. [x] Add tests proving `series_fn` is not called again on cache hit.
+9. [x] Document that the cache is not persisted across R sessions.
 
 **Acceptance Criteria:**
-- [ ] First run computes and caches feature series.
-- [ ] Subsequent same-snapshot/same-indicator runs do not call `series_fn`.
-- [ ] Cache key uses `snapshot_hash`.
-- [ ] Cache key includes indicator fingerprint and feature-engine version.
-- [ ] Telemetry shows cache hits/misses.
-- [ ] Tests avoid brittle wall-clock thresholds.
-- [ ] `ledgr_clear_feature_cache()` is exported and tested.
+- [x] First run computes and caches feature series.
+- [x] Subsequent same-snapshot/same-indicator runs do not call `series_fn`.
+- [x] Cache key uses `snapshot_hash`.
+- [x] Cache key includes indicator fingerprint and feature-engine version.
+- [x] Telemetry shows cache hits/misses.
+- [x] Tests avoid brittle wall-clock thresholds.
+- [x] `ledgr_clear_feature_cache()` is exported and tested.
 
 **Test Requirements:**
 - New feature cache tests

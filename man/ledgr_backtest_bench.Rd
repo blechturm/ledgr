@@ -2,7 +2,7 @@
 % Please edit documentation in R/backtest.R
 \name{ledgr_backtest_bench}
 \alias{ledgr_backtest_bench}
-\title{Summarize per-pulse telemetry timings}
+\title{Summarize per-pulse telemetry}
 \usage{
 ledgr_backtest_bench(bt)
 }
@@ -10,14 +10,15 @@ ledgr_backtest_bench(bt)
 \item{bt}{A \code{ledgr_backtest} object.}
 }
 \value{
-A tibble with mean/median/p99 timings per component.
+A tibble with mean/median/p99 values per telemetry component.
 }
 \description{
-Summarize per-pulse telemetry timings
+Summarize per-pulse telemetry
 }
 \details{
 This is a diagnostic helper for engine profiling. It only reports telemetry
-captured for runs executed in the current R session.
+captured for runs executed in the current R session. Timing components are
+reported in seconds; feature-cache hit/miss rows are counts.
 }
 \examples{
 bars <- data.frame(

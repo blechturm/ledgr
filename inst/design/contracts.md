@@ -105,6 +105,14 @@ coding agents must preserve. The authoritative narrative remains in
   `series_fn`, parameters, or warmup requirements changes the fingerprint.
 - Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
   stable windows, not expanding full-history windows.
+- Feature precomputation may use a session-scoped cache. Cache entries are keyed
+  by sealed `snapshot_hash`, instrument ID, indicator fingerprint,
+  feature-engine version, and date range. The cache is never persisted to
+  DuckDB and may be cleared with `ledgr_clear_feature_cache()`.
+- The session feature cache is a runner precomputation optimization for
+  repeated backtests over sealed snapshots. Low-level recovery helpers and
+  interactive pulse/indicator tools recompute features because they do not own
+  a sealed snapshot hash cache key.
 - `ctx$targets()` creates a full named target vector initialized to flat
   positions. It is appropriate when the strategy wants unspecified instruments
   to go flat.

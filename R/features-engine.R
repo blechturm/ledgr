@@ -306,6 +306,9 @@ ledgr_check_no_lookahead <- function(feature_def, bars_df, horizons = c(1L, 3L))
   invisible(TRUE)
 }
 
+# This low-level recovery/helper path intentionally bypasses the session feature
+# cache because it has no sealed snapshot_hash. The runner-owned precompute path
+# is the parameter-sweep cache integration point.
 ledgr_compute_features <- function(con, run_id, instrument_ids, start_ts_utc, end_ts_utc, feature_defs) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")

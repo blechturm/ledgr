@@ -204,6 +204,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   if (!is.null(snapshot_id)) {
     snapshot_db_path <- ledgr_snapshot_db_path_from_config(cfg, db_path)
   }
+  snapshot_hash_for_features <- NULL
 
   set.seed(seed)
 
@@ -364,6 +365,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     if (!identical(recomputed, stored_snapshot_hash)) {
       fail_run("LEDGR_SNAPSHOT_CORRUPTED: stored snapshot_hash does not match recomputed hash.", class = "LEDGR_SNAPSHOT_CORRUPTED")
     }
+    snapshot_hash_for_features <- stored_snapshot_hash
 
     ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
     missing_inst <- DBI::dbGetQuery(
@@ -631,20 +633,22 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   } else {
     0L
   }
-    telemetry <- new.env(parent = emptyenv())
-    telemetry$t_pre <- NA_real_
-    telemetry$t_post <- NA_real_
-    telemetry$t_loop <- NA_real_
-    telemetry$telemetry_stride <- as.integer(telemetry_stride)
-    telemetry$telemetry_samples <- 0L
-    telemetry$t_pulse <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-    telemetry$t_bars <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-    telemetry$t_ctx <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-    telemetry$t_fill <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-    telemetry$t_state <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-    telemetry$t_feats <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-    telemetry$t_strat <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
-    telemetry$t_exec <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry <- new.env(parent = emptyenv())
+  telemetry$t_pre <- NA_real_
+  telemetry$t_post <- NA_real_
+  telemetry$t_loop <- NA_real_
+  telemetry$telemetry_stride <- as.integer(telemetry_stride)
+  telemetry$telemetry_samples <- 0L
+  telemetry$t_pulse <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_bars <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_ctx <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_fill <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_state <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_feats <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_strat <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_exec <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$feature_cache_hits <- 0L
+  telemetry$feature_cache_misses <- 0L
   telemetry_idx <- 0L
 
   state_env <- new.env(parent = emptyenv())
@@ -674,8 +678,8 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   if (is.null(preflight_start)) {
     preflight_start <- ledgr_time_now()
   }
-  feature_cache <- NULL
-  feature_cache_mat <- NULL
+  run_feature_series <- NULL
+  run_feature_matrix <- NULL
   bars_by_id <- NULL
   bars_cols_by_id <- NULL
   bars_mat <- NULL
@@ -798,30 +802,44 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   }
 
   if (length(feature_defs) > 0) {
-    feature_cache <- list()
+    run_feature_series <- list()
     for (def in feature_defs) {
       per_inst <- list()
       for (instrument_id in instrument_ids) {
         b <- bars_by_id[[instrument_id]]
-        values <- ledgr_compute_feature_series(b, def)
+        cache_key <- ledgr_feature_cache_key(
+          snapshot_hash = snapshot_hash_for_features,
+          instrument_id = instrument_id,
+          feature_def = def,
+          start_ts_utc = start_ts_utc,
+          end_ts_utc = end_ts_utc
+        )
+        values <- ledgr_feature_cache_get(cache_key, expected_len = nrow(b))
+        if (is.null(values)) {
+          values <- ledgr_compute_feature_series(b, def)
+          ledgr_feature_cache_set(cache_key, values)
+          if (!is.null(cache_key)) telemetry$feature_cache_misses <- telemetry$feature_cache_misses + 1L
+        } else {
+          telemetry$feature_cache_hits <- telemetry$feature_cache_hits + 1L
+        }
         if (length(values) != nrow(b)) {
           fail_run(sprintf("Feature hydration length mismatch for %s/%s.", def$id, instrument_id))
         }
         per_inst[[instrument_id]] <- as.numeric(values)
       }
-      feature_cache[[def$id]] <- per_inst
+      run_feature_series[[def$id]] <- per_inst
     }
     def_ids <- vapply(feature_defs, function(d) d$id, character(1))
     n_inst <- length(instrument_ids)
     n_def <- length(def_ids)
-    feature_cache_mat <- vector("list", n_def)
+    run_feature_matrix <- vector("list", n_def)
     for (d in seq_len(n_def)) {
       id <- def_ids[[d]]
       mat <- matrix(NA_real_, nrow = n_inst, ncol = length(pulses))
       for (j in seq_along(instrument_ids)) {
-        mat[j, ] <- as.numeric(feature_cache[[id]][[instrument_ids[[j]]]])
+        mat[j, ] <- as.numeric(run_feature_series[[id]][[instrument_ids[[j]]]])
       }
-      feature_cache_mat[[d]] <- mat
+      run_feature_matrix[[d]] <- mat
     }
     features_df <- data.frame(
       instrument_id = rep(instrument_ids, each = n_def),
@@ -1088,14 +1106,14 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
               features_proxy$ts_utc <- rep(pulses_posix[[i]], n_inst * n_def)
               for (d in seq_len(n_def)) {
                 idx <- seq(from = d, by = n_def, length.out = n_inst)
-                features_proxy$feature_value[idx] <- feature_cache_mat[[d]][, i]
+                features_proxy$feature_value[idx] <- run_feature_matrix[[d]][, i]
               }
               feat_df <- features_proxy
             } else {
               features_df$ts_utc[] <- pulses_posix[[i]]
               for (d in seq_len(n_def)) {
                 idx <- seq(from = d, by = n_def, length.out = n_inst)
-                features_df$feature_value[idx] <- feature_cache_mat[[d]][, i]
+                features_df$feature_value[idx] <- run_feature_matrix[[d]][, i]
               }
               feat_df <- features_df
             }
@@ -1106,7 +1124,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
               instrument_ids,
               ts,
               feature_defs,
-              feature_cache,
+              run_feature_series,
               i,
               persist_features
             )
@@ -1460,9 +1478,18 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
   finalize_telemetry <- function() {
     telemetry_names <- ls(telemetry, all.names = TRUE)
+    telemetry_scalars <- c(
+      "t_pre",
+      "t_post",
+      "t_loop",
+      "telemetry_stride",
+      "telemetry_samples",
+      "feature_cache_hits",
+      "feature_cache_misses"
+    )
     trimmed <- lapply(telemetry_names, function(name) {
       x <- telemetry[[name]]
-      if (name %in% c("t_pre", "t_post", "t_loop", "telemetry_stride", "telemetry_samples")) return(x)
+      if (name %in% telemetry_scalars) return(x)
       if (telemetry_idx > 0) x[seq_len(telemetry_idx)] else numeric(0)
     })
     names(trimmed) <- telemetry_names
@@ -1688,7 +1715,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
           id <- instrument_ids[[j]]
           feat_vals <- matrix(NA_real_, nrow = n_def, ncol = n_p)
           for (d in seq_len(n_def)) {
-            feat_vals[d, ] <- feature_cache_mat[[d]][j, ]
+            feat_vals[d, ] <- run_feature_matrix[[d]][j, ]
           }
           out <- data.frame(
             run_id = rep(run_id, n_def * n_p),
@@ -1918,7 +1945,7 @@ ledgr_features_at_pulse_cached <- function(con,
                                            instrument_ids,
                                            ts_utc,
                                            feature_defs,
-                                           feature_cache,
+                                           run_feature_series,
                                            pulse_idx,
                                            persist_features = TRUE) {
   if (!DBI::dbIsValid(con)) {
@@ -1930,8 +1957,8 @@ ledgr_features_at_pulse_cached <- function(con,
   if (!is.character(instrument_ids) || length(instrument_ids) < 1 || anyNA(instrument_ids) || any(!nzchar(instrument_ids))) {
     rlang::abort("`instrument_ids` must be a non-empty character vector of non-empty strings.", class = "ledgr_invalid_args")
   }
-  if (!is.list(feature_cache) || length(feature_cache) < 1) {
-    rlang::abort("`feature_cache` must be a non-empty list.", class = "ledgr_invalid_args")
+  if (!is.list(run_feature_series) || length(run_feature_series) < 1) {
+    rlang::abort("`run_feature_series` must be a non-empty list.", class = "ledgr_invalid_args")
   }
   if (!is.numeric(pulse_idx) || length(pulse_idx) != 1 || is.na(pulse_idx) || pulse_idx < 1) {
     rlang::abort("`pulse_idx` must be a positive integer.", class = "ledgr_invalid_args")
@@ -1951,7 +1978,7 @@ ledgr_features_at_pulse_cached <- function(con,
 
   for (instrument_id in instrument_ids) {
     for (def in feature_defs) {
-      cache <- feature_cache[[def$id]]
+      cache <- run_feature_series[[def$id]]
       if (is.null(cache) || is.null(cache[[instrument_id]])) {
         rlang::abort(sprintf("Missing feature cache for %s/%s.", def$id, instrument_id), class = "ledgr_invalid_args")
       }

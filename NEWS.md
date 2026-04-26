@@ -13,6 +13,9 @@
   run/snapshot-adapter hash call sites to explicitly named internal helpers.
 - Added optional vectorized indicator `series_fn` support for full-series
   feature precomputation, including vectorized built-in indicators.
+- Added a session-scoped feature cache keyed by snapshot hash, instrument,
+  indicator fingerprint, feature-engine version, and date range, with
+  `ledgr_clear_feature_cache()` for explicit cleanup.
 - Changed fn-only custom indicator fallback from expanding full-history windows
   to bounded stable windows to avoid accidental O(n^2) feature work.
 - Clarified v0.x compatibility policy, strategy reproducibility tiers,

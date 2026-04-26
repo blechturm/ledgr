@@ -76,7 +76,7 @@ tickets:
     tests: ["tests/testthat/test-indicators.R", "tests/testthat/test-features.R", "custom-indicators vignette if changed or created"]
   - id: LDG-713
     title: "Feature Cache Across Parameter Sweeps"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-712]
     tests: ["feature cache tests", "tests/testthat/test-features.R", "tests/testthat/test-backtest-wrapper.R", "tools/check-coverage.R"]

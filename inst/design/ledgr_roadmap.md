@@ -212,30 +212,158 @@ the ledgr mental model.
 **Goal:** Let users run fast exploratory parameter sweeps without DuckDB
 persistence, with guaranteed numeric parity against full truth runs.
 
-### Key Constraint
+### Architectural Framing
 
-Sweep mode is not a separate engine. It is the same execution path with
-persistence disabled. Parity tests enforce this as a CI invariant. Any engine
-change that silently breaks sweep/truth agreement is a build failure.
+The backtest is a left fold over pulses:
 
-### Scope
+```
+final_state = Reduce(apply_pulse, pulses, initial_state)
+```
 
-- `ledgr_sweep()` as the sweep entry point: same config contract as
-  `ledgr_backtest()`, no DuckDB artifact produced
-- Explicit public API boundary: which guarantees hold in sweep mode and which
-  do not (no run identity, no provenance, no ledger persistence)
-- Parity test suite: identical equity curves from `ledgr_sweep()` and
-  `ledgr_backtest()` on the same input fixture
-- Clear documentation of the intended workflow: sweep to shortlist, then
-  `ledgr_backtest()` for the candidates worth storing
+Each `apply_pulse` is a pure function of state, bar data, precomputed features,
+and the strategy. DuckDB writes are an output handler applied to the result —
+not part of the computation. This means `ledgr_backtest()` and `ledgr_sweep()`
+are the same fold with different output handlers, not different engines.
+
+Parameter sweeps expose two naturally parallel map dimensions:
+
+```
+map(instruments × indicators → feature series)   # pure, no dependencies
+  ↓ share zero-copy (mori)
+map(parameter combinations → fold result)        # pure, no dependencies
+  ↓
+reduce(fold results → comparison table)          # cheap, sequential
+```
+
+The only sequential work is within a single fold (the pulse loop has a
+time-step dependency that cannot be broken) and the final reduce. Everything
+else is embarrassingly parallel.
+
+### Core Invariant
+
+> Sweep mode may remove persistence.
+> Sweep mode may not change execution semantics.
+
+The implementation must extract an internal fold core that both
+`ledgr_backtest()` and `ledgr_sweep()` call. Implementing `ledgr_sweep()` by
+copying the runner and deleting DuckDB calls is explicitly prohibited — that
+path leads to silent parity drift.
+
+### Strategy Contract
+
+Sweep mode requires sweep-compatible strategies:
+
+```
+sweep-compatible strategy =
+  function(ctx, params)         # functional, explicit params
+  + no hidden mutable state     # no closures capturing external env state
+  + no DuckDB side effects      # no reads/writes to the run store
+  + Tier 1 reproducibility      # as defined in LDG-702
+```
+
+R6 strategies are excluded from sweep mode in the initial implementation
+unless they can be freshly instantiated per parameter set with no shared state.
+Sweep mode fails loudly with a clear error for non-compatible strategies.
+
+### Parity Scope
+
+"Same equity curve" is necessary but not sufficient. Full parity requires:
+
+- same equity curve
+- same trades and fills
+- same final positions and cash balance
+- same target/fill timing behaviour
+- same final-bar no-fill behaviour
+
+The in-memory event stream produced by sweep mode must be semantically
+equivalent to the persisted ledger. Sweep mode drops the DuckDB write; it does
+not drop the event semantics.
+
+### Precomputed Features Interface
+
+`precomputed_features` is a typed object, not a raw list:
+
+```r
+features <- ledgr_precompute_features(
+  snapshot,
+  indicators = list(...)
+)
+
+ledgr_sweep(
+  snapshot  = snapshot,
+  strategy  = strategy,
+  strategy_params = param_grid,
+  precomputed_features = features
+)
+```
+
+The object carries: `snapshot_hash`, universe, start/end range, indicator
+fingerprints, feature-engine version, and feature matrices. `ledgr_sweep()`
+fails loudly if the feature object does not match the requested snapshot, date
+range, universe, or indicator set.
+
+### Performance Expectations
+
+Sweep mode is not vectorbt-style instant matrix sweeps. It is the same
+simulation with a cheaper output path. Expected gains over `ledgr_backtest()`:
+
+- no DuckDB write per run
+- no repeated feature computation (features computed once, reused across
+  the sweep)
+- no run/schema/provenance overhead
+- result materialisation reduced to summary output
+
+The pulse loop remains sequential within each run. Sweep mode does not
+vectorise strategy evaluation or fill logic. Wall-time gains come from removing
+persistence overhead and from parallelising across parameter combinations.
+
+### Recommended Parallel Stack (no hard dependencies)
+
+The first implementation contract is: single-process sweep is correct and
+faster than `ledgr_backtest()`. Parallel sweep is user-composable and not part
+of the ledgr API.
+
+The intended high-performance parallel pattern composes ledgr with ecosystem
+packages users configure independently:
+
+```r
+# One-time setup
+future::plan(mirai::daemons(8))             # persistent workers, µs dispatch
+features <- mori::share(                    # zero-copy across all workers
+  ledgr_precompute_features(snap, indicators)
+)
+
+# Sweep
+results <- furrr::future_pmap(param_grid, function(...) {
+  ledgr_sweep(..., precomputed_features = features)
+})
+```
+
+- **mirai** — persistent daemon workers with sub-millisecond dispatch;
+  recommended `future` backend (`future::plan(mirai::daemons(n))`)
+- **mori** — OS-level shared memory via ALTREP; feature series shared
+  zero-copy across all workers; lazy access means workers pay only for the
+  features they touch; mori objects are transparent at the R API boundary
+- **furrr** — idiomatic `purrr`-style map API; swap `pmap` for
+  `future_pmap` without changing sweep code
+
+ledgr takes no hard dependency on any of these. The `precomputed_features`
+interface accepts normal R objects; mori-shared objects work because they are
+indistinguishable from plain R objects at the API boundary.
 
 ### Definition of Done
 
-- `ledgr_sweep()` and `ledgr_backtest()` produce numerically identical results
-  on the same input
+- `ledgr_sweep()` and `ledgr_backtest()` produce identical results on the same
+  input: equity curve, trades, fills, final positions, cash, and fill timing
 - Parity is enforced by CI, not by convention
+- Both functions call the same internal fold core; no copied runner code
+- `ledgr_precompute_features()` is implemented, typed, and validates against
+  the requesting sweep call
+- Strategy compatibility contract is enforced with clear errors
 - The public API surface clearly communicates what sweep mode does and does not
   guarantee
+- Single-process sweep is documented with a working example
+- Recommended parallel stack is documented separately as optional guidance
 
 ---
 

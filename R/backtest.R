@@ -1115,13 +1115,14 @@ ledgr_compute_equity_curve <- function(bt) {
   tibble::as_tibble(equity)
 }
 
-#' Summarize per-pulse telemetry timings
+#' Summarize per-pulse telemetry
 #'
 #' @param bt A `ledgr_backtest` object.
-#' @return A tibble with mean/median/p99 timings per component.
+#' @return A tibble with mean/median/p99 values per telemetry component.
 #' @details
 #' This is a diagnostic helper for engine profiling. It only reports telemetry
-#' captured for runs executed in the current R session.
+#' captured for runs executed in the current R session. Timing components are
+#' reported in seconds; feature-cache hit/miss rows are counts.
 #'
 #' @examples
 #' bars <- data.frame(
@@ -1161,7 +1162,21 @@ ledgr_backtest_bench <- function(bt) {
     )
   }
 
-  components <- c("t_pre", "t_post", "t_loop", "t_pulse", "t_bars", "t_ctx", "t_fill", "t_state", "t_feats", "t_strat", "t_exec")
+  components <- c(
+    "t_pre",
+    "t_post",
+    "t_loop",
+    "t_pulse",
+    "t_bars",
+    "t_ctx",
+    "t_fill",
+    "t_state",
+    "t_feats",
+    "t_strat",
+    "t_exec",
+    "feature_cache_hits",
+    "feature_cache_misses"
+  )
   out <- lapply(components, function(name) summarize_vec(telemetry[[name]]))
 
   tibble::tibble(
