@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Date:** April 26, 2026  
-**Total Tickets:** 14  
+**Total Tickets:** 15  
 **Estimated Duration:** 2-3 weeks
 
 ---
@@ -28,7 +28,7 @@ LDG-708 -> LDG-711 -> LDG-714
 LDG-709 -----------> LDG-714
 LDG-710 -> LDG-711 -> LDG-714
 
-LDG-712 -> LDG-713 -> LDG-714
+LDG-712 -> LDG-713 -> LDG-715 -> LDG-714
 ```
 
 `LDG-714` is the stabilisation gate. It should not be accepted until contracts,
@@ -533,11 +533,168 @@ indicator fingerprint do not recompute the same feature series.
 
 ---
 
+## LDG-715: Low-Code TTR Indicator Constructor
+
+**Priority:** P1  
+**Effort:** 1-2 days  
+**Dependencies:** LDG-713
+
+**Description:**
+Add a low-code `ledgr_ind_ttr()` constructor for common TTR indicators. The
+constructor should produce normal `ledgr_indicator` objects with `series_fn`
+support, deterministic fingerprints, and explicit warmup semantics.
+
+This is not a generic loose wrapper around arbitrary R functions. It is a
+TTR-specific convenience layer that lets users write readable research code for
+well-known technical indicators while preserving ledgr's reproducibility
+contracts.
+
+**User-Facing UX:**
+```r
+rsi_14 <- ledgr_ind_ttr("RSI", input = "close", n = 14)
+
+atr_20 <- ledgr_ind_ttr(
+  "ATR",
+  input = "hlc",
+  output = "atr",
+  n = 20
+)
+
+macd <- ledgr_ind_ttr(
+  "MACD",
+  input = "close",
+  output = "macd",
+  nFast = 12,
+  nSlow = 26,
+  nSig = 9
+)
+```
+
+**Design Rules:**
+1. Name the constructor `ledgr_ind_ttr()`, not `ledgr_adapter_ttr()`, because it
+   creates an indicator rather than a data/snapshot adapter.
+2. Add `ledgr_ttr_warmup_rules()` as an exported inspectable rules table. Do not
+   export a mutable constant.
+   The return schema must be a data frame/tibble with at least:
+   - `ttr_fn`: TTR function name;
+   - `input`: supported ledgr input shape;
+   - `formula`: human-readable warmup formula;
+   - `required_args`: character/list column of args required for inference;
+   - `id_args`: character/list column giving deterministic ID arg order.
+3. Include a TTR function in the inference table only when required bars are
+   deterministic from explicit arguments alone. No heuristics.
+4. Do not rely on TTR's default indicator parameters for warmup inference or ID
+   generation. Parameterized functions must receive explicit args such as `n`,
+   `nFast`, `nSlow`, and `nSig`.
+5. If warmup cannot be inferred, require explicit `requires_bars` and give an
+   actionable error explaining how to measure it by counting leading `NA` values
+   on a sample TTR output.
+   Known functions with missing explicit args must fail before calling TTR with
+   an example-driven message, for example:
+   ```text
+   TTR::RSI requires explicit `n` for ledgr warmup inference and stable indicator IDs.
+   Example: ledgr_ind_ttr("RSI", input = "close", n = 14)
+   ```
+6. Store TTR metadata in indicator params with a clear split between identity
+   fields and forwarded TTR args:
+   ```r
+   params = list(
+     ttr_fn = "ATR",
+     ttr_version = as.character(utils::packageVersion("TTR")),
+     input = "hlc",
+     output = "atr",
+     args = list(n = 20)
+   )
+   ```
+7. Forward only `params$args` to TTR:
+   ```r
+   ttr_fn <- getExportedValue("TTR", params$ttr_fn)
+   result <- do.call(ttr_fn, c(list(x), params$args))
+   ```
+8. Include `ttr_version` in params so indicator fingerprints change when TTR is
+   upgraded.
+9. Generate deterministic default IDs from explicit user-supplied args:
+   `ttr_<fn>_<id_args in rules-table order>[_<output>]`.
+10. For known functions, ID arg order comes from the rules table, not
+    alphabetical order. For unknown functions with explicit `requires_bars`, use
+    alphabetical ordering of supplied args unless the user provides `id`.
+
+**Input Mapping Contract:**
+- `input = "close"` -> numeric vector `bars$close`
+- `input = "hlc"` -> matrix with columns `High`, `Low`, `Close`
+- `input = "ohlc"` -> matrix with columns `Open`, `High`, `Low`, `Close`
+- `input = "hlcv"` -> matrix with columns `High`, `Low`, `Close`, `Volume`
+
+Column names must match TTR expectations exactly for functions that validate
+their input names.
+
+**Initial Warmup Rules:**
+- `RSI`, `input = "close"`: `requires_bars = n + 1`, `id_args = n`
+- `SMA`, `input = "close"`: `requires_bars = n`, `id_args = n`
+- `EMA`, `input = "close"`: `requires_bars = n + 1`, `id_args = n`
+- `ATR`, `input = "hlc"`: `requires_bars = n + 1`, `id_args = n`
+- `MACD`, `input = "close"`: `requires_bars = nSlow + nSig - 1`,
+  `id_args = nFast,nSlow,nSig`
+
+**Tasks:**
+1. Implement `ledgr_ttr_warmup_rules()`.
+2. Implement `ledgr_ind_ttr(ttr_fn, input, output = NULL, id = NULL,
+   requires_bars = NULL, stable_after = requires_bars, ...)`.
+3. Implement TTR input builders with explicit column naming.
+4. Implement TTR output selection:
+   - vector output can use `output = NULL`;
+   - multi-column output requires `output`;
+   - invalid output names fail with available choices.
+5. Implement scalar `fn` fallback and vectorized `series_fn` from the same
+   TTR call template.
+6. Add dependency handling with `requireNamespace("TTR", quietly = TRUE)` and a
+   clear error when TTR is unavailable.
+7. Include TTR version, input shape, output name, function name, and forwarded
+   args in indicator params/fingerprints.
+8. Add reference documentation and examples guarded for optional TTR dependency
+   where needed.
+9. Update custom-indicators or getting-started docs only where this improves the
+   research-loop story without bloating onboarding.
+
+**Acceptance Criteria:**
+- [ ] `ledgr_ind_ttr("RSI", input = "close", n = 14)` creates a valid
+      `ledgr_indicator`.
+- [ ] `ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)` creates a
+      valid `ledgr_indicator`.
+- [ ] `ledgr_ind_ttr("MACD", input = "close", output = "macd", nFast = 12,
+      nSlow = 26, nSig = 9)` creates a valid `ledgr_indicator`.
+- [ ] `series_fn` is used in backtest feature precomputation.
+- [ ] Scalar `fn` and `series_fn` agree on the latest value for supported
+      indicators.
+- [ ] `ledgr_ttr_warmup_rules()` is exported, documented, and test-covered.
+- [ ] `ledgr_ttr_warmup_rules()` returns the documented schema.
+- [ ] Warmup inference uses only explicit args and documented deterministic
+      rules.
+- [ ] Missing required explicit args fail before calling TTR.
+- [ ] Unknown functions require explicit `requires_bars`.
+- [ ] Multi-column TTR output without `output` fails with available column names.
+- [ ] Invalid `output` names fail with available column names.
+- [ ] Indicator fingerprint changes when TTR version metadata changes.
+- [ ] Input builders produce TTR-compatible column names.
+
+**Test Requirements:**
+- `tests/testthat/test-indicators.R`
+- `tests/testthat/test-indicator-adapters.R` or new `test-indicator-ttr.R`
+- Warmup-rule contract test that runs each rules-table entry against TTR output
+  and verifies the first non-`NA` row matches the inferred `requires_bars`
+- Backtest integration test proving `series_fn` is called once per instrument
+- Optional-dependency skip path when TTR is unavailable
+- `R CMD check --no-manual --no-build-vignettes`
+
+**Source Reference:** TTR UX discussion after LDG-712
+
+---
+
 ## LDG-714: v0.1.4 Stabilisation Gate
 
 **Priority:** P0  
 **Effort:** 1 day  
-**Dependencies:** LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713
+**Dependencies:** LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715
 
 **Description:**
 Final validation gate for the v0.1.4 stabilisation cycle.

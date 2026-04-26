@@ -80,9 +80,15 @@ tickets:
     priority: P1
     dependencies: [LDG-712]
     tests: ["feature cache tests", "tests/testthat/test-features.R", "tests/testthat/test-backtest-wrapper.R", "tools/check-coverage.R"]
+  - id: LDG-715
+    title: "Low-Code TTR Indicator Constructor"
+    status: pending
+    priority: P1
+    dependencies: [LDG-713]
+    tests: ["tests/testthat/test-indicators.R", "tests/testthat/test-indicator-ttr.R", "backtest series_fn integration", "R CMD check"]
   - id: LDG-714
     title: "v0.1.4 Stabilisation Gate"
     status: pending
     priority: P0
-    dependencies: [LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713]
+    dependencies: [LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715]
     tests: ["tools/check-readme-example.R", "tools/check-coverage.R", "R CMD check", "pkgdown::build_site", ".github/workflows/R-CMD-check.yaml"]
