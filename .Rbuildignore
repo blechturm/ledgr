@@ -2,6 +2,7 @@
 ^README\.Rmd$
 ^AGENTS\.md$
 ^\.github$
+^\.claude$
 ^docs$
 ^_pkgdown\.yml$
 ^vignettes$

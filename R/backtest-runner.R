@@ -7,10 +7,9 @@
 #' @param run_id Optional run identifier to resume or reuse.
 #' @return A list with `run_id` and `db_path`.
 #' @details
-#' This is the canonical low-level runner. Most users should call
-#' `ledgr_backtest()`, which builds the config and then delegates here. There is
-#' no exported config-construction helper in v0.1.3, so the example is
-#' illustrative only.
+#' This is a low-level internal runner. Most users should call
+#' `ledgr_backtest()`, which builds the config and then delegates here. Direct
+#' use is not recommended; the example is illustrative only.
 #'
 #' @examples
 #' if (FALSE) {
@@ -174,7 +173,7 @@ ledgr_get_run_telemetry <- function(run_id) {
 }
 
 ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list()) {
-  ledgr_validate_config(config)
+  validate_ledgr_config(config)
 
   cfg <- if (is.character(config)) {
     jsonlite::fromJSON(config, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE)

@@ -1,6 +1,6 @@
 #' Run a backtest (v0.1.2)
 #'
-#' Thin wrapper around the canonical engine entrypoint `ledgr_run()`.
+#' Thin wrapper around the canonical engine path.
 #'
 #' @param snapshot A `ledgr_snapshot` object, or a data frame for the data-first
 #'   convenience path.
@@ -11,7 +11,8 @@
 #' @param end End timestamp (NULL = snapshot end).
 #' @param initial_cash Starting capital.
 #' @param features List of ledgr indicator definitions (optional).
-#' @param fill_model Fill model config (NULL = instant fill).
+#' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
+#'   model with zero spread and zero fixed commission.
 #' @param execution_mode Execution mode ("db_live" or "audit_log").
 #' @param checkpoint_every Flush interval for audit_log mode.
 #' @param db_path Database path for the run ledger (NULL = snapshot DB).
@@ -21,6 +22,11 @@
 #' @param data Optional data frame/tibble or `ledgr_snapshot`. Exactly one of
 #'   `snapshot` and `data` may be supplied.
 #' @return A `ledgr_backtest` object.
+#' @details
+#' Strategies return target holdings. The default fill model is `next_open`: a
+#' target decided at pulse `t` is filled at the next available bar. Targets on
+#' the final pulse therefore cannot be filled unless another bar exists after
+#' `end`.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -559,7 +565,43 @@ ledgr_config <- function(snapshot,
 
   if (!is.null(run_id)) config$run_id <- run_id
 
+  class(config) <- c("ledgr_config", class(config))
+  validate_ledgr_config(config)
   config
+}
+
+#' Print a ledgr config
+#'
+#' @param x A `ledgr_config` object.
+#' @param ... Unused.
+#' @return The input config, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102),
+#'   high = c(101, 102, 103),
+#'   low = c(99, 100, 101),
+#'   close = c(100, 101, 102),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) ctx$targets()
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' print(bt$config)
+#' close(bt)
+#' @export
+print.ledgr_config <- function(x, ...) {
+  cat("ledgr_config\n")
+  cat("============\n")
+  cat("Database:    ", x$db_path, "\n", sep = "")
+  snapshot_id <- if (is.list(x$data) && !is.null(x$data$snapshot_id)) x$data$snapshot_id else NA_character_
+  cat("Snapshot ID: ", snapshot_id, "\n", sep = "")
+  cat("Universe:    ", paste(x$universe$instrument_ids, collapse = ", "), "\n", sep = "")
+  cat("Backtest:    ", x$backtest$start_ts_utc, " to ", x$backtest$end_ts_utc, "\n", sep = "")
+  cat("Initial Cash:", x$backtest$initial_cash, "\n")
+  cat("Fill Model:  ", x$fill_model$type, "\n", sep = "")
+  cat("Strategy:    ", x$strategy$id, "\n", sep = "")
+  invisible(x)
 }
 
 ledgr_backtest_equity <- function(con, run_id) {

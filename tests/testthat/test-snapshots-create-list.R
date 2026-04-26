@@ -82,3 +82,18 @@ testthat::test_that("snapshot_list(status=...) filters and validates status enum
 
   testthat::expect_error(ledgr_snapshot_list(con, status = "NOPE"), class = "ledgr_invalid_args")
 })
+
+testthat::test_that("snapshot_list accepts a DuckDB path", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  con <- ledgr_db_init(db_path)
+  on.exit(if (DBI::dbIsValid(con)) DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  snapshot_id <- "snapshot_20250101_000000_abcd"
+  ledgr_snapshot_create(con, snapshot_id = snapshot_id, meta = list())
+  DBI::dbDisconnect(con, shutdown = TRUE)
+
+  df <- ledgr_snapshot_list(db_path)
+  testthat::expect_equal(nrow(df), 1L)
+  testthat::expect_identical(df$snapshot_id[[1]], snapshot_id)
+})

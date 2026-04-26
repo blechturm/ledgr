@@ -34,6 +34,7 @@ testthat::test_that("exported API surface is locked (v0.1.2)", {
     "ledgr_snapshot_import_instruments_csv",
     "ledgr_snapshot_info",
     "ledgr_snapshot_list",
+    "ledgr_snapshot_load",
     "ledgr_snapshot_seal",
     "ledgr_state_reconstruct",
     "ledgr_validate_schema"

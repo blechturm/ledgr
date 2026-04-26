@@ -1,0 +1,88 @@
+version: "0.1.4-stabilisation"
+source: "v0_1_4_tickets.md"
+tickets:
+  - id: LDG-701
+    title: "Compatibility Policy and Design-File Hygiene"
+    status: done
+    priority: P0
+    dependencies: []
+    tests: ["inst/design/contracts.md", "NEWS.md", "rg non-ascii design inputs"]
+  - id: LDG-702
+    title: "Strategy Identity and Reproducibility Tiers"
+    status: done
+    priority: P0
+    note: "Release-critical, not implementation-blocking."
+    dependencies: [LDG-701]
+    tests: ["design review", "inst/design/contracts.md"]
+  - id: LDG-703
+    title: "Low-Level API Lifecycle Cleanup"
+    status: done
+    priority: P0
+    dependencies: [LDG-701]
+    tests: ["tests/testthat/test-api-exports.R", "man", "NEWS.md", "R CMD check"]
+  - id: LDG-704
+    title: "Internal ledgr_config Class and Validation"
+    status: done
+    priority: P0
+    dependencies: [LDG-701]
+    tests: ["tests/testthat/test-backtest-wrapper.R", "tests/testthat/test-config*.R", "acceptance-v0.1"]
+  - id: LDG-705
+    title: "Public ledgr_data_hash Deprecation and Internal Hash Split"
+    status: pending
+    priority: P1
+    dependencies: [LDG-701]
+    tests: ["tests/testthat/test-data-hash.R", "snapshot adapter tests", "acceptance-v0.1"]
+  - id: LDG-706
+    title: "Reconstruction Documentation Cleanup"
+    status: done
+    priority: P2
+    dependencies: []
+    tests: ["man", "R CMD check"]
+  - id: LDG-707
+    title: "Optional Indicator Deregistration Helper"
+    status: pending
+    priority: P3
+    dependencies: []
+    tests: ["tests/testthat/test-indicators.R", "tests/testthat/test-api-exports.R"]
+  - id: LDG-708
+    title: "Load Existing Sealed Snapshots"
+    status: done
+    priority: P0
+    dependencies: []
+    tests: ["tests/testthat/test-snapshots-load.R", "tests/testthat/test-snapshots-create-list.R", "vignettes/getting-started.Rmd"]
+  - id: LDG-709
+    title: "Path-First Snapshot Listing"
+    status: done
+    priority: P1
+    dependencies: []
+    tests: ["tests/testthat/test-snapshots-create-list.R", "R CMD check"]
+  - id: LDG-710
+    title: "Current Target Helper"
+    status: done
+    priority: P0
+    dependencies: []
+    tests: ["tests/testthat/test-pulse-context-accessors.R", "tests/testthat/test-indicator-tools.R", "tests/testthat/test-strategy-contracts.R"]
+  - id: LDG-711
+    title: "Research Workflow Documentation Updates"
+    status: done
+    priority: P1
+    dependencies: [LDG-708, LDG-710]
+    tests: ["README.Rmd", "vignettes/getting-started.Rmd", "R CMD check"]
+  - id: LDG-712
+    title: "Vectorized Indicator series_fn"
+    status: pending
+    priority: P0
+    dependencies: []
+    tests: ["tests/testthat/test-indicators.R", "tests/testthat/test-features.R", "custom-indicators vignette if changed or created"]
+  - id: LDG-713
+    title: "Feature Cache Across Parameter Sweeps"
+    status: pending
+    priority: P1
+    dependencies: [LDG-712]
+    tests: ["feature cache tests", "tests/testthat/test-features.R", "tests/testthat/test-backtest-wrapper.R", "tools/check-coverage.R"]
+  - id: LDG-714
+    title: "v0.1.4 Stabilisation Gate"
+    status: pending
+    priority: P0
+    dependencies: [LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713]
+    tests: ["tools/check-readme-example.R", "tools/check-coverage.R", "R CMD check", "pkgdown::build_site", ".github/workflows/R-CMD-check.yaml"]

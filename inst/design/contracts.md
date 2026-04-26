@@ -12,6 +12,24 @@ coding agents must preserve. The authoritative narrative remains in
   execution semantics.
 - The runner owns pulse order, fills, strategy state, ledger events, features,
   and equity output.
+- v0.x may make breaking public-API changes when they protect correctness or
+  simplify the public model. Every breaking change must be documented in
+  `NEWS.md` and, where practical, pass through one deprecation release.
+- The default fill model is `next_open` with zero spread and zero fixed
+  commission. A target emitted at pulse `t` is filled at the next available bar;
+  a target emitted on the final pulse has no next bar and is not filled.
+
+## Config Contract
+
+- `ledgr_config()` is an internal construction helper in v0.1.4. It returns an
+  S3 object of class `ledgr_config`, validates the object before returning, and
+  has a concise print method for diagnostics.
+- `validate_ledgr_config()` is the internal validator name used by execution
+  code. It delegates to the same schema checks as the legacy
+  `ledgr_validate_config()` helper.
+- Exporting direct config construction is deferred until the experiment-store
+  API proves that users need it. Public workflows should continue to start with
+  `ledgr_backtest()`.
 
 ## Snapshot Contract
 
@@ -22,6 +40,11 @@ coding agents must preserve. The authoritative narrative remains in
   snapshot hash or transitioning to `SEALED`.
 - Split snapshot/run DB mode must verify the source snapshot hash from the
   snapshot DB while writing run artifacts to the run DB.
+- `ledgr_snapshot_load(db_path, snapshot_id)` may reopen an existing sealed
+  snapshot. It must never create, silently overwrite, or silently reseal a
+  snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
+- `ledgr_snapshot_list()` accepts either a DBI connection or a DuckDB file path.
+  Path inputs are opened read-style for discovery and closed before returning.
 
 ## Persistence Contract
 
@@ -51,6 +74,17 @@ coding agents must preserve. The authoritative narrative remains in
   `ledgr_signal_strategy()` is an explicit convenience wrapper that maps signals
   to normal targets before validation.
 - Functional strategies and R6 strategies use the same target validator.
+- Strategy reproducibility is tiered:
+  - Tier 1: self-contained `function(ctx, params)` style logic with explicit
+    parameters and no unresolved external objects.
+  - Tier 2: logic that can be inspected but not fully replayed without external
+    context, including R6 strategies unless they provide explicit source and
+    parameter metadata.
+  - Tier 3: environment-dependent logic whose execution identity cannot be
+    recovered from stored metadata.
+- v0.1.4 run-identity design must treat `strategy_source_hash`,
+  `strategy_params_hash`, and reproducibility tier as part of experiment
+  provenance. R6 strategy identity must not be finalized implicitly.
 
 ## Context Contract
 
@@ -58,6 +92,12 @@ coding agents must preserve. The authoritative narrative remains in
   `ctx$bars` and long-table `ctx$features`.
 - Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
   views over `ctx$features`; they do not change feature computation semantics.
+- `ctx$targets()` creates a full named target vector initialized to flat
+  positions. It is appropriate when the strategy wants unspecified instruments
+  to go flat.
+- `ctx$current_targets()` creates a full named target vector initialized from
+  current holdings. It is appropriate for hold-unless-signal strategies and
+  rebalance throttling.
 - Interactive pulse and indicator tools are read-only against persistent ledgr
   tables.
 

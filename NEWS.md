@@ -1,3 +1,18 @@
+# ledgr 0.1.4
+
+- Added `ledgr_snapshot_load()` for reopening existing sealed snapshots from a
+  durable DuckDB file, with optional hash verification.
+- Updated `ledgr_snapshot_list()` so it accepts either a DBI connection or a
+  DuckDB file path.
+- Added `ctx$current_targets()` to runtime and interactive pulse contexts for
+  hold-unless-signal strategy patterns.
+- Made internal backtest configs an S3 `ledgr_config` object with validation
+  and diagnostic printing, while keeping public workflows centered on
+  `ledgr_backtest()`.
+- Clarified v0.x compatibility policy, strategy reproducibility tiers,
+  next-open fill semantics, and low-level API lifecycle notes in design and
+  reference documentation.
+
 # ledgr 0.1.3
 
 - Reworked the README into a 5-minute installed-package path with runnable
