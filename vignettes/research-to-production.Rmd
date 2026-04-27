@@ -4,6 +4,7 @@ output:
   github_document:
     toc: false
     html_preview: false
+    md_extensions: -smart
 ---
 
 ```{r setup, include=FALSE}
@@ -63,6 +64,26 @@ market data permanently. A **`run_id`** is an immutable experiment key. Strategy
 identity is captured from source text and parameters. Every run is auditable and
 discoverable after the R session ends.
 
+In v0.1.5 this is a concrete user-facing workflow:
+
+```{r experiment-store-api, eval=FALSE}
+runs <- ledgr_run_list(db_path)
+
+info <- ledgr_run_info(db_path, "sma_20_production_candidate")
+
+bt <- ledgr_run_open(db_path, "sma_20_production_candidate")
+ledgr_results(bt, what = "equity")
+
+ledgr_run_label(db_path, "sma_20_production_candidate", "approved-baseline")
+ledgr_run_archive(db_path, "discarded-parameter-test", reason = "bad regime fit")
+```
+
+`run_id` is the immutable experiment key. `label` and archive state are mutable
+metadata only; they do not change the snapshot hash, strategy source hash,
+strategy parameter hash, config hash, or ledger artifacts. Older runs created
+before provenance capture remain inspectable as legacy/pre-provenance runs, but
+they cannot be upgraded into fully reproducible experiments after the fact.
+
 The research workflow before deployment has two phases:
 
 **Sweep** (v0.1.7). Fast, parallel, no persistence. Explore the parameter space
@@ -79,7 +100,7 @@ deployment decision.
 v0.1.5 ships before v0.1.7 because sweep mode depends on the same experiment
 identity and parity contracts that persistence establishes.
 
-```r
+```{r sweep-persist-sketch, eval=FALSE}
 # Sweep: explore
 features <- ledgr_precompute_features(snapshot, indicators = list(sma_20, rsi_14))
 
@@ -96,6 +117,9 @@ bt <- ledgr_backtest(
 )
 ledgr_run_label(db_path, "sma_20_production_candidate", "Approved 2026-05-01")
 ```
+
+Run comparison tables and strategy-source recovery are intentionally not part of
+v0.1.5. They build on the identity and discovery layer in later releases.
 
 ## The Edge Device
 
@@ -121,7 +145,7 @@ parameters and no hidden mutable state:
 
 ```r
 sma_strategy <- function(ctx, params) {
-  targets <- ctx$current_targets()
+  targets <- ctx$targets()
   for (id in ctx$universe) {
     sma <- ctx$feature(id, paste0("ttr_sma_", params$window))
     if (!is.na(sma) && ctx$close(id) > sma) {

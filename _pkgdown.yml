@@ -27,12 +27,21 @@ reference:
       - print.ledgr_backtest
       - summary.ledgr_backtest
       - as_tibble.ledgr_backtest
+      - ledgr_results
       - close.ledgr_backtest
       - plot.ledgr_backtest
       - ledgr_extract_fills
       - ledgr_compute_equity_curve
       - ledgr_compute_metrics
       - ledgr_state_reconstruct
+  - title: Experiment Store
+    contents:
+      - ledgr_run_list
+      - ledgr_run_info
+      - print.ledgr_run_info
+      - ledgr_run_open
+      - ledgr_run_label
+      - ledgr_run_archive
   - title: Snapshots
     contents:
       - starts_with("ledgr_snapshot")

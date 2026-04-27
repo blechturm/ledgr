@@ -2,7 +2,8 @@
 
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
-`inst/design/ledgr_v0_1_2_spec_packet/v0_1_2_spec.md`.
+the active versioned spec packet, currently
+`inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md`.
 
 ## Execution Contract
 
@@ -45,6 +46,9 @@ coding agents must preserve. The authoritative narrative remains in
   snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
 - `ledgr_snapshot_list()` accepts either a DBI connection or a DuckDB file path.
   Path inputs are opened read-style for discovery and closed before returning.
+- Explicit custom snapshot IDs are allowed. The generated `snapshot_` pattern is
+  a convention for generated IDs, not a ban on durable user names; warn only
+  when a user-supplied ID starts with `snapshot_` but is malformed.
 - `ledgr_data_hash()` is a legacy v0.1.0 helper for direct `bars` table
   workflows. Snapshot-backed workflows should use sealed `snapshot_hash`
   values. Internal run-resume and snapshot-adapter data-subset hashes must use
@@ -71,6 +75,8 @@ coding agents must preserve. The authoritative narrative remains in
 - `ledgr_run_label()` and `ledgr_run_archive()` mutate only run metadata.
   They must never rename `run_id`, delete artifacts, or change experiment
   identity hashes. Archive is non-destructive and idempotent.
+- Run comparison, tags, hard delete, and strategy-source recovery are deferred
+  beyond v0.1.5 and must not be documented as available v0.1.5 APIs.
 
 ## Canonical JSON Contract
 
@@ -119,9 +125,9 @@ coding agents must preserve. The authoritative narrative remains in
 - Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
   views over `ctx$features`; they do not change feature computation semantics.
 - `ctx$feature(instrument_id, feature_id)` must fail loudly for unknown feature
-  IDs when features are configured, including the requested feature, instrument,
-  and available feature IDs. A known feature whose current value is warmup `NA`
-  remains a normal `NA` lookup, not an error.
+  IDs, including the requested feature, instrument, and available feature IDs
+  (`<none>` if no features are registered). A known feature whose current value
+  is warmup `NA` remains a normal `NA` lookup, not an error.
 - Indicators may provide an optional `series_fn(bars, params)` for full-series
   precomputation. The input is one instrument's full bar series in ascending
   time order, and the output must be a numeric vector aligned to `nrow(bars)`.
@@ -185,7 +191,7 @@ coding agents must preserve. The authoritative narrative remains in
 
 - Full regression tests must pass before release-ticket completion.
 - Package check target:
-  `R CMD check --no-manual --no-build-vignettes ledgr_0.1.2.tar.gz`.
+  `R CMD check --no-manual --no-build-vignettes ledgr_*.tar.gz`.
 - Coverage gate target: at least 80% total coverage via `tools/check-coverage.R`.
 - CI must run acceptance tests before the full package check and include a
   Windows runner before v0.1.2 release.

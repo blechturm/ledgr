@@ -25,7 +25,9 @@ data -> sealed snapshot -> pulses -> event ledger -> results
 ```
 
 Results come from recorded history, not a hidden intermediate
-calculation.
+calculation. For the longer design arc, see the
+[`research-to-production`](https://blechturm.github.io/ledgr/articles/research-to-production.html)
+article on the pkgdown site.
 
 ## Install
 
@@ -143,6 +145,7 @@ bt
 #> Run ID:         readme-demo
 #> Universe:       AAA, BBB
 #> Date Range:     2020-01-01T00:00:00Z to 2020-02-14T00:00:00Z
+#> Execution Mode: audit_log
 #> Initial Cash:   $10000.00
 #> Final Equity:   $10436.30
 #> P&L:            $436.30 (4.36%)
@@ -299,6 +302,6 @@ help(package = "ledgr")
 utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
 ```
 
-The v0.1.3 design packet is in `inst/design/ledgr_v0_1_3_spec_packet/`.
-The v0.1.2 packet records the engine and UX foundation this release
-builds on.
+The v0.1.5 design packet is in `inst/design/ledgr_v0_1_5_spec_packet/`.
+Earlier packets record the engine, snapshot, and onboarding foundations
+this release builds on.

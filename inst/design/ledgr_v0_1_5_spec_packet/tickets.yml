@@ -338,7 +338,7 @@ tickets:
 
   - id: LDG-808
     title: "Documentation, Contracts, And Site Updates"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-801, LDG-802, LDG-803, LDG-804, LDG-805, LDG-806, LDG-807]
     tests:

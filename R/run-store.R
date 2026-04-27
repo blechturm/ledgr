@@ -349,6 +349,11 @@ ledgr_run_info <- function(db_path, run_id) {
   ledgr_run_info_from_row(row, db_path)
 }
 
+#' Print run information
+#'
+#' @param x A `ledgr_run_info` object.
+#' @param ... Unused.
+#' @return The input object, invisibly.
 #' @export
 print.ledgr_run_info <- function(x, ...) {
   if (!inherits(x, "ledgr_run_info")) {

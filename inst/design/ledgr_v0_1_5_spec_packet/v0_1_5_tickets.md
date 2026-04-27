@@ -705,15 +705,15 @@ model is visible, coherent, and aligned with implementation.
     `ledgr_run_open()`, and `ledgr_run_info()`.
 
 **Acceptance Criteria:**
-- [ ] `contracts.md` matches v0.1.5 behavior.
-- [ ] `NEWS.md` lists public API additions and behavior changes.
-- [ ] Every new exported function has offline-safe examples.
-- [ ] pkgdown navigation includes new user-facing docs where appropriate.
-- [ ] Docs explain `run_id`, `label`, archive, legacy/pre-provenance runs, and
+- [x] `contracts.md` matches v0.1.5 behavior.
+- [x] `NEWS.md` lists public API additions and behavior changes.
+- [x] Every new exported function has offline-safe examples.
+- [x] pkgdown navigation includes new user-facing docs where appropriate.
+- [x] Docs explain `run_id`, `label`, archive, legacy/pre-provenance runs, and
       strategy params.
-- [ ] `vignettes/research-to-production.Rmd` explains the v0.1.5
+- [x] `vignettes/research-to-production.Rmd` explains the v0.1.5
       experiment-store role in the research-to-production arc.
-- [ ] Docs do not imply v0.1.5 supports comparison or strategy recovery.
+- [x] Docs do not imply v0.1.5 supports comparison or strategy recovery.
 
 **Test Requirements:**
 - `devtools::document()` or `roxygen2::roxygenise()`.

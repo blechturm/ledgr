@@ -1,0 +1,187 @@
+Design Philosophy: From Research to Production
+================
+
+ledgr is built around one design premise: strategies should use the same
+contract across backtest, paper, and live modes. Not a translation of
+research code into production code. Not a reimplementation. The same
+strategy function, the same logic, the same event-sourced ledger model.
+
+This article explains the arc ledgr is designed to cover, how the
+event-sourced model enables it, and where v0.1.x sits on that path.
+
+## The Arc
+
+``` text
+research  ->  paper trading  ->  live trading
+```
+
+Most backtesting libraries stop at the first arrow. The strategy exits
+the research environment as a CSV of returns and is re-implemented in a
+production system that has nothing to do with the backtest. The results
+differ. The bugs differ. The audit trail is gone.
+
+ledgr is designed so that the strategy that produced the backtested
+results uses the same contract in production. The event-sourced ledger
+is what makes that continuity possible.
+
+## The Ledger Is The Bridge
+
+In ledgr, results are never computed directly from price arrays. Every
+decision -- a target position, a fill, a cash change -- is recorded as
+an immutable event. Equity, trades, and metrics are derived from that
+ledger after the fact.
+
+``` text
+data -> sealed snapshot -> pulses -> event ledger -> results
+```
+
+This is not just a correctness choice. It is an architectural choice
+that makes the research-to-production arc coherent. Backtest and paper
+fills share the same ledger event schema, so the reconstruction logic,
+result views, and audit trail work identically across both modes. Live
+trading extends the event stream with broker lifecycle events --
+submissions, acknowledgments, partial fills, rejections -- without
+changing the strategy contract. Safety gates, reconciliation, and
+operational controls are adapter concerns; the strategy itself does not
+change.
+
+## The Experiment Store
+
+Before a strategy is deployed it needs to be validated -- not just
+against one parameter set on one data slice, but across many
+combinations and market regimes, with full provenance.
+
+The ledgr experiment store makes this durable. A **sealed snapshot**
+pins the market data permanently. A **`run_id`** is an immutable
+experiment key. Strategy identity is captured from source text and
+parameters. Every run is auditable and discoverable after the R session
+ends.
+
+In v0.1.5 this is a concrete user-facing workflow:
+
+``` r
+runs <- ledgr_run_list(db_path)
+
+info <- ledgr_run_info(db_path, "sma_20_production_candidate")
+
+bt <- ledgr_run_open(db_path, "sma_20_production_candidate")
+ledgr_results(bt, what = "equity")
+
+ledgr_run_label(db_path, "sma_20_production_candidate", "approved-baseline")
+ledgr_run_archive(db_path, "discarded-parameter-test", reason = "bad regime fit")
+```
+
+`run_id` is the immutable experiment key. `label` and archive state are
+mutable metadata only; they do not change the snapshot hash, strategy
+source hash, strategy parameter hash, config hash, or ledger artifacts.
+Older runs created before provenance capture remain inspectable as
+legacy/pre-provenance runs, but they cannot be upgraded into fully
+reproducible experiments after the fact.
+
+The research workflow before deployment has two phases:
+
+**Sweep** (v0.1.7). Fast, parallel, no persistence. Explore the
+parameter space across many combinations using precomputed, shared
+feature series. Feature computation happens once per indicator per
+instrument and is reused across the entire sweep. The output is a ranked
+list of candidates.
+
+**Persist** (v0.1.5). Full provenance run. Validate the top candidates
+with durable artifacts: sealed snapshot hash, strategy source hash,
+parameter hash, ledgr and R version, dependency versions. Commit the
+winning configuration to the experiment store with a label. That stored
+run is the audit record of the deployment decision.
+
+v0.1.5 ships before v0.1.7 because sweep mode depends on the same
+experiment identity and parity contracts that persistence establishes.
+
+``` r
+# Sweep: explore
+features <- ledgr_precompute_features(snapshot, indicators = list(sma_20, rsi_14))
+
+results <- furrr::future_pmap(param_grid, function(...) {
+  ledgr_sweep(..., precomputed_features = features)
+})
+
+# Persist: validate the winner
+bt <- ledgr_backtest(
+  snapshot = snapshot,
+  strategy = strategy,
+  strategy_params = best_params,
+  run_id = "sma_20_production_candidate"
+)
+ledgr_run_label(db_path, "sma_20_production_candidate", "Approved 2026-05-01")
+```
+
+Run comparison tables and strategy-source recovery are intentionally not
+part of v0.1.5. They build on the identity and discovery layer in later
+releases.
+
+## The Edge Device
+
+DuckDB runs anywhere R runs, including ARM edge hardware such as a
+Raspberry Pi or a small cloud VPS. A validated strategy can be deployed
+to an edge device with an R instance, a DuckDB experiment store, and a
+broker adapter.
+
+The device maintains its own ledger, appending live fills to the same
+schema the backtest used. If the device restarts,
+`ledgr_state_reconstruct()` rebuilds current positions and cash from the
+ledger events. No state is held in memory across restarts. No
+reconciliation step is needed. The ledger is the state.
+
+This makes the deployment target simpler than traditional production
+systems. There is no separate database, no separate execution engine, no
+translation layer. R, DuckDB, and a broker adapter are sufficient for
+systematic EOD and low-frequency intraday strategies.
+
+## The Strategy Contract
+
+The sweep-to-production path works cleanly for strategies written as
+self-contained `function(ctx, params)` functions with explicit,
+JSON-safe parameters and no hidden mutable state:
+
+``` r
+sma_strategy <- function(ctx, params) {
+  targets <- ctx$targets()
+  for (id in ctx$universe) {
+    sma <- ctx$feature(id, paste0("ttr_sma_", params$window))
+    if (!is.na(sma) && ctx$close(id) > sma) {
+      targets[id] <- params$quantity
+    }
+  }
+  targets
+}
+```
+
+This is Tier 1 reproducibility: the strategy is fully self-contained,
+its parameters are hashable, and its source is capturable. Tier 1
+strategies earn full experiment-store identity -- source hash, parameter
+hash, provenance metadata -- and are the natural fit for sweep mode and
+edge deployment.
+
+ledgr supports less constrained strategies too, but the reproducibility
+tier is always visible in run provenance. The trust boundary is
+explicit, not hidden.
+
+## What v0.1.x Delivers Today
+
+v0.1.x is the research layer:
+
+- sealed snapshots and deterministic replay across machines and R
+  sessions;
+- reproducible backtests with next-open fill semantics and an
+  append-only ledger;
+- a TTR indicator adapter with deterministic warmup, vectorized
+  precomputation, and session-scoped feature caching;
+- an experiment store with run discovery, provenance, labeling, and
+  archival (v0.1.5);
+- fast parameter sweep mode with parity-enforced results (v0.1.7).
+
+Paper and live trading adapters, OMS state machine semantics, and
+observability tooling follow in the v0.2.x and v0.3.x range.
+
+The path from a validated experiment-store entry to a running edge
+device is shorter than it looks. The research work done in v0.1.x is not
+throwaway scaffolding -- it is the foundation the production system
+builds on.

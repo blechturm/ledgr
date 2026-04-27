@@ -124,6 +124,7 @@ bt
 #> Run ID:         getting-started-demo
 #> Universe:       AAA, BBB
 #> Date Range:     2020-01-01T00:00:00Z to 2020-02-14T00:00:00Z
+#> Execution Mode: audit_log
 #> Initial Cash:   $10000.00
 #> Final Equity:   $13107.17
 #> P&L:            $3107.17 (31.07%)
@@ -362,12 +363,12 @@ bt_sma |> as_tibble(what = "trades") |> head(6)
 #> # A tibble: 6 x 9
 #>   event_seq ts_utc              instrument_id side    qty price   fee realized_pnl action
 #>       <int> <dttm>              <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-06 00:00:00 AAA           BUY      10  101.     0         0    OPEN
-#> 2         2 2020-01-13 00:00:00 AAA           SELL     10  101.     0         7.60 CLOSE
-#> 3         3 2020-01-15 00:00:00 AAA           BUY      10  101.     0         0    OPEN
-#> 4         4 2020-01-20 00:00:00 AAA           SELL     10  102.     0         2.90 CLOSE
-#> 5         5 2020-01-23 00:00:00 AAA           BUY      10  102.     0         0    OPEN
-#> 6         6 2020-01-28 00:00:00 AAA           SELL     10  101.     0        -3.40 CLOSE
+#> 1         1 2020-01-06 00:00:00 AAA           BUY      10  101.     0        0     OPEN
+#> 2         2 2020-01-13 00:00:00 AAA           SELL     10  101.     0        7.60  CLOSE
+#> 3         3 2020-01-15 00:00:00 AAA           BUY      10  101.     0        0     OPEN
+#> 4         4 2020-01-21 00:00:00 AAA           SELL     10  102.     0        0.600 CLOSE
+#> 5         5 2020-01-23 00:00:00 AAA           BUY      10  102.     0        0     OPEN
+#> 6         6 2020-01-28 00:00:00 AAA           SELL     10  101.     0       -3.40  CLOSE
 ```
 
 The first few indicator values may be `NA` while the indicator warms up.
@@ -538,7 +539,7 @@ durable_bt <- ledgr_backtest(
 )
 
 basename(durable_bt$db_path)
-#> [1] "ledgr_getting_started_116947316304c.duckdb"
+#> [1] "ledgr_getting_started_148c8173f7c77.duckdb"
 file.exists(durable_bt$db_path)
 #> [1] TRUE
 
@@ -567,7 +568,7 @@ ledgr_snapshot_close(snapshot)
 reloaded_snapshot <- ledgr_snapshot_load(artifact_db, snapshot_id, verify = TRUE)
 ledgr_snapshot_info(reloaded_snapshot)[, c("snapshot_id", "status", "bar_count")]
 #>                     snapshot_id status bar_count
-#> 1 snapshot_20260426_203356_ed2a SEALED        66
+#> 1 snapshot_20260427_211329_b1e5 SEALED        66
 ledgr_snapshot_close(reloaded_snapshot)
 ```
 
@@ -592,10 +593,51 @@ snapshot by database path and snapshot id. It does not create or
 overwrite snapshots, and `verify = TRUE` recomputes the snapshot hash
 before returning.
 
-`run_id` names one run inside that artifact file. Today it is mainly a
-stable label for reading run artifacts. Later experiment-store work will
-make run discovery, reopening, metadata, labels, and archiving
-first-class.
+`run_id` names one run inside that artifact file. The experiment-store
+helpers make those runs discoverable and reopenable without recomputing
+the strategy:
+
+``` r
+ledgr_run_list(artifact_db)[, c("run_id", "status", "execution_mode", "total_return")]
+#> # A tibble: 1 x 4
+#>   run_id                  status execution_mode total_return
+#>   <chr>                   <chr>  <chr>                 <dbl>
+#> 1 getting-started-durable DONE   audit_log             0.311
+
+run_info <- ledgr_run_info(artifact_db, "getting-started-durable")
+run_info
+#> ledgr Run Info
+#> ==============
+#>
+#> Run ID:          getting-started-durable
+#> Label:           NA
+#> Status:          DONE
+#> Archived:        FALSE
+#> Snapshot:        snapshot_20260427_211329_b1e5
+#> Snapshot Hash:   a91451efaef4cd8be93458d12f4680166107b56033ec9e5a0c9f23e3d39a9442
+#> Config Hash:     ebb000ad7ef226730ad9a78d9f4edd78d6e2e9962fe6e41333f43d2b51b98d0a
+#> Strategy Hash:   a52efc8758f6febee8d846c0393c50ec90d2340fcbdfd67a543056f969031434
+#> Params Hash:     071685bbedd79b55e3cadcf0089a6d740ffa729e425e34aef44a8beab9a67c87
+#> Reproducibility: tier_2
+#> Execution Mode:  audit_log
+#> Elapsed Sec:     0.960000000000001
+#> Persist Features:TRUE
+#> Cache Hits:      0
+#> Cache Misses:    0
+
+reopened_bt <- ledgr_run_open(artifact_db, "getting-started-durable")
+reopened_bt |> ledgr_results(what = "equity") |> tail(2)
+#> # A tibble: 2 x 6
+#>   ts_utc              equity  cash positions_value running_max drawdown
+#>   <dttm>               <dbl> <dbl>           <dbl>       <dbl>    <dbl>
+#> 1 2020-02-13 00:00:00 13099. 6083.           7016.      13099.        0
+#> 2 2020-02-14 00:00:00 13107. 6083.           7024.      13107.        0
+close(reopened_bt)
+```
+
+Use `ledgr_run_label()` for mutable human-readable names and
+`ledgr_run_archive()` to hide old runs from default listings without
+deleting their artifacts. `run_id` itself is immutable.
 
 Reproducibility is not only about getting the same answer in one R
 session. It is also about keeping the data and run artifacts that

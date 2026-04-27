@@ -493,9 +493,23 @@ Keeping this file means keeping the research artifact.
 snapshot by database path and snapshot id. It does not create or overwrite
 snapshots, and `verify = TRUE` recomputes the snapshot hash before returning.
 
-`run_id` names one run inside that artifact file. Today it is mainly a stable
-label for reading run artifacts. Later experiment-store work will make run
-discovery, reopening, metadata, labels, and archiving first-class.
+`run_id` names one run inside that artifact file. The experiment-store helpers
+make those runs discoverable and reopenable without recomputing the strategy:
+
+```{r durable-runs}
+ledgr_run_list(artifact_db)[, c("run_id", "status", "execution_mode", "total_return")]
+
+run_info <- ledgr_run_info(artifact_db, "getting-started-durable")
+run_info
+
+reopened_bt <- ledgr_run_open(artifact_db, "getting-started-durable")
+reopened_bt |> ledgr_results(what = "equity") |> tail(2)
+close(reopened_bt)
+```
+
+Use `ledgr_run_label()` for mutable human-readable names and
+`ledgr_run_archive()` to hide old runs from default listings without deleting
+their artifacts. `run_id` itself is immutable.
 
 Reproducibility is not only about getting the same answer in one R session. It
 is also about keeping the data and run artifacts that explain where the answer

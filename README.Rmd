@@ -3,6 +3,7 @@ output:
   github_document:
     toc: false
     html_preview: false
+    md_extensions: -smart
 ---
 
 ```{r setup, include=FALSE}
@@ -46,6 +47,9 @@ data -> sealed snapshot -> pulses -> event ledger -> results
 ```
 
 Results come from recorded history, not a hidden intermediate calculation.
+For the longer design arc, see the
+[`research-to-production`](https://blechturm.github.io/ledgr/articles/research-to-production.html)
+article on the pkgdown site.
 
 ## Install
 
@@ -265,5 +269,6 @@ help(package = "ledgr")
 utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
 ```
 
-The v0.1.3 design packet is in `inst/design/ledgr_v0_1_3_spec_packet/`.
-The v0.1.2 packet records the engine and UX foundation this release builds on.
+The v0.1.5 design packet is in `inst/design/ledgr_v0_1_5_spec_packet/`.
+Earlier packets record the engine, snapshot, and onboarding foundations this
+release builds on.
