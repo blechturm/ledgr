@@ -1,0 +1,431 @@
+version: "0.1.5-experiment-store-core"
+source: "v0_1_5_tickets.md"
+tickets:
+  - id: LDG-801
+    title: "Experiment Store Schema And Migration Protocol"
+    status: pending
+    priority: P0
+    dependencies: []
+    tests:
+      - "schema/migration tests"
+      - "tests/testthat/test-db-schema*.R"
+      - "legacy-store fixture or generated pre-v0.1.5 database"
+      - "future schema_version failure path"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Touches DuckDB schema, migrations, persistence, restart safety, run
+        identity fields, and legacy-store compatibility. These are
+        hard-escalation areas under the model routing rulebook.
+      invariants_at_risk:
+        - DuckDB schema compatibility
+        - restart and resume safety
+        - legacy run discoverability
+        - run input identity
+        - no silent mutation from read-only APIs
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Persistence Contract, Snapshot Contract, Canonical JSON Contract)
+        - R/db-schema-create.R
+        - R/db-schema-validate.R
+        - R/backtest-runner.R
+        - R/data-hash.R
+      tests_required:
+        - legacy store can be inspected without mutation
+        - existing v0.1.4 run rows, ledger events, feature rows, and equity curves remain readable after migration
+        - write-triggered migration is additive
+        - schema_version is updated last
+        - future schema versions fail clearly
+        - data_hash remains run-window identity, not public legacy ledgr_data_hash()
+      escalation_triggers:
+        - migration requires destructive table rebuilds
+        - schema change affects ledger event semantics
+        - data_hash semantics conflict with resume logic
+        - migration cannot be made transaction-safe
+      forbidden_actions:
+        - silently overwriting existing run rows
+        - mutating legacy stores from read-only APIs
+        - downgrading newer schema versions
+        - changing snapshot_hash semantics
+
+  - id: LDG-802
+    title: "Strategy Params And Provenance Capture"
+    status: pending
+    priority: P0
+    dependencies: [LDG-801]
+    tests:
+      - "strategy identity tests"
+      - "functional strategy tests"
+      - "canonical JSON hashing tests"
+      - "R6 provenance tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Touches strategy execution calling convention, strategy source capture,
+        canonical JSON, strategy parameter hashing, dependency version
+        provenance, and experiment identity. These are hard-escalation identity
+        and execution areas.
+      invariants_at_risk:
+        - strategy call semantics
+        - target validation must remain unchanged
+        - canonical JSON identity
+        - strategy source and params hashes
+        - reproducibility tier correctness
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Strategy Contract, Canonical JSON Contract)
+        - R/backtest.R
+        - R/backtest-runner.R
+        - R/config-canonical-json.R
+        - R/strategy-contracts.R
+        - R/config-validate.R
+      tests_required:
+        - function(ctx) remains valid
+        - function(ctx, params) receives params
+        - function(ctx, params) with strategy_params = list() receives an empty list
+        - unsupported signature errors
+        - function(ctx, params, extra) fails clearly
+        - params hash changes when params change
+        - source hash changes when source changes
+        - R6 strategy defaults to Tier 2
+        - non-JSON-safe params fail clearly
+      escalation_triggers:
+        - implementation changes strategy output validation
+        - implementation touches fill timing or pulse order
+        - static source analysis becomes broader than specified
+        - canonical JSON behavior must change
+      forbidden_actions:
+        - serializing closure environments wholesale
+        - treating R6 strategies as Tier 1 by default
+        - changing target-vector validation semantics
+        - evaluating recovered strategy source
+
+  - id: LDG-803
+    title: "Run Discovery, Info, And Reopen APIs"
+    status: pending
+    priority: P0
+    dependencies: [LDG-801, LDG-802]
+    tests:
+      - "run-store API tests"
+      - "completed/failed/running/archived run tests"
+      - "reopened handle result-method tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Adds public experiment-store APIs over persistent DuckDB artifacts and
+        hydrates ledgr_backtest-compatible handles. This touches persistence,
+        public API, run identity, and derived result access.
+      invariants_at_risk:
+        - reopened runs must not recompute or mutate execution artifacts
+        - run status handling
+        - legacy run labeling
+        - result method compatibility
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Persistence Contract, Result Contract)
+        - R/backtest.R
+        - R/backtest-runner.R
+        - R/derived-state.R
+        - R/public-api.R
+        - R/db-schema-create.R
+      tests_required:
+        - ledgr_run_list lists multiple runs
+        - ledgr_run_info has class and print method
+        - ledgr_run_open reopens completed runs without recomputation
+        - ledgr_run_open rejects incomplete runs
+        - archived completed runs can be opened
+        - reopened handles support existing result helpers
+        - absent telemetry fields are tolerated and displayed as missing or NA
+      escalation_triggers:
+        - implementation needs partial-run handles
+        - implementation changes result reconstruction semantics
+        - implementation needs to execute strategy source during reopen
+      forbidden_actions:
+        - recomputing fills during ledgr_run_open()
+        - mutating run artifacts during ledgr_run_open()
+        - silently opening failed/incomplete runs as if complete
+        - adding comparison APIs in v0.1.5
+
+  - id: LDG-804
+    title: "Run Labels And Archive Metadata"
+    status: pending
+    priority: P1
+    dependencies: [LDG-801]
+    tests:
+      - "metadata mutation tests"
+      - "archive visibility tests"
+      - "identity-hash stability tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Although behavior is metadata-only, this ticket writes to DuckDB
+        experiment store state and changes public API surface. DuckDB writes
+        are a hard escalation area.
+      invariants_at_risk:
+        - run_id immutability
+        - experiment identity hashes must not change on metadata edits
+        - archive must remain non-destructive
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Persistence Contract)
+        - R/db-schema-create.R
+        - R/backtest-runner.R
+        - run APIs introduced by LDG-803
+      tests_required:
+        - label update does not alter identity hashes
+        - archive hides run from default list
+        - include_archived lists archived runs
+        - archive works for failed and incomplete runs
+        - in-progress archive behavior is documented and fails clearly if unsupported
+        - double archive is idempotent
+      escalation_triggers:
+        - implementation requires hard delete or unarchive
+        - archive affects result methods or run open semantics beyond spec
+        - metadata writes require non-additive migration
+      forbidden_actions:
+        - renaming run_id
+        - deleting run artifacts
+        - rewriting original archive timestamp on second archive call
+        - changing strategy or config hashes during metadata edits
+
+  - id: LDG-805
+    title: "Audit UX Fixes - Feature Lookup And Snapshot IDs"
+    status: pending
+    priority: P1
+    dependencies: []
+    tests:
+      - "tests/testthat/test-pulse-context-accessors.R"
+      - "tests/testthat/test-indicator-tools.R"
+      - "snapshot adapter tests"
+      - "mistyped feature ID audit regression"
+    classification:
+      risk_level: medium
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Touches pulse context behavior used during strategy execution and
+        snapshot ID validation. The changes are bounded but affect runtime
+        strategy authoring and snapshot UX, so Tier H implementation is
+        warranted.
+      invariants_at_risk:
+        - feature warmup NA semantics
+        - strategy runtime context behavior
+        - snapshot ID validation
+        - generated snapshot ID convention
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/ledgr_v0_1_5_spec_packet/ledgr_v0_1_4_audit_report.md
+        - inst/design/contracts.md (Context Contract, Snapshot Contract)
+        - R/pulse-context.R
+        - R/features-engine.R
+        - R/snapshot_adapters.R
+      tests_required:
+        - unknown feature ID errors with available IDs
+        - known warmup feature returns NA as before
+        - runtime and pulse_snapshot contexts match
+        - explicit custom snapshot IDs do not warn
+        - generated snapshot IDs remain canonical
+      escalation_triggers:
+        - implementation changes feature computation or caching
+        - implementation changes snapshot hash or sealing semantics
+        - unknown feature handling cannot distinguish warmup from typo
+      forbidden_actions:
+        - changing indicator warmup rules
+        - changing feature values or alignment
+        - banning custom snapshot IDs
+        - mutating snapshot artifacts during validation
+
+  - id: LDG-806
+    title: "Persisted Telemetry Summary And Execution Mode Visibility"
+    status: pending
+    priority: P1
+    dependencies: [LDG-801, LDG-803]
+    tests:
+      - "telemetry persistence tests"
+      - "print.ledgr_backtest test"
+      - "ledgr_run_info print test"
+      - "feature cache telemetry tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Writes telemetry summary fields into persistent run metadata and
+        changes public print behavior. This touches DuckDB writes, run
+        metadata, and public diagnostics.
+      invariants_at_risk:
+        - run metadata consistency
+        - feature cache telemetry counts
+        - execution mode visibility
+        - session-scoped detailed telemetry remains separate
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/ledgr_v0_1_5_spec_packet/ledgr_v0_1_4_audit_report.md
+        - inst/design/contracts.md (Persistence Contract, Result Contract)
+        - R/backtest-runner.R
+        - R/backtest.R
+        - R/feature-cache.R
+        - run APIs introduced by LDG-803
+      tests_required:
+        - telemetry summary persisted on successful run
+        - failed runs record status and execution_mode
+        - failed-run elapsed time and cache counts are stored when available and otherwise represented as NA
+        - run_info reports telemetry after reopening
+        - print.ledgr_backtest reports execution mode
+        - ledgr_backtest_bench remains session-scoped
+        - cache hit/miss counts remain accurate
+      escalation_triggers:
+        - implementation needs to persist full telemetry tables
+        - telemetry fields conflict with feature-cache tests
+        - execution_mode values beyond audit_log/db_live are needed
+      forbidden_actions:
+        - changing feature cache key semantics
+        - replacing ledgr_backtest_bench() with persisted-only telemetry
+        - adding wall-clock assertions to tests
+
+  - id: LDG-807
+    title: "Package-Prefixed Result Wrapper"
+    status: pending
+    priority: P2
+    dependencies: []
+    tests:
+      - "result wrapper tests"
+      - "tests/testthat/test-backtest-s3.R"
+      - "export surface test"
+      - "roxygen/documentation check"
+    classification:
+      risk_level: low
+      implementation_tier: M
+      review_tier: M
+      classification_reason: >
+        Contained public API addition that delegates to the existing result
+        path. It does not alter result reconstruction or persistence semantics.
+      invariants_at_risk:
+        - wrapper must not become an alternate result implementation
+        - supported what values must match as_tibble.ledgr_backtest()
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Result Contract)
+        - R/backtest.R
+        - tests/testthat/test-backtest-s3.R
+      tests_required:
+        - wrapper matches tibble::as_tibble() for all supported values
+        - unsupported what errors
+        - exported and documented
+      escalation_triggers:
+        - implementation touches ledgr_compute_equity_curve()
+        - implementation touches ledger reconstruction
+        - implementation adds new result types
+      forbidden_actions:
+        - duplicating result reconstruction code
+        - mutating run state
+        - expanding what values beyond the spec without review
+
+  - id: LDG-808
+    title: "Documentation, Contracts, And Site Updates"
+    status: pending
+    priority: P1
+    dependencies: [LDG-801, LDG-802, LDG-803, LDG-804, LDG-805, LDG-806, LDG-807]
+    tests:
+      - "roxygen/documentation generation"
+      - "R CMD check"
+      - "pkgdown build"
+      - "README/vignette render if changed"
+    classification:
+      risk_level: medium
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Mostly documentation, but it modifies contracts.md and documents public
+        API lifecycle. Contract modifications are Tier H under the model
+        routing rules.
+      invariants_at_risk:
+        - docs must match public API
+        - contracts must not overpromise comparison or recovery
+        - examples must remain offline-safe
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md
+        - NEWS.md
+        - README.Rmd
+        - vignettes
+        - _pkgdown.yml
+      tests_required:
+        - roxygen/documentation generation
+        - R CMD check
+        - pkgdown build
+        - README/vignette render if changed
+        - vignettes/research-to-production.Rmd references v0.1.5 experiment-store APIs
+      escalation_triggers:
+        - documentation requires changing public API semantics
+        - examples need network access
+        - contracts conflict with implementation
+      forbidden_actions:
+        - documenting v0.1.6 APIs as available in v0.1.5
+        - adding live/paper/sweep content to v0.1.5 docs
+        - using non-offline examples
+
+  - id: LDG-809
+    title: "v0.1.5 Experiment Store Gate"
+    status: pending
+    priority: P0
+    dependencies: [LDG-801, LDG-802, LDG-803, LDG-804, LDG-805, LDG-806, LDG-807, LDG-808]
+    tests:
+      - "tools/check-coverage.R"
+      - "tools/check-readme-example.R if README changes"
+      - "R CMD check --no-manual --no-build-vignettes"
+      - "pkgdown::build_site()"
+      - ".github/workflows/R-CMD-check.yaml"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gate and final Tier H review for the v0.1.5 experiment-store
+        cycle. Validates all contracts, public APIs, tests, CI, docs, and
+        acceptance criteria.
+      invariants_at_risk:
+        - all v0.1.5 contracts
+        - experiment-store identity and provenance
+        - persistence and migration safety
+        - public API surface
+        - release quality gates
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_tickets.md
+        - inst/design/contracts.md
+        - NEWS.md
+        - tools/check-coverage.R
+        - tools/check-readme-example.R
+        - .github/workflows/R-CMD-check.yaml
+        - all v0.1.5 review findings
+      tests_required:
+        - all targeted v0.1.5 tests pass
+        - earlier v0.1.x regression tests pass where applicable
+        - R CMD check passes with 0 errors and 0 warnings
+        - coverage gate passes
+        - pkgdown builds
+        - Ubuntu and Windows CI are green
+      escalation_triggers: []
+      forbidden_actions:
+        - accepting the gate with open P0 or P1 issues
+        - bypassing R CMD check or coverage
+        - releasing without green CI
+        - accepting accidental v0.1.6 API scope

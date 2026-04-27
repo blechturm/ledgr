@@ -1,22 +1,31 @@
 
 # ledgr
 
-ledgr is an event-sourced backtesting engine for R.
+ledgr is an event-sourced systematic trading framework for R. The full
+arc is research, paper trading, and live trading on any device that runs
+R.
 
-It is designed for one thing: making backtests reproducible and
-auditable.
+In v0.1.x, ledgr covers the research side: sealed market-data snapshots,
+reproducible backtests, a durable experiment store, and a TTR indicator
+adapter. Paper and live trading adapters follow in later releases.
+
+The core design premise: strategies use the same contract across
+backtest, paper, and live modes. All three use the same event-sourced
+ledger model, so a backtest fill and a paper trade share the same schema
+and auditability guarantees. Live trading extends the event stream with
+broker lifecycle events -- submissions, acknowledgments, rejections --
+without changing the strategy contract.
 
 Most backtesting tools compute results from full price arrays. ledgr
-records decisions and state changes as events, then derives trades,
-equity, and metrics from that ledger.
+records every decision and state change as an immutable event, then
+derives trades, equity, and metrics from that ledger.
 
 ``` text
 data -> sealed snapshot -> pulses -> event ledger -> results
 ```
 
-That means results come from recorded history, not from a hidden
-intermediate calculation. ledgr is not a live-trading system, broker
-adapter, or optimization framework.
+Results come from recorded history, not a hidden intermediate
+calculation.
 
 ## Install
 

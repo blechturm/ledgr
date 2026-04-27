@@ -11,6 +11,41 @@ The roadmap is intentionally conservative and correctness-first.
 
 ---
 
+## Vision
+
+ledgr covers the systematic trading arc from research to production:
+
+```text
+research  ->  paper trading  ->  live trading on an edge device
+```
+
+The research layer (v0.1.x) validates strategies through sealed-snapshot
+backtests, a durable experiment store, and fast parameter sweeps. Those
+strategies use the same contract in paper and live mode through broker adapters.
+The event-sourced ledger is the shared model across all three modes: backtest and
+paper fills share the same event schema; live trading extends the event stream
+with broker lifecycle events without changing the strategy contract.
+
+DuckDB runs anywhere R runs, including lightweight ARM edge hardware. A validated
+strategy can be deployed to an edge device with an R instance, a DuckDB
+experiment store, and a broker adapter -- fully auditable through the same ledger
+it was developed against.
+
+The research workflow before deployment has two phases:
+
+1. **Sweep** (v0.1.7): fast, parallel, no persistence -- explore the parameter
+   space using shared precomputed features and find the candidates.
+2. **Persist** (v0.1.5): full provenance run -- validate top candidates with
+   durable artifacts, strategy identity metadata, and experiment-store provenance.
+
+v0.1.5 ships before v0.1.7 because sweep mode depends on the same experiment
+identity and parity contracts that persistence establishes.
+
+These phases compose with ecosystem parallelism packages (mori, mirai, furrr)
+without ledgr taking hard dependencies on them.
+
+---
+
 ## Guiding Principles
 
 - Treat the v0.1.x experiment store as the foundation for, not a replacement

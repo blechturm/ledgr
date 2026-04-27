@@ -1,10 +1,12 @@
-# Ledgr: Event‑Sourced Trading Framework (R)
+# Ledgr: Event-Sourced Trading Framework (R)
 
-**Status:** v0.3 — *Specification locked*
+**Status:** v0.4 -- Amended April 2026
 
-**Primary goal:** A correctness‑first, restart‑safe, low‑frequency (EOD / daily) systematic trading framework implemented as an R package, suitable for rule‑based and ML‑based strategies, with strict no‑lookahead guarantees and reproducible backtests.
+**Primary goal:** A correctness-first, restart-safe, low-frequency (EOD / daily) systematic trading framework implemented as an R package, suitable for rule-based and ML-based strategies, with strict no-lookahead guarantees and reproducible backtests.
 
 This document is a **binding system specification**. Anything not defined here must not be relied upon for correctness. Examples, tutorials, and concrete strategies live outside this document.
+
+**Amendment note (v0.4):** This revision clarifies the product vision, corrects the v0.x scope statement to reflect the phased delivery plan, and replaces non-ASCII characters with plain ASCII throughout. The core architecture, data model, and locked decisions from v0.3 are unchanged.
 
 ---
 
@@ -171,9 +173,9 @@ same strategy contract
 
 1. **Correctness over performance** (for v0.x)
 2. **No lookahead, by construction**
-3. **Event‑sourced ledger** (append‑only, reconstructable)
-4. **Deterministic replay** (same inputs ⇒ same outputs)
-5. **Restart safety** (crash‑safe at any point)
+3. **Event-sourced ledger** (append-only, reconstructable)
+4. **Deterministic replay** (same inputs => same outputs)
+5. **Restart safety** (crash-safe at any point)
 6. **Vendor independence** (ports & adapters)
 7. **Explicit temporal semantics** (no implicit time assumptions)
 8. **Modularity with hard contracts** (prevent drift)
@@ -188,7 +190,7 @@ same strategy contract
 - Architecture: intraday-capable with explicit pulse semantics
 - Equities / ETFs (cash equity trading)
 - Rule-based and ML-based strategies
-- Backtesting, paper trading, live trading
+- Backtesting (v0.1.x); paper-trading foundations (v0.2-v0.3); live-trading architecture (v1.0)
 
 **Explicitly out of scope (documented limitations)**
 - High-frequency execution
@@ -217,11 +219,11 @@ State flows only through **explicit events** persisted to disk.
 
 All internal timestamps are UTC.
 
-**EOD Epoch Semantics (ADR‑0014)**
+**EOD Epoch Semantics (ADR-0014)**
 
-- Market close: 16:00 exchange‑local
+- Market close: 16:00 exchange-local
 - Observation delay: +15 minutes
-- Observation time `T_obs(k)`: trading day *k* at 16:15 local → UTC
+- Observation time `T_obs(k)`: trading day *k* at 16:15 local -> UTC
 - Decision deadline: next trading day 09:00 local
 - Execution start `T_exec(k+1)`: next trading day open (09:30 NYSE)
 
@@ -237,7 +239,7 @@ Canonical bar (S3 DTO):
 - instrument_id
 - timestamp_utc
 - open, high, low, close, volume
-- gap_type ∈ {NONE, MISSING, HALT, SOURCE_ERROR, HOLIDAY_MISMATCH}
+- gap_type in {NONE, MISSING, HALT, SOURCE_ERROR, HOLIDAY_MISMATCH}
 - is_synthetic (boolean)
 
 ### 5.2 Data Quality Contract
@@ -248,22 +250,22 @@ A **Data Health Score** is computed per instrument per pulse based on:
 - source errors
 
 **Default engine rule:**
-- If data health < threshold ⇒ strategy output for that instrument is ignored (no trade).
+- If data health < threshold => strategy output for that instrument is ignored (no trade).
 
 Strategies may *opt in* to using synthetic data, but must do so explicitly.
 
 ---
 
-## 6. Instrument Master (Point‑in‑Time)
+## 6. Instrument Master (Point-in-Time)
 
 - Instruments are identified by immutable `instrument_id`
-- Symbols are time‑varying labels
+- Symbols are time-varying labels
 
 Required fields:
 - instrument_id
 - listing_datetime_utc
 - delisting_datetime_utc (nullable)
-- status ∈ {ACTIVE, HALTED, SUSPENDED, DELISTED}
+- status in {ACTIVE, HALTED, SUSPENDED, DELISTED}
 
 Port function:
 ```
@@ -275,9 +277,9 @@ Returns only tradeable instruments at that timestamp.
 
 ## 7. Ledger Model (LOCKED DECISION)
 
-### 7.1 Event‑Sourced Ledger (ADR‑0013)
+### 7.1 Event-Sourced Ledger (ADR-0013)
 
-The system uses an **append‑only event ledger**, not full double‑entry accounting.
+The system uses an **append-only event ledger**, not full double-entry accounting.
 
 Ledger events:
 - OrderIntentCreated
@@ -305,7 +307,7 @@ This guarantees reconstructability and restart safety.
 
 ## 8. Cost Basis & Tax Assumptions
 
-**ADR‑0012**
+**ADR-0012**
 - Cost basis method: FIFO
 - Wash sales: **not enforced in v0.x**
 
@@ -342,7 +344,7 @@ Strategies are **pure decision functions**. They do not place orders directly.
 A structured return object:
 - `targets` (required): desired positions (qty or weights)
 - `diagnostics` (optional): signals, ranks, explanations
-- `state_update` (optional): JSON‑serializable state blob
+- `state_update` (optional): JSON-serializable state blob
 - `actions` (optional): advisory requests (e.g. suggest cancel stale orders)
 
 The engine validates and executes results.
@@ -431,7 +433,7 @@ State stored anywhere else is undefined behavior.
 
 ## 11. Feature Pipeline & Leakage Prevention
 
-**ADR‑0011**
+**ADR-0011**
 
 Feature definitions must declare:
 - `requires_bars`
@@ -442,13 +444,13 @@ The engine:
 - never exposes future bars
 
 Mandatory tests:
-- past‑only vs past+future equality test
+- past-only vs past+future equality test
 
 Limitations (documented): external data leaks cannot be fully prevented in v0.x.
 
 ---
 
-## 12. Target → Order Translation
+## 12. Target -> Order Translation
 
 - Strategies express **targets**, not orders
 - Engine computes target gap using:
@@ -457,21 +459,21 @@ Limitations (documented): external data leaks cannot be fully prevented in v0.x.
   - partial fills
 - Stale orders are aged out per OMS policy
 
-In YELLOW safety state: reduce‑only (no new exposure).
+In YELLOW safety state: reduce-only (no new exposure).
 
 ---
 
 ## 13. Order Management System (OMS)
 
 Order states:
-- INTENT → SUBMITTING → PENDING → ACKED → WORKING
+- INTENT -> SUBMITTING -> PENDING -> ACKED -> WORKING
 - FILLED / CANCELLED / REJECTED / UNKNOWN
 
-**Soft‑commit:** intent persisted before broker call
+**Soft-commit:** intent persisted before broker call
 
-**Hard‑commit:** broker acknowledgment persisted
+**Hard-commit:** broker acknowledgment persisted
 
-On restart, reconciliation prioritizes un‑acked intents.
+On restart, reconciliation prioritizes un-acked intents.
 
 ---
 
@@ -483,19 +485,19 @@ On restart, reconciliation prioritizes un‑acked intents.
   - its own OMS
 - Bots may share market data but **never share state**
 
-Parallel execution is process‑level, not thread‑level.
+Parallel execution is process-level, not thread-level.
 
 ---
 
-## 15. ML and Non‑ML Strategy Support
+## 15. ML and Non-ML Strategy Support
 
-The framework is strategy‑agnostic.
+The framework is strategy-agnostic.
 
 Supported styles:
-- Rule‑based indicators
+- Rule-based indicators
 - Rebalancing portfolios
-- Calendar/event‑driven logic
-- ML models (offline‑trained or online‑updated)
+- Calendar/event-driven logic
+- ML models (offline-trained or online-updated)
 
 ML models:
 - trained outside the engine
@@ -532,8 +534,8 @@ The architecture is intentionally **asset-class extensible**. Additional asset c
 
 2) **Session/Calendar profile (temporal semantics)**
 - The engine supports multiple session models via configuration.
-  - *Equities*: close → next open (EOD)
-  - *Crypto*: 24/7; define an explicit daily cutoff timestamp for “EOD-like” operation
+  - *Equities*: close -> next open (EOD)
+  - *Crypto*: 24/7; define an explicit daily cutoff timestamp for "EOD-like" operation
   - *Futures*: exchange session calendars (including overnight trading)
 
 3) **Valuation model (mark-to-market semantics)**
@@ -567,15 +569,15 @@ This preserves correctness while enabling future expansion.
 
 - Concrete strategy implementations
 - Dashboard/UI design
-- Broker‑specific quirks
+- Broker-specific quirks
 - Tax reporting workflows
 
 These live in vignettes, README, or ops documentation.
 
 ---
 
-## 18. Final Lock Statement
+## 18. Version History
 
-This document is **frozen for v0.3**.
-
-Further changes require a new versioned design document.
+- **v0.3** (original): core architecture, data model, OMS, and all locked decisions.
+- **v0.4** (April 2026): vision and scope clarifications; v0.x delivery phasing
+  corrected; mojibake removed. Core architecture unchanged.

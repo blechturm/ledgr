@@ -7,6 +7,10 @@ development:
   mode: auto
 
 articles:
+  - title: Philosophy
+    navbar: ~
+    contents:
+      - research-to-production
   - title: Start
     navbar: ~
     contents:
