@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Date:** April 26, 2026  
-**Total Tickets:** 15  
+**Total Tickets:** 16  
 **Estimated Duration:** 2-3 weeks
 
 ---
@@ -28,7 +28,7 @@ LDG-708 -> LDG-711 -> LDG-714
 LDG-709 -----------> LDG-714
 LDG-710 -> LDG-711 -> LDG-714
 
-LDG-712 -> LDG-713 -> LDG-715 -> LDG-714
+LDG-712 -> LDG-713 -> LDG-715 -> LDG-716 -> LDG-714
 ```
 
 `LDG-714` is the stabilisation gate. It should not be accepted until contracts,
@@ -754,11 +754,157 @@ forbidden_actions:
 
 ---
 
+## LDG-716: Expand TTR Warmup Rules and Indicator Documentation
+
+**Priority:** P1  
+**Effort:** 1-2 days  
+**Dependencies:** LDG-715
+
+**Description:**
+Expand the TTR adapter from the initial core set to a broader common technical
+analysis set while preserving the LDG-715 rule: only infer warmup when the first
+stable row is deterministic from explicit arguments alone.
+
+This ticket should make the TTR bridge a visible value proposition: ledgr users
+can use common TTR indicators as normal `ledgr_indicator` objects with
+deterministic IDs, fingerprint metadata, `series_fn` precomputation, and feature
+caching.
+
+**Candidate Functions:**
+- `WMA`, `input = "close"`: `requires_bars = n`, `id_args = n`
+- `ROC`, `input = "close"`: `requires_bars = n + 1`, `id_args = n`
+- `momentum`, `input = "close"`: `requires_bars = n + 1`, `id_args = n`
+- `CCI`, `input = "hlc"`: `requires_bars = n`, `id_args = n`
+- `BBands`, `input = "close"`: `requires_bars = n`, `id_args = n`
+- `aroon`, `input = "hlc"`: `requires_bars = n + 1`, `id_args = n`
+- `DonchianChannel`, `input = "hlc"`: `requires_bars = n`, `id_args = n`
+- `MFI`, `input = "hlcv"`: `requires_bars = n + 1`, `id_args = n`
+- `CMF`, `input = "hlcv"`: `requires_bars = n`, `id_args = n`
+- Rolling statistics with deterministic `n`, for example `runMean`, `runSD`,
+  `runVar`, and `runMAD`, `input = "close"`: `requires_bars = n`,
+  `id_args = n`
+
+The final implementation may drop a candidate if TTR output, arguments, or
+warmup behavior fail the deterministic inclusion rule. Dropped candidates must
+be listed in a short implementation note or ticket comment.
+
+**Explicitly Out Of Scope:**
+- `ADX`, `stoch`, `DEMA`, `TEMA`, `ZLEMA`, `HMA`, `SAR`, `PSAR`, `OBV`, `CLV`,
+  `williamsAD`, and similar functions whose warmup or semantics need a separate
+  design decision.
+- Heuristic warmup approximations.
+- Making TTR a hard dependency.
+- Changing the feature-engine `series_fn` contract.
+
+**Documentation Scope:**
+Add a pkgdown article or article-style vignette explaining the TTR adapter as a
+hexagonal boundary:
+
+```text
+TTR -> ledgr_ind_ttr() -> ledgr_indicator -> deterministic pulse engine
+```
+
+The article should explain:
+- the indicator port: `fn`, `series_fn`, `requires_bars`, `stable_after`, and
+  `params`;
+- why TTR stays outside the engine and the engine only sees `ledgr_indicator`
+  objects;
+- how TTR metadata affects indicator fingerprints;
+- examples for simple, multi-input, and multi-output indicators;
+- `ledgr_ttr_warmup_rules()` as the inspectable source of inferred support;
+- custom `series_fn` as the escape hatch for unsupported indicators.
+
+**Tasks:**
+1. Expand `ledgr_ttr_warmup_rules()` with the accepted common TTR functions.
+2. Update `ledgr_ttr_infer_requires_bars()` and ID generation coverage for all
+   new rows.
+3. Add or adjust input/output selection support only where it follows the
+   existing LDG-715 contracts.
+4. Extend warmup verification tests so every rules-table row is run against
+   actual TTR output and the first non-`NA` row equals inferred
+   `requires_bars`.
+5. Add required-argument and multi-output error tests for representative new
+   functions.
+6. Add documentation for the TTR adapter philosophy and examples.
+7. Add the article to `_pkgdown.yml` under the relevant navbar section.
+8. Update `NEWS.md` and `contracts.md` if the supported TTR surface or contract
+   language changes.
+
+**Acceptance Criteria:**
+- [ ] Every added TTR rule has deterministic warmup from explicit args alone.
+- [ ] Every rules-table row is tested against actual TTR output.
+- [ ] No added rule relies on TTR default parameters for warmup or ID
+      generation.
+- [ ] Deterministic IDs use rules-table `id_args` order.
+- [ ] Multi-output indicators require or validate `output` with available
+      choices.
+- [ ] Unsupported/ambiguous TTR functions still require explicit
+      `requires_bars`.
+- [ ] TTR remains an optional dependency.
+- [ ] TTR adapter article renders offline and links from appropriate reference
+      or pkgdown navigation.
+- [ ] `_pkgdown.yml` links the article from the package site navigation.
+
+**Test Requirements:**
+- `tests/testthat/test-indicator-ttr.R`
+- warmup-rule contract test over all rows in `ledgr_ttr_warmup_rules()`
+- representative backtest integration test for at least one newly added
+  indicator
+- documentation render / pkgdown build check
+- `R CMD check --no-manual --no-build-vignettes`
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: M
+review_tier: H
+classification_reason: >
+  Bounded expansion of the TTR adapter within the existing LDG-715 contract.
+  The work adds supported warmup-rule rows, tests them against actual TTR
+  output, and documents the adapter philosophy. It does not touch the execution
+  path or persistence, but warmup correctness affects feature availability and
+  deserves Tier H review.
+invariants_at_risk:
+  - TTR warmup correctness
+  - deterministic indicator IDs
+  - TTR input/output mapping correctness
+  - documentation must not imply unsupported TTR functions are inferred
+required_context:
+  - inst/design/model_routing.md
+  - R/indicator-ttr.R
+  - tests/testthat/test-indicator-ttr.R
+  - inst/design/contracts.md (Context Contract and series_fn/TTR metadata contract)
+  - _pkgdown.yml
+  - LDG-715 review findings
+  - TTR documentation for newly added functions
+tests_required:
+  - every new rules-table row is verified against actual TTR output
+  - required explicit args fail before calling TTR
+  - supported input mappings produce TTR-compatible column names
+  - multi-output functions require or validate output selection
+  - deterministic IDs use rules-table id_args order
+  - pkgdown article/example renders without network access
+  - _pkgdown.yml links the article from the package site navigation
+  - R CMD check passes
+escalation_triggers:
+  - adding a TTR function whose warmup is not deterministic from explicit args alone
+  - changing ledgr_indicator(), feature computation, feature cache, or execution code
+  - adding hard dependencies on TTR or pkgdown-only packages
+  - changing public behavior of existing supported TTR wrappers beyond documented warmup additions
+forbidden_actions:
+  - using heuristic or approximate warmup rules
+  - relying on TTR default indicator parameters for ID or warmup inference
+  - making TTR a hard package dependency
+  - changing the core feature-engine series_fn contract
+```
+
+---
+
 ## LDG-714: v0.1.4 Stabilisation Gate
 
 **Priority:** P0  
 **Effort:** 1 day  
-**Dependencies:** LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715
+**Dependencies:** LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715, LDG-716
 
 **Description:**
 Final validation gate for the v0.1.4 stabilisation cycle.

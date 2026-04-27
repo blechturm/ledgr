@@ -139,11 +139,59 @@ tickets:
       forbidden_actions:
         - changing any other warmup formula
         - touching the execution path or feature cache
+  - id: LDG-716
+    title: "Expand TTR Warmup Rules and Indicator Documentation"
+    status: pending
+    priority: P1
+    dependencies: [LDG-715]
+    tests: ["tests/testthat/test-indicator-ttr.R", "TTR warmup contract tests", "pkgdown article render", "R CMD check"]
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Bounded expansion of the TTR adapter within the existing LDG-715
+        contract. The work adds supported warmup-rule rows, tests them against
+        actual TTR output, and documents the adapter philosophy. It does not
+        touch the execution path or persistence, but warmup correctness affects
+        feature availability and deserves Tier H review.
+      invariants_at_risk:
+        - TTR warmup correctness
+        - deterministic indicator IDs
+        - TTR input/output mapping correctness
+        - documentation must not imply unsupported TTR functions are inferred
+      required_context:
+        - inst/design/model_routing.md
+        - R/indicator-ttr.R
+        - tests/testthat/test-indicator-ttr.R
+        - inst/design/contracts.md (Context Contract and series_fn/TTR metadata contract)
+        - _pkgdown.yml
+        - LDG-715 review findings
+        - TTR documentation for newly added functions
+      tests_required:
+        - every new rules-table row is verified against actual TTR output
+        - required explicit args fail before calling TTR
+        - supported input mappings produce TTR-compatible column names
+        - multi-output functions require or validate output selection
+        - deterministic IDs use rules-table id_args order
+        - pkgdown article/example renders without network access
+        - _pkgdown.yml links the article from the package site navigation
+        - R CMD check passes
+      escalation_triggers:
+        - adding a TTR function whose warmup is not deterministic from explicit args alone
+        - changing ledgr_indicator(), feature computation, feature cache, or execution code
+        - adding hard dependencies on TTR or pkgdown-only packages
+        - changing public behavior of existing supported TTR wrappers beyond documented warmup additions
+      forbidden_actions:
+        - using heuristic or approximate warmup rules
+        - relying on TTR default indicator parameters for ID or warmup inference
+        - making TTR a hard package dependency
+        - changing the core feature-engine series_fn contract
   - id: LDG-714
     title: "v0.1.4 Stabilisation Gate"
     status: pending
     priority: P0
-    dependencies: [LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715]
+    dependencies: [LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715, LDG-716]
     tests: ["tools/check-readme-example.R", "tools/check-coverage.R", "R CMD check", "pkgdown::build_site", ".github/workflows/R-CMD-check.yaml"]
     classification:
       risk_level: release-critical
