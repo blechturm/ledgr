@@ -9,7 +9,7 @@
 
 v0.1.3 is tagged and public. The package now has a credible onboarding path, but
 the first real evaluation surfaced issues that should be addressed before the
-experiment-store layer is built in v0.1.4.
+experiment-store layer is built in the next cycle.
 
 The goal of this plan is targeted stabilisation, not a broad refactor. The work
 focuses on:
@@ -59,8 +59,8 @@ Recommended policy:
 
 Functional strategies can be identified through source text, explicit
 parameters, and hashes. R6 strategies do not yet have an equally clear
-identity model. If v0.1.4 stores run identity without deciding how R6 strategies
-are classified, the decision will be made implicitly by implementation details.
+identity model. The v0.1.4 stabilisation cycle records the policy before the
+v0.1.5 experiment-store work depends on it.
 
 Recommended policy:
 
@@ -73,8 +73,8 @@ Recommended policy:
 
 **Definition of done:**
 
-- v0.1.4 spec states how functional and R6 strategies map to reproducibility
-  tiers.
+- The v0.1.4 stabilisation spec states how functional and R6 strategies map to
+  reproducibility tiers for future run identity.
 - Run identity design does not silently treat R6 objects as fully reproducible.
 - `contracts.md` records the strategy identity boundary.
 
@@ -98,9 +98,8 @@ future review worse.
 ## Track A: API Surface Cleanup
 
 **Timing:** Before or at the start of v0.1.4.  
-**Rationale:** v0.1.4 will add run discovery, run identity, and experiment-store
-primitives. The public surface should not carry avoidable contradictions into
-that layer.
+**Rationale:** v0.1.4 prepares the public surface for the next experiment-store
+layer. Low-level APIs should not carry avoidable contradictions into that layer.
 
 ### A1: Define Lifecycle For `ledgr_backtest_run()`
 
@@ -147,8 +146,8 @@ config identity and validation path, but exporting the constructor too early
 would commit ledgr to a public config shape before the run-store API is settled.
 
 **Decision:**  
-Stabilize the internal type first. Defer export until v0.1.4 proves that users
-need direct config construction.
+Stabilize the internal type first. Defer export until the experiment-store API
+proves that users need direct config construction.
 
 **Tasks:**
 
@@ -156,7 +155,7 @@ need direct config construction.
 2. Add internal `validate_ledgr_config()`.
 3. Add `print.ledgr_config()` if config objects remain visible through
    `bt$config`.
-4. Keep `ledgr_config()` internal unless the v0.1.4 experiment-store spec
+4. Keep `ledgr_config()` internal unless the future experiment-store spec
    requires public construction.
 
 **Definition of done:**

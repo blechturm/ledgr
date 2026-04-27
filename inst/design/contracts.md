@@ -27,9 +27,9 @@ coding agents must preserve. The authoritative narrative remains in
 - `validate_ledgr_config()` is the internal validator name used by execution
   code. It delegates to the same schema checks as the legacy
   `ledgr_validate_config()` helper.
-- Exporting direct config construction is deferred until the experiment-store
-  API proves that users need it. Public workflows should continue to start with
-  `ledgr_backtest()`.
+- Exporting direct config construction is deferred until the future
+  experiment-store API proves that users need it. Public workflows should
+  continue to start with `ledgr_backtest()`.
 
 ## Snapshot Contract
 
@@ -86,9 +86,10 @@ coding agents must preserve. The authoritative narrative remains in
     parameter metadata.
   - Tier 3: environment-dependent logic whose execution identity cannot be
     recovered from stored metadata.
-- v0.1.4 run-identity design must treat `strategy_source_hash`,
-  `strategy_params_hash`, and reproducibility tier as part of experiment
-  provenance. R6 strategy identity must not be finalized implicitly.
+- Future experiment-store run-identity design, scheduled for v0.1.5, must treat
+  `strategy_source_hash`, `strategy_params_hash`, and reproducibility tier as
+  part of experiment provenance. R6 strategy identity must not be finalized
+  implicitly.
 
 ## Context Contract
 

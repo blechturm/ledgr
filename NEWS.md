@@ -1,5 +1,8 @@
 # ledgr 0.1.4
 
+- Stabilised the research workflow ahead of the experiment-store APIs, with
+  durable snapshot reuse, safer strategy helpers, faster indicator
+  precomputation, and broader TTR indicator support.
 - Added `ledgr_snapshot_load()` for reopening existing sealed snapshots from a
   durable DuckDB file, with optional hash verification.
 - Updated `ledgr_snapshot_list()` so it accepts either a DBI connection or a
