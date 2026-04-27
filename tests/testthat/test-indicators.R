@@ -114,6 +114,94 @@ testthat::test_that("indicator registry rejects silent overwrite", {
   testthat::expect_silent(ledgr_register_indicator(ind_b, name, overwrite = TRUE))
 })
 
+testthat::test_that("indicator registry supports deregistration", {
+  name <- "test_registry_remove"
+  ledgr_deregister_indicator(name, missing_ok = TRUE)
+  on.exit(ledgr_deregister_indicator(name, missing_ok = TRUE), add = TRUE)
+
+  ind <- ledgr_indicator(
+    id = name,
+    fn = function(window) mean(window$close),
+    requires_bars = 2L
+  )
+
+  ledgr_register_indicator(ind)
+  testthat::expect_true(name %in% ledgr_list_indicators("^test_registry_remove$"))
+  testthat::expect_true(ledgr_deregister_indicator(name))
+  testthat::expect_false(name %in% ledgr_list_indicators("^test_registry_remove$"))
+  testthat::expect_error(
+    ledgr_get_indicator(name),
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("indicator deregistration handles missing and invalid names", {
+  name <- "test_registry_missing"
+  ledgr_deregister_indicator(name, missing_ok = TRUE)
+
+  testthat::expect_false(ledgr_deregister_indicator(name, missing_ok = TRUE))
+  testthat::expect_error(
+    ledgr_deregister_indicator(name, missing_ok = FALSE),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
+    ledgr_deregister_indicator(character()),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
+    ledgr_deregister_indicator(name, missing_ok = NA),
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("indicator deregistration does not mutate persisted feature artifacts", {
+  name <- "test_registry_persisted_artifact"
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  on.exit(ledgr_deregister_indicator(name, missing_ok = TRUE), add = TRUE)
+
+  ind <- ledgr_indicator(
+    id = name,
+    fn = function(window) tail(window$close, 1),
+    series_fn = function(bars, params = list()) bars$close,
+    requires_bars = 1L
+  )
+
+  strategy <- function(ctx) {
+    ctx$targets()
+  }
+
+  bt <- ledgr_backtest(
+    data = test_bars,
+    strategy = strategy,
+    start = "2020-01-01",
+    end = "2020-01-10",
+    initial_cash = 1000,
+    features = list(ind),
+    db_path = db_path
+  )
+  on.exit(close(bt), add = TRUE)
+
+  con <- ledgr:::get_connection(bt)
+  before <- DBI::dbGetQuery(
+    con,
+    "SELECT COUNT(*) AS n FROM features WHERE run_id = ? AND feature_name = ?",
+    params = list(bt$run_id, name)
+  )$n[[1]]
+
+  testthat::expect_gt(before, 0L)
+  ledgr_deregister_indicator(name)
+
+  after <- DBI::dbGetQuery(
+    con,
+    "SELECT COUNT(*) AS n FROM features WHERE run_id = ? AND feature_name = ?",
+    params = list(bt$run_id, name)
+  )$n[[1]]
+
+  testthat::expect_identical(after, before)
+  testthat::expect_false(name %in% ledgr_list_indicators("^test_registry_persisted_artifact$"))
+})
+
 testthat::test_that("built-in indicators are deterministic and silent", {
   n <- 20
   window <- data.frame(

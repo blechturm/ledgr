@@ -272,22 +272,24 @@ results through S3/tibble helpers.
 **Dependencies:** None
 
 **Description:**
-Decide whether to add `ledgr_deregister_indicator()` for interactive sessions
-and tests. This is optional because current examples already clean up local
-registry state.
+Add `ledgr_deregister_indicator()` for interactive sessions and tests. This
+is optional because current examples already clean up local registry state, but
+the helper is useful for explicit session cleanup and avoids direct access to
+the package registry environment.
 
 **Tasks:**
-1. Decide whether public deregistration is worth adding in v0.1.4.
-2. If added, implement `ledgr_deregister_indicator(name, missing_ok = TRUE)`.
-3. Ensure deregistration affects only the session registry.
-4. Document that persisted run artifacts are not changed.
-5. Add tests for existing, missing, and invalid names.
+1. [x] Decide whether public deregistration is worth adding in v0.1.4.
+2. [x] If added, implement `ledgr_deregister_indicator(name, missing_ok = TRUE)`.
+3. [x] Ensure deregistration affects only the session registry.
+4. [x] Document that persisted run artifacts are not changed.
+5. [x] Add tests for existing, missing, and invalid names.
 
 **Acceptance Criteria:**
-- [ ] Decision is recorded.
-- [ ] If implemented, helper is exported, documented, and tested.
-- [ ] Helper does not mutate persisted artifacts.
-- [ ] If not implemented, ticket is closed as intentionally unnecessary.
+- [x] Decision is recorded.
+- [x] If implemented, helper is exported, documented, and tested.
+- [x] Helper does not mutate persisted artifacts.
+- [x] Not applicable: helper was implemented rather than closed as intentionally
+  unnecessary.
 
 **Test Requirements:**
 - `tests/testthat/test-indicators.R`

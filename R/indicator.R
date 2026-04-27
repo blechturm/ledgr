@@ -285,6 +285,51 @@ ledgr_register_indicator <- function(indicator, name = NULL, overwrite = FALSE) 
   invisible(indicator)
 }
 
+#' Deregister an indicator from the session registry
+#'
+#' Removes an indicator registration from the current R session. This only
+#' affects the in-memory registry used for interactive lookup and tests; it does
+#' not alter any persisted snapshots, runs, features, or ledger artifacts.
+#'
+#' @param name Indicator registry name.
+#' @param missing_ok If `TRUE`, missing names are ignored. If `FALSE`, missing
+#'   names are an error.
+#'
+#' @return Invisibly returns `TRUE` when an indicator was removed and `FALSE`
+#'   when the indicator was already absent and `missing_ok = TRUE`.
+#' @examples
+#' local({
+#'   ind <- ledgr_indicator(
+#'     id = "example_deregister",
+#'     fn = function(window) tail(window$close, 1),
+#'     requires_bars = 1
+#'   )
+#'   ledgr_register_indicator(ind)
+#'   ledgr_deregister_indicator("example_deregister")
+#' })
+#' @export
+ledgr_deregister_indicator <- function(name, missing_ok = TRUE) {
+  if (!is.character(name) || length(name) != 1 || !nzchar(name)) {
+    rlang::abort("`name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  if (!is.logical(missing_ok) || length(missing_ok) != 1 || is.na(missing_ok)) {
+    rlang::abort("`missing_ok` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+
+  if (!exists(name, envir = .ledgr_indicator_registry, inherits = FALSE)) {
+    if (isTRUE(missing_ok)) {
+      return(invisible(FALSE))
+    }
+    rlang::abort(
+      sprintf("Indicator '%s' is not registered.", name),
+      class = "ledgr_invalid_args"
+    )
+  }
+
+  rm(list = name, envir = .ledgr_indicator_registry)
+  invisible(TRUE)
+}
+
 #' Get an indicator by name
 #'
 #' @param name Indicator name.

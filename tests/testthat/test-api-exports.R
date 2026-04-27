@@ -14,6 +14,7 @@ testthat::test_that("exported API surface is locked (v0.1.2)", {
     "ledgr_create_schema",
     "ledgr_data_hash",
     "ledgr_db_init",
+    "ledgr_deregister_indicator",
     "ledgr_extract_fills",
     "ledgr_get_indicator",
     "ledgr_ind_ema",

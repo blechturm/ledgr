@@ -40,7 +40,7 @@ tickets:
     tests: ["man", "R CMD check"]
   - id: LDG-707
     title: "Optional Indicator Deregistration Helper"
-    status: pending
+    status: done
     priority: P3
     dependencies: []
     tests: ["tests/testthat/test-indicators.R", "tests/testthat/test-api-exports.R"]
