@@ -782,15 +782,27 @@ experiment-store core is coherent, documented, covered, and green in CI.
 9. Confirm no v0.1.6 APIs were accidentally exposed.
 
 **Acceptance Criteria:**
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+- [x] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
-- [ ] Coverage remains at or above the project gate.
-- [ ] pkgdown site builds.
-- [ ] README and vignettes remain offline-safe.
+- [x] Coverage remains at or above the project gate.
+- [x] pkgdown site builds.
+- [x] README and vignettes remain offline-safe.
 - [ ] Ubuntu and Windows CI are green.
-- [ ] `contracts.md` and `NEWS.md` match the implemented scope.
-- [ ] All v0.1.5 acceptance criteria are satisfied.
-- [ ] No open P0/P1 review findings remain.
+- [x] `contracts.md` and `NEWS.md` match the implemented scope.
+- [x] All v0.1.5 acceptance criteria are satisfied.
+- [x] No open P0/P1 review findings remain.
+
+**Local Gate Evidence (2026-04-28):**
+- `devtools::test()` passed with 1138 passing tests, 0 failures, 0 warnings,
+  and 1 expected skip.
+- `tools/check-readme-example.R` passed under installed-package semantics.
+- `tools/check-coverage.R` reported 83.03% coverage, above the 80% gate.
+- `devtools::check(args = c("--no-manual", "--no-build-vignettes"))` passed
+  with 0 errors and 0 warnings. The only note was the local Windows clock
+  verification note: "unable to verify current time."
+- `pkgdown::build_site(new_process = FALSE, install = TRUE)` completed.
+- Export scan found no accidental v0.1.6 API exposure. Future sweep APIs only
+  appear in non-evaluated roadmap/article examples.
 
 **Test Requirements:**
 - `tools/check-coverage.R`
