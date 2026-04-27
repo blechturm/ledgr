@@ -664,9 +664,10 @@ their input names.
 **Initial Warmup Rules:**
 - `RSI`, `input = "close"`: `requires_bars = n + 1`, `id_args = n`
 - `SMA`, `input = "close"`: `requires_bars = n`, `id_args = n`
-- `EMA`, `input = "close"`: `requires_bars = n + 1`, `id_args = n`
+- `EMA`, `input = "close"`: `requires_bars = n`, `id_args = n`
 - `ATR`, `input = "hlc"`: `requires_bars = n + 1`, `id_args = n`
-- `MACD`, `input = "close"`: `requires_bars = nSlow + nSig - 1`,
+- `MACD`, `input = "close"`: `requires_bars = nSlow` for `output = "macd"`
+  and `nSlow + nSig - 1` for `output = "signal"` or `"histogram"`,
   `id_args = nFast,nSlow,nSig`
 
 **Tasks:**
@@ -721,11 +722,10 @@ their input names.
 
 **Source Reference:** TTR UX discussion after LDG-712
 
-**Status Note:** P1 outstanding — MACD `histogram` output gets
-`requires_bars = nSlow` instead of `nSlow + nSig - 1`. Fix
-`ledgr_ttr_infer_requires_bars` to include `"histogram"` in the signal-tier
-warmup branch, and add histogram and signal cases to the warmup verification
-test.
+**Status Note:** Review fix verified. MACD `signal` and `histogram` outputs
+use `requires_bars = nSlow + nSig - 1`, while MACD `macd` output uses
+`requires_bars = nSlow`. The warmup verification test covers all three output
+paths against direct TTR output.
 
 **Classification:**
 ```yaml
@@ -778,17 +778,17 @@ caching.
 - `momentum`, `input = "close"`: `requires_bars = n + 1`, `id_args = n`
 - `CCI`, `input = "hlc"`: `requires_bars = n`, `id_args = n`
 - `BBands`, `input = "close"`: `requires_bars = n`, `id_args = n`
-- `aroon`, `input = "hlc"`: `requires_bars = n + 1`, `id_args = n`
-- `DonchianChannel`, `input = "hlc"`: `requires_bars = n`, `id_args = n`
+- `aroon`, `input = "hl"`: `requires_bars = n`, `id_args = n`
+- `DonchianChannel`, `input = "hl"`: `requires_bars = n`, `id_args = n`
 - `MFI`, `input = "hlcv"`: `requires_bars = n + 1`, `id_args = n`
 - `CMF`, `input = "hlcv"`: `requires_bars = n`, `id_args = n`
 - Rolling statistics with deterministic `n`, for example `runMean`, `runSD`,
   `runVar`, and `runMAD`, `input = "close"`: `requires_bars = n`,
   `id_args = n`
 
-The final implementation may drop a candidate if TTR output, arguments, or
-warmup behavior fail the deterministic inclusion rule. Dropped candidates must
-be listed in a short implementation note or ticket comment.
+Implementation note: no listed candidates were dropped. `aroon` and
+`DonchianChannel` use the TTR-compatible `input = "hl"` shape because TTR
+requires a High/Low matrix for those functions.
 
 **Explicitly Out Of Scope:**
 - `ADX`, `stoch`, `DEMA`, `TEMA`, `ZLEMA`, `HMA`, `SAR`, `PSAR`, `OBV`, `CLV`,
@@ -817,35 +817,35 @@ The article should explain:
 - custom `series_fn` as the escape hatch for unsupported indicators.
 
 **Tasks:**
-1. Expand `ledgr_ttr_warmup_rules()` with the accepted common TTR functions.
-2. Update `ledgr_ttr_infer_requires_bars()` and ID generation coverage for all
+1. [x] Expand `ledgr_ttr_warmup_rules()` with the accepted common TTR functions.
+2. [x] Update `ledgr_ttr_infer_requires_bars()` and ID generation coverage for all
    new rows.
-3. Add or adjust input/output selection support only where it follows the
+3. [x] Add or adjust input/output selection support only where it follows the
    existing LDG-715 contracts.
-4. Extend warmup verification tests so every rules-table row is run against
+4. [x] Extend warmup verification tests so every rules-table row is run against
    actual TTR output and the first non-`NA` row equals inferred
    `requires_bars`.
-5. Add required-argument and multi-output error tests for representative new
+5. [x] Add required-argument and multi-output error tests for representative new
    functions.
-6. Add documentation for the TTR adapter philosophy and examples.
-7. Add the article to `_pkgdown.yml` under the relevant navbar section.
-8. Update `NEWS.md` and `contracts.md` if the supported TTR surface or contract
+6. [x] Add documentation for the TTR adapter philosophy and examples.
+7. [x] Add the article to `_pkgdown.yml` under the relevant navbar section.
+8. [x] Update `NEWS.md` and `contracts.md` if the supported TTR surface or contract
    language changes.
 
 **Acceptance Criteria:**
-- [ ] Every added TTR rule has deterministic warmup from explicit args alone.
-- [ ] Every rules-table row is tested against actual TTR output.
-- [ ] No added rule relies on TTR default parameters for warmup or ID
+- [x] Every added TTR rule has deterministic warmup from explicit args alone.
+- [x] Every rules-table row is tested against actual TTR output.
+- [x] No added rule relies on TTR default parameters for warmup or ID
       generation.
-- [ ] Deterministic IDs use rules-table `id_args` order.
-- [ ] Multi-output indicators require or validate `output` with available
+- [x] Deterministic IDs use rules-table `id_args` order.
+- [x] Multi-output indicators require or validate `output` with available
       choices.
-- [ ] Unsupported/ambiguous TTR functions still require explicit
+- [x] Unsupported/ambiguous TTR functions still require explicit
       `requires_bars`.
-- [ ] TTR remains an optional dependency.
-- [ ] TTR adapter article renders offline and links from appropriate reference
+- [x] TTR remains an optional dependency.
+- [x] TTR adapter article renders offline and links from appropriate reference
       or pkgdown navigation.
-- [ ] `_pkgdown.yml` links the article from the package site navigation.
+- [x] `_pkgdown.yml` links the article from the package site navigation.
 
 **Test Requirements:**
 - `tests/testthat/test-indicator-ttr.R`
@@ -949,7 +949,7 @@ risk_level: release-critical
 implementation_tier: H
 review_tier: H
 classification_reason: >
-  Release gate. Validates the entire v0.1.4 scope — contracts, NEWS, test
+  Release gate. Validates the entire v0.1.4 scope - contracts, NEWS, test
   coverage, R CMD check, CI, and acceptance tests. Cannot be delegated to a
   lower tier. This ticket IS the final Tier H review.
 invariants_at_risk:

@@ -107,6 +107,16 @@ coding agents must preserve. The authoritative narrative remains in
   version, input shape, output column, and forwarded TTR arguments in indicator
   params. Only `params$args` are forwarded to TTR; metadata fields are identity
   fields for fingerprints and diagnostics.
+- TTR warmup inference is allowed only for functions listed by
+  `ledgr_ttr_warmup_rules()`. Each listed rule must be deterministic from
+  explicit arguments alone and verified against direct TTR output in tests.
+- TTR input mappings are adapter contracts: `close` maps to `bars$close`, `hl`
+  maps to `High/Low`, `hlc` maps to `High/Low/Close`, `ohlc` maps to
+  `Open/High/Low/Close`, and `hlcv` maps to `High/Low/Close/Volume`.
+- TTR-backed generated IDs use rules-table `id_args` first and then any other
+  supplied scalar arguments in sorted order before the optional output suffix.
+  Users must provide `id` explicitly when non-scalar TTR arguments would make a
+  generated ID ambiguous.
 - Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
   stable windows, not expanding full-history windows.
 - Feature precomputation may use a session-scoped cache. Cache entries are keyed

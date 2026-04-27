@@ -110,11 +110,11 @@ tickets:
     tests: ["feature cache tests", "tests/testthat/test-features.R", "tests/testthat/test-backtest-wrapper.R", "tools/check-coverage.R"]
   - id: LDG-715
     title: "Low-Code TTR Indicator Constructor"
-    status: pending-fix
+    status: done
     priority: P1
     dependencies: [LDG-713]
     tests: ["tests/testthat/test-indicators.R", "tests/testthat/test-indicator-ttr.R", "backtest series_fn integration", "R CMD check"]
-    note: "P1 outstanding: MACD histogram output gets requires_bars = nSlow instead of nSlow + nSig - 1. Fix ledgr_ttr_infer_requires_bars and add histogram to warmup verification test."
+    note: "Review fix verified: MACD histogram and signal outputs use nSlow + nSig - 1 and are covered against direct TTR output."
     classification:
       risk_level: low
       implementation_tier: M
@@ -141,7 +141,7 @@ tickets:
         - touching the execution path or feature cache
   - id: LDG-716
     title: "Expand TTR Warmup Rules and Indicator Documentation"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-715]
     tests: ["tests/testthat/test-indicator-ttr.R", "TTR warmup contract tests", "pkgdown article render", "R CMD check"]
@@ -198,7 +198,7 @@ tickets:
       implementation_tier: H
       review_tier: H
       classification_reason: >
-        Release gate. Validates the entire v0.1.4 scope — contracts, NEWS,
+        Release gate. Validates the entire v0.1.4 scope - contracts, NEWS,
         test coverage, R CMD check, CI, and acceptance tests. Cannot be
         delegated to a lower tier. This ticket IS the final Tier H review.
       invariants_at_risk:

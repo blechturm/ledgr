@@ -17,8 +17,8 @@ ledgr_ind_ttr(
 \arguments{
 \item{ttr_fn}{TTR function name, for example \code{"RSI"}, \code{"ATR"}, or \code{"MACD"}.}
 
-\item{input}{ledgr input shape. Supported values are \code{"close"}, \code{"hlc"},
-\code{"ohlc"}, and \code{"hlcv"}.}
+\item{input}{ledgr input shape. Supported values are \code{"close"}, \code{"hl"},
+\code{"hlc"}, \code{"ohlc"}, and \code{"hlcv"}.}
 
 \item{output}{Output column for multi-column TTR functions. Vector outputs
 use \code{NULL}.}

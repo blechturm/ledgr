@@ -12,21 +12,46 @@
 #' @export
 ledgr_ttr_warmup_rules <- function() {
   rules <- data.frame(
-    ttr_fn = c("RSI", "SMA", "EMA", "ATR", "MACD"),
-    input = c("close", "close", "close", "hlc", "close"),
-    formula = c("n + 1", "n", "n", "n + 1", "macd: nSlow; signal: nSlow + nSig - 1"),
+    ttr_fn = c(
+      "RSI", "SMA", "EMA", "ATR", "MACD",
+      "WMA", "ROC", "momentum", "CCI", "BBands",
+      "aroon", "DonchianChannel", "MFI", "CMF",
+      "runMean", "runSD", "runVar", "runMAD"
+    ),
+    input = c(
+      "close", "close", "close", "hlc", "close",
+      "close", "close", "close", "hlc", "close",
+      "hl", "hl", "hlcv", "hlcv",
+      "close", "close", "close", "close"
+    ),
+    formula = c(
+      "n + 1", "n", "n", "n + 1", "macd: nSlow; signal/histogram: nSlow + nSig - 1",
+      "n", "n + 1", "n + 1", "n", "n",
+      "n", "n", "n + 1", "n",
+      "n", "n", "n", "n"
+    ),
     stringsAsFactors = FALSE
   )
-  rules$required_args <- I(list("n", "n", "n", "n", c("nFast", "nSlow", "nSig")))
-  rules$id_args <- I(list("n", "n", "n", "n", c("nFast", "nSlow", "nSig")))
+  rules$required_args <- I(list(
+    "n", "n", "n", "n", c("nFast", "nSlow", "nSig"),
+    "n", "n", "n", "n", "n",
+    "n", "n", "n", "n",
+    "n", "n", "n", "n"
+  ))
+  rules$id_args <- I(list(
+    "n", "n", "n", "n", c("nFast", "nSlow", "nSig"),
+    "n", "n", "n", "n", "n",
+    "n", "n", "n", "n",
+    "n", "n", "n", "n"
+  ))
   rules
 }
 
 #' Construct a ledgr indicator from a supported TTR indicator
 #'
 #' @param ttr_fn TTR function name, for example `"RSI"`, `"ATR"`, or `"MACD"`.
-#' @param input ledgr input shape. Supported values are `"close"`, `"hlc"`,
-#'   `"ohlc"`, and `"hlcv"`.
+#' @param input ledgr input shape. Supported values are `"close"`, `"hl"`,
+#'   `"hlc"`, `"ohlc"`, and `"hlcv"`.
 #' @param output Output column for multi-column TTR functions. Vector outputs
 #'   use `NULL`.
 #' @param id Optional indicator identifier. If omitted, ledgr builds a stable ID
@@ -166,13 +191,13 @@ ledgr_ttr_normalize_fn <- function(ttr_fn) {
 }
 
 ledgr_ttr_normalize_input <- function(input) {
-  allowed <- c("close", "hlc", "ohlc", "hlcv")
+  allowed <- c("close", "hl", "hlc", "ohlc", "hlcv")
   if (!is.character(input) || length(input) != 1L || is.na(input) || !nzchar(input)) {
-    rlang::abort("`input` must be one of: close, hlc, ohlc, hlcv.", class = "ledgr_invalid_args")
+    rlang::abort("`input` must be one of: close, hl, hlc, ohlc, hlcv.", class = "ledgr_invalid_args")
   }
   input <- tolower(input)
   if (!input %in% allowed) {
-    rlang::abort("`input` must be one of: close, hlc, ohlc, hlcv.", class = "ledgr_invalid_args")
+    rlang::abort("`input` must be one of: close, hl, hlc, ohlc, hlcv.", class = "ledgr_invalid_args")
   }
   input
 }
@@ -217,6 +242,19 @@ ledgr_ttr_infer_requires_bars <- function(ttr_fn, args, output = NULL) {
     SMA = integer_arg("n"),
     EMA = integer_arg("n"),
     ATR = integer_arg("n") + 1L,
+    WMA = integer_arg("n"),
+    ROC = integer_arg("n") + 1L,
+    momentum = integer_arg("n") + 1L,
+    CCI = integer_arg("n"),
+    BBands = integer_arg("n"),
+    aroon = integer_arg("n"),
+    DonchianChannel = integer_arg("n"),
+    MFI = integer_arg("n") + 1L,
+    CMF = integer_arg("n"),
+    runMean = integer_arg("n"),
+    runSD = integer_arg("n"),
+    runVar = integer_arg("n"),
+    runMAD = integer_arg("n"),
     MACD = {
       if (identical(output, "signal") || identical(output, "histogram")) {
         integer_arg("nSlow") + integer_arg("nSig") - 1L
@@ -241,7 +279,20 @@ ledgr_ttr_example_call <- function(ttr_fn, input, required_args) {
     SMA = "ledgr_ind_ttr(\"SMA\", input = \"close\", n = 20)",
     EMA = "ledgr_ind_ttr(\"EMA\", input = \"close\", n = 20)",
     ATR = "ledgr_ind_ttr(\"ATR\", input = \"hlc\", output = \"atr\", n = 20)",
-    MACD = "ledgr_ind_ttr(\"MACD\", input = \"close\", output = \"macd\", nFast = 12, nSlow = 26, nSig = 9)"
+    MACD = "ledgr_ind_ttr(\"MACD\", input = \"close\", output = \"macd\", nFast = 12, nSlow = 26, nSig = 9)",
+    WMA = "ledgr_ind_ttr(\"WMA\", input = \"close\", n = 10)",
+    ROC = "ledgr_ind_ttr(\"ROC\", input = \"close\", n = 10)",
+    momentum = "ledgr_ind_ttr(\"momentum\", input = \"close\", n = 10)",
+    CCI = "ledgr_ind_ttr(\"CCI\", input = \"hlc\", n = 20)",
+    BBands = "ledgr_ind_ttr(\"BBands\", input = \"close\", output = \"up\", n = 20)",
+    aroon = "ledgr_ind_ttr(\"aroon\", input = \"hl\", output = \"oscillator\", n = 20)",
+    DonchianChannel = "ledgr_ind_ttr(\"DonchianChannel\", input = \"hl\", output = \"mid\", n = 20)",
+    MFI = "ledgr_ind_ttr(\"MFI\", input = \"hlcv\", n = 14)",
+    CMF = "ledgr_ind_ttr(\"CMF\", input = \"hlcv\", n = 20)",
+    runMean = "ledgr_ind_ttr(\"runMean\", input = \"close\", n = 20)",
+    runSD = "ledgr_ind_ttr(\"runSD\", input = \"close\", n = 20)",
+    runVar = "ledgr_ind_ttr(\"runVar\", input = \"close\", n = 20)",
+    runMAD = "ledgr_ind_ttr(\"runMAD\", input = \"close\", n = 20)"
   )
   if (ttr_fn %in% names(examples)) return(examples[[ttr_fn]])
   arg_bits <- paste(sprintf("%s = ?", required_args), collapse = ", ")
@@ -249,6 +300,7 @@ ledgr_ttr_example_call <- function(ttr_fn, input, required_args) {
 }
 
 ledgr_ttr_default_id <- function(ttr_fn, id_args, args, output) {
+  id_args <- c(id_args, sort(setdiff(names(args), id_args)))
   arg_values <- character(0)
   if (length(id_args) > 0L) {
     arg_values <- vapply(id_args, function(name) {
@@ -281,6 +333,7 @@ ledgr_ttr_build_input <- function(bars, input) {
   required <- switch(
     input,
     close = "close",
+    hl = c("high", "low"),
     hlc = c("high", "low", "close"),
     ohlc = c("open", "high", "low", "close"),
     hlcv = c("high", "low", "close", "volume")
@@ -295,6 +348,10 @@ ledgr_ttr_build_input <- function(bars, input) {
   switch(
     input,
     close = as.numeric(bars$close),
+    hl = structure(
+      cbind(as.numeric(bars$high), as.numeric(bars$low)),
+      dimnames = list(NULL, c("High", "Low"))
+    ),
     hlc = structure(
       cbind(as.numeric(bars$high), as.numeric(bars$low), as.numeric(bars$close)),
       dimnames = list(NULL, c("High", "Low", "Close"))
@@ -316,7 +373,11 @@ ledgr_ttr_call <- function(bars, params) {
   }
   x <- ledgr_ttr_build_input(bars, params$input)
   ttr_fn <- getExportedValue("TTR", params$ttr_fn)
-  result <- do.call(ttr_fn, c(list(x), params$args))
+  result <- if (identical(params$input, "hlcv") && params$ttr_fn %in% c("MFI", "CMF")) {
+    do.call(ttr_fn, c(list(x[, c("High", "Low", "Close"), drop = FALSE], x[, "Volume"]), params$args))
+  } else {
+    do.call(ttr_fn, c(list(x), params$args))
+  }
   ledgr_ttr_select_output(result, params$output, params$ttr_fn)
 }
 

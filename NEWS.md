@@ -18,6 +18,9 @@
   `ledgr_clear_feature_cache()` for explicit cleanup.
 - Added `ledgr_ind_ttr()` and `ledgr_ttr_warmup_rules()` for low-code TTR
   indicator construction with explicit warmup and fingerprint metadata.
+- Expanded low-code TTR support to common close, high/low, HLC, and HLCV
+  indicators including WMA, ROC, momentum, CCI, BBands, aroon,
+  DonchianChannel, MFI, CMF, and rolling statistic functions.
 - Added `ledgr_deregister_indicator()` for cleaning up session-scoped
   indicator registry entries during interactive work and tests.
 - Changed fn-only custom indicator fallback from expanding full-history windows
