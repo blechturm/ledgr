@@ -53,7 +53,7 @@ tickets:
 
   - id: LDG-802
     title: "Strategy Params And Provenance Capture"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-801]
     tests:

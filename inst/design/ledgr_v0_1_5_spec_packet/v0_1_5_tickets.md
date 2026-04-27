@@ -143,7 +143,8 @@ forbidden_actions:
 
 **Priority:** P0  
 **Effort:** 3-4 days  
-**Dependencies:** LDG-801
+**Dependencies:** LDG-801  
+**Status:** Done
 
 **Description:**
 Make strategy parameters and strategy provenance part of durable experiment
@@ -176,19 +177,19 @@ to the experiment store.
 15. Document the existing `NULL`/`NA` canonical JSON collision for params.
 
 **Acceptance Criteria:**
-- [ ] `function(ctx)` strategies remain supported.
-- [ ] `function(ctx, params)` strategies receive `strategy_params`.
-- [ ] `function(ctx, params)` with `strategy_params = list()` receives an empty
+- [x] `function(ctx)` strategies remain supported.
+- [x] `function(ctx, params)` strategies receive `strategy_params`.
+- [x] `function(ctx, params)` with `strategy_params = list()` receives an empty
       list and is valid.
-- [ ] Unsupported signatures such as `function(ctx, params, extra)` fail
+- [x] Unsupported signatures such as `function(ctx, params, extra)` fail
       clearly.
-- [ ] Changing `strategy_params` changes `strategy_params_hash`.
-- [ ] Changing strategy source changes `strategy_source_hash`.
-- [ ] Non-JSON-safe params fail with a classed actionable error.
-- [ ] R6 strategies are not classified as Tier 1 by default.
-- [ ] Stored run metadata includes strategy source hash, params hash, ledgr
+- [x] Changing `strategy_params` changes `strategy_params_hash`.
+- [x] Changing strategy source changes `strategy_source_hash`.
+- [x] Non-JSON-safe params fail with a classed actionable error.
+- [x] R6 strategies are not classified as Tier 1 by default.
+- [x] Stored run metadata includes strategy source hash, params hash, ledgr
       version, R version, dependency versions, and reproducibility level.
-- [ ] Legacy/pre-provenance runs are labeled clearly.
+- [x] Legacy/pre-provenance runs are labeled clearly.
 
 **Test Requirements:**
 - New strategy identity tests.

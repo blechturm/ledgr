@@ -78,6 +78,9 @@ coding agents must preserve. The authoritative narrative remains in
   `ledgr_signal_strategy()` is an explicit convenience wrapper that maps signals
   to normal targets before validation.
 - Functional strategies and R6 strategies use the same target validator.
+- Functional strategies may use `function(ctx)` or `function(ctx, params)`.
+  `strategy_params` defaults to `list()`, is passed only to the two-argument
+  functional form, and must be canonical JSON serializable.
 - Strategy reproducibility is tiered:
   - Tier 1: self-contained `function(ctx, params)` style logic with explicit
     parameters and no unresolved external objects.
@@ -86,10 +89,15 @@ coding agents must preserve. The authoritative narrative remains in
     parameter metadata.
   - Tier 3: environment-dependent logic whose execution identity cannot be
     recovered from stored metadata.
-- Future experiment-store run-identity design, scheduled for v0.1.5, must treat
-  `strategy_source_hash`, `strategy_params_hash`, and reproducibility tier as
-  part of experiment provenance. R6 strategy identity must not be finalized
-  implicitly.
+- v0.1.5 run provenance stores `strategy_source_hash`,
+  `strategy_params_hash`, captured strategy source where available,
+  dependency versions, R version, and reproducibility tier. R6 strategies are
+  Tier 2 by default unless a future explicit metadata contract upgrades them.
+- `strategy_source_hash` is R-version-sensitive and should be compared directly
+  only between runs created under the same `R_version`.
+- Canonical JSON currently serializes both `NULL` and `NA` as JSON `null`;
+  users who need to distinguish those parameter values must encode that
+  distinction explicitly.
 
 ## Context Contract
 

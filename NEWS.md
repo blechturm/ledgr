@@ -3,6 +3,9 @@
 - Added the v0.1.5 experiment-store schema foundation, including schema-version
   metadata, additive migration hooks, run provenance and telemetry tables, and
   defensive future-schema checks.
+- Added `strategy_params` support for `function(ctx, params)` strategies and
+  durable run provenance capture for strategy source hashes, parameter hashes,
+  dependency versions, R version, and reproducibility tier.
 
 # ledgr 0.1.4
 

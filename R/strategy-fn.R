@@ -1,11 +1,14 @@
 # Internal registry for functional strategies (keyed by digest).
 ledgr_strategy_registry <- new.env(parent = emptyenv())
 
-ledgr_register_strategy_fn <- function(fn) {
+ledgr_register_strategy_fn <- function(fn, include_captures = TRUE, key = NULL) {
   if (!is.function(fn)) {
     rlang::abort("`strategy` must be a function or object with $on_pulse().", class = "ledgr_invalid_args")
   }
-  key <- ledgr_function_fingerprint(fn, include_captures = TRUE, label = "`strategy`")
+  ledgr_strategy_signature(fn)
+  if (is.null(key)) {
+    key <- ledgr_function_fingerprint(fn, include_captures = include_captures, label = "`strategy`")
+  }
   assign(key, fn, envir = ledgr_strategy_registry)
   key
 }
@@ -23,15 +26,16 @@ ledgr_get_strategy_fn <- function(key) {
   get(key, envir = ledgr_strategy_registry, inherits = FALSE)
 }
 
-ledgr_strategy_fn_from_key <- function(key) {
+ledgr_strategy_fn_from_key <- function(key, signature = NULL, strategy_params = list()) {
   fn <- ledgr_get_strategy_fn(key)
+  if (is.null(signature)) signature <- ledgr_strategy_signature(fn)
 
   R6::R6Class(
     "FunctionalStrategy",
     inherit = LedgrStrategy,
     private = list(
       on_pulse_impl = function(ctx) {
-        out <- fn(ctx)
+        out <- ledgr_call_strategy_fn(fn, ctx, strategy_params, signature)
         if (is.list(out) && !is.null(out$targets)) return(out)
         if (is.numeric(out)) return(list(targets = out, state_update = list()))
         rlang::abort(

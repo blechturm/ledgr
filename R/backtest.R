@@ -5,6 +5,9 @@
 #' @param snapshot A `ledgr_snapshot` object, or a data frame for the data-first
 #'   convenience path.
 #' @param strategy Strategy function or object with `$on_pulse(ctx)` method.
+#'   Functional strategies may use `function(ctx)` or `function(ctx, params)`.
+#' @param strategy_params JSON-safe list passed to `function(ctx, params)`
+#'   strategies and stored as part of run provenance.
 #' @param universe Character vector of instrument IDs. If `NULL`, it is inferred
 #'   from the snapshot or data frame.
 #' @param start Start timestamp (NULL = snapshot start).
@@ -52,6 +55,7 @@ ledgr_backtest <- function(snapshot = NULL,
                            start = NULL,
                            end = NULL,
                            initial_cash = 100000,
+                           strategy_params = list(),
                            features = list(),
                            fill_model = NULL,
                            execution_mode = "audit_log",
@@ -182,6 +186,7 @@ ledgr_backtest <- function(snapshot = NULL,
     snapshot = snapshot,
     universe = universe,
     strategy = strategy,
+    strategy_params = strategy_params,
     backtest = ledgr_backtest_config(start = start, end = end, initial_cash = initial_cash),
     features = features,
     persist_features = persist_features,
@@ -413,8 +418,20 @@ ledgr_fill_model_instant <- function() {
 
 ledgr_strategy_spec <- function(strategy) {
   if (is.function(strategy)) {
+    signature <- ledgr_strategy_signature(strategy)
     key <- ledgr_register_strategy_fn(strategy)
-    return(list(id = "functional", params = list(strategy_key = key)))
+    source_info <- ledgr_strategy_source_info(strategy)
+    return(list(
+      id = "functional",
+      params = list(strategy_key = key, call_signature = signature),
+      provenance = list(
+        strategy_type = "functional",
+        strategy_source = source_info$source,
+        strategy_source_hash = source_info$hash,
+        strategy_source_capture_method = source_info$capture_method,
+        reproducibility_level = ledgr_strategy_reproducibility_level("functional", signature, source_info)
+      )
+    ))
   }
 
   if (is.list(strategy) && is.character(strategy$id)) {
@@ -423,13 +440,42 @@ ledgr_strategy_spec <- function(strategy) {
     if (!is.list(params)) {
       rlang::abort("strategy.params must be a list.", class = "ledgr_invalid_args")
     }
-    return(list(id = strategy$id, params = params))
+    return(list(
+      id = strategy$id,
+      params = params,
+      provenance = list(
+        strategy_type = "configured",
+        strategy_source = NA_character_,
+        strategy_source_hash = NA_character_,
+        strategy_source_capture_method = "configured_strategy",
+        reproducibility_level = "tier_2"
+      )
+    ))
   }
 
   if (!is.null(strategy) && is.function(strategy$on_pulse)) {
     fn <- function(ctx) strategy$on_pulse(ctx)
-    key <- ledgr_register_strategy_fn(fn)
-    return(list(id = "functional", params = list(strategy_key = key)))
+    r6_key_payload <- list(
+      type = "R6_object",
+      class = class(strategy),
+      params = if (is.list(strategy$params)) strategy$params else list()
+    )
+    key <- ledgr_register_strategy_fn(
+      fn,
+      include_captures = FALSE,
+      key = digest::digest(canonical_json(r6_key_payload), algo = "sha256")
+    )
+    return(list(
+      id = "functional",
+      params = list(strategy_key = key, call_signature = "ctx"),
+      provenance = list(
+        strategy_type = "R6_object",
+        strategy_source = NA_character_,
+        strategy_source_hash = NA_character_,
+        strategy_source_capture_method = "R6_object",
+        reproducibility_level = "tier_2"
+      )
+    ))
   }
 
   rlang::abort(
@@ -441,6 +487,7 @@ ledgr_strategy_spec <- function(strategy) {
 ledgr_config <- function(snapshot,
                          universe,
                          strategy,
+                         strategy_params = list(),
                          backtest,
                          features = list(),
                          persist_features = TRUE,
@@ -511,7 +558,16 @@ ledgr_config <- function(snapshot,
     rlang::abort("`fill_model` must be a list.", class = "ledgr_invalid_args")
   }
 
+  strategy_params_info <- ledgr_strategy_params_info(strategy_params)
   strat <- ledgr_strategy_spec(strategy)
+  if (identical(strat$id, "functional") &&
+      identical(strat$params$call_signature, "ctx") &&
+      length(strategy_params_info$value) > 0) {
+    rlang::warn(
+      "`strategy_params` was provided, but the strategy signature is `function(ctx)`. Params will be stored in provenance but not passed to the strategy.",
+      class = "ledgr_unused_strategy_params"
+    )
+  }
 
   config <- list(
     db_path = db_path,
@@ -554,8 +610,12 @@ ledgr_config <- function(snapshot,
     },
     strategy = list(
       id = strat$id,
-      params = strat$params
+      params = strat$params,
+      provenance = strat$provenance
     ),
+    strategy_params = strategy_params_info$value,
+    strategy_params_json = strategy_params_info$json,
+    strategy_params_hash = strategy_params_info$hash,
     data = list(
       source = "snapshot",
       snapshot_id = snapshot$snapshot_id,

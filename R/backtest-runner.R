@@ -263,6 +263,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
   if (!is_resume) {
     run_snapshot_id <- if (is.null(snapshot_id)) NA_character_ else snapshot_id
+    run_created_at_utc <- as.POSIXct(Sys.time(), tz = "UTC")
     DBI::dbExecute(
       con,
       "
@@ -280,7 +281,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
       ",
       params = list(
         run_id,
-        as.POSIXct(Sys.time(), tz = "UTC"),
+        run_created_at_utc,
         engine_version,
         config_json,
         cfg_hash,
@@ -327,6 +328,20 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
       params = list("FAILED", msg, run_id)
     )
     rlang::abort(msg, class = class)
+  }
+
+  if (!is_resume) {
+    run_created_at <- DBI::dbGetQuery(
+      con,
+      "SELECT created_at_utc FROM runs WHERE run_id = ?",
+      params = list(run_id)
+    )$created_at_utc[[1]]
+    tryCatch(
+      ledgr_write_strategy_provenance(con, run_id, cfg, created_at_utc = run_created_at),
+      error = function(e) {
+        fail_run(conditionMessage(e), class = "ledgr_run_provenance_failed")
+      }
+    )
   }
 
   # v0.1.1 snapshot integration:
@@ -538,6 +553,11 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   }
   if (!is.function(strategy_fn)) {
     rlang::abort("Strategy on_pulse is not a function; check strategy configuration.", class = "ledgr_invalid_strategy")
+  }
+  strategy_params <- if (is.null(cfg$strategy_params)) list() else cfg$strategy_params
+  strategy_call_signature <- NULL
+  if (!is.null(cfg$strategy) && is.list(cfg$strategy) && !is.null(cfg$strategy$params$call_signature)) {
+    strategy_call_signature <- cfg$strategy$params$call_signature
   }
 
   pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
@@ -1174,7 +1194,11 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         }
 
         t_strat_start <- time_start(sample_now)
-        result <- strategy_fn(ctx)
+        result <- if (isTRUE(strategy_is_functional)) {
+          ledgr_call_strategy_fn(strategy_fn, ctx, strategy_params, strategy_call_signature)
+        } else {
+          strategy_fn(ctx)
+        }
         if (sample_now) {
           t_strat <- time_end(t_strat_start, TRUE)
         }
@@ -2208,7 +2232,9 @@ ledgr_strategy_from_config <- function(cfg) {
   if (identical(id, "state_prev")) return(StatePrevStrategy$new(params = params))
   if (identical(id, "functional")) {
     key <- params$strategy_key
-    return(ledgr_strategy_fn_from_key(key))
+    signature <- params$call_signature
+    strategy_params <- if (is.null(cfg$strategy_params)) list() else cfg$strategy_params
+    return(ledgr_strategy_fn_from_key(key, signature = signature, strategy_params = strategy_params))
   }
 
   rlang::abort(sprintf("Unknown strategy.id: %s", id), class = "ledgr_invalid_config")

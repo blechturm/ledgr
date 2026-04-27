@@ -11,6 +11,7 @@ ledgr_backtest(
   start = NULL,
   end = NULL,
   initial_cash = 1e+05,
+  strategy_params = list(),
   features = list(),
   fill_model = NULL,
   execution_mode = "audit_log",
@@ -26,7 +27,8 @@ ledgr_backtest(
 \item{snapshot}{A \code{ledgr_snapshot} object, or a data frame for the data-first
 convenience path.}
 
-\item{strategy}{Strategy function or object with \verb{$on_pulse(ctx)} method.}
+\item{strategy}{Strategy function or object with \verb{$on_pulse(ctx)} method.
+Functional strategies may use \verb{function(ctx)} or \verb{function(ctx, params)}.}
 
 \item{universe}{Character vector of instrument IDs. If \code{NULL}, it is inferred
 from the snapshot or data frame.}
@@ -36,6 +38,9 @@ from the snapshot or data frame.}
 \item{end}{End timestamp (NULL = snapshot end).}
 
 \item{initial_cash}{Starting capital.}
+
+\item{strategy_params}{JSON-safe list passed to \verb{function(ctx, params)}
+strategies and stored as part of run provenance.}
 
 \item{features}{List of ledgr indicator definitions (optional).}
 

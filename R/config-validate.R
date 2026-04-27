@@ -136,6 +136,24 @@ validate_ledgr_config <- function(config) {
 
   strategy_id <- cfg_get(c("strategy", "id"))
   assert_scalar_chr(strategy_id, "strategy.id")
+  if (!is.null(config$strategy$params$call_signature)) {
+    assert_scalar_chr(config$strategy$params$call_signature, "strategy.params.call_signature")
+    if (!config$strategy$params$call_signature %in% c("ctx", "ctx_params")) {
+      rlang::abort(
+        "Config field strategy.params.call_signature must be 'ctx' or 'ctx_params'.",
+        class = "ledgr_invalid_config"
+      )
+    }
+  }
+  if (!is.null(config$strategy_params) && (!is.list(config$strategy_params) || is.data.frame(config$strategy_params))) {
+    rlang::abort("Config field strategy_params must be a list.", class = "ledgr_invalid_config")
+  }
+  if (!is.null(config$strategy_params_json)) {
+    assert_scalar_chr(config$strategy_params_json, "strategy_params_json")
+  }
+  if (!is.null(config$strategy_params_hash)) {
+    assert_scalar_chr(config$strategy_params_hash, "strategy_params_hash")
+  }
 
   # v0.1.1 snapshot integration: config$data$source == "snapshot" requires
   # config$data$snapshot_id.

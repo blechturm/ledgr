@@ -205,6 +205,44 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
       "
     )
 
+    if (ledgr_experiment_store_table_exists(con, "runs")) {
+      DBI::dbExecute(
+        con,
+        "
+        INSERT INTO run_provenance (
+          run_id,
+          strategy_type,
+          strategy_source,
+          strategy_source_hash,
+          strategy_source_capture_method,
+          strategy_params_json,
+          strategy_params_hash,
+          reproducibility_level,
+          ledgr_version,
+          R_version,
+          dependency_versions_json,
+          created_at_utc
+        )
+        SELECT
+          r.run_id,
+          'legacy',
+          NULL,
+          NULL,
+          'legacy_pre_provenance',
+          NULL,
+          NULL,
+          'legacy',
+          NULL,
+          NULL,
+          NULL,
+          COALESCE(r.created_at_utc, CURRENT_TIMESTAMP)
+        FROM runs r
+        LEFT JOIN run_provenance p ON p.run_id = r.run_id
+        WHERE p.run_id IS NULL
+        "
+      )
+    }
+
     if (isTRUE(simulate_failure)) {
       rlang::abort(
         "Simulated experiment-store migration failure.",

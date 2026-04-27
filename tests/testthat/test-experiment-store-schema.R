@@ -163,6 +163,12 @@ testthat::test_that("write-triggered migration is additive and preserves v0.1.4 
     DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM equity_curve WHERE run_id = 'legacy-run'")$n[[1]],
     1
   )
+  legacy_provenance <- DBI::dbGetQuery(
+    con,
+    "SELECT reproducibility_level, strategy_source_capture_method FROM run_provenance WHERE run_id = 'legacy-run'"
+  )
+  testthat::expect_identical(legacy_provenance$reproducibility_level[[1]], "legacy")
+  testthat::expect_identical(legacy_provenance$strategy_source_capture_method[[1]], "legacy_pre_provenance")
 
   runs_cols <- DBI::dbGetQuery(
     con,

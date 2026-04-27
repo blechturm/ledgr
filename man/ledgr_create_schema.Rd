@@ -2,7 +2,7 @@
 % Please edit documentation in R/db-schema-create.R
 \name{ledgr_create_schema}
 \alias{ledgr_create_schema}
-\title{Create ledgr DuckDB schema (v0.1.0)}
+\title{Create the current ledgr DuckDB schema}
 \usage{
 ledgr_create_schema(con)
 }
@@ -13,7 +13,7 @@ ledgr_create_schema(con)
 Invisibly returns \code{TRUE} on success.
 }
 \description{
-Creates all required v0.1.0 tables and forward-migrates older schemas.
+Creates all required ledgr tables and forward-migrates legacy schemas.
 }
 \examples{
 db_path <- tempfile(fileext = ".duckdb")
