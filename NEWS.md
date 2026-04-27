@@ -16,6 +16,8 @@
 - Added a session-scoped feature cache keyed by snapshot hash, instrument,
   indicator fingerprint, feature-engine version, and date range, with
   `ledgr_clear_feature_cache()` for explicit cleanup.
+- Added `ledgr_ind_ttr()` and `ledgr_ttr_warmup_rules()` for low-code TTR
+  indicator construction with explicit warmup and fingerprint metadata.
 - Changed fn-only custom indicator fallback from expanding full-history windows
   to bounded stable windows to avoid accidental O(n^2) feature work.
 - Clarified v0.x compatibility policy, strategy reproducibility tiers,

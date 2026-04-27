@@ -295,6 +295,37 @@ registry state.
 
 **Source Reference:** A5
 
+**Classification:**
+```yaml
+risk_level: low
+implementation_tier: M
+review_tier: M
+classification_reason: >
+  New exported function with bounded scope. The indicator registry is
+  session-scoped and not persisted, so deregistration cannot corrupt run
+  artifacts. New export requires a NEWS entry per the compatibility policy.
+invariants_at_risk:
+  - indicator registry consistency
+  - new export must not break existing ledgr_register_indicator() contract
+required_context:
+  - R/indicator.R
+  - tests/testthat/test-indicators.R
+  - tests/testthat/test-api-exports.R
+  - inst/design/contracts.md (Compatibility Policy)
+tests_required:
+  - deregistering an existing indicator removes it from the registry
+  - deregistering a missing indicator with missing_ok = TRUE succeeds silently
+  - deregistering a missing indicator with missing_ok = FALSE errors
+  - persisted run artifacts are not affected
+  - NAMESPACE and exports are clean
+escalation_triggers:
+  - implementation touches indicator fingerprinting logic
+  - implementation affects registered indicators in active backtest state
+forbidden_actions:
+  - modifying ledgr_register_indicator() behaviour
+  - touching the execution path or fingerprinting logic
+```
+
 ---
 
 ## LDG-708: Load Existing Sealed Snapshots
@@ -637,45 +668,45 @@ their input names.
   `id_args = nFast,nSlow,nSig`
 
 **Tasks:**
-1. Implement `ledgr_ttr_warmup_rules()`.
-2. Implement `ledgr_ind_ttr(ttr_fn, input, output = NULL, id = NULL,
+1. [x] Implement `ledgr_ttr_warmup_rules()`.
+2. [x] Implement `ledgr_ind_ttr(ttr_fn, input, output = NULL, id = NULL,
    requires_bars = NULL, stable_after = requires_bars, ...)`.
-3. Implement TTR input builders with explicit column naming.
-4. Implement TTR output selection:
+3. [x] Implement TTR input builders with explicit column naming.
+4. [x] Implement TTR output selection:
    - vector output can use `output = NULL`;
    - multi-column output requires `output`;
    - invalid output names fail with available choices.
-5. Implement scalar `fn` fallback and vectorized `series_fn` from the same
+5. [x] Implement scalar `fn` fallback and vectorized `series_fn` from the same
    TTR call template.
-6. Add dependency handling with `requireNamespace("TTR", quietly = TRUE)` and a
+6. [x] Add dependency handling with `requireNamespace("TTR", quietly = TRUE)` and a
    clear error when TTR is unavailable.
-7. Include TTR version, input shape, output name, function name, and forwarded
+7. [x] Include TTR version, input shape, output name, function name, and forwarded
    args in indicator params/fingerprints.
-8. Add reference documentation and examples guarded for optional TTR dependency
+8. [x] Add reference documentation and examples guarded for optional TTR dependency
    where needed.
-9. Update custom-indicators or getting-started docs only where this improves the
+9. [x] Update custom-indicators or getting-started docs only where this improves the
    research-loop story without bloating onboarding.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_ind_ttr("RSI", input = "close", n = 14)` creates a valid
+- [x] `ledgr_ind_ttr("RSI", input = "close", n = 14)` creates a valid
       `ledgr_indicator`.
-- [ ] `ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)` creates a
+- [x] `ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)` creates a
       valid `ledgr_indicator`.
-- [ ] `ledgr_ind_ttr("MACD", input = "close", output = "macd", nFast = 12,
+- [x] `ledgr_ind_ttr("MACD", input = "close", output = "macd", nFast = 12,
       nSlow = 26, nSig = 9)` creates a valid `ledgr_indicator`.
-- [ ] `series_fn` is used in backtest feature precomputation.
-- [ ] Scalar `fn` and `series_fn` agree on the latest value for supported
+- [x] `series_fn` is used in backtest feature precomputation.
+- [x] Scalar `fn` and `series_fn` agree on the latest value for supported
       indicators.
-- [ ] `ledgr_ttr_warmup_rules()` is exported, documented, and test-covered.
-- [ ] `ledgr_ttr_warmup_rules()` returns the documented schema.
-- [ ] Warmup inference uses only explicit args and documented deterministic
+- [x] `ledgr_ttr_warmup_rules()` is exported, documented, and test-covered.
+- [x] `ledgr_ttr_warmup_rules()` returns the documented schema.
+- [x] Warmup inference uses only explicit args and documented deterministic
       rules.
-- [ ] Missing required explicit args fail before calling TTR.
-- [ ] Unknown functions require explicit `requires_bars`.
-- [ ] Multi-column TTR output without `output` fails with available column names.
-- [ ] Invalid `output` names fail with available column names.
-- [ ] Indicator fingerprint changes when TTR version metadata changes.
-- [ ] Input builders produce TTR-compatible column names.
+- [x] Missing required explicit args fail before calling TTR.
+- [x] Unknown functions require explicit `requires_bars`.
+- [x] Multi-column TTR output without `output` fails with available column names.
+- [x] Invalid `output` names fail with available column names.
+- [x] Indicator fingerprint changes when TTR version metadata changes.
+- [x] Input builders produce TTR-compatible column names.
 
 **Test Requirements:**
 - `tests/testthat/test-indicators.R`
@@ -687,6 +718,39 @@ their input names.
 - `R CMD check --no-manual --no-build-vignettes`
 
 **Source Reference:** TTR UX discussion after LDG-712
+
+**Status Note:** P1 outstanding — MACD `histogram` output gets
+`requires_bars = nSlow` instead of `nSlow + nSig - 1`. Fix
+`ledgr_ttr_infer_requires_bars` to include `"histogram"` in the signal-tier
+warmup branch, and add histogram and signal cases to the warmup verification
+test.
+
+**Classification:**
+```yaml
+risk_level: low
+implementation_tier: M
+review_tier: M
+classification_reason: >
+  Narrow bug fix in the TTR adapter. One-line change to
+  ledgr_ttr_infer_requires_bars to include histogram in the signal-tier warmup
+  branch, plus verification test cases. Does not touch the execution path,
+  fill semantics, or any other invariant-sensitive area.
+invariants_at_risk:
+  - MACD histogram warmup correctness (currently too short by nSig - 1 bars)
+required_context:
+  - R/indicator-ttr.R
+  - tests/testthat/test-indicator-ttr.R
+  - LDG-715 review findings (MACD histogram P1 bug)
+tests_required:
+  - ledgr_ttr_infer_requires_bars("MACD", ..., output = "histogram") returns nSlow + nSig - 1
+  - warmup verification test covers MACD histogram output against actual TTR output
+  - warmup verification test covers MACD signal output against actual TTR output
+escalation_triggers:
+  - fix requires touching anything outside R/indicator-ttr.R and test-indicator-ttr.R
+forbidden_actions:
+  - changing any other warmup formula
+  - touching the execution path or feature cache
+```
 
 ---
 
@@ -730,6 +794,43 @@ Final validation gate for the v0.1.4 stabilisation cycle.
 - `pkgdown::build_site()`
 
 **Source Reference:** Global Definition Of Done
+
+**Classification:**
+```yaml
+risk_level: release-critical
+implementation_tier: H
+review_tier: H
+classification_reason: >
+  Release gate. Validates the entire v0.1.4 scope — contracts, NEWS, test
+  coverage, R CMD check, CI, and acceptance tests. Cannot be delegated to a
+  lower tier. This ticket IS the final Tier H review.
+invariants_at_risk:
+  - all v0.1.4 contracts
+  - public API surface and compatibility policy
+  - reproducibility and determinism guarantees
+  - coverage gate
+required_context:
+  - inst/design/contracts.md
+  - NEWS.md
+  - inst/design/ledgr_v0_1_4_spec_packet/v0_1_4_tickets.md (all acceptance criteria)
+  - inst/design/model_routing.md
+  - .github/workflows/R-CMD-check.yaml
+  - tools/check-coverage.R
+  - tools/check-readme-example.R
+  - All prior review findings for v0.1.4 tickets
+tests_required:
+  - R CMD check passes 0 errors 0 warnings on Ubuntu and Windows
+  - coverage >= 80%
+  - README cold-start check passes
+  - pkgdown site builds without errors
+  - v0.1.2 and v0.1.3 acceptance tests pass
+  - contracts.md and NEWS.md match implemented scope
+escalation_triggers: []
+forbidden_actions:
+  - accepting the gate with any open P0 or P1 issues
+  - bypassing R CMD check or coverage gate
+  - releasing without green CI on both platforms
+```
 
 ---
 

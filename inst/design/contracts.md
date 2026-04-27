@@ -103,6 +103,10 @@ coding agents must preserve. The authoritative narrative remains in
   Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
 - Indicator fingerprints include `series_fn` when present. Changing `fn`,
   `series_fn`, parameters, or warmup requirements changes the fingerprint.
+- TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
+  version, input shape, output column, and forwarded TTR arguments in indicator
+  params. Only `params$args` are forwarded to TTR; metadata fields are identity
+  fields for fingerprints and diagnostics.
 - Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
   stable windows, not expanding full-history windows.
 - Feature precomputation may use a session-scoped cache. Cache entries are keyed

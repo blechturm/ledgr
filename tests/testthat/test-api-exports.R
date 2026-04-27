@@ -20,6 +20,7 @@ testthat::test_that("exported API surface is locked (v0.1.2)", {
     "ledgr_ind_returns",
     "ledgr_ind_rsi",
     "ledgr_ind_sma",
+    "ledgr_ind_ttr",
     "ledgr_indicator",
     "ledgr_indicator_dev",
     "ledgr_list_indicators",
@@ -38,6 +39,7 @@ testthat::test_that("exported API surface is locked (v0.1.2)", {
     "ledgr_snapshot_load",
     "ledgr_snapshot_seal",
     "ledgr_state_reconstruct",
+    "ledgr_ttr_warmup_rules",
     "ledgr_validate_schema"
   ))
 
