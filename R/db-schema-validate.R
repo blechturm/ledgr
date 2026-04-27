@@ -73,6 +73,7 @@ ledgr_validate_schema <- function(con) {
         execution_mode = "TEXT",
         elapsed_sec = "DOUBLE",
         pulse_count = "INTEGER",
+        persist_features = "BOOLEAN",
         feature_cache_hits = "INTEGER",
         feature_cache_misses = "INTEGER",
         updated_at_utc = "TIMESTAMP"

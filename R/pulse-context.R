@@ -33,8 +33,20 @@ ledgr_feature_table_ready <- function(features) {
     length(features[["feature_value"]]) > 0
 }
 
+ledgr_feature_names <- function(features) {
+  if (!ledgr_feature_table_ready(features)) return(character(0))
+  feature_names <- unique(as.character(features[["feature_name"]]))
+  sort(feature_names[!is.na(feature_names) & nzchar(feature_names)])
+}
+
+ledgr_feature_names_message <- function(feature_names) {
+  if (length(feature_names) == 0L) return("<none>")
+  paste(feature_names, collapse = ", ")
+}
+
 ledgr_feature_accessor <- function(features) {
   force(features)
+  available_features <- ledgr_feature_names(features)
 
   function(instrument_id, feature_name, default = NA_real_) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
@@ -43,7 +55,28 @@ ledgr_feature_accessor <- function(features) {
     if (!is.character(feature_name) || length(feature_name) != 1L || is.na(feature_name) || !nzchar(feature_name)) {
       rlang::abort("`feature_name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
     }
-    if (!ledgr_feature_table_ready(features)) return(default)
+    if (!ledgr_feature_table_ready(features)) {
+      rlang::abort(
+        sprintf(
+          "Unknown feature ID `%s` for instrument_id `%s`. Available feature IDs: %s.",
+          feature_name,
+          instrument_id,
+          ledgr_feature_names_message(available_features)
+        ),
+        class = "ledgr_unknown_feature_id"
+      )
+    }
+    if (!(feature_name %in% available_features)) {
+      rlang::abort(
+        sprintf(
+          "Unknown feature ID `%s` for instrument_id `%s`. Available feature IDs: %s.",
+          feature_name,
+          instrument_id,
+          ledgr_feature_names_message(available_features)
+        ),
+        class = "ledgr_unknown_feature_id"
+      )
+    }
 
     idx <- which(
       as.character(features[["instrument_id"]]) == instrument_id &

@@ -149,6 +149,8 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
       %s AS data_hash,
       COALESCE(%s, %s) AS execution_mode,
       %s AS elapsed_sec,
+      %s AS pulse_count,
+      %s AS persist_features,
       %s AS feature_cache_hits,
       %s AS feature_cache_misses,
       %s AS error_msg,
@@ -192,6 +194,8 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
     telem_expr("execution_mode"),
     run_expr("execution_mode"),
     telem_expr("elapsed_sec"),
+    telem_expr("pulse_count"),
+    telem_expr("persist_features"),
     telem_expr("feature_cache_hits"),
     telem_expr("feature_cache_misses"),
     run_expr("error_msg"),
@@ -218,6 +222,8 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
     out$archived_at_utc <- vapply(out$archived_at_utc, ledgr_run_store_format_ts, character(1))
   }
   if ("archived" %in% names(out)) out$archived <- as.logical(out$archived)
+  if ("persist_features" %in% names(out)) out$persist_features <- as.logical(out$persist_features)
+  if ("pulse_count" %in% names(out)) out$pulse_count <- as.integer(out$pulse_count)
   if ("n_trades" %in% names(out)) out$n_trades <- as.integer(out$n_trades)
   tibble::as_tibble(out)
 }
@@ -259,7 +265,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
   info <- as.list(row[1, , drop = TRUE])
   info$db_path <- db_path
   info$telemetry_missing <- all(vapply(
-    info[c("elapsed_sec", "feature_cache_hits", "feature_cache_misses")],
+    info[c("elapsed_sec", "persist_features", "feature_cache_hits", "feature_cache_misses")],
     function(x) is.null(x) || length(x) == 0L || is.na(x),
     logical(1)
   ))
@@ -369,6 +375,9 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Reproducibility: ", value("reproducibility_level"), "\n", sep = "")
   cat("Execution Mode:  ", value("execution_mode"), "\n", sep = "")
   cat("Elapsed Sec:     ", value("elapsed_sec"), "\n", sep = "")
+  cat("Persist Features:", value("persist_features"), "\n", sep = "")
+  cat("Cache Hits:      ", value("feature_cache_hits"), "\n", sep = "")
+  cat("Cache Misses:    ", value("feature_cache_misses"), "\n", sep = "")
   if (isTRUE(x$legacy_pre_provenance)) {
     cat("\nLegacy/pre-provenance run: strategy provenance is incomplete.\n")
   }

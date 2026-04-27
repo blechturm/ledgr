@@ -568,10 +568,10 @@ ledgr_validate_snapshot_id <- function(snapshot_id) {
     rlang::abort("`snapshot_id` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
   }
   pattern <- "^snapshot_[0-9]{8}_[0-9]{6}_[0-9a-f]{4}$"
-  if (!grepl(pattern, snapshot_id)) {
-    warning(
-      "`snapshot_id` does not match 'snapshot_YYYYmmdd_HHMMSS_XXXX'. Using a canonical format improves provenance.",
-      call. = FALSE
+  if (startsWith(snapshot_id, "snapshot_") && !grepl(pattern, snapshot_id)) {
+    rlang::warn(
+      "`snapshot_id` uses the generated-ID prefix `snapshot_` but does not match 'snapshot_YYYYmmdd_HHMMSS_XXXX'. Custom IDs without this prefix are allowed.",
+      class = "ledgr_snapshot_id_noncanonical"
     )
   }
   invisible(TRUE)

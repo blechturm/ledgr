@@ -65,6 +65,10 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
       ctx$features$feature_name == "sma_3"
   ]
   testthat::expect_equal(ctx$feature("TEST_A", "sma_3"), long_value[[1]])
+  testthat::expect_error(
+    ctx$feature("TEST_A", "sma_30"),
+    class = "ledgr_unknown_feature_id"
+  )
   testthat::expect_equal(
     ctx$features_wide$sma_3[ctx$features_wide$instrument_id == "TEST_A"],
     long_value[[1]]

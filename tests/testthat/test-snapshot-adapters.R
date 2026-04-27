@@ -25,11 +25,18 @@ test_that("ledgr_snapshot_from_df validates required columns", {
   expect_error(ledgr_snapshot_from_df(bad), "bars_df missing required column")
 })
 
-test_that("ledgr_snapshot_from_df warns on non-canonical snapshot_id format", {
+test_that("ledgr_snapshot_from_df allows custom snapshot IDs and warns on malformed generated-style IDs", {
   expect_warning(
-    ledgr_snapshot_from_df(test_bars, snapshot_id = "bad_id"),
-    "snapshot_YYYYmmdd_HHMMSS_XXXX"
+    snap <- ledgr_snapshot_from_df(test_bars, snapshot_id = "research_baseline"),
+    NA
   )
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  expect_warning(
+    snap_bad <- ledgr_snapshot_from_df(test_bars, snapshot_id = "snapshot_bad"),
+    class = "ledgr_snapshot_id_noncanonical"
+  )
+  on.exit(ledgr_snapshot_close(snap_bad), add = TRUE)
 })
 
 test_that("ledgr_snapshot_from_df requires chronological bars per instrument", {

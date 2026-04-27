@@ -465,14 +465,14 @@ generate noisy canonical-format warnings.
 9. Add regression tests based on the audit typo `returns_20` vs `return_20`.
 
 **Acceptance Criteria:**
-- [ ] Unknown `ctx$feature()` IDs fail loudly with a classed condition.
-- [ ] Error message lists available feature IDs.
-- [ ] Known features during warmup still return expected `NA` behavior.
-- [ ] Runtime and `ledgr_pulse_snapshot()` contexts behave consistently.
-- [ ] Explicit noncanonical snapshot IDs no longer produce the old noisy
+- [x] Unknown `ctx$feature()` IDs fail loudly with a classed condition.
+- [x] Error message lists available feature IDs.
+- [x] Known features during warmup still return expected `NA` behavior.
+- [x] Runtime and `ledgr_pulse_snapshot()` contexts behave consistently.
+- [x] Explicit noncanonical snapshot IDs no longer produce the old noisy
       warning.
-- [ ] Generated snapshot IDs remain canonical.
-- [ ] Malformed generated-style IDs still produce useful diagnostics.
+- [x] Generated snapshot IDs remain canonical.
+- [x] Malformed generated-style IDs still produce useful diagnostics.
 
 **Test Requirements:**
 - `tests/testthat/test-pulse-context-accessors.R`
@@ -550,15 +550,15 @@ the original R session is gone. Also make execution mode visible in
    summary.
 
 **Acceptance Criteria:**
-- [ ] `print.ledgr_backtest()` shows execution mode.
-- [ ] `ledgr_run_info()` shows execution mode.
-- [ ] `ledgr_run_info()` shows elapsed seconds, cache hits, cache misses, and
+- [x] `print.ledgr_backtest()` shows execution mode.
+- [x] `ledgr_run_info()` shows execution mode.
+- [x] `ledgr_run_info()` shows elapsed seconds, cache hits, cache misses, and
       `persist_features`.
-- [ ] Persisted telemetry survives a fresh handle/session.
-- [ ] Failed runs record execution mode and status; elapsed time and cache
+- [x] Persisted telemetry survives a fresh handle/session.
+- [x] Failed runs record execution mode and status; elapsed time and cache
       counts are stored when available and otherwise represented as `NA`.
-- [ ] `ledgr_backtest_bench()` remains a detailed session-scoped helper.
-- [ ] No full per-component telemetry table is persisted in v0.1.5.
+- [x] `ledgr_backtest_bench()` remains a detailed session-scoped helper.
+- [x] No full per-component telemetry table is persisted in v0.1.5.
 
 **Test Requirements:**
 - Telemetry persistence tests.

@@ -73,6 +73,14 @@ ledgr_experiment_store_add_execution_mode_column <- function(con, table_name) {
   invisible(TRUE)
 }
 
+ledgr_experiment_store_ensure_run_telemetry_columns <- function(con) {
+  if (!ledgr_experiment_store_table_exists(con, "run_telemetry")) {
+    return(invisible(FALSE))
+  }
+  ledgr_experiment_store_add_column(con, "run_telemetry", "persist_features", "BOOLEAN")
+  invisible(TRUE)
+}
+
 ledgr_experiment_store_version <- function(con) {
   if (!ledgr_experiment_store_table_exists(con, "ledgr_schema_metadata")) {
     return(0L)
@@ -124,6 +132,7 @@ ledgr_experiment_store_check_schema <- function(con, write = FALSE, inform = FAL
   if (version < ledgr_experiment_store_schema_version) {
     ledgr_experiment_store_migrate(con, from_version = version, inform = inform)
   }
+  ledgr_experiment_store_ensure_run_telemetry_columns(con)
   invisible(list(schema_version = ledgr_experiment_store_schema_version, is_legacy = FALSE))
 }
 
@@ -198,6 +207,7 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
         execution_mode TEXT CHECK (execution_mode IS NULL OR execution_mode IN ('audit_log','db_live')),
         elapsed_sec DOUBLE,
         pulse_count INTEGER,
+        persist_features BOOLEAN,
         feature_cache_hits INTEGER,
         feature_cache_misses INTEGER,
         updated_at_utc TIMESTAMP

@@ -1323,6 +1323,11 @@ print.ledgr_backtest <- function(x, ...) {
   start <- cfg$backtest$start_ts_utc
   end <- cfg$backtest$end_ts_utc
   initial_cash <- cfg$backtest$initial_cash
+  execution_mode <- if (is.list(cfg$engine) && !is.null(cfg$engine$execution_mode)) {
+    cfg$engine$execution_mode
+  } else {
+    NA_character_
+  }
 
   con <- get_connection(x)
   final_equity <- DBI::dbGetQuery(
@@ -1346,6 +1351,7 @@ print.ledgr_backtest <- function(x, ...) {
   cat("Run ID:        ", x$run_id, "\n")
   cat("Universe:      ", paste(universe, collapse = ", "), "\n")
   cat("Date Range:    ", start, "to", end, "\n")
+  cat("Execution Mode:", execution_mode, "\n")
   cat("Initial Cash:  ", sprintf("$%.2f", initial_cash), "\n")
   cat("Final Equity:  ", sprintf("$%.2f", final_equity), "\n")
   cat("P&L:           ", sprintf("$%.2f (%.2f%%)", pnl, pnl_pct), "\n\n")

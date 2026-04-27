@@ -202,7 +202,7 @@ tickets:
 
   - id: LDG-805
     title: "Audit UX Fixes - Feature Lookup And Snapshot IDs"
-    status: pending
+    status: done
     priority: P1
     dependencies: []
     tests:
@@ -250,7 +250,7 @@ tickets:
 
   - id: LDG-806
     title: "Persisted Telemetry Summary And Execution Mode Visibility"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-801, LDG-803]
     tests:

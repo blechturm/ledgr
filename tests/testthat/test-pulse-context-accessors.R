@@ -111,6 +111,81 @@ testthat::test_that("pulse context accessors fail loudly on ambiguity", {
   )
 })
 
+testthat::test_that("pulse context feature accessor fails loudly on unknown feature IDs", {
+  ts <- "2020-01-02T00:00:00Z"
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = ts,
+    open = 10,
+    high = 11,
+    low = 9,
+    close = 10.5,
+    volume = 100,
+    stringsAsFactors = FALSE
+  )
+  features <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = ts,
+    feature_name = "return_20",
+    feature_value = NA_real_,
+    stringsAsFactors = FALSE
+  )
+
+  ctx <- ledgr:::ledgr_pulse_context(
+    run_id = "run-1",
+    ts_utc = ts,
+    universe = "AAA",
+    bars = bars,
+    features = features,
+    cash = 1000,
+    equity = 1000
+  )
+
+  testthat::expect_true(is.na(ctx$feature("AAA", "return_20")))
+  testthat::expect_error(
+    ctx$feature("AAA", "returns_20"),
+    class = "ledgr_unknown_feature_id"
+  )
+  testthat::expect_error(
+    ctx$feature("AAA", "returns_20"),
+    "Available feature IDs: return_20",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("pulse context feature accessor fails when no features are registered", {
+  ts <- "2020-01-02T00:00:00Z"
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = ts,
+    open = 10,
+    high = 11,
+    low = 9,
+    close = 10.5,
+    volume = 100,
+    stringsAsFactors = FALSE
+  )
+
+  ctx <- ledgr:::ledgr_pulse_context(
+    run_id = "run-1",
+    ts_utc = ts,
+    universe = "AAA",
+    bars = bars,
+    cash = 1000,
+    equity = 1000
+  )
+
+  testthat::expect_error(
+    ctx$feature("AAA", "rsi_20"),
+    class = "ledgr_unknown_feature_id"
+  )
+  testthat::expect_error(
+    ctx$feature("AAA", "rsi_20"),
+    "Available feature IDs: <none>",
+    fixed = TRUE
+  )
+})
+
 testthat::test_that("interactive pulse snapshots expose strategy authoring helpers", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -138,6 +213,10 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
   testthat::expect_equal(ctx$position("TEST_A"), 0)
   testthat::expect_identical(ctx$targets(), stats::setNames(c(0, 0), universe))
   testthat::expect_identical(ctx$current_targets(), stats::setNames(c(0, 0), universe))
+  testthat::expect_error(
+    ctx$feature("TEST_A", "sma_200"),
+    class = "ledgr_unknown_feature_id"
+  )
   testthat::expect_true(is.environment(ctx$.pulse_lookup))
 })
 

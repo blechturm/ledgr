@@ -12,6 +12,14 @@
 - Added `ledgr_run_label()` and `ledgr_run_archive()` for metadata-only run
   management without changing experiment identity or deleting artifacts.
 - Added `ledgr_results()` as a package-prefixed wrapper for result tables.
+- Made mistyped `ctx$feature()` lookups fail loudly with available feature IDs
+  instead of silently returning `NA`, while preserving warmup `NA` behavior for
+  known features.
+- Persisted compact run telemetry summaries, including execution mode, elapsed
+  time, pulse count, feature-cache hit/miss counts, and `persist_features`;
+  `print.ledgr_backtest()` and `ledgr_run_info()` now surface execution mode.
+- Relaxed snapshot ID diagnostics so explicit durable custom IDs do not warn
+  unless they use the generated `snapshot_` prefix in a malformed way.
 
 # ledgr 0.1.4
 

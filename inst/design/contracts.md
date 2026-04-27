@@ -61,6 +61,10 @@ coding agents must preserve. The authoritative narrative remains in
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
   discovery APIs. They must tolerate legacy/pre-provenance stores and treat
   missing telemetry as missing/`NA`, not as corruption.
+- Completed and failed v0.1.5+ runs persist compact `run_telemetry`:
+  `status`, `execution_mode`, elapsed seconds, pulse count, `persist_features`,
+  and feature-cache hit/miss counts. Detailed per-component telemetry remains
+  session-scoped through `ledgr_backtest_bench()`.
 - `ledgr_run_open()` returns a `ledgr_backtest` handle only for completed
   `DONE` runs. Opening a run must not execute strategy code, recompute fills,
   or mutate persistent run artifacts.
@@ -114,6 +118,10 @@ coding agents must preserve. The authoritative narrative remains in
   `ctx$bars` and long-table `ctx$features`.
 - Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
   views over `ctx$features`; they do not change feature computation semantics.
+- `ctx$feature(instrument_id, feature_id)` must fail loudly for unknown feature
+  IDs when features are configured, including the requested feature, instrument,
+  and available feature IDs. A known feature whose current value is warmup `NA`
+  remains a normal `NA` lookup, not an error.
 - Indicators may provide an optional `series_fn(bars, params)` for full-series
   precomputation. The input is one instrument's full bar series in ascending
   time order, and the output must be a numeric vector aligned to `nrow(bars)`.

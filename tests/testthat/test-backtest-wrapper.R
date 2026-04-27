@@ -316,3 +316,22 @@ testthat::test_that("backtest feature hydration uses indicator series_fn", {
   )
   testthat::expect_true("series_backtest_probe" %in% features$feature_name)
 })
+
+testthat::test_that("runtime feature typos fail loudly instead of running as no-op", {
+  typo_strategy <- function(ctx) {
+    ctx$feature("TEST_A", "returns_2")
+    ctx$targets()
+  }
+
+  testthat::expect_error(
+    ledgr_backtest(
+      data = test_bars,
+      strategy = typo_strategy,
+      features = list(ledgr_ind_returns(2)),
+      start = "2020-01-01",
+      end = "2020-01-05",
+      run_id = "feature-typo-run"
+    ),
+    class = "ledgr_unknown_feature_id"
+  )
+})

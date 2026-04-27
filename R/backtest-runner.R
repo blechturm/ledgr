@@ -172,6 +172,48 @@ ledgr_get_run_telemetry <- function(run_id) {
   get(run_id, envir = .ledgr_telemetry_registry, inherits = FALSE)
 }
 
+ledgr_write_run_telemetry <- function(con,
+                                      run_id,
+                                      status,
+                                      execution_mode,
+                                      elapsed_sec,
+                                      pulse_count,
+                                      persist_features,
+                                      feature_cache_hits,
+                                      feature_cache_misses) {
+  if (!ledgr_experiment_store_table_exists(con, "run_telemetry")) {
+    return(invisible(FALSE))
+  }
+  DBI::dbExecute(
+    con,
+    "
+    INSERT OR REPLACE INTO run_telemetry (
+      run_id,
+      status,
+      execution_mode,
+      elapsed_sec,
+      pulse_count,
+      persist_features,
+      feature_cache_hits,
+      feature_cache_misses,
+      updated_at_utc
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ",
+    params = list(
+      run_id,
+      status,
+      execution_mode,
+      elapsed_sec,
+      pulse_count,
+      persist_features,
+      feature_cache_hits,
+      feature_cache_misses,
+      as.POSIXct(Sys.time(), tz = "UTC")
+    )
+  )
+  invisible(TRUE)
+}
+
 ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list()) {
   validate_ledgr_config(config)
 
@@ -190,6 +232,25 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   end_ts_utc <- cfg$backtest$end_ts_utc
   initial_cash <- as.numeric(cfg$backtest$initial_cash)
   seed <- as.integer(cfg$engine$seed)
+  run_wall_start <- ledgr_time_now()
+
+  persist_features <- TRUE
+  if (!is.null(cfg$features) && is.list(cfg$features) && !is.null(cfg$features$persist)) {
+    persist_features <- isTRUE(cfg$features$persist)
+  }
+  execution_mode <- "audit_log"
+  checkpoint_every <- 10000L
+  if (!is.null(cfg$engine) && is.list(cfg$engine)) {
+    if (!is.null(cfg$engine$execution_mode)) {
+      execution_mode <- cfg$engine$execution_mode
+    }
+    if (!is.null(cfg$engine$checkpoint_every)) {
+      checkpoint_every <- as.integer(cfg$engine$checkpoint_every)
+    }
+  }
+  if (!execution_mode %in% c("db_live", "audit_log")) {
+    rlang::abort("engine.execution_mode must be \"db_live\" or \"audit_log\".", class = "ledgr_invalid_config")
+  }
 
   snapshot_id <- NULL
   if (!is.null(cfg$data) && is.list(cfg$data) && identical(cfg$data$source, "snapshot")) {
@@ -321,12 +382,50 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     }
   }
 
+  write_persistent_telemetry <- function(status, strict = TRUE) {
+    elapsed_sec <- ledgr_time_elapsed(run_wall_start, ledgr_time_now())
+    pulse_count <- if (exists("processed", inherits = TRUE)) as.integer(processed) else NA_integer_
+    cache_hits <- if (exists("telemetry", inherits = TRUE) && is.environment(telemetry)) {
+      as.integer(telemetry$feature_cache_hits)
+    } else {
+      NA_integer_
+    }
+    cache_misses <- if (exists("telemetry", inherits = TRUE) && is.environment(telemetry)) {
+      as.integer(telemetry$feature_cache_misses)
+    } else {
+      NA_integer_
+    }
+
+    err <- tryCatch(
+      {
+        ledgr_write_run_telemetry(
+          con = con,
+          run_id = run_id,
+          status = status,
+          execution_mode = execution_mode,
+          elapsed_sec = elapsed_sec,
+          pulse_count = pulse_count,
+          persist_features = persist_features,
+          feature_cache_hits = cache_hits,
+          feature_cache_misses = cache_misses
+        )
+        NULL
+      },
+      error = function(e) e
+    )
+    if (!is.null(err) && isTRUE(strict)) {
+      rlang::abort("Failed to persist run telemetry.", class = "ledgr_run_telemetry_failed", parent = err)
+    }
+    invisible(is.null(err))
+  }
+
   fail_run <- function(msg, class = "ledgr_run_failed") {
     DBI::dbExecute(
       con,
       "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
       params = list("FAILED", msg, run_id)
     )
+    try(write_persistent_telemetry("FAILED", strict = FALSE), silent = TRUE)
     rlang::abort(msg, class = class)
   }
 
@@ -514,23 +613,6 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   feature_defs <- ledgr_feature_defs_from_config(cfg)
   if (length(feature_defs) > 0) {
     feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
-  }
-  persist_features <- TRUE
-  if (!is.null(cfg$features) && is.list(cfg$features) && !is.null(cfg$features$persist)) {
-    persist_features <- isTRUE(cfg$features$persist)
-  }
-  execution_mode <- "audit_log"
-  checkpoint_every <- 10000L
-  if (!is.null(cfg$engine) && is.list(cfg$engine)) {
-    if (!is.null(cfg$engine$execution_mode)) {
-      execution_mode <- cfg$engine$execution_mode
-    }
-    if (!is.null(cfg$engine$checkpoint_every)) {
-      checkpoint_every <- as.integer(cfg$engine$checkpoint_every)
-    }
-  }
-  if (!execution_mode %in% c("db_live", "audit_log")) {
-    rlang::abort("engine.execution_mode must be \"db_live\" or \"audit_log\".", class = "ledgr_invalid_config")
   }
   DBI::dbExecute(
     con,
@@ -1046,6 +1128,28 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   }
 
   full_run <- TRUE
+  finalize_telemetry <- function(status, strict = TRUE) {
+    telemetry_names <- ls(telemetry, all.names = TRUE)
+    telemetry_scalars <- c(
+      "t_pre",
+      "t_post",
+      "t_loop",
+      "telemetry_stride",
+      "telemetry_samples",
+      "feature_cache_hits",
+      "feature_cache_misses"
+    )
+    trimmed <- lapply(telemetry_names, function(name) {
+      x <- telemetry[[name]]
+      if (name %in% telemetry_scalars) return(x)
+      if (telemetry_idx > 0) x[seq_len(telemetry_idx)] else numeric(0)
+    })
+    names(trimmed) <- telemetry_names
+    ledgr_store_run_telemetry(run_id, trimmed)
+    write_persistent_telemetry(status, strict = strict)
+    invisible(TRUE)
+  }
+
   run_ok <- tryCatch(
     {
       process_pulse <- function(i, sample_now) {
@@ -1501,34 +1605,14 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
         params = list("FAILED", conditionMessage(e), run_id)
       )
+      finalize_telemetry("FAILED", strict = FALSE)
       stop(e)
     }
   )
 
-  finalize_telemetry <- function() {
-    telemetry_names <- ls(telemetry, all.names = TRUE)
-    telemetry_scalars <- c(
-      "t_pre",
-      "t_post",
-      "t_loop",
-      "telemetry_stride",
-      "telemetry_samples",
-      "feature_cache_hits",
-      "feature_cache_misses"
-    )
-    trimmed <- lapply(telemetry_names, function(name) {
-      x <- telemetry[[name]]
-      if (name %in% telemetry_scalars) return(x)
-      if (telemetry_idx > 0) x[seq_len(telemetry_idx)] else numeric(0)
-    })
-    names(trimmed) <- telemetry_names
-    ledgr_store_run_telemetry(run_id, trimmed)
-    invisible(TRUE)
-  }
-
   if (isTRUE(run_ok) && is.finite(max_pulses) && processed >= max_pulses) {
     # Simulated interruption for tests.
-    finalize_telemetry()
+    finalize_telemetry("RUNNING")
     return(list(run_id = run_id, db_path = db_path))
   }
 
@@ -1772,7 +1856,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   })
   telemetry$t_post <- ledgr_time_elapsed(post_start, ledgr_time_now())
 
-  finalize_telemetry()
+  finalize_telemetry("DONE")
 
   list(run_id = run_id, db_path = db_path)
 }
