@@ -9,6 +9,8 @@
 - Added experiment-store discovery APIs: `ledgr_run_list()`,
   `ledgr_run_info()`, and `ledgr_run_open()` for listing, inspecting, and
   reopening completed runs without recomputation.
+- Added `ledgr_run_label()` and `ledgr_run_archive()` for metadata-only run
+  management without changing experiment identity or deleting artifacts.
 - Added `ledgr_results()` as a package-prefixed wrapper for result tables.
 
 # ledgr 0.1.4

@@ -227,6 +227,47 @@ ledgr_run_store_format_ts <- function(x) {
   ledgr_normalize_ts_utc(x)
 }
 
+ledgr_run_store_normalize_optional_text <- function(x, arg) {
+  if (is.null(x)) {
+    return(NA_character_)
+  }
+  if (!is.character(x) || length(x) != 1L || is.na(x)) {
+    rlang::abort(sprintf("`%s` must be NULL or a character scalar.", arg), class = "ledgr_invalid_args")
+  }
+  if (!nzchar(x)) {
+    return(NA_character_)
+  }
+  x
+}
+
+ledgr_run_store_assert_run_exists <- function(con, run_id) {
+  row <- DBI::dbGetQuery(
+    con,
+    "SELECT run_id FROM runs WHERE run_id = ?",
+    params = list(run_id)
+  )
+  if (nrow(row) != 1L) {
+    rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
+  }
+  invisible(TRUE)
+}
+
+ledgr_run_info_from_row <- function(row, db_path) {
+  if (nrow(row) != 1L) {
+    rlang::abort("`row` must contain exactly one run.", class = "ledgr_internal_error")
+  }
+  info <- as.list(row[1, , drop = TRUE])
+  info$db_path <- db_path
+  info$telemetry_missing <- all(vapply(
+    info[c("elapsed_sec", "feature_cache_hits", "feature_cache_misses")],
+    function(x) is.null(x) || length(x) == 0L || is.na(x),
+    logical(1)
+  ))
+  info$legacy_pre_provenance <- identical(info$reproducibility_level, "legacy") ||
+    identical(info$strategy_source_capture_method, "legacy_pre_provenance")
+  structure(info, class = c("ledgr_run_info", "list"))
+}
+
 #' List runs in a ledgr experiment store
 #'
 #' Discovers stored runs in a DuckDB experiment-store file without recomputing
@@ -299,16 +340,7 @@ ledgr_run_info <- function(db_path, run_id) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
   }
 
-  info <- as.list(row[1, , drop = TRUE])
-  info$db_path <- db_path
-  info$telemetry_missing <- all(vapply(
-    info[c("elapsed_sec", "feature_cache_hits", "feature_cache_misses")],
-    function(x) is.null(x) || length(x) == 0L || is.na(x),
-    logical(1)
-  ))
-  info$legacy_pre_provenance <- identical(info$reproducibility_level, "legacy") ||
-    identical(info$strategy_source_capture_method, "legacy_pre_provenance")
-  structure(info, class = c("ledgr_run_info", "list"))
+  ledgr_run_info_from_row(row, db_path)
 }
 
 #' @export
@@ -427,4 +459,107 @@ ledgr_run_open <- function(db_path, run_id) {
     }
   )
   new_ledgr_backtest(run_id = run_id, db_path = db_path, config = cfg)
+}
+
+#' Set a human-readable label for a run
+#'
+#' Updates only the mutable label metadata for a stored run. The immutable
+#' `run_id` and experiment identity hashes are not changed.
+#'
+#' @param db_path Path to a DuckDB experiment-store file.
+#' @param run_id Run identifier.
+#' @param label Human-readable label. Use `NULL` or `""` to clear the label.
+#' @return A `ledgr_run_info` object after the update.
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) ctx$targets()
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
+#' ledgr_run_label(db_path, bt$run_id, "baseline")
+#' close(bt)
+#' @export
+ledgr_run_label <- function(db_path, run_id, label = NULL) {
+  if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
+    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  label <- ledgr_run_store_normalize_optional_text(label, "label")
+
+  opened <- ledgr_run_store_open(db_path)
+  on.exit(ledgr_run_store_close(opened), add = TRUE)
+  ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
+  ledgr_run_store_assert_run_exists(opened$con, run_id)
+
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE runs SET label = ? WHERE run_id = ?",
+    params = list(label, run_id)
+  )
+  row <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id)
+  ledgr_run_info_from_row(row, db_path)
+}
+
+#' Archive a run without deleting artifacts
+#'
+#' Marks a stored run as archived so it is hidden from default run lists while
+#' remaining inspectable and, if completed, reopenable. Archiving is
+#' idempotent and does not rewrite existing archive metadata.
+#'
+#' @param db_path Path to a DuckDB experiment-store file.
+#' @param run_id Run identifier.
+#' @param reason Optional archive reason. Empty strings are stored as `NULL`.
+#' @return A `ledgr_run_info` object after the archive operation.
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103),
+#'   high = c(101, 102, 103, 104),
+#'   low = c(99, 100, 101, 102),
+#'   close = c(100, 101, 102, 103),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx) ctx$targets()
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
+#' ledgr_run_archive(db_path, bt$run_id, reason = "example cleanup")
+#' close(bt)
+#' @export
+ledgr_run_archive <- function(db_path, run_id, reason = NULL) {
+  if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
+    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  reason <- ledgr_run_store_normalize_optional_text(reason, "reason")
+
+  opened <- ledgr_run_store_open(db_path)
+  on.exit(ledgr_run_store_close(opened), add = TRUE)
+  ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
+  ledgr_run_store_assert_run_exists(opened$con, run_id)
+
+  DBI::dbExecute(
+    opened$con,
+    "
+    UPDATE runs
+    SET archived = TRUE,
+        archived_at_utc = CASE
+          WHEN COALESCE(archived, FALSE) = TRUE THEN archived_at_utc
+          ELSE ?
+        END,
+        archive_reason = CASE
+          WHEN COALESCE(archived, FALSE) = TRUE THEN archive_reason
+          ELSE ?
+        END
+    WHERE run_id = ?
+    ",
+    params = list(as.POSIXct(Sys.time(), tz = "UTC"), reason, run_id)
+  )
+  row <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id)
+  ledgr_run_info_from_row(row, db_path)
 }

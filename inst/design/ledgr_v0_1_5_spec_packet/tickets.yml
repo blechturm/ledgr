@@ -157,7 +157,7 @@ tickets:
 
   - id: LDG-804
     title: "Run Labels And Archive Metadata"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-801]
     tests:

@@ -355,6 +355,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-801
+**Status:** Done
 
 **Description:**
 Add metadata-only run management APIs:
@@ -381,15 +382,15 @@ them auditable.
 11. Ensure `ledgr_run_info()` reports archive state.
 
 **Acceptance Criteria:**
-- [ ] Labels can be set and updated without changing `run_id`.
-- [ ] Label changes do not alter experiment identity hashes.
-- [ ] Failed and incomplete runs can be labeled.
-- [ ] Runs can be archived without deleting artifacts.
-- [ ] Failed and incomplete runs can be archived.
-- [ ] In-progress archive behavior is documented; if unsupported, it fails
+- [x] Labels can be set and updated without changing `run_id`.
+- [x] Label changes do not alter experiment identity hashes.
+- [x] Failed and incomplete runs can be labeled.
+- [x] Runs can be archived without deleting artifacts.
+- [x] Failed and incomplete runs can be archived.
+- [x] In-progress archive behavior is documented; if unsupported, it fails
       clearly.
-- [ ] Double archive is idempotent and preserves original archive metadata.
-- [ ] Archived runs are hidden by default but visible when requested.
+- [x] Double archive is idempotent and preserves original archive metadata.
+- [x] Archived runs are hidden by default but visible when requested.
 
 **Test Requirements:**
 - New metadata mutation tests.

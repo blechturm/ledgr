@@ -64,6 +64,9 @@ coding agents must preserve. The authoritative narrative remains in
 - `ledgr_run_open()` returns a `ledgr_backtest` handle only for completed
   `DONE` runs. Opening a run must not execute strategy code, recompute fills,
   or mutate persistent run artifacts.
+- `ledgr_run_label()` and `ledgr_run_archive()` mutate only run metadata.
+  They must never rename `run_id`, delete artifacts, or change experiment
+  identity hashes. Archive is non-destructive and idempotent.
 
 ## Canonical JSON Contract
 
