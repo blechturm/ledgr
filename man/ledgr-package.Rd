@@ -10,6 +10,15 @@ Correctness-first, event-sourced backtesting with sealed data snapshots,
 deterministic replay, no-lookahead strategy execution, and ledger-derived
 results.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://blechturm.github.io/ledgr}
+  \item \url{https://github.com/blechturm/ledgr}
+  \item Report bugs at \url{https://github.com/blechturm/ledgr/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Max Thomasberger \email{31213680+blechturm@users.noreply.github.com}
 

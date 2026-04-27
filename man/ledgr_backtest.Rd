@@ -39,7 +39,8 @@ from the snapshot or data frame.}
 
 \item{features}{List of ledgr indicator definitions (optional).}
 
-\item{fill_model}{Fill model config (NULL = instant fill).}
+\item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
+model with zero spread and zero fixed commission.}
 
 \item{execution_mode}{Execution mode ("db_live" or "audit_log").}
 
@@ -60,7 +61,13 @@ from the snapshot or data frame.}
 A \code{ledgr_backtest} object.
 }
 \description{
-Thin wrapper around the canonical engine entrypoint \code{ledgr_run()}.
+Thin wrapper around the canonical engine path.
+}
+\details{
+Strategies return target holdings. The default fill model is \code{next_open}: a
+target decided at pulse \code{t} is filled at the next available bar. Targets on
+the final pulse therefore cannot be filled unless another bar exists after
+\code{end}.
 }
 \examples{
 bars <- data.frame(

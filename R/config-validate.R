@@ -1,4 +1,4 @@
-ledgr_validate_config <- function(config) {
+validate_ledgr_config <- function(config) {
   if (is.character(config) && length(config) == 1 && !is.na(config)) {
     config <- tryCatch(
       jsonlite::fromJSON(config, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
@@ -159,5 +159,10 @@ ledgr_validate_config <- function(config) {
     }
   }
 
+  invisible(TRUE)
+}
+
+ledgr_validate_config <- function(config) {
+  validate_ledgr_config(config)
   invisible(TRUE)
 }

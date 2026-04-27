@@ -19,10 +19,9 @@ Executes the v0.1.0 EOD pulse loop against a DuckDB database preloaded with
 \code{instruments} and \code{bars}, writing derived outputs back to the same database.
 }
 \details{
-This is the canonical low-level runner. Most users should call
-\code{ledgr_backtest()}, which builds the config and then delegates here. There is
-no exported config-construction helper in v0.1.3, so the example is
-illustrative only.
+This is a low-level internal runner. Most users should call
+\code{ledgr_backtest()}, which builds the config and then delegates here. Direct
+use is not recommended; the example is illustrative only.
 }
 \examples{
 if (FALSE) {

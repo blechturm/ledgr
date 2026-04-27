@@ -395,7 +395,7 @@ ledgr_snapshot_from_df <- function(bars_df,
   )
   on.exit(suppressWarnings(try(DBI::dbExecute(con, "DROP VIEW bars"), silent = TRUE)), add = TRUE)
 
-  data_hash <- ledgr_data_hash(
+  data_hash <- ledgr_snapshot_adapter_data_subset_hash(
     con,
     sort(unique(bars_out$instrument_id)),
     min(ts_posix),

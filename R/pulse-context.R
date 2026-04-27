@@ -134,6 +134,7 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
   volume <- function(id) ledgr_pulse_context_scalar(lookup, id, "volume")
   position <- function(id) ledgr_pulse_context_position(lookup, id)
   targets <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
+  current_targets <- function() ledgr_pulse_context_current_targets(lookup)
 
   if (is.environment(ctx)) {
     ctx$.pulse_lookup <- lookup
@@ -145,6 +146,7 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
     ctx$volume <- volume
     ctx$position <- position
     ctx$targets <- targets
+    ctx$current_targets <- current_targets
     return(ctx)
   }
 
@@ -157,6 +159,7 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
   ctx$volume <- volume
   ctx$position <- position
   ctx$targets <- targets
+  ctx$current_targets <- current_targets
   ctx
 }
 
@@ -319,6 +322,34 @@ ledgr_pulse_context_targets <- function(lookup, default = 0) {
   universe <- lookup$universe
   if (is.null(universe)) universe <- character(0)
   stats::setNames(rep(as.numeric(default), length(universe)), universe)
+}
+
+ledgr_pulse_context_current_targets <- function(lookup) {
+  universe <- lookup$universe
+  if (is.null(universe)) universe <- character(0)
+  universe <- as.character(universe)
+
+  out <- stats::setNames(rep(0, length(universe)), universe)
+  positions <- lookup$positions
+  if (is.null(positions) || length(positions) == 0L) {
+    return(out)
+  }
+  if (!is.numeric(positions) || is.null(names(positions))) {
+    rlang::abort("Pulse context `positions` must be a named numeric vector.", class = "ledgr_invalid_pulse_context")
+  }
+  if (anyNA(positions) || any(!is.finite(positions))) {
+    rlang::abort("Pulse context `positions` must contain only finite numbers.", class = "ledgr_invalid_pulse_context")
+  }
+  bad <- setdiff(names(positions), universe)
+  if (length(bad) > 0L) {
+    rlang::abort(
+      sprintf("Pulse context `positions` contains instrument_ids not in universe: %s", paste(bad, collapse = ", ")),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+
+  out[names(positions)] <- as.numeric(positions)
+  out
 }
 
 ledgr_normalize_ts_utc <- function(x) {

@@ -114,6 +114,9 @@ strategy <- function(ctx) {
 }
 ```
 
+Use `ctx$current_targets()` instead when the rule should keep current
+holdings unless a signal explicitly changes them.
+
 Run the backtest:
 
 ``` r

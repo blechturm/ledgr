@@ -7,7 +7,7 @@
 ledgr_snapshot_list(con, status = NULL)
 }
 \arguments{
-\item{con}{A DBI connection to DuckDB.}
+\item{con}{A DBI connection to DuckDB or a path to a DuckDB snapshot file.}
 
 \item{status}{Optional status filter (NULL for all, or one/more of
 \code{CREATED}, \code{SEALED}, \code{FAILED}).}
@@ -33,5 +33,6 @@ db_path <- tempfile(fileext = ".duckdb")
 con <- ledgr_db_init(db_path)
 ledgr_snapshot_create(con, snapshot_id = "snapshot_20200101_000000_abcd")
 ledgr_snapshot_list(con)
+ledgr_snapshot_list(db_path)
 DBI::dbDisconnect(con, shutdown = TRUE)
 }

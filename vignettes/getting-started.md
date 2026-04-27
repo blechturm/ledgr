@@ -80,11 +80,11 @@ strategy <- function(ctx) {
   targets <- ctx$targets()
 
   if (ctx$close("AAA") > 100.4) {
-    targets["AAA"] <- 10
+    targets["AAA"] <- floor(0.40 * ctx$equity / ctx$close("AAA"))
   }
 
   if (ctx$close("BBB") > 80.0) {
-    targets["BBB"] <- 5
+    targets["BBB"] <- floor(0.30 * ctx$equity / ctx$close("BBB"))
   }
 
   targets
@@ -94,13 +94,18 @@ strategy <- function(ctx) {
 Read the function as a short research rule:
 
 - start from flat target holdings;
-- own 10 units of `AAA` when its close is above 100.4;
-- own 5 units of `BBB` when its close is above 80.0.
+- put about 40% of current equity into `AAA` when its close is above
+  100.4;
+- put about 30% of current equity into `BBB` when its close is above
+  80.0.
 
 The helper calls keep strategy code readable. `ctx$targets()` creates a
-named target vector over the full universe. `ctx$close("AAA")` reads the
-close price at the current decision point. `ctx$position("AAA")`, which
-we use later, reads the current held quantity.
+named target vector over the full universe and initializes every
+instrument to flat. `ctx$close("AAA")` reads the close price at the
+current decision point. `ctx$cash` is current simulated cash, and
+`ctx$equity` is current simulated portfolio value.
+`ctx$position("AAA")`, which we use later, reads the current held
+quantity.
 
 ## Step 3: Run The First Backtest
 
@@ -120,8 +125,8 @@ bt
 #> Universe:       AAA, BBB
 #> Date Range:     2020-01-01T00:00:00Z to 2020-02-14T00:00:00Z
 #> Initial Cash:   $10000.00
-#> Final Equity:   $10436.30
-#> P&L:            $436.30 (4.36%)
+#> Final Equity:   $13107.17
+#> P&L:            $3107.17 (31.07%)
 #>
 #> Use summary(bt) for detailed metrics
 #> Use plot(bt) for equity curve visualization
@@ -134,6 +139,14 @@ returns a handle to one recorded run.
 The fixed `run_id` makes printed output stable. In interactive work you
 can omit it and ledgr will generate a unique one. A `ledgr_backtest`
 object points to one run.
+
+A `ledgr_backtest` object owns a lazy DuckDB connection. In longer
+scripts, register cleanup after construction so Windows file handles do
+not stay open:
+
+``` r
+on.exit(close(bt), add = TRUE)
+```
 
 When `start` and `end` are omitted, ledgr uses the full timestamp range
 in the snapshot. If you pass a narrower window, the snapshot can still
@@ -148,17 +161,17 @@ summary(bt)
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        4.36%
-#>   Annualized Return:   39.98%
-#>   Max Drawdown:        -4.00%
+#>   Total Return:        31.07%
+#>   Annualized Return:   742.14%
+#>   Max Drawdown:        -29.63%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 25.60%
+#>   Volatility (annual): 199.20%
 #>
 #> Trade Statistics:
-#>   Total Trades:        4
-#>   Win Rate:            0.00%
-#>   Avg Trade:           $-0.34
+#>   Total Trades:        7
+#>   Win Rate:            28.57%
+#>   Avg Trade:           $-0.81
 #>
 #> Exposure:
 #>   Time in Market:      93.94%
@@ -174,13 +187,16 @@ audit trail lives underneath it.
 
 ``` r
 bt |> as_tibble(what = "trades")
-#> # A tibble: 4 x 9
+#> # A tibble: 7 x 9
 #>   event_seq ts_utc              instrument_id side    qty price   fee realized_pnl action
 #>       <int> <dttm>              <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-03 00:00:00 AAA           BUY      10 100.      0         0    OPEN
-#> 2         2 2020-01-07 00:00:00 BBB           BUY       5  80.2     0         0    OPEN
-#> 3         3 2020-01-13 00:00:00 BBB           SELL      5  80.0     0        -1.35 CLOSE
-#> 4         4 2020-01-14 00:00:00 BBB           BUY       5  80.8     0         0    OPEN
+#> 1         1 2020-01-03 00:00:00 AAA           BUY      39 100.      0        0     OPEN
+#> 2         2 2020-01-07 00:00:00 BBB           BUY      37  80.2     0        0     OPEN
+#> 3         3 2020-01-13 00:00:00 BBB           SELL     37  80.0     0       -9.99  CLOSE
+#> 4         4 2020-01-14 00:00:00 BBB           BUY      37  80.8     0        0     OPEN
+#> 5         5 2020-01-22 00:00:00 BBB           SELL      1  81.4     0        0.620 CLOSE
+#> 6         6 2020-01-23 00:00:00 BBB           BUY       1  81.2     0        0     OPEN
+#> 7         7 2020-02-13 00:00:00 AAA           SELL      1 104.      0        3.69  CLOSE
 ```
 
 `trades` is the research-friendly fills table. It answers: what actually
@@ -188,13 +204,16 @@ got executed?
 
 ``` r
 bt |> as_tibble(what = "ledger")
-#> # A tibble: 4 x 11
+#> # A tibble: 7 x 11
 #>   event_id     run_id ts_utc              event_type instrument_id side    qty price   fee
 #>   <chr>        <chr>  <dttm>              <chr>      <chr>         <chr> <dbl> <dbl> <dbl>
-#> 1 getting-sta~ getti~ 2020-01-03 00:00:00 FILL       AAA           BUY      10 100.      0
-#> 2 getting-sta~ getti~ 2020-01-07 00:00:00 FILL       BBB           BUY       5  80.2     0
-#> 3 getting-sta~ getti~ 2020-01-13 00:00:00 FILL       BBB           SELL      5  80.0     0
-#> 4 getting-sta~ getti~ 2020-01-14 00:00:00 FILL       BBB           BUY       5  80.8     0
+#> 1 getting-sta~ getti~ 2020-01-03 00:00:00 FILL       AAA           BUY      39 100.      0
+#> 2 getting-sta~ getti~ 2020-01-07 00:00:00 FILL       BBB           BUY      37  80.2     0
+#> 3 getting-sta~ getti~ 2020-01-13 00:00:00 FILL       BBB           SELL     37  80.0     0
+#> 4 getting-sta~ getti~ 2020-01-14 00:00:00 FILL       BBB           BUY      37  80.8     0
+#> 5 getting-sta~ getti~ 2020-01-22 00:00:00 FILL       BBB           SELL      1  81.4     0
+#> 6 getting-sta~ getti~ 2020-01-23 00:00:00 FILL       BBB           BUY       1  81.2     0
+#> 7 getting-sta~ getti~ 2020-02-13 00:00:00 FILL       AAA           SELL      1 104.      0
 #> # i 2 more variables: meta_json <chr>, event_seq <int>
 ```
 
@@ -206,12 +225,12 @@ bt |> as_tibble(what = "equity") |> tail(6)
 #> # A tibble: 6 x 6
 #>   ts_utc              equity  cash positions_value running_max drawdown
 #>   <dttm>               <dbl> <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2020-02-07 00:00:00 10020  8590.           1430.      10410.  -0.0375
-#> 2 2020-02-10 00:00:00 10024. 8590.           1434.      10410.  -0.0371
-#> 3 2020-02-11 00:00:00 10023. 8590.           1433.      10410.  -0.0372
-#> 4 2020-02-12 00:00:00 10035. 8590.           1444.      10410.  -0.0361
-#> 5 2020-02-13 00:00:00 10435. 8996.           1440.      10435.   0
-#> 6 2020-02-14 00:00:00 10436. 8996.           1441.      10436.   0
+#> 1 2020-02-07 00:00:00 10065. 3085.           6980.      12999.   -0.226
+#> 2 2020-02-10 00:00:00 10089. 3085.           7004.      12999.   -0.224
+#> 3 2020-02-11 00:00:00 10085. 3189.           6897.      12999.   -0.224
+#> 4 2020-02-12 00:00:00 10127. 3189.           6938.      12999.   -0.221
+#> 5 2020-02-13 00:00:00 13099. 6083.           7016.      13099.    0
+#> 6 2020-02-14 00:00:00 13107. 6083.           7024.      13107.    0
 ```
 
 `equity` is the portfolio value over time. It is also derived from
@@ -267,15 +286,49 @@ ledgr expects a named numeric target vector with names matching
 `ctx$universe`. It does not accept raw signal labels such as `"LONG"` or
 `"FLAT"` as core strategy output.
 
+`ctx$targets()` starts from flat positions. That is useful when every
+pulse should fully restate the desired portfolio. For hold-unless-signal
+rules, start from the current position vector instead:
+
+``` r
+targets <- ctx$current_targets()
+```
+
+That pattern says: keep current holdings unless this pulse explicitly
+changes them.
+
 The default fill model is next-open. A target change decided at pulse
 `t` fills on the next available bar. If the strategy asks for a new
 position on the final available pulse, there is no next bar to fill
 against, so ledgr warns with `LEDGR_LAST_BAR_NO_FILL` and records no
 fill for that final request.
 
+Non-default fill costs are supplied through `fill_model`:
+
+``` r
+fill_model <- list(type = "next_open", spread_bps = 5, commission_fixed = 1)
+```
+
 Real trading systems receive information step by step. ledgr follows
 that shape. The strategy does not get future prices. It gets the current
 pulse, makes a decision, and the engine moves forward.
+
+You can throttle rebalances inside the strategy by using `ctx$ts_utc`.
+This toy example only changes targets on the first calendar day of a
+month and keeps current holdings otherwise:
+
+``` r
+monthly_strategy <- function(ctx) {
+  targets <- ctx$current_targets()
+  if (format(as.Date(ctx$ts_utc), "%d") != "01") return(targets)
+
+  if (ctx$close("AAA") > 100) {
+    targets["AAA"] <- floor(0.50 * ctx$equity / ctx$close("AAA"))
+  }
+
+  targets
+}
+```
 
 ## Step 6: Add A Simple Indicator
 
@@ -367,14 +420,18 @@ pulse$close("AAA")
 #> [1] 101.47
 pulse$position("AAA")
 #> [1] 0
+pulse$current_targets()
+#> AAA BBB
+#>   0   0
 strategy(pulse)
 #> AAA BBB
-#>  10   5
+#> 394 371
 ```
 
 At this moment, the strategy only sees state available at
-`pulse$ts_utc`. `strategy(pulse)` shows the target holdings the strategy
-would request from that context.
+`pulse$ts_utc`. `pulse$current_targets()` shows the current holdings as
+a full target vector. `strategy(pulse)` shows the target holdings the
+strategy would request from that context.
 
 A pulse snapshot is read-only. It is meant for research and debugging,
 not for changing run state. The close calls release DuckDB connections.
@@ -404,11 +461,11 @@ yahoo_strategy <- function(ctx) {
   targets <- ctx$targets()
 
   if (ctx$close("AAPL") > ctx$open("AAPL")) {
-    targets["AAPL"] <- 10
+    targets["AAPL"] <- floor(0.40 * ctx$equity / ctx$close("AAPL"))
   }
 
   if (ctx$close("MSFT") > ctx$open("MSFT")) {
-    targets["MSFT"] <- 5
+    targets["MSFT"] <- floor(0.30 * ctx$equity / ctx$close("MSFT"))
   }
 
   targets
@@ -470,6 +527,7 @@ snapshot <- ledgr_snapshot_from_csv(
   csv_path = bars_csv,
   db_path = artifact_db
 )
+snapshot_id <- snapshot$snapshot_id
 
 durable_bt <- ledgr_backtest(
   snapshot = snapshot,
@@ -480,28 +538,37 @@ durable_bt <- ledgr_backtest(
 )
 
 basename(durable_bt$db_path)
-#> [1] "ledgr_getting_started_1245865252409.duckdb"
+#> [1] "ledgr_getting_started_116947316304c.duckdb"
 file.exists(durable_bt$db_path)
 #> [1] TRUE
 
 durable_bt |> as_tibble(what = "trades")
-#> # A tibble: 4 x 9
+#> # A tibble: 7 x 9
 #>   event_seq ts_utc              instrument_id side    qty price   fee realized_pnl action
 #>       <int> <dttm>              <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-03 00:00:00 AAA           BUY      10 100.      0         0    OPEN
-#> 2         2 2020-01-07 00:00:00 BBB           BUY       5  80.2     0         0    OPEN
-#> 3         3 2020-01-13 00:00:00 BBB           SELL      5  80.0     0        -1.35 CLOSE
-#> 4         4 2020-01-14 00:00:00 BBB           BUY       5  80.8     0         0    OPEN
+#> 1         1 2020-01-03 00:00:00 AAA           BUY      39 100.      0        0     OPEN
+#> 2         2 2020-01-07 00:00:00 BBB           BUY      37  80.2     0        0     OPEN
+#> 3         3 2020-01-13 00:00:00 BBB           SELL     37  80.0     0       -9.99  CLOSE
+#> 4         4 2020-01-14 00:00:00 BBB           BUY      37  80.8     0        0     OPEN
+#> 5         5 2020-01-22 00:00:00 BBB           SELL      1  81.4     0        0.620 CLOSE
+#> 6         6 2020-01-23 00:00:00 BBB           BUY       1  81.2     0        0     OPEN
+#> 7         7 2020-02-13 00:00:00 AAA           SELL      1 104.      0        3.69  CLOSE
 durable_bt |> as_tibble(what = "equity") |> tail(3)
 #> # A tibble: 3 x 6
 #>   ts_utc              equity  cash positions_value running_max drawdown
 #>   <dttm>               <dbl> <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2020-02-12 00:00:00 10035. 8590.           1444.      10410.  -0.0361
-#> 2 2020-02-13 00:00:00 10435. 8996.           1440.      10435.   0
-#> 3 2020-02-14 00:00:00 10436. 8996.           1441.      10436.   0
+#> 1 2020-02-12 00:00:00 10127. 3189.           6938.      12999.   -0.221
+#> 2 2020-02-13 00:00:00 13099. 6083.           7016.      13099.    0
+#> 3 2020-02-14 00:00:00 13107. 6083.           7024.      13107.    0
 
 close(durable_bt)
 ledgr_snapshot_close(snapshot)
+
+reloaded_snapshot <- ledgr_snapshot_load(artifact_db, snapshot_id, verify = TRUE)
+ledgr_snapshot_info(reloaded_snapshot)[, c("snapshot_id", "status", "bar_count")]
+#>                     snapshot_id status bar_count
+#> 1 snapshot_20260426_203356_ed2a SEALED        66
+ledgr_snapshot_close(reloaded_snapshot)
 ```
 
 The close calls at the end release file handles. They do not delete a
@@ -520,9 +587,14 @@ This DuckDB file now contains:
 
 Keeping this file means keeping the research artifact.
 
-`run_id` names one run inside that artifact file. In v0.1.3 it is mainly
-a stable label for reading run artifacts. The v0.1.4 experiment-store
-work will make run discovery, reopening, metadata, labels, and archiving
+`ledgr_snapshot_load()` is the rerun path. It reopens an existing sealed
+snapshot by database path and snapshot id. It does not create or
+overwrite snapshots, and `verify = TRUE` recomputes the snapshot hash
+before returning.
+
+`run_id` names one run inside that artifact file. Today it is mainly a
+stable label for reading run artifacts. Later experiment-store work will
+make run discovery, reopening, metadata, labels, and archiving
 first-class.
 
 Reproducibility is not only about getting the same answer in one R
@@ -531,7 +603,7 @@ explain where the answer came from.
 
 ## Step 10: Know The Scope
 
-ledgr v0.1.3 focuses on deterministic research backtests.
+ledgr currently focuses on deterministic research backtests.
 
 It does not include:
 

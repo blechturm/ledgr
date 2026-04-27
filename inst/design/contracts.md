@@ -12,6 +12,24 @@ coding agents must preserve. The authoritative narrative remains in
   execution semantics.
 - The runner owns pulse order, fills, strategy state, ledger events, features,
   and equity output.
+- v0.x may make breaking public-API changes when they protect correctness or
+  simplify the public model. Every breaking change must be documented in
+  `NEWS.md` and, where practical, pass through one deprecation release.
+- The default fill model is `next_open` with zero spread and zero fixed
+  commission. A target emitted at pulse `t` is filled at the next available bar;
+  a target emitted on the final pulse has no next bar and is not filled.
+
+## Config Contract
+
+- `ledgr_config()` is an internal construction helper in v0.1.4. It returns an
+  S3 object of class `ledgr_config`, validates the object before returning, and
+  has a concise print method for diagnostics.
+- `validate_ledgr_config()` is the internal validator name used by execution
+  code. It delegates to the same schema checks as the legacy
+  `ledgr_validate_config()` helper.
+- Exporting direct config construction is deferred until the future
+  experiment-store API proves that users need it. Public workflows should
+  continue to start with `ledgr_backtest()`.
 
 ## Snapshot Contract
 
@@ -22,6 +40,15 @@ coding agents must preserve. The authoritative narrative remains in
   snapshot hash or transitioning to `SEALED`.
 - Split snapshot/run DB mode must verify the source snapshot hash from the
   snapshot DB while writing run artifacts to the run DB.
+- `ledgr_snapshot_load(db_path, snapshot_id)` may reopen an existing sealed
+  snapshot. It must never create, silently overwrite, or silently reseal a
+  snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
+- `ledgr_snapshot_list()` accepts either a DBI connection or a DuckDB file path.
+  Path inputs are opened read-style for discovery and closed before returning.
+- `ledgr_data_hash()` is a legacy v0.1.0 helper for direct `bars` table
+  workflows. Snapshot-backed workflows should use sealed `snapshot_hash`
+  values. Internal run-resume and snapshot-adapter data-subset hashes must use
+  explicit internal helpers, not the exported legacy function.
 
 ## Persistence Contract
 
@@ -51,6 +78,18 @@ coding agents must preserve. The authoritative narrative remains in
   `ledgr_signal_strategy()` is an explicit convenience wrapper that maps signals
   to normal targets before validation.
 - Functional strategies and R6 strategies use the same target validator.
+- Strategy reproducibility is tiered:
+  - Tier 1: self-contained `function(ctx, params)` style logic with explicit
+    parameters and no unresolved external objects.
+  - Tier 2: logic that can be inspected but not fully replayed without external
+    context, including R6 strategies unless they provide explicit source and
+    parameter metadata.
+  - Tier 3: environment-dependent logic whose execution identity cannot be
+    recovered from stored metadata.
+- Future experiment-store run-identity design, scheduled for v0.1.5, must treat
+  `strategy_source_hash`, `strategy_params_hash`, and reproducibility tier as
+  part of experiment provenance. R6 strategy identity must not be finalized
+  implicitly.
 
 ## Context Contract
 
@@ -58,6 +97,43 @@ coding agents must preserve. The authoritative narrative remains in
   `ctx$bars` and long-table `ctx$features`.
 - Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
   views over `ctx$features`; they do not change feature computation semantics.
+- Indicators may provide an optional `series_fn(bars, params)` for full-series
+  precomputation. The input is one instrument's full bar series in ascending
+  time order, and the output must be a numeric vector aligned to `nrow(bars)`.
+- Feature warmup `NA_real_` and warmup `NaN` are normalized to `NA_real_`.
+  Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
+- Indicator fingerprints include `series_fn` when present. Changing `fn`,
+  `series_fn`, parameters, or warmup requirements changes the fingerprint.
+- TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
+  version, input shape, output column, and forwarded TTR arguments in indicator
+  params. Only `params$args` are forwarded to TTR; metadata fields are identity
+  fields for fingerprints and diagnostics.
+- TTR warmup inference is allowed only for functions listed by
+  `ledgr_ttr_warmup_rules()`. Each listed rule must be deterministic from
+  explicit arguments alone and verified against direct TTR output in tests.
+- TTR input mappings are adapter contracts: `close` maps to `bars$close`, `hl`
+  maps to `High/Low`, `hlc` maps to `High/Low/Close`, `ohlc` maps to
+  `Open/High/Low/Close`, and `hlcv` maps to `High/Low/Close/Volume`.
+- TTR-backed generated IDs use rules-table `id_args` first and then any other
+  supplied scalar arguments in sorted order before the optional output suffix.
+  Users must provide `id` explicitly when non-scalar TTR arguments would make a
+  generated ID ambiguous.
+- Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
+  stable windows, not expanding full-history windows.
+- Feature precomputation may use a session-scoped cache. Cache entries are keyed
+  by sealed `snapshot_hash`, instrument ID, indicator fingerprint,
+  feature-engine version, and date range. The cache is never persisted to
+  DuckDB and may be cleared with `ledgr_clear_feature_cache()`.
+- The session feature cache is a runner precomputation optimization for
+  repeated backtests over sealed snapshots. Low-level recovery helpers and
+  interactive pulse/indicator tools recompute features because they do not own
+  a sealed snapshot hash cache key.
+- `ctx$targets()` creates a full named target vector initialized to flat
+  positions. It is appropriate when the strategy wants unspecified instruments
+  to go flat.
+- `ctx$current_targets()` creates a full named target vector initialized from
+  current holdings. It is appropriate for hold-unless-signal strategies and
+  rebalance throttling.
 - Interactive pulse and indicator tools are read-only against persistent ledgr
   tables.
 

@@ -30,25 +30,33 @@ Computes a deterministic SHA-256 hash over:
 Numeric OHLCV values are rounded to 8 decimal places before hashing.
 Missing values are represented as the literal string \code{NA}.
 
-This is a low-level v0.1.0 helper that hashes rows from the legacy \code{bars}
-table or view. v0.1.2 snapshot workflows should normally use
+This is a legacy v0.1.0 helper that hashes rows from the raw \code{bars} table or
+a compatible temporary view. It remains exported for compatibility with old
+low-level workflows, but modern snapshot-backed workflows should use
 \code{ledgr_snapshot_from_df()} or \code{ledgr_snapshot_from_csv()} and inspect the
 sealed snapshot hash with \code{ledgr_snapshot_info()}.
 }
 \examples{
-# Low-level legacy-table example. For normal v0.1.2 workflows, prefer
-# ledgr_snapshot_from_df() and ledgr_snapshot_info().
 db_path <- tempfile(fileext = ".duckdb")
-con <- ledgr_db_init(db_path)
-DBI::dbAppendTable(con, "bars", data.frame(
-  instrument_id = "AAA",
+bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+  instrument_id = "AAA",
   open = c(100, 101, 102),
   high = c(101, 102, 103),
   low = c(99, 100, 101),
   close = c(100, 101, 102),
   volume = c(1000, 1000, 1000)
-))
-ledgr_data_hash(con, "AAA", "2020-01-01", "2020-01-03")
-DBI::dbDisconnect(con, shutdown = TRUE)
+)
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+ledgr_snapshot_info(snapshot)$snapshot_hash
+ledgr_snapshot_close(snapshot)
+
+if (FALSE) {
+  # Legacy v0.1.0 workflows require rows in the raw bars table.
+  legacy_path <- tempfile(fileext = ".duckdb")
+  con <- ledgr_db_init(legacy_path)
+  DBI::dbAppendTable(con, "bars", bars)
+  ledgr_data_hash(con, "AAA", "2020-01-01", "2020-01-03")
+  DBI::dbDisconnect(con, shutdown = TRUE)
+}
 }

@@ -1,3 +1,37 @@
+# ledgr 0.1.4
+
+- Stabilised the research workflow ahead of the experiment-store APIs, with
+  durable snapshot reuse, safer strategy helpers, faster indicator
+  precomputation, and broader TTR indicator support.
+- Added `ledgr_snapshot_load()` for reopening existing sealed snapshots from a
+  durable DuckDB file, with optional hash verification.
+- Updated `ledgr_snapshot_list()` so it accepts either a DBI connection or a
+  DuckDB file path.
+- Added `ctx$current_targets()` to runtime and interactive pulse contexts for
+  hold-unless-signal strategy patterns.
+- Made internal backtest configs an S3 `ledgr_config` object with validation
+  and diagnostic printing, while keeping public workflows centered on
+  `ledgr_backtest()`.
+- Marked `ledgr_data_hash()` as a legacy v0.1.0 helper and moved internal
+  run/snapshot-adapter hash call sites to explicitly named internal helpers.
+- Added optional vectorized indicator `series_fn` support for full-series
+  feature precomputation, including vectorized built-in indicators.
+- Added a session-scoped feature cache keyed by snapshot hash, instrument,
+  indicator fingerprint, feature-engine version, and date range, with
+  `ledgr_clear_feature_cache()` for explicit cleanup.
+- Added `ledgr_ind_ttr()` and `ledgr_ttr_warmup_rules()` for low-code TTR
+  indicator construction with explicit warmup and fingerprint metadata.
+- Expanded low-code TTR support to common close, high/low, HLC, and HLCV
+  indicators including WMA, ROC, momentum, CCI, BBands, aroon,
+  DonchianChannel, MFI, CMF, and rolling statistic functions.
+- Added `ledgr_deregister_indicator()` for cleaning up session-scoped
+  indicator registry entries during interactive work and tests.
+- Changed fn-only custom indicator fallback from expanding full-history windows
+  to bounded stable windows to avoid accidental O(n^2) feature work.
+- Clarified v0.x compatibility policy, strategy reproducibility tiers,
+  next-open fill semantics, and low-level API lifecycle notes in design and
+  reference documentation.
+
 # ledgr 0.1.3
 
 - Reworked the README into a 5-minute installed-package path with runnable

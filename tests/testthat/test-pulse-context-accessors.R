@@ -31,6 +31,7 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_true(is.function(ctx$volume))
   testthat::expect_true(is.function(ctx$position))
   testthat::expect_true(is.function(ctx$targets))
+  testthat::expect_true(is.function(ctx$current_targets))
 
   testthat::expect_equal(ctx$open("A"), 10)
   testthat::expect_equal(ctx$high("A"), 11)
@@ -48,6 +49,7 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_equal(ctx$position("B"), 3)
   testthat::expect_identical(ctx$targets(), stats::setNames(c(0, 0), universe))
   testthat::expect_identical(ctx$targets(default = 2), stats::setNames(c(2, 2), universe))
+  testthat::expect_identical(ctx$current_targets(), stats::setNames(c(0, 3), universe))
 
   testthat::expect_true(is.numeric(ctx$cash))
   testthat::expect_true(is.numeric(ctx$equity))
@@ -131,9 +133,11 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
   testthat::expect_true(is.function(ctx$close))
   testthat::expect_true(is.function(ctx$position))
   testthat::expect_true(is.function(ctx$targets))
+  testthat::expect_true(is.function(ctx$current_targets))
   testthat::expect_equal(ctx$close("TEST_A"), ctx$bars$close[ctx$bars$instrument_id == "TEST_A"])
   testthat::expect_equal(ctx$position("TEST_A"), 0)
   testthat::expect_identical(ctx$targets(), stats::setNames(c(0, 0), universe))
+  testthat::expect_identical(ctx$current_targets(), stats::setNames(c(0, 0), universe))
   testthat::expect_true(is.environment(ctx$.pulse_lookup))
 })
 
@@ -148,7 +152,7 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
   observed$count <- 0L
 
   helper_strategy <- function(ctx) {
-    if (!is.function(ctx$close) || !is.function(ctx$targets) || !is.function(ctx$position)) {
+    if (!is.function(ctx$close) || !is.function(ctx$targets) || !is.function(ctx$position) || !is.function(ctx$current_targets)) {
       stop("runtime context accessors are missing")
     }
     if (is.function(ctx$cash) || is.function(ctx$equity)) {
@@ -159,6 +163,11 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
     }
     if (!identical(ctx$position("TEST_A"), unname(if ("TEST_A" %in% names(ctx$positions)) ctx$positions[["TEST_A"]] else 0))) {
       stop("runtime position accessor does not match ctx$positions")
+    }
+    expected_current <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
+    if (length(ctx$positions) > 0) expected_current[names(ctx$positions)] <- as.numeric(ctx$positions)
+    if (!identical(ctx$current_targets(), expected_current)) {
+      stop("runtime current_targets accessor does not match ctx$positions")
     }
 
     observed$count <- observed$count + 1L

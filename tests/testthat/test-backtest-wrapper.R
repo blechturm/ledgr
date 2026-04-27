@@ -269,3 +269,50 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
     NA
   )
 })
+
+testthat::test_that("backtest feature hydration uses indicator series_fn", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  calls <- new.env(parent = emptyenv())
+  calls$series_fn <- 0L
+
+  ind <- ledgr_indicator(
+    id = "series_backtest_probe",
+    fn = function(window) {
+      stop("fallback fn should not be called when series_fn is available")
+    },
+    series_fn = function(bars, params = list()) {
+      calls$series_fn <- calls$series_fn + 1L
+      bars$close
+    },
+    requires_bars = 1L
+  )
+
+  strategy <- function(ctx) {
+    value <- ctx$feature("TEST_A", "series_backtest_probe")
+    if (!is.na(value) && value < 0) {
+      stop("unexpected negative feature")
+    }
+    ctx$targets()
+  }
+
+  bt <- ledgr_backtest(
+    data = test_bars,
+    strategy = strategy,
+    start = "2020-01-01",
+    end = "2020-01-10",
+    initial_cash = 1000,
+    features = list(ind),
+    db_path = db_path
+  )
+  on.exit(close(bt), add = TRUE)
+
+  testthat::expect_identical(calls$series_fn, 2L)
+  features <- DBI::dbGetQuery(
+    ledgr:::get_connection(bt),
+    "SELECT feature_name FROM features WHERE run_id = ?",
+    params = list(bt$run_id)
+  )
+  testthat::expect_true("series_backtest_probe" %in% features$feature_name)
+})

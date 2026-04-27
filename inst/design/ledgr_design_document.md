@@ -19,6 +19,10 @@ The experiment store makes later paper/live modes safer because data identity,
 strategy identity, configuration, event history, and run artifacts are explicit
 before real-time execution is introduced.
 
+v0.1.4 is a stabilisation release for research workflow ergonomics, indicator
+performance, and experiment-store readiness. The first user-facing
+experiment-store API layer is scheduled for v0.1.5.
+
 ### 0.1 Experiment Store Foundation
 
 A DuckDB file is a ledgr experiment store.
@@ -48,7 +52,7 @@ If any component changes, the run is a different experiment.
 
 #### 0.1.1 Legacy Run Provenance
 
-Runs created before the v0.1.4 experiment-store schema are valid execution
+Runs created before the v0.1.5 experiment-store schema are valid execution
 artifacts, but they do not carry full strategy provenance. They may have a
 `run_id`, config hash, data hash, ledger events, and derived views, but they do
 not have persisted strategy source text, strategy parameter identity, or a
@@ -78,7 +82,7 @@ separate from normal research cleanup.
 
 ### 0.2.1 Experiment Store Schema Target
 
-The v0.1.4 experiment-store layer should make run discovery and reopening
+The v0.1.5 experiment-store layer should make run discovery and reopening
 explicit rather than treating DuckDB as hidden infrastructure.
 
 Minimum persistent schema:
@@ -114,8 +118,12 @@ run_strategy
 - reproducibility_notes_json
 ```
 
-`ledgr_runs(db_path)` should expose a user-facing view over these tables rather
-than the raw schema. Minimum output columns:
+Run-store APIs should follow the noun-first family convention used by snapshot
+APIs: `ledgr_run_list()`, `ledgr_run_open()`, `ledgr_run_info()`,
+`ledgr_run_label()`, and `ledgr_run_archive()`.
+
+`ledgr_run_list(db_path)` should expose a user-facing view over these tables
+rather than the raw schema. Minimum output columns:
 
 ```text
 run_id
@@ -134,7 +142,7 @@ ledgr_version
 reproducibility_level
 ```
 
-`ledgr_open_run(db_path, run_id)` should return a `ledgr_backtest` handle for an
+`ledgr_run_open(db_path, run_id)` should return a `ledgr_backtest` handle for an
 existing run without recomputing it.
 
 ### 0.3 Continuity Across Backtest, Paper, And Live

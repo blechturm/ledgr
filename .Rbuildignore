@@ -1,7 +1,9 @@
 ^LICENSE\.md$
 ^README\.Rmd$
 ^AGENTS\.md$
+^dev$
 ^\.github$
+^\.claude$
 ^docs$
 ^_pkgdown\.yml$
 ^vignettes$
@@ -9,3 +11,4 @@
 ^.*\.tar\.gz$
 ^coverage\.html$
 ^lib$
+^Rprof\.out$
