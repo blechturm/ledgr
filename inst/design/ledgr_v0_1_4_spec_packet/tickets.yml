@@ -189,7 +189,8 @@ tickets:
         - changing the core feature-engine series_fn contract
   - id: LDG-714
     title: "v0.1.4 Stabilisation Gate"
-    status: pending
+    status: pending_remote_ci
+    note: "Local gates accepted 2026-04-27; awaiting Ubuntu and Windows CI."
     priority: P0
     dependencies: [LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715, LDG-716]
     tests: ["tools/check-readme-example.R", "tools/check-coverage.R", "R CMD check", "pkgdown::build_site", ".github/workflows/R-CMD-check.yaml"]

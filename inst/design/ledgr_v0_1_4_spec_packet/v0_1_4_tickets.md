@@ -907,6 +907,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 1 day  
 **Dependencies:** LDG-701, LDG-702, LDG-703, LDG-704, LDG-705, LDG-706, LDG-708, LDG-709, LDG-710, LDG-711, LDG-712, LDG-713, LDG-715, LDG-716
+**Status:** pending_remote_ci (local gates accepted 2026-04-27)
 
 **Description:**
 Final validation gate for the v0.1.4 stabilisation cycle.
@@ -925,14 +926,14 @@ Final validation gate for the v0.1.4 stabilisation cycle.
 8. Confirm CI is green on Ubuntu and Windows.
 
 **Acceptance Criteria:**
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+- [x] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
-- [ ] v0.1.2 and v0.1.3 acceptance tests pass.
-- [ ] Coverage remains at or above 80%.
-- [ ] README cold-start check passes if README changed.
-- [ ] pkgdown site builds if reference/vignette docs changed.
+- [x] v0.1.2 and v0.1.3 acceptance tests pass.
+- [x] Coverage remains at or above 80%.
+- [x] README cold-start check passes if README changed.
+- [x] pkgdown site builds if reference/vignette docs changed.
 - [ ] Ubuntu and Windows CI are green.
-- [ ] `contracts.md` and `NEWS.md` match the implemented scope.
+- [x] `contracts.md` and `NEWS.md` match the implemented scope.
 
 **Test Requirements:**
 - `tools/check-readme-example.R`
@@ -979,6 +980,30 @@ forbidden_actions:
   - bypassing R CMD check or coverage gate
   - releasing without green CI on both platforms
 ```
+
+**Local Acceptance Audit (2026-04-27):**
+
+The v0.1.4 release scope is locked in
+`inst/design/ledgr_v0_1_4_spec_packet/v0_1_4_spec.md`. The roadmap now scopes
+v0.1.4 as the research workflow stabilisation release and moves the
+experiment-store core to v0.1.5.
+
+Local verification:
+
+- `devtools::document()` completed and made no documentation changes.
+- `Rscript --vanilla tools/check-readme-example.R` passed.
+- `pkgload::load_all('.', quiet = TRUE); testthat::test_local('.', filter =
+  'acceptance-v0.1', reporter = 'summary', load_package = 'none')` passed.
+- `Rscript tools/check-coverage.R` passed with 81.38% coverage.
+- `pkgdown::build_site(new_process = FALSE)` passed. The first sandboxed run
+  failed on a local user-directory permission check; rerunning outside the
+  sandbox with the same build command completed successfully.
+- `rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-build-vignettes'),
+  error_on = 'warning', check_dir = 'check')` passed with 0 errors, 0 warnings,
+  and 0 notes after adding `C:\rtools45` to `PATH` for the process.
+
+LDG-714 remains `pending_remote_ci` until the Ubuntu and Windows GitHub Actions
+matrix is green.
 
 ---
 
