@@ -57,3 +57,4 @@ rsconnect/
 .env
 data-raw
 inst/extdata/.DS_Store
+.claude

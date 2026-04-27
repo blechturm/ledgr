@@ -1,5 +1,5 @@
 ---
-title: "From Research to Production"
+title: "Design Philosophy: From Research to Production"
 output:
   github_document:
     toc: false
