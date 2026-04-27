@@ -6,6 +6,10 @@
 - Added `strategy_params` support for `function(ctx, params)` strategies and
   durable run provenance capture for strategy source hashes, parameter hashes,
   dependency versions, R version, and reproducibility tier.
+- Added experiment-store discovery APIs: `ledgr_run_list()`,
+  `ledgr_run_info()`, and `ledgr_run_open()` for listing, inspecting, and
+  reopening completed runs without recomputation.
+- Added `ledgr_results()` as a package-prefixed wrapper for result tables.
 
 # ledgr 0.1.4
 

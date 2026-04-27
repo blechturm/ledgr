@@ -1,4 +1,4 @@
-testthat::test_that("exported API surface is locked (v0.1.2)", {
+testthat::test_that("exported API surface is locked", {
   exports <- sort(getNamespaceExports("ledgr"))
 
   expected <- sort(c(
@@ -27,6 +27,10 @@ testthat::test_that("exported API surface is locked (v0.1.2)", {
     "ledgr_list_indicators",
     "ledgr_pulse_snapshot",
     "ledgr_register_indicator",
+    "ledgr_results",
+    "ledgr_run_info",
+    "ledgr_run_list",
+    "ledgr_run_open",
     "ledgr_signal_strategy",
     "ledgr_snapshot_close",
     "ledgr_snapshot_create",

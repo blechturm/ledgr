@@ -58,6 +58,12 @@ coding agents must preserve. The authoritative narrative remains in
 - Cross-connection read-back is part of the persistence contract: completed
   runs and their `ledger_events`, `features`, and `equity_curve` rows must be
   visible from a newly opened connection.
+- `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
+  discovery APIs. They must tolerate legacy/pre-provenance stores and treat
+  missing telemetry as missing/`NA`, not as corruption.
+- `ledgr_run_open()` returns a `ledgr_backtest` handle only for completed
+  `DONE` runs. Opening a run must not execute strategy code, recompute fills,
+  or mutate persistent run artifacts.
 
 ## Canonical JSON Contract
 
@@ -150,6 +156,11 @@ coding agents must preserve. The authoritative narrative remains in
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
   backtest object or persistent run state.
+- `tibble::as_tibble(bt, what = ...)` supports the v0.1.5 result set:
+  `equity`, `fills`, `trades`, and `ledger`.
+- `ledgr_results(bt, what = ...)` is the package-prefixed wrapper over that
+  same result path. It must delegate to `tibble::as_tibble()` and must not
+  duplicate reconstruction logic.
 - Metrics are descriptive only and must never feed back into strategy execution.
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild

@@ -509,6 +509,238 @@ indistinguishable from plain R objects at the API boundary.
 
 ---
 
+## v0.1.8 - Portfolio Optimization Support
+
+**Goal:** Make portfolio optimization a first-class research workflow in ledgr.
+
+An optimizer is a strategy that computes target weights mathematically rather
+than by rules. The strategy contract already supports this output; what is
+missing is the tooling that makes writing optimizer strategies natural rather
+than awkward.
+
+ledgr is the harness, not the solver. The optimization math stays external
+(quadprog, CVXR, PortfolioAnalytics, or any other solver the user chooses).
+ledgr provides the clean inputs and the clean output conversion so that plugging
+in a solver feels like one function call, not an exercise in data wrangling.
+
+### Scope
+
+#### Context Accessors
+
+- `ctx$returns_matrix(lookback)` -- a numeric matrix of shape
+  `instruments x time` covering the lookback window, ready for covariance
+  estimation or any return-based optimization input. Respects the no-lookahead
+  guarantee: only bars available at the current pulse are included.
+- `ctx$weights_to_targets(weights)` -- converts a named weight vector
+  (e.g. `c(SPY = 0.6, TLT = 0.4)`) to share quantities using current equity
+  and close prices. Validates that weights sum to at most 1 and that all names
+  are in `ctx$universe`.
+
+#### Vignette
+
+A worked vignette demonstrating the full research workflow:
+
+1. Write a mean-variance strategy using `ctx$returns_matrix()` and an external
+   solver.
+2. Sweep over lookback window and risk-target combinations using
+   `ledgr_precompute_features()` and `ledgr_sweep()`.
+3. Persist the winning configuration with `ledgr_backtest()` and label it in
+   the experiment store.
+4. Compare runs with `ledgr_compare_runs()`.
+
+The vignette is the primary deliverable -- the context accessors exist to make
+it readable.
+
+#### Reproducibility Note
+
+Strategies that call external solvers (quadprog, CVXR) reference package
+functions that are outside the base-R namespace. These strategies are classified
+Tier 2 (source captured, replay requires solver package). This is documented
+explicitly in the vignette and in `ledgr_run_info()` output.
+
+### Definition of Done
+
+- A mean-variance strategy can be written in under 30 lines of strategy code
+  using `ctx$returns_matrix()` and a standard solver
+- `ctx$weights_to_targets()` handles weight-to-quantity conversion correctly
+  under edge cases: zero equity, missing prices, weights that do not span the
+  full universe
+- The sweep-to-persist-to-compare workflow is demonstrated end-to-end in the
+  vignette against the canonical demo dataset
+- `ctx$returns_matrix()` is covered by no-lookahead tests
+
+---
+
+## v0.1.9 - Calendar And Event-Driven Strategies
+
+**Goal:** Give strategies a structured temporal context so calendar and
+event-driven logic does not require manual date arithmetic inside the strategy
+function.
+
+Calendar strategies are among the most common in systematic research --
+month-end rebalancing, quarter-end drift correction, regime detection by
+calendar period. Today a ledgr strategy can read `ctx$ts_utc` and compute
+everything manually, but every user rewrites the same boilerplate. A thin
+calendar layer eliminates that without adding hidden state or breaking the
+no-lookahead guarantee.
+
+### Scope
+
+#### Calendar Context Accessors
+
+- `ctx$calendar$is_month_end` -- logical, TRUE if the current pulse is the last
+  trading day of the calendar month
+- `ctx$calendar$is_quarter_end` -- logical, TRUE if the current pulse is the
+  last trading day of the calendar quarter
+- `ctx$calendar$days_since(reference_ts)` -- integer count of trading days
+  between `reference_ts` and the current pulse, using the universe calendar
+  derived from the sealed snapshot
+- `ctx$calendar$trading_day` -- integer position of the current pulse within
+  the sealed snapshot (1 = first pulse)
+
+All accessors are derived from the sealed snapshot calendar, not from a live
+clock. No-lookahead is preserved by construction.
+
+#### Rebalance Throttle Helper
+
+- `ctx$calendar$periods_since_rebalance(frequency)` where `frequency` is one
+  of `"daily"`, `"weekly"`, `"monthly"`, `"quarterly"` -- returns an integer
+  count of full periods elapsed since the last pulse on which the strategy
+  returned a non-flat target change. Intended for strategies that want to
+  rebalance on a schedule without tracking their own rebalance timestamp.
+
+#### Vignette Extension
+
+Extend the strategy-authoring vignette with a calendar-driven rebalancing
+example: a monthly rebalancing portfolio that acts only on month-end pulses and
+holds otherwise.
+
+### Definition of Done
+
+- All calendar accessors are derived from sealed snapshot data with no
+  wall-clock calls
+- `ctx$calendar$days_since()` is tested against known trading calendars with
+  gaps and holidays present in the snapshot
+- No-lookahead tests cover calendar accessor paths
+- Calendar-driven rebalancing is demonstrated in the strategy-authoring vignette
+
+---
+
+## v0.1.10 - Pairs And Spread Trading
+
+**Goal:** Make cross-instrument spread strategies natural to write without
+manual cross-instrument data assembly inside the strategy function.
+
+Pairs trading and statistical arbitrage are distinct from universe-level
+portfolio optimization: they operate on instrument pairs, require spread
+z-scores and rolling cointegration residuals, and produce relative rather than
+absolute target positions. The returns matrix from v0.1.8 partially addresses
+this, but the pair-level spread computation is specific enough to warrant its
+own accessor layer.
+
+### Scope
+
+#### Spread Accessors
+
+- `ctx$spread(id_a, id_b, lookback)` -- the current price spread between two
+  instruments, normalized as a rolling z-score over `lookback` bars. Uses
+  log-price difference by default; raw difference available via a `method`
+  argument.
+- `ctx$spread_history(id_a, id_b, lookback)` -- the full lookback window of
+  spread values as a numeric vector, for strategies that need to fit a
+  cointegration model or compute their own statistics.
+
+Both accessors respect the no-lookahead guarantee and are computed from the
+sealed snapshot bars available at the current pulse.
+
+#### Position Helpers
+
+- `ctx$net_exposure(id_a, id_b)` -- the current net dollar exposure of a pair
+  as a signed scalar: positive means long `id_a` / short `id_b`, negative
+  means the reverse. Simplifies the position-sizing logic common to
+  pairs strategies.
+
+#### Vignette
+
+A worked vignette demonstrating a z-score mean-reversion pairs strategy:
+entry on spread z-score threshold, exit on reversion to zero, position sizing
+using `ctx$net_exposure()`. Sweep over lookback and entry threshold using
+`ledgr_sweep()`, persist the winner.
+
+### Definition of Done
+
+- `ctx$spread()` and `ctx$spread_history()` respect no-lookahead across all
+  lookback window sizes
+- `ctx$net_exposure()` is consistent with the ledger-derived position state
+- A pairs strategy can be written in under 40 lines of strategy code
+- The sweep-to-persist workflow is demonstrated in the vignette against the
+  canonical demo dataset with at least two instruments
+
+---
+
+## v0.1.11 - ML Strategy Artifact Management
+
+**Goal:** Make ML-based strategies first-class experiment-store citizens by
+giving model artifacts their own provenance slot in run identity.
+
+The design document specifies that ML models are trained outside the engine,
+loaded as immutable artifacts per run, and treated as deterministic functions
+at decision time. The strategy contract already supports this at runtime --
+a strategy can load and call any model. What is missing is the provenance
+layer: a trained model is not JSON-safe, cannot go in `strategy_params`, and
+cannot be fingerprinted by the existing source-hash mechanism. Without artifact
+management, ML strategies are always Tier 3 and the experiment store cannot
+distinguish two runs that used different model versions.
+
+### Scope
+
+#### Artifact Registry
+
+- `ledgr_artifact_register(path, label = NULL)` -- hashes a model artifact
+  file (any format: `.rds`, `.onnx`, `.pt`, etc.) and registers it in the
+  experiment store with a content hash, file size, and optional label. Returns
+  an artifact handle.
+- `ledgr_artifact_load(db_path, artifact_hash)` -- retrieves a registered
+  artifact path by hash. Does not load the model itself; loading is the
+  user's responsibility and keeps ledgr framework-agnostic.
+- Artifact hashes are stored in a new `run_artifacts` table linked to
+  `run_provenance`. A run that references an artifact carries the artifact
+  hash as part of its experiment identity.
+
+#### Strategy Integration
+
+- `strategy_params` accepts artifact handles as values. An artifact handle
+  serializes to its content hash in JSON, making it canonical-JSON-safe and
+  hashable. The `strategy_params_hash` therefore changes when the model
+  changes, even if no other parameter changes.
+- Strategies that load a model via an artifact handle are classified Tier 2
+  (source captured, artifact hash recorded, but replay requires the artifact
+  file to be present). This is documented explicitly.
+- Strategies that load a model by raw file path (bypassing the artifact
+  registry) are classified Tier 3.
+
+#### Vignette
+
+A worked vignette: train a classification model offline (e.g. logistic
+regression or xgboost), register it as an artifact, write a strategy that
+loads and calls it at each pulse, run two experiments with different model
+versions, compare run provenance to show the artifact hashes differ.
+
+### Definition of Done
+
+- A model artifact can be registered and its hash stored as part of run
+  identity
+- Two runs using different model versions produce different
+  `strategy_params_hash` values even when all other parameters are identical
+- `ledgr_run_info()` displays artifact hashes for runs that reference
+  artifacts
+- Tier 2 vs. Tier 3 classification is correctly applied based on whether
+  the artifact registry was used
+- The vignette demonstrates the full workflow: train, register, backtest,
+  compare
+
+---
+
 ## v0.2.0 - OMS Semantics (Simulation Only)
 
 **Goal:** Introduce realistic order lifecycle handling without a real broker.

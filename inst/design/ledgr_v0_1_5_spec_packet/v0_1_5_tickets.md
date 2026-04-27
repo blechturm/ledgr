@@ -253,7 +253,8 @@ forbidden_actions:
 
 **Priority:** P0  
 **Effort:** 3-4 days  
-**Dependencies:** LDG-801, LDG-802
+**Dependencies:** LDG-801, LDG-802  
+**Status:** Done
 
 **Description:**
 Add the core experiment-store discovery APIs:
@@ -284,15 +285,15 @@ completed runs without recomputation. `ledgr_run_info()` must return an S3
     error.
 
 **Acceptance Criteria:**
-- [ ] Multiple runs in one DuckDB file are discoverable.
-- [ ] `ledgr_run_info()` returns class `ledgr_run_info`.
-- [ ] `print.ledgr_run_info()` is concise and readable.
-- [ ] `ledgr_run_open()` returns a `ledgr_backtest`-compatible handle for
+- [x] Multiple runs in one DuckDB file are discoverable.
+- [x] `ledgr_run_info()` returns class `ledgr_run_info`.
+- [x] `print.ledgr_run_info()` is concise and readable.
+- [x] `ledgr_run_open()` returns a `ledgr_backtest`-compatible handle for
       completed runs.
-- [ ] Reopened handles support existing result methods.
-- [ ] Incomplete runs fail clearly on open.
-- [ ] `ledgr_run_info()` provides diagnostics for incomplete runs.
-- [ ] No strategy code executes during reopen.
+- [x] Reopened handles support existing result methods.
+- [x] Incomplete runs fail clearly on open.
+- [x] `ledgr_run_info()` provides diagnostics for incomplete runs.
+- [x] No strategy code executes during reopen.
 
 **Test Requirements:**
 - New run-store API tests.
@@ -611,7 +612,8 @@ forbidden_actions:
 
 **Priority:** P2  
 **Effort:** 0.5-1 day  
-**Dependencies:** None
+**Dependencies:** None  
+**Status:** Done
 
 **Description:**
 Add `ledgr_results()` as a package-prefixed discovery helper over the existing
@@ -628,12 +630,12 @@ know to call `tibble::as_tibble(bt, what = ...)`.
 7. Ensure no mutation of backtest object or persistent run state.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_results(bt, "equity")` matches `tibble::as_tibble(bt, what = "equity")`.
-- [ ] `ledgr_results(bt, "fills")` matches the existing result path.
-- [ ] `ledgr_results(bt, "trades")` matches the existing result path.
-- [ ] `ledgr_results(bt, "ledger")` matches the existing result path.
-- [ ] Unsupported `what` values fail clearly.
-- [ ] Function is exported, documented, and covered by examples.
+- [x] `ledgr_results(bt, "equity")` matches `tibble::as_tibble(bt, what = "equity")`.
+- [x] `ledgr_results(bt, "fills")` matches the existing result path.
+- [x] `ledgr_results(bt, "trades")` matches the existing result path.
+- [x] `ledgr_results(bt, "ledger")` matches the existing result path.
+- [x] Unsupported `what` values fail clearly.
+- [x] Function is exported, documented, and covered by examples.
 
 **Test Requirements:**
 - Result wrapper tests.

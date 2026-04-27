@@ -108,7 +108,7 @@ tickets:
 
   - id: LDG-803
     title: "Run Discovery, Info, And Reopen APIs"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-801, LDG-802]
     tests:
@@ -299,7 +299,7 @@ tickets:
 
   - id: LDG-807
     title: "Package-Prefixed Result Wrapper"
-    status: pending
+    status: done
     priority: P2
     dependencies: []
     tests:
