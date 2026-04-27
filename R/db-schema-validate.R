@@ -29,9 +29,56 @@ ledgr_validate_schema <- function(con) {
         data_hash = "TEXT",
         snapshot_id = "TEXT",
         status = "TEXT",
-        error_msg = "TEXT"
+        error_msg = "TEXT",
+        label = "TEXT",
+        archived = "BOOLEAN",
+        archived_at_utc = "TIMESTAMP",
+        archive_reason = "TEXT",
+        execution_mode = "TEXT",
+        schema_version = "INTEGER"
       ),
       pk = c("run_id")
+    ),
+    ledgr_schema_metadata = list(
+      columns = c(
+        key = "TEXT",
+        value = "TEXT",
+        updated_at_utc = "TIMESTAMP"
+      ),
+      pk = c("key"),
+      not_null = c("key", "value", "updated_at_utc")
+    ),
+    run_provenance = list(
+      columns = c(
+        run_id = "TEXT",
+        strategy_type = "TEXT",
+        strategy_source = "TEXT",
+        strategy_source_hash = "TEXT",
+        strategy_source_capture_method = "TEXT",
+        strategy_params_json = "TEXT",
+        strategy_params_hash = "TEXT",
+        reproducibility_level = "TEXT",
+        ledgr_version = "TEXT",
+        R_version = "TEXT",
+        dependency_versions_json = "TEXT",
+        created_at_utc = "TIMESTAMP"
+      ),
+      pk = c("run_id"),
+      not_null = c("run_id")
+    ),
+    run_telemetry = list(
+      columns = c(
+        run_id = "TEXT",
+        status = "TEXT",
+        execution_mode = "TEXT",
+        elapsed_sec = "DOUBLE",
+        pulse_count = "INTEGER",
+        feature_cache_hits = "INTEGER",
+        feature_cache_misses = "INTEGER",
+        updated_at_utc = "TIMESTAMP"
+      ),
+      pk = c("run_id"),
+      not_null = c("run_id")
     ),
     instruments = list(
       columns = c(
@@ -171,6 +218,8 @@ ledgr_validate_schema <- function(con) {
     "
     DBI::dbGetQuery(con, q, params = list(schema, table_name))$n[[1]] > 0
   }
+
+  ledgr_experiment_store_check_schema(con, write = FALSE)
 
   get_columns <- function(table_name) {
     q <- "

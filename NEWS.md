@@ -1,3 +1,9 @@
+# ledgr 0.1.5
+
+- Added the v0.1.5 experiment-store schema foundation, including schema-version
+  metadata, additive migration hooks, run provenance and telemetry tables, and
+  defensive future-schema checks.
+
 # ledgr 0.1.4
 
 - Stabilised the research workflow ahead of the experiment-store APIs, with

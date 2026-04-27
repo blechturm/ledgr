@@ -45,7 +45,8 @@ all match the accepted scope.
 
 **Priority:** P0  
 **Effort:** 2-3 days  
-**Dependencies:** None
+**Dependencies:** None  
+**Status:** Done
 
 **Description:**
 Add the v0.1.5 experiment-store schema foundation and defensive migration
@@ -75,15 +76,15 @@ possible and update `schema_version` last.
 11. Define valid v0.1.5 `execution_mode` values: `audit_log` and `db_live`.
 
 **Acceptance Criteria:**
-- [ ] Existing v0.1.4 databases remain readable.
-- [ ] Existing v0.1.4 run rows, ledger events, feature rows, and equity curves
+- [x] Existing v0.1.4 databases remain readable.
+- [x] Existing v0.1.4 run rows, ledger events, feature rows, and equity curves
       remain readable after migration.
-- [ ] Read-only schema inspection does not mutate legacy databases.
-- [ ] Write-triggered migration is additive and non-destructive.
-- [ ] Failed migration leaves the store readable at the previous schema version.
-- [ ] Future-schema databases fail with a classed error.
-- [ ] `data_hash` is documented and tested as the run input-window hash.
-- [ ] Valid `execution_mode` values are constrained to `audit_log` and
+- [x] Read-only schema inspection does not mutate legacy databases.
+- [x] Write-triggered migration is additive and non-destructive.
+- [x] Failed migration leaves the store readable at the previous schema version.
+- [x] Future-schema databases fail with a classed error.
+- [x] `data_hash` is documented and tested as the run input-window hash.
+- [x] Valid `execution_mode` values are constrained to `audit_log` and
       `db_live` for v0.1.5.
 
 **Test Requirements:**

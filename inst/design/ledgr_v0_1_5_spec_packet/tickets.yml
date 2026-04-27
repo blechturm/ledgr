@@ -3,7 +3,7 @@ source: "v0_1_5_tickets.md"
 tickets:
   - id: LDG-801
     title: "Experiment Store Schema And Migration Protocol"
-    status: pending
+    status: done
     priority: P0
     dependencies: []
     tests:

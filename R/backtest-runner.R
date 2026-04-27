@@ -517,6 +517,11 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   if (!execution_mode %in% c("db_live", "audit_log")) {
     rlang::abort("engine.execution_mode must be \"db_live\" or \"audit_log\".", class = "ledgr_invalid_config")
   }
+  DBI::dbExecute(
+    con,
+    "UPDATE runs SET execution_mode = ?, schema_version = ? WHERE run_id = ?",
+    params = list(execution_mode, ledgr_experiment_store_schema_version, run_id)
+  )
   if (!is.finite(checkpoint_every) || is.na(checkpoint_every) || checkpoint_every < 1 || (checkpoint_every %% 1) != 0) {
     rlang::abort("engine.checkpoint_every must be an integer >= 1.", class = "ledgr_invalid_config")
   }

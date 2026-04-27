@@ -1,6 +1,6 @@
-#' Create ledgr DuckDB schema (v0.1.0)
+#' Create the current ledgr DuckDB schema
 #'
-#' Creates all required v0.1.0 tables and forward-migrates older schemas.
+#' Creates all required ledgr tables and forward-migrates legacy schemas.
 #'
 #' @param con A DBI connection to DuckDB.
 #' @return Invisibly returns `TRUE` on success.
@@ -14,6 +14,9 @@ ledgr_create_schema <- function(con) {
   if (!DBI::dbIsValid(con)) {
     stop("`con` must be a valid DBI connection.", call. = FALSE)
   }
+
+  ledgr_experiment_store_check_schema(con, write = FALSE)
+  existing_experiment_store <- ledgr_experiment_store_has_artifacts(con)
 
   schema <- "main"
 
@@ -159,7 +162,13 @@ ledgr_create_schema <- function(con) {
       data_hash TEXT,
       snapshot_id TEXT,
       status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','DONE','FAILED')),
-      error_msg TEXT
+      error_msg TEXT,
+      label TEXT,
+      archived BOOLEAN NOT NULL DEFAULT FALSE,
+      archived_at_utc TIMESTAMP,
+      archive_reason TEXT,
+      execution_mode TEXT CHECK (execution_mode IS NULL OR execution_mode IN ('audit_log','db_live')),
+      schema_version INTEGER NOT NULL DEFAULT 105
     )
   "
 
@@ -433,6 +442,8 @@ ledgr_create_schema <- function(con) {
   } else {
     add_column_if_missing("snapshot_bars", "volume", "DOUBLE")
   }
+
+  ledgr_experiment_store_check_schema(con, write = TRUE, inform = existing_experiment_store)
 
   # Best-effort immutability enforcement for SEALED snapshots (DuckDB trigger support varies by build).
   # If triggers are unsupported, this is a no-op and must be enforced by ledgr write-paths (later tickets).

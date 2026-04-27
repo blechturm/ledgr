@@ -270,7 +270,13 @@ testthat::test_that("validator fails if runs.status does not accept DONE", {
       data_hash TEXT,
       snapshot_id TEXT,
       status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','COMPLETED','FAILED')),
-      error_msg TEXT
+      error_msg TEXT,
+      label TEXT,
+      archived BOOLEAN,
+      archived_at_utc TIMESTAMP,
+      archive_reason TEXT,
+      execution_mode TEXT,
+      schema_version INTEGER
     )
     "
   )
