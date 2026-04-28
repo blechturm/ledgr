@@ -73,6 +73,36 @@ testthat::test_that("ledgr_state_reconstruct() returns derived artifacts and reb
   testthat::expect_equal(eq_rows, 3)
 })
 
+testthat::test_that("ledgr_state_reconstruct() fails clearly for unsupported object-style calls", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct(c("2020-01-01 00:00:00", "2020-01-02 00:00:00"), tz = "UTC"),
+    open = c(100, 101),
+    high = c(100, 101),
+    low = c(100, 101),
+    close = c(100, 101),
+    volume = c(1, 1),
+    stringsAsFactors = FALSE
+  )
+  strategy <- function(ctx) ctx$targets()
+  bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, db_path = db_path)
+  on.exit(close(bt), add = TRUE)
+
+  testthat::expect_error(
+    ledgr_state_reconstruct(bt),
+    "ledgr_state_reconstruct\\(bt\\$run_id, con\\)",
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
+    ledgr_state_reconstruct(bt$run_id),
+    "Use ledgr_state_reconstruct\\(run_id, con\\)",
+    class = "ledgr_invalid_con"
+  )
+})
+
 testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed runs", {
   snapshot_path <- tempfile(fileext = ".duckdb")
   run_path <- tempfile(fileext = ".duckdb")

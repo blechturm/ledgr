@@ -12,7 +12,7 @@
 #'   from the snapshot or data frame.
 #' @param start Start timestamp (NULL = snapshot start).
 #' @param end End timestamp (NULL = snapshot end).
-#' @param initial_cash Starting capital.
+#' @param initial_cash Starting capital. Must be a finite numeric scalar > 0.
 #' @param features List of ledgr indicator definitions (optional).
 #' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
 #'   model with zero spread and zero fixed commission.
@@ -30,6 +30,10 @@
 #' target decided at pulse `t` is filled at the next available bar. Targets on
 #' the final pulse therefore cannot be filled unless another bar exists after
 #' `end`.
+#'
+#' v0.1.x does not provide a supported broker-style short-selling contract.
+#' Strategy authors should treat negative target quantities as outside the
+#' supported public workflow until explicit shorting semantics are specified.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -407,6 +411,9 @@ ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
   }
   if (!is.numeric(initial_cash) || length(initial_cash) != 1 || is.na(initial_cash) || !is.finite(initial_cash)) {
     rlang::abort("`initial_cash` must be a finite numeric scalar.", class = "ledgr_invalid_args")
+  }
+  if (initial_cash <= 0) {
+    rlang::abort("`initial_cash` must be > 0.", class = "ledgr_invalid_args")
   }
 
   list(start = start_iso, end = end_iso, initial_cash = as.numeric(initial_cash))
@@ -1177,12 +1184,15 @@ ledgr_compute_equity_curve <- function(bt) {
 
 #' Summarize per-pulse telemetry
 #'
-#' @param bt A `ledgr_backtest` object.
+#' @param bt A `ledgr_backtest` object. This function does not accept a DuckDB
+#'   file path; use `ledgr_run_info()` for persisted run-level telemetry.
 #' @return A tibble with mean/median/p99 values per telemetry component.
 #' @details
-#' This is a diagnostic helper for engine profiling. It only reports telemetry
-#' captured for runs executed in the current R session. Timing components are
-#' reported in seconds; feature-cache hit/miss rows are counts.
+#' This is a diagnostic helper for engine profiling. It only reports detailed
+#' telemetry captured for runs executed in the current R session. Timing
+#' components are reported in seconds; feature-cache hit/miss rows are counts.
+#' The compact telemetry persisted in durable experiment stores is available
+#' through `ledgr_run_info()`.
 #'
 #' @examples
 #' bars <- data.frame(
@@ -1249,7 +1259,8 @@ ledgr_backtest_bench <- function(bt) {
 
 #' Compute standard metrics from backtest results
 #'
-#' @param bt A `ledgr_backtest` object.
+#' @param bt A `ledgr_backtest` object. This function does not accept an equity
+#'   tibble directly.
 #' @param metrics Only `"standard"` is supported in v0.1.2.
 #' @return Named list of metric values.
 #'

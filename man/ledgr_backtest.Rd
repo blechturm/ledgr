@@ -37,7 +37,7 @@ from the snapshot or data frame.}
 
 \item{end}{End timestamp (NULL = snapshot end).}
 
-\item{initial_cash}{Starting capital.}
+\item{initial_cash}{Starting capital. Must be a finite numeric scalar > 0.}
 
 \item{strategy_params}{JSON-safe list passed to \verb{function(ctx, params)}
 strategies and stored as part of run provenance.}
@@ -73,6 +73,10 @@ Strategies return target holdings. The default fill model is \code{next_open}: a
 target decided at pulse \code{t} is filled at the next available bar. Targets on
 the final pulse therefore cannot be filled unless another bar exists after
 \code{end}.
+
+v0.1.x does not provide a supported broker-style short-selling contract.
+Strategy authors should treat negative target quantities as outside the
+supported public workflow until explicit shorting semantics are specified.
 }
 \examples{
 bars <- data.frame(

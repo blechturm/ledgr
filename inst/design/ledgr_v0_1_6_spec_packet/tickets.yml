@@ -3,7 +3,7 @@ source: "v0_1_6_tickets.md"
 tickets:
   - id: LDG-901
     title: "v0.1.5 Audit Stabilisation"
-    status: pending
+    status: done
     priority: P0
     dependencies: []
     tests:

@@ -45,7 +45,7 @@ the gate unless it is explicitly promoted after review.
 **Priority:** P0  
 **Effort:** 2-3 days  
 **Dependencies:** None  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Address the concrete v0.1.5 audit findings that would otherwise undermine
@@ -79,16 +79,16 @@ This ticket must not add `ctx$params`. The correct parameter contract remains
 10. Document long-only/negative target behavior in contracts or reference docs.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_state_reconstruct(run_id, con)` works as documented or fails
+- [x] `ledgr_state_reconstruct(run_id, con)` works as documented or fails
       clearly for invalid inputs.
-- [ ] Duplicate feature IDs fail before DuckDB writes with a classed ledgr
+- [x] Duplicate feature IDs fail before DuckDB writes with a classed ledgr
       error.
-- [ ] `initial_cash = 0` and negative initial cash fail with a classed ledgr
+- [x] `initial_cash = 0` and negative initial cash fail with a classed ledgr
       error.
-- [ ] Final-bar target-change warning behavior is covered by a regression test.
-- [ ] Docs no longer imply unsupported object signatures for low-level helpers.
-- [ ] No `ctx$params` API is introduced.
-- [ ] Existing v0.1.5 run storage and replay behavior is unchanged for valid
+- [x] Final-bar target-change warning behavior is covered by a regression test.
+- [x] Docs no longer imply unsupported object signatures for low-level helpers.
+- [x] No `ctx$params` API is introduced.
+- [x] Existing v0.1.5 run storage and replay behavior is unchanged for valid
       inputs.
 
 **Test Requirements:**

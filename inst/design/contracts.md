@@ -93,6 +93,9 @@ the active versioned spec packet, currently
   `targets`.
 - Names must exactly match `ctx$universe`; missing, extra, duplicate, unnamed,
   or non-finite targets fail with `ledgr_invalid_strategy_result`.
+- v0.1.x does not define a supported broker-style short-selling contract.
+  Negative target quantities are outside the supported public workflow until
+  explicit shorting semantics are specified.
 - Raw signal strings such as `"LONG"` and `"FLAT"` are invalid core outputs.
   `ledgr_signal_strategy()` is an explicit convenience wrapper that maps signals
   to normal targets before validation.

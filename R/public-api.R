@@ -98,6 +98,18 @@ ledgr_db_init <- function(db_path) {
 #' close(bt)
 #' @export
 ledgr_state_reconstruct <- function(run_id, con) {
+  if (missing(run_id)) {
+    rlang::abort("`run_id` must be supplied. Use ledgr_state_reconstruct(run_id, con).", class = "ledgr_invalid_args")
+  }
+  if (inherits(run_id, "ledgr_backtest")) {
+    rlang::abort(
+      "`ledgr_state_reconstruct()` is a low-level DBI recovery helper. Use ledgr_state_reconstruct(bt$run_id, con) or tibble::as_tibble(bt, what = \"equity\").",
+      class = "ledgr_invalid_args"
+    )
+  }
+  if (missing(con)) {
+    rlang::abort("`con` must be supplied. Use ledgr_state_reconstruct(run_id, con).", class = "ledgr_invalid_con")
+  }
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }

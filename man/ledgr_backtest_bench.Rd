@@ -7,7 +7,8 @@
 ledgr_backtest_bench(bt)
 }
 \arguments{
-\item{bt}{A \code{ledgr_backtest} object.}
+\item{bt}{A \code{ledgr_backtest} object. This function does not accept a DuckDB
+file path; use \code{ledgr_run_info()} for persisted run-level telemetry.}
 }
 \value{
 A tibble with mean/median/p99 values per telemetry component.
@@ -16,9 +17,11 @@ A tibble with mean/median/p99 values per telemetry component.
 Summarize per-pulse telemetry
 }
 \details{
-This is a diagnostic helper for engine profiling. It only reports telemetry
-captured for runs executed in the current R session. Timing components are
-reported in seconds; feature-cache hit/miss rows are counts.
+This is a diagnostic helper for engine profiling. It only reports detailed
+telemetry captured for runs executed in the current R session. Timing
+components are reported in seconds; feature-cache hit/miss rows are counts.
+The compact telemetry persisted in durable experiment stores is available
+through \code{ledgr_run_info()}.
 }
 \examples{
 bars <- data.frame(

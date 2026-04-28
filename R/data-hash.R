@@ -15,7 +15,8 @@
 #' `ledgr_snapshot_from_df()` or `ledgr_snapshot_from_csv()` and inspect the
 #' sealed snapshot hash with `ledgr_snapshot_info()`.
 #'
-#' @param con A DBI connection to DuckDB.
+#' @param con A DBI connection to DuckDB. This legacy helper does not accept a
+#'   data frame directly.
 #' @param instrument_ids Character vector of instrument ids (order-sensitive).
 #' @param start_ts_utc Start timestamp (character ISO8601 `...Z` or POSIXt).
 #' @param end_ts_utc End timestamp (character ISO8601 `...Z` or POSIXt).

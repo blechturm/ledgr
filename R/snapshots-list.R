@@ -6,6 +6,8 @@
 #' Timestamps are returned as ISO8601 UTC strings with trailing `Z`.
 #'
 #' @param con A DBI connection to DuckDB or a path to a DuckDB snapshot file.
+#'   This function does not accept a `ledgr_snapshot` object; use
+#'   `ledgr_snapshot_info(snapshot)` for a single snapshot handle.
 #' @param status Optional status filter (NULL for all, or one/more of
 #'   `CREATED`, `SEALED`, `FAILED`).
 #' @return A data.frame with snapshot metadata and counts.

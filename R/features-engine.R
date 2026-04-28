@@ -1,3 +1,19 @@
+ledgr_duplicate_feature_ids <- function(ids) {
+  ids <- as.character(ids)
+  unique(ids[!is.na(ids) & nzchar(ids) & duplicated(ids)])
+}
+
+ledgr_abort_duplicate_feature_ids <- function(ids) {
+  duplicates <- ledgr_duplicate_feature_ids(ids)
+  if (length(duplicates) == 0L) {
+    return(invisible(TRUE))
+  }
+  rlang::abort(
+    sprintf("Duplicate feature IDs are not allowed: %s", paste(duplicates, collapse = ", ")),
+    class = c("ledgr_duplicate_feature_id", "ledgr_invalid_feature_def")
+  )
+}
+
 ledgr_validate_feature_def <- function(feature_def) {
   if (!is.list(feature_def)) {
     rlang::abort("Each feature_def must be a list.", class = "ledgr_invalid_feature_def")
@@ -62,9 +78,7 @@ ledgr_validate_feature_defs <- function(feature_defs) {
   if (anyNA(ids) || any(!nzchar(ids))) {
     rlang::abort("All feature_defs must include a non-empty `id`.", class = "ledgr_invalid_feature_def")
   }
-  if (anyDuplicated(ids)) {
-    rlang::abort(sprintf("feature_defs contain duplicate ids: %s", paste(unique(ids[duplicated(ids)]), collapse = ", ")), class = "ledgr_invalid_feature_def")
-  }
+  ledgr_abort_duplicate_feature_ids(ids)
   for (d in feature_defs) ledgr_validate_feature_def(d)
   invisible(TRUE)
 }

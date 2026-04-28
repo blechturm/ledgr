@@ -113,8 +113,8 @@ validate_ledgr_config <- function(config) {
 
   initial_cash <- cfg_get(c("backtest", "initial_cash"))
   assert_scalar_num(initial_cash, "backtest.initial_cash")
-  if (initial_cash < 0) {
-    rlang::abort("Config field backtest.initial_cash must be >= 0.", class = "ledgr_invalid_config")
+  if (initial_cash <= 0) {
+    rlang::abort("Config field backtest.initial_cash must be > 0.", class = c("ledgr_invalid_args", "ledgr_invalid_config"))
   }
 
   fill_type <- cfg_get(c("fill_model", "type"))
@@ -175,6 +175,25 @@ validate_ledgr_config <- function(config) {
     if (!is.null(config$data$snapshot_db_path)) {
       assert_scalar_chr(config$data$snapshot_db_path, "data.snapshot_db_path")
     }
+  }
+
+  if (!is.null(config$features) && is.list(config$features) && isTRUE(config$features$enabled)) {
+    defs <- config$features$defs
+    if (is.null(defs) || !is.list(defs) || length(defs) < 1) {
+      rlang::abort("Config field features.defs must be a non-empty list when features.enabled is TRUE.", class = "ledgr_invalid_config")
+    }
+    ids <- vapply(defs, function(d) {
+      if (!is.list(d)) {
+        return(NA_character_)
+      }
+      id <- d$id
+      if (is.null(id)) id <- d$name
+      if (is.null(id) || !is.character(id) || length(id) != 1L) NA_character_ else id
+    }, character(1))
+    if (anyNA(ids) || any(!nzchar(ids))) {
+      rlang::abort("Each feature def must include `id` (or `name`) as a non-empty string.", class = "ledgr_invalid_config")
+    }
+    ledgr_abort_duplicate_feature_ids(ids)
   }
 
   invisible(TRUE)

@@ -7,7 +7,9 @@
 ledgr_snapshot_list(con, status = NULL)
 }
 \arguments{
-\item{con}{A DBI connection to DuckDB or a path to a DuckDB snapshot file.}
+\item{con}{A DBI connection to DuckDB or a path to a DuckDB snapshot file.
+This function does not accept a \code{ledgr_snapshot} object; use
+\code{ledgr_snapshot_info(snapshot)} for a single snapshot handle.}
 
 \item{status}{Optional status filter (NULL for all, or one/more of
 \code{CREATED}, \code{SEALED}, \code{FAILED}).}

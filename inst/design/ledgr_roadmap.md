@@ -397,6 +397,37 @@ R6 strategies are excluded from sweep mode in the initial implementation unless
 they can be freshly instantiated per parameter set with no shared state. Sweep
 mode fails loudly with a clear error for non-compatible strategies.
 
+### Deterministic Random State
+
+Every backtest and sweep run is fully deterministic by default. Strategies that
+use randomness (Monte Carlo sizing, stochastic optimisers, random tie-breaking)
+must produce the same output for the same inputs without user intervention.
+
+`ledgr_backtest()` and `ledgr_sweep()` accept an optional `seed` argument:
+
+```r
+ledgr_backtest(..., seed = NULL)   # NULL derives default from run_id
+ledgr_backtest(..., seed = 42)     # explicit override
+ledgr_backtest(..., seed = NA)     # explicit opt-out: non-deterministic
+```
+
+When `seed = NULL`, the effective seed is derived deterministically from
+`run_id` so the same experiment always starts from the same random state across
+sessions. When `seed = NA`, no seed is set and random draws are
+non-deterministic; this is an explicit user choice, not the default.
+
+The engine calls `set.seed(seed + pulse_index)` before each pulse callback.
+This gives each pulse an independent, deterministic random state. The
+pulse-specific seed is exposed as `ctx$seed` for strategy inspection or
+logging.
+
+The effective seed is stored in `config_json` and included in `config_hash`.
+Two runs that differ only by seed produce different config hashes, which is
+correct: they are different experiments. `ledgr_run_info()` surfaces the seed.
+
+Parity between `ledgr_backtest()` and `ledgr_sweep()` extends to random state:
+same seed, same pulse order, same draws.
+
 ### Parity Scope
 
 "Same equity curve" is necessary but not sufficient. Full parity requires:
@@ -406,6 +437,7 @@ mode fails loudly with a clear error for non-compatible strategies.
 - same final positions and cash balance
 - same target/fill timing behaviour
 - same final-bar no-fill behaviour
+- same random draws at each pulse (same seed, same pulse order)
 
 The in-memory event stream produced by sweep mode must be semantically
 equivalent to the persisted ledger. Sweep mode drops the DuckDB write; it does
@@ -496,7 +528,8 @@ indistinguishable from plain R objects at the API boundary.
 ### Definition of Done
 
 - `ledgr_sweep()` and `ledgr_backtest()` produce identical results on the same
-  input: equity curve, trades, fills, final positions, cash, and fill timing
+  input: equity curve, trades, fills, final positions, cash, fill timing, and
+  random draws
 - Parity is enforced by CI, not by convention
 - Both functions call the same internal fold core; no copied runner code
 - `ledgr_precompute_features()` is implemented, typed, and validates against
@@ -506,6 +539,10 @@ indistinguishable from plain R objects at the API boundary.
   guarantee
 - Single-process sweep is documented with a working example
 - Recommended parallel stack is documented separately as optional guidance
+- Default seed derivation from `run_id` is documented and tested
+- `ctx$seed` is available at every pulse in both backtest and sweep modes
+- Explicit `seed = NA` opt-out is documented with a clear warning about
+  non-determinism
 
 ---
 

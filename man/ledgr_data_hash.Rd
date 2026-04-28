@@ -7,7 +7,8 @@
 ledgr_data_hash(con, instrument_ids, start_ts_utc, end_ts_utc)
 }
 \arguments{
-\item{con}{A DBI connection to DuckDB.}
+\item{con}{A DBI connection to DuckDB. This legacy helper does not accept a
+data frame directly.}
 
 \item{instrument_ids}{Character vector of instrument ids (order-sensitive).}
 

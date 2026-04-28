@@ -335,3 +335,122 @@ testthat::test_that("runtime feature typos fail loudly instead of running as no-
     class = "ledgr_unknown_feature_id"
   )
 })
+
+testthat::test_that("backtest rejects non-positive initial cash", {
+  strategy <- function(ctx) ctx$targets()
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  testthat::expect_error(
+    ledgr_backtest(
+      data = test_bars,
+      strategy = strategy,
+      initial_cash = 0
+    ),
+    "`initial_cash` must be > 0",
+    fixed = TRUE,
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
+    ledgr_backtest(
+      data = test_bars,
+      strategy = strategy,
+      initial_cash = -1
+    ),
+    "`initial_cash` must be > 0",
+    fixed = TRUE,
+    class = "ledgr_invalid_args"
+  )
+
+  testthat::expect_error(
+    ledgr:::ledgr_config(
+      snapshot = snap,
+      universe = c("TEST_A", "TEST_B"),
+      strategy = strategy,
+      backtest = list(
+        start = "2020-01-01T00:00:00Z",
+        end = "2020-01-10T00:00:00Z",
+        initial_cash = 0
+      )
+    ),
+    "backtest.initial_cash must be > 0",
+    fixed = TRUE,
+    class = "ledgr_invalid_config"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_config(
+      snapshot = snap,
+      universe = c("TEST_A", "TEST_B"),
+      strategy = strategy,
+      backtest = list(
+        start = "2020-01-01T00:00:00Z",
+        end = "2020-01-10T00:00:00Z",
+        initial_cash = -1
+      )
+    ),
+    "backtest.initial_cash must be > 0",
+    fixed = TRUE,
+    class = "ledgr_invalid_config"
+  )
+})
+
+testthat::test_that("duplicate feature IDs fail before DuckDB feature writes", {
+  strategy <- function(ctx) ctx$targets()
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  testthat::expect_error(
+    ledgr_backtest(
+      data = test_bars,
+      strategy = strategy,
+      features = list(ledgr_ind_sma(2), ledgr_ind_sma(2)),
+      db_path = db_path,
+      initial_cash = 1000
+    ),
+    "Duplicate feature IDs are not allowed: sma_2",
+    fixed = TRUE,
+    class = "ledgr_duplicate_feature_id"
+  )
+
+  con <- ledgr_db_init(db_path)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  testthat::expect_identical(
+    DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM runs")$n[[1]],
+    0
+  )
+})
+
+testthat::test_that("final-bar target changes emit LEDGR_LAST_BAR_NO_FILL", {
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct(c("2020-01-01 00:00:00", "2020-01-02 00:00:00"), tz = "UTC"),
+    open = c(100, 101),
+    high = c(100, 101),
+    low = c(100, 101),
+    close = c(100, 101),
+    volume = c(1, 1),
+    stringsAsFactors = FALSE
+  )
+  strategy <- function(ctx) {
+    targets <- ctx$targets()
+    if (identical(ctx$ts_utc, "2020-01-02T00:00:00Z")) {
+      targets["AAA"] <- 1
+    }
+    targets
+  }
+
+  bt <- NULL
+  testthat::expect_warning(
+    bt <- ledgr_backtest(
+      data = bars,
+      strategy = strategy,
+      initial_cash = 1000,
+      run_id = "last-bar-warning"
+    ),
+    "LEDGR_LAST_BAR_NO_FILL",
+    fixed = TRUE
+  )
+  on.exit(if (inherits(bt, "ledgr_backtest")) close(bt), add = TRUE)
+})

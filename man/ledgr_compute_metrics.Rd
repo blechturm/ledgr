@@ -7,7 +7,8 @@
 ledgr_compute_metrics(bt, metrics = "standard")
 }
 \arguments{
-\item{bt}{A \code{ledgr_backtest} object.}
+\item{bt}{A \code{ledgr_backtest} object. This function does not accept an equity
+tibble directly.}
 
 \item{metrics}{Only \code{"standard"} is supported in v0.1.2.}
 }
