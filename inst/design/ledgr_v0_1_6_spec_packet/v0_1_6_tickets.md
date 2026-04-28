@@ -735,16 +735,29 @@ contracts, tests, package checks, and CI all match the accepted scope.
 10. Confirm no open P0/P1 review findings remain.
 
 **Acceptance Criteria:**
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+- [x] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
-- [ ] Coverage remains at or above the project gate.
-- [ ] pkgdown site builds.
-- [ ] README and vignettes remain offline-safe.
+- [x] Coverage remains at or above the project gate.
+- [x] pkgdown site builds.
+- [x] README and vignettes remain offline-safe.
 - [ ] Ubuntu and Windows CI are green.
-- [ ] Contracts and NEWS match the implemented scope.
-- [ ] All v0.1.6 acceptance criteria are satisfied.
-- [ ] No open P0/P1 review findings remain.
-- [ ] No accidental v0.1.7 API exposure exists.
+- [x] Contracts and NEWS match the implemented scope.
+- [x] All v0.1.6 acceptance criteria are satisfied.
+- [x] No open P0/P1 review findings remain.
+- [x] No accidental v0.1.7 API exposure exists.
+
+**Verification Notes:**
+- `devtools::test()` passed: 1,237 passing assertions, 1 expected skip, no
+  failures.
+- `tools/check-coverage.R` passed with 83.55% coverage.
+- `tools/check-readme-example.R` passed under installed-package semantics.
+- `vignettes/experiment-store.Rmd`, `vignettes/strategy-development.Rmd`, and
+  `vignettes/research-to-production.Rmd` rendered offline.
+- `R CMD build .` produced `ledgr_0.1.6.tar.gz`.
+- `R CMD check --no-manual --no-build-vignettes ledgr_0.1.6.tar.gz` completed
+  with `Status: OK`.
+- `pkgdown::build_site(new_process = FALSE, install = TRUE)` completed.
+- Export scan found no exported v0.1.7/v0.1.8 API names.
 
 **Test Requirements:**
 - `tools/check-coverage.R`.

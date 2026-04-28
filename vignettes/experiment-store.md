@@ -112,12 +112,12 @@ ledgr_run_label(db_path, "trend_small", "Lower threshold, one share")
 #> Tags:            NA
 #> Snapshot:        demo_snapshot
 #> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     e9e489295e5c0f62587ce87d4974371bb1962773fcfec835cb3d2306120258d4
+#> Config Hash:     cbafb2862d3dda3fa49a32a48d9933ce8c30d034bf395ee99cfd6cd8b4d71ced
 #> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
 #> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.73
+#> Elapsed Sec:     1.71
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    0
@@ -132,12 +132,12 @@ ledgr_run_tag(db_path, "trend_small", c("baseline", "trend"))
 #> Tags:            baseline, trend
 #> Snapshot:        demo_snapshot
 #> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     e9e489295e5c0f62587ce87d4974371bb1962773fcfec835cb3d2306120258d4
+#> Config Hash:     cbafb2862d3dda3fa49a32a48d9933ce8c30d034bf395ee99cfd6cd8b4d71ced
 #> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
 #> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.73
+#> Elapsed Sec:     1.71
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    0
@@ -152,12 +152,12 @@ ledgr_run_tag(db_path, "trend_large", c("trend", "higher-size"))
 #> Tags:            higher-size, trend
 #> Snapshot:        demo_snapshot
 #> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     54b70cab4140819a1e7f361633c87a1101ff8f3368ee6df3dceeaaea18d52162
+#> Config Hash:     5848665167afb2de32572195eb7d7783976d809afffccc3dc4886cb078546c20
 #> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
 #> Params Hash:     778613d18461ba161bdadf9a616484075e13a4c86c49b2576b91f6dac42efbde
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.17
+#> Elapsed Sec:     1.13
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    0
@@ -190,12 +190,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        demo_snapshot
 #> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     e9e489295e5c0f62587ce87d4974371bb1962773fcfec835cb3d2306120258d4
+#> Config Hash:     cbafb2862d3dda3fa49a32a48d9933ce8c30d034bf395ee99cfd6cd8b4d71ced
 #> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
 #> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.73
+#> Elapsed Sec:     1.71
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    0
@@ -295,12 +295,12 @@ ledgr_run_archive(db_path, "trend_large", reason = "superseded by smaller baseli
 #> Tags:            higher-size, trend
 #> Snapshot:        demo_snapshot
 #> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     54b70cab4140819a1e7f361633c87a1101ff8f3368ee6df3dceeaaea18d52162
+#> Config Hash:     5848665167afb2de32572195eb7d7783976d809afffccc3dc4886cb078546c20
 #> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
 #> Params Hash:     778613d18461ba161bdadf9a616484075e13a4c86c49b2576b91f6dac42efbde
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.17
+#> Elapsed Sec:     1.13
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    0

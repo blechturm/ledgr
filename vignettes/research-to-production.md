@@ -80,7 +80,7 @@ reproducible experiments after the fact.
 
 The research workflow before deployment has two phases:
 
-**Sweep** (v0.1.7). Fast, parallel, no persistence. Explore the
+**Sweep** (v0.1.8). Fast, parallel, no persistence. Explore the
 parameter space across many combinations using precomputed, shared
 feature series. Feature computation happens once per indicator per
 instrument and is reused across the entire sweep. The output is a ranked
@@ -92,7 +92,7 @@ parameter hash, ledgr and R version, dependency versions. Commit the
 winning configuration to the experiment store with a label. That stored
 run is the audit record of the deployment decision.
 
-v0.1.5 ships before v0.1.7 because sweep mode depends on the same
+v0.1.5 ships before v0.1.8 because sweep mode depends on the same
 experiment identity and parity contracts that persistence establishes.
 
 ``` r
