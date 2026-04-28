@@ -1,0 +1,196 @@
+---
+title: "Experiment Store"
+output:
+  github_document:
+    toc: false
+    html_preview: false
+vignette: >
+  %\VignetteIndexEntry{Experiment Store}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 90)
+options(cli.unicode = FALSE)
+default_output_hook <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(
+  output = function(x, options) {
+    default_output_hook(gsub("[ \t]+(?=\n)", "", x, perl = TRUE), options)
+  }
+)
+```
+
+The experiment store is a durable DuckDB file that keeps sealed market data,
+run metadata, result artifacts, provenance, and compact telemetry together.
+
+The basic workflow is:
+
+```text
+sealed snapshot -> many runs -> list / inspect / compare / reopen
+```
+
+`run_id` is the immutable experiment key. Labels, tags, and archive state are
+mutable metadata layered on top of that key.
+
+## Create One Store
+
+Use one durable `db_path` for the snapshot and all runs you want to compare.
+
+```{r data}
+library(ledgr)
+
+db_path <- tempfile(fileext = ".duckdb")
+
+bars <- data.frame(
+  ts_utc = rep(as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:6, 2),
+  instrument_id = rep(c("AAA", "BBB"), each = 7),
+  open = c(100, 101, 102, 103, 104, 105, 106,
+           80,  80,  81,  81,  82,  83,  83),
+  high = c(101, 102, 103, 104, 105, 106, 107,
+           81,  81,  82,  82,  83,  84,  84),
+  low = c(99, 100, 101, 102, 103, 104, 105,
+          79, 79, 80, 80, 81, 82, 82),
+  close = c(100, 101, 102, 103, 104, 105, 106,
+            80, 80, 81, 81, 82, 83, 83),
+  volume = 1000
+)
+
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  db_path = db_path,
+  snapshot_id = "demo_snapshot"
+)
+```
+
+The snapshot is sealed. Reusing it means each run is evaluated against the same
+data artifact.
+
+## Run Variants
+
+Here two parameter sets use the same strategy function and the same snapshot.
+
+```{r runs}
+trend_strategy <- function(ctx, params) {
+  targets <- ctx$targets()
+  for (id in ctx$universe) {
+    if (ctx$close(id) > params$threshold[[id]]) {
+      targets[id] <- params$qty
+    }
+  }
+  targets
+}
+
+bt_small <- ledgr_backtest(
+  snapshot = snapshot,
+  strategy = trend_strategy,
+  strategy_params = list(threshold = c(AAA = 101, BBB = 80), qty = 1),
+  db_path = db_path,
+  run_id = "trend_small"
+)
+
+bt_large <- ledgr_backtest(
+  snapshot = snapshot,
+  strategy = trend_strategy,
+  strategy_params = list(threshold = c(AAA = 102, BBB = 81), qty = 3),
+  db_path = db_path,
+  run_id = "trend_large"
+)
+```
+
+## List Runs
+
+`ledgr_run_list()` is the discovery view. It is read-only.
+
+```{r list}
+ledgr_run_list(db_path)[, c(
+  "run_id", "label", "tags", "status", "final_equity", "total_return",
+  "execution_mode", "reproducibility_level"
+)]
+```
+
+`run_id` should be stable and script-friendly. Use labels for human names.
+
+```{r label-tags}
+ledgr_run_label(db_path, "trend_small", "Lower threshold, one share")
+ledgr_run_tag(db_path, "trend_small", c("baseline", "trend"))
+ledgr_run_tag(db_path, "trend_large", c("trend", "higher-size"))
+
+ledgr_run_list(db_path)[, c("run_id", "label", "tags")]
+```
+
+Tags are mutable grouping metadata. They do not change identity hashes, stored
+artifacts, strategy provenance, or comparison semantics.
+
+## Inspect One Run
+
+`ledgr_run_info()` gives the detailed metadata for one run.
+
+```{r info}
+info <- ledgr_run_info(db_path, "trend_small")
+info
+```
+
+Important fields:
+
+- `execution_mode`: how the run wrote artifacts, for example `audit_log` or
+  `db_live`;
+- `elapsed_sec`, `pulse_count`, and cache counts: compact telemetry retained
+  after the R session ends;
+- `reproducibility_level`: whether ledgr captured enough strategy metadata for
+  source inspection or recovery;
+- `strategy_source_hash` and `strategy_params_hash`: identity metadata for the
+  strategy and parameters.
+
+Older stores may contain legacy/pre-provenance runs. ledgr reads them, but the
+provenance fields can be missing.
+
+## Compare Runs
+
+`ledgr_compare_runs()` builds on stored run metadata and result artifacts. It
+does not rerun strategies.
+
+```{r compare}
+ledgr_compare_runs(db_path, run_ids = c("trend_small", "trend_large"))[, c(
+  "run_id", "final_equity", "total_return", "max_drawdown",
+  "n_trades", "win_rate", "strategy_params_hash"
+)]
+```
+
+This is the lightweight comparison surface in v0.1.6. Parameter sweeps are
+future scope.
+
+## Reopen A Completed Run
+
+`ledgr_run_open()` returns a normal `ledgr_backtest` handle over existing
+artifacts. It does not recompute the run.
+
+```{r open}
+reopened <- ledgr_run_open(db_path, "trend_small")
+summary(reopened)
+ledgr_results(reopened, what = "equity")
+close(reopened)
+```
+
+Only completed runs can be opened. Failed or incomplete runs should be inspected
+with `ledgr_run_info()`.
+
+## Archive Instead Of Delete
+
+Archiving hides a run from the default list but keeps the artifacts available.
+
+```{r archive}
+ledgr_run_archive(db_path, "trend_large", reason = "superseded by smaller baseline")
+
+ledgr_run_list(db_path)[, c("run_id", "archived")]
+ledgr_run_list(db_path, include_archived = TRUE)[, c("run_id", "archived", "archive_reason")]
+```
+
+Archive is non-destructive and idempotent. Hard delete is not a v0.1.6 API.
+
+```{r cleanup}
+close(bt_small)
+close(bt_large)
+close(snapshot)
+```

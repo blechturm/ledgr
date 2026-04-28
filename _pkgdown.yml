@@ -15,6 +15,11 @@ articles:
     navbar: ~
     contents:
       - getting-started
+  - title: Workflows
+    navbar: ~
+    contents:
+      - experiment-store
+      - strategy-development
   - title: Indicators
     navbar: ~
     contents:

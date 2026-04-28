@@ -274,7 +274,7 @@ tickets:
 
   - id: LDG-907
     title: "Experiment Store Vignette"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-901, LDG-903]
     tests:
@@ -318,7 +318,7 @@ tickets:
 
   - id: LDG-908
     title: "v0.1.6 Documentation, Contracts, And NEWS"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-901, LDG-903, LDG-904, LDG-905, LDG-907]
     tests:

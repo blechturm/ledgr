@@ -431,15 +431,15 @@ This article is the user-facing story for v0.1.6.
 15. Ensure all examples are offline-safe.
 
 **Acceptance Criteria:**
-- [ ] Article renders offline.
-- [ ] Article includes `function(ctx)` and `function(ctx, params)` examples.
-- [ ] Article explains `ctx` comprehensively enough that a new strategy author
+- [x] Article renders offline.
+- [x] Article includes `function(ctx)` and `function(ctx, params)` examples.
+- [x] Article explains `ctx` comprehensively enough that a new strategy author
       does not need to infer fields from source code.
-- [ ] Article shows built-in and TTR indicators.
-- [ ] Article shows feature ID discovery before runtime.
-- [ ] Article culminates in `ledgr_compare_runs()`.
-- [ ] Article uses `ledgr_extract_strategy(..., trust = FALSE)` safely.
-- [ ] No example uses network access.
+- [x] Article shows built-in and TTR indicators.
+- [x] Article shows feature ID discovery before runtime.
+- [x] Article culminates in `ledgr_compare_runs()`.
+- [x] Article uses `ledgr_extract_strategy(..., trust = FALSE)` safely.
+- [x] No example uses network access.
 
 **Test Requirements:**
 - Render `vignettes/strategy-development.Rmd`.
@@ -556,7 +556,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-901, LDG-903  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Add a dedicated experiment-store how-to article. This fills the audit gap that
@@ -581,13 +581,13 @@ the research-to-production philosophy article.
 15. Keep all examples offline-safe and use `tempfile()`.
 
 **Acceptance Criteria:**
-- [ ] Article renders offline.
-- [ ] Article teaches concrete run-management APIs, not only philosophy.
-- [ ] Article distinguishes `run_id` from `label`.
-- [ ] Article explains archive as non-destructive cleanup.
-- [ ] Article explains telemetry and reproducibility tiers.
-- [ ] Article links comparison to stored run metadata.
-- [ ] Article presents tags as mutable grouping metadata and does not imply hard
+- [x] Article renders offline.
+- [x] Article teaches concrete run-management APIs, not only philosophy.
+- [x] Article distinguishes `run_id` from `label`.
+- [x] Article explains archive as non-destructive cleanup.
+- [x] Article explains telemetry and reproducibility tiers.
+- [x] Article links comparison to stored run metadata.
+- [x] Article presents tags as mutable grouping metadata and does not imply hard
       delete is available.
 
 **Test Requirements:**
@@ -640,7 +640,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-901, LDG-903, LDG-904, LDG-905, LDG-907  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Bring contracts, NEWS, reference docs, and pkgdown navigation into alignment with
@@ -658,12 +658,12 @@ the accepted v0.1.6 scope.
 8. Ensure docs do not imply v0.1.7 sweep mode is available.
 
 **Acceptance Criteria:**
-- [ ] Contracts match v0.1.6 behavior.
-- [ ] NEWS lists all public API additions and behavior changes.
-- [ ] New exported functions have examples.
-- [ ] Pkgdown navigation is complete.
-- [ ] Low-level, legacy, and recommended APIs are clearly distinguished.
-- [ ] No v0.1.7 APIs are documented as available.
+- [x] Contracts match v0.1.6 behavior.
+- [x] NEWS lists all public API additions and behavior changes.
+- [x] New exported functions have examples.
+- [x] Pkgdown navigation is complete.
+- [x] Low-level, legacy, and recommended APIs are clearly distinguished.
+- [x] No v0.1.7 APIs are documented as available.
 
 **Test Requirements:**
 - `devtools::document()`.

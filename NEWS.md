@@ -6,6 +6,8 @@
   optional hash-verified recovery from the experiment store.
 - Added `ledgr_run_tag()`, `ledgr_run_untag()`, and `ledgr_run_tags()` for
   mutable run grouping metadata that does not change experiment identity.
+- Added dedicated experiment-store and strategy-development articles covering
+  run management, `ctx`, feature IDs, comparison, and safe source inspection.
 - Added `ledgr_feature_id()` and `print.ledgr_indicator()` so strategy authors
   can discover exact built-in and TTR feature IDs before writing
   `ctx$feature()` calls.

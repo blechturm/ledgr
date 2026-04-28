@@ -33,12 +33,12 @@ it was developed against.
 
 The research workflow before deployment has two phases:
 
-1. **Sweep** (v0.1.7): fast, parallel, no persistence -- explore the parameter
+1. **Sweep** (v0.1.8): fast, parallel, no persistence -- explore the parameter
    space using shared precomputed features and find the candidates.
 2. **Persist** (v0.1.5): full provenance run -- validate top candidates with
    durable artifacts, strategy identity metadata, and experiment-store provenance.
 
-v0.1.5 ships before v0.1.7 because sweep mode depends on the same experiment
+v0.1.5 ships before v0.1.8 because sweep mode depends on the same experiment
 identity and parity contracts that persistence establishes.
 
 These phases compose with ecosystem parallelism packages (mori, mirai, furrr)
@@ -341,187 +341,43 @@ experiment-store core moves to v0.1.5.
 
 ---
 
-## v0.1.6.1 - Core UX Pass (BENCHED — spec after v0.1.6 ships)
+## v0.1.7 - Core UX Overhaul
 
-**Goal:** Nail down the core interaction model before sweep mode is built on
-top of it. The four changes below affect every strategy and every backtest;
-getting them right now avoids compounding the cost later.
+**Goal:** Replace the db_path-first research API with a coherent
+experiment-first model. Hard-breaks the existing public API; no backward
+compatibility. The new surface is the foundation v0.1.8 sweep mode builds on.
 
-**Full spec deferred.** Design discussion to happen once v0.1.6 is shipped.
-The scope below is intentionally brief — a reminder of what was agreed, not a
-complete ticket set.
+**Note:** v0.1.7 is an intentional public API reset before wider adoption.
+It explicitly overrides any earlier "deprecate where possible" posture. The
+package has no known production users; the cost of a clean break now is lower
+than the cost of carrying two API layers into sweep mode and beyond.
 
-### Provisional Scope
+**Full spec:** `inst/design/ledgr_ux_decisions.md`
 
-- **`ctx$hold()` / `ctx$flat()`**: rename `ctx$current_targets()` and
-  `ctx$targets()` to names that make the hold-unless-signal pattern obvious;
-  exact names to be decided in the spec discussion
-- **Strategy signature unification**: mandate `function(ctx, params)` as the
-  single strategy signature; drop `function(ctx)` as a distinct tier trigger;
-  required before sweep mode locks in the contract
-- **`ledgr_experiment()` session object**: unify the repeated `db_path`
-  argument across `ledgr_backtest()`, `ledgr_run_*`, and `ledgr_compare_runs()`
-  behind a session handle; design this interface first — it sets the shape for
-  everything else in this pass and for sweep mode
-- **`close(bt)` lifecycle**: make explicit close optional; auto-checkpoint on
-  GC with a warning; in-memory runs (no `db_path`) require no close at all
+**Spec packet required** before any implementation starts. v0.1.7 scope is
+large enough to warrant its own ticket packet with acceptance criteria per
+function.
 
-### Constraint
+### Scope
 
-No new features. No vignette or dataset work. Only changes to the core
-four-step arc: data → strategy → run → compare.
+**New surface:**
+- `ledgr_experiment()` -- central spec object; design this first
+- `ledgr_run()` -- single run on an experiment (replaces `ledgr_backtest()` as public API)
+- `ledgr_param_grid()` -- typed grid constructor
+- `ledgr_opening()` and `ledgr_opening_from_broker()` -- opening state
+- `ctx$flat()` and `ctx$hold()` -- replace `ctx$targets()` and `ctx$current_targets()`
+- Snapshot-first signatures for all store operation APIs
+- `ledgr_run_list` and `ledgr_comparison` S3 print methods
 
----
+**Hard removals:**
+- `ctx$targets()` and `ctx$current_targets()` -- calling them is a loud error
+- `function(ctx)` strategy signature -- `function(ctx, params)` is the only valid form
+- All `db_path`-first public APIs -- replaced by snapshot-first signatures
+- `ledgr_backtest()` demoted to internal; `ledgr_run()` is the public API
 
-## v0.1.7 - Lightweight Parameter Sweep Mode
-
-**Goal:** Let users run fast exploratory parameter sweeps without DuckDB
-persistence, with guaranteed numeric parity against full truth runs.
-
-### Architectural Framing
-
-The backtest is a left fold over pulses:
-
-```text
-final_state = Reduce(apply_pulse, pulses, initial_state)
-```
-
-Each `apply_pulse` is a pure function of state, bar data, precomputed features,
-and the strategy. DuckDB writes are an output handler applied to the result, not
-part of the computation. This means `ledgr_backtest()` and `ledgr_sweep()` are
-the same fold with different output handlers, not different engines.
-
-Parameter sweeps expose two naturally parallel map dimensions:
-
-```text
-map(instruments x indicators -> feature series)   # pure, no dependencies
-  -> share zero-copy (mori)
-map(parameter combinations -> fold result)        # pure, no dependencies
-  ->
-reduce(fold results -> comparison table)          # cheap, sequential
-```
-
-The only sequential work is within a single fold (the pulse loop has a
-time-step dependency that cannot be broken) and the final reduce. Everything
-else is embarrassingly parallel.
-
-### Core Invariant
-
-> Sweep mode may remove persistence.
-> Sweep mode may not change execution semantics.
-
-The implementation must extract an internal fold core that both
-`ledgr_backtest()` and `ledgr_sweep()` call. Implementing `ledgr_sweep()` by
-copying the runner and deleting DuckDB calls is explicitly prohibited because
-that path leads to silent parity drift.
-
-### Strategy Contract
-
-Sweep mode requires sweep-compatible strategies:
-
-```text
-sweep-compatible strategy =
-  function(ctx, params)         # functional, explicit params
-  + no hidden mutable state     # no closures capturing external env state
-  + no DuckDB side effects      # no reads/writes to the run store
-  + Tier 1 reproducibility      # as defined in LDG-702
-```
-
-R6 strategies are excluded from sweep mode in the initial implementation unless
-they can be freshly instantiated per parameter set with no shared state. Sweep
-mode fails loudly with a clear error for non-compatible strategies.
-
-### Deterministic Random State
-
-Every backtest and sweep run is fully deterministic by default. Strategies that
-use randomness (Monte Carlo sizing, stochastic optimisers, random tie-breaking)
-must produce the same output for the same inputs without user intervention.
-
-`ledgr_backtest()` and `ledgr_sweep()` accept an optional `seed` argument:
-
-```r
-ledgr_backtest(..., seed = NULL)   # NULL derives default from run_id
-ledgr_backtest(..., seed = 42)     # explicit override
-ledgr_backtest(..., seed = NA)     # explicit opt-out: non-deterministic
-```
-
-When `seed = NULL`, the effective seed is derived deterministically from
-`run_id` so the same experiment always starts from the same random state across
-sessions. When `seed = NA`, no seed is set and random draws are
-non-deterministic; this is an explicit user choice, not the default.
-
-The engine calls `set.seed(seed + pulse_index)` before each pulse callback.
-This gives each pulse an independent, deterministic random state. The
-pulse-specific seed is exposed as `ctx$seed` for strategy inspection or
-logging.
-
-The effective seed is stored in `config_json` and included in `config_hash`.
-Two runs that differ only by seed produce different config hashes, which is
-correct: they are different experiments. `ledgr_run_info()` surfaces the seed.
-
-Parity between `ledgr_backtest()` and `ledgr_sweep()` extends to random state:
-same seed, same pulse order, same draws.
-
-### Parity Scope
-
-"Same equity curve" is necessary but not sufficient. Full parity requires:
-
-- same equity curve
-- same trades and fills
-- same final positions and cash balance
-- same target/fill timing behaviour
-- same final-bar no-fill behaviour
-- same random draws at each pulse (same seed, same pulse order)
-
-The in-memory event stream produced by sweep mode must be semantically
-equivalent to the persisted ledger. Sweep mode drops the DuckDB write; it does
-not drop the event semantics.
-
-### Precomputed Features Interface
-
-`precomputed_features` is a typed object, not a raw list:
-
-```r
-features <- ledgr_precompute_features(
-  snapshot,
-  indicators = list(...),
-  universe = NULL,
-  start = NULL,
-  end = NULL
-)
-
-ledgr_sweep(
-  snapshot = snapshot,
-  strategy = strategy,
-  strategy_params = param_grid,
-  precomputed_features = features
-)
-```
-
-The object carries: `snapshot_hash`, universe, start/end range, indicator
-fingerprints, feature-engine version, and feature matrices. `ledgr_sweep()`
-fails loudly if the feature object does not match the requested snapshot, date
-range, universe, or indicator set.
-
-If `start` and `end` are `NULL`, `ledgr_precompute_features()` computes the full
-sealed snapshot range. A sweep may request the same range or a narrower covered
-range; it must fail if the requested pulse range or warmup requirements are not
-covered by the feature object.
-
-### Performance Expectations
-
-Sweep mode is not vectorbt-style instant matrix sweeps. It is the same
-simulation with a cheaper output path. Expected gains over `ledgr_backtest()`:
-
-- no DuckDB write per run
-- no repeated feature computation (features computed once, reused across the
-  sweep)
-- no run/schema/provenance overhead
-- result materialisation reduced to summary output
-
-The pulse loop remains sequential within each run. Sweep mode does not vectorise
-strategy evaluation or fill logic. Wall-time gains come from removing
-persistence overhead and from parallelising across parameter combinations.
+**Lifecycle:**
+- `close(bt)` made optional; auto-checkpoint on GC with informational message
+- In-memory runs require no `close()` at all
 
 ### Synthetic Demo Dataset
 
@@ -559,10 +415,10 @@ giving higher volume in crash regimes.
 
 - **Instruments:** 12, named `SYM_01` through `SYM_12`; grouped into two
   synthetic sectors of 6 each for factor structure
-- **Date range:** 2015-01-01 to 2021-12-31, daily bars (≈1,760 rows per
-  instrument; ≈21,120 rows total)
+- **Date range:** 2015-01-01 to 2021-12-31, daily bars (~1,760 rows per
+  instrument; ~21,120 rows total)
 - **Columns:** `ts_utc`, `instrument_id`, `open`, `high`, `low`, `close`,
-  `volume` -- identical schema to `ledgr_backtest(data = ...)` input
+  `volume` -- identical schema to `ledgr_snapshot_from_df()` input
 - **Stored seed:** fixed in `data-raw/make_demo_bars.R` so the committed
   data is reproducible given the same DGP code and R version
 
@@ -604,9 +460,188 @@ polish.
 
 #### Constraint
 
-The v0.1.8 and v0.1.10 vignettes already reference "the canonical demo
+The v0.1.9 and v0.1.11 vignettes already reference "the canonical demo
 dataset." This task makes that reference concrete. All later vignettes must
 be authored against `ledgr_demo_bars` from v0.1.7 onward.
+
+### Definition of Done
+
+- Full workflow from `ledgr_snapshot_from_df()` through `ledgr_run()` and
+  `ledgr_compare_runs()` uses no `db_path` argument after snapshot creation
+- `ctx$hold()` and `ctx$flat()` are the only documented target constructors
+- `function(ctx)` strategies emit a loud error at run time
+- `ledgr_run_list()` and `ledgr_compare_runs()` print curated views with
+  percentage formatting and footers
+- All vignettes and examples are updated to the new API; no inline bar
+  construction remains in vignettes or README prose
+- `ledgr_demo_bars` is a committed `.rda` in `data/` with >= 10 instruments
+  and >= 5 years of daily bars
+- `ledgr_sim_bars()` is exported, documented, and deterministic given the
+  same seed
+- `data-raw/make_demo_bars.R` is the single source of truth for the
+  committed dataset; it is not run at install or check time
+- All Rd examples that previously constructed bars inline are updated to
+  use `ledgr_demo_bars` or `ledgr_sim_bars()`
+- `inst/design/ledgr_ux_decisions.md` open questions resolved before ticket cut
+
+---
+
+## v0.1.8 - Lightweight Parameter Sweep Mode
+
+**Goal:** Let users run fast exploratory parameter sweeps without DuckDB
+persistence, with guaranteed numeric parity against full truth runs.
+
+### Architectural Framing
+
+The backtest is a left fold over pulses:
+
+```text
+final_state = Reduce(apply_pulse, pulses, initial_state)
+```
+
+Each `apply_pulse` is a pure function of state, bar data, precomputed features,
+and the strategy. DuckDB writes are an output handler applied to the result, not
+part of the computation. This means `ledgr_backtest()` and `ledgr_sweep()` are
+the same fold with different output handlers, not different engines.
+
+Parameter sweeps expose two naturally parallel map dimensions:
+
+```text
+map(instruments x indicators -> feature series)   # pure, no dependencies
+  -> share zero-copy (mori)
+map(parameter combinations -> fold result)        # pure, no dependencies
+  ->
+reduce(fold results -> comparison table)          # cheap, sequential
+```
+
+The only sequential work is within a single fold (the pulse loop has a
+time-step dependency that cannot be broken) and the final reduce. Everything
+else is embarrassingly parallel.
+
+### Core Invariant
+
+> Sweep mode may remove persistence.
+> Sweep mode may not change execution semantics.
+
+The implementation must extract an internal fold core that both
+`ledgr_run()` and `ledgr_sweep()` call. Implementing `ledgr_sweep()` by
+copying the runner and deleting DuckDB calls is explicitly prohibited because
+that path leads to silent parity drift.
+
+### Strategy Contract
+
+Sweep mode requires sweep-compatible strategies:
+
+```text
+sweep-compatible strategy =
+  function(ctx, params)         # functional, explicit params
+  + no hidden mutable state     # no closures capturing external env state
+  + no DuckDB side effects      # no reads/writes to the run store
+  + Tier 1 reproducibility      # as defined in LDG-702
+```
+
+R6 strategies are excluded from sweep mode in the initial implementation unless
+they can be freshly instantiated per parameter set with no shared state. Sweep
+mode fails loudly with a clear error for non-compatible strategies.
+
+### Deterministic Random State
+
+Every backtest and sweep run is fully deterministic by default. Strategies that
+use randomness (Monte Carlo sizing, stochastic optimisers, random tie-breaking)
+must produce the same output for the same inputs without user intervention.
+
+`ledgr_run()` and `ledgr_sweep()` accept an optional `seed` argument:
+
+```r
+ledgr_run(..., seed = NULL)   # NULL derives default from run_id
+ledgr_run(..., seed = 42)     # explicit override
+ledgr_run(..., seed = NA)     # explicit opt-out: non-deterministic
+
+ledgr_sweep(..., seed = NULL) # NULL derives default from sweep candidate label
+ledgr_sweep(..., seed = 42)   # explicit override; same seed for every combination
+ledgr_sweep(..., seed = NA)   # explicit opt-out: non-deterministic
+```
+
+When `seed = NULL`, the effective seed is derived deterministically but the
+source differs by function: `ledgr_run()` derives it from `run_id`;
+`ledgr_sweep()` derives it from the sweep candidate label -- the name supplied
+to `ledgr_param_grid()`, or the auto-hash label for unnamed entries. This means
+the same params always produce the same random draws regardless of the order
+they appear in the grid. When `seed = NA`, no seed is set and random draws are
+non-deterministic; this is an explicit user choice, not the default.
+
+The engine calls `set.seed(seed + pulse_index)` before each pulse callback.
+This gives each pulse an independent, deterministic random state. The
+pulse-specific seed is exposed as `ctx$seed` for strategy inspection or
+logging.
+
+The effective seed is stored in `config_json` and included in `config_hash`.
+Two runs that differ only by seed produce different config hashes, which is
+correct: they are different experiments. `ledgr_run_info()` surfaces the seed.
+
+Parity between `ledgr_run()` and `ledgr_sweep()` extends to random state:
+same seed, same pulse order, same draws.
+
+### Parity Scope
+
+"Same equity curve" is necessary but not sufficient. Full parity requires:
+
+- same equity curve
+- same trades and fills
+- same final positions and cash balance
+- same target/fill timing behaviour
+- same final-bar no-fill behaviour
+- same random draws at each pulse (same seed, same pulse order)
+
+The in-memory event stream produced by sweep mode must be semantically
+equivalent to the persisted ledger. Sweep mode drops the DuckDB write; it does
+not drop the event semantics.
+
+### Precomputed Features Interface
+
+`precomputed_features` is a typed object, not a raw list. It is built from a
+`ledgr_experiment` and the param grid so ledgr can automatically derive the
+required indicator configurations:
+
+```r
+features <- ledgr_precompute_features(exp, param_grid)
+
+# With explicit date range -- defaults to full snapshot range
+features <- ledgr_precompute_features(exp, param_grid, start = "2016-01-01", end = "2021-12-31")
+
+results <- exp |>
+  ledgr_sweep(param_grid, precomputed_features = features)
+```
+
+The object carries: `snapshot_hash`, universe, `start`/`end` range, indicator
+fingerprints, feature-engine version, and feature matrices. `ledgr_sweep()`
+fails loudly if the feature object does not match the experiment snapshot, date
+range, universe, or indicator set.
+
+When `features` in `ledgr_experiment()` is `function(params) list(...)`, the
+precompute step evaluates it for every unique indicator configuration across
+the param grid and deduplicates by fingerprint. Combinations that share the
+same indicators pay the compute cost once.
+
+If `start` and `end` are `NULL`, `ledgr_precompute_features()` computes the full
+sealed snapshot range. A sweep may request the same range or a narrower covered
+range; it must fail if the requested pulse range or warmup requirements are not
+covered by the feature object.
+
+### Performance Expectations
+
+Sweep mode is not vectorbt-style instant matrix sweeps. It is the same
+simulation with a cheaper output path. Expected gains over `ledgr_run()`:
+
+- no DuckDB write per run
+- no repeated feature computation (features computed once, reused across the
+  sweep)
+- no run/schema/provenance overhead
+- result materialisation reduced to summary output
+
+The pulse loop remains sequential within each run. Sweep mode does not vectorise
+strategy evaluation or fill logic. Wall-time gains come from removing
+persistence overhead and from parallelising across parameter combinations.
 
 ### Recommended Parallel Stack (no hard dependencies)
 
@@ -621,63 +656,56 @@ packages users configure independently:
 # One-time setup
 future::plan(future.mirai::mirai_multisession, workers = 8)
 features <- mori::share(                    # zero-copy across all workers
-  ledgr_precompute_features(snap, indicators)
+  ledgr_precompute_features(exp, param_grid)
 )
 
-# Sweep
-results <- furrr::future_pmap(param_grid, function(...) {
-  ledgr_sweep(..., precomputed_features = features)
-})
+# Sweep -- ledgr_sweep() respects the active future plan
+results <- exp |> ledgr_sweep(param_grid, precomputed_features = features)
 ```
 
-- **future.mirai / mirai** - `future` backend over persistent mirai workers;
-  current recommended shape is `future::plan(future.mirai::mirai_multisession,
-  workers = n)`, but executable examples must be checked against current
-  package docs before publication
-- **mori** - OS-level shared memory via ALTREP; feature series shared
-  zero-copy across all workers; lazy access means workers pay only for the
-  features they touch; mori objects are transparent at the R API boundary
-- **furrr** - idiomatic `purrr`-style map API; swap `pmap` for
-  `future_pmap` without changing sweep code
+- **future.mirai / mirai** -- `future` backend over persistent mirai workers;
+  executable examples must be checked against current package APIs before
+  publication
+- **mori** -- OS-level shared memory via ALTREP; feature series shared
+  zero-copy across all workers; mori objects are transparent at the R API
+  boundary
 
-ledgr takes no hard dependency on any of these. The `precomputed_features`
-interface accepts normal R objects; mori-shared objects work because they are
-indistinguishable from plain R objects at the API boundary.
+ledgr takes no hard dependency on any of these. `ledgr_sweep()` respects a
+`future` plan if set by the user; otherwise runs sequentially. The
+`precomputed_features` interface accepts normal R objects; mori-shared objects
+work because they are indistinguishable from plain R objects at the API boundary.
 
 ### Definition of Done
 
-- `ledgr_sweep()` and `ledgr_backtest()` produce identical results on the same
-  input: equity curve, trades, fills, final positions, cash, fill timing, and
-  random draws
+- `ledgr_sweep()` and `ledgr_run()` produce identical results on the same
+  input: equity curve, trades, fills, final positions, cash, fill timing,
+  warmup behaviour, fee model, long-only enforcement, and random draws
 - Parity is enforced by CI, not by convention
 - Both functions call the same internal fold core; no copied runner code
 - `ledgr_precompute_features()` is implemented, typed, and validates against
   the requesting sweep call
 - Strategy compatibility contract is enforced with clear errors
-- The public API surface clearly communicates what sweep mode does and does not
-  guarantee
+- Failed combinations produce result rows with `status = "FAILED"`,
+  `error_class`, `error_msg`, and `NA` metric columns; `stop_on_error = FALSE`
+  is the default; `stop_on_error = TRUE` aborts on first error
+- `ledgr_sweep_results` S3 print method follows the same conventions as
+  `ledgr_comparison` (curated columns, percentage formatting, footer)
+- `params` list column in results enables clean candidate promotion:
+  `results |> slice(1) |> pull(params) |> first()` passes directly to `ledgr_run()`
+- Warning emitted when grid exceeds the threshold size and no precomputed
+  features are supplied
 - Single-process sweep is documented with a working example
-- Recommended parallel stack is documented separately as optional guidance
-- Default seed derivation from `run_id` is documented and tested
-- `ctx$seed` is available at every pulse in both backtest and sweep modes
+- Recommended parallel stack is documented separately as optional guidance;
+  not part of first-release user docs
+- Default seed derivation from grid label is documented and tested
+- `ctx$seed` is available at every pulse in both run and sweep modes
 - Explicit `seed = NA` opt-out is documented with a clear warning about
   non-determinism
-- `ledgr_demo_bars` is a committed `.rda` in `data/` with ≥10 instruments
-  and ≥5 years of daily bars
-- `ledgr_sim_bars()` is exported, documented, and deterministic given the
-  same seed
-- `data-raw/make_demo_bars.R` is the single source of truth for the
-  committed dataset; it is not run at install or check time
-- All vignettes use `ledgr_demo_bars` or `ledgr_sim_bars()`; no inline
-  bar construction remains in vignette or README prose
-- All Rd examples that previously constructed bars inline are updated to
-  use `ledgr_demo_bars` or `ledgr_sim_bars()`
-- Vignette examples demonstrate multi-instrument universes (not single-asset
-  toy examples) where the narrative benefits from it
+- `ledgr_tune()` is explicitly out of scope for this milestone; it is a candidate post-v0.1.8 convenience wrapper once the fold core is stable, not an indefinite deferral
 
 ---
 
-## v0.1.8 - Portfolio Optimization Support
+## v0.1.9 - Portfolio Optimization Support
 
 **Goal:** Make portfolio optimization a first-class research workflow in ledgr.
 
@@ -712,7 +740,7 @@ A worked vignette demonstrating the full research workflow:
    solver.
 2. Sweep over lookback window and risk-target combinations using
    `ledgr_precompute_features()` and `ledgr_sweep()`.
-3. Persist the winning configuration with `ledgr_backtest()` and label it in
+3. Persist the winning configuration with `ledgr_run()` and label it in
    the experiment store.
 4. Compare runs with `ledgr_compare_runs()`.
 
@@ -739,7 +767,7 @@ explicitly in the vignette and in `ledgr_run_info()` output.
 
 ---
 
-## v0.1.9 - Calendar And Event-Driven Strategies
+## v0.1.10 - Calendar And Event-Driven Strategies
 
 **Goal:** Give strategies a structured temporal context so calendar and
 event-driven logic does not require manual date arithmetic inside the strategy
@@ -794,7 +822,7 @@ holds otherwise.
 
 ---
 
-## v0.1.10 - Pairs And Spread Trading
+## v0.1.11 - Pairs And Spread Trading
 
 **Goal:** Make cross-instrument spread strategies natural to write without
 manual cross-instrument data assembly inside the strategy function.
@@ -846,7 +874,7 @@ using `ctx$net_exposure()`. Sweep over lookback and entry threshold using
 
 ---
 
-## v0.1.11 - ML Strategy Artifact Management
+## v0.1.12 - ML Strategy Artifact Management
 
 **Goal:** Make ML-based strategies first-class experiment-store citizens by
 giving model artifacts their own provenance slot in run identity.
