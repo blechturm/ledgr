@@ -1,0 +1,410 @@
+version: "0.1.6-strategy-comparison-and-recovery"
+source: "v0_1_6_tickets.md"
+tickets:
+  - id: LDG-901
+    title: "v0.1.5 Audit Stabilisation"
+    status: pending
+    priority: P0
+    dependencies: []
+    tests:
+      - "state reconstruction tests"
+      - "duplicate feature ID tests"
+      - "initial_cash validation tests"
+      - "final-bar no-fill warning tests"
+      - "v0.1.x acceptance tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Touches execution-adjacent validation, final-bar fill diagnostics,
+        low-level reconstruction, public API error behavior, and feature write
+        preflight. These areas include execution, persistence, and public API
+        hard-escalation concerns under the model routing rulebook.
+      invariants_at_risk:
+        - deterministic replay
+        - final-bar no-fill semantics
+        - feature identity uniqueness
+        - backtest input validation
+        - low-level recovery API behavior
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/ledgr_v0_1_6_spec_packet/ledgr_v0_1_5_audit_report.md
+        - inst/design/contracts.md (Execution Contract, Strategy Contract, Persistence Contract)
+        - R/public-api.R
+        - R/backtest.R
+        - R/backtest-runner.R
+        - R/features-engine.R
+        - R/pulse-context.R
+      tests_required:
+        - state reconstruction tests
+        - duplicate feature ID tests
+        - initial_cash validation tests
+        - final-bar no-fill warning tests
+        - regression acceptance tests
+      escalation_triggers:
+        - fix requires changing ledger or fill semantics
+        - duplicate feature handling requires schema changes
+        - state reconstruction cannot be fixed without changing run storage
+        - docs and implementation contracts conflict
+      forbidden_actions:
+        - adding ctx$params as an implicit parameter path
+        - changing valid target vector semantics
+        - changing snapshot hash or ledger event semantics
+        - silently allowing duplicate feature IDs
+
+  - id: LDG-902
+    title: "Feature ID Discovery UX"
+    status: pending
+    priority: P1
+    dependencies: [LDG-901]
+    tests:
+      - "feature ID helper tests if helper is added"
+      - "TTR ID examples render"
+      - "existing indicator tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Bounded user-facing API/documentation improvement around existing
+        indicator IDs. It should not alter feature computation or fingerprint
+        semantics, but any exported helper requires Tier H review for public API
+        surface.
+      invariants_at_risk:
+        - feature ID stability
+        - indicator fingerprint stability
+        - public API discoverability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/contracts.md (Indicator Contract, Strategy Contract)
+        - R/indicators_builtin.R
+        - R/indicator-ttr.R
+        - vignettes/ttr-indicators.Rmd
+      tests_required:
+        - feature ID helper tests if helper is added
+        - TTR ID examples render
+        - existing indicator tests remain green
+      escalation_triggers:
+        - implementation would change existing IDs
+        - implementation would change fingerprints
+        - helper scope expands beyond ID discovery
+      forbidden_actions:
+        - renaming existing feature IDs
+        - adding aliases that mask duplicate feature IDs
+        - changing TTR warmup or series_fn behavior
+
+  - id: LDG-903
+    title: "Compare Stored Runs"
+    status: pending
+    priority: P0
+    dependencies: [LDG-901]
+    tests:
+      - "comparison API tests"
+      - "no recompute tests"
+      - "no mutation tests"
+      - "archived and failed run tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Reads DuckDB experiment-store artifacts, exposes a new public
+        comparison API, combines run identity, provenance, telemetry, and result
+        metrics, and must preserve no-recompute/no-mutation guarantees. This
+        touches persistence, identity, and public API contracts.
+      invariants_at_risk:
+        - experiment-store read-only behavior
+        - run identity interpretation
+        - archived and incomplete run semantics
+        - result metric consistency
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Persistence Contract, Run Identity Contract, Result Contract)
+        - R/run-store.R
+        - R/backtest.R
+        - R/public-api.R
+      tests_required:
+        - comparison API tests
+        - no recompute tests
+        - no mutation tests
+        - archived and failed run tests
+      escalation_triggers:
+        - comparison requires recomputing result views
+        - comparison needs schema changes
+        - metric definitions conflict with summary/metrics output
+        - legacy run behavior is ambiguous
+      forbidden_actions:
+        - executing strategy source
+        - mutating stores from comparison
+        - adding sweep APIs
+        - silently including failed or running runs in comparisons
+
+  - id: LDG-904
+    title: "Extract Stored Strategy Source"
+    status: pending
+    priority: P0
+    dependencies: [LDG-901]
+    tests:
+      - "extraction tests"
+      - "hash mismatch tests"
+      - "no-eval tests"
+      - "trust=TRUE tests"
+      - "legacy run tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Touches strategy source provenance, strategy hashes, trust-boundary
+        semantics, public API behavior, and experiment-store identity. These are
+        identity and public API hard-escalation areas.
+      invariants_at_risk:
+        - strategy source hash meaning
+        - trust boundary correctness
+        - reproducibility tier interpretation
+        - legacy run handling
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Run Identity Contract, Strategy Contract, Compatibility Policy)
+        - R/strategy-provenance.R
+        - R/run-store.R
+      tests_required:
+        - extraction tests
+        - hash mismatch tests
+        - no-eval tests
+        - trust=TRUE tests
+        - legacy run tests
+      escalation_triggers:
+        - trust=TRUE requires changing source capture semantics
+        - source hashes are not reproducible enough for verification
+        - evaluation environment cannot be made explicit
+      forbidden_actions:
+        - evaluating source when trust=FALSE
+        - executing recovered strategies against data
+        - treating hash verification as a safety guarantee
+        - silently recovering missing or mismatched source
+
+  - id: LDG-905
+    title: "Strategy Development And Comparison Vignette"
+    status: pending
+    priority: P1
+    dependencies: [LDG-902, LDG-903, LDG-904]
+    tests:
+      - "vignette render"
+      - "pkgdown build"
+      - "offline example checks"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation-heavy but central to the v0.1.6 user contract. It teaches
+        strategy semantics, feature IDs, and new comparison/recovery APIs, so
+        Tier H review is required even though implementation is mostly vignette
+        work.
+      invariants_at_risk:
+        - strategy authoring mental model
+        - target-vector semantics
+        - feature ID usage
+        - trust-boundary explanation
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Indicator Contract)
+        - vignettes/getting-started.Rmd
+        - vignettes/ttr-indicators.Rmd
+        - vignettes/research-to-production.Rmd
+      tests_required:
+        - vignette render
+        - pkgdown build
+        - offline example checks
+      escalation_triggers:
+        - article requires undocumented API behavior
+        - examples reveal contract ambiguity
+        - comparison or extraction APIs change after article is written
+      forbidden_actions:
+        - documenting ctx$params as supported
+        - using network data in examples
+        - implying sweep, live, or paper trading support
+
+  - id: LDG-906
+    title: "Optional Run Tags"
+    status: pending
+    priority: P3
+    dependencies: [LDG-903]
+    tests:
+      - "tag schema/API tests if implemented"
+    classification:
+      risk_level: medium
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Optional, but if implemented it touches DuckDB schema, mutable run
+        metadata, and public API surface. Those are persistence and public API
+        hard-escalation areas.
+      invariants_at_risk:
+        - run identity immutability
+        - schema migration safety
+        - archive/label/tag metadata boundaries
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Persistence Contract, Run Identity Contract)
+        - R/run-store.R
+      tests_required:
+        - tag schema tests if implemented
+        - tag API tests if implemented
+        - no identity hash mutation tests if implemented
+      escalation_triggers:
+        - tags require destructive migration
+        - tags start affecting comparison semantics
+        - tags become required for the v0.1.6 user story
+      forbidden_actions:
+        - making tags part of experiment identity
+        - adding hard delete
+        - blocking the release gate on optional tag work without explicit rescope
+
+  - id: LDG-907
+    title: "Experiment Store Vignette"
+    status: pending
+    priority: P1
+    dependencies: [LDG-901, LDG-903]
+    tests:
+      - "vignette render"
+      - "pkgdown build"
+      - "offline example checks"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation-heavy but central to the experiment-store workflow. It
+        explains run identity, labels, archive, telemetry, reproducibility
+        tiers, and comparison, so Tier H review is required for contract
+        accuracy.
+      invariants_at_risk:
+        - experiment-store mental model
+        - run identity versus metadata distinction
+        - archive semantics
+        - reproducibility-tier interpretation
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md
+        - inst/design/contracts.md (Persistence Contract, Run Identity Contract)
+        - vignettes/research-to-production.Rmd
+        - vignettes/getting-started.Rmd
+      tests_required:
+        - vignette render
+        - pkgdown build
+        - offline example checks
+      escalation_triggers:
+        - article requires undocumented API behavior
+        - examples need comparison behavior not implemented in LDG-903
+        - run tags become necessary to explain the workflow
+      forbidden_actions:
+        - documenting hard delete
+        - documenting tags as available unless LDG-906 is accepted
+        - using network data in examples
+        - implying strategy recovery executes source by default
+
+  - id: LDG-908
+    title: "v0.1.6 Documentation, Contracts, And NEWS"
+    status: pending
+    priority: P1
+    dependencies: [LDG-901, LDG-903, LDG-904, LDG-905, LDG-907]
+    tests:
+      - "devtools::document()"
+      - "example checks"
+      - "pkgdown build"
+      - "export scan for accidental v0.1.7 APIs"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Cross-cutting docs and contracts update. Mostly documentation and
+        package plumbing, but it updates contracts and public API
+        documentation, requiring Tier H review under the model routing workflow.
+      invariants_at_risk:
+        - public API documentation accuracy
+        - strategy and result contracts
+        - trust-boundary documentation
+        - roadmap scope clarity
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/contracts.md
+        - NEWS.md
+        - _pkgdown.yml
+        - man/
+      tests_required:
+        - documentation generation
+        - pkgdown build
+        - examples remain offline-safe
+      escalation_triggers:
+        - documentation requires changing public API semantics
+        - contracts conflict with implementation
+        - examples need network access
+      forbidden_actions:
+        - documenting sweep, live, or paper APIs as available
+        - hiding trust-boundary warnings
+        - adding undocumented exports
+
+  - id: LDG-909
+    title: "v0.1.6 Release Gate"
+    status: pending
+    priority: P0
+    dependencies: [LDG-901, LDG-902, LDG-903, LDG-904, LDG-905, LDG-907, LDG-908]
+    tests:
+      - "tools/check-coverage.R"
+      - "tools/check-readme-example.R if README changes"
+      - "strategy-development vignette render"
+      - "R CMD check --no-manual --no-build-vignettes"
+      - "pkgdown::build_site()"
+      - ".github/workflows/R-CMD-check.yaml"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gate and final Tier H review for the v0.1.6 strategy comparison
+        and recovery cycle. Validates all contracts, public APIs, tests, docs,
+        CI, and acceptance criteria.
+      invariants_at_risk:
+        - all v0.1.6 contracts
+        - comparison and recovery API correctness
+        - trust boundary
+        - public API surface
+        - release quality gates
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_tickets.md
+        - inst/design/contracts.md
+        - NEWS.md
+        - tools/check-coverage.R
+        - tools/check-readme-example.R
+        - .github/workflows/R-CMD-check.yaml
+        - all v0.1.6 review findings
+      tests_required:
+        - all targeted v0.1.6 tests pass
+        - earlier v0.1.x regression tests pass where applicable
+        - R CMD check passes with 0 errors and 0 warnings
+        - coverage gate passes
+        - pkgdown builds
+        - Ubuntu and Windows CI are green
+      escalation_triggers: []
+      forbidden_actions:
+        - accepting the gate with open P0 or P1 issues
+        - bypassing R CMD check or coverage
+        - releasing without green CI
+        - accepting accidental v0.1.7 API scope
