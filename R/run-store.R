@@ -484,20 +484,13 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   data = bars, strategy = strategy, strategy_params = list(qty = 1),
 #'   db_path = db_path, run_id = "qty-1"
 #' )
+#' on.exit(close(bt_a), add = TRUE)
 #' bt_b <- ledgr_backtest(
 #'   data = bars, strategy = strategy, strategy_params = list(qty = 2),
 #'   db_path = db_path, run_id = "qty-2"
 #' )
+#' on.exit(close(bt_b), add = TRUE)
 #' ledgr_compare_runs(db_path, run_ids = c("qty-1", "qty-2"))
-#'
-#' flat_strategy <- function(ctx) ctx$targets()
-#' bt_c <- ledgr_backtest(
-#'   data = bars, strategy = flat_strategy, db_path = db_path, run_id = "flat"
-#' )
-#' ledgr_compare_runs(db_path, run_ids = c("qty-1", "flat"))
-#' close(bt_a)
-#' close(bt_b)
-#' close(bt_c)
 #' @export
 ledgr_compare_runs <- function(db_path, run_ids = NULL, include_archived = FALSE, metrics = c("standard")) {
   if (!is.character(metrics) || length(metrics) != 1L || !identical(metrics, "standard")) {
