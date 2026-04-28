@@ -117,6 +117,11 @@ the active versioned spec packet, currently
   Tier 2 by default unless a future explicit metadata contract upgrades them.
 - `strategy_source_hash` is R-version-sensitive and should be compared directly
   only between runs created under the same `R_version`.
+- `ledgr_extract_strategy(trust = FALSE)` is inspection-only: it returns stored
+  source text and metadata without parsing, evaluating, or executing source.
+  `trust = TRUE` verifies the stored source hash before parsing/evaluating the
+  source into a function object. Hash verification proves stored-text identity,
+  not safety.
 - Canonical JSON currently serializes both `NULL` and `NA` as JSON `null`;
   users who need to distinguish those parameter values must encode that
   distinction explicitly.

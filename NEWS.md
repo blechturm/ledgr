@@ -2,6 +2,8 @@
 
 - Added `ledgr_compare_runs()` for comparing completed stored runs from a
   durable experiment store without rerunning strategies.
+- Added `ledgr_extract_strategy()` for safe strategy-source inspection and
+  optional hash-verified recovery from the experiment store.
 - Added `ledgr_feature_id()` and `print.ledgr_indicator()` so strategy authors
   can discover exact built-in and TTR feature IDs before writing
   `ctx$feature()` calls.

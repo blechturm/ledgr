@@ -146,7 +146,7 @@ tickets:
 
   - id: LDG-904
     title: "Extract Stored Strategy Source"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-901]
     tests:

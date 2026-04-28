@@ -321,7 +321,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 2-3 days  
 **Dependencies:** LDG-901  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Add `ledgr_extract_strategy()` for inspecting and optionally recovering stored
@@ -342,14 +342,14 @@ text and metadata only, with no evaluation.
 10. Do not execute the recovered strategy against data.
 
 **Acceptance Criteria:**
-- [ ] `trust = FALSE` returns source metadata without evaluation.
-- [ ] `trust = TRUE` verifies the hash before any evaluation.
-- [ ] Hash mismatch fails with a classed error.
-- [ ] Legacy/pre-provenance runs fail or return structured missing-source
+- [x] `trust = FALSE` returns source metadata without evaluation.
+- [x] `trust = TRUE` verifies the hash before any evaluation.
+- [x] Hash mismatch fails with a classed error.
+- [x] Legacy/pre-provenance runs fail or return structured missing-source
       diagnostics.
-- [ ] Tier 2/Tier 3 warnings are visible.
-- [ ] Print output is concise and does not dump long source by default.
-- [ ] No strategy execution occurs during extraction.
+- [x] Tier 2/Tier 3 warnings are visible.
+- [x] Print output is concise and does not dump long source by default.
+- [x] No strategy execution occurs during extraction.
 
 **Test Requirements:**
 - Tier 1 `function(ctx, params)` extraction.

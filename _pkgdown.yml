@@ -39,6 +39,8 @@ reference:
       - ledgr_run_list
       - ledgr_run_info
       - ledgr_compare_runs
+      - ledgr_extract_strategy
+      - print.ledgr_extracted_strategy
       - print.ledgr_run_info
       - ledgr_run_open
       - ledgr_run_label
