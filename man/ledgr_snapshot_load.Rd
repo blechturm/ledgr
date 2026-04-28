@@ -4,7 +4,7 @@
 \alias{ledgr_snapshot_load}
 \title{Load an existing sealed snapshot}
 \usage{
-ledgr_snapshot_load(db_path, snapshot_id, verify = FALSE)
+ledgr_snapshot_load(db_path, snapshot_id = NULL, verify = FALSE)
 }
 \arguments{
 \item{db_path}{Path to an existing DuckDB file.}

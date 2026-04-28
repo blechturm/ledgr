@@ -54,14 +54,12 @@ fields and helpers are:
   `ctx$volume(id)`: scalar OHLCV accessors;
 - `ctx$position(id)`: current quantity for one instrument;
 - `ctx$feature(id, name)`: feature lookup;
-- `ctx$flat(default = 0)`: full target vector initialized to
-  `default`;
-- `ctx$hold()`: full target vector initialized from current
-  positions.
+- `ctx$flat(default = 0)`: full target vector initialized to `default`;
+- `ctx$hold()`: full target vector initialized from current positions.
 
-Use `ctx$flat()` when the strategy should go flat unless it
-explicitly emits a target. Use `ctx$hold()` when the strategy
-should hold unless it explicitly changes a target.
+Use `ctx$flat()` when the strategy should go flat unless it explicitly
+emits a target. Use `ctx$hold()` when the strategy should hold unless it
+explicitly changes a target.
 
 ## Targets
 
@@ -167,7 +165,7 @@ pulse$close("AAA")
 #> [1] 103
 pulse$feature("AAA", "sma_3")
 #> [1] 102
-pulse$current_targets()
+pulse$hold()
 #> AAA BBB
 #>   0   0
 threshold_strategy(
@@ -202,7 +200,7 @@ bt_qty_3 <- ledgr_backtest(
   run_id = "threshold_qty_3"
 )
 
-ledgr_compare_runs(db_path, run_ids = c("threshold_qty_1", "threshold_qty_3"))[, c(
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))[, c(
   "run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash"
 )]
 #> # A tibble: 2 x 5
@@ -226,14 +224,14 @@ bt_flat <- ledgr_backtest(
   run_id = "flat"
 )
 
-ledgr_compare_runs(db_path, run_ids = c("threshold_qty_1", "flat"))[, c(
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))[, c(
   "run_id", "final_equity", "total_return", "n_trades", "strategy_source_hash"
 )]
 #> # A tibble: 2 x 5
 #>   run_id          final_equity total_return n_trades strategy_source_hash
 #>   <chr>                  <dbl>        <dbl>    <int> <chr>
-#> 1 threshold_qty_1       100000            0        0 7e92c0d24dd915b6037bbd1cb90c76264955~
-#> 2 flat                  100000            0        0 3e404013b056168a274f2ecfbd6e9d06da55~
+#> 1 threshold_qty_1       100000            0        0 afbf00a42940c4bc95ec6c46d5eb886aa7c2~
+#> 2 flat                  100000            0        0 6ff3d4c1bd787a3652026316b75672ec8441~
 ```
 
 ## Inspect Stored Source
@@ -242,14 +240,14 @@ ledgr_compare_runs(db_path, run_ids = c("threshold_qty_1", "flat"))[, c(
 metadata without parsing or evaluating it.
 
 ``` r
-extracted <- ledgr_extract_strategy(db_path, "threshold_qty_1", trust = FALSE)
+extracted <- ledgr_extract_strategy(snapshot, "threshold_qty_1", trust = FALSE)
 extracted
 #> ledgr Extracted Strategy
 #> ========================
 #>
 #> Run ID:          threshold_qty_1
 #> Reproducibility: tier_1
-#> Source Hash:     7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
+#> Source Hash:     afbf00a42940c4bc95ec6c46d5eb886aa7c2d6c1546eaf875e918880ee6abf36
 #> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
 #> Hash Verified:   TRUE
 #> Trust:           FALSE

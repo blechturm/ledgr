@@ -14,6 +14,43 @@ ledgr_run_store_open <- function(db_path) {
   opened
 }
 
+ledgr_run_store_snapshot_path <- function(snapshot, arg = "snapshot") {
+  if (!inherits(snapshot, "ledgr_snapshot")) {
+    if (is.character(snapshot) && length(snapshot) == 1L && !is.na(snapshot) && nzchar(snapshot)) {
+      rlang::abort(
+        sprintf(
+          "`%s` must be a ledgr_snapshot object in v0.1.7. Resume from a DuckDB file with ledgr_snapshot_load(db_path, snapshot_id), then call this API with the snapshot.",
+          arg
+        ),
+        class = "ledgr_snapshot_required"
+      )
+    }
+    rlang::abort(
+      sprintf("`%s` must be a ledgr_snapshot object.", arg),
+      class = "ledgr_invalid_args"
+    )
+  }
+  db_path <- snapshot$db_path
+  if (!is.character(db_path) || length(db_path) != 1L || is.na(db_path) || !nzchar(db_path)) {
+    rlang::abort("`snapshot$db_path` must be a non-empty character scalar.", class = "ledgr_invalid_snapshot")
+  }
+  if (!is.character(snapshot$snapshot_id) || length(snapshot$snapshot_id) != 1L ||
+    is.na(snapshot$snapshot_id) || !nzchar(snapshot$snapshot_id)) {
+    rlang::abort("`snapshot$snapshot_id` must be a non-empty character scalar.", class = "ledgr_invalid_snapshot")
+  }
+  if (identical(db_path, ":memory:")) {
+    rlang::abort(
+      "Snapshot-first experiment-store APIs require a durable DuckDB file, not ':memory:'.",
+      class = "ledgr_invalid_snapshot"
+    )
+  }
+  db_path
+}
+
+ledgr_run_store_snapshot_id <- function(snapshot) {
+  snapshot$snapshot_id
+}
+
 ledgr_run_store_close <- function(opened) {
   if (is.list(opened) && !is.null(opened$con) && DBI::dbIsValid(opened$con)) {
     suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))
@@ -34,7 +71,7 @@ ledgr_run_store_optional_join <- function(con, table_name, alias, on_sql) {
   sprintf("LEFT JOIN %s %s ON %s", table_name, alias, on_sql)
 }
 
-ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) {
+ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, snapshot_id = NULL) {
   ledgr_experiment_store_check_schema(con, write = FALSE)
   if (!ledgr_experiment_store_table_exists(con, "runs")) {
     return(tibble::tibble())
@@ -63,6 +100,10 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
   if (!is.null(run_id)) {
     where <- c(where, "r.run_id = ?")
     params <- c(params, list(run_id))
+  }
+  if (!is.null(snapshot_id) && "snapshot_id" %in% runs_cols) {
+    where <- c(where, "r.snapshot_id = ?")
+    params <- c(params, list(snapshot_id))
   }
   where_sql <- if (length(where) > 0L) paste("WHERE", paste(where, collapse = " AND ")) else ""
 
@@ -265,14 +306,21 @@ ledgr_run_store_normalize_optional_text <- function(x, arg) {
   x
 }
 
-ledgr_run_store_assert_run_exists <- function(con, run_id) {
+ledgr_run_store_assert_run_exists <- function(con, run_id, snapshot_id = NULL) {
   if (!ledgr_experiment_store_table_exists(con, "runs")) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
   }
+  runs_cols <- ledgr_experiment_store_columns(con, "runs")
+  where <- "run_id = ?"
+  params <- list(run_id)
+  if (!is.null(snapshot_id) && "snapshot_id" %in% runs_cols) {
+    where <- paste(where, "AND snapshot_id = ?")
+    params <- c(params, list(snapshot_id))
+  }
   row <- DBI::dbGetQuery(
     con,
-    "SELECT run_id FROM runs WHERE run_id = ?",
-    params = list(run_id)
+    paste("SELECT run_id FROM runs WHERE", where),
+    params = params
   )
   if (nrow(row) != 1L) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
@@ -457,7 +505,9 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' durable DuckDB experiment store. Strategies are not rerun, recovered source
 #' is not evaluated, and the database is not mutated.
 #'
-#' @param db_path Path to a DuckDB experiment-store file.
+#' @param snapshot A sealed `ledgr_snapshot` object. Use
+#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   DuckDB file in a new R session.
 #' @param run_ids Optional character vector of run IDs. If supplied, output
 #'   preserves this order, including duplicates, and may include archived
 #'   completed runs. If `NULL`, compares all non-archived completed runs.
@@ -475,26 +525,27 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   close = c(100, 101, 102, 103, 104),
 #'   volume = 1000
 #' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 #' strategy <- function(ctx, params) {
 #'   targets <- ctx$flat()
 #'   targets["AAA"] <- params$qty
 #'   targets
 #' }
 #' bt_a <- ledgr_backtest(
-#'   data = bars, strategy = strategy, strategy_params = list(qty = 1),
+#'   snapshot = snapshot, strategy = strategy, strategy_params = list(qty = 1),
 #'   db_path = db_path, run_id = "qty-1"
 #' )
 #' on.exit(close(bt_a), add = TRUE)
 #' bt_b <- ledgr_backtest(
-#'   data = bars, strategy = strategy, strategy_params = list(qty = 2),
+#'   snapshot = snapshot, strategy = strategy, strategy_params = list(qty = 2),
 #'   db_path = db_path, run_id = "qty-2"
 #' )
 #' on.exit(close(bt_b), add = TRUE)
-#' ledgr_compare_runs(db_path, run_ids = c("qty-1", "qty-2"))
+#' ledgr_compare_runs(snapshot, run_ids = c("qty-1", "qty-2"))
 #' @export
-ledgr_compare_runs <- function(db_path, run_ids = NULL, include_archived = FALSE, metrics = c("standard")) {
+ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALSE, metrics = c("standard")) {
   if (!is.character(metrics) || length(metrics) != 1L || !identical(metrics, "standard")) {
-    rlang::abort("Only metrics = 'standard' is supported in v0.1.6.", class = "ledgr_invalid_args")
+    rlang::abort("Only metrics = 'standard' is supported in v0.1.7.", class = "ledgr_invalid_args")
   }
   if (!is.logical(include_archived) || length(include_archived) != 1L || is.na(include_archived)) {
     rlang::abort("`include_archived` must be TRUE or FALSE.", class = "ledgr_invalid_args")
@@ -505,15 +556,25 @@ ledgr_compare_runs <- function(db_path, run_ids = NULL, include_archived = FALSE
     }
   }
 
+  db_path <- ledgr_run_store_snapshot_path(snapshot)
+  snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
 
   if (is.null(run_ids)) {
-    rows <- ledgr_run_store_fetch(opened$con, include_archived = include_archived)
+    rows <- ledgr_run_store_fetch(opened$con, include_archived = include_archived, snapshot_id = snapshot_id)
     rows <- rows[rows$status == "DONE", , drop = FALSE]
   } else {
     unique_ids <- unique(run_ids)
-    fetched <- lapply(unique_ids, function(run_id) ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id))
+    fetched <- lapply(
+      unique_ids,
+      function(run_id) ledgr_run_store_fetch(
+        opened$con,
+        include_archived = TRUE,
+        run_id = run_id,
+        snapshot_id = snapshot_id
+      )
+    )
     rows <- if (length(fetched) == 0L) tibble::tibble() else tibble::as_tibble(do.call(rbind, fetched))
     found <- as.character(rows$run_id)
     missing <- setdiff(unique_ids, found)
@@ -550,7 +611,9 @@ ledgr_compare_runs <- function(db_path, run_ids = NULL, include_archived = FALSE
 #' Discovers stored runs in a DuckDB experiment-store file without recomputing
 #' or mutating runs. Archived runs are hidden by default.
 #'
-#' @param db_path Path to a DuckDB experiment-store file.
+#' @param snapshot A sealed `ledgr_snapshot` object. Use
+#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   DuckDB file in a new R session.
 #' @param include_archived Logical scalar. If `TRUE`, include archived runs.
 #' @return A tibble with run identity, provenance, status, telemetry summary,
 #'   and basic result summary columns.
@@ -565,18 +628,21 @@ ledgr_compare_runs <- function(db_path, run_ids = NULL, include_archived = FALSE
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-#' ledgr_run_list(db_path)
+#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' ledgr_run_list(snapshot)
 #' close(bt)
 #' @export
-ledgr_run_list <- function(db_path, include_archived = FALSE) {
+ledgr_run_list <- function(snapshot, include_archived = FALSE) {
   if (!is.logical(include_archived) || length(include_archived) != 1L || is.na(include_archived)) {
     rlang::abort("`include_archived` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  db_path <- ledgr_run_store_snapshot_path(snapshot)
+  snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  out <- ledgr_run_store_fetch(opened$con, include_archived = include_archived)
+  out <- ledgr_run_store_fetch(opened$con, include_archived = include_archived, snapshot_id = snapshot_id)
   detail_cols <- c("config_json", "dependency_versions_json", "strategy_params_json")
   out[setdiff(names(out), detail_cols)]
 }
@@ -586,7 +652,9 @@ ledgr_run_list <- function(db_path, include_archived = FALSE) {
 #' Returns a structured `ledgr_run_info` object for a stored run. This function
 #' reads run metadata and diagnostics only; it does not execute strategy code.
 #'
-#' @param db_path Path to a DuckDB experiment-store file.
+#' @param snapshot A sealed `ledgr_snapshot` object. Use
+#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @return A `ledgr_run_info` object.
 #' @examples
@@ -600,19 +668,22 @@ ledgr_run_list <- function(db_path, include_archived = FALSE) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-#' ledgr_run_info(db_path, bt$run_id)
+#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' ledgr_run_info(snapshot, bt$run_id)
 #' close(bt)
 #' @export
-ledgr_run_info <- function(db_path, run_id) {
+ledgr_run_info <- function(snapshot, run_id) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
+  db_path <- ledgr_run_store_snapshot_path(snapshot)
+  snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
 
-  row <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id)
+  row <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id, snapshot_id = snapshot_id)
   if (nrow(row) != 1L) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
   }
@@ -669,7 +740,9 @@ print.ledgr_run_info <- function(x, ...) {
 #' Returns a `ledgr_backtest`-compatible handle over an existing completed run.
 #' The run is not recomputed and strategy code is not executed.
 #'
-#' @param db_path Path to a DuckDB experiment-store file.
+#' @param snapshot A sealed `ledgr_snapshot` object. Use
+#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   DuckDB file in a new R session.
 #' @param run_id Run identifier. The run must have status `DONE`.
 #' @return A `ledgr_backtest` object.
 #' @examples
@@ -683,26 +756,29 @@ print.ledgr_run_info <- function(x, ...) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
+#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
 #' run_id <- bt$run_id
 #' close(bt)
-#' reopened <- ledgr_run_open(db_path, run_id)
+#' reopened <- ledgr_run_open(snapshot, run_id)
 #' summary(reopened)
 #' close(reopened)
 #' @export
-ledgr_run_open <- function(db_path, run_id) {
+ledgr_run_open <- function(snapshot, run_id) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
+  db_path <- ledgr_run_store_snapshot_path(snapshot)
+  snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   ledgr_experiment_store_check_schema(opened$con, write = FALSE)
 
   row <- DBI::dbGetQuery(
     opened$con,
-    "SELECT run_id, status, config_json FROM runs WHERE run_id = ?",
-    params = list(run_id)
+    "SELECT run_id, status, config_json FROM runs WHERE run_id = ? AND snapshot_id = ?",
+    params = list(run_id, snapshot_id)
   )
   if (nrow(row) != 1L) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
@@ -752,10 +828,12 @@ ledgr_run_open <- function(db_path, run_id) {
 #' Updates only the mutable label metadata for a stored run. The immutable
 #' `run_id` and experiment identity hashes are not changed.
 #'
-#' @param db_path Path to a DuckDB experiment-store file.
+#' @param snapshot A sealed `ledgr_snapshot` object. Use
+#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param label Human-readable label. Use `NULL` or `""` to clear the label.
-#' @return A `ledgr_run_info` object after the update.
+#' @return The input `ledgr_snapshot`, invisibly.
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
 #' bars <- data.frame(
@@ -767,29 +845,31 @@ ledgr_run_open <- function(db_path, run_id) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-#' ledgr_run_label(db_path, bt$run_id, "baseline")
+#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' ledgr_run_label(snapshot, bt$run_id, "baseline")
 #' close(bt)
 #' @export
-ledgr_run_label <- function(db_path, run_id, label = NULL) {
+ledgr_run_label <- function(snapshot, run_id, label = NULL) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
   label <- ledgr_run_store_normalize_optional_text(label, "label")
 
+  db_path <- ledgr_run_store_snapshot_path(snapshot)
+  snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
-  ledgr_run_store_assert_run_exists(opened$con, run_id)
+  ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
   DBI::dbExecute(
     opened$con,
-    "UPDATE runs SET label = ? WHERE run_id = ?",
-    params = list(label, run_id)
+    "UPDATE runs SET label = ? WHERE run_id = ? AND snapshot_id = ?",
+    params = list(label, run_id, snapshot_id)
   )
-  row <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id)
-  ledgr_run_info_from_row(row, db_path)
+  invisible(snapshot)
 }
 
 #' Archive a run without deleting artifacts
@@ -798,10 +878,12 @@ ledgr_run_label <- function(db_path, run_id, label = NULL) {
 #' remaining inspectable and, if completed, reopenable. Archiving is
 #' idempotent and does not rewrite existing archive metadata.
 #'
-#' @param db_path Path to a DuckDB experiment-store file.
+#' @param snapshot A sealed `ledgr_snapshot` object. Use
+#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param reason Optional archive reason. Empty strings are stored as `NULL`.
-#' @return A `ledgr_run_info` object after the archive operation.
+#' @return The input `ledgr_snapshot`, invisibly.
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
 #' bars <- data.frame(
@@ -813,21 +895,24 @@ ledgr_run_label <- function(db_path, run_id, label = NULL) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-#' ledgr_run_archive(db_path, bt$run_id, reason = "example cleanup")
+#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' ledgr_run_archive(snapshot, bt$run_id, reason = "example cleanup")
 #' close(bt)
 #' @export
-ledgr_run_archive <- function(db_path, run_id, reason = NULL) {
+ledgr_run_archive <- function(snapshot, run_id, reason = NULL) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
   reason <- ledgr_run_store_normalize_optional_text(reason, "reason")
 
+  db_path <- ledgr_run_store_snapshot_path(snapshot)
+  snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
-  ledgr_run_store_assert_run_exists(opened$con, run_id)
+  ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
   DBI::dbExecute(
     opened$con,
@@ -842,10 +927,9 @@ ledgr_run_archive <- function(db_path, run_id, reason = NULL) {
           WHEN COALESCE(archived, FALSE) = TRUE THEN archive_reason
           ELSE ?
         END
-    WHERE run_id = ?
+    WHERE run_id = ? AND snapshot_id = ?
     ",
-    params = list(as.POSIXct(Sys.time(), tz = "UTC"), reason, run_id)
+    params = list(as.POSIXct(Sys.time(), tz = "UTC"), reason, run_id, snapshot_id)
   )
-  row <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id)
-  ledgr_run_info_from_row(row, db_path)
+  invisible(snapshot)
 }

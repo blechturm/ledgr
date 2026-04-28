@@ -4,10 +4,12 @@
 \alias{ledgr_run_list}
 \title{List runs in a ledgr experiment store}
 \usage{
-ledgr_run_list(db_path, include_archived = FALSE)
+ledgr_run_list(snapshot, include_archived = FALSE)
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{include_archived}{Logical scalar. If \code{TRUE}, include archived runs.}
 }
@@ -30,8 +32,9 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 strategy <- function(ctx, params) ctx$flat()
-bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-ledgr_run_list(db_path)
+bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+ledgr_run_list(snapshot)
 close(bt)
 }

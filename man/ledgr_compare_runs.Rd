@@ -5,14 +5,16 @@
 \title{Compare completed runs in a ledgr experiment store}
 \usage{
 ledgr_compare_runs(
-  db_path,
+  snapshot,
   run_ids = NULL,
   include_archived = FALSE,
   metrics = c("standard")
 )
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_ids}{Optional character vector of run IDs. If supplied, output
 preserves this order, including duplicates, and may include archived
@@ -41,20 +43,21 @@ bars <- data.frame(
   close = c(100, 101, 102, 103, 104),
   volume = 1000
 )
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
   targets["AAA"] <- params$qty
   targets
 }
 bt_a <- ledgr_backtest(
-  data = bars, strategy = strategy, strategy_params = list(qty = 1),
+  snapshot = snapshot, strategy = strategy, strategy_params = list(qty = 1),
   db_path = db_path, run_id = "qty-1"
 )
 on.exit(close(bt_a), add = TRUE)
 bt_b <- ledgr_backtest(
-  data = bars, strategy = strategy, strategy_params = list(qty = 2),
+  snapshot = snapshot, strategy = strategy, strategy_params = list(qty = 2),
   db_path = db_path, run_id = "qty-2"
 )
 on.exit(close(bt_b), add = TRUE)
-ledgr_compare_runs(db_path, run_ids = c("qty-1", "qty-2"))
+ledgr_compare_runs(snapshot, run_ids = c("qty-1", "qty-2"))
 }

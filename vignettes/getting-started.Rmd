@@ -347,14 +347,14 @@ pulse$ts_utc
 pulse$bars
 pulse$close("AAA")
 pulse$position("AAA")
-pulse$current_targets()
-strategy(pulse)
+pulse$hold()
+strategy(pulse, list())
 ```
 
 At this moment, the strategy only sees state available at `pulse$ts_utc`.
-`pulse$current_targets()` shows the current holdings as a full target vector.
-`strategy(pulse)` shows the target holdings the strategy would request from
-that context.
+`pulse$hold()` shows the current holdings as a full target vector.
+`strategy(pulse, list())` shows the target holdings the strategy would request
+from that context.
 
 A pulse snapshot is read-only. It is meant for research and debugging, not for
 changing run state. The close calls release DuckDB connections.
@@ -497,14 +497,17 @@ snapshots, and `verify = TRUE` recomputes the snapshot hash before returning.
 make those runs discoverable and reopenable without recomputing the strategy:
 
 ```{r durable-runs}
-ledgr_run_list(artifact_db)[, c("run_id", "status", "execution_mode", "total_return")]
+durable_snapshot <- ledgr_snapshot_load(artifact_db, snapshot_id)
 
-run_info <- ledgr_run_info(artifact_db, "getting-started-durable")
+ledgr_run_list(durable_snapshot)[, c("run_id", "status", "execution_mode", "total_return")]
+
+run_info <- ledgr_run_info(durable_snapshot, "getting-started-durable")
 run_info
 
-reopened_bt <- ledgr_run_open(artifact_db, "getting-started-durable")
+reopened_bt <- ledgr_run_open(durable_snapshot, "getting-started-durable")
 reopened_bt |> ledgr_results(what = "equity") |> tail(2)
 close(reopened_bt)
+close(durable_snapshot)
 ```
 
 Use `ledgr_run_label()` for mutable human-readable names and

@@ -189,7 +189,7 @@ tickets:
 
   - id: LDG-1005
     title: "Snapshot-First Store Operations"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-1002]
     tests:

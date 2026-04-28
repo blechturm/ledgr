@@ -17,7 +17,9 @@ state are mutable metadata layered on top of that key.
 ## Create One Store
 
 Use one durable `db_path` for the snapshot and all runs you want to
-compare.
+compare. Experiment-store APIs take the snapshot handle, not the raw
+path. In a new R session, reopen that handle with
+`ledgr_snapshot_load(db_path, snapshot_id)`.
 
 ``` r
 library(ledgr)
@@ -86,7 +88,7 @@ bt_large <- ledgr_backtest(
 `ledgr_run_list()` is the discovery view. It is read-only.
 
 ``` r
-ledgr_run_list(db_path)[, c(
+ledgr_run_list(snapshot)[, c(
   "run_id", "label", "tags", "status", "final_equity", "total_return",
   "execution_mode", "reproducibility_level"
 )]
@@ -101,68 +103,12 @@ ledgr_run_list(db_path)[, c(
 names.
 
 ``` r
-ledgr_run_label(db_path, "trend_small", "Lower threshold, one share")
-#> ledgr Run Info
-#> ==============
-#>
-#> Run ID:          trend_small
-#> Label:           Lower threshold, one share
-#> Status:          DONE
-#> Archived:        FALSE
-#> Tags:            NA
-#> Snapshot:        demo_snapshot
-#> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     cbafb2862d3dda3fa49a32a48d9933ce8c30d034bf395ee99cfd6cd8b4d71ced
-#> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
-#> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
-#> Reproducibility: tier_1
-#> Execution Mode:  audit_log
-#> Elapsed Sec:     1.71
-#> Persist Features:TRUE
-#> Cache Hits:      0
-#> Cache Misses:    0
-ledgr_run_tag(db_path, "trend_small", c("baseline", "trend"))
-#> ledgr Run Info
-#> ==============
-#>
-#> Run ID:          trend_small
-#> Label:           Lower threshold, one share
-#> Status:          DONE
-#> Archived:        FALSE
-#> Tags:            baseline, trend
-#> Snapshot:        demo_snapshot
-#> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     cbafb2862d3dda3fa49a32a48d9933ce8c30d034bf395ee99cfd6cd8b4d71ced
-#> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
-#> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
-#> Reproducibility: tier_1
-#> Execution Mode:  audit_log
-#> Elapsed Sec:     1.71
-#> Persist Features:TRUE
-#> Cache Hits:      0
-#> Cache Misses:    0
-ledgr_run_tag(db_path, "trend_large", c("trend", "higher-size"))
-#> ledgr Run Info
-#> ==============
-#>
-#> Run ID:          trend_large
-#> Label:           NA
-#> Status:          DONE
-#> Archived:        FALSE
-#> Tags:            higher-size, trend
-#> Snapshot:        demo_snapshot
-#> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     5848665167afb2de32572195eb7d7783976d809afffccc3dc4886cb078546c20
-#> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
-#> Params Hash:     778613d18461ba161bdadf9a616484075e13a4c86c49b2576b91f6dac42efbde
-#> Reproducibility: tier_1
-#> Execution Mode:  audit_log
-#> Elapsed Sec:     1.13
-#> Persist Features:TRUE
-#> Cache Hits:      0
-#> Cache Misses:    0
+snapshot <- snapshot |>
+  ledgr_run_label("trend_small", "Lower threshold, one share") |>
+  ledgr_run_tag("trend_small", c("baseline", "trend")) |>
+  ledgr_run_tag("trend_large", c("trend", "higher-size"))
 
-ledgr_run_list(db_path)[, c("run_id", "label", "tags")]
+ledgr_run_list(snapshot)[, c("run_id", "label", "tags")]
 #> # A tibble: 2 x 3
 #>   run_id      label                      tags
 #>   <chr>       <chr>                      <chr>
@@ -178,7 +124,7 @@ stored artifacts, strategy provenance, or comparison semantics.
 `ledgr_run_info()` gives the detailed metadata for one run.
 
 ``` r
-info <- ledgr_run_info(db_path, "trend_small")
+info <- ledgr_run_info(snapshot, "trend_small")
 info
 #> ledgr Run Info
 #> ==============
@@ -190,12 +136,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        demo_snapshot
 #> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     cbafb2862d3dda3fa49a32a48d9933ce8c30d034bf395ee99cfd6cd8b4d71ced
-#> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
+#> Config Hash:     06f3728cd15f73427e45d025be871b34e1d1fa2d7d4e17d1b5e5f30142a6bfab
+#> Strategy Hash:   afbf00a42940c4bc95ec6c46d5eb886aa7c2d6c1546eaf875e918880ee6abf36
 #> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.71
+#> Elapsed Sec:     0.98
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    0
@@ -221,7 +167,7 @@ but the provenance fields can be missing.
 artifacts. It does not rerun strategies.
 
 ``` r
-ledgr_compare_runs(db_path, run_ids = c("trend_small", "trend_large"))[, c(
+ledgr_compare_runs(snapshot, run_ids = c("trend_small", "trend_large"))[, c(
   "run_id", "final_equity", "total_return", "max_drawdown",
   "n_trades", "win_rate", "strategy_params_hash"
 )]
@@ -241,7 +187,7 @@ are future scope.
 existing artifacts. It does not recompute the run.
 
 ``` r
-reopened <- ledgr_run_open(db_path, "trend_small")
+reopened <- ledgr_run_open(snapshot, "trend_small")
 summary(reopened)
 #> ledgr Backtest Summary
 #> ======================
@@ -284,33 +230,14 @@ Archiving hides a run from the default list but keeps the artifacts
 available.
 
 ``` r
-ledgr_run_archive(db_path, "trend_large", reason = "superseded by smaller baseline")
-#> ledgr Run Info
-#> ==============
-#>
-#> Run ID:          trend_large
-#> Label:           NA
-#> Status:          DONE
-#> Archived:        TRUE
-#> Tags:            higher-size, trend
-#> Snapshot:        demo_snapshot
-#> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     5848665167afb2de32572195eb7d7783976d809afffccc3dc4886cb078546c20
-#> Strategy Hash:   7e92c0d24dd915b6037bbd1cb90c76264955c73363f045f4da2c239161f27e82
-#> Params Hash:     778613d18461ba161bdadf9a616484075e13a4c86c49b2576b91f6dac42efbde
-#> Reproducibility: tier_1
-#> Execution Mode:  audit_log
-#> Elapsed Sec:     1.13
-#> Persist Features:TRUE
-#> Cache Hits:      0
-#> Cache Misses:    0
+snapshot <- ledgr_run_archive(snapshot, "trend_large", reason = "superseded by smaller baseline")
 
-ledgr_run_list(db_path)[, c("run_id", "archived")]
+ledgr_run_list(snapshot)[, c("run_id", "archived")]
 #> # A tibble: 1 x 2
 #>   run_id      archived
 #>   <chr>       <lgl>
 #> 1 trend_small FALSE
-ledgr_run_list(db_path, include_archived = TRUE)[, c("run_id", "archived", "archive_reason")]
+ledgr_run_list(snapshot, include_archived = TRUE)[, c("run_id", "archived", "archive_reason")]
 #> # A tibble: 2 x 3
 #>   run_id      archived archive_reason
 #>   <chr>       <lgl>    <chr>

@@ -4,17 +4,19 @@
 \alias{ledgr_run_label}
 \title{Set a human-readable label for a run}
 \usage{
-ledgr_run_label(db_path, run_id, label = NULL)
+ledgr_run_label(snapshot, run_id, label = NULL)
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_id}{Run identifier.}
 
 \item{label}{Human-readable label. Use \code{NULL} or \code{""} to clear the label.}
 }
 \value{
-A \code{ledgr_run_info} object after the update.
+The input \code{ledgr_snapshot}, invisibly.
 }
 \description{
 Updates only the mutable label metadata for a stored run. The immutable
@@ -31,8 +33,9 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 strategy <- function(ctx, params) ctx$flat()
-bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-ledgr_run_label(db_path, bt$run_id, "baseline")
+bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+ledgr_run_label(snapshot, bt$run_id, "baseline")
 close(bt)
 }

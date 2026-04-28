@@ -37,6 +37,8 @@ mutable metadata layered on top of that key.
 ## Create One Store
 
 Use one durable `db_path` for the snapshot and all runs you want to compare.
+Experiment-store APIs take the snapshot handle, not the raw path. In a new R
+session, reopen that handle with `ledgr_snapshot_load(db_path, snapshot_id)`.
 
 ```{r data}
 library(ledgr)
@@ -104,7 +106,7 @@ bt_large <- ledgr_backtest(
 `ledgr_run_list()` is the discovery view. It is read-only.
 
 ```{r list}
-ledgr_run_list(db_path)[, c(
+ledgr_run_list(snapshot)[, c(
   "run_id", "label", "tags", "status", "final_equity", "total_return",
   "execution_mode", "reproducibility_level"
 )]
@@ -113,11 +115,12 @@ ledgr_run_list(db_path)[, c(
 `run_id` should be stable and script-friendly. Use labels for human names.
 
 ```{r label-tags}
-ledgr_run_label(db_path, "trend_small", "Lower threshold, one share")
-ledgr_run_tag(db_path, "trend_small", c("baseline", "trend"))
-ledgr_run_tag(db_path, "trend_large", c("trend", "higher-size"))
+snapshot <- snapshot |>
+  ledgr_run_label("trend_small", "Lower threshold, one share") |>
+  ledgr_run_tag("trend_small", c("baseline", "trend")) |>
+  ledgr_run_tag("trend_large", c("trend", "higher-size"))
 
-ledgr_run_list(db_path)[, c("run_id", "label", "tags")]
+ledgr_run_list(snapshot)[, c("run_id", "label", "tags")]
 ```
 
 Tags are mutable grouping metadata. They do not change identity hashes, stored
@@ -128,7 +131,7 @@ artifacts, strategy provenance, or comparison semantics.
 `ledgr_run_info()` gives the detailed metadata for one run.
 
 ```{r info}
-info <- ledgr_run_info(db_path, "trend_small")
+info <- ledgr_run_info(snapshot, "trend_small")
 info
 ```
 
@@ -152,7 +155,7 @@ provenance fields can be missing.
 does not rerun strategies.
 
 ```{r compare}
-ledgr_compare_runs(db_path, run_ids = c("trend_small", "trend_large"))[, c(
+ledgr_compare_runs(snapshot, run_ids = c("trend_small", "trend_large"))[, c(
   "run_id", "final_equity", "total_return", "max_drawdown",
   "n_trades", "win_rate", "strategy_params_hash"
 )]
@@ -167,7 +170,7 @@ future scope.
 artifacts. It does not recompute the run.
 
 ```{r open}
-reopened <- ledgr_run_open(db_path, "trend_small")
+reopened <- ledgr_run_open(snapshot, "trend_small")
 summary(reopened)
 ledgr_results(reopened, what = "equity")
 close(reopened)
@@ -181,10 +184,10 @@ with `ledgr_run_info()`.
 Archiving hides a run from the default list but keeps the artifacts available.
 
 ```{r archive}
-ledgr_run_archive(db_path, "trend_large", reason = "superseded by smaller baseline")
+snapshot <- ledgr_run_archive(snapshot, "trend_large", reason = "superseded by smaller baseline")
 
-ledgr_run_list(db_path)[, c("run_id", "archived")]
-ledgr_run_list(db_path, include_archived = TRUE)[, c("run_id", "archived", "archive_reason")]
+ledgr_run_list(snapshot)[, c("run_id", "archived")]
+ledgr_run_list(snapshot, include_archived = TRUE)[, c("run_id", "archived", "archive_reason")]
 ```
 
 Archive is non-destructive and idempotent. Hard delete is not a v0.1.6 API.

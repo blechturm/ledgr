@@ -287,8 +287,8 @@ ledgr expects a named numeric target vector with names matching
 `ctx$universe`. It does not accept raw signal labels such as `"LONG"` or
 `"FLAT"` as core strategy output.
 
-`ctx$flat()` starts from flat positions. That is useful when every
-pulse should fully restate the desired portfolio. For hold-unless-signal
+`ctx$flat()` starts from flat positions. That is useful when every pulse
+should fully restate the desired portfolio. For hold-unless-signal
 rules, start from the current position vector instead:
 
 ``` r
@@ -421,17 +421,17 @@ pulse$close("AAA")
 #> [1] 101.47
 pulse$position("AAA")
 #> [1] 0
-pulse$current_targets()
+pulse$hold()
 #> AAA BBB
 #>   0   0
-strategy(pulse)
+strategy(pulse, list())
 #> AAA BBB
 #> 394 371
 ```
 
 At this moment, the strategy only sees state available at
-`pulse$ts_utc`. `pulse$current_targets()` shows the current holdings as
-a full target vector. `strategy(pulse)` shows the target holdings the
+`pulse$ts_utc`. `pulse$hold()` shows the current holdings as a full
+target vector. `strategy(pulse, list())` shows the target holdings the
 strategy would request from that context.
 
 A pulse snapshot is read-only. It is meant for research and debugging,
@@ -539,7 +539,7 @@ durable_bt <- ledgr_backtest(
 )
 
 basename(durable_bt$db_path)
-#> [1] "ledgr_getting_started_148c8173f7c77.duckdb"
+#> [1] "ledgr_getting_started_deec6d9a57b7.duckdb"
 file.exists(durable_bt$db_path)
 #> [1] TRUE
 
@@ -568,7 +568,7 @@ ledgr_snapshot_close(snapshot)
 reloaded_snapshot <- ledgr_snapshot_load(artifact_db, snapshot_id, verify = TRUE)
 ledgr_snapshot_info(reloaded_snapshot)[, c("snapshot_id", "status", "bar_count")]
 #>                     snapshot_id status bar_count
-#> 1 snapshot_20260427_211329_b1e5 SEALED        66
+#> 1 snapshot_20260428_165835_215e SEALED        66
 ledgr_snapshot_close(reloaded_snapshot)
 ```
 
@@ -598,13 +598,15 @@ helpers make those runs discoverable and reopenable without recomputing
 the strategy:
 
 ``` r
-ledgr_run_list(artifact_db)[, c("run_id", "status", "execution_mode", "total_return")]
+durable_snapshot <- ledgr_snapshot_load(artifact_db, snapshot_id)
+
+ledgr_run_list(durable_snapshot)[, c("run_id", "status", "execution_mode", "total_return")]
 #> # A tibble: 1 x 4
 #>   run_id                  status execution_mode total_return
 #>   <chr>                   <chr>  <chr>                 <dbl>
 #> 1 getting-started-durable DONE   audit_log             0.311
 
-run_info <- ledgr_run_info(artifact_db, "getting-started-durable")
+run_info <- ledgr_run_info(durable_snapshot, "getting-started-durable")
 run_info
 #> ledgr Run Info
 #> ==============
@@ -613,19 +615,20 @@ run_info
 #> Label:           NA
 #> Status:          DONE
 #> Archived:        FALSE
-#> Snapshot:        snapshot_20260427_211329_b1e5
+#> Tags:            NA
+#> Snapshot:        snapshot_20260428_165835_215e
 #> Snapshot Hash:   a91451efaef4cd8be93458d12f4680166107b56033ec9e5a0c9f23e3d39a9442
-#> Config Hash:     ebb000ad7ef226730ad9a78d9f4edd78d6e2e9962fe6e41333f43d2b51b98d0a
-#> Strategy Hash:   a52efc8758f6febee8d846c0393c50ec90d2340fcbdfd67a543056f969031434
+#> Config Hash:     200a1c5c0dc9829f53237274c14e266ff8df82440abeaff53e88ee4e4a0976b9
+#> Strategy Hash:   e6f588c03da63a973d766baab1ee5ecf169303cc705a1d8876556c64334dc8d9
 #> Params Hash:     071685bbedd79b55e3cadcf0089a6d740ffa729e425e34aef44a8beab9a67c87
-#> Reproducibility: tier_2
+#> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     0.960000000000001
+#> Elapsed Sec:     0.94
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    0
 
-reopened_bt <- ledgr_run_open(artifact_db, "getting-started-durable")
+reopened_bt <- ledgr_run_open(durable_snapshot, "getting-started-durable")
 reopened_bt |> ledgr_results(what = "equity") |> tail(2)
 #> # A tibble: 2 x 6
 #>   ts_utc              equity  cash positions_value running_max drawdown
@@ -633,6 +636,7 @@ reopened_bt |> ledgr_results(what = "equity") |> tail(2)
 #> 1 2020-02-13 00:00:00 13099. 6083.           7016.      13099.        0
 #> 2 2020-02-14 00:00:00 13107. 6083.           7024.      13107.        0
 close(reopened_bt)
+close(durable_snapshot)
 ```
 
 Use `ledgr_run_label()` for mutable human-readable names and

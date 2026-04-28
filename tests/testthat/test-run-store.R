@@ -36,7 +36,7 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
   )
   on.exit(close(bt_b), add = TRUE)
 
-  runs <- ledgr_run_list(db_path)
+  runs <- ledgr_run_list(snapshot)
   testthat::expect_s3_class(runs, "tbl_df")
   testthat::expect_true(all(c("list-a", "list-b") %in% runs$run_id))
   testthat::expect_true(all(c(
@@ -52,13 +52,23 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
   DBI::dbExecute(opened$con, "UPDATE runs SET archived = TRUE WHERE run_id = 'list-b'")
 
-  visible <- ledgr_run_list(db_path)
+  visible <- ledgr_run_list(snapshot)
   testthat::expect_true("list-a" %in% visible$run_id)
   testthat::expect_false("list-b" %in% visible$run_id)
 
-  all_runs <- ledgr_run_list(db_path, include_archived = TRUE)
+  all_runs <- ledgr_run_list(snapshot, include_archived = TRUE)
   testthat::expect_true("list-b" %in% all_runs$run_id)
   testthat::expect_true(all_runs$archived[all_runs$run_id == "list-b"])
+})
+
+testthat::test_that("experiment-store APIs reject db_path-first calls", {
+  db_path <- tempfile(fileext = ".duckdb")
+
+  testthat::expect_error(
+    ledgr_run_list(db_path),
+    "ledgr_snapshot_load",
+    class = "ledgr_snapshot_required"
+  )
 })
 
 testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates missing telemetry", {
@@ -81,8 +91,10 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
     run_id = "info-run"
   )
   on.exit(close(bt), add = TRUE)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  info <- ledgr_run_info(db_path, "info-run")
+  info <- ledgr_run_info(snapshot, "info-run")
   testthat::expect_s3_class(info, "ledgr_run_info")
   testthat::expect_identical(info$run_id, "info-run")
   testthat::expect_identical(info$status, "DONE")
@@ -108,7 +120,7 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
     "UPDATE runs SET status = 'FAILED', error_msg = 'simulated failure' WHERE run_id = 'info-run'"
   )
 
-  failed_info <- ledgr_run_info(db_path, "info-run")
+  failed_info <- ledgr_run_info(snapshot, "info-run")
   testthat::expect_identical(failed_info$status, "FAILED")
   failed_print <- utils::capture.output(print(failed_info))
   testthat::expect_true(any(grepl("simulated failure", failed_print, fixed = TRUE)))
@@ -137,6 +149,8 @@ testthat::test_that("ledgr_run_open returns a handle without recomputation or mu
   )
   original_calls <- calls$n
   close(bt)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   opened <- ledgr_test_open_duckdb(db_path)
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
@@ -147,7 +161,7 @@ testthat::test_that("ledgr_run_open returns a handle without recomputation or mu
   )$n[[1]]
 
   calls$n <- 0L
-  reopened <- ledgr_run_open(db_path, "open-run")
+  reopened <- ledgr_run_open(snapshot, "open-run")
   on.exit(close(reopened), add = TRUE)
   testthat::expect_s3_class(reopened, "ledgr_backtest")
   testthat::expect_s3_class(reopened$config, "ledgr_config")
@@ -194,12 +208,14 @@ testthat::test_that("ledgr_run_open rejects incomplete runs and archived complet
     run_id = "status-run"
   )
   close(bt)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   opened <- ledgr_test_open_duckdb(db_path)
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
 
   DBI::dbExecute(opened$con, "UPDATE runs SET archived = TRUE WHERE run_id = 'status-run'")
-  archived <- ledgr_run_open(db_path, "status-run")
+  archived <- ledgr_run_open(snapshot, "status-run")
   testthat::expect_s3_class(archived, "ledgr_backtest")
   close(archived)
 
@@ -208,10 +224,10 @@ testthat::test_that("ledgr_run_open rejects incomplete runs and archived complet
     "UPDATE runs SET status = 'FAILED', error_msg = 'bad params' WHERE run_id = 'status-run'"
   )
   testthat::expect_error(
-    ledgr_run_open(db_path, "status-run"),
+    ledgr_run_open(snapshot, "status-run"),
     class = "ledgr_run_not_complete"
   )
-  info <- ledgr_run_info(db_path, "status-run")
+  info <- ledgr_run_info(snapshot, "status-run")
   testthat::expect_identical(info$error_msg, "bad params")
 })
 
@@ -220,6 +236,64 @@ testthat::test_that("ledgr_run_list reads legacy stores without mutating them", 
   on.exit(unlink(db_path), add = TRUE)
 
   opened <- ledgr_test_open_duckdb(db_path)
+  DBI::dbExecute(
+    opened$con,
+    "
+    CREATE TABLE snapshots (
+      snapshot_id TEXT NOT NULL PRIMARY KEY,
+      status TEXT NOT NULL,
+      created_at_utc TIMESTAMP NOT NULL,
+      sealed_at_utc TIMESTAMP,
+      snapshot_hash TEXT,
+      meta_json TEXT
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    CREATE TABLE snapshot_instruments (
+      snapshot_id TEXT NOT NULL,
+      instrument_id TEXT NOT NULL,
+      meta_json TEXT,
+      PRIMARY KEY (snapshot_id, instrument_id)
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    CREATE TABLE snapshot_bars (
+      snapshot_id TEXT NOT NULL,
+      instrument_id TEXT NOT NULL,
+      ts_utc TIMESTAMP NOT NULL,
+      open DOUBLE NOT NULL,
+      high DOUBLE NOT NULL,
+      low DOUBLE NOT NULL,
+      close DOUBLE NOT NULL,
+      volume DOUBLE,
+      PRIMARY KEY (snapshot_id, instrument_id, ts_utc)
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    INSERT INTO snapshots (
+      snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash, meta_json
+    ) VALUES (
+      'legacy-snapshot', 'SEALED', TIMESTAMP '2020-01-01 00:00:00',
+      TIMESTAMP '2020-01-01 00:00:00', 'legacy-hash', '{}'
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    INSERT INTO snapshot_instruments (snapshot_id, instrument_id, meta_json)
+    VALUES ('legacy-snapshot', 'TEST_A', '{}')
+    "
+  )
   DBI::dbExecute(
     opened$con,
     "
@@ -249,12 +323,14 @@ testthat::test_that("ledgr_run_list reads legacy stores without mutating them", 
     "
   )
   ledgr_test_close_duckdb(opened$con, opened$drv)
+  snapshot <- new_ledgr_snapshot(db_path, "legacy-snapshot")
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  runs <- ledgr_run_list(db_path)
+  runs <- ledgr_run_list(snapshot)
   testthat::expect_true("legacy-run" %in% runs$run_id)
   testthat::expect_identical(runs$reproducibility_level[runs$run_id == "legacy-run"], "legacy")
   testthat::expect_error(
-    ledgr_run_open(db_path, "legacy-run"),
+    ledgr_run_open(snapshot, "legacy-run"),
     class = "ledgr_invalid_run"
   )
 

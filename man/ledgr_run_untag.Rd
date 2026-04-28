@@ -4,10 +4,12 @@
 \alias{ledgr_run_untag}
 \title{Remove tags from a stored run}
 \usage{
-ledgr_run_untag(db_path, run_id, tags = NULL)
+ledgr_run_untag(snapshot, run_id, tags = NULL)
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_id}{Run identifier.}
 
@@ -16,7 +18,7 @@ from the run. Use \code{NULL} for "all tags"; \code{character(0)} is treated as 
 invalid empty tag set.}
 }
 \value{
-A \code{ledgr_run_info} object after the update.
+The input \code{ledgr_snapshot}, invisibly.
 }
 \description{
 Removes mutable metadata tags from a run. If \code{tags = NULL}, all tags for the
@@ -33,9 +35,10 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 strategy <- function(ctx, params) ctx$flat()
-bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-ledgr_run_tag(db_path, bt$run_id, c("baseline", "demo"))
-ledgr_run_untag(db_path, bt$run_id, "demo")
+bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+ledgr_run_tag(snapshot, bt$run_id, c("baseline", "demo"))
+ledgr_run_untag(snapshot, bt$run_id, "demo")
 close(bt)
 }

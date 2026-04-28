@@ -20,6 +20,9 @@
 - Added `ledgr_run()` as the public single-run API for `ledgr_experiment`
   objects, including run-time `features = function(params)` evaluation and an
   explicit `seed = NULL` identity field.
+- Converted experiment-store APIs to snapshot-first signatures and extended
+  `ledgr_snapshot_load()` so a durable file with exactly one sealed snapshot can
+  be resumed without retyping the snapshot id.
 - Added `ledgr_opening_from_broker()` as a reserved adapter hook. v0.1.7 does
   not ship built-in broker integrations.
 

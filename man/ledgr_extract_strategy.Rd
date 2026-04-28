@@ -4,10 +4,12 @@
 \alias{ledgr_extract_strategy}
 \title{Extract stored strategy source for a run}
 \usage{
-ledgr_extract_strategy(db_path, run_id, trust = FALSE)
+ledgr_extract_strategy(snapshot, run_id, trust = FALSE)
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_id}{Run identifier.}
 
@@ -57,15 +59,16 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
   targets["AAA"] <- params$qty
   targets
 }
 bt <- ledgr_backtest(
-  data = bars, strategy = strategy, strategy_params = list(qty = 1),
+  snapshot = snapshot, strategy = strategy, strategy_params = list(qty = 1),
   db_path = db_path
 )
-ledgr_extract_strategy(db_path, bt$run_id)
+ledgr_extract_strategy(snapshot, bt$run_id)
 close(bt)
 }

@@ -4,17 +4,19 @@
 \alias{ledgr_run_archive}
 \title{Archive a run without deleting artifacts}
 \usage{
-ledgr_run_archive(db_path, run_id, reason = NULL)
+ledgr_run_archive(snapshot, run_id, reason = NULL)
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_id}{Run identifier.}
 
 \item{reason}{Optional archive reason. Empty strings are stored as \code{NULL}.}
 }
 \value{
-A \code{ledgr_run_info} object after the archive operation.
+The input \code{ledgr_snapshot}, invisibly.
 }
 \description{
 Marks a stored run as archived so it is hidden from default run lists while
@@ -32,8 +34,9 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 strategy <- function(ctx, params) ctx$flat()
-bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-ledgr_run_archive(db_path, bt$run_id, reason = "example cleanup")
+bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+ledgr_run_archive(snapshot, bt$run_id, reason = "example cleanup")
 close(bt)
 }

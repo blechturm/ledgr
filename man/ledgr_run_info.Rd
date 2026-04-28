@@ -4,10 +4,12 @@
 \alias{ledgr_run_info}
 \title{Inspect one run in a ledgr experiment store}
 \usage{
-ledgr_run_info(db_path, run_id)
+ledgr_run_info(snapshot, run_id)
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_id}{Run identifier.}
 }
@@ -29,8 +31,9 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
+snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
 strategy <- function(ctx, params) ctx$flat()
-bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-ledgr_run_info(db_path, bt$run_id)
+bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+ledgr_run_info(snapshot, bt$run_id)
 close(bt)
 }

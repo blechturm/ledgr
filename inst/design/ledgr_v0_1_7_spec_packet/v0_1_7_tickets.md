@@ -409,7 +409,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1002  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Convert the public experiment-store workflow from `db_path`-first calls to
@@ -438,17 +438,17 @@ file back to a snapshot handle.
 12. Add tests proving no unintended store mutation from read operations.
 
 **Acceptance Criteria:**
-- [ ] New-session workflow can resume from an existing DuckDB file by loading a
+- [x] New-session workflow can resume from an existing DuckDB file by loading a
       snapshot handle first.
-- [ ] `ledgr_snapshot_load()` or its replacement is documented as the
+- [x] `ledgr_snapshot_load()` or its replacement is documented as the
       canonical resumption path.
-- [ ] Snapshot-first calls cover all store workflows from v0.1.6.
-- [ ] Mutation calls return snapshot.
-- [ ] Read calls preserve classed returns.
-- [ ] Old `db_path`-first public examples are gone.
-- [ ] Old signatures fail clearly or are documented as low-level/internal.
-- [ ] Comparison and extraction remain no-recompute/no-mutation reads.
-- [ ] Run identity hashes are unchanged by metadata mutations.
+- [x] Snapshot-first calls cover all store workflows from v0.1.6.
+- [x] Mutation calls return snapshot.
+- [x] Read calls preserve classed returns.
+- [x] Old `db_path`-first public examples are gone.
+- [x] Old signatures fail clearly or are documented as low-level/internal.
+- [x] Comparison and extraction remain no-recompute/no-mutation reads.
+- [x] Run identity hashes are unchanged by metadata mutations.
 
 **Test Requirements:**
 - Snapshot resumption tests against an existing durable store.

@@ -182,7 +182,7 @@ pulse <- ledgr_pulse_snapshot(
 
 pulse$close("AAA")
 pulse$feature("AAA", "sma_3")
-pulse$current_targets()
+pulse$hold()
 threshold_strategy(
   pulse,
   list(threshold = c(AAA = 101, BBB = 80), qty = 1)
@@ -213,7 +213,7 @@ bt_qty_3 <- ledgr_backtest(
   run_id = "threshold_qty_3"
 )
 
-ledgr_compare_runs(db_path, run_ids = c("threshold_qty_1", "threshold_qty_3"))[, c(
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))[, c(
   "run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash"
 )]
 ```
@@ -231,7 +231,7 @@ bt_flat <- ledgr_backtest(
   run_id = "flat"
 )
 
-ledgr_compare_runs(db_path, run_ids = c("threshold_qty_1", "flat"))[, c(
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))[, c(
   "run_id", "final_equity", "total_return", "n_trades", "strategy_source_hash"
 )]
 ```
@@ -242,7 +242,7 @@ ledgr_compare_runs(db_path, run_ids = c("threshold_qty_1", "flat"))[, c(
 without parsing or evaluating it.
 
 ```{r extract}
-extracted <- ledgr_extract_strategy(db_path, "threshold_qty_1", trust = FALSE)
+extracted <- ledgr_extract_strategy(snapshot, "threshold_qty_1", trust = FALSE)
 extracted
 ```
 

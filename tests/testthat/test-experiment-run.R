@@ -72,7 +72,7 @@ testthat::test_that("ledgr_run rejects non-NULL seeds while storing seed NULL in
 
   bt <- ledgr_run(exp, run_id = "null-seed-run")
   on.exit(close(bt), add = TRUE)
-  config_json <- ledgr_run_info(db_path, "null-seed-run")$config_json
+  config_json <- ledgr_run_info(snapshot, "null-seed-run")$config_json
   cfg <- jsonlite::fromJSON(config_json, simplifyVector = FALSE)
   testthat::expect_null(cfg$engine$seed)
 })
