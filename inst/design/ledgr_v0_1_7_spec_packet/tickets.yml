@@ -240,7 +240,7 @@ tickets:
 
   - id: LDG-1006
     title: "Typed Parameter Grid"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1001]
     tests:
@@ -284,7 +284,7 @@ tickets:
 
   - id: LDG-1007
     title: "Curated Run List And Comparison Prints"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1005]
     tests:
@@ -365,7 +365,7 @@ tickets:
 
   - id: LDG-1009
     title: "Demo Dataset And Simulation Helper"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1001]
     tests:

@@ -22,10 +22,11 @@ completed runs. If \code{NULL}, compares all non-archived completed runs.}
 
 \item{include_archived}{Logical scalar. Used only when \code{run_ids = NULL}.}
 
-\item{metrics}{Metrics set. Only \code{"standard"} is supported in v0.1.6.}
+\item{metrics}{Metrics set. Only \code{"standard"} is supported in v0.1.7.}
 }
 \value{
-A tibble with one row per completed run.
+A \code{ledgr_comparison} object, which is a classed tibble with one row
+per completed run.
 }
 \description{
 Reads stored run metadata, provenance, telemetry, and result artifacts from a

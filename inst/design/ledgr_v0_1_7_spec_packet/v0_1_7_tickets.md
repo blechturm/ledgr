@@ -507,7 +507,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-1001  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Add `ledgr_param_grid()` as a typed, non-executing parameter-grid object. This
@@ -526,13 +526,13 @@ shipping sweep or tune execution in v0.1.7.
 9. Document that the object is not executed in v0.1.7.
 
 **Acceptance Criteria:**
-- [ ] Named grids preserve labels.
-- [ ] Unnamed grids receive stable generated labels.
-- [ ] Duplicate labels fail with a classed error.
-- [ ] All entries are params lists.
-- [ ] Return object is classed and printable.
-- [ ] No sweep or tune execution API is added.
-- [ ] Canonical params hashing is deterministic.
+- [x] Named grids preserve labels.
+- [x] Unnamed grids receive stable generated labels.
+- [x] Duplicate labels fail with a classed error.
+- [x] All entries are params lists.
+- [x] Return object is classed and printable.
+- [x] No sweep or tune execution API is added.
+- [x] Canonical params hashing is deterministic.
 
 **Test Requirements:**
 - Named-grid tests.
@@ -587,7 +587,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-1005  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Make `ledgr_run_list` and `ledgr_comparison` print as curated research objects
@@ -604,11 +604,11 @@ while remaining ordinary tibble-like data underneath.
 8. Add examples in docs and vignettes.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_run_list()` prints a curated view with useful footer.
-- [ ] `ledgr_compare_runs()` prints a curated view with useful footer.
-- [ ] Underlying objects remain dplyr/tibble compatible.
-- [ ] Numeric metric columns remain numeric.
-- [ ] Print output does not hide access to identity and telemetry columns.
+- [x] `ledgr_run_list()` prints a curated view with useful footer.
+- [x] `ledgr_compare_runs()` prints a curated view with useful footer.
+- [x] Underlying objects remain dplyr/tibble compatible.
+- [x] Numeric metric columns remain numeric.
+- [x] Print output does not hide access to identity and telemetry columns.
 
 **Test Requirements:**
 - Print snapshot tests or robust text tests.
@@ -730,7 +730,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1001  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Ship a deterministic synthetic demo dataset and a public simulator so examples
@@ -749,13 +749,13 @@ can stop hand-constructing tiny bars inline.
 8. Do not replace internal test helper data unless a test explicitly benefits.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_demo_bars` has at least 10 instruments and at least 5 years of
+- [x] `ledgr_demo_bars` has at least 10 instruments and at least 5 years of
       daily bars.
-- [ ] Dataset columns match `ledgr_snapshot_from_df()` input requirements.
-- [ ] `ledgr_sim_bars()` is deterministic for the same seed.
-- [ ] The DGP is documented and readable.
-- [ ] No generation code runs at install, check, or package load time.
-- [ ] README/vignettes can use the dataset offline.
+- [x] Dataset columns match `ledgr_snapshot_from_df()` input requirements.
+- [x] `ledgr_sim_bars()` is deterministic for the same seed.
+- [x] The DGP is documented and readable.
+- [x] No generation code runs at install, check, or package load time.
+- [x] README/vignettes can use the dataset offline.
 
 **Test Requirements:**
 - Dataset schema tests.

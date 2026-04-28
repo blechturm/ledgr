@@ -23,6 +23,12 @@
 - Converted experiment-store APIs to snapshot-first signatures and extended
   `ledgr_snapshot_load()` so a durable file with exactly one sealed snapshot can
   be resumed without retyping the snapshot id.
+- Added `ledgr_param_grid()` as a typed, non-executing parameter-grid object
+  with stable canonical-JSON labels for future sweep/tune workflows.
+- Added curated print methods for `ledgr_run_list()` and
+  `ledgr_compare_runs()` while keeping the underlying objects tibble-compatible.
+- Added `ledgr_demo_bars` and `ledgr_sim_bars()` as deterministic offline demo
+  data for examples and documentation.
 - Added `ledgr_opening_from_broker()` as a reserved adapter hook. v0.1.7 does
   not ship built-in broker integrations.
 

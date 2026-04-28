@@ -1031,6 +1031,21 @@ versions, compare run provenance to show the artifact hashes differ.
 - Additional asset classes (crypto, futures, FX)
 - Intraday / multi-pulse scheduling
 - Advanced transaction cost models
+- Modular validation zoo:
+  - read-only validation suites for data quality, snapshot integrity,
+    indicators, strategy outputs, fill assumptions, ledger reconciliation,
+    and experiment-store metadata
+  - structured validation results with check IDs, severity, affected objects,
+    and classed failures/warnings
+  - explicit extension mechanism so package or user-defined checks can be
+    composed without changing core execution semantics
+- Advanced cost and slippage modeling:
+  - keep costs and slippage in fill/execution models, not strategy code
+  - expose traceable fill components such as reference price, execution price,
+    spread, slippage, fixed commission, and future percentage/market-impact
+    cost terms
+  - preserve zero-cost defaults for controlled examples while documenting that
+    realistic research should opt into explicit execution-cost assumptions
 - Tax-aware accounting (wash sales, lot selection)
 - UI / dashboards
 

@@ -480,7 +480,36 @@ ledgr_compare_runs_select <- function(rows, fill_stats) {
     "snapshot_hash"
   )
   out <- out[, intersect(cols, names(out)), drop = FALSE]
-  tibble::as_tibble(out)
+  ledgr_classed_tibble(out, "ledgr_comparison")
+}
+
+ledgr_classed_tibble <- function(x, class_name) {
+  out <- tibble::as_tibble(x)
+  class(out) <- c(class_name, setdiff(class(out), class_name))
+  out
+}
+
+ledgr_format_percent <- function(x, digits = 1L, signed = FALSE) {
+  out <- rep(NA_character_, length(x))
+  ok <- !is.na(x)
+  fmt <- if (isTRUE(signed)) paste0("%+.", digits, "f%%") else paste0("%.", digits, "f%%")
+  out[ok] <- sprintf(fmt, 100 * as.numeric(x[ok]))
+  out
+}
+
+ledgr_print_curated_tibble <- function(title, x, cols, footer, ...) {
+  view <- tibble::as_tibble(x[, intersect(cols, names(x)), drop = FALSE])
+  if ("total_return" %in% names(view)) view$total_return <- ledgr_format_percent(view$total_return, signed = TRUE)
+  if ("max_drawdown" %in% names(view)) view$max_drawdown <- ledgr_format_percent(view$max_drawdown)
+  if ("win_rate" %in% names(view)) view$win_rate <- ledgr_format_percent(view$win_rate)
+
+  cat(title, "\n", sep = "")
+  print(view, ...)
+  cat("\n")
+  for (line in footer) {
+    cat("# i ", line, "\n", sep = "")
+  }
+  invisible(x)
 }
 
 ledgr_run_info_from_row <- function(row, db_path) {
@@ -512,8 +541,9 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   preserves this order, including duplicates, and may include archived
 #'   completed runs. If `NULL`, compares all non-archived completed runs.
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
-#' @param metrics Metrics set. Only `"standard"` is supported in v0.1.6.
-#' @return A tibble with one row per completed run.
+#' @param metrics Metrics set. Only `"standard"` is supported in v0.1.7.
+#' @return A `ledgr_comparison` object, which is a classed tibble with one row
+#'   per completed run.
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
 #' bars <- data.frame(
@@ -606,6 +636,28 @@ ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALS
   out
 }
 
+#' Print a run comparison
+#'
+#' @param x A `ledgr_comparison` object returned by [ledgr_compare_runs()].
+#' @param ... Passed to the tibble print method for the curated view.
+#' @return The input object, invisibly.
+#' @export
+print.ledgr_comparison <- function(x, ...) {
+  ledgr_print_curated_tibble(
+    "# ledgr comparison",
+    x,
+    cols = c(
+      "run_id", "label", "final_equity", "total_return",
+      "max_drawdown", "n_trades", "win_rate", "reproducibility_level"
+    ),
+    footer = c(
+      "Full identity and telemetry columns remain available on this tibble.",
+      "Inspect one run with ledgr_run_info(snapshot, run_id)."
+    ),
+    ...
+  )
+}
+
 #' List runs in a ledgr experiment store
 #'
 #' Discovers stored runs in a DuckDB experiment-store file without recomputing
@@ -615,8 +667,9 @@ ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALS
 #'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param include_archived Logical scalar. If `TRUE`, include archived runs.
-#' @return A tibble with run identity, provenance, status, telemetry summary,
-#'   and basic result summary columns.
+#' @return A `ledgr_run_list` object, which is a classed tibble with run
+#'   identity, provenance, status, telemetry summary, and basic result summary
+#'   columns.
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
 #' bars <- data.frame(
@@ -644,7 +697,33 @@ ledgr_run_list <- function(snapshot, include_archived = FALSE) {
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   out <- ledgr_run_store_fetch(opened$con, include_archived = include_archived, snapshot_id = snapshot_id)
   detail_cols <- c("config_json", "dependency_versions_json", "strategy_params_json")
-  out[setdiff(names(out), detail_cols)]
+  ledgr_classed_tibble(out[setdiff(names(out), detail_cols)], "ledgr_run_list")
+}
+
+#' Print a run list
+#'
+#' @param x A `ledgr_run_list` object returned by [ledgr_run_list()].
+#' @param ... Passed to the tibble print method for the curated view.
+#' @return The input object, invisibly.
+#' @export
+print.ledgr_run_list <- function(x, ...) {
+  cols <- c(
+    "run_id", "label", "tags", "status", "final_equity",
+    "total_return", "execution_mode", "reproducibility_level"
+  )
+  if ("archived" %in% names(x) && any(as.logical(x$archived), na.rm = TRUE)) {
+    cols <- c("run_id", "label", "archived", "tags", "status", "final_equity", "total_return", "execution_mode")
+  }
+  ledgr_print_curated_tibble(
+    "# ledgr run list",
+    x,
+    cols = cols,
+    footer = c(
+      "Full identity and telemetry columns remain available on this tibble.",
+      "Inspect one run with ledgr_run_info(snapshot, run_id)."
+    ),
+    ...
+  )
 }
 
 #' Inspect one run in a ledgr experiment store

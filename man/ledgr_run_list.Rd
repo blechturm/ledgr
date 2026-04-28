@@ -14,8 +14,9 @@ DuckDB file in a new R session.}
 \item{include_archived}{Logical scalar. If \code{TRUE}, include archived runs.}
 }
 \value{
-A tibble with run identity, provenance, status, telemetry summary,
-and basic result summary columns.
+A \code{ledgr_run_list} object, which is a classed tibble with run
+identity, provenance, status, telemetry summary, and basic result summary
+columns.
 }
 \description{
 Discovers stored runs in a DuckDB experiment-store file without recomputing
