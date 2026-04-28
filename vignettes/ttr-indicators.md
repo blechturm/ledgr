@@ -53,9 +53,9 @@ functions can still be used by supplying `requires_bars` manually.
 rsi_14 <- ledgr_ind_ttr("RSI", input = "close", n = 14)
 wma_10 <- ledgr_ind_ttr("WMA", input = "close", n = 10)
 
-rsi_14$id
+ledgr_feature_id(rsi_14)
 #> [1] "ttr_rsi_14"
-wma_10$id
+ledgr_feature_id(wma_10)
 #> [1] "ttr_wma_10"
 ```
 
@@ -63,24 +63,61 @@ The generated ID is derived from the TTR function and explicit
 arguments. ledgr does not rely on TTR defaults for warmup inference or
 ID construction.
 
+Built-in indicators follow the same convention:
+
+``` r
+builtins <- list(
+  ledgr_ind_sma(20),
+  ledgr_ind_ema(20),
+  ledgr_ind_rsi(14),
+  ledgr_ind_returns(5)
+)
+
+ledgr_feature_id(builtins)
+#> [1] "sma_20"   "ema_20"   "rsi_14"   "return_5"
+```
+
+Those strings are the names you use inside a strategy:
+
+``` r
+ctx$feature("AAA", "sma_20")
+ctx$feature("AAA", "return_5")
+```
+
 ## Multi-Input And Multi-Output Indicators
 
 ``` r
 atr_20 <- ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)
 bb_up <- ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+macd_signal <- ledgr_ind_ttr(
+  "MACD",
+  input = "close",
+  output = "signal",
+  nFast = 12,
+  nSlow = 26,
+  nSig = 9
+)
 aroon_osc <- ledgr_ind_ttr("aroon", input = "hl", output = "oscillator", n = 20)
 
-atr_20$id
-#> [1] "ttr_atr_20_atr"
-bb_up$id
-#> [1] "ttr_bbands_20_up"
-aroon_osc$id
-#> [1] "ttr_aroon_20_oscillator"
+ledgr_feature_id(list(rsi_14, atr_20, bb_up, macd_signal, aroon_osc))
+#> [1] "ttr_rsi_14"              "ttr_atr_20_atr"          "ttr_bbands_20_up"       
+#> [4] "ttr_macd_12_26_9_signal" "ttr_aroon_20_oscillator"
 ```
 
 Some TTR indicators return several columns. For those indicators, choose
 the column with `output`. The available outputs are checked at
 construction time so errors happen before a backtest starts.
+
+The ID format is deterministic:
+
+``` text
+ttr_<function>_<explicit args>_<output>
+```
+
+For example, the IDs above include `ttr_rsi_14`, `ttr_atr_20_atr`,
+`ttr_bbands_20_up`, and `ttr_macd_12_26_9_signal`. Use
+`ledgr_feature_id(ind)` or print the indicator object instead of
+guessing the string.
 
 ## Feature Computation In A Backtest
 
@@ -99,13 +136,16 @@ features <- list(
   ledgr_ind_ttr("RSI", input = "close", n = 14),
   ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
 )
+ledgr_feature_id(features)
+#> [1] "ttr_rsi_14"       "ttr_bbands_20_up"
 
 strategy <- function(ctx) {
   targets <- ctx$current_targets()
   rsi <- ctx$feature("AAA", "ttr_rsi_14")
+  bb_up <- ctx$feature("AAA", "ttr_bbands_20_up")
 
   # This article uses one synthetic instrument, so only AAA is targeted.
-  if (!is.na(rsi) && rsi > 50) {
+  if (!is.na(rsi) && !is.na(bb_up) && rsi > 50 && ctx$close("AAA") > bb_up) {
     targets["AAA"] <- 10
   }
   targets
@@ -120,7 +160,7 @@ bt <- ledgr_backtest(
 )
 
 nrow(tibble::as_tibble(bt, what = "trades"))
-#> [1] 1
+#> [1] 0
 close(bt)
 ```
 

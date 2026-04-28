@@ -74,6 +74,33 @@ testthat::test_that("indicator fingerprint includes series_fn", {
   ))
 })
 
+testthat::test_that("ledgr_feature_id exposes existing indicator IDs", {
+  sma <- ledgr_ind_sma(20)
+  returns <- ledgr_ind_returns(5)
+
+  testthat::expect_identical(ledgr_feature_id(sma), "sma_20")
+  testthat::expect_identical(
+    ledgr_feature_id(list(sma, returns)),
+    c("sma_20", "return_5")
+  )
+  named <- list(first = sma, second = returns)
+  testthat::expect_null(names(ledgr_feature_id(named)))
+  testthat::expect_error(
+    ledgr_feature_id(list(sma, list(id = "not_an_indicator"))),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
+    ledgr_feature_id("sma_20"),
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("print.ledgr_indicator surfaces the feature ID", {
+  out <- utils::capture.output(print(ledgr_ind_sma(20)))
+  testthat::expect_true(any(grepl("ID:\\s*sma_20", out)))
+  testthat::expect_true(any(grepl("Requires bars:\\s*20", out)))
+})
+
 testthat::test_that("indicator registry supports register/get/list", {
   ind <- ledgr_ind_sma(2)
   ledgr_register_indicator(ind, "test_sma_2", overwrite = TRUE)

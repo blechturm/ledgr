@@ -56,7 +56,7 @@ tickets:
 
   - id: LDG-902
     title: "Feature ID Discovery UX"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-901]
     tests:

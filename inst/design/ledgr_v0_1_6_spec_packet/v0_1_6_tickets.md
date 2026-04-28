@@ -152,7 +152,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-901  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Make indicator feature IDs discoverable before runtime. The v0.1.5 audit showed
@@ -172,13 +172,13 @@ guessable. Runtime unknown-feature errors are necessary but not sufficient.
 7. Ensure unknown-feature runtime errors still list available IDs.
 
 **Acceptance Criteria:**
-- [ ] Users can discover the exact feature ID before running a strategy.
-- [ ] TTR ID examples include at least BBands, MACD, ATR, and RSI.
-- [ ] Built-in indicator ID examples are documented.
-- [ ] Any new helper is exported, documented, tested, and does not create a
+- [x] Users can discover the exact feature ID before running a strategy.
+- [x] TTR ID examples include at least BBands, MACD, ATR, and RSI.
+- [x] Built-in indicator ID examples are documented.
+- [x] Any new helper is exported, documented, tested, and does not create a
       second ID-generation scheme.
-- [ ] List input returns a plain character vector of IDs in list order.
-- [ ] Existing indicator fingerprints and IDs remain unchanged.
+- [x] List input returns a plain character vector of IDs in list order.
+- [x] Existing indicator fingerprints and IDs remain unchanged.
 
 **Test Requirements:**
 - Unit tests for any new helper or print method.

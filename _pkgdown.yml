@@ -52,6 +52,8 @@ reference:
     contents:
       - starts_with("ledgr_ind_")
       - ledgr_indicator
+      - print.ledgr_indicator
+      - ledgr_feature_id
       - ledgr_register_indicator
       - ledgr_deregister_indicator
       - ledgr_get_indicator

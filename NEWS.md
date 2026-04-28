@@ -1,3 +1,11 @@
+# ledgr 0.1.6
+
+- Added `ledgr_feature_id()` and `print.ledgr_indicator()` so strategy authors
+  can discover exact built-in and TTR feature IDs before writing
+  `ctx$feature()` calls.
+- Expanded the TTR indicator article with feature ID examples for built-in
+  indicators, RSI, ATR, BBands, and MACD.
+
 # ledgr 0.1.5
 
 - Added the v0.1.5 experiment-store schema foundation, including schema-version

@@ -152,6 +152,9 @@ the active versioned spec packet, currently
   supplied scalar arguments in sorted order before the optional output suffix.
   Users must provide `id` explicitly when non-scalar TTR arguments would make a
   generated ID ambiguous.
+- `ledgr_feature_id()` is a discovery helper over existing `ledgr_indicator`
+  IDs. It must not generate aliases, rename indicators, or change fingerprint
+  semantics; list input returns IDs in list order.
 - Fn-only indicators remain supported. In v0.1.4 the fallback uses bounded
   stable windows, not expanding full-history windows.
 - Feature precomputation may use a session-scoped cache. Cache entries are keyed

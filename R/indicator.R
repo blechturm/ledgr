@@ -71,6 +71,63 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after
   )
 }
 
+#' Get feature IDs from ledgr indicators
+#'
+#' Returns the exact feature ID strings that strategies should pass to
+#' `ctx$feature(instrument_id, name)`. This helper reads the existing indicator
+#' IDs; it does not generate aliases or change the ID scheme.
+#'
+#' @param x A `ledgr_indicator` object, or a list of `ledgr_indicator` objects.
+#'
+#' @return A character vector. List input returns a plain unnamed character
+#'   vector in list order.
+#' @examples
+#' sma_20 <- ledgr_ind_sma(20)
+#' ledgr_feature_id(sma_20)
+#'
+#' features <- list(ledgr_ind_sma(20), ledgr_ind_returns(5))
+#' ledgr_feature_id(features)
+#' @export
+ledgr_feature_id <- function(x) {
+  if (inherits(x, "ledgr_indicator")) {
+    return(unname(as.character(x$id)))
+  }
+  if (is.list(x)) {
+    ids <- vapply(x, function(ind) {
+      if (!inherits(ind, "ledgr_indicator")) {
+        rlang::abort(
+          "`x` must be a ledgr_indicator object or a list of ledgr_indicator objects.",
+          class = "ledgr_invalid_args"
+        )
+      }
+      as.character(ind$id)
+    }, character(1))
+    return(unname(ids))
+  }
+  rlang::abort(
+    "`x` must be a ledgr_indicator object or a list of ledgr_indicator objects.",
+    class = "ledgr_invalid_args"
+  )
+}
+
+#' Print a ledgr indicator
+#'
+#' @param x A `ledgr_indicator` object.
+#' @param ... Unused.
+#'
+#' @return Invisibly returns `x`.
+#' @examples
+#' ledgr_ind_sma(20)
+#' @export
+print.ledgr_indicator <- function(x, ...) {
+  cat("ledgr indicator\n")
+  cat("  ID:            ", x$id, "\n", sep = "")
+  cat("  Requires bars: ", x$requires_bars, "\n", sep = "")
+  cat("  Stable after:  ", x$stable_after, "\n", sep = "")
+  cat("  Series fn:     ", if (is.null(x$series_fn)) "no" else "yes", "\n", sep = "")
+  invisible(x)
+}
+
 ledgr_assert_indicator_fn_pure <- function(fn) {
   fn_body <- paste(deparse(fn), collapse = "\n")
   if (grepl("<<-", fn_body, fixed = TRUE)) {
