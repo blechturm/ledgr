@@ -787,7 +787,7 @@ experiment-store core is coherent, documented, covered, and green in CI.
 - [x] Coverage remains at or above the project gate.
 - [x] pkgdown site builds.
 - [x] README and vignettes remain offline-safe.
-- [ ] Ubuntu and Windows CI are green.
+- [x] Ubuntu and Windows CI are green.
 - [x] `contracts.md` and `NEWS.md` match the implemented scope.
 - [x] All v0.1.5 acceptance criteria are satisfied.
 - [x] No open P0/P1 review findings remain.
@@ -803,6 +803,7 @@ experiment-store core is coherent, documented, covered, and green in CI.
 - `pkgdown::build_site(new_process = FALSE, install = TRUE)` completed.
 - Export scan found no accidental v0.1.6 API exposure. Future sweep APIs only
   appear in non-evaluated roadmap/article examples.
+- Ubuntu and Windows CI were confirmed green after the local gate commit.
 
 **Test Requirements:**
 - `tools/check-coverage.R`

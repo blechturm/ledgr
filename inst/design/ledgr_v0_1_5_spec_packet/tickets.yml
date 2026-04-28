@@ -383,7 +383,7 @@ tickets:
 
   - id: LDG-809
     title: "v0.1.5 Experiment Store Gate"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-801, LDG-802, LDG-803, LDG-804, LDG-805, LDG-806, LDG-807, LDG-808]
     tests:
