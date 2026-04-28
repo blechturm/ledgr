@@ -384,7 +384,7 @@ The article must cover:
 - reproducibility tiers;
 - legacy/pre-provenance runs;
 - how `ledgr_compare_runs()` builds on stored run metadata;
-- what remains out of scope: hard delete, tags unless LDG-906 is accepted,
+- what remains out of scope: hard delete,
   strategy recovery details beyond a pointer to the strategy-development
   article.
 
@@ -404,8 +404,9 @@ experiment-store schema:
 - `run_telemetry`;
 - result tables/views used by existing result accessors.
 
-If optional run tags are added, they require a separate additive schema ticket.
-Tags are optional and must not block v0.1.6.
+Run tags are mutable grouping metadata stored outside run identity. They are
+accepted through LDG-906 as a small additive schema surface and must not affect
+run identity, comparison metrics, or source extraction.
 
 Read-only comparison and extraction APIs must not migrate or mutate stores.
 If they need v0.1.5 metadata that is missing, they must return legacy-aware
@@ -475,8 +476,8 @@ v0.1.6 does not include:
 - paper trading;
 - broker adapters.
 
-Optional run tags may be ticketed as a P3 item, but are not part of the release
-gate.
+Run tags are mutable grouping metadata only. They are outside run identity and
+outside comparison semantics.
 
 ---
 

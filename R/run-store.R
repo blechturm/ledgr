@@ -69,6 +69,22 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
   provenance_join <- ledgr_run_store_optional_join(con, "run_provenance", "p", "p.run_id = r.run_id")
   telemetry_join <- ledgr_run_store_optional_join(con, "run_telemetry", "t", "t.run_id = r.run_id")
   snapshot_join <- ledgr_run_store_optional_join(con, "snapshots", "s", "s.snapshot_id = r.snapshot_id")
+  tags_join <- if (ledgr_experiment_store_table_exists(con, "run_tags")) {
+    "
+    LEFT JOIN (
+      SELECT run_id, string_agg(tag, ', ' ORDER BY tag) AS tags
+      FROM run_tags
+      GROUP BY run_id
+    ) tg ON tg.run_id = r.run_id
+    "
+  } else {
+    "
+    LEFT JOIN (
+      SELECT CAST(NULL AS TEXT) AS run_id, CAST(NULL AS TEXT) AS tags
+      WHERE FALSE
+    ) tg ON tg.run_id = r.run_id
+    "
+  }
   equity_join <- if (ledgr_experiment_store_table_exists(con, "equity_curve")) {
     "
     LEFT JOIN (
@@ -136,6 +152,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
       COALESCE(%s, FALSE) AS archived,
       %s AS archived_at_utc,
       %s AS archive_reason,
+      tg.tags,
       COALESCE(%s, 'legacy') AS reproducibility_level,
       %s AS strategy_type,
       %s AS strategy_source_hash,
@@ -164,6 +181,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
       %s AS config_json,
       %s AS schema_version
     FROM runs r
+    %s
     %s
     %s
     %s
@@ -204,6 +222,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL) 
     provenance_join,
     telemetry_join,
     snapshot_join,
+    tags_join,
     equity_join,
     trades_join,
     where_sql,
@@ -247,6 +266,9 @@ ledgr_run_store_normalize_optional_text <- function(x, arg) {
 }
 
 ledgr_run_store_assert_run_exists <- function(con, run_id) {
+  if (!ledgr_experiment_store_table_exists(con, "runs")) {
+    rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
+  }
   row <- DBI::dbGetQuery(
     con,
     "SELECT run_id FROM runs WHERE run_id = ?",
@@ -628,6 +650,7 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Label:           ", value("label"), "\n", sep = "")
   cat("Status:          ", value("status"), "\n", sep = "")
   cat("Archived:        ", value("archived", "FALSE"), "\n", sep = "")
+  cat("Tags:            ", value("tags"), "\n", sep = "")
   cat("Snapshot:        ", value("snapshot_id"), "\n", sep = "")
   cat("Snapshot Hash:   ", value("snapshot_hash"), "\n", sep = "")
   cat("Config Hash:     ", value("config_hash"), "\n", sep = "")

@@ -328,7 +328,7 @@ experiment-store core moves to v0.1.5.
     stored source hash, but hash verification proves identity, not safety.
 - Deterministic capture of JSON-safe strategy parameters
 - Clear warnings for strategies that depend on unresolved external objects
-- Optional tagging API for grouping runs
+- Mutable tagging API for grouping runs without changing experiment identity
 
 ### Definition of Done
 
@@ -336,6 +336,40 @@ experiment-store core moves to v0.1.5.
 - Self-contained functional strategies can be recovered from the experiment
   store with an explicit trust boundary
 - Strategy parameters are visible, hashable, and reusable
+- Tags can group runs as mutable metadata without affecting stored artifacts or
+  comparison semantics
+
+---
+
+## v0.1.6.1 - Core UX Pass (BENCHED — spec after v0.1.6 ships)
+
+**Goal:** Nail down the core interaction model before sweep mode is built on
+top of it. The four changes below affect every strategy and every backtest;
+getting them right now avoids compounding the cost later.
+
+**Full spec deferred.** Design discussion to happen once v0.1.6 is shipped.
+The scope below is intentionally brief — a reminder of what was agreed, not a
+complete ticket set.
+
+### Provisional Scope
+
+- **`ctx$hold()` / `ctx$flat()`**: rename `ctx$current_targets()` and
+  `ctx$targets()` to names that make the hold-unless-signal pattern obvious;
+  exact names to be decided in the spec discussion
+- **Strategy signature unification**: mandate `function(ctx, params)` as the
+  single strategy signature; drop `function(ctx)` as a distinct tier trigger;
+  required before sweep mode locks in the contract
+- **`ledgr_experiment()` session object**: unify the repeated `db_path`
+  argument across `ledgr_backtest()`, `ledgr_run_*`, and `ledgr_compare_runs()`
+  behind a session handle; design this interface first — it sets the shape for
+  everything else in this pass and for sweep mode
+- **`close(bt)` lifecycle**: make explicit close optional; auto-checkpoint on
+  GC with a warning; in-memory runs (no `db_path`) require no close at all
+
+### Constraint
+
+No new features. No vignette or dataset work. Only changes to the core
+four-step arc: data → strategy → run → compare.
 
 ---
 

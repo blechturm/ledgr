@@ -25,11 +25,11 @@ LDG-901 -> LDG-902 -> LDG-905 -> LDG-907 -> LDG-908 -> LDG-909
 LDG-901 -> LDG-903 -> LDG-905 -> LDG-907 -> LDG-908 -> LDG-909
 LDG-901 -> LDG-904 -> LDG-905 -> LDG-907 -> LDG-908 -> LDG-909
 LDG-901 ----------------------------> LDG-907 -> LDG-908 -> LDG-909
-LDG-906 (optional, not release-gate dependency)
+LDG-906 -----------------------------------------> LDG-909
 ```
 
-`LDG-909` is the v0.1.6 release gate. `LDG-906` is optional and must not block
-the gate unless it is explicitly promoted after review.
+`LDG-909` is the v0.1.6 release gate. `LDG-906` started as optional and is now
+included in the gate because the tag API was accepted and implemented.
 
 ### Priority Levels
 
@@ -406,7 +406,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2 days  
 **Dependencies:** LDG-902, LDG-903, LDG-904  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Add a dedicated strategy-development article that teaches the ledgr strategy
@@ -490,7 +490,7 @@ forbidden_actions:
 **Priority:** P3  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-903  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Optional additive tagging API for grouping runs. This ticket is not part of the
@@ -505,13 +505,14 @@ release gate unless explicitly promoted after review.
 5. Document tags as mutable metadata, not identity.
 
 **Acceptance Criteria:**
-- [ ] If implemented, tags do not alter run identity hashes.
-- [ ] If implemented, tags are additive and non-destructive.
-- [ ] If deferred, roadmap/spec notes remain accurate.
-- [ ] LDG-909 does not depend on this ticket unless explicitly promoted.
+- [x] If implemented, tags do not alter run identity hashes.
+- [x] If implemented, tags are additive and non-destructive.
+- [x] Roadmap/spec notes reflect the accepted tag scope.
+- [x] LDG-906 is explicitly promoted into the LDG-909 gate after
+      implementation.
 
 **Test Requirements:**
-- Only required if implemented: tag schema/API tests and migration tests.
+- Tag schema/API tests and migration tests.
 
 **Source Reference:** v0.1.6 spec section 7 and roadmap v0.1.6 optional tagging.
 
@@ -586,8 +587,8 @@ the research-to-production philosophy article.
 - [ ] Article explains archive as non-destructive cleanup.
 - [ ] Article explains telemetry and reproducibility tiers.
 - [ ] Article links comparison to stored run metadata.
-- [ ] Article does not imply hard delete or tags are available unless LDG-906
-      is accepted.
+- [ ] Article presents tags as mutable grouping metadata and does not imply hard
+      delete is available.
 
 **Test Requirements:**
 - Render `vignettes/experiment-store.Rmd`.
@@ -627,7 +628,7 @@ escalation_triggers:
   - run tags become necessary to explain the workflow
 forbidden_actions:
   - documenting hard delete
-  - documenting tags as available unless LDG-906 is accepted
+  - documenting tags as identity-affecting metadata
   - using network data in examples
   - implying strategy recovery executes source by default
 ```
@@ -713,7 +714,7 @@ forbidden_actions:
 
 **Priority:** P0  
 **Effort:** 1 day  
-**Dependencies:** LDG-901, LDG-902, LDG-903, LDG-904, LDG-905, LDG-907, LDG-908  
+**Dependencies:** LDG-901, LDG-902, LDG-903, LDG-904, LDG-905, LDG-906, LDG-907, LDG-908  
 **Status:** Pending
 
 **Description:**

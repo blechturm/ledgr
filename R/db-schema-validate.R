@@ -81,6 +81,15 @@ ledgr_validate_schema <- function(con) {
       pk = c("run_id"),
       not_null = c("run_id")
     ),
+    run_tags = list(
+      columns = c(
+        run_id = "TEXT",
+        tag = "TEXT",
+        created_at_utc = "TIMESTAMP"
+      ),
+      pk = c("run_id", "tag"),
+      not_null = c("run_id", "tag", "created_at_utc")
+    ),
     instruments = list(
       columns = c(
         instrument_id = "TEXT",

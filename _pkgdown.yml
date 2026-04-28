@@ -45,6 +45,9 @@ reference:
       - ledgr_run_open
       - ledgr_run_label
       - ledgr_run_archive
+      - ledgr_run_tag
+      - ledgr_run_untag
+      - ledgr_run_tags
   - title: Snapshots
     contents:
       - starts_with("ledgr_snapshot")

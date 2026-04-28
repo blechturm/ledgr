@@ -180,6 +180,10 @@ testthat::test_that("write-triggered migration is additive and preserves v0.1.4 
     "
   )$column_name
   testthat::expect_true(all(c("label", "archived", "execution_mode", "schema_version") %in% runs_cols))
+  testthat::expect_true("run_tags" %in% DBI::dbGetQuery(
+    con,
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+  )$table_name)
 })
 
 testthat::test_that("future experiment-store schemas fail before downgrade or mutation", {
@@ -250,6 +254,7 @@ testthat::test_that("failed migration leaves the previous schema marker and old 
   )$table_name
   testthat::expect_false("run_provenance" %in% tables)
   testthat::expect_false("run_telemetry" %in% tables)
+  testthat::expect_false("run_tags" %in% tables)
   testthat::expect_identical(
     DBI::dbGetQuery(con, "SELECT status FROM runs WHERE run_id = 'legacy-run'")$status[[1]],
     "DONE"

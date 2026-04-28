@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 105L
+ledgr_experiment_store_schema_version <- 106L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -38,6 +38,7 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "snapshot_instruments",
     "run_provenance",
     "run_telemetry",
+    "run_tags",
     "ledgr_schema_metadata"
   )
   any(vapply(known_tables, function(table_name) ledgr_experiment_store_table_exists(con, table_name), logical(1)))
@@ -211,6 +212,20 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
         feature_cache_hits INTEGER,
         feature_cache_misses INTEGER,
         updated_at_utc TIMESTAMP
+      )
+      "
+    )
+
+    DBI::dbExecute(
+      con,
+      "
+      -- Mutable run metadata. Tags are deliberately outside run identity and
+      -- do not affect comparison or extraction semantics.
+      CREATE TABLE IF NOT EXISTS run_tags (
+        run_id TEXT NOT NULL,
+        tag TEXT NOT NULL,
+        created_at_utc TIMESTAMP NOT NULL,
+        PRIMARY KEY (run_id, tag)
       )
       "
     )

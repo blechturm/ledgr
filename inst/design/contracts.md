@@ -75,8 +75,9 @@ the active versioned spec packet, currently
 - `ledgr_run_label()` and `ledgr_run_archive()` mutate only run metadata.
   They must never rename `run_id`, delete artifacts, or change experiment
   identity hashes. Archive is non-destructive and idempotent.
-- Run comparison, tags, hard delete, and strategy-source recovery are deferred
-  beyond v0.1.5 and must not be documented as available v0.1.5 APIs.
+- Run comparison, run tags, and strategy-source recovery are v0.1.6 scope.
+  Hard delete remains deferred and must not be documented as available in
+  v0.1.5 or v0.1.6.
 
 ## Canonical JSON Contract
 
@@ -192,6 +193,9 @@ the active versioned spec packet, currently
 - `ledgr_compare_runs()` reads stored completed-run artifacts only. It must not
   rerun strategy code, evaluate recovered source, or mutate the experiment
   store while producing comparison tables.
+- `ledgr_run_tag()`, `ledgr_run_untag()`, and `ledgr_run_tags()` manage mutable
+  run grouping metadata in `run_tags`. Tags must not alter run identity hashes,
+  stored artifacts, comparison semantics, or strategy provenance.
 - Metrics are descriptive only and must never feed back into strategy execution.
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild

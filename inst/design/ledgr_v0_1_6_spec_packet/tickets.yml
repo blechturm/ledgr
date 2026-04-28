@@ -193,7 +193,7 @@ tickets:
 
   - id: LDG-905
     title: "Strategy Development And Comparison Vignette"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-902, LDG-903, LDG-904]
     tests:
@@ -236,7 +236,7 @@ tickets:
 
   - id: LDG-906
     title: "Optional Run Tags"
-    status: pending
+    status: done
     priority: P3
     dependencies: [LDG-903]
     tests:
@@ -312,7 +312,7 @@ tickets:
         - run tags become necessary to explain the workflow
       forbidden_actions:
         - documenting hard delete
-        - documenting tags as available unless LDG-906 is accepted
+        - documenting tags as identity-affecting metadata
         - using network data in examples
         - implying strategy recovery executes source by default
 
@@ -363,7 +363,7 @@ tickets:
     title: "v0.1.6 Release Gate"
     status: pending
     priority: P0
-    dependencies: [LDG-901, LDG-902, LDG-903, LDG-904, LDG-905, LDG-907, LDG-908]
+    dependencies: [LDG-901, LDG-902, LDG-903, LDG-904, LDG-905, LDG-906, LDG-907, LDG-908]
     tests:
       - "tools/check-coverage.R"
       - "tools/check-readme-example.R if README changes"
