@@ -38,6 +38,7 @@ reference:
     contents:
       - ledgr_run_list
       - ledgr_run_info
+      - ledgr_compare_runs
       - print.ledgr_run_info
       - ledgr_run_open
       - ledgr_run_label

@@ -228,7 +228,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 2-3 days  
 **Dependencies:** LDG-901  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Add `ledgr_compare_runs()` for comparing completed stored runs without
@@ -251,16 +251,16 @@ recomputing strategies. This is the central v0.1.6 experiment-comparison API.
     different-strategy runs.
 
 **Acceptance Criteria:**
-- [ ] Completed stored runs can be compared in one table.
-- [ ] No strategy is rerun.
-- [ ] No database mutation occurs.
-- [ ] Archived run behavior matches the spec.
-- [ ] Failed/incomplete run behavior is classed and points to
+- [x] Completed stored runs can be compared in one table.
+- [x] No strategy is rerun.
+- [x] No database mutation occurs.
+- [x] Archived run behavior matches the spec.
+- [x] Failed/incomplete run behavior is classed and points to
       `ledgr_run_info()`.
-- [ ] Result columns include final equity, total return, max drawdown,
+- [x] Result columns include final equity, total return, max drawdown,
       trade count, win rate, execution mode, elapsed seconds, and identity
       hashes.
-- [ ] Legacy/pre-provenance runs remain inspectable but comparison output marks
+- [x] Legacy/pre-provenance runs remain inspectable but comparison output marks
       missing identity fields clearly.
 
 **Test Requirements:**

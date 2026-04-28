@@ -98,7 +98,7 @@ tickets:
 
   - id: LDG-903
     title: "Compare Stored Runs"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-901]
     tests:

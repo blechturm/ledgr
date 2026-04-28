@@ -9,6 +9,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_backtest_bench",
     "ledgr_backtest_run",
     "ledgr_clear_feature_cache",
+    "ledgr_compare_runs",
     "ledgr_compute_equity_curve",
     "ledgr_compute_metrics",
     "ledgr_create_schema",

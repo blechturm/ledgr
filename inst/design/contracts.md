@@ -184,6 +184,9 @@ the active versioned spec packet, currently
 - `ledgr_results(bt, what = ...)` is the package-prefixed wrapper over that
   same result path. It must delegate to `tibble::as_tibble()` and must not
   duplicate reconstruction logic.
+- `ledgr_compare_runs()` reads stored completed-run artifacts only. It must not
+  rerun strategy code, evaluate recovered source, or mutate the experiment
+  store while producing comparison tables.
 - Metrics are descriptive only and must never feed back into strategy execution.
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild

@@ -258,6 +258,161 @@ ledgr_run_store_assert_run_exists <- function(con, run_id) {
   invisible(TRUE)
 }
 
+ledgr_compare_runs_fill_stats <- function(con, run_ids) {
+  empty <- tibble::tibble(
+    run_id = run_ids,
+    n_trades = rep(0L, length(run_ids)),
+    win_rate = rep(NA_real_, length(run_ids))
+  )
+  if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "ledger_events")) {
+    return(empty)
+  }
+
+  placeholders <- paste(rep("?", length(run_ids)), collapse = ", ")
+  rows <- DBI::dbGetQuery(
+    con,
+    sprintf(
+      "
+      SELECT run_id, event_seq, instrument_id, side, qty, price
+      FROM ledger_events
+      WHERE run_id IN (%s) AND event_type IN ('FILL', 'FILL_PARTIAL')
+      ORDER BY run_id, event_seq
+      ",
+      placeholders
+    ),
+    params = as.list(run_ids)
+  )
+  if (nrow(rows) == 0L) {
+    return(empty)
+  }
+
+  stats <- lapply(run_ids, function(run_id) {
+    run_rows <- rows[rows$run_id == run_id, , drop = FALSE]
+    if (nrow(run_rows) == 0L) {
+      return(data.frame(run_id = run_id, n_trades = 0L, win_rate = NA_real_, stringsAsFactors = FALSE))
+    }
+
+    fifo <- new.env(parent = emptyenv())
+    realized <- numeric(0)
+
+    for (i in seq_len(nrow(run_rows))) {
+      inst <- as.character(run_rows$instrument_id[[i]])
+      side_norm <- toupper(as.character(run_rows$side[[i]]))
+      qty <- suppressWarnings(as.numeric(run_rows$qty[[i]]))
+      price <- suppressWarnings(as.numeric(run_rows$price[[i]]))
+      if (is.na(qty) || qty <= 0 || is.na(price)) {
+        next
+      }
+      if (side_norm %in% c("BUY", "COVER", "BUY_TO_COVER")) {
+        direction <- 1L
+      } else if (side_norm %in% c("SELL", "SHORT", "SELL_SHORT")) {
+        direction <- -1L
+      } else {
+        next
+      }
+
+      lots <- if (exists(inst, envir = fifo, inherits = FALSE)) {
+        get(inst, envir = fifo, inherits = FALSE)
+      } else {
+        data.frame(qty = numeric(), price = numeric(), stringsAsFactors = FALSE)
+      }
+
+      net_pos <- if (nrow(lots) > 0L) sum(lots$qty) else 0
+      close_qty <- 0
+      if (direction > 0L && net_pos < 0) {
+        close_qty <- min(qty, abs(net_pos))
+      } else if (direction < 0L && net_pos > 0) {
+        close_qty <- min(qty, net_pos)
+      }
+      open_qty <- qty - close_qty
+
+      if (close_qty > 0) {
+        remaining_close <- close_qty
+        realized_close <- 0
+        compensation <- 0
+        if (direction > 0L) {
+          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] < 0) {
+            cover_qty <- min(remaining_close, abs(lots$qty[[1]]))
+            delta <- (lots$price[[1]] - price) * cover_qty
+            y <- delta - compensation
+            t <- realized_close + y
+            compensation <- (t - realized_close) - y
+            realized_close <- t
+            lots$qty[[1]] <- lots$qty[[1]] + cover_qty
+            remaining_close <- remaining_close - cover_qty
+            if (abs(lots$qty[[1]]) < 1e-12) lots <- lots[-1, , drop = FALSE]
+          }
+        } else {
+          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] > 0) {
+            cover_qty <- min(remaining_close, lots$qty[[1]])
+            delta <- (price - lots$price[[1]]) * cover_qty
+            y <- delta - compensation
+            t <- realized_close + y
+            compensation <- (t - realized_close) - y
+            realized_close <- t
+            lots$qty[[1]] <- lots$qty[[1]] - cover_qty
+            remaining_close <- remaining_close - cover_qty
+            if (abs(lots$qty[[1]]) < 1e-12) lots <- lots[-1, , drop = FALSE]
+          }
+        }
+        realized <- c(realized, realized_close)
+      }
+
+      if (open_qty > 0) {
+        lot_qty <- if (direction > 0L) open_qty else -open_qty
+        lots <- rbind(
+          lots,
+          data.frame(qty = lot_qty, price = price, stringsAsFactors = FALSE)
+        )
+      }
+
+      assign(inst, lots, envir = fifo)
+    }
+
+    n_trades <- length(realized)
+    data.frame(
+      run_id = run_id,
+      n_trades = as.integer(n_trades),
+      win_rate = if (n_trades > 0L) sum(realized > 0, na.rm = TRUE) / n_trades else NA_real_,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  tibble::as_tibble(do.call(rbind, stats))
+}
+
+ledgr_compare_runs_select <- function(rows, fill_stats) {
+  out <- rows
+  out$n_trades <- NULL
+  fill_idx <- match(out$run_id, fill_stats$run_id)
+  out$n_trades <- fill_stats$n_trades[fill_idx]
+  out$win_rate <- fill_stats$win_rate[fill_idx]
+  out$n_trades[is.na(out$n_trades)] <- 0L
+  out$n_trades <- as.integer(out$n_trades)
+  cols <- c(
+    "run_id",
+    "label",
+    "archived",
+    "created_at_utc",
+    "snapshot_id",
+    "status",
+    "final_equity",
+    "total_return",
+    "max_drawdown",
+    "n_trades",
+    "win_rate",
+    "execution_mode",
+    "elapsed_sec",
+    "reproducibility_level",
+    "strategy_source_hash",
+    "strategy_params_hash",
+    "config_hash",
+    "snapshot_hash"
+  )
+  out <- out[, intersect(cols, names(out)), drop = FALSE]
+  tibble::as_tibble(out)
+}
+
 ledgr_run_info_from_row <- function(row, db_path) {
   if (nrow(row) != 1L) {
     rlang::abort("`row` must contain exactly one run.", class = "ledgr_internal_error")
@@ -272,6 +427,107 @@ ledgr_run_info_from_row <- function(row, db_path) {
   info$legacy_pre_provenance <- identical(info$reproducibility_level, "legacy") ||
     identical(info$strategy_source_capture_method, "legacy_pre_provenance")
   structure(info, class = c("ledgr_run_info", "list"))
+}
+
+#' Compare completed runs in a ledgr experiment store
+#'
+#' Reads stored run metadata, provenance, telemetry, and result artifacts from a
+#' durable DuckDB experiment store. Strategies are not rerun, recovered source
+#' is not evaluated, and the database is not mutated.
+#'
+#' @param db_path Path to a DuckDB experiment-store file.
+#' @param run_ids Optional character vector of run IDs. If supplied, output
+#'   preserves this order, including duplicates, and may include archived
+#'   completed runs. If `NULL`, compares all non-archived completed runs.
+#' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
+#' @param metrics Metrics set. Only `"standard"` is supported in v0.1.6.
+#' @return A tibble with one row per completed run.
+#' @examples
+#' db_path <- tempfile(fileext = ".duckdb")
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102, 103, 104),
+#'   high = c(101, 102, 103, 104, 105),
+#'   low = c(99, 100, 101, 102, 103),
+#'   close = c(100, 101, 102, 103, 104),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$targets()
+#'   targets["AAA"] <- params$qty
+#'   targets
+#' }
+#' bt_a <- ledgr_backtest(
+#'   data = bars, strategy = strategy, strategy_params = list(qty = 1),
+#'   db_path = db_path, run_id = "qty-1"
+#' )
+#' bt_b <- ledgr_backtest(
+#'   data = bars, strategy = strategy, strategy_params = list(qty = 2),
+#'   db_path = db_path, run_id = "qty-2"
+#' )
+#' ledgr_compare_runs(db_path, run_ids = c("qty-1", "qty-2"))
+#'
+#' flat_strategy <- function(ctx) ctx$targets()
+#' bt_c <- ledgr_backtest(
+#'   data = bars, strategy = flat_strategy, db_path = db_path, run_id = "flat"
+#' )
+#' ledgr_compare_runs(db_path, run_ids = c("qty-1", "flat"))
+#' close(bt_a)
+#' close(bt_b)
+#' close(bt_c)
+#' @export
+ledgr_compare_runs <- function(db_path, run_ids = NULL, include_archived = FALSE, metrics = c("standard")) {
+  if (!is.character(metrics) || length(metrics) != 1L || !identical(metrics, "standard")) {
+    rlang::abort("Only metrics = 'standard' is supported in v0.1.6.", class = "ledgr_invalid_args")
+  }
+  if (!is.logical(include_archived) || length(include_archived) != 1L || is.na(include_archived)) {
+    rlang::abort("`include_archived` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  if (!is.null(run_ids)) {
+    if (!is.character(run_ids) || any(is.na(run_ids)) || any(!nzchar(run_ids))) {
+      rlang::abort("`run_ids` must be NULL or a character vector of non-empty run IDs.", class = "ledgr_invalid_args")
+    }
+  }
+
+  opened <- ledgr_run_store_open(db_path)
+  on.exit(ledgr_run_store_close(opened), add = TRUE)
+
+  if (is.null(run_ids)) {
+    rows <- ledgr_run_store_fetch(opened$con, include_archived = include_archived)
+    rows <- rows[rows$status == "DONE", , drop = FALSE]
+  } else {
+    unique_ids <- unique(run_ids)
+    fetched <- lapply(unique_ids, function(run_id) ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = run_id))
+    rows <- if (length(fetched) == 0L) tibble::tibble() else tibble::as_tibble(do.call(rbind, fetched))
+    found <- as.character(rows$run_id)
+    missing <- setdiff(unique_ids, found)
+    if (length(missing) > 0L) {
+      rlang::abort(
+        sprintf("Run IDs not found: %s", paste(missing, collapse = ", ")),
+        class = "ledgr_run_not_found"
+      )
+    }
+    bad <- rows[is.na(rows$status) | rows$status != "DONE", , drop = FALSE]
+    if (nrow(bad) > 0L) {
+      rlang::abort(
+        sprintf(
+          "Run '%s' has status %s and cannot be compared as a completed run. Use ledgr_run_info() for diagnostics.",
+          bad$run_id[[1]],
+          bad$status[[1]]
+        ),
+        class = "ledgr_run_not_complete"
+      )
+    }
+    rows <- rows[match(run_ids, rows$run_id), , drop = FALSE]
+  }
+
+  if (nrow(rows) == 0L) {
+    return(ledgr_compare_runs_select(rows, tibble::tibble(run_id = character(), n_trades = integer(), win_rate = numeric())))
+  }
+  fill_stats <- ledgr_compare_runs_fill_stats(opened$con, as.character(unique(rows$run_id)))
+  out <- ledgr_compare_runs_select(rows, fill_stats)
+  out
 }
 
 #' List runs in a ledgr experiment store
