@@ -13,7 +13,7 @@ if (file.exists(fixture_path)) {
   source(fixture_path, local = TRUE)
 }
 
-test_strategy <- function(ctx) {
+test_strategy <- function(ctx, params) {
   c(TEST_A = 100, TEST_B = 50)
 }
 

@@ -28,7 +28,7 @@ ledgr_backtest(
 convenience path.}
 
 \item{strategy}{Strategy function or object with \verb{$on_pulse(ctx)} method.
-Functional strategies may use \verb{function(ctx)} or \verb{function(ctx, params)}.}
+Functional strategies must use \verb{function(ctx, params)}.}
 
 \item{universe}{Character vector of instrument IDs. If \code{NULL}, it is inferred
 from the snapshot or data frame.}
@@ -69,6 +69,10 @@ A \code{ledgr_backtest} object.
 Thin wrapper around the canonical engine path.
 }
 \details{
+v0.1.7 introduces the experiment-first public workflow:
+\code{ledgr_experiment()} plus \code{ledgr_run()}. \code{ledgr_backtest()} remains available
+as a compatibility wrapper around the same canonical runner path.
+
 Strategies return target holdings. The default fill model is \code{next_open}: a
 target decided at pulse \code{t} is filled at the next available bar. Targets on
 the final pulse therefore cannot be filled unless another bar exists after
@@ -88,8 +92,8 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
-strategy <- function(ctx) {
-  targets <- ctx$targets()
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
   targets["AAA"] <- if (ctx$close("AAA") > 100) 1 else 0
   targets
 }

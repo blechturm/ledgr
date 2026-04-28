@@ -76,8 +76,8 @@ contract for a run.
 ## Step 2: Write A Strategy
 
 ``` r
-strategy <- function(ctx) {
-  targets <- ctx$targets()
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
 
   if (ctx$close("AAA") > 100.4) {
     targets["AAA"] <- floor(0.40 * ctx$equity / ctx$close("AAA"))
@@ -99,7 +99,7 @@ Read the function as a short research rule:
 - put about 30% of current equity into `BBB` when its close is above
   80.0.
 
-The helper calls keep strategy code readable. `ctx$targets()` creates a
+The helper calls keep strategy code readable. `ctx$flat()` creates a
 named target vector over the full universe and initializes every
 instrument to flat. `ctx$close("AAA")` reads the close price at the
 current decision point. `ctx$cash` is current simulated cash, and
@@ -287,12 +287,12 @@ ledgr expects a named numeric target vector with names matching
 `ctx$universe`. It does not accept raw signal labels such as `"LONG"` or
 `"FLAT"` as core strategy output.
 
-`ctx$targets()` starts from flat positions. That is useful when every
+`ctx$flat()` starts from flat positions. That is useful when every
 pulse should fully restate the desired portfolio. For hold-unless-signal
 rules, start from the current position vector instead:
 
 ``` r
-targets <- ctx$current_targets()
+targets <- ctx$hold()
 ```
 
 That pattern says: keep current holdings unless this pulse explicitly
@@ -319,8 +319,8 @@ This toy example only changes targets on the first calendar day of a
 month and keeps current holdings otherwise:
 
 ``` r
-monthly_strategy <- function(ctx) {
-  targets <- ctx$current_targets()
+monthly_strategy <- function(ctx, params) {
+  targets <- ctx$hold()
   if (format(as.Date(ctx$ts_utc), "%d") != "01") return(targets)
 
   if (ctx$close("AAA") > 100) {
@@ -339,8 +339,8 @@ strategy can read them from the same `ctx` object.
 ``` r
 features <- list(ledgr_ind_sma(3))
 
-sma_strategy <- function(ctx) {
-  targets <- ctx$targets()
+sma_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
   sma_3 <- ctx$feature("AAA", "sma_3")
 
   if (is.finite(sma_3) && ctx$close("AAA") > sma_3) {
@@ -458,8 +458,8 @@ install.packages("quantmod")
 ``` r
 library(quantmod)
 
-yahoo_strategy <- function(ctx) {
-  targets <- ctx$targets()
+yahoo_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
 
   if (ctx$close("AAPL") > ctx$open("AAPL")) {
     targets["AAPL"] <- floor(0.40 * ctx$equity / ctx$close("AAPL"))

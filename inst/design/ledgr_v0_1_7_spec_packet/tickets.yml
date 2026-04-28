@@ -91,7 +91,7 @@ tickets:
 
   - id: LDG-1003
     title: "`ledgr_run()` Public Execution API"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-1002]
     tests:
@@ -143,7 +143,7 @@ tickets:
 
   - id: LDG-1004
     title: "Strategy Signature And Context Helper Reset"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-1002]
     tests:

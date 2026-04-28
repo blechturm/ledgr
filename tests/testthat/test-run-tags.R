@@ -3,7 +3,7 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- params$qty
     targets
   }
@@ -60,7 +60,7 @@ testthat::test_that("run tag validation and missing runs fail clearly", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,

@@ -214,6 +214,87 @@ ledgr_write_run_telemetry <- function(con,
   invisible(TRUE)
 }
 
+ledgr_config_named_numeric <- function(x) {
+  if (is.null(x)) {
+    return(stats::setNames(numeric(), character()))
+  }
+  if (is.list(x) && !is.data.frame(x)) {
+    x <- unlist(x, use.names = TRUE)
+  }
+  if (!is.numeric(x) || length(x) < 1L) {
+    return(stats::setNames(numeric(), character()))
+  }
+  x_names <- names(x)
+  if (is.null(x_names)) {
+    return(stats::setNames(numeric(), character()))
+  }
+  valid <- !is.na(x_names) & nzchar(x_names) & !is.na(x) & is.finite(x)
+  as.numeric(x[valid]) |>
+    stats::setNames(x_names[valid])
+}
+
+ledgr_config_opening_positions <- function(cfg) {
+  positions <- ledgr_config_named_numeric(cfg$opening$positions)
+  positions[positions != 0]
+}
+
+ledgr_config_opening_cost_basis <- function(cfg, positions) {
+  basis <- ledgr_config_named_numeric(cfg$opening$cost_basis)
+  if (length(positions) < 1L || length(basis) < 1L) {
+    return(stats::setNames(rep(NA_real_, length(positions)), names(positions)))
+  }
+  out <- stats::setNames(rep(NA_real_, length(positions)), names(positions))
+  matched <- intersect(names(positions), names(basis))
+  out[matched] <- as.numeric(basis[matched])
+  out
+}
+
+ledgr_write_opening_position_events <- function(con,
+                                                run_id,
+                                                ts_utc,
+                                                positions,
+                                                cost_basis,
+                                                event_seq_start) {
+  if (length(positions) < 1L) {
+    return(as.integer(event_seq_start))
+  }
+  ts_exec_iso <- ledgr_normalize_ts_utc(ts_utc)
+  ts_exec_posix <- as.POSIXct(ts_exec_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  if (is.na(ts_exec_posix)) {
+    rlang::abort("Opening position timestamp must be a valid UTC timestamp.", class = "ledgr_invalid_config")
+  }
+  event_seq <- as.integer(event_seq_start)
+  rows <- vector("list", length(positions))
+  for (i in seq_along(positions)) {
+    instrument_id <- names(positions)[[i]]
+    qty <- as.numeric(positions[[i]])
+    basis <- as.numeric(cost_basis[[i]])
+    meta_json <- canonical_json(list(
+      cash_delta = 0,
+      position_delta = qty,
+      cost_basis = if (is.na(basis)) NULL else basis,
+      source = "opening_position"
+    ))
+    rows[[i]] <- data.frame(
+      event_id = paste0(run_id, "_", sprintf("%08d", event_seq)),
+      run_id = run_id,
+      ts_utc = ts_exec_posix,
+      event_type = "CASHFLOW",
+      instrument_id = instrument_id,
+      side = NA_character_,
+      qty = qty,
+      price = if (is.na(basis)) NA_real_ else basis,
+      fee = 0,
+      meta_json = meta_json,
+      event_seq = event_seq,
+      stringsAsFactors = FALSE
+    )
+    event_seq <- event_seq + 1L
+  }
+  DBI::dbAppendTable(con, "ledger_events", do.call(rbind, rows))
+  as.integer(event_seq)
+}
+
 ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list()) {
   validate_ledgr_config(config)
 
@@ -231,7 +312,10 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   start_ts_utc <- cfg$backtest$start_ts_utc
   end_ts_utc <- cfg$backtest$end_ts_utc
   initial_cash <- as.numeric(cfg$backtest$initial_cash)
-  seed <- as.integer(cfg$engine$seed)
+  opening_positions <- ledgr_config_opening_positions(cfg)
+  opening_cost_basis <- ledgr_config_opening_cost_basis(cfg, opening_positions)
+  seed <- cfg$engine$seed
+  runtime_seed <- if (is.null(seed)) 1L else as.integer(seed)
   run_wall_start <- ledgr_time_now()
 
   persist_features <- TRUE
@@ -267,7 +351,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   }
   snapshot_hash_for_features <- NULL
 
-  set.seed(seed)
+  set.seed(runtime_seed)
 
   opened <- ledgr_open_duckdb_with_retry(db_path)
   drv <- opened$drv
@@ -290,7 +374,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     } else {
       run_id <- paste0(
         "run_",
-        substr(digest::digest(paste0(cfg_hash, ":", seed), algo = "sha256"), 1, 16)
+        substr(digest::digest(paste0(cfg_hash, ":", if (is.null(seed)) "NULL" else seed), algo = "sha256"), 1, 16)
       )
     }
   }
@@ -710,6 +794,16 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     params = list(run_id)
   )$next_seq[[1]]
   next_event_seq <- as.integer(next_event_seq)
+  if (!is_resume && length(opening_positions) > 0L) {
+    next_event_seq <- ledgr_write_opening_position_events(
+      con = con,
+      run_id = run_id,
+      ts_utc = start_ts_utc,
+      positions = opening_positions,
+      cost_basis = opening_cost_basis,
+      event_seq_start = next_event_seq
+    )
+  }
 
   fast_context <- control$fast_context
   if (is.null(fast_context)) fast_context <- FALSE
@@ -760,10 +854,14 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
   state_env <- new.env(parent = emptyenv())
   if (identical(execution_mode, "audit_log")) {
-    state_env$current <- list(cash = as.numeric(initial_cash), positions = rep(0, length(instrument_ids)))
-    names(state_env$current$positions) <- instrument_ids
+    initial_positions <- rep(0, length(instrument_ids))
+    names(initial_positions) <- instrument_ids
+    if (length(opening_positions) > 0L) {
+      initial_positions[names(opening_positions)] <- as.numeric(opening_positions)
+    }
+    state_env$current <- list(cash = as.numeric(initial_cash), positions = initial_positions)
   } else {
-    state_env$current <- list(cash = as.numeric(initial_cash), positions = numeric(0))
+    state_env$current <- list(cash = as.numeric(initial_cash), positions = opening_positions)
   }
   instrument_index <- seq_along(instrument_ids)
   names(instrument_index) <- instrument_ids
@@ -2328,7 +2426,7 @@ TsRuleStrategy <- R6::R6Class(
   "TsRuleStrategy",
   inherit = LedgrStrategy,
   private = list(
-    on_pulse_impl = function(ctx) {
+    on_pulse_impl = function(ctx, params) {
       cut <- self$params$cutover_ts_utc
       before <- self$params$targets_before
       after <- self$params$targets_after

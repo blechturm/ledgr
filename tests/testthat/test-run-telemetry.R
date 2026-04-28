@@ -2,7 +2,7 @@ testthat::test_that("successful runs persist compact telemetry and print executi
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
 
   bt <- ledgr_backtest(
     data = test_bars,
@@ -38,7 +38,7 @@ testthat::test_that("failed runs persist minimum telemetry diagnostics", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bad_strategy <- function(ctx) {
+  bad_strategy <- function(ctx, params) {
     stop("strategy boom")
   }
 

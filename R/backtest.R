@@ -5,7 +5,7 @@
 #' @param snapshot A `ledgr_snapshot` object, or a data frame for the data-first
 #'   convenience path.
 #' @param strategy Strategy function or object with `$on_pulse(ctx)` method.
-#'   Functional strategies may use `function(ctx)` or `function(ctx, params)`.
+#'   Functional strategies must use `function(ctx, params)`.
 #' @param strategy_params JSON-safe list passed to `function(ctx, params)`
 #'   strategies and stored as part of run provenance.
 #' @param universe Character vector of instrument IDs. If `NULL`, it is inferred
@@ -26,6 +26,10 @@
 #'   `snapshot` and `data` may be supplied.
 #' @return A `ledgr_backtest` object.
 #' @details
+#' v0.1.7 introduces the experiment-first public workflow:
+#' `ledgr_experiment()` plus `ledgr_run()`. `ledgr_backtest()` remains available
+#' as a compatibility wrapper around the same canonical runner path.
+#'
 #' Strategies return target holdings. The default fill model is `next_open`: a
 #' target decided at pulse `t` is filled at the next available bar. Targets on
 #' the final pulse therefore cannot be filled unless another bar exists after
@@ -44,8 +48,8 @@
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- if (ctx$close("AAA") > 100) 1 else 0
 #'   targets
 #' }
@@ -202,7 +206,7 @@ ledgr_backtest <- function(snapshot = NULL,
     run_id = run_id
   )
 
-  result <- ledgr_run(config)
+  result <- ledgr_run_config(config)
 
   new_ledgr_backtest(
     run_id = result$run_id,
@@ -248,8 +252,97 @@ ledgr_infer_universe_from_snapshot <- function(snapshot) {
   universe
 }
 
-ledgr_run <- function(config, run_id = NULL) {
+ledgr_run_config <- function(config, run_id = NULL) {
   ledgr_backtest_run(config = config, run_id = run_id)
+}
+
+#' Run a ledgr experiment
+#'
+#' `ledgr_run()` is the public single-run API for the v0.1.7
+#' experiment-first workflow. It evaluates run-time feature definitions,
+#' builds the canonical backtest config, and delegates to the shared runner.
+#'
+#' @param exp A `ledgr_experiment` object.
+#' @param params JSON-safe list passed to `function(ctx, params)` strategy and
+#'   `function(params)` feature definitions.
+#' @param run_id Optional run identifier.
+#' @param seed Reserved for future deterministic stochastic workflows. v0.1.7
+#'   stores `seed = NULL` in run identity and rejects non-NULL seeds.
+#' @return A `ledgr_backtest` object.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102),
+#'   high = c(101, 102, 103),
+#'   low = c(99, 100, 101),
+#'   close = c(100, 101, 102),
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
+#'   targets["AAA"] <- params$qty
+#'   targets
+#' }
+#' exp <- ledgr_experiment(snapshot, strategy)
+#' bt <- ledgr_run(exp, params = list(qty = 1), run_id = "example-run")
+#' close(bt)
+#' ledgr_snapshot_close(snapshot)
+#' @export
+ledgr_run <- function(exp, params = list(), run_id = NULL, seed = NULL) {
+  if (!inherits(exp, "ledgr_experiment")) {
+    rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
+  }
+  if (!is.list(params) || is.data.frame(params)) {
+    rlang::abort("`params` must be a list. Use `params = list()` when the strategy has no parameters.", class = "ledgr_invalid_args")
+  }
+  ledgr_run_experiment(exp = exp, params = params, run_id = run_id, seed = seed)
+}
+
+ledgr_run_experiment <- function(exp, params = list(), run_id = NULL, seed = NULL) {
+  if (!inherits(exp, "ledgr_experiment")) {
+    rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
+  }
+  params_info <- ledgr_strategy_params_info(params)
+  if (!is.null(seed)) {
+    rlang::abort(
+      "`seed` is reserved for v0.1.8 stochastic workflows. v0.1.7 stores seed = NULL in run identity.",
+      class = "ledgr_seed_not_supported"
+    )
+  }
+  if (!is.null(run_id) && (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id))) {
+    rlang::abort("`run_id` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  features <- ledgr_experiment_materialize_features(exp, params_info$value)
+  start <- if (!is.null(exp$opening$date)) exp$opening$date else exp$snapshot$metadata$start_date
+  end <- exp$snapshot$metadata$end_date
+  if (is.null(start) || is.null(end) || anyNA(c(start, end))) {
+    rlang::abort("Experiment snapshot must provide start/end metadata, or opening$date must provide start.", class = "ledgr_invalid_experiment")
+  }
+
+  config <- ledgr_config(
+    snapshot = exp$snapshot,
+    universe = exp$universe,
+    strategy = exp$strategy,
+    strategy_params = params_info$value,
+    backtest = ledgr_backtest_config(start = start, end = end, initial_cash = exp$opening$cash),
+    features = features,
+    persist_features = exp$persist_features,
+    execution_mode = exp$execution_mode,
+    fill_model = exp$fill_model,
+    db_path = exp$snapshot$db_path,
+    run_id = run_id,
+    opening = exp$opening,
+    seed = NULL
+  )
+
+  result <- ledgr_run_config(config)
+  new_ledgr_backtest(
+    run_id = result$run_id,
+    db_path = result$db_path,
+    config = config
+  )
 }
 
 new_ledgr_backtest <- function(run_id, db_path, config) {
@@ -326,8 +419,8 @@ ledgr_backtest_open <- function(bt) {
 #'   close = c(100, 101, 102),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -461,7 +554,7 @@ ledgr_strategy_spec <- function(strategy) {
   }
 
   if (!is.null(strategy) && is.function(strategy$on_pulse)) {
-    fn <- function(ctx) strategy$on_pulse(ctx)
+    fn <- function(ctx, params) strategy$on_pulse(ctx)
     r6_key_payload <- list(
       type = "R6_object",
       class = class(strategy),
@@ -474,7 +567,7 @@ ledgr_strategy_spec <- function(strategy) {
     )
     return(list(
       id = "functional",
-      params = list(strategy_key = key, call_signature = "ctx"),
+      params = list(strategy_key = key, call_signature = "ctx_params"),
       provenance = list(
         strategy_type = "R6_object",
         strategy_source = NA_character_,
@@ -503,7 +596,9 @@ ledgr_config <- function(snapshot,
                          fill_model = NULL,
                          db_path = NULL,
                          control = list(),
-                         run_id = NULL) {
+                         run_id = NULL,
+                         opening = NULL,
+                         seed = NULL) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
@@ -542,6 +637,12 @@ ledgr_config <- function(snapshot,
   if (!is.list(control)) {
     rlang::abort("`control` must be a list.", class = "ledgr_invalid_args")
   }
+  if (!is.null(seed)) {
+    if (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || !is.finite(seed) || (seed %% 1) != 0) {
+      rlang::abort("`seed` must be NULL or an integer-like scalar.", class = "ledgr_invalid_args")
+    }
+    seed <- as.integer(seed)
+  }
 
   if (!is.null(control$execution_mode)) {
     execution_mode <- control$execution_mode
@@ -567,19 +668,12 @@ ledgr_config <- function(snapshot,
 
   strategy_params_info <- ledgr_strategy_params_info(strategy_params)
   strat <- ledgr_strategy_spec(strategy)
-  if (identical(strat$id, "functional") &&
-      identical(strat$params$call_signature, "ctx") &&
-      length(strategy_params_info$value) > 0) {
-    rlang::warn(
-      "`strategy_params` was provided, but the strategy signature is `function(ctx)`. Params will be stored in provenance but not passed to the strategy.",
-      class = "ledgr_unused_strategy_params"
-    )
-  }
+  opening <- ledgr_config_normalize_opening(opening, backtest$initial_cash)
 
   config <- list(
     db_path = db_path,
     engine = list(
-      seed = 1L,
+      seed = seed,
       tz = "UTC",
       execution_mode = execution_mode,
       checkpoint_every = as.integer(checkpoint_every),
@@ -623,6 +717,7 @@ ledgr_config <- function(snapshot,
     strategy_params = strategy_params_info$value,
     strategy_params_json = strategy_params_info$json,
     strategy_params_hash = strategy_params_info$hash,
+    opening = opening,
     data = list(
       source = "snapshot",
       snapshot_id = snapshot$snapshot_id,
@@ -635,6 +730,29 @@ ledgr_config <- function(snapshot,
   class(config) <- c("ledgr_config", class(config))
   validate_ledgr_config(config)
   config
+}
+
+ledgr_config_normalize_opening <- function(opening, initial_cash) {
+  if (is.null(opening)) {
+    return(list(
+      cash = as.numeric(initial_cash),
+      date = NULL,
+      positions = stats::setNames(numeric(), character()),
+      cost_basis = NULL
+    ))
+  }
+  if (!inherits(opening, "ledgr_opening")) {
+    rlang::abort("`opening` must be NULL or a ledgr_opening object.", class = "ledgr_invalid_args")
+  }
+  if (!isTRUE(all.equal(as.numeric(opening$cash), as.numeric(initial_cash), tolerance = 0))) {
+    rlang::abort("`opening$cash` must match `backtest$initial_cash`.", class = "ledgr_invalid_args")
+  }
+  list(
+    cash = as.numeric(opening$cash),
+    date = opening$date,
+    positions = opening$positions,
+    cost_basis = opening$cost_basis
+  )
 }
 
 #' Print a ledgr config
@@ -652,7 +770,7 @@ ledgr_config <- function(snapshot,
 #'   close = c(100, 101, 102),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
 #' print(bt$config)
 #' close(bt)
@@ -700,8 +818,8 @@ ledgr_backtest_equity <- function(con, run_id) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -1160,8 +1278,8 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -1204,8 +1322,8 @@ ledgr_compute_equity_curve <- function(bt) {
 #'   close = c(100, 101, 102),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -1287,8 +1405,8 @@ ledgr_backtest_bench <- function(bt) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -1315,8 +1433,8 @@ ledgr_compute_metrics <- function(bt, metrics = "standard") {
 #'   close = c(100, 101, 102),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -1391,8 +1509,8 @@ print.ledgr_backtest <- function(x, ...) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -1452,8 +1570,8 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
@@ -1512,8 +1630,8 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }

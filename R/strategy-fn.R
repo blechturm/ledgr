@@ -34,7 +34,7 @@ ledgr_strategy_fn_from_key <- function(key, signature = NULL, strategy_params = 
     "FunctionalStrategy",
     inherit = LedgrStrategy,
     private = list(
-      on_pulse_impl = function(ctx) {
+      on_pulse_impl = function(ctx, params) {
         out <- ledgr_call_strategy_fn(fn, ctx, strategy_params, signature)
         if (is.list(out) && !is.null(out$targets)) return(out)
         if (is.numeric(out)) return(list(targets = out, state_update = list()))

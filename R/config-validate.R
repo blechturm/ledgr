@@ -49,10 +49,11 @@ validate_ledgr_config <- function(config) {
   db_path <- cfg_get(c("db_path"))
   assert_scalar_chr(db_path, "db_path")
 
-  seed <- cfg_get(c("engine", "seed"))
-  if (!is.numeric(seed) || length(seed) != 1 || is.na(seed) || !is.finite(seed) || (seed %% 1) != 0) {
+  seed <- config$engine$seed
+  if (!is.null(seed) &&
+      (!is.numeric(seed) || length(seed) != 1 || is.na(seed) || !is.finite(seed) || (seed %% 1) != 0)) {
     rlang::abort(
-      "Config field engine.seed must be an integer-like scalar.",
+      "Config field engine.seed must be NULL or an integer-like scalar.",
       class = "ledgr_invalid_config"
     )
   }

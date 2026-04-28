@@ -14,11 +14,11 @@ quantity for every instrument in `ctx$universe`.
 
 ## The Strategy Function
 
-The simplest form is `function(ctx)`.
+The simplest form is `function(ctx, params)`.
 
 ``` r
-flat_strategy <- function(ctx) {
-  ctx$targets()
+flat_strategy <- function(ctx, params) {
+  ctx$flat()
 }
 ```
 
@@ -27,7 +27,7 @@ as the second argument. There is no `ctx$params` field.
 
 ``` r
 threshold_strategy <- function(ctx, params) {
-  targets <- ctx$targets()
+  targets <- ctx$flat()
   for (id in ctx$universe) {
     if (ctx$close(id) > params$threshold[[id]]) {
       targets[id] <- params$qty
@@ -54,13 +54,13 @@ fields and helpers are:
   `ctx$volume(id)`: scalar OHLCV accessors;
 - `ctx$position(id)`: current quantity for one instrument;
 - `ctx$feature(id, name)`: feature lookup;
-- `ctx$targets(default = 0)`: full target vector initialized to
+- `ctx$flat(default = 0)`: full target vector initialized to
   `default`;
-- `ctx$current_targets()`: full target vector initialized from current
+- `ctx$hold()`: full target vector initialized from current
   positions.
 
-Use `ctx$targets()` when the strategy should go flat unless it
-explicitly emits a target. Use `ctx$current_targets()` when the strategy
+Use `ctx$flat()` when the strategy should go flat unless it
+explicitly emits a target. Use `ctx$hold()` when the strategy
 should hold unless it explicitly changes a target.
 
 ## Targets
@@ -69,8 +69,8 @@ Targets must be full named numeric vectors. Names must exactly match
 `ctx$universe`.
 
 ``` r
-buy_one_if_up <- function(ctx) {
-  targets <- ctx$targets()
+buy_one_if_up <- function(ctx, params) {
+  targets <- ctx$flat()
   if (ctx$close("AAA") > ctx$open("AAA")) {
     targets["AAA"] <- 1
   }
@@ -113,7 +113,7 @@ loudly; warmup `NA` for known features is normal.
 
 ``` r
 rsi_strategy <- function(ctx, params) {
-  targets <- ctx$current_targets()
+  targets <- ctx$hold()
   rsi <- ctx$feature("AAA", "ttr_rsi_3")
   if (is.na(rsi)) return(targets)
 

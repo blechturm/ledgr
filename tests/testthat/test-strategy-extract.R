@@ -3,7 +3,7 @@ testthat::test_that("ledgr_extract_strategy returns Tier 1 source metadata witho
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- params$qty
     targets
   }
@@ -38,7 +38,7 @@ testthat::test_that("ledgr_extract_strategy trust TRUE verifies hash and returns
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- params$qty
     targets
   }
@@ -64,7 +64,12 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx, params) ctx$targets()
+  external_qty <- 0
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["TEST_A"] <- external_qty
+    targets
+  }
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,
@@ -81,7 +86,7 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
   DBI::dbExecute(
     opened$con,
     "UPDATE run_provenance SET strategy_source = ? WHERE run_id = ?",
-    params = list("function(ctx, params) ctx$targets()", "extract-mismatch")
+    params = list("function(ctx, params) ctx$flat()", "extract-mismatch")
   )
 
   testthat::expect_error(
@@ -94,7 +99,12 @@ testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evalua
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx, params) ctx$targets()
+  external_qty <- 0
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["TEST_A"] <- external_qty
+    targets
+  }
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,
@@ -128,7 +138,12 @@ testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  external_qty <- 0
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["TEST_A"] <- external_qty
+    targets
+  }
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,

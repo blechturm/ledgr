@@ -51,7 +51,7 @@ ledgr_run_tags_empty <- function() {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' ledgr_run_tag(db_path, bt$run_id, c("baseline", "demo"))
 #' ledgr_run_tags(db_path, bt$run_id)
@@ -107,7 +107,7 @@ ledgr_run_tag <- function(db_path, run_id, tags) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' ledgr_run_tag(db_path, bt$run_id, c("baseline", "demo"))
 #' ledgr_run_untag(db_path, bt$run_id, "demo")
@@ -160,7 +160,7 @@ ledgr_run_untag <- function(db_path, run_id, tags = NULL) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' ledgr_run_tag(db_path, bt$run_id, "baseline")
 #' ledgr_run_tags(db_path)

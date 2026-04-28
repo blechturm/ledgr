@@ -55,7 +55,7 @@ snapshot.
 
 ``` r
 trend_strategy <- function(ctx, params) {
-  targets <- ctx$targets()
+  targets <- ctx$flat()
   for (id in ctx$universe) {
     if (ctx$close(id) > params$threshold[[id]]) {
       targets[id] <- params$qty

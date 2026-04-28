@@ -194,8 +194,8 @@ testthat::test_that("indicator deregistration does not mutate persisted feature 
     requires_bars = 1L
   )
 
-  strategy <- function(ctx) {
-    ctx$targets()
+  strategy <- function(ctx, params) {
+    ctx$flat()
   }
 
   bt <- ledgr_backtest(

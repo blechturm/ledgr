@@ -132,7 +132,7 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #'   volume = 1000
 #' )
 #' strategy <- function(ctx, params) {
-#'   targets <- ctx$targets()
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- params$qty
 #'   targets
 #' }

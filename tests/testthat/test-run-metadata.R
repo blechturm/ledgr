@@ -2,8 +2,8 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) {
-    targets <- ctx$targets()
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
     targets["TEST_A"] <- 1
     targets
   }
@@ -43,7 +43,7 @@ testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,
@@ -76,7 +76,7 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,

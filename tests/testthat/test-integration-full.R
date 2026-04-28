@@ -31,7 +31,7 @@ testthat::test_that("LDG-507 full v0.1.2 workflow completes without warnings", {
 
   features <- list(ledgr_ind_sma(3), ledgr_ind_ema(3))
   final_pulse <- iso_utc(dates[[length(dates) - 1L]])
-  strategy <- function(ctx) {
+  strategy <- function(ctx, params) {
     targets <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
     current_names <- intersect(names(ctx$positions), ctx$universe)
     if (length(current_names) > 0L) {

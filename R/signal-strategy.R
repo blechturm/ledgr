@@ -12,13 +12,13 @@
 #' @param flat_qty Target quantity for `"FLAT"`.
 #' @param short_qty Target quantity for `"SHORT"`.
 #'
-#' @return A strategy function suitable for `ledgr_backtest()`.
+#' @return A `function(ctx, params)` strategy suitable for ledgr execution.
 #' @examples
 #' strategy <- ledgr_signal_strategy(
-#'   function(ctx) c(AAA = "LONG"),
+#'   function(ctx, params) c(AAA = "LONG"),
 #'   long_qty = 10
 #' )
-#' strategy(list(universe = "AAA"))
+#' strategy(list(universe = "AAA"), list())
 #' @export
 ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1) {
   if (!is.function(fn)) {
@@ -41,7 +41,7 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
   force(flat_qty)
   force(short_qty)
 
-  function(ctx) {
+  function(ctx, params) {
     universe <- ctx$universe
     if (!is.character(universe) || length(universe) < 1L || anyNA(universe) || any(!nzchar(universe))) {
       rlang::abort("Signal strategy context must include a non-empty character `universe`.", class = "ledgr_invalid_strategy_result")

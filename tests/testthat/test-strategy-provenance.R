@@ -3,7 +3,7 @@ testthat::test_that("function(ctx, params) strategies receive strategy_params an
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     qty <- sum(abs(params$qty))
     id <- paste0("TEST", "_A")
     if (!is.na(qty)) {
@@ -68,7 +68,7 @@ testthat::test_that("function(ctx, params) with empty default strategy_params is
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- if (identical(params, list())) 1 else 0
     targets
   }
@@ -89,67 +89,39 @@ testthat::test_that("function(ctx, params) with empty default strategy_params is
   testthat::expect_true(any(as.numeric(fills$qty) == 1))
 })
 
-testthat::test_that("function(ctx) strategies remain supported and are not Tier 1", {
+testthat::test_that("function(ctx) strategies fail with migration guidance", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) {
-    targets <- ctx$targets()
-    targets["TEST_A"] <- 1
-    targets
-  }
-
-  bt <- ledgr_backtest(
-    data = test_bars,
-    strategy = strategy,
-    start = "2020-01-01",
-    end = "2020-01-05",
-    initial_cash = 10000,
-    db_path = db_path,
-    run_id = "ctx-run"
-  )
-  on.exit(close(bt), add = TRUE)
-
-  opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
-  provenance <- DBI::dbGetQuery(
-    opened$con,
-    "SELECT reproducibility_level FROM run_provenance WHERE run_id = 'ctx-run'"
-  )
-  testthat::expect_identical(provenance$reproducibility_level[[1]], "tier_2")
-})
-
-testthat::test_that("non-empty strategy_params warn when strategy only accepts ctx", {
-  db_path <- tempfile(fileext = ".duckdb")
-  on.exit(unlink(db_path), add = TRUE)
-
-  strategy <- function(ctx) {
-    targets <- ctx$targets()
-    targets["TEST_A"] <- 1
-    targets
-  }
-
-  testthat::expect_warning(
-    bt <- ledgr_backtest(
+  strategy <- function(ctx) ctx$flat()
+  testthat::expect_error(
+    ledgr_backtest(
       data = test_bars,
       strategy = strategy,
-      strategy_params = list(qty = 5),
       start = "2020-01-01",
       end = "2020-01-05",
-      initial_cash = 10000,
-      db_path = db_path,
-      run_id = "unused-params-run"
+      db_path = db_path
     ),
-    class = "ledgr_unused_strategy_params"
+    class = "ledgr_invalid_strategy_signature"
   )
-  on.exit(close(bt), add = TRUE)
+  testthat::expect_error(
+    ledgr_backtest(
+      data = test_bars,
+      strategy = strategy,
+      start = "2020-01-01",
+      end = "2020-01-05",
+      db_path = db_path
+    ),
+    "function(ctx, params)",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("strategy signature and params validation fail clearly", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bad_signature <- function(ctx, params, extra) ctx$targets()
+  bad_signature <- function(ctx, params, extra) ctx$flat()
   testthat::expect_error(
     ledgr_backtest(
       data = test_bars,
@@ -161,7 +133,7 @@ testthat::test_that("strategy signature and params validation fail clearly", {
     class = "ledgr_invalid_strategy_signature"
   )
 
-  strategy <- function(ctx, params) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   testthat::expect_error(
     ledgr_backtest(
       data = test_bars,
@@ -180,12 +152,12 @@ testthat::test_that("strategy params and source changes alter provenance hashes"
   on.exit(unlink(db_path), add = TRUE)
 
   strategy_a <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- params$qty
     targets
   }
   strategy_b <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- params$qty + 1
     targets
   }

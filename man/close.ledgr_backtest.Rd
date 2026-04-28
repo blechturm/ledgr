@@ -28,8 +28,8 @@ bars <- data.frame(
   close = c(100, 101, 102),
   volume = 1000
 )
-strategy <- function(ctx) {
-  targets <- ctx$targets()
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
   targets["AAA"] <- 1
   targets
 }

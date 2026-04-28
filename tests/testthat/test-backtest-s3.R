@@ -5,7 +5,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
-  one_leg <- function(ctx) c(TEST_A = 100)
+  one_leg <- function(ctx, params) c(TEST_A = 100)
 
   bt <- ledgr_backtest(
     snapshot = snap,

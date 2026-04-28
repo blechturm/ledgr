@@ -8,8 +8,8 @@
 - The v0.1.7 strategy contract is `function(ctx, params)`. Strategies without
   tunable parameters receive `params = list()`.
 - The v0.1.7 context target constructors are `ctx$flat()` and `ctx$hold()`;
-  the older `ctx$targets()` and `ctx$current_targets()` names will be removed
-  from the public workflow.
+  the older `ctx$targets()` and `ctx$current_targets()` helpers now fail with
+  migration guidance.
 
 ## New features
 
@@ -17,6 +17,9 @@
   cost basis.
 - Added `ledgr_experiment()` as the central object for the experiment-first
   workflow.
+- Added `ledgr_run()` as the public single-run API for `ledgr_experiment`
+  objects, including run-time `features = function(params)` evaluation and an
+  explicit `seed = NULL` identity field.
 - Added `ledgr_opening_from_broker()` as a reserved adapter hook. v0.1.7 does
   not ship built-in broker integrations.
 

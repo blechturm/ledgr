@@ -87,7 +87,7 @@ testthat::test_that("ledgr_state_reconstruct() fails clearly for unsupported obj
     volume = c(1, 1),
     stringsAsFactors = FALSE
   )
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, db_path = db_path)
   on.exit(close(bt), add = TRUE)
 
@@ -125,7 +125,7 @@ testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed
   snap <- ledgr_snapshot_from_df(bars, db_path = snapshot_path, snapshot_id = "snapshot_20200101_000000_abcd")
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
-  strat <- function(ctx) {
+  strat <- function(ctx, params) {
     c(AAA = 1)
   }
   bt <- suppressWarnings(ledgr_backtest(
@@ -179,7 +179,7 @@ testthat::test_that("ledgr_state_reconstruct() rejects tampered snapshot sources
   snap <- ledgr_snapshot_from_df(bars, db_path = snapshot_path, snapshot_id = "snapshot_20200101_000000_abcd")
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
-  strat <- function(ctx) {
+  strat <- function(ctx, params) {
     c(AAA = 1)
   }
   bt <- suppressWarnings(ledgr_backtest(

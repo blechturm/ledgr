@@ -5,7 +5,7 @@ testthat::test_that("ledgr_config is a validated internal S3 object", {
   snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   config <- ledgr:::ledgr_config(
     snapshot = snapshot,
     universe = c("TEST_A", "TEST_B"),

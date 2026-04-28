@@ -139,8 +139,8 @@ features <- list(
 ledgr_feature_id(features)
 #> [1] "ttr_rsi_14"       "ttr_bbands_20_up"
 
-strategy <- function(ctx) {
-  targets <- ctx$current_targets()
+strategy <- function(ctx, params) {
+  targets <- ctx$hold()
   rsi <- ctx$feature("AAA", "ttr_rsi_14")
   bb_up <- ctx$feature("AAA", "ttr_bbands_20_up")
 

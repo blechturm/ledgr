@@ -58,7 +58,7 @@ bars <- data.frame(
   volume = 1000
 )
 strategy <- function(ctx, params) {
-  targets <- ctx$targets()
+  targets <- ctx$flat()
   targets["AAA"] <- params$qty
   targets
 }

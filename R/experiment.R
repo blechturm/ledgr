@@ -330,6 +330,24 @@ ledgr_experiment_validate_features <- function(features) {
   "list"
 }
 
+ledgr_experiment_materialize_features <- function(exp, params) {
+  if (!inherits(exp, "ledgr_experiment")) {
+    rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_experiment")
+  }
+  features <- exp$features
+  if (identical(exp$features_mode, "function")) {
+    features <- features(params)
+  }
+  mode <- ledgr_experiment_validate_features(features)
+  if (!identical(mode, "list")) {
+    rlang::abort(
+      "`features` must resolve to a list of ledgr_indicator objects.",
+      class = "ledgr_invalid_experiment_features"
+    )
+  }
+  features
+}
+
 ledgr_experiment_validate_opening <- function(opening, universe) {
   if (length(opening$positions) > 0L) {
     missing <- setdiff(names(opening$positions), universe)

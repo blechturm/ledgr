@@ -20,7 +20,7 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
     backtest = ledgr:::ledgr_backtest_config(start = "2020-01-01", end = "2020-12-31", initial_cash = 100000),
     db_path = db_path_direct
   )
-  result_direct <- ledgr:::ledgr_run(config)
+  result_direct <- ledgr:::ledgr_run_config(config)
 
   result_wrapper <- ledgr_backtest(
     snapshot = snap_wrapper,
@@ -76,7 +76,7 @@ testthat::test_that("functional strategies must return targets for the full univ
   snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path, snapshot_id = "snapshot_20200101_000000_abcd")
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
-  missing_target_strategy <- function(ctx) {
+  missing_target_strategy <- function(ctx, params) {
     c(TEST_A = 0)
   }
 
@@ -95,7 +95,7 @@ testthat::test_that("functional strategies must return targets for the full univ
     class = "ledgr_invalid_strategy_result"
   )
 
-  unnamed_target_strategy <- function(ctx) {
+  unnamed_target_strategy <- function(ctx, params) {
     c(0, 0)
   }
 
@@ -192,12 +192,12 @@ testthat::test_that("ledgr_backtest source validation and inference are clear", 
 
 testthat::test_that("functional strategy fingerprints include captured values", {
   target_qty <- 1
-  key_one <- ledgr:::ledgr_register_strategy_fn(function(ctx) {
+  key_one <- ledgr:::ledgr_register_strategy_fn(function(ctx, params) {
     stats::setNames(rep(target_qty, length(ctx$universe)), ctx$universe)
   })
 
   target_qty <- 2
-  key_two <- ledgr:::ledgr_register_strategy_fn(function(ctx) {
+  key_two <- ledgr:::ledgr_register_strategy_fn(function(ctx, params) {
     stats::setNames(rep(target_qty, length(ctx$universe)), ctx$universe)
   })
 
@@ -205,7 +205,7 @@ testthat::test_that("functional strategy fingerprints include captured values", 
 
   captured_time <- Sys.time()
   testthat::expect_error(
-    ledgr:::ledgr_register_strategy_fn(function(ctx) {
+    ledgr:::ledgr_register_strategy_fn(function(ctx, params) {
       captured_time
       stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
     }),
@@ -230,7 +230,7 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
   testthat::expect_true(is.data.frame(ctx$features_wide))
   testthat::expect_true("sma_2" %in% names(ctx$features_wide))
 
-  data_frame_strategy <- function(ctx) {
+  data_frame_strategy <- function(ctx, params) {
     if (!is.data.frame(ctx$bars) || nrow(ctx$bars) != length(ctx$universe)) {
       stop("runtime bars context is not data-frame compatible")
     }
@@ -289,12 +289,12 @@ testthat::test_that("backtest feature hydration uses indicator series_fn", {
     requires_bars = 1L
   )
 
-  strategy <- function(ctx) {
+  strategy <- function(ctx, params) {
     value <- ctx$feature("TEST_A", "series_backtest_probe")
     if (!is.na(value) && value < 0) {
       stop("unexpected negative feature")
     }
-    ctx$targets()
+    ctx$flat()
   }
 
   bt <- ledgr_backtest(
@@ -318,9 +318,9 @@ testthat::test_that("backtest feature hydration uses indicator series_fn", {
 })
 
 testthat::test_that("runtime feature typos fail loudly instead of running as no-op", {
-  typo_strategy <- function(ctx) {
+  typo_strategy <- function(ctx, params) {
     ctx$feature("TEST_A", "returns_2")
-    ctx$targets()
+    ctx$flat()
   }
 
   testthat::expect_error(
@@ -337,7 +337,7 @@ testthat::test_that("runtime feature typos fail loudly instead of running as no-
 })
 
 testthat::test_that("backtest rejects non-positive initial cash", {
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
@@ -397,7 +397,7 @@ testthat::test_that("backtest rejects non-positive initial cash", {
 })
 
 testthat::test_that("duplicate feature IDs fail before DuckDB feature writes", {
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -433,8 +433,8 @@ testthat::test_that("final-bar target changes emit LEDGR_LAST_BAR_NO_FILL", {
     volume = c(1, 1),
     stringsAsFactors = FALSE
   )
-  strategy <- function(ctx) {
-    targets <- ctx$targets()
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
     if (identical(ctx$ts_utc, "2020-01-02T00:00:00Z")) {
       targets["AAA"] <- 1
     }

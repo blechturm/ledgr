@@ -19,7 +19,7 @@ testthat::test_that("audit_log matches db_live results", {
   snap <- ledgr_snapshot_from_df(df)
   ledgr_snapshot_seal(snap)
 
-  strategy <- function(ctx) {
+  strategy <- function(ctx, params) {
     if (as.numeric(ctx$bars$close[[1]]) > as.numeric(ctx$bars$open[[1]])) {
       return(c(BTC = 1))
     }

@@ -227,7 +227,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1002  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Add `ledgr_run()` as the public single-run API on a `ledgr_experiment` object.
@@ -256,15 +256,15 @@ semantics for equivalent valid runs.
     execution paths where possible.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_run()` is the documented public single-run entry point.
-- [ ] Equivalent valid runs preserve equity, trades, fills, positions, ledger
+- [x] `ledgr_run()` is the documented public single-run entry point.
+- [x] Equivalent valid runs preserve equity, trades, fills, positions, ledger
       semantics, feature values, telemetry, and provenance.
-- [ ] Feature functions of params are evaluated exactly once per run.
-- [ ] `params = list()` works.
-- [ ] `run_id` generation and validation match existing durable run rules.
-- [ ] `seed = NULL` appears in `config_json` and participates in config hash.
-- [ ] non-NULL `seed` behavior is explicit and tested.
-- [ ] `ledgr_backtest()` is no longer recommended in user-facing docs.
+- [x] Feature functions of params are evaluated exactly once per run.
+- [x] `params = list()` works.
+- [x] `run_id` generation and validation match existing durable run rules.
+- [x] `seed = NULL` appears in `config_json` and participates in config hash.
+- [x] non-NULL `seed` behavior is explicit and tested.
+- [x] `ledgr_backtest()` is no longer recommended in user-facing docs.
 
 **Test Requirements:**
 - `ledgr_run()` smoke test with fixed features.
@@ -326,7 +326,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1002  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Hard-reset the strategy contract to `function(ctx, params)` and replace target
@@ -347,13 +347,13 @@ helper names with `ctx$flat()` and `ctx$hold()`.
 10. Update contracts for the new context names.
 
 **Acceptance Criteria:**
-- [ ] `function(ctx, params)` is the only accepted strategy signature.
-- [ ] `function(ctx)` fails before execution with a migration message.
-- [ ] `params = list()` is valid and passed as the second argument.
-- [ ] `ctx$flat()` returns a zero target vector over the universe.
-- [ ] `ctx$hold()` returns current positions as targets.
-- [ ] old helper names fail, not alias.
-- [ ] runtime and pulse-snapshot contexts behave consistently.
+- [x] `function(ctx, params)` is the only accepted strategy signature.
+- [x] `function(ctx)` fails before execution with a migration message.
+- [x] `params = list()` is valid and passed as the second argument.
+- [x] `ctx$flat()` returns a zero target vector over the universe.
+- [x] `ctx$hold()` returns current positions as targets.
+- [x] old helper names fail, not alias.
+- [x] runtime and pulse-snapshot contexts behave consistently.
 
 **Test Requirements:**
 - Strategy signature validation tests.

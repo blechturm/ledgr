@@ -166,8 +166,20 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
   close <- function(id) ledgr_pulse_context_scalar(lookup, id, "close")
   volume <- function(id) ledgr_pulse_context_scalar(lookup, id, "volume")
   position <- function(id) ledgr_pulse_context_position(lookup, id)
-  targets <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
-  current_targets <- function() ledgr_pulse_context_current_targets(lookup)
+  flat <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
+  hold <- function() ledgr_pulse_context_current_targets(lookup)
+  targets <- function(...) {
+    rlang::abort(
+      "`ctx$targets()` was removed in v0.1.7. Use `ctx$flat()` for a flat/default target vector.",
+      class = "ledgr_context_helper_removed"
+    )
+  }
+  current_targets <- function(...) {
+    rlang::abort(
+      "`ctx$current_targets()` was removed in v0.1.7. Use `ctx$hold()` to start from current positions.",
+      class = "ledgr_context_helper_removed"
+    )
+  }
 
   if (is.environment(ctx)) {
     ctx$.pulse_lookup <- lookup
@@ -178,6 +190,8 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
     ctx$close <- close
     ctx$volume <- volume
     ctx$position <- position
+    ctx$flat <- flat
+    ctx$hold <- hold
     ctx$targets <- targets
     ctx$current_targets <- current_targets
     return(ctx)
@@ -191,6 +205,8 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
   ctx$close <- close
   ctx$volume <- volume
   ctx$position <- position
+  ctx$flat <- flat
+  ctx$hold <- hold
   ctx$targets <- targets
   ctx$current_targets <- current_targets
   ctx

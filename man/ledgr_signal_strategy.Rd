@@ -18,7 +18,7 @@ signal per instrument in \code{ctx$universe}.}
 \item{short_qty}{Target quantity for \code{"SHORT"}.}
 }
 \value{
-A strategy function suitable for \code{ledgr_backtest()}.
+A \verb{function(ctx, params)} strategy suitable for ledgr execution.
 }
 \description{
 \code{ledgr_signal_strategy()} is a small convenience wrapper for tutorial-style
@@ -28,8 +28,8 @@ vector before the shared StrategyResult validator runs.
 }
 \examples{
 strategy <- ledgr_signal_strategy(
-  function(ctx) c(AAA = "LONG"),
+  function(ctx, params) c(AAA = "LONG"),
   long_qty = 10
 )
-strategy(list(universe = "AAA"))
+strategy(list(universe = "AAA"), list())
 }

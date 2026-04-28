@@ -105,13 +105,13 @@ ledgr has to match each target to `ctx$universe`; values are numeric
 position quantities, not labels such as `"LONG"` or `"FLAT"`.
 
 Now define a strategy that reads the close price at the current pulse
-and returns target holdings for the full universe. `ctx$targets()`
+and returns target holdings for the full universe. `ctx$flat()`
 creates a flat target vector over `ctx$universe`; the strategy then
 changes only the holdings it wants to own:
 
 ``` r
-strategy <- function(ctx) {
-  targets <- ctx$targets()
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
 
   if (ctx$close("AAA") > 100.4) {
     targets["AAA"] <- 10
@@ -125,7 +125,7 @@ strategy <- function(ctx) {
 }
 ```
 
-Use `ctx$current_targets()` instead when the rule should keep current
+Use `ctx$hold()` instead when the rule should keep current
 holdings unless a signal explicitly changes them.
 
 Run the backtest:

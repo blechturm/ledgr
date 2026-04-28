@@ -29,7 +29,7 @@ bars <- data.frame(
   close = c(100, 101, 102, 103),
   volume = 1000
 )
-strategy <- function(ctx) ctx$targets()
+strategy <- function(ctx, params) ctx$flat()
 bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 run_id <- bt$run_id
 close(bt)

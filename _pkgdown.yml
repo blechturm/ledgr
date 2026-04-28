@@ -25,10 +25,18 @@ articles:
     contents:
       - ttr-indicators
 
-reference:
-  - title: Backtests
-    contents:
-      - ledgr_backtest
+  reference:
+    - title: Experiment Workflow
+      contents:
+        - ledgr_experiment
+        - print.ledgr_experiment
+        - ledgr_opening
+        - print.ledgr_opening
+        - ledgr_opening_from_broker
+        - ledgr_run
+    - title: Backtests
+      contents:
+        - ledgr_backtest
       - print.ledgr_backtest
       - summary.ledgr_backtest
       - as_tibble.ledgr_backtest

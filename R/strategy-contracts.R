@@ -82,7 +82,7 @@ LedgrStrategy <- R6::R6Class(
       invisible(self)
     },
 
-    on_pulse = function(ctx) {
+    on_pulse = function(ctx, params) {
       ledgr_validate_pulse_context(ctx)
 
       before <- private$fingerprint()
@@ -103,7 +103,7 @@ LedgrStrategy <- R6::R6Class(
     }
   ),
   private = list(
-    on_pulse_impl = function(ctx) {
+    on_pulse_impl = function(ctx, params) {
       rlang::abort(
         "LedgrStrategy is abstract: subclasses must implement `private$on_pulse_impl(ctx)`.",
         class = "ledgr_invalid_strategy"
@@ -159,7 +159,7 @@ HoldZeroStrategy <- R6::R6Class(
   "HoldZeroStrategy",
   inherit = LedgrStrategy,
   private = list(
-    on_pulse_impl = function(ctx) {
+    on_pulse_impl = function(ctx, params) {
       targets <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
       list(targets = targets, state_update = list())
     }
@@ -170,7 +170,7 @@ EchoStrategy <- R6::R6Class(
   "EchoStrategy",
   inherit = LedgrStrategy,
   private = list(
-    on_pulse_impl = function(ctx) {
+    on_pulse_impl = function(ctx, params) {
       targets <- self$params$targets
       state_update <- self$params$state_update
       if (is.null(state_update)) state_update <- list()
@@ -186,7 +186,7 @@ BadMutatingStrategy <- R6::R6Class(
     counter = 0L
   ),
   private = list(
-    on_pulse_impl = function(ctx) {
+    on_pulse_impl = function(ctx, params) {
       self$counter <- self$counter + 1L
       targets <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
       list(targets = targets, state_update = list())
@@ -198,7 +198,7 @@ StatePrevStrategy <- R6::R6Class(
   "StatePrevStrategy",
   inherit = LedgrStrategy,
   private = list(
-    on_pulse_impl = function(ctx) {
+    on_pulse_impl = function(ctx, params) {
       prev <- ctx$state_prev
 
       step <- 1L

@@ -476,7 +476,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   volume = 1000
 #' )
 #' strategy <- function(ctx, params) {
-#'   targets <- ctx$targets()
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- params$qty
 #'   targets
 #' }
@@ -565,7 +565,7 @@ ledgr_compare_runs <- function(db_path, run_ids = NULL, include_archived = FALSE
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' ledgr_run_list(db_path)
 #' close(bt)
@@ -600,7 +600,7 @@ ledgr_run_list <- function(db_path, include_archived = FALSE) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' ledgr_run_info(db_path, bt$run_id)
 #' close(bt)
@@ -683,7 +683,7 @@ print.ledgr_run_info <- function(x, ...) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' run_id <- bt$run_id
 #' close(bt)
@@ -767,7 +767,7 @@ ledgr_run_open <- function(db_path, run_id) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' ledgr_run_label(db_path, bt$run_id, "baseline")
 #' close(bt)
@@ -813,7 +813,7 @@ ledgr_run_label <- function(db_path, run_id, label = NULL) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) ctx$targets()
+#' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
 #' ledgr_run_archive(db_path, bt$run_id, reason = "example cleanup")
 #' close(bt)

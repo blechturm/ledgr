@@ -5,7 +5,7 @@ testthat::test_that("metrics handle zero-trade backtests", {
   snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
-  zero_strategy <- function(ctx) {
+  zero_strategy <- function(ctx, params) {
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   }
 

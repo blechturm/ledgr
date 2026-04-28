@@ -5,13 +5,13 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
   snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  strategy_one <- function(ctx) {
-    targets <- ctx$targets()
+  strategy_one <- function(ctx, params) {
+    targets <- ctx$flat()
     targets["TEST_A"] <- 1
     targets
   }
-  strategy_two <- function(ctx) {
-    targets <- ctx$targets()
+  strategy_two <- function(ctx, params) {
+    targets <- ctx$flat()
     targets["TEST_B"] <- 2
     targets
   }
@@ -66,7 +66,7 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
   on.exit(unlink(db_path), add = TRUE)
 
   strategy <- function(ctx, params) {
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- params$qty
     targets
   }
@@ -120,9 +120,9 @@ testthat::test_that("ledgr_run_open returns a handle without recomputation or mu
 
   calls <- new.env(parent = emptyenv())
   calls$n <- 0L
-  strategy <- function(ctx) {
+  strategy <- function(ctx, params) {
     calls$n <- calls$n + 1L
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- 1
     targets
   }
@@ -184,7 +184,7 @@ testthat::test_that("ledgr_run_open rejects incomplete runs and archived complet
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,

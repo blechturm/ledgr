@@ -17,7 +17,7 @@ testthat::test_that("ledgr_compare_runs compares stored completed runs without r
   calls$n <- 0L
   strategy <- function(ctx, params) {
     calls$n <- calls$n + 1L
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     targets["TEST_A"] <- params$qty
     targets
   }
@@ -68,13 +68,13 @@ testthat::test_that("ledgr_compare_runs compares different stored strategies", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  buy_one <- function(ctx) {
-    targets <- ctx$targets()
+  buy_one <- function(ctx, params) {
+    targets <- ctx$flat()
     targets["TEST_A"] <- 1
     targets
   }
-  buy_two <- function(ctx) {
-    targets <- ctx$targets()
+  buy_two <- function(ctx, params) {
+    targets <- ctx$flat()
     targets["TEST_A"] <- 2
     targets
   }
@@ -117,8 +117,8 @@ testthat::test_that("ledgr_compare_runs counts only closing trades for win rate"
     volume = c(1, 1, 1, 1),
     stringsAsFactors = FALSE
   )
-  strategy <- function(ctx) {
-    targets <- ctx$targets()
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
     if (ctx$ts_utc == "2020-01-01T00:00:00Z") {
       targets["AAA"] <- 10
     }
@@ -143,7 +143,7 @@ testthat::test_that("ledgr_compare_runs respects archive and incomplete-run rule
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,
@@ -161,7 +161,7 @@ testthat::test_that("ledgr_compare_runs respects archive and incomplete-run rule
   duplicate <- ledgr_compare_runs(db_path, run_ids = c("compare-archived", "compare-archived"))
   testthat::expect_identical(duplicate$run_id, c("compare-archived", "compare-archived"))
 
-  bad_strategy <- function(ctx) stop("compare failure")
+  bad_strategy <- function(ctx, params) stop("compare failure")
   testthat::expect_error(
     ledgr_backtest(
       data = test_bars,
