@@ -1,3 +1,25 @@
+# ledgr 0.1.7
+
+## Breaking changes
+
+- Began the v0.1.7 experiment-first API reset. The public research workflow now
+  centers on `ledgr_experiment()` and `ledgr_run()` rather than `db_path`-first
+  calls and direct `ledgr_backtest()` usage.
+- The v0.1.7 strategy contract is `function(ctx, params)`. Strategies without
+  tunable parameters receive `params = list()`.
+- The v0.1.7 context target constructors are `ctx$flat()` and `ctx$hold()`;
+  the older `ctx$targets()` and `ctx$current_targets()` names will be removed
+  from the public workflow.
+
+## New features
+
+- Added `ledgr_opening()` for explicit opening cash, positions, and optional
+  cost basis.
+- Added `ledgr_experiment()` as the central object for the experiment-first
+  workflow.
+- Added `ledgr_opening_from_broker()` as a reserved adapter hook. v0.1.7 does
+  not ship built-in broker integrations.
+
 # ledgr 0.1.6
 
 - Added `ledgr_compare_runs()` for comparing completed stored runs from a
