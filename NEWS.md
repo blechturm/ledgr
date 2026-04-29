@@ -29,6 +29,11 @@
   `ledgr_compare_runs()` while keeping the underlying objects tibble-compatible.
 - Added `ledgr_demo_bars` and `ledgr_sim_bars()` as deterministic offline demo
   data for examples and documentation.
+- Made durable `ledgr_backtest` handles safer to clean up: explicit `close(bt)`
+  checkpoints before disconnecting, and a finalizer safety net attempts one
+  auto-checkpoint if a durable handle is garbage-collected without close.
+- Rewrote README and vignettes around the v0.1.7 experiment-first workflow and
+  added a v0.1.6 to v0.1.7 migration guide.
 - Added `ledgr_opening_from_broker()` as a reserved adapter hook. v0.1.7 does
   not ship built-in broker integrations.
 

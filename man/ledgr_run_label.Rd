@@ -23,19 +23,12 @@ Updates only the mutable label metadata for a stored run. The immutable
 \code{run_id} and experiment identity hashes are not changed.
 }
 \examples{
-db_path <- tempfile(fileext = ".duckdb")
-bars <- data.frame(
-  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-  instrument_id = "AAA",
-  open = c(100, 101, 102, 103),
-  high = c(101, 102, 103, 104),
-  low = c(99, 100, 101, 102),
-  close = c(100, 101, 102, 103),
-  volume = 1000
-)
-snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 strategy <- function(ctx, params) ctx$flat()
-bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+bt <- ledgr_run(exp, params = list(), run_id = "flat")
 ledgr_run_label(snapshot, bt$run_id, "baseline")
 close(bt)
+ledgr_snapshot_close(snapshot)
 }

@@ -20,180 +20,151 @@ knitr::knit_hooks$set(
     default_output_hook(gsub("[ \t]+(?=\n)", "", x, perl = TRUE), options)
   }
 )
+demo_data_path <- if (file.exists("data/ledgr_demo_bars.rda")) {
+  "data/ledgr_demo_bars.rda"
+} else {
+  file.path("..", "data", "ledgr_demo_bars.rda")
+}
+if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
+  load(demo_data_path)
+}
 ```
 
-The experiment store is a durable DuckDB file that keeps sealed market data,
-run metadata, result artifacts, provenance, and compact telemetry together.
-
-The basic workflow is:
+The experiment store is the DuckDB file behind a sealed snapshot. It keeps
+market data, run artifacts, provenance, labels, tags, archive state, and compact
+telemetry together.
 
 ```text
-sealed snapshot -> many runs -> list / inspect / compare / reopen
+snapshot handle -> run experiments -> list / inspect / compare / reopen
 ```
 
-`run_id` is the immutable experiment key. Labels, tags, and archive state are
-mutable metadata layered on top of that key.
+`run_id` is immutable. Labels, tags, and archive state are mutable metadata.
 
-## Create One Store
-
-Use one durable `db_path` for the snapshot and all runs you want to compare.
-Experiment-store APIs take the snapshot handle, not the raw path. In a new R
-session, reopen that handle with `ledgr_snapshot_load(db_path, snapshot_id)`.
-
-```{r data}
+```{r library}
 library(ledgr)
+data("ledgr_demo_bars", package = "ledgr")
+```
 
-db_path <- tempfile(fileext = ".duckdb")
+## Create A Durable Snapshot
 
-bars <- data.frame(
-  ts_utc = rep(as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:6, 2),
-  instrument_id = rep(c("AAA", "BBB"), each = 7),
-  open = c(100, 101, 102, 103, 104, 105, 106,
-           80,  80,  81,  81,  82,  83,  83),
-  high = c(101, 102, 103, 104, 105, 106, 107,
-           81,  81,  82,  82,  83,  84,  84),
-  low = c(99, 100, 101, 102, 103, 104, 105,
-          79, 79, 80, 80, 81, 82, 82),
-  close = c(100, 101, 102, 103, 104, 105, 106,
-            80, 80, 81, 81, 82, 83, 83),
-  volume = 1000
+```{r snapshot}
+db_path <- tempfile("ledgr_store_", fileext = ".duckdb")
+
+bars <- subset(
+  ledgr_demo_bars,
+  instrument_id %in% c("DEMO_01", "DEMO_02") &
+    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
+    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
 )
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
   db_path = db_path,
-  snapshot_id = "demo_snapshot"
+  snapshot_id = "store_demo_snapshot"
 )
 ```
 
-The snapshot is sealed. Reusing it means each run is evaluated against the same
-data artifact.
+After snapshot creation, store operations take `snapshot`, not `db_path`. In a
+new R session, recover the handle with `ledgr_snapshot_load(db_path,
+snapshot_id)`.
 
 ## Run Variants
 
-Here two parameter sets use the same strategy function and the same snapshot.
+```{r experiment}
+features <- list(ledgr_ind_sma(20))
 
-```{r runs}
 trend_strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
-    if (ctx$close(id) > params$threshold[[id]]) {
+    sma <- ctx$feature(id, "sma_20")
+    if (is.finite(sma) && ctx$close(id) > sma) {
       targets[id] <- params$qty
     }
   }
   targets
 }
 
-bt_small <- ledgr_backtest(
+exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = trend_strategy,
-  strategy_params = list(threshold = c(AAA = 101, BBB = 80), qty = 1),
-  db_path = db_path,
-  run_id = "trend_small"
+  features = features,
+  opening = ledgr_opening(cash = 10000)
 )
 
-bt_large <- ledgr_backtest(
-  snapshot = snapshot,
-  strategy = trend_strategy,
-  strategy_params = list(threshold = c(AAA = 102, BBB = 81), qty = 3),
-  db_path = db_path,
-  run_id = "trend_large"
-)
+bt_small <- exp |>
+  ledgr_run(params = list(qty = 5), run_id = "trend_qty_5")
+
+bt_large <- exp |>
+  ledgr_run(params = list(qty = 15), run_id = "trend_qty_15")
 ```
 
-## List Runs
+## Discover Runs
 
-`ledgr_run_list()` is the discovery view. It is read-only.
+`ledgr_run_list()` is the store discovery view.
 
 ```{r list}
-ledgr_run_list(snapshot)[, c(
-  "run_id", "label", "tags", "status", "final_equity", "total_return",
-  "execution_mode", "reproducibility_level"
-)]
+ledgr_run_list(snapshot)[
+  c("run_id", "label", "tags", "status", "final_equity", "execution_mode")
+]
 ```
 
-`run_id` should be stable and script-friendly. Use labels for human names.
+Use labels and tags for mutable human-facing organization.
 
 ```{r label-tags}
 snapshot <- snapshot |>
-  ledgr_run_label("trend_small", "Lower threshold, one share") |>
-  ledgr_run_tag("trend_small", c("baseline", "trend")) |>
-  ledgr_run_tag("trend_large", c("trend", "higher-size"))
+  ledgr_run_label("trend_qty_5", "Baseline quantity") |>
+  ledgr_run_tag("trend_qty_5", c("baseline", "trend")) |>
+  ledgr_run_tag("trend_qty_15", c("trend", "larger-size"))
 
-ledgr_run_list(snapshot)[, c("run_id", "label", "tags")]
+ledgr_run_list(snapshot)[c("run_id", "label", "tags")]
 ```
 
-Tags are mutable grouping metadata. They do not change identity hashes, stored
-artifacts, strategy provenance, or comparison semantics.
+Tags and labels do not alter snapshot hashes, strategy hashes, parameter hashes,
+config hashes, or result artifacts.
 
-## Inspect One Run
-
-`ledgr_run_info()` gives the detailed metadata for one run.
+## Inspect And Compare
 
 ```{r info}
-info <- ledgr_run_info(snapshot, "trend_small")
+info <- ledgr_run_info(snapshot, "trend_qty_5")
 info
 ```
 
-Important fields:
-
-- `execution_mode`: how the run wrote artifacts, for example `audit_log` or
-  `db_live`;
-- `elapsed_sec`, `pulse_count`, and cache counts: compact telemetry retained
-  after the R session ends;
-- `reproducibility_level`: whether ledgr captured enough strategy metadata for
-  source inspection or recovery;
-- `strategy_source_hash` and `strategy_params_hash`: identity metadata for the
-  strategy and parameters.
-
-Older stores may contain legacy/pre-provenance runs. ledgr reads them, but the
-provenance fields can be missing.
-
-## Compare Runs
-
-`ledgr_compare_runs()` builds on stored run metadata and result artifacts. It
-does not rerun strategies.
+`ledgr_run_info()` is the detailed metadata view. It includes execution mode,
+compact telemetry, status, identity hashes, and reproducibility tier.
 
 ```{r compare}
-ledgr_compare_runs(snapshot, run_ids = c("trend_small", "trend_large"))[, c(
-  "run_id", "final_equity", "total_return", "max_drawdown",
-  "n_trades", "win_rate", "strategy_params_hash"
-)]
+ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))[
+  c("run_id", "final_equity", "total_return", "max_drawdown", "n_trades", "win_rate")
+]
 ```
 
-This is the lightweight comparison surface in v0.1.6. Parameter sweeps are
-future scope.
+Comparison is read-only and does not rerun strategies.
 
 ## Reopen A Completed Run
 
-`ledgr_run_open()` returns a normal `ledgr_backtest` handle over existing
-artifacts. It does not recompute the run.
-
 ```{r open}
-reopened <- ledgr_run_open(snapshot, "trend_small")
+reopened <- ledgr_run_open(snapshot, "trend_qty_5")
 summary(reopened)
-ledgr_results(reopened, what = "equity")
+tail(ledgr_results(reopened, what = "equity"), 3)
 close(reopened)
 ```
 
-Only completed runs can be opened. Failed or incomplete runs should be inspected
-with `ledgr_run_info()`.
+Only completed runs can be reopened. Failed or incomplete runs remain
+inspectable through `ledgr_run_info()`.
 
-## Archive Instead Of Delete
-
-Archiving hides a run from the default list but keeps the artifacts available.
+## Archive Without Deleting
 
 ```{r archive}
-snapshot <- ledgr_run_archive(snapshot, "trend_large", reason = "superseded by smaller baseline")
+snapshot <- snapshot |>
+  ledgr_run_archive("trend_qty_15", reason = "larger position kept for reference")
 
-ledgr_run_list(snapshot)[, c("run_id", "archived")]
-ledgr_run_list(snapshot, include_archived = TRUE)[, c("run_id", "archived", "archive_reason")]
+ledgr_run_list(snapshot)[c("run_id", "status", "archived", "archive_reason")]
 ```
 
-Archive is non-destructive and idempotent. Hard delete is not a v0.1.6 API.
+Archiving hides a run from default listings without deleting artifacts.
 
 ```{r cleanup}
 close(bt_small)
 close(bt_large)
-close(snapshot)
+ledgr_snapshot_close(snapshot)
 ```

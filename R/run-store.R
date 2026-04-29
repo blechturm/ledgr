@@ -545,33 +545,20 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' @return A `ledgr_comparison` object, which is a classed tibble with one row
 #'   per completed run.
 #' @examples
-#' db_path <- tempfile(fileext = ".duckdb")
-#' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
-#'   instrument_id = "AAA",
-#'   open = c(100, 101, 102, 103, 104),
-#'   high = c(101, 102, 103, 104, 105),
-#'   low = c(99, 100, 101, 102, 103),
-#'   close = c(100, 101, 102, 103, 104),
-#'   volume = 1000
-#' )
-#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+#' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+#' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 30))
 #' strategy <- function(ctx, params) {
 #'   targets <- ctx$flat()
-#'   targets["AAA"] <- params$qty
+#'   targets["DEMO_01"] <- params$qty
 #'   targets
 #' }
-#' bt_a <- ledgr_backtest(
-#'   snapshot = snapshot, strategy = strategy, strategy_params = list(qty = 1),
-#'   db_path = db_path, run_id = "qty-1"
-#' )
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
 #' on.exit(close(bt_a), add = TRUE)
-#' bt_b <- ledgr_backtest(
-#'   snapshot = snapshot, strategy = strategy, strategy_params = list(qty = 2),
-#'   db_path = db_path, run_id = "qty-2"
-#' )
+#' bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "qty-2")
 #' on.exit(close(bt_b), add = TRUE)
 #' ledgr_compare_runs(snapshot, run_ids = c("qty-1", "qty-2"))
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALSE, metrics = c("standard")) {
   if (!is.character(metrics) || length(metrics) != 1L || !identical(metrics, "standard")) {
@@ -671,21 +658,14 @@ print.ledgr_comparison <- function(x, ...) {
 #'   identity, provenance, status, telemetry summary, and basic result summary
 #'   columns.
 #' @examples
-#' db_path <- tempfile(fileext = ".duckdb")
-#' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-#'   instrument_id = "AAA",
-#'   open = c(100, 101, 102, 103),
-#'   high = c(101, 102, 103, 104),
-#'   low = c(99, 100, 101, 102),
-#'   close = c(100, 101, 102, 103),
-#'   volume = 1000
-#' )
-#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+#' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+#' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_list(snapshot)
 #' close(bt)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_run_list <- function(snapshot, include_archived = FALSE) {
   if (!is.logical(include_archived) || length(include_archived) != 1L || is.na(include_archived)) {
@@ -737,21 +717,14 @@ print.ledgr_run_list <- function(x, ...) {
 #' @param run_id Run identifier.
 #' @return A `ledgr_run_info` object.
 #' @examples
-#' db_path <- tempfile(fileext = ".duckdb")
-#' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-#'   instrument_id = "AAA",
-#'   open = c(100, 101, 102, 103),
-#'   high = c(101, 102, 103, 104),
-#'   low = c(99, 100, 101, 102),
-#'   close = c(100, 101, 102, 103),
-#'   volume = 1000
-#' )
-#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+#' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+#' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_info(snapshot, bt$run_id)
 #' close(bt)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_run_info <- function(snapshot, run_id) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
@@ -825,24 +798,17 @@ print.ledgr_run_info <- function(x, ...) {
 #' @param run_id Run identifier. The run must have status `DONE`.
 #' @return A `ledgr_backtest` object.
 #' @examples
-#' db_path <- tempfile(fileext = ".duckdb")
-#' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-#'   instrument_id = "AAA",
-#'   open = c(100, 101, 102, 103),
-#'   high = c(101, 102, 103, 104),
-#'   low = c(99, 100, 101, 102),
-#'   close = c(100, 101, 102, 103),
-#'   volume = 1000
-#' )
-#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+#' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+#' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' run_id <- bt$run_id
 #' close(bt)
 #' reopened <- ledgr_run_open(snapshot, run_id)
 #' summary(reopened)
 #' close(reopened)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_run_open <- function(snapshot, run_id) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
@@ -914,21 +880,14 @@ ledgr_run_open <- function(snapshot, run_id) {
 #' @param label Human-readable label. Use `NULL` or `""` to clear the label.
 #' @return The input `ledgr_snapshot`, invisibly.
 #' @examples
-#' db_path <- tempfile(fileext = ".duckdb")
-#' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-#'   instrument_id = "AAA",
-#'   open = c(100, 101, 102, 103),
-#'   high = c(101, 102, 103, 104),
-#'   low = c(99, 100, 101, 102),
-#'   close = c(100, 101, 102, 103),
-#'   volume = 1000
-#' )
-#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+#' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+#' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_label(snapshot, bt$run_id, "baseline")
 #' close(bt)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_run_label <- function(snapshot, run_id, label = NULL) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
@@ -964,21 +923,14 @@ ledgr_run_label <- function(snapshot, run_id, label = NULL) {
 #' @param reason Optional archive reason. Empty strings are stored as `NULL`.
 #' @return The input `ledgr_snapshot`, invisibly.
 #' @examples
-#' db_path <- tempfile(fileext = ".duckdb")
-#' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-#'   instrument_id = "AAA",
-#'   open = c(100, 101, 102, 103),
-#'   high = c(101, 102, 103, 104),
-#'   low = c(99, 100, 101, 102),
-#'   close = c(100, 101, 102, 103),
-#'   volume = 1000
-#' )
-#' snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+#' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+#' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(snapshot = snapshot, strategy = strategy, db_path = db_path)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_archive(snapshot, bt$run_id, reason = "example cleanup")
 #' close(bt)
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_run_archive <- function(snapshot, run_id, reason = NULL) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {

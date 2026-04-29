@@ -1,255 +1,221 @@
 Experiment Store
 ================
 
-The experiment store is a durable DuckDB file that keeps sealed market
-data, run metadata, result artifacts, provenance, and compact telemetry
-together.
-
-The basic workflow is:
+The experiment store is the DuckDB file behind a sealed snapshot. It
+keeps market data, run artifacts, provenance, labels, tags, archive
+state, and compact telemetry together.
 
 ``` text
-sealed snapshot -> many runs -> list / inspect / compare / reopen
+snapshot handle -> run experiments -> list / inspect / compare / reopen
 ```
 
-`run_id` is the immutable experiment key. Labels, tags, and archive
-state are mutable metadata layered on top of that key.
-
-## Create One Store
-
-Use one durable `db_path` for the snapshot and all runs you want to
-compare. Experiment-store APIs take the snapshot handle, not the raw
-path. In a new R session, reopen that handle with
-`ledgr_snapshot_load(db_path, snapshot_id)`.
+`run_id` is immutable. Labels, tags, and archive state are mutable
+metadata.
 
 ``` r
 library(ledgr)
+data("ledgr_demo_bars", package = "ledgr")
+```
 
-db_path <- tempfile(fileext = ".duckdb")
+## Create A Durable Snapshot
 
-bars <- data.frame(
-  ts_utc = rep(as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:6, 2),
-  instrument_id = rep(c("AAA", "BBB"), each = 7),
-  open = c(100, 101, 102, 103, 104, 105, 106,
-           80,  80,  81,  81,  82,  83,  83),
-  high = c(101, 102, 103, 104, 105, 106, 107,
-           81,  81,  82,  82,  83,  84,  84),
-  low = c(99, 100, 101, 102, 103, 104, 105,
-          79, 79, 80, 80, 81, 82, 82),
-  close = c(100, 101, 102, 103, 104, 105, 106,
-            80, 80, 81, 81, 82, 83, 83),
-  volume = 1000
+``` r
+db_path <- tempfile("ledgr_store_", fileext = ".duckdb")
+
+bars <- subset(
+  ledgr_demo_bars,
+  instrument_id %in% c("DEMO_01", "DEMO_02") &
+    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
+    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
 )
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
   db_path = db_path,
-  snapshot_id = "demo_snapshot"
+  snapshot_id = "store_demo_snapshot"
 )
 ```
 
-The snapshot is sealed. Reusing it means each run is evaluated against
-the same data artifact.
+After snapshot creation, store operations take `snapshot`, not
+`db_path`. In a new R session, recover the handle with
+`ledgr_snapshot_load(db_path, snapshot_id)`.
 
 ## Run Variants
 
-Here two parameter sets use the same strategy function and the same
-snapshot.
-
 ``` r
+features <- list(ledgr_ind_sma(20))
+
 trend_strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
-    if (ctx$close(id) > params$threshold[[id]]) {
+    sma <- ctx$feature(id, "sma_20")
+    if (is.finite(sma) && ctx$close(id) > sma) {
       targets[id] <- params$qty
     }
   }
   targets
 }
 
-bt_small <- ledgr_backtest(
+exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = trend_strategy,
-  strategy_params = list(threshold = c(AAA = 101, BBB = 80), qty = 1),
-  db_path = db_path,
-  run_id = "trend_small"
+  features = features,
+  opening = ledgr_opening(cash = 10000)
 )
 
-bt_large <- ledgr_backtest(
-  snapshot = snapshot,
-  strategy = trend_strategy,
-  strategy_params = list(threshold = c(AAA = 102, BBB = 81), qty = 3),
-  db_path = db_path,
-  run_id = "trend_large"
-)
+bt_small <- exp |>
+  ledgr_run(params = list(qty = 5), run_id = "trend_qty_5")
+
+bt_large <- exp |>
+  ledgr_run(params = list(qty = 15), run_id = "trend_qty_15")
 ```
 
-## List Runs
+## Discover Runs
 
-`ledgr_run_list()` is the discovery view. It is read-only.
+`ledgr_run_list()` is the store discovery view.
 
 ``` r
-ledgr_run_list(snapshot)[, c(
-  "run_id", "label", "tags", "status", "final_equity", "total_return",
-  "execution_mode", "reproducibility_level"
-)]
-#> # A tibble: 2 x 8
-#>   run_id label tags  status final_equity total_return execution_mode reproducibility_level
-#>   <chr>  <chr> <chr> <chr>         <dbl>        <dbl> <chr>          <chr>
-#> 1 trend~ <NA>  <NA>  DONE         100005    0.0000500 audit_log      tier_1
-#> 2 trend~ <NA>  <NA>  DONE         100255    0.00255   audit_log      tier_1
+ledgr_run_list(snapshot)[
+  c("run_id", "label", "tags", "status", "final_equity", "execution_mode")
+]
+#> # ledgr run list
+#> # A tibble: 2 x 6
+#>   run_id       label tags  status final_equity execution_mode
+#>   <chr>        <chr> <chr> <chr>         <dbl> <chr>
+#> 1 trend_qty_5  <NA>  <NA>  DONE         10343. audit_log
+#> 2 trend_qty_15 <NA>  <NA>  DONE         11028. audit_log
+#>
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
-`run_id` should be stable and script-friendly. Use labels for human
-names.
+Use labels and tags for mutable human-facing organization.
 
 ``` r
 snapshot <- snapshot |>
-  ledgr_run_label("trend_small", "Lower threshold, one share") |>
-  ledgr_run_tag("trend_small", c("baseline", "trend")) |>
-  ledgr_run_tag("trend_large", c("trend", "higher-size"))
+  ledgr_run_label("trend_qty_5", "Baseline quantity") |>
+  ledgr_run_tag("trend_qty_5", c("baseline", "trend")) |>
+  ledgr_run_tag("trend_qty_15", c("trend", "larger-size"))
 
-ledgr_run_list(snapshot)[, c("run_id", "label", "tags")]
+ledgr_run_list(snapshot)[c("run_id", "label", "tags")]
+#> # ledgr run list
 #> # A tibble: 2 x 3
-#>   run_id      label                      tags
-#>   <chr>       <chr>                      <chr>
-#> 1 trend_small Lower threshold, one share baseline, trend
-#> 2 trend_large <NA>                       higher-size, trend
+#>   run_id       label             tags
+#>   <chr>        <chr>             <chr>
+#> 1 trend_qty_5  Baseline quantity baseline, trend
+#> 2 trend_qty_15 <NA>              larger-size, trend
+#>
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
-Tags are mutable grouping metadata. They do not change identity hashes,
-stored artifacts, strategy provenance, or comparison semantics.
+Tags and labels do not alter snapshot hashes, strategy hashes, parameter
+hashes, config hashes, or result artifacts.
 
-## Inspect One Run
-
-`ledgr_run_info()` gives the detailed metadata for one run.
+## Inspect And Compare
 
 ``` r
-info <- ledgr_run_info(snapshot, "trend_small")
+info <- ledgr_run_info(snapshot, "trend_qty_5")
 info
 #> ledgr Run Info
 #> ==============
 #>
-#> Run ID:          trend_small
-#> Label:           Lower threshold, one share
+#> Run ID:          trend_qty_5
+#> Label:           Baseline quantity
 #> Status:          DONE
 #> Archived:        FALSE
 #> Tags:            baseline, trend
-#> Snapshot:        demo_snapshot
-#> Snapshot Hash:   c64c19dceb5b5f4e274ad0b73189cb2c6b7beee5e7c54e636c2256e66eb4fe24
-#> Config Hash:     06f3728cd15f73427e45d025be871b34e1d1fa2d7d4e17d1b5e5f30142a6bfab
-#> Strategy Hash:   afbf00a42940c4bc95ec6c46d5eb886aa7c2d6c1546eaf875e918880ee6abf36
-#> Params Hash:     c9c0e58fc8eb6c19318a70ace1b640044df1f6945b2cfd04715cebe20c8cb34c
+#> Snapshot:        store_demo_snapshot
+#> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
+#> Config Hash:     00e240f9e094fa1ce4e1d453635c72db237a085384f6f297bdfceeee3a12f455
+#> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+#> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     0.98
+#> Elapsed Sec:     1.19
 #> Persist Features:TRUE
-#> Cache Hits:      0
+#> Cache Hits:      2
 #> Cache Misses:    0
 ```
 
-Important fields:
-
-- `execution_mode`: how the run wrote artifacts, for example `audit_log`
-  or `db_live`;
-- `elapsed_sec`, `pulse_count`, and cache counts: compact telemetry
-  retained after the R session ends;
-- `reproducibility_level`: whether ledgr captured enough strategy
-  metadata for source inspection or recovery;
-- `strategy_source_hash` and `strategy_params_hash`: identity metadata
-  for the strategy and parameters.
-
-Older stores may contain legacy/pre-provenance runs. ledgr reads them,
-but the provenance fields can be missing.
-
-## Compare Runs
-
-`ledgr_compare_runs()` builds on stored run metadata and result
-artifacts. It does not rerun strategies.
+`ledgr_run_info()` is the detailed metadata view. It includes execution
+mode, compact telemetry, status, identity hashes, and reproducibility
+tier.
 
 ``` r
-ledgr_compare_runs(snapshot, run_ids = c("trend_small", "trend_large"))[, c(
-  "run_id", "final_equity", "total_return", "max_drawdown",
-  "n_trades", "win_rate", "strategy_params_hash"
-)]
-#> # A tibble: 2 x 7
-#>   run_id     final_equity total_return max_drawdown n_trades win_rate strategy_params_hash
-#>   <chr>             <dbl>        <dbl>        <dbl>    <int>    <dbl> <chr>
-#> 1 trend_sma~       100005    0.0000500      0              0       NA c9c0e58fc8eb6c19318~
-#> 2 trend_lar~       100255    0.00255       -0.00249        0       NA 778613d18461ba161bd~
+ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))[
+  c("run_id", "final_equity", "total_return", "max_drawdown", "n_trades", "win_rate")
+]
+#> # ledgr comparison
+#> # A tibble: 2 x 6
+#>   run_id       final_equity total_return max_drawdown n_trades win_rate
+#>   <chr>               <dbl> <chr>        <chr>           <int> <chr>
+#> 1 trend_qty_5        10343. +3.4%        -7.0%              12 25.0%
+#> 2 trend_qty_15       11028. +10.3%       -19.6%             12 25.0%
+#>
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
-This is the lightweight comparison surface in v0.1.6. Parameter sweeps
-are future scope.
+Comparison is read-only and does not rerun strategies.
 
 ## Reopen A Completed Run
 
-`ledgr_run_open()` returns a normal `ledgr_backtest` handle over
-existing artifacts. It does not recompute the run.
-
 ``` r
-reopened <- ledgr_run_open(snapshot, "trend_small")
+reopened <- ledgr_run_open(snapshot, "trend_qty_5")
 summary(reopened)
 #> ledgr Backtest Summary
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        0.01%
-#>   Annualized Return:   0.21%
-#>   Max Drawdown:        0.00%
+#>   Total Return:        3.43%
+#>   Annualized Return:   6.86%
+#>   Max Drawdown:        -7.00%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 0.02%
+#>   Volatility (annual): 27.29%
 #>
 #> Trade Statistics:
-#>   Total Trades:        2
-#>   Win Rate:            0.00%
-#>   Avg Trade:           $0.00
+#>   Total Trades:        24
+#>   Win Rate:            12.50%
+#>   Avg Trade:           $1.74
 #>
 #> Exposure:
-#>   Time in Market:      57.14%
-ledgr_results(reopened, what = "equity")
-#> # A tibble: 7 x 6
-#>   ts_utc              equity   cash positions_value running_max drawdown
-#>   <dttm>               <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2020-01-01 00:00:00 100000 100000               0      100000        0
-#> 2 2020-01-02 00:00:00 100000 100000               0      100000        0
-#> 3 2020-01-03 00:00:00 100000 100000               0      100000        0
-#> 4 2020-01-04 00:00:00 100000  99816             184      100000        0
-#> 5 2020-01-05 00:00:00 100002  99816             186      100002        0
-#> 6 2020-01-06 00:00:00 100004  99816             188      100004        0
-#> 7 2020-01-07 00:00:00 100005  99816             189      100005        0
+#>   Time in Market:      65.12%
+tail(ledgr_results(reopened, what = "equity"), 3)
+#> # A tibble: 3 x 6
+#>   ts_utc              equity  cash positions_value running_max drawdown
+#>   <dttm>               <dbl> <dbl>           <dbl>       <dbl>    <dbl>
+#> 1 2019-06-26 00:00:00 10016. 9197.            819.      10450.  -0.0415
+#> 2 2019-06-27 00:00:00 10016. 9197.            819.      10450.  -0.0415
+#> 3 2019-06-28 00:00:00 10343. 9535.            808.      10450.  -0.0102
 close(reopened)
 ```
 
-Only completed runs can be opened. Failed or incomplete runs should be
-inspected with `ledgr_run_info()`.
+Only completed runs can be reopened. Failed or incomplete runs remain
+inspectable through `ledgr_run_info()`.
 
-## Archive Instead Of Delete
-
-Archiving hides a run from the default list but keeps the artifacts
-available.
+## Archive Without Deleting
 
 ``` r
-snapshot <- ledgr_run_archive(snapshot, "trend_large", reason = "superseded by smaller baseline")
+snapshot <- snapshot |>
+  ledgr_run_archive("trend_qty_15", reason = "larger position kept for reference")
 
-ledgr_run_list(snapshot)[, c("run_id", "archived")]
+ledgr_run_list(snapshot)[c("run_id", "status", "archived", "archive_reason")]
+#> # ledgr run list
 #> # A tibble: 1 x 2
-#>   run_id      archived
-#>   <chr>       <lgl>
-#> 1 trend_small FALSE
-ledgr_run_list(snapshot, include_archived = TRUE)[, c("run_id", "archived", "archive_reason")]
-#> # A tibble: 2 x 3
-#>   run_id      archived archive_reason
-#>   <chr>       <lgl>    <chr>
-#> 1 trend_small FALSE    <NA>
-#> 2 trend_large TRUE     superseded by smaller baseline
+#>   run_id      status
+#>   <chr>       <chr>
+#> 1 trend_qty_5 DONE
+#>
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
-Archive is non-destructive and idempotent. Hard delete is not a v0.1.6
-API.
+Archiving hides a run from default listings without deleting artifacts.
 
 ``` r
 close(bt_small)
 close(bt_large)
-close(snapshot)
+ledgr_snapshot_close(snapshot)
 ```

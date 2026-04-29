@@ -20,6 +20,14 @@ knitr::knit_hooks$set(
     default_output_hook(gsub("[ \t]+(?=\n)", "", x, perl = TRUE), options)
   }
 )
+demo_data_path <- if (file.exists("data/ledgr_demo_bars.rda")) {
+  "data/ledgr_demo_bars.rda"
+} else {
+  file.path("..", "data", "ledgr_demo_bars.rda")
+}
+if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
+  load(demo_data_path)
+}
 ```
 
 A ledgr strategy is a function that receives a pulse context and returns target
@@ -27,6 +35,7 @@ holdings.
 
 ```{r library}
 library(ledgr)
+data("ledgr_demo_bars", package = "ledgr")
 ```
 
 At each pulse, ledgr gives the strategy the current observable state. The
@@ -149,25 +158,15 @@ rsi_strategy <- function(ctx, params) {
 what a strategy saw.
 
 ```{r data}
-db_path <- tempfile(fileext = ".duckdb")
-
-bars <- data.frame(
-  ts_utc = rep(as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:7, 2),
-  instrument_id = rep(c("AAA", "BBB"), each = 8),
-  open = c(100, 101, 102, 103, 104, 103, 102, 101,
-           80,  80,  81,  81,  82,  83,  82,  81),
-  high = c(101, 102, 103, 104, 105, 104, 103, 102,
-           81,  81,  82,  82,  83,  84,  83,  82),
-  low = c(99, 100, 101, 102, 103, 102, 101, 100,
-          79, 79, 80, 80, 81, 82, 81, 80),
-  close = c(100, 101, 102, 103, 104, 103, 102, 101,
-            80, 80, 81, 81, 82, 83, 82, 81),
-  volume = 1000
+bars <- subset(
+  ledgr_demo_bars,
+  instrument_id %in% c("DEMO_01", "DEMO_02") &
+    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
+    ts_utc <= as.POSIXct("2019-04-30", tz = "UTC")
 )
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
-  db_path = db_path,
   snapshot_id = "strategy_demo_snapshot"
 )
 ```
@@ -175,43 +174,43 @@ snapshot <- ledgr_snapshot_from_df(
 ```{r pulse}
 pulse <- ledgr_pulse_snapshot(
   snapshot,
-  universe = c("AAA", "BBB"),
-  ts_utc = "2020-01-04T00:00:00Z",
+  universe = c("DEMO_01", "DEMO_02"),
+  ts_utc = "2019-03-01T00:00:00Z",
   features = list(sma_3, rsi_3)
 )
 
-pulse$close("AAA")
-pulse$feature("AAA", "sma_3")
+pulse$close("DEMO_01")
+pulse$feature("DEMO_01", "sma_3")
 pulse$hold()
 threshold_strategy(
   pulse,
-  list(threshold = c(AAA = 101, BBB = 80), qty = 1)
+  list(threshold = c(DEMO_01 = 55, DEMO_02 = 75), qty = 1)
 )
 close(pulse)
 ```
 
 ## Compare Parameter Variants
 
-Run related strategy variants into the same experiment store.
+Run related strategy variants through one experiment.
 
 ```{r compare-params}
-bt_qty_1 <- ledgr_backtest(
+exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = threshold_strategy,
-  strategy_params = list(threshold = c(AAA = 101, BBB = 80), qty = 1),
-  end = "2020-01-07",
-  db_path = db_path,
-  run_id = "threshold_qty_1"
+  opening = ledgr_opening(cash = 10000)
 )
 
-bt_qty_3 <- ledgr_backtest(
-  snapshot = snapshot,
-  strategy = threshold_strategy,
-  strategy_params = list(threshold = c(AAA = 101, BBB = 80), qty = 3),
-  end = "2020-01-07",
-  db_path = db_path,
-  run_id = "threshold_qty_3"
-)
+bt_qty_1 <- exp |>
+  ledgr_run(
+    params = list(threshold = c(DEMO_01 = 55, DEMO_02 = 75), qty = 1),
+    run_id = "threshold_qty_1"
+  )
+
+bt_qty_3 <- exp |>
+  ledgr_run(
+    params = list(threshold = c(DEMO_01 = 55, DEMO_02 = 75), qty = 3),
+    run_id = "threshold_qty_3"
+  )
 
 ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))[, c(
   "run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash"
@@ -223,13 +222,14 @@ ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))[
 The same comparison table also works across different strategy functions.
 
 ```{r compare-strategies}
-bt_flat <- ledgr_backtest(
-  snapshot = snapshot,
+flat_exp <- ledgr_experiment(
+  snapshot,
   strategy = flat_strategy,
-  end = "2020-01-07",
-  db_path = db_path,
-  run_id = "flat"
+  opening = ledgr_opening(cash = 10000)
 )
+
+bt_flat <- flat_exp |>
+  ledgr_run(params = list(), run_id = "flat")
 
 ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))[, c(
   "run_id", "final_equity", "total_return", "n_trades", "strategy_source_hash"

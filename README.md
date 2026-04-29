@@ -1,31 +1,23 @@
 
 # ledgr
 
-ledgr is an event-sourced systematic trading framework for R. The full
-arc is research, paper trading, and live trading on any device that runs
-R.
+ledgr is an event-sourced systematic trading research framework for R.
 
-In v0.1.x, ledgr covers the research side: sealed market-data snapshots,
-reproducible backtests, a durable experiment store, and a TTR indicator
-adapter. Paper and live trading adapters follow in later releases.
+In v0.1.x, ledgr focuses on deterministic research: sealed market-data
+snapshots, experiment-first backtests, durable run metadata, strategy
+provenance, comparison tables, and low-code TTR indicators. Paper
+trading and live trading adapters are planned for later releases and are
+not available in the current package.
 
-The core design premise: strategies use the same contract across
-backtest, paper, and live modes. All three use the same event-sourced
-ledger model, so a backtest fill and a paper trade share the same schema
-and auditability guarantees. Live trading extends the event stream with
-broker lifecycle events -- submissions, acknowledgments, rejections --
-without changing the strategy contract.
-
-Most backtesting tools compute results from full price arrays. ledgr
-records every decision and state change as an immutable event, then
+Most backtesting tools compute results directly from price arrays. ledgr
+records each decision and state change as an immutable event, then
 derives trades, equity, and metrics from that ledger.
 
 ``` text
-data -> sealed snapshot -> pulses -> event ledger -> results
+sealed snapshot -> experiment -> run -> event ledger -> results
 ```
 
-Results come from recorded history, not a hidden intermediate
-calculation. For the longer design arc, see the
+For the longer design arc, see the
 [`research-to-production`](https://blechturm.github.io/ledgr/articles/research-to-production.html)
 article on the pkgdown site.
 
@@ -36,125 +28,109 @@ if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
 pak::pak("blechturm/ledgr")
 ```
 
-Then attach ledgr and tibble. ledgr returns tidy tibbles for inspection,
-so it fits naturally into tidyverse-style workflows without requiring
-the full tidyverse in the first run.
-
 ``` r
 library(ledgr)
 library(tibble)
+data("ledgr_demo_bars", package = "ledgr")
 ```
 
-## First Backtest
+## First Experiment
 
-This first run creates two synthetic instruments, defines a
-target-position strategy, and runs one backtest. The data is
-deliberately generated in the example so the code works in a fresh R
-session without local files or network data.
-
-First create a small OHLCV data set:
+Use the bundled demo bars for a first run. They are deterministic and
+require no network access.
 
 ``` r
-set.seed(20260425)
-calendar <- seq.Date(as.Date("2020-01-01"), as.Date("2020-02-14"), by = "day")
-dates <- calendar[!(weekdays(calendar) %in% c("Saturday", "Sunday"))]
-
-make_bars <- function(instrument_id, start_price, drift) {
-  n <- length(dates)
-  close <- start_price + cumsum(drift + stats::rnorm(n, mean = 0, sd = 0.35))
-  open <- c(start_price, close[-n])
-
-  data.frame(
-    ts_utc = as.POSIXct(dates, tz = "UTC"),
-    instrument_id = instrument_id,
-    open = round(open, 2),
-    high = round(pmax(open, close) + 0.45, 2),
-    low = round(pmin(open, close) - 0.45, 2),
-    close = round(close, 2),
-    volume = seq.int(1000L, 1000L + n - 1L),
-    stringsAsFactors = FALSE
-  )
-}
-
-bars <- rbind(
-  make_bars("AAA", start_price = 100, drift = 0.18),
-  make_bars("BBB", start_price = 80, drift = -0.04)
+bars <- subset(
+  ledgr_demo_bars,
+  instrument_id %in% c("DEMO_01", "DEMO_02") &
+    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
+    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
 )
 
-bars |> as_tibble() |> head(4)
+head(as_tibble(bars), 4)
 #> # A tibble: 4 x 7
 #>   ts_utc              instrument_id  open  high   low close volume
-#>   <dttm>              <chr>         <dbl> <dbl> <dbl> <dbl>  <int>
-#> 1 2020-01-01 00:00:00 AAA            100   101.  99.6  100.   1000
-#> 2 2020-01-02 00:00:00 AAA            100.  101.  99.7  100.   1001
-#> 3 2020-01-03 00:00:00 AAA            100.  101. 100.0  101.   1002
-#> 4 2020-01-06 00:00:00 AAA            101.  101. 100.   101.   1003
+#>   <dttm>              <chr>         <dbl> <dbl> <dbl> <dbl>  <dbl>
+#> 1 2019-01-01 00:00:00 DEMO_01        89.7  91.8  89.7  91.5 468600
+#> 2 2019-01-02 00:00:00 DEMO_01        91.5  91.6  91.0  91.3 438315
+#> 3 2019-01-03 00:00:00 DEMO_01        91.3  92.1  89.6  90.5 576390
+#> 4 2019-01-04 00:00:00 DEMO_01        90.7  91.1  89.5  89.8 458921
 ```
 
-Every ledgr strategy ultimately returns target holding amounts. This
-vector:
+Create a sealed snapshot. A snapshot is the immutable data artifact
+every run uses.
 
 ``` r
-c(AAA = 10, BBB = 0)
-#> AAA BBB
-#>  10   0
+snapshot <- ledgr_snapshot_from_df(bars)
 ```
 
-means: hold 10 units of `AAA` and 0 units of `BBB`. Names matter because
-ledgr has to match each target to `ctx$universe`; values are numeric
-position quantities, not labels such as `"LONG"` or `"FLAT"`.
-
-Now define a strategy that reads the close price at the current pulse
-and returns target holdings for the full universe. `ctx$flat()`
-creates a flat target vector over `ctx$universe`; the strategy then
-changes only the holdings it wants to own:
+Strategies receive a pulse context `ctx` and a parameter list `params`.
+They return target holdings: a named numeric vector with one desired
+quantity per instrument.
 
 ``` r
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
 
-  if (ctx$close("AAA") > 100.4) {
-    targets["AAA"] <- 10
-  }
-
-  if (ctx$close("BBB") > 80.0) {
-    targets["BBB"] <- 5
+  for (id in ctx$universe) {
+    sma <- ctx$feature(id, "sma_20")
+    if (is.finite(sma) && ctx$close(id) > sma) {
+      targets[id] <- params$qty
+    }
   }
 
   targets
 }
 ```
 
-Use `ctx$hold()` instead when the rule should keep current
-holdings unless a signal explicitly changes them.
-
-Run the backtest:
+Bundle the snapshot, strategy, indicators, starting state, and execution
+options into an experiment. Construction validates the object; it does
+not run the strategy or write run artifacts.
 
 ``` r
-bt <- ledgr_backtest(
-  data = bars,
+features <- list(ledgr_ind_sma(20))
+
+exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = strategy,
-  initial_cash = 10000,
-  run_id = "readme-demo"
+  features = features,
+  opening = ledgr_opening(cash = 10000)
 )
+
+exp
+#> ledgr_experiment
+#> ================
+#> Snapshot ID: snapshot_20260429_155321_e201
+#> Database:    C:\Users\maxth\AppData\Local\Temp\Rtmp6Fb6WG\ledgr_11cb02f51185b.duckdb
+#> Universe:    2 instruments
+#> Features:    1 fixed
+#> Opening:     cash=10000, positions=0
+#> Mode:        audit_log
+```
+
+Run the experiment with explicit parameters.
+
+``` r
+bt <- exp |>
+  ledgr_run(params = list(qty = 10), run_id = "readme_sma_20")
 
 bt
 #> ledgr Backtest Results
 #> ======================
 #>
-#> Run ID:         readme-demo
-#> Universe:       AAA, BBB
-#> Date Range:     2020-01-01T00:00:00Z to 2020-02-14T00:00:00Z
+#> Run ID:         readme_sma_20
+#> Universe:       DEMO_01, DEMO_02
+#> Date Range:     2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
 #> Execution Mode: audit_log
 #> Initial Cash:   $10000.00
-#> Final Equity:   $10436.30
-#> P&L:            $436.30 (4.36%)
+#> Final Equity:   $10685.17
+#> P&L:            $685.17 (6.85%)
 #>
 #> Use summary(bt) for detailed metrics
 #> Use plot(bt) for equity curve visualization
 ```
 
-Inspect the derived results:
+Inspect result views. These are derived from the recorded event ledger.
 
 ``` r
 summary(bt)
@@ -162,138 +138,93 @@ summary(bt)
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        4.36%
-#>   Annualized Return:   39.98%
-#>   Max Drawdown:        -4.00%
+#>   Total Return:        6.85%
+#>   Annualized Return:   13.94%
+#>   Max Drawdown:        -13.51%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 25.60%
+#>   Volatility (annual): 54.72%
 #>
 #> Trade Statistics:
-#>   Total Trades:        4
-#>   Win Rate:            0.00%
-#>   Avg Trade:           $-0.34
+#>   Total Trades:        24
+#>   Win Rate:            12.50%
+#>   Avg Trade:           $3.48
 #>
 #> Exposure:
-#>   Time in Market:      93.94%
-bt |> as_tibble(what = "trades")
-#> # A tibble: 4 x 9
-#>   event_seq ts_utc              instrument_id side    qty price   fee realized_pnl action
-#>       <int> <dttm>              <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-03 00:00:00 AAA           BUY      10 100.      0         0    OPEN
-#> 2         2 2020-01-07 00:00:00 BBB           BUY       5  80.2     0         0    OPEN
-#> 3         3 2020-01-13 00:00:00 BBB           SELL      5  80.0     0        -1.35 CLOSE
-#> 4         4 2020-01-14 00:00:00 BBB           BUY       5  80.8     0         0    OPEN
+#>   Time in Market:      65.12%
+ledgr_results(bt, what = "trades")
+#> # A tibble: 24 x 9
+#>    event_seq ts_utc              instrument_id side    qty price   fee realized_pnl action
+#>        <int> <dttm>              <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
+#>  1         1 2019-01-29 00:00:00 DEMO_01       BUY      10  91.9     0         0    OPEN
+#>  2         2 2019-02-19 00:00:00 DEMO_02       BUY      10  68.7     0         0    OPEN
+#>  3         3 2019-02-25 00:00:00 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
+#>  4         4 2019-03-04 00:00:00 DEMO_02       BUY      10  68.0     0         0    OPEN
+#>  5         5 2019-03-05 00:00:00 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
+#>  6         6 2019-03-08 00:00:00 DEMO_02       BUY      10  68.9     0         0    OPEN
+#>  7         7 2019-03-12 00:00:00 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
+#>  8         8 2019-03-13 00:00:00 DEMO_02       BUY      10  67.4     0         0    OPEN
+#>  9         9 2019-03-19 00:00:00 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
+#> 10        10 2019-03-20 00:00:00 DEMO_01       SELL     10 101.      0        96.1  CLOSE
+#> # i 14 more rows
 ```
 
-The numbers come from generated toy data. They validate the API path,
-not the strategy. Exact printed values can change after intentional
-engine changes. The important invariant is not the exact toy numbers; it
-is that the same data and same strategy produce the same ledger and
-equity curve.
+## Compare Runs
 
-## Why ledgr?
-
-Most backtesting tools assume reproducibility. ledgr makes it testable.
-
-- Same data and the same strategy produce identical normalized ledger
-  and equity outputs.
-- All reported results come from the event ledger.
-- Sealed snapshot hashes let you detect when the input data changed.
-
-This matters because research often gets revisited months later. ledgr
-gives you a way to prove which data and strategy produced the result you
-are looking at.
-
-Many tools compute results from full price arrays. ledgr follows the
-sequential process more closely:
-
-- new data arrives;
-- the strategy sees one decision point in time, called a pulse;
-- positions and cash can change;
-- the system moves forward.
-
-At each pulse, the strategy only sees data available at that timestamp.
-Every state change is recorded as an event. The ledger is the source of
-truth; trades, equity, and metrics are derived views of that ledger.
-
-The first call to `ledgr_backtest(data = bars, ...)` created a sealed
-snapshot, then called the same canonical engine used by explicit
-snapshot workflows. We seal this data so you cannot accidentally lie to
-your future self.
-
-The quick ledger/equity count below confirms that the visible result is
-backed by recorded events and derived equity rows.
+Run another parameter set against the same experiment and compare stored
+results. Comparison reads existing artifacts; it does not recompute
+strategies.
 
 ``` r
-c(
-  ledger_rows = nrow(bt |> as_tibble(what = "ledger")),
-  equity_rows = nrow(bt |> as_tibble(what = "equity"))
-)
-#> ledger_rows equity_rows
-#>           4          33
+bt_qty_20 <- exp |>
+  ledgr_run(params = list(qty = 20), run_id = "readme_sma_20_qty_20")
+
+ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))[
+  c("run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash")
+]
+#> # ledgr comparison
+#> # A tibble: 2 x 4
+#>   run_id               final_equity total_return n_trades
+#>   <chr>                       <dbl> <chr>           <int>
+#> 1 readme_sma_20              10685. +6.9%              12
+#> 2 readme_sma_20_qty_20       11370. +13.7%             12
+#>
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
-## Trust Check: Determinism (Optional But Important)
+## Durable Research
+
+For durable research, create the snapshot in a project DuckDB file:
 
 ``` r
-normalize_result <- function(x) {
-  if ("run_id" %in% names(x)) x$run_id <- NULL
-  if ("event_id" %in% names(x)) x$event_id <- NULL
-
-  x[] <- lapply(x, function(col) {
-    if (inherits(col, "POSIXt")) {
-      format(as.POSIXct(col, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    } else if (is.numeric(col)) {
-      round(col, 10)
-    } else {
-      col
-    }
-  })
-
-  row.names(x) <- NULL
-  x
-}
-
-run_once <- function(run_id) {
-  bt <- ledgr_backtest(
-    data = bars,
-    strategy = strategy,
-    initial_cash = 10000,
-    run_id = run_id
-  )
-
-  list(
-    ledger = normalize_result(bt |> as_tibble(what = "ledger")),
-    equity = normalize_result(bt |> as_tibble(what = "equity"))
-  )
-}
-
-run_a <- run_once("readme-a")
-run_b <- run_once("readme-b")
-
-c(
-  same_ledger = identical(run_a$ledger, run_b$ledger),
-  same_equity = identical(run_a$equity, run_b$equity)
-)
-#> same_ledger same_equity
-#>        TRUE        TRUE
+snapshot <- ledgr_snapshot_from_df(bars, db_path = "research.duckdb")
 ```
 
-The two runs use different run identifiers and different temporary
-databases. After identity columns are removed, the ledger and equity
-curve match exactly. That is the ledgr difference: replay is testable
-instead of assumed. If the sealed input data changes, the snapshot hash
-changes with it.
+In a later R session, reopen the sealed snapshot and continue from the
+snapshot handle:
 
-## What To Try Next
+``` r
+snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "my_snapshot")
+ledgr_run_list(snapshot)
+ledgr_run_info(snapshot, "readme_sma_20")
+```
 
-Good next edits are small and observable:
+After snapshot creation or loading, normal experiment-store operations
+take the snapshot handle rather than a raw database path.
 
-- change the `AAA` or `BBB` target quantities in `strategy()`;
-- change the threshold values that trigger a position;
-- add an indicator such as `ledgr_ind_sma(5)`;
-- inspect a single decision point with `ledgr_pulse_snapshot()`.
+## Scope
+
+v0.1.7 is the experiment-first research API. It does not ship parameter
+sweep execution, broker adapters, paper trading, live trading, or
+short-selling semantics. Those are separate roadmap items with different
+state and safety requirements.
+
+``` r
+close(bt)
+close(bt_qty_20)
+ledgr_snapshot_close(snapshot)
+```
 
 ## Documentation
 
@@ -302,6 +233,4 @@ help(package = "ledgr")
 utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
 ```
 
-The v0.1.5 design packet is in `inst/design/ledgr_v0_1_5_spec_packet/`.
-Earlier packets record the engine, snapshot, and onboarding foundations
-this release builds on.
+The v0.1.7 design packet is in `inst/design/ledgr_v0_1_7_spec_packet/`.

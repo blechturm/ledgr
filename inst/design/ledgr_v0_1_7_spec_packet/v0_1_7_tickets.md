@@ -804,7 +804,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1003, LDG-1004, LDG-1006, LDG-1007, LDG-1008, LDG-1009  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Rewrite user-facing documentation around the experiment-first v0.1.7 API and
@@ -828,14 +828,14 @@ the built-in demo dataset.
     requires it.
 
 **Acceptance Criteria:**
-- [ ] User-facing docs teach `ledgr_experiment()` and `ledgr_run()`.
-- [ ] No vignette or README workflow uses `function(ctx)` strategies.
-- [ ] No vignette or README workflow uses old context helper names.
-- [ ] No user-facing workflow passes `db_path` after snapshot creation.
-- [ ] Inline ad-hoc bar construction is removed from README and vignettes.
-- [ ] Migration guide names each breaking change and replacement.
-- [ ] pkgdown navigation includes new APIs and articles.
-- [ ] NEWS captures the breaking changes and new features.
+- [x] User-facing docs teach `ledgr_experiment()` and `ledgr_run()`.
+- [x] No vignette or README workflow uses `function(ctx)` strategies.
+- [x] No vignette or README workflow uses old context helper names.
+- [x] No user-facing workflow passes `db_path` after snapshot creation.
+- [x] Inline ad-hoc bar construction is removed from README and vignettes.
+- [x] Migration guide names each breaking change and replacement.
+- [x] pkgdown navigation includes new APIs and articles.
+- [x] NEWS captures the breaking changes and new features.
 
 **Test Requirements:**
 - Roxygen generation.

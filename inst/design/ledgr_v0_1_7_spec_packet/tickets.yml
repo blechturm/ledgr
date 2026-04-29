@@ -404,7 +404,7 @@ tickets:
 
   - id: LDG-1010
     title: "Documentation Rewrite, Migration Guide, And NEWS"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1003, LDG-1004, LDG-1006, LDG-1007, LDG-1008, LDG-1009]
     tests:
