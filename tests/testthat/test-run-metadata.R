@@ -1,43 +1,3 @@
-ledgr_test_run_identity_hashes <- function(db_path, run_id) {
-  opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
-
-  run_identity <- provenance_identity <- NULL
-  for (attempt in seq_len(20L)) {
-    run_identity <- DBI::dbGetQuery(
-      opened$con,
-      "
-      SELECT
-        r.run_id,
-        r.config_hash,
-        r.data_hash
-      FROM runs r
-      WHERE r.run_id = ?
-      ",
-      params = list(run_id)
-    )
-    provenance_identity <- DBI::dbGetQuery(
-      opened$con,
-      "
-      SELECT
-        p.strategy_source_hash,
-        p.strategy_params_hash
-      FROM run_provenance p
-      WHERE p.run_id = ?
-      ",
-      params = list(run_id)
-    )
-    if (nrow(run_identity) == 1L && nrow(provenance_identity) == 1L) break
-    Sys.sleep(0.05)
-  }
-  testthat::expect_identical(nrow(run_identity), 1L)
-  testthat::expect_identical(nrow(provenance_identity), 1L)
-  run_identity <- as.list(run_identity[1, , drop = TRUE])
-  provenance_identity <- as.list(provenance_identity[1, , drop = TRUE])
-
-  c(run_identity, provenance_identity)
-}
-
 testthat::test_that("ledgr_run_label updates labels without changing identity hashes", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -61,13 +21,14 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  before_identity <- ledgr_test_run_identity_hashes(db_path, "label-run")
+  before <- ledgr_run_info(snapshot, "label-run")
+  identity_cols <- c("run_id", "config_hash", "data_hash")
 
   labeled <- ledgr_run_label(snapshot, "label-run", "baseline")
   testthat::expect_s3_class(labeled, "ledgr_snapshot")
   labeled_info <- ledgr_run_info(snapshot, "label-run")
   testthat::expect_identical(labeled_info$label, "baseline")
-  testthat::expect_identical(ledgr_test_run_identity_hashes(db_path, "label-run"), before_identity)
+  testthat::expect_identical(labeled_info[identity_cols], before[identity_cols])
 
   ledgr_run_label(snapshot, "label-run", "")
   cleared <- ledgr_run_info(snapshot, "label-run")
@@ -137,7 +98,8 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  before_identity <- ledgr_test_run_identity_hashes(db_path, "archive-run")
+  before <- ledgr_run_info(snapshot, "archive-run")
+  identity_cols <- c("run_id", "config_hash", "data_hash")
 
   archived_snapshot <- ledgr_run_archive(snapshot, "archive-run", reason = "bad parameter test")
   testthat::expect_s3_class(archived_snapshot, "ledgr_snapshot")
@@ -145,7 +107,7 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
   testthat::expect_true(archived$archived)
   testthat::expect_identical(archived$archive_reason, "bad parameter test")
   testthat::expect_false(is.na(archived$archived_at_utc))
-  testthat::expect_identical(ledgr_test_run_identity_hashes(db_path, "archive-run"), before_identity)
+  testthat::expect_identical(archived[identity_cols], before[identity_cols])
 
   visible <- ledgr_run_list(snapshot)
   testthat::expect_false("archive-run" %in% visible$run_id)

@@ -1,9 +1,15 @@
 ledgr_test_replace_run_provenance <- function(db_path, run_id, values) {
   opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+  con <- opened$con
+  drv <- opened$drv
+  on.exit({
+    suppressWarnings(try(DBI::dbExecute(con, "CHECKPOINT"), silent = TRUE))
+    suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
+    suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
+  }, add = TRUE)
 
   row <- DBI::dbGetQuery(
-    opened$con,
+    con,
     "SELECT * FROM run_provenance WHERE run_id = ?",
     params = list(run_id)
   )
@@ -11,7 +17,7 @@ ledgr_test_replace_run_provenance <- function(db_path, run_id, values) {
   for (nm in names(values)) {
     row[[nm]] <- values[[nm]]
   }
-  DBI::dbExecute(opened$con, "DELETE FROM run_provenance WHERE run_id = ?", params = list(run_id))
+  DBI::dbExecute(con, "DELETE FROM run_provenance WHERE run_id = ?", params = list(run_id))
   value <- function(nm, default = NA_character_) {
     if (nm %in% names(values)) {
       values[[nm]]
@@ -22,7 +28,7 @@ ledgr_test_replace_run_provenance <- function(db_path, run_id, values) {
     }
   }
   DBI::dbExecute(
-    opened$con,
+    con,
     "
     INSERT INTO run_provenance (
       run_id,
