@@ -17,6 +17,7 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
     run_id = "label-run"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 

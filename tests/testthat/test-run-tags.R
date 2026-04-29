@@ -17,6 +17,7 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
     run_id = "tagged-run"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
