@@ -253,10 +253,60 @@ tickets:
         - using base column slicing to hide poor default prints in narrative demos
 
   - id: LDG-1106
+    title: "Result Timestamp Display Options"
+    status: pending
+    priority: P2
+    dependencies: [LDG-1101]
+    tests:
+      - "timestamp display helper tests"
+      - "EOD and intraday print tests"
+      - "package option tests"
+      - "type-preservation tests"
+      - "existing result/run-store tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The work is a bounded result-display UX change, but it touches exported
+        result objects, print behavior, package options, and timestamp
+        presentation. It must preserve programmatic timestamp semantics and
+        therefore needs Tier H review.
+      invariants_at_risk:
+        - timestamp type preservation
+        - result table composability
+        - print/display contract
+        - package option behavior
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/contracts.md (Result Contract)
+        - R/run-store.R
+        - R/backtest.R
+        - tests/testthat/test-run-store.R
+        - tests/testthat/test-backtest-wrapper.R
+      tests_required:
+        - timestamp display helper tests
+        - EOD and intraday print tests
+        - package option tests
+        - type-preservation tests
+        - existing result/run-store tests
+      escalation_triggers:
+        - ledgr_results() must stop returning a tibble-compatible object
+        - timestamp values would need mutation rather than display formatting
+        - intraday timestamps become ambiguous
+        - global option behavior conflicts with tibble printing
+      forbidden_actions:
+        - converting stored or returned ts_utc values to character
+        - hiding intraday time information in auto mode
+        - changing result table schemas
+        - changing fill or ledger timestamps
+
+  - id: LDG-1107
     title: "v0.1.7.1 Release Gate"
     status: pending
     priority: P0
-    dependencies: [LDG-1102, LDG-1104, LDG-1105]
+    dependencies: [LDG-1102, LDG-1104, LDG-1105, LDG-1106]
     tests:
       - "devtools::test()"
       - "R CMD check --no-manual --no-build-vignettes"
@@ -277,6 +327,7 @@ tickets:
         - package build health
         - public API export boundary
         - documentation/installability
+        - timestamp display contract
       required_context:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
@@ -293,6 +344,7 @@ tickets:
         - pkgdown build
         - export/API inventory scan
         - documentation pattern scans
+        - timestamp display option tests
         - CI verification
       escalation_triggers:
         - any CI failure remains unexplained

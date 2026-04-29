@@ -343,6 +343,33 @@ The helper should prefer base R implementation unless a stronger dependency
 case is made. Adding `lubridate` as an `Imports` dependency is not assumed by
 this spec.
 
+### R13: EOD Timestamp Printing Must Be Compact But Reversible
+
+EOD result tables should not waste screen estate by printing every UTC timestamp
+as `YYYY-MM-DD 00:00:00`.
+
+v0.1.7.1 should add a display-only timestamp-printing option for ledgr-owned
+result table print paths:
+
+```r
+options(ledgr.print_ts_utc = "auto")
+```
+
+Supported values:
+
+- `"auto"`: default. Display date-only values when all non-missing timestamps in
+  the printed table are midnight UTC. Display full UTC datetimes otherwise.
+- `"datetime"`: always display full UTC datetimes.
+
+The option must never mutate stored data or the object returned to users.
+`ts_utc` remains POSIXct UTC in `ledgr_results()`, `as_tibble()`, and all
+programmatic paths.
+
+Implementation should prefer a classed tibble print path for ledgr result
+tables. If that proves too broad for v0.1.7.1, the ticket must either narrow
+the first implementation to the most visible result tables or explicitly defer
+the option with a documented reason.
+
 ---
 
 ## 3. Public Scope
@@ -493,6 +520,8 @@ v0.1.7.1 is complete only when:
 - README and narrative docs use modern data workflows with the base pipe;
 - raw UTC parsing boilerplate is replaced by a documented helper or by a
   clearly justified local pattern;
+- ledgr-owned result table printing can compact midnight UTC timestamps for EOD
+  displays without changing underlying `ts_utc` values;
 - no sweep/tune APIs are exported;
 - `devtools::test()` passes;
 - `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and

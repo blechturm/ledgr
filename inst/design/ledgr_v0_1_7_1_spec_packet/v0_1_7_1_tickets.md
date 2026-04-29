@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0  
 **Date:** April 30, 2026  
-**Total Tickets:** 6  
+**Total Tickets:** 7  
 **Estimated Duration:** 1-2 weeks
 
 ---
@@ -21,13 +21,14 @@ new helper behavior.
 ### Dependency DAG
 
 ```text
-LDG-1101 -> LDG-1102 -> LDG-1104 -> LDG-1106
-LDG-1101 -> LDG-1103 -> LDG-1104 -> LDG-1106
-LDG-1101 -> LDG-1105 -------------> LDG-1106
-LDG-1101 --------------------------> LDG-1106
+LDG-1101 -> LDG-1102 -> LDG-1104 -> LDG-1107
+LDG-1101 -> LDG-1103 -> LDG-1104 -> LDG-1107
+LDG-1101 -> LDG-1105 -------------> LDG-1107
+LDG-1101 -> LDG-1106 -------------> LDG-1107
+LDG-1101 --------------------------> LDG-1107
 ```
 
-`LDG-1106` is the v0.1.7.1 release gate.
+`LDG-1107` is the v0.1.7.1 release gate.
 
 ### Priority Levels
 
@@ -576,11 +577,108 @@ forbidden_actions:
 
 ---
 
-## LDG-1106: v0.1.7.1 Release Gate
+## LDG-1106: Result Timestamp Display Options
+
+**Priority:** P2  
+**Effort:** 1-2 days  
+**Dependencies:** LDG-1101  
+**Status:** Pending
+
+**Description:**
+Make EOD result-table printing compact without weakening timestamp correctness.
+`ts_utc` must remain POSIXct UTC for all programmatic paths, but ledgr-owned
+print methods should be able to display date-only values when all visible
+timestamps are midnight UTC.
+
+**Tasks:**
+1. Add a package option:
+   - `options(ledgr.print_ts_utc = "auto")` as the default;
+   - `"auto"` displays date-only values for all-midnight-UTC result tables and
+     full UTC datetimes otherwise;
+   - `"datetime"` always displays full UTC datetimes.
+2. Validate invalid option values with a clear classed error or warning in the
+   relevant print path.
+3. Add a display helper for `ts_utc` that:
+   - detects all non-missing timestamps at midnight UTC;
+   - formats EOD values as `YYYY-MM-DD`;
+   - preserves full datetime display for intraday values;
+   - handles empty and all-`NA` timestamp vectors safely.
+4. Introduce classed tibble result printing where needed so the display helper
+   applies to ledgr-owned result tables without mutating the underlying data.
+5. Ensure `ledgr_results()` remains tibble-compatible and programmatic access
+   to `ts_utc` remains POSIXct UTC.
+6. Ensure `tibble::as_tibble()` or equivalent raw access returns the original
+   timestamp column, not formatted strings.
+7. Update README/vignette examples if compact timestamp printing changes their
+   rendered output.
+8. Document the option and display-only contract.
+
+**Acceptance Criteria:**
+- [ ] EOD result tables can print `ts_utc` as dates in ledgr-owned print paths.
+- [ ] Intraday result tables still print full datetimes.
+- [ ] `options(ledgr.print_ts_utc = "datetime")` restores full datetime
+      display.
+- [ ] Underlying `ts_utc` values remain POSIXct UTC.
+- [ ] `as_tibble()` / raw programmatic access is not display-formatted.
+- [ ] Invalid option values fail or warn clearly.
+- [ ] Documentation states this is display-only.
+
+**Test Requirements:**
+- Unit tests for timestamp display helper.
+- Print tests for EOD and intraday result tables.
+- Option tests for `"auto"`, `"datetime"`, and invalid values.
+- Type-preservation tests for `ledgr_results()` and `as_tibble()`.
+- Existing result/run-store tests.
+
+**Source Reference:** v0.1.7.1 spec section 2 R13.
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: M
+review_tier: H
+classification_reason: >
+  The work is a bounded result-display UX change, but it touches exported result
+  objects, print behavior, package options, and timestamp presentation. It must
+  preserve programmatic timestamp semantics and therefore needs Tier H review.
+invariants_at_risk:
+  - timestamp type preservation
+  - result table composability
+  - print/display contract
+  - package option behavior
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+  - inst/design/contracts.md (Result Contract)
+  - R/run-store.R
+  - R/backtest.R
+  - tests/testthat/test-run-store.R
+  - tests/testthat/test-backtest-wrapper.R
+tests_required:
+  - timestamp display helper tests
+  - EOD and intraday print tests
+  - package option tests
+  - type-preservation tests
+  - existing result/run-store tests
+escalation_triggers:
+  - ledgr_results() must stop returning a tibble-compatible object
+  - timestamp values would need mutation rather than display formatting
+  - intraday timestamps become ambiguous
+  - global option behavior conflicts with tibble printing
+forbidden_actions:
+  - converting stored or returned ts_utc values to character
+  - hiding intraday time information in auto mode
+  - changing result table schemas
+  - changing fill or ledger timestamps
+```
+
+---
+
+## LDG-1107: v0.1.7.1 Release Gate
 
 **Priority:** P0  
 **Effort:** 1 day  
-**Dependencies:** LDG-1102, LDG-1104, LDG-1105  
+**Dependencies:** LDG-1102, LDG-1104, LDG-1105, LDG-1106  
 **Status:** Pending
 
 **Description:**
@@ -603,12 +701,14 @@ no future-cycle APIs leaked into the release.
    - no raw UTC boilerplate in first examples.
 7. Confirm installed narrative docs are discoverable from pkgdown and package
    documentation.
-8. Run full test suite.
-9. Run `R CMD check --no-manual --no-build-vignettes`.
-10. Build pkgdown locally.
-11. Confirm no `ledgr_sweep()`, `ledgr_tune()`, or
+8. Confirm EOD timestamp display remains display-only and does not mutate
+   `ts_utc` values.
+9. Run full test suite.
+10. Run `R CMD check --no-manual --no-build-vignettes`.
+11. Build pkgdown locally.
+12. Confirm no `ledgr_sweep()`, `ledgr_tune()`, or
     `ledgr_precompute_features()` exports exist.
-12. Confirm Ubuntu and Windows CI are green before merge/tag.
+13. Confirm Ubuntu and Windows CI are green before merge/tag.
 
 **Acceptance Criteria:**
 - [ ] All v0.1.7.1 tickets are done and reviewed.
@@ -618,6 +718,7 @@ no future-cycle APIs leaked into the release.
 - [ ] pkgdown builds.
 - [ ] CI is green on Ubuntu and Windows.
 - [ ] No future sweep/tune APIs are exported.
+- [ ] Timestamp display option is tested and documented as display-only.
 - [ ] Final review signs off on release scope.
 
 **Test Requirements:**
