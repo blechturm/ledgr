@@ -23,11 +23,23 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
   stop(last_err)
 }
 
-ledgr_checkpoint_duckdb <- function(con) {
-  if (!is.null(con) && DBI::dbIsValid(con)) {
-    suppressWarnings(try(DBI::dbExecute(con, "CHECKPOINT"), silent = TRUE))
+ledgr_checkpoint_duckdb <- function(con, strict = FALSE) {
+  if (is.null(con) || !DBI::dbIsValid(con)) {
+    return(invisible(FALSE))
   }
-  invisible(TRUE)
+  out <- tryCatch(
+    {
+      DBI::dbExecute(con, "CHECKPOINT")
+      TRUE
+    },
+    error = function(e) {
+      if (isTRUE(strict)) {
+        rlang::abort("DuckDB checkpoint failed.", class = "ledgr_checkpoint_failed", parent = e)
+      }
+      FALSE
+    }
+  )
+  invisible(out)
 }
 
 #' Initialize or open a ledgr DuckDB database (v0.1.0)
@@ -82,8 +94,8 @@ ledgr_db_init <- function(db_path) {
 #'   close = c(100, 101, 102, 103),
 #'   volume = 1000
 #' )
-#' strategy <- function(ctx) {
-#'   targets <- ctx$targets()
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
 #'   targets["AAA"] <- 1
 #'   targets
 #' }

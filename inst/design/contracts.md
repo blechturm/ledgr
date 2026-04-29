@@ -3,19 +3,25 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_5_spec_packet/v0_1_5_spec.md`.
+`inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md`.
 
 ## Execution Contract
 
-- There is one canonical execution path: `ledgr_backtest()` builds a canonical
-  config and calls `ledgr_run()`, which calls `ledgr_backtest_run()`.
+- v0.1.7 makes `ledgr_run()` the public single-run API over a
+  `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
+  public workflow to a lower-level compatibility surface.
+- There is still one canonical execution path. Public convenience APIs must
+  build canonical config and delegate to the existing runner; they must not
+  implement alternate pulse, fill, ledger, feature, or replay semantics.
 - Convenience APIs may reduce setup friction, but must not implement alternate
   execution semantics.
 - The runner owns pulse order, fills, strategy state, ledger events, features,
   and equity output.
-- v0.x may make breaking public-API changes when they protect correctness or
-  simplify the public model. Every breaking change must be documented in
-  `NEWS.md` and, where practical, pass through one deprecation release.
+- v0.1.7 is an intentional hard public API reset. It explicitly overrides the
+  earlier "deprecate where practical" posture for the research workflow because
+  carrying both old and new public surfaces into sweep mode would create
+  avoidable long-term complexity. Breaking changes must be documented in
+  `NEWS.md` and the v0.1.6-to-v0.1.7 migration guide.
 - The default fill model is `next_open` with zero spread and zero fixed
   commission. A target emitted at pulse `t` is filled at the next available bar;
   a target emitted on the final pulse has no next bar and is not filled.
@@ -28,9 +34,8 @@ the active versioned spec packet, currently
 - `validate_ledgr_config()` is the internal validator name used by execution
   code. It delegates to the same schema checks as the legacy
   `ledgr_validate_config()` helper.
-- Exporting direct config construction is deferred until the future
-  experiment-store API proves that users need it. Public workflows should
-  continue to start with `ledgr_backtest()`.
+- Exporting direct config construction remains deferred. v0.1.7 public
+  workflows start with `ledgr_experiment()` and run with `ledgr_run()`.
 
 ## Snapshot Contract
 
@@ -44,6 +49,10 @@ the active versioned spec packet, currently
 - `ledgr_snapshot_load(db_path, snapshot_id)` may reopen an existing sealed
   snapshot. It must never create, silently overwrite, or silently reseal a
   snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
+- In the v0.1.7 snapshot-first workflow, `ledgr_snapshot_load()` is the normal
+  new-session resumption path. After loading a snapshot handle, ordinary
+  run-management APIs should use the snapshot object rather than a `db_path`
+  argument.
 - `ledgr_snapshot_list()` accepts either a DBI connection or a DuckDB file path.
   Path inputs are opened read-style for discovery and closed before returning.
 - Explicit custom snapshot IDs are allowed. The generated `snapshot_` pattern is
@@ -62,6 +71,8 @@ the active versioned spec packet, currently
 - Cross-connection read-back is part of the persistence contract: completed
   runs and their `ledger_events`, `features`, and `equity_curve` rows must be
   visible from a newly opened connection.
+- v0.1.7 public experiment-store APIs are snapshot-first. A `db_path` appears
+  in normal workflows only at snapshot creation or snapshot loading.
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
   discovery APIs. They must tolerate legacy/pre-provenance stores and treat
   missing telemetry as missing/`NA`, not as corruption.
@@ -101,9 +112,12 @@ the active versioned spec packet, currently
   `ledgr_signal_strategy()` is an explicit convenience wrapper that maps signals
   to normal targets before validation.
 - Functional strategies and R6 strategies use the same target validator.
-- Functional strategies may use `function(ctx)` or `function(ctx, params)`.
-  `strategy_params` defaults to `list()`, is passed only to the two-argument
-  functional form, and must be canonical JSON serializable.
+- v0.1.7 public experiment workflows accept only functional strategies with
+  signature `function(ctx, params)`. `params` defaults to `list()` and is passed
+  as the second argument. `ctx$params` is not part of the public contract.
+- Legacy lower-level paths may retain older signatures temporarily only as
+  explicit compatibility surfaces; they must not be taught in user-facing
+  v0.1.7 workflows.
 - Strategy reproducibility is tiered:
   - Tier 1: self-contained `function(ctx, params)` style logic with explicit
     parameters and no unresolved external objects.
@@ -171,12 +185,15 @@ the active versioned spec packet, currently
   repeated backtests over sealed snapshots. Low-level recovery helpers and
   interactive pulse/indicator tools recompute features because they do not own
   a sealed snapshot hash cache key.
-- `ctx$targets()` creates a full named target vector initialized to flat
-  positions. It is appropriate when the strategy wants unspecified instruments
-  to go flat.
-- `ctx$current_targets()` creates a full named target vector initialized from
-  current holdings. It is appropriate for hold-unless-signal strategies and
-  rebalance throttling.
+- In v0.1.7 public workflows, `ctx$flat()` creates a full named target vector
+  initialized to flat positions. It is appropriate when unspecified instruments
+  should go flat.
+- In v0.1.7 public workflows, `ctx$hold()` creates a full named target vector
+  initialized from current holdings. It is appropriate for hold-unless-signal
+  strategies and rebalance throttling.
+- `ctx$targets()` and `ctx$current_targets()` are removed from the v0.1.7
+  public workflow and should fail loudly with migration guidance once the
+  context reset ticket is implemented.
 - Interactive pulse and indicator tools are read-only against persistent ledgr
   tables.
 

@@ -3,7 +3,10 @@ ledgr_test_open_duckdb <- function(db_path, attempts = 50L, sleep_s = 0.05) {
 }
 
 ledgr_test_close_duckdb <- function(con, drv) {
-  suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
+  if (!is.null(con) && DBI::dbIsValid(con)) {
+    ledgr_checkpoint_duckdb(con)
+  }
+  suppressWarnings(try(DBI::dbDisconnect(con, shutdown = FALSE), silent = TRUE))
   suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
   invisible(TRUE)
 }
@@ -13,7 +16,7 @@ if (file.exists(fixture_path)) {
   source(fixture_path, local = TRUE)
 }
 
-test_strategy <- function(ctx) {
+test_strategy <- function(ctx, params) {
   c(TEST_A = 100, TEST_B = 50)
 }
 
@@ -109,6 +112,14 @@ ledgr_test_make_bars <- function(instrument_ids, ts_utc) {
 
 ledgr_test_norm_ts <- function(x) {
   format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+}
+
+ledgr_test_snapshot_for_run <- function(db_path, bt) {
+  snapshot_id <- bt$config$data$snapshot_id
+  if (!is.character(snapshot_id) || length(snapshot_id) != 1L || is.na(snapshot_id) || !nzchar(snapshot_id)) {
+    rlang::abort("Test backtest config does not contain a snapshot id.", class = "ledgr_test_error")
+  }
+  ledgr_snapshot_load(db_path, snapshot_id)
 }
 
 ledgr_test_fetch_ledger_core <- function(con, run_id) {

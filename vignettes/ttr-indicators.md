@@ -19,6 +19,7 @@ feature. It only sees the ledgr indicator contract: `fn`, `series_fn`,
 
 ``` r
 library(ledgr)
+data("ledgr_demo_bars", package = "ledgr")
 
 as.data.frame(ledgr_ttr_warmup_rules()[, c("ttr_fn", "input", "formula")])
 #>             ttr_fn input                                         formula
@@ -122,14 +123,11 @@ guessing the string.
 ## Feature Computation In A Backtest
 
 ``` r
-bars <- data.frame(
-  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:39,
-  instrument_id = "AAA",
-  open = 100 + seq_len(40),
-  high = 101 + seq_len(40),
-  low = 99 + seq_len(40),
-  close = 100 + seq_len(40),
-  volume = 1000 + seq_len(40)
+bars <- subset(
+  ledgr_demo_bars,
+  instrument_id == "DEMO_01" &
+    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
+    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
 )
 
 features <- list(
@@ -139,29 +137,33 @@ features <- list(
 ledgr_feature_id(features)
 #> [1] "ttr_rsi_14"       "ttr_bbands_20_up"
 
-strategy <- function(ctx) {
-  targets <- ctx$current_targets()
-  rsi <- ctx$feature("AAA", "ttr_rsi_14")
-  bb_up <- ctx$feature("AAA", "ttr_bbands_20_up")
+strategy <- function(ctx, params) {
+  targets <- ctx$hold()
+  rsi <- ctx$feature("DEMO_01", "ttr_rsi_14")
+  bb_up <- ctx$feature("DEMO_01", "ttr_bbands_20_up")
 
-  # This article uses one synthetic instrument, so only AAA is targeted.
-  if (!is.na(rsi) && !is.na(bb_up) && rsi > 50 && ctx$close("AAA") > bb_up) {
-    targets["AAA"] <- 10
+  # This article uses one demo instrument, so only DEMO_01 is targeted.
+  if (!is.na(rsi) && !is.na(bb_up) && rsi > 50 && ctx$close("DEMO_01") > bb_up) {
+    targets["DEMO_01"] <- params$qty
   }
   targets
 }
 
-bt <- ledgr_backtest(
-  data = bars,
+snapshot <- ledgr_snapshot_from_df(bars)
+exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = strategy,
   features = features,
-  initial_cash = 10000,
-  run_id = paste0("ttr-article-demo-", Sys.getpid())
+  opening = ledgr_opening(cash = 10000)
 )
 
+bt <- exp |>
+  ledgr_run(params = list(qty = 10), run_id = paste0("ttr-article-demo-", Sys.getpid()))
+
 nrow(tibble::as_tibble(bt, what = "trades"))
-#> [1] 0
+#> [1] 1
 close(bt)
+ledgr_snapshot_close(snapshot)
 ```
 
 TTR-backed indicators use `series_fn`, so ledgr computes the full

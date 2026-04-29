@@ -54,19 +54,31 @@ output <- tempfile("README-", fileext = ".md")
 message("Executing README.Rmd chunks under installed-package semantics.")
 knitr::knit(input = readme, output = output, quiet = TRUE, envir = env)
 
-if (!exists("run_a", envir = env, inherits = FALSE) ||
-    !exists("run_b", envir = env, inherits = FALSE)) {
-  stop("README determinism objects `run_a` and `run_b` were not created.", call. = FALSE)
+if (!exists("bt", envir = env, inherits = FALSE) ||
+    !exists("bt_qty_20", envir = env, inherits = FALSE)) {
+  stop("README did not create the expected `bt` and `bt_qty_20` run handles.", call. = FALSE)
 }
 
-run_a <- get("run_a", envir = env, inherits = FALSE)
-run_b <- get("run_b", envir = env, inherits = FALSE)
+bt <- get("bt", envir = env, inherits = FALSE)
+bt_qty_20 <- get("bt_qty_20", envir = env, inherits = FALSE)
 
-if (!identical(run_a$ledger, run_b$ledger)) {
-  stop("README determinism check failed: normalized ledgers differ.", call. = FALSE)
+if (!inherits(bt, "ledgr_backtest") || !inherits(bt_qty_20, "ledgr_backtest")) {
+  stop("README run objects are not ledgr_backtest handles.", call. = FALSE)
 }
-if (!identical(run_a$equity, run_b$equity)) {
-  stop("README determinism check failed: normalized equity curves differ.", call. = FALSE)
+
+for (what in c("ledger", "equity", "trades")) {
+  out <- ledgr::ledgr_results(bt, what = what)
+  if (!is.data.frame(out)) {
+    stop(sprintf("README result table `%s` is not a data frame.", what), call. = FALSE)
+  }
+}
+
+if (!exists("snapshot", envir = env, inherits = FALSE)) {
+  stop("README did not create a snapshot handle.", call. = FALSE)
+}
+snapshot <- get("snapshot", envir = env, inherits = FALSE)
+if (!inherits(snapshot, "ledgr_snapshot")) {
+  stop("README `snapshot` object is not a ledgr_snapshot handle.", call. = FALSE)
 }
 
 if ("package:pkgload" %in% search()) {

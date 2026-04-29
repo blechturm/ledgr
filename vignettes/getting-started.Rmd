@@ -4,6 +4,10 @@ output:
   github_document:
     toc: false
     html_preview: false
+vignette: >
+  %\VignetteIndexEntry{Getting Started with ledgr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
@@ -21,513 +25,223 @@ knitr::knit_hooks$set(
     default_output_hook(gsub("[ \t]+(?=\n)", "", x, perl = TRUE), options)
   }
 )
+demo_data_path <- if (file.exists("data/ledgr_demo_bars.rda")) {
+  "data/ledgr_demo_bars.rda"
+} else {
+  file.path("..", "data", "ledgr_demo_bars.rda")
+}
+if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
+  load(demo_data_path)
+}
 ```
 
-This vignette walks through the ledgr research loop:
+This vignette walks through the v0.1.7 research loop:
 
-1. create bar data;
-2. write a target-holdings strategy;
-3. run a backtest;
-4. inspect the recorded results;
-5. debug one decision point;
-6. move from exploratory data to durable research artifacts.
+1. start from deterministic demo bars;
+2. seal them into a snapshot;
+3. define an experiment;
+4. run one or more parameter sets;
+5. inspect the event-derived results;
+6. reopen and compare stored runs.
 
-The goal is not to build a profitable strategy. The goal is to understand how
-ledgr models decisions over time and why it records them in an event ledger.
-The data is deliberately synthetic so the vignette can run offline; the same
-workflow applies to real OHLCV bars.
-
-## Step 1: Create Bar Data
+## Data And Snapshot
 
 ```{r attach}
 library(ledgr)
 library(tibble)
+data("ledgr_demo_bars", package = "ledgr")
 ```
 
-```{r create-bars}
-set.seed(20260425)
-calendar <- seq.Date(as.Date("2020-01-01"), as.Date("2020-02-14"), by = "day")
-dates <- calendar[!(weekdays(calendar) %in% c("Saturday", "Sunday"))]
+`ledgr_demo_bars` is bundled with the package so examples do not need local
+files or network access.
 
-make_bars <- function(instrument_id, start_price, drift) {
-  n <- length(dates)
-  close <- start_price + cumsum(drift + stats::rnorm(n, mean = 0, sd = 0.35))
-  open <- c(start_price, close[-n])
-
-  data.frame(
-    ts_utc = as.POSIXct(dates, tz = "UTC"),
-    instrument_id = instrument_id,
-    open = round(open, 2),
-    high = round(pmax(open, close) + 0.45, 2),
-    low = round(pmin(open, close) - 0.45, 2),
-    close = round(close, 2),
-    volume = seq.int(1000L, 1000L + n - 1L),
-    stringsAsFactors = FALSE
-  )
-}
-
-bars <- rbind(
-  make_bars("AAA", start_price = 100, drift = 0.18),
-  make_bars("BBB", start_price = 80, drift = -0.04)
+```{r demo-data}
+bars <- subset(
+  ledgr_demo_bars,
+  instrument_id %in% c("DEMO_01", "DEMO_02") &
+    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
+    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
 )
 
-bars |> as_tibble() |> head(6)
+head(as_tibble(bars), 6)
 ```
 
-This is the smallest useful shape for ledgr bar data. Each row is one
-instrument at one timestamp.
+Create a sealed snapshot. This is the immutable input artifact for all runs in
+the experiment.
 
-Required columns are `ts_utc`, `instrument_id`, `open`, `high`, `low`, and
-`close`. `volume` is optional. The timestamps in this example are business days
-because that reads more like market data, but ledgr does not require daily bars
-or a specific exchange calendar.
+```{r snapshot}
+snapshot <- ledgr_snapshot_from_df(bars)
+snapshot
+```
 
-A backtest is only as auditable as its inputs. ledgr turns these rows into a
-sealed snapshot before it runs the engine. A snapshot is the data contract for
-a run.
+For durable work, pass a stable `db_path` at snapshot creation. After that,
+normal run and store operations use the snapshot handle.
 
-## Step 2: Write A Strategy
+## Strategy Contract
 
-```{r define-strategy}
-strategy <- function(ctx) {
-  targets <- ctx$targets()
+A v0.1.7 strategy is `function(ctx, params)`. `ctx` is the pulse context; it
+contains only state observable at the current decision point. `params` is the
+JSON-safe parameter list passed to `ledgr_run()`.
 
-  if (ctx$close("AAA") > 100.4) {
-    targets["AAA"] <- floor(0.40 * ctx$equity / ctx$close("AAA"))
-  }
+```{r strategy}
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
 
-  if (ctx$close("BBB") > 80.0) {
-    targets["BBB"] <- floor(0.30 * ctx$equity / ctx$close("BBB"))
+  for (id in ctx$universe) {
+    sma <- ctx$feature(id, "sma_20")
+    if (is.finite(sma) && ctx$close(id) > sma) {
+      targets[id] <- params$qty
+    }
   }
 
   targets
 }
 ```
 
-Read the function as a short research rule:
+Targets are desired holdings, not signals. A return value like
+`c(DEMO_01 = 10, DEMO_02 = 0)` means "hold 10 units of `DEMO_01` and 0 units
+of `DEMO_02`." The names must match `ctx$universe`.
 
-- start from flat target holdings;
-- put about 40% of current equity into `AAA` when its close is above 100.4;
-- put about 30% of current equity into `BBB` when its close is above 80.0.
+Use `ctx$flat()` when each pulse should restate the whole portfolio from flat.
+Use `ctx$hold()` when a rule should keep current positions unless it emits a
+new target.
 
-The helper calls keep strategy code readable. `ctx$targets()` creates a named
-target vector over the full universe and initializes every instrument to flat.
-`ctx$close("AAA")` reads the close price at the current decision point.
-`ctx$cash` is current simulated cash, and `ctx$equity` is current simulated
-portfolio value. `ctx$position("AAA")`, which we use later, reads the current
-held quantity.
+## Experiment And Run
 
-## Step 3: Run The First Backtest
+Indicators are feature definitions. Ask ledgr for the feature IDs before using
+them in `ctx$feature()`.
 
-```{r run-backtest}
-bt <- ledgr_backtest(
-  data = bars,
+```{r features}
+features <- list(ledgr_ind_sma(20))
+ledgr_feature_id(features)
+```
+
+Bundle the reusable parts into an experiment. Construction validates the
+snapshot, strategy, features, opening state, universe, and execution options;
+it does not execute the strategy.
+
+```{r experiment}
+exp <- ledgr_experiment(
+  snapshot = snapshot,
   strategy = strategy,
-  initial_cash = 10000,
-  run_id = "getting-started-demo"
+  features = features,
+  opening = ledgr_opening(cash = 10000)
 )
+
+exp
+```
+
+Run one parameter set.
+
+```{r run}
+bt <- exp |>
+  ledgr_run(params = list(qty = 10), run_id = "getting_started_qty_10")
 
 bt
 ```
 
-`ledgr_backtest()` is the primary first-use path. It accepts a data frame,
-creates a sealed snapshot internally, runs the strategy, and returns a handle to
-one recorded run.
-
-The fixed `run_id` makes printed output stable. In interactive work you can
-omit it and ledgr will generate a unique one. A `ledgr_backtest` object points
-to one run.
-
-A `ledgr_backtest` object owns a lazy DuckDB connection. In longer scripts,
-register cleanup after construction so Windows file handles do not stay open:
+A backtest handle points to stored run artifacts. Close it when you are done so
+Windows file handles are released deterministically.
 
 ```r
 on.exit(close(bt), add = TRUE)
 ```
 
-When `start` and `end` are omitted, ledgr uses the full timestamp range in the
-snapshot. If you pass a narrower window, the snapshot can still contain more
-data, but the run only iterates through pulses inside that inclusive window.
-
-## Step 4: Inspect The Result Views
+## Inspect Results
 
 ```{r summary}
 summary(bt)
 ```
 
-In this toy run, total return is positive while win rate is 0%. That is not a
-contradiction: win rate is computed from closed trades, and the profitable
-`AAA` position remains open at the end. Its gain appears in equity, not in the
-closed-trade win rate.
+Results are derived views over recorded events.
 
-The summary is a derived view. It is useful for a quick read, but the audit
-trail lives underneath it.
-
-```{r inspect-trades}
-bt |> as_tibble(what = "trades")
+```{r result-tables}
+ledgr_results(bt, what = "trades")
+tail(ledgr_results(bt, what = "equity"), 4)
 ```
 
-`trades` is the research-friendly fills table. It answers: what actually got
-executed?
+The ledger is the source of truth.
 
-```{r inspect-ledger}
-bt |> as_tibble(what = "ledger")
+```{r ledger}
+head(ledgr_results(bt, what = "ledger"), 6)
 ```
 
-`ledger` is the raw event stream. It is the source of truth. Use it when you
-need to audit the exact sequence of state changes.
+## Debug One Pulse
 
-```{r inspect-equity}
-bt |> as_tibble(what = "equity") |> tail(6)
-```
+`ledgr_pulse_snapshot()` builds the same pulse context a strategy sees at a
+single timestamp. It is useful for explaining one decision without rerunning an
+entire experiment.
 
-`equity` is the portfolio value over time. It is also derived from recorded
-state, not from a hidden intermediate calculation.
-
-Trades, equity, and metrics are views over recorded history. If a number looks
-strange, you can trace it back to the events that produced it.
-
-```{r plot-backtest, fig.width=7, fig.height=6, fig.alt="Line chart of the backtest equity curve above an area chart of drawdown over the same date range."}
-plot(bt)
-```
-
-The plot is another derived view over the same recorded state. The top panel
-shows equity over time. The bottom panel shows drawdown relative to the running
-maximum.
-
-## Step 5: Understand Pulses, Targets, And Fills
-
-ledgr does not treat data as a static table. It simulates a system that moves
-forward in time:
-
-```text
-data.frame
--> sealed snapshot (immutable input)
--> pulse-by-pulse execution (time iteration)
--> event ledger (state changes recorded)
--> derived views (trades, equity, summary)
-```
-
-A pulse is one decision point. At each pulse, the strategy observes only the
-current and past state, returns target holdings, and then the engine records any
-position changes as events.
-
-Every ledgr strategy returns target holding amounts:
-
-```r
-c(AAA = 10, BBB = 0)
-```
-
-That means: hold 10 units of `AAA` and hold 0 units of `BBB`.
-
-Names are part of the contract because ledgr must match each target to
-`ctx$universe`. These are invalid strategy outputs:
-
-```r
-c(10, 0)                  # missing instrument names
-c(AAA = "LONG", BBB = 0)  # not numeric
-```
-
-ledgr expects a named numeric target vector with names matching `ctx$universe`.
-It does not accept raw signal labels such as `"LONG"` or `"FLAT"` as core
-strategy output.
-
-`ctx$targets()` starts from flat positions. That is useful when every pulse
-should fully restate the desired portfolio. For hold-unless-signal rules, start
-from the current position vector instead:
-
-```r
-targets <- ctx$current_targets()
-```
-
-That pattern says: keep current holdings unless this pulse explicitly changes
-them.
-
-The default fill model is next-open. A target change decided at pulse `t` fills
-on the next available bar. If the strategy asks for a new position on the final
-available pulse, there is no next bar to fill against, so ledgr warns with
-`LEDGR_LAST_BAR_NO_FILL` and records no fill for that final request.
-
-Non-default fill costs are supplied through `fill_model`:
-
-```r
-fill_model <- list(type = "next_open", spread_bps = 5, commission_fixed = 1)
-```
-
-Real trading systems receive information step by step. ledgr follows that
-shape. The strategy does not get future prices. It gets the current pulse,
-makes a decision, and the engine moves forward.
-
-You can throttle rebalances inside the strategy by using `ctx$ts_utc`. This
-toy example only changes targets on the first calendar day of a month and keeps
-current holdings otherwise:
-
-```r
-monthly_strategy <- function(ctx) {
-  targets <- ctx$current_targets()
-  if (format(as.Date(ctx$ts_utc), "%d") != "01") return(targets)
-
-  if (ctx$close("AAA") > 100) {
-    targets["AAA"] <- floor(0.50 * ctx$equity / ctx$close("AAA"))
-  }
-
-  targets
-}
-```
-
-## Step 6: Add A Simple Indicator
-
-Indicators are deterministic features computed at each pulse. The strategy can
-read them from the same `ctx` object.
-
-```{r indicator-strategy}
-features <- list(ledgr_ind_sma(3))
-
-sma_strategy <- function(ctx) {
-  targets <- ctx$targets()
-  sma_3 <- ctx$feature("AAA", "sma_3")
-
-  if (is.finite(sma_3) && ctx$close("AAA") > sma_3) {
-    targets["AAA"] <- 10
-  }
-
-  targets
-}
-
-bt_sma <- ledgr_backtest(
-  data = bars,
-  strategy = sma_strategy,
-  features = features,
-  end = as.POSIXct("2020-02-13", tz = "UTC"),
-  initial_cash = 10000,
-  run_id = "getting-started-sma"
-)
-
-bt_sma |> as_tibble(what = "trades") |> head(6)
-```
-
-The first few indicator values may be `NA` while the indicator warms up. In the
-strategy above, `is.finite(sma_3)` prevents trading before the SMA is available.
-
-The example uses an explicit `end` one bar before the last available bar. That
-keeps the example focused on indicator behavior rather than the final-bar
-no-fill warning described above.
-
-Indicators are part of the pulse context. ledgr computes the feature values
-without lookahead and records the run through the same event ledger.
-
-## Step 7: Debug One Pulse
-
-After a run, the most common debugging question is: why did the strategy make
-that decision at that time?
-
-The useful answer is a pulse snapshot: the exact context the strategy saw at
-one timestamp. The first backtest created a snapshot internally. Here we create
-one explicitly so the debugging tool has a snapshot handle, then choose a
-readable timestamp.
-
-```{r create-debug-snapshot}
-snapshot <- ledgr_snapshot_from_df(
-  bars,
-  db_path = tempfile(fileext = ".duckdb")
-)
-
-decision_time <- as.POSIXct("2020-01-14", tz = "UTC")
-decision_time
-```
-
-```{r debug-pulse}
+```{r pulse}
 pulse <- ledgr_pulse_snapshot(
   snapshot = snapshot,
-  universe = c("AAA", "BBB"),
-  ts_utc = decision_time
+  universe = c("DEMO_01", "DEMO_02"),
+  ts_utc = "2019-03-01T00:00:00Z",
+  features = features
 )
 
-pulse$ts_utc
-pulse$bars
-pulse$close("AAA")
-pulse$position("AAA")
-pulse$current_targets()
-strategy(pulse)
-```
-
-At this moment, the strategy only sees state available at `pulse$ts_utc`.
-`pulse$current_targets()` shows the current holdings as a full target vector.
-`strategy(pulse)` shows the target holdings the strategy would request from
-that context.
-
-A pulse snapshot is read-only. It is meant for research and debugging, not for
-changing run state. The close calls release DuckDB connections.
-
-```{r close-debug-pulse}
+pulse$close("DEMO_01")
+pulse$feature("DEMO_01", "sma_20")
+strategy(pulse, list(qty = 10))
 close(pulse)
-ledgr_snapshot_close(snapshot)
 ```
 
-Debugging a backtest should not require guessing from final outputs. You can
-inspect the decision context directly.
+## Compare Variants
 
-## Step 8: Use Yahoo As A Convenience Source
+Run a second parameter set into the same snapshot-backed store.
 
-Yahoo is the quickest path from a ticker symbol to a sealed ledgr snapshot.
-This path requires the optional `quantmod` package and network access:
+```{r second-run}
+bt_qty_20 <- exp |>
+  ledgr_run(params = list(qty = 20), run_id = "getting_started_qty_20")
 
-```r
-install.packages("quantmod")
+ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_started_qty_20"))[
+  c("run_id", "final_equity", "total_return", "max_drawdown", "n_trades")
+]
 ```
 
-```{r yahoo-snapshot, eval=FALSE}
-library(quantmod)
+## Durable Store Workflow
 
-yahoo_strategy <- function(ctx) {
-  targets <- ctx$targets()
+Use a stable DuckDB path for research you want to keep.
 
-  if (ctx$close("AAPL") > ctx$open("AAPL")) {
-    targets["AAPL"] <- floor(0.40 * ctx$equity / ctx$close("AAPL"))
-  }
-
-  if (ctx$close("MSFT") > ctx$open("MSFT")) {
-    targets["MSFT"] <- floor(0.30 * ctx$equity / ctx$close("MSFT"))
-  }
-
-  targets
-}
-
-yahoo_snapshot <- ledgr_snapshot_from_yahoo(
-  symbols = c("AAPL", "MSFT"),
-  from = "2020-01-01",
-  to = "2020-03-31",
-  db_path = tempfile(fileext = ".duckdb")
-)
-
-yahoo_bt <- ledgr_backtest(
-  snapshot = yahoo_snapshot,
-  strategy = yahoo_strategy,
-  universe = c("AAPL", "MSFT"),
-  start = "2020-01-01",
-  end = "2020-03-31",
-  initial_cash = 10000
-)
-
-yahoo_bt
-yahoo_bt |> as_tibble(what = "trades")
-plot(yahoo_bt)
-
-ledgr_snapshot_close(yahoo_snapshot)
-```
-
-The code above is meant to be run interactively. It is not defensive because
-the dependency is part of the workflow: install `quantmod`, attach it, fetch
-data, seal the result, then run ledgr.
-
-The rendered vignette does not execute the live Yahoo chunk because live API
-output is not a stable release artifact. Yahoo is convenient for exploration,
-but it is provider-dependent and not deterministic as a source. Providers can
-revise historical data.
-
-For durable research, download once, seal the downloaded data into a snapshot,
-and reuse that snapshot. The ledgr audit guarantees apply to the sealed data,
-not to the external provider.
-
-## Step 9: Make Research Durable
-
-The quick path creates temporary storage for you. For research you want to keep,
-choose the data file and DuckDB path yourself. This vignette uses `tempfile()`
-for CRAN-safe examples; in real projects use a stable path under your research
-directory.
-
-```{r durable-artifact}
-bars_csv <- tempfile(fileext = ".csv")
+```{r durable}
 artifact_db <- tempfile("ledgr_getting_started_", fileext = ".duckdb")
-
-bars_for_csv <- bars
-bars_for_csv$ts_utc <- format(bars_for_csv$ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-
-utils::write.csv(bars_for_csv, bars_csv, row.names = FALSE)
-
-snapshot <- ledgr_snapshot_from_csv(
-  csv_path = bars_csv,
-  db_path = artifact_db
+durable_snapshot <- ledgr_snapshot_from_df(
+  bars,
+  db_path = artifact_db,
+  snapshot_id = "getting_started_snapshot"
 )
-snapshot_id <- snapshot$snapshot_id
 
-durable_bt <- ledgr_backtest(
-  snapshot = snapshot,
+durable_exp <- ledgr_experiment(
+  snapshot = durable_snapshot,
   strategy = strategy,
-  universe = c("AAA", "BBB"),
-  initial_cash = 10000,
-  run_id = "getting-started-durable"
+  features = features,
+  opening = ledgr_opening(cash = 10000)
 )
 
-basename(durable_bt$db_path)
-file.exists(durable_bt$db_path)
-
-durable_bt |> as_tibble(what = "trades")
-durable_bt |> as_tibble(what = "equity") |> tail(3)
+durable_bt <- durable_exp |>
+  ledgr_run(params = list(qty = 10), run_id = "durable_qty_10")
 
 close(durable_bt)
+ledgr_snapshot_close(durable_snapshot)
+
+reloaded <- ledgr_snapshot_load(artifact_db, "getting_started_snapshot", verify = TRUE)
+ledgr_run_list(reloaded)[c("run_id", "status", "execution_mode", "total_return")]
+ledgr_run_info(reloaded, "durable_qty_10")
+ledgr_snapshot_close(reloaded)
+```
+
+`ledgr_snapshot_load()` is the new-session resumption path. Store APIs such as
+`ledgr_run_list()`, `ledgr_run_info()`, `ledgr_compare_runs()`,
+`ledgr_run_label()`, and `ledgr_run_archive()` operate on the snapshot handle.
+
+## Scope
+
+v0.1.7 is a research release. It does not provide live trading, broker
+integrations, short-selling semantics, or parameter sweep execution. Sweep and
+tune APIs are reserved for later versions.
+
+```{r cleanup}
+close(bt)
+close(bt_qty_20)
 ledgr_snapshot_close(snapshot)
-
-reloaded_snapshot <- ledgr_snapshot_load(artifact_db, snapshot_id, verify = TRUE)
-ledgr_snapshot_info(reloaded_snapshot)[, c("snapshot_id", "status", "bar_count")]
-ledgr_snapshot_close(reloaded_snapshot)
 ```
-
-The close calls at the end release file handles. They do not delete a stable
-project database; this example uses temporary paths only so the vignette can run
-cleanly during package checks.
-
-CSV workflows should write timestamps as explicit UTC strings such as
-`2020-01-01T00:00:00Z`. The parser is deliberately strict because timestamp
-ambiguity is a common source of backtest drift.
-
-This DuckDB file now contains:
-
-- the sealed input snapshot;
-- the recorded run events;
-- derived views such as trades and equity.
-
-Keeping this file means keeping the research artifact.
-
-`ledgr_snapshot_load()` is the rerun path. It reopens an existing sealed
-snapshot by database path and snapshot id. It does not create or overwrite
-snapshots, and `verify = TRUE` recomputes the snapshot hash before returning.
-
-`run_id` names one run inside that artifact file. The experiment-store helpers
-make those runs discoverable and reopenable without recomputing the strategy:
-
-```{r durable-runs}
-ledgr_run_list(artifact_db)[, c("run_id", "status", "execution_mode", "total_return")]
-
-run_info <- ledgr_run_info(artifact_db, "getting-started-durable")
-run_info
-
-reopened_bt <- ledgr_run_open(artifact_db, "getting-started-durable")
-reopened_bt |> ledgr_results(what = "equity") |> tail(2)
-close(reopened_bt)
-```
-
-Use `ledgr_run_label()` for mutable human-readable names and
-`ledgr_run_archive()` to hide old runs from default listings without deleting
-their artifacts. `run_id` itself is immutable.
-
-Reproducibility is not only about getting the same answer in one R session. It
-is also about keeping the data and run artifacts that explain where the answer
-came from.
-
-## Step 10: Know The Scope
-
-ledgr currently focuses on deterministic research backtests.
-
-It does not include:
-
-- live trading;
-- streaming data;
-- broker integrations;
-- paper-trading state;
-- parameter optimization;
-- walk-forward testing.
-
-Those are different systems with different state and safety requirements. This
-release keeps the onboarding path focused on backtests that can be reproduced,
-inspected, and audited.

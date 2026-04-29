@@ -64,62 +64,41 @@ market data permanently. A **`run_id`** is an immutable experiment key. Strategy
 identity is captured from source text and parameters. Every run is auditable and
 discoverable after the R session ends.
 
-In v0.1.5 this is a concrete user-facing workflow:
+In v0.1.7 this is a concrete user-facing workflow:
 
 ```{r experiment-store-api, eval=FALSE}
-runs <- ledgr_run_list(db_path)
+snapshot <- ledgr_snapshot_load(db_path, "snapshot_id")
 
-info <- ledgr_run_info(db_path, "sma_20_production_candidate")
+runs <- ledgr_run_list(snapshot)
 
-bt <- ledgr_run_open(db_path, "sma_20_production_candidate")
+info <- ledgr_run_info(snapshot, "sma_20_production_candidate")
+
+bt <- ledgr_run_open(snapshot, "sma_20_production_candidate")
 ledgr_results(bt, what = "equity")
 
-ledgr_run_label(db_path, "sma_20_production_candidate", "approved-baseline")
-ledgr_run_archive(db_path, "discarded-parameter-test", reason = "bad regime fit")
+snapshot <- snapshot |>
+  ledgr_run_label("sma_20_production_candidate", "approved-baseline") |>
+  ledgr_run_archive("discarded-parameter-test", reason = "bad regime fit")
 ```
 
-`run_id` is the immutable experiment key. `label` and archive state are mutable
-metadata only; they do not change the snapshot hash, strategy source hash,
-strategy parameter hash, config hash, or ledger artifacts. Older runs created
-before provenance capture remain inspectable as legacy/pre-provenance runs, but
-they cannot be upgraded into fully reproducible experiments after the fact.
+`run_id` is the immutable experiment key. `label`, tags, and archive state are
+mutable metadata only; they do not change the snapshot hash, strategy source
+hash, strategy parameter hash, config hash, or ledger artifacts. Older runs
+created before provenance capture remain inspectable as legacy/pre-provenance
+runs, but they cannot be upgraded into fully reproducible experiments after the
+fact.
 
 The research workflow before deployment has two phases:
 
-**Sweep** (v0.1.8). Fast, parallel, no persistence. Explore the parameter space
-across many combinations using precomputed, shared feature series. Feature
-computation happens once per indicator per instrument and is reused across the
-entire sweep. The output is a ranked list of candidates.
-
-**Persist** (v0.1.5). Full provenance run. Validate the top candidates with
+**Commit** (v0.1.7). Full provenance run. Validate named candidates with
 durable artifacts: sealed snapshot hash, strategy source hash, parameter hash,
-ledgr and R version, dependency versions. Commit the winning configuration to
-the experiment store with a label. That stored run is the audit record of the
-deployment decision.
+config hash, ledgr and R version, dependency versions, compact telemetry, and
+result artifacts. Use `ledgr_compare_runs()` to compare named variants and
+`ledgr_extract_strategy()` to inspect stored strategy source.
 
-v0.1.5 ships before v0.1.8 because sweep mode depends on the same experiment
-identity and parity contracts that persistence establishes.
-
-```{r sweep-persist-sketch, eval=FALSE}
-# Sweep: explore
-features <- ledgr_precompute_features(snapshot, indicators = list(sma_20, rsi_14))
-
-results <- furrr::future_pmap(param_grid, function(...) {
-  ledgr_sweep(..., precomputed_features = features)
-})
-
-# Persist: validate the winner
-bt <- ledgr_backtest(
-  snapshot = snapshot,
-  strategy = strategy,
-  strategy_params = best_params,
-  run_id = "sma_20_production_candidate"
-)
-ledgr_run_label(db_path, "sma_20_production_candidate", "Approved 2026-05-01")
-```
-
-Run comparison tables and strategy-source recovery are intentionally not part of
-v0.1.5. They build on the identity and discovery layer in later releases.
+**Explore** (future). Fast parameter sweep mode is planned for a later release.
+It will build on the same experiment object and parity contracts, but it is not
+part of v0.1.7.
 
 ## The Edge Device
 
@@ -145,7 +124,7 @@ parameters and no hidden mutable state:
 
 ```r
 sma_strategy <- function(ctx, params) {
-  targets <- ctx$targets()
+  targets <- ctx$flat()
   for (id in ctx$universe) {
     sma <- ctx$feature(id, paste0("ttr_sma_", params$window))
     if (!is.na(sma) && ctx$close(id) > sma) {
@@ -173,8 +152,9 @@ v0.1.x is the research layer:
 - a TTR indicator adapter with deterministic warmup, vectorized precomputation,
   and session-scoped feature caching;
 - an experiment store with run discovery, provenance, labeling, and archival
-  (v0.1.5);
-- fast parameter sweep mode with parity-enforced results (v0.1.7).
+  (v0.1.5+);
+- experiment-first execution, run comparison, strategy-source inspection, and a
+  deterministic demo dataset (v0.1.7).
 
 Paper and live trading adapters, OMS state machine semantics, and observability
 tooling follow in the v0.2.x and v0.3.x range.

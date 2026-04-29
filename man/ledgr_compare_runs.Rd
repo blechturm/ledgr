@@ -5,14 +5,16 @@
 \title{Compare completed runs in a ledgr experiment store}
 \usage{
 ledgr_compare_runs(
-  db_path,
+  snapshot,
   run_ids = NULL,
   include_archived = FALSE,
   metrics = c("standard")
 )
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_ids}{Optional character vector of run IDs. If supplied, output
 preserves this order, including duplicates, and may include archived
@@ -20,10 +22,11 @@ completed runs. If \code{NULL}, compares all non-archived completed runs.}
 
 \item{include_archived}{Logical scalar. Used only when \code{run_ids = NULL}.}
 
-\item{metrics}{Metrics set. Only \code{"standard"} is supported in v0.1.6.}
+\item{metrics}{Metrics set. Only \code{"standard"} is supported in v0.1.7.}
 }
 \value{
-A tibble with one row per completed run.
+A \code{ledgr_comparison} object, which is a classed tibble with one row
+per completed run.
 }
 \description{
 Reads stored run metadata, provenance, telemetry, and result artifacts from a
@@ -31,30 +34,18 @@ durable DuckDB experiment store. Strategies are not rerun, recovered source
 is not evaluated, and the database is not mutated.
 }
 \examples{
-db_path <- tempfile(fileext = ".duckdb")
-bars <- data.frame(
-  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
-  instrument_id = "AAA",
-  open = c(100, 101, 102, 103, 104),
-  high = c(101, 102, 103, 104, 105),
-  low = c(99, 100, 101, 102, 103),
-  close = c(100, 101, 102, 103, 104),
-  volume = 1000
-)
+bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+snapshot <- ledgr_snapshot_from_df(utils::head(bars, 30))
 strategy <- function(ctx, params) {
-  targets <- ctx$targets()
-  targets["AAA"] <- params$qty
+  targets <- ctx$flat()
+  targets["DEMO_01"] <- params$qty
   targets
 }
-bt_a <- ledgr_backtest(
-  data = bars, strategy = strategy, strategy_params = list(qty = 1),
-  db_path = db_path, run_id = "qty-1"
-)
+exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
 on.exit(close(bt_a), add = TRUE)
-bt_b <- ledgr_backtest(
-  data = bars, strategy = strategy, strategy_params = list(qty = 2),
-  db_path = db_path, run_id = "qty-2"
-)
+bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "qty-2")
 on.exit(close(bt_b), add = TRUE)
-ledgr_compare_runs(db_path, run_ids = c("qty-1", "qty-2"))
+ledgr_compare_runs(snapshot, run_ids = c("qty-1", "qty-2"))
+ledgr_snapshot_close(snapshot)
 }

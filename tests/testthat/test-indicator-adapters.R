@@ -134,7 +134,7 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_r("TTR::RSI", id = "test_ttr_rsi", requires_bars = 15L, n = 14L)
-  zero_strategy <- function(ctx) {
+  zero_strategy <- function(ctx, params) {
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   }
 
@@ -174,7 +174,7 @@ testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_csv(csv_path = csv_path, value_col = "signal", id = "test_csv_signal")
-  zero_strategy <- function(ctx) {
+  zero_strategy <- function(ctx, params) {
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
   }
 

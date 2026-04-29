@@ -4,10 +4,12 @@
 \alias{ledgr_run_tag}
 \title{Add tags to a stored run}
 \usage{
-ledgr_run_tag(db_path, run_id, tags)
+ledgr_run_tag(snapshot, run_id, tags)
 }
 \arguments{
-\item{db_path}{Path to a DuckDB experiment-store file.}
+\item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
+\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+DuckDB file in a new R session.}
 
 \item{run_id}{Run identifier.}
 
@@ -15,7 +17,7 @@ ledgr_run_tag(db_path, run_id, tags)
 must not contain commas or control characters.}
 }
 \value{
-A \code{ledgr_run_info} object after the update.
+The input \code{ledgr_snapshot}, invisibly.
 }
 \description{
 Adds mutable metadata tags to a run in a ledgr experiment store. Tags do not
@@ -23,19 +25,13 @@ alter run identity hashes, stored artifacts, comparison semantics, or
 strategy provenance. Re-adding an existing tag is idempotent.
 }
 \examples{
-db_path <- tempfile(fileext = ".duckdb")
-bars <- data.frame(
-  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-  instrument_id = "AAA",
-  open = c(100, 101, 102, 103),
-  high = c(101, 102, 103, 104),
-  low = c(99, 100, 101, 102),
-  close = c(100, 101, 102, 103),
-  volume = 1000
-)
-strategy <- function(ctx) ctx$targets()
-bt <- ledgr_backtest(data = bars, strategy = strategy, db_path = db_path)
-ledgr_run_tag(db_path, bt$run_id, c("baseline", "demo"))
-ledgr_run_tags(db_path, bt$run_id)
+bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
+strategy <- function(ctx, params) ctx$flat()
+exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+bt <- ledgr_run(exp, params = list(), run_id = "flat")
+ledgr_run_tag(snapshot, bt$run_id, c("baseline", "demo"))
+ledgr_run_tags(snapshot, bt$run_id)
 close(bt)
+ledgr_snapshot_close(snapshot)
 }

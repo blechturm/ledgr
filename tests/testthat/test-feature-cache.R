@@ -17,12 +17,12 @@ testthat::test_that("session feature cache reuses series by snapshot hash", {
     requires_bars = 1L
   )
 
-  strategy <- function(ctx) {
+  strategy <- function(ctx, params) {
     value <- ctx$feature("TEST_A", "cache_probe")
     if (!is.na(value) && value < 0) {
       stop("unexpected negative feature")
     }
-    ctx$targets()
+    ctx$flat()
   }
 
   db_path_a <- tempfile(fileext = ".duckdb")

@@ -1,0 +1,502 @@
+version: "0.1.7-core-ux-overhaul"
+source: "v0_1_7_tickets.md"
+tickets:
+  - id: LDG-1001
+    title: "API Reset Contract And Migration Policy"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation consistency scan"
+      - "export/API inventory review"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Version scoping, compatibility policy, contract modification, and
+        public API breaking-change definition are Tier H by rule. This ticket
+        sets boundaries for all later implementation work.
+      invariants_at_risk:
+        - public API compatibility policy
+        - release scope
+        - migration semantics
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/ledgr_ux_decisions.md
+        - inst/design/ledgr_sweep_mode_ux.md
+        - inst/design/contracts.md
+        - NEWS.md
+      tests_required:
+        - documentation consistency scan
+        - export/API inventory review
+      escalation_triggers:
+        - a compatibility shim seems necessary
+        - existing contracts conflict with the hard reset
+        - sweep/tune scope leaks into v0.1.7
+      forbidden_actions:
+        - silently preserving old public workflow signatures
+        - adding v0.1.8 sweep APIs
+        - changing execution semantics while editing contracts
+
+  - id: LDG-1002
+    title: "Experiment And Opening State Objects"
+    status: done
+    priority: P0
+    dependencies: [LDG-1001]
+    tests:
+      - "constructor validation tests"
+      - "opening-state tests"
+      - "universe validation tests"
+      - "experiment object tests"
+      - "print method tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Introduces central public API objects that carry snapshot, strategy,
+        feature, opening, and execution metadata. It touches public API,
+        strategy validation, execution configuration, and future run identity.
+      invariants_at_risk:
+        - public API object model
+        - strategy contract validation
+        - opening-state semantics
+        - universe selection semantics
+        - future run config identity
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/ledgr_ux_decisions.md
+        - inst/design/contracts.md (Strategy Contract, Snapshot Contract, Run Identity Contract)
+        - R/backtest.R
+        - R/config-validate.R
+        - R/snapshots-load.R
+      tests_required:
+        - constructor validation tests
+        - opening-state tests
+        - universe validation tests
+        - experiment object tests
+        - print method tests
+      escalation_triggers:
+        - experiment object requires schema changes
+        - opening state changes ledger semantics
+        - broker integration becomes more than a structural hook
+      forbidden_actions:
+        - running backtests from constructors
+        - adding broker network integrations
+        - allowing short positions
+        - adding sweep or tune execution
+
+  - id: LDG-1003
+    title: "`ledgr_run()` Public Execution API"
+    status: done
+    priority: P0
+    dependencies: [LDG-1002]
+    tests:
+      - "ledgr_run execution tests"
+      - "parity tests"
+      - "durable store tests"
+      - "provenance tests"
+      - "telemetry tests"
+      - "seed field/config-hash test"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Adds the new canonical public execution API and maps it to the existing
+        runner. It touches execution, persistence, run identity, strategy
+        params, feature computation, telemetry, and public API contracts.
+      invariants_at_risk:
+        - canonical execution path
+        - event ledger semantics
+        - run identity and config hash
+        - strategy params provenance
+        - seed identity stability
+        - feature cache behavior
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/contracts.md (Execution Contract, Strategy Contract, Run Identity Contract, Persistence Contract)
+        - R/backtest.R
+        - R/backtest-runner.R
+        - R/strategy-contracts.R
+        - R/strategy-provenance.R
+        - R/features-engine.R
+      tests_required:
+        - ledgr_run execution tests
+        - parity tests
+        - durable store tests
+        - provenance tests
+        - telemetry tests
+      escalation_triggers:
+        - parity with existing valid runs fails
+        - opening state requires changing fill/ledger semantics
+        - seed identity cannot be specified cleanly
+      forbidden_actions:
+        - forking the runner
+        - changing pulse order or fill semantics
+        - adding sweep/tune execution
+        - dropping telemetry or provenance
+
+  - id: LDG-1004
+    title: "Strategy Signature And Context Helper Reset"
+    status: done
+    priority: P0
+    dependencies: [LDG-1002]
+    tests:
+      - "strategy signature tests"
+      - "context helper tests"
+      - "migration-error tests"
+      - "existing runner tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Hard-removes an existing strategy signature and existing context
+        helpers, touching execution callbacks, strategy dispatch, target-vector
+        semantics, and public API behavior.
+      invariants_at_risk:
+        - strategy dispatch
+        - target vector semantics
+        - pulse context contract
+        - reproducibility tier classification
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract)
+        - R/strategy-contracts.R
+        - R/pulse-context.R
+        - R/backtest-runner.R
+        - tests/testthat/test-strategy-provenance.R
+      tests_required:
+        - strategy signature tests
+        - context helper tests
+        - migration-error tests
+        - existing runner tests
+      escalation_triggers:
+        - old helpers are needed internally
+        - target semantics differ between runtime and pulse snapshot
+        - provenance classifier assumes function(ctx) remains valid
+      forbidden_actions:
+        - adding ctx$params
+        - keeping old helpers as aliases
+        - silently accepting function(ctx)
+        - changing target vector shape
+
+  - id: LDG-1005
+    title: "Snapshot-First Store Operations"
+    status: done
+    priority: P0
+    dependencies: [LDG-1002]
+    tests:
+      - "snapshot resumption tests"
+      - "snapshot-first store API tests"
+      - "old-signature failure tests"
+      - "no-mutation tests"
+      - "identity-preservation tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Changes public signatures for experiment-store operations, including
+        DuckDB reads/writes, metadata mutation, comparison, strategy extraction,
+        and run identity surfaces.
+      invariants_at_risk:
+        - experiment-store persistence
+        - snapshot resumption workflow
+        - run identity immutability
+        - archived/tagged metadata semantics
+        - comparison no-mutation guarantee
+        - strategy extraction trust boundary
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/ledgr_v0_1_6_spec_packet/v0_1_6_spec.md
+        - inst/design/contracts.md (Persistence Contract, Run Identity Contract, Result Contract)
+        - R/run-store.R
+        - R/run-tags.R
+        - R/snapshots-load.R
+        - R/strategy-extract.R
+      tests_required:
+        - snapshot resumption tests
+        - snapshot-first store API tests
+        - old-signature failure tests
+        - no-mutation tests
+        - identity-preservation tests
+      escalation_triggers:
+        - snapshot object lacks enough store metadata
+        - old db_path signature compatibility seems necessary
+        - comparison/extraction behavior changes unintentionally
+      forbidden_actions:
+        - changing run identity hashes during metadata mutation
+        - mutating stores from read APIs
+        - evaluating strategy source from comparison
+        - adding hard delete
+
+  - id: LDG-1006
+    title: "Typed Parameter Grid"
+    status: done
+    priority: P1
+    dependencies: [LDG-1001]
+    tests:
+      - "param grid validation tests"
+      - "stable label tests"
+      - "duplicate label tests"
+      - "export scan for sweep/tune APIs"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Adds a public API that uses canonical JSON-derived labels and will
+        become part of future sweep identity. Although bounded, it touches
+        public API and identity-adjacent hashing.
+      invariants_at_risk:
+        - parameter identity
+        - canonical JSON expectations
+        - future sweep label semantics
+        - public API boundary
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/ledgr_sweep_mode_ux.md
+        - inst/design/contracts.md (Canonical JSON Contract, Run Identity Contract)
+        - R/config-canonical-json.R
+      tests_required:
+        - param grid validation tests
+        - stable label tests
+        - duplicate label tests
+        - export scan for sweep/tune APIs
+      escalation_triggers:
+        - label hashing conflicts with existing canonical JSON behavior
+        - users need grid expansion syntax not covered by the spec
+        - implementation starts executing grids
+      forbidden_actions:
+        - exporting ledgr_sweep
+        - exporting ledgr_tune
+        - treating grid labels as run IDs
+        - using non-canonical serialization for generated labels
+
+  - id: LDG-1007
+    title: "Curated Run List And Comparison Prints"
+    status: done
+    priority: P1
+    dependencies: [LDG-1005]
+    tests:
+      - "print method tests"
+      - "type stability tests"
+      - "docs examples"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Bounded S3 print work over existing return objects. It is user-visible
+        and central to the UX reset but should not change persistence,
+        identity, or execution semantics.
+      invariants_at_risk:
+        - user-facing result presentation
+        - tibble composability
+        - metric type stability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/ledgr_ux_decisions.md
+        - R/run-store.R
+      tests_required:
+        - print method tests
+        - type stability tests
+        - docs examples
+      escalation_triggers:
+        - print method requires changing returned columns
+        - formatting changes underlying values
+        - comparison object class is ambiguous
+      forbidden_actions:
+        - changing stored metric definitions
+        - dropping columns from underlying tibbles
+        - formatting numeric columns in data rather than print
+
+  - id: LDG-1008
+    title: "Safe Close Lifecycle"
+    status: done
+    priority: P1
+    dependencies: [LDG-1003]
+    tests:
+      - "no-close durability tests"
+      - "close idempotency tests"
+      - "in-memory lifecycle tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Touches DuckDB connection lifecycle, checkpoint behavior, persistence
+        safety, and restart durability. These are persistence hard-escalation
+        areas.
+      invariants_at_risk:
+        - durable run persistence
+        - checkpoint safety
+        - connection lifecycle
+        - restart safety
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/contracts.md (Persistence Contract)
+        - R/backtest.R
+        - R/backtest-runner.R
+        - R/db-connect.R
+      tests_required:
+        - no-close durability tests
+        - close idempotency tests
+        - in-memory lifecycle tests
+      escalation_triggers:
+        - finalizer behavior is unreliable on CI
+        - checkpoint requires schema or connection architecture changes
+        - close lifecycle conflicts with DuckDB locking on Windows
+      forbidden_actions:
+        - relying on GC as the only persistence path
+        - hiding checkpoint failures
+        - weakening explicit close behavior
+
+  - id: LDG-1009
+    title: "Demo Dataset And Simulation Helper"
+    status: done
+    priority: P1
+    dependencies: [LDG-1001]
+    tests:
+      - "dataset schema tests"
+      - "simulator determinism tests"
+      - "documentation examples"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Adds package data, an exported simulator, and documentation. It does
+        not touch execution semantics, but it is public API and becomes the
+        canonical documentation dataset.
+      invariants_at_risk:
+        - example reproducibility
+        - package data stability
+        - snapshot input schema assumptions
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/ledgr_roadmap.md (Synthetic Demo Dataset)
+        - R/snapshot-from-df.R
+      tests_required:
+        - dataset schema tests
+        - simulator determinism tests
+        - documentation examples
+      escalation_triggers:
+        - simulator requires non-base dependencies
+        - dataset size causes check or install problems
+        - DGP creates invalid OHLC bars
+      forbidden_actions:
+        - using network data
+        - regenerating data at install or check time
+        - changing test helper datasets unnecessarily
+
+  - id: LDG-1010
+    title: "Documentation Rewrite, Migration Guide, And NEWS"
+    status: done
+    priority: P1
+    dependencies: [LDG-1003, LDG-1004, LDG-1006, LDG-1007, LDG-1008, LDG-1009]
+    tests:
+      - "roxygen generation"
+      - "README render/check"
+      - "vignette render"
+      - "pkgdown build"
+      - "documentation scans"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation-heavy, but it defines and teaches the new breaking public
+        API. Tier H review is required for contract accuracy and to prevent old
+        workflow leakage.
+      invariants_at_risk:
+        - public workflow documentation
+        - migration accuracy
+        - API discoverability
+        - scope clarity for sweep/live/broker non-goals
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/contracts.md
+        - NEWS.md
+        - README.Rmd
+        - vignettes/
+        - _pkgdown.yml
+      tests_required:
+        - roxygen generation
+        - README render/check
+        - vignette render
+        - pkgdown build
+        - documentation scans
+      escalation_triggers:
+        - docs require behavior not implemented
+        - old and new public workflows conflict
+        - examples need network access
+      forbidden_actions:
+        - documenting sweep/tune as available
+        - using ctx$params
+        - using function(ctx)
+        - using old context helper names
+        - recommending ledgr_backtest as public entry point
+
+  - id: LDG-1011
+    title: "v0.1.7 Release Gate"
+    status: pending
+    priority: P0
+    dependencies: [LDG-1001, LDG-1002, LDG-1003, LDG-1004, LDG-1005, LDG-1006, LDG-1007, LDG-1008, LDG-1009, LDG-1010]
+    tests:
+      - "full package tests"
+      - "coverage gate"
+      - "README/vignette renders"
+      - "R CMD check"
+      - "pkgdown build"
+      - "CI green"
+      - "export scan"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gate and final Tier H review for a breaking public API reset.
+        Validates all contracts, tests, docs, CI, and API surface boundaries.
+      invariants_at_risk:
+        - all v0.1.7 contracts
+        - public API reset correctness
+        - execution parity
+        - persistence safety
+        - documentation accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_tickets.md
+        - inst/design/contracts.md
+        - inst/design/ledgr_ux_decisions.md
+        - NEWS.md
+        - tools/check-coverage.R
+        - tools/check-readme-example.R
+        - .github/workflows/R-CMD-check.yaml
+      tests_required:
+        - all targeted v0.1.7 tests pass
+        - earlier v0.1.x regression tests pass
+        - R CMD check passes with 0 errors and 0 warnings
+        - coverage gate passes
+        - pkgdown builds
+        - Ubuntu and Windows CI are green
+      escalation_triggers: []
+      forbidden_actions:
+        - accepting the gate with open P0 or P1 issues
+        - bypassing R CMD check or coverage
+        - releasing without green CI
+        - accepting accidental v0.1.8 API scope

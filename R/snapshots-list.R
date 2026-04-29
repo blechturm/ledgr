@@ -168,7 +168,7 @@ ledgr_snapshot_list <- function(con, status = NULL) {
 #' ledgr_snapshot_info(snapshot)
 #' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_snapshot_load <- function(db_path, snapshot_id, verify = FALSE) {
+ledgr_snapshot_load <- function(db_path, snapshot_id = NULL, verify = FALSE) {
   if (!is.character(db_path) || length(db_path) != 1 || is.na(db_path) || !nzchar(db_path)) {
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -178,15 +178,32 @@ ledgr_snapshot_load <- function(db_path, snapshot_id, verify = FALSE) {
   if (!file.exists(db_path)) {
     rlang::abort(sprintf("Snapshot database file does not exist: %s", db_path), class = "LEDGR_SNAPSHOT_DB_NOT_FOUND")
   }
-  if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {
-    rlang::abort("`snapshot_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
   if (!is.logical(verify) || length(verify) != 1 || is.na(verify)) {
     rlang::abort("`verify` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
 
   con <- ledgr_db_init(db_path)
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  if (is.null(snapshot_id)) {
+    snapshots <- ledgr_snapshot_list(con)
+    sealed <- snapshots[snapshots$status == "SEALED", , drop = FALSE]
+    if (nrow(sealed) == 1L) {
+      snapshot_id <- sealed$snapshot_id[[1]]
+    } else if (nrow(sealed) == 0L) {
+      rlang::abort(
+        "No SEALED snapshots found in this DuckDB file. Use ledgr_snapshot_list(db_path) to inspect available snapshots.",
+        class = "ledgr_snapshot_not_found"
+      )
+    } else {
+      rlang::abort(
+        "Multiple SEALED snapshots found. Supply `snapshot_id`; inspect candidates with ledgr_snapshot_list(db_path).",
+        class = "ledgr_snapshot_id_required"
+      )
+    }
+  }
+  if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {
+    rlang::abort("`snapshot_id` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
 
   info <- ledgr_snapshot_info(con, snapshot_id)
   if (!identical(info$status[[1]], "SEALED")) {

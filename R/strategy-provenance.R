@@ -6,17 +6,15 @@ ledgr_strategy_signature <- function(fn) {
   args <- names(formals(fn))
   if (is.null(args)) args <- character()
 
-  if (identical(args, "ctx")) {
-    return("ctx")
-  }
   if (identical(args, c("ctx", "params"))) {
     return("ctx_params")
   }
 
   rlang::abort(
     paste0(
-      "Functional strategies must have signature function(ctx) or ",
-      "function(ctx, params). Unsupported signature: function(",
+      "Functional strategies must have signature function(ctx, params) in v0.1.7. ",
+      "Use `params` as the second argument; `ctx$params` is not part of the strategy context. ",
+      "Unsupported signature: function(",
       paste(args, collapse = ", "),
       ")."
     ),
@@ -27,9 +25,6 @@ ledgr_strategy_signature <- function(fn) {
 ledgr_call_strategy_fn <- function(fn, ctx, params = list(), signature = NULL) {
   if (is.null(signature)) {
     signature <- ledgr_strategy_signature(fn)
-  }
-  if (identical(signature, "ctx")) {
-    return(fn(ctx))
   }
   if (identical(signature, "ctx_params")) {
     return(fn(ctx, params))

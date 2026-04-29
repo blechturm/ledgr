@@ -10,7 +10,7 @@ ledgr_strategy_extract_parse_json <- function(json, empty = list(), label = "JSO
   )
 }
 
-ledgr_strategy_extract_fetch <- function(con, run_id) {
+ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
   ledgr_experiment_store_check_schema(con, write = FALSE)
   if (!ledgr_experiment_store_table_exists(con, "runs")) {
     return(tibble::tibble())
@@ -21,9 +21,18 @@ ledgr_strategy_extract_fetch <- function(con, run_id) {
     if (column %in% runs_cols) paste0("r.", column) else default
   }
   prov_expr <- function(column, default = "NULL") {
-    if (ledgr_run_store_has_col(con, "run_provenance", column)) paste0("p.", column) else default
+    if (ledgr_run_store_has_col(con, "run_provenance", column)) {
+      sprintf("(SELECT p.%s FROM run_provenance p WHERE p.run_id = r.run_id LIMIT 1)", column)
+    } else {
+      default
+    }
   }
-  provenance_join <- ledgr_run_store_optional_join(con, "run_provenance", "p", "p.run_id = r.run_id")
+  where <- "r.run_id = ?"
+  params <- list(run_id)
+  if (!is.null(snapshot_id) && "snapshot_id" %in% runs_cols) {
+    where <- paste(where, "AND r.snapshot_id = ?")
+    params <- c(params, list(snapshot_id))
+  }
 
   sql <- sprintf(
     "
@@ -41,8 +50,7 @@ ledgr_strategy_extract_fetch <- function(con, run_id) {
       %s AS R_version,
       %s AS dependency_versions_json
     FROM runs r
-    %s
-    WHERE r.run_id = ?
+    WHERE %s
     ",
     run_expr("status"),
     prov_expr("strategy_type"),
@@ -55,9 +63,9 @@ ledgr_strategy_extract_fetch <- function(con, run_id) {
     prov_expr("ledgr_version"),
     prov_expr("R_version"),
     prov_expr("dependency_versions_json"),
-    provenance_join
+    where
   )
-  tibble::as_tibble(DBI::dbGetQuery(con, sql, params = list(run_id)))
+  tibble::as_tibble(DBI::dbGetQuery(con, sql, params = params))
 }
 
 ledgr_strategy_source_available <- function(source) {
@@ -92,7 +100,9 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #' hash mismatches abort in all modes because a mismatch means the stored
 #' artifact is corrupt.
 #'
-#' @param db_path Path to a DuckDB experiment-store file.
+#' @param snapshot A sealed `ledgr_snapshot` object. Use
+#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param trust Logical scalar. If `FALSE`, return source text and metadata
 #'   only. If `TRUE`, verify the stored source hash before parsing/evaluating
@@ -121,29 +131,20 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #'   `trust = TRUE` succeeds.}
 #' }
 #' @examples
-#' db_path <- tempfile(fileext = ".duckdb")
-#' bars <- data.frame(
-#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-#'   instrument_id = "AAA",
-#'   open = c(100, 101, 102, 103),
-#'   high = c(101, 102, 103, 104),
-#'   low = c(99, 100, 101, 102),
-#'   close = c(100, 101, 102, 103),
-#'   volume = 1000
-#' )
+#' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
+#' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) {
-#'   targets <- ctx$targets()
-#'   targets["AAA"] <- params$qty
+#'   targets <- ctx$flat()
+#'   targets["DEMO_01"] <- params$qty
 #'   targets
 #' }
-#' bt <- ledgr_backtest(
-#'   data = bars, strategy = strategy, strategy_params = list(qty = 1),
-#'   db_path = db_path
-#' )
-#' ledgr_extract_strategy(db_path, bt$run_id)
+#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' bt <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
+#' ledgr_extract_strategy(snapshot, bt$run_id)
 #' close(bt)
+#' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_extract_strategy <- function(db_path, run_id, trust = FALSE) {
+ledgr_extract_strategy <- function(snapshot, run_id, trust = FALSE) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -151,9 +152,11 @@ ledgr_extract_strategy <- function(db_path, run_id, trust = FALSE) {
     rlang::abort("`trust` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
 
+  db_path <- ledgr_run_store_snapshot_path(snapshot)
+  snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  row <- ledgr_strategy_extract_fetch(opened$con, run_id)
+  row <- ledgr_strategy_extract_fetch(opened$con, run_id, snapshot_id = snapshot_id)
   if (nrow(row) != 1L) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
   }

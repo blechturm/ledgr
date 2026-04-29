@@ -244,7 +244,7 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
   ind$fn <- function(window, params) {
     stop("backtest precomputation should use series_fn for TTR indicators")
   }
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
 
   bt <- ledgr_backtest(
     snapshot = snap,

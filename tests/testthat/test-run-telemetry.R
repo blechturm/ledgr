@@ -2,7 +2,7 @@ testthat::test_that("successful runs persist compact telemetry and print executi
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
 
   bt <- ledgr_backtest(
     data = test_bars,
@@ -14,12 +14,14 @@ testthat::test_that("successful runs persist compact telemetry and print executi
     persist_features = FALSE
   )
   on.exit(close(bt), add = TRUE)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   printed_bt <- utils::capture.output(print(bt))
   testthat::expect_true(any(grepl("Execution Mode:", printed_bt, fixed = TRUE)))
   testthat::expect_true(any(grepl("audit_log", printed_bt, fixed = TRUE)))
 
-  info <- ledgr_run_info(db_path, "telemetry-success")
+  info <- ledgr_run_info(snapshot, "telemetry-success")
   testthat::expect_identical(info$status, "DONE")
   testthat::expect_identical(info$execution_mode, "audit_log")
   testthat::expect_true(is.finite(info$elapsed_sec))
@@ -38,7 +40,7 @@ testthat::test_that("failed runs persist minimum telemetry diagnostics", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bad_strategy <- function(ctx) {
+  bad_strategy <- function(ctx, params) {
     stop("strategy boom")
   }
 
@@ -53,8 +55,16 @@ testthat::test_that("failed runs persist minimum telemetry diagnostics", {
     ),
     "strategy boom"
   )
+  opened_snapshot <- ledgr_test_open_duckdb(db_path)
+  snapshot_id <- DBI::dbGetQuery(
+    opened_snapshot$con,
+    "SELECT snapshot_id FROM runs WHERE run_id = 'telemetry-failed'"
+  )$snapshot_id[[1]]
+  ledgr_test_close_duckdb(opened_snapshot$con, opened_snapshot$drv)
+  snapshot <- ledgr_snapshot_load(db_path, snapshot_id)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  info <- ledgr_run_info(db_path, "telemetry-failed")
+  info <- ledgr_run_info(snapshot, "telemetry-failed")
   testthat::expect_identical(info$status, "FAILED")
   testthat::expect_identical(info$telemetry_missing, FALSE)
   testthat::expect_identical(info$execution_mode, "audit_log")

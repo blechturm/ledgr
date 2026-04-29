@@ -30,6 +30,8 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_true(is.function(ctx$close))
   testthat::expect_true(is.function(ctx$volume))
   testthat::expect_true(is.function(ctx$position))
+  testthat::expect_true(is.function(ctx$flat))
+  testthat::expect_true(is.function(ctx$hold))
   testthat::expect_true(is.function(ctx$targets))
   testthat::expect_true(is.function(ctx$current_targets))
 
@@ -47,9 +49,13 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
 
   testthat::expect_equal(ctx$position("A"), 0)
   testthat::expect_equal(ctx$position("B"), 3)
-  testthat::expect_identical(ctx$targets(), stats::setNames(c(0, 0), universe))
-  testthat::expect_identical(ctx$targets(default = 2), stats::setNames(c(2, 2), universe))
-  testthat::expect_identical(ctx$current_targets(), stats::setNames(c(0, 3), universe))
+  testthat::expect_identical(ctx$flat(), stats::setNames(c(0, 0), universe))
+  testthat::expect_identical(ctx$flat(default = 2), stats::setNames(c(2, 2), universe))
+  testthat::expect_identical(ctx$hold(), stats::setNames(c(0, 3), universe))
+  testthat::expect_error(ctx$targets(), class = "ledgr_context_helper_removed")
+  testthat::expect_error(ctx$current_targets(), class = "ledgr_context_helper_removed")
+  testthat::expect_error(ctx$targets(), "`ctx$targets()` was removed", fixed = TRUE)
+  testthat::expect_error(ctx$current_targets(), "`ctx$current_targets()` was removed", fixed = TRUE)
 
   testthat::expect_true(is.numeric(ctx$cash))
   testthat::expect_true(is.numeric(ctx$equity))
@@ -91,7 +97,7 @@ testthat::test_that("pulse context accessors fail loudly on ambiguity", {
     fixed = TRUE
   )
   testthat::expect_error(
-    ctx$targets(default = NA_real_),
+    ctx$flat(default = NA_real_),
     "`default` must be a finite numeric scalar",
     fixed = TRUE
   )
@@ -207,12 +213,12 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
   testthat::expect_s3_class(ctx, "ledgr_pulse_context")
   testthat::expect_true(is.function(ctx$close))
   testthat::expect_true(is.function(ctx$position))
-  testthat::expect_true(is.function(ctx$targets))
-  testthat::expect_true(is.function(ctx$current_targets))
+  testthat::expect_true(is.function(ctx$flat))
+  testthat::expect_true(is.function(ctx$hold))
   testthat::expect_equal(ctx$close("TEST_A"), ctx$bars$close[ctx$bars$instrument_id == "TEST_A"])
   testthat::expect_equal(ctx$position("TEST_A"), 0)
-  testthat::expect_identical(ctx$targets(), stats::setNames(c(0, 0), universe))
-  testthat::expect_identical(ctx$current_targets(), stats::setNames(c(0, 0), universe))
+  testthat::expect_identical(ctx$flat(), stats::setNames(c(0, 0), universe))
+  testthat::expect_identical(ctx$hold(), stats::setNames(c(0, 0), universe))
   testthat::expect_error(
     ctx$feature("TEST_A", "sma_200"),
     class = "ledgr_unknown_feature_id"
@@ -230,8 +236,8 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
   observed <- new.env(parent = emptyenv())
   observed$count <- 0L
 
-  helper_strategy <- function(ctx) {
-    if (!is.function(ctx$close) || !is.function(ctx$targets) || !is.function(ctx$position) || !is.function(ctx$current_targets)) {
+  helper_strategy <- function(ctx, params) {
+    if (!is.function(ctx$close) || !is.function(ctx$flat) || !is.function(ctx$position) || !is.function(ctx$hold)) {
       stop("runtime context accessors are missing")
     }
     if (is.function(ctx$cash) || is.function(ctx$equity)) {
@@ -245,12 +251,12 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
     }
     expected_current <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
     if (length(ctx$positions) > 0) expected_current[names(ctx$positions)] <- as.numeric(ctx$positions)
-    if (!identical(ctx$current_targets(), expected_current)) {
-      stop("runtime current_targets accessor does not match ctx$positions")
+    if (!identical(ctx$hold(), expected_current)) {
+      stop("runtime hold accessor does not match ctx$positions")
     }
 
     observed$count <- observed$count + 1L
-    targets <- ctx$targets()
+    targets <- ctx$flat()
     if (observed$count == 1L && ctx$close("TEST_A") > 0) {
       targets["TEST_A"] <- 1
     }

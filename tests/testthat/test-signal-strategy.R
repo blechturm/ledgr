@@ -10,7 +10,7 @@ testthat::test_that("raw signal strings are not valid functional strategy result
   testthat::expect_error(
     ledgr_backtest(
       data = bars,
-      strategy = function(ctx) "LONG",
+      strategy = function(ctx, params) "LONG",
       universe = "AAA",
       start = "2020-01-01",
       end = "2020-01-02",
@@ -31,7 +31,7 @@ testthat::test_that("ledgr_signal_strategy maps scalar and named vector signals 
     equity = 1000
   )
 
-  scalar <- ledgr_signal_strategy(function(ctx) "LONG", long_qty = 5)
+  scalar <- ledgr_signal_strategy(function(ctx, params) "LONG", long_qty = 5)
   testthat::expect_identical(scalar(one_ctx), c(AAA = 5))
 
   multi_ctx <- ledgr:::ledgr_pulse_context(
@@ -49,7 +49,7 @@ testthat::test_that("ledgr_signal_strategy maps scalar and named vector signals 
   )
 
   vectorized <- ledgr_signal_strategy(
-    function(ctx) c(AAA = "LONG", BBB = "FLAT"),
+    function(ctx, params) c(AAA = "LONG", BBB = "FLAT"),
     long_qty = 2,
     flat_qty = 0
   )
@@ -77,14 +77,14 @@ testthat::test_that("ledgr_signal_strategy fails loud on ambiguous or unknown si
     equity = 1000
   )
 
-  ambiguous <- ledgr_signal_strategy(function(ctx) "LONG")
+  ambiguous <- ledgr_signal_strategy(function(ctx, params) "LONG")
   testthat::expect_error(
     ambiguous(ctx),
     "multi-instrument",
     class = "ledgr_invalid_strategy_result"
   )
 
-  unknown <- ledgr_signal_strategy(function(ctx) c(AAA = "BUY", BBB = "FLAT"))
+  unknown <- ledgr_signal_strategy(function(ctx, params) c(AAA = "BUY", BBB = "FLAT"))
   testthat::expect_error(
     unknown(ctx),
     "Unknown signal",
@@ -102,7 +102,7 @@ testthat::test_that("ledgr_signal_strategy runs through the data-first backtest 
   )
 
   wrapped <- ledgr_signal_strategy(
-    function(ctx) stats::setNames(rep("LONG", length(ctx$universe)), ctx$universe),
+    function(ctx, params) stats::setNames(rep("LONG", length(ctx$universe)), ctx$universe),
     long_qty = 1
   )
 

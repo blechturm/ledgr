@@ -2,8 +2,8 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) {
-    targets <- ctx$targets()
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
     targets["TEST_A"] <- 1
     targets
   }
@@ -17,24 +17,29 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
     run_id = "label-run"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  before <- ledgr_run_info(db_path, "label-run")
-  identity_cols <- c("run_id", "config_hash", "data_hash", "strategy_source_hash", "strategy_params_hash")
+  before <- ledgr_run_info(snapshot, "label-run")
+  identity_cols <- c("run_id", "config_hash", "data_hash")
 
-  labeled <- ledgr_run_label(db_path, "label-run", "baseline")
-  testthat::expect_s3_class(labeled, "ledgr_run_info")
-  testthat::expect_identical(labeled$label, "baseline")
-  testthat::expect_identical(labeled[identity_cols], before[identity_cols])
+  labeled <- ledgr_run_label(snapshot, "label-run", "baseline")
+  testthat::expect_s3_class(labeled, "ledgr_snapshot")
+  labeled_info <- ledgr_run_info(snapshot, "label-run")
+  testthat::expect_identical(labeled_info$label, "baseline")
+  testthat::expect_identical(labeled_info[identity_cols], before[identity_cols])
 
-  cleared <- ledgr_run_label(db_path, "label-run", "")
+  ledgr_run_label(snapshot, "label-run", "")
+  cleared <- ledgr_run_info(snapshot, "label-run")
   testthat::expect_true(is.na(cleared$label))
 
   testthat::expect_error(
-    ledgr_run_label(db_path, "missing-run", "label"),
+    ledgr_run_label(snapshot, "missing-run", "label"),
     class = "ledgr_run_not_found"
   )
   testthat::expect_error(
-    ledgr_run_label(db_path, "label-run", NA_character_),
+    ledgr_run_label(snapshot, "label-run", NA_character_),
     class = "ledgr_invalid_args"
   )
 })
@@ -43,7 +48,7 @@ testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,
@@ -53,6 +58,8 @@ testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed
     run_id = "status-metadata-run"
   )
   close(bt)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   opened <- ledgr_test_open_duckdb(db_path)
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
@@ -61,12 +68,14 @@ testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed
     "UPDATE runs SET status = 'FAILED', error_msg = 'bad params' WHERE run_id = 'status-metadata-run'"
   )
 
-  failed_label <- ledgr_run_label(db_path, "status-metadata-run", "failed bad params")
+  ledgr_run_label(snapshot, "status-metadata-run", "failed bad params")
+  failed_label <- ledgr_run_info(snapshot, "status-metadata-run")
   testthat::expect_identical(failed_label$status, "FAILED")
   testthat::expect_identical(failed_label$label, "failed bad params")
 
   DBI::dbExecute(opened$con, "UPDATE runs SET status = 'RUNNING' WHERE run_id = 'status-metadata-run'")
-  running_archive <- ledgr_run_archive(db_path, "status-metadata-run", reason = "stale running test")
+  ledgr_run_archive(snapshot, "status-metadata-run", reason = "stale running test")
+  running_archive <- ledgr_run_info(snapshot, "status-metadata-run")
   testthat::expect_identical(running_archive$status, "RUNNING")
   testthat::expect_true(running_archive$archived)
   testthat::expect_identical(running_archive$archive_reason, "stale running test")
@@ -76,7 +85,7 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  strategy <- function(ctx) ctx$targets()
+  strategy <- function(ctx, params) ctx$flat()
   bt <- ledgr_backtest(
     data = test_bars,
     strategy = strategy,
@@ -86,38 +95,42 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
     run_id = "archive-run"
   )
   close(bt)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  before <- ledgr_run_info(db_path, "archive-run")
-  identity_cols <- c("run_id", "config_hash", "data_hash", "strategy_source_hash", "strategy_params_hash")
+  before <- ledgr_run_info(snapshot, "archive-run")
+  identity_cols <- c("run_id", "config_hash", "data_hash")
 
-  archived <- ledgr_run_archive(db_path, "archive-run", reason = "bad parameter test")
-  testthat::expect_s3_class(archived, "ledgr_run_info")
+  archived_snapshot <- ledgr_run_archive(snapshot, "archive-run", reason = "bad parameter test")
+  testthat::expect_s3_class(archived_snapshot, "ledgr_snapshot")
+  archived <- ledgr_run_info(snapshot, "archive-run")
   testthat::expect_true(archived$archived)
   testthat::expect_identical(archived$archive_reason, "bad parameter test")
   testthat::expect_false(is.na(archived$archived_at_utc))
   testthat::expect_identical(archived[identity_cols], before[identity_cols])
 
-  visible <- ledgr_run_list(db_path)
+  visible <- ledgr_run_list(snapshot)
   testthat::expect_false("archive-run" %in% visible$run_id)
 
-  all_runs <- ledgr_run_list(db_path, include_archived = TRUE)
+  all_runs <- ledgr_run_list(snapshot, include_archived = TRUE)
   testthat::expect_true("archive-run" %in% all_runs$run_id)
   testthat::expect_true(all_runs$archived[all_runs$run_id == "archive-run"])
 
-  reopened <- ledgr_run_open(db_path, "archive-run")
+  reopened <- ledgr_run_open(snapshot, "archive-run")
   testthat::expect_s3_class(reopened, "ledgr_backtest")
   close(reopened)
 
-  archived_again <- ledgr_run_archive(db_path, "archive-run", reason = "second reason")
+  ledgr_run_archive(snapshot, "archive-run", reason = "second reason")
+  archived_again <- ledgr_run_info(snapshot, "archive-run")
   testthat::expect_identical(archived_again$archived_at_utc, archived$archived_at_utc)
   testthat::expect_identical(archived_again$archive_reason, archived$archive_reason)
 
   testthat::expect_error(
-    ledgr_run_archive(db_path, "missing-run"),
+    ledgr_run_archive(snapshot, "missing-run"),
     class = "ledgr_run_not_found"
   )
   testthat::expect_error(
-    ledgr_run_archive(db_path, "archive-run", reason = NA_character_),
+    ledgr_run_archive(snapshot, "archive-run", reason = NA_character_),
     class = "ledgr_invalid_args"
   )
 })
@@ -127,6 +140,64 @@ testthat::test_that("metadata writes migrate legacy stores before updating", {
   on.exit(unlink(db_path), add = TRUE)
 
   opened <- ledgr_test_open_duckdb(db_path)
+  DBI::dbExecute(
+    opened$con,
+    "
+    CREATE TABLE snapshots (
+      snapshot_id TEXT NOT NULL PRIMARY KEY,
+      status TEXT NOT NULL,
+      created_at_utc TIMESTAMP NOT NULL,
+      sealed_at_utc TIMESTAMP,
+      snapshot_hash TEXT,
+      meta_json TEXT
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    CREATE TABLE snapshot_instruments (
+      snapshot_id TEXT NOT NULL,
+      instrument_id TEXT NOT NULL,
+      meta_json TEXT,
+      PRIMARY KEY (snapshot_id, instrument_id)
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    CREATE TABLE snapshot_bars (
+      snapshot_id TEXT NOT NULL,
+      instrument_id TEXT NOT NULL,
+      ts_utc TIMESTAMP NOT NULL,
+      open DOUBLE NOT NULL,
+      high DOUBLE NOT NULL,
+      low DOUBLE NOT NULL,
+      close DOUBLE NOT NULL,
+      volume DOUBLE,
+      PRIMARY KEY (snapshot_id, instrument_id, ts_utc)
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    INSERT INTO snapshots (
+      snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash, meta_json
+    ) VALUES (
+      'legacy-snapshot', 'SEALED', TIMESTAMP '2020-01-01 00:00:00',
+      TIMESTAMP '2020-01-01 00:00:00', 'legacy-hash', '{}'
+    )
+    "
+  )
+  DBI::dbExecute(
+    opened$con,
+    "
+    INSERT INTO snapshot_instruments (snapshot_id, instrument_id, meta_json)
+    VALUES ('legacy-snapshot', 'TEST_A', '{}')
+    "
+  )
   DBI::dbExecute(
     opened$con,
     "
@@ -156,17 +227,22 @@ testthat::test_that("metadata writes migrate legacy stores before updating", {
     "
   )
   ledgr_test_close_duckdb(opened$con, opened$drv)
+  snapshot <- new_ledgr_snapshot(db_path, "legacy-snapshot")
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   labeled <- NULL
   testthat::expect_message(
-    labeled <- ledgr_run_label(db_path, "legacy-metadata-run", "legacy failed"),
+    labeled <- ledgr_run_label(snapshot, "legacy-metadata-run", "legacy failed"),
     "Upgraded ledgr experiment-store schema",
     fixed = TRUE
   )
-  testthat::expect_identical(labeled$label, "legacy failed")
-  testthat::expect_identical(labeled$status, "FAILED")
+  testthat::expect_s3_class(labeled, "ledgr_snapshot")
+  labeled_info <- ledgr_run_info(snapshot, "legacy-metadata-run")
+  testthat::expect_identical(labeled_info$label, "legacy failed")
+  testthat::expect_identical(labeled_info$status, "FAILED")
 
-  archived <- ledgr_run_archive(db_path, "legacy-metadata-run", reason = "legacy cleanup")
+  ledgr_run_archive(snapshot, "legacy-metadata-run", reason = "legacy cleanup")
+  archived <- ledgr_run_info(snapshot, "legacy-metadata-run")
   testthat::expect_true(archived$archived)
   testthat::expect_identical(archived$archive_reason, "legacy cleanup")
 })

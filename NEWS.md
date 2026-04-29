@@ -1,3 +1,42 @@
+# ledgr 0.1.7
+
+## Breaking changes
+
+- Began the v0.1.7 experiment-first API reset. The public research workflow now
+  centers on `ledgr_experiment()` and `ledgr_run()` rather than `db_path`-first
+  calls and direct `ledgr_backtest()` usage.
+- The v0.1.7 strategy contract is `function(ctx, params)`. Strategies without
+  tunable parameters receive `params = list()`.
+- The v0.1.7 context target constructors are `ctx$flat()` and `ctx$hold()`;
+  the older `ctx$targets()` and `ctx$current_targets()` helpers now fail with
+  migration guidance.
+
+## New features
+
+- Added `ledgr_opening()` for explicit opening cash, positions, and optional
+  cost basis.
+- Added `ledgr_experiment()` as the central object for the experiment-first
+  workflow.
+- Added `ledgr_run()` as the public single-run API for `ledgr_experiment`
+  objects, including run-time `features = function(params)` evaluation and an
+  explicit `seed = NULL` identity field.
+- Converted experiment-store APIs to snapshot-first signatures and extended
+  `ledgr_snapshot_load()` so a durable file with exactly one sealed snapshot can
+  be resumed without retyping the snapshot id.
+- Added `ledgr_param_grid()` as a typed, non-executing parameter-grid object
+  with stable canonical-JSON labels for future sweep/tune workflows.
+- Added curated print methods for `ledgr_run_list()` and
+  `ledgr_compare_runs()` while keeping the underlying objects tibble-compatible.
+- Added `ledgr_demo_bars` and `ledgr_sim_bars()` as deterministic offline demo
+  data for examples and documentation.
+- Made durable `ledgr_backtest` handles safer to clean up: explicit `close(bt)`
+  checkpoints before disconnecting, and a finalizer safety net attempts one
+  auto-checkpoint if a durable handle is garbage-collected without close.
+- Rewrote README and vignettes around the v0.1.7 experiment-first workflow and
+  added a v0.1.6 to v0.1.7 migration guide.
+- Added `ledgr_opening_from_broker()` as a reserved adapter hook. v0.1.7 does
+  not ship built-in broker integrations.
+
 # ledgr 0.1.6
 
 - Added `ledgr_compare_runs()` for comparing completed stored runs from a

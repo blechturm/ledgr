@@ -11,5 +11,6 @@ the default runtime context.
 - Inspect indicator windows with `ledgr_indicator_dev()`
 - Freeze a decision point with `ledgr_pulse_snapshot()`
 - Validate bars and feature context shape
-- Run the same strategy through `ledgr_backtest()`
+- Run the same `function(ctx, params)` strategy through `ledgr_experiment()` and
+  `ledgr_run()`
 - Keep interactive tools read-only

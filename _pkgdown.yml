@@ -26,6 +26,16 @@ articles:
       - ttr-indicators
 
 reference:
+  - title: Experiment Workflow
+    contents:
+      - ledgr_experiment
+      - print.ledgr_experiment
+      - ledgr_opening
+      - print.ledgr_opening
+      - ledgr_opening_from_broker
+      - ledgr_run
+      - ledgr_param_grid
+      - print.ledgr_param_grid
   - title: Backtests
     contents:
       - ledgr_backtest
@@ -42,8 +52,10 @@ reference:
   - title: Experiment Store
     contents:
       - ledgr_run_list
+      - print.ledgr_run_list
       - ledgr_run_info
       - ledgr_compare_runs
+      - print.ledgr_comparison
       - ledgr_extract_strategy
       - print.ledgr_extracted_strategy
       - print.ledgr_run_info
@@ -92,3 +104,5 @@ reference:
       - print.ledgr_config
       - ledgr_backtest_run
       - ledgr_backtest_bench
+      - ledgr_sim_bars
+      - ledgr_demo_bars
