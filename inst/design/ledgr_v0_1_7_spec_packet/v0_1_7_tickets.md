@@ -656,7 +656,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1003  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Make forgotten `close(bt)` safe for durable runs. Explicit close remains
@@ -675,11 +675,11 @@ close a handle.
 8. Update docs to keep showing explicit close as the preferred pattern.
 
 **Acceptance Criteria:**
-- [ ] Explicit close still works and is idempotent.
-- [ ] Forgetting close does not silently lose completed durable run artifacts.
-- [ ] GC checkpoint emits an informative one-time message.
-- [ ] In-memory runs require no close.
-- [ ] The lifecycle behavior is documented.
+- [x] Explicit close still works and is idempotent.
+- [x] Forgetting close does not silently lose completed durable run artifacts.
+- [x] GC checkpoint emits an informative one-time message.
+- [x] In-memory runs require no close.
+- [x] The lifecycle behavior is documented.
 
 **Test Requirements:**
 - Durable no-explicit-close persistence test.

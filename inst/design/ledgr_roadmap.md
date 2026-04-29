@@ -460,7 +460,7 @@ polish.
 
 #### Constraint
 
-The v0.1.9 and v0.1.11 vignettes already reference "the canonical demo
+The v0.1.10 and v0.1.12 vignettes already reference "the canonical demo
 dataset." This task makes that reference concrete. All later vignettes must
 be authored against `ledgr_demo_bars` from v0.1.7 onward.
 
@@ -705,7 +705,120 @@ work because they are indistinguishable from plain R objects at the API boundary
 
 ---
 
-## v0.1.9 - Portfolio Optimization Support
+## v0.1.9 - Target Risk Layer
+
+**Goal:** Add a first-class, composable risk transform between strategy target
+outputs and fill simulation. Risk is not part of the strategy; it is a separate
+layer that constrains what the fill model receives.
+
+### Scope
+
+#### Risk Function Contract
+
+- `risk` argument added to `ledgr_experiment()`. Default is `NULL`, equivalent
+  to `ledgr_risk_identity()`.
+- The execution path at every pulse is:
+  ```text
+  strategy(ctx, params)           -> targets_raw
+  risk(targets_raw, ctx, params)  -> targets_risked
+  fill_model(targets_risked, state) -> trades
+  ```
+- Contract: `function(targets, ctx, params) -> targets` where `targets` is the
+  named numeric vector from the strategy. The return must be a named numeric
+  vector of the same shape.
+- `risk = NULL` is the default and is stored as `null` in `config_json`. Two
+  runs that differ only in risk configuration produce different `config_hash`
+  values.
+
+#### Helpers
+
+**`ledgr_risk_identity()`** -- returns targets unchanged. Equivalent to
+`risk = NULL`. Useful for explicit documentation in experiment code.
+
+**`ledgr_risk_compose(...)`** -- chains multiple risk functions in order, each
+receiving the output of the previous. `ledgr_risk_compose()` with no arguments
+returns `ledgr_risk_identity()`.
+
+**Cross-pulse stateless helpers** -- these read `targets` and current `ctx`
+state (prices, positions). They do not require cross-pulse historical state such
+as equity peaks, trailing volatility, or prior losses.
+
+- `ledgr_risk_no_short()`: zero any negative target quantities
+- `ledgr_risk_max_weight(max)`: cap any single instrument's implied portfolio
+  weight; uses `ctx$close()` for weight estimation
+- `ledgr_risk_max_gross_exposure(max)`: cap total gross exposure; uses
+  `ctx$close()`
+- `ledgr_risk_max_net_exposure(max)`: cap net exposure; uses `ctx$close()`
+- `ledgr_risk_min_trade_value(min)`: zero targets that would generate trades
+  below a minimum estimated value; uses `ctx$close()`
+
+All weight and exposure helpers compute implied weights from current close prices
+and current portfolio value. The Rd documentation states this assumption
+explicitly for each helper. Actual fill values may differ under next-open
+execution.
+
+#### Explicit Semantics
+
+- **Returning all-zero targets means liquidation**, not halting. Zero targets
+  drive the fill model to close all positions.
+- **There is no HALT sentinel in v0.1.9.** Risk functions that want to hold
+  current positions should return `ctx$hold()`. This is already expressible
+  without a special sentinel.
+
+#### Parity Contract Extension
+
+The fold-core parity contract from v0.1.8 is extended to cover risk:
+
+> `ledgr_run()` and `ledgr_sweep()` must apply identical risk transforms for
+> identical snapshot, strategy, params, opening, execution, and risk.
+
+This is documented in `contracts.md`.
+
+#### Experiment Print
+
+`print.ledgr_experiment()` includes a risk summary line:
+
+```text
+Risk: identity
+```
+
+or
+
+```text
+Risk: composed[no_short, max_weight(10%), max_gross_exposure(100%)]
+```
+
+### Non-goals
+
+- No order interception or order-level risk events in the ledger
+- No broker-aware risk (margin constraints, account-level position limits)
+- No stateful helpers requiring cross-pulse historical state -- `ctx` does not
+  yet expose equity curve, drawdown, or trailing volatility
+- No persisted risk-event ledger (risk decisions are not recorded as ledger
+  events)
+- No HALT or hold sentinel -- use `ctx$hold()` directly
+
+### Definition of Done
+
+- `risk` argument accepted and validated by `ledgr_experiment()` at
+  construction time; non-function values are rejected with a clear error
+- Risk transform is applied every pulse between strategy output and fill model
+- `ledgr_risk_compose()` with no arguments returns identity; tested explicitly
+- All stateless helpers implemented, tested, and documented with explicit price
+  assumption caveats in Rd
+- `ctx$hold()` documented as the correct pattern for hold-current-positions
+  risk behavior
+- `print.ledgr_experiment()` includes risk summary
+- Parity contract extended and documented in `contracts.md`
+- `ledgr_run()` and `ledgr_sweep()` produce identical results under identical
+  risk configurations; verified by parity tests
+- `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+  0 warnings
+- Coverage gate passes
+
+---
+
+## v0.1.10 - Portfolio Optimization Support
 
 **Goal:** Make portfolio optimization a first-class research workflow in ledgr.
 
@@ -767,7 +880,7 @@ explicitly in the vignette and in `ledgr_run_info()` output.
 
 ---
 
-## v0.1.10 - Calendar And Event-Driven Strategies
+## v0.1.11 - Calendar And Event-Driven Strategies
 
 **Goal:** Give strategies a structured temporal context so calendar and
 event-driven logic does not require manual date arithmetic inside the strategy
@@ -822,7 +935,7 @@ holds otherwise.
 
 ---
 
-## v0.1.11 - Pairs And Spread Trading
+## v0.1.12 - Pairs And Spread Trading
 
 **Goal:** Make cross-instrument spread strategies natural to write without
 manual cross-instrument data assembly inside the strategy function.
@@ -874,7 +987,7 @@ using `ctx$net_exposure()`. Sweep over lookback and entry threshold using
 
 ---
 
-## v0.1.12 - ML Strategy Artifact Management
+## v0.1.13 - ML Strategy Artifact Management
 
 **Goal:** Make ML-based strategies first-class experiment-store citizens by
 giving model artifacts their own provenance slot in run identity.

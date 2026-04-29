@@ -323,7 +323,7 @@ tickets:
 
   - id: LDG-1008
     title: "Safe Close Lifecycle"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1003]
     tests:

@@ -15,8 +15,10 @@
 The input object, invisibly.
 }
 \description{
-Releases any open DuckDB connection held by a \code{ledgr_backtest} object. The
-underlying DuckDB file is not deleted.
+Checkpoints a durable DuckDB run file when possible and releases any open
+connection held by a \code{ledgr_backtest} object. The underlying DuckDB file is
+not deleted. Durable handles also register a finalizer as a safety net, but
+explicit \code{close(bt)} remains the preferred deterministic cleanup path.
 }
 \examples{
 bars <- data.frame(
