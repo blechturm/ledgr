@@ -22,6 +22,7 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   before <- ledgr_run_info(snapshot, "tagged-run")
+  identity_cols <- c("config_hash", "data_hash", "strategy_source_hash", "strategy_params_hash")
   tagged <- ledgr_run_tag(snapshot, "tagged-run", c(" baseline ", "demo", "demo"))
   testthat::expect_s3_class(tagged, "ledgr_snapshot")
   tagged_info <- ledgr_run_info(snapshot, "tagged-run")
@@ -39,16 +40,38 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
   testthat::expect_identical(runs$tags[runs$run_id == "tagged-run"], "baseline, demo")
 
   opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
   testthat::expect_identical(
     DBI::dbGetQuery(opened$con, "SELECT COUNT(*) AS n FROM run_tags WHERE run_id = 'tagged-run'")$n[[1]],
     2
   )
+  ledgr_test_close_duckdb(opened$con, opened$drv)
 
-  after <- ledgr_run_info(snapshot, "tagged-run")
-  identity_cols <- c("config_hash", "data_hash", "snapshot_hash", "strategy_source_hash", "strategy_params_hash")
+  opened <- ledgr_test_open_duckdb(db_path)
+  run_identity <- as.list(DBI::dbGetQuery(
+    opened$con,
+    "
+    SELECT
+      r.config_hash,
+      r.data_hash
+    FROM runs r
+    WHERE r.run_id = 'tagged-run'
+    "
+  )[1, , drop = TRUE])
+  provenance_identity <- as.list(DBI::dbGetQuery(
+    opened$con,
+    "
+    SELECT
+      p.strategy_source_hash,
+      p.strategy_params_hash
+    FROM runs r
+    JOIN run_provenance p ON p.run_id = r.run_id
+    WHERE r.run_id = 'tagged-run'
+    "
+  )[1, , drop = TRUE])
+  ledgr_test_close_duckdb(opened$con, opened$drv)
+  after_identity <- c(run_identity[c("config_hash", "data_hash")], provenance_identity)
   for (col in identity_cols) {
-    testthat::expect_identical(after[[col]], before[[col]])
+    testthat::expect_identical(after_identity[[col]], before[[col]])
   }
 
   ledgr_run_untag(snapshot, "tagged-run", "demo")

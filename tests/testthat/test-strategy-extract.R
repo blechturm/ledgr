@@ -1,3 +1,62 @@
+ledgr_test_replace_run_provenance <- function(db_path, run_id, values) {
+  opened <- ledgr_test_open_duckdb(db_path)
+  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+
+  row <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT * FROM run_provenance WHERE run_id = ?",
+    params = list(run_id)
+  )
+  testthat::expect_identical(nrow(row), 1L)
+  for (nm in names(values)) {
+    row[[nm]] <- values[[nm]]
+  }
+  DBI::dbExecute(opened$con, "DELETE FROM run_provenance WHERE run_id = ?", params = list(run_id))
+  value <- function(nm, default = NA_character_) {
+    if (nm %in% names(values)) {
+      values[[nm]]
+    } else if (nm %in% names(row)) {
+      row[[nm]][[1]]
+    } else {
+      default
+    }
+  }
+  DBI::dbExecute(
+    opened$con,
+    "
+    INSERT INTO run_provenance (
+      run_id,
+      strategy_type,
+      strategy_source,
+      strategy_source_hash,
+      strategy_source_capture_method,
+      strategy_params_json,
+      strategy_params_hash,
+      reproducibility_level,
+      ledgr_version,
+      R_version,
+      dependency_versions_json,
+      created_at_utc
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ",
+    params = list(
+      run_id,
+      value("strategy_type"),
+      value("strategy_source"),
+      value("strategy_source_hash"),
+      value("strategy_source_capture_method"),
+      value("strategy_params_json"),
+      value("strategy_params_hash"),
+      value("reproducibility_level"),
+      value("ledgr_version"),
+      value("R_version"),
+      value("dependency_versions_json"),
+      value("created_at_utc", as.POSIXct(Sys.time(), tz = "UTC"))
+    )
+  )
+  invisible(TRUE)
+}
+
 testthat::test_that("ledgr_extract_strategy returns Tier 1 source metadata without evaluation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -18,6 +77,7 @@ testthat::test_that("ledgr_extract_strategy returns Tier 1 source metadata witho
     run_id = "extract-tier-1"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -54,6 +114,7 @@ testthat::test_that("ledgr_extract_strategy trust TRUE verifies hash and returns
     run_id = "extract-trusted"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -84,17 +145,15 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
     run_id = "extract-mismatch"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
-  DBI::dbExecute(
-    opened$con,
-    "UPDATE run_provenance SET strategy_source = ? WHERE run_id = ?",
-    params = list("function(ctx, params) ctx$flat()", "extract-mismatch")
+  ledgr_test_replace_run_provenance(
+    db_path,
+    "extract-mismatch",
+    list(strategy_source = "function(ctx, params) ctx$flat()")
   )
-  ledgr_test_close_duckdb(opened$con, opened$drv)
 
   testthat::expect_error(
     ledgr_extract_strategy(snapshot, "extract-mismatch"),
@@ -122,18 +181,19 @@ testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evalua
     run_id = "extract-no-eval"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   replacement <- "function(ctx, params) {"
-  opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
-  DBI::dbExecute(
-    opened$con,
-    "UPDATE run_provenance SET strategy_source = ?, strategy_source_hash = ? WHERE run_id = ?",
-    params = list(replacement, digest::digest(replacement, algo = "sha256"), "extract-no-eval")
+  ledgr_test_replace_run_provenance(
+    db_path,
+    "extract-no-eval",
+    list(
+      strategy_source = replacement,
+      strategy_source_hash = digest::digest(replacement, algo = "sha256")
+    )
   )
-  ledgr_test_close_duckdb(opened$con, opened$drv)
 
   extracted <- ledgr_extract_strategy(snapshot, "extract-no-eval", trust = FALSE)
   testthat::expect_identical(extracted$strategy_source_text, replacement)
@@ -163,6 +223,7 @@ testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
     run_id = "extract-tier-2"
   )
   on.exit(close(bt), add = TRUE)
+  close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 

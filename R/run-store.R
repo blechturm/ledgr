@@ -53,7 +53,8 @@ ledgr_run_store_snapshot_id <- function(snapshot) {
 
 ledgr_run_store_close <- function(opened) {
   if (is.list(opened) && !is.null(opened$con) && DBI::dbIsValid(opened$con)) {
-    suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))
+    ledgr_checkpoint_duckdb(opened$con)
+    suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = FALSE), silent = TRUE))
   }
   if (is.list(opened) && !is.null(opened$drv)) {
     suppressWarnings(try(duckdb::duckdb_shutdown(opened$drv), silent = TRUE))
@@ -82,7 +83,11 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     if (column %in% runs_cols) paste0("r.", column) else default
   }
   prov_expr <- function(column, default = "NULL") {
-    if (ledgr_run_store_has_col(con, "run_provenance", column)) paste0("p.", column) else default
+    if (ledgr_run_store_has_col(con, "run_provenance", column)) {
+      sprintf("(SELECT p.%s FROM run_provenance p WHERE p.run_id = r.run_id LIMIT 1)", column)
+    } else {
+      default
+    }
   }
   telem_expr <- function(column, default = "NULL") {
     if (ledgr_run_store_has_col(con, "run_telemetry", column)) paste0("t.", column) else default
@@ -107,24 +112,12 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
   }
   where_sql <- if (length(where) > 0L) paste("WHERE", paste(where, collapse = " AND ")) else ""
 
-  provenance_join <- ledgr_run_store_optional_join(con, "run_provenance", "p", "p.run_id = r.run_id")
   telemetry_join <- ledgr_run_store_optional_join(con, "run_telemetry", "t", "t.run_id = r.run_id")
   snapshot_join <- ledgr_run_store_optional_join(con, "snapshots", "s", "s.snapshot_id = r.snapshot_id")
-  tags_join <- if (ledgr_experiment_store_table_exists(con, "run_tags")) {
-    "
-    LEFT JOIN (
-      SELECT run_id, string_agg(tag, ', ' ORDER BY tag) AS tags
-      FROM run_tags
-      GROUP BY run_id
-    ) tg ON tg.run_id = r.run_id
-    "
+  tags_expr <- if (ledgr_experiment_store_table_exists(con, "run_tags")) {
+    "(SELECT string_agg(rt.tag, ', ' ORDER BY rt.tag) FROM run_tags rt WHERE rt.run_id = r.run_id)"
   } else {
-    "
-    LEFT JOIN (
-      SELECT CAST(NULL AS TEXT) AS run_id, CAST(NULL AS TEXT) AS tags
-      WHERE FALSE
-    ) tg ON tg.run_id = r.run_id
-    "
+    "NULL"
   }
   equity_join <- if (ledgr_experiment_store_table_exists(con, "equity_curve")) {
     "
@@ -193,7 +186,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
       COALESCE(%s, FALSE) AS archived,
       %s AS archived_at_utc,
       %s AS archive_reason,
-      tg.tags,
+      %s AS tags,
       COALESCE(%s, 'legacy') AS reproducibility_level,
       %s AS strategy_type,
       %s AS strategy_source_hash,
@@ -227,8 +220,6 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     %s
     %s
     %s
-    %s
-    %s
     ORDER BY %s, r.run_id
     ",
     run_expr("label"),
@@ -239,6 +230,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     archived_expr,
     run_expr("archived_at_utc"),
     run_expr("archive_reason"),
+    tags_expr,
     prov_expr("reproducibility_level"),
     prov_expr("strategy_type"),
     prov_expr("strategy_source_hash"),
@@ -260,10 +252,8 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     run_expr("error_msg"),
     run_expr("config_json"),
     run_expr("schema_version"),
-    provenance_join,
     telemetry_join,
     snapshot_join,
-    tags_join,
     equity_join,
     trades_join,
     where_sql,

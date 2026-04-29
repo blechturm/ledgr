@@ -3,7 +3,10 @@ ledgr_test_open_duckdb <- function(db_path, attempts = 50L, sleep_s = 0.05) {
 }
 
 ledgr_test_close_duckdb <- function(con, drv) {
-  suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
+  if (!is.null(con) && DBI::dbIsValid(con)) {
+    ledgr_checkpoint_duckdb(con)
+  }
+  suppressWarnings(try(DBI::dbDisconnect(con, shutdown = FALSE), silent = TRUE))
   suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
   invisible(TRUE)
 }

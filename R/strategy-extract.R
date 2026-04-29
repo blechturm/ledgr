@@ -21,9 +21,12 @@ ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
     if (column %in% runs_cols) paste0("r.", column) else default
   }
   prov_expr <- function(column, default = "NULL") {
-    if (ledgr_run_store_has_col(con, "run_provenance", column)) paste0("p.", column) else default
+    if (ledgr_run_store_has_col(con, "run_provenance", column)) {
+      sprintf("(SELECT p.%s FROM run_provenance p WHERE p.run_id = r.run_id LIMIT 1)", column)
+    } else {
+      default
+    }
   }
-  provenance_join <- ledgr_run_store_optional_join(con, "run_provenance", "p", "p.run_id = r.run_id")
   where <- "r.run_id = ?"
   params <- list(run_id)
   if (!is.null(snapshot_id) && "snapshot_id" %in% runs_cols) {
@@ -47,7 +50,6 @@ ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
       %s AS R_version,
       %s AS dependency_versions_json
     FROM runs r
-    %s
     WHERE %s
     ",
     run_expr("status"),
@@ -61,7 +63,6 @@ ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
     prov_expr("ledgr_version"),
     prov_expr("R_version"),
     prov_expr("dependency_versions_json"),
-    provenance_join,
     where
   )
   tibble::as_tibble(DBI::dbGetQuery(con, sql, params = params))
