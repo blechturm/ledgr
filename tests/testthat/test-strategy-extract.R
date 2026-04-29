@@ -204,8 +204,42 @@ testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evalua
   extracted <- ledgr_extract_strategy(snapshot, "extract-no-eval", trust = FALSE)
   testthat::expect_identical(extracted$strategy_source_text, replacement)
   testthat::expect_false("strategy_function" %in% names(extracted))
+})
+
+testthat::test_that("ledgr_extract_strategy trust TRUE reports parse failures", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["TEST_A"] <- 1
+    targets
+  }
+  bt <- ledgr_backtest(
+    data = test_bars,
+    strategy = strategy,
+    start = "2020-01-01",
+    end = "2020-01-05",
+    db_path = db_path,
+    run_id = "extract-parse-failed"
+  )
+  on.exit(close(bt), add = TRUE)
+  close(bt)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  replacement <- "function(ctx, params) {"
+  ledgr_test_replace_run_provenance(
+    db_path,
+    "extract-parse-failed",
+    list(
+      strategy_source = replacement,
+      strategy_source_hash = digest::digest(replacement, algo = "sha256")
+    )
+  )
+
   testthat::expect_error(
-    ledgr_extract_strategy(snapshot, "extract-no-eval", trust = TRUE),
+    ledgr_extract_strategy(snapshot, "extract-parse-failed", trust = TRUE),
     class = "ledgr_strategy_parse_failed"
   )
 })
