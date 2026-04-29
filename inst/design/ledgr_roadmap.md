@@ -1075,6 +1075,51 @@ versions, compare run provenance to show the artifact hashes differ.
 
 ---
 
+## v0.2.x - Snapshot Lineage And Roll-Forward Data Sources
+
+**Goal:** Bridge immutable research snapshots to operational EOD workflows
+without making sealed snapshots mutable.
+
+This milestone is intentionally parked for later design. It exists because the
+paper/live path needs an appendable market-data story before users connect
+ledgr to real broker workflows. Sealed snapshots remain immutable; the
+appendable data source lives outside the snapshot.
+
+### Scope
+
+- Define the distinction between:
+  - appendable market-data sources;
+  - immutable as-of snapshots;
+  - derived run/features/results artifacts.
+- Snapshot roll-forward workflow:
+  - prior sealed snapshot plus new EOD bars;
+  - new immutable snapshot with a new hash;
+  - lineage metadata such as parent snapshot hash, appended date range, and
+    data-source provenance.
+- Separate warmup history from decision/trading range so production-style EOD
+  runs can start with fully warmed indicators instead of waiting from
+  deployment day.
+- Preserve sealed-snapshot reproducibility while making daily data refreshes
+  ergonomic.
+
+### Non-goals
+
+- No mutation of sealed market-data artifacts.
+- No live broker data adapter in this milestone.
+- No paper trading execution.
+
+### Definition of Done
+
+- Users can create a new as-of snapshot from an existing sealed snapshot plus
+  new bars without changing the parent snapshot.
+- Snapshot lineage is inspectable.
+- Runs can distinguish the feature warmup/history range from the decision
+  range.
+- The workflow is documented as the bridge from research snapshots to paper
+  trading.
+
+---
+
 ## v0.3.0 - Paper Trading Adapter + Reconciliation
 
 **Goal:** Trade against a real broker in paper mode safely.
