@@ -227,6 +227,18 @@ testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
+  source <- "function(ctx, params) { targets <- ctx$flat(); targets }"
+  ledgr_test_replace_run_provenance(
+    db_path,
+    "extract-tier-2",
+    list(
+      strategy_source = source,
+      strategy_source_hash = digest::digest(source, algo = "sha256"),
+      strategy_source_capture_method = "deparse_function",
+      reproducibility_level = "tier_2"
+    )
+  )
+
   extracted <- ledgr_extract_strategy(snapshot, "extract-tier-2")
   testthat::expect_identical(extracted$reproducibility_level, "tier_2")
   testthat::expect_true(any(grepl("may depend on external state", extracted$warnings, fixed = TRUE)))
