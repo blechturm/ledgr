@@ -62,6 +62,7 @@ pak::pak("blechturm/ledgr")
 
 ```{r attach}
 library(ledgr)
+library(dplyr)
 library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
@@ -72,14 +73,14 @@ Use the bundled demo bars for a first run. They are deterministic and require no
 network access.
 
 ```{r bars}
-bars <- subset(
-  ledgr_demo_bars,
-  instrument_id %in% c("DEMO_01", "DEMO_02") &
-    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
-    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
-)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+  )
 
-head(as_tibble(bars), 4)
+bars |>
+  slice_head(n = 4)
 ```
 
 Create a sealed snapshot. A snapshot is the immutable data artifact every run
@@ -150,9 +151,7 @@ results. Comparison reads existing artifacts; it does not recompute strategies.
 bt_qty_20 <- exp |>
   ledgr_run(params = list(qty = 20), run_id = "readme_sma_20_qty_20")
 
-ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))[
-  c("run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash")
-]
+ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))
 ```
 
 ## Durable Research
@@ -181,6 +180,10 @@ v0.1.7 is the experiment-first research API. It does not ship parameter sweep
 execution, broker adapters, paper trading, live trading, or short-selling
 semantics. Those are separate roadmap items with different state and safety
 requirements.
+
+`ledgr_run()` returns a live handle. The run artifacts are already durable, but
+closing the handle is the deterministic way to checkpoint and release DuckDB
+resources in scripts and long sessions.
 
 ```{r cleanup}
 close(bt)

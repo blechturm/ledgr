@@ -1726,10 +1726,16 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' Package-prefixed convenience wrapper around `tibble::as_tibble()` for
 #' backtest result tables.
 #'
+#' The returned object is tibble-compatible. Its print method may compact
+#' all-midnight UTC timestamps for EOD output according to
+#' `options(ledgr.print_ts_utc)`, but programmatic access keeps `ts_utc` as
+#' POSIXct UTC.
+#'
 #' @param bt A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"fills"`, `"trades"`, or
 #'   `"ledger"`.
-#' @return A tibble with the requested result table.
+#' @return A ledgr result table, which is a classed tibble with the requested
+#'   result columns.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -1751,5 +1757,5 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' @export
 ledgr_results <- function(bt, what = c("equity", "fills", "trades", "ledger")) {
   what <- match.arg(what)
-  tibble::as_tibble(bt, what = what)
+  ledgr_result_table(tibble::as_tibble(bt, what = what), what = what)
 }

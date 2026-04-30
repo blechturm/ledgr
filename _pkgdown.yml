@@ -43,6 +43,8 @@ reference:
       - summary.ledgr_backtest
       - as_tibble.ledgr_backtest
       - ledgr_results
+      - as_tibble.ledgr_result_table
+      - print.ledgr_result_table
       - close.ledgr_backtest
       - plot.ledgr_backtest
       - ledgr_extract_fills
@@ -97,6 +99,7 @@ reference:
   - title: Low-Level Utilities
     contents:
       - iso_utc
+      - ledgr_utc
       - ledgr_db_init
       - ledgr_create_schema
       - ledgr_validate_schema

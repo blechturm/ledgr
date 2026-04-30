@@ -19,6 +19,7 @@ feature. It only sees the ledgr indicator contract: `fn`, `series_fn`,
 
 ``` r
 library(ledgr)
+library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 
 as.data.frame(ledgr_ttr_warmup_rules()[, c("ttr_fn", "input", "formula")])
@@ -123,12 +124,11 @@ guessing the string.
 ## Feature Computation In A Backtest
 
 ``` r
-bars <- subset(
-  ledgr_demo_bars,
-  instrument_id == "DEMO_01" &
-    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
-    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
-)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id == "DEMO_01",
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+  )
 
 features <- list(
   ledgr_ind_ttr("RSI", input = "close", n = 14),

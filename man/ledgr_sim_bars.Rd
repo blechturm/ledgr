@@ -24,7 +24,7 @@ ledgr_sim_bars(
 \item{instrument_prefix}{Prefix used for generated instrument IDs.}
 }
 \value{
-A data frame with \code{ts_utc}, \code{instrument_id}, \code{open}, \code{high}, \code{low},
+A tibble with \code{ts_utc}, \code{instrument_id}, \code{open}, \code{high}, \code{low},
 \code{close}, and \code{volume} columns suitable for \code{ledgr_snapshot_from_df()}.
 }
 \description{

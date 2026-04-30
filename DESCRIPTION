@@ -1,6 +1,6 @@
 Package: ledgr
 Title: Deterministic Event-Sourced Backtesting
-Version: 0.1.7
+Version: 0.1.7.1
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",
@@ -28,6 +28,7 @@ Imports:
     tibble
 Suggests: 
     covr,
+    dplyr,
     ggplot2,
     gridExtra,
     microbenchmark,

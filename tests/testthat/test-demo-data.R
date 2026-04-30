@@ -9,6 +9,7 @@ testthat::test_that("ledgr_sim_bars is deterministic and schema-compatible", {
     names(a),
     c("ts_utc", "instrument_id", "open", "high", "low", "close", "volume")
   )
+  testthat::expect_s3_class(a, "tbl_df")
   testthat::expect_s3_class(a$ts_utc, "POSIXct")
   testthat::expect_identical(attr(a$ts_utc, "tzone"), "UTC")
   testthat::expect_identical(nrow(a), 60L)
@@ -28,6 +29,7 @@ testthat::test_that("ledgr_sim_bars validates arguments", {
 
 testthat::test_that("ledgr_demo_bars is an offline multi-instrument demo dataset", {
   testthat::expect_true(exists("ledgr_demo_bars"))
+  testthat::expect_s3_class(ledgr_demo_bars, "tbl_df")
   testthat::expect_identical(
     names(ledgr_demo_bars),
     c("ts_utc", "instrument_id", "open", "high", "low", "close", "volume")

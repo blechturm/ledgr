@@ -5,7 +5,7 @@
 \alias{ledgr_demo_bars}
 \title{Synthetic demo OHLCV bars}
 \format{
-A data frame with 12,600 rows and 7 columns:
+A tibble with 12,600 rows and 7 columns:
 \describe{
 \item{ts_utc}{POSIXct UTC bar timestamp.}
 \item{instrument_id}{Synthetic instrument identifier.}

@@ -15,3 +15,21 @@ test_that("iso_utc rejects unsupported formats", {
   expect_error(iso_utc("2016-12-31T23:59:60Z"), "Unsupported timestamp format")
   expect_error(iso_utc(NA_character_), "non-empty")
 })
+
+test_that("ledgr_utc returns UTC POSIXct vectors", {
+  x <- ledgr_utc(c("2020-01-01", "2020-01-01 09:30:00", "2020-01-01T10:30:00Z"))
+  expect_s3_class(x, "POSIXct")
+  expect_identical(attr(x, "tzone"), "UTC")
+  expect_identical(
+    format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    c("2020-01-01T00:00:00Z", "2020-01-01T09:30:00Z", "2020-01-01T10:30:00Z")
+  )
+
+  d <- ledgr_utc(as.Date(c("2020-01-01", "2020-01-02")))
+  expect_identical(
+    format(d, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z")
+  )
+  expect_error(ledgr_utc("not-a-date"), class = "ledgr_invalid_timestamp")
+  expect_error(ledgr_utc(NA_character_), class = "ledgr_invalid_timestamp")
+})

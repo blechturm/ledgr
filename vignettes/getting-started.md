@@ -14,6 +14,15 @@ This vignette walks through the v0.1.7 research loop:
 
 ``` r
 library(ledgr)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
 library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
@@ -22,14 +31,14 @@ data("ledgr_demo_bars", package = "ledgr")
 local files or network access.
 
 ``` r
-bars <- subset(
-  ledgr_demo_bars,
-  instrument_id %in% c("DEMO_01", "DEMO_02") &
-    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
-    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
-)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+  )
 
-head(as_tibble(bars), 6)
+bars |>
+  slice_head(n = 6)
 #> # A tibble: 6 x 7
 #>   ts_utc              instrument_id  open  high   low close volume
 #>   <dttm>              <chr>         <dbl> <dbl> <dbl> <dbl>  <dbl>
@@ -52,8 +61,8 @@ snapshot
 #> Bars:         258
 #> Instruments:  2
 #> Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
-#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpeieDxk\ledgr_1804c423b663f.duckdb
-#> Snapshot ID:  snapshot_20260429_162649_02f1
+#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpMDvGcZ\ledgr_dcc055b3159c.duckdb
+#> Snapshot ID:  snapshot_20260430_054425_49b6
 #> Connection:  Closed (opens on-demand)
 ```
 
@@ -115,8 +124,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260429_162649_02f1
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpeieDxk\ledgr_1804c423b663f.duckdb
+#> Snapshot ID: snapshot_20260430_054425_49b6
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpMDvGcZ\ledgr_dcc055b3159c.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -145,8 +154,10 @@ bt
 #> Use plot(bt) for equity curve visualization
 ```
 
-A backtest handle points to stored run artifacts. Close it when you are
-done so Windows file handles are released deterministically.
+A backtest handle points to stored run artifacts and may own DuckDB
+resources while it is live. The artifacts are already durable;
+`close(bt)` is deterministic cleanup for scripts, tests, and long
+sessions.
 
 ``` r
 on.exit(close(bt), add = TRUE)
@@ -181,27 +192,27 @@ Results are derived views over recorded events.
 ``` r
 ledgr_results(bt, what = "trades")
 #> # A tibble: 24 x 9
-#>    event_seq ts_utc              instrument_id side    qty price   fee realized_pnl action
-#>        <int> <dttm>              <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-29 00:00:00 DEMO_01       BUY      10  91.9     0         0    OPEN
-#>  2         2 2019-02-19 00:00:00 DEMO_02       BUY      10  68.7     0         0    OPEN
-#>  3         3 2019-02-25 00:00:00 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
-#>  4         4 2019-03-04 00:00:00 DEMO_02       BUY      10  68.0     0         0    OPEN
-#>  5         5 2019-03-05 00:00:00 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
-#>  6         6 2019-03-08 00:00:00 DEMO_02       BUY      10  68.9     0         0    OPEN
-#>  7         7 2019-03-12 00:00:00 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
-#>  8         8 2019-03-13 00:00:00 DEMO_02       BUY      10  67.4     0         0    OPEN
-#>  9         9 2019-03-19 00:00:00 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
-#> 10        10 2019-03-20 00:00:00 DEMO_01       SELL     10 101.      0        96.1  CLOSE
+#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
+#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
+#>  1         1 2019-01-29 DEMO_01       BUY      10  91.9     0         0    OPEN
+#>  2         2 2019-02-19 DEMO_02       BUY      10  68.7     0         0    OPEN
+#>  3         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
+#>  4         4 2019-03-04 DEMO_02       BUY      10  68.0     0         0    OPEN
+#>  5         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
+#>  6         6 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
+#>  7         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
+#>  8         8 2019-03-13 DEMO_02       BUY      10  67.4     0         0    OPEN
+#>  9         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
+#> 10        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE
 #> # i 14 more rows
 tail(ledgr_results(bt, what = "equity"), 4)
 #> # A tibble: 4 x 6
-#>   ts_utc              equity  cash positions_value running_max drawdown
-#>   <dttm>               <dbl> <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2019-06-25 00:00:00 10030. 8394.           1637.      10899.  -0.0797
-#> 2 2019-06-26 00:00:00 10031. 8394.           1637.      10899.  -0.0796
-#> 3 2019-06-27 00:00:00 10032. 8394.           1638.      10899.  -0.0796
-#> 4 2019-06-28 00:00:00 10685. 9069.           1616.      10899.  -0.0196
+#>   ts_utc     equity  cash positions_value running_max drawdown
+#>   <date>      <dbl> <dbl>           <dbl>       <dbl>    <dbl>
+#> 1 2019-06-25 10030. 8394.           1637.      10899.  -0.0797
+#> 2 2019-06-26 10031. 8394.           1637.      10899.  -0.0796
+#> 3 2019-06-27 10032. 8394.           1638.      10899.  -0.0796
+#> 4 2019-06-28 10685. 9069.           1616.      10899.  -0.0196
 ```
 
 The ledger is the source of truth.
@@ -209,15 +220,15 @@ The ledger is the source of truth.
 ``` r
 head(ledgr_results(bt, what = "ledger"), 6)
 #> # A tibble: 6 x 11
-#>   event_id     run_id ts_utc              event_type instrument_id side    qty price   fee
-#>   <chr>        <chr>  <dttm>              <chr>      <chr>         <chr> <dbl> <dbl> <dbl>
-#> 1 getting_sta~ getti~ 2019-01-29 00:00:00 FILL       DEMO_01       BUY      10  91.9     0
-#> 2 getting_sta~ getti~ 2019-02-19 00:00:00 FILL       DEMO_02       BUY      10  68.7     0
-#> 3 getting_sta~ getti~ 2019-02-25 00:00:00 FILL       DEMO_02       SELL     10  67.5     0
-#> 4 getting_sta~ getti~ 2019-03-04 00:00:00 FILL       DEMO_02       BUY      10  68.0     0
-#> 5 getting_sta~ getti~ 2019-03-05 00:00:00 FILL       DEMO_02       SELL     10  65.3     0
-#> 6 getting_sta~ getti~ 2019-03-08 00:00:00 FILL       DEMO_02       BUY      10  68.9     0
-#> # i 2 more variables: meta_json <chr>, event_seq <int>
+#>   event_id    run_id ts_utc     event_type instrument_id side    qty price   fee meta_json
+#>   <chr>       <chr>  <date>     <chr>      <chr>         <chr> <dbl> <dbl> <dbl> <chr>
+#> 1 getting_st~ getti~ 2019-01-29 FILL       DEMO_01       BUY      10  91.9     0 "{\"cash~
+#> 2 getting_st~ getti~ 2019-02-19 FILL       DEMO_02       BUY      10  68.7     0 "{\"cash~
+#> 3 getting_st~ getti~ 2019-02-25 FILL       DEMO_02       SELL     10  67.5     0 "{\"cash~
+#> 4 getting_st~ getti~ 2019-03-04 FILL       DEMO_02       BUY      10  68.0     0 "{\"cash~
+#> 5 getting_st~ getti~ 2019-03-05 FILL       DEMO_02       SELL     10  65.3     0 "{\"cash~
+#> 6 getting_st~ getti~ 2019-03-08 FILL       DEMO_02       BUY      10  68.9     0 "{\"cash~
+#> # i 1 more variable: event_seq <int>
 ```
 
 ## Debug One Pulse
@@ -252,15 +263,14 @@ Run a second parameter set into the same snapshot-backed store.
 bt_qty_20 <- exp |>
   ledgr_run(params = list(qty = 20), run_id = "getting_started_qty_20")
 
-ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_started_qty_20"))[
-  c("run_id", "final_equity", "total_return", "max_drawdown", "n_trades")
-]
+ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_started_qty_20"))
 #> # ledgr comparison
-#> # A tibble: 2 x 5
-#>   run_id                 final_equity total_return max_drawdown n_trades
-#>   <chr>                         <dbl> <chr>        <chr>           <int>
-#> 1 getting_started_qty_10       10685. +6.9%        -13.5%             12
-#> 2 getting_started_qty_20       11370. +13.7%       -25.3%             12
+#> # A tibble: 2 x 8
+#>   run_id                 label final_equity total_return max_drawdown n_trades win_rate
+#>   <chr>                  <chr>        <dbl> <chr>        <chr>           <int> <chr>
+#> 1 getting_started_qty_10 <NA>        10685. +6.9%        -13.5%             12 25.0%
+#> 2 getting_started_qty_20 <NA>        11370. +13.7%       -25.3%             12 25.0%
+#> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -292,12 +302,12 @@ close(durable_bt)
 ledgr_snapshot_close(durable_snapshot)
 
 reloaded <- ledgr_snapshot_load(artifact_db, "getting_started_snapshot", verify = TRUE)
-ledgr_run_list(reloaded)[c("run_id", "status", "execution_mode", "total_return")]
+ledgr_run_list(reloaded)
 #> # ledgr run list
-#> # A tibble: 1 x 4
-#>   run_id         status total_return execution_mode
-#>   <chr>          <chr>  <chr>        <chr>
-#> 1 durable_qty_10 DONE   +6.9%        audit_log
+#> # A tibble: 1 x 8
+#>   run_id label tags  status final_equity total_return execution_mode reproducibility_level
+#>   <chr>  <chr> <chr> <chr>         <dbl> <chr>        <chr>          <chr>
+#> 1 durab~ <NA>  <NA>  DONE         10685. +6.9%        audit_log      tier_1
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -312,12 +322,12 @@ ledgr_run_info(reloaded, "durable_qty_10")
 #> Tags:            NA
 #> Snapshot:        getting_started_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     e4bc5e0d1a0637c9519badf8c2982d93f545377b2ccfad8e5a6ea1ddcd16af9b
+#> Config Hash:     f093b88f9381df691ba7d17a0b66487817b005ece1d323cab97cdef2315227c5
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.18
+#> Elapsed Sec:     1.23
 #> Persist Features:TRUE
 #> Cache Hits:      2
 #> Cache Misses:    0

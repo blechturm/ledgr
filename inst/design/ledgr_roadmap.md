@@ -486,6 +486,38 @@ be authored against `ledgr_demo_bars` from v0.1.7 onward.
 
 ---
 
+## v0.1.7.1 - Installed UX Stabilisation
+
+**Goal:** Stabilise the installed-package experience after the v0.1.7
+experiment-first reset without reopening the public API design.
+
+### Scope
+
+- Installed narrative docs are discoverable and runnable.
+- README and vignettes use modern base-pipe examples with `ledgr_demo_bars`.
+- `ledgr_utc()` removes repeated `as.POSIXct(..., tz = "UTC")` boilerplate in
+  user-facing examples.
+- `ledgr_demo_bars` and `ledgr_sim_bars()` are tibble-friendly.
+- Result-table printing can compact all-midnight UTC timestamps for EOD output
+  while preserving POSIXct UTC values for programmatic access.
+- Experiment-store docs explain curated defaults, "dig deeper" tibble access,
+  handle cleanup, snapshot lifecycle, and the difference between sealed market
+  data and derived features/runs.
+- The audit-reported MACD warmup case is reproduced and fixed or explicitly
+  documented as not reproducible.
+
+### Definition of Done
+
+- A first-time installed-package user can run the offline experiment-first
+  workflow without source or design-doc context.
+- Main run-list and comparison examples use curated print defaults directly.
+- `close(bt)` and `ledgr_snapshot_close(snapshot)` are explained before they
+  appear as cleanup ceremony.
+- No sweep/tune APIs are exported.
+- CI is green on Ubuntu and Windows.
+
+---
+
 ## v0.1.8 - Lightweight Parameter Sweep Mode
 
 **Goal:** Let users run fast exploratory parameter sweeps without DuckDB
@@ -674,6 +706,19 @@ ledgr takes no hard dependency on any of these. `ledgr_sweep()` respects a
 `future` plan if set by the user; otherwise runs sequentially. The
 `precomputed_features` interface accepts normal R objects; mori-shared objects
 work because they are indistinguishable from plain R objects at the API boundary.
+
+### Implementation Note
+
+When extracting the internal fold core, remove the dead in-loop equity
+tracking from `backtest-runner.R`. The six pre-allocated `eq_*` arrays
+(`eq_cash`, `eq_positions_value`, `eq_equity`, `eq_ts`, `eq_realized`,
+`eq_unrealized`) and their per-pulse assignments are superseded by the
+post-run derived-state reconstruction and are never persisted. The in-loop
+FIFO lot tracking (lines ~1552–1606) that feeds `eq_unrealized` and
+`eq_realized` is also dead in the forward path; note that the pre-loop
+resume replay (lines ~1166–1225) shares the same `lot_map`/`kahan_add`
+structures and must be preserved. Clean this up as part of opening the
+loop for the fold-core extraction, not as a standalone edit.
 
 ### Definition of Done
 

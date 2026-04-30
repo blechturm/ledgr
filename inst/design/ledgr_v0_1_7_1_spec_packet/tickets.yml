@@ -203,12 +203,12 @@ tickets:
     status: pending
     priority: P2
     dependencies: [LDG-1101]
-      tests:
-        - "changed vignette render"
-        - "experiment-store documentation chunks"
-        - "current-workflow documentation scan"
-        - "curated-print documentation scan"
-        - "unsafe-shell documentation scan"
+    tests:
+      - "changed vignette render"
+      - "experiment-store documentation chunks"
+      - "current-workflow documentation scan"
+      - "curated-print documentation scan"
+      - "unsafe-shell documentation scan"
     classification:
       risk_level: medium
       implementation_tier: M

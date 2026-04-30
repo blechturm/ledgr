@@ -13,11 +13,18 @@ ledgr_results(bt, what = c("equity", "fills", "trades", "ledger"))
 \code{"ledger"}.}
 }
 \value{
-A tibble with the requested result table.
+A ledgr result table, which is a classed tibble with the requested
+result columns.
 }
 \description{
 Package-prefixed convenience wrapper around \code{tibble::as_tibble()} for
 backtest result tables.
+}
+\details{
+The returned object is tibble-compatible. Its print method may compact
+all-midnight UTC timestamps for EOD output according to
+\code{options(ledgr.print_ts_utc)}, but programmatic access keeps \code{ts_utc} as
+POSIXct UTC.
 }
 \examples{
 bars <- data.frame(

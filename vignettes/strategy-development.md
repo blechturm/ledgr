@@ -6,6 +6,7 @@ target holdings.
 
 ``` r
 library(ledgr)
+library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
@@ -131,12 +132,11 @@ rsi_strategy <- function(ctx, params) {
 inspect what a strategy saw.
 
 ``` r
-bars <- subset(
-  ledgr_demo_bars,
-  instrument_id %in% c("DEMO_01", "DEMO_02") &
-    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
-    ts_utc <= as.POSIXct("2019-04-30", tz = "UTC")
-)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-04-30"))
+  )
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
@@ -191,15 +191,14 @@ bt_qty_3 <- exp |>
     run_id = "threshold_qty_3"
   )
 
-ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))[, c(
-  "run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash"
-)]
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))
 #> # ledgr comparison
-#> # A tibble: 2 x 4
-#>   run_id          final_equity total_return n_trades
-#>   <chr>                  <dbl> <chr>           <int>
-#> 1 threshold_qty_1       10084. +0.8%               0
-#> 2 threshold_qty_3       10251. +2.5%               0
+#> # A tibble: 2 x 8
+#>   run_id          label final_equity total_return max_drawdown n_trades win_rate
+#>   <chr>           <chr>        <dbl> <chr>        <chr>           <int> <chr>
+#> 1 threshold_qty_1 <NA>        10084. +0.8%        -0.8%               0 <NA>
+#> 2 threshold_qty_3 <NA>        10251. +2.5%        -2.4%               0 <NA>
+#> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -220,15 +219,14 @@ flat_exp <- ledgr_experiment(
 bt_flat <- flat_exp |>
   ledgr_run(params = list(), run_id = "flat")
 
-ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))[, c(
-  "run_id", "final_equity", "total_return", "n_trades", "strategy_source_hash"
-)]
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))
 #> # ledgr comparison
-#> # A tibble: 2 x 4
-#>   run_id          final_equity total_return n_trades
-#>   <chr>                  <dbl> <chr>           <int>
-#> 1 threshold_qty_1       10084. +0.8%               0
-#> 2 flat                  10000  +0.0%               0
+#> # A tibble: 2 x 8
+#>   run_id          label final_equity total_return max_drawdown n_trades win_rate
+#>   <chr>           <chr>        <dbl> <chr>        <chr>           <int> <chr>
+#> 1 threshold_qty_1 <NA>        10084. +0.8%        -0.8%               0 <NA>
+#> 2 flat            <NA>        10000  +0.0%        0.0%                0 <NA>
+#> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
