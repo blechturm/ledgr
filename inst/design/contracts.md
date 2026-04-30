@@ -105,6 +105,9 @@ the active versioned spec packet, currently
   `targets`.
 - Names must exactly match `ctx$universe`; missing, extra, duplicate, unnamed,
   or non-finite targets fail with `ledgr_invalid_strategy_result`.
+- Target values are desired instrument quantities after the next fill, not
+  portfolio weights, order sizes, or signals. Weight-based allocation remains
+  outside the v0.1.x public strategy contract.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.
@@ -147,6 +150,10 @@ the active versioned spec packet, currently
   `ctx$bars` and long-table `ctx$features`.
 - Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
   views over `ctx$features`; they do not change feature computation semantics.
+- `ctx$flat(default = 0)` constructs a full target vector initialized to a
+  scalar quantity. `ctx$hold()` constructs a full target vector initialized to
+  current positions. Strategies choose between them based on whether the default
+  behavior is flat-unless-signal or hold-unless-signal.
 - `ctx$feature(instrument_id, feature_id)` must fail loudly for unknown feature
   IDs, including the requested feature, instrument, and available feature IDs
   (`<none>` if no features are registered). A known feature whose current value

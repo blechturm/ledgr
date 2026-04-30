@@ -14,6 +14,8 @@
   `histogram` outputs with both `percent = TRUE` and `percent = FALSE`; under
   the tested TTR version, `macd` is first valid at `nSlow`, while `signal` and
   `histogram` are first valid at `nSlow + nSig - 1`.
+- Expanded strategy and TTR indicator articles with clearer `ctx`, `params`,
+  feature ID, warmup `NA`, and quantity-target sizing guidance.
 - Clarified the experiment-store mental model: sealed snapshots freeze market
   data, while indicators, features, runs, labels, tags, comparisons, and
   telemetry are derived artifacts that can be added later.

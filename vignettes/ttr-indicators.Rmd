@@ -59,9 +59,11 @@ be used by supplying `requires_bars` manually.
 ```{r simple, eval=requireNamespace("TTR", quietly = TRUE)}
 rsi_14 <- ledgr_ind_ttr("RSI", input = "close", n = 14)
 wma_10 <- ledgr_ind_ttr("WMA", input = "close", n = 10)
+mom_10 <- ledgr_ind_ttr("momentum", input = "close", n = 10)
 
 ledgr_feature_id(rsi_14)
 ledgr_feature_id(wma_10)
+ledgr_feature_id(mom_10)
 ```
 
 The generated ID is derived from the TTR function and explicit arguments. ledgr
@@ -92,6 +94,15 @@ ctx$feature("AAA", "return_5")
 ```{r multi, eval=requireNamespace("TTR", quietly = TRUE)}
 atr_20 <- ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)
 bb_up <- ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+macd_line <- ledgr_ind_ttr(
+  "MACD",
+  input = "close",
+  output = "macd",
+  nFast = 12,
+  nSlow = 26,
+  nSig = 9,
+  percent = FALSE
+)
 macd_signal <- ledgr_ind_ttr(
   "MACD",
   input = "close",
@@ -102,7 +113,7 @@ macd_signal <- ledgr_ind_ttr(
 )
 aroon_osc <- ledgr_ind_ttr("aroon", input = "hl", output = "oscillator", n = 20)
 
-ledgr_feature_id(list(rsi_14, atr_20, bb_up, macd_signal, aroon_osc))
+ledgr_feature_id(list(rsi_14, atr_20, bb_up, macd_line, macd_signal, aroon_osc))
 ```
 
 Some TTR indicators return several columns. For those indicators, choose the
@@ -116,9 +127,44 @@ ttr_<function>_<explicit args>_<output>
 ```
 
 For example, the IDs above include `ttr_rsi_14`, `ttr_atr_20_atr`,
-`ttr_bbands_20_up`, and `ttr_macd_12_26_9_signal`. Use
+`ttr_bbands_20_up`, `ttr_macd_12_26_9_false_macd`, and
+`ttr_macd_12_26_9_signal`. Use
 `ledgr_feature_id(ind)` or print the indicator object instead of guessing the
 string.
+
+The two MACD examples intentionally use different explicit arguments:
+`macd_line` sets `percent = FALSE`, while `macd_signal` leaves TTR's default
+`percent` argument implicit. Explicit extra arguments become part of the
+feature ID, so combine MACD outputs in one strategy only when their argument
+sets match the computation you intend.
+
+## Warmup And Short Histories
+
+Every ledgr indicator declares `requires_bars` and `stable_after`.
+`requires_bars` is the first row where the indicator may produce a non-`NA`
+value. `stable_after` is the first row ledgr treats as stable; built-in and
+supported TTR indicators use the same value unless an adapter has a reason to
+be more conservative.
+
+```{r warmup-values, eval=requireNamespace("TTR", quietly = TRUE)}
+c(
+  rsi = rsi_14$requires_bars,
+  momentum = mom_10$requires_bars,
+  bbands = bb_up$requires_bars,
+  macd = macd_line$requires_bars,
+  macd_signal = macd_signal$requires_bars
+)
+```
+
+Warmup `NA` is expected and should be handled in the strategy with `is.na()`.
+Unknown feature IDs are different: `ctx$feature()` fails loudly when the ID was
+not configured for the run.
+
+For MACD, ledgr verifies the supported warmup rules against direct TTR output.
+With current TTR behavior, the `macd` output is first valid at `nSlow`, while
+`signal` and the derived ledgr `histogram` output are first valid at
+`nSlow + nSig - 1`. The same rule is verified for both `percent = TRUE` and
+`percent = FALSE`.
 
 ## Feature Computation In A Backtest
 
@@ -131,17 +177,38 @@ bars <- ledgr_demo_bars |>
 
 features <- list(
   ledgr_ind_ttr("RSI", input = "close", n = 14),
-  ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+  ledgr_ind_ttr("momentum", input = "close", n = 10),
+  ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
+  ledgr_ind_ttr(
+    "MACD",
+    input = "close",
+    output = "macd",
+    nFast = 12,
+    nSlow = 26,
+    nSig = 9,
+    percent = FALSE
+  )
 )
 ledgr_feature_id(features)
 
 strategy <- function(ctx, params) {
   targets <- ctx$hold()
   rsi <- ctx$feature("DEMO_01", "ttr_rsi_14")
+  mom <- ctx$feature("DEMO_01", "ttr_momentum_10")
   bb_up <- ctx$feature("DEMO_01", "ttr_bbands_20_up")
+  macd <- ctx$feature("DEMO_01", "ttr_macd_12_26_9_false_macd")
 
   # This article uses one demo instrument, so only DEMO_01 is targeted.
-  if (!is.na(rsi) && !is.na(bb_up) && rsi > 50 && ctx$close("DEMO_01") > bb_up) {
+  if (
+    !is.na(rsi) &&
+      !is.na(mom) &&
+      !is.na(bb_up) &&
+      !is.na(macd) &&
+      rsi > 50 &&
+      mom > 0 &&
+      macd > 0 &&
+      ctx$close("DEMO_01") > bb_up
+  ) {
     targets["DEMO_01"] <- params$qty
   }
   targets

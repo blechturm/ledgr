@@ -7,11 +7,19 @@ target holdings.
 ``` r
 library(ledgr)
 library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
 At each pulse, ledgr gives the strategy the current observable state.
-The strategy answers with a full named numeric vector: the desired
+The strategy answers with a full named numeric vector: the desired share
 quantity for every instrument in `ctx$universe`.
 
 ## The Strategy Function
@@ -25,7 +33,7 @@ flat_strategy <- function(ctx, params) {
 ```
 
 Parameterized strategies use `function(ctx, params)`. Parameters arrive
-as the second argument. There is no `ctx$params` field.
+as the second argument; they are not stored on the context object.
 
 ``` r
 threshold_strategy <- function(ctx, params) {
@@ -66,7 +74,9 @@ explicitly changes a target.
 ## Targets
 
 Targets must be full named numeric vectors. Names must exactly match
-`ctx$universe`.
+`ctx$universe`, and values are desired quantities, not portfolio weights
+or orders. A target of `10` means hold 10 shares after the next fill; a
+target of `0` means hold no shares.
 
 ``` r
 buy_one_if_up <- function(ctx, params) {
@@ -84,6 +94,31 @@ workflow until explicit shorting semantics are specified.
 The default fill model is next-open: a target decided at pulse `t` fills
 at the next available bar. A target change on the final pulse cannot
 fill.
+
+For multi-asset strategies, build the full vector first and then assign
+the quantities you want to hold. This example uses the built-in one-bar
+return indicator, whose feature ID is `return_1`; the next section shows
+how to ask ledgr for feature IDs before using them in a strategy.
+
+``` r
+top_two_equal_quantity <- function(ctx, params) {
+  targets <- ctx$flat()
+  scores <- numeric()
+
+  for (id in ctx$universe) {
+    score <- ctx$feature(id, "return_1")
+    if (!is.na(score)) {
+      scores[id] <- score
+    }
+  }
+
+  if (length(scores) == 0) return(targets)
+
+  selected <- names(sort(scores, decreasing = TRUE))[seq_len(min(2, length(scores)))]
+  targets[selected] <- params$qty_per_instrument
+  targets
+}
+```
 
 ## Indicators And Feature IDs
 
@@ -109,7 +144,10 @@ Feature IDs are exact strings. Ask ledgr for them before writing
 `ctx$feature()` calls.
 
 Feature values can be `NA` during warmup. Unknown feature IDs fail
-loudly; warmup `NA` for known features is normal.
+loudly; warmup `NA` for known features is normal. This distinction
+matters: a typo such as `"returns_1"` fails because no configured
+feature has that ID, while `"return_1"` may return `NA` on early bars if
+the indicator is not ready.
 
 ``` r
 rsi_strategy <- function(ctx, params) {
@@ -125,6 +163,31 @@ rsi_strategy <- function(ctx, params) {
   targets
 }
 ```
+
+`requires_bars` is the first row where an indicator may emit a value.
+`stable_after` is the first row ledgr treats as stable. Built-in and
+supported TTR indicators set these for you. When a strategy sees `NA`,
+the ordinary pattern is to return `ctx$hold()` for hold-unless-signal
+strategies or `ctx$flat()` for flat-unless-signal strategies.
+
+``` r
+sma_breakout <- function(ctx, params) {
+  targets <- ctx$flat()
+  sma <- ctx$feature("AAA", "sma_3")
+  if (is.na(sma)) return(targets)
+
+  if (ctx$close("AAA") > sma) {
+    targets["AAA"] <- params$qty
+  }
+  targets
+}
+```
+
+On very short histories, this is not an error: the run can complete with
+no trades because the feature never becomes ready. That is different
+from an insufficient-history custom indicator that returns `NA` after
+`stable_after`; post-warmup `NA` values are invalid and ledgr aborts
+rather than silently using bad features.
 
 ## Debug One Pulse
 
