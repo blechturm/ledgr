@@ -3,7 +3,7 @@ source: "v0_1_7_1_tickets.md"
 tickets:
   - id: LDG-1101
     title: "Patch Scope, Version, And Documentation Standard"
-    status: pending
+    status: done
     priority: P0
     dependencies: []
     tests:
@@ -50,7 +50,7 @@ tickets:
 
   - id: LDG-1102
     title: "MACD Warmup Regression"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-1101]
     tests:
@@ -99,7 +99,7 @@ tickets:
 
   - id: LDG-1103
     title: "Date/Time Ergonomics And Modern Example Style"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1101]
     tests:
@@ -149,7 +149,7 @@ tickets:
 
   - id: LDG-1104
     title: "Strategy, Feature ID, Warmup, And Sizing Documentation"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1102, LDG-1103]
     tests:
@@ -200,7 +200,7 @@ tickets:
 
   - id: LDG-1105
     title: "Experiment Store, Run Comparison, And Snapshot Lifecycle Docs"
-    status: pending
+    status: done
     priority: P2
     dependencies: [LDG-1101]
     tests:
@@ -254,7 +254,7 @@ tickets:
 
   - id: LDG-1106
     title: "Result Timestamp Display Options"
-    status: pending
+    status: done
     priority: P2
     dependencies: [LDG-1101]
     tests:

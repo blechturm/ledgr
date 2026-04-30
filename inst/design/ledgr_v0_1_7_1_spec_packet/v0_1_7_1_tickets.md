@@ -44,7 +44,7 @@ LDG-1101 --------------------------> LDG-1107
 **Priority:** P0  
 **Effort:** 0.5-1 day  
 **Dependencies:** None  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Lock the v0.1.7.1 patch boundary before implementation begins. This ticket
@@ -136,7 +136,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-1101  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Reproduce and resolve the audit-reported MACD warmup failure where
@@ -230,7 +230,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-1101  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Make the first examples look like modern applied R and remove distracting UTC
@@ -332,7 +332,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2-3 days  
 **Dependencies:** LDG-1102, LDG-1103  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Close the installed-documentation gaps that block ordinary strategy
@@ -439,7 +439,7 @@ forbidden_actions:
 **Priority:** P2  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-1101  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Clarify the experiment-store and snapshot lifecycle documentation so installed
@@ -582,7 +582,7 @@ forbidden_actions:
 **Priority:** P2  
 **Effort:** 1-2 days  
 **Dependencies:** LDG-1101  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Make EOD result-table printing compact without weakening timestamp correctness.
