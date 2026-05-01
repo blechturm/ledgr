@@ -232,8 +232,9 @@ short-selling semantics. Those are separate roadmap items with different
 state and safety requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
-durable, but closing the handle is the deterministic way to checkpoint
-and release DuckDB resources in scripts and long sessions.
+durable when the run finishes. Most result inspection opens and closes
+its own read connection; explicit `close(bt)` is resource cleanup for
+long sessions, explicit opens, and lazy result cursors.
 
 ``` r
 close(bt)

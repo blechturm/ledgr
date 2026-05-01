@@ -183,10 +183,12 @@ ledgr_run_list(snapshot)
 
 Archiving hides a run from default listings without deleting artifacts.
 
-`ledgr_run()` and `ledgr_run_open()` return live handles that may own DuckDB
-resources. The run artifacts are already durable, but `close(bt)` is the
-deterministic way to checkpoint and release those resources in scripts, tests,
-and long sessions. Close the snapshot handle when the workflow is finished.
+`ledgr_run()` and `ledgr_run_open()` return live handles for durable run
+artifacts. The artifacts are already durable when a run completes, and ordinary
+result inspection opens and closes read connections per operation. Use
+`close(bt)` as explicit resource cleanup in long sessions, tests, explicit-open
+workflows, and lazy result cursors. Close the snapshot handle when the workflow
+is finished.
 
 ```{r cleanup}
 close(bt_small)

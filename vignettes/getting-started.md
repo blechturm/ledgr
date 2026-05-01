@@ -154,10 +154,11 @@ bt
 #> Use plot(bt) for equity curve visualization
 ```
 
-A backtest handle points to stored run artifacts and may own DuckDB
-resources while it is live. The artifacts are already durable;
-`close(bt)` is deterministic cleanup for scripts, tests, and long
-sessions.
+A backtest handle points to stored run artifacts. The artifacts are
+already durable when `ledgr_run()` returns, and ordinary result
+inspection opens and closes read connections per operation. Use
+`close(bt)` as explicit resource cleanup in long sessions, tests,
+explicit-open workflows, and lazy result cursors.
 
 ``` r
 on.exit(close(bt), add = TRUE)

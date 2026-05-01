@@ -456,21 +456,22 @@ snapshot |> ledgr_run_open("momentum_v1") |> ledgr_results(what = "equity")
 
 ## `close(bt)` Lifecycle (v0.1.7)
 
-Currently `close(bt)` is required to flush the DuckDB checkpoint before the
-connection is released. Forgetting it causes silent data loss on some platforms.
+`close(bt)` releases a result-access DuckDB connection immediately. Completed
+run artifacts are durable when `ledgr_run()` returns; forgetting `close(bt)` is
+a resource-lifecycle issue in long sessions, not data-loss prevention.
 The contract should match how R users actually think about objects.
 
 **Target behaviour:**
 
-- `close(bt)` remains valid and flushes immediately when called.
-- If `close()` is never called, the finalizer auto-checkpoints on GC and emits
-  a one-time message (`"ledgr: run '<id>' checkpointed on garbage collection"`)
-  so users can learn the pattern without losing data.
+- `close(bt)` remains valid and releases any held connection immediately.
+- Ordinary result inspection should avoid creating a long-lived read connection.
+- If an explicit open or lazy cursor leaves a durable connection behind, the
+  finalizer attempts a one-time cleanup on GC.
 - In-memory runs (no `db_path` provided) never require `close()` -- there is
   nothing to flush.
 
-The GC path is a safety net, not the intended workflow. Documentation continues
-to show explicit `close(bt)`.
+The GC path is a safety net, not the intended workflow. Documentation frames
+explicit `close(bt)` as resource management for long sessions, not data safety.
 
 ---
 

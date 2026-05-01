@@ -71,6 +71,10 @@ the active versioned spec packet, currently
 - Cross-connection read-back is part of the persistence contract: completed
   runs and their `ledger_events`, `features`, and `equity_curve` rows must be
   visible from a newly opened connection.
+- Completed run artifacts are durable when `ledgr_run()` returns. User-facing
+  `close(bt)` and `ledgr_snapshot_close(snapshot)` calls are resource-management
+  tools for long sessions, explicit opens, and lazy cursors; documentation must
+  not frame them as data-loss prevention.
 - v0.1.7 public experiment-store APIs are snapshot-first. A `db_path` appears
   in normal workflows only at snapshot creation or snapshot loading.
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
@@ -209,6 +213,9 @@ the active versioned spec packet, currently
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
   backtest object or persistent run state.
+- Ordinary result-access APIs over durable `ledgr_backtest` handles should use
+  per-operation read connections where practical so inspecting results does not
+  leave a DuckDB connection open and block a later write in the same session.
 - `tibble::as_tibble(bt, what = ...)` supports the v0.1.5 result set:
   `equity`, `fills`, `trades`, and `ledger`.
 - `ledgr_results(bt, what = ...)` is the package-prefixed wrapper over that

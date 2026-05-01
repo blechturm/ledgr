@@ -509,12 +509,48 @@ ledgr_backtest_open <- function(bt) {
   list(con = state$con, opened_new = TRUE)
 }
 
+ledgr_backtest_read_connection <- function(bt) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
+
+  state <- backtest_state(bt)
+  if (!is.null(state$con) && DBI::dbIsValid(state$con)) {
+    return(list(
+      con = state$con,
+      temporary = FALSE,
+      close = function() invisible(FALSE)
+    ))
+  }
+
+  if (identical(bt$db_path, ":memory:")) {
+    opened <- ledgr_backtest_open(bt)
+    return(list(
+      con = opened$con,
+      temporary = FALSE,
+      close = function() invisible(FALSE)
+    ))
+  }
+
+  opened <- ledgr_open_duckdb_with_retry(bt$db_path)
+  list(
+    con = opened$con,
+    temporary = TRUE,
+    close = function() {
+      suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))
+      suppressWarnings(try(duckdb::duckdb_shutdown(opened$drv), silent = TRUE))
+      invisible(TRUE)
+    }
+  )
+}
+
 #' Close a backtest result connection
 #'
-#' Checkpoints a durable DuckDB run file when possible and releases any open
-#' connection held by a `ledgr_backtest` object. The underlying DuckDB file is
-#' not deleted. Durable handles also register a finalizer as a safety net, but
-#' explicit `close(bt)` remains the preferred deterministic cleanup path.
+#' Releases any open DuckDB connection held by a `ledgr_backtest` object and
+#' checkpoints a durable run file when possible. Completed run artifacts are
+#' already durable when `ledgr_run()` returns; `close(bt)` is resource
+#' management for explicit opens, lazy result cursors, tests, and long sessions.
+#' The underlying DuckDB file is not deleted.
 #'
 #' @param con A `ledgr_backtest` object.
 #' @param ... Unused.
@@ -966,7 +1002,22 @@ ledgr_empty_equity_curve <- function() {
 #' close(bt)
 #' @export
 ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
-  con <- get_connection(bt)
+  ledgr_extract_fills_impl(bt, lazy = lazy, stream_threshold = stream_threshold)
+}
+
+ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000L, con = NULL) {
+  requested_lazy <- isTRUE(lazy)
+  owns_connection <- FALSE
+  if (is.null(con)) {
+    opened <- if (requested_lazy) {
+      list(con = get_connection(bt), close = function() invisible(FALSE))
+    } else {
+      ledgr_backtest_read_connection(bt)
+    }
+    con <- opened$con
+    owns_connection <- TRUE
+    on.exit(opened$close(), add = TRUE)
+  }
   total_rows <- DBI::dbGetQuery(
     con,
     "
@@ -988,6 +1039,10 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
 
   if (total_rows > stream_threshold) {
     lazy <- TRUE
+    if (!requested_lazy && isTRUE(owns_connection)) {
+      opened$close()
+      return(ledgr_extract_fills(bt, lazy = TRUE, stream_threshold = stream_threshold))
+    }
   }
 
   # Temp-table accumulation handles dynamic sizing; no R-side caps needed.
@@ -1016,7 +1071,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   if (!is.logical(lazy) || length(lazy) != 1 || is.na(lazy)) {
     rlang::abort("`lazy` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
-  if (!lazy) {
+  if (!lazy && !(exists("opened", inherits = FALSE) && isTRUE(opened$temporary))) {
     on.exit(DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table)), add = TRUE)
   }
 
@@ -1286,8 +1341,8 @@ ledgr_closed_trade_rows <- function(fills) {
   tibble::as_tibble(fills[ledgr_col_equals(fills$action, "CLOSE"), , drop = FALSE])
 }
 
-ledgr_extract_trades <- function(bt) {
-  ledgr_closed_trade_rows(ledgr_extract_fills(bt))
+ledgr_extract_trades <- function(bt, con = NULL) {
+  ledgr_closed_trade_rows(ledgr_extract_fills_impl(bt, con = con))
 }
 
 ledgr_col_equals <- function(x, value) {
@@ -1320,12 +1375,16 @@ compute_time_in_market <- function(equity) {
   mean(abs(equity$positions_value) > 1e-6)
 }
 
-ledgr_estimate_bars_per_year <- function(bt, equity) {
+ledgr_estimate_bars_per_year <- function(bt, equity, con = NULL) {
   fallback <- 252
   if (!inherits(bt, "ledgr_backtest")) return(fallback)
   if (!is.list(bt$config) || is.null(bt$config$data$snapshot_id)) return(fallback)
 
-  con <- get_connection(bt)
+  if (is.null(con)) {
+    opened <- ledgr_backtest_read_connection(bt)
+    con <- opened$con
+    on.exit(opened$close(), add = TRUE)
+  }
   snapshot_id <- bt$config$data$snapshot_id
   if (!is.null(bt$config$data) && is.list(bt$config$data) && identical(bt$config$data$source, "snapshot")) {
     run_db_path <- bt$config$db_path
@@ -1390,12 +1449,14 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
     )
   }
 
-  con <- get_connection(bt)
+  opened <- ledgr_backtest_read_connection(bt)
+  con <- opened$con
+  on.exit(opened$close(), add = TRUE)
   equity <- ledgr_backtest_equity(con, bt$run_id)
   equity$equity <- as.numeric(equity$equity)
   equity$positions_value <- as.numeric(equity$positions_value)
 
-  fills <- ledgr_extract_fills(bt)
+  fills <- ledgr_extract_fills_impl(bt, con = con)
   trades <- ledgr_closed_trade_rows(fills)
 
   returns <- numeric(0)
@@ -1404,7 +1465,7 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
     cur <- equity$equity[-1]
     returns <- (cur / prev) - 1
   }
-  bars_per_year <- ledgr_estimate_bars_per_year(bt, equity)
+  bars_per_year <- ledgr_estimate_bars_per_year(bt, equity, con = con)
 
   list(
     total_return = if (nrow(equity) > 0) (equity$equity[[nrow(equity)]] / equity$equity[[1]]) - 1 else NA_real_,
@@ -1442,7 +1503,15 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
 #' close(bt)
 #' @export
 ledgr_compute_equity_curve <- function(bt) {
-  con <- get_connection(bt)
+  ledgr_compute_equity_curve_impl(bt)
+}
+
+ledgr_compute_equity_curve_impl <- function(bt, con = NULL) {
+  if (is.null(con)) {
+    opened <- ledgr_backtest_read_connection(bt)
+    con <- opened$con
+    on.exit(opened$close(), add = TRUE)
+  }
   equity <- ledgr_backtest_equity(con, bt$run_id)
   if (nrow(equity) == 0) {
     return(ledgr_empty_equity_curve())
@@ -1614,7 +1683,9 @@ print.ledgr_backtest <- function(x, ...) {
     NA_character_
   }
 
-  con <- get_connection(x)
+  opened <- ledgr_backtest_read_connection(x)
+  con <- opened$con
+  on.exit(opened$close(), add = TRUE)
   final_equity <- DBI::dbGetQuery(
     con,
     "
@@ -1745,15 +1816,17 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 
   if (!is.null(type)) what <- type
   what <- match.arg(what, c("equity", "fills", "trades", "ledger"))
-  con <- get_connection(x)
+  opened <- ledgr_backtest_read_connection(x)
+  con <- opened$con
+  on.exit(opened$close(), add = TRUE)
 
   switch(
     what,
     equity = {
-      ledgr_compute_equity_curve(x)
+      ledgr_compute_equity_curve_impl(x, con = con)
     },
-    fills = ledgr_extract_fills(x),
-    trades = ledgr_extract_trades(x),
+    fills = ledgr_extract_fills_impl(x, con = con),
+    trades = ledgr_extract_trades(x, con = con),
     ledger = tibble::as_tibble(
       DBI::dbGetQuery(
         con,

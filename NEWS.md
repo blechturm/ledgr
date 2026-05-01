@@ -4,8 +4,10 @@
   counts closed trade rows consistently across `summary()`,
   `ledgr_compare_runs()`, `ledgr_run_list()`, and `ledgr_results(bt, what =
   "trades")`, while `what = "fills"` continues to expose execution fill rows.
-- TODO: Improve result-access connection lifecycle and document `close()` as
-  long-session resource management rather than data-safety ceremony.
+- Improved result-access connection lifecycle: ordinary durable result
+  inspection now opens and closes read connections per operation, and `close()`
+  is documented as long-session resource management rather than data-safety
+  ceremony.
 - TODO: Add the minimal strategy-helper reference layer while preserving the
   existing pulse runner and no-lookahead execution path.
 - TODO: Overhaul strategy-development documentation around the ledgr mental

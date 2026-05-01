@@ -95,7 +95,7 @@ tickets:
 
   - id: LDG-1203
     title: "Result-Access Connection Lifecycle"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1201]
     tests:

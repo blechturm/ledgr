@@ -215,7 +215,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1201  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Evaluate and, if practical, implement per-operation read connections for
@@ -239,12 +239,12 @@ v0.1.8.
    durable `ledgr_run()` against the same snapshot where practical.
 
 **Acceptance Criteria:**
-- [ ] The lifecycle decision is documented: implemented now or explicitly
+- [x] The lifecycle decision is documented: implemented now or explicitly
       deferred.
-- [ ] Docs do not teach close calls as data-safety requirements.
-- [ ] If implemented, ordinary result-access APIs do not leave durable DuckDB
+- [x] Docs do not teach close calls as data-safety requirements.
+- [x] If implemented, ordinary result-access APIs do not leave durable DuckDB
       files locked for later writes.
-- [ ] If deferred, v0.1.8 owns the remaining architecture work.
+- [x] Implementation adopted; no v0.1.8 deferral is required.
 
 **Test Requirements:**
 - Connection lifecycle regression test where practical.
