@@ -1,0 +1,424 @@
+summary:
+  episodes_reviewed: 10
+  feedback_items_reviewed: 38
+  high_priority_count: 1
+  unresolved_uncertainty:
+    - "Two episodes had parser errors and no parsed feedback rows: 2026-05-01_004_multi_asset_momentum and 2026-05-01_006_bbands_macd. Raw framework_feedback.md was reviewed and included in themes, but those raw findings have no compound feedback IDs."
+    - "Several help/vignette discovery findings may reflect noninteractive R or Windows behavior rather than ledgr-specific defects."
+    - "Trade-count findings need maintainer confirmation of intended n_trades semantics across ledgr_compare_runs(), summary(), fills, and result tables."
+themes:
+  - theme_id: THEME-001
+    title: "Noninteractive documentation discovery is weak"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-01_001_cold_start_readme", "2026-05-01_002_cold_start_getting_started", "2026-05-01_004_multi_asset_momentum", "2026-05-01_005_rsi_mean_reversion", "2026-05-01_006_bbands_macd", "2026-05-01_007_experiment_store_compare", "2026-05-01_008_snapshot_csv_seal_backtest", "2026-05-01_009_edge_case_ten_bars", "2026-05-01_010_strategy_development_article"]
+    feedback_ids: ["2026-05-01_001_cold_start_readme/MD-003", "2026-05-01_001_cold_start_readme/MD-005", "2026-05-01_002_cold_start_getting_started/MD-002", "2026-05-01_005_rsi_mean_reversion/MD-002", "2026-05-01_007_experiment_store_compare/MD-002", "2026-05-01_007_experiment_store_compare/MD-003", "2026-05-01_008_snapshot_csv_seal_backtest/MD-002", "2026-05-01_009_edge_case_ten_bars/MD-001", "2026-05-01_010_strategy_development_article/MD-004"]
+    evidence: "Multiple episodes report that help(package = \"ledgr\"), vignette(package = \"ledgr\"), or printing a vignette object produced empty, unusable, or browser-dependent output in Rscript/noninteractive workflows. Agents worked around this by reading installed HTML/Rd files or using tools::Rd_db()/Rd2txt()."
+    recommended_action: "Add a documented noninteractive discovery path, ensure installed vignettes are discoverable from standard entry points, and point command-line users to stable installed files or helper commands."
+    uncertainty: "Some behavior may come from base R help mechanics or local Windows/browser configuration, not ledgr itself."
+  - theme_id: THEME-002
+    title: "First runnable examples are not clearly self-contained"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-01_001_cold_start_readme", "2026-05-01_002_cold_start_getting_started", "2026-05-01_010_strategy_development_article"]
+    feedback_ids: ["2026-05-01_001_cold_start_readme/MD-002", "2026-05-01_001_cold_start_readme/MD-004", "2026-05-01_002_cold_start_getting_started/MD-003", "2026-05-01_002_cold_start_getting_started/MD-005", "2026-05-01_010_strategy_development_article/MD-003"]
+    evidence: "The README-equivalent example was not runnable, the getting-started and strategy-development vignettes use dplyr/tibble without an upfront dependency note, and a durable example uses tempfile() despite durable wording."
+    recommended_action: "Make the primary getting-started path explicitly runnable from a clean install, state suggested-package expectations before code, and distinguish temporary vignette storage from durable project storage."
+    uncertainty: "Installed environment already had some suggested packages, so cold-start dependency failures were not directly observed."
+  - theme_id: THEME-003
+    title: "Feature IDs and indicator output discovery drive repeated friction"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-01_003_single_asset_sma_crossover", "2026-05-01_004_multi_asset_momentum", "2026-05-01_005_rsi_mean_reversion", "2026-05-01_006_bbands_macd"]
+    feedback_ids: ["2026-05-01_003_single_asset_sma_crossover/MD-004", "2026-05-01_005_rsi_mean_reversion/MD-002", "2026-05-01_005_rsi_mean_reversion/MD-003"]
+    evidence: "Parsed and raw feedback repeatedly notes exact feature IDs are easy to guess incorrectly. Raw episode 004 guessed return_5 incorrectly, episode 005 contrasts rsi_14 with ttr_rsi_14, and raw episode 006 found BBands/MACD outputs most discoverable through errors or a vignette."
+    recommended_action: "Keep emphasizing ledgr_feature_id(), add a compact supported TTR indicator/output table or discoverability helper, and include examples that pass generated IDs into strategies."
+    uncertainty: "Construction-time validation was reported as helpful, so the main issue is smooth-path documentation rather than broken validation."
+  - theme_id: THEME-004
+    title: "Strategy contract examples need broader coverage"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-01_003_single_asset_sma_crossover", "2026-05-01_004_multi_asset_momentum", "2026-05-01_005_rsi_mean_reversion", "2026-05-01_010_strategy_development_article"]
+    feedback_ids: ["2026-05-01_003_single_asset_sma_crossover/MD-001", "2026-05-01_003_single_asset_sma_crossover/MD-002", "2026-05-01_003_single_asset_sma_crossover/MD-003", "2026-05-01_005_rsi_mean_reversion/MD-002", "2026-05-01_010_strategy_development_article/MD-005"]
+    evidence: "Users had to infer SMA crossover, multi-asset target vector shape, target quantities versus weights, stateful RSI mean reversion, and conceptual AAA examples versus DEMO_01/DEMO_02 runnable data."
+    recommended_action: "Add focused examples for SMA crossover, two-asset momentum, stateful threshold strategies, and clarify when examples are conceptual versus runnable against demo data."
+    uncertainty: "Most workflows were completed with workarounds, so severity is documentation/UX rather than confirmed runtime failure."
+  - theme_id: THEME-005
+    title: "Warmup and short-history behavior is under-explained"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-01_003_single_asset_sma_crossover", "2026-05-01_004_multi_asset_momentum", "2026-05-01_005_rsi_mean_reversion", "2026-05-01_009_edge_case_ten_bars"]
+    feedback_ids: ["2026-05-01_003_single_asset_sma_crossover/MD-005", "2026-05-01_005_rsi_mean_reversion/MD-002", "2026-05-01_009_edge_case_ten_bars/MD-001"]
+    evidence: "Warmup guards were needed for SMA, momentum, RSI, and a 10-bar edge case. The 10-bar SMA20 run silently stayed flat; unguarded feature use failed with a raw R missing-value error; ledgr_ind_rsi(n = 14) reports Requires bars: 15 without an explanation in the cited help."
+    recommended_action: "Add a warmup and short-datasets note near indicator examples, consider preflight warnings when required bars exceed available bars, and wrap strategy evaluation errors with timestamp/instrument/feature context."
+    uncertainty: "Some warmup behavior is expected; the issue is whether ledgr should warn proactively or only document the user responsibility."
+  - theme_id: THEME-006
+    title: "Comparison and trade metrics conflict or lack definitions"
+    bucket: ledgr_bug
+    severity: high
+    episode_ids: ["2026-05-01_007_experiment_store_compare", "2026-05-01_010_strategy_development_article", "2026-05-01_009_edge_case_ten_bars"]
+    feedback_ids: ["2026-05-01_007_experiment_store_compare/MD-007", "2026-05-01_010_strategy_development_article/MD-002", "2026-05-01_010_strategy_development_article/MD-006", "2026-05-01_009_edge_case_ten_bars/MD-001"]
+    evidence: "Episode 010 reports ledgr_compare_runs() n_trades = 0 while ledgr_extract_fills() prints two fills and summary() reports Total Trades: 2. Episode 007 saw n_trades = 0 for nonzero target holdings and changed equity. Episode 009 reports ledgr_results(bt, what = \"trades\") as a 0 x 0 tibble for a flat run."
+    recommended_action: "Confirm intended metric semantics, fix any inconsistency in ledgr_compare_runs(), document n_trades definitions, and return stable zero-row result schemas."
+    uncertainty: "Episode 007 explicitly notes the zero count may be intentional depending on ledgr's definition; episode 010 has stronger conflicting evidence."
+  - theme_id: THEME-007
+    title: "Experiment-store operational steps need clearer guidance"
+    bucket: docs_gap
+    severity: low
+    episode_ids: ["2026-05-01_007_experiment_store_compare", "2026-05-01_008_snapshot_csv_seal_backtest", "2026-05-01_010_strategy_development_article"]
+    feedback_ids: ["2026-05-01_007_experiment_store_compare/MD-004", "2026-05-01_007_experiment_store_compare/MD-005", "2026-05-01_008_snapshot_csv_seal_backtest/MD-002", "2026-05-01_010_strategy_development_article/MD-007"]
+    evidence: "Feedback calls out remembering or setting snapshot IDs, missing label/tag examples in compare workflows, needing lower-level explicit seal/load steps for CSV import, and easy-to-miss close()/on.exit() lifecycle cleanup."
+    recommended_action: "Add operational notes and small examples for persistent snapshot IDs, labels/tags, explicit CSV seal/load workflows, and defensive cleanup."
+    uncertainty: "The runs succeeded; these are hardening improvements for repeatable manual workflows."
+  - theme_id: THEME-008
+    title: "Shell, logging, and encoding issues are mostly non-ledgr friction"
+    bucket: expected_user_error
+    severity: low
+    episode_ids: ["2026-05-01_001_cold_start_readme", "2026-05-01_002_cold_start_getting_started", "2026-05-01_003_single_asset_sma_crossover", "2026-05-01_007_experiment_store_compare"]
+    feedback_ids: ["2026-05-01_001_cold_start_readme/MD-006", "2026-05-01_001_cold_start_readme/MD-007", "2026-05-01_002_cold_start_getting_started/MD-004", "2026-05-01_003_single_asset_sma_crossover/MD-006", "2026-05-01_007_experiment_store_compare/MD-006"]
+    evidence: "PowerShell quoting expanded R $ expressions, stderr redirection through Tee-Object or PowerShell wrappers made successful R runs look failed, and captured tibble output showed mojibake on Windows."
+    recommended_action: "Treat as environment guidance: provide Windows-safe command examples and remind reviewers to check true process exit codes and full logs."
+    uncertainty: "Raw evidence frames these as not ledgr runtime bugs."
+items:
+  - feedback_id: "2026-05-01_001_cold_start_readme/MD-001"
+    episode_id: "2026-05-01_001_cold_start_readme"
+    title: "Outcome"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Workflow succeeded after using the installed getting-started vignette as the README-equivalent runnable example."
+    recommended_action: "No direct issue; use as context for README discovery findings."
+    uncertainty: "Parser treated an outcome heading as feedback."
+  - feedback_id: "2026-05-01_001_cold_start_readme/MD-002"
+    episode_id: "2026-05-01_001_cold_start_readme"
+    title: "README-equivalent example is not runnable"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "Installed examples/README.md says examples are non-executable development artifacts; user had to move to the getting-started vignette."
+    recommended_action: "Provide or clearly link a first runnable README-level example."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_001_cold_start_readme/MD-003"
+    episode_id: "2026-05-01_001_cold_start_readme"
+    title: "Package overview discovery is ambiguous"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Installed doc index and vignette list did not clearly mark the primary starting point."
+    recommended_action: "Mark getting-started as the primary package overview."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_001_cold_start_readme/MD-004"
+    episode_id: "2026-05-01_001_cold_start_readme"
+    title: "Getting-started example depends on suggested packages"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: "2026-05-01_002_cold_start_getting_started/MD-003"
+    evidence: "Getting-started calls library(dplyr) and library(tibble); dplyr is only Suggested."
+    recommended_action: "Add an upfront dependency note or base R alternative."
+    uncertainty: "The episode environment already had packages installed."
+  - feedback_id: "2026-05-01_001_cold_start_readme/MD-005"
+    episode_id: "2026-05-01_001_cold_start_readme"
+    title: "Rscript rendering of help(package = \"ledgr\") was not useful"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: "2026-05-01_002_cold_start_getting_started/MD-002"
+    evidence: "Rscript help(package = \"ledgr\") did not show a useful overview; installed HTML index worked."
+    recommended_action: "Document a noninteractive help-index path."
+    uncertainty: "May be base R behavior."
+  - feedback_id: "2026-05-01_001_cold_start_readme/MD-006"
+    episode_id: "2026-05-01_001_cold_start_readme"
+    title: "PowerShell quoting around Rscript -e"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: "2026-05-01_003_single_asset_sma_crossover/MD-006"
+    evidence: "Invalid R variable name and PowerShell/R quoting mistakes slowed documentation inspection."
+    recommended_action: "Use script files or Windows-safe quoting examples for command-line snippets."
+    uncertainty: "Raw evidence says this did not indicate a ledgr issue."
+  - feedback_id: "2026-05-01_001_cold_start_readme/MD-007"
+    episode_id: "2026-05-01_001_cold_start_readme"
+    title: "PowerShell 2>&1 | Tee-Object made script verification look failed"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: "2026-05-01_002_cold_start_getting_started/MD-004"
+    evidence: "First run printed success but shell reported exit code 1 when stderr was merged through Tee-Object; rerun with separate logs had LASTEXITCODE 0."
+    recommended_action: "Document checking true exit codes and separate logs in Windows episode guidance."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_002_cold_start_getting_started/MD-001"
+    episode_id: "2026-05-01_002_cold_start_getting_started"
+    title: "Status"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Getting-started workflow succeeded with ledgr 0.1.7.1."
+    recommended_action: "No direct issue; use as context."
+    uncertainty: "Parser treated a status heading as feedback."
+  - feedback_id: "2026-05-01_002_cold_start_getting_started/MD-002"
+    episode_id: "2026-05-01_002_cold_start_getting_started"
+    title: "Batch discovery of help and vignettes was unclear"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "help(package = \"ledgr\") and vignette(package = \"ledgr\") printed no useful index via Rscript."
+    recommended_action: "Provide a reliable batch/noninteractive discovery recipe."
+    uncertainty: "May be R help-system behavior."
+  - feedback_id: "2026-05-01_002_cold_start_getting_started/MD-003"
+    episode_id: "2026-05-01_002_cold_start_getting_started"
+    title: "Getting-started vignette depends on tidyverse packages without an upfront install/check note"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "Vignette starts with library(dplyr) and library(tibble)."
+    recommended_action: "State suggested-package requirements before code or provide base R equivalents."
+    uncertainty: "Episode did not fail because packages were already installed."
+  - feedback_id: "2026-05-01_002_cold_start_getting_started/MD-004"
+    episode_id: "2026-05-01_002_cold_start_getting_started"
+    title: "PowerShell can make normal R stderr look like a command failure"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "Redirected vignette run produced a NativeCommandError wrapper around R stderr while exiting with code 0."
+    recommended_action: "Document checking actual process exit code."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_002_cold_start_getting_started/MD-005"
+    episode_id: "2026-05-01_002_cold_start_getting_started"
+    title: "Durable workflow uses a temporary database in the vignette"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Durable store example uses tempfile(\"ledgr_getting_started_\", fileext = \".duckdb\")."
+    recommended_action: "Add note to use explicit project artifact paths for real research."
+    uncertainty: "Appropriate for a vignette run but potentially confusing."
+  - feedback_id: "2026-05-01_003_single_asset_sma_crossover/MD-001"
+    episode_id: "2026-05-01_003_single_asset_sma_crossover"
+    title: "No direct SMA crossover example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "User combined SMA help, getting-started close-above-SMA example, and strategy-development contract docs to infer two-SMA crossover."
+    recommended_action: "Add a direct SMA crossover example."
+    uncertainty: "Workflow was resolved."
+  - feedback_id: "2026-05-01_003_single_asset_sma_crossover/MD-002"
+    episode_id: "2026-05-01_003_single_asset_sma_crossover"
+    title: "Signals versus targets requires careful reading"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Task language suggested signals; ledgr strategies return desired holdings, which docs explain but required verification."
+    recommended_action: "Highlight target-holdings contract in strategy examples."
+    uncertainty: "Resolved by reading docs."
+  - feedback_id: "2026-05-01_003_single_asset_sma_crossover/MD-003"
+    episode_id: "2026-05-01_003_single_asset_sma_crossover"
+    title: "ledgr_signal_strategy() help text has a small signature mismatch"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Usage/argument text says fn(ctx), while example uses function(ctx, params); core strategy contract elsewhere is function(ctx, params)."
+    recommended_action: "Make wrapper signature documentation consistent."
+    uncertainty: "A one-argument signal function worked in testing."
+  - feedback_id: "2026-05-01_003_single_asset_sma_crossover/MD-004"
+    episode_id: "2026-05-01_003_single_asset_sma_crossover"
+    title: "Feature IDs are exact strings and easy to guess incorrectly"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "User had to call ledgr_feature_id() to confirm sma_10 and sma_30 IDs."
+    recommended_action: "Continue making ledgr_feature_id() prominent in examples."
+    uncertainty: "Docs already mention this, but repeated friction suggests more emphasis."
+  - feedback_id: "2026-05-01_003_single_asset_sma_crossover/MD-005"
+    episode_id: "2026-05-01_003_single_asset_sma_crossover"
+    title: "Warmup behavior must be handled by the user strategy"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "30-day SMA needs warmup handling; strategy returned ctx$hold() until both features were available."
+    recommended_action: "Add explicit warmup guard patterns near indicator examples."
+    uncertainty: "Expected behavior but easy to miss."
+  - feedback_id: "2026-05-01_003_single_asset_sma_crossover/MD-006"
+    episode_id: "2026-05-01_003_single_asset_sma_crossover"
+    title: "Shell quoting caused a misleading first failure"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "PowerShell expanded R $ expressions in an inline command, corrupting ledgr_demo_bars$instrument_id."
+    recommended_action: "Prefer .R scripts or escaped $ in Windows command-line examples."
+    uncertainty: "Raw feedback says not a ledgr bug."
+  - feedback_id: "2026-05-01_005_rsi_mean_reversion/MD-001"
+    episode_id: "2026-05-01_005_rsi_mean_reversion"
+    title: "Bugs"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "No confirmed ledgr runtime bug was found."
+    recommended_action: "No direct issue; use following grouped rows for triage."
+    uncertainty: "Parser treated a section heading as feedback."
+  - feedback_id: "2026-05-01_005_rsi_mean_reversion/MD-002"
+    episode_id: "2026-05-01_005_rsi_mean_reversion"
+    title: "UX friction and documentation gaps"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "Raw markdown lists noninteractive help friction, thin RSI helper docs, feature ID differences, unexplained requires_bars = n + 1, fragile generated instrument-name guesses, incomplete invalid-target error context, and limited help from ledgr_signal_strategy() for stateful logic."
+    recommended_action: "Expand RSI and stateful strategy documentation; show ledgr_feature_id(), ctx$universe, and expected warmup behavior."
+    uncertainty: "This parsed row aggregates several issues; not all have separate feedback IDs."
+  - feedback_id: "2026-05-01_005_rsi_mean_reversion/MD-003"
+    episode_id: "2026-05-01_005_rsi_mean_reversion"
+    title: "Workarounds used"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Workarounds included Rd2txt help extraction, ledgr_feature_id(), ctx$universe[[1]], and deterministic oscillating synthetic data."
+    recommended_action: "Use these workaround patterns as candidate documentation snippets."
+    uncertainty: "Parser treated workaround section as feedback."
+  - feedback_id: "2026-05-01_007_experiment_store_compare/MD-001"
+    episode_id: "2026-05-01_007_experiment_store_compare"
+    title: "Status"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Task succeeded."
+    recommended_action: "No direct issue; use as context."
+    uncertainty: "Parser treated status heading as feedback."
+  - feedback_id: "2026-05-01_007_experiment_store_compare/MD-002"
+    episode_id: "2026-05-01_007_experiment_store_compare"
+    title: "Noninteractive help discovery is awkward"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: "2026-05-01_002_cold_start_getting_started/MD-002"
+    evidence: "help and vignette captures with sink() produced empty files; workaround used exports and Rd2txt help pages."
+    recommended_action: "Document noninteractive help capture."
+    uncertainty: "May be R help-system behavior."
+  - feedback_id: "2026-05-01_007_experiment_store_compare/MD-003"
+    episode_id: "2026-05-01_007_experiment_store_compare"
+    title: "No installed vignettes were discoverable"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: "2026-05-01_002_cold_start_getting_started/MD-002"
+    evidence: "vignette(package = \"ledgr\") did not list available vignettes in this installed package."
+    recommended_action: "Ensure installed vignettes are discoverable through standard vignette listing."
+    uncertainty: "Conflicts with other episodes that found installed vignettes by direct paths; environment or invocation may matter."
+  - feedback_id: "2026-05-01_007_experiment_store_compare/MD-004"
+    episode_id: "2026-05-01_007_experiment_store_compare"
+    title: "Experiment-store workflow depends on remembering the snapshot ID"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "User must set snapshot_id up front or save snapshot$snapshot_id before closing the original handle."
+    recommended_action: "Call out persistent snapshot ID handling in compare/list examples."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_007_experiment_store_compare/MD-005"
+    episode_id: "2026-05-01_007_experiment_store_compare"
+    title: "Run IDs are clear, but labels/tags are not part of the main compare example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Compare/list output includes label and tags, but basic compare examples do not show how to label/tag runs for later discovery."
+    recommended_action: "Add labels/tags to the main experiment-store compare example."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_007_experiment_store_compare/MD-006"
+    episode_id: "2026-05-01_007_experiment_store_compare"
+    title: "Console/log encoding degraded tibble print hints on Windows"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "Captured output showed mojibake for tibble multiplication sign and info marker, though data remained readable."
+    recommended_action: "Include UTF-8/logging guidance for Windows evidence capture if needed."
+    uncertainty: "Likely environment/logging issue."
+  - feedback_id: "2026-05-01_007_experiment_store_compare/MD-007"
+    episode_id: "2026-05-01_007_experiment_store_compare"
+    title: "Trade count was surprising for a simple held-position strategy"
+    bucket: unclear
+    severity: medium
+    duplicate_of: "2026-05-01_010_strategy_development_article/MD-002"
+    evidence: "Comparison output reported n_trades = 0 despite nonzero target holdings and changed equity."
+    recommended_action: "Define n_trades semantics and compare against fills/summary behavior."
+    uncertainty: "May be intentional if n_trades excludes open positions or closed round trips."
+  - feedback_id: "2026-05-01_008_snapshot_csv_seal_backtest/MD-001"
+    episode_id: "2026-05-01_008_snapshot_csv_seal_backtest"
+    title: "Status"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Task succeeded with workarounds."
+    recommended_action: "No direct issue; use as context."
+    uncertainty: "Parser treated status heading as feedback."
+  - feedback_id: "2026-05-01_008_snapshot_csv_seal_backtest/MD-002"
+    episode_id: "2026-05-01_008_snapshot_csv_seal_backtest"
+    title: "Workarounds used"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "User used Rd files for help, lower-level explicit snapshot creation/import/seal/load steps, and explicit start/end timestamps for ledgr_backtest()."
+    recommended_action: "Add a concise explicit CSV import, seal, load, and backtest example."
+    uncertainty: "Parser treated workaround section as feedback, but workarounds identify documentation opportunities."
+  - feedback_id: "2026-05-01_009_edge_case_ten_bars/MD-001"
+    episode_id: "2026-05-01_009_edge_case_ten_bars"
+    title: "Status"
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: "Raw markdown reports no proactive warning when SMA20 warmup exceeds 10 available bars, raw R error for unguarded NA feature use, zero-trade results table as 0 x 0, and awkward help logging."
+    recommended_action: "Consider warmup preflight warnings, contextual strategy error wrapping, and stable zero-row result schemas."
+    uncertainty: "The parser collapsed detailed raw issues under a status heading."
+  - feedback_id: "2026-05-01_010_strategy_development_article/MD-001"
+    episode_id: "2026-05-01_010_strategy_development_article"
+    title: "Succeeded With Issues"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Strategy-development vignette could be followed end to end and produced pulse snapshot, threshold runs, flat comparison, and stored strategy extraction."
+    recommended_action: "No direct issue; use as context."
+    uncertainty: "Parser treated success context as feedback."
+  - feedback_id: "2026-05-01_010_strategy_development_article/MD-002"
+    episode_id: "2026-05-01_010_strategy_development_article"
+    title: "ledgr_compare_runs() reports zero trades for a run with fills"
+    bucket: ledgr_bug
+    severity: high
+    duplicate_of: null
+    evidence: "raw_logs/reproducible_script_run.txt reportedly has ledgr_compare_runs() n_trades = 0 for threshold_qty_1 while ledgr_extract_fills() prints two fill rows and summary(bt_qty_1) reports Total Trades: 2."
+    recommended_action: "Investigate and fix or document n_trades computation in ledgr_compare_runs()."
+    uncertainty: "Strongest trade-count evidence, but maintainer should confirm intended metric definitions."
+  - feedback_id: "2026-05-01_010_strategy_development_article/MD-003"
+    episode_id: "2026-05-01_010_strategy_development_article"
+    title: "The article depends on dplyr without explaining dependency expectations"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: "2026-05-01_002_cold_start_getting_started/MD-003"
+    evidence: "Vignette starts with library(dplyr) and uses filter() and between()."
+    recommended_action: "Explain whether dplyr is required, suggested, or a vignette convenience; consider base R data filtering."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_010_strategy_development_article/MD-004"
+    episode_id: "2026-05-01_010_strategy_development_article"
+    title: "Printing a vignette object can fail before the user sees the article"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: "2026-05-01_002_cold_start_getting_started/MD-002"
+    evidence: "utils::vignette(\"strategy-development\", package = \"ledgr\") attempted to browse a localhost URL and failed in this environment."
+    recommended_action: "Document non-browser alternatives for locating and reading installed vignette files."
+    uncertainty: "Likely environment/browser association dependent."
+  - feedback_id: "2026-05-01_010_strategy_development_article/MD-005"
+    episode_id: "2026-05-01_010_strategy_development_article"
+    title: "Some strategy examples use AAA, which is not part of the later demo universe"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "buy_one_if_up(), rsi_strategy(), and sma_breakout() hard-code AAA while later demo snapshot uses DEMO_01 and DEMO_02."
+    recommended_action: "Mark AAA examples as conceptual or align runnable examples with DEMO_01/DEMO_02."
+    uncertainty: ""
+  - feedback_id: "2026-05-01_010_strategy_development_article/MD-006"
+    episode_id: "2026-05-01_010_strategy_development_article"
+    title: "Comparison metric terminology is unclear"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: "2026-05-01_010_strategy_development_article/MD-002"
+    evidence: "Article shows n_trades but does not define whether it means fills, round trips, closed trades, signal changes, or another metric; observed output conflicted with summary and fills."
+    recommended_action: "Define comparison-table metrics near the example."
+    uncertainty: "Closely related to possible ledgr_compare_runs() bug."
+  - feedback_id: "2026-05-01_010_strategy_development_article/MD-007"
+    episode_id: "2026-05-01_010_strategy_development_article"
+    title: "Cleanup requires explicit close() calls but the lifecycle is easy to miss"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Vignette closes pulse, backtests, and snapshot at the end, but does not show on.exit() or defensive cleanup for early errors."
+    recommended_action: "Add cleanup or on.exit() pattern for long interactive examples."
+    uncertainty: ""

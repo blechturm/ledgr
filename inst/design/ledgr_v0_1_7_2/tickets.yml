@@ -1,0 +1,430 @@
+version: "0.1.7.2-auditr-ux-and-strategy-helpers"
+source: "v0_1_7_2_tickets.md"
+tickets:
+  - id: LDG-1201
+    title: "Patch Scope, Metadata, And Non-Goal Guardrails"
+    status: pending
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation consistency scan"
+      - "export/API inventory scan"
+      - "filename/package scan"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Version scoping, ticket generation, compatibility posture, and non-goal
+        boundary definition are Tier H by rule.
+      invariants_at_risk:
+        - release scope
+        - public API boundary
+        - non-goal boundary
+        - documentation contract
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/ledgr_v0_1_7_2/ledgr_strategy_spec.md
+        - inst/design/ledgr_v0_1_7_2/ledgr_triage_report.md
+        - inst/design/ledgr_roadmap.md
+        - inst/design/contracts.md
+        - NEWS.md
+      tests_required:
+        - documentation consistency scan
+        - export/API inventory scan
+        - filename/package scan
+      escalation_triggers:
+        - sweep/tune scope appears necessary
+        - short-selling or leverage semantics appear necessary
+        - helper layer requires a second execution path
+      forbidden_actions:
+        - adding ledgr_sweep or ledgr_tune
+        - adding strategy dependency-packaging arguments
+        - adding short-selling semantics
+        - changing execution behavior during scope setup
+
+  - id: LDG-1202
+    title: "Comparison Metrics And Stable Result Schemas"
+    status: pending
+    priority: P0
+    dependencies: [LDG-1201]
+    tests:
+      - "targeted comparison metric regression test"
+      - "zero-row schema tests"
+      - "flat/open-only/round-trip/multi-fill tests"
+      - "existing comparison tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Result metric semantics affect public comparison output and documented
+        interpretation of ledger-derived artifacts. The work may touch
+        run-store SQL, result reconstruction, and summary metrics, so Tier H
+        implementation and review are required.
+      invariants_at_risk:
+        - result metric definitions
+        - comparison no-recompute contract
+        - result table schemas
+        - ledger-derived result interpretation
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/ledgr_v0_1_7_2/ledgr_triage_report.md
+        - inst/design/contracts.md (Result Contract, Persistence Contract)
+        - R/run-store.R
+        - R/backtest.R
+        - tests/testthat/test-run-compare.R
+        - tests/testthat/test-run-store.R
+      tests_required:
+        - targeted comparison metric regression test
+        - zero-row schema tests
+        - flat/open-only/round-trip/multi-fill tests
+        - existing comparison tests
+      escalation_triggers:
+        - metric fix requires changing ledger or fill semantics
+        - comparison would need to rerun strategy code
+        - schema changes appear necessary
+        - result definitions conflict with existing summary output
+      forbidden_actions:
+        - recomputing strategies from comparison APIs
+        - mutating stores from comparison APIs
+        - changing fill or ledger semantics
+        - hiding metric inconsistencies with print-only formatting
+
+  - id: LDG-1203
+    title: "Result-Access Connection Lifecycle"
+    status: pending
+    priority: P1
+    dependencies: [LDG-1201]
+    tests:
+      - "connection lifecycle regression test"
+      - "existing persistence tests"
+      - "close-framing documentation scan"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        DuckDB connection lifecycle, checkpoint behavior, and persistent
+        read/write locking are persistence hard-escalation areas. Even if the
+        result is deferral, the investigation and documentation require Tier H
+        review.
+      invariants_at_risk:
+        - persistence lifecycle
+        - DuckDB locking behavior
+        - restart/readback safety
+        - documentation accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/contracts.md (Persistence Contract, Result Contract)
+        - R/backtest.R
+        - R/run-store.R
+        - R/snapshot.R
+        - R/db-connect.R
+      tests_required:
+        - connection lifecycle regression test
+        - existing persistence tests
+        - close-framing documentation scan
+      escalation_triggers:
+        - per-operation reads require schema or storage architecture changes
+        - Windows or Ubuntu DuckDB locking differs materially
+        - checkpoint behavior would need to change
+      forbidden_actions:
+        - weakening runner checkpoint behavior
+        - hiding connection failures
+        - teaching close as data-loss prevention
+        - changing result schemas while refactoring connections
+
+  - id: LDG-1204
+    title: "Strategy Helper Types, Contracts, And Validator"
+    status: pending
+    priority: P0
+    dependencies: [LDG-1201]
+    tests:
+      - "helper type tests"
+      - "validator tests"
+      - "invalid direct return tests"
+      - "existing strategy tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        This ticket changes public strategy return validation and updates the
+        binding Strategy Contract. Strategy output validation is
+        execution-adjacent and contract-sensitive, requiring Tier H
+        implementation and review.
+      invariants_at_risk:
+        - strategy output contract
+        - target vector shape
+        - canonical execution path
+        - public helper API
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/ledgr_v0_1_7_2/ledgr_strategy_spec.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract)
+        - R/strategy-contracts.R
+        - R/pulse-context.R
+        - tests/testthat/test-backtest-wrapper.R
+        - tests/testthat/test-experiment-run.R
+      tests_required:
+        - helper type tests
+        - validator tests
+        - invalid direct return tests
+        - existing strategy tests
+      escalation_triggers:
+        - helper types require changing runner internals
+        - target validation conflicts with existing numeric-vector behavior
+        - contracts need broader weight/short-selling semantics
+      forbidden_actions:
+        - accepting weights or signals as executable strategy outputs
+        - changing target vector shape
+        - adding short-selling semantics
+        - forking the runner
+
+  - id: LDG-1205
+    title: "Strategy Helper Reference Primitives"
+    status: pending
+    priority: P1
+    dependencies: [LDG-1204]
+    tests:
+      - "helper primitive tests"
+      - "reference strategy tests"
+      - "no-lookahead relevant smoke tests"
+      - "export scan"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Implements public strategy helper APIs that construct executable targets
+        from feature data and current portfolio state. This touches strategy
+        output semantics and user-facing helper contracts, so Tier H is
+        required.
+      invariants_at_risk:
+        - strategy helper semantics
+        - target quantity construction
+        - long-only contract
+        - no-lookahead feature access
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/ledgr_v0_1_7_2/ledgr_strategy_spec.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Indicator Contract)
+        - R/pulse-context.R
+        - R/indicators_builtin.R
+        - R/strategy-contracts.R
+      tests_required:
+        - helper primitive tests
+        - reference strategy tests
+        - no-lookahead relevant smoke tests
+        - export scan
+      escalation_triggers:
+        - helper requires unregistered feature auto-creation
+        - target construction needs shorting or leverage semantics
+        - current equity/price assumptions conflict with execution semantics
+      forbidden_actions:
+        - auto-registering indicators from signal helpers
+        - silently normalizing weights
+        - allowing negative weights
+        - adding broad helper zoo APIs
+        - adding sweep/tune APIs
+
+  - id: LDG-1206
+    title: "Warmup, Feature IDs, And Strategy Error Context"
+    status: pending
+    priority: P1
+    dependencies: [LDG-1201]
+    tests:
+      - "strategy error context test"
+      - "documentation render/scans"
+      - "existing feature/indicator tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Documentation portions are bounded, but wrapping strategy evaluation
+        errors touches execution callbacks and strategy failure behavior. Tier H
+        is required.
+      invariants_at_risk:
+        - strategy error semantics
+        - feature ID/fingerprint contract
+        - warmup behavior expectations
+        - no-lookahead debugging context
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Indicator Contract)
+        - R/backtest-runner.R
+        - R/pulse-context.R
+        - R/indicator.R
+        - R/indicator-ttr.R
+        - vignettes/ttr-indicators.Rmd
+        - vignettes/strategy-development.Rmd
+      tests_required:
+        - strategy error context test
+        - documentation render/scans
+        - existing feature/indicator tests
+      escalation_triggers:
+        - wrapping changes error classes relied on by tests
+        - useful context requires changing pulse semantics
+        - feature ID aliases seem necessary
+      forbidden_actions:
+        - changing feature fingerprints
+        - adding feature ID aliases
+        - swallowing original strategy errors
+        - weakening post-warmup NA validation
+
+  - id: LDG-1207
+    title: "Strategy Development Vignette Overhaul"
+    status: pending
+    priority: P1
+    dependencies: [LDG-1202, LDG-1204, LDG-1205, LDG-1206]
+    tests:
+      - "vignette render"
+      - "documentation scans"
+      - "README/vignette checks"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation-heavy work, but it teaches the central public strategy
+        contract and helper mental model. Implementation can be Tier M, with
+        Tier H review for contract accuracy.
+      invariants_at_risk:
+        - strategy contract comprehension
+        - context mental model
+        - target quantity semantics
+        - helper API expectations
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/ledgr_v0_1_7_2/ledgr_strategy_spec.md
+        - inst/design/ledgr_design_document.md
+        - inst/design/ledgr_design_philosophy.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Result Contract)
+        - vignettes/strategy-development.Rmd
+        - vignettes/getting-started.Rmd
+      tests_required:
+        - vignette render
+        - documentation scans
+        - README/vignette checks
+      escalation_triggers:
+        - docs need helper APIs that did not ship
+        - examples expose missing runtime support
+        - article cannot stay runnable with installed package dependencies
+      forbidden_actions:
+        - teaching ctx$params
+        - teaching old context helper names
+        - presenting future helper APIs as current if Track B defers
+        - using conceptual IDs in runnable examples
+
+  - id: LDG-1208
+    title: "Installed Documentation And Background Articles"
+    status: pending
+    priority: P2
+    dependencies: [LDG-1201, LDG-1203]
+    tests:
+      - "README render/check"
+      - "article render"
+      - "pkgdown build"
+      - "documentation scans"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Mostly documentation and pkgdown navigation, but it affects installed
+        documentation discovery, first-run UX, and strategic positioning. Tier H
+        review is required to prevent misleading claims or future API leakage.
+      invariants_at_risk:
+        - documentation discoverability
+        - installed-vs-pkgdown article boundary
+        - public workflow expectations
+        - strategic positioning accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/ledgr_v0_1_7_2/ledgr_triage_report.md
+        - README.Rmd
+        - _pkgdown.yml
+        - vignettes/getting-started.Rmd
+        - vignettes/experiment-store.Rmd
+        - vignettes/articles/
+      tests_required:
+        - README render/check
+        - article render
+        - pkgdown build
+        - documentation scans
+      escalation_triggers:
+        - articles claim unavailable APIs
+        - installed vignettes become noisy with positioning content
+        - pkgdown-only article links fail from nested article paths
+      forbidden_actions:
+        - adding positioning articles as installed vignettes
+        - presenting future helper APIs as current
+        - adding network-dependent examples
+        - adding unreviewed competitor claims
+
+  - id: LDG-1209
+    title: "v0.1.7.2 Release Gate"
+    status: pending
+    priority: P0
+    dependencies: [LDG-1201, LDG-1202, LDG-1203, LDG-1204, LDG-1205, LDG-1206, LDG-1207, LDG-1208]
+    tests:
+      - "full package tests"
+      - "R CMD check"
+      - "README/article renders"
+      - "pkgdown build"
+      - "export/API inventory scan"
+      - "CI verification"
+      - "local WSL/Ubuntu gate"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gates are Tier H by routing rule. This ticket validates
+        contracts, tests, documentation, CI, package metadata, and API boundary
+        before merge and tag.
+      invariants_at_risk:
+        - release correctness
+        - package build health
+        - public API export boundary
+        - documentation accuracy
+        - contract consistency
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_spec.md
+        - inst/design/ledgr_v0_1_7_2/v0_1_7_2_tickets.md
+        - inst/design/ledgr_v0_1_7_2/tickets.yml
+        - inst/design/contracts.md
+        - inst/design/ledgr_roadmap.md
+        - DESCRIPTION
+        - NEWS.md
+        - README.Rmd
+        - _pkgdown.yml
+      tests_required:
+        - full package tests
+        - R CMD check
+        - README/article renders
+        - pkgdown build
+        - export/API inventory scan
+        - CI verification
+        - local WSL/Ubuntu gate
+      escalation_triggers:
+        - any CI failure remains unexplained
+        - exported API inventory contains future-cycle APIs
+        - R CMD check warnings require scope decisions
+        - documentation examples cannot run offline
+      forbidden_actions:
+        - tagging before CI is green
+        - ignoring R CMD check warnings
+        - shipping with known future-cycle API leaks
+        - accepting the gate with open P0 or P1 issues

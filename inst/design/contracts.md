@@ -254,3 +254,8 @@ the active versioned spec packet, currently
 - Coverage gate target: at least 80% total coverage via `tools/check-coverage.R`.
 - CI must run acceptance tests before the full package check and include a
   Windows runner before v0.1.2 release.
+- For tickets that touch executable R code, package metadata, vignettes,
+  pkgdown, DuckDB persistence, snapshots, file paths, time zones, encodings, or
+  other OS-sensitive behavior, a local WSL/Ubuntu gate should run before push.
+  At minimum this gate runs package tests and `R CMD check` under Linux; docs
+  and pkgdown changes also require a local pkgdown build where practical.

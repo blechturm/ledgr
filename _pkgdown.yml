@@ -7,9 +7,11 @@ development:
   mode: release
 
 articles:
-  - title: Philosophy
+  - title: Background
     navbar: ~
     contents:
+      - articles/who-ledgr-is-for
+      - articles/why-r
       - research-to-production
   - title: Start
     navbar: ~

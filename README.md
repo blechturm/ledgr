@@ -21,6 +21,9 @@ For the longer design arc, see the
 [`research-to-production`](https://blechturm.github.io/ledgr/articles/research-to-production.html)
 article on the pkgdown site.
 
+Not sure whether ledgr fits your workflow? Start with [Who ledgr is
+for](https://blechturm.github.io/ledgr/articles/who-ledgr-is-for.html).
+
 ## Install
 
 ``` r

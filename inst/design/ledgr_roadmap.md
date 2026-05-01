@@ -518,6 +518,123 @@ experiment-first reset without reopening the public API design.
 
 ---
 
+## v0.1.7.2 - Auditr UX Stabilisation And Strategy Helper Layer
+
+**Goal:** Close the highest-value auditr companion-package findings from the
+installed v0.1.7.1 experience and prepare the strategy helper layer without
+changing ledgr's canonical target-vector execution contract.
+
+v0.1.7 established `function(ctx, params)` as the public strategy shape.
+v0.1.7.2 has two tracks:
+
+1. **Auditr UX stabilisation:** fix confirmed comparison/trade metric
+   inconsistencies and remove the most repeated documentation/discovery
+   friction from installed-package workflows.
+2. **Strategy helper design:** prepare a thin helper layer that lets strategies
+   express the common research sequence:
+
+```text
+signal -> selection -> weights -> target
+```
+
+The helper layer is not a second engine. It must terminate in explicit target
+quantities before execution and must continue to use `ledgr_run()` and the
+existing runner.
+
+### Scope
+
+- Confirm and fix comparison/trade metric semantics:
+  - `summary()`, `ledgr_compare_runs()`, `ledgr_extract_fills()`, and
+    `ledgr_results(bt, what = "trades")` must use documented, non-conflicting
+    definitions.
+  - Flat or zero-trade runs must return stable zero-row result schemas, not
+    `0 x 0` tibbles.
+- Improve installed documentation discovery for noninteractive users:
+  - standard vignette/help discovery paths;
+  - command-line safe alternatives for reading installed docs;
+  - explicit suggested-package expectations in runnable vignettes.
+- Tighten strategy and indicator examples:
+  - direct SMA crossover;
+  - two-asset momentum;
+  - stateful threshold or RSI example;
+  - feature ID discovery with `ledgr_feature_id()`;
+  - warmup and short-history behavior near examples.
+- Overhaul `vignettes/strategy-development.Rmd` as the central strategy
+  authoring chapter:
+  - teach the design mental model;
+  - explain why strategies are `function(ctx, params)`;
+  - build a simple quant strategy step by step;
+  - show helper functions as economic logic;
+  - demonstrate interactive snapshot/pulse debugging during strategy
+    development.
+- Clarify experiment-store operational examples:
+  - durable snapshot IDs;
+  - labels/tags in comparison workflows;
+  - explicit CSV seal/load/backtest workflow;
+  - handle lifecycle framing for long sessions and multi-run workflows.
+- Public helper value types for strategy authoring:
+  - `ledgr_signal`
+  - `ledgr_selection`
+  - `ledgr_weights`
+  - `ledgr_target`
+- Minimal reference helpers for:
+  - feature-backed signals;
+  - top-n selection;
+  - equal weighting;
+  - target construction from weights.
+- `ledgr_target` validator support as a thin wrapper around a full named
+  numeric target vector.
+- `contracts.md` update when helper validator support ships, preserving the
+  target-quantity execution contract while allowing `ledgr_target` as a helper
+  wrapper.
+- Explicit long-only behavior: negative weights remain unsupported until a
+  future short-selling contract exists.
+- Documentation that distinguishes the helper pipeline from the core execution
+  contract.
+- Corrected handle lifecycle documentation: explicit close calls release
+  result-access DuckDB connections for long sessions, but are not framed as
+  data-loss prevention after `ledgr_run()` completes.
+- Evaluation of per-operation read connections for result access so ordinary
+  result inspection does not keep durable DuckDB files locked.
+
+### Non-goals
+
+- No sweep/tune APIs.
+- No `strategy_helpers`, `strategy_packages`, or `strategy_globals_ok`
+  dependency declaration arguments. Sweep worker dependency packaging remains
+  v0.1.8 scope.
+- No short selling, leverage, broker margin semantics, or order-level risk.
+- No large helper zoo.
+
+### Definition of Done
+
+- The auditr high-priority trade-metric theme is either fixed or explicitly
+  documented with tests proving intended behavior.
+- Installed-package documentation has a reliable noninteractive discovery path.
+- First-path examples are runnable from a clean installed package with stated
+  suggested-package assumptions.
+- Warmup, feature ID, and strategy target-shape examples address the recurring
+  auditr friction points.
+- The strategy-development vignette reads as a coherent teaching chapter, with
+  runnable examples against `ledgr_demo_bars` and a clear distinction between
+  current APIs and any helper-layer examples.
+- Helper pipelines run through `ledgr_run()` and produce the same kind of
+  target quantities as hand-written strategies.
+- Returning signals, selections, or weights directly from a strategy fails
+  loudly.
+- `contracts.md` is updated to allow `ledgr_target` as a validated wrapper
+  while preserving the target-quantity execution contract.
+- Strategy documentation explains when to use the helper layer and when to
+  write plain `function(ctx, params)` logic.
+- Documentation explains close semantics without teaching defensive cleanup as
+  mandatory happy-path ceremony.
+- Result-access connection lifecycle is either improved with per-operation read
+  connections or explicitly deferred to v0.1.8 with the corrected close framing
+  retained in v0.1.7.2 docs.
+- No sweep/tune APIs or sweep dependency declaration arguments are exported.
+
+---
+
 ## v0.1.8 - Lightweight Parameter Sweep Mode
 
 **Goal:** Let users run fast exploratory parameter sweeps without DuckDB

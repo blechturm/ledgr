@@ -1,0 +1,165 @@
+---
+title: "Why ledgr is built in R"
+---
+
+The default expectation in 2026 is that quantitative trading frameworks are
+written in Python. VectorBT, NautilusTrader, Zipline, Backtrader, and
+backtesting.py are all Python projects. The R quant ecosystem is older,
+quieter, and underinvested. Building a new framework in R requires
+justification.
+
+This article is that justification. It is not "R is better than Python." It is
+a specific argument about why, for ledgr's goals and audience, R is the right
+choice.
+
+## R's culture is readability-first
+
+R was built by statisticians for statisticians. The language has its quirks, but
+the community that grew around it, particularly the tidyverse subculture,
+developed strong conventions about what good code looks like:
+
+- consistent function naming
+- pipe-friendly APIs that compose left-to-right
+- predictable return types
+- error messages that teach
+- documentation that reads like prose, not only reference manuals
+- packages that are checked before they reach users
+
+Python's data and quant ecosystem optimizes for different things: flexibility,
+breadth, and velocity. The community has produced extraordinary tools, and the
+language's reach across data science, ML, and production engineering is
+unmatched. Those are real strengths. The tradeoff is that conventions vary
+widely across projects, and the gap between "code that works" and "code that
+reads well" is often left to individual authors and teams.
+
+R's culture, by contrast, makes readable, composable, predictable code the
+default expectation. That happens to be exactly what systematic trading
+research demands: strategies you can audit, modify, and trust years after you
+wrote them.
+
+ledgr's current strategy API uses ordinary `function(ctx, params)` functions.
+The proposed v0.1.7.2 helper layer is intended to make those functions read like
+their economic logic:
+
+```r
+ctx |>
+  signal_return(lookback = 20) |>
+  select_top_n(10) |>
+  weight_equal() |>
+  target_rebalance(ctx, equity_fraction = 1)
+```
+
+That helper pipeline is a design target, not the currently installed API. The
+point is the direction: code should describe the research idea in the order you
+would explain it to a colleague.
+
+## R deploys on hardware you own
+
+ledgr's vision is the full research-to-production arc, including deployment to
+hardware you control: a Raspberry Pi, an Intel NUC, a small VPS, or anything
+else that runs R. The current package imports are:
+
+```text
+cli, codetools, DBI, digest, duckdb, jsonlite, R6, rlang, tibble
+```
+
+That is a modest runtime footprint for a research framework. DuckDB is the main
+systems dependency users need to care about. There is no GPU requirement, no JIT
+runtime, and no Docker requirement. R itself runs on ARM, x86, macOS, Windows,
+and major Linux distributions. DuckDB runs everywhere R runs. The intended
+deployment story is: install R, install ledgr, copy your DuckDB experiment
+store, schedule a daily script.
+
+Compare this to heavier trading stacks that may require a Rust toolchain,
+NumPy/Numba/Pandas-style scientific Python stacks, or more operational
+infrastructure. Those tools are excellent in their domains. They are not what
+you reach for when the deployment target is a small machine running unattended.
+
+The DIY deployment story is part of ledgr's identity. If you cannot run the
+framework on hardware you own, the "research to production" arc is a marketing
+claim, not an engineering reality. R, with its modest runtime requirements and
+DuckDB's portability, makes the claim practical.
+
+## R's package culture rewards careful design
+
+R's package ecosystem has institutional pressures that matter:
+
+- `R CMD check` catches a wide class of common errors
+- CRAN review enforces basic quality standards for packages that go there
+- reverse dependency testing reveals breakage before it ships
+- the `usethis` and `devtools` toolchain makes modern packaging tractable
+- pkgdown produces documentation sites by default
+- testthat, covr, and CI conventions are well-established
+
+This infrastructure gives carefully developed R packages a high quality floor.
+Different ecosystems make different tradeoffs; R's tradeoff is useful for users
+who value long-term maintainability.
+
+ledgr is being built to use this infrastructure rather than work around it.
+Every release is checked, the pkgdown site builds in CI, the test suite is tied
+to explicit release acceptance criteria, and NEWS documents user-visible
+changes. None of this is unique to ledgr, but it is the kind of discipline the R
+package culture expects and rewards.
+
+## R's quant ecosystem needs the investment
+
+The honest part: R's systematic trading layer is undermaintained. quantstrat
+works but its API predates modern R conventions. PerformanceAnalytics is solid
+but showing its age. Most new quant tooling in recent years has been
+Python-first.
+
+This is not a reason to give up on R for quant. It is a reason to invest. The
+tidyverse did not exist before someone made the upfront investment in how data
+analysis should feel in R. The same opportunity exists for systematic trading:
+take the design discipline that modern R brought to data analysis and apply it
+to quant research.
+
+ledgr is one attempt at that investment. The goal is not to compete with Python
+on adoption. Python has the ML stack, the talent pipeline, and the institutional
+inertia. The goal is to make sure R users who want first-class quant tooling
+have a tool worth using, and that people who prefer R for readability, package
+culture, and edge deployability are not forced into Python by default.
+
+## When R is the wrong choice
+
+R is not the right tool for every quant workload:
+
+- high-frequency trading needs lower latency than R offers
+- deep-learning-heavy strategies live where the ML stack lives, which is Python
+- large production systems often need engineering conventions that are stronger
+  in Python or compiled languages
+- specific institutional quant ecosystems are Python-dominant for reasons that
+  have nothing to do with language quality
+
+If you are building any of those, R is not your tool and ledgr is not your
+framework. That is fine. Tools should fit their domains.
+
+For research-driven systematic trading at low-to-medium frequency, deployable
+on lightweight hardware, with reproducibility as a first-class concern, by
+individual practitioners who value readable code, R is genuinely a strong
+choice. ledgr is the framework built for that intersection.
+
+## The constituency
+
+A specific kind of user shows up in every R-vs-Python thread: someone who has
+used both languages seriously, prefers R for its readability and package
+discipline, and is frustrated that the tools they need have not kept pace with
+the language's design culture. They often work alone or in small teams. They
+care about reproducibility because they have to defend their work. They write
+code they will come back to.
+
+ledgr is built for them.
+
+If that describes you, if you have tried Python quant tools and felt that the
+resulting code did not match the standards you hold yourself to in R, ledgr aims
+to be the tool that vindicates the preference. Not by being faster than VectorBT
+or as feature-complete as NautilusTrader, but by being readable, reproducible,
+and deployable in ways that respect the user.
+
+That is what R is for. That is why ledgr is built in it.
+
+## Reading on
+
+- [Who ledgr is for](who-ledgr-is-for.html): the audience filter
+- [Getting started](../articles/getting-started.html): the 10-minute first backtest
+- [Strategy development](../articles/strategy-development.html): the readable strategy authoring model
