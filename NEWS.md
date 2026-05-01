@@ -8,6 +8,9 @@
   inspection now opens and closes read connections per operation, and `close()`
   is documented as long-session resource management rather than data-safety
   ceremony.
+- Added the strategy-helper value type foundation: `ledgr_signal`,
+  `ledgr_selection`, `ledgr_weights`, and `ledgr_target`, with `ledgr_target`
+  unwrapping through the existing target-vector validator.
 - TODO: Add the minimal strategy-helper reference layer while preserving the
   existing pulse runner and no-lookahead execution path.
 - TODO: Overhaul strategy-development documentation around the ledgr mental

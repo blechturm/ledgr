@@ -98,6 +98,10 @@ reference:
       - print.ledgr_pulse_context
       - close.ledgr_pulse_context
       - ledgr_signal_strategy
+      - ledgr_signal
+      - ledgr_selection
+      - ledgr_weights
+      - ledgr_target
   - title: Low-Level Utilities
     contents:
       - iso_utc

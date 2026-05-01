@@ -140,7 +140,7 @@ tickets:
 
   - id: LDG-1204
     title: "Strategy Helper Types, Contracts, And Validator"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-1201]
     tests:

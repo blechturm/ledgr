@@ -297,7 +297,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1201  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Implement the minimal public value types that make the strategy helper layer
@@ -319,12 +319,12 @@ thin wrapper around the existing full named numeric target vector.
 8. Add NEWS draft bullets for the helper layer if Track B ships.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_target` is accepted by the validator and unwraps to a full named
+- [x] `ledgr_target` is accepted by the validator and unwraps to a full named
       numeric target vector.
-- [ ] Plain full named numeric target vectors still work.
-- [ ] Returning signal, selection, or weights directly fails loudly.
-- [ ] Helper types do not create a second execution path.
-- [ ] `contracts.md` matches the implemented helper contract.
+- [x] Plain full named numeric target vectors still work.
+- [x] Returning signal, selection, or weights directly fails loudly.
+- [x] Helper types do not create a second execution path.
+- [x] `contracts.md` matches the implemented helper contract.
 
 **Test Requirements:**
 - Helper type constructor tests.

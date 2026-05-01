@@ -36,6 +36,9 @@ ledgr_strategy_fn_from_key <- function(key, signature = NULL, strategy_params = 
     private = list(
       on_pulse_impl = function(ctx, params) {
         out <- ledgr_call_strategy_fn(fn, ctx, strategy_params, signature)
+        if (ledgr_is_strategy_intermediate(out)) {
+          ledgr_abort_intermediate_strategy_result(out)
+        }
         if (is.list(out) && !is.null(out$targets)) return(out)
         if (is.numeric(out)) return(list(targets = out, state_update = list()))
         rlang::abort(

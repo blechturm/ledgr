@@ -125,8 +125,6 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
-  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   ledgr_test_replace_run_provenance(
     db_path,
@@ -136,6 +134,8 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
       strategy_source_hash = "definitely-not-the-current-source-hash"
     )
   )
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   testthat::expect_error(
     ledgr_extract_strategy(snapshot, "extract-mismatch"),
@@ -164,8 +164,6 @@ testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evalua
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
-  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   replacement <- "function(ctx, params) {"
   ledgr_test_replace_run_provenance(
@@ -176,6 +174,8 @@ testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evalua
       strategy_source_hash = digest::digest(replacement, algo = "sha256")
     )
   )
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   extracted <- ledgr_extract_strategy(snapshot, "extract-no-eval", trust = FALSE)
   testthat::expect_identical(extracted$strategy_source_text, replacement)
@@ -201,8 +201,6 @@ testthat::test_that("ledgr_extract_strategy trust TRUE reports parse failures", 
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
-  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   replacement <- "function(ctx, params) {"
   ledgr_test_replace_run_provenance(
@@ -213,6 +211,8 @@ testthat::test_that("ledgr_extract_strategy trust TRUE reports parse failures", 
       strategy_source_hash = digest::digest(replacement, algo = "sha256")
     )
   )
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   testthat::expect_error(
     ledgr_extract_strategy(snapshot, "extract-parse-failed", trust = TRUE),
@@ -240,8 +240,6 @@ testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
-  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   source <- "function(ctx, params) { targets <- ctx$flat(); targets }"
   ledgr_test_replace_run_provenance(
@@ -254,6 +252,8 @@ testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
       reproducibility_level = "tier_2"
     )
   )
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   extracted <- ledgr_extract_strategy(snapshot, "extract-tier-2")
   testthat::expect_identical(extracted$reproducibility_level, "tier_2")

@@ -1,5 +1,34 @@
 ledgr_strategy_targets_contract <- function() {
-  "a named numeric target vector with names matching ctx$universe"
+  "a named numeric target vector, or ledgr_target, with names matching ctx$universe"
+}
+
+ledgr_strategy_intermediate_classes <- function() {
+  c("ledgr_signal", "ledgr_selection", "ledgr_weights")
+}
+
+ledgr_is_strategy_intermediate <- function(x) {
+  any(vapply(ledgr_strategy_intermediate_classes(), inherits, logical(1), x = x))
+}
+
+ledgr_abort_intermediate_strategy_result <- function(x) {
+  cls <- intersect(class(x), ledgr_strategy_intermediate_classes())[[1]]
+  rlang::abort(
+    sprintf(
+      "Strategies must not return `%s` directly. Helper pipelines must terminate in `ledgr_target` or a full named numeric target vector.",
+      cls
+    ),
+    class = "ledgr_invalid_strategy_result"
+  )
+}
+
+ledgr_unwrap_strategy_target <- function(targets) {
+  if (ledgr_is_strategy_intermediate(targets)) {
+    ledgr_abort_intermediate_strategy_result(targets)
+  }
+  if (inherits(targets, "ledgr_target")) {
+    targets <- unclass(targets)
+  }
+  targets
 }
 
 ledgr_validate_strategy_targets <- function(targets, universe) {
@@ -10,6 +39,7 @@ ledgr_validate_strategy_targets <- function(targets, universe) {
     rlang::abort("`universe` must not contain duplicates.", class = "ledgr_invalid_strategy_result")
   }
 
+  targets <- ledgr_unwrap_strategy_target(targets)
   if (!is.numeric(targets) || length(targets) < 1) {
     rlang::abort(
       sprintf(

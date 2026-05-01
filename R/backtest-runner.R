@@ -1404,6 +1404,9 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         if (sample_now) {
           t_strat <- time_end(t_strat_start, TRUE)
         }
+        if (ledgr_is_strategy_intermediate(result)) {
+          ledgr_abort_intermediate_strategy_result(result)
+        }
         numeric_result <- is.numeric(result)
         if (numeric_result) {
           result <- list(targets = result, state_update = NULL)

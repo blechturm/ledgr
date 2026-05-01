@@ -90,7 +90,7 @@ testthat::test_that("functional strategies must return targets for the full univ
       initial_cash = 100000,
       db_path = db_path
     ),
-    "a named numeric target vector with names matching ctx$universe",
+    "a named numeric target vector, or ledgr_target, with names matching ctx$universe",
     fixed = TRUE,
     class = "ledgr_invalid_strategy_result"
   )
@@ -109,7 +109,7 @@ testthat::test_that("functional strategies must return targets for the full univ
       initial_cash = 100000,
       db_path = db_path
     ),
-    "a named numeric target vector with names matching ctx$universe",
+    "a named numeric target vector, or ledgr_target, with names matching ctx$universe",
     fixed = TRUE,
     class = "ledgr_invalid_strategy_result"
   )

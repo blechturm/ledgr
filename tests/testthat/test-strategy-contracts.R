@@ -105,6 +105,15 @@ testthat::test_that("EchoStrategy validates targets names", {
   out <- strat_ok$on_pulse(ctx)
   testthat::expect_identical(out$targets, good_targets)
 
+  wrapped_targets <- ledgr_target(stats::setNames(c(1, 0), c("B", "A")), universe = universe)
+  strat_wrapped <- ledgr:::EchoStrategy$new(params = list(targets = wrapped_targets))
+  out_wrapped <- strat_wrapped$on_pulse(ctx)
+  testthat::expect_s3_class(out_wrapped$targets, "ledgr_target")
+  testthat::expect_identical(
+    ledgr:::ledgr_validate_strategy_targets(out_wrapped$targets, universe),
+    stats::setNames(c(0, 1), universe)
+  )
+
   bad_extra <- stats::setNames(c(0, 1, 2), c("A", "B", "C"))
   strat_extra <- ledgr:::EchoStrategy$new(params = list(targets = bad_extra))
   testthat::expect_error(strat_extra$on_pulse(ctx), "extra instruments: C", fixed = TRUE)
@@ -127,7 +136,7 @@ testthat::test_that("shared target validation gives actionable contract errors",
 
   testthat::expect_error(
     ledgr:::ledgr_validate_strategy_targets(c(0, 1), universe),
-    "a named numeric target vector with names matching ctx$universe",
+    "a named numeric target vector, or ledgr_target, with names matching ctx$universe",
     fixed = TRUE,
     class = "ledgr_invalid_strategy_result"
   )

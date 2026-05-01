@@ -105,13 +105,20 @@ the active versioned spec packet, currently
 
 ## Strategy Contract
 
-- Strategy output is a full named numeric target vector, or a list containing
-  `targets`.
+- Strategy output is a full named numeric target vector, a `ledgr_target`, or a
+  list containing `targets`.
 - Names must exactly match `ctx$universe`; missing, extra, duplicate, unnamed,
   or non-finite targets fail with `ledgr_invalid_strategy_result`.
 - Target values are desired instrument quantities after the next fill, not
-  portfolio weights, order sizes, or signals. Weight-based allocation remains
-  outside the v0.1.x public strategy contract.
+  portfolio weights, order sizes, or signals. `ledgr_target` is a thin wrapper
+  around those same target quantities and is unwrapped before execution.
+- Strategy helper pipelines may use `ledgr_signal`, `ledgr_selection`, and
+  `ledgr_weights` as intermediate value types, but those objects are invalid
+  direct strategy outputs. Helper pipelines must terminate in `ledgr_target` or
+  a plain full named numeric target vector.
+- v0.1.7.2 helper weights are public authoring helpers only. They do not alter
+  the execution contract, and target constructors must reject negative weights
+  or leverage until explicit short-selling and leverage semantics are specified.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.
