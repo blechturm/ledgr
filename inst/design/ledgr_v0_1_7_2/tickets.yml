@@ -413,6 +413,7 @@ tickets:
       tests_required:
         - full package tests
         - R CMD check
+        - package metadata/version check
         - README/article renders
         - pkgdown build
         - export/API inventory scan

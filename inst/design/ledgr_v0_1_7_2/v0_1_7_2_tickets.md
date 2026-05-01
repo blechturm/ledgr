@@ -738,22 +738,25 @@ Final validation gate for v0.1.7.2.
 **Tasks:**
 1. Verify spec, tickets, contracts, roadmap, NEWS, DESCRIPTION, README, and
    pkgdown navigation agree.
-2. Run targeted v0.1.7.2 tests.
-3. Run full package tests.
-4. Run coverage gate if required by current release practice.
-5. Render README and changed vignettes/articles.
-6. Run package check.
-7. Build pkgdown.
-8. Confirm Ubuntu and Windows CI are green.
-9. Confirm no sweep/tune APIs are exported.
-10. Confirm no open P0/P1 review findings remain.
-11. Confirm the local WSL/Ubuntu gate was run on the release branch after the
+2. Bump `DESCRIPTION` to version `0.1.7.2` during the release gate, not before
+   implementation tickets are complete.
+3. Run targeted v0.1.7.2 tests.
+4. Run full package tests.
+5. Run coverage gate if required by current release practice.
+6. Render README and changed vignettes/articles.
+7. Run package check.
+8. Build pkgdown.
+9. Confirm Ubuntu and Windows CI are green.
+10. Confirm no sweep/tune APIs are exported.
+11. Confirm no open P0/P1 review findings remain.
+12. Confirm the local WSL/Ubuntu gate was run on the release branch after the
     final implementation changes.
 
 **Acceptance Criteria:**
 - [ ] Full tests pass.
 - [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
+- [ ] `DESCRIPTION` version is `0.1.7.2` before release tagging.
 - [ ] pkgdown builds.
 - [ ] README and changed articles render.
 - [ ] Ubuntu and Windows CI are green.
