@@ -573,16 +573,8 @@ ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALS
     rows <- rows[rows$status == "DONE", , drop = FALSE]
   } else {
     unique_ids <- unique(run_ids)
-    fetched <- lapply(
-      unique_ids,
-      function(run_id) ledgr_run_store_fetch(
-        opened$con,
-        include_archived = TRUE,
-        run_id = run_id,
-        snapshot_id = snapshot_id
-      )
-    )
-    rows <- if (length(fetched) == 0L) tibble::tibble() else tibble::as_tibble(do.call(rbind, fetched))
+    rows <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, snapshot_id = snapshot_id)
+    rows <- rows[as.character(rows$run_id) %in% unique_ids, , drop = FALSE]
     found <- as.character(rows$run_id)
     missing <- setdiff(unique_ids, found)
     if (length(missing) > 0L) {
