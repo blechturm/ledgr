@@ -19,6 +19,9 @@
 - Clarified the experiment-store mental model: sealed snapshots freeze market
   data, while indicators, features, runs, labels, tags, comparisons, and
   telemetry are derived artifacts that can be added later.
+- Included package vignettes in source builds and declared the vignette build
+  dependencies so GitHub installs with `build_vignettes = TRUE` expose
+  `vignette(package = "ledgr")`.
 
 # ledgr 0.1.7
 
