@@ -49,7 +49,7 @@ LDG-1201 -----------------------------------------> LDG-1208 -> LDG-1209
 **Priority:** P0  
 **Effort:** 1 day  
 **Dependencies:** None  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Finalize the v0.1.7.2 release boundary before implementation begins. This
@@ -71,12 +71,12 @@ scope.
 7. Confirm there is no stale `ledr_*` filename in the spec packet.
 
 **Acceptance Criteria:**
-- [ ] v0.1.7.2 spec, roadmap, strategy spec, and triage report agree on scope.
-- [ ] `NEWS.md` has a v0.1.7.2 draft section.
-- [ ] No sweep/tune APIs are in scope.
-- [ ] No short-selling or leverage semantics are in scope.
-- [ ] No stale `ledr_*` files remain in the packet.
-- [ ] Ticket statuses and dependencies are internally consistent.
+- [x] v0.1.7.2 spec, roadmap, strategy spec, and triage report agree on scope.
+- [x] `NEWS.md` has a v0.1.7.2 draft section.
+- [x] No sweep/tune APIs are in scope.
+- [x] No short-selling or leverage semantics are in scope.
+- [x] No stale `ledr_*` files remain in the packet.
+- [x] Ticket statuses and dependencies are internally consistent.
 
 **Test Requirements:**
 - Documentation consistency scan.

@@ -1,3 +1,17 @@
+# ledgr 0.1.7.2
+
+- TODO: Stabilise comparison metrics and zero-row result schemas for flat,
+  open-only, and closed-round-trip runs.
+- TODO: Improve result-access connection lifecycle and document `close()` as
+  long-session resource management rather than data-safety ceremony.
+- TODO: Add the minimal strategy-helper reference layer while preserving the
+  existing pulse runner and no-lookahead execution path.
+- TODO: Overhaul strategy-development documentation around the ledgr mental
+  model, helper functions, feature IDs, warmup behavior, and interactive
+  snapshot debugging.
+- TODO: Improve installed documentation discovery and pkgdown positioning
+  content without exposing v0.1.8 sweep/tune APIs.
+
 # ledgr 0.1.7.1
 
 - Stabilised the installed-package UX after the v0.1.7 experiment-first reset,

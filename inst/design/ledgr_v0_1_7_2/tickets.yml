@@ -3,7 +3,7 @@ source: "v0_1_7_2_tickets.md"
 tickets:
   - id: LDG-1201
     title: "Patch Scope, Metadata, And Non-Goal Guardrails"
-    status: pending
+    status: done
     priority: P0
     dependencies: []
     tests:
