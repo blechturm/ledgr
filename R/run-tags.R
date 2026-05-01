@@ -71,13 +71,14 @@ ledgr_run_tag <- function(snapshot, run_id, tags) {
     DBI::dbExecute(
       opened$con,
       "
-      INSERT INTO run_tags (run_id, tag, created_at_utc)
+      INSERT INTO run_tags (run_id, \"tag\", created_at_utc)
       VALUES (?, ?, ?)
       ON CONFLICT DO NOTHING
       ",
       params = list(run_id, tag, created_at)
     )
   }
+  ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
 
   invisible(snapshot)
 }
@@ -122,14 +123,14 @@ ledgr_run_untag <- function(snapshot, run_id, tags = NULL) {
   if (is.null(tags)) {
     DBI::dbExecute(opened$con, "DELETE FROM run_tags WHERE run_id = ?", params = list(run_id))
   } else {
-    for (tag in tags) {
-      DBI::dbExecute(
-        opened$con,
-        "DELETE FROM run_tags WHERE run_id = ? AND tag = ?",
-        params = list(run_id, tag)
-      )
-    }
+    placeholders <- paste(rep("?", length(tags)), collapse = ", ")
+    DBI::dbExecute(
+      opened$con,
+      sprintf("DELETE FROM run_tags WHERE run_id = ? AND \"tag\" IN (%s)", placeholders),
+      params = c(list(run_id), as.list(tags))
+    )
   }
+  ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
 
   invisible(snapshot)
 }
