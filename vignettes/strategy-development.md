@@ -6,11 +6,20 @@ target holdings.
 
 ``` r
 library(ledgr)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
 At each pulse, ledgr gives the strategy the current observable state.
-The strategy answers with a full named numeric vector: the desired
+The strategy answers with a full named numeric vector: the desired share
 quantity for every instrument in `ctx$universe`.
 
 ## The Strategy Function
@@ -24,7 +33,7 @@ flat_strategy <- function(ctx, params) {
 ```
 
 Parameterized strategies use `function(ctx, params)`. Parameters arrive
-as the second argument. There is no `ctx$params` field.
+as the second argument; they are not stored on the context object.
 
 ``` r
 threshold_strategy <- function(ctx, params) {
@@ -65,7 +74,9 @@ explicitly changes a target.
 ## Targets
 
 Targets must be full named numeric vectors. Names must exactly match
-`ctx$universe`.
+`ctx$universe`, and values are desired quantities, not portfolio weights
+or orders. A target of `10` means hold 10 shares after the next fill; a
+target of `0` means hold no shares.
 
 ``` r
 buy_one_if_up <- function(ctx, params) {
@@ -83,6 +94,31 @@ workflow until explicit shorting semantics are specified.
 The default fill model is next-open: a target decided at pulse `t` fills
 at the next available bar. A target change on the final pulse cannot
 fill.
+
+For multi-asset strategies, build the full vector first and then assign
+the quantities you want to hold. This example uses the built-in one-bar
+return indicator, whose feature ID is `return_1`; the next section shows
+how to ask ledgr for feature IDs before using them in a strategy.
+
+``` r
+top_two_equal_quantity <- function(ctx, params) {
+  targets <- ctx$flat()
+  scores <- numeric()
+
+  for (id in ctx$universe) {
+    score <- ctx$feature(id, "return_1")
+    if (!is.na(score)) {
+      scores[id] <- score
+    }
+  }
+
+  if (length(scores) == 0) return(targets)
+
+  selected <- names(sort(scores, decreasing = TRUE))[seq_len(min(2, length(scores)))]
+  targets[selected] <- params$qty_per_instrument
+  targets
+}
+```
 
 ## Indicators And Feature IDs
 
@@ -108,7 +144,10 @@ Feature IDs are exact strings. Ask ledgr for them before writing
 `ctx$feature()` calls.
 
 Feature values can be `NA` during warmup. Unknown feature IDs fail
-loudly; warmup `NA` for known features is normal.
+loudly; warmup `NA` for known features is normal. This distinction
+matters: a typo such as `"returns_1"` fails because no configured
+feature has that ID, while `"return_1"` may return `NA` on early bars if
+the indicator is not ready.
 
 ``` r
 rsi_strategy <- function(ctx, params) {
@@ -125,18 +164,42 @@ rsi_strategy <- function(ctx, params) {
 }
 ```
 
+`requires_bars` is the first row where an indicator may emit a value.
+`stable_after` is the first row ledgr treats as stable. Built-in and
+supported TTR indicators set these for you. When a strategy sees `NA`,
+the ordinary pattern is to return `ctx$hold()` for hold-unless-signal
+strategies or `ctx$flat()` for flat-unless-signal strategies.
+
+``` r
+sma_breakout <- function(ctx, params) {
+  targets <- ctx$flat()
+  sma <- ctx$feature("AAA", "sma_3")
+  if (is.na(sma)) return(targets)
+
+  if (ctx$close("AAA") > sma) {
+    targets["AAA"] <- params$qty
+  }
+  targets
+}
+```
+
+On very short histories, this is not an error: the run can complete with
+no trades because the feature never becomes ready. That is different
+from an insufficient-history custom indicator that returns `NA` after
+`stable_after`; post-warmup `NA` values are invalid and ledgr aborts
+rather than silently using bad features.
+
 ## Debug One Pulse
 
 `ledgr_pulse_snapshot()` freezes the context at one timestamp so you can
 inspect what a strategy saw.
 
 ``` r
-bars <- subset(
-  ledgr_demo_bars,
-  instrument_id %in% c("DEMO_01", "DEMO_02") &
-    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
-    ts_utc <= as.POSIXct("2019-04-30", tz = "UTC")
-)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-04-30"))
+  )
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
@@ -191,15 +254,14 @@ bt_qty_3 <- exp |>
     run_id = "threshold_qty_3"
   )
 
-ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))[, c(
-  "run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash"
-)]
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))
 #> # ledgr comparison
-#> # A tibble: 2 x 4
-#>   run_id          final_equity total_return n_trades
-#>   <chr>                  <dbl> <chr>           <int>
-#> 1 threshold_qty_1       10084. +0.8%               0
-#> 2 threshold_qty_3       10251. +2.5%               0
+#> # A tibble: 2 x 8
+#>   run_id          label final_equity total_return max_drawdown n_trades win_rate
+#>   <chr>           <chr>        <dbl> <chr>        <chr>           <int> <chr>
+#> 1 threshold_qty_1 <NA>        10084. +0.8%        -0.8%               0 <NA>
+#> 2 threshold_qty_3 <NA>        10251. +2.5%        -2.4%               0 <NA>
+#> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -220,15 +282,14 @@ flat_exp <- ledgr_experiment(
 bt_flat <- flat_exp |>
   ledgr_run(params = list(), run_id = "flat")
 
-ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))[, c(
-  "run_id", "final_equity", "total_return", "n_trades", "strategy_source_hash"
-)]
+ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))
 #> # ledgr comparison
-#> # A tibble: 2 x 4
-#>   run_id          final_equity total_return n_trades
-#>   <chr>                  <dbl> <chr>           <int>
-#> 1 threshold_qty_1       10084. +0.8%               0
-#> 2 flat                  10000  +0.0%               0
+#> # A tibble: 2 x 8
+#>   run_id          label final_equity total_return max_drawdown n_trades win_rate
+#>   <chr>           <chr>        <dbl> <chr>        <chr>           <int> <chr>
+#> 1 threshold_qty_1 <NA>        10084. +0.8%        -0.8%               0 <NA>
+#> 2 flat            <NA>        10000  +0.0%        0.0%                0 <NA>
+#> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).

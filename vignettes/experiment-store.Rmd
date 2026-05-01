@@ -42,20 +42,27 @@ snapshot handle -> run experiments -> list / inspect / compare / reopen
 
 ```{r library}
 library(ledgr)
+library(dplyr)
+library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
 ## Create A Durable Snapshot
 
+Market data and derived data have different lifecycle rules in ledgr. A sealed
+snapshot freezes the real market-data input and its hash. If you need more
+instruments, more dates, corrected bars, or tick-derived bars, create a new
+snapshot. Indicators, runs, labels, tags, comparisons, and telemetry are derived
+from sealed market data and can be added later without mutating the snapshot.
+
 ```{r snapshot}
 db_path <- tempfile("ledgr_store_", fileext = ".duckdb")
 
-bars <- subset(
-  ledgr_demo_bars,
-  instrument_id %in% c("DEMO_01", "DEMO_02") &
-    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
-    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
-)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+  )
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
@@ -103,9 +110,7 @@ bt_large <- exp |>
 `ledgr_run_list()` is the store discovery view.
 
 ```{r list}
-ledgr_run_list(snapshot)[
-  c("run_id", "label", "tags", "status", "final_equity", "execution_mode")
-]
+ledgr_run_list(snapshot)
 ```
 
 Use labels and tags for mutable human-facing organization.
@@ -116,11 +121,20 @@ snapshot <- snapshot |>
   ledgr_run_tag("trend_qty_5", c("baseline", "trend")) |>
   ledgr_run_tag("trend_qty_15", c("trend", "larger-size"))
 
-ledgr_run_list(snapshot)[c("run_id", "label", "tags")]
+ledgr_run_list(snapshot)
 ```
 
 Tags and labels do not alter snapshot hashes, strategy hashes, parameter hashes,
 config hashes, or result artifacts.
+
+The returned objects are still tibbles. When you need a custom view, convert to
+a tibble and select the columns you want.
+
+```{r list-deeper}
+ledgr_run_list(snapshot) |>
+  as_tibble() |>
+  select(run_id, label, tags, status, final_equity, execution_mode)
+```
 
 ## Inspect And Compare
 
@@ -133,14 +147,18 @@ info
 compact telemetry, status, identity hashes, and reproducibility tier.
 
 ```{r compare}
-ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))[
-  c("run_id", "final_equity", "total_return", "max_drawdown", "n_trades", "win_rate")
-]
+ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
 ```
 
-Comparison is read-only and does not rerun strategies.
+Comparison is read-only and does not rerun strategies. `n_trades` counts
+closed, realised trade observations, not every fill. A run can have fills but no
+closed trades yet, in which case win rate is not defined.
 
-## Reopen A Completed Run
+## Reopen A Completed Run In A Later Session
+
+`ledgr_run_open()` reconstructs a completed run handle from stored artifacts. It
+does not recompute the strategy. This is useful when you want full result
+tables or plots after restarting R.
 
 ```{r open}
 reopened <- ledgr_run_open(snapshot, "trend_qty_5")
@@ -158,10 +176,15 @@ inspectable through `ledgr_run_info()`.
 snapshot <- snapshot |>
   ledgr_run_archive("trend_qty_15", reason = "larger position kept for reference")
 
-ledgr_run_list(snapshot)[c("run_id", "status", "archived", "archive_reason")]
+ledgr_run_list(snapshot)
 ```
 
 Archiving hides a run from default listings without deleting artifacts.
+
+`ledgr_run()` and `ledgr_run_open()` return live handles that may own DuckDB
+resources. The run artifacts are already durable, but `close(bt)` is the
+deterministic way to checkpoint and release those resources in scripts, tests,
+and long sessions. Close the snapshot handle when the workflow is finished.
 
 ```{r cleanup}
 close(bt_small)

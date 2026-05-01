@@ -15,51 +15,24 @@ ledgr_test_replace_run_provenance <- function(db_path, run_id, values) {
   )
   testthat::expect_identical(nrow(row), 1L)
   for (nm in names(values)) {
-    row[[nm]] <- values[[nm]]
-  }
-  DBI::dbExecute(con, "DELETE FROM run_provenance WHERE run_id = ?", params = list(run_id))
-  value <- function(nm, default = NA_character_) {
-    if (nm %in% names(values)) {
-      values[[nm]]
-    } else if (nm %in% names(row)) {
-      row[[nm]][[1]]
-    } else {
-      default
-    }
-  }
-  DBI::dbExecute(
-    con,
-    "
-    INSERT INTO run_provenance (
-      run_id,
-      strategy_type,
-      strategy_source,
-      strategy_source_hash,
-      strategy_source_capture_method,
-      strategy_params_json,
-      strategy_params_hash,
-      reproducibility_level,
-      ledgr_version,
-      R_version,
-      dependency_versions_json,
-      created_at_utc
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ",
-    params = list(
-      run_id,
-      value("strategy_type"),
-      value("strategy_source"),
-      value("strategy_source_hash"),
-      value("strategy_source_capture_method"),
-      value("strategy_params_json"),
-      value("strategy_params_hash"),
-      value("reproducibility_level"),
-      value("ledgr_version"),
-      value("R_version"),
-      value("dependency_versions_json"),
-      value("created_at_utc", as.POSIXct(Sys.time(), tz = "UTC"))
+    testthat::expect_true(nm %in% names(row))
+    changed <- DBI::dbExecute(
+      con,
+      sprintf("UPDATE run_provenance SET %s = ? WHERE run_id = ?", DBI::dbQuoteIdentifier(con, nm)),
+      params = list(values[[nm]], run_id)
     )
+    testthat::expect_identical(as.integer(changed), 1L)
+  }
+
+  updated <- DBI::dbGetQuery(
+    con,
+    "SELECT * FROM run_provenance WHERE run_id = ?",
+    params = list(run_id)
   )
+  testthat::expect_identical(nrow(updated), 1L)
+  for (nm in names(values)) {
+    testthat::expect_identical(updated[[nm]][[1]], values[[nm]])
+  }
   invisible(TRUE)
 }
 
@@ -158,7 +131,10 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
   ledgr_test_replace_run_provenance(
     db_path,
     "extract-mismatch",
-    list(strategy_source = "function(ctx, params) ctx$flat()")
+    list(
+      strategy_source = "function(ctx, params) ctx$flat()",
+      strategy_source_hash = "definitely-not-the-current-source-hash"
+    )
   )
 
   testthat::expect_error(

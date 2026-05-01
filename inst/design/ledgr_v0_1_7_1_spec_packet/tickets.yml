@@ -1,0 +1,358 @@
+version: "0.1.7.1-installed-ux-stabilisation"
+source: "v0_1_7_1_tickets.md"
+tickets:
+  - id: LDG-1101
+    title: "Patch Scope, Version, And Documentation Standard"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "version consistency scan"
+      - "export/API inventory scan"
+      - "documentation consistency scan"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Version scoping, ticket generation, compatibility posture,
+        documentation standard setting, and release boundary definition are
+        Tier H by rule.
+      invariants_at_risk:
+        - release scope
+        - public API compatibility policy
+        - documentation contract
+        - non-goal boundary
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/ledgr_triage_report.md
+        - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
+        - inst/design/contracts.md
+        - inst/design/ledgr_ux_decisions.md
+        - inst/design/ledgr_roadmap.md
+        - DESCRIPTION
+        - NEWS.md
+      tests_required:
+        - version consistency scan
+        - export/API inventory scan
+        - documentation consistency scan
+      escalation_triggers:
+        - a new public helper becomes more than documentation ergonomics
+        - a schema migration appears necessary
+        - sweep/tune scope leaks into the patch release
+        - v0.1.7 breaking-change policy needs revision
+      forbidden_actions:
+        - adding sweep/tune APIs
+        - adding broker/live integrations
+        - changing execution semantics
+        - weakening the experiment-first workflow
+
+  - id: LDG-1102
+    title: "MACD Warmup Regression"
+    status: done
+    priority: P0
+    dependencies: [LDG-1101]
+    tests:
+      - "targeted MACD regression test"
+      - "direct TTR output warmup verification"
+      - "existing indicator-ttr test suite"
+      - "feature computation smoke test"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        TTR warmup inference affects feature computation readiness, indicator
+        metadata, strategy behavior, and reproducibility expectations. The work
+        touches a known invariant-sensitive area and must be implemented and
+        reviewed at Tier H.
+      invariants_at_risk:
+        - indicator warmup correctness
+        - TTR adapter contract
+        - feature computation readiness
+        - strategy behavior on early bars
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/ledgr_triage_report.md
+        - inst/design/contracts.md (Indicator Contract, series_fn contract)
+        - R/indicator-ttr.R
+        - R/features-engine.R
+        - tests/testthat/test-indicator-ttr.R
+        - vignettes/ttr-indicators.Rmd
+      tests_required:
+        - targeted MACD regression test
+        - direct TTR output warmup verification
+        - existing indicator-ttr test suite
+        - feature computation smoke test
+      escalation_triggers:
+        - the defect is in shared feature normalization rather than MACD rules
+        - fixing MACD changes indicator fingerprint identity
+        - TTR behavior differs by installed TTR version in a non-deterministic way
+        - a broader warmup-table redesign seems necessary
+      forbidden_actions:
+        - weakening deterministic warmup inclusion rules
+        - adding heuristic warmup inference
+        - changing unrelated TTR indicators
+        - changing feature engine semantics without escalation
+
+  - id: LDG-1103
+    title: "Date/Time Ergonomics And Modern Example Style"
+    status: done
+    priority: P1
+    dependencies: [LDG-1101]
+    tests:
+      - "ledgr_utc tests if helper is implemented"
+      - "ledgr_demo_bars tibble compatibility test"
+      - "README render"
+      - "changed vignette render"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The work is mostly documentation and a contained utility helper, but the
+        helper would be exported public API and timestamp handling is
+        user-visible. Implementation is Tier M with Tier H review.
+      invariants_at_risk:
+        - timestamp interpretation
+        - public helper API
+        - example readability
+        - package dependency footprint
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/ledgr_ux_decisions.md
+        - README.Rmd
+        - vignettes/getting-started.Rmd
+        - vignettes/strategy-development.Rmd
+        - vignettes/experiment-store.Rmd
+        - data/ledgr_demo_bars.rda
+        - DESCRIPTION
+        - NAMESPACE
+      tests_required:
+        - ledgr_utc tests if helper is implemented
+        - ledgr_demo_bars tibble compatibility test
+        - README render
+        - changed vignette render
+      escalation_triggers:
+        - lubridate or another new dependency seems necessary
+        - helper semantics need time zones other than UTC
+        - shipped demo data values must change
+        - docs require changing snapshot/bar schema
+      forbidden_actions:
+        - changing stored timestamp semantics
+        - adding lubridate as Imports without review
+        - replacing base pipe with magrittr in the new canonical examples
+        - making demo data depend on network access
+
+  - id: LDG-1104
+    title: "Strategy, Feature ID, Warmup, And Sizing Documentation"
+    status: done
+    priority: P1
+    dependencies: [LDG-1102, LDG-1103]
+    tests:
+      - "changed vignette render"
+      - "strategy documentation code chunks"
+      - "TTR documentation code chunks"
+      - "documentation scans for ctx$params and old helper names"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The ticket is documentation-heavy, but it teaches the public strategy
+        contract, context semantics, indicator IDs, warmup behavior, and
+        target-vector sizing. These are user-facing execution concepts and need
+        Tier H review.
+      invariants_at_risk:
+        - strategy contract comprehension
+        - context helper semantics
+        - indicator ID discoverability
+        - warmup behavior expectations
+        - long-only target-vector semantics
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/ledgr_triage_report.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Indicator Contract)
+        - vignettes/strategy-development.Rmd
+        - vignettes/ttr-indicators.Rmd
+        - R/pulse-context.R
+        - R/indicator.R
+        - R/indicator-ttr.R
+      tests_required:
+        - changed vignette render
+        - strategy documentation code chunks
+        - TTR documentation code chunks
+        - documentation scans for ctx$params and old helper names
+      escalation_triggers:
+        - docs reveal a missing helper that seems necessary for v0.1.7.1
+        - target-vector semantics are unclear or inconsistent with implementation
+        - warmup behavior differs from the LDG-1102 tests
+        - a weight-based allocation API seems necessary
+      forbidden_actions:
+        - adding ctx$params
+        - adding target-weight or optimizer APIs
+        - teaching old target helpers as current usage
+        - adding runtime feature-ID lookup as the default strategy style
+
+  - id: LDG-1105
+    title: "Experiment Store, Run Comparison, And Snapshot Lifecycle Docs"
+    status: done
+    priority: P2
+    dependencies: [LDG-1101]
+    tests:
+      - "changed vignette render"
+      - "experiment-store documentation chunks"
+      - "current-workflow documentation scan"
+      - "curated-print documentation scan"
+      - "unsafe-shell documentation scan"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The ticket is documentation-heavy, but it teaches persistence, run
+        identity, snapshot lifecycle, and comparison semantics. These are
+        contract-sensitive public concepts and need Tier H review.
+      invariants_at_risk:
+        - experiment-store mental model
+        - run identity immutability
+        - comparison metric interpretation
+        - snapshot lifecycle expectations
+        - sealed market data versus derived feature data
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/ledgr_triage_report.md
+        - inst/design/contracts.md (Persistence Contract, Run Identity Contract, Snapshot Contract, Result Contract)
+        - vignettes/experiment-store.Rmd
+        - vignettes/getting-started.Rmd
+        - README.Rmd
+        - R/run-store.R
+        - R/snapshots-list.R
+      tests_required:
+        - changed vignette render
+        - experiment-store documentation chunks
+        - current-workflow documentation scan
+        - curated-print documentation scan
+        - unsafe-shell documentation scan
+      escalation_triggers:
+        - docs require new filtering/query APIs
+        - curated print methods are insufficient for the narrative examples
+        - snapshot lifecycle documentation conflicts with implementation
+        - metric semantics appear wrong or under-specified
+        - a schema change seems necessary
+      forbidden_actions:
+        - adding tag or label query DSLs
+        - changing comparison metric definitions
+        - changing snapshot sealing semantics
+        - reintroducing db_path-first store examples as the main path
+        - using base column slicing to hide poor default prints in narrative demos
+
+  - id: LDG-1106
+    title: "Result Timestamp Display Options"
+    status: done
+    priority: P2
+    dependencies: [LDG-1101]
+    tests:
+      - "timestamp display helper tests"
+      - "EOD and intraday print tests"
+      - "package option tests"
+      - "type-preservation tests"
+      - "existing result/run-store tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The work is a bounded result-display UX change, but it touches exported
+        result objects, print behavior, package options, and timestamp
+        presentation. It must preserve programmatic timestamp semantics and
+        therefore needs Tier H review.
+      invariants_at_risk:
+        - timestamp type preservation
+        - result table composability
+        - print/display contract
+        - package option behavior
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/contracts.md (Result Contract)
+        - R/run-store.R
+        - R/backtest.R
+        - tests/testthat/test-run-store.R
+        - tests/testthat/test-backtest-wrapper.R
+      tests_required:
+        - timestamp display helper tests
+        - EOD and intraday print tests
+        - package option tests
+        - type-preservation tests
+        - existing result/run-store tests
+      escalation_triggers:
+        - ledgr_results() must stop returning a tibble-compatible object
+        - timestamp values would need mutation rather than display formatting
+        - intraday timestamps become ambiguous
+        - global option behavior conflicts with tibble printing
+      forbidden_actions:
+        - converting stored or returned ts_utc values to character
+        - hiding intraday time information in auto mode
+        - changing result table schemas
+        - changing fill or ledger timestamps
+
+  - id: LDG-1107
+    title: "v0.1.7.1 Release Gate"
+    status: pending
+    priority: P0
+    dependencies: [LDG-1102, LDG-1104, LDG-1105, LDG-1106]
+    tests:
+      - "devtools::test()"
+      - "R CMD check --no-manual --no-build-vignettes"
+      - "pkgdown build"
+      - "export/API inventory scan"
+      - "documentation pattern scans"
+      - "CI verification"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gates are Tier H by routing rule. This ticket verifies version
+        scope, test completeness, documentation rendering, exported API
+        boundaries, and CI readiness before merge and tag.
+      invariants_at_risk:
+        - release correctness
+        - package build health
+        - public API export boundary
+        - documentation/installability
+        - timestamp display contract
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_spec.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/v0_1_7_1_tickets.md
+        - inst/design/ledgr_v0_1_7_1_spec_packet/tickets.yml
+        - DESCRIPTION
+        - NEWS.md
+        - README.Rmd
+        - _pkgdown.yml
+        - inst/design/ledgr_roadmap.md
+      tests_required:
+        - devtools::test()
+        - R CMD check --no-manual --no-build-vignettes
+        - pkgdown build
+        - export/API inventory scan
+        - documentation pattern scans
+        - timestamp display option tests
+        - CI verification
+      escalation_triggers:
+        - any CI failure remains unexplained
+        - exported API inventory contains future-cycle APIs
+        - R CMD check warnings require scope decisions
+        - documentation examples cannot run offline
+      forbidden_actions:
+        - tagging before CI is green
+        - ignoring R CMD check warnings
+        - shipping with known future-cycle API leaks
+        - changing implementation behavior during the release gate without a ticket

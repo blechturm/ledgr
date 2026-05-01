@@ -41,6 +41,24 @@ ledgr_test_ind_ttr_from_case <- function(case) {
   )
 }
 
+ledgr_test_macd_warmup_cases <- function() {
+  outputs <- c("macd", "signal", "histogram")
+  percents <- c(TRUE, FALSE)
+  unlist(
+    lapply(outputs, function(output) {
+      lapply(percents, function(percent) {
+        list(
+          output = output,
+          percent = percent,
+          args = list(nFast = 12, nSlow = 26, nSig = 9, percent = percent),
+          requires_bars = if (identical(output, "macd")) 26L else 34L
+        )
+      })
+    }),
+    recursive = FALSE
+  )
+}
+
 testthat::test_that("TTR warmup rules table has the documented schema", {
   rules <- ledgr_ttr_warmup_rules()
 
@@ -213,6 +231,69 @@ testthat::test_that("TTR warmup rules match direct TTR output", {
       nSig = macd_args$nSig
     )
     testthat::expect_identical(first_valid_from_ttr, ind$requires_bars)
+  }
+})
+
+testthat::test_that("MACD audit case uses direct TTR warmup with percent false", {
+  testthat::skip_if_not_installed("TTR")
+
+  bars <- ledgr_test_ttr_bars()
+  ind <- ledgr_ind_ttr(
+    "MACD",
+    input = "close",
+    output = "macd",
+    nFast = 12,
+    nSlow = 26,
+    nSig = 9,
+    percent = FALSE
+  )
+
+  testthat::expect_identical(ind$requires_bars, 26L)
+  testthat::expect_identical(ind$stable_after, 26L)
+
+  values <- ledgr:::ledgr_compute_feature_series(bars, ind)
+  first_valid <- which(!is.na(values))[1]
+  testthat::expect_identical(first_valid, 26L)
+  testthat::expect_false(any(is.na(values[seq.int(ind$stable_after, length(values))])))
+
+  direct_values <- ledgr:::ledgr_ttr_call(bars, ind$params)
+  first_valid_from_ttr <- min(which(!is.na(direct_values)))
+  testthat::expect_identical(first_valid_from_ttr, ind$requires_bars)
+})
+
+testthat::test_that("MACD warmup matches direct TTR output for all percent/output cases", {
+  testthat::skip_if_not_installed("TTR")
+
+  bars <- ledgr_test_ttr_bars()
+  ttr_version <- as.character(utils::packageVersion("TTR"))
+
+  # LDG-1102: the audit reported that MACD output = "macd" with
+  # percent = FALSE needed 34 bars. Against the installed TTR version recorded
+  # here, direct TTR output is first valid at row 26 for the macd column and at
+  # row 34 for signal/histogram, for both percent values. If ledgr inferred too
+  # small a stable_after, the feature engine would abort on NA after warmup
+  # rather than silently trading late.
+  for (case in ledgr_test_macd_warmup_cases()) {
+    params <- list(
+      ttr_fn = "MACD",
+      ttr_version = ttr_version,
+      input = "close",
+      output = case$output,
+      args = case$args
+    )
+    values_from_ttr <- ledgr:::ledgr_ttr_call(bars, params)
+    first_valid_from_ttr <- min(which(!is.na(values_from_ttr)))
+
+    ind <- do.call(
+      ledgr_ind_ttr,
+      c(list("MACD", input = "close", output = case$output), case$args)
+    )
+    values_from_ledgr <- ledgr:::ledgr_compute_feature_series(bars, ind)
+    first_valid_from_ledgr <- which(!is.na(values_from_ledgr))[1]
+
+    testthat::expect_identical(ind$requires_bars, case$requires_bars)
+    testthat::expect_identical(first_valid_from_ttr, case$requires_bars)
+    testthat::expect_identical(first_valid_from_ledgr, case$requires_bars)
   }
 })
 

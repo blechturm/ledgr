@@ -105,6 +105,9 @@ the active versioned spec packet, currently
   `targets`.
 - Names must exactly match `ctx$universe`; missing, extra, duplicate, unnamed,
   or non-finite targets fail with `ledgr_invalid_strategy_result`.
+- Target values are desired instrument quantities after the next fill, not
+  portfolio weights, order sizes, or signals. Weight-based allocation remains
+  outside the v0.1.x public strategy contract.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.
@@ -147,6 +150,10 @@ the active versioned spec packet, currently
   `ctx$bars` and long-table `ctx$features`.
 - Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
   views over `ctx$features`; they do not change feature computation semantics.
+- `ctx$flat(default = 0)` constructs a full target vector initialized to a
+  scalar quantity. `ctx$hold()` constructs a full target vector initialized to
+  current positions. Strategies choose between them based on whether the default
+  behavior is flat-unless-signal or hold-unless-signal.
 - `ctx$feature(instrument_id, feature_id)` must fail loudly for unknown feature
   IDs, including the requested feature, instrument, and available feature IDs
   (`<none>` if no features are registered). A known feature whose current value
@@ -207,6 +214,12 @@ the active versioned spec packet, currently
 - `ledgr_results(bt, what = ...)` is the package-prefixed wrapper over that
   same result path. It must delegate to `tibble::as_tibble()` and must not
   duplicate reconstruction logic.
+- `ledgr_results(bt, what = ...)` may return a ledgr-owned tibble subclass for
+  display. That subclass must remain tibble-compatible, and
+  `tibble::as_tibble()` must expose the raw result table.
+- Timestamp display options are print-only. `options(ledgr.print_ts_utc =
+  "auto")` may compact all-midnight UTC timestamps to dates in ledgr-owned
+  print paths, but returned and stored `ts_utc` values remain POSIXct UTC.
 - `ledgr_compare_runs()` reads stored completed-run artifacts only. It must not
   rerun strategy code, evaluate recovered source, or mutate the experiment
   store while producing comparison tables.
@@ -221,6 +234,17 @@ the active versioned spec packet, currently
 - `ledgr_extract_fills()` and `ledgr_compute_equity_curve()` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
+
+## Documentation Contract
+
+- README and narrative vignettes use the base pipe `|>` in canonical examples.
+- README and narrative vignettes prefer `filter()` / `between()` over
+  `subset()` for applied data preparation examples.
+- First-path examples avoid raw `as.POSIXct(..., tz = "UTC")` boilerplate when
+  `ledgr_utc()` or an equivalent clearer pattern is available.
+- Narrative run-list and comparison examples should demonstrate curated print
+  defaults directly. Full-column access belongs in explicit tibble-compatible
+  "dig deeper" examples.
 
 ## Verification Contract
 

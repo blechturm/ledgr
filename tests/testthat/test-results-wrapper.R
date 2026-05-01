@@ -19,11 +19,16 @@ testthat::test_that("ledgr_results delegates to tibble::as_tibble for supported 
   on.exit(close(bt), add = TRUE)
 
   for (what in c("equity", "fills", "trades", "ledger")) {
+    result <- ledgr_results(bt, what = what)
+    testthat::expect_s3_class(result, "ledgr_result_table")
     testthat::expect_equal(
-      ledgr_results(bt, what = what),
+      tibble::as_tibble(result),
       tibble::as_tibble(bt, what = what),
       ignore_attr = TRUE
     )
+    if ("ts_utc" %in% names(result)) {
+      testthat::expect_s3_class(tibble::as_tibble(result)$ts_utc, "POSIXct")
+    }
   }
   testthat::expect_error(ledgr_results(bt, what = "positions"))
 })

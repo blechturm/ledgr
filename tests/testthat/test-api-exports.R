@@ -59,6 +59,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_snapshot_seal",
     "ledgr_state_reconstruct",
     "ledgr_ttr_warmup_rules",
+    "ledgr_utc",
     "ledgr_validate_schema"
   ))
 

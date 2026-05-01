@@ -10,7 +10,7 @@
 #' @param seed Random seed used for deterministic generation.
 #' @param start First calendar date considered for the business-day sequence.
 #' @param instrument_prefix Prefix used for generated instrument IDs.
-#' @return A data frame with `ts_utc`, `instrument_id`, `open`, `high`, `low`,
+#' @return A tibble with `ts_utc`, `instrument_id`, `open`, `high`, `low`,
 #'   `close`, and `volume` columns suitable for `ledgr_snapshot_from_df()`.
 #' @examples
 #' bars <- ledgr_sim_bars(n_instruments = 3, n_days = 20, seed = 1)
@@ -74,7 +74,7 @@ ledgr_sim_bars <- function(n_instruments = 10L,
 
   out <- do.call(rbind, rows)
   rownames(out) <- NULL
-  out
+  tibble::as_tibble(out)
 }
 
 ledgr_sim_positive_integer <- function(x, arg) {

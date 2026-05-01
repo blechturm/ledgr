@@ -1,3 +1,25 @@
+# ledgr 0.1.7.1
+
+- Stabilised the installed-package UX after the v0.1.7 experiment-first reset,
+  with clearer start-here documentation, modern base-pipe examples, and a
+  runnable offline workflow built around `ledgr_demo_bars`.
+- Added `ledgr_utc()` as a small UTC timestamp helper for examples and user
+  workflows, avoiding repeated `as.POSIXct(..., tz = "UTC")` boilerplate.
+- Made `ledgr_demo_bars` and `ledgr_sim_bars()` tibble-friendly for modern R
+  examples.
+- Added display-only result timestamp printing controls through
+  `options(ledgr.print_ts_utc = "auto")`, so all-midnight EOD result tables can
+  print compact dates while underlying `ts_utc` values remain POSIXct UTC.
+- Verified MACD TTR warmup against direct TTR output for `macd`, `signal`, and
+  `histogram` outputs with both `percent = TRUE` and `percent = FALSE`; under
+  the tested TTR version, `macd` is first valid at `nSlow`, while `signal` and
+  `histogram` are first valid at `nSlow + nSig - 1`.
+- Expanded strategy and TTR indicator articles with clearer `ctx`, `params`,
+  feature ID, warmup `NA`, and quantity-target sizing guidance.
+- Clarified the experiment-store mental model: sealed snapshots freeze market
+  data, while indicators, features, runs, labels, tags, comparisons, and
+  telemetry are derived artifacts that can be added later.
+
 # ledgr 0.1.7
 
 ## Breaking changes

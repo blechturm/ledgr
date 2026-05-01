@@ -75,3 +75,57 @@ iso_utc <- function(x) {
 
   rlang::abort("Unsupported timestamp format in `x`.", class = "ledgr_invalid_timestamp")
 }
+
+#' Parse timestamps as UTC POSIXct values
+#'
+#' Convenience helper for examples and user workflows that need UTC timestamps
+#' without repeating `as.POSIXct(..., tz = "UTC")` boilerplate.
+#'
+#' Supported inputs are character vectors, `Date`, and `POSIXct`/`POSIXt`.
+#' Character values may be dates (`"YYYY-MM-DD"`), ISO datetimes with `T`, ISO
+#' datetimes with trailing `Z`, or datetimes with a space separator.
+#'
+#' @param x A character, Date, or POSIXt vector.
+#' @return A POSIXct vector in UTC.
+#' @examples
+#' ledgr_utc("2020-01-01")
+#' ledgr_utc("2020-01-01 09:30:00")
+#' @export
+ledgr_utc <- function(x) {
+  if (inherits(x, "POSIXt")) {
+    out <- as.POSIXct(x, tz = "UTC")
+    if (length(out) != length(x) || anyNA(out)) {
+      rlang::abort("`x` must contain valid POSIXct values.", class = "ledgr_invalid_timestamp")
+    }
+    attr(out, "tzone") <- "UTC"
+    return(out)
+  }
+
+  if (inherits(x, "Date")) {
+    if (anyNA(x)) {
+      rlang::abort("`x` must contain valid Date values.", class = "ledgr_invalid_timestamp")
+    }
+    out <- as.POSIXct(x, tz = "UTC")
+    attr(out, "tzone") <- "UTC"
+    return(out)
+  }
+
+  if (!is.character(x) || anyNA(x) || any(!nzchar(x))) {
+    rlang::abort(
+      "`x` must be a character, Date, or POSIXct vector with no missing values.",
+      class = "ledgr_invalid_timestamp"
+    )
+  }
+
+  parse_one <- function(value) {
+    if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$", value)) {
+      value <- sub(" ", "T", value, fixed = TRUE)
+    }
+    as.POSIXct(iso_utc(value), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  }
+
+  out <- unname(vapply(x, parse_one, as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")))
+  out <- as.POSIXct(out, origin = "1970-01-01", tz = "UTC")
+  attr(out, "tzone") <- "UTC"
+  out
+}

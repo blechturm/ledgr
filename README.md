@@ -30,6 +30,15 @@ pak::pak("blechturm/ledgr")
 
 ``` r
 library(ledgr)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
 library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
@@ -40,14 +49,14 @@ Use the bundled demo bars for a first run. They are deterministic and
 require no network access.
 
 ``` r
-bars <- subset(
-  ledgr_demo_bars,
-  instrument_id %in% c("DEMO_01", "DEMO_02") &
-    ts_utc >= as.POSIXct("2019-01-01", tz = "UTC") &
-    ts_utc <= as.POSIXct("2019-06-30", tz = "UTC")
-)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+  )
 
-head(as_tibble(bars), 4)
+bars |>
+  slice_head(n = 4)
 #> # A tibble: 4 x 7
 #>   ts_utc              instrument_id  open  high   low close volume
 #>   <dttm>              <chr>         <dbl> <dbl> <dbl> <dbl>  <dbl>
@@ -100,8 +109,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260429_155321_e201
-#> Database:    C:\Users\maxth\AppData\Local\Temp\Rtmp6Fb6WG\ledgr_11cb02f51185b.duckdb
+#> Snapshot ID: snapshot_20260430_054407_b4c3
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKkKxFY\ledgr_10b183d756dd8.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -154,18 +163,18 @@ summary(bt)
 #>   Time in Market:      65.12%
 ledgr_results(bt, what = "trades")
 #> # A tibble: 24 x 9
-#>    event_seq ts_utc              instrument_id side    qty price   fee realized_pnl action
-#>        <int> <dttm>              <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-29 00:00:00 DEMO_01       BUY      10  91.9     0         0    OPEN
-#>  2         2 2019-02-19 00:00:00 DEMO_02       BUY      10  68.7     0         0    OPEN
-#>  3         3 2019-02-25 00:00:00 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
-#>  4         4 2019-03-04 00:00:00 DEMO_02       BUY      10  68.0     0         0    OPEN
-#>  5         5 2019-03-05 00:00:00 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
-#>  6         6 2019-03-08 00:00:00 DEMO_02       BUY      10  68.9     0         0    OPEN
-#>  7         7 2019-03-12 00:00:00 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
-#>  8         8 2019-03-13 00:00:00 DEMO_02       BUY      10  67.4     0         0    OPEN
-#>  9         9 2019-03-19 00:00:00 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
-#> 10        10 2019-03-20 00:00:00 DEMO_01       SELL     10 101.      0        96.1  CLOSE
+#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
+#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
+#>  1         1 2019-01-29 DEMO_01       BUY      10  91.9     0         0    OPEN
+#>  2         2 2019-02-19 DEMO_02       BUY      10  68.7     0         0    OPEN
+#>  3         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
+#>  4         4 2019-03-04 DEMO_02       BUY      10  68.0     0         0    OPEN
+#>  5         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
+#>  6         6 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
+#>  7         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
+#>  8         8 2019-03-13 DEMO_02       BUY      10  67.4     0         0    OPEN
+#>  9         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
+#> 10        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE
 #> # i 14 more rows
 ```
 
@@ -179,15 +188,14 @@ strategies.
 bt_qty_20 <- exp |>
   ledgr_run(params = list(qty = 20), run_id = "readme_sma_20_qty_20")
 
-ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))[
-  c("run_id", "final_equity", "total_return", "n_trades", "strategy_params_hash")
-]
+ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))
 #> # ledgr comparison
-#> # A tibble: 2 x 4
-#>   run_id               final_equity total_return n_trades
-#>   <chr>                       <dbl> <chr>           <int>
-#> 1 readme_sma_20              10685. +6.9%              12
-#> 2 readme_sma_20_qty_20       11370. +13.7%             12
+#> # A tibble: 2 x 8
+#>   run_id               label final_equity total_return max_drawdown n_trades win_rate
+#>   <chr>                <chr>        <dbl> <chr>        <chr>           <int> <chr>
+#> 1 readme_sma_20        <NA>        10685. +6.9%        -13.5%             12 25.0%
+#> 2 readme_sma_20_qty_20 <NA>        11370. +13.7%       -25.3%             12 25.0%
+#> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -219,6 +227,10 @@ v0.1.7 is the experiment-first research API. It does not ship parameter
 sweep execution, broker adapters, paper trading, live trading, or
 short-selling semantics. Those are separate roadmap items with different
 state and safety requirements.
+
+`ledgr_run()` returns a live handle. The run artifacts are already
+durable, but closing the handle is the deterministic way to checkpoint
+and release DuckDB resources in scripts and long sessions.
 
 ``` r
 close(bt)
