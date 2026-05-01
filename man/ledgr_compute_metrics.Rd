@@ -26,10 +26,12 @@ Standard metrics are derived from the ledger and equity curve:
 frequency, snapped to common frequencies such as daily or weekly.
 \item \code{volatility}: annualized standard deviation of period equity returns.
 \item \code{max_drawdown}: worst percentage decline from the running equity maximum.
-\item \code{n_trades}: number of ledger-derived fill rows.
-\item \code{win_rate}: share of fill rows with strict realized P&L \verb{> 0}; breakeven is
-not a win, and open-position gains remain in equity until closed.
-\item \code{avg_trade}: mean realized P&L across fill rows.
+\item \code{n_trades}: number of closed trade rows. Open-only fills do not count until
+a later fill closes quantity.
+\item \code{win_rate}: share of closed trade rows with strict realized P&L \verb{> 0};
+breakeven is not a win, and open-position gains remain in equity until
+closed.
+\item \code{avg_trade}: mean realized P&L across closed trade rows.
 \item \code{time_in_market}: share of equity timestamps with non-zero position value.
 }
 }

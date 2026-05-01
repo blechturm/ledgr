@@ -275,6 +275,12 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
   if ("persist_features" %in% names(out)) out$persist_features <- as.logical(out$persist_features)
   if ("pulse_count" %in% names(out)) out$pulse_count <- as.integer(out$pulse_count)
   if ("n_trades" %in% names(out)) out$n_trades <- as.integer(out$n_trades)
+  if ("n_trades" %in% names(out) && ledgr_experiment_store_table_exists(con, "ledger_events")) {
+    trade_stats <- ledgr_compare_runs_fill_stats(con, unique(as.character(out$run_id)))
+    trade_idx <- match(as.character(out$run_id), trade_stats$run_id)
+    out$n_trades <- as.integer(trade_stats$n_trades[trade_idx])
+    out$n_trades[is.na(out$n_trades)] <- 0L
+  }
   tibble::as_tibble(out)
 }
 
@@ -533,7 +539,8 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
 #' @param metrics Metrics set. Only `"standard"` is supported in v0.1.7.
 #' @return A `ledgr_comparison` object, which is a classed tibble with one row
-#'   per completed run.
+#'   per completed run. `n_trades` counts closed trade rows, not open-only fill
+#'   rows; `win_rate` is computed over those closed trade rows.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 30))

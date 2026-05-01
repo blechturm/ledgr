@@ -20,6 +20,19 @@ testthat::test_that("metrics handle zero-trade backtests", {
 
   fills <- ledgr:::ledgr_extract_fills(bt)
   testthat::expect_equal(nrow(fills), 0L)
+  testthat::expect_identical(
+    names(fills),
+    c("event_seq", "ts_utc", "instrument_id", "side", "qty", "price", "fee", "realized_pnl", "action")
+  )
+  testthat::expect_s3_class(fills$ts_utc, "POSIXct")
+
+  trades <- ledgr_results(bt, what = "trades")
+  testthat::expect_equal(nrow(trades), 0L)
+  testthat::expect_identical(names(tibble::as_tibble(trades)), names(fills))
+
+  result_fills <- ledgr_results(bt, what = "fills")
+  testthat::expect_equal(nrow(result_fills), 0L)
+  testthat::expect_identical(names(tibble::as_tibble(result_fills)), names(fills))
 
   metrics <- ledgr:::ledgr_compute_metrics(bt)
   testthat::expect_equal(metrics$n_trades, 0L)

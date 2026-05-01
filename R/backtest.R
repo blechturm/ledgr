@@ -912,12 +912,40 @@ ledgr_backtest_equity <- function(con, run_id) {
   )
 }
 
+ledgr_empty_fills_table <- function() {
+  tibble::tibble(
+    event_seq = integer(),
+    ts_utc = as.POSIXct(character(), tz = "UTC"),
+    instrument_id = character(),
+    side = character(),
+    qty = numeric(),
+    price = numeric(),
+    fee = numeric(),
+    realized_pnl = numeric(),
+    action = character()
+  )
+}
+
+ledgr_empty_equity_curve <- function() {
+  tibble::tibble(
+    ts_utc = as.POSIXct(character(), tz = "UTC"),
+    equity = numeric(),
+    cash = numeric(),
+    positions_value = numeric(),
+    running_max = numeric(),
+    drawdown = numeric()
+  )
+}
+
 #' Extract fill events from a backtest
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param lazy If `TRUE`, return a streaming cursor instead of materializing all rows.
 #' @param stream_threshold Number of fill rows above which lazy mode is forced.
 #' @return A tibble of fill rows, or a `ledgr_fills_cursor` when `lazy = TRUE`.
+#' @details Fill rows describe execution events and may include both opening and
+#'   closing actions. Closed trades are exposed by `ledgr_results(bt, what =
+#'   "trades")`.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -950,7 +978,7 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   )$n[[1]]
   total_rows <- as.integer(total_rows)
   if (is.na(total_rows) || total_rows < 1L) {
-    return(tibble::tibble())
+    return(ledgr_empty_fills_table())
   }
 
   if (!is.numeric(stream_threshold) || length(stream_threshold) != 1 || is.na(stream_threshold)) {
@@ -1251,6 +1279,21 @@ ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table)))
 }
 
+ledgr_closed_trade_rows <- function(fills) {
+  if (nrow(fills) == 0L) {
+    return(fills)
+  }
+  tibble::as_tibble(fills[ledgr_col_equals(fills$action, "CLOSE"), , drop = FALSE])
+}
+
+ledgr_extract_trades <- function(bt) {
+  ledgr_closed_trade_rows(ledgr_extract_fills(bt))
+}
+
+ledgr_col_equals <- function(x, value) {
+  !is.na(x) & as.character(x) == value
+}
+
 compute_annualized_return <- function(equity, bars_per_year) {
   if (!is.data.frame(equity) || nrow(equity) < 2) return(NA_real_)
   if (!is.numeric(bars_per_year) || length(bars_per_year) != 1 || !is.finite(bars_per_year) || bars_per_year <= 0) {
@@ -1353,6 +1396,7 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
   equity$positions_value <- as.numeric(equity$positions_value)
 
   fills <- ledgr_extract_fills(bt)
+  trades <- ledgr_closed_trade_rows(fills)
 
   returns <- numeric(0)
   if (nrow(equity) > 1) {
@@ -1367,9 +1411,9 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
     annualized_return = compute_annualized_return(equity, bars_per_year),
     volatility = if (length(returns) > 1) stats::sd(returns, na.rm = TRUE) * sqrt(bars_per_year) else NA_real_,
     max_drawdown = compute_max_drawdown(equity$equity),
-    n_trades = nrow(fills),
-    win_rate = if (nrow(fills) > 0) sum(fills$realized_pnl > 0, na.rm = TRUE) / nrow(fills) else NA_real_,
-    avg_trade = if (nrow(fills) > 0) mean(fills$realized_pnl, na.rm = TRUE) else NA_real_,
+    n_trades = nrow(trades),
+    win_rate = if (nrow(trades) > 0) sum(trades$realized_pnl > 0, na.rm = TRUE) / nrow(trades) else NA_real_,
+    avg_trade = if (nrow(trades) > 0) mean(trades$realized_pnl, na.rm = TRUE) else NA_real_,
     time_in_market = compute_time_in_market(equity)
   )
 }
@@ -1401,7 +1445,7 @@ ledgr_compute_equity_curve <- function(bt) {
   con <- get_connection(bt)
   equity <- ledgr_backtest_equity(con, bt$run_id)
   if (nrow(equity) == 0) {
-    return(tibble::as_tibble(equity))
+    return(ledgr_empty_equity_curve())
   }
 
   equity$equity <- as.numeric(equity$equity)
@@ -1499,10 +1543,12 @@ ledgr_backtest_bench <- function(bt) {
 #'   frequency, snapped to common frequencies such as daily or weekly.
 #' - `volatility`: annualized standard deviation of period equity returns.
 #' - `max_drawdown`: worst percentage decline from the running equity maximum.
-#' - `n_trades`: number of ledger-derived fill rows.
-#' - `win_rate`: share of fill rows with strict realized P&L `> 0`; breakeven is
-#'   not a win, and open-position gains remain in equity until closed.
-#' - `avg_trade`: mean realized P&L across fill rows.
+#' - `n_trades`: number of closed trade rows. Open-only fills do not count until
+#'   a later fill closes quantity.
+#' - `win_rate`: share of closed trade rows with strict realized P&L `> 0`;
+#'   breakeven is not a win, and open-position gains remain in equity until
+#'   closed.
+#' - `avg_trade`: mean realized P&L across closed trade rows.
 #' - `time_in_market`: share of equity timestamps with non-zero position value.
 #'
 #' @examples
@@ -1670,6 +1716,8 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
 #' @param ... Unused.
 #' @param type Deprecated alias for `what`.
 #' @return A tibble with the requested result table.
+#' @details `what = "fills"` returns execution fill rows, including opening
+#'   and closing actions. `what = "trades"` returns closed trade rows only.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -1705,7 +1753,7 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
       ledgr_compute_equity_curve(x)
     },
     fills = ledgr_extract_fills(x),
-    trades = ledgr_extract_fills(x),
+    trades = ledgr_extract_trades(x),
     ledger = tibble::as_tibble(
       DBI::dbGetQuery(
         con,
@@ -1730,6 +1778,10 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' all-midnight UTC timestamps for EOD output according to
 #' `options(ledgr.print_ts_utc)`, but programmatic access keeps `ts_utc` as
 #' POSIXct UTC.
+#'
+#' `what = "fills"` returns execution fill rows, including opening and closing
+#' actions. `what = "trades"` returns closed trade rows only; this is the same
+#' definition used by `summary()` and `ledgr_compare_runs()` for `n_trades`.
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"fills"`, `"trades"`, or

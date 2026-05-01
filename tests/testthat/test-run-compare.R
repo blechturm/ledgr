@@ -124,7 +124,7 @@ testthat::test_that("ledgr_compare_runs counts only closing trades for win rate"
   )
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
-    if (ctx$ts_utc == "2020-01-01T00:00:00Z") {
+    if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) {
       targets["AAA"] <- 10
     }
     targets
@@ -143,6 +143,112 @@ testthat::test_that("ledgr_compare_runs counts only closing trades for win rate"
 
   cmp <- ledgr_compare_runs(snapshot, run_ids = "compare-roundtrip")
   testthat::expect_identical(cmp$n_trades, 1L)
+  testthat::expect_equal(cmp$win_rate, 1)
+
+  fills <- ledgr_results(bt, what = "fills")
+  trades <- ledgr_results(bt, what = "trades")
+  metrics <- ledgr:::ledgr_compute_metrics(bt)
+  listed <- ledgr_run_list(snapshot)
+
+  testthat::expect_identical(nrow(fills), 2L)
+  testthat::expect_identical(nrow(trades), 1L)
+  testthat::expect_true(all(trades$action == "CLOSE"))
+  testthat::expect_identical(metrics$n_trades, 1L)
+  testthat::expect_equal(metrics$win_rate, 1)
+  testthat::expect_identical(listed$n_trades[match("compare-roundtrip", listed$run_id)], 1L)
+})
+
+testthat::test_that("open-only fills are not counted as closed trades", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+    instrument_id = "AAA",
+    open = c(100, 100, 110, 120),
+    high = c(100, 100, 110, 120),
+    low = c(100, 100, 110, 120),
+    close = c(100, 100, 110, 120),
+    volume = c(1, 1, 1, 1),
+    stringsAsFactors = FALSE
+  )
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- 10
+    targets
+  }
+
+  bt <- ledgr_backtest(
+    data = bars,
+    strategy = strategy,
+    initial_cash = 2000,
+    db_path = db_path,
+    run_id = "compare-open-only"
+  )
+  on.exit(close(bt), add = TRUE)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  fills <- ledgr_results(bt, what = "fills")
+  trades <- ledgr_results(bt, what = "trades")
+  metrics <- ledgr:::ledgr_compute_metrics(bt)
+  cmp <- ledgr_compare_runs(snapshot, run_ids = "compare-open-only")
+  listed <- ledgr_run_list(snapshot)
+
+  testthat::expect_identical(nrow(fills), 1L)
+  testthat::expect_identical(fills$action[[1]], "OPEN")
+  testthat::expect_identical(nrow(trades), 0L)
+  testthat::expect_identical(names(trades), names(fills))
+  testthat::expect_identical(metrics$n_trades, 0L)
+  testthat::expect_true(is.na(metrics$win_rate))
+  testthat::expect_identical(cmp$n_trades, 0L)
+  testthat::expect_true(is.na(cmp$win_rate))
+  testthat::expect_identical(listed$n_trades[match("compare-open-only", listed$run_id)], 0L)
+})
+
+testthat::test_that("multi-fill runs count each closing fill as a trade", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+    instrument_id = "AAA",
+    open = c(100, 100, 110, 120, 120),
+    high = c(100, 100, 110, 120, 120),
+    low = c(100, 100, 110, 120, 120),
+    close = c(100, 100, 110, 120, 120),
+    volume = c(1, 1, 1, 1, 1),
+    stringsAsFactors = FALSE
+  )
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    ts_utc <- ledgr_utc(ctx$ts_utc)
+    if (ts_utc == ledgr_utc("2020-01-01")) {
+      targets["AAA"] <- 10
+    } else if (ts_utc == ledgr_utc("2020-01-02")) {
+      targets["AAA"] <- 5
+    }
+    targets
+  }
+
+  bt <- ledgr_backtest(
+    data = bars,
+    strategy = strategy,
+    initial_cash = 2000,
+    db_path = db_path,
+    run_id = "compare-multi-fill"
+  )
+  on.exit(close(bt), add = TRUE)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  fills <- ledgr_results(bt, what = "fills")
+  trades <- ledgr_results(bt, what = "trades")
+  cmp <- ledgr_compare_runs(snapshot, run_ids = "compare-multi-fill")
+
+  testthat::expect_identical(nrow(fills), 3L)
+  testthat::expect_identical(nrow(trades), 2L)
+  testthat::expect_identical(cmp$n_trades, 2L)
   testthat::expect_equal(cmp$win_rate, 1)
 })
 

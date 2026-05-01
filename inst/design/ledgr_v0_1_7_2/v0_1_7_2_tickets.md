@@ -128,7 +128,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1201  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Investigate and resolve the auditr high-priority finding that
@@ -150,12 +150,12 @@ flat runs return normal empty tables rather than `0 x 0` tibbles.
    multi-fill runs.
 
 **Acceptance Criteria:**
-- [ ] A targeted regression test reproduces or explicitly disproves the auditr
+- [x] A targeted regression test reproduces or explicitly disproves the auditr
       metric discrepancy.
-- [ ] `n_trades` is defined in docs and tests.
-- [ ] Comparison output agrees with the documented definition.
-- [ ] Flat runs and zero-trade runs return stable schemas, not `0 x 0` tibbles.
-- [ ] Existing comparison no-recompute/no-mutation behavior is preserved.
+- [x] `n_trades` is defined in docs and tests.
+- [x] Comparison output agrees with the documented definition.
+- [x] Flat runs and zero-trade runs return stable schemas, not `0 x 0` tibbles.
+- [x] Existing comparison no-recompute/no-mutation behavior is preserved.
 
 **Test Requirements:**
 - Targeted comparison metric regression test.

@@ -25,6 +25,10 @@ The returned object is tibble-compatible. Its print method may compact
 all-midnight UTC timestamps for EOD output according to
 \code{options(ledgr.print_ts_utc)}, but programmatic access keeps \code{ts_utc} as
 POSIXct UTC.
+
+\code{what = "fills"} returns execution fill rows, including opening and closing
+actions. \code{what = "trades"} returns closed trade rows only; this is the same
+definition used by \code{summary()} and \code{ledgr_compare_runs()} for \code{n_trades}.
 }
 \examples{
 bars <- data.frame(

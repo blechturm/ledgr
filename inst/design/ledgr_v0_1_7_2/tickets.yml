@@ -46,7 +46,7 @@ tickets:
 
   - id: LDG-1202
     title: "Comparison Metrics And Stable Result Schemas"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-1201]
     tests:

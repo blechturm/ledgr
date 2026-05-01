@@ -1,7 +1,9 @@
 # ledgr 0.1.7.2
 
-- TODO: Stabilise comparison metrics and zero-row result schemas for flat,
-  open-only, and closed-round-trip runs.
+- Stabilised comparison metrics and zero-row result schemas: `n_trades` now
+  counts closed trade rows consistently across `summary()`,
+  `ledgr_compare_runs()`, `ledgr_run_list()`, and `ledgr_results(bt, what =
+  "trades")`, while `what = "fills"` continues to expose execution fill rows.
 - TODO: Improve result-access connection lifecycle and document `close()` as
   long-session resource management rather than data-safety ceremony.
 - TODO: Add the minimal strategy-helper reference layer while preserving the

@@ -16,6 +16,10 @@ ledgr_extract_fills(bt, lazy = FALSE, stream_threshold = 100000L)
 \value{
 A tibble of fill rows, or a \code{ledgr_fills_cursor} when \code{lazy = TRUE}.
 }
+\details{
+Fill rows describe execution events and may include both opening and closing
+actions. Closed trades are exposed by \code{ledgr_results(bt, what = "trades")}.
+}
 \description{
 Extract fill events from a backtest
 }

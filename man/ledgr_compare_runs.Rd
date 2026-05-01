@@ -26,7 +26,8 @@ completed runs. If \code{NULL}, compares all non-archived completed runs.}
 }
 \value{
 A \code{ledgr_comparison} object, which is a classed tibble with one row
-per completed run.
+per completed run. \code{n_trades} counts closed trade rows, not open-only fill
+rows; \code{win_rate} is computed over those closed trade rows.
 }
 \description{
 Reads stored run metadata, provenance, telemetry, and result artifacts from a

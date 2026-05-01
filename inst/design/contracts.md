@@ -217,6 +217,11 @@ the active versioned spec packet, currently
 - `ledgr_results(bt, what = ...)` may return a ledgr-owned tibble subclass for
   display. That subclass must remain tibble-compatible, and
   `tibble::as_tibble()` must expose the raw result table.
+- `ledgr_results(bt, what = "fills")` returns execution fill rows, including
+  opening and closing actions. `ledgr_results(bt, what = "trades")` returns
+  closed trade rows only. Public `n_trades` and `win_rate` metrics are computed
+  from closed trade rows, so open-only fills do not count as trades until
+  quantity is closed.
 - Timestamp display options are print-only. `options(ledgr.print_ts_utc =
   "auto")` may compact all-midnight UTC timestamps to dates in ledgr-owned
   print paths, but returned and stored `ts_utc` values remain POSIXct UTC.

@@ -22,6 +22,10 @@ A tibble with the requested result table.
 \description{
 Extract tidy backtest tables
 }
+\details{
+\code{what = "fills"} returns execution fill rows, including opening and closing
+actions. \code{what = "trades"} returns closed trade rows only.
+}
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
