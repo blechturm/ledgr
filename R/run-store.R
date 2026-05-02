@@ -79,30 +79,16 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
   }
 
   runs_cols <- ledgr_experiment_store_columns(con, "runs")
-  run_expr <- function(column, default = "NULL") {
-    if (column %in% runs_cols) paste0("r.", column) else default
-  }
-  prov_expr <- function(column, default = "NULL") {
-    if (ledgr_run_store_has_col(con, "run_provenance", column)) {
-      sprintf("(SELECT p.%s FROM run_provenance p WHERE p.run_id = r.run_id LIMIT 1)", column)
-    } else {
-      default
-    }
-  }
-  telem_expr <- function(column, default = "NULL") {
-    if (ledgr_run_store_has_col(con, "run_telemetry", column)) paste0("t.", column) else default
-  }
-  snap_expr <- function(column, default = "NULL") {
-    if (ledgr_run_store_has_col(con, "snapshots", column)) paste0("s.", column) else default
-  }
-
-  archived_expr <- run_expr("archived", "FALSE")
   quote_string <- function(x) {
     as.character(DBI::dbQuoteString(con, as.character(x)))
   }
+  quote_values <- function(x) {
+    paste(vapply(x, quote_string, character(1)), collapse = ", ")
+  }
+
   where <- character()
-  if (!isTRUE(include_archived)) {
-    where <- c(where, sprintf("COALESCE(%s, FALSE) = FALSE", archived_expr))
+  if (!isTRUE(include_archived) && "archived" %in% runs_cols) {
+    where <- c(where, "COALESCE(r.archived, FALSE) = FALSE")
   }
   if (!is.null(run_id)) {
     where <- c(where, sprintf("r.run_id = %s", quote_string(run_id)))
@@ -111,159 +97,168 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     where <- c(where, sprintf("r.snapshot_id = %s", quote_string(snapshot_id)))
   }
   where_sql <- if (length(where) > 0L) paste("WHERE", paste(where, collapse = " AND ")) else ""
-
-  telemetry_join <- ledgr_run_store_optional_join(con, "run_telemetry", "t", "t.run_id = r.run_id")
-  snapshot_join <- ledgr_run_store_optional_join(con, "snapshots", "s", "s.snapshot_id = r.snapshot_id")
-  tags_expr <- if (ledgr_experiment_store_table_exists(con, "run_tags")) {
-    "(SELECT string_agg(rt.tag, ', ' ORDER BY rt.tag) FROM run_tags rt WHERE rt.run_id = r.run_id)"
-  } else {
-    "NULL"
-  }
-  equity_join <- if (ledgr_experiment_store_table_exists(con, "equity_curve")) {
-    "
-    LEFT JOIN (
-      SELECT run_id,
-             MAX(CASE WHEN rn_first = 1 THEN equity END) AS first_equity,
-             MAX(CASE WHEN rn_last = 1 THEN equity END) AS final_equity,
-             MIN(CASE
-               WHEN running_max IS NULL OR running_max = 0 THEN NULL
-               ELSE equity / running_max - 1
-             END) AS max_drawdown
-      FROM (
-        SELECT run_id,
-               equity,
-               ROW_NUMBER() OVER (PARTITION BY run_id ORDER BY ts_utc ASC) AS rn_first,
-               ROW_NUMBER() OVER (PARTITION BY run_id ORDER BY ts_utc DESC) AS rn_last,
-               MAX(equity) OVER (
-                 PARTITION BY run_id
-                 ORDER BY ts_utc ASC
-                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-               ) AS running_max
-        FROM equity_curve
-      ) eq_ranked
-      GROUP BY run_id
-    ) eq ON eq.run_id = r.run_id
-    "
-  } else {
-    "
-    LEFT JOIN (
-      SELECT
-        CAST(NULL AS TEXT) AS run_id,
-        CAST(NULL AS DOUBLE) AS first_equity,
-        CAST(NULL AS DOUBLE) AS final_equity,
-        CAST(NULL AS DOUBLE) AS max_drawdown
-      WHERE FALSE
-    ) eq ON eq.run_id = r.run_id
-    "
-  }
-  trades_join <- if (ledgr_experiment_store_table_exists(con, "ledger_events")) {
-    "
-    LEFT JOIN (
-      SELECT run_id, COUNT(*) AS n_trades
-      FROM ledger_events
-      WHERE event_type = 'FILL'
-      GROUP BY run_id
-    ) tr ON tr.run_id = r.run_id
-    "
-  } else {
-    "
-    LEFT JOIN (
-      SELECT CAST(NULL AS TEXT) AS run_id, CAST(NULL AS INTEGER) AS n_trades
-      WHERE FALSE
-    ) tr ON tr.run_id = r.run_id
-    "
+  order_col <- if ("created_at_utc" %in% runs_cols) "r.created_at_utc" else "r.run_id"
+  sql <- sprintf("SELECT r.* FROM runs r %s ORDER BY %s, r.run_id", where_sql, order_col)
+  out <- DBI::dbGetQuery(con, sql)
+  if (!"run_id" %in% names(out)) {
+    out$run_id <- character(nrow(out))
   }
 
-  sql <- sprintf(
-    "
-    SELECT
-      r.run_id,
-      %s AS label,
-      %s AS snapshot_id,
-      %s AS snapshot_hash,
-      %s AS created_at_utc,
-      %s AS status,
-      COALESCE(%s, FALSE) AS archived,
-      %s AS archived_at_utc,
-      %s AS archive_reason,
-      %s AS tags,
-      COALESCE(%s, 'legacy') AS reproducibility_level,
-      %s AS strategy_type,
-      %s AS strategy_source_hash,
-      %s AS strategy_source_capture_method,
-      %s AS strategy_params_json,
-      %s AS strategy_params_hash,
-      %s AS ledgr_version,
-      %s AS R_version,
-      %s AS dependency_versions_json,
-      %s AS config_hash,
-      %s AS data_hash,
-      COALESCE(%s, %s) AS execution_mode,
-      %s AS elapsed_sec,
-      %s AS pulse_count,
-      %s AS persist_features,
-      %s AS feature_cache_hits,
-      %s AS feature_cache_misses,
-      %s AS error_msg,
-      eq.final_equity,
-      eq.max_drawdown,
-      CASE
-        WHEN eq.first_equity IS NULL OR eq.first_equity = 0 THEN NULL
-        ELSE eq.final_equity / eq.first_equity - 1
-      END AS total_return,
-      COALESCE(tr.n_trades, 0) AS n_trades,
-      %s AS config_json,
-      %s AS schema_version
-    FROM runs r
-    %s
-    %s
-    %s
-    %s
-    %s
-    ORDER BY %s, r.run_id
-    ",
-    run_expr("label"),
-    run_expr("snapshot_id"),
-    snap_expr("snapshot_hash"),
-    run_expr("created_at_utc"),
-    run_expr("status"),
-    archived_expr,
-    run_expr("archived_at_utc"),
-    run_expr("archive_reason"),
-    tags_expr,
-    prov_expr("reproducibility_level"),
-    prov_expr("strategy_type"),
-    prov_expr("strategy_source_hash"),
-    prov_expr("strategy_source_capture_method"),
-    prov_expr("strategy_params_json"),
-    prov_expr("strategy_params_hash"),
-    prov_expr("ledgr_version"),
-    prov_expr("R_version"),
-    prov_expr("dependency_versions_json"),
-    run_expr("config_hash"),
-    run_expr("data_hash"),
-    telem_expr("execution_mode"),
-    run_expr("execution_mode"),
-    telem_expr("elapsed_sec"),
-    telem_expr("pulse_count"),
-    telem_expr("persist_features"),
-    telem_expr("feature_cache_hits"),
-    telem_expr("feature_cache_misses"),
-    run_expr("error_msg"),
-    run_expr("config_json"),
-    run_expr("schema_version"),
-    telemetry_join,
-    snapshot_join,
-    equity_join,
-    trades_join,
-    where_sql,
-    run_expr("created_at_utc", "r.run_id")
+  ensure_col <- function(name, value = NA) {
+    if (!name %in% names(out)) {
+      out[[name]] <<- rep(value, nrow(out))
+    }
+  }
+  canonical_cols <- c(
+    "run_id", "label", "snapshot_id", "snapshot_hash", "created_at_utc",
+    "status", "archived", "archived_at_utc", "archive_reason", "tags",
+    "reproducibility_level", "strategy_type", "strategy_source_hash",
+    "strategy_source_capture_method", "strategy_params_json",
+    "strategy_params_hash", "ledgr_version", "R_version",
+    "dependency_versions_json", "config_hash", "data_hash", "execution_mode",
+    "elapsed_sec", "pulse_count", "persist_features", "feature_cache_hits",
+    "feature_cache_misses", "error_msg", "final_equity", "max_drawdown",
+    "total_return", "n_trades", "config_json", "schema_version"
   )
 
-  out <- DBI::dbGetQuery(con, sql)
-  if (nrow(out) == 0L) {
-    return(tibble::as_tibble(out))
+  for (col in setdiff(canonical_cols, names(out))) {
+    ensure_col(col, NA)
   }
+  out$archived[is.na(out$archived)] <- FALSE
+  out$reproducibility_level[is.na(out$reproducibility_level)] <- "legacy"
+  out$n_trades <- rep(0L, nrow(out))
+  run_execution_mode <- out$execution_mode
+
+  run_ids <- unique(as.character(out$run_id))
+  if (length(run_ids) > 0L) {
+    run_id_sql <- quote_values(run_ids)
+
+    if (ledgr_run_store_has_col(con, "snapshots", "snapshot_hash") && "snapshot_id" %in% names(out)) {
+      snap_ids <- unique(as.character(stats::na.omit(out$snapshot_id)))
+      if (length(snap_ids) > 0L) {
+        snapshots <- DBI::dbGetQuery(
+          con,
+          sprintf(
+            "SELECT snapshot_id, snapshot_hash FROM snapshots WHERE snapshot_id IN (%s)",
+            quote_values(snap_ids)
+          )
+        )
+        snap_idx <- match(as.character(out$snapshot_id), as.character(snapshots$snapshot_id))
+        out$snapshot_hash <- snapshots$snapshot_hash[snap_idx]
+      }
+    }
+
+    if (ledgr_experiment_store_table_exists(con, "run_tags")) {
+      tags <- DBI::dbGetQuery(
+        con,
+        sprintf(
+          "SELECT run_id, tag FROM run_tags WHERE run_id IN (%s) ORDER BY run_id, tag",
+          run_id_sql
+        )
+      )
+      if (nrow(tags) > 0L) {
+        tags_split <- split(as.character(tags$tag), as.character(tags$run_id))
+        out$tags <- vapply(
+          as.character(out$run_id),
+          function(id) {
+            if (!id %in% names(tags_split)) return(NA_character_)
+            paste(tags_split[[id]], collapse = ", ")
+          },
+          character(1)
+        )
+      }
+    }
+
+    if (ledgr_experiment_store_table_exists(con, "run_provenance")) {
+      prov_cols <- intersect(
+        c(
+          "run_id", "reproducibility_level", "strategy_type",
+          "strategy_source_hash", "strategy_source_capture_method",
+          "strategy_params_json", "strategy_params_hash", "ledgr_version",
+          "R_version", "dependency_versions_json"
+        ),
+        ledgr_experiment_store_columns(con, "run_provenance")
+      )
+      if (length(prov_cols) > 1L) {
+        provenance <- DBI::dbGetQuery(
+          con,
+          sprintf(
+            "SELECT %s FROM run_provenance WHERE run_id IN (%s)",
+            paste(prov_cols, collapse = ", "),
+            run_id_sql
+          )
+        )
+        prov_idx <- match(as.character(out$run_id), as.character(provenance$run_id))
+        for (col in setdiff(prov_cols, "run_id")) {
+          out[[col]] <- provenance[[col]][prov_idx]
+        }
+      }
+    }
+
+    if (ledgr_experiment_store_table_exists(con, "run_telemetry")) {
+      telem_cols <- intersect(
+        c(
+          "run_id", "execution_mode", "elapsed_sec", "pulse_count",
+          "persist_features", "feature_cache_hits", "feature_cache_misses"
+        ),
+        ledgr_experiment_store_columns(con, "run_telemetry")
+      )
+      if (length(telem_cols) > 1L) {
+        telemetry <- DBI::dbGetQuery(
+          con,
+          sprintf(
+            "SELECT %s FROM run_telemetry WHERE run_id IN (%s)",
+            paste(telem_cols, collapse = ", "),
+            run_id_sql
+          )
+        )
+        telem_idx <- match(as.character(out$run_id), as.character(telemetry$run_id))
+        for (col in setdiff(telem_cols, "run_id")) {
+          out[[col]] <- telemetry[[col]][telem_idx]
+        }
+      }
+    }
+
+    if (ledgr_experiment_store_table_exists(con, "equity_curve")) {
+      equity <- DBI::dbGetQuery(
+        con,
+        sprintf(
+          "SELECT run_id, ts_utc, equity FROM equity_curve WHERE run_id IN (%s) ORDER BY run_id, ts_utc",
+          run_id_sql
+        )
+      )
+      if (nrow(equity) > 0L) {
+        equity_stats <- lapply(run_ids, function(id) {
+          rows <- equity[as.character(equity$run_id) == id, , drop = FALSE]
+          if (nrow(rows) == 0L) {
+            return(data.frame(run_id = id, first_equity = NA_real_, final_equity = NA_real_, max_drawdown = NA_real_))
+          }
+          eq <- as.numeric(rows$equity)
+          running_max <- cummax(eq)
+          drawdown <- ifelse(is.na(running_max) | running_max == 0, NA_real_, eq / running_max - 1)
+          data.frame(
+            run_id = id,
+            first_equity = eq[[1]],
+            final_equity = eq[[length(eq)]],
+            max_drawdown = suppressWarnings(min(drawdown, na.rm = TRUE))
+          )
+        })
+        equity_stats <- do.call(rbind, equity_stats)
+        equity_stats$max_drawdown[is.infinite(equity_stats$max_drawdown)] <- NA_real_
+        eq_idx <- match(as.character(out$run_id), as.character(equity_stats$run_id))
+        out$final_equity <- equity_stats$final_equity[eq_idx]
+        out$max_drawdown <- equity_stats$max_drawdown[eq_idx]
+        out$total_return <- ifelse(
+          is.na(equity_stats$first_equity[eq_idx]) | equity_stats$first_equity[eq_idx] == 0,
+          NA_real_,
+          out$final_equity / equity_stats$first_equity[eq_idx] - 1
+        )
+      }
+    }
+  }
+
+  out$execution_mode[is.na(out$execution_mode)] <- run_execution_mode[is.na(out$execution_mode)]
+  out$reproducibility_level[is.na(out$reproducibility_level)] <- "legacy"
 
   if ("created_at_utc" %in% names(out)) {
     out$created_at_utc <- vapply(out$created_at_utc, ledgr_run_store_format_ts, character(1))
@@ -281,6 +276,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     out$n_trades <- as.integer(trade_stats$n_trades[trade_idx])
     out$n_trades[is.na(out$n_trades)] <- 0L
   }
+  out <- out[, canonical_cols, drop = FALSE]
   tibble::as_tibble(out)
 }
 
@@ -580,8 +576,11 @@ ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALS
     rows <- rows[rows$status == "DONE", , drop = FALSE]
   } else {
     unique_ids <- unique(run_ids)
-    rows <- ledgr_run_store_fetch(opened$con, include_archived = TRUE, snapshot_id = snapshot_id)
-    rows <- rows[as.character(rows$run_id) %in% unique_ids, , drop = FALSE]
+    row_list <- lapply(
+      unique_ids,
+      function(id) ledgr_run_store_fetch(opened$con, include_archived = TRUE, run_id = id, snapshot_id = snapshot_id)
+    )
+    rows <- do.call(rbind, row_list)
     found <- as.character(rows$run_id)
     missing <- setdiff(unique_ids, found)
     if (length(missing) > 0L) {
