@@ -1,6 +1,9 @@
 Strategy Development And Comparison
 ================
 
+The examples use `dplyr` for demo-data preparation. Strategy functions
+use ledgr’s pulse context rather than data-frame operations.
+
 ``` r
 library(ledgr)
 library(dplyr)

@@ -12,6 +12,10 @@ snapshot handle -> run experiments -> list / inspect / compare / reopen
 `run_id` is immutable. Labels, tags, and archive state are mutable
 metadata.
 
+The examples use `dplyr` and `tibble` for data preparation and compact
+display. They are suggested packages used by the vignettes, not part of
+the experiment store contract.
+
 ``` r
 library(ledgr)
 library(dplyr)
@@ -27,6 +31,10 @@ need more instruments, more dates, corrected bars, or tick-derived bars,
 create a new snapshot. Indicators, runs, labels, tags, comparisons, and
 telemetry are derived from sealed market data and can be added later
 without mutating the snapshot.
+
+This vignette uses `tempfile()` so it can run without writing into your
+project directory. For real research, use a stable path such as
+`"research.duckdb"` and a snapshot ID you will recognize later.
 
 ``` r
 db_path <- tempfile("ledgr_store_", fileext = ".duckdb")
@@ -47,6 +55,24 @@ snapshot <- ledgr_snapshot_from_df(
 After snapshot creation, store operations take `snapshot`, not
 `db_path`. In a new R session, recover the handle with
 `ledgr_snapshot_load(db_path, snapshot_id)`.
+
+If your market data starts in CSV, seal the CSV into the same kind of
+durable store. The CSV must contain at least `instrument_id`, `ts_utc`,
+`open`, `high`, `low`, and `close`.
+
+``` r
+snapshot <- ledgr_snapshot_from_csv(
+  "data/daily_bars.csv",
+  db_path = "research.duckdb",
+  snapshot_id = "eod_2019_h1"
+)
+```
+
+In any later session, recover the handle without re-sealing the data:
+
+``` r
+snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "eod_2019_h1")
+```
 
 ## Run Variants
 
@@ -147,12 +173,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     1e97fe4ff6295566e9a35d8eaa1b510ccdcc3371e8816b5cc473d1d1eb31f1bb
+#> Config Hash:     f9a4ce78cac8f9c75b3eb4ee20383bce17aa94ebf9695d0f9827b85f9349f318
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.22
+#> Elapsed Sec:     1.03
 #> Persist Features:TRUE
 #> Cache Hits:      2
 #> Cache Misses:    0
@@ -201,9 +227,9 @@ summary(reopened)
 #>   Volatility (annual): 27.29%
 #>
 #> Trade Statistics:
-#>   Total Trades:        24
-#>   Win Rate:            12.50%
-#>   Avg Trade:           $1.74
+#>   Total Trades:        12
+#>   Win Rate:            25.00%
+#>   Avg Trade:           $3.48
 #>
 #> Exposure:
 #>   Time in Market:      65.12%
@@ -242,9 +268,9 @@ Archiving hides a run from default listings without deleting artifacts.
 `ledgr_run()` and `ledgr_run_open()` return live handles for durable run
 artifacts. The artifacts are already durable when a run completes, and
 ordinary result inspection opens and closes read connections per
-operation. Use `close(bt)` as explicit resource cleanup in long sessions,
-tests, explicit-open workflows, and lazy result cursors. Close the
-snapshot handle when the workflow is finished.
+operation. Use `close(bt)` as explicit resource cleanup in long
+sessions, tests, explicit-open workflows, and lazy result cursors. Close
+the snapshot handle when the workflow is finished.
 
 ``` r
 close(bt_small)

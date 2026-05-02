@@ -641,7 +641,7 @@ forbidden_actions:
 **Priority:** P2  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1201, LDG-1203  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Improve installed-package documentation discovery, first-run expectations,
@@ -664,15 +664,15 @@ ticket includes the pkgdown-only background articles "Who ledgr is for" and
 9. Verify relative links in pkgdown-only articles.
 
 **Acceptance Criteria:**
-- [ ] Noninteractive documentation discovery is documented.
-- [ ] Positioning articles are pkgdown-only, not installed vignettes.
-- [ ] README links to the audience-filter article.
-- [ ] Suggested-package assumptions are stated before use.
-- [ ] Durable examples distinguish temporary vignette storage from real project
+- [x] Noninteractive documentation discovery is documented.
+- [x] Positioning articles are pkgdown-only, not installed vignettes.
+- [x] README links to the audience-filter article.
+- [x] Suggested-package assumptions are stated before use.
+- [x] Durable examples distinguish temporary vignette storage from real project
       artifact paths.
-- [ ] Experiment-store docs include labels/tags and persistent snapshot ID
+- [x] Experiment-store docs include labels/tags and persistent snapshot ID
       guidance.
-- [ ] Article links work from pkgdown.
+- [x] Article links work from pkgdown.
 
 **Test Requirements:**
 - README render/check.

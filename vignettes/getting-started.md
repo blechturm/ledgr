@@ -12,17 +12,13 @@ This vignette walks through the v0.1.7 research loop:
 
 ## Data And Snapshot
 
+The examples use `dplyr` and `tibble` for data preparation and compact
+display. They are suggested packages used by the vignettes, not part of
+the strategy contract.
+
 ``` r
 library(ledgr)
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
@@ -61,8 +57,8 @@ snapshot
 #> Bars:         258
 #> Instruments:  2
 #> Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
-#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpMDvGcZ\ledgr_dcc055b3159c.duckdb
-#> Snapshot ID:  snapshot_20260430_054425_49b6
+#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638525e9e2.duckdb
+#> Snapshot ID:  snapshot_20260502_114730_d9bb
 #> Connection:  Closed (opens on-demand)
 ```
 
@@ -71,9 +67,9 @@ that, normal run and store operations use the snapshot handle.
 
 ## Strategy Contract
 
-A v0.1.7 strategy is `function(ctx, params)`. `ctx` is the pulse
-context; it contains only state observable at the current decision
-point. `params` is the JSON-safe parameter list passed to `ledgr_run()`.
+A ledgr strategy is `function(ctx, params)`. `ctx` is the pulse context;
+it contains only state observable at the current decision point.
+`params` is the JSON-safe parameter list passed to `ledgr_run()`.
 
 ``` r
 strategy <- function(ctx, params) {
@@ -124,8 +120,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260430_054425_49b6
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpMDvGcZ\ledgr_dcc055b3159c.duckdb
+#> Snapshot ID: snapshot_20260502_114730_d9bb
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638525e9e2.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -180,9 +176,9 @@ summary(bt)
 #>   Volatility (annual): 54.72%
 #>
 #> Trade Statistics:
-#>   Total Trades:        24
-#>   Win Rate:            12.50%
-#>   Avg Trade:           $3.48
+#>   Total Trades:        12
+#>   Win Rate:            25.00%
+#>   Avg Trade:           $6.96
 #>
 #> Exposure:
 #>   Time in Market:      65.12%
@@ -192,20 +188,21 @@ Results are derived views over recorded events.
 
 ``` r
 ledgr_results(bt, what = "trades")
-#> # A tibble: 24 x 9
+#> # A tibble: 12 x 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-29 DEMO_01       BUY      10  91.9     0         0    OPEN
-#>  2         2 2019-02-19 DEMO_02       BUY      10  68.7     0         0    OPEN
-#>  3         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
-#>  4         4 2019-03-04 DEMO_02       BUY      10  68.0     0         0    OPEN
-#>  5         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
-#>  6         6 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
-#>  7         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
-#>  8         8 2019-03-13 DEMO_02       BUY      10  67.4     0         0    OPEN
-#>  9         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
-#> 10        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE
-#> # i 14 more rows
+#>  1         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
+#>  2         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
+#>  3         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
+#>  4         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
+#>  5        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE
+#>  6        13 2019-03-27 DEMO_01       SELL     10 105.      0        -2.88 CLOSE
+#>  7        15 2019-04-05 DEMO_01       SELL     10 103.      0       -21.2  CLOSE
+#>  8        17 2019-04-15 DEMO_01       SELL     10 104.      0       -18.6  CLOSE
+#>  9        19 2019-04-18 DEMO_01       SELL     10 103.      0       -17.4  CLOSE
+#> 10        21 2019-05-16 DEMO_01       SELL     10 101.      0        -9.67 CLOSE
+#> 11        22 2019-06-03 DEMO_02       SELL     10  79.8     0       128.   CLOSE
+#> 12        24 2019-06-05 DEMO_02       SELL     10  79.3     0       -14.6  CLOSE
 tail(ledgr_results(bt, what = "equity"), 4)
 #> # A tibble: 4 x 6
 #>   ts_utc     equity  cash positions_value running_max drawdown
@@ -279,7 +276,9 @@ ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_star
 
 ## Durable Store Workflow
 
-Use a stable DuckDB path for research you want to keep.
+Use a stable DuckDB path for research you want to keep. The vignette
+uses `tempfile()` so it does not leave files in your project; in real
+work, replace that with a project path such as `"research.duckdb"`.
 
 ``` r
 artifact_db <- tempfile("ledgr_getting_started_", fileext = ".duckdb")
@@ -323,12 +322,12 @@ ledgr_run_info(reloaded, "durable_qty_10")
 #> Tags:            NA
 #> Snapshot:        getting_started_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     f093b88f9381df691ba7d17a0b66487817b005ece1d323cab97cdef2315227c5
+#> Config Hash:     8b004ea9697551629444e53cecc65d5a29b57c7257c607ebe1f379cb49eded47
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.23
+#> Elapsed Sec:     1.14
 #> Persist Features:TRUE
 #> Cache Hits:      2
 #> Cache Misses:    0

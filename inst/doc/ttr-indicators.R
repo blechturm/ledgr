@@ -13,12 +13,14 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
   load(demo_data_path)
 }
 
-## ----rules------------------------------------------------------------------------------
+
+## ----rules, message=FALSE---------------------------------------------------------------
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 
 as.data.frame(ledgr_ttr_warmup_rules()[, c("ttr_fn", "input", "formula")])
+
 
 ## ----simple, eval=requireNamespace("TTR", quietly = TRUE)-------------------------------
 rsi_14 <- ledgr_ind_ttr("RSI", input = "close", n = 14)
@@ -29,6 +31,7 @@ ledgr_feature_id(rsi_14)
 ledgr_feature_id(wma_10)
 ledgr_feature_id(mom_10)
 
+
 ## ----builtin-ids------------------------------------------------------------------------
 builtins <- list(
   ledgr_ind_sma(20),
@@ -38,6 +41,7 @@ builtins <- list(
 )
 
 ledgr_feature_id(builtins)
+
 
 ## ----multi, eval=requireNamespace("TTR", quietly = TRUE)--------------------------------
 atr_20 <- ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)
@@ -63,6 +67,29 @@ aroon_osc <- ledgr_ind_ttr("aroon", input = "hl", output = "oscillator", n = 20)
 
 ledgr_feature_id(list(rsi_14, atr_20, bb_up, macd_line, macd_signal, aroon_osc))
 
+
+## ----id-reference-table, eval=requireNamespace("TTR", quietly = TRUE)-------------------
+data.frame(
+  constructor = c(
+    "ledgr_ind_sma(20)",
+    "ledgr_ind_returns(5)",
+    'ledgr_ind_ttr("RSI", input = "close", n = 14)',
+    'ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)',
+    'ledgr_ind_ttr("MACD", output = "macd", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)',
+    'ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9)'
+  ),
+  feature_id = c(
+    ledgr_feature_id(ledgr_ind_sma(20)),
+    ledgr_feature_id(ledgr_ind_returns(5)),
+    ledgr_feature_id(rsi_14),
+    ledgr_feature_id(bb_up),
+    ledgr_feature_id(macd_line),
+    ledgr_feature_id(macd_signal)
+  ),
+  stringsAsFactors = FALSE
+)
+
+
 ## ----warmup-values, eval=requireNamespace("TTR", quietly = TRUE)------------------------
 c(
   rsi = rsi_14$requires_bars,
@@ -71,6 +98,7 @@ c(
   macd = macd_line$requires_bars,
   macd_signal = macd_signal$requires_bars
 )
+
 
 ## ----backtest, eval=requireNamespace("TTR", quietly = TRUE)-----------------------------
 bars <- ledgr_demo_bars |>
@@ -132,6 +160,7 @@ bt <- exp |>
 nrow(tibble::as_tibble(bt, what = "trades"))
 close(bt)
 ledgr_snapshot_close(snapshot)
+
 
 ## ----unsupported, eval=requireNamespace("TTR", quietly = TRUE)--------------------------
 ledgr_ind_ttr(

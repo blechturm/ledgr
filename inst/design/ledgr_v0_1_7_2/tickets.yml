@@ -327,7 +327,7 @@ tickets:
 
   - id: LDG-1208
     title: "Installed Documentation And Background Articles"
-    status: pending
+    status: done
     priority: P2
     dependencies: [LDG-1201, LDG-1203]
     tests:

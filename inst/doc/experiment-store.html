@@ -346,18 +346,13 @@ state, and compact telemetry together.</p>
 <pre class="text"><code>snapshot handle -&gt; run experiments -&gt; list / inspect / compare / reopen</code></pre>
 <p><code>run_id</code> is immutable. Labels, tags, and archive state are
 mutable metadata.</p>
+<p>The examples use <code>dplyr</code> and <code>tibble</code> for data
+preparation and compact display. They are suggested packages used by the
+vignettes, not part of the experiment store contract.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(ledgr)</span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;dplyr&#39;</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt;     filter, lag</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:base&#39;:</span></span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;ledgr_demo_bars&quot;</span>, <span class="at">package =</span> <span class="st">&quot;ledgr&quot;</span>)</span></code></pre></div>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;ledgr_demo_bars&quot;</span>, <span class="at">package =</span> <span class="st">&quot;ledgr&quot;</span>)</span></code></pre></div>
 <div id="create-a-durable-snapshot" class="section level2">
 <h2>Create A Durable Snapshot</h2>
 <p>Market data and derived data have different lifecycle rules in ledgr.
@@ -366,6 +361,10 @@ you need more instruments, more dates, corrected bars, or tick-derived
 bars, create a new snapshot. Indicators, runs, labels, tags,
 comparisons, and telemetry are derived from sealed market data and can
 be added later without mutating the snapshot.</p>
+<p>This vignette uses <code>tempfile()</code> so it can run without
+writing into your project directory. For real research, use a stable
+path such as <code>&quot;research.duckdb&quot;</code> and a snapshot ID you will
+recognize later.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>db_path <span class="ot">&lt;-</span> <span class="fu">tempfile</span>(<span class="st">&quot;ledgr_store_&quot;</span>, <span class="at">fileext =</span> <span class="st">&quot;.duckdb&quot;</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>bars <span class="ot">&lt;-</span> ledgr_demo_bars <span class="sc">|&gt;</span></span>
@@ -382,114 +381,126 @@ be added later without mutating the snapshot.</p>
 <p>After snapshot creation, store operations take <code>snapshot</code>,
 not <code>db_path</code>. In a new R session, recover the handle with
 <code>ledgr_snapshot_load(db_path, snapshot_id)</code>.</p>
+<p>If your market data starts in CSV, seal the CSV into the same kind of
+durable store. The CSV must contain at least <code>instrument_id</code>,
+<code>ts_utc</code>, <code>open</code>, <code>high</code>,
+<code>low</code>, and <code>close</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> <span class="fu">ledgr_snapshot_from_csv</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="st">&quot;data/daily_bars.csv&quot;</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">db_path =</span> <span class="st">&quot;research.duckdb&quot;</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">snapshot_id =</span> <span class="st">&quot;eod_2019_h1&quot;</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>)</span></code></pre></div>
+<p>In any later session, recover the handle without re-sealing the
+data:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> <span class="fu">ledgr_snapshot_load</span>(<span class="st">&quot;research.duckdb&quot;</span>, <span class="at">snapshot_id =</span> <span class="st">&quot;eod_2019_h1&quot;</span>)</span></code></pre></div>
 </div>
 <div id="run-variants" class="section level2">
 <h2>Run Variants</h2>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>features <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">ledgr_ind_sma</span>(<span class="dv">20</span>))</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>trend_strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    sma <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">feature</span>(id, <span class="st">&quot;sma_20&quot;</span>)</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.finite</span>(sma) <span class="sc">&amp;&amp;</span> ctx<span class="sc">$</span><span class="fu">close</span>(id) <span class="sc">&gt;</span> sma) {</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    }</span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  }</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  targets</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>}</span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>exp <span class="ot">&lt;-</span> <span class="fu">ledgr_experiment</span>(</span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>  <span class="at">snapshot =</span> snapshot,</span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  <span class="at">strategy =</span> trend_strategy,</span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  <span class="at">features =</span> features,</span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>  <span class="at">opening =</span> <span class="fu">ledgr_opening</span>(<span class="at">cash =</span> <span class="dv">10000</span>)</span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>)</span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a></span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>bt_small <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(<span class="at">params =</span> <span class="fu">list</span>(<span class="at">qty =</span> <span class="dv">5</span>), <span class="at">run_id =</span> <span class="st">&quot;trend_qty_5&quot;</span>)</span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a></span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>bt_large <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(<span class="at">params =</span> <span class="fu">list</span>(<span class="at">qty =</span> <span class="dv">15</span>), <span class="at">run_id =</span> <span class="st">&quot;trend_qty_15&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>features <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">ledgr_ind_sma</span>(<span class="dv">20</span>))</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>trend_strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>    sma <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">feature</span>(id, <span class="st">&quot;sma_20&quot;</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.finite</span>(sma) <span class="sc">&amp;&amp;</span> ctx<span class="sc">$</span><span class="fu">close</span>(id) <span class="sc">&gt;</span> sma) {</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>    }</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  }</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  targets</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>}</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>exp <span class="ot">&lt;-</span> <span class="fu">ledgr_experiment</span>(</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  <span class="at">snapshot =</span> snapshot,</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>  <span class="at">strategy =</span> trend_strategy,</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  <span class="at">features =</span> features,</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="at">opening =</span> <span class="fu">ledgr_opening</span>(<span class="at">cash =</span> <span class="dv">10000</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>)</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>bt_small <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(<span class="at">params =</span> <span class="fu">list</span>(<span class="at">qty =</span> <span class="dv">5</span>), <span class="at">run_id =</span> <span class="st">&quot;trend_qty_5&quot;</span>)</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>bt_large <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(<span class="at">params =</span> <span class="fu">list</span>(<span class="at">qty =</span> <span class="dv">15</span>), <span class="at">run_id =</span> <span class="st">&quot;trend_qty_15&quot;</span>)</span></code></pre></div>
 </div>
 <div id="discover-runs" class="section level2">
 <h2>Discover Runs</h2>
 <p><code>ledgr_run_list()</code> is the store discovery view.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt; # ledgr run list</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt;   run_id label tags  status final_equity total_return execution_mode reproducibility_level</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 1 trend~ &lt;NA&gt;  &lt;NA&gt;  DONE         10343. +3.4%        audit_log      tier_1</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; 2 trend~ &lt;NA&gt;  &lt;NA&gt;  DONE         11028. +10.3%       audit_log      tier_1</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; # ledgr run list</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;   run_id label tags  status final_equity total_return execution_mode reproducibility_level</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; 1 trend~ &lt;NA&gt;  &lt;NA&gt;  DONE         10343. +3.4%        audit_log      tier_1</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; 2 trend~ &lt;NA&gt;  &lt;NA&gt;  DONE         11028. +10.3%       audit_log      tier_1</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
 <p>Use labels and tags for mutable human-facing organization.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> snapshot <span class="sc">|&gt;</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="fu">ledgr_run_label</span>(<span class="st">&quot;trend_qty_5&quot;</span>, <span class="st">&quot;Baseline quantity&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="fu">ledgr_run_tag</span>(<span class="st">&quot;trend_qty_5&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;baseline&quot;</span>, <span class="st">&quot;trend&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">ledgr_run_tag</span>(<span class="st">&quot;trend_qty_15&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;trend&quot;</span>, <span class="st">&quot;larger-size&quot;</span>))</span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot)</span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; # ledgr run list</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt;   run_id label tags  status final_equity total_return execution_mode reproducibility_level</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; 1 trend~ Base~ base~ DONE         10343. +3.4%        audit_log      tier_1</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; 2 trend~ &lt;NA&gt;  larg~ DONE         11028. +10.3%       audit_log      tier_1</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> snapshot <span class="sc">|&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="fu">ledgr_run_label</span>(<span class="st">&quot;trend_qty_5&quot;</span>, <span class="st">&quot;Baseline quantity&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="fu">ledgr_run_tag</span>(<span class="st">&quot;trend_qty_5&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;baseline&quot;</span>, <span class="st">&quot;trend&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="fu">ledgr_run_tag</span>(<span class="st">&quot;trend_qty_15&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;trend&quot;</span>, <span class="st">&quot;larger-size&quot;</span>))</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; # ledgr run list</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt;   run_id label tags  status final_equity total_return execution_mode reproducibility_level</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; 1 trend~ Base~ base~ DONE         10343. +3.4%        audit_log      tier_1</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; 2 trend~ &lt;NA&gt;  larg~ DONE         11028. +10.3%       audit_log      tier_1</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
 <p>Tags and labels do not alter snapshot hashes, strategy hashes,
 parameter hashes, config hashes, or result artifacts.</p>
 <p>The returned objects are still tibbles. When you need a custom view,
 convert to a tibble and select the columns you want.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot) <span class="sc">|&gt;</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="fu">select</span>(run_id, label, tags, status, final_equity, execution_mode)</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 6</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt;   run_id       label             tags               status final_equity execution_mode</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;             &lt;chr&gt;              &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; 1 trend_qty_5  Baseline quantity baseline, trend    DONE         10343. audit_log</span></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; 2 trend_qty_15 &lt;NA&gt;              larger-size, trend DONE         11028. audit_log</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot) <span class="sc">|&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="fu">as_tibble</span>() <span class="sc">|&gt;</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="fu">select</span>(run_id, label, tags, status, final_equity, execution_mode)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 6</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt;   run_id       label             tags               status final_equity execution_mode</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;             &lt;chr&gt;              &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; 1 trend_qty_5  Baseline quantity baseline, trend    DONE         10343. audit_log</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; 2 trend_qty_15 &lt;NA&gt;              larger-size, trend DONE         11028. audit_log</span></span></code></pre></div>
 </div>
 <div id="inspect-and-compare" class="section level2">
 <h2>Inspect And Compare</h2>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>info <span class="ot">&lt;-</span> <span class="fu">ledgr_run_info</span>(snapshot, <span class="st">&quot;trend_qty_5&quot;</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>info</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co">#&gt; ledgr Run Info</span></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; ==============</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt; Run ID:          trend_qty_5</span></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; Label:           Baseline quantity</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; Status:          DONE</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; Archived:        FALSE</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt; Tags:            baseline, trend</span></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Snapshot:        store_demo_snapshot</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e</span></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Config Hash:     5c62e206450fb699f6dc9c6b5351f2bbbe19e26fe392dd26134278d112de82fd</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co">#&gt; Reproducibility: tier_1</span></span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="co">#&gt; Execution Mode:  audit_log</span></span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; Elapsed Sec:     1.35</span></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#&gt; Persist Features:TRUE</span></span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt; Cache Hits:      0</span></span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; Cache Misses:    2</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>info <span class="ot">&lt;-</span> <span class="fu">ledgr_run_info</span>(snapshot, <span class="st">&quot;trend_qty_5&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>info</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt; ledgr Run Info</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; ==============</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; Run ID:          trend_qty_5</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt; Label:           Baseline quantity</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt; Status:          DONE</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt; Archived:        FALSE</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; Tags:            baseline, trend</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; Snapshot:        store_demo_snapshot</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt; Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Config Hash:     1e1a4b0501d7f265064754d6e8f7b0e055981595ca046d47a03ac756c547e233</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; Reproducibility: tier_1</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; Execution Mode:  audit_log</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt; Elapsed Sec:     1.03</span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt; Persist Features:TRUE</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt; Cache Hits:      2</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt; Cache Misses:    0</span></span></code></pre></div>
 <p><code>ledgr_run_info()</code> is the detailed metadata view. It
 includes execution mode, compact telemetry, status, identity hashes, and
 reproducibility tier.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">ledgr_compare_runs</span>(snapshot, <span class="at">run_ids =</span> <span class="fu">c</span>(<span class="st">&quot;trend_qty_5&quot;</span>, <span class="st">&quot;trend_qty_15&quot;</span>))</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; # ledgr comparison</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt;   run_id       label             final_equity total_return max_drawdown n_trades win_rate</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;                    &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;int&gt; &lt;chr&gt;</span></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; 1 trend_qty_5  Baseline quantity       10343. +3.4%        -7.0%              12 25.0%</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; 2 trend_qty_15 &lt;NA&gt;                    11028. +10.3%       -19.6%             12 25.0%</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; # i 1 more variable: reproducibility_level &lt;chr&gt;</span></span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">ledgr_compare_runs</span>(snapshot, <span class="at">run_ids =</span> <span class="fu">c</span>(<span class="st">&quot;trend_qty_5&quot;</span>, <span class="st">&quot;trend_qty_15&quot;</span>))</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt; # ledgr comparison</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt;   run_id       label             final_equity total_return max_drawdown n_trades win_rate</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;                    &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;int&gt; &lt;chr&gt;</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt; 1 trend_qty_5  Baseline quantity       10343. +3.4%        -7.0%              12 25.0%</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt; 2 trend_qty_15 &lt;NA&gt;                    11028. +10.3%       -19.6%             12 25.0%</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt; # i 1 more variable: reproducibility_level &lt;chr&gt;</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
 <p>Comparison is read-only and does not rerun strategies.
 <code>n_trades</code> counts closed, realised trade observations, not
 every fill. A run can have fills but no closed trades yet, in which case
@@ -500,61 +511,63 @@ win rate is not defined.</p>
 <p><code>ledgr_run_open()</code> reconstructs a completed run handle
 from stored artifacts. It does not recompute the strategy. This is
 useful when you want full result tables or plots after restarting R.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>reopened <span class="ot">&lt;-</span> <span class="fu">ledgr_run_open</span>(snapshot, <span class="st">&quot;trend_qty_5&quot;</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">summary</span>(reopened)</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt; ledgr Backtest Summary</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; ======================</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; Performance Metrics:</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;   Total Return:        3.43%</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;   Annualized Return:   6.86%</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;   Max Drawdown:        -7.00%</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; Risk Metrics:</span></span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt;   Volatility (annual): 27.29%</span></span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; Trade Statistics:</span></span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt;   Total Trades:        24</span></span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt;   Win Rate:            12.50%</span></span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt;   Avg Trade:           $1.74</span></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt; Exposure:</span></span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;   Time in Market:      65.12%</span></span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="fu">tail</span>(<span class="fu">ledgr_results</span>(reopened, <span class="at">what =</span> <span class="st">&quot;equity&quot;</span>), <span class="dv">3</span>)</span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 x 6</span></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt;   ts_utc     equity  cash positions_value running_max drawdown</span></span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt;   &lt;date&gt;      &lt;dbl&gt; &lt;dbl&gt;           &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;</span></span>
-<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co">#&gt; 1 2019-06-26 10016. 9197.            819.      10450.  -0.0415</span></span>
-<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co">#&gt; 2 2019-06-27 10016. 9197.            819.      10450.  -0.0415</span></span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt; 3 2019-06-28 10343. 9535.            808.      10450.  -0.0102</span></span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="fu">close</span>(reopened)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>reopened <span class="ot">&lt;-</span> <span class="fu">ledgr_run_open</span>(snapshot, <span class="st">&quot;trend_qty_5&quot;</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">summary</span>(reopened)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt; ledgr Backtest Summary</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co">#&gt; ======================</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt; Performance Metrics:</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="co">#&gt;   Total Return:        3.43%</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="co">#&gt;   Annualized Return:   6.86%</span></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co">#&gt;   Max Drawdown:        -7.00%</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="co">#&gt; Risk Metrics:</span></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co">#&gt;   Volatility (annual): 27.29%</span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a><span class="co">#&gt; Trade Statistics:</span></span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="co">#&gt;   Total Trades:        12</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt;   Win Rate:            25.00%</span></span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="co">#&gt;   Avg Trade:           $3.48</span></span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a><span class="co">#&gt; Exposure:</span></span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a><span class="co">#&gt;   Time in Market:      65.12%</span></span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a><span class="fu">tail</span>(<span class="fu">ledgr_results</span>(reopened, <span class="at">what =</span> <span class="st">&quot;equity&quot;</span>), <span class="dv">3</span>)</span>
+<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 x 6</span></span>
+<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a><span class="co">#&gt;   ts_utc     equity  cash positions_value running_max drawdown</span></span>
+<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a><span class="co">#&gt;   &lt;date&gt;      &lt;dbl&gt; &lt;dbl&gt;           &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;</span></span>
+<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a><span class="co">#&gt; 1 2019-06-26 10016. 9197.            819.      10450.  -0.0415</span></span>
+<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a><span class="co">#&gt; 2 2019-06-27 10016. 9197.            819.      10450.  -0.0415</span></span>
+<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a><span class="co">#&gt; 3 2019-06-28 10343. 9535.            808.      10450.  -0.0102</span></span>
+<span id="cb12-28"><a href="#cb12-28" tabindex="-1"></a><span class="fu">close</span>(reopened)</span></code></pre></div>
 <p>Only completed runs can be reopened. Failed or incomplete runs remain
 inspectable through <code>ledgr_run_info()</code>.</p>
 </div>
 <div id="archive-without-deleting" class="section level2">
 <h2>Archive Without Deleting</h2>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> snapshot <span class="sc">|&gt;</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="fu">ledgr_run_archive</span>(<span class="st">&quot;trend_qty_15&quot;</span>, <span class="at">reason =</span> <span class="st">&quot;larger position kept for reference&quot;</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot)</span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt; # ledgr run list</span></span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 x 8</span></span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt;   run_id label tags  status final_equity total_return execution_mode reproducibility_level</span></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt; 1 trend~ Base~ base~ DONE         10343. +3.4%        audit_log      tier_1</span></span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> snapshot <span class="sc">|&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="fu">ledgr_run_archive</span>(<span class="st">&quot;trend_qty_15&quot;</span>, <span class="at">reason =</span> <span class="st">&quot;larger position kept for reference&quot;</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="fu">ledgr_run_list</span>(snapshot)</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co">#&gt; # ledgr run list</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 x 8</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt;   run_id label tags  status final_equity total_return execution_mode reproducibility_level</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt; 1 trend~ Base~ base~ DONE         10343. +3.4%        audit_log      tier_1</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
 <p>Archiving hides a run from default listings without deleting
 artifacts.</p>
 <p><code>ledgr_run()</code> and <code>ledgr_run_open()</code> return
-live handles that may own DuckDB resources. The run artifacts are
-already durable, but <code>close(bt)</code> is the deterministic way to
-checkpoint and release those resources in scripts, tests, and long
-sessions. Close the snapshot handle when the workflow is finished.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">close</span>(bt_small)</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">close</span>(bt_large)</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="fu">ledgr_snapshot_close</span>(snapshot)</span></code></pre></div>
+live handles for durable run artifacts. The artifacts are already
+durable when a run completes, and ordinary result inspection opens and
+closes read connections per operation. Use <code>close(bt)</code> as
+explicit resource cleanup in long sessions, tests, explicit-open
+workflows, and lazy result cursors. Close the snapshot handle when the
+workflow is finished.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">close</span>(bt_small)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">close</span>(bt_large)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="fu">ledgr_snapshot_close</span>(snapshot)</span></code></pre></div>
 </div>
 
 

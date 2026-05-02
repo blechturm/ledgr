@@ -20,8 +20,11 @@
 - Overhauled the strategy-development article around the ledgr pulse mental
   model, helper functions, feature IDs, warmup behavior, interactive pulse
   debugging, and run comparison.
-- TODO: Improve installed documentation discovery and pkgdown positioning
-  content without exposing v0.1.8 sweep/tune APIs.
+- Improved documentation discovery and pkgdown positioning: README now shows
+  noninteractive installed-vignette lookup paths, background positioning
+  articles remain pkgdown-only, and experiment-store docs clarify durable paths,
+  persistent snapshot IDs, labels, tags, CSV snapshot creation, and handle
+  lifecycle framing.
 
 # ledgr 0.1.7.1
 

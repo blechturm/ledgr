@@ -17,6 +17,10 @@ feature. It only sees the ledgr indicator contract: `fn`, `series_fn`,
 
 ## Inspect Supported Warmup Rules
 
+This vignette uses `dplyr` for compact display. TTR examples require the
+suggested `TTR` package; chunks that call TTR are skipped when it is not
+installed.
+
 ``` r
 library(ledgr)
 library(dplyr)
@@ -122,6 +126,46 @@ ledgr_feature_id(list(rsi_14, atr_20, bb_up, macd_line, macd_signal, aroon_osc))
 Some TTR indicators return several columns. For those indicators, choose
 the column with `output`. The available outputs are checked at
 construction time so errors happen before a backtest starts.
+
+``` r
+data.frame(
+  constructor = c(
+    "ledgr_ind_sma(20)",
+    "ledgr_ind_returns(5)",
+    'ledgr_ind_ttr("RSI", input = "close", n = 14)',
+    'ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)',
+    'ledgr_ind_ttr("MACD", output = "macd", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)',
+    'ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9)'
+  ),
+  feature_id = c(
+    ledgr_feature_id(ledgr_ind_sma(20)),
+    ledgr_feature_id(ledgr_ind_returns(5)),
+    ledgr_feature_id(rsi_14),
+    ledgr_feature_id(bb_up),
+    ledgr_feature_id(macd_line),
+    ledgr_feature_id(macd_signal)
+  ),
+  stringsAsFactors = FALSE
+)
+#>                                                                                 constructor
+#> 1                                                                         ledgr_ind_sma(20)
+#> 2                                                                      ledgr_ind_returns(5)
+#> 3                                             ledgr_ind_ttr("RSI", input = "close", n = 14)
+#> 4                           ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+#> 5 ledgr_ind_ttr("MACD", output = "macd", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)
+#> 6                ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9)
+#>                    feature_id
+#> 1                      sma_20
+#> 2                    return_5
+#> 3                  ttr_rsi_14
+#> 4            ttr_bbands_20_up
+#> 5 ttr_macd_12_26_9_false_macd
+#> 6     ttr_macd_12_26_9_signal
+```
+
+Use this pattern as a reference table in your own project: construct the
+indicator objects first, call `ledgr_feature_id()`, and copy only those
+returned strings into strategy code.
 
 The ID format is deterministic:
 
@@ -232,7 +276,7 @@ bt <- exp |>
   ledgr_run(params = list(qty = 10), run_id = paste0("ttr-article-demo-", Sys.getpid()))
 
 nrow(tibble::as_tibble(bt, what = "trades"))
-#> [1] 1
+#> [1] 0
 close(bt)
 ledgr_snapshot_close(snapshot)
 ```

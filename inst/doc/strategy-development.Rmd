@@ -32,6 +32,9 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 }
 ```
 
+The examples use `dplyr` for demo-data preparation. Strategy functions use
+ledgr's pulse context rather than data-frame operations.
+
 ```{r library, message=FALSE}
 library(ledgr)
 library(dplyr)

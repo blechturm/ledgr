@@ -37,9 +37,8 @@ default expectation. That happens to be exactly what systematic trading
 research demands: strategies you can audit, modify, and trust years after you
 wrote them.
 
-ledgr's current strategy API uses ordinary `function(ctx, params)` functions.
-The proposed v0.1.7.2 helper layer is intended to make those functions read like
-their economic logic:
+ledgr's strategy API uses ordinary `function(ctx, params)` functions. The
+v0.1.7.2 helper layer makes those functions read like their economic logic:
 
 ```r
 ctx |>
@@ -49,9 +48,9 @@ ctx |>
   target_rebalance(ctx, equity_fraction = 1)
 ```
 
-That helper pipeline is a design target, not the currently installed API. The
-point is the direction: code should describe the research idea in the order you
-would explain it to a colleague.
+That helper pipeline is not a second execution path. It is authoring structure
+for the same pulse contract: code should describe the research idea in the
+order you would explain it to a colleague.
 
 ## R deploys on hardware you own
 

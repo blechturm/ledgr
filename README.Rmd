@@ -63,7 +63,11 @@ if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
 pak::pak("blechturm/ledgr")
 ```
 
-```{r attach}
+The README uses `dplyr` and `tibble` for compact example output. They are
+suggested packages for documentation and examples; ledgr strategies themselves
+use the pulse context shown below.
+
+```{r attach, message=FALSE}
 library(ledgr)
 library(dplyr)
 library(tibble)
@@ -200,6 +204,14 @@ ledgr_snapshot_close(snapshot)
 ```{r docs, eval=FALSE}
 help(package = "ledgr")
 utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
+vignette(package = "ledgr")
+system.file("doc", package = "ledgr")
+system.file("doc", "strategy-development.html", package = "ledgr")
 ```
 
-The v0.1.7 design packet is in `inst/design/ledgr_v0_1_7_spec_packet/`.
+The `system.file()` calls are useful in noninteractive `Rscript` and agent
+workflows where opening pkgdown in a browser is not the first step. The
+pkgdown-only background articles are on the website, while installed vignettes
+focus on package workflows.
+
+Design packets are in `inst/design/`, including the current v0.1.7.2 packet.

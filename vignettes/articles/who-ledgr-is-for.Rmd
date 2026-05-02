@@ -6,7 +6,7 @@ ledgr is not for everyone. This article is the honest version of that
 statement: who the package is built for, who it is not built for, and what to
 use instead if you do not fit.
 
-## Who ledgr is for
+## Intended audience
 
 **People who care not just about finding strategies, but about knowing when they
 are wrong.** ledgr's central goal is not to help you discover profitable
@@ -33,8 +33,7 @@ paying for infrastructure they do not need.
 
 **People who value readable code.** ledgr's current strategy API uses ordinary
 `function(ctx, params)` functions that return explicit target quantities. The
-proposed v0.1.7.2 helper layer is intended to make that same contract read like
-economic logic:
+v0.1.7.2 helper layer makes that same contract read like economic logic:
 
 ```r
 ctx |>
@@ -44,10 +43,12 @@ ctx |>
   target_rebalance(ctx, equity_fraction = 1)
 ```
 
-That helper pipeline is the target authoring style, not the currently installed
-API. Today's runnable code uses explicit `ctx$feature()`, `ctx$flat()`, and
-`ctx$hold()` calls; see the getting-started and strategy-development articles
-for working examples.
+That helper pipeline is still ordinary ledgr strategy code: it ends in target
+quantities and runs through the same pulse engine. See the strategy-development
+article for a runnable, step-by-step version.
+
+The pulse context appears twice because signal scoring needs current feature
+values, and final sizing needs current prices, cash, and equity.
 
 **Researchers working with agents.** Reproducibility, sealed data, and explicit
 dependency boundaries are useful for humans, and they are also what makes a

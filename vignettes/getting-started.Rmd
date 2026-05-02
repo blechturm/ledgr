@@ -48,7 +48,11 @@ This vignette walks through the v0.1.7 research loop:
 
 ## Data And Snapshot
 
-```{r attach}
+The examples use `dplyr` and `tibble` for data preparation and compact display.
+They are suggested packages used by the vignettes, not part of the strategy
+contract.
+
+```{r attach, message=FALSE}
 library(ledgr)
 library(dplyr)
 library(tibble)
@@ -82,7 +86,7 @@ normal run and store operations use the snapshot handle.
 
 ## Strategy Contract
 
-A v0.1.7 strategy is `function(ctx, params)`. `ctx` is the pulse context; it
+A ledgr strategy is `function(ctx, params)`. `ctx` is the pulse context; it
 contains only state observable at the current decision point. `params` is the
 JSON-safe parameter list passed to `ledgr_run()`.
 
@@ -205,7 +209,9 @@ ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_star
 
 ## Durable Store Workflow
 
-Use a stable DuckDB path for research you want to keep.
+Use a stable DuckDB path for research you want to keep. The vignette uses
+`tempfile()` so it does not leave files in your project; in real work, replace
+that with a project path such as `"research.duckdb"`.
 
 ```{r durable}
 artifact_db <- tempfile("ledgr_getting_started_", fileext = ".duckdb")

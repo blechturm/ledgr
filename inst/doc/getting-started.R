@@ -22,11 +22,13 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
   load(demo_data_path)
 }
 
-## ----attach-----------------------------------------------------------------------------
+
+## ----attach, message=FALSE--------------------------------------------------------------
 library(ledgr)
 library(dplyr)
 library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
+
 
 ## ----demo-data--------------------------------------------------------------------------
 bars <- ledgr_demo_bars |>
@@ -38,9 +40,11 @@ bars <- ledgr_demo_bars |>
 bars |>
   slice_head(n = 6)
 
+
 ## ----snapshot---------------------------------------------------------------------------
 snapshot <- ledgr_snapshot_from_df(bars)
 snapshot
+
 
 ## ----strategy---------------------------------------------------------------------------
 strategy <- function(ctx, params) {
@@ -56,9 +60,11 @@ strategy <- function(ctx, params) {
   targets
 }
 
+
 ## ----features---------------------------------------------------------------------------
 features <- list(ledgr_ind_sma(20))
 ledgr_feature_id(features)
+
 
 ## ----experiment-------------------------------------------------------------------------
 exp <- ledgr_experiment(
@@ -70,21 +76,26 @@ exp <- ledgr_experiment(
 
 exp
 
+
 ## ----run--------------------------------------------------------------------------------
 bt <- exp |>
   ledgr_run(params = list(qty = 10), run_id = "getting_started_qty_10")
 
 bt
 
+
 ## ----summary----------------------------------------------------------------------------
 summary(bt)
+
 
 ## ----result-tables----------------------------------------------------------------------
 ledgr_results(bt, what = "trades")
 tail(ledgr_results(bt, what = "equity"), 4)
 
+
 ## ----ledger-----------------------------------------------------------------------------
 head(ledgr_results(bt, what = "ledger"), 6)
+
 
 ## ----pulse------------------------------------------------------------------------------
 pulse <- ledgr_pulse_snapshot(
@@ -99,11 +110,13 @@ pulse$feature("DEMO_01", "sma_20")
 strategy(pulse, list(qty = 10))
 close(pulse)
 
+
 ## ----second-run-------------------------------------------------------------------------
 bt_qty_20 <- exp |>
   ledgr_run(params = list(qty = 20), run_id = "getting_started_qty_20")
 
 ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_started_qty_20"))
+
 
 ## ----durable----------------------------------------------------------------------------
 artifact_db <- tempfile("ledgr_getting_started_", fileext = ".duckdb")
@@ -130,6 +143,7 @@ reloaded <- ledgr_snapshot_load(artifact_db, "getting_started_snapshot", verify 
 ledgr_run_list(reloaded)
 ledgr_run_info(reloaded, "durable_qty_10")
 ledgr_snapshot_close(reloaded)
+
 
 ## ----cleanup----------------------------------------------------------------------------
 close(bt)

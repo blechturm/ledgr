@@ -42,7 +42,11 @@ snapshot handle -> run experiments -> list / inspect / compare / reopen
 
 `run_id` is immutable. Labels, tags, and archive state are mutable metadata.
 
-```{r library}
+The examples use `dplyr` and `tibble` for data preparation and compact display.
+They are suggested packages used by the vignettes, not part of the experiment
+store contract.
+
+```{r library, message=FALSE}
 library(ledgr)
 library(dplyr)
 library(tibble)
@@ -56,6 +60,10 @@ snapshot freezes the real market-data input and its hash. If you need more
 instruments, more dates, corrected bars, or tick-derived bars, create a new
 snapshot. Indicators, runs, labels, tags, comparisons, and telemetry are derived
 from sealed market data and can be added later without mutating the snapshot.
+
+This vignette uses `tempfile()` so it can run without writing into your project
+directory. For real research, use a stable path such as `"research.duckdb"` and
+a snapshot ID you will recognize later.
 
 ```{r snapshot}
 db_path <- tempfile("ledgr_store_", fileext = ".duckdb")
@@ -76,6 +84,24 @@ snapshot <- ledgr_snapshot_from_df(
 After snapshot creation, store operations take `snapshot`, not `db_path`. In a
 new R session, recover the handle with `ledgr_snapshot_load(db_path,
 snapshot_id)`.
+
+If your market data starts in CSV, seal the CSV into the same kind of durable
+store. The CSV must contain at least `instrument_id`, `ts_utc`, `open`, `high`,
+`low`, and `close`.
+
+```{r csv-snapshot, eval=FALSE}
+snapshot <- ledgr_snapshot_from_csv(
+  "data/daily_bars.csv",
+  db_path = "research.duckdb",
+  snapshot_id = "eod_2019_h1"
+)
+```
+
+In any later session, recover the handle without re-sealing the data:
+
+```{r csv-snapshot-load, eval=FALSE}
+snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "eod_2019_h1")
+```
 
 ## Run Variants
 
@@ -183,10 +209,12 @@ ledgr_run_list(snapshot)
 
 Archiving hides a run from default listings without deleting artifacts.
 
-`ledgr_run()` and `ledgr_run_open()` return live handles that may own DuckDB
-resources. The run artifacts are already durable, but `close(bt)` is the
-deterministic way to checkpoint and release those resources in scripts, tests,
-and long sessions. Close the snapshot handle when the workflow is finished.
+`ledgr_run()` and `ledgr_run_open()` return live handles for durable run
+artifacts. The artifacts are already durable when a run completes, and ordinary
+result inspection opens and closes read connections per operation. Use
+`close(bt)` as explicit resource cleanup in long sessions, tests, explicit-open
+workflows, and lazy result cursors. Close the snapshot handle when the workflow
+is finished.
 
 ```{r cleanup}
 close(bt_small)

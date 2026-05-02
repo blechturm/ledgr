@@ -351,6 +351,9 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 </ol>
 <div id="data-and-snapshot" class="section level2">
 <h2>Data And Snapshot</h2>
+<p>The examples use <code>dplyr</code> and <code>tibble</code> for data
+preparation and compact display. They are suggested packages used by the
+vignettes, not part of the strategy contract.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(ledgr)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
@@ -383,8 +386,8 @@ all runs in the experiment.</p>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; Bars:         258</span></span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; Instruments:  2</span></span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; Database:     C:\Users\maxth\AppData\Local\Temp\RtmpURWwuW\ledgr_ac2869db697.duckdb</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; Snapshot ID:  snapshot_20260501_160259_3830</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; Database:     C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638391c4686.duckdb</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; Snapshot ID:  snapshot_20260502_114742_aebd</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; Connection:  Closed (opens on-demand)</span></span></code></pre></div>
 <p>For durable work, pass a stable <code>db_path</code> at snapshot
 creation. After that, normal run and store operations use the snapshot
@@ -392,7 +395,7 @@ handle.</p>
 </div>
 <div id="strategy-contract" class="section level2">
 <h2>Strategy Contract</h2>
-<p>A v0.1.7 strategy is <code>function(ctx, params)</code>.
+<p>A ledgr strategy is <code>function(ctx, params)</code>.
 <code>ctx</code> is the pulse context; it contains only state observable
 at the current decision point. <code>params</code> is the JSON-safe
 parameter list passed to <code>ledgr_run()</code>.</p>
@@ -436,8 +439,8 @@ options; it does not execute the strategy.</p>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>exp</span>
 <span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; ledgr_experiment</span></span>
 <span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; ================</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; Snapshot ID: snapshot_20260501_160259_3830</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; Database:    C:\Users\maxth\AppData\Local\Temp\RtmpURWwuW\ledgr_ac2869db697.duckdb</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; Snapshot ID: snapshot_20260502_114742_aebd</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638391c4686.duckdb</span></span>
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; Universe:    2 instruments</span></span>
 <span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; Features:    1 fixed</span></span>
 <span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; Opening:     cash=10000, positions=0</span></span>
@@ -460,10 +463,11 @@ options; it does not execute the strategy.</p>
 <span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; Use summary(bt) for detailed metrics</span></span>
 <span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; Use plot(bt) for equity curve visualization</span></span></code></pre></div>
-<p>A backtest handle points to stored run artifacts and may own DuckDB
-resources while it is live. The artifacts are already durable;
-<code>close(bt)</code> is deterministic cleanup for scripts, tests, and
-long sessions.</p>
+<p>A backtest handle points to stored run artifacts. The artifacts are
+already durable when <code>ledgr_run()</code> returns, and ordinary
+result inspection opens and closes read connections per operation. Use
+<code>close(bt)</code> as explicit resource cleanup in long sessions,
+tests, explicit-open workflows, and lazy result cursors.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">on.exit</span>(<span class="fu">close</span>(bt), <span class="at">add =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 </div>
 <div id="inspect-results" class="section level2">
@@ -481,36 +485,37 @@ long sessions.</p>
 <span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt;   Volatility (annual): 54.72%</span></span>
 <span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; Trade Statistics:</span></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;   Total Trades:        24</span></span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt;   Win Rate:            12.50%</span></span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt;   Avg Trade:           $3.48</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;   Total Trades:        12</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt;   Win Rate:            25.00%</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt;   Avg Trade:           $6.96</span></span>
 <span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt; Exposure:</span></span>
 <span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt;   Time in Market:      65.12%</span></span></code></pre></div>
 <p>Results are derived views over recorded events.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;trades&quot;</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 24 x 9</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 12 x 9</span></span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt;    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action</span></span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt;        &lt;int&gt; &lt;date&gt;     &lt;chr&gt;         &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;  1         1 2019-01-29 DEMO_01       BUY      10  91.9     0         0    OPEN</span></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt;  2         2 2019-02-19 DEMO_02       BUY      10  68.7     0         0    OPEN</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;  3         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;  4         4 2019-03-04 DEMO_02       BUY      10  68.0     0         0    OPEN</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;  5         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;  6         6 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;  7         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE</span></span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt;  8         8 2019-03-13 DEMO_02       BUY      10  67.4     0         0    OPEN</span></span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt;  9         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE</span></span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; 10        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE</span></span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; # i 14 more rows</span></span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="fu">tail</span>(<span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;equity&quot;</span>), <span class="dv">4</span>)</span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 x 6</span></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt;   ts_utc     equity  cash positions_value running_max drawdown</span></span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;   &lt;date&gt;      &lt;dbl&gt; &lt;dbl&gt;           &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;</span></span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt; 1 2019-06-25 10030. 8394.           1637.      10899.  -0.0797</span></span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt; 2 2019-06-26 10031. 8394.           1637.      10899.  -0.0796</span></span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; 3 2019-06-27 10032. 8394.           1638.      10899.  -0.0796</span></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt; 4 2019-06-28 10685. 9069.           1616.      10899.  -0.0196</span></span></code></pre></div>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;  1         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt;  2         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;  3         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;  4         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;  5        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;  6        13 2019-03-27 DEMO_01       SELL     10 105.      0        -2.88 CLOSE</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;  7        15 2019-04-05 DEMO_01       SELL     10 103.      0       -21.2  CLOSE</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt;  8        17 2019-04-15 DEMO_01       SELL     10 104.      0       -18.6  CLOSE</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt;  9        19 2019-04-18 DEMO_01       SELL     10 103.      0       -17.4  CLOSE</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; 10        21 2019-05-16 DEMO_01       SELL     10 101.      0        -9.67 CLOSE</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; 11        22 2019-06-03 DEMO_02       SELL     10  79.8     0       128.   CLOSE</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; 12        24 2019-06-05 DEMO_02       SELL     10  79.3     0       -14.6  CLOSE</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="fu">tail</span>(<span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;equity&quot;</span>), <span class="dv">4</span>)</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 x 6</span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;   ts_utc     equity  cash positions_value running_max drawdown</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;   &lt;date&gt;      &lt;dbl&gt; &lt;dbl&gt;           &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt; 1 2019-06-25 10030. 8394.           1637.      10899.  -0.0797</span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; 2 2019-06-26 10031. 8394.           1637.      10899.  -0.0796</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt; 3 2019-06-27 10032. 8394.           1638.      10899.  -0.0796</span></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt; 4 2019-06-28 10685. 9069.           1616.      10899.  -0.0196</span></span></code></pre></div>
 <p>The ledger is the source of truth.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;ledger&quot;</span>), <span class="dv">6</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 11</span></span>
@@ -565,7 +570,10 @@ decision without rerunning an entire experiment.</p>
 </div>
 <div id="durable-store-workflow" class="section level2">
 <h2>Durable Store Workflow</h2>
-<p>Use a stable DuckDB path for research you want to keep.</p>
+<p>Use a stable DuckDB path for research you want to keep. The vignette
+uses <code>tempfile()</code> so it does not leave files in your project;
+in real work, replace that with a project path such as
+<code>&quot;research.duckdb&quot;</code>.</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>artifact_db <span class="ot">&lt;-</span> <span class="fu">tempfile</span>(<span class="st">&quot;ledgr_getting_started_&quot;</span>, <span class="at">fileext =</span> <span class="st">&quot;.duckdb&quot;</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>durable_snapshot <span class="ot">&lt;-</span> <span class="fu">ledgr_snapshot_from_df</span>(</span>
 <span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  bars,</span>
@@ -607,12 +615,12 @@ decision without rerunning an entire experiment.</p>
 <span id="cb14-39"><a href="#cb14-39" tabindex="-1"></a><span class="co">#&gt; Tags:            NA</span></span>
 <span id="cb14-40"><a href="#cb14-40" tabindex="-1"></a><span class="co">#&gt; Snapshot:        getting_started_snapshot</span></span>
 <span id="cb14-41"><a href="#cb14-41" tabindex="-1"></a><span class="co">#&gt; Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e</span></span>
-<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a><span class="co">#&gt; Config Hash:     4fc3e91779277d858e24ea6a343f29f7d1343371bcf1af94d3f83899d9f55cfc</span></span>
+<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a><span class="co">#&gt; Config Hash:     1b863424104f49506d905a31040a3cf5b9069139f76f7f4612cda4e4a90d4810</span></span>
 <span id="cb14-43"><a href="#cb14-43" tabindex="-1"></a><span class="co">#&gt; Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236</span></span>
 <span id="cb14-44"><a href="#cb14-44" tabindex="-1"></a><span class="co">#&gt; Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7</span></span>
 <span id="cb14-45"><a href="#cb14-45" tabindex="-1"></a><span class="co">#&gt; Reproducibility: tier_1</span></span>
 <span id="cb14-46"><a href="#cb14-46" tabindex="-1"></a><span class="co">#&gt; Execution Mode:  audit_log</span></span>
-<span id="cb14-47"><a href="#cb14-47" tabindex="-1"></a><span class="co">#&gt; Elapsed Sec:     1.17</span></span>
+<span id="cb14-47"><a href="#cb14-47" tabindex="-1"></a><span class="co">#&gt; Elapsed Sec:     1.06</span></span>
 <span id="cb14-48"><a href="#cb14-48" tabindex="-1"></a><span class="co">#&gt; Persist Features:TRUE</span></span>
 <span id="cb14-49"><a href="#cb14-49" tabindex="-1"></a><span class="co">#&gt; Cache Hits:      2</span></span>
 <span id="cb14-50"><a href="#cb14-50" tabindex="-1"></a><span class="co">#&gt; Cache Misses:    0</span></span>

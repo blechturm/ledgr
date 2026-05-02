@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md`.
+`inst/design/ledgr_v0_1_7_2/`.
 
 ## Execution Contract
 
@@ -90,9 +90,8 @@ the active versioned spec packet, currently
 - `ledgr_run_label()` and `ledgr_run_archive()` mutate only run metadata.
   They must never rename `run_id`, delete artifacts, or change experiment
   identity hashes. Archive is non-destructive and idempotent.
-- Run comparison, run tags, and strategy-source recovery are v0.1.6 scope.
-  Hard delete remains deferred and must not be documented as available in
-  v0.1.5 or v0.1.6.
+- Run comparison, run tags, and strategy-source recovery are available. Hard
+  delete is not available in v0.1.x and must not be documented as such.
 
 ## Canonical JSON Contract
 
@@ -275,6 +274,13 @@ the active versioned spec packet, currently
 - Narrative run-list and comparison examples should demonstrate curated print
   defaults directly. Full-column access belongs in explicit tibble-compatible
   "dig deeper" examples.
+- Background and positioning articles such as "Who ledgr is for" and "Why
+  ledgr is built in R" live under `vignettes/articles/` for pkgdown. They must
+  not be installed vignettes, copied into `inst/doc/`, or mixed into the
+  operational vignette set.
+- README must document noninteractive installed-documentation discovery for
+  `Rscript` and agent workflows, including `vignette(package = "ledgr")` and
+  `system.file("doc", package = "ledgr")`.
 
 ## Verification Contract
 

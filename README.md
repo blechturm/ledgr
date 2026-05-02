@@ -31,17 +31,13 @@ if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
 pak::pak("blechturm/ledgr")
 ```
 
+The README uses `dplyr` and `tibble` for compact example output. They
+are suggested packages for documentation and examples; ledgr strategies
+themselves use the pulse context shown below.
+
 ``` r
 library(ledgr)
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
@@ -112,8 +108,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260430_054407_b4c3
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKkKxFY\ledgr_10b183d756dd8.duckdb
+#> Snapshot ID: snapshot_20260502_114721_f472
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_1663833449e2.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -158,27 +154,28 @@ summary(bt)
 #>   Volatility (annual): 54.72%
 #>
 #> Trade Statistics:
-#>   Total Trades:        24
-#>   Win Rate:            12.50%
-#>   Avg Trade:           $3.48
+#>   Total Trades:        12
+#>   Win Rate:            25.00%
+#>   Avg Trade:           $6.96
 #>
 #> Exposure:
 #>   Time in Market:      65.12%
 ledgr_results(bt, what = "trades")
-#> # A tibble: 24 x 9
+#> # A tibble: 12 x 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-29 DEMO_01       BUY      10  91.9     0         0    OPEN
-#>  2         2 2019-02-19 DEMO_02       BUY      10  68.7     0         0    OPEN
-#>  3         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
-#>  4         4 2019-03-04 DEMO_02       BUY      10  68.0     0         0    OPEN
-#>  5         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
-#>  6         6 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
-#>  7         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
-#>  8         8 2019-03-13 DEMO_02       BUY      10  67.4     0         0    OPEN
-#>  9         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
-#> 10        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE
-#> # i 14 more rows
+#>  1         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
+#>  2         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
+#>  3         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
+#>  4         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
+#>  5        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE
+#>  6        13 2019-03-27 DEMO_01       SELL     10 105.      0        -2.88 CLOSE
+#>  7        15 2019-04-05 DEMO_01       SELL     10 103.      0       -21.2  CLOSE
+#>  8        17 2019-04-15 DEMO_01       SELL     10 104.      0       -18.6  CLOSE
+#>  9        19 2019-04-18 DEMO_01       SELL     10 103.      0       -17.4  CLOSE
+#> 10        21 2019-05-16 DEMO_01       SELL     10 101.      0        -9.67 CLOSE
+#> 11        22 2019-06-03 DEMO_02       SELL     10  79.8     0       128.   CLOSE
+#> 12        24 2019-06-05 DEMO_02       SELL     10  79.3     0       -14.6  CLOSE
 ```
 
 ## Compare Runs
@@ -247,6 +244,15 @@ ledgr_snapshot_close(snapshot)
 ``` r
 help(package = "ledgr")
 utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
+vignette(package = "ledgr")
+system.file("doc", package = "ledgr")
+system.file("doc", "strategy-development.html", package = "ledgr")
 ```
 
-The v0.1.7 design packet is in `inst/design/ledgr_v0_1_7_spec_packet/`.
+The `system.file()` calls are useful in noninteractive `Rscript` and
+agent workflows where opening pkgdown in a browser is not the first
+step. The pkgdown-only background articles are on the website, while
+installed vignettes focus on package workflows.
+
+Design packets are in `inst/design/`, including the current v0.1.7.2
+packet.

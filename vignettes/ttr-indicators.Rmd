@@ -43,7 +43,11 @@ It only sees the ledgr indicator contract: `fn`, `series_fn`, `requires_bars`,
 
 ## Inspect Supported Warmup Rules
 
-```{r rules}
+This vignette uses `dplyr` for compact display. TTR examples require the
+suggested `TTR` package; chunks that call TTR are skipped when it is not
+installed.
+
+```{r rules, message=FALSE}
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")

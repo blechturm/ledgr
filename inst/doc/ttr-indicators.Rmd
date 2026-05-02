@@ -43,7 +43,11 @@ It only sees the ledgr indicator contract: `fn`, `series_fn`, `requires_bars`,
 
 ## Inspect Supported Warmup Rules
 
-```{r rules}
+This vignette uses `dplyr` for compact display. TTR examples require the
+suggested `TTR` package; chunks that call TTR are skipped when it is not
+installed.
+
+```{r rules, message=FALSE}
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
@@ -121,6 +125,32 @@ ledgr_feature_id(list(rsi_14, atr_20, bb_up, macd_line, macd_signal, aroon_osc))
 Some TTR indicators return several columns. For those indicators, choose the
 column with `output`. The available outputs are checked at construction time so
 errors happen before a backtest starts.
+
+```{r id-reference-table, eval=requireNamespace("TTR", quietly = TRUE)}
+data.frame(
+  constructor = c(
+    "ledgr_ind_sma(20)",
+    "ledgr_ind_returns(5)",
+    'ledgr_ind_ttr("RSI", input = "close", n = 14)',
+    'ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)',
+    'ledgr_ind_ttr("MACD", output = "macd", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)',
+    'ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9)'
+  ),
+  feature_id = c(
+    ledgr_feature_id(ledgr_ind_sma(20)),
+    ledgr_feature_id(ledgr_ind_returns(5)),
+    ledgr_feature_id(rsi_14),
+    ledgr_feature_id(bb_up),
+    ledgr_feature_id(macd_line),
+    ledgr_feature_id(macd_signal)
+  ),
+  stringsAsFactors = FALSE
+)
+```
+
+Use this pattern as a reference table in your own project: construct the
+indicator objects first, call `ledgr_feature_id()`, and copy only those returned
+strings into strategy code.
 
 The ID format is deterministic:
 
