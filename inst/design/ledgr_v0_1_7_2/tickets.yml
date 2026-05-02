@@ -236,7 +236,7 @@ tickets:
 
   - id: LDG-1206
     title: "Warmup, Feature IDs, And Strategy Error Context"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1201]
     tests:
@@ -282,7 +282,7 @@ tickets:
 
   - id: LDG-1207
     title: "Strategy Development Vignette Overhaul"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1202, LDG-1204, LDG-1205, LDG-1206]
     tests:

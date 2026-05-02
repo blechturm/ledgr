@@ -29,6 +29,47 @@ ledgr_backtest_run <- function(config, run_id = NULL) {
 .ledgr_telemetry_registry <- new.env(parent = emptyenv())
 .ledgr_preflight_registry <- new.env(parent = emptyenv())
 
+ledgr_strategy_error_classes <- function(error) {
+  unique(c("ledgr_strategy_error", class(error)))
+}
+
+ledgr_strategy_context_list <- function(x, max_items = 8L) {
+  x <- as.character(x)
+  x <- x[!is.na(x) & nzchar(x)]
+  if (length(x) == 0L) return("<none>")
+  if (length(x) <= max_items) return(paste(x, collapse = ", "))
+  paste(c(x[seq_len(max_items)], sprintf("... (%d more)", length(x) - max_items)), collapse = ", ")
+}
+
+ledgr_strategy_error_features <- function(ctx) {
+  features <- tryCatch(ledgr_feature_names(ctx$features), error = function(e) character())
+  ledgr_strategy_context_list(features)
+}
+
+ledgr_strategy_error_message <- function(error, ctx) {
+  sprintf(
+    paste(
+      "Strategy error at ts_utc=%s for run_id=%s.",
+      "Instruments: %s.",
+      "Available feature IDs: %s.",
+      "Original error: %s"
+    ),
+    if (!is.null(ctx$ts_utc)) as.character(ctx$ts_utc) else "<unknown>",
+    if (!is.null(ctx$run_id)) as.character(ctx$run_id) else "<unknown>",
+    ledgr_strategy_context_list(ctx$universe),
+    ledgr_strategy_error_features(ctx),
+    conditionMessage(error)
+  )
+}
+
+ledgr_abort_strategy_error <- function(error, ctx) {
+  rlang::abort(
+    ledgr_strategy_error_message(error, ctx),
+    class = ledgr_strategy_error_classes(error),
+    parent = error
+  )
+}
+
 ledgr_time_now <- function() {
   candidate <- proc.time()[["elapsed"]]
   if (length(candidate) == 1L && !is.na(candidate)) {
@@ -1396,11 +1437,16 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         }
 
         t_strat_start <- time_start(sample_now)
-        result <- if (isTRUE(strategy_is_functional)) {
-          ledgr_call_strategy_fn(strategy_fn, ctx, strategy_params, strategy_call_signature)
-        } else {
-          strategy_fn(ctx)
-        }
+        result <- tryCatch(
+          {
+            if (isTRUE(strategy_is_functional)) {
+              ledgr_call_strategy_fn(strategy_fn, ctx, strategy_params, strategy_call_signature)
+            } else {
+              strategy_fn(ctx)
+            }
+          },
+          error = function(e) ledgr_abort_strategy_error(e, ctx)
+        )
         if (sample_now) {
           t_strat <- time_end(t_strat_start, TRUE)
         }

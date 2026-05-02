@@ -473,7 +473,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1201  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Address auditr findings around feature ID discoverability, warmup/short-history
@@ -493,12 +493,12 @@ pulse context while preserving the original parent condition.
 8. Do not add aliases that change feature fingerprint semantics.
 
 **Acceptance Criteria:**
-- [ ] Feature IDs used in examples are discoverable before use.
-- [ ] TTR multi-output IDs are documented in compact tables.
-- [ ] Warmup and short-history behavior are explained near strategy examples.
-- [ ] Strategy errors include useful pulse context without hiding the original
+- [x] Feature IDs used in examples are discoverable before use.
+- [x] TTR multi-output IDs are documented in compact tables.
+- [x] Warmup and short-history behavior are explained near strategy examples.
+- [x] Strategy errors include useful pulse context without hiding the original
       error.
-- [ ] Fingerprint and feature ID semantics are unchanged.
+- [x] Fingerprint and feature ID semantics are unchanged.
 
 **Test Requirements:**
 - Strategy error wrapping test.
@@ -553,7 +553,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1202, LDG-1204, LDG-1205, LDG-1206  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Rewrite `vignettes/strategy-development.Rmd` as ledgr's central strategy
@@ -580,13 +580,13 @@ and show interactive debugging against `ledgr_demo_bars`.
 9. Render the vignette and generated markdown/html according to repo practice.
 
 **Acceptance Criteria:**
-- [ ] The article reads as a coherent teaching chapter, not a reference dump.
-- [ ] Examples are runnable against `ledgr_demo_bars`.
-- [ ] The article explains the design mental model and strategy contract.
-- [ ] Interactive debugging is used to understand a strategy before running it.
-- [ ] Helper examples are current if Track B ships, or clearly future-facing if
+- [x] The article reads as a coherent teaching chapter, not a reference dump.
+- [x] Examples are runnable against `ledgr_demo_bars`.
+- [x] The article explains the design mental model and strategy contract.
+- [x] Interactive debugging is used to understand a strategy before running it.
+- [x] Helper examples are current if Track B ships, or clearly future-facing if
       Track B defers.
-- [ ] No unexplained cleanup ceremony appears in the happy path.
+- [x] No unexplained cleanup ceremony appears in the happy path.
 
 **Test Requirements:**
 - Vignette render.

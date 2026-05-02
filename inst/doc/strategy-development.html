@@ -340,278 +340,559 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<p>A ledgr strategy is a function that receives a pulse context and
-returns target holdings.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(ledgr)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;ledgr_demo_bars&quot;</span>, <span class="at">package =</span> <span class="st">&quot;ledgr&quot;</span>)</span></code></pre></div>
-<p>At each pulse, ledgr gives the strategy the current observable state.
-The strategy answers with a full named numeric vector: the desired share
-quantity for every instrument in <code>ctx$universe</code>.</p>
-<div id="the-strategy-function" class="section level2">
-<h2>The Strategy Function</h2>
-<p>The simplest form is <code>function(ctx, params)</code>.</p>
+<p>A ledgr strategy is an ordinary R function, but the important idea is
+not the function syntax. The important idea is the pulse.</p>
+<p>A backtest in ledgr is a sequence of decision moments. At each pulse,
+ledgr shows the strategy only what could have been known at that time.
+The strategy answers with desired holdings. ledgr records the decision,
+applies the fill model, and moves to the next pulse.</p>
+<p>This matters because leakage is easy. If a strategy accidentally sees
+tomorrow’s price while deciding today’s trade, the backtest can look
+profitable for the wrong reason. ledgr’s strategy interface is built to
+make that mistake harder: your strategy receives one pulse context, not
+the whole future.</p>
+<div id="a-strategy-that-does-nothing" class="section level2">
+<h2>A Strategy That Does Nothing</h2>
+<p>The simplest economic policy is: hold cash and own no
+instruments.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>flat_strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>}</span></code></pre></div>
-<p>Parameterized strategies use <code>function(ctx, params)</code>.
-Parameters arrive as the second argument; they are not stored on the
-context object.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>threshold_strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    <span class="cf">if</span> (ctx<span class="sc">$</span><span class="fu">close</span>(id) <span class="sc">&gt;</span> params<span class="sc">$</span>threshold[[id]]) {</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    }</span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  }</span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  targets</span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>}</span></code></pre></div>
+<p><code>ctx$flat()</code> creates a full target vector with one entry
+for every instrument in the run and every value set to zero.
+Economically, this means: after the next fill opportunity, hold no
+positions.</p>
+<p>This is a complete ledgr strategy. It is not useful for making money,
+but it is useful for understanding the contract: at every pulse, return
+target holdings.</p>
+<p>The return value is a named numeric vector. Names are instrument IDs
+from <code>ctx$universe</code>, values are desired quantities.
+<code>ctx$flat()</code> produces the full-universe shape with every
+entry at zero.</p>
+<p>The deeper mental model is that a strategy is a
+<strong>policy</strong>, not a sequence of orders. At each pulse, the
+strategy declares a desired state: “I want to hold this many shares of
+each instrument.” The engine compares that against current holdings,
+computes the gap, and fills accordingly. The strategy never says “buy 3
+shares”; it says “I want to hold 3 shares.” This distinction is what
+keeps strategies free from execution-state bookkeeping, and it is what
+makes a ledgr strategy composable, testable, and directly readable as
+financial reasoning.</p>
 </div>
 <div id="what-is-ctx" class="section level2">
 <h2>What Is <code>ctx</code>?</h2>
-<p><code>ctx</code> is the pulse context. It represents one decision
-point. The main fields and helpers are:</p>
-<ul>
-<li><code>ctx$ts_utc</code>: current pulse timestamp;</li>
-<li><code>ctx$universe</code>: character vector of instrument IDs;</li>
-<li><code>ctx$bars</code>: current OHLCV rows;</li>
-<li><code>ctx$features</code>: long feature table at the current
-pulse;</li>
-<li><code>ctx$features_wide</code>: wide feature table for
-scanning;</li>
-<li><code>ctx$positions</code>: current position vector;</li>
-<li><code>ctx$cash</code>: current simulated cash;</li>
-<li><code>ctx$equity</code>: current simulated equity;</li>
-<li><code>ctx$open(id)</code>, <code>ctx$high(id)</code>,
-<code>ctx$low(id)</code>, <code>ctx$close(id)</code>,
-<code>ctx$volume(id)</code>: scalar OHLCV accessors;</li>
-<li><code>ctx$position(id)</code>: current quantity for one
-instrument;</li>
-<li><code>ctx$feature(id, name)</code>: feature lookup;</li>
-<li><code>ctx$flat(default = 0)</code>: full target vector initialized
-to <code>default</code>;</li>
-<li><code>ctx$hold()</code>: full target vector initialized from current
-positions.</li>
-</ul>
-<p>Use <code>ctx$flat()</code> when the strategy should go flat unless
-it explicitly emits a target. Use <code>ctx$hold()</code> when the
-strategy should hold unless it explicitly changes a target.</p>
+<p><code>ctx</code> is the pulse context. It is the information packet
+ledgr gives your strategy at one decision time.</p>
+<p>It contains the current timestamp, current bars, current features,
+current positions, cash, equity, and small helper functions for
+accessing those values. It is deliberately not the full dataset.</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Expression</th>
+<th>Meaning at one pulse</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ctx$ts_utc</code></td>
+<td>current decision timestamp</td>
+</tr>
+<tr class="even">
+<td><code>ctx$universe</code></td>
+<td>instruments in the run</td>
+</tr>
+<tr class="odd">
+<td><code>ctx$open(id)</code>, <code>ctx$close(id)</code></td>
+<td>current bar values for one instrument</td>
+</tr>
+<tr class="even">
+<td><code>ctx$feature(id, name)</code></td>
+<td>current indicator value for one instrument</td>
+</tr>
+<tr class="odd">
+<td><code>ctx$position(id)</code></td>
+<td>current simulated position</td>
+</tr>
+<tr class="even">
+<td><code>ctx$cash</code>, <code>ctx$equity</code></td>
+<td>current simulated portfolio state</td>
+</tr>
+<tr class="odd">
+<td><code>ctx$flat()</code></td>
+<td>target zero positions unless changed</td>
+</tr>
+<tr class="even">
+<td><code>ctx$hold()</code></td>
+<td>target current positions unless changed</td>
+</tr>
+</tbody>
+</table>
+<p>Use <code>ctx$flat()</code> when the strategy should be flat unless
+it sees a reason to act. Use <code>ctx$hold()</code> when the strategy
+should keep existing positions unless it sees a reason to change
+them.</p>
+<p>For example, this policy starts from current holdings and only
+changes the book when it sees an exit reason. Economically, it means:
+“keep what I already own, unless today’s bar gives me a reason to
+leave.”</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>hold_unless_down <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">hold</span>()</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    <span class="cf">if</span> (ctx<span class="sc">$</span><span class="fu">close</span>(id) <span class="sc">&lt;</span> ctx<span class="sc">$</span><span class="fu">open</span>(id)) {</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    }</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  }</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  targets</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>}</span></code></pre></div>
+<p>This loop style is fine while the mechanics are still visible. Once
+you have helpers like <code>signal_*()</code> and
+<code>select_*()</code>, most strategy logic is easier to express at the
+whole-universe level instead of one instrument at a time.</p>
 </div>
-<div id="targets" class="section level2">
-<h2>Targets</h2>
-<p>Targets must be full named numeric vectors. Names must exactly match
-<code>ctx$universe</code>, and values are desired quantities, not
-portfolio weights or orders. A target of <code>10</code> means hold 10
-shares after the next fill; a target of <code>0</code> means hold no
-shares.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>buy_one_if_up <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
+<div id="a-first-trading-rule" class="section level2">
+<h2>A First Trading Rule</h2>
+<p>Now add one small economic idea:</p>
+<blockquote>
+<p>If an instrument closes above its open, own one share. Otherwise own
+nothing.</p>
+</blockquote>
+<p>This is still a teaching strategy, not investment advice. It shows
+how observable data becomes a target.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>buy_if_up <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="cf">if</span> (ctx<span class="sc">$</span><span class="fu">close</span>(<span class="st">&quot;AAA&quot;</span>) <span class="sc">&gt;</span> ctx<span class="sc">$</span><span class="fu">open</span>(<span class="st">&quot;AAA&quot;</span>)) {</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    targets[<span class="st">&quot;AAA&quot;</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  }</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  targets</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>}</span></code></pre></div>
-<p>v0.1.x is long-only. Negative targets are outside the supported
-public workflow until explicit shorting semantics are specified.</p>
-<p>The default fill model is next-open: a target decided at pulse
-<code>t</code> fills at the next available bar. A target change on the
-final pulse cannot fill.</p>
-<p>For multi-asset strategies, build the full vector first and then
-assign the quantities you want to hold. This example uses the built-in
-one-bar return indicator, whose feature ID is <code>return_1</code>; the
-next section shows how to ask ledgr for feature IDs before using them in
-a strategy.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>top_two_equal_quantity <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    <span class="cf">if</span> (ctx<span class="sc">$</span><span class="fu">close</span>(id) <span class="sc">&gt;</span> ctx<span class="sc">$</span><span class="fu">open</span>(id)) {</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    }</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>  }</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  targets</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>}</span></code></pre></div>
+<p>Targets are desired quantities, not orders, signals, or portfolio
+weights. A target of <code>1</code> means “after the next fill
+opportunity, hold one share.” A target of <code>0</code> means “hold no
+shares.”</p>
+<p>In these examples, decisions fill at the next open: a decision made
+at pulse <code>t</code> fills at the next available bar. That keeps the
+strategy from deciding and filling on the same close.</p>
+<p>The loop is intentionally plain because this is the first example.
+Once the economic idea is clear, ledgr strategies are usually easier to
+read when they use helper functions that operate on the whole universe
+at once. The later sections make that transition.</p>
+</div>
+<div id="why-params-exists" class="section level2">
+<h2>Why <code>params</code> Exists</h2>
+<p>Hard-coded constants make experiments awkward. Parameters let one
+economic idea run under different assumptions.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>buy_if_up_qty <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  scores <span class="ot">&lt;-</span> <span class="fu">numeric</span>()</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>    score <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">feature</span>(id, <span class="st">&quot;return_1&quot;</span>)</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(score)) {</span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>      scores[id] <span class="ot">&lt;-</span> score</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>    }</span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  }</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(scores) <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(targets)</span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  selected <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">sort</span>(scores, <span class="at">decreasing =</span> <span class="cn">TRUE</span>))[<span class="fu">seq_len</span>(<span class="fu">min</span>(<span class="dv">2</span>, <span class="fu">length</span>(scores)))]</span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  targets[selected] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty_per_instrument</span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  targets</span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>    <span class="cf">if</span> (ctx<span class="sc">$</span><span class="fu">close</span>(id) <span class="sc">&gt;</span> ctx<span class="sc">$</span><span class="fu">open</span>(id)) {</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>    }</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  }</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  targets</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>}</span></code></pre></div>
+<p>Strategies use <code>function(ctx, params)</code>. <code>ctx</code>
+is the pulse. <code>params</code> is the experimenter’s chosen
+configuration for this run. Keeping them separate makes the strategy
+easier to test, compare, and store.</p>
+</div>
+<div id="prepare-a-small-experiment" class="section level2">
+<h2>Prepare A Small Experiment</h2>
+<p>Use two instruments from the offline demo data so the examples run
+anywhere.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>bars <span class="ot">&lt;-</span> ledgr_demo_bars <span class="sc">|&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>    instrument_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>    <span class="fu">between</span>(ts_utc, <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-01-01&quot;</span>), <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-06-30&quot;</span>))</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  )</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> <span class="fu">ledgr_snapshot_from_df</span>(</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  bars,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">snapshot_id =</span> <span class="st">&quot;strategy_chapter_snapshot&quot;</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>)</span></code></pre></div>
+<p>The snapshot seals the market data. That is the evidence base for the
+experiment. Strategies and indicators can derive from it, but the
+underlying bars do not change mid-research.</p>
 </div>
 <div id="indicators-and-feature-ids" class="section level2">
 <h2>Indicators And Feature IDs</h2>
-<p>Built-in indicators are ordinary <code>ledgr_indicator</code>
-objects.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>sma_3 <span class="ot">&lt;-</span> <span class="fu">ledgr_ind_sma</span>(<span class="dv">3</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>ret_1 <span class="ot">&lt;-</span> <span class="fu">ledgr_ind_returns</span>(<span class="dv">1</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">ledgr_feature_id</span>(<span class="fu">list</span>(sma_3, ret_1))</span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;sma_3&quot;    &quot;return_1&quot;</span></span></code></pre></div>
-<p>TTR indicators use <code>ledgr_ind_ttr()</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>rsi_3 <span class="ot">&lt;-</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;RSI&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">n =</span> <span class="dv">3</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>bb_up <span class="ot">&lt;-</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;BBands&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">output =</span> <span class="st">&quot;up&quot;</span>, <span class="at">n =</span> <span class="dv">3</span>)</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">ledgr_feature_id</span>(<span class="fu">list</span>(rsi_3, bb_up))</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;ttr_rsi_3&quot;       &quot;ttr_bbands_3_up&quot;</span></span></code></pre></div>
-<p>Feature IDs are exact strings. Ask ledgr for them before writing
-<code>ctx$feature()</code> calls.</p>
-<p>Feature values can be <code>NA</code> during warmup. Unknown feature
-IDs fail loudly; warmup <code>NA</code> for known features is normal.
-This distinction matters: a typo such as <code>&quot;returns_1&quot;</code> fails
-because no configured feature has that ID, while <code>&quot;return_1&quot;</code>
-may return <code>NA</code> on early bars if the indicator is not
-ready.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>rsi_strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">hold</span>()</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  rsi <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">feature</span>(<span class="st">&quot;AAA&quot;</span>, <span class="st">&quot;ttr_rsi_3&quot;</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(rsi)) <span class="fu">return</span>(targets)</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="cf">if</span> (rsi <span class="sc">&lt;</span> params<span class="sc">$</span>buy_below) {</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>    targets[<span class="st">&quot;AAA&quot;</span>] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (rsi <span class="sc">&gt;</span> params<span class="sc">$</span>sell_above) {</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>    targets[<span class="st">&quot;AAA&quot;</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  }</span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  targets</span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>}</span></code></pre></div>
-<p><code>requires_bars</code> is the first row where an indicator may
-emit a value. <code>stable_after</code> is the first row ledgr treats as
-stable. Built-in and supported TTR indicators set these for you. When a
-strategy sees <code>NA</code>, the ordinary pattern is to return
-<code>ctx$hold()</code> for hold-unless-signal strategies or
-<code>ctx$flat()</code> for flat-unless-signal strategies.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>sma_breakout <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  sma <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">feature</span>(<span class="st">&quot;AAA&quot;</span>, <span class="st">&quot;sma_3&quot;</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(sma)) <span class="fu">return</span>(targets)</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="cf">if</span> (ctx<span class="sc">$</span><span class="fu">close</span>(<span class="st">&quot;AAA&quot;</span>) <span class="sc">&gt;</span> sma) {</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>    targets[<span class="st">&quot;AAA&quot;</span>] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  }</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  targets</span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>}</span></code></pre></div>
-<p>On very short histories, this is not an error: the run can complete
-with no trades because the feature never becomes ready. That is
-different from an insufficient-history custom indicator that returns
-<code>NA</code> after <code>stable_after</code>; post-warmup
-<code>NA</code> values are invalid and ledgr aborts rather than silently
-using bad features.</p>
+<p>Indicators are feature definitions. Before a strategy uses a feature,
+ask ledgr for the exact ID.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>features <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">ledgr_ind_returns</span>(<span class="dv">5</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">ledgr_feature_id</span>(features)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;return_5&quot;</span></span></code></pre></div>
+<p>Those strings are the names used inside <code>ctx$feature()</code>.
+They are exact. A typo such as <code>&quot;returns_5&quot;</code> is not treated
+as a warmup value; it is an unknown feature and ledgr fails loudly.</p>
+<p>Warmup is different. A known feature can be <code>NA</code> early in
+the sample because there are not enough prior bars yet. Strategy code
+should treat that as “no signal yet.”</p>
 </div>
-<div id="debug-one-pulse" class="section level2">
-<h2>Debug One Pulse</h2>
-<p><code>ledgr_pulse_snapshot()</code> freezes the context at one
-timestamp so you can inspect what a strategy saw.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>bars <span class="ot">&lt;-</span> ledgr_demo_bars <span class="sc">|&gt;</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>    instrument_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>    <span class="fu">between</span>(ts_utc, <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-01-01&quot;</span>), <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-04-30&quot;</span>))</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  )</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> <span class="fu">ledgr_snapshot_from_df</span>(</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  bars,</span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>  <span class="at">snapshot_id =</span> <span class="st">&quot;strategy_demo_snapshot&quot;</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>)</span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>pulse <span class="ot">&lt;-</span> <span class="fu">ledgr_pulse_snapshot</span>(</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  snapshot,</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">universe =</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">ts_utc =</span> <span class="st">&quot;2019-03-01T00:00:00Z&quot;</span>,</span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  <span class="at">features =</span> <span class="fu">list</span>(sma_3, rsi_3)</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>)</span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>pulse<span class="sc">$</span><span class="fu">close</span>(<span class="st">&quot;DEMO_01&quot;</span>)</span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt; [1] 106.5053</span></span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>pulse<span class="sc">$</span><span class="fu">feature</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;sma_3&quot;</span>)</span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; [1] 103.9883</span></span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>pulse<span class="sc">$</span><span class="fu">hold</span>()</span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co">#&gt; DEMO_01 DEMO_02</span></span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt;       0       0</span></span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="fu">threshold_strategy</span>(</span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>  pulse,</span>
-<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">threshold =</span> <span class="fu">c</span>(<span class="at">DEMO_01 =</span> <span class="dv">55</span>, <span class="at">DEMO_02 =</span> <span class="dv">75</span>), <span class="at">qty =</span> <span class="dv">1</span>)</span>
-<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>)</span>
-<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co">#&gt; DEMO_01 DEMO_02</span></span>
-<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co">#&gt;       1       0</span></span>
-<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="fu">close</span>(pulse)</span></code></pre></div>
+<div id="debug-one-pulse-before-running" class="section level2">
+<h2>Debug One Pulse Before Running</h2>
+<p>Before running a full backtest, inspect one pulse. This is the
+fastest way to understand what your strategy will see.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>pulse <span class="ot">&lt;-</span> <span class="fu">ledgr_pulse_snapshot</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  snapshot,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">universe =</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">ts_utc =</span> <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-03-01&quot;</span>),</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">features =</span> features</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>pulse<span class="sc">$</span>ts_utc</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; [1] &quot;2019-03-01T00:00:00Z&quot;</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>pulse<span class="sc">$</span>universe</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; [1] &quot;DEMO_01&quot; &quot;DEMO_02&quot;</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>pulse<span class="sc">$</span><span class="fu">close</span>(<span class="st">&quot;DEMO_01&quot;</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; [1] 106.5053</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>pulse<span class="sc">$</span><span class="fu">feature</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;return_5&quot;</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; [1] 0.08531877</span></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>pulse<span class="sc">$</span><span class="fu">hold</span>()</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="co">#&gt; DEMO_01 DEMO_02</span></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt;       0       0</span></span></code></pre></div>
+<p>Now build the strategy logic one transformation at a time.</p>
+<p>The economic idea:</p>
+<blockquote>
+<p>Rank instruments by recent return, keep the top names, split capital
+equally, and convert those weights into share quantities.</p>
+</blockquote>
+<p><code>signal_return()</code> is a thin helper around the same feature
+you inspected above: it reads <code>return_N</code> for every instrument
+in the pulse and returns one universe-wide signal object.</p>
+<p>The helper pipeline has four stages:</p>
+<table>
+<colgroup>
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Stage</th>
+<th>Input</th>
+<th>Output</th>
+<th>Question answered</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>signal</td>
+<td>pulse context</td>
+<td>numeric scores</td>
+<td>What looks attractive?</td>
+</tr>
+<tr class="even">
+<td>selection</td>
+<td>signal</td>
+<td>logical inclusion</td>
+<td>What should be considered?</td>
+</tr>
+<tr class="odd">
+<td>weights</td>
+<td>selection</td>
+<td>allocation weights</td>
+<td>How should capital be split?</td>
+</tr>
+<tr class="even">
+<td>target</td>
+<td>weights and context</td>
+<td>share quantities</td>
+<td>What should the portfolio hold?</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>signal <span class="ot">&lt;-</span> <span class="fu">signal_return</span>(pulse, <span class="at">lookback =</span> <span class="dv">5</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>signal</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; &lt;ledgr_signal&gt; [2 assets]</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; origin: return_5</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; non-NA: 2/2</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt;     DEMO_01     DEMO_02</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; 0.085318770 0.004018771</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>selection <span class="ot">&lt;-</span> <span class="fu">select_top_n</span>(signal, <span class="at">n =</span> <span class="dv">1</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>selection</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; &lt;ledgr_selection&gt; [2 assets]</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; origin: return_5</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; 1 selected</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt; DEMO_01 DEMO_02</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt;    TRUE   FALSE</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>weights <span class="ot">&lt;-</span> <span class="fu">weight_equal</span>(selection)</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>weights</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt; &lt;ledgr_weights&gt; [1 asset]</span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co">#&gt; origin: return_5</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt; non-NA: 1/1</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt; DEMO_01</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt;       1</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>target <span class="ot">&lt;-</span> <span class="fu">target_rebalance</span>(weights, pulse, <span class="at">equity_fraction =</span> <span class="fl">0.1</span>)</span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>target</span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; &lt;ledgr_target&gt; [2 assets]</span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; origin: return_5</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; non-NA: 2/2</span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="co">#&gt; DEMO_01 DEMO_02</span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="co">#&gt;      93       0</span></span></code></pre></div>
+<p>The helper objects are not a second execution path. They are
+authoring aids. The pipeline still ends in a <code>ledgr_target</code>,
+which unwraps to the same target quantity vector the runner has always
+consumed.</p>
+<p>Interactive pulse snapshots and backtest handles can be closed when
+you are done inspecting them. This releases DuckDB resources in long
+sessions; completed run artifacts are already durable when
+<code>ledgr_run()</code> returns.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">close</span>(pulse)</span></code></pre></div>
+</div>
+<div id="turn-the-idea-into-a-strategy" class="section level2">
+<h2>Turn The Idea Into A Strategy</h2>
+<p>The same transformations become an ordinary strategy function.</p>
+<p>The full backtest replays every bar, including the earliest warmup
+pulses. During those first pulses, <code>return_5</code> is
+<code>NA</code> for every instrument because five prior bars do not
+exist yet. <code>select_top_n()</code> warns when a signal has no usable
+values; that warning is useful during pulse debugging, but expected
+during a full run. The strategy suppresses that specific warmup noise
+while still returning an empty selection, empty weights, and a flat
+target.</p>
+<p>The warning exists because an empty selection can mean either “normal
+warmup” or “my signal is broken.” The helper cannot know which one is
+true, so it warns and lets the strategy decide how to handle that
+case.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>top_return_strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  signal <span class="ot">&lt;-</span> <span class="fu">signal_return</span>(ctx, <span class="at">lookback =</span> params<span class="sc">$</span>lookback)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  selection <span class="ot">&lt;-</span> <span class="fu">suppressWarnings</span>(<span class="fu">select_top_n</span>(signal, <span class="at">n =</span> params<span class="sc">$</span>n))</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  weights <span class="ot">&lt;-</span> <span class="fu">weight_equal</span>(selection)</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="fu">target_rebalance</span>(weights, ctx, <span class="at">equity_fraction =</span> params<span class="sc">$</span>equity_fraction)</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>}</span></code></pre></div>
+<p>Read it economically:</p>
+<ol style="list-style-type: decimal">
+<li><code>signal_return()</code> scores each instrument by recent
+return.</li>
+<li><code>select_top_n()</code> keeps the highest scores and ignores
+warmup <code>NA</code>.</li>
+<li><code>weight_equal()</code> splits the chosen allocation
+equally.</li>
+<li><code>target_rebalance()</code> converts weights into full target
+quantities.</li>
+</ol>
+<p>No helper registers indicators automatically. The experiment must say
+which features exist.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>exp <span class="ot">&lt;-</span> <span class="fu">ledgr_experiment</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="at">snapshot =</span> snapshot,</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">strategy =</span> top_return_strategy,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">features =</span> features,</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="at">opening =</span> <span class="fu">ledgr_opening</span>(<span class="at">cash =</span> <span class="dv">10000</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="run-one-backtest" class="section level2">
+<h2>Run One Backtest</h2>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>bt_top_1 <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>    <span class="at">params =</span> <span class="fu">list</span>(<span class="at">lookback =</span> <span class="dv">5</span>, <span class="at">n =</span> <span class="dv">1</span>, <span class="at">equity_fraction =</span> <span class="fl">0.1</span>),</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>    <span class="at">run_id =</span> <span class="st">&quot;top_return_1&quot;</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  )</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="fu">summary</span>(bt_top_1)</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt; ledgr Backtest Summary</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt; ======================</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; Performance Metrics:</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt;   Total Return:        -0.41%</span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co">#&gt;   Annualized Return:   -0.81%</span></span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="co">#&gt;   Max Drawdown:        -18.26%</span></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="co">#&gt; Risk Metrics:</span></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="co">#&gt;   Volatility (annual): 93.23%</span></span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a><span class="co">#&gt; Trade Statistics:</span></span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a><span class="co">#&gt;   Total Trades:        24</span></span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a><span class="co">#&gt;   Win Rate:            45.83%</span></span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a><span class="co">#&gt;   Avg Trade:           $2.15</span></span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a><span class="co">#&gt; Exposure:</span></span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a><span class="co">#&gt;   Time in Market:      78.29%</span></span></code></pre></div>
+<p>The summary is portfolio-level: total return, max drawdown, and trade
+count are computed from the completed run. In ledgr, trades are closed
+round trips; the fills table can contain more rows because opening fills
+and closing fills are both recorded.</p>
+<p>The annualized volatility is high because this toy strategy switches
+positions often on a tiny two-instrument demo universe. Treat it as a
+warning about the example, not as a property you should expect from the
+same idea on real data. The drawdown is disproportionate to the final
+loss for the same reason: a small, concentrated portfolio can swing hard
+during the run even if it ends roughly flat.</p>
+<p>Do not expect a teaching strategy to be good. A weak or unattractive
+result is still useful evidence: ledgr records failed ideas with the
+same care as successful ones, which is part of not fooling yourself.</p>
+<p>Inspecting trades shows the actions produced by the target
+decisions.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">ledgr_results</span>(bt_top_1, <span class="at">what =</span> <span class="st">&quot;trades&quot;</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 24 x 9</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt;    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt;        &lt;int&gt; &lt;date&gt;     &lt;chr&gt;         &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt;  1         3 2019-01-14 DEMO_02       SELL     13  72.8     0       -22.5  CLOSE</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt;  2         4 2019-01-18 DEMO_01       SELL     11  86.2     0       -19.0  CLOSE</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt;  3         7 2019-01-21 DEMO_02       SELL     13  70.2     0       -31.5  CLOSE</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt;  4         8 2019-01-25 DEMO_01       SELL      1  90.7     0         3.37 CLOSE</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt;  5         9 2019-02-08 DEMO_01       SELL     10  92.6     0        52.8  CLOSE</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt;  6        13 2019-02-13 DEMO_02       SELL     15  66.2     0       -14.0  CLOSE</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt;  7        14 2019-02-20 DEMO_01       SELL     10  96.9     0        30.4  CLOSE</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co">#&gt;  8        17 2019-02-25 DEMO_02       SELL     14  67.5     0       -24.5  CLOSE</span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co">#&gt;  9        18 2019-02-27 DEMO_01       SELL      1 100.      0         2.52 CLOSE</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co">#&gt; 10        19 2019-03-11 DEMO_01       SELL      9 106.      0        77.7  CLOSE</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt; # i 14 more rows</span></span></code></pre></div>
+<p>The trade table only includes closed round trips. Small one-share
+rows appear when integer sizing and price movement leave a tiny
+adjustment after a previous target. Larger rows are the ordinary
+position exits. <code>realized_pnl</code> is the profit or loss booked
+when that position closes.</p>
 </div>
 <div id="compare-parameter-variants" class="section level2">
 <h2>Compare Parameter Variants</h2>
-<p>Run related strategy variants through one experiment.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>exp <span class="ot">&lt;-</span> <span class="fu">ledgr_experiment</span>(</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="at">snapshot =</span> snapshot,</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">strategy =</span> threshold_strategy,</span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">opening =</span> <span class="fu">ledgr_opening</span>(<span class="at">cash =</span> <span class="dv">10000</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>)</span>
-<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a></span>
-<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>bt_qty_1 <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
-<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(</span>
-<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>    <span class="at">params =</span> <span class="fu">list</span>(<span class="at">threshold =</span> <span class="fu">c</span>(<span class="at">DEMO_01 =</span> <span class="dv">55</span>, <span class="at">DEMO_02 =</span> <span class="dv">75</span>), <span class="at">qty =</span> <span class="dv">1</span>),</span>
-<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>    <span class="at">run_id =</span> <span class="st">&quot;threshold_qty_1&quot;</span></span>
-<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>  )</span>
-<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a></span>
-<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>bt_qty_3 <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
-<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(</span>
-<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>    <span class="at">params =</span> <span class="fu">list</span>(<span class="at">threshold =</span> <span class="fu">c</span>(<span class="at">DEMO_01 =</span> <span class="dv">55</span>, <span class="at">DEMO_02 =</span> <span class="dv">75</span>), <span class="at">qty =</span> <span class="dv">3</span>),</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>    <span class="at">run_id =</span> <span class="st">&quot;threshold_qty_3&quot;</span></span>
-<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>  )</span>
-<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a></span>
-<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a><span class="fu">ledgr_compare_runs</span>(snapshot, <span class="at">run_ids =</span> <span class="fu">c</span>(<span class="st">&quot;threshold_qty_1&quot;</span>, <span class="st">&quot;threshold_qty_3&quot;</span>))</span>
-<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a><span class="co">#&gt; # ledgr comparison</span></span>
-<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
-<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a><span class="co">#&gt;   run_id          label final_equity total_return max_drawdown n_trades win_rate</span></span>
-<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;           &lt;chr&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;int&gt; &lt;chr&gt;</span></span>
-<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a><span class="co">#&gt; 1 threshold_qty_1 &lt;NA&gt;        10084. +0.8%        -0.8%               0 &lt;NA&gt;</span></span>
-<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a><span class="co">#&gt; 2 threshold_qty_3 &lt;NA&gt;        10251. +2.5%        -2.4%               0 &lt;NA&gt;</span></span>
-<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a><span class="co">#&gt; # i 1 more variable: reproducibility_level &lt;chr&gt;</span></span>
-<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb12-28"><a href="#cb12-28" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
-<span id="cb12-29"><a href="#cb12-29" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<p>Now keep the economic idea fixed and change one assumption: hold the
+top two instruments instead of the top one.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>bt_top_2 <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>    <span class="at">params =</span> <span class="fu">list</span>(<span class="at">lookback =</span> <span class="dv">5</span>, <span class="at">n =</span> <span class="dv">2</span>, <span class="at">equity_fraction =</span> <span class="fl">0.1</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>    <span class="at">run_id =</span> <span class="st">&quot;top_return_2&quot;</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  )</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="fu">ledgr_compare_runs</span>(snapshot, <span class="at">run_ids =</span> <span class="fu">c</span>(<span class="st">&quot;top_return_1&quot;</span>, <span class="st">&quot;top_return_2&quot;</span>))</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; # ledgr comparison</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt;   run_id       label final_equity total_return max_drawdown n_trades win_rate</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;int&gt; &lt;chr&gt;</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="co">#&gt; 1 top_return_1 &lt;NA&gt;         9959. -0.4%        -18.3%             24 45.8%</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co">#&gt; 2 top_return_2 &lt;NA&gt;         9999. -0.0%        -1.2%               7 57.1%</span></span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="co">#&gt; # i 1 more variable: reproducibility_level &lt;chr&gt;</span></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<p>Comparison is most useful when the compared runs differ for a reason
+you can explain. Here the reason is simple: one run concentrates the
+allocation in the single strongest recent-return instrument, and the
+other splits it across two.</p>
+<p>The comparison table is not asking “which number is biggest?” in
+isolation. It is asking whether the change in assumption improved the
+run in ways you can defend: return, drawdown, number of closed trades,
+and win rate all matter.</p>
+<p>These runs share the same sealed data, initial cash, feature set, and
+cost assumptions. That keeps the teaching example narrow. A real
+comparison would also ask whether the conclusion survives different
+samples, execution costs, starting capital, and parameter choices.</p>
 </div>
-<div id="compare-different-strategies" class="section level2">
-<h2>Compare Different Strategies</h2>
-<p>The same comparison table also works across different strategy
-functions.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>flat_exp <span class="ot">&lt;-</span> <span class="fu">ledgr_experiment</span>(</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  snapshot,</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">strategy =</span> flat_strategy,</span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">opening =</span> <span class="fu">ledgr_opening</span>(<span class="at">cash =</span> <span class="dv">10000</span>)</span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>)</span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>bt_flat <span class="ot">&lt;-</span> flat_exp <span class="sc">|&gt;</span></span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(<span class="at">params =</span> <span class="fu">list</span>(), <span class="at">run_id =</span> <span class="st">&quot;flat&quot;</span>)</span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="fu">ledgr_compare_runs</span>(snapshot, <span class="at">run_ids =</span> <span class="fu">c</span>(<span class="st">&quot;threshold_qty_1&quot;</span>, <span class="st">&quot;flat&quot;</span>))</span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; # ledgr comparison</span></span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co">#&gt;   run_id          label final_equity total_return max_drawdown n_trades win_rate</span></span>
-<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;           &lt;chr&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;int&gt; &lt;chr&gt;</span></span>
-<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="co">#&gt; 1 threshold_qty_1 &lt;NA&gt;        10084. +0.8%        -0.8%               0 &lt;NA&gt;</span></span>
-<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="co">#&gt; 2 flat            &lt;NA&gt;        10000  +0.0%        0.0%                0 &lt;NA&gt;</span></span>
-<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="co">#&gt; # i 1 more variable: reproducibility_level &lt;chr&gt;</span></span>
-<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
-<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<div id="compare-against-a-baseline" class="section level2">
+<h2>Compare Against A Baseline</h2>
+<p>The flat strategy is a sanity baseline, not a market benchmark. It
+tells you what the result table looks like when the strategy
+deliberately does nothing, and it keeps the comparison honest: if an
+active strategy cannot beat doing nothing on the same sealed data, that
+is valuable information.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>flat_exp <span class="ot">&lt;-</span> <span class="fu">ledgr_experiment</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">snapshot =</span> snapshot,</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">strategy =</span> flat_strategy,</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="at">opening =</span> <span class="fu">ledgr_opening</span>(<span class="at">cash =</span> <span class="dv">10000</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>bt_flat <span class="ot">&lt;-</span> flat_exp <span class="sc">|&gt;</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(<span class="at">params =</span> <span class="fu">list</span>(), <span class="at">run_id =</span> <span class="st">&quot;flat_baseline&quot;</span>)</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="fu">ledgr_compare_runs</span>(snapshot, <span class="at">run_ids =</span> <span class="fu">c</span>(<span class="st">&quot;top_return_1&quot;</span>, <span class="st">&quot;top_return_2&quot;</span>, <span class="st">&quot;flat_baseline&quot;</span>))</span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="co">#&gt; # ledgr comparison</span></span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 x 8</span></span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a><span class="co">#&gt;   run_id        label final_equity total_return max_drawdown n_trades win_rate</span></span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;         &lt;chr&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;int&gt; &lt;chr&gt;</span></span>
+<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="co">#&gt; 1 top_return_1  &lt;NA&gt;         9959. -0.4%        -18.3%             24 45.8%</span></span>
+<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a><span class="co">#&gt; 2 top_return_2  &lt;NA&gt;         9999. -0.0%        -1.2%               7 57.1%</span></span>
+<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="co">#&gt; 3 flat_baseline &lt;NA&gt;        10000  +0.0%        0.0%                0 &lt;NA&gt;</span></span>
+<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a><span class="co">#&gt; # i 1 more variable: reproducibility_level &lt;chr&gt;</span></span>
+<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
+<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span></code></pre></div>
+<p>The flat baseline has no win rate because it has no closed trades.
+That is not missing data; there are no wins or losses to count.</p>
+</div>
+<div id="when-ledgr-complains" class="section level2">
+<h2>When ledgr Complains</h2>
+<p>ledgr tries to fail loudly when an error would make a backtest
+misleading. If a strategy returns a vector with the wrong names or
+length, ledgr rejects it instead of silently treating missing
+instruments as zero. If a helper reads an unregistered feature,
+<code>ctx$feature()</code> reports the unknown feature ID and lists the
+available IDs. If <code>target_rebalance()</code> receives negative or
+over-allocated weights, it fails before turning them into target
+quantities.</p>
+<p>Those errors are part of the design. They are meant to catch research
+mistakes while the mistake is still small enough to understand.</p>
 </div>
 <div id="inspect-stored-source" class="section level2">
 <h2>Inspect Stored Source</h2>
-<p><code>ledgr_extract_strategy(..., trust = FALSE)</code> returns
-stored source and metadata without parsing or evaluating it.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>extracted <span class="ot">&lt;-</span> <span class="fu">ledgr_extract_strategy</span>(snapshot, <span class="st">&quot;threshold_qty_1&quot;</span>, <span class="at">trust =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>extracted</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt; ledgr Extracted Strategy</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; ========================</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt;</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt; Run ID:          threshold_qty_1</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; Reproducibility: tier_1</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; Source Hash:     afbf00a42940c4bc95ec6c46d5eb886aa7c2d6c1546eaf875e918880ee6abf36</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt; Params Hash:     49fb6f889a174d502c0c6060bced4c8244a3d11631b8e480743e228657da5e6d</span></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; Hash Verified:   TRUE</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; Trust:           FALSE</span></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co">#&gt; Source Available:TRUE</span></span></code></pre></div>
+<p>The experiment store lets you come back later and know exactly what
+code and parameters produced a result. When you return to a
+six-month-old run, this is the artifact that tells you what was actually
+tested, not what you remember testing.</p>
+<p>ledgr stores strategy provenance with the run. Inspection is
+read-only by default: <code>trust = FALSE</code> returns stored text and
+metadata without parsing or evaluating it.</p>
+<p>Hash verification proves stored-text identity, not safety. That is
+why the read-only path is the default.</p>
+<p>You usually do not read the hashes yourself. They are the durable
+fingerprints ledgr uses to verify that recovered source and parameters
+are identical to the artifacts that produced the run.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">ledgr_extract_strategy</span>(snapshot, <span class="st">&quot;top_return_1&quot;</span>, <span class="at">trust =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="co">#&gt; ledgr Extracted Strategy</span></span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="co">#&gt; ========================</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="co">#&gt; Run ID:          top_return_1</span></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a><span class="co">#&gt; Reproducibility: tier_2</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="co">#&gt; Source Hash:     3fea0cd657f5bb33baf0f7939e8091258abcaad27c48b6f261bbc3039733d9aa</span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a><span class="co">#&gt; Params Hash:     3caea9cbe019dbfa16b53b9bbeee913bdb2f16e4c6f196e0f5a3c8332cac270c</span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="co">#&gt; Hash Verified:   TRUE</span></span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="co">#&gt; Trust:           FALSE</span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="co">#&gt; Source Available:TRUE</span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="co">#&gt;</span></span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="co">#&gt; Warnings:</span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co">#&gt; - This run is tier_2; recovered source may depend on external state or not be executable by itself.</span></span></code></pre></div>
 <p>Use <code>trust = TRUE</code> only when you explicitly trust the
-experiment store and want to recover a function object. Hash
-verification proves stored-text identity, not safety.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">close</span>(bt_qty_1)</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">close</span>(bt_qty_3)</span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="fu">close</span>(bt_flat)</span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="fu">close</span>(snapshot)</span></code></pre></div>
+experiment store and want to recover a function object.</p>
+</div>
+<div id="cleanup" class="section level2">
+<h2>Cleanup</h2>
+<p>These calls release DuckDB connections. Forgetting them in a short
+interactive session is not a data-safety issue; completed run artifacts
+are already durable when <code>ledgr_run()</code> returns. In long
+sessions and scripts, releasing resources explicitly avoids lock and
+resource warnings.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">close</span>(bt_top_1)</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">close</span>(bt_top_2)</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="fu">close</span>(bt_flat)</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="fu">ledgr_snapshot_close</span>(snapshot)</span></code></pre></div>
+</div>
+<div id="whats-next" class="section level2">
+<h2>What’s Next?</h2>
+<p>If you want the formal contract, read the strategy and context
+sections in <code>inst/design/contracts.md</code>. If you want the
+deployment story, continue with
+<code>vignette(&quot;research-to-production&quot;, package = &quot;ledgr&quot;)</code>. If
+you want to inspect or compare durable runs, read
+<code>vignette(&quot;experiment-store&quot;, package = &quot;ledgr&quot;)</code>.</p>
 </div>
 
 

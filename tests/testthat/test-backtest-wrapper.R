@@ -336,6 +336,33 @@ testthat::test_that("runtime feature typos fail loudly instead of running as no-
   )
 })
 
+testthat::test_that("strategy evaluation errors include pulse context and preserve parent", {
+  bad_strategy <- function(ctx, params) {
+    stop("strategy boom")
+  }
+
+  err <- tryCatch(
+    ledgr_backtest(
+      data = test_bars,
+      strategy = bad_strategy,
+      features = list(ledgr_ind_returns(1)),
+      start = "2020-01-01",
+      end = "2020-01-05",
+      run_id = "strategy-context-error"
+    ),
+    error = function(e) e
+  )
+
+  testthat::expect_s3_class(err, "ledgr_strategy_error")
+  testthat::expect_match(conditionMessage(err), "Strategy error at ts_utc=", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "run_id=strategy-context-error", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "Instruments: TEST_A, TEST_B", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "Available feature IDs: return_1", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "Original error: strategy boom", fixed = TRUE)
+  testthat::expect_s3_class(err$parent, "simpleError")
+  testthat::expect_match(conditionMessage(err$parent), "strategy boom", fixed = TRUE)
+})
+
 testthat::test_that("backtest rejects non-positive initial cash", {
   strategy <- function(ctx, params) ctx$flat()
   db_path <- tempfile(fileext = ".duckdb")

@@ -14,9 +14,12 @@
 - Added the minimal strategy-helper reference layer: `signal_return()`,
   `select_top_n()`, `weight_equal()`, and `target_rebalance()` for long-only
   helper pipelines that still terminate in normal target quantities.
-- TODO: Overhaul strategy-development documentation around the ledgr mental
-  model, helper functions, feature IDs, warmup behavior, and interactive
-  snapshot debugging.
+- Improved strategy diagnostics and feature-ID documentation: strategy errors
+  now include pulse timestamp, run, instrument, and available-feature context
+  while preserving the original error as the parent condition.
+- Overhauled the strategy-development article around the ledgr pulse mental
+  model, helper functions, feature IDs, warmup behavior, interactive pulse
+  debugging, and run comparison.
 - TODO: Improve installed documentation discovery and pkgdown positioning
   content without exposing v0.1.8 sweep/tune APIs.
 

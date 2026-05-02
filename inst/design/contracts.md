@@ -176,6 +176,10 @@ the active versioned spec packet, currently
   IDs, including the requested feature, instrument, and available feature IDs
   (`<none>` if no features are registered). A known feature whose current value
   is warmup `NA` remains a normal `NA` lookup, not an error.
+- Strategy evaluation errors are wrapped with pulse context while preserving the
+  original condition as the parent. The wrapper must name the run, timestamp,
+  instruments, and available feature IDs so users can distinguish strategy
+  logic failures from feature ID and warmup behavior.
 - Indicators may provide an optional `series_fn(bars, params)` for full-series
   precomputation. The input is one instrument's full bar series in ascending
   time order, and the output must be a numeric vector aligned to `nrow(bars)`.

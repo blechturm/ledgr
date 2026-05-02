@@ -17,160 +17,176 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
   load(demo_data_path)
 }
 
-## ----library----------------------------------------------------------------------------
+
+## ----library, message=FALSE-------------------------------------------------------------
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 
-## ----ctx-strategy-----------------------------------------------------------------------
+
+## ----flat-strategy----------------------------------------------------------------------
 flat_strategy <- function(ctx, params) {
   ctx$flat()
 }
 
-## ----params-strategy--------------------------------------------------------------------
-threshold_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
+
+## ----hold-example-----------------------------------------------------------------------
+hold_unless_down <- function(ctx, params) {
+  targets <- ctx$hold()
+
   for (id in ctx$universe) {
-    if (ctx$close(id) > params$threshold[[id]]) {
+    if (ctx$close(id) < ctx$open(id)) {
+      targets[id] <- 0
+    }
+  }
+
+  targets
+}
+
+
+## ----buy-if-up--------------------------------------------------------------------------
+buy_if_up <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    if (ctx$close(id) > ctx$open(id)) {
+      targets[id] <- 1
+    }
+  }
+
+  targets
+}
+
+
+## ----buy-if-up-param--------------------------------------------------------------------
+buy_if_up_qty <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    if (ctx$close(id) > ctx$open(id)) {
       targets[id] <- params$qty
     }
   }
+
   targets
 }
 
-## ----target-example---------------------------------------------------------------------
-buy_one_if_up <- function(ctx, params) {
-  targets <- ctx$flat()
-  if (ctx$close("AAA") > ctx$open("AAA")) {
-    targets["AAA"] <- 1
-  }
-  targets
-}
-
-## ----sizing-example---------------------------------------------------------------------
-top_two_equal_quantity <- function(ctx, params) {
-  targets <- ctx$flat()
-  scores <- numeric()
-
-  for (id in ctx$universe) {
-    score <- ctx$feature(id, "return_1")
-    if (!is.na(score)) {
-      scores[id] <- score
-    }
-  }
-
-  if (length(scores) == 0) return(targets)
-
-  selected <- names(sort(scores, decreasing = TRUE))[seq_len(min(2, length(scores)))]
-  targets[selected] <- params$qty_per_instrument
-  targets
-}
-
-## ----builtins---------------------------------------------------------------------------
-sma_3 <- ledgr_ind_sma(3)
-ret_1 <- ledgr_ind_returns(1)
-ledgr_feature_id(list(sma_3, ret_1))
-
-## ----ttr--------------------------------------------------------------------------------
-rsi_3 <- ledgr_ind_ttr("RSI", input = "close", n = 3)
-bb_up <- ledgr_ind_ttr("BBands", input = "close", output = "up", n = 3)
-ledgr_feature_id(list(rsi_3, bb_up))
-
-## ----indicator-strategy-----------------------------------------------------------------
-rsi_strategy <- function(ctx, params) {
-  targets <- ctx$hold()
-  rsi <- ctx$feature("AAA", "ttr_rsi_3")
-  if (is.na(rsi)) return(targets)
-
-  if (rsi < params$buy_below) {
-    targets["AAA"] <- params$qty
-  } else if (rsi > params$sell_above) {
-    targets["AAA"] <- 0
-  }
-  targets
-}
-
-## ----warmup-flat------------------------------------------------------------------------
-sma_breakout <- function(ctx, params) {
-  targets <- ctx$flat()
-  sma <- ctx$feature("AAA", "sma_3")
-  if (is.na(sma)) return(targets)
-
-  if (ctx$close("AAA") > sma) {
-    targets["AAA"] <- params$qty
-  }
-  targets
-}
 
 ## ----data-------------------------------------------------------------------------------
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-04-30"))
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
   )
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
-  snapshot_id = "strategy_demo_snapshot"
+  snapshot_id = "strategy_chapter_snapshot"
 )
+
+
+## ----feature-ids------------------------------------------------------------------------
+features <- list(ledgr_ind_returns(5))
+
+ledgr_feature_id(features)
+
 
 ## ----pulse------------------------------------------------------------------------------
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = "2019-03-01T00:00:00Z",
-  features = list(sma_3, rsi_3)
+  ts_utc = ledgr_utc("2019-03-01"),
+  features = features
 )
 
+pulse$ts_utc
+pulse$universe
 pulse$close("DEMO_01")
-pulse$feature("DEMO_01", "sma_3")
+pulse$feature("DEMO_01", "return_5")
 pulse$hold()
-threshold_strategy(
-  pulse,
-  list(threshold = c(DEMO_01 = 55, DEMO_02 = 75), qty = 1)
-)
+
+
+## ----pulse-pipeline---------------------------------------------------------------------
+signal <- signal_return(pulse, lookback = 5)
+signal
+
+selection <- select_top_n(signal, n = 1)
+selection
+
+weights <- weight_equal(selection)
+weights
+
+target <- target_rebalance(weights, pulse, equity_fraction = 0.1)
+target
+
+
+## ----close-pulse------------------------------------------------------------------------
 close(pulse)
 
-## ----compare-params---------------------------------------------------------------------
+
+## ----helper-strategy--------------------------------------------------------------------
+top_return_strategy <- function(ctx, params) {
+  signal <- signal_return(ctx, lookback = params$lookback)
+  selection <- suppressWarnings(select_top_n(signal, n = params$n))
+
+  weights <- weight_equal(selection)
+  target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
+}
+
+
+## ----experiment-------------------------------------------------------------------------
 exp <- ledgr_experiment(
   snapshot = snapshot,
-  strategy = threshold_strategy,
+  strategy = top_return_strategy,
+  features = features,
   opening = ledgr_opening(cash = 10000)
 )
 
-bt_qty_1 <- exp |>
+
+## ----run-one----------------------------------------------------------------------------
+bt_top_1 <- exp |>
   ledgr_run(
-    params = list(threshold = c(DEMO_01 = 55, DEMO_02 = 75), qty = 1),
-    run_id = "threshold_qty_1"
+    params = list(lookback = 5, n = 1, equity_fraction = 0.1),
+    run_id = "top_return_1"
   )
 
-bt_qty_3 <- exp |>
+summary(bt_top_1)
+
+
+## ----trades-----------------------------------------------------------------------------
+ledgr_results(bt_top_1, what = "trades")
+
+
+## ----run-two----------------------------------------------------------------------------
+bt_top_2 <- exp |>
   ledgr_run(
-    params = list(threshold = c(DEMO_01 = 55, DEMO_02 = 75), qty = 3),
-    run_id = "threshold_qty_3"
+    params = list(lookback = 5, n = 2, equity_fraction = 0.1),
+    run_id = "top_return_2"
   )
 
-ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "threshold_qty_3"))
+ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2"))
 
-## ----compare-strategies-----------------------------------------------------------------
+
+## ----baseline---------------------------------------------------------------------------
 flat_exp <- ledgr_experiment(
-  snapshot,
+  snapshot = snapshot,
   strategy = flat_strategy,
   opening = ledgr_opening(cash = 10000)
 )
 
 bt_flat <- flat_exp |>
-  ledgr_run(params = list(), run_id = "flat")
+  ledgr_run(params = list(), run_id = "flat_baseline")
 
-ledgr_compare_runs(snapshot, run_ids = c("threshold_qty_1", "flat"))
+ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2", "flat_baseline"))
+
 
 ## ----extract----------------------------------------------------------------------------
-extracted <- ledgr_extract_strategy(snapshot, "threshold_qty_1", trust = FALSE)
-extracted
+ledgr_extract_strategy(snapshot, "top_return_1", trust = FALSE)
+
 
 ## ----cleanup----------------------------------------------------------------------------
-close(bt_qty_1)
-close(bt_qty_3)
+close(bt_top_1)
+close(bt_top_2)
 close(bt_flat)
-close(snapshot)
+ledgr_snapshot_close(snapshot)
 
