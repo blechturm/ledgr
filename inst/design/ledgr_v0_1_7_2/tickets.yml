@@ -374,7 +374,7 @@ tickets:
 
   - id: LDG-1209
     title: "v0.1.7.2 Release Gate"
-    status: pending
+    status: done
     priority: P0
     dependencies: [LDG-1201, LDG-1202, LDG-1203, LDG-1204, LDG-1205, LDG-1206, LDG-1207, LDG-1208]
     tests:

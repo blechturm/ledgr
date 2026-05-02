@@ -730,7 +730,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 1 day  
 **Dependencies:** LDG-1201, LDG-1202, LDG-1203, LDG-1204, LDG-1205, LDG-1206, LDG-1207, LDG-1208  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Final validation gate for v0.1.7.2.
@@ -759,7 +759,7 @@ Final validation gate for v0.1.7.2.
 - [x] `DESCRIPTION` version is `0.1.7.2` before release tagging.
 - [x] pkgdown builds.
 - [x] README and changed articles render.
-- [ ] Ubuntu and Windows CI are green.
+- [x] Ubuntu and Windows CI are green.
 - [x] The local WSL/Ubuntu gate has passed on the release branch.
 - [x] Contracts and NEWS match the implemented v0.1.7.2 scope.
 - [x] No accidental v0.1.8 API exposure exists.
