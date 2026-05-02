@@ -63,6 +63,7 @@ ledgr_run_tag <- function(snapshot, run_id, tags) {
   snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
+  ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
   ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
   ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
@@ -117,6 +118,7 @@ ledgr_run_untag <- function(snapshot, run_id, tags = NULL) {
   snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
+  ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
   ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
   ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
