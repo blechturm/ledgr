@@ -382,7 +382,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1204  
-**Status:** Pending
+**Status:** Done
 
 **Description:**
 Implement the minimal helper primitives needed to prove the strategy helper
@@ -405,15 +405,15 @@ construction. Keep the helper set deliberately small.
 10. Document the helpers if they ship.
 
 **Acceptance Criteria:**
-- [ ] The reference helper pipeline runs through `ledgr_run()`.
-- [ ] `signal_return()` reads registered `return_<lookback>` features and fails
+- [x] The reference helper pipeline runs through `ledgr_run()`.
+- [x] `signal_return()` reads registered `return_<lookback>` features and fails
       clearly if missing.
-- [ ] `select_top_n()` handles `NA`, fewer-than-n assets, no available assets,
+- [x] `select_top_n()` handles `NA`, fewer-than-n assets, no available assets,
       and ties deterministically.
-- [ ] `weight_equal()` produces valid long-only weights.
-- [ ] `target_rebalance()` returns a full-universe `ledgr_target`.
-- [ ] Negative weights and leverage fail loudly.
-- [ ] No helper zoo or sweep dependency arguments are added.
+- [x] `weight_equal()` produces valid long-only weights.
+- [x] `target_rebalance()` returns a full-universe `ledgr_target`.
+- [x] Negative weights and leverage fail loudly.
+- [x] No helper zoo or sweep dependency arguments are added.
 
 **Test Requirements:**
 - Signal helper tests.

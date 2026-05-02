@@ -60,6 +60,12 @@ ledgr_strategy_type_origin <- function(origin) {
   origin
 }
 
+ledgr_strategy_type_empty_universe <- function(x) {
+  universe <- attr(x, "universe", exact = TRUE)
+  if (is.character(universe) && length(universe) > 0L) return(universe)
+  names(x)
+}
+
 ledgr_strategy_type_stats <- function(x) {
   if (is.logical(x)) {
     return(sprintf("%d selected", sum(x, na.rm = TRUE)))
@@ -134,7 +140,8 @@ ledgr_selection <- function(x, universe = NULL, origin = NULL) {
   structure(
     as.logical(x) |> stats::setNames(names(x)),
     class = c("ledgr_selection", "logical"),
-    origin = ledgr_strategy_type_origin(origin)
+    origin = ledgr_strategy_type_origin(origin),
+    universe = if (length(x) == 0L) universe else NULL
   )
 }
 
@@ -163,7 +170,8 @@ ledgr_weights <- function(x, universe = NULL, origin = NULL) {
   structure(
     as.numeric(x) |> stats::setNames(names(x)),
     class = c("ledgr_weights", "numeric"),
-    origin = ledgr_strategy_type_origin(origin)
+    origin = ledgr_strategy_type_origin(origin),
+    universe = if (length(x) == 0L) universe else NULL
   )
 }
 

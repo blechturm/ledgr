@@ -119,6 +119,13 @@ the active versioned spec packet, currently
 - v0.1.7.2 helper weights are public authoring helpers only. They do not alter
   the execution contract, and target constructors must reject negative weights
   or leverage until explicit short-selling and leverage semantics are specified.
+- The v0.1.7.2 reference helper pipeline is deliberately small:
+  `signal_return()` reads already-registered `return_<lookback>` features,
+  `select_top_n()` ignores missing signals and breaks ties by instrument ID,
+  `weight_equal()` creates long-only equal weights, and `target_rebalance()`
+  converts weights into full-universe `ledgr_target` quantities using
+  decision-time equity and close prices. These helpers must not auto-register
+  indicators, silently normalize weights, or add a second execution path.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.

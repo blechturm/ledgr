@@ -102,6 +102,10 @@ reference:
       - ledgr_selection
       - ledgr_weights
       - ledgr_target
+      - signal_return
+      - select_top_n
+      - weight_equal
+      - target_rebalance
   - title: Low-Level Utilities
     contents:
       - iso_utc

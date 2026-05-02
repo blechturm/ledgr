@@ -148,9 +148,6 @@ testthat::test_that("strategy signature and params validation fail clearly", {
 })
 
 testthat::test_that("strategy params and source changes alter provenance hashes", {
-  db_path <- tempfile(fileext = ".duckdb")
-  on.exit(unlink(db_path), add = TRUE)
-
   strategy_a <- function(ctx, params) {
     targets <- ctx$flat()
     targets["TEST_A"] <- params$qty
@@ -162,49 +159,38 @@ testthat::test_that("strategy params and source changes alter provenance hashes"
     targets
   }
 
-  bt_a <- ledgr_backtest(
-    data = test_bars,
-    strategy = strategy_a,
-    strategy_params = list(qty = 1),
-    start = "2020-01-01",
-    end = "2020-01-05",
-    db_path = db_path,
-    run_id = "hash-a"
-  )
-  on.exit(close(bt_a), add = TRUE)
+  run_provenance <- function(strategy, strategy_params, run_id) {
+    db_path <- tempfile(fileext = ".duckdb")
+    on.exit(unlink(db_path), add = TRUE)
+    bt <- ledgr_backtest(
+      data = test_bars,
+      strategy = strategy,
+      strategy_params = strategy_params,
+      start = "2020-01-01",
+      end = "2020-01-05",
+      db_path = db_path,
+      run_id = run_id
+    )
+    on.exit(close(bt), add = TRUE)
+    close(bt)
 
-  bt_b <- ledgr_backtest(
-    data = test_bars,
-    strategy = strategy_a,
-    strategy_params = list(qty = 2),
-    start = "2020-01-01",
-    end = "2020-01-05",
-    db_path = db_path,
-    run_id = "hash-b"
-  )
-  on.exit(close(bt_b), add = TRUE)
+    opened <- ledgr_test_open_duckdb(db_path)
+    on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+    DBI::dbGetQuery(
+      opened$con,
+      "
+      SELECT run_id, strategy_source_hash, strategy_params_hash
+      FROM run_provenance
+      WHERE run_id = ?
+      ",
+      params = list(run_id)
+    )
+  }
 
-  bt_c <- ledgr_backtest(
-    data = test_bars,
-    strategy = strategy_b,
-    strategy_params = list(qty = 1),
-    start = "2020-01-01",
-    end = "2020-01-05",
-    db_path = db_path,
-    run_id = "hash-c"
-  )
-  on.exit(close(bt_c), add = TRUE)
-
-  opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
-  provenance <- DBI::dbGetQuery(
-    opened$con,
-    "
-    SELECT run_id, strategy_source_hash, strategy_params_hash
-    FROM run_provenance
-    WHERE run_id IN ('hash-a', 'hash-b', 'hash-c')
-    ORDER BY run_id
-    "
+  provenance <- rbind(
+    run_provenance(strategy_a, list(qty = 1), "hash-a"),
+    run_provenance(strategy_a, list(qty = 2), "hash-b"),
+    run_provenance(strategy_b, list(qty = 1), "hash-c")
   )
 
   testthat::expect_false(identical(

@@ -188,7 +188,7 @@ tickets:
 
   - id: LDG-1205
     title: "Strategy Helper Reference Primitives"
-    status: pending
+    status: done
     priority: P1
     dependencies: [LDG-1204]
     tests:

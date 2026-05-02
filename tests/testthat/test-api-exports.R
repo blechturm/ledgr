@@ -64,7 +64,11 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_ttr_warmup_rules",
     "ledgr_utc",
     "ledgr_validate_schema",
-    "ledgr_weights"
+    "ledgr_weights",
+    "select_top_n",
+    "signal_return",
+    "target_rebalance",
+    "weight_equal"
   ))
 
   testthat::expect_identical(exports, expected)
