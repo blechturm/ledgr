@@ -896,6 +896,7 @@ ledgr_run_label <- function(snapshot, run_id, label = NULL) {
     "UPDATE runs SET label = ? WHERE run_id = ? AND snapshot_id = ?",
     params = list(label, run_id, snapshot_id)
   )
+  ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
   invisible(snapshot)
 }
 
@@ -951,5 +952,6 @@ ledgr_run_archive <- function(snapshot, run_id, reason = NULL) {
     ",
     params = list(as.POSIXct(Sys.time(), tz = "UTC"), reason, run_id, snapshot_id)
   )
+  ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
   invisible(snapshot)
 }

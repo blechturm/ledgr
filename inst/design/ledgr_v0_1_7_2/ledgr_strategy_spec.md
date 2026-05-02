@@ -30,7 +30,7 @@ This model must:
 - avoid hidden semantics;
 - terminate in explicit target quantities before execution.
 
-This document is a design specification for a proposed v0.1.7.2 helper layer.
+This document is a design specification for the v0.1.7.2 helper layer.
 It does not introduce an alternate engine, alternate pulse loop, alternate fill
 model, or alternate result path.
 

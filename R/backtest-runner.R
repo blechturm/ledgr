@@ -66,6 +66,7 @@ ledgr_abort_strategy_error <- function(error, ctx) {
   rlang::abort(
     ledgr_strategy_error_message(error, ctx),
     class = ledgr_strategy_error_classes(error),
+    original_error = error,
     parent = error
   )
 }
@@ -1753,7 +1754,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         params = list("FAILED", conditionMessage(e), run_id)
       )
       finalize_telemetry("FAILED", strict = FALSE)
-      stop(e)
+      rlang::cnd_signal(e)
     }
   )
 

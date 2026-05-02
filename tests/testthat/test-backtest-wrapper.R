@@ -345,7 +345,7 @@ testthat::test_that("strategy evaluation errors include pulse context and preser
     ledgr_backtest(
       data = test_bars,
       strategy = bad_strategy,
-      features = list(ledgr_ind_returns(1)),
+      features = list(ledgr_ind_returns(2)),
       start = "2020-01-01",
       end = "2020-01-05",
       run_id = "strategy-context-error"
@@ -357,10 +357,31 @@ testthat::test_that("strategy evaluation errors include pulse context and preser
   testthat::expect_match(conditionMessage(err), "Strategy error at ts_utc=", fixed = TRUE)
   testthat::expect_match(conditionMessage(err), "run_id=strategy-context-error", fixed = TRUE)
   testthat::expect_match(conditionMessage(err), "Instruments: TEST_A, TEST_B", fixed = TRUE)
-  testthat::expect_match(conditionMessage(err), "Available feature IDs: return_1", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "Available feature IDs: return_2", fixed = TRUE)
   testthat::expect_match(conditionMessage(err), "Original error: strategy boom", fixed = TRUE)
-  testthat::expect_s3_class(err$parent, "simpleError")
-  testthat::expect_match(conditionMessage(err$parent), "strategy boom", fixed = TRUE)
+  original_error <- err$parent
+  if (is.null(original_error)) {
+    original_error <- err$original_error
+  }
+  testthat::expect_s3_class(original_error, "simpleError")
+  testthat::expect_match(conditionMessage(original_error), "strategy boom", fixed = TRUE)
+
+  direct_ctx <- list(
+    ts_utc = ledgr_utc("2020-01-01"),
+    run_id = "strategy-context-error-direct",
+    universe = c("TEST_A", "TEST_B"),
+    features = data.frame(
+      instrument_id = "TEST_A",
+      feature_name = "return_1",
+      feature_value = 0
+    )
+  )
+  direct_err <- tryCatch(
+    ledgr:::ledgr_abort_strategy_error(simpleError("strategy boom"), direct_ctx),
+    error = function(e) e
+  )
+  testthat::expect_s3_class(direct_err$parent, "simpleError")
+  testthat::expect_match(conditionMessage(direct_err$parent), "strategy boom", fixed = TRUE)
 })
 
 testthat::test_that("backtest rejects non-positive initial cash", {

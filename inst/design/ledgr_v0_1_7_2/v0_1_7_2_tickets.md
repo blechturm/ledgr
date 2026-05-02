@@ -753,17 +753,17 @@ Final validation gate for v0.1.7.2.
     final implementation changes.
 
 **Acceptance Criteria:**
-- [ ] Full tests pass.
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+- [x] Full tests pass.
+- [x] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
-- [ ] `DESCRIPTION` version is `0.1.7.2` before release tagging.
-- [ ] pkgdown builds.
-- [ ] README and changed articles render.
+- [x] `DESCRIPTION` version is `0.1.7.2` before release tagging.
+- [x] pkgdown builds.
+- [x] README and changed articles render.
 - [ ] Ubuntu and Windows CI are green.
-- [ ] The local WSL/Ubuntu gate has passed on the release branch.
-- [ ] Contracts and NEWS match the implemented v0.1.7.2 scope.
-- [ ] No accidental v0.1.8 API exposure exists.
-- [ ] No open P0/P1 review findings remain.
+- [x] The local WSL/Ubuntu gate has passed on the release branch.
+- [x] Contracts and NEWS match the implemented v0.1.7.2 scope.
+- [x] No accidental v0.1.8 API exposure exists.
+- [x] No open P0/P1 review findings remain.
 
 **Test Requirements:**
 - Full package tests.
