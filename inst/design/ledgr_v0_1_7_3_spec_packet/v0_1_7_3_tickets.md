@@ -132,7 +132,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1301  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Fix the confirmed Episode 013 defect where fills and trades close a position but
@@ -155,13 +155,13 @@ Ledger fills are the accounting oracle for this ticket.
    are the source of inconsistency.
 
 **Acceptance Criteria:**
-- [ ] Episode 013 has a failing-then-passing regression test.
-- [ ] The regression passes in every supported execution mode that writes an
+- [x] Episode 013 has a failing-then-passing regression test.
+- [x] The regression passes in every supported execution mode that writes an
       equity curve.
-- [ ] Final public positions reconstructed from fills agree with final equity
+- [x] Final public positions reconstructed from fills agree with final equity
       `positions_value`.
-- [ ] Final total return no longer includes an unfilled open position.
-- [ ] Existing flat, open-only, and closed-trade tests still pass.
+- [x] Final total return no longer includes an unfilled open position.
+- [x] Existing flat, open-only, and closed-trade tests still pass.
 
 **Test Requirements:**
 - Episode 013 regression test.

@@ -45,7 +45,7 @@ tickets:
 
   - id: LDG-1302
     title: "Equity Curve And Ledger Fill Consistency"
-    status: planned
+    status: done
     priority: P0
     dependencies: [LDG-1301]
     tests:

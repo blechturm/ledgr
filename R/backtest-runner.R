@@ -1826,9 +1826,13 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     }
   }
 
-  cash_cum <- if (n_events > 0) cumsum(cash_delta) else numeric(0)
   idx <- findInterval(pulse_ts_num, event_ts_num)
-  cash_at <- as.numeric(initial_cash) + ifelse(idx > 0, cash_cum[idx], 0)
+  cash_cum <- if (n_events > 0) cumsum(cash_delta) else numeric(0)
+  cash_at <- rep(as.numeric(initial_cash), length(idx))
+  has_event <- idx > 0
+  if (any(has_event)) {
+    cash_at[has_event] <- as.numeric(initial_cash) + cash_cum[idx[has_event]]
+  }
 
   n_inst <- length(instrument_ids)
   n_pulses <- length(pulses_posix)
@@ -1840,7 +1844,10 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
       if (length(ev_idx) == 0) next
       pos_cum <- cumsum(position_delta[ev_idx])
       idx_inst <- findInterval(pulse_ts_num, event_ts_num[ev_idx])
-      positions_mat[j, ] <- ifelse(idx_inst > 0, pos_cum[idx_inst], 0)
+      has_inst_event <- idx_inst > 0
+      if (any(has_inst_event)) {
+        positions_mat[j, has_inst_event] <- pos_cum[idx_inst[has_inst_event]]
+      }
     }
   }
 
@@ -1936,8 +1943,12 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     }
   }
 
-  realized_at <- ifelse(idx > 0, event_realized[idx], 0)
-  cost_basis_at <- ifelse(idx > 0, event_cost_basis[idx], 0)
+  realized_at <- numeric(length(idx))
+  cost_basis_at <- numeric(length(idx))
+  if (any(has_event)) {
+    realized_at[has_event] <- event_realized[idx[has_event]]
+    cost_basis_at[has_event] <- event_cost_basis[idx[has_event]]
+  }
 
   equity <- cash_at + positions_value
   unrealized <- positions_value - cost_basis_at
