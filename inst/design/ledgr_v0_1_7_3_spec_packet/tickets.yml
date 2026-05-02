@@ -1,0 +1,434 @@
+version: "0.1.7.3-accounting-correctness-and-doc-discovery"
+source: "v0_1_7_3_tickets.md"
+tickets:
+  - id: LDG-1301
+    title: "Patch Scope, Metadata, And Accounting Contract Baseline"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation consistency scan"
+      - "export/API inventory scan"
+      - "spec/ticket filename scan"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Version scoping, ticket generation, contract baseline decisions, and
+        non-goal boundaries are Tier H by routing rule.
+      invariants_at_risk:
+        - release scope
+        - public API boundary
+        - accounting contract placement
+        - documentation contract
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/ledgr_triage_report.md
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - NEWS.md
+      tests_required:
+        - documentation consistency scan
+        - export/API inventory scan
+        - spec/ticket filename scan
+      escalation_triggers:
+        - metric definitions require execution changes before scope is settled
+        - new public documentation helper appears necessary
+        - sweep/tune or short-selling scope appears necessary
+      forbidden_actions:
+        - adding ledgr_docs
+        - adding sweep/tune APIs
+        - adding short-selling or leverage semantics
+        - changing execution behavior during scope setup
+
+  - id: LDG-1302
+    title: "Equity Curve And Ledger Fill Consistency"
+    status: planned
+    priority: P0
+    dependencies: [LDG-1301]
+    tests:
+      - "Episode 013 regression test"
+      - "execution-mode parity test where exposed"
+      - "existing backtest runner tests"
+      - "existing result/equity tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        The ticket touches fill timing, equity curve writing, event-ledger
+        interpretation, and public metrics. Execution and ledger semantics are
+        hard escalation areas, so Tier H implementation and review are required.
+      invariants_at_risk:
+        - event ledger semantics
+        - fill lifecycle timing
+        - equity curve correctness
+        - deterministic replay
+        - public result interpretation
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/ledgr_triage_report.md
+        - inst/design/contracts.md (Execution Contract, Result Contract)
+        - C:/Users/maxth/Documents/GitHub/auditr/episodes_v0.1.7.2/2026-05-02_013_trades_fills_and_metrics/
+        - R/backtest-runner.R
+        - R/derived-state.R
+        - R/results.R
+      tests_required:
+        - Episode 013 regression test
+        - execution-mode parity test where exposed
+        - existing backtest runner tests
+        - existing result/equity tests
+      escalation_triggers:
+        - fix requires changing fill semantics
+        - standard mode and audit-log mode disagree
+        - derived-state reconstruction disagrees with public fills
+        - result schema changes appear necessary
+      forbidden_actions:
+        - masking inconsistency in print methods only
+        - changing fills to match broken equity rows
+        - adding a second result reconstruction path for one metric
+        - weakening ledger/event tests
+
+  - id: LDG-1303
+    title: "Metric Definitions And Independent Oracle Fixtures"
+    status: planned
+    priority: P0
+    dependencies: [LDG-1302]
+    tests:
+      - "independent metric oracle tests"
+      - "deterministic accounting fixture tests"
+      - "summary/comparison/run-list consistency tests"
+      - "zero-row metric tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Public metric definitions are contract-sensitive and derive from
+        ledger, trade, and equity outputs. Changes may touch summary,
+        comparison, run-store, and result semantics, so Tier H implementation
+        and review are required.
+      invariants_at_risk:
+        - metric definitions
+        - result table interpretation
+        - comparison semantics
+        - summary output correctness
+        - zero-row result behavior
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - inst/design/contracts.md (Result Contract, Persistence Contract)
+        - R/metrics.R
+        - R/results.R
+        - R/run-store.R
+        - R/backtest.R
+        - tests/testthat/test-run-compare.R
+        - tests/testthat/test-run-store.R
+      tests_required:
+        - independent metric oracle tests
+        - deterministic accounting fixture tests
+        - summary/comparison/run-list consistency tests
+        - zero-row metric tests
+      escalation_triggers:
+        - current metric implementation conflicts with intended contract
+        - annualization assumptions are ambiguous
+        - initial capital cannot be derived consistently
+        - open-position semantics require broader accounting decisions
+      forbidden_actions:
+        - using internal metric functions as expected-value oracles
+        - changing metric labels without definitions
+        - hiding edge cases in formatting
+        - redefining fills or trades to force metric agreement
+
+  - id: LDG-1304
+    title: "Summary, Result Semantics, And Accounting Vignette"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1303]
+    tests:
+      - "vignette render"
+      - "documentation scans for metric definitions"
+      - "existing documentation tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The work is documentation-heavy, but it teaches public accounting and
+        metric contracts. Tier M implementation is acceptable with Tier H
+        review for correctness against LDG-1303 definitions.
+      invariants_at_risk:
+        - metric documentation accuracy
+        - result table semantics
+        - installed documentation contract
+        - user interpretation of open positions
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - inst/design/contracts.md (Result Contract)
+        - vignettes/strategy-development.Rmd
+        - vignettes/experiment-store.Rmd
+        - R/results.R
+        - R/metrics.R
+      tests_required:
+        - vignette render
+        - documentation scans for metric definitions
+        - existing documentation tests
+      escalation_triggers:
+        - docs expose metric ambiguity left unresolved by LDG-1303
+        - examples reveal public table inconsistency
+        - summary return behavior must change
+      forbidden_actions:
+        - documenting metrics differently from contracts
+        - linking to metrics-and-accounting before the vignette exists
+        - adding network-dependent examples
+        - treating close calls as data-safety requirements
+
+  - id: LDG-1305
+    title: "Function-Level Help Discoverability"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1304]
+    tests:
+      - "Rd documentation scan"
+      - "installed vignette list check"
+      - "documentation contract tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Roxygen/help-page work is bounded, but it changes installed
+        documentation discovery and must preserve the installed-vs-pkgdown-only
+        article boundary. Tier H review is required for documentation contract
+        compliance.
+      invariants_at_risk:
+        - documentation discoverability
+        - installed vignette boundary
+        - package-level help accuracy
+        - article link stability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - inst/design/contracts.md (Documentation Contract)
+        - R/*.R roxygen for entry points
+        - vignettes/
+        - vignettes/articles/
+      tests_required:
+        - Rd documentation scan
+        - installed vignette list check
+        - documentation contract tests
+      escalation_triggers:
+        - desired article is not installed
+        - roxygen organization obscures entry-point ownership
+        - pkgdown-only article would need to become installed
+      forbidden_actions:
+        - adding ledgr_docs
+        - linking to non-installed articles as installed vignettes
+        - moving positioning articles into installed vignettes
+        - adding browser-only discovery instructions as the sole path
+
+  - id: LDG-1306
+    title: "Helper Composition, Feature IDs, And TTR Output Docs"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1301]
+    tests:
+      - "documentation render"
+      - "feature-ID documentation scans"
+      - "helper/TTR existing tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Primarily documentation and roxygen examples, but it teaches public
+        helper contracts and feature-ID semantics. Tier M implementation is
+        acceptable with Tier H review for contract accuracy.
+      invariants_at_risk:
+        - helper composition contract
+        - target quantity interpretation
+        - feature ID/fingerprint expectations
+        - TTR multi-output semantics
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - C:/Users/maxth/Documents/GitHub/auditr/episodes_v0.1.7.2/2026-05-02_006_bbands_macd/framework_feedback.md
+        - C:/Users/maxth/Documents/GitHub/auditr/episodes_v0.1.7.2/2026-05-02_018_manual_vs_helper_parity/framework_feedback.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract)
+        - R/strategy-helpers.R
+        - R/strategy-fn.R
+        - R/indicator-ttr.R
+        - vignettes/strategy-development.Rmd
+      tests_required:
+        - documentation render
+        - feature-ID documentation scans
+        - helper/TTR existing tests
+      escalation_triggers:
+        - docs reveal unsupported helper behavior
+        - TTR output semantics need implementation changes
+        - target flooring behavior conflicts with code
+      forbidden_actions:
+        - changing feature IDs for documentation convenience
+        - auto-registering helper features
+        - changing target_rebalance semantics without a correctness ticket
+        - adding helper APIs outside the spec
+
+  - id: LDG-1307
+    title: "Pkgdown Reading Order And Vignette North-Star Review"
+    status: planned
+    priority: P2
+    dependencies: [LDG-1304, LDG-1305, LDG-1306]
+    tests:
+      - "vignette/article render"
+      - "pkgdown build if navigation changes"
+      - "installed-vignette boundary tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation navigation and article review are bounded, but they
+        affect the public learning path and installed/pkgdown-only boundary.
+        Tier H review is required to protect the documentation contract.
+      invariants_at_risk:
+        - pkgdown navigation
+        - installed-vs-pkgdown article boundary
+        - documentation teaching order
+        - Windows example usability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - inst/design/contracts.md (Documentation Contract)
+        - _pkgdown.yml
+        - vignettes/
+        - vignettes/articles/
+        - inst/design/release_ci_playbook.md
+      tests_required:
+        - vignette/article render
+        - pkgdown build if navigation changes
+        - installed-vignette boundary tests
+      escalation_triggers:
+        - pkgdown requires copying inst/design files into vignettes
+        - article order conflicts with installed-vignette policy
+        - examples need runtime changes to remain honest
+      forbidden_actions:
+        - installing pkgdown-only positioning articles
+        - copying design packets into installed vignettes without a contract decision
+        - adding network-dependent examples
+        - hiding broken examples by marking core chunks eval = FALSE
+
+  - id: LDG-1308
+    title: "No-Trade And Warmup Diagnostics"
+    status: planned
+    priority: P2
+    dependencies: [LDG-1303, LDG-1304]
+    tests:
+      - "documentation render"
+      - "warmup/no-trade helper tests if runtime behavior changes"
+      - "existing helper tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation-only implementation is Tier M. A narrow warning-class or
+        helper argument addition is still bounded public API work, but requires
+        Tier H review because helper semantics and user diagnostics are
+        involved.
+      invariants_at_risk:
+        - helper warning semantics
+        - warmup interpretation
+        - zero-trade result interpretation
+        - backward compatibility
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - C:/Users/maxth/Documents/GitHub/auditr/episodes_v0.1.7.2/2026-05-02_019_zero_trade_diagnosis/framework_feedback.md
+        - inst/design/contracts.md (Strategy Contract, Result Contract)
+        - R/strategy-helpers.R
+        - vignettes/strategy-development.Rmd
+        - vignettes/metrics-and-accounting.Rmd
+      tests_required:
+        - documentation render
+        - helper warning tests if runtime changes
+        - existing helper tests
+      escalation_triggers:
+        - diagnostics need run-store schema changes
+        - helper API change could break existing calls
+        - warning suppression hides real strategy errors
+      forbidden_actions:
+        - broad suppressWarnings guidance without diagnostics
+        - hiding never-usable signals as normal warmup
+        - changing run success/failure semantics for zero-trade runs
+        - adding persistent diagnostic tables in this ticket
+
+  - id: LDG-1309
+    title: "v0.1.7.3 Release Gate"
+    status: planned
+    priority: P0
+    dependencies:
+      - LDG-1301
+      - LDG-1302
+      - LDG-1303
+      - LDG-1304
+      - LDG-1305
+      - LDG-1306
+      - LDG-1307
+      - LDG-1308
+    tests:
+      - "full package tests"
+      - "independent metric oracle tests"
+      - "R CMD check"
+      - "README/article renders"
+      - "pkgdown build if applicable"
+      - "export/API inventory scan"
+      - "local WSL/Ubuntu gate"
+      - "remote CI verification"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gates are Tier H by routing rule. This ticket validates
+        correctness regressions, documentation, contracts, CI, package metadata,
+        and API boundary before merge and tag.
+      invariants_at_risk:
+        - release correctness
+        - package build health
+        - public API export boundary
+        - accounting contract consistency
+        - documentation accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_tickets.md
+        - inst/design/ledgr_v0_1_7_3_spec_packet/tickets.yml
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - DESCRIPTION
+        - NEWS.md
+        - README.Rmd
+        - _pkgdown.yml
+      tests_required:
+        - full package tests
+        - independent metric oracle tests
+        - R CMD check
+        - README/article renders
+        - pkgdown build if applicable
+        - export/API inventory scan
+        - local WSL/Ubuntu gate
+        - remote CI verification
+      escalation_triggers:
+        - any CI failure remains unexplained
+        - metric oracle tests disagree with documented definitions
+        - R CMD check warnings require scope decisions
+        - documentation examples cannot run offline
+      forbidden_actions:
+        - tagging before remote CI is green
+        - ignoring R CMD check warnings
+        - shipping with known future-cycle API leaks
+        - accepting the gate with open P0 or P1 issues

@@ -1,0 +1,892 @@
+﻿summary:
+  episodes_reviewed: 19
+  feedback_items_reviewed: 88
+  high_priority_count: 2
+  unresolved_uncertainty:
+    - '2026-05-02_006_bbands_macd had parser diagnostic error: no feedback items could be parsed, but raw framework_feedback.md contains six numbered issues.'
+    - '2026-05-02_004_multi_asset_momentum/MD-006 reports surprising equity and drawdown output but explicitly says it was not investigated as a ledgr bug.'
+    - 'High-priority trades/fills findings in 2026-05-02_013 need maintainer confirmation against intended accounting semantics.'
+themes:
+  - theme_id: THEME-001
+    title: 'Headless documentation discovery is weak'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_001_cold_start_readme', '2026-05-02_002_cold_start_getting_started', '2026-05-02_003_single_asset_sma_crossover', '2026-05-02_005_rsi_mean_reversion', '2026-05-02_007_experiment_store_compare', '2026-05-02_009_edge_case_ten_bars', '2026-05-02_010_strategy_development_article', '2026-05-02_011_strategy_helper_introduction', '2026-05-02_012_multi_asset_rotation_with_helpers', '2026-05-02_014_close_lifecycle', '2026-05-02_016_helper_type_errors', '2026-05-02_018_manual_vs_helper_parity']
+    feedback_ids: ['2026-05-02_001_cold_start_readme/MD-001', '2026-05-02_001_cold_start_readme/MD-002', '2026-05-02_002_cold_start_getting_started/MD-001', '2026-05-02_003_single_asset_sma_crossover/MD-005', '2026-05-02_007_experiment_store_compare/MD-001', '2026-05-02_010_strategy_development_article/MD-001', '2026-05-02_010_strategy_development_article/MD-002', '2026-05-02_014_close_lifecycle/MD-004', '2026-05-02_016_helper_type_errors/MD-006', '2026-05-02_018_manual_vs_helper_parity/MD-002']
+    evidence: 'Many episodes report help(), vignette(), package help, or help.search() being blank, browser-bound, or awkward from Rscript/headless Windows shells.'
+    recommended_action: 'Add CLI-friendly documentation discovery examples, installed-vignette paths, and package overview links to runnable first workflows.'
+    uncertainty: 'Some friction is base R or Windows shell behavior rather than ledgr-specific, but it repeatedly affected ledgr UX episodes.'
+  - theme_id: THEME-002
+    title: 'Helper pipeline examples are too fragmented'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_003_single_asset_sma_crossover', '2026-05-02_004_multi_asset_momentum', '2026-05-02_011_strategy_helper_introduction', '2026-05-02_012_multi_asset_rotation_with_helpers', '2026-05-02_016_helper_type_errors', '2026-05-02_017_parametric_helper_comparison', '2026-05-02_018_manual_vs_helper_parity']
+    feedback_ids: ['2026-05-02_003_single_asset_sma_crossover/MD-003', '2026-05-02_004_multi_asset_momentum/MD-004', '2026-05-02_011_strategy_helper_introduction/MD-004', '2026-05-02_012_multi_asset_rotation_with_helpers/MD-002', '2026-05-02_016_helper_type_errors/MD-005', '2026-05-02_017_parametric_helper_comparison/MD-002', '2026-05-02_018_manual_vs_helper_parity/MD-001']
+    evidence: 'Users repeatedly stitched signal_return(), select_top_n(), weight_equal(), target_rebalance(), features, params, and result comparison from separate pages.'
+    recommended_action: 'Add complete runnable helper-pipeline examples for single-asset, multi-asset, parametric comparison, and manual/helper parity.'
+    uncertainty: 'Most pieces worked once discovered; the gap is end-to-end composition rather than missing individual functions.'
+  - theme_id: THEME-003
+    title: 'Warmup and all-NA behavior needs diagnostics'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_004_multi_asset_momentum', '2026-05-02_006_bbands_macd', '2026-05-02_009_edge_case_ten_bars', '2026-05-02_012_multi_asset_rotation_with_helpers', '2026-05-02_015_warmup_and_na_in_helpers', '2026-05-02_019_zero_trade_diagnosis']
+    feedback_ids: ['2026-05-02_004_multi_asset_momentum/MD-001', '2026-05-02_004_multi_asset_momentum/MD-002', '2026-05-02_009_edge_case_ten_bars/MD-001', '2026-05-02_009_edge_case_ten_bars/MD-002', '2026-05-02_012_multi_asset_rotation_with_helpers/MD-004', '2026-05-02_012_multi_asset_rotation_with_helpers/MD-005', '2026-05-02_015_warmup_and_na_in_helpers/MD-002', '2026-05-02_015_warmup_and_na_in_helpers/MD-003', '2026-05-02_019_zero_trade_diagnosis/MD-001']
+    evidence: 'Warmup warnings repeat per pulse, start/end behavior was unclear, long lookbacks can produce all-flat or zero-trade runs, and users had to inspect pulses manually.'
+    recommended_action: 'Document warmup timing, add quiet/diagnostic patterns for expected warmup, and consider run-level feature availability/no-trade diagnostics.'
+    uncertainty: 'Repeated warnings may be intentional, but evidence supports a UX issue around separating expected warmup from never-usable signals.'
+  - theme_id: THEME-004
+    title: 'Feature IDs and indicator outputs are easy to miss'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_003_single_asset_sma_crossover', '2026-05-02_005_rsi_mean_reversion', '2026-05-02_006_bbands_macd', '2026-05-02_011_strategy_helper_introduction', '2026-05-02_012_multi_asset_rotation_with_helpers', '2026-05-02_019_zero_trade_diagnosis']
+    feedback_ids: ['2026-05-02_003_single_asset_sma_crossover/MD-001', '2026-05-02_005_rsi_mean_reversion/MD-001', '2026-05-02_011_strategy_helper_introduction/MD-005', '2026-05-02_012_multi_asset_rotation_with_helpers/MD-003', '2026-05-02_019_zero_trade_diagnosis/MD-001']
+    evidence: 'Episodes highlight exact feature ID strings, multi-output TTR indicator names, RSI ID variants, and helper feature registration as recurring discovery points.'
+    recommended_action: 'Emphasize ledgr_feature_id() in examples, cross-link built-in/TTR indicator pages, and show failure/recovery paths for unregistered or mismatched feature IDs.'
+    uncertainty: 'Raw parsed CSV collapsed the detailed RSI and BBands/MACD numbered issues, so theme evidence includes raw markdown headings and diagnostic context.'
+  - theme_id: THEME-005
+    title: 'Shell quoting and captured logs confuse Windows users'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_001_cold_start_readme', '2026-05-02_002_cold_start_getting_started', '2026-05-02_003_single_asset_sma_crossover', '2026-05-02_005_rsi_mean_reversion', '2026-05-02_007_experiment_store_compare', '2026-05-02_010_strategy_development_article', '2026-05-02_012_multi_asset_rotation_with_helpers', '2026-05-02_017_parametric_helper_comparison']
+    feedback_ids: ['2026-05-02_001_cold_start_readme/MD-004', '2026-05-02_001_cold_start_readme/MD-005', '2026-05-02_002_cold_start_getting_started/MD-003', '2026-05-02_003_single_asset_sma_crossover/MD-006', '2026-05-02_007_experiment_store_compare/MD-004', '2026-05-02_010_strategy_development_article/MD-005', '2026-05-02_012_multi_asset_rotation_with_helpers/MD-008']
+    evidence: 'PowerShell $ expansion, Rscript -e brittleness, stderr startup messages, and NativeCommandError-looking logs recurred across episodes.'
+    recommended_action: 'Prefer script-file examples for Windows and add notes for escaping $, suppressing startup messages, and checking exit status.'
+    uncertainty: 'This is mostly environment and documentation friction, not ledgr runtime behavior.'
+  - theme_id: THEME-006
+    title: 'Final-bar next-open fill semantics need clearer guidance'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_004_multi_asset_momentum', '2026-05-02_012_multi_asset_rotation_with_helpers', '2026-05-02_017_parametric_helper_comparison', '2026-05-02_018_manual_vs_helper_parity']
+    feedback_ids: ['2026-05-02_004_multi_asset_momentum/MD-003', '2026-05-02_012_multi_asset_rotation_with_helpers/MD-006', '2026-05-02_017_parametric_helper_comparison/MD-002', '2026-05-02_018_manual_vs_helper_parity/MD-002']
+    evidence: 'Several runs emitted LEDGR_LAST_BAR_NO_FILL or required penultimate end-date workarounds because next_open fills cannot occur on the final pulse.'
+    recommended_action: 'Add a concise warning explanation and examples that set end to the penultimate bar when using next_open.'
+    uncertainty: 'The underlying behavior appears documented in ledgr_backtest() help, but not discoverable enough in experiment/helper workflows.'
+  - theme_id: THEME-007
+    title: 'Trades, fills, equity metrics, and summaries need triage'
+    bucket: ledgr_bug
+    severity: high
+    episode_ids: ['2026-05-02_004_multi_asset_momentum', '2026-05-02_007_experiment_store_compare', '2026-05-02_013_trades_fills_and_metrics', '2026-05-02_019_zero_trade_diagnosis']
+    feedback_ids: ['2026-05-02_004_multi_asset_momentum/MD-006', '2026-05-02_007_experiment_store_compare/MD-005', '2026-05-02_013_trades_fills_and_metrics/MD-001', '2026-05-02_013_trades_fills_and_metrics/MD-002', '2026-05-02_013_trades_fills_and_metrics/MD-003', '2026-05-02_013_trades_fills_and_metrics/MD-005', '2026-05-02_019_zero_trade_diagnosis/MD-001']
+    evidence: 'High-priority episode 013 reports final position without corresponding fill, total_return versus realized P&L disagreement, and time_in_market affected by equity state; other episodes show confusion around zero closed trades and surprising equity/drawdown output.'
+    recommended_action: 'Maintainer should verify accounting semantics, then either fix result state or document metric/table definitions with examples.'
+    uncertainty: 'Some findings may be expected open-position or closed-trade semantics; raw evidence does not prove every item is a bug.'
+  - theme_id: THEME-008
+    title: 'Snapshot manual import and sealing path diverges from convenience path'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_008_snapshot_csv_seal_backtest']
+    feedback_ids: ['2026-05-02_008_snapshot_csv_seal_backtest/MD-002']
+    evidence: 'Raw framework feedback reports manual create/import/seal snapshots did not provide usable start/end metadata while ledgr_snapshot_from_csv() did, and explicit sealing was hidden by the convenience path.'
+    recommended_action: 'Clarify manual versus convenience snapshot metadata behavior and show explicit seal/backtest examples with start/end.'
+    uncertainty: 'Parsed CSV only retained status/workaround headings, so this theme relies on raw framework_feedback.md details.'
+  - theme_id: THEME-009
+    title: 'Strategy context and helper contracts need reference clarity'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-02_003_single_asset_sma_crossover', '2026-05-02_004_multi_asset_momentum', '2026-05-02_016_helper_type_errors', '2026-05-02_018_manual_vs_helper_parity']
+    feedback_ids: ['2026-05-02_003_single_asset_sma_crossover/MD-004', '2026-05-02_004_multi_asset_momentum/MD-005', '2026-05-02_016_helper_type_errors/MD-003', '2026-05-02_018_manual_vs_helper_parity/MD-001', '2026-05-02_018_manual_vs_helper_parity/MD-002']
+    evidence: 'Reports include ledgr_signal_strategy() fn(ctx) vs function(ctx, params) inconsistency, ctx$equity field versus method confusion, and ledgr_weights universe exact-name behavior confusion.'
+    recommended_action: 'Add a compact strategy context reference and align helper contract wording across help pages.'
+    uncertainty: 'Some exact-name behavior may be intentional; the docs should make the contract explicit.'
+  - theme_id: THEME-010
+    title: 'Resolved and positive rows are not independent defects'
+    bucket: unclear
+    severity: low
+    episode_ids: ['2026-05-02_001_cold_start_readme', '2026-05-02_004_multi_asset_momentum', '2026-05-02_008_snapshot_csv_seal_backtest', '2026-05-02_017_parametric_helper_comparison', '2026-05-02_018_manual_vs_helper_parity']
+    feedback_ids: ['2026-05-02_001_cold_start_readme/MD-007', '2026-05-02_004_multi_asset_momentum/MD-007', '2026-05-02_008_snapshot_csv_seal_backtest/MD-001', '2026-05-02_008_snapshot_csv_seal_backtest/MD-002', '2026-05-02_017_parametric_helper_comparison/MD-001', '2026-05-02_018_manual_vs_helper_parity/MD-004']
+    evidence: 'Several parsed feedback rows are status, outcome, positive observation, or workaround summaries rather than direct maintenance findings.'
+    recommended_action: 'Use these rows as supporting context only; do not file standalone issues from them without a linked defect row.'
+    uncertainty: 'Parser heading granularity caused some raw issue lists to collapse into workaround/status rows.'
+items:
+  - feedback_id: '2026-05-02_001_cold_start_readme/MD-001'
+    episode_id: '2026-05-02_001_cold_start_readme'
+    title: 'No installed root README was available'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'a first-time user working offline from the installed package has to know'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_001_cold_start_readme/MD-002'
+    episode_id: '2026-05-02_001_cold_start_readme'
+    title: 'Package overview help has no runnable example'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: '`help(package = "ledgr")` lists many functions, but the package overview'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_001_cold_start_readme/MD-003'
+    episode_id: '2026-05-02_001_cold_start_readme'
+    title: 'Vignette example depends on `dplyr` for setup'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'a user can confuse a missing suggested package with a ledgr setup'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_001_cold_start_readme/MD-004'
+    episode_id: '2026-05-02_001_cold_start_readme'
+    title: 'Running installed `getting-started.R` directly returned non-zero shell status'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'a user might think the README example failed even though the ledgr'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_001_cold_start_readme/MD-005'
+    episode_id: '2026-05-02_001_cold_start_readme'
+    title: 'Inline PowerShell examples need `$` escaping'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'the error points at strategy execution rather than shell quoting, which'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_001_cold_start_readme/MD-006'
+    episode_id: '2026-05-02_001_cold_start_readme'
+    title: 'Backtest print hint assumes object name `bt`'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'minor, but first-time users may copy the hint and get `object ''bt'' not'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_001_cold_start_readme/MD-007'
+    episode_id: '2026-05-02_001_cold_start_readme'
+    title: 'Resolved workarounds'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- Used the installed `getting-started` vignette as the README-equivalent entry point. - Rewrote the setup with base R filtering to avoid `dplyr` in the final install check script. - Ran the workflow from an `.R` file instead of inline PowerShell so `$` method calls reached R unchanged.'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_002_cold_start_getting_started/MD-001'
+    episode_id: '2026-05-02_002_cold_start_getting_started'
+    title: 'Non-interactive docs discovery can appear blank'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'A first-time CLI user may think no help or vignettes are installed.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_002_cold_start_getting_started/MD-002'
+    episode_id: '2026-05-02_002_cold_start_getting_started'
+    title: 'Vignette depends on suggested packages without an explicit failure path'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'If either suggested package is missing, the first workflow will fail before reaching ledgr concepts. The vignette says they are suggested packages, but a cold-start user may not know whether to install them or translate the examples to base R.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_002_cold_start_getting_started/MD-003'
+    episode_id: '2026-05-02_002_cold_start_getting_started'
+    title: 'Captured run logs can look like errors despite success'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'A Windows CLI user reviewing logs may misread successful startup messages as a failed run.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_002_cold_start_getting_started/MD-004'
+    episode_id: '2026-05-02_002_cold_start_getting_started'
+    title: 'Durable workflow uses a temporary database by default'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The durable-store section demonstrates reload inside one script, but a first-time user may not immediately see the created file because it lives under a temp directory.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_003_single_asset_sma_crossover/MD-001'
+    episode_id: '2026-05-02_003_single_asset_sma_crossover'
+    title: 'Missing dedicated SMA crossover example'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'I had to infer that `features <- list(ledgr_ind_sma(20),'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_003_single_asset_sma_crossover/MD-002'
+    episode_id: '2026-05-02_003_single_asset_sma_crossover'
+    title: '"Crossover" vs "regime" is not documented'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'A strict crossover rule, such as "buy only when fast crosses from below'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_003_single_asset_sma_crossover/MD-003'
+    episode_id: '2026-05-02_003_single_asset_sma_crossover'
+    title: 'Signals, targets, and signal strategies require several pages to reconcile'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'I spent extra time confirming that a plain `function(ctx, params)` that'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_003_single_asset_sma_crossover/MD-004'
+    episode_id: '2026-05-02_003_single_asset_sma_crossover'
+    title: '`ledgr_signal_strategy()` help has a signature inconsistency'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'I avoided the helper to prevent relying on ambiguous behavior.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_003_single_asset_sma_crossover/MD-005'
+    episode_id: '2026-05-02_003_single_asset_sma_crossover'
+    title: 'Vignette access failed through `vignette()`'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The usual R vignette entry point was not usable from this episode shell.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_003_single_asset_sma_crossover/MD-006'
+    episode_id: '2026-05-02_003_single_asset_sma_crossover'
+    title: 'Inline Windows `Rscript -e` quoting was brittle'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'It slowed down the first full-run attempt and could confuse a new user'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_004_multi_asset_momentum/MD-001'
+    episode_id: '2026-05-02_004_multi_asset_momentum'
+    title: 'Warmup warnings are noisy for return-signal workflows'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Using the documented helper chain `signal_return()` -> `select_top_n()` -> `weight_equal()` -> `target_rebalance()` produced one warning per warmup pulse: ```text No available signal values; returning an empty selection. ``` This happened for both 20-bar and 5-bar momentum lookbacks. It is understandable that early ...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_004_multi_asset_momentum/MD-002'
+    episode_id: '2026-05-02_004_multi_asset_momentum'
+    title: 'Setting `start` did not clearly solve feature warmup'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'I tried using `ledgr_backtest(start = "2020-01-30", ...)` with a 20-bar return feature, expecting the earlier bars in `data` might provide enough history before the first strategy pulse. The run still produced 20 missing-signal warnings. This may be correct behavior, but the docs I found did not explain whether feat...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_004_multi_asset_momentum/MD-003'
+    episode_id: '2026-05-02_004_multi_asset_momentum'
+    title: 'Final-bar next-open fill warning requires an implicit workaround'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The docs explain that the default fill model is `next_open` and that final-pulse targets cannot be filled without another bar after `end`. In practice, the experiment-first `ledgr_run()` path has no documented `start` or `end` argument, so my first complete run ended with: ```text LEDGR_LAST_BAR_NO_FILL ``` Workarou...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_004_multi_asset_momentum/MD-004'
+    episode_id: '2026-05-02_004_multi_asset_momentum'
+    title: 'Multi-asset strategy helpers are discoverable but not shown as a full example'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The exported helpers are enough to build the strategy, but I had to piece together the multi-asset workflow from separate help pages: - `ledgr_ind_returns()` - `signal_return()` - `select_top_n()` - `weight_equal()` - `target_rebalance()` A concise two-asset or top-N momentum example would have made the target-vecto...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_004_multi_asset_momentum/MD-005'
+    episode_id: '2026-05-02_004_multi_asset_momentum'
+    title: '`ledgr_signal_strategy()` help has a signature inconsistency'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The `ledgr_signal_strategy()` argument text says the supplied function is called as `fn(ctx)`, while the example uses `function(ctx, params)`. This made it less clear whether strategy helpers should consistently accept `params`. Evidence: `raw_logs/all_help_pages.txt`'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_004_multi_asset_momentum/MD-006'
+    episode_id: '2026-05-02_004_multi_asset_momentum'
+    title: 'Equity and drawdown output looked surprising for a long-only rebalance'
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: 'The final strategy used `target_rebalance()` with `equity_fraction = 0.95`, but the equity curve showed very large interim running maximum and drawdown values relative to final equity. I did not investigate this as a ledgr bug because the task was to build the workflow, but as a user I was unsure whether I had misus...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Reporter did not investigate enough to classify this confidently as a ledgr bug.'
+  - feedback_id: '2026-05-02_004_multi_asset_momentum/MD-007'
+    episode_id: '2026-05-02_004_multi_asset_momentum'
+    title: 'What worked'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'The following documented pieces worked together successfully: - `ledgr_sim_bars()` produced a valid two-instrument OHLCV dataset. - `ledgr_ind_returns()` registered the momentum feature. - `signal_return()`, `select_top_n()`, `weight_equal()`, and `target_rebalance()` produced valid full-universe strategy targets. -...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_005_rsi_mean_reversion/MD-001'
+    episode_id: '2026-05-02_005_rsi_mean_reversion'
+    title: 'Resolved Workarounds'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- Used `utils:::.getHelpFile()` plus `tools::Rd2txt()` to capture individual help pages after package-level help capture and help search were not useful. - Used `ledgr_feature_id(ledgr_ind_rsi(14))` before writing the strategy, then copied the resulting `rsi_14` ID into `ctx$feature()`. - Put the final workflow in `...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_007_experiment_store_compare/MD-001'
+    episode_id: '2026-05-02_007_experiment_store_compare'
+    title: 'F-001: Package-level help capture was unexpectedly empty'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'first-time users may have trouble discovering the experiment-store'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_007_experiment_store_compare/MD-002'
+    episode_id: '2026-05-02_007_experiment_store_compare'
+    title: 'F-002: `ledgr_param_grid()` looks relevant but does not execute variants'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'this is documented, but it is a workflow gap for users expecting a'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_007_experiment_store_compare/MD-003'
+    episode_id: '2026-05-02_007_experiment_store_compare'
+    title: 'F-003: Run IDs, grid labels, labels, and tags are distinct concepts'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'resolved by reading several help pages and using explicit'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_007_experiment_store_compare/MD-004'
+    episode_id: '2026-05-02_007_experiment_store_compare'
+    title: 'F-004: Windows `Rscript -e` quoting can distort documented strategy code'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'resolved by placing the workflow in an `.R` script. Windows users'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_007_experiment_store_compare/MD-005'
+    episode_id: '2026-05-02_007_experiment_store_compare'
+    title: 'F-005: Comparison output reports zero closed trades for always-long variants'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'resolved by reading the metric definition. A comparison example'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_007_experiment_store_compare/MD-006'
+    episode_id: '2026-05-02_007_experiment_store_compare'
+    title: 'F-006: Durable store reload requires preserving `snapshot_id`'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'resolved by saving `snapshot_id` in the script before closing.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_008_snapshot_csv_seal_backtest/MD-001'
+    episode_id: '2026-05-02_008_snapshot_csv_seal_backtest'
+    title: 'Status'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'Task succeeded.'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_008_snapshot_csv_seal_backtest/MD-002'
+    episode_id: '2026-05-02_008_snapshot_csv_seal_backtest'
+    title: 'Resolved workarounds included in final script'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- Generated a local CSV fixture in the episode directory. - Used the manual snapshot workflow so `ledgr_snapshot_seal()` is explicit. - Passed explicit `start` and `end` to `ledgr_backtest()` to avoid depending on missing manual-snapshot metadata. - Used `ledgr_snapshot_load(..., verify = TRUE)` to confirm sealed sn...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_009_edge_case_ten_bars/MD-001'
+    episode_id: '2026-05-02_009_edge_case_ten_bars'
+    title: 'No explicit all-warmup guidance for indicator windows longer than the data'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'a first-time user might read the flat result as a strategy outcome rather than an input/window mismatch.'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_009_edge_case_ten_bars/MD-002'
+    episode_id: '2026-05-02_009_edge_case_ten_bars'
+    title: 'Helper warmup warning is useful but repetitive in full runs'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'on a short edge-case run this is tolerable, but on a larger warmup span the repeated warning could obscure other messages.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_009_edge_case_ten_bars/MD-003'
+    episode_id: '2026-05-02_009_edge_case_ten_bars'
+    title: 'Missing-feature errors are strong and actionable'
+    bucket: expected_user_error
+    severity: medium
+    duplicate_of: null
+    evidence: 'this is a good first-time-user error. It points directly to the fix: register `features = list(ledgr_ind_returns(20))`.'
+    recommended_action: 'Keep the clear error path; consider adding it as a documented troubleshooting example.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_009_edge_case_ten_bars/MD-004'
+    episode_id: '2026-05-02_009_edge_case_ten_bars'
+    title: 'Noninteractive help lookup friction'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'this is general R help behavior, not necessarily ledgr-specific, but it affects agent and terminal workflows that rely on package documentation.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_009_edge_case_ten_bars/MD-005'
+    episode_id: '2026-05-02_009_edge_case_ten_bars'
+    title: 'Resolved Workarounds'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- Used `ledgr_sim_bars()` to create exactly 10 synthetic observations without external data. - Used `ledgr_snapshot_from_df()` because the vignettes present snapshots as the stable experiment input. - Used `is.finite()` around `ctx$feature(id, "sma_20")`, following the getting-started example, so missing warmup valu...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_010_strategy_development_article/MD-001'
+    episode_id: '2026-05-02_010_strategy_development_article'
+    title: 'F-001: `vignette("strategy-development")` is awkward in a headless shell'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Attempting `vignette("strategy-development", package = "ledgr")` started an HTTP help server and tried to open a browser, then failed because the local HTTP URL had no valid file association in this shell. The installed files were available under `ledgr/doc/`, so this was recoverable, but a first-time CLI user may n...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_010_strategy_development_article/MD-002'
+    episode_id: '2026-05-02_010_strategy_development_article'
+    title: 'F-002: `help(package = "ledgr")` / `vignette(package = "ledgr")` are not straightforward to capture'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'My initial attempts to capture printed help and vignette listings produced empty files. The installed package `INDEX`, `str(help(package = "ledgr"))`, and `doc/index.html` were more reliable. Evidence: `raw_logs/help_package_ledgr.txt`, `raw_logs/vignettes_ledgr.txt`, `raw_logs/help_package_ledgr_str.txt`, and insta...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_010_strategy_development_article/MD-003'
+    episode_id: '2026-05-02_010_strategy_development_article'
+    title: 'F-003: The article''s final "What''s Next?" points to `inst/design/contracts.md`'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The strategy-development article recommends reading `inst/design/contracts.md` for the formal contract. That path is not ordinary installed user documentation and, under this episode''s rules, would look like source/design material rather than an allowed help/vignette page. Suggested improvement: Promote the relevant...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_010_strategy_development_article/MD-004'
+    episode_id: '2026-05-02_010_strategy_development_article'
+    title: 'F-004: Generated vignette script depends on `dplyr`'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The article states that examples use `dplyr`, and `dplyr` was installed in this environment. A first-time user without `dplyr` would fail before reaching ledgr-specific concepts. Suggested improvement: Either list `dplyr` as an explicit vignette prerequisite near the runnable code, or show a base R equivalent for th...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_010_strategy_development_article/MD-005'
+    episode_id: '2026-05-02_010_strategy_development_article'
+    title: 'F-005: Shell stderr can look like a failed ledgr run'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'When run through PowerShell with broad redirection, normal package attach messages were wrapped as a native-command error even though the ledgr workflow completed. Retrying with separate stdout/stderr showed `LASTEXITCODE=0`. Suggested improvement: Not a ledgr bug, but article/testing instructions could mention that...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_010_strategy_development_article/MD-006'
+    episode_id: '2026-05-02_010_strategy_development_article'
+    title: 'F-006: Reproducibility tier warning is not explained in the article path'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: '`ledgr_extract_strategy(snapshot, "top_return_1", trust = FALSE)` reported reproducibility `tier_2` and warned that recovered source may depend on external state. The article says this can happen, but a new user may not know what action would move a run to a stronger tier. Suggested improvement: Add one sentence exp...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_011_strategy_helper_introduction/MD-001'
+    episode_id: '2026-05-02_011_strategy_helper_introduction'
+    title: 'Resolved: package help capture was confusing in Rscript'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'A first-time user running from scripts may think the package has no visible index.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_011_strategy_helper_introduction/MD-002'
+    episode_id: '2026-05-02_011_strategy_helper_introduction'
+    title: 'Resolved: vignette listing capture was not useful in Rscript'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The task specifically says to discover helpers through documentation; the vignette route is harder to find from noninteractive scripts.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_011_strategy_helper_introduction/MD-003'
+    episode_id: '2026-05-02_011_strategy_helper_introduction'
+    title: 'Resolved: printing a specific vignette tried to open a browser and failed'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'In a headless or CLI-only episode, the natural vignette command fails noisily.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_011_strategy_helper_introduction/MD-004'
+    episode_id: '2026-05-02_011_strategy_helper_introduction'
+    title: 'Resolved: helper composition depends on reading the vignette, not only help pages'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'A first-time user can identify the helpers from the package index but still needs the vignette to learn the intended order and that return indicators must be registered explicitly.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_011_strategy_helper_introduction/MD-005'
+    episode_id: '2026-05-02_011_strategy_helper_introduction'
+    title: 'Resolved: return feature registration is an easy step to miss'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The helper name makes it feel like it might calculate returns directly, but it reads precomputed registered features.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_011_strategy_helper_introduction/MD-006'
+    episode_id: '2026-05-02_011_strategy_helper_introduction'
+    title: 'Positive: helper pipeline API was compact once discovered'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- What worked: The sequence `signal_return()` -> `select_top_n()` -> `weight_equal()` -> `target_rebalance()` was readable and ran without additional package internals. - Evidence: `reproducible_script.R` and `raw_logs/reproducible_script_run_1.txt`.'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-001'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: 'Help index and vignettes were not useful entry points'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'first-time users are likely to miss the intended pipeline unless they already know the helper names.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-002'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: 'No end-to-end multi-asset helper example'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'the intended workflow is inferable but not obvious.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-003'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: '`signal_return()` depends on feature registration, but the failure path is not demonstrated'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'feature registration is a likely first-time failure point.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-004'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: 'Warmup creates repeated warnings'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'normal indicator warmup is noisy and can look like a failed run in automation.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-005'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: '`start`/`end` did not solve warmup warnings'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'it is unclear whether ledgr intentionally computes features only inside the requested run window or whether pre-start bars can be used for warmup. The docs I found did not explain this.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-006'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: 'Final-bar warning is terse'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'users need to already know the engine''s next-open fill model to interpret the warning.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-007'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: 'Result inspection distinction is useful but easy to miss'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'this part worked once found, but it should be linked from any strategy-helper walkthrough.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-008'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: 'Shell quoting was a non-ledgr episode friction point'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'not a ledgr bug, but examples for Windows users should favor script files or careful quoting when using `$` fields.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_012_multi_asset_rotation_with_helpers/MD-009'
+    episode_id: '2026-05-02_012_multi_asset_rotation_with_helpers'
+    title: 'Resolved workarounds used'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- Used `ledgr_sim_bars()` for deterministic synthetic three-asset data. - Used `ledgr_snapshot_from_df()` plus `ledgr_experiment()` and `ledgr_run()` for the v0.1.7 public workflow. - Registered `ledgr_ind_returns(20L)` explicitly so `signal_return(ctx, lookback = 20L)` could read `return_20`. - Used `ledgr_extract_...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_013_trades_fills_and_metrics/MD-001'
+    episode_id: '2026-05-02_013_trades_fills_and_metrics'
+    title: 'F-001: Equity curve can show a final position with no corresponding fill'
+    bucket: ledgr_bug
+    severity: high
+    duplicate_of: null
+    evidence: 'Severity: high In the final reproducible script, fills show: - 2020-01-02 BUY 1 AAA at 101, action OPEN - 2020-01-03 SELL 1 AAA at 102, action CLOSE Trades show exactly one closed trade, the SELL/CLOSE row. There are no later BUY fills. Despite that, `ledgr_results(bt, what = "equity")` ends with `cash == 899` and `...'
+    recommended_action: 'Maintainer should reproduce against intended accounting semantics and fix or document the behavior.'
+    uncertainty: 'Raw episode evidence suggests a possible defect, but maintainer confirmation is required.'
+  - feedback_id: '2026-05-02_013_trades_fills_and_metrics/MD-002'
+    episode_id: '2026-05-02_013_trades_fills_and_metrics'
+    title: 'F-002: `total_return` can disagree with closed-trade realized P&L'
+    bucket: docs_gap
+    severity: high
+    duplicate_of: null
+    evidence: 'Severity: high The final reproducible case has one closed trade with realized P&L 1 on initial cash 1000, so closed-trade realized return is 0.001. Ledgr reports `metrics$total_return == 0.004`. This appears related to F-001 because the reported final equity includes a position that has no matching fill. The metric ...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_013_trades_fills_and_metrics/MD-003'
+    episode_id: '2026-05-02_013_trades_fills_and_metrics'
+    title: 'F-003: `time_in_market` appears affected by inconsistent equity state'
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: 'Severity: medium In the final case, the actual fills imply the strategy was in the market during the opened position between the BUY and SELL/CLOSE fills. The equity table shows zero `positions_value` for those rows but a non-zero final `positions_value`, and `metrics$time_in_market` is 1/6. The documented definitio...'
+    recommended_action: 'Maintainer should reproduce against intended accounting semantics and fix or document the behavior.'
+    uncertainty: 'Raw episode evidence suggests a possible defect, but maintainer confirmation is required.'
+  - feedback_id: '2026-05-02_013_trades_fills_and_metrics/MD-004'
+    episode_id: '2026-05-02_013_trades_fills_and_metrics'
+    title: 'F-004: `summary(bt)` prints metrics but returns the original backtest object'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'Severity: low `summary(bt)` prints a readable summary, but the returned value has class `c("ledgr_backtest", "ledgr_run")`. As a first-time user, I expected either a summary object or the same metric list returned by `ledgr_compute_metrics(bt)`. This is confusing when assigning `s <- summary(bt)` or wrapping `print(...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_013_trades_fills_and_metrics/MD-005'
+    episode_id: '2026-05-02_013_trades_fills_and_metrics'
+    title: 'F-005: Result column semantics need more detail'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Severity: medium `?ledgr_results` documents what each table represents at a high level, but the returned `fills` and `trades` tables have the same columns and `trades` is a subset of `fills` where `action == "CLOSE"` in these examples. More explicit documentation would help explain whether that identity is guarantee...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_014_close_lifecycle/MD-001'
+    episode_id: '2026-05-02_014_close_lifecycle'
+    title: 'F-001: Post-close result access behavior is not shown directly'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'A first-time user may not know whether closing invalidates the object'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_014_close_lifecycle/MD-002'
+    episode_id: '2026-05-02_014_close_lifecycle'
+    title: 'F-002: The docs imply resource cleanup, but "required" is still ambiguous'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: '- Severity: UX/documentation friction - Evidence: `?close.ledgr_backtest` says completed run artifacts are already durable when `ledgr_run()` returns and that `close(bt)` is for resource management. That is helpful, but it does not state whether ordinary short scripts must call `close()`, whether garbage collection ...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_014_close_lifecycle/MD-003'
+    episode_id: '2026-05-02_014_close_lifecycle'
+    title: 'F-003: `ledgr_run()` vs `ledgr_backtest()` lifecycle wording requires inference'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'For a task about a `ledgr_backtest` object, I had to infer that the'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_014_close_lifecycle/MD-004'
+    episode_id: '2026-05-02_014_close_lifecycle'
+    title: 'F-004: Discoverability through broad help entry points was weak in scripted use'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'This slowed first-time discovery of `ledgr_results()` and related'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_014_close_lifecycle/MD-005'
+    episode_id: '2026-05-02_014_close_lifecycle'
+    title: 'Workarounds Used'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- Used `ls("package:ledgr")` after loading ledgr to find exported result helpers when broad help capture was not useful. - Used `?ledgr_results` instead of an assumed generic `?results` topic. - Treated `ledgr_backtest()` as acceptable for the task because its help documents it as a wrapper around the canonical runn...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_015_warmup_and_na_in_helpers/MD-001'
+    episode_id: '2026-05-02_015_warmup_and_na_in_helpers'
+    title: 'Partial warmup across instruments is hard to test directly'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'I tried to create a realistic "some signals are `NA`" case by giving one instrument fewer early bars than the others. The backtest failed before strategy execution with: `LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range.` This is probably an intentional data integrity rul...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_015_warmup_and_na_in_helpers/MD-002'
+    episode_id: '2026-05-02_015_warmup_and_na_in_helpers'
+    title: '`select_top_n()` all-`NA` behavior is documented, but noisy'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'During five warmup bars, `select_top_n()` warned once per bar: `No available signal values; returning an empty selection.` The warning is understandable, but in a normal lookback warmup it is expected behavior and can create noisy logs. A documented warmup pattern or optional quiet mode would make this easier to use...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_015_warmup_and_na_in_helpers/MD-003'
+    episode_id: '2026-05-02_015_warmup_and_na_in_helpers'
+    title: '`signal_return()` docs do not state warmup timing explicitly'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The `signal_return()` help page says it reads `return_<lookback>` and requires the indicator to be registered, but it does not explicitly state that `lookback = 5` yields five initial `NA` pulses and first finite values on the sixth bar. That behavior was inferable only by running the workflow. Evidence: `raw_logs/h...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_015_warmup_and_na_in_helpers/MD-004'
+    episode_id: '2026-05-02_015_warmup_and_na_in_helpers'
+    title: 'Helper object inspection is possible but not demonstrated'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The helper object classes are usable as vectors, and `str()` showed useful attributes such as `origin` and `universe`. I did not find an example showing how to inspect `ledgr_signal`, `ledgr_selection`, `ledgr_weights`, and `ledgr_target` during a strategy. A small debugging example would help first-time users verif...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_015_warmup_and_na_in_helpers/MD-005'
+    episode_id: '2026-05-02_015_warmup_and_na_in_helpers'
+    title: 'Formatting classed ledgr/POSIX values can surprise logging code'
+    bucket: model_error
+    severity: medium
+    duplicate_of: null
+    evidence: 'My first final-script logging attempt failed with `invalid ''trim'' argument`. The failure came from my use of `format()` while logging classed strategy objects/timestamps, not from the helper pipeline itself. I worked around it with `formatC()` for numeric vectors and `strftime(as.POSIXct(...))` for timestamps. The r...'
+    recommended_action: 'Treat as episode/user logging mistake unless it recurs in non-agent runs; document safer logging patterns if useful.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_015_warmup_and_na_in_helpers/MD-006'
+    episode_id: '2026-05-02_015_warmup_and_na_in_helpers'
+    title: 'Resolved workarounds'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '- Used complete instrument coverage for the actual backtest. - Used documented `ledgr_signal()` reconstruction inside the strategy to create a partial-`NA` helper input after warmup. - Used CSV logs in `raw_logs/` for inspectable evidence rather than relying on classed object printing.'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_016_helper_type_errors/MD-001'
+    episode_id: '2026-05-02_016_helper_type_errors'
+    title: 'Direct `ledgr_signal` return error is actionable'
+    bucket: expected_user_error
+    severity: medium
+    duplicate_of: null
+    evidence: 'Exact message: ```text Strategies must not return `ledgr_signal` directly. Helper pipelines must terminate in `ledgr_target` or a full named numeric target vector. ``` Rating: clear. Why: names the invalid object type and says to return `ledgr_target` or a full named numeric target vector.'
+    recommended_action: 'Keep the clear error path; consider adding it as a documented troubleshooting example.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_016_helper_type_errors/MD-002'
+    episode_id: '2026-05-02_016_helper_type_errors'
+    title: 'Direct `ledgr_weights` return error is actionable'
+    bucket: expected_user_error
+    severity: medium
+    duplicate_of: null
+    evidence: 'Exact message: ```text Strategies must not return `ledgr_weights` directly. Helper pipelines must terminate in `ledgr_target` or a full named numeric target vector. ``` Rating: clear. Why: names the invalid object type and the valid strategy outputs. Friction: on early pulses, `signal_return()` plus `select_top_n()`...'
+    recommended_action: 'Keep the clear error path; consider adding it as a documented troubleshooting example.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_016_helper_type_errors/MD-003'
+    episode_id: '2026-05-02_016_helper_type_errors'
+    title: 'Out-of-universe weight error names the bad instrument, but the sparse/full-universe expectation is confusing'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Exact message: ```text Strategy error at ts_utc=2018-01-01T00:00:00Z for run_id=helper-type-errors-out_of_universe_weights. Instruments: TST_01, TST_02, TST_03. Available feature IDs: return_5. Original error: `x` is incompatible with `universe`; missing instruments: TST_02, TST_03; extra instruments: NOT_IN_UNIVERS...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_016_helper_type_errors/MD-004'
+    episode_id: '2026-05-02_016_helper_type_errors'
+    title: 'Unregistered feature error is actionable'
+    bucket: expected_user_error
+    severity: medium
+    duplicate_of: null
+    evidence: 'Exact message: ```text Strategy error at ts_utc=2018-01-01T00:00:00Z for run_id=helper-type-errors-unregistered_feature. Instruments: TST_01, TST_02, TST_03. Available feature IDs: <none>. Original error: Unknown feature ID `return_5` for instrument_id `TST_01`. Available feature IDs: <none>. Caused by error in `ctx...'
+    recommended_action: 'Keep the clear error path; consider adding it as a documented troubleshooting example.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_016_helper_type_errors/MD-005'
+    episode_id: '2026-05-02_016_helper_type_errors'
+    title: 'Documentation gap: helper pages describe pieces, but not a full helper pipeline example'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The reference pages for `signal_return()`, `select_top_n()`, `weight_equal()`, and `target_rebalance()` clearly describe individual helper inputs and outputs. As a first-time user, I still had to stitch together the full runnable strategy from multiple pages. Suggested improvement: add one complete example that crea...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_016_helper_type_errors/MD-006'
+    episode_id: '2026-05-02_016_helper_type_errors'
+    title: 'Documentation/tooling friction: text help capture needed a workaround in this environment'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Attempting to capture help with `help("signal_return")` tried to open the local HTML help server and failed because no browser association was available. Rendering Rd help to text worked. This is environment friction rather than a ledgr API bug, but it affected the documentation workflow for an agent episode.'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_017_parametric_helper_comparison/MD-001'
+    episode_id: '2026-05-02_017_parametric_helper_comparison'
+    title: 'Status'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'Task succeeded.'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_017_parametric_helper_comparison/MD-002'
+    episode_id: '2026-05-02_017_parametric_helper_comparison'
+    title: 'Workarounds used'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '1. Used `features = function(params) list(ledgr_ind_returns(params$lookback))` so each run registered the return indicator matching its `lookback`. 2. Used explicit `run_id` values and passed them in order to `ledgr_compare_runs()` to make the two-row comparison deterministic. 3. Converted the comparison to `as.data...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_018_manual_vs_helper_parity/MD-001'
+    episode_id: '2026-05-02_018_manual_vs_helper_parity'
+    title: 'Documentation gaps'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: '1. `target_rebalance()` help says it converts weights to target quantities using current pulse equity and current close prices, but it does not say that the resulting quantities are floored to whole numbers. This was the key missing detail for raw/helper parity. A direct fractional implementation produced a differen...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_018_manual_vs_helper_parity/MD-002'
+    episode_id: '2026-05-02_018_manual_vs_helper_parity'
+    title: 'UX friction and unclear errors'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: '1. Printing `help()` output from `Rscript` attempted to start a browser-backed local help server and failed with a Windows file-association error. Using `tools::Rd2txt()` worked, but this is not obvious for a first-time user trying to capture docs in an automated episode. 2. Calling `ctx$equity()` produced `attempt ...'
+    recommended_action: 'Improve documentation or examples around this workflow, preserving the reported workaround as a candidate doc note.'
+    uncertainty: 'Classification is advisory and based on parsed CSV plus spot-checked raw markdown themes.'
+  - feedback_id: '2026-05-02_018_manual_vs_helper_parity/MD-003'
+    episode_id: '2026-05-02_018_manual_vs_helper_parity'
+    title: 'Resolved workarounds'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '1. Used `tools::Rd2txt(utils:::.getHelpFile(...))` to capture help pages into `raw_logs/`. 2. Probed the public strategy context from a ledgr run rather than reading package source. 3. Compared helper and manual target vectors at decision time. This identified the divergent raw implementation step as quantity sizing...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_018_manual_vs_helper_parity/MD-004'
+    episode_id: '2026-05-02_018_manual_vs_helper_parity'
+    title: 'Outcome'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'The task succeeded after applying the undocumented whole-share flooring rule. The final parity evidence is in `raw_logs/reproducible_script_run_2.txt`.'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'
+  - feedback_id: '2026-05-02_019_zero_trade_diagnosis/MD-001'
+    episode_id: '2026-05-02_019_zero_trade_diagnosis'
+    title: 'Resolved issues and friction'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: '1. Zero-trade runs are valid but under-explained by `summary()`. - What happened: the first run completed with `Total Trades: 0`, unchanged equity, and no fills. - Friction: `summary()` correctly reported the outcome but did not point to likely causes such as all-flat targets, all-`NA` features, final-pulse-only tar...'
+    recommended_action: 'Use as supporting triage context; do not file as a standalone defect without human review.'
+    uncertainty: 'Parsed row appears to be a status, positive note, or workaround summary rather than an independent finding.'

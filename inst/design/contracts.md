@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_2/`.
+`inst/design/ledgr_v0_1_7_3_spec_packet/`.
 
 ## Execution Contract
 
@@ -263,6 +263,12 @@ the active versioned spec packet, currently
 - `ledgr_extract_fills()` and `ledgr_compute_equity_curve()` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
+- v0.1.7.3 owns the accounting and metric definition baseline in this section.
+  LDG-1303 must replace this scaffold with exact definitions for public summary
+  and comparison metrics, including total return, annualized return, max
+  drawdown, annualized volatility, total trades, win rate, average trade, and
+  time in market. Those definitions must be independently testable from public
+  result tables rather than from the metric implementation under test.
 
 ## Documentation Contract
 
@@ -281,6 +287,9 @@ the active versioned spec packet, currently
 - README must document noninteractive installed-documentation discovery for
   `Rscript` and agent workflows, including `vignette(package = "ledgr")` and
   `system.file("doc", package = "ledgr")`.
+- v0.1.7.3 owns the next documentation-discovery hardening step. LDG-1305 must
+  extend this contract so core function-level help pages point to relevant
+  installed articles with browser-free lookup paths.
 
 ## Verification Contract
 
