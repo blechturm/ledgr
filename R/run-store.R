@@ -97,18 +97,18 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
   }
 
   archived_expr <- run_expr("archived", "FALSE")
+  quote_string <- function(x) {
+    as.character(DBI::dbQuoteString(con, as.character(x)))
+  }
   where <- character()
-  params <- list()
   if (!isTRUE(include_archived)) {
     where <- c(where, sprintf("COALESCE(%s, FALSE) = FALSE", archived_expr))
   }
   if (!is.null(run_id)) {
-    where <- c(where, "r.run_id = ?")
-    params <- c(params, list(run_id))
+    where <- c(where, sprintf("r.run_id = %s", quote_string(run_id)))
   }
   if (!is.null(snapshot_id) && "snapshot_id" %in% runs_cols) {
-    where <- c(where, "r.snapshot_id = ?")
-    params <- c(params, list(snapshot_id))
+    where <- c(where, sprintf("r.snapshot_id = %s", quote_string(snapshot_id)))
   }
   where_sql <- if (length(where) > 0L) paste("WHERE", paste(where, collapse = " AND ")) else ""
 
@@ -260,7 +260,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     run_expr("created_at_utc", "r.run_id")
   )
 
-  out <- DBI::dbGetQuery(con, sql, params = params)
+  out <- DBI::dbGetQuery(con, sql)
   if (nrow(out) == 0L) {
     return(tibble::as_tibble(out))
   }
