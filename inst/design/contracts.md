@@ -295,3 +295,6 @@ the active versioned spec packet, currently
   other OS-sensitive behavior, a local WSL/Ubuntu gate should run before push.
   At minimum this gate runs package tests and `R CMD check` under Linux; docs
   and pkgdown changes also require a local pkgdown build where practical.
+- Release-ticket execution should follow `inst/design/release_ci_playbook.md`.
+  Main-branch CI and tag-triggered CI are separate gates; a release tag is not
+  valid until the tag workflow is green.

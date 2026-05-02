@@ -1,0 +1,132 @@
+# ledgr Release CI Playbook
+
+This playbook records the release-gate lessons from v0.1.7.2. It is meant for
+maintainers and coding agents working the final release ticket.
+
+## What Went Wrong in v0.1.7.2
+
+The release was not blocked by one bug. It was blocked by several different
+classes of failure that looked similar from the outside:
+
+- **DuckDB cross-connection visibility on Ubuntu.** Windows read-after-write
+  behavior was forgiving. Ubuntu exposed cases where a write connection had
+  committed data, but a fresh read connection did not reliably observe mutable
+  metadata until an explicit checkpoint had happened.
+- **DuckDB native instability on parameter-bound metadata queries.** The
+  original comparison metadata query used a complex SQL shape with joins,
+  subqueries, window-like aggregation, and DBI parameters. On Ubuntu CI this
+  could abort inside DuckDB native code. The fix was to simplify metadata reads
+  and do enrichment in R.
+- **Main and tag CI are separate evidence.** A green `main` run does not prove a
+  moved release tag is green. Tag pushes create a fresh workflow run on fresh
+  runners, with fresh dependency installs and timing.
+- **Coverage is not the same gate as `R CMD check`.** The coverage step runs the
+  installed test suite again under `covr` instrumentation. That adds another
+  layer around native code. A coverage-only native abort can happen after the
+  strict package check already passed.
+- **Local WSL parity is useful but not complete.** Matching Ubuntu and R
+  versions reduces drift, but it does not perfectly match GitHub Actions runner
+  timing, filesystem, package binaries, or process scheduling.
+
+The practical lesson: treat each failed step as a separate signal. Do not call a
+release ready because a similar run passed elsewhere.
+
+## Release Order
+
+1. Finish the release ticket on the release branch.
+2. Run the local gates before merge:
+   - full package tests;
+   - `R CMD check --no-manual --no-build-vignettes`;
+   - `tools/check-coverage.R` when coverage behavior changed;
+   - pkgdown build when documentation, vignettes, or pkgdown changed.
+3. Run the local WSL/Ubuntu gate for any change touching executable R code,
+   DuckDB persistence, snapshots, file paths, time zones, vignettes, pkgdown, or
+   CI.
+4. Push the branch and wait for branch CI.
+5. Merge to `main` only after branch CI is green.
+6. Wait for `main` CI to be green on both workflows.
+7. Move the release tag only after `main` is green.
+8. Wait for the tag-triggered CI. The tag is not release-valid until its own CI
+   is green.
+
+## Tag Handling
+
+Use tags deliberately. A tag push is a release candidate, not a proof of
+release readiness.
+
+```sh
+git rev-parse HEAD
+git rev-parse vX.Y.Z
+git tag -f vX.Y.Z <green-main-commit>
+git push --force origin vX.Y.Z
+```
+
+After pushing the tag, check the tag run directly:
+
+```sh
+gh run list --repo blechturm/ledgr --limit 8
+gh run view <run-id> --repo blechturm/ledgr
+```
+
+Avoid open-ended polling. Prefer periodic status checks, or use
+`gh run watch <run-id> --exit-status` only when you are prepared to wait through
+the whole run.
+
+## Ubuntu and DuckDB Triage
+
+When Ubuntu CI fails around experiment-store behavior:
+
+1. Pull the failed job log with `gh run view --log-failed`.
+2. Identify whether the failure is:
+   - an R assertion failure;
+   - a DuckDB native abort;
+   - a coverage-only abort after `R CMD check` passed.
+3. Reproduce locally under WSL/Ubuntu with the same class of command:
+   - targeted `testthat::test_file()` for a named failing test;
+   - full `testthat::test_local()` for cross-test interactions;
+   - `rcmdcheck::rcmdcheck()` for installed-package behavior;
+   - `Rscript tools/check-coverage.R` for coverage-only failures.
+4. If fresh connections miss writes, inspect checkpoint placement. User-facing
+   metadata mutations that must be visible to later reads should checkpoint
+   strictly before returning.
+5. If a query crashes in native DuckDB code, simplify the SQL shape before
+   trying to tune timing. Prefer simple reads plus R-side enrichment over a
+   release-blocking complex query.
+
+Do not weaken tests just because Ubuntu exposed the issue. If the assertion is
+about ledgr's persistence contract, fix the persistence path.
+
+## Coverage Triage
+
+The coverage gate enforces the numeric threshold, but it also reruns tests under
+instrumentation. For v0.1.7.2, Ubuntu occasionally aborted in native code during
+this coverage run even when:
+
+- README cold-start passed;
+- acceptance tests passed;
+- `R CMD check` passed;
+- pkgdown passed;
+- local Ubuntu coverage passed.
+
+The CI coverage step therefore retries up to three attempts. This is acceptable
+only for coverage-run native aborts. It is not a substitute for fixing package
+test failures or `R CMD check` failures.
+
+If all coverage attempts fail, treat it as a release blocker and inspect the
+failed log. Do not lower the coverage threshold to pass a release.
+
+## What Counts as Green
+
+A release tag is ready only when all of the following are true:
+
+- local Windows or primary development checks passed;
+- local WSL/Ubuntu gate passed when the ticket touched OS-sensitive behavior;
+- `main` `R-CMD-check` workflow is green;
+- `main` pkgdown workflow is green;
+- tag `R-CMD-check` workflow is green;
+- no failed run remains unexplained as a real package failure.
+
+Old failed runs can remain in the GitHub history. They are acceptable only when
+a newer run on the same intended release commit or tag is green and the failure
+mode is understood.
+
