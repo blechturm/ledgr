@@ -108,8 +108,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260502_114721_f472
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_1663833449e2.duckdb
+#> Snapshot ID: snapshot_20260503_083212_d6f4
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpWcKWJ2\ledgr_1a3ac7f3df2.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -131,8 +131,8 @@ bt
 #> Date Range:     2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
 #> Execution Mode: audit_log
 #> Initial Cash:   $10000.00
-#> Final Equity:   $10685.17
-#> P&L:            $685.17 (6.85%)
+#> Final Equity:   $10083.54
+#> P&L:            $83.54 (0.84%)
 #>
 #> Use summary(bt) for detailed metrics
 #> Use plot(bt) for equity curve visualization
@@ -146,12 +146,12 @@ summary(bt)
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        6.85%
-#>   Annualized Return:   13.94%
-#>   Max Drawdown:        -13.51%
+#>   Total Return:        0.84%
+#>   Annualized Return:   1.65%
+#>   Max Drawdown:        -0.99%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 54.72%
+#>   Volatility (annual): 1.96%
 #>
 #> Trade Statistics:
 #>   Total Trades:        12
@@ -159,7 +159,7 @@ summary(bt)
 #>   Avg Trade:           $6.96
 #>
 #> Exposure:
-#>   Time in Market:      65.12%
+#>   Time in Market:      66.67%
 ledgr_results(bt, what = "trades")
 #> # A tibble: 12 x 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
@@ -193,8 +193,8 @@ ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"
 #> # A tibble: 2 x 8
 #>   run_id               label final_equity total_return max_drawdown n_trades win_rate
 #>   <chr>                <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 readme_sma_20        <NA>        10685. +6.9%        -13.5%             12 25.0%
-#> 2 readme_sma_20_qty_20 <NA>        11370. +13.7%       -25.3%             12 25.0%
+#> 1 readme_sma_20        <NA>        10084. +0.8%        -1.0%              12 25.0%
+#> 2 readme_sma_20_qty_20 <NA>        10167. +1.7%        -2.0%              12 25.0%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -254,5 +254,5 @@ agent workflows where opening pkgdown in a browser is not the first
 step. The pkgdown-only background articles are on the website, while
 installed vignettes focus on package workflows.
 
-Design packets are in `inst/design/`, including the current v0.1.7.2
+Design packets are in `inst/design/`, including the current v0.1.7.3
 packet.

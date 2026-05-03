@@ -778,20 +778,20 @@ Final validation gate for v0.1.7.3.
 15. Confirm no open P0/P1 review findings remain.
 
 **Acceptance Criteria:**
-- [ ] Full tests pass.
-- [ ] Independent metric oracle tests pass.
-- [ ] Episode 013 regression passes in all supported equity-writing modes.
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+- [x] Full tests pass.
+- [x] Independent metric oracle tests pass.
+- [x] Episode 013 regression passes in all supported equity-writing modes.
+- [x] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
-- [ ] `DESCRIPTION` version is `0.1.7.3` before release tagging.
-- [ ] README and changed articles render.
-- [ ] pkgdown builds if navigation/articles changed.
-- [ ] Installed indicator documentation is consolidated around `indicators`,
+- [x] `DESCRIPTION` version is `0.1.7.3` before release tagging.
+- [x] README and changed articles render.
+- [x] pkgdown builds if navigation/articles changed.
+- [x] Installed indicator documentation is consolidated around `indicators`,
       with no redundant installed `ttr-indicators` teaching path.
-- [ ] Local WSL/Ubuntu gate passes on the release branch.
+- [x] Local WSL/Ubuntu gate passes on the release branch.
 - [ ] Remote Windows and Ubuntu CI are green on the target commit.
-- [ ] Contracts, NEWS, help pages, and vignettes match the implemented scope.
-- [ ] No accidental future-cycle API exposure exists.
+- [x] Contracts, NEWS, help pages, and vignettes match the implemented scope.
+- [x] No accidental future-cycle API exposure exists.
 - [ ] No open P0/P1 review findings remain.
 
 **Test Requirements:**
