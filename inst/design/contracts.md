@@ -125,6 +125,14 @@ the active versioned spec packet, currently
   converts weights into full-universe `ledgr_target` quantities using
   decision-time equity and close prices. These helpers must not auto-register
   indicators, silently normalize weights, or add a second execution path.
+- The helper composition contract is
+  `signal -> selection -> weights -> target quantities -> existing execution
+  path`. Signal, selection, and weight objects are research objects with origin
+  metadata; `ledgr_target` is the only helper value type that may unwrap into
+  executable target quantities.
+- `target_rebalance()` floors share quantities to whole numbers after sizing
+  long-only weights from current pulse equity and current close prices. It must
+  not silently create fractional share targets.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.

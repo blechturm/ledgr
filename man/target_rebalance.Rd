@@ -20,7 +20,9 @@ A full-universe \code{ledgr_target} object.
 \code{target_rebalance()} converts long-only weights into a full-universe
 \code{ledgr_target}. It uses current pulse equity and current close prices at
 decision time; fills still occur at the next open, so small drift between
-decision-time sizing and fill-time value is expected.
+decision-time sizing and fill-time value is expected. Share quantities are
+floored to whole numbers with \code{floor(weight * equity_fraction * equity /
+close_price)}.
 }
 \section{Articles}{
 

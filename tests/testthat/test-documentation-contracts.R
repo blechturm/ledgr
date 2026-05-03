@@ -22,8 +22,26 @@ testthat::test_that("TTR docs include compact multi-output ID references", {
 
   testthat::expect_match(ttr_doc, "ttr_bbands_20_up", fixed = TRUE)
   testthat::expect_match(ttr_doc, "ttr_macd_12_26_9_false_macd", fixed = TRUE)
-  testthat::expect_match(ttr_doc, "ttr_macd_12_26_9_signal", fixed = TRUE)
+  testthat::expect_match(ttr_doc, "ttr_macd_12_26_9_false_signal", fixed = TRUE)
+  testthat::expect_match(ttr_doc, "Current TTR column names are `dn`, `mavg`, `up`, and", fixed = TRUE)
+  testthat::expect_match(ttr_doc, "pctB", fixed = TRUE)
   testthat::expect_match(ttr_doc, "ledgr_feature_id()", fixed = TRUE)
+})
+
+testthat::test_that("helper docs state composition and whole-share target flooring", {
+  strategy_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  target_help <- paste(readLines(file.path(root, "man", "target_rebalance.Rd"), warn = FALSE), collapse = "\n")
+  signal_strategy_help <- paste(readLines(file.path(root, "man", "ledgr_signal_strategy.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(strategy_doc, "Execution semantics begin only at the target stage", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "floors to whole shares", fixed = TRUE)
+  testthat::expect_match(target_help, "floored to whole numbers", fixed = TRUE)
+  testthat::expect_match(target_help, "floor(weight * equity_fraction * equity /", fixed = TRUE)
+
+  testthat::expect_match(signal_strategy_help, "called as \\code{fn(ctx)}", fixed = TRUE)
+  testthat::expect_match(signal_strategy_help, "not \\code{params}", fixed = TRUE)
+  testthat::expect_match(signal_strategy_help, "\\verb{function(ctx, params)}", fixed = TRUE)
 })
 
 testthat::test_that("background articles stay pkgdown-only", {

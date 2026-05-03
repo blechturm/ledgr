@@ -5,17 +5,21 @@
 #' contract: the returned strategy maps signals to a full named numeric target
 #' vector before the shared StrategyResult validator runs.
 #'
-#' @param fn Function called as `fn(ctx)`. It must return either a scalar signal
-#'   for a single-instrument universe or a named character vector with one
-#'   signal per instrument in `ctx$universe`.
+#' @param fn Signal function called as `fn(ctx)`. It receives the ledgr pulse
+#'   context, not `params`, and must return either a scalar signal for a
+#'   single-instrument universe or a named character vector with one signal per
+#'   instrument in `ctx$universe`.
 #' @param long_qty Target quantity for `"LONG"`.
 #' @param flat_qty Target quantity for `"FLAT"`.
 #' @param short_qty Target quantity for `"SHORT"`.
 #'
-#' @return A `function(ctx, params)` strategy suitable for ledgr execution.
+#' @return A `function(ctx, params)` strategy suitable for ledgr execution. The
+#'   returned strategy follows the normal ledgr strategy convention and maps the
+#'   inner signal function's `"LONG"`, `"FLAT"`, and `"SHORT"` values to a full
+#'   named numeric target vector.
 #' @examples
 #' strategy <- ledgr_signal_strategy(
-#'   function(ctx, params) c(AAA = "LONG"),
+#'   function(ctx) c(AAA = "LONG"),
 #'   long_qty = 10
 #' )
 #' strategy(list(universe = "AAA"), list())

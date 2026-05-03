@@ -143,7 +143,9 @@ weight_equal <- function(selection) {
 #' `target_rebalance()` converts long-only weights into a full-universe
 #' `ledgr_target`. It uses current pulse equity and current close prices at
 #' decision time; fills still occur at the next open, so small drift between
-#' decision-time sizing and fill-time value is expected.
+#' decision-time sizing and fill-time value is expected. Share quantities are
+#' floored to whole numbers with `floor(weight * equity_fraction * equity /
+#' close_price)`.
 #'
 #' @param weights A `ledgr_weights` object.
 #' @param ctx ledgr strategy context.

@@ -113,14 +113,15 @@ macd_signal <- ledgr_ind_ttr(
   output = "signal",
   nFast = 12,
   nSlow = 26,
-  nSig = 9
+  nSig = 9,
+  percent = FALSE
 )
 aroon_osc <- ledgr_ind_ttr("aroon", input = "hl", output = "oscillator", n = 20)
 
 ledgr_feature_id(list(rsi_14, atr_20, bb_up, macd_line, macd_signal, aroon_osc))
-#> [1] "ttr_rsi_14"                  "ttr_atr_20_atr"             
-#> [3] "ttr_bbands_20_up"            "ttr_macd_12_26_9_false_macd"
-#> [5] "ttr_macd_12_26_9_signal"     "ttr_aroon_20_oscillator"
+#> [1] "ttr_rsi_14"                    "ttr_atr_20_atr"               
+#> [3] "ttr_bbands_20_up"              "ttr_macd_12_26_9_false_macd"  
+#> [5] "ttr_macd_12_26_9_false_signal" "ttr_aroon_20_oscillator"
 ```
 
 Some TTR indicators return several columns. For those indicators, choose
@@ -135,7 +136,7 @@ data.frame(
     'ledgr_ind_ttr("RSI", input = "close", n = 14)',
     'ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)',
     'ledgr_ind_ttr("MACD", output = "macd", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)',
-    'ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9)'
+    'ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)'
   ),
   feature_id = c(
     ledgr_feature_id(ledgr_ind_sma(20)),
@@ -147,20 +148,20 @@ data.frame(
   ),
   stringsAsFactors = FALSE
 )
-#>                                                                                 constructor
-#> 1                                                                         ledgr_ind_sma(20)
-#> 2                                                                      ledgr_ind_returns(5)
-#> 3                                             ledgr_ind_ttr("RSI", input = "close", n = 14)
-#> 4                           ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
-#> 5 ledgr_ind_ttr("MACD", output = "macd", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)
-#> 6                ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9)
-#>                    feature_id
-#> 1                      sma_20
-#> 2                    return_5
-#> 3                  ttr_rsi_14
-#> 4            ttr_bbands_20_up
-#> 5 ttr_macd_12_26_9_false_macd
-#> 6     ttr_macd_12_26_9_signal
+#>                                                                                   constructor
+#> 1                                                                           ledgr_ind_sma(20)
+#> 2                                                                        ledgr_ind_returns(5)
+#> 3                                               ledgr_ind_ttr("RSI", input = "close", n = 14)
+#> 4                             ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+#> 5   ledgr_ind_ttr("MACD", output = "macd", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)
+#> 6 ledgr_ind_ttr("MACD", output = "signal", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)
+#>                      feature_id
+#> 1                        sma_20
+#> 2                      return_5
+#> 3                    ttr_rsi_14
+#> 4              ttr_bbands_20_up
+#> 5   ttr_macd_12_26_9_false_macd
+#> 6 ttr_macd_12_26_9_false_signal
 ```
 
 Use this pattern as a reference table in your own project: construct the
@@ -175,14 +176,18 @@ ttr_<function>_<explicit args>_<output>
 
 For example, the IDs above include `ttr_rsi_14`, `ttr_atr_20_atr`,
 `ttr_bbands_20_up`, `ttr_macd_12_26_9_false_macd`, and
-`ttr_macd_12_26_9_signal`. Use `ledgr_feature_id(ind)` or print the
-indicator object instead of guessing the string.
+`ttr_macd_12_26_9_false_signal`. Use `ledgr_feature_id(ind)` or print
+the indicator object instead of guessing the string.
 
-The two MACD examples intentionally use different explicit arguments:
-`macd_line` sets `percent = FALSE`, while `macd_signal` leaves TTR’s
-default `percent` argument implicit. Explicit extra arguments become
-part of the feature ID, so combine MACD outputs in one strategy only
-when their argument sets match the computation you intend.
+BBands is multi-output. Current TTR column names are `dn`, `mavg`, `up`,
+and `pctB`; choose one with `output`, such as `output = "up"`, before
+asking ledgr for the feature ID.
+
+The two MACD examples use matching explicit arguments. Explicit extra
+arguments become part of the feature ID, so combine MACD outputs in one
+strategy only when their argument sets match the computation you intend.
+If one MACD output uses `percent = FALSE`, the paired `signal` output
+should usually set `percent = FALSE` too.
 
 ## Warmup And Short Histories
 
@@ -235,11 +240,21 @@ features <- list(
     nSlow = 26,
     nSig = 9,
     percent = FALSE
+  ),
+  ledgr_ind_ttr(
+    "MACD",
+    input = "close",
+    output = "signal",
+    nFast = 12,
+    nSlow = 26,
+    nSig = 9,
+    percent = FALSE
   )
 )
 ledgr_feature_id(features)
-#> [1] "ttr_rsi_14"                  "ttr_momentum_10"            
-#> [3] "ttr_bbands_20_up"            "ttr_macd_12_26_9_false_macd"
+#> [1] "ttr_rsi_14"                    "ttr_momentum_10"              
+#> [3] "ttr_bbands_20_up"              "ttr_macd_12_26_9_false_macd"  
+#> [5] "ttr_macd_12_26_9_false_signal"
 
 strategy <- function(ctx, params) {
   targets <- ctx$hold()
@@ -247,6 +262,7 @@ strategy <- function(ctx, params) {
   mom <- ctx$feature("DEMO_01", "ttr_momentum_10")
   bb_up <- ctx$feature("DEMO_01", "ttr_bbands_20_up")
   macd <- ctx$feature("DEMO_01", "ttr_macd_12_26_9_false_macd")
+  macd_signal <- ctx$feature("DEMO_01", "ttr_macd_12_26_9_false_signal")
 
   # This article uses one demo instrument, so only DEMO_01 is targeted.
   if (
@@ -254,9 +270,10 @@ strategy <- function(ctx, params) {
       !is.na(mom) &&
       !is.na(bb_up) &&
       !is.na(macd) &&
+      !is.na(macd_signal) &&
       rsi > 50 &&
       mom > 0 &&
-      macd > 0 &&
+      macd > macd_signal &&
       ctx$close("DEMO_01") > bb_up
   ) {
     targets["DEMO_01"] <- params$qty

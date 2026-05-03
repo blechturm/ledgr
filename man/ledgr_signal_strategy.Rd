@@ -7,9 +7,10 @@
 ledgr_signal_strategy(fn, long_qty = 1, flat_qty = 0, short_qty = -1)
 }
 \arguments{
-\item{fn}{Function called as \code{fn(ctx)}. It must return either a scalar signal
-for a single-instrument universe or a named character vector with one
-signal per instrument in \code{ctx$universe}.}
+\item{fn}{Signal function called as \code{fn(ctx)}. It receives the ledgr pulse
+context, not \code{params}, and must return either a scalar signal for a
+single-instrument universe or a named character vector with one signal per
+instrument in \code{ctx$universe}.}
 
 \item{long_qty}{Target quantity for \code{"LONG"}.}
 
@@ -18,7 +19,10 @@ signal per instrument in \code{ctx$universe}.}
 \item{short_qty}{Target quantity for \code{"SHORT"}.}
 }
 \value{
-A \verb{function(ctx, params)} strategy suitable for ledgr execution.
+A \verb{function(ctx, params)} strategy suitable for ledgr execution. The
+returned strategy follows the normal ledgr strategy convention and maps the
+inner signal function's \code{"LONG"}, \code{"FLAT"}, and \code{"SHORT"} values to a full
+named numeric target vector.
 }
 \description{
 \code{ledgr_signal_strategy()} is a small convenience wrapper for tutorial-style
@@ -28,7 +32,7 @@ vector before the shared StrategyResult validator runs.
 }
 \examples{
 strategy <- ledgr_signal_strategy(
-  function(ctx, params) c(AAA = "LONG"),
+  function(ctx) c(AAA = "LONG"),
   long_qty = 10
 )
 strategy(list(universe = "AAA"), list())

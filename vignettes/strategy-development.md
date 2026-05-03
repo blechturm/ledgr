@@ -245,10 +245,15 @@ The helper pipeline has four stages:
 
 | Stage | Input | Output | Question answered |
 |----|----|----|----|
-| signal | pulse context | numeric scores | What looks attractive? |
-| selection | signal | logical inclusion | What should be considered? |
-| weights | selection | allocation weights | How should capital be split? |
-| target | weights and context | share quantities | What should the portfolio hold? |
+| signal | pulse context | numeric scores with origin metadata | What looks attractive? |
+| selection | signal | logical inclusion with the same origin | What should be considered? |
+| weights | selection | allocation weights with the same origin | How should capital be split? |
+| target | weights and context | full-universe share quantities | What should the portfolio hold? |
+
+Execution semantics begin only at the target stage. `signal`,
+`selection`, and `weights` are research objects that help author the
+strategy; `target` is the ordinary full named target vector shape the
+runner validates and executes.
 
 ``` r
 signal <- signal_return(pulse, lookback = 5)
@@ -282,6 +287,17 @@ target
 #> non-NA: 2/2
 #> DEMO_01 DEMO_02
 #>      93       0
+```
+
+`target_rebalance()` sizes with current pulse equity and current close
+prices, then floors to whole shares. For the selected `DEMO_01` pulse
+above, 10% of equity is allocated to the one selected instrument:
+
+``` r
+raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
+c(pre_floor = raw_qty, target_qty = unclass(target)[["DEMO_01"]])
+#>  pre_floor target_qty
+#>   93.89208   93.00000
 ```
 
 The helper objects are not a second execution path. They are authoring
@@ -328,7 +344,8 @@ Read it economically:
 1.  `signal_return()` scores each instrument by recent return.
 2.  `select_top_n()` keeps the highest scores and ignores warmup `NA`.
 3.  `weight_equal()` splits the chosen allocation equally.
-4.  `target_rebalance()` converts weights into full target quantities.
+4.  `target_rebalance()` converts weights into floored full target
+    quantities.
 
 No helper registers indicators automatically. The experiment must say
 which features exist.
@@ -356,12 +373,12 @@ summary(bt_top_1)
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        -0.41%
-#>   Annualized Return:   -0.81%
-#>   Max Drawdown:        -18.26%
+#>   Total Return:        0.45%
+#>   Annualized Return:   0.89%
+#>   Max Drawdown:        -1.12%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 93.23%
+#>   Volatility (annual): 2.02%
 #>
 #> Trade Statistics:
 #>   Total Trades:        24
@@ -369,7 +386,7 @@ summary(bt_top_1)
 #>   Avg Trade:           $2.15
 #>
 #> Exposure:
-#>   Time in Market:      78.29%
+#>   Time in Market:      95.35%
 ```
 
 The summary is portfolio-level: total return, max drawdown, and trade
@@ -430,8 +447,8 @@ ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2"))
 #> # A tibble: 2 x 8
 #>   run_id       label final_equity total_return max_drawdown n_trades win_rate
 #>   <chr>        <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 top_return_1 <NA>         9959. -0.4%        -18.3%             24 45.8%
-#> 2 top_return_2 <NA>         9999. -0.0%        -1.2%               7 57.1%
+#> 1 top_return_1 <NA>        10045. +0.5%        -1.1%              24 45.8%
+#> 2 top_return_2 <NA>        10004. +0.0%        -1.1%               7 57.1%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -476,8 +493,8 @@ ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2", "flat_b
 #> # A tibble: 3 x 8
 #>   run_id        label final_equity total_return max_drawdown n_trades win_rate
 #>   <chr>         <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 top_return_1  <NA>         9959. -0.4%        -18.3%             24 45.8%
-#> 2 top_return_2  <NA>         9999. -0.0%        -1.2%               7 57.1%
+#> 1 top_return_1  <NA>        10045. +0.5%        -1.1%              24 45.8%
+#> 2 top_return_2  <NA>        10004. +0.0%        -1.1%               7 57.1%
 #> 3 flat_baseline <NA>        10000  +0.0%        0.0%                0 <NA>
 #> # i 1 more variable: reproducibility_level <chr>
 #>

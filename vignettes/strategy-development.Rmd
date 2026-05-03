@@ -264,10 +264,14 @@ The helper pipeline has four stages:
 
 | Stage | Input | Output | Question answered |
 |---|---|---|---|
-| signal | pulse context | numeric scores | What looks attractive? |
-| selection | signal | logical inclusion | What should be considered? |
-| weights | selection | allocation weights | How should capital be split? |
-| target | weights and context | share quantities | What should the portfolio hold? |
+| signal | pulse context | numeric scores with origin metadata | What looks attractive? |
+| selection | signal | logical inclusion with the same origin | What should be considered? |
+| weights | selection | allocation weights with the same origin | How should capital be split? |
+| target | weights and context | full-universe share quantities | What should the portfolio hold? |
+
+Execution semantics begin only at the target stage. `signal`, `selection`, and
+`weights` are research objects that help author the strategy; `target` is the
+ordinary full named target vector shape the runner validates and executes.
 
 ```{r pulse-pipeline}
 signal <- signal_return(pulse, lookback = 5)
@@ -281,6 +285,15 @@ weights
 
 target <- target_rebalance(weights, pulse, equity_fraction = 0.1)
 target
+```
+
+`target_rebalance()` sizes with current pulse equity and current close prices,
+then floors to whole shares. For the selected `DEMO_01` pulse above, 10% of
+equity is allocated to the one selected instrument:
+
+```{r floor-sizing}
+raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
+c(pre_floor = raw_qty, target_qty = unclass(target)[["DEMO_01"]])
 ```
 
 The helper objects are not a second execution path. They are authoring aids.
@@ -325,7 +338,7 @@ Read it economically:
 1. `signal_return()` scores each instrument by recent return.
 2. `select_top_n()` keeps the highest scores and ignores warmup `NA`.
 3. `weight_equal()` splits the chosen allocation equally.
-4. `target_rebalance()` converts weights into full target quantities.
+4. `target_rebalance()` converts weights into floored full target quantities.
 
 No helper registers indicators automatically. The experiment must say which
 features exist.
