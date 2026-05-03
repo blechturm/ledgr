@@ -1,0 +1,470 @@
+version: "0.1.7.4-feature-map-authoring-and-auditr-cleanup"
+source: "v0_1_7_4_tickets.md"
+tickets:
+  - id: LDG-1401
+    title: "Scope, Metadata, And Contract Baseline"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation consistency scan"
+      - "export/API inventory scan"
+      - "spec/ticket filename scan"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Version scoping, public API boundary decisions, contract scaffolding,
+        and ticket classification are Tier H by routing rule.
+      invariants_at_risk:
+        - release scope
+        - public API boundary
+        - feature-map contract placement
+        - documentation contract
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/ledgr_triage_report.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/cycle_retrospective.md
+        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - NEWS.md
+      tests_required:
+        - documentation consistency scan
+        - export/API inventory scan
+        - spec/ticket filename scan
+      escalation_triggers:
+        - feature maps require execution-path changes
+        - config_hash parity cannot be specified without identity changes
+        - CSV workflow issue proves to be a snapshot bug requiring broader scope
+      forbidden_actions:
+        - implementing ledgr_feature_map
+        - changing execution behavior
+        - adding sweep/tune APIs
+        - adding ledgr_docs
+
+  - id: LDG-1402
+    title: "Feature Map Type, Experiment Registration, And Identity"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1401]
+    tests:
+      - "feature-map constructor tests"
+      - "experiment registration tests"
+      - "duplicate feature ID tests"
+      - "config-hash parity tests"
+      - "copy-on-use immutability tests"
+      - "existing experiment/config hash tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        This ticket adds exported public API and touches experiment feature
+        registration and config_hash identity. Public API and identity are hard
+        escalation areas, so Tier H implementation and review are required.
+      invariants_at_risk:
+        - public API compatibility
+        - experiment feature registration
+        - config_hash identity
+        - feature ID uniqueness
+        - copy-on-use immutability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Canonical JSON Contract)
+        - R/experiment.R
+        - R/indicator.R
+        - R/features-engine.R
+        - R/config-hash.R
+        - R/config-canonical-json.R
+        - tests/testthat/test-experiment.R
+        - tests/testthat/test-backtest-wrapper.R
+      tests_required:
+        - feature-map constructor tests
+        - experiment registration tests
+        - duplicate feature ID tests
+        - config-hash parity tests
+        - immutability tests
+      escalation_triggers:
+        - aliases appear to need run identity semantics
+        - feature maps require changes to canonical JSON format
+        - plain list compatibility breaks
+        - duplicate feature IDs cannot be caught before runtime
+      forbidden_actions:
+        - changing feature ID generation
+        - making aliases silently part of config_hash identity
+        - breaking features = list(...)
+        - adding roles, selectors, prep, bake, or wide feature tables
+
+  - id: LDG-1403
+    title: "Pulse Feature Bundles And Warmup Predicate"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1402]
+    tests:
+      - "pulse-context accessor tests"
+      - "feature-map strategy run tests"
+      - "warmup and unknown feature tests"
+      - "standard/audit-log parity tests"
+      - "existing pulse context and strategy helper tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        This ticket adds pulse-context accessors and must preserve no-lookahead,
+        execution-mode parity, and strategy context semantics. Pulse semantics
+        and execution behavior are hard escalation areas.
+      invariants_at_risk:
+        - no-lookahead pulse context
+        - strategy context contract
+        - feature warmup semantics
+        - execution-mode parity
+        - strategy error diagnostics
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract)
+        - R/pulse-context.R
+        - R/backtest-runner.R
+        - R/indicator_dev.R
+        - R/strategy-helpers.R
+        - tests/testthat/test-pulse-context-accessors.R
+        - tests/testthat/test-backtest-audit-log-equivalence.R
+      tests_required:
+        - pulse-context accessor tests
+        - feature-map strategy run tests
+        - warmup and unknown feature tests
+        - standard/audit-log parity tests
+      escalation_triggers:
+        - ctx$features needs future data or full-table access
+        - standard mode and audit-log mode disagree
+        - warmup behavior conflicts with feature-engine validation
+        - strategy error wrapping loses context
+      forbidden_actions:
+        - adding ctx$features_wide
+        - bypassing ctx$feature validation
+        - treating unknown features as warmup NA
+        - changing pulse order or fill timing
+
+  - id: LDG-1404
+    title: "Feature Map Documentation And Teaching Integration"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1403]
+    tests:
+      - "documentation render"
+      - "Rd documentation scans"
+      - "vignette scans for feature-map teaching order"
+      - "existing documentation contract tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation and roxygen work is bounded, but it teaches a new public
+        API and strategy-authoring contract. Tier M implementation is
+        acceptable with Tier H review for contract accuracy.
+      invariants_at_risk:
+        - feature-map public API documentation
+        - strategy authoring mental model
+        - documentation teaching order
+        - installed article discoverability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/contracts.md (Documentation Contract, Strategy Contract)
+        - R/strategy-helpers.R
+        - R/strategy-types.R
+        - vignettes/strategy-development.Rmd
+        - vignettes/indicators.Rmd
+      tests_required:
+        - documentation render
+        - Rd documentation scans
+        - feature-map teaching-order scans
+      escalation_triggers:
+        - docs require API behavior not implemented in LDG-1402/1403
+        - feature maps appear to replace target-vector strategy contract
+        - indicators vignette becomes a duplicate strategy tutorial
+      forbidden_actions:
+        - documenting unimplemented feature roles or selectors
+        - hiding ctx$feature explicit contract
+        - adding a second execution model in prose
+        - making examples depend on network data
+
+  - id: LDG-1405
+    title: "External Review And Copy-Paste Documentation Fixes"
+    status: planned
+    priority: P2
+    dependencies: [LDG-1401]
+    tests:
+      - "article_utc documentation scan"
+      - "README/vignette render"
+      - "documentation contract tests"
+      - "pkgdown build if article navigation changes"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The work is documentation-focused but affects first-contact learning
+        paths and package positioning. Tier H review is required for
+        documentation contract and north-star alignment.
+      invariants_at_risk:
+        - copy-paste runnable documentation
+        - canonical workflow framing
+        - no-lookahead teaching
+        - first-path documentation navigation
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_design_philosophy.md
+        - README.Rmd
+        - vignettes/metrics-and-accounting.Rmd
+        - vignettes/strategy-development.Rmd
+        - vignettes/getting-started.Rmd
+        - _pkgdown.yml
+      tests_required:
+        - article_utc documentation scan
+        - README/vignette render
+        - documentation contract tests
+      escalation_triggers:
+        - leakage example needs new API support
+        - ledgr_backtest fixture framing conflicts with public API docs
+        - first-path examples require executable example infrastructure
+      forbidden_actions:
+        - adding new exported docs helper
+        - making ledgr_backtest the canonical research path
+        - adding browser-only discovery as the only path
+        - using hidden helpers in visible code
+
+  - id: LDG-1406
+    title: "Helper, Feature-ID, Warmup, And TTR Docs"
+    status: planned
+    priority: P2
+    dependencies: [LDG-1401]
+    tests:
+      - "Rd documentation scans"
+      - "vignette/documentation render"
+      - "documentation scans for parameter-grid and TTR phrases"
+      - "existing documentation contract tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        This is documentation and roxygen work, but it teaches public helper,
+        feature-ID, warmup, and TTR contracts. Tier M implementation with Tier H
+        review is appropriate.
+      invariants_at_risk:
+        - helper composition documentation
+        - feature ID discovery
+        - warmup semantics
+        - TTR multi-output semantics
+        - documentation discoverability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/ledgr_triage_report.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Documentation Contract)
+        - R/strategy-helpers.R
+        - R/strategy-types.R
+        - R/signal-strategy.R
+        - R/indicator-ttr.R
+        - R/indicator.R
+        - vignettes/strategy-development.Rmd
+        - vignettes/indicators.Rmd
+        - vignettes/metrics-and-accounting.Rmd
+      tests_required:
+        - Rd documentation scans
+        - documentation render
+        - documentation contract tests
+      escalation_triggers:
+        - examples require runtime behavior not currently supported
+        - TTR docs reveal implementation mismatch
+        - diagnostics require new persistent tables
+        - feature-ID docs suggest aliases are implemented before LDG-1402
+      forbidden_actions:
+        - changing feature ID generation
+        - auto-registering feature variants
+        - treating unknown feature IDs as warmup
+        - adding ledgr_docs to work around auditr
+
+  - id: LDG-1407
+    title: "CSV Snapshot Import/Seal Workflow Investigation"
+    status: planned
+    priority: P0
+    dependencies: [LDG-1401]
+    tests:
+      - "CSV snapshot import/seal/run regression"
+      - "snapshot load regression if applicable"
+      - "existing snapshot and experiment tests"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        The ticket may touch snapshot import, sealing, loading, metadata, and
+        experiment execution. Snapshot semantics and persistence are hard
+        escalation areas, so Tier H implementation and review are required.
+      invariants_at_risk:
+        - snapshot sealing
+        - snapshot metadata
+        - snapshot loading
+        - snapshot hash integrity
+        - experiment snapshot validation
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/ledgr_triage_report.md
+        - C:/Users/maxth/Documents/GitHub/auditr/episodes_v0.1.7.3/2026-05-03_008_snapshot_csv_seal_backtest/
+        - inst/design/contracts.md (Snapshot Contract, Persistence Contract)
+        - R/snapshot_adapters.R
+        - R/snapshots-list.R
+        - R/snapshots-seal.R
+        - R/experiment.R
+        - tests/testthat/test-snapshot-adapters.R
+        - tests/testthat/test-snapshots-load.R
+      tests_required:
+        - CSV snapshot import/seal/run regression
+        - snapshot load regression if applicable
+        - existing snapshot and experiment tests
+      escalation_triggers:
+        - fix requires changing snapshot hash inputs
+        - metadata workaround indicates schema migration issue
+        - ledgr_run rejects a valid sealed snapshot
+        - documented workflow conflicts with snapshot contract
+      forbidden_actions:
+        - bypassing snapshot sealing
+        - mutating sealed snapshot data
+        - weakening hash verification
+        - documenting undocumented metadata edits as normal workflow
+
+  - id: LDG-1408
+    title: "Contracts, Site Reference, Installed-Doc Hygiene, And NEWS"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406]
+    tests:
+      - "documentation contract tests"
+      - "installed-doc hygiene tests"
+      - "Rd scans"
+      - "pkgdown build if nav/reference changes"
+      - "NEWS/scope scan"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Mostly documentation, metadata, and site-configuration work, but it
+        changes contracts and release-facing package documentation. Tier H
+        review is required for contract and release coherence.
+      invariants_at_risk:
+        - documentation contract
+        - installed vignette boundary
+        - pkgdown reference structure
+        - release notes accuracy
+        - public API discoverability
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - NEWS.md
+        - _pkgdown.yml
+        - R/ledgr-package.R
+        - tests/testthat/test-documentation-contracts.R
+        - inst/doc/
+      tests_required:
+        - documentation contract tests
+        - installed-doc hygiene tests
+        - Rd scans
+        - pkgdown build if nav/reference changes
+      escalation_triggers:
+        - stale installed docs are required by build tooling
+        - pkgdown reference structure conflicts with exports
+        - contracts need behavior not implemented by prior tickets
+      forbidden_actions:
+        - retaining stale ttr-indicators installed docs without a contract exception
+        - adding undocumented exports
+        - changing contracts to bless unimplemented behavior
+        - moving pkgdown-only positioning articles into installed vignettes
+
+  - id: LDG-1409
+    title: "v0.1.7.4 Release Gate"
+    status: planned
+    priority: P0
+    dependencies:
+      - LDG-1401
+      - LDG-1402
+      - LDG-1403
+      - LDG-1404
+      - LDG-1405
+      - LDG-1406
+      - LDG-1407
+      - LDG-1408
+    tests:
+      - "full package tests"
+      - "feature-map test suite"
+      - "pulse-context parity tests"
+      - "CSV snapshot workflow tests"
+      - "R CMD check"
+      - "README/article renders"
+      - "pkgdown build if applicable"
+      - "export/API inventory scan"
+      - "local WSL/Ubuntu gate"
+      - "remote CI verification"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gates are Tier H by routing rule. This ticket validates public
+        API, context behavior, identity, snapshot investigation, documentation,
+        contracts, CI, package metadata, and release tagging readiness.
+      invariants_at_risk:
+        - release correctness
+        - public API export boundary
+        - config_hash identity
+        - pulse context semantics
+        - snapshot workflow correctness
+        - documentation accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_tickets.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/tickets.yml
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - DESCRIPTION
+        - NEWS.md
+        - README.Rmd
+        - _pkgdown.yml
+      tests_required:
+        - full package tests
+        - feature-map tests
+        - pulse-context parity tests
+        - CSV snapshot workflow tests
+        - R CMD check
+        - README/article renders
+        - pkgdown build if applicable
+        - export/API inventory scan
+        - local WSL/Ubuntu gate
+        - remote CI verification
+      escalation_triggers:
+        - any CI failure remains unexplained
+        - config_hash parity fails
+        - R CMD check warnings require scope decisions
+        - CSV snapshot investigation remains unresolved
+        - documentation examples cannot run offline
+      forbidden_actions:
+        - tagging before remote CI is green
+        - ignoring R CMD check warnings
+        - shipping with stale retired installed docs
+        - accepting the gate with open P0 or P1 issues

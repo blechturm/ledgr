@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_3_spec_packet/`.
+`inst/design/ledgr_v0_1_7_4_spec_packet/`.
 
 ## Execution Contract
 
@@ -101,6 +101,10 @@ the active versioned spec packet, currently
   na = "null", digits = NA, pretty = FALSE)`.
 - Config hashes, strategy-state JSON, snapshot metadata JSON, and ledger
   `meta_json` must use this canonical path when deterministic identity matters.
+- Feature-map authoring objects are wrappers around existing indicator
+  definitions. Equivalent feature maps and plain feature lists must preserve
+  feature-related config identity for equivalent indicator definitions unless a
+  later contract deliberately changes run identity semantics.
 
 ## Strategy Contract
 
@@ -133,6 +137,16 @@ the active versioned spec packet, currently
 - `target_rebalance()` floors share quantities to whole numbers after sizing
   long-only weights from current pulse equity and current close prices. It must
   not silently create fractional share targets.
+- Feature maps are authoring UX over the existing feature registry and pulse
+  context. They may make feature registration and pulse-time lookup easier, but
+  they must not add a second strategy path: strategies still return full named
+  numeric target vectors, `ledgr_target`, or `list(targets = ...)`.
+- `ledgr_feature_map()` may bundle aliases, indicator objects, and resolved
+  feature IDs for registration and lookup. Existing
+  `ledgr_experiment(features = list(...))` workflows remain valid.
+- Feature-map aliases are readable names for strategy authors. They are not
+  roles, selectors, recipes-style preprocessing groups, or execution
+  instructions.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.
@@ -183,6 +197,15 @@ the active versioned spec packet, currently
   IDs, including the requested feature, instrument, and available feature IDs
   (`<none>` if no features are registered). A known feature whose current value
   is warmup `NA` remains a normal `NA` lookup, not an error.
+- `ctx$features(instrument_id, feature_map)` is a pulse-scoped bundled view
+  over `ctx$feature()`. It must preserve no-lookahead semantics, fail loudly
+  for unregistered mapped feature IDs, and return warmup `NA` for known
+  features that are not usable yet.
+- `passed_warmup()` is a strategy-authoring guard for named numeric vectors
+  produced by `ctx$features()`. It is not a helper-pipeline transformation and
+  zero-length input must fail loudly rather than returning vacuous success.
+- v0.1.7.4 feature maps do not add `ctx$features_wide()` or any new wide
+  feature-table API.
 - Strategy evaluation errors are wrapped with pulse context while preserving the
   original condition as the parent. The wrapper must name the run, timestamp,
   instruments, and available feature IDs so users can distinguish strategy
@@ -333,6 +356,12 @@ the active versioned spec packet, currently
   and `?ledgr_ttr_warmup_rules`.
 - Help pages must not present pkgdown-only background articles as installed
   vignettes.
+- Visible vignette code must not depend on hidden setup helpers. Prefer
+  exported helpers such as `ledgr_utc()` or show local helpers before first
+  visible use.
+- Installed documentation must not expose stale retired article paths such as
+  `ttr-indicators` after `indicators` is the single installed indicator
+  article, unless the contract explicitly documents why both are needed.
 
 ## Verification Contract
 

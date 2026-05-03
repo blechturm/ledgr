@@ -684,6 +684,146 @@ surface.
 
 ---
 
+## v0.1.7.4 - External Documentation Review And Auditr Report
+
+**Goal:** Close the documentation gaps identified by external review and the
+v0.1.7.3 auditr episode report, and add the feature-authoring UX needed to make
+indicator-heavy strategies readable before the v0.1.8 API surface expands.
+
+This release may add a small authoring API for feature maps, but it must not
+change the execution model: strategies still return full named numeric target
+vectors, and helper objects must flow through the same target-vector validator.
+Documentation scope is intentionally held open until the auditr report is
+complete; the items below are confirmed findings from external review that do
+not depend on that report.
+
+### Confirmed Scope
+
+**`ledgr_backtest()` API-story clarification**
+
+The `metrics-and-accounting` vignette uses `ledgr_backtest()` as a compact
+accounting fixture while every other article teaches the canonical
+`snapshot -> ledgr_experiment() -> ledgr_run()` path. A reader who enters the
+site non-linearly sees two shapes for the same workflow. Add one sentence near
+the first `ledgr_backtest()` call making the fixture role explicit:
+
+> This article uses `ledgr_backtest()` as a compact fixture helper for
+> hand-checkable accounting examples. The canonical research workflow remains
+> `snapshot -> ledgr_experiment() -> ledgr_run()`, as shown in Getting Started.
+
+**Homepage framing**
+
+Add the following line to the homepage, near the canonical workflow diagram.
+It is the clearest single-sentence description of why the setup exists:
+
+> The setup is not overhead. The setup is the audit trail.
+
+**Leakage wrong/right example**
+
+Add a pkgdown-only article or a focused section in `strategy-development`
+showing a seductive vectorized leakage pattern alongside the ledgr equivalent:
+
+```r
+# Wrong: lead() reads tomorrow's close at decision time
+bars |>
+  mutate(signal = lead(close) / close - 1 > 0)
+
+# ledgr: the strategy has no object from which it can read tomorrow's close
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  for (id in ctx$universe) {
+    if (ctx$close(id) > ctx$open(id)) targets[id] <- params$qty
+  }
+  targets
+}
+```
+
+The closing line should be: "The ledgr strategy has no object from which it
+can accidentally read tomorrow's close." This makes the pulse model emotionally
+obvious rather than only architecturally described.
+
+**Feature-map authoring UX**
+
+Promote the design in `inst/design/ledgr_feature_map_ux.md` into this release.
+The goal is to remove stringly typed feature lookup from ordinary strategy code
+without adding a second execution path.
+
+Minimum user shape:
+
+```r
+features <- ledgr_feature_map(
+  rsi = ledgr_ind_ttr("RSI", input = "close", n = 14),
+  bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+)
+
+strategy <- function(ctx, params) {
+  targets <- ctx$hold()
+  for (id in ctx$universe) {
+    x <- ctx$features(id, features)
+    if (passed_warmup(x) && x[["rsi"]] > 50 && ctx$close(id) > x[["bb_up"]]) {
+      targets[id] <- params$qty
+    }
+  }
+  targets
+}
+```
+
+The same `features` object should be accepted by
+`ledgr_experiment(features = features)` for registration and by
+`ctx$features(id, features)` for pulse-time lookup. Plain `list()` feature
+registration remains supported.
+
+The first version includes `ledgr_feature_map()`, `ctx$features()`, and
+`passed_warmup()`. It does not add feature roles, selectors, `prep()`, `bake()`,
+wide feature tables, or any general preprocessing pipeline.
+
+### Auditr-Driven Scope
+
+The v0.1.7.3 auditr report found no high-severity ledgr theme. The package is
+holding, but the installed-package experience still has repeated documentation
+and discovery friction. v0.1.7.4 should resolve or explicitly defer every
+ledgr-side finding:
+
+- replace visible vignette calls to hidden `article_utc()` helpers with
+  exported `ledgr_utc()`;
+- investigate the CSV snapshot import/seal metadata workaround report and fix
+  or document the supported path;
+- add first-contact article links and local examples for strategy helper and
+  helper value-type help pages;
+- document readable feature aliases, multi-output feature IDs, and
+  parameter-grid feature registration;
+- extend zero-trade and warmup diagnosis with short-data and per-instrument
+  preflight checks;
+- make TTR dependency, multi-output columns, MACD argument matching, and pulse
+  snapshot prerequisites explicit;
+- remove or rewrite non-runnable first-path examples and stale installed-doc
+  navigation;
+- record the auditr `DOC_DISCOVERY.R` `n = Inf` issue as an auditr-side
+  follow-up, not a ledgr package API requirement.
+
+### Non-Goals
+
+- No execution behavior changes.
+- No new exported API outside the narrow feature-map authoring surface.
+- No sweep/tune APIs.
+
+### Definition of Done
+
+- `ledgr_backtest()` fixture role is explicit in `metrics-and-accounting`.
+- Homepage carries the "setup is the audit trail" framing.
+- Leakage wrong/right example exists as an article or vignette section.
+- `ledgr_feature_map()`, `ctx$features()`, and `passed_warmup()` are implemented,
+  documented, and tested against the existing strategy target-vector contract.
+- Plain `features = list(...)` registration remains supported.
+- All ledgr-side auditr report findings are either resolved or explicitly
+  deferred with a rationale.
+- Stale installed `ttr-indicators` artifacts are absent or justified by an
+  explicit documentation-contract change.
+- No new R CMD check warnings or notes.
+- Ubuntu and Windows CI are green.
+
+---
+
 ## v0.1.8 - Lightweight Parameter Sweep Mode
 
 **Goal:** Let users run fast exploratory parameter sweeps without DuckDB

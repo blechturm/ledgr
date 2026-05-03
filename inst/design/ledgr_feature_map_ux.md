@@ -1,7 +1,7 @@
 # ledgr Feature Map UX -- Design Proposal
 
-**Status:** Draft proposal. Candidate for a future feature-authoring ticket;
-explicitly not part of LDG-1306.
+**Status:** Design input for the v0.1.7.4 feature-map authoring tickets; not
+implemented yet.
 **Scope:** User-facing feature declaration, feature lookup, warmup guards, and
 strategy-authoring ergonomics. This document does not change the execution
 model.

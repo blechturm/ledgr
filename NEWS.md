@@ -1,3 +1,18 @@
+# ledgr 0.1.7.4
+
+- Planned: add feature-map authoring UX with `ledgr_feature_map()`,
+  `ctx$features()`, and `passed_warmup()` while preserving the existing
+  target-vector execution contract and `features = list(...)` registration.
+- Planned: resolve auditr documentation findings around hidden vignette
+  helpers, helper-page discovery, feature IDs, warmup diagnosis,
+  TTR-backed indicators, leakage examples, and first-path navigation.
+- Planned: verify the documented CSV snapshot import, seal, experiment, and
+  run workflow, fixing ledgr if a real metadata bug is confirmed or clarifying
+  the supported path if the report is not reproducible.
+- Planned: clean installed-documentation hygiene, including stale retired
+  `ttr-indicators` artifacts, package/help-page article links, pkgdown
+  reference entries, and documentation-contract tests.
+
 # ledgr 0.1.7.3
 
 - Correctness hardening: aligned equity-curve state, final positions, and
