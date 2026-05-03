@@ -94,7 +94,7 @@ tickets:
 
   - id: LDG-1303
     title: "Metric Definitions And Independent Oracle Fixtures"
-    status: planned
+    status: done
     priority: P0
     dependencies: [LDG-1302]
     tests:

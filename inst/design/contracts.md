@@ -263,12 +263,33 @@ the active versioned spec packet, currently
 - `ledgr_extract_fills()` and `ledgr_compute_equity_curve()` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
-- v0.1.7.3 owns the accounting and metric definition baseline in this section.
-  LDG-1303 must replace this scaffold with exact definitions for public summary
-  and comparison metrics, including total return, annualized return, max
-  drawdown, annualized volatility, total trades, win rate, average trade, and
-  time in market. Those definitions must be independently testable from public
-  result tables rather than from the metric implementation under test.
+- Public standard metrics use the equity rows returned by
+  `ledgr_results(bt, what = "equity")` and the closed trade rows returned by
+  `ledgr_results(bt, what = "trades")`.
+- `initial_equity` is the `equity` value in the first public equity row for the
+  completed run. Total return is `final_equity / initial_equity - 1`, where
+  `final_equity` is the `equity` value in the last public equity row. If no
+  equity row exists or `initial_equity` is zero, total return is `NA`.
+- Annualized return is the geometric annualized return from the same first and
+  last public equity rows: `(final_equity / initial_equity)^(1 / years) - 1`,
+  where `years = (n_equity_rows - 1) / bars_per_year`. If fewer than two equity
+  rows exist, `bars_per_year` is invalid, or `initial_equity` is zero, the
+  metric is `NA`.
+- Max drawdown is the maximum peak-to-trough decline in public equity rows:
+  `min(equity / cummax(equity) - 1)`.
+- Annualized volatility is `sd(period_returns) * sqrt(bars_per_year)`, where
+  `period_returns` are adjacent public equity-row returns
+  `equity[t] / equity[t - 1] - 1`. If fewer than two period returns exist, the
+  metric is `NA`.
+- `n_trades` is the number of closed trade rows. It is not the number of fill
+  rows.
+- `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.
+  Breakeven trades are not wins. If no closed trade rows exist, `win_rate` is
+  `NA`.
+- `avg_trade` is the mean `realized_pnl` across closed trade rows. If no closed
+  trade rows exist, `avg_trade` is `NA`.
+- `time_in_market` is the share of public equity rows with absolute
+  `positions_value > 1e-6`.
 
 ## Documentation Contract
 

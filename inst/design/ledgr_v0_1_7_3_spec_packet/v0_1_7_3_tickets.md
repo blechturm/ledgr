@@ -219,7 +219,7 @@ forbidden_actions:
 **Priority:** P0  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1302  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Define ledgr's public summary/comparison metrics and add independent oracle
@@ -245,13 +245,13 @@ the `initial capital` definition before writing total-return oracle tests.
    closed trades exist.
 
 **Acceptance Criteria:**
-- [ ] `initial capital` has one documented implementation/test definition.
-- [ ] Every displayed summary metric has a definition in `contracts.md`.
-- [ ] Independent oracle tests cover the deterministic fixture set.
-- [ ] `summary()`, `ledgr_compare_runs()`, and `ledgr_run_list()` agree on
+- [x] `initial capital` has one documented implementation/test definition.
+- [x] Every displayed summary metric has a definition in `contracts.md`.
+- [x] Independent oracle tests cover the deterministic fixture set.
+- [x] `summary()`, `ledgr_compare_runs()`, and `ledgr_run_list()` agree on
       metric definitions.
-- [ ] `n_trades` counts closed trade rows, not fill rows.
-- [ ] No expected metric is computed by reusing the internal function under
+- [x] `n_trades` counts closed trade rows, not fill rows.
+- [x] No expected metric is computed by reusing the internal function under
       test.
 
 **Test Requirements:**

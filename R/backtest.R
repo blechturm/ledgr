@@ -1354,12 +1354,17 @@ compute_annualized_return <- function(equity, bars_per_year) {
   if (!is.numeric(bars_per_year) || length(bars_per_year) != 1 || !is.finite(bars_per_year) || bars_per_year <= 0) {
     return(NA_real_)
   }
+  initial_equity <- as.numeric(equity$equity[[1]])
+  final_equity <- as.numeric(equity$equity[[nrow(equity)]])
+  if (!is.finite(initial_equity) || initial_equity == 0 || !is.finite(final_equity)) {
+    return(NA_real_)
+  }
 
   n_periods <- nrow(equity) - 1
   years <- n_periods / bars_per_year
   if (years <= 0) return(NA_real_)
 
-  total_return <- (equity$equity[[nrow(equity)]] / equity$equity[[1]]) - 1
+  total_return <- (final_equity / initial_equity) - 1
   (1 + total_return)^(1 / years) - 1
 }
 
@@ -1466,9 +1471,16 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
     returns <- (cur / prev) - 1
   }
   bars_per_year <- ledgr_estimate_bars_per_year(bt, equity, con = con)
+  initial_equity <- if (nrow(equity) > 0) as.numeric(equity$equity[[1]]) else NA_real_
+  final_equity <- if (nrow(equity) > 0) as.numeric(equity$equity[[nrow(equity)]]) else NA_real_
+  total_return <- if (nrow(equity) > 0 && is.finite(initial_equity) && initial_equity != 0 && is.finite(final_equity)) {
+    (final_equity / initial_equity) - 1
+  } else {
+    NA_real_
+  }
 
   list(
-    total_return = if (nrow(equity) > 0) (equity$equity[[nrow(equity)]] / equity$equity[[1]]) - 1 else NA_real_,
+    total_return = total_return,
     annualized_return = compute_annualized_return(equity, bars_per_year),
     volatility = if (length(returns) > 1) stats::sd(returns, na.rm = TRUE) * sqrt(bars_per_year) else NA_real_,
     max_drawdown = compute_max_drawdown(equity$equity),
@@ -1602,23 +1614,28 @@ ledgr_backtest_bench <- function(bt) {
 #'
 #' @param bt A `ledgr_backtest` object. This function does not accept an equity
 #'   tibble directly.
-#' @param metrics Only `"standard"` is supported in v0.1.2.
+#' @param metrics Only `"standard"` is supported in v0.1.7.
 #' @return Named list of metric values.
 #'
 #' @details
 #' Standard metrics are derived from the ledger and equity curve:
-#' - `total_return`: final equity divided by initial equity minus 1.
-#' - `annualized_return`: geometric annualized return using the detected bar
-#'   frequency, snapped to common frequencies such as daily or weekly.
-#' - `volatility`: annualized standard deviation of period equity returns.
-#' - `max_drawdown`: worst percentage decline from the running equity maximum.
+#' - `total_return`: last public equity row divided by the first public equity
+#'   row minus 1.
+#' - `annualized_return`: geometric annualized return from the first and last
+#'   public equity rows using the detected bar frequency, snapped to common
+#'   frequencies such as daily or weekly.
+#' - `volatility`: annualized standard deviation of adjacent public equity-row
+#'   returns.
+#' - `max_drawdown`: maximum peak-to-trough percentage decline,
+#'   `min(equity / cummax(equity) - 1)`.
 #' - `n_trades`: number of closed trade rows. Open-only fills do not count until
 #'   a later fill closes quantity.
 #' - `win_rate`: share of closed trade rows with strict realized P&L `> 0`;
 #'   breakeven is not a win, and open-position gains remain in equity until
 #'   closed.
 #' - `avg_trade`: mean realized P&L across closed trade rows.
-#' - `time_in_market`: share of equity timestamps with non-zero position value.
+#' - `time_in_market`: share of equity timestamps with absolute
+#'   `positions_value > 1e-6`.
 #'
 #' @examples
 #' bars <- data.frame(
