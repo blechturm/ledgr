@@ -44,6 +44,7 @@ Metrics and accounting:
 \code{vignette("metrics-and-accounting", package = "ledgr")}
 \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
 }
+
 \examples{
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 30))

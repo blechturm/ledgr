@@ -324,6 +324,13 @@ the active versioned spec packet, currently
   `system.file("doc", package = "ledgr")`, and direct paths for core installed
   articles such as `strategy-development`, `metrics-and-accounting`, and
   `experiment-store`.
+- Indicator concepts must have one installed teaching article, `indicators`,
+  covering built-in indicators, TTR-backed indicators, feature IDs, and warmup
+  `NA`. `ttr-indicators` must not remain as a parallel installed teaching
+  vignette unless the contract explicitly documents why both are needed.
+- TTR-specific reference facts, including multi-output column names and
+  detailed warmup formulas, belong in function help such as `?ledgr_ind_ttr`
+  and `?ledgr_ttr_warmup_rules`.
 - Help pages must not present pkgdown-only background articles as installed
   vignettes.
 

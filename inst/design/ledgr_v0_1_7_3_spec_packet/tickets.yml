@@ -279,7 +279,7 @@ tickets:
 
   - id: LDG-1307
     title: "Pkgdown Reading Order And Indicator Vignette Spine"
-    status: planned
+    status: done
     priority: P2
     dependencies: [LDG-1304, LDG-1305, LDG-1306]
     tests:

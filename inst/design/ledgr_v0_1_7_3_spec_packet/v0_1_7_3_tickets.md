@@ -559,7 +559,7 @@ forbidden_actions:
 **Priority:** P2  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1304, LDG-1305, LDG-1306  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Make the pkgdown site imply a reading order and review the existing installed
@@ -592,19 +592,19 @@ redundant installed `ttr-indicators` teaching path.
    changes.
 
 **Acceptance Criteria:**
-- [ ] Pkgdown article order communicates the intended reading path.
-- [ ] Installed versus pkgdown-only article boundaries are preserved.
-- [ ] No design packet is copied into installed vignettes just for pkgdown.
-- [ ] Existing vignettes have been reviewed against the north-star checklist.
-- [ ] `indicators` is the installed teaching article for feature IDs,
+- [x] Pkgdown article order communicates the intended reading path.
+- [x] Installed versus pkgdown-only article boundaries are preserved.
+- [x] No design packet is copied into installed vignettes just for pkgdown.
+- [x] Existing vignettes have been reviewed against the north-star checklist.
+- [x] `indicators` is the installed teaching article for feature IDs,
       indicator warmup, built-in indicators, and TTR-backed indicators.
-- [ ] `ledgr_feature_id()`, `ledgr_ind_returns()`, and `ledgr_ind_ttr()` help
+- [x] `ledgr_feature_id()`, `ledgr_ind_returns()`, and `ledgr_ind_ttr()` help
       pages link to the installed `indicators` article.
-- [ ] `ttr-indicators` is not left as a redundant installed teaching vignette.
-- [ ] TTR-specific output names and warmup details remain discoverable from
+- [x] `ttr-indicators` is not left as a redundant installed teaching vignette.
+- [x] TTR-specific output names and warmup details remain discoverable from
       function help.
-- [ ] Windows-facing examples avoid fragile `$` shell quoting where practical.
-- [ ] Changed articles render and pkgdown builds if `_pkgdown.yml` changes.
+- [x] Windows-facing examples avoid fragile `$` shell quoting where practical.
+- [x] Changed articles render and pkgdown builds if `_pkgdown.yml` changes.
 
 **Test Requirements:**
 - Vignette/article renders.

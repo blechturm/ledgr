@@ -95,6 +95,11 @@ ledgr_ttr_warmup_rules <- function() {
 #'   )
 #'   ledgr_feature_id(list(macd, macd_signal))
 #' }
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_ind_ttr <- function(ttr_fn,
                           input,

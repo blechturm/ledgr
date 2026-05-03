@@ -39,6 +39,7 @@ Durable experiment stores:
 \code{vignette("experiment-store", package = "ledgr")}
 \code{system.file("doc", "experiment-store.html", package = "ledgr")}
 }
+
 \examples{
 if (FALSE) {
   # Requires quantmod and network access. Yahoo data can change over time.

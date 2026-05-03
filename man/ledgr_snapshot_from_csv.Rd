@@ -25,6 +25,7 @@ Durable experiment stores:
 \code{vignette("experiment-store", package = "ledgr")}
 \code{system.file("doc", "experiment-store.html", package = "ledgr")}
 }
+
 \examples{
 csv_path <- tempfile(fileext = ".csv")
 utils::write.csv(data.frame(

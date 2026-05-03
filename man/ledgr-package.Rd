@@ -31,10 +31,11 @@ Core installed articles:
 \item \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
 \item \code{vignette("experiment-store", package = "ledgr")}
 \item \code{system.file("doc", "experiment-store.html", package = "ledgr")}
-\item \code{vignette("ttr-indicators", package = "ledgr")}
-\item \code{system.file("doc", "ttr-indicators.html", package = "ledgr")}
+\item \code{vignette("indicators", package = "ledgr")}
+\item \code{system.file("doc", "indicators.html", package = "ledgr")}
 }
 }
+
 \seealso{
 Useful links:
 \itemize{

@@ -41,6 +41,13 @@ A \code{ledgr_indicator} object.
 \description{
 Construct a ledgr indicator from a supported TTR indicator
 }
+\section{Articles}{
+
+Indicators, feature IDs, and warmup:
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+}
+
 \examples{
 if (requireNamespace("TTR", quietly = TRUE)) {
   rsi_14 <- ledgr_ind_ttr("RSI", input = "close", n = 14)
@@ -72,4 +79,5 @@ if (requireNamespace("TTR", quietly = TRUE)) {
   )
   ledgr_feature_id(list(macd, macd_signal))
 }
+
 }

@@ -35,6 +35,7 @@ Metrics and accounting:
 \code{vignette("metrics-and-accounting", package = "ledgr")}
 \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
 }
+
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,

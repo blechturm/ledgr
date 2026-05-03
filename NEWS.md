@@ -9,8 +9,9 @@
 - Planned documentation discoverability: make installed articles discoverable
   from package-level and function-level help pages for headless and agent
   workflows.
-- Planned concept documentation: add an installed accounting/metrics article
-  and tighten helper, feature-ID, TTR-output, warmup, and no-trade guidance.
+- Planned concept documentation: add installed accounting/metrics and
+  indicators articles, consolidate TTR-backed and built-in indicator teaching,
+  and tighten helper, feature-ID, warmup, and no-trade guidance.
 
 # ledgr 0.1.7.2
 

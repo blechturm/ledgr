@@ -6,26 +6,29 @@ ledgr_test_source_vignette <- function(file) {
 
 testthat::test_that("strategy docs show feature ID discovery before feature lookup", {
   strategy_doc <- readLines(ledgr_test_source_vignette("strategy-development.Rmd"), warn = FALSE)
-  ttr_doc <- readLines(ledgr_test_source_vignette("ttr-indicators.Rmd"), warn = FALSE)
+  indicators_doc <- readLines(ledgr_test_source_vignette("indicators.Rmd"), warn = FALSE)
 
   first_strategy_feature_id <- grep("ledgr_feature_id", strategy_doc)[[1]]
   first_strategy_lookup <- grep("\\$feature\\([^)]*\"", strategy_doc)[[1]]
   testthat::expect_lt(first_strategy_feature_id, first_strategy_lookup)
 
-  first_ttr_feature_id <- grep("ledgr_feature_id", ttr_doc)[[1]]
-  first_ttr_lookup <- grep("\\$feature\\([^)]*\"", ttr_doc)[[1]]
-  testthat::expect_lt(first_ttr_feature_id, first_ttr_lookup)
+  first_indicator_feature_id <- grep("ledgr_feature_id", indicators_doc)[[1]]
+  first_indicator_lookup <- grep("\\$feature\\([^)]*\"", indicators_doc)[[1]]
+  testthat::expect_lt(first_indicator_feature_id, first_indicator_lookup)
 })
 
-testthat::test_that("TTR docs include compact multi-output ID references", {
-  ttr_doc <- paste(readLines(ledgr_test_source_vignette("ttr-indicators.Rmd"), warn = FALSE), collapse = "\n")
+testthat::test_that("indicator docs include compact multi-output ID references", {
+  indicators_doc <- paste(readLines(ledgr_test_source_vignette("indicators.Rmd"), warn = FALSE), collapse = "\n")
+  ttr_help <- paste(readLines(testthat::test_path("..", "..", "man", "ledgr_ind_ttr.Rd"), warn = FALSE), collapse = "\n")
 
-  testthat::expect_match(ttr_doc, "ttr_bbands_20_up", fixed = TRUE)
-  testthat::expect_match(ttr_doc, "ttr_macd_12_26_9_false_macd", fixed = TRUE)
-  testthat::expect_match(ttr_doc, "ttr_macd_12_26_9_false_signal", fixed = TRUE)
-  testthat::expect_match(ttr_doc, "Current TTR column names are `dn`, `mavg`, `up`, and", fixed = TRUE)
-  testthat::expect_match(ttr_doc, "pctB", fixed = TRUE)
-  testthat::expect_match(ttr_doc, "ledgr_feature_id()", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ttr_bbands_20_up", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ttr_macd_12_26_9_false_macd", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ttr_macd_12_26_9_false_signal", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "built-in ledgr indicators and TTR-backed indicators", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Warmup `NA` is expected", fixed = TRUE)
+  testthat::expect_match(ttr_help, "\\code{BBands} exposes \\code{dn}, \\code{mavg}, \\code{up}, and", fixed = TRUE)
+  testthat::expect_match(ttr_help, "\\code{pctB}", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_feature_id()", fixed = TRUE)
 })
 
 testthat::test_that("helper docs state composition and whole-share target flooring", {
@@ -106,10 +109,11 @@ testthat::test_that("package help exposes an installed-documentation spine", {
 
   testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
-  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "ttr-indicators")) {
+  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "indicators")) {
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
+  testthat::expect_no_match(text, "ttr-indicators", fixed = TRUE)
 })
 
 testthat::test_that("core help pages point to installed articles with browser-free paths", {
@@ -126,6 +130,9 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_snapshot_from_df = "experiment-store",
     ledgr_snapshot_from_csv = "experiment-store",
     ledgr_snapshot_from_yahoo = "experiment-store",
+    ledgr_feature_id = "indicators",
+    ledgr_ind_returns = "indicators",
+    ledgr_ind_ttr = "indicators",
     signal_return = "strategy-development",
     select_top_n = "strategy-development",
     weight_equal = "strategy-development",
@@ -157,6 +164,8 @@ testthat::test_that("help-page article links target installed vignettes only", {
 
   installed_articles <- tools::file_path_sans_ext(basename(list.files(vignettes_dir, pattern = "[.]Rmd$", full.names = TRUE)))
   testthat::expect_true(all(linked_articles %in% installed_articles))
+  testthat::expect_true("indicators" %in% installed_articles)
+  testthat::expect_false("ttr-indicators" %in% installed_articles)
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)
 })

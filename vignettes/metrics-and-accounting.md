@@ -40,7 +40,7 @@ bars <- data.frame(
 
 one_day_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) {
+  if (article_utc(ctx$ts_utc) == article_utc("2020-01-01")) {
     targets["AAA"] <- 1
   }
   targets
@@ -281,7 +281,7 @@ last target change.
 ``` r
 final_bar_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-05")) {
+  if (article_utc(ctx$ts_utc) == article_utc("2020-01-05")) {
     targets["AAA"] <- 1
   }
   targets
@@ -323,3 +323,11 @@ close(flat_bt)
 close(open_bt)
 close(final_bar_bt)
 ```
+
+## What’s Next?
+
+For strategy authoring, read
+`vignette("strategy-development", package = "ledgr")`. For indicators,
+feature IDs, and warmup, read
+`vignette("indicators", package = "ledgr")`. For durable run inspection,
+read `vignette("experiment-store", package = "ledgr")`.

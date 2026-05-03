@@ -171,7 +171,11 @@ anywhere.
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    between(
+      ts_utc,
+      article_utc("2019-01-01"),
+      article_utc("2019-06-30")
+    )
   )
 
 snapshot <- ledgr_snapshot_from_df(
@@ -213,7 +217,7 @@ way to understand what your strategy will see.
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-03-01"),
+  ts_utc = article_utc("2019-03-01"),
   features = features
 )
 
@@ -574,7 +578,9 @@ ledgr_snapshot_close(snapshot)
 ## What’s Next?
 
 If you want the formal contract, read the strategy and context sections
-in `inst/design/contracts.md`. If you want the deployment story,
-continue with `vignette("research-to-production", package = "ledgr")`.
-If you want to inspect or compare durable runs, read
+in `inst/design/contracts.md`. If you want the indicator story, read
+`vignette("indicators", package = "ledgr")`. If you want the deployment
+story, continue with
+`vignette("research-to-production", package = "ledgr")`. If you want to
+inspect or compare durable runs, read
 `vignette("experiment-store", package = "ledgr")`.
