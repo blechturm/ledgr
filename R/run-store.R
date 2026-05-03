@@ -537,6 +537,14 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' @return A `ledgr_comparison` object, which is a classed tibble with one row
 #'   per completed run. `n_trades` counts closed trade rows, not open-only fill
 #'   rows; `win_rate` is computed over those closed trade rows.
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#'
+#' Metrics and accounting:
+#' `vignette("metrics-and-accounting", package = "ledgr")`
+#' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 30))

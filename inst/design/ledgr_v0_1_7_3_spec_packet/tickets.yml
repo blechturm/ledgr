@@ -189,7 +189,7 @@ tickets:
 
   - id: LDG-1305
     title: "Function-Level Help Discoverability"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1304]
     tests:

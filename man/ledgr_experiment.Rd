@@ -44,6 +44,16 @@ state, and execution options into the experiment-first public object used by
 the v0.1.7 workflow. The constructor validates shape only; it does not run a
 strategy or write run artifacts.
 }
+\section{Articles}{
+
+Strategy authoring:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,

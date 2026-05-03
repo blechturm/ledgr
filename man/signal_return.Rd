@@ -20,3 +20,9 @@ already be registered on the experiment, for example with
 \code{features = list(ledgr_ind_returns(20))}; this helper never auto-registers
 indicators.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}

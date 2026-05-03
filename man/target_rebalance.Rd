@@ -22,3 +22,9 @@ A full-universe \code{ledgr_target} object.
 decision time; fills still occur at the next open, so small drift between
 decision-time sizing and fill-time value is expected.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}

@@ -39,6 +39,12 @@ It is the source for \code{n_trades}, \code{win_rate}, and \code{avg_trade}.
 drawdown, volatility, and exposure metrics. Open positions can affect equity
 through \code{positions_value} even when there are zero closed trade rows.
 }
+\section{Articles}{
+
+Metrics and accounting:
+\code{vignette("metrics-and-accounting", package = "ledgr")}
+\code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+}
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,

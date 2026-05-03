@@ -10,6 +10,31 @@ Correctness-first, event-sourced backtesting with sealed data snapshots,
 deterministic replay, no-lookahead strategy execution, and ledger-derived
 results.
 }
+\section{Start here}{
+
+Installed vignettes can be discovered interactively with:
+
+\code{vignette(package = "ledgr")}
+
+Noninteractive \code{Rscript} and agent workflows can locate installed article
+files with:
+
+\code{system.file("doc", package = "ledgr")}
+
+Core installed articles:
+\itemize{
+\item \code{vignette("getting-started", package = "ledgr")}
+\item \code{system.file("doc", "getting-started.html", package = "ledgr")}
+\item \code{vignette("strategy-development", package = "ledgr")}
+\item \code{system.file("doc", "strategy-development.html", package = "ledgr")}
+\item \code{vignette("metrics-and-accounting", package = "ledgr")}
+\item \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+\item \code{vignette("experiment-store", package = "ledgr")}
+\item \code{system.file("doc", "experiment-store.html", package = "ledgr")}
+\item \code{vignette("ttr-indicators", package = "ledgr")}
+\item \code{system.file("doc", "ttr-indicators.html", package = "ledgr")}
+}
+}
 \seealso{
 Useful links:
 \itemize{
@@ -23,4 +48,3 @@ Useful links:
 \strong{Maintainer}: Max Thomasberger \email{31213680+blechturm@users.noreply.github.com}
 
 }
-\keyword{internal}

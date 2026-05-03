@@ -38,6 +38,15 @@
 #' v0.1.x does not provide a supported broker-style short-selling contract.
 #' Strategy authors should treat negative target quantities as outside the
 #' supported public workflow until explicit shorting semantics are specified.
+#'
+#' @section Articles:
+#' Strategy authoring:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
+#'
+#' Metrics and accounting:
+#' `vignette("metrics-and-accounting", package = "ledgr")`
+#' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -269,6 +278,14 @@ ledgr_run_config <- function(config, run_id = NULL) {
 #' @param seed Reserved for future deterministic stochastic workflows. v0.1.7
 #'   stores `seed = NULL` in run identity and rejects non-NULL seeds.
 #' @return A `ledgr_backtest` object.
+#' @section Articles:
+#' Strategy authoring:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
+#'
+#' Metrics and accounting:
+#' `vignette("metrics-and-accounting", package = "ledgr")`
+#' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
@@ -1837,6 +1854,11 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
 #' `what = "equity"` returns the public equity curve used for return,
 #' drawdown, volatility, and exposure metrics. Open positions can affect equity
 #' through `positions_value` even when there are zero closed trade rows.
+#'
+#' @section Articles:
+#' Metrics and accounting:
+#' `vignette("metrics-and-accounting", package = "ledgr")`
+#' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -1913,6 +1935,11 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' drawdown, volatility, and exposure metrics. Open positions can affect equity
 #' through `positions_value` even when there are zero closed trade rows.
 #'
+#' @section Articles:
+#' Metrics and accounting:
+#' `vignette("metrics-and-accounting", package = "ledgr")`
+#' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#' 
 #' @param bt A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"fills"`, `"trades"`, or
 #'   `"ledger"`.

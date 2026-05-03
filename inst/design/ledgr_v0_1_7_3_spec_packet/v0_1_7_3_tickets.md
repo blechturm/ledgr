@@ -393,7 +393,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2-3 days  
 **Dependencies:** LDG-1304  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Make installed articles discoverable from the help pages users and agents
@@ -415,12 +415,12 @@ actually inspect first, not only from the README.
 6. Regenerate Rd files.
 
 **Acceptance Criteria:**
-- [ ] `?ledgr` / package help lists installed vignettes and `system.file()`
+- [x] `?ledgr` / package help lists installed vignettes and `system.file()`
       lookup commands.
-- [ ] Core entry-point help pages point to the right installed articles.
-- [ ] No help page links to an article that is not installed.
-- [ ] Documentation scans pin the discovery spine.
-- [ ] Background positioning articles remain pkgdown-only.
+- [x] Core entry-point help pages point to the right installed articles.
+- [x] No help page links to an article that is not installed.
+- [x] Documentation scans pin the discovery spine.
+- [x] Background positioning articles remain pkgdown-only.
 
 **Test Requirements:**
 - Rd documentation scan.

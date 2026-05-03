@@ -34,6 +34,16 @@ Reads stored run metadata, provenance, telemetry, and result artifacts from a
 durable DuckDB experiment store. Strategies are not rerun, recovered source
 is not evaluated, and the database is not mutated.
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+
+Metrics and accounting:
+\code{vignette("metrics-and-accounting", package = "ledgr")}
+\code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+}
 \examples{
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 30))

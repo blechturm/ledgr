@@ -79,3 +79,66 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(results_help, "action = \"CLOSE\"", fixed = TRUE)
   testthat::expect_match(results_help, "Open positions can affect equity", fixed = TRUE)
 })
+
+testthat::test_that("package help exposes an installed-documentation spine", {
+  root <- testthat::test_path("..", "..")
+  pkg_help <- file.path(root, "man", "ledgr-package.Rd")
+  testthat::skip_if_not(file.exists(pkg_help), "package help source not available during installed-package tests")
+  text <- paste(readLines(pkg_help, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
+  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "ttr-indicators")) {
+    testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
+    testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
+  }
+})
+
+testthat::test_that("core help pages point to installed articles with browser-free paths", {
+  root <- testthat::test_path("..", "..")
+  man_dir <- file.path(root, "man")
+  testthat::skip_if_not(dir.exists(man_dir), "man pages not available during installed-package tests")
+
+  expected <- list(
+    ledgr_run = c("strategy-development", "metrics-and-accounting"),
+    ledgr_experiment = c("strategy-development", "experiment-store"),
+    ledgr_backtest = c("strategy-development", "metrics-and-accounting"),
+    ledgr_results = "metrics-and-accounting",
+    ledgr_compare_runs = c("experiment-store", "metrics-and-accounting"),
+    ledgr_snapshot_from_df = "experiment-store",
+    ledgr_snapshot_from_csv = "experiment-store",
+    ledgr_snapshot_from_yahoo = "experiment-store",
+    signal_return = "strategy-development",
+    select_top_n = "strategy-development",
+    weight_equal = "strategy-development",
+    target_rebalance = "strategy-development"
+  )
+
+  for (page in names(expected)) {
+    path <- file.path(man_dir, paste0(page, ".Rd"))
+    text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+    for (article in expected[[page]]) {
+      testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE, info = page)
+      testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE, info = page)
+    }
+  }
+})
+
+testthat::test_that("help-page article links target installed vignettes only", {
+  root <- testthat::test_path("..", "..")
+  man_dir <- file.path(root, "man")
+  vignettes_dir <- file.path(root, "vignettes")
+  testthat::skip_if_not(dir.exists(man_dir) && dir.exists(vignettes_dir), "source docs not available during installed-package tests")
+
+  man_text <- paste(unlist(lapply(list.files(man_dir, pattern = "[.]Rd$", full.names = TRUE), readLines, warn = FALSE)), collapse = "\n")
+  linked <- unique(unlist(regmatches(
+    man_text,
+    gregexpr('system[.]file\\("doc", "[^"]+[.]html", package = "ledgr"\\)', man_text)
+  )))
+  linked_articles <- sub('^system[.]file\\("doc", "([^"]+)[.]html", package = "ledgr"\\)$', "\\1", linked)
+
+  installed_articles <- tools::file_path_sans_ext(basename(list.files(vignettes_dir, pattern = "[.]Rmd$", full.names = TRUE)))
+  testthat::expect_true(all(linked_articles %in% installed_articles))
+  testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
+  testthat::expect_false("why-r" %in% linked_articles)
+})

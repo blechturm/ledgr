@@ -308,9 +308,16 @@ the active versioned spec packet, currently
 - README must document noninteractive installed-documentation discovery for
   `Rscript` and agent workflows, including `vignette(package = "ledgr")` and
   `system.file("doc", package = "ledgr")`.
-- v0.1.7.3 owns the next documentation-discovery hardening step. LDG-1305 must
-  extend this contract so core function-level help pages point to relevant
-  installed articles with browser-free lookup paths.
+- Core function-level help pages must point to relevant installed articles with
+  both interactive and browser-free lookup paths. The browser-free form is
+  `system.file("doc", "<article>.html", package = "ledgr")`.
+- Package help (`?ledgr` / `?ledgr-package`) must include a compact "Start
+  here" spine with `vignette(package = "ledgr")`,
+  `system.file("doc", package = "ledgr")`, and direct paths for core installed
+  articles such as `strategy-development`, `metrics-and-accounting`, and
+  `experiment-store`.
+- Help pages must not present pkgdown-only background articles as installed
+  vignettes.
 
 ## Verification Contract
 

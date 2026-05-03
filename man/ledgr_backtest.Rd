@@ -82,6 +82,16 @@ v0.1.x does not provide a supported broker-style short-selling contract.
 Strategy authors should treat negative target quantities as outside the
 supported public workflow until explicit shorting semantics are specified.
 }
+\section{Articles}{
+
+Strategy authoring:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+
+Metrics and accounting:
+\code{vignette("metrics-and-accounting", package = "ledgr")}
+\code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+}
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,

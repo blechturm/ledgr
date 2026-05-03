@@ -15,3 +15,9 @@ A \code{ledgr_weights} object.
 \code{weight_equal()} assigns equal positive weights to selected instruments.
 Empty selections produce empty weights.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}

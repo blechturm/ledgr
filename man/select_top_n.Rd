@@ -18,3 +18,9 @@ A \code{ledgr_selection} object.
 Missing values are ignored. Ties are broken deterministically by instrument
 ID in alphabetical order.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}
