@@ -332,11 +332,17 @@ empty weights, and a flat target.
 The warning exists because an empty selection can mean either “normal
 warmup” or “my signal is broken.” The helper cannot know which one is
 true, so it warns and lets the strategy decide how to handle that case.
+The warning includes the signal origin and non-missing count; if a run
+finishes with zero trades, inspect a late pulse without suppression
+before assuming the empty selection was only early warmup.
 
 ``` r
 top_return_strategy <- function(ctx, params) {
   signal <- signal_return(ctx, lookback = params$lookback)
-  selection <- suppressWarnings(select_top_n(signal, n = params$n))
+  selection <- suppressWarnings(
+    select_top_n(signal, n = params$n),
+    classes = "ledgr_empty_selection"
+  )
 
   weights <- weight_equal(selection)
   target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
@@ -353,6 +359,12 @@ Read it economically:
 
 No helper registers indicators automatically. The experiment must say
 which features exist.
+
+Class-specific suppression is deliberately narrow: it keeps expected
+warmup noise out of a full run while still allowing unrelated warnings
+to surface. There is no `warn_empty = FALSE` argument in v0.1.7.3; use a
+diagnostic pulse and call `select_top_n()` without suppression when a
+strategy produces no fills or no closed trades.
 
 ``` r
 exp <- ledgr_experiment(
@@ -547,7 +559,7 @@ ledgr_extract_strategy(snapshot, "top_return_1", trust = FALSE)
 #>
 #> Run ID:          top_return_1
 #> Reproducibility: tier_2
-#> Source Hash:     3fea0cd657f5bb33baf0f7939e8091258abcaad27c48b6f261bbc3039733d9aa
+#> Source Hash:     b706d30745a9bbbb0793f14aa6fcc3e74e4b65fb0585e8045fa326fbb00c6316
 #> Params Hash:     3caea9cbe019dbfa16b53b9bbeee913bdb2f16e4c6f196e0f5a3c8332cac270c
 #> Hash Verified:   TRUE
 #> Trust:           FALSE

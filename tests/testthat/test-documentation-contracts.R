@@ -39,6 +39,8 @@ testthat::test_that("helper docs state composition and whole-share target floori
 
   testthat::expect_match(strategy_doc, "Execution semantics begin only at the target stage", fixed = TRUE)
   testthat::expect_match(strategy_doc, "floors to whole shares", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "signal origin and non-missing count", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "There is no `warn_empty = FALSE` argument", fixed = TRUE)
   testthat::expect_match(target_help, "floored to whole numbers", fixed = TRUE)
   testthat::expect_match(target_help, "floor(weight * equity_fraction * equity /", fixed = TRUE)
 
@@ -89,6 +91,9 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   )) {
     testthat::expect_match(metrics_doc, term, fixed = TRUE)
   }
+  testthat::expect_match(metrics_doc, "Diagnose A Successful Run With Zero Trades", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Expected warmup is local to the beginning of a run", fixed = TRUE)
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)

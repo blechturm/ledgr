@@ -330,7 +330,7 @@ tickets:
 
   - id: LDG-1308
     title: "No-Trade And Warmup Diagnostics"
-    status: planned
+    status: done
     priority: P2
     dependencies: [LDG-1303, LDG-1304]
     tests:

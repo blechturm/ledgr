@@ -666,7 +666,7 @@ forbidden_actions:
 **Priority:** P2  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1303, LDG-1304  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Improve the user path for successful runs with no fills or no closed trades,
@@ -689,13 +689,13 @@ design remains bounded.
 6. If runtime changes are deferred, document the deferral explicitly.
 
 **Acceptance Criteria:**
-- [ ] Users have a documented checklist for diagnosing zero-trade runs.
-- [ ] The docs distinguish expected warmup from never-usable signals.
-- [ ] If warning behavior changes, tests cover origin/count details and
+- [x] Users have a documented checklist for diagnosing zero-trade runs.
+- [x] The docs distinguish expected warmup from never-usable signals.
+- [x] If warning behavior changes, tests cover origin/count details and
       suppression behavior.
-- [ ] If `warn_empty = FALSE` or warning-class work is deferred, the deferral is
+- [x] If `warn_empty = FALSE` or warning-class work is deferred, the deferral is
       explicit.
-- [ ] Existing helper behavior remains backward compatible unless a change is
+- [x] Existing helper behavior remains backward compatible unless a change is
       deliberately documented.
 
 **Test Requirements:**

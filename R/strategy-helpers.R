@@ -71,7 +71,9 @@ signal_return <- function(ctx, lookback = 20L) {
 #'
 #' `select_top_n()` selects the highest finite/non-missing signal values.
 #' Missing values are ignored. Ties are broken deterministically by instrument
-#' ID in alphabetical order.
+#' ID in alphabetical order. If no values are usable, the warning includes the
+#' signal origin and non-missing count so warmup can be distinguished from a
+#' signal that never becomes usable.
 #'
 #' @param signal A `ledgr_signal` object.
 #' @param n Number of instruments to select.
@@ -91,7 +93,18 @@ select_top_n <- function(signal, n) {
   ids <- names(signal)
   available <- !is.na(values)
   if (!any(available)) {
-    rlang::warn("No available signal values; returning an empty selection.", class = "ledgr_empty_selection")
+    origin <- attr(signal, "origin")
+    if (is.null(origin) || is.na(origin) || !nzchar(origin)) {
+      origin <- "<unknown>"
+    }
+    rlang::warn(
+      sprintf(
+        "No available signal values for origin `%s` (non-missing 0/%d); returning an empty selection.",
+        origin,
+        length(ids)
+      ),
+      class = "ledgr_empty_selection"
+    )
     return(ledgr_selection(logical(), universe = ids, origin = attr(signal, "origin")))
   }
 

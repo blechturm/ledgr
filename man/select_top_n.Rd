@@ -17,7 +17,9 @@ A \code{ledgr_selection} object.
 \description{
 \code{select_top_n()} selects the highest finite/non-missing signal values.
 Missing values are ignored. Ties are broken deterministically by instrument
-ID in alphabetical order.
+ID in alphabetical order. If no values are usable, the warning includes the
+signal origin and non-missing count so warmup can be distinguished from a
+signal that never becomes usable.
 }
 \section{Articles}{
 

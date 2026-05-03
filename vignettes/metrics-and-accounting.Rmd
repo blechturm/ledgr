@@ -258,6 +258,35 @@ warned
 ledgr_results(final_bar_bt, what = "fills")
 ```
 
+## Diagnose A Successful Run With Zero Trades
+
+A completed run with zero trades is not automatically wrong. It means ledgr
+accepted the strategy outputs and the ledger reached the end of the sample, but
+no closed round trips were recorded.
+
+Use this checklist before changing the strategy:
+
+1. Start with `summary(bt)`. If `Total Trades` is zero, `win_rate` and
+   `avg_trade` should be `NA`, not zero.
+2. Inspect `ledgr_results(bt, what = "fills")`. Empty fills mean nothing ever
+   executed. Non-empty fills with empty trades mean positions opened but did
+   not close.
+3. Confirm the feature IDs with `ledgr_feature_id(features)`. A helper such as
+   `signal_return(ctx, lookback = 60)` reads `return_60`; that indicator must
+   be registered before the run.
+4. Inspect a late pulse with `ledgr_pulse_snapshot()`. If the feature is still
+   `NA` for every instrument near the end of the sample, the issue is no longer
+   ordinary early warmup. Check the lookback length, sample length, universe,
+   and feature registration.
+5. If the strategy suppresses `ledgr_empty_selection` warnings during a full
+   run, rerun the same helper pipeline on the diagnostic pulse without
+   suppression. The warning message reports the signal origin and non-missing
+   count.
+
+Expected warmup is local to the beginning of a run. A signal that has zero
+usable values over the whole sample is a different condition, even though both
+appear as `NA` feature values at a single pulse.
+
 ## Cleanup
 
 Closing handles releases DuckDB resources in long sessions. It is not data
