@@ -1736,13 +1736,33 @@ print.ledgr_backtest <- function(x, ...) {
 
 #' Summarize a backtest result
 #'
-#' Prints standard performance, risk, trade, and exposure metrics. See
-#' `ledgr_compute_metrics()` for metric definitions.
+#' Prints standard performance, risk, trade, and exposure metrics.
 #'
 #' @param object A `ledgr_backtest` object.
-#' @param metrics Only `"standard"` is supported in v0.1.2.
+#' @param metrics Only `"standard"` is supported in v0.1.7.
 #' @param ... Unused.
-#' @return The input object, invisibly.
+#' @return The input `ledgr_backtest` object, invisibly. The printed values are
+#'   descriptive output; use `ledgr_compute_metrics()` for a named list of the
+#'   same metric values.
+#'
+#' @details
+#' The standard summary displays:
+#' - total return: last public equity row divided by the first public equity
+#'   row minus 1;
+#' - annualized return: geometric annualized return from the first and last
+#'   public equity rows using the detected bar frequency;
+#' - max drawdown: maximum peak-to-trough decline,
+#'   `min(equity / cummax(equity) - 1)`;
+#' - annualized volatility: standard deviation of adjacent equity-row returns
+#'   multiplied by `sqrt(bars_per_year)`;
+#' - total trades: number of closed trade rows, not number of fill rows;
+#' - win rate: share of closed trade rows with strict `realized_pnl > 0`;
+#' - average trade: mean `realized_pnl` across closed trade rows;
+#' - time in market: share of equity rows with absolute
+#'   `positions_value > 1e-6`.
+#'
+#' If there are no closed trade rows, total trades is zero and win rate and
+#' average trade are printed as not available.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -1804,8 +1824,19 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
 #' @param ... Unused.
 #' @param type Deprecated alias for `what`.
 #' @return A tibble with the requested result table.
-#' @details `what = "fills"` returns execution fill rows, including opening
-#'   and closing actions. `what = "trades"` returns closed trade rows only.
+#' @details
+#' `what = "fills"` returns execution fill rows, including opening and closing
+#' actions. Fill rows include execution `side`, absolute `qty`, `price`, `fee`,
+#' derived `action`, and `realized_pnl`. Opening fills have `action = "OPEN"`
+#' and do not count as closed trades.
+#'
+#' `what = "trades"` returns closed trade rows only. This table has the same
+#' zero-row schema as fills, but only rows with `action = "CLOSE"` are present.
+#' It is the source for `n_trades`, `win_rate`, and `avg_trade`.
+#'
+#' `what = "equity"` returns the public equity curve used for return,
+#' drawdown, volatility, and exposure metrics. Open positions can affect equity
+#' through `positions_value` even when there are zero closed trade rows.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -1870,8 +1901,17 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' POSIXct UTC.
 #'
 #' `what = "fills"` returns execution fill rows, including opening and closing
-#' actions. `what = "trades"` returns closed trade rows only; this is the same
-#' definition used by `summary()` and `ledgr_compare_runs()` for `n_trades`.
+#' actions. Fill rows include execution `side`, absolute `qty`, `price`, `fee`,
+#' derived `action`, and `realized_pnl`. Opening fills have `action = "OPEN"`
+#' and do not count as closed trades.
+#'
+#' `what = "trades"` returns closed trade rows only. This table has the same
+#' zero-row schema as fills, but only rows with `action = "CLOSE"` are present.
+#' It is the source for `n_trades`, `win_rate`, and `avg_trade`.
+#'
+#' `what = "equity"` returns the public equity curve used for return,
+#' drawdown, volatility, and exposure metrics. Open positions can affect equity
+#' through `positions_value` even when there are zero closed trade rows.
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"fills"`, `"trades"`, or

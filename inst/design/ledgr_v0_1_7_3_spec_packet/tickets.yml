@@ -145,7 +145,7 @@ tickets:
 
   - id: LDG-1304
     title: "Summary, Result Semantics, And Accounting Vignette"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1303]
     tests:

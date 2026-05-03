@@ -311,7 +311,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1303  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Document the metric and result-table concepts that LDG-1303 defines. Add an
@@ -333,13 +333,13 @@ and result access.
    practice.
 
 **Acceptance Criteria:**
-- [ ] `metrics-and-accounting` is an installed vignette.
-- [ ] The vignette teaches metric derivation from public result tables.
-- [ ] Summary help defines all displayed metrics.
-- [ ] `ledgr_results()` help distinguishes fills, trades, open positions, and
+- [x] `metrics-and-accounting` is an installed vignette.
+- [x] The vignette teaches metric derivation from public result tables.
+- [x] Summary help defines all displayed metrics.
+- [x] `ledgr_results()` help distinguishes fills, trades, open positions, and
       zero-row results.
-- [ ] Docs state that zero closed trades and `win_rate = NA` can be correct.
-- [ ] Examples run against offline demo data or tiny in-memory fixtures.
+- [x] Docs state that zero closed trades and `win_rate = NA` can be correct.
+- [x] Examples run against offline demo data or tiny in-memory fixtures.
 
 **Test Requirements:**
 - Vignette render.

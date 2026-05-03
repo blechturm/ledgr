@@ -9,16 +9,38 @@
 \arguments{
 \item{object}{A \code{ledgr_backtest} object.}
 
-\item{metrics}{Only \code{"standard"} is supported in v0.1.2.}
+\item{metrics}{Only \code{"standard"} is supported in v0.1.7.}
 
 \item{...}{Unused.}
 }
 \value{
-The input object, invisibly.
+The input \code{ledgr_backtest} object, invisibly. The printed values are
+descriptive output; use \code{ledgr_compute_metrics()} for a named list of the
+same metric values.
 }
 \description{
-Prints standard performance, risk, trade, and exposure metrics. See
-\code{ledgr_compute_metrics()} for metric definitions.
+Prints standard performance, risk, trade, and exposure metrics.
+}
+\details{
+The standard summary displays:
+\itemize{
+\item total return: last public equity row divided by the first public equity
+row minus 1;
+\item annualized return: geometric annualized return from the first and last
+public equity rows using the detected bar frequency;
+\item max drawdown: maximum peak-to-trough decline,
+\code{min(equity / cummax(equity) - 1)};
+\item annualized volatility: standard deviation of adjacent equity-row returns
+multiplied by \code{sqrt(bars_per_year)};
+\item total trades: number of closed trade rows, not number of fill rows;
+\item win rate: share of closed trade rows with strict \code{realized_pnl > 0};
+\item average trade: mean \code{realized_pnl} across closed trade rows;
+\item time in market: share of equity rows with absolute
+\code{positions_value > 1e-6}.
+}
+
+If there are no closed trade rows, total trades is zero and win rate and
+average trade are printed as not available.
 }
 \examples{
 bars <- data.frame(

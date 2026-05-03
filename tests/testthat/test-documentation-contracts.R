@@ -49,3 +49,33 @@ testthat::test_that("README documents noninteractive documentation discovery", {
   testthat::expect_match(text, "system.file\\(\"doc\", package = \"ledgr\"\\)")
   testthat::expect_match(text, "noninteractive `Rscript` and agent\\s+workflows")
 })
+
+testthat::test_that("metrics and accounting docs define public result semantics", {
+  metrics_doc <- paste(readLines(ledgr_test_source_vignette("metrics-and-accounting.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  summary_help <- paste(readLines(file.path(root, "man", "summary.ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
+  results_help <- paste(readLines(file.path(root, "man", "ledgr_results.Rd"), warn = FALSE), collapse = "\n")
+
+  for (term in c(
+    "total_return",
+    "annualized_return",
+    "max_drawdown",
+    "volatility",
+    "n_trades",
+    "win_rate",
+    "avg_trade",
+    "time_in_market"
+  )) {
+    testthat::expect_match(metrics_doc, term, fixed = TRUE)
+  }
+
+  testthat::expect_match(summary_help, "total return", fixed = TRUE)
+  testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)
+  testthat::expect_match(summary_help, "time in market", fixed = TRUE)
+  testthat::expect_match(summary_help, "closed trade rows", fixed = TRUE)
+
+  testthat::expect_match(results_help, "execution fill rows", fixed = TRUE)
+  testthat::expect_match(results_help, "zero-row schema", fixed = TRUE)
+  testthat::expect_match(results_help, "action = \"CLOSE\"", fixed = TRUE)
+  testthat::expect_match(results_help, "Open positions can affect equity", fixed = TRUE)
+})

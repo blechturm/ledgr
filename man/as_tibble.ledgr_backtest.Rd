@@ -24,7 +24,17 @@ Extract tidy backtest tables
 }
 \details{
 \code{what = "fills"} returns execution fill rows, including opening and closing
-actions. \code{what = "trades"} returns closed trade rows only.
+actions. Fill rows include execution \code{side}, absolute \code{qty}, \code{price}, \code{fee},
+derived \code{action}, and \code{realized_pnl}. Opening fills have \code{action = "OPEN"}
+and do not count as closed trades.
+
+\code{what = "trades"} returns closed trade rows only. This table has the same
+zero-row schema as fills, but only rows with \code{action = "CLOSE"} are present.
+It is the source for \code{n_trades}, \code{win_rate}, and \code{avg_trade}.
+
+\code{what = "equity"} returns the public equity curve used for return,
+drawdown, volatility, and exposure metrics. Open positions can affect equity
+through \code{positions_value} even when there are zero closed trade rows.
 }
 \examples{
 bars <- data.frame(
