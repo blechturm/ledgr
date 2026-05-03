@@ -635,6 +635,55 @@ existing runner.
 
 ---
 
+## v0.1.7.3 - Accounting Correctness And Indicator Documentation UX
+
+**Goal:** Close the confirmed v0.1.7.2 accounting defect, make public metrics
+auditable from result tables, and clean up the installed documentation spine so
+indicator usage is teachable from one canonical article.
+
+v0.1.7.3 is intentionally small and correctness-first. The release may refactor
+documentation architecture, but it must not introduce the future feature-map API
+surface.
+
+### Scope
+
+- Fix the Episode 013 equity-curve inconsistency so final cash, positions,
+  `positions_value`, equity, fills, trades, and summary metrics reconcile.
+- Add independent metric oracles that recompute public metrics from public
+  result tables rather than ledgr metric internals.
+- Add an installed `metrics-and-accounting` vignette that teaches fills,
+  trades, equity rows, and summary metric definitions.
+- Strengthen help-page and package-level article discovery for headless users
+  and agents.
+- Consolidate indicator teaching into a single installed `indicators` vignette:
+  - built-in ledgr indicators and TTR-backed indicators share one mental model;
+  - feature IDs are shown before use;
+  - warmup `NA` is explained as the general indicator contract;
+  - multi-output TTR details remain available through focused reference docs.
+- Retire `ttr-indicators` as a parallel installed teaching vignette once the
+  general indicators article exists. Do not keep redundant installed docs for
+  the same indicator mental model.
+- Keep the feature-map API proposal in `inst/design/ledgr_feature_map_ux.md` as
+  future design work. Do not export `ledgr_feature_map()`, `ctx$features()`, or
+  `passed_warmup()` in this release.
+
+### Definition of Done
+
+- Accounting fixtures pass in supported execution modes.
+- Every printed public metric has a documented definition and an independent
+  regression oracle.
+- Installed help pages point to the correct teaching articles with interactive
+  and noninteractive lookup paths.
+- `indicators` is the installed article for indicator concepts; `ttr-indicators`
+  is removed from the installed article spine or otherwise deliberately retired
+  with matching contract, help, pkgdown, and test updates.
+- TTR-specific output names and warmup formulas remain discoverable from
+  `?ledgr_ind_ttr`.
+- No feature-map API is exported.
+- Ubuntu and Windows CI are green.
+
+---
+
 ## v0.1.8 - Lightweight Parameter Sweep Mode
 
 **Goal:** Let users run fast exploratory parameter sweeps without DuckDB

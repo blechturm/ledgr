@@ -472,7 +472,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 2-4 days  
 **Dependencies:** LDG-1301  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Close the helper and feature documentation gaps from Episodes 006 and 018:
@@ -496,13 +496,13 @@ exact feature IDs, multi-output TTR indicators, and
 8. Add documentation scans or examples where practical.
 
 **Acceptance Criteria:**
-- [ ] Episode 006 raw findings are reviewed and either addressed or explicitly
+- [x] Episode 006 raw findings are reviewed and either addressed or explicitly
       deferred.
-- [ ] `target_rebalance()` docs state whole-share floor sizing.
-- [ ] The helper composition contract is documented.
-- [ ] Multi-output TTR IDs are easier to discover before use.
-- [ ] `ledgr_feature_id()` appears before feature IDs are used in new examples.
-- [ ] `ledgr_signal_strategy()` help matches the implemented signature.
+- [x] `target_rebalance()` docs state whole-share floor sizing.
+- [x] The helper composition contract is documented.
+- [x] Multi-output TTR IDs are easier to discover before use.
+- [x] `ledgr_feature_id()` appears before feature IDs are used in new examples.
+- [x] `ledgr_signal_strategy()` help matches the implemented signature.
 
 **Test Requirements:**
 - Documentation render.
@@ -554,7 +554,7 @@ forbidden_actions:
 
 ---
 
-## LDG-1307: Pkgdown Reading Order And Vignette North-Star Review
+## LDG-1307: Pkgdown Reading Order And Indicator Vignette Spine
 
 **Priority:** P2  
 **Effort:** 2-4 days  
@@ -563,7 +563,9 @@ forbidden_actions:
 
 **Description:**
 Make the pkgdown site imply a reading order and review the existing installed
-and pkgdown-only vignettes against the ledgr teaching north star.
+and pkgdown-only vignettes against the ledgr teaching north star. Consolidate
+indicator teaching into one installed `indicators` vignette and retire the
+redundant installed `ttr-indicators` teaching path.
 
 **Tasks:**
 1. Update `_pkgdown.yml` article sections to distinguish Start Here, Core
@@ -573,11 +575,20 @@ and pkgdown-only vignettes against the ledgr teaching north star.
 3. Treat links to `inst/design/` materials as aspirational unless a deliberate
    pkgdown/design-reference decision is made.
 4. Add "what to read next" links to installed vignettes where useful.
-5. Review `getting-started`, `strategy-development`, `experiment-store`, and
-   pkgdown-only articles against the north-star checklist.
-6. Prefer `.R` script snippets over fragile shell one-liners for examples with
+5. Review `getting-started`, `strategy-development`, `experiment-store`,
+   current indicator/TTR docs, and pkgdown-only articles against the north-star
+   checklist.
+6. Create or refactor to a general installed `indicators` vignette that teaches
+   built-in ledgr indicators and TTR-backed indicators under one mental model.
+7. Fold reusable `ttr-indicators` teaching content into `indicators`; move
+   TTR-specific reference facts to `?ledgr_ind_ttr` where practical.
+8. Remove `ttr-indicators` from the installed article spine unless a deliberate
+   contract exception is documented.
+9. Update package help, function-level article links, pkgdown navigation,
+   contracts, and documentation tests for the new indicator spine.
+10. Prefer `.R` script snippets over fragile shell one-liners for examples with
    `$` or multi-line strategy code.
-7. Render changed vignettes/articles and build pkgdown if site navigation
+11. Render changed vignettes/articles and build pkgdown if site navigation
    changes.
 
 **Acceptance Criteria:**
@@ -585,6 +596,13 @@ and pkgdown-only vignettes against the ledgr teaching north star.
 - [ ] Installed versus pkgdown-only article boundaries are preserved.
 - [ ] No design packet is copied into installed vignettes just for pkgdown.
 - [ ] Existing vignettes have been reviewed against the north-star checklist.
+- [ ] `indicators` is the installed teaching article for feature IDs,
+      indicator warmup, built-in indicators, and TTR-backed indicators.
+- [ ] `ledgr_feature_id()`, `ledgr_ind_returns()`, and `ledgr_ind_ttr()` help
+      pages link to the installed `indicators` article.
+- [ ] `ttr-indicators` is not left as a redundant installed teaching vignette.
+- [ ] TTR-specific output names and warmup details remain discoverable from
+      function help.
 - [ ] Windows-facing examples avoid fragile `$` shell quoting where practical.
 - [ ] Changed articles render and pkgdown builds if `_pkgdown.yml` changes.
 
@@ -592,9 +610,11 @@ and pkgdown-only vignettes against the ledgr teaching north star.
 - Vignette/article renders.
 - Pkgdown build if navigation changes.
 - Installed-vignette boundary tests.
+- Package-help and function-help article-link tests.
 - Documentation scans for shell-style examples where practical.
 
-**Source Reference:** v0.1.7.3 spec sections R10, R11, C2, D2.
+**Source Reference:** v0.1.7.3 spec sections R9, R10, R11, C2, D2, D3;
+`inst/design/ledgr_feature_map_ux.md` documentation implications.
 
 **Classification:**
 ```yaml
@@ -610,27 +630,33 @@ invariants_at_risk:
   - installed-vs-pkgdown article boundary
   - documentation teaching order
   - Windows example usability
+  - indicator documentation spine
 required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
   - inst/design/contracts.md (Documentation Contract)
+  - inst/design/ledgr_feature_map_ux.md
   - _pkgdown.yml
   - vignettes/
   - vignettes/articles/
+  - R/indicator-ttr.R
   - inst/design/release_ci_playbook.md
 tests_required:
   - vignette/article render
   - pkgdown build if navigation changes
   - installed-vignette boundary tests
+  - package/function help article-link tests
 escalation_triggers:
   - pkgdown requires copying inst/design files into vignettes
   - article order conflicts with installed-vignette policy
   - examples need runtime changes to remain honest
+  - indicator docs require new public helper APIs
 forbidden_actions:
   - installing pkgdown-only positioning articles
   - copying design packets into installed vignettes without a contract decision
   - adding network-dependent examples
   - hiding broken examples by marking core chunks eval = FALSE
+  - exporting ledgr_feature_map, ctx$features, or passed_warmup in this ticket
 ```
 
 ---
@@ -739,14 +765,17 @@ Final validation gate for v0.1.7.3.
 5. Verify Episode 006 raw findings have been reviewed and addressed or
    explicitly deferred.
 6. Verify `metrics-and-accounting` is installed before help pages link to it.
-7. Render README and changed vignettes/articles.
-8. Run full package tests.
-9. Run coverage gate if required by current release practice.
-10. Run package check.
-11. Build pkgdown if navigation/articles changed.
-12. Run the full WSL/Ubuntu check from `release_ci_playbook.md`.
-13. Confirm Windows and Ubuntu remote CI are green before tagging.
-14. Confirm no open P0/P1 review findings remain.
+7. Verify `indicators` is the installed indicator teaching vignette and
+   `ttr-indicators.Rmd` has been deleted, moved to `vignettes/articles/`, or
+   deliberately retained with a documented contract exception.
+8. Render README and changed vignettes/articles.
+9. Run full package tests.
+10. Run coverage gate if required by current release practice.
+11. Run package check.
+12. Build pkgdown if navigation/articles changed.
+13. Run the full WSL/Ubuntu check from `release_ci_playbook.md`.
+14. Confirm Windows and Ubuntu remote CI are green before tagging.
+15. Confirm no open P0/P1 review findings remain.
 
 **Acceptance Criteria:**
 - [ ] Full tests pass.
@@ -757,6 +786,8 @@ Final validation gate for v0.1.7.3.
 - [ ] `DESCRIPTION` version is `0.1.7.3` before release tagging.
 - [ ] README and changed articles render.
 - [ ] pkgdown builds if navigation/articles changed.
+- [ ] Installed indicator documentation is consolidated around `indicators`,
+      with no redundant installed `ttr-indicators` teaching path.
 - [ ] Local WSL/Ubuntu gate passes on the release branch.
 - [ ] Remote Windows and Ubuntu CI are green on the target commit.
 - [ ] Contracts, NEWS, help pages, and vignettes match the implemented scope.
@@ -832,6 +863,9 @@ Do not implement these in v0.1.7.3:
 - `ledgr_sweep()`;
 - `ledgr_precompute_features()`;
 - `ledgr_tune()`;
+- `ledgr_feature_map()`;
+- `ctx$features()`;
+- `passed_warmup()`;
 - strategy dependency-packaging arguments;
 - persistent feature-cache storage;
 - short selling;

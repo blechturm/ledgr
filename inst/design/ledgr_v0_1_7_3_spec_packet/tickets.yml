@@ -233,7 +233,7 @@ tickets:
 
   - id: LDG-1306
     title: "Helper Composition, Feature IDs, And TTR Output Docs"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1301]
     tests:
@@ -278,7 +278,7 @@ tickets:
         - adding helper APIs outside the spec
 
   - id: LDG-1307
-    title: "Pkgdown Reading Order And Vignette North-Star Review"
+    title: "Pkgdown Reading Order And Indicator Vignette Spine"
     status: planned
     priority: P2
     dependencies: [LDG-1304, LDG-1305, LDG-1306]
@@ -286,6 +286,7 @@ tickets:
       - "vignette/article render"
       - "pkgdown build if navigation changes"
       - "installed-vignette boundary tests"
+      - "package/function help article-link tests"
     classification:
       risk_level: medium
       implementation_tier: M
@@ -299,27 +300,33 @@ tickets:
         - installed-vs-pkgdown article boundary
         - documentation teaching order
         - Windows example usability
+        - indicator documentation spine
       required_context:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
         - inst/design/contracts.md (Documentation Contract)
+        - inst/design/ledgr_feature_map_ux.md
         - _pkgdown.yml
         - vignettes/
         - vignettes/articles/
+        - R/indicator-ttr.R
         - inst/design/release_ci_playbook.md
       tests_required:
         - vignette/article render
         - pkgdown build if navigation changes
         - installed-vignette boundary tests
+        - package/function help article-link tests
       escalation_triggers:
         - pkgdown requires copying inst/design files into vignettes
         - article order conflicts with installed-vignette policy
         - examples need runtime changes to remain honest
+        - indicator docs require new public helper APIs
       forbidden_actions:
         - installing pkgdown-only positioning articles
         - copying design packets into installed vignettes without a contract decision
         - adding network-dependent examples
         - hiding broken examples by marking core chunks eval = FALSE
+        - exporting ledgr_feature_map, ctx$features, or passed_warmup in this ticket
 
   - id: LDG-1308
     title: "No-Trade And Warmup Diagnostics"
@@ -384,6 +391,7 @@ tickets:
       - "independent metric oracle tests"
       - "R CMD check"
       - "README/article renders"
+      - "installed indicator spine check"
       - "pkgdown build if applicable"
       - "export/API inventory scan"
       - "local WSL/Ubuntu gate"
@@ -402,6 +410,7 @@ tickets:
         - public API export boundary
         - accounting contract consistency
         - documentation accuracy
+        - indicator documentation spine
       required_context:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
@@ -418,6 +427,7 @@ tickets:
         - independent metric oracle tests
         - R CMD check
         - README/article renders
+        - installed indicator spine check
         - pkgdown build if applicable
         - export/API inventory scan
         - local WSL/Ubuntu gate

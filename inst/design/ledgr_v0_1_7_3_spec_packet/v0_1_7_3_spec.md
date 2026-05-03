@@ -74,6 +74,9 @@ then show how to inspect and verify the result.
 
 Add or revise concept material where the current docs do not explain fills,
 trades, equity curves, metrics, helper composition, or feature-ID behavior.
+Indicator documentation must be consolidated around a single installed
+`indicators` vignette rather than preserving separate installed teaching paths
+for built-in indicators and TTR-backed indicators.
 
 ---
 
@@ -159,6 +162,7 @@ Core help pages must point to the relevant installed articles. At minimum:
 - `ledgr_results()`;
 - `ledgr_compare_runs()`;
 - `ledgr_snapshot_from_df()` / snapshot creation entry points;
+- `ledgr_feature_id()`, `ledgr_ind_returns()`, and `ledgr_ind_ttr()`;
 - `signal_return()`, `select_top_n()`, `weight_equal()`, and
   `target_rebalance()`.
 
@@ -181,10 +185,14 @@ system.file("doc", package = "ledgr")
 system.file("doc", "strategy-development.html", package = "ledgr")
 system.file("doc", "experiment-store.html", package = "ledgr")
 system.file("doc", "metrics-and-accounting.html", package = "ledgr")
+system.file("doc", "indicators.html", package = "ledgr")
 ```
 
 If R7 is implemented before D1, the metrics-and-accounting path must be added
 as part of D1 before the release gate closes.
+
+If the `indicators` vignette is implemented after the package help spine, the
+`indicators.html` path must be added before the release gate closes.
 
 ### R8 - Helper Composition Semantics Must Be Documented
 
@@ -206,6 +214,12 @@ strings easier to discover.
 
 At minimum, examples that rely on feature IDs must show
 `ledgr_feature_id()` before using the ID in `ctx$feature()` or helper code.
+
+The release must also remove the redundant installed-documentation split between
+general indicator concepts and TTR-specific examples. Built-in ledgr indicators
+and TTR-backed indicators should be taught in one installed indicators vignette.
+TTR-specific output-column and warmup details should remain discoverable from
+function help, especially `?ledgr_ind_ttr`.
 
 ### R10 - Pkgdown Must Imply Reading Order
 
@@ -351,6 +365,9 @@ Inspecting durable runs and experiment stores:
 
 Accounting, fills, trades, and metrics:
   vignette("metrics-and-accounting", package = "ledgr")
+
+Indicators, feature IDs, and warmup:
+  vignette("indicators", package = "ledgr")
 ```
 
 ### C2 - Pkgdown Article Structure
@@ -365,8 +382,8 @@ Start Here
 
 Core Concepts
   Accounting, Fills, Trades, And Metrics [installed]
+  Indicators And Feature IDs [installed]
   Strategy Context And Pulses [installed or section in Strategy Development]
-  Feature IDs And Indicators [installed or pkgdown-only]
 
 Research Workflow
   Who ledgr is for [pkgdown-only]
@@ -417,6 +434,7 @@ Review:
 - `getting-started`;
 - `strategy-development`;
 - `experiment-store`;
+- current indicator/TTR documentation;
 - pkgdown-only background articles under `vignettes/articles/`.
 
 For each, decide whether it:
@@ -433,14 +451,22 @@ For each, decide whether it:
 
 ### D3 - Feature/Indicator Concept Coverage
 
-After reviewing episode 006, either update an existing vignette or create a
-compact concept article covering:
+After reviewing episode 006, create an installed `indicators` vignette, or
+rename/refactor the existing TTR material into that role, covering:
 
 - exact feature IDs;
 - `ledgr_feature_id()`;
+- built-in ledgr indicators and TTR-backed indicators under one mental model;
 - multi-output TTR indicators;
-- warmup `NA`;
+- warmup `NA` as the general indicator contract;
 - helper feature registration boundaries.
+
+The current `ttr-indicators` vignette should not remain as a parallel installed
+teaching article once `indicators` exists. Fold reusable teaching material into
+the general indicators vignette and move TTR-specific reference facts into
+function help. Retiring or deleting `ttr-indicators` requires matching updates
+to package help, function-level article links, pkgdown navigation, contracts,
+and documentation tests.
 
 ---
 
@@ -455,6 +481,8 @@ docs:
 - no new exported documentation helper such as `ledgr_docs()` in this cycle;
   reconsider only if function-level and package-level help still fail a later
   discovery audit;
+- no exported feature-map API in this cycle; `ledgr_feature_map()`,
+  `ctx$features()`, and `passed_warmup()` remain design proposals;
 - no second strategy execution path;
 - no silent treatment of missing targets as zero;
 - no broad rewrite of result storage unless required by the confirmed equity
@@ -474,6 +502,9 @@ The release is not ready until:
   docs or defects are either addressed or explicitly deferred;
 - `metrics-and-accounting` exists as an installed vignette before help pages
   link to it;
+- `indicators` is the installed indicator teaching vignette, and
+  `ttr-indicators` is not left as a redundant installed teaching article unless
+  the documentation contract explicitly says why;
 - function-level help pages point to installed articles;
 - pkgdown article order reflects the intended reading path;
 - vignettes have been reviewed against the north star;
