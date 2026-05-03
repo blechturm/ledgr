@@ -25,6 +25,17 @@ A \code{ledgr_backtest} object.
 experiment-first workflow. It evaluates run-time feature definitions,
 builds the canonical backtest config, and delegates to the shared runner.
 }
+\section{Articles}{
+
+Strategy authoring:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+
+Metrics and accounting:
+\code{vignette("metrics-and-accounting", package = "ledgr")}
+\code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+}
+
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,

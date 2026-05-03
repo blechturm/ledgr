@@ -53,7 +53,9 @@ ledgr_ttr_warmup_rules <- function() {
 #' @param input ledgr input shape. Supported values are `"close"`, `"hl"`,
 #'   `"hlc"`, `"ohlc"`, and `"hlcv"`.
 #' @param output Output column for multi-column TTR functions. Vector outputs
-#'   use `NULL`.
+#'   use `NULL`. For common multi-output functions, use TTR's column names:
+#'   `BBands` exposes `dn`, `mavg`, `up`, and `pctB`; `MACD` exposes `macd`
+#'   and `signal`, and ledgr also supports derived `histogram`.
 #' @param id Optional indicator identifier. If omitted, ledgr builds a stable ID
 #'   from the TTR function, explicit arguments, and output column.
 #' @param requires_bars Explicit warmup length. Required for unknown TTR
@@ -69,7 +71,35 @@ ledgr_ttr_warmup_rules <- function() {
 #'
 #'   atr_20 <- ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)
 #'   atr_20$id
+#'
+#'   bb_up <- ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+#'   ledgr_feature_id(bb_up)
+#'
+#'   macd <- ledgr_ind_ttr(
+#'     "MACD",
+#'     input = "close",
+#'     output = "macd",
+#'     nFast = 12,
+#'     nSlow = 26,
+#'     nSig = 9,
+#'     percent = FALSE
+#'   )
+#'   macd_signal <- ledgr_ind_ttr(
+#'     "MACD",
+#'     input = "close",
+#'     output = "signal",
+#'     nFast = 12,
+#'     nSlow = 26,
+#'     nSig = 9,
+#'     percent = FALSE
+#'   )
+#'   ledgr_feature_id(list(macd, macd_signal))
 #' }
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_ind_ttr <- function(ttr_fn,
                           input,
@@ -279,7 +309,7 @@ ledgr_ttr_example_call <- function(ttr_fn, input, required_args) {
     SMA = "ledgr_ind_ttr(\"SMA\", input = \"close\", n = 20)",
     EMA = "ledgr_ind_ttr(\"EMA\", input = \"close\", n = 20)",
     ATR = "ledgr_ind_ttr(\"ATR\", input = \"hlc\", output = \"atr\", n = 20)",
-    MACD = "ledgr_ind_ttr(\"MACD\", input = \"close\", output = \"macd\", nFast = 12, nSlow = 26, nSig = 9)",
+    MACD = "ledgr_ind_ttr(\"MACD\", input = \"close\", output = \"macd\", nFast = 12, nSlow = 26, nSig = 9, percent = FALSE)",
     WMA = "ledgr_ind_ttr(\"WMA\", input = \"close\", n = 10)",
     ROC = "ledgr_ind_ttr(\"ROC\", input = \"close\", n = 10)",
     momentum = "ledgr_ind_ttr(\"momentum\", input = \"close\", n = 10)",

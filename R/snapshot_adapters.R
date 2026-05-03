@@ -10,6 +10,10 @@
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
 #' @return A `ledgr_snapshot` object.
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
@@ -439,6 +443,10 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
 #' @return A `ledgr_snapshot` object.
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
 #' @examples
 #' csv_path <- tempfile(fileext = ".csv")
 #' utils::write.csv(data.frame(
@@ -512,6 +520,10 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
 #' @param ... Additional arguments passed to `quantmod::getSymbols()`.
 #' @return A `ledgr_snapshot` object.
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
 #' @examples
 #' if (FALSE) {
 #'   # Requires quantmod and network access. Yahoo data can change over time.

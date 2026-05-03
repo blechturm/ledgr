@@ -87,6 +87,11 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after
 #'
 #' features <- list(ledgr_ind_sma(20), ledgr_ind_returns(5))
 #' ledgr_feature_id(features)
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_feature_id <- function(x) {
   if (inherits(x, "ledgr_indicator")) {

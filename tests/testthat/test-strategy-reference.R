@@ -49,13 +49,19 @@ testthat::test_that("select_top_n handles NA, partial, empty, and ties", {
   )
   testthat::expect_identical(unclass(partial), c(BBB = TRUE, AAA = TRUE, CCC = FALSE, DDD = TRUE))
 
-  empty_signal <- ledgr_signal(c(AAA = NA_real_, BBB = NA_real_))
+  empty_signal <- ledgr_signal(c(AAA = NA_real_, BBB = NA_real_), origin = "return_60")
   testthat::expect_warning(
     empty <- select_top_n(empty_signal, 1),
+    regexp = "return_60.*non-missing 0/2",
     class = "ledgr_empty_selection"
   )
   testthat::expect_s3_class(empty, "ledgr_selection")
   testthat::expect_identical(length(empty), 0L)
+
+  testthat::expect_silent(
+    suppressed_empty <- suppressWarnings(select_top_n(empty_signal, 1), classes = "ledgr_empty_selection")
+  )
+  testthat::expect_identical(length(suppressed_empty), 0L)
 })
 
 testthat::test_that("weight_equal creates long-only equal weights", {
@@ -135,7 +141,10 @@ testthat::test_that("reference helper pipeline runs through ledgr_run", {
 
   strategy <- function(ctx, params) {
     signal <- signal_return(ctx, lookback = params$lookback)
-    selection <- suppressWarnings(select_top_n(signal, params$n))
+    selection <- suppressWarnings(
+      select_top_n(signal, params$n),
+      classes = "ledgr_empty_selection"
+    )
     weights <- weight_equal(selection)
     target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
   }

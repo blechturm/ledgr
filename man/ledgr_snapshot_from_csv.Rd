@@ -19,6 +19,13 @@ A \code{ledgr_snapshot} object.
 \description{
 Reads a CSV file and delegates to \code{ledgr_snapshot_from_df()}.
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 csv_path <- tempfile(fileext = ".csv")
 utils::write.csv(data.frame(

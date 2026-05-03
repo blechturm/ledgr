@@ -10,7 +10,7 @@ ledgr_compute_metrics(bt, metrics = "standard")
 \item{bt}{A \code{ledgr_backtest} object. This function does not accept an equity
 tibble directly.}
 
-\item{metrics}{Only \code{"standard"} is supported in v0.1.2.}
+\item{metrics}{Only \code{"standard"} is supported in v0.1.7.}
 }
 \value{
 Named list of metric values.
@@ -21,18 +21,23 @@ Compute standard metrics from backtest results
 \details{
 Standard metrics are derived from the ledger and equity curve:
 \itemize{
-\item \code{total_return}: final equity divided by initial equity minus 1.
-\item \code{annualized_return}: geometric annualized return using the detected bar
-frequency, snapped to common frequencies such as daily or weekly.
-\item \code{volatility}: annualized standard deviation of period equity returns.
-\item \code{max_drawdown}: worst percentage decline from the running equity maximum.
+\item \code{total_return}: last public equity row divided by the first public equity
+row minus 1.
+\item \code{annualized_return}: geometric annualized return from the first and last
+public equity rows using the detected bar frequency, snapped to common
+frequencies such as daily or weekly.
+\item \code{volatility}: annualized standard deviation of adjacent public equity-row
+returns.
+\item \code{max_drawdown}: maximum peak-to-trough percentage decline,
+\code{min(equity / cummax(equity) - 1)}.
 \item \code{n_trades}: number of closed trade rows. Open-only fills do not count until
 a later fill closes quantity.
 \item \code{win_rate}: share of closed trade rows with strict realized P&L \verb{> 0};
 breakeven is not a win, and open-position gains remain in equity until
 closed.
 \item \code{avg_trade}: mean realized P&L across closed trade rows.
-\item \code{time_in_market}: share of equity timestamps with non-zero position value.
+\item \code{time_in_market}: share of equity timestamps with absolute
+\code{positions_value > 1e-6}.
 }
 }
 \examples{

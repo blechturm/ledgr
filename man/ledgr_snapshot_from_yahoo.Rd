@@ -33,6 +33,13 @@ A \code{ledgr_snapshot} object.
 Fetches historical data from Yahoo Finance via quantmod and delegates to
 \code{ledgr_snapshot_from_df()}.
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 if (FALSE) {
   # Requires quantmod and network access. Yahoo data can change over time.

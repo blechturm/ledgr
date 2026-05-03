@@ -49,6 +49,10 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #' @param ctx ledgr strategy context.
 #' @param lookback Positive integer return lookback.
 #' @return A `ledgr_signal` object.
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 signal_return <- function(ctx, lookback = 20L) {
   universe <- ledgr_validate_strategy_helper_ctx(ctx, "signal_return")
@@ -67,11 +71,17 @@ signal_return <- function(ctx, lookback = 20L) {
 #'
 #' `select_top_n()` selects the highest finite/non-missing signal values.
 #' Missing values are ignored. Ties are broken deterministically by instrument
-#' ID in alphabetical order.
+#' ID in alphabetical order. If no values are usable, the warning includes the
+#' signal origin and non-missing count so warmup can be distinguished from a
+#' signal that never becomes usable.
 #'
 #' @param signal A `ledgr_signal` object.
 #' @param n Number of instruments to select.
 #' @return A `ledgr_selection` object.
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 select_top_n <- function(signal, n) {
   if (!inherits(signal, "ledgr_signal")) {
@@ -83,7 +93,18 @@ select_top_n <- function(signal, n) {
   ids <- names(signal)
   available <- !is.na(values)
   if (!any(available)) {
-    rlang::warn("No available signal values; returning an empty selection.", class = "ledgr_empty_selection")
+    origin <- attr(signal, "origin")
+    if (is.null(origin) || is.na(origin) || !nzchar(origin)) {
+      origin <- "<unknown>"
+    }
+    rlang::warn(
+      sprintf(
+        "No available signal values for origin `%s` (non-missing 0/%d); returning an empty selection.",
+        origin,
+        length(ids)
+      ),
+      class = "ledgr_empty_selection"
+    )
     return(ledgr_selection(logical(), universe = ids, origin = attr(signal, "origin")))
   }
 
@@ -111,6 +132,10 @@ select_top_n <- function(signal, n) {
 #'
 #' @param selection A `ledgr_selection` object.
 #' @return A `ledgr_weights` object.
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 weight_equal <- function(selection) {
   if (!inherits(selection, "ledgr_selection")) {
@@ -131,13 +156,19 @@ weight_equal <- function(selection) {
 #' `target_rebalance()` converts long-only weights into a full-universe
 #' `ledgr_target`. It uses current pulse equity and current close prices at
 #' decision time; fills still occur at the next open, so small drift between
-#' decision-time sizing and fill-time value is expected.
+#' decision-time sizing and fill-time value is expected. Share quantities are
+#' floored to whole numbers with `floor(weight * equity_fraction * equity /
+#' close_price)`.
 #'
 #' @param weights A `ledgr_weights` object.
 #' @param ctx ledgr strategy context.
 #' @param equity_fraction Fraction of current equity to allocate, between 0 and
 #'   1.
 #' @return A full-universe `ledgr_target` object.
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
   if (!inherits(weights, "ledgr_weights")) {

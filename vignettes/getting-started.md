@@ -30,7 +30,11 @@ local files or network access.
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    between(
+      ts_utc,
+      article_utc("2019-01-01"),
+      article_utc("2019-06-30")
+    )
   )
 
 bars |>
@@ -57,8 +61,8 @@ snapshot
 #> Bars:         258
 #> Instruments:  2
 #> Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
-#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638525e9e2.duckdb
-#> Snapshot ID:  snapshot_20260502_114730_d9bb
+#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpmuuwuV\ledgr_b8643f321c0d.duckdb
+#> Snapshot ID:  snapshot_20260503_074023_314b
 #> Connection:  Closed (opens on-demand)
 ```
 
@@ -120,8 +124,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260502_114730_d9bb
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638525e9e2.duckdb
+#> Snapshot ID: snapshot_20260503_074023_314b
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpmuuwuV\ledgr_b8643f321c0d.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -143,8 +147,8 @@ bt
 #> Date Range:     2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
 #> Execution Mode: audit_log
 #> Initial Cash:   $10000.00
-#> Final Equity:   $10685.17
-#> P&L:            $685.17 (6.85%)
+#> Final Equity:   $10083.54
+#> P&L:            $83.54 (0.84%)
 #>
 #> Use summary(bt) for detailed metrics
 #> Use plot(bt) for equity curve visualization
@@ -168,12 +172,12 @@ summary(bt)
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        6.85%
-#>   Annualized Return:   13.94%
-#>   Max Drawdown:        -13.51%
+#>   Total Return:        0.84%
+#>   Annualized Return:   1.65%
+#>   Max Drawdown:        -0.99%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 54.72%
+#>   Volatility (annual): 1.96%
 #>
 #> Trade Statistics:
 #>   Total Trades:        12
@@ -181,7 +185,7 @@ summary(bt)
 #>   Avg Trade:           $6.96
 #>
 #> Exposure:
-#>   Time in Market:      65.12%
+#>   Time in Market:      66.67%
 ```
 
 Results are derived views over recorded events.
@@ -205,12 +209,12 @@ ledgr_results(bt, what = "trades")
 #> 12        24 2019-06-05 DEMO_02       SELL     10  79.3     0       -14.6  CLOSE
 tail(ledgr_results(bt, what = "equity"), 4)
 #> # A tibble: 4 x 6
-#>   ts_utc     equity  cash positions_value running_max drawdown
-#>   <date>      <dbl> <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2019-06-25 10030. 8394.           1637.      10899.  -0.0797
-#> 2 2019-06-26 10031. 8394.           1637.      10899.  -0.0796
-#> 3 2019-06-27 10032. 8394.           1638.      10899.  -0.0796
-#> 4 2019-06-28 10685. 9069.           1616.      10899.  -0.0196
+#>   ts_utc     equity   cash positions_value running_max drawdown
+#>   <date>      <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
+#> 1 2019-06-25 10084. 10084.               0      10134. -0.00499
+#> 2 2019-06-26 10084. 10084.               0      10134. -0.00499
+#> 3 2019-06-27 10084. 10084.               0      10134. -0.00499
+#> 4 2019-06-28 10084. 10084.               0      10134. -0.00499
 ```
 
 The ledger is the source of truth.
@@ -266,8 +270,8 @@ ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_star
 #> # A tibble: 2 x 8
 #>   run_id                 label final_equity total_return max_drawdown n_trades win_rate
 #>   <chr>                  <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 getting_started_qty_10 <NA>        10685. +6.9%        -13.5%             12 25.0%
-#> 2 getting_started_qty_20 <NA>        11370. +13.7%       -25.3%             12 25.0%
+#> 1 getting_started_qty_10 <NA>        10084. +0.8%        -1.0%              12 25.0%
+#> 2 getting_started_qty_20 <NA>        10167. +1.7%        -2.0%              12 25.0%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -306,8 +310,8 @@ ledgr_run_list(reloaded)
 #> # ledgr run list
 #> # A tibble: 1 x 8
 #>   run_id label tags  status final_equity total_return execution_mode reproducibility_level
-#>   <chr>  <chr> <chr> <chr>         <dbl> <chr>        <chr>          <chr>
-#> 1 durab~ <NA>  <NA>  DONE         10685. +6.9%        audit_log      tier_1
+#>   <chr>  <chr> <lgl> <chr>         <dbl> <chr>        <chr>          <chr>
+#> 1 durab~ <NA>  NA    DONE         10084. +0.8%        audit_log      tier_1
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -322,12 +326,12 @@ ledgr_run_info(reloaded, "durable_qty_10")
 #> Tags:            NA
 #> Snapshot:        getting_started_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     8b004ea9697551629444e53cecc65d5a29b57c7257c607ebe1f379cb49eded47
+#> Config Hash:     58e553a5920abf24b8f695d89c77d870c0e0e1c125a406859c468f6143a9794a
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.14
+#> Elapsed Sec:     1.25
 #> Persist Features:TRUE
 #> Cache Hits:      2
 #> Cache Misses:    0
@@ -350,3 +354,11 @@ close(bt)
 close(bt_qty_20)
 ledgr_snapshot_close(snapshot)
 ```
+
+## What’s Next?
+
+For strategy authoring, read
+`vignette("strategy-development", package = "ledgr")`. For indicators
+and feature IDs, read `vignette("indicators", package = "ledgr")`. For
+durable run inspection, read
+`vignette("experiment-store", package = "ledgr")`.

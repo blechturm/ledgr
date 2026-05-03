@@ -29,6 +29,13 @@ Validates schema, normalizes timestamps, creates a snapshot via v0.1.1
 functions, imports bars, seals the snapshot, and returns a lazy snapshot
 object.
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,

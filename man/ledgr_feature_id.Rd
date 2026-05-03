@@ -18,10 +18,18 @@ Returns the exact feature ID strings that strategies should pass to
 \code{ctx$feature(instrument_id, name)}. This helper reads the existing indicator
 IDs; it does not generate aliases or change the ID scheme.
 }
+\section{Articles}{
+
+Indicators, feature IDs, and warmup:
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+}
+
 \examples{
 sma_20 <- ledgr_ind_sma(20)
 ledgr_feature_id(sma_20)
 
 features <- list(ledgr_ind_sma(20), ledgr_ind_returns(5))
 ledgr_feature_id(features)
+
 }

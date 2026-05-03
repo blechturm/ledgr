@@ -17,6 +17,6 @@ ledgr_target(x, universe = NULL, origin = NULL)
 A \code{ledgr_target} object.
 }
 \description{
-\code{ledgr_target()} creates a thin wrapper around the full named numeric
-target quantity vector consumed by ledgr's existing strategy-result validator.
+\code{ledgr_target()} creates a thin wrapper around the full named numeric target
+quantity vector consumed by ledgr's existing strategy-result validator.
 }

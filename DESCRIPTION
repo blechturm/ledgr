@@ -1,6 +1,6 @@
 Package: ledgr
 Title: Deterministic Event-Sourced Backtesting
-Version: 0.1.7.2
+Version: 0.1.7.3
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",
@@ -15,7 +15,7 @@ BugReports: https://github.com/blechturm/ledgr/issues
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.1.0)
+    R (>= 4.2.0)
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr

@@ -7,27 +7,27 @@ development:
   mode: release
 
 articles:
-  - title: Background
-    navbar: ~
-    contents:
-      - articles/who-ledgr-is-for
-      - articles/why-r
-      - research-to-production
-  - title: Start
+  - title: Start Here
     navbar: ~
     contents:
       - getting-started
-  - title: Workflows
-    navbar: ~
-    contents:
-      - experiment-store
       - strategy-development
-  - title: Indicators
+      - experiment-store
+  - title: Core Concepts
     navbar: ~
     contents:
-      - ttr-indicators
-
+      - metrics-and-accounting
+      - indicators
+  - title: Research Workflow
+    navbar: ~
+    contents:
+      - articles/who-ledgr-is-for
+      - research-to-production
+      - articles/why-r
 reference:
+  - title: Package
+    contents:
+      - ledgr-package
   - title: Experiment Workflow
     contents:
       - ledgr_experiment

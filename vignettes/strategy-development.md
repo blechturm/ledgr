@@ -171,7 +171,11 @@ anywhere.
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    between(
+      ts_utc,
+      article_utc("2019-01-01"),
+      article_utc("2019-06-30")
+    )
   )
 
 snapshot <- ledgr_snapshot_from_df(
@@ -213,7 +217,7 @@ way to understand what your strategy will see.
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-03-01"),
+  ts_utc = article_utc("2019-03-01"),
   features = features
 )
 
@@ -245,10 +249,15 @@ The helper pipeline has four stages:
 
 | Stage | Input | Output | Question answered |
 |----|----|----|----|
-| signal | pulse context | numeric scores | What looks attractive? |
-| selection | signal | logical inclusion | What should be considered? |
-| weights | selection | allocation weights | How should capital be split? |
-| target | weights and context | share quantities | What should the portfolio hold? |
+| signal | pulse context | numeric scores with origin metadata | What looks attractive? |
+| selection | signal | logical inclusion with the same origin | What should be considered? |
+| weights | selection | allocation weights with the same origin | How should capital be split? |
+| target | weights and context | full-universe share quantities | What should the portfolio hold? |
+
+Execution semantics begin only at the target stage. `signal`,
+`selection`, and `weights` are research objects that help author the
+strategy; `target` is the ordinary full named target vector shape the
+runner validates and executes.
 
 ``` r
 signal <- signal_return(pulse, lookback = 5)
@@ -284,6 +293,17 @@ target
 #>      93       0
 ```
 
+`target_rebalance()` sizes with current pulse equity and current close
+prices, then floors to whole shares. For the selected `DEMO_01` pulse
+above, 10% of equity is allocated to the one selected instrument:
+
+``` r
+raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
+c(pre_floor = raw_qty, target_qty = unclass(target)[["DEMO_01"]])
+#>  pre_floor target_qty
+#>   93.89208   93.00000
+```
+
 The helper objects are not a second execution path. They are authoring
 aids. The pipeline still ends in a `ledgr_target`, which unwraps to the
 same target quantity vector the runner has always consumed.
@@ -312,11 +332,17 @@ empty weights, and a flat target.
 The warning exists because an empty selection can mean either “normal
 warmup” or “my signal is broken.” The helper cannot know which one is
 true, so it warns and lets the strategy decide how to handle that case.
+The warning includes the signal origin and non-missing count; if a run
+finishes with zero trades, inspect a late pulse without suppression
+before assuming the empty selection was only early warmup.
 
 ``` r
 top_return_strategy <- function(ctx, params) {
   signal <- signal_return(ctx, lookback = params$lookback)
-  selection <- suppressWarnings(select_top_n(signal, n = params$n))
+  selection <- suppressWarnings(
+    select_top_n(signal, n = params$n),
+    classes = "ledgr_empty_selection"
+  )
 
   weights <- weight_equal(selection)
   target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
@@ -328,10 +354,17 @@ Read it economically:
 1.  `signal_return()` scores each instrument by recent return.
 2.  `select_top_n()` keeps the highest scores and ignores warmup `NA`.
 3.  `weight_equal()` splits the chosen allocation equally.
-4.  `target_rebalance()` converts weights into full target quantities.
+4.  `target_rebalance()` converts weights into floored full target
+    quantities.
 
 No helper registers indicators automatically. The experiment must say
 which features exist.
+
+Class-specific suppression is deliberately narrow: it keeps expected
+warmup noise out of a full run while still allowing unrelated warnings
+to surface. There is no `warn_empty = FALSE` argument in v0.1.7.3; use a
+diagnostic pulse and call `select_top_n()` without suppression when a
+strategy produces no fills or no closed trades.
 
 ``` r
 exp <- ledgr_experiment(
@@ -356,12 +389,12 @@ summary(bt_top_1)
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        -0.41%
-#>   Annualized Return:   -0.81%
-#>   Max Drawdown:        -18.26%
+#>   Total Return:        0.45%
+#>   Annualized Return:   0.89%
+#>   Max Drawdown:        -1.12%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 93.23%
+#>   Volatility (annual): 2.02%
 #>
 #> Trade Statistics:
 #>   Total Trades:        24
@@ -369,7 +402,7 @@ summary(bt_top_1)
 #>   Avg Trade:           $2.15
 #>
 #> Exposure:
-#>   Time in Market:      78.29%
+#>   Time in Market:      95.35%
 ```
 
 The summary is portfolio-level: total return, max drawdown, and trade
@@ -430,8 +463,8 @@ ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2"))
 #> # A tibble: 2 x 8
 #>   run_id       label final_equity total_return max_drawdown n_trades win_rate
 #>   <chr>        <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 top_return_1 <NA>         9959. -0.4%        -18.3%             24 45.8%
-#> 2 top_return_2 <NA>         9999. -0.0%        -1.2%               7 57.1%
+#> 1 top_return_1 <NA>        10045. +0.5%        -1.1%              24 45.8%
+#> 2 top_return_2 <NA>        10004. +0.0%        -1.1%               7 57.1%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -476,8 +509,8 @@ ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2", "flat_b
 #> # A tibble: 3 x 8
 #>   run_id        label final_equity total_return max_drawdown n_trades win_rate
 #>   <chr>         <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 top_return_1  <NA>         9959. -0.4%        -18.3%             24 45.8%
-#> 2 top_return_2  <NA>         9999. -0.0%        -1.2%               7 57.1%
+#> 1 top_return_1  <NA>        10045. +0.5%        -1.1%              24 45.8%
+#> 2 top_return_2  <NA>        10004. +0.0%        -1.1%               7 57.1%
 #> 3 flat_baseline <NA>        10000  +0.0%        0.0%                0 <NA>
 #> # i 1 more variable: reproducibility_level <chr>
 #>
@@ -526,7 +559,7 @@ ledgr_extract_strategy(snapshot, "top_return_1", trust = FALSE)
 #>
 #> Run ID:          top_return_1
 #> Reproducibility: tier_2
-#> Source Hash:     3fea0cd657f5bb33baf0f7939e8091258abcaad27c48b6f261bbc3039733d9aa
+#> Source Hash:     b706d30745a9bbbb0793f14aa6fcc3e74e4b65fb0585e8045fa326fbb00c6316
 #> Params Hash:     3caea9cbe019dbfa16b53b9bbeee913bdb2f16e4c6f196e0f5a3c8332cac270c
 #> Hash Verified:   TRUE
 #> Trust:           FALSE
@@ -557,7 +590,9 @@ ledgr_snapshot_close(snapshot)
 ## What’s Next?
 
 If you want the formal contract, read the strategy and context sections
-in `inst/design/contracts.md`. If you want the deployment story,
-continue with `vignette("research-to-production", package = "ledgr")`.
-If you want to inspect or compare durable runs, read
+in `inst/design/contracts.md`. If you want the indicator story, read
+`vignette("indicators", package = "ledgr")`. If you want the deployment
+story, continue with
+`vignette("research-to-production", package = "ledgr")`. If you want to
+inspect or compare durable runs, read
 `vignette("experiment-store", package = "ledgr")`.

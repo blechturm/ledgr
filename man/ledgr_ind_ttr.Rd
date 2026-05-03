@@ -21,7 +21,9 @@ ledgr_ind_ttr(
 \code{"hlc"}, \code{"ohlc"}, and \code{"hlcv"}.}
 
 \item{output}{Output column for multi-column TTR functions. Vector outputs
-use \code{NULL}.}
+use \code{NULL}. For common multi-output functions, use TTR's column names:
+\code{BBands} exposes \code{dn}, \code{mavg}, \code{up}, and \code{pctB}; \code{MACD} exposes \code{macd}
+and \code{signal}, and ledgr also supports derived \code{histogram}.}
 
 \item{id}{Optional indicator identifier. If omitted, ledgr builds a stable ID
 from the TTR function, explicit arguments, and output column.}
@@ -39,6 +41,13 @@ A \code{ledgr_indicator} object.
 \description{
 Construct a ledgr indicator from a supported TTR indicator
 }
+\section{Articles}{
+
+Indicators, feature IDs, and warmup:
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+}
+
 \examples{
 if (requireNamespace("TTR", quietly = TRUE)) {
   rsi_14 <- ledgr_ind_ttr("RSI", input = "close", n = 14)
@@ -46,5 +55,29 @@ if (requireNamespace("TTR", quietly = TRUE)) {
 
   atr_20 <- ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 20)
   atr_20$id
+
+  bb_up <- ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)
+  ledgr_feature_id(bb_up)
+
+  macd <- ledgr_ind_ttr(
+    "MACD",
+    input = "close",
+    output = "macd",
+    nFast = 12,
+    nSlow = 26,
+    nSig = 9,
+    percent = FALSE
+  )
+  macd_signal <- ledgr_ind_ttr(
+    "MACD",
+    input = "close",
+    output = "signal",
+    nFast = 12,
+    nSlow = 26,
+    nSig = 9,
+    percent = FALSE
+  )
+  ledgr_feature_id(list(macd, macd_signal))
 }
+
 }

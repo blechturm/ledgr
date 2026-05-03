@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_2/`.
+`inst/design/ledgr_v0_1_7_3_spec_packet/`.
 
 ## Execution Contract
 
@@ -125,6 +125,14 @@ the active versioned spec packet, currently
   converts weights into full-universe `ledgr_target` quantities using
   decision-time equity and close prices. These helpers must not auto-register
   indicators, silently normalize weights, or add a second execution path.
+- The helper composition contract is
+  `signal -> selection -> weights -> target quantities -> existing execution
+  path`. Signal, selection, and weight objects are research objects with origin
+  metadata; `ledgr_target` is the only helper value type that may unwrap into
+  executable target quantities.
+- `target_rebalance()` floors share quantities to whole numbers after sizing
+  long-only weights from current pulse equity and current close prices. It must
+  not silently create fractional share targets.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.
@@ -263,6 +271,33 @@ the active versioned spec packet, currently
 - `ledgr_extract_fills()` and `ledgr_compute_equity_curve()` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
+- Public standard metrics use the equity rows returned by
+  `ledgr_results(bt, what = "equity")` and the closed trade rows returned by
+  `ledgr_results(bt, what = "trades")`.
+- `initial_equity` is the `equity` value in the first public equity row for the
+  completed run. Total return is `final_equity / initial_equity - 1`, where
+  `final_equity` is the `equity` value in the last public equity row. If no
+  equity row exists or `initial_equity` is zero, total return is `NA`.
+- Annualized return is the geometric annualized return from the same first and
+  last public equity rows: `(final_equity / initial_equity)^(1 / years) - 1`,
+  where `years = (n_equity_rows - 1) / bars_per_year`. If fewer than two equity
+  rows exist, `bars_per_year` is invalid, or `initial_equity` is zero, the
+  metric is `NA`.
+- Max drawdown is the maximum peak-to-trough decline in public equity rows:
+  `min(equity / cummax(equity) - 1)`.
+- Annualized volatility is `sd(period_returns) * sqrt(bars_per_year)`, where
+  `period_returns` are adjacent public equity-row returns
+  `equity[t] / equity[t - 1] - 1`. If fewer than two period returns exist, the
+  metric is `NA`.
+- `n_trades` is the number of closed trade rows. It is not the number of fill
+  rows.
+- `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.
+  Breakeven trades are not wins. If no closed trade rows exist, `win_rate` is
+  `NA`.
+- `avg_trade` is the mean `realized_pnl` across closed trade rows. If no closed
+  trade rows exist, `avg_trade` is `NA`.
+- `time_in_market` is the share of public equity rows with absolute
+  `positions_value > 1e-6`.
 
 ## Documentation Contract
 
@@ -281,6 +316,23 @@ the active versioned spec packet, currently
 - README must document noninteractive installed-documentation discovery for
   `Rscript` and agent workflows, including `vignette(package = "ledgr")` and
   `system.file("doc", package = "ledgr")`.
+- Core function-level help pages must point to relevant installed articles with
+  both interactive and browser-free lookup paths. The browser-free form is
+  `system.file("doc", "<article>.html", package = "ledgr")`.
+- Package help (`?ledgr` / `?ledgr-package`) must include a compact "Start
+  here" spine with `vignette(package = "ledgr")`,
+  `system.file("doc", package = "ledgr")`, and direct paths for core installed
+  articles such as `strategy-development`, `metrics-and-accounting`, and
+  `experiment-store`.
+- Indicator concepts must have one installed teaching article, `indicators`,
+  covering built-in indicators, TTR-backed indicators, feature IDs, and warmup
+  `NA`. `ttr-indicators` must not remain as a parallel installed teaching
+  vignette unless the contract explicitly documents why both are needed.
+- TTR-specific reference facts, including multi-output column names and
+  detailed warmup formulas, belong in function help such as `?ledgr_ind_ttr`
+  and `?ledgr_ttr_warmup_rules`.
+- Help pages must not present pkgdown-only background articles as installed
+  vignettes.
 
 ## Verification Contract
 

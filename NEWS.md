@@ -1,3 +1,18 @@
+# ledgr 0.1.7.3
+
+- Correctness hardening: aligned equity-curve state, final positions, and
+  summary/comparison metrics against ledger fills, with focused regressions for
+  the v0.1.7.2 auditr accounting finding.
+- Metric explainability: documented every metric shown by `summary()`,
+  `ledgr_compare_runs()`, and related result surfaces, and added independent
+  oracle tests that recompute expected values from public result tables.
+- Documentation discoverability: made installed articles discoverable
+  from package-level and function-level help pages for headless and agent
+  workflows.
+- Concept documentation: added installed accounting/metrics and
+  indicators articles, consolidated TTR-backed and built-in indicator teaching,
+  and tighten helper, feature-ID, warmup, and no-trade guidance.
+
 # ledgr 0.1.7.2
 
 - Stabilised comparison metrics and zero-row result schemas: `n_trades` now

@@ -102,6 +102,11 @@ ledgr_ind_rsi <- function(n = 14L) {
 #' @examples
 #' window <- data.frame(close = c(100, 105))
 #' ledgr_ind_returns(1)$fn(window)
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_ind_returns <- function(n = 1L) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {

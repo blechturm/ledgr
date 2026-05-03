@@ -16,6 +16,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 options(width = 90)
 options(cli.unicode = FALSE)
+article_utc <- function(x) as.POSIXct(x, tz = "UTC")
 default_output_hook <- knitr::knit_hooks$get("output")
 knitr::knit_hooks$set(
   output = function(x, options) {
@@ -197,7 +198,11 @@ Use two instruments from the offline demo data so the examples run anywhere.
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    between(
+      ts_utc,
+      article_utc("2019-01-01"),
+      article_utc("2019-06-30")
+    )
   )
 
 snapshot <- ledgr_snapshot_from_df(
@@ -238,7 +243,7 @@ understand what your strategy will see.
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-03-01"),
+  ts_utc = article_utc("2019-03-01"),
   features = features
 )
 
@@ -264,10 +269,14 @@ The helper pipeline has four stages:
 
 | Stage | Input | Output | Question answered |
 |---|---|---|---|
-| signal | pulse context | numeric scores | What looks attractive? |
-| selection | signal | logical inclusion | What should be considered? |
-| weights | selection | allocation weights | How should capital be split? |
-| target | weights and context | share quantities | What should the portfolio hold? |
+| signal | pulse context | numeric scores with origin metadata | What looks attractive? |
+| selection | signal | logical inclusion with the same origin | What should be considered? |
+| weights | selection | allocation weights with the same origin | How should capital be split? |
+| target | weights and context | full-universe share quantities | What should the portfolio hold? |
+
+Execution semantics begin only at the target stage. `signal`, `selection`, and
+`weights` are research objects that help author the strategy; `target` is the
+ordinary full named target vector shape the runner validates and executes.
 
 ```{r pulse-pipeline}
 signal <- signal_return(pulse, lookback = 5)
@@ -281,6 +290,15 @@ weights
 
 target <- target_rebalance(weights, pulse, equity_fraction = 0.1)
 target
+```
+
+`target_rebalance()` sizes with current pulse equity and current close prices,
+then floors to whole shares. For the selected `DEMO_01` pulse above, 10% of
+equity is allocated to the one selected instrument:
+
+```{r floor-sizing}
+raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
+c(pre_floor = raw_qty, target_qty = unclass(target)[["DEMO_01"]])
 ```
 
 The helper objects are not a second execution path. They are authoring aids.
@@ -308,12 +326,18 @@ returning an empty selection, empty weights, and a flat target.
 
 The warning exists because an empty selection can mean either "normal warmup"
 or "my signal is broken." The helper cannot know which one is true, so it warns
-and lets the strategy decide how to handle that case.
+and lets the strategy decide how to handle that case. The warning includes the
+signal origin and non-missing count; if a run finishes with zero trades, inspect
+a late pulse without suppression before assuming the empty selection was only
+early warmup.
 
 ```{r helper-strategy}
 top_return_strategy <- function(ctx, params) {
   signal <- signal_return(ctx, lookback = params$lookback)
-  selection <- suppressWarnings(select_top_n(signal, n = params$n))
+  selection <- suppressWarnings(
+    select_top_n(signal, n = params$n),
+    classes = "ledgr_empty_selection"
+  )
 
   weights <- weight_equal(selection)
   target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
@@ -325,10 +349,16 @@ Read it economically:
 1. `signal_return()` scores each instrument by recent return.
 2. `select_top_n()` keeps the highest scores and ignores warmup `NA`.
 3. `weight_equal()` splits the chosen allocation equally.
-4. `target_rebalance()` converts weights into full target quantities.
+4. `target_rebalance()` converts weights into floored full target quantities.
 
 No helper registers indicators automatically. The experiment must say which
 features exist.
+
+Class-specific suppression is deliberately narrow: it keeps expected warmup
+noise out of a full run while still allowing unrelated warnings to surface.
+There is no `warn_empty = FALSE` argument in v0.1.7.3; use a diagnostic pulse
+and call `select_top_n()` without suppression when a strategy produces no
+fills or no closed trades.
 
 ```{r experiment}
 exp <- ledgr_experiment(
@@ -483,6 +513,8 @@ ledgr_snapshot_close(snapshot)
 ## What's Next?
 
 If you want the formal contract, read the strategy and context sections in
-`inst/design/contracts.md`. If you want the deployment story, continue with
-`vignette("research-to-production", package = "ledgr")`. If you want to inspect
-or compare durable runs, read `vignette("experiment-store", package = "ledgr")`.
+`inst/design/contracts.md`. If you want the indicator story, read
+`vignette("indicators", package = "ledgr")`. If you want the deployment story,
+continue with `vignette("research-to-production", package = "ledgr")`. If you
+want to inspect or compare durable runs, read
+`vignette("experiment-store", package = "ledgr")`.
