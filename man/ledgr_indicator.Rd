@@ -10,7 +10,8 @@ ledgr_indicator(
   requires_bars,
   params = list(),
   stable_after = requires_bars,
-  series_fn = NULL
+  series_fn = NULL,
+  source = "custom"
 )
 }
 \arguments{
@@ -26,6 +27,10 @@ ledgr_indicator(
 
 \item{series_fn}{Optional vectorized indicator function:
 function(bars, params) -> numeric vector aligned to \code{bars}.}
+
+\item{source}{Indicator source label. Built-in ledgr indicators use
+\code{"ledgr"}, TTR-backed indicators use \code{"TTR"}, and user/adapted indicators
+use \code{"custom"}.}
 }
 \value{
 A \code{ledgr_indicator} object.

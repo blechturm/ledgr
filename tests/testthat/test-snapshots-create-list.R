@@ -46,6 +46,7 @@ testthat::test_that("snapshot_list returns required columns and counts are zero 
 
   df <- ledgr_snapshot_list(con)
   testthat::expect_true(is.data.frame(df))
+  testthat::expect_s3_class(df, "tbl_df")
   required <- c(
     "snapshot_id",
     "status",
@@ -78,7 +79,12 @@ testthat::test_that("snapshot_list(status=...) filters and validates status enum
   ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000001_abce", meta = list())
 
   df <- ledgr_snapshot_list(con, status = "CREATED")
+  testthat::expect_s3_class(df, "tbl_df")
   testthat::expect_true(all(df$status == "CREATED"))
+
+  empty <- ledgr_snapshot_list(con, status = "SEALED")
+  testthat::expect_s3_class(empty, "tbl_df")
+  testthat::expect_equal(nrow(empty), 0L)
 
   testthat::expect_error(ledgr_snapshot_list(con, status = "NOPE"), class = "ledgr_invalid_args")
 })
@@ -94,6 +100,7 @@ testthat::test_that("snapshot_list accepts a DuckDB path", {
   DBI::dbDisconnect(con, shutdown = TRUE)
 
   df <- ledgr_snapshot_list(db_path)
+  testthat::expect_s3_class(df, "tbl_df")
   testthat::expect_equal(nrow(df), 1L)
   testthat::expect_identical(df$snapshot_id[[1]], snapshot_id)
 })

@@ -5,9 +5,31 @@
 #' underlying indicators, while strategies can later use the aliases for
 #' pulse-time feature lookup.
 #'
+#' A feature map is also accepted anywhere `features = list(...)` is accepted.
+#' Plain lists remain valid; use a feature map when readable aliases make
+#' strategy code clearer. The map is validated at construction time, and
+#' `ledgr_feature_id()` returns a named character vector keyed by alias.
+#'
 #' @param ... For `ledgr_feature_map()`, named `ledgr_indicator` objects.
 #'   Names are strategy-facing aliases. For the print method, unused.
 #' @return A `ledgr_feature_map` object.
+#' @section Articles:
+#' Feature maps are taught in the strategy-development article:
+#'
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
+#'
+#' Indicator configuration is covered in:
+#'
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
+#' @examples
+#' features <- ledgr_feature_map(
+#'   ret_5 = ledgr_ind_returns(5),
+#'   sma_10 = ledgr_ind_sma(10)
+#' )
+#'
+#' ledgr_feature_id(features)
 #' @export
 ledgr_feature_map <- function(...) {
   indicators <- list(...)
@@ -167,8 +189,29 @@ print.ledgr_feature_map <- function(x, ...) {
 #' every requested feature is usable at the current pulse. For arbitrary
 #' vectors, it is only an `all(!is.na(x))` predicate.
 #'
+#' `passed_warmup()` is not a signal pipeline transformation. It is a guard for
+#' strategy conditions after feature values have been read. Zero-length input
+#' aborts with classes `ledgr_empty_warmup_input` and
+#' `ledgr_invalid_warmup_input`; non-numeric input aborts with class
+#' `ledgr_invalid_warmup_input`.
+#'
 #' @param x A numeric vector, typically returned by `ctx$features()`.
 #' @return A logical scalar.
+#' @section Articles:
+#' Feature-map strategy authoring is taught in:
+#'
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
+#'
+#' Indicator warmup is covered in:
+#'
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
+#' @examples
+#' passed_warmup(c(ret_5 = NA_real_, sma_10 = 101))
+#' passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
+#'
+#' try(passed_warmup(numeric(0)))
 #' @export
 passed_warmup <- function(x) {
   if (!is.numeric(x)) {

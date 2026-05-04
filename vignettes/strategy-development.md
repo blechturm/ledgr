@@ -173,8 +173,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      article_utc("2019-01-01"),
-      article_utc("2019-06-30")
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
     )
   )
 
@@ -217,7 +217,7 @@ way to understand what your strategy will see.
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = article_utc("2019-03-01"),
+  ts_utc = ledgr_utc("2019-03-01"),
   features = features
 )
 
@@ -233,6 +233,37 @@ pulse$hold()
 #> DEMO_01 DEMO_02
 #>       0       0
 ```
+
+The same pulse can also be viewed as one wide row. This is useful when
+you want to see prices, portfolio state, and computed features together.
+
+``` r
+ledgr_pulse_wide(pulse) |>
+  glimpse()
+#> Rows: 1
+#> Columns: 15
+#> $ ts_utc                    <dttm> 2019-03-01
+#> $ cash                      <dbl> 1e+05
+#> $ equity                    <dbl> 1e+05
+#> $ DEMO_01__ohlcv_open       <dbl> 103.4069
+#> $ DEMO_01__ohlcv_high       <dbl> 106.6241
+#> $ DEMO_01__ohlcv_low        <dbl> 102.7549
+#> $ DEMO_01__ohlcv_close      <dbl> 106.5053
+#> $ DEMO_01__ohlcv_volume     <dbl> 545965
+#> $ DEMO_01__feature_return_5 <dbl> 0.08531877
+#> $ DEMO_02__ohlcv_open       <dbl> 67.38033
+#> $ DEMO_02__ohlcv_high       <dbl> 68.56432
+#> $ DEMO_02__ohlcv_low        <dbl> 67.03894
+#> $ DEMO_02__ohlcv_close      <dbl> 68.03192
+#> $ DEMO_02__ohlcv_volume     <dbl> 580351
+#> $ DEMO_02__feature_return_5 <dbl> 0.004018771
+```
+
+The wide row and the scalar accessors are two ways of looking at the
+same pulse-known data. The wide row is good for inspection and
+model-like thinking. The rest of this vignette uses the non-wide
+accessors because they keep the step-by-step strategy logic easier to
+read.
 
 Now build the strategy logic one transformation at a time.
 
@@ -374,6 +405,127 @@ exp <- ledgr_experiment(
   opening = ledgr_opening(cash = 10000)
 )
 ```
+
+## Feature Maps For Readable Feature Access
+
+The examples above keep the exact feature ID contract visible:
+`ctx$feature(id, feature_id)` reads one registered feature for one
+instrument at one pulse. That contract remains the foundation.
+
+When a strategy reads several features per instrument, repeating feature
+ID strings can obscure the trading idea. A feature map bundles indicator
+objects with strategy-facing aliases. The same object can be registered
+with the experiment and used by the strategy for pulse-time lookup.
+
+``` r
+mapped_features <- ledgr_feature_map(
+  ret_5 = ledgr_ind_returns(5),
+  sma_10 = ledgr_ind_sma(10)
+)
+
+ledgr_feature_id(mapped_features)
+#>      ret_5     sma_10
+#> "return_5"   "sma_10"
+```
+
+The strategy closes over `mapped_features`. Inside the universe loop,
+`ctx$features(id, mapped_features)` returns a named numeric vector keyed
+by the aliases. `passed_warmup()` is a guard for that vector: for values
+returned by `ctx$features()`, it means every requested indicator is
+usable at this pulse. It is not a signal pipeline transformation, and it
+is not a data-quality diagnostic for arbitrary vectors. A zero-length
+input is a classed error because an empty feature bundle cannot prove
+warmup has passed. The specific error classes are
+`ledgr_empty_warmup_input` and `ledgr_invalid_warmup_input`.
+
+``` r
+mapped_return_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    x <- ctx$features(id, mapped_features)
+
+    if (
+      passed_warmup(x) &&
+        x[["ret_5"]] > params$min_return &&
+        ctx$close(id) > x[["sma_10"]]
+    ) {
+      targets[id] <- params$qty
+    }
+  }
+
+  targets
+}
+```
+
+Read that as one pulse-time decision:
+
+1.  `ctx$features()` reads the mapped feature values for one instrument.
+2.  `passed_warmup()` keeps the rule inactive until the mapped
+    indicators are usable.
+3.  The condition states the trading idea.
+4.  The strategy still returns an ordinary target vector.
+
+Plain `features = list(...)` remains valid. Use it when exact IDs are
+clearest. Use a feature map when aliases make a feature-heavy strategy
+easier to read.
+
+``` r
+mapped_exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = mapped_return_strategy,
+  features = mapped_features,
+  opening = ledgr_opening(cash = 10000)
+)
+```
+
+Run it the same way as any other experiment. The strategy still returns
+target quantities; the feature map only changes how the strategy reads
+features.
+
+``` r
+bt_mapped <- mapped_exp |>
+  ledgr_run(
+    params = list(min_return = 0, qty = 5),
+    run_id = "mapped_return"
+  )
+#> Warning: LEDGR_LAST_BAR_NO_FILL
+
+summary(bt_mapped)
+#> ledgr Backtest Summary
+#> ======================
+#>
+#> Performance Metrics:
+#>   Total Return:        0.64%
+#>   Annualized Return:   1.26%
+#>   Max Drawdown:        -0.36%
+#>
+#> Risk Metrics:
+#>   Volatility (annual): 0.82%
+#>
+#> Trade Statistics:
+#>   Total Trades:        19
+#>   Win Rate:            31.58%
+#>   Avg Trade:           $3.69
+#>
+#> Exposure:
+#>   Time in Market:      62.79%
+```
+
+Feature-map strategies commonly close over the feature map object. That
+is the single-definition pattern: one object defines aliases, registers
+indicators, and drives pulse-time lookup.
+
+This has a provenance consequence. Tier 2 is common for strategy
+functions that call package helpers or depend on external symbols; the
+helper-pipeline strategy below is also tier 2. Feature maps add a more
+specific concern: the recovered strategy source may reference
+`mapped_features`, but the alias map object itself is not recovered as a
+standalone object from strategy provenance. The experiment store records
+the registered feature definitions, while the human-readable alias
+construction remains part of your research code. Keep the feature-map
+construction code with the research record when you need to rerun the
+strategy later.
 
 ## Run One Backtest
 
@@ -584,6 +736,7 @@ warnings.
 close(bt_top_1)
 close(bt_top_2)
 close(bt_flat)
+close(bt_mapped)
 ledgr_snapshot_close(snapshot)
 ```
 
@@ -591,8 +744,9 @@ ledgr_snapshot_close(snapshot)
 
 If you want the formal contract, read the strategy and context sections
 in `inst/design/contracts.md`. If you want the indicator story, read
-`vignette("indicators", package = "ledgr")`. If you want the deployment
-story, continue with
+`vignette("indicators", package = "ledgr")`. For formal feature-map
+help, see `?ledgr_feature_map` and `?passed_warmup`. If you want the
+deployment story, continue with
 `vignette("research-to-production", package = "ledgr")`. If you want to
 inspect or compare durable runs, read
 `vignette("experiment-store", package = "ledgr")`.

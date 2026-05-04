@@ -12,7 +12,7 @@ ledgr_snapshot_info(con, snapshot_id)
 \item{snapshot_id}{Snapshot id (must exist) when \code{con} is a connection.}
 }
 \value{
-A 1-row data.frame with:
+A 1-row tibble with:
 snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
 bar_count, instrument_count, meta_json, error_msg.
 }

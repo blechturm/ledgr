@@ -1,8 +1,8 @@
 # ledgr v0.1.7.4 Tickets
 
-**Version:** 0.1.7.4  
-**Date:** May 3, 2026  
-**Total Tickets:** 9  
+**Version:** 0.1.7.4
+**Date:** May 3, 2026
+**Total Tickets:** 9
 
 ---
 
@@ -33,6 +33,7 @@ LDG-1401 -> LDG-1402 -> LDG-1403 -> LDG-1404 -> LDG-1408 -> LDG-1409
 LDG-1401 -------------------------> LDG-1405 -------------> LDG-1408
 LDG-1401 -------------------------> LDG-1406 -------------> LDG-1408
 LDG-1401 -------------------------> LDG-1407 -------------> LDG-1409
+LDG-1403 -------------------------> LDG-1410 -------------> LDG-1408
 LDG-1402 -------------------------> LDG-1408
 LDG-1403 -------------------------> LDG-1408
 LDG-1405 -------------------------> LDG-1409
@@ -53,9 +54,9 @@ LDG-1408 -------------------------> LDG-1409
 
 ## LDG-1401: Scope, Metadata, And Contract Baseline
 
-**Priority:** P0  
-**Effort:** 1 day  
-**Dependencies:** None  
+**Priority:** P0
+**Effort:** 1 day
+**Dependencies:** None
 **Status:** Done
 
 **Description:**
@@ -135,9 +136,9 @@ forbidden_actions:
 
 ## LDG-1402: Feature Map Type, Experiment Registration, And Identity
 
-**Priority:** P1  
-**Effort:** 3-5 days  
-**Dependencies:** LDG-1401  
+**Priority:** P1
+**Effort:** 3-5 days
+**Dependencies:** LDG-1401
 **Status:** Done
 
 **Description:**
@@ -233,9 +234,9 @@ forbidden_actions:
 
 ## LDG-1403: Pulse Feature Bundles And Warmup Predicate
 
-**Priority:** P1  
-**Effort:** 3-5 days  
-**Dependencies:** LDG-1402  
+**Priority:** P1
+**Effort:** 3-5 days
+**Dependencies:** LDG-1402
 **Status:** Done
 
 **Description:**
@@ -321,10 +322,10 @@ forbidden_actions:
 
 ## LDG-1404: Feature Map Documentation And Teaching Integration
 
-**Priority:** P1  
-**Effort:** 2-4 days  
-**Dependencies:** LDG-1403  
-**Status:** Planned
+**Priority:** P1
+**Effort:** 2-4 days
+**Dependencies:** LDG-1403
+**Status:** Done
 
 **Description:**
 Document feature maps as the preferred readable authoring pattern for
@@ -346,13 +347,13 @@ covers configuration and links to the strategy section.
 7. Regenerate Rd and rendered vignette markdown according to repo practice.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_feature_map()` and `passed_warmup()` have help pages.
-- [ ] Help pages include installed article links and local examples.
-- [ ] `strategy-development` is the primary feature-map tutorial.
-- [ ] `indicators` explains configuration and links to strategy-development.
-- [ ] Docs preserve the explicit `ctx$feature(id, feature_id)` contract.
-- [ ] Docs state `passed_warmup()` semantic boundary and zero-length error.
-- [ ] Examples avoid hardcoded one-instrument repetition where a universe loop
+- [x] `ledgr_feature_map()` and `passed_warmup()` have help pages.
+- [x] Help pages include installed article links and local examples.
+- [x] `strategy-development` is the primary feature-map tutorial.
+- [x] `indicators` explains configuration and links to strategy-development.
+- [x] Docs preserve the explicit `ctx$feature(id, feature_id)` contract.
+- [x] Docs state `passed_warmup()` semantic boundary and zero-length error.
+- [x] Examples avoid hardcoded one-instrument repetition where a universe loop
       is the intended pattern.
 
 **Test Requirements:**
@@ -405,9 +406,9 @@ forbidden_actions:
 
 ## LDG-1405: External Review And Copy-Paste Documentation Fixes
 
-**Priority:** P2  
-**Effort:** 2-3 days  
-**Dependencies:** LDG-1401  
+**Priority:** P2
+**Effort:** 2-3 days
+**Dependencies:** LDG-1401
 **Status:** Planned
 
 **Description:**
@@ -490,9 +491,9 @@ forbidden_actions:
 
 ## LDG-1406: Helper, Feature-ID, Warmup, And TTR Docs
 
-**Priority:** P2  
-**Effort:** 2-4 days  
-**Dependencies:** LDG-1401  
+**Priority:** P2
+**Effort:** 2-4 days
+**Dependencies:** LDG-1401
 **Status:** Planned
 
 **Description:**
@@ -584,9 +585,9 @@ forbidden_actions:
 
 ## LDG-1407: CSV Snapshot Import/Seal Workflow Investigation
 
-**Priority:** P0  
-**Effort:** 2-4 days  
-**Dependencies:** LDG-1401  
+**Priority:** P0
+**Effort:** 2-4 days
+**Dependencies:** LDG-1401
 **Status:** Planned
 
 **Description:**
@@ -667,11 +668,109 @@ forbidden_actions:
 
 ---
 
+## LDG-1410: Feature Inspection Views And Indicators Teaching Flow
+
+**Priority:** P1
+**Effort:** 2-4 days
+**Dependencies:** LDG-1403
+**Status:** Done
+
+**Description:**
+Add public feature-inspection views so users can see how indicator contracts
+become pulse-known feature data. These views support debugging, teaching, and a
+future machine-learning training-frame API without changing strategy execution
+semantics.
+
+**Tasks:**
+1. Implement `ledgr_feature_contracts(features)` for feature maps, named lists,
+   and unnamed lists.
+2. Implement `ledgr_pulse_features(pulse, feature_map = NULL)` as the long
+   pulse-known feature view with a stable `alias` column.
+3. Implement `ledgr_pulse_wide(pulse, feature_map = NULL)` with stable
+   `{instrument_id}__ohlcv_{field}` and
+   `{instrument_id}__feature_{feature_id}` wide column names.
+4. Document that supplied feature maps filter/order pulse views and provide
+   aliases in long output, but never rename wide columns to aliases.
+5. Rewrite the indicator teaching flow around contract view, long pulse view,
+   wide pulse view, scalar access, mapped access, and strategy execution.
+6. Add tests for input modes, alias rules, source values, pulse long views,
+   pulse wide naming, feature-map filtering/order, and execution-mode parity.
+7. Regenerate Rd and rendered vignette markdown.
+
+**Acceptance Criteria:**
+- [x] `ledgr_feature_contracts()` returns `alias`, `feature_id`, `source`,
+      `requires_bars`, and `stable_after`.
+- [x] Feature-map aliases are authoritative; named-list aliases use names;
+      unnamed-list aliases are `NA_character_`.
+- [x] Source values are `"ledgr"`, `"TTR"`, or `"custom"`.
+- [x] `ledgr_pulse_features()` always returns an `alias` column and uses
+      `NA_character_` when no feature map is supplied.
+- [x] `ledgr_pulse_wide()` uses `{instrument_id}__ohlcv_{field}` and
+      `{instrument_id}__feature_{feature_id}` column names.
+- [x] Feature maps filter/order pulse views without changing wide column names
+      to aliases.
+- [x] `ledgr_training_frame()` remains out of scope but the naming contract is
+      reserved for it.
+- [x] `indicators` teaches the runtime feature shape before the accessor APIs.
+
+**Test Requirements:**
+- Feature-inspection unit tests.
+- Pulse long/wide tests.
+- Audit-log and db-live parity checks.
+- Documentation contract tests.
+- Vignette render.
+
+**Source Reference:** v0.1.7.4 spec section A6; `ledgr_feature_map_ux.md`.
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: M
+review_tier: H
+classification_reason: >
+  Adds three public inspection helpers and rewrites the indicator teaching flow,
+  but does not change execution semantics, fill timing, or strategy target
+  validation. Tier H review is required because the wide-column naming contract
+  is future-facing.
+invariants_at_risk:
+  - public API export boundary
+  - pulse context no-lookahead semantics
+  - feature-map alias semantics
+  - future training-frame naming compatibility
+  - indicators teaching flow
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+  - inst/design/ledgr_feature_map_ux.md
+  - inst/design/contracts.md (Context Contract, Documentation Contract)
+  - R/pulse-context.R
+  - R/feature-map.R
+  - R/indicator.R
+  - vignettes/indicators.Rmd
+tests_required:
+  - feature-inspection unit tests
+  - pulse long/wide tests
+  - audit-log and db-live parity checks
+  - documentation contract tests
+escalation_triggers:
+  - stable wide-column naming appears insufficient for future training frames
+  - implementation requires a new dependency such as tidyr
+  - inspection helpers expose future data
+  - indicators rewrite becomes a second strategy-development tutorial
+forbidden_actions:
+  - adding ledgr_training_frame()
+  - using aliases in wide column names
+  - changing ctx$feature() or ctx$features() semantics
+  - adding feature roles, selectors, prep(), or bake()
+```
+
+---
+
 ## LDG-1408: Contracts, Site Reference, Installed-Doc Hygiene, And NEWS
 
-**Priority:** P1  
-**Effort:** 2-3 days  
-**Dependencies:** LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406  
+**Priority:** P1
+**Effort:** 2-3 days
+**Dependencies:** LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406, LDG-1410
 **Status:** Planned
 
 **Description:**
@@ -757,9 +856,9 @@ forbidden_actions:
 
 ## LDG-1409: v0.1.7.4 Release Gate
 
-**Priority:** P0  
-**Effort:** 1 day  
-**Dependencies:** LDG-1401, LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406, LDG-1407, LDG-1408  
+**Priority:** P0
+**Effort:** 1 day
+**Dependencies:** LDG-1401, LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406, LDG-1407, LDG-1408, LDG-1410
 **Status:** Planned
 
 **Description:**
@@ -773,21 +872,24 @@ Final validation gate for v0.1.7.4.
    and copy-on-use tests.
 4. Verify `ctx$features()` and `passed_warmup()` tests, including standard and
    audit-log mode parity.
-5. Verify `passed_warmup()` zero-length behavior is a classed error.
-6. Verify visible docs no longer call hidden `article_utc()`.
-7. Verify homepage, `metrics-and-accounting`, and leakage framing are present.
-8. Verify helper, feature-ID, warmup, and TTR docs meet spec.
-9. Verify CSV snapshot import finding is fixed or explicitly classified with a
+5. Verify feature-inspection helpers, long/wide pulse views, and stable
+   `{instrument_id}__ohlcv_{field}` and
+   `{instrument_id}__feature_{feature_id}` wide names.
+6. Verify `passed_warmup()` zero-length behavior is a classed error.
+7. Verify visible docs no longer call hidden `article_utc()`.
+8. Verify homepage, `metrics-and-accounting`, and leakage framing are present.
+9. Verify helper, feature-ID, warmup, and TTR docs meet spec.
+10. Verify CSV snapshot import finding is fixed or explicitly classified with a
    regression/documentation update.
-10. Verify stale installed `ttr-indicators` artifacts are absent or justified.
-11. Render README and changed vignettes/articles.
-12. Run full package tests.
-13. Run coverage gate if required by current release practice.
-14. Run package check.
-15. Build pkgdown if navigation/reference/articles changed.
-16. Run the full WSL/Ubuntu check from `release_ci_playbook.md`.
-17. Confirm Windows and Ubuntu remote CI are green before tagging.
-18. Confirm no open P0/P1 review findings remain.
+11. Verify stale installed `ttr-indicators` artifacts are absent or justified.
+12. Render README and changed vignettes/articles.
+13. Run full package tests.
+14. Run coverage gate if required by current release practice.
+15. Run package check.
+16. Build pkgdown if navigation/reference/articles changed.
+17. Run the full WSL/Ubuntu check from `release_ci_playbook.md`.
+18. Confirm Windows and Ubuntu remote CI are green before tagging.
+19. Confirm no open P0/P1 review findings remain.
 
 **Acceptance Criteria:**
 - [ ] Full tests pass.

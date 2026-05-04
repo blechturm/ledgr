@@ -8,6 +8,7 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
   snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list(a = 1))
 
   info0 <- ledgr_snapshot_info(con, snapshot_id)
+  testthat::expect_s3_class(info0, "tbl_df")
   testthat::expect_equal(
     names(info0),
     c(
@@ -59,6 +60,7 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
   ledgr_snapshot_seal(con, snapshot_id)
 
   info1 <- ledgr_snapshot_info(con, snapshot_id)
+  testthat::expect_s3_class(info1, "tbl_df")
   testthat::expect_equal(info1$status[[1]], "SEALED")
   testthat::expect_true(grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", info1$sealed_at_utc[[1]]))
   testthat::expect_true(is.character(info1$snapshot_hash[[1]]) && nzchar(info1$snapshot_hash[[1]]))
@@ -76,4 +78,3 @@ testthat::test_that("ledgr_snapshot_info errors with LEDGR_SNAPSHOT_NOT_FOUND", 
     class = "LEDGR_SNAPSHOT_NOT_FOUND"
   )
 })
-

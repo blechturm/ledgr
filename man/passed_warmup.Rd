@@ -18,3 +18,29 @@ returned by \code{ctx$features(id, feature_map)}. For those vectors, \code{TRUE}
 every requested feature is usable at the current pulse. For arbitrary
 vectors, it is only an \code{all(!is.na(x))} predicate.
 }
+\details{
+\code{passed_warmup()} is not a signal pipeline transformation. It is a guard for
+strategy conditions after feature values have been read. Zero-length input
+aborts with classes \code{ledgr_empty_warmup_input} and
+\code{ledgr_invalid_warmup_input}; non-numeric input aborts with class
+\code{ledgr_invalid_warmup_input}.
+}
+\section{Articles}{
+
+Feature-map strategy authoring is taught in:
+
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+
+Indicator warmup is covered in:
+
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+}
+
+\examples{
+passed_warmup(c(ret_5 = NA_real_, sma_10 = 101))
+passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
+
+try(passed_warmup(numeric(0)))
+}

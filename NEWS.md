@@ -6,6 +6,9 @@
   the raw long feature table moves from `ctx$features` to
   `ctx$feature_table`, while `ctx$features` becomes the feature-map bundle
   accessor.
+- Planned: add feature-inspection views with `ledgr_feature_contracts()`,
+  `ledgr_pulse_features()`, and `ledgr_pulse_wide()` so users can inspect
+  contracts, long pulse rows, and stable wide pulse rows.
 - Planned: resolve auditr documentation findings around hidden vignette
   helpers, helper-page discovery, feature IDs, warmup diagnosis,
   TTR-backed indicators, leakage examples, and first-path navigation.

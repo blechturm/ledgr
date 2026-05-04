@@ -7,6 +7,9 @@
 #' @param stable_after Number of bars after which the indicator output is stable.
 #' @param series_fn Optional vectorized indicator function:
 #'   function(bars, params) -> numeric vector aligned to `bars`.
+#' @param source Indicator source label. Built-in ledgr indicators use
+#'   `"ledgr"`, TTR-backed indicators use `"TTR"`, and user/adapted indicators
+#'   use `"custom"`.
 #'
 #' @return A `ledgr_indicator` object.
 #' @examples
@@ -17,7 +20,13 @@
 #' )
 #' last_close$id
 #' @export
-ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after = requires_bars, series_fn = NULL) {
+ledgr_indicator <- function(id,
+                            fn,
+                            requires_bars,
+                            params = list(),
+                            stable_after = requires_bars,
+                            series_fn = NULL,
+                            source = "custom") {
   if (!is.character(id) || length(id) != 1 || !nzchar(id)) {
     rlang::abort("`id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -48,6 +57,9 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after
       class = "ledgr_invalid_args"
     )
   }
+  if (!is.character(source) || length(source) != 1L || is.na(source) || !(source %in% c("ledgr", "TTR", "custom"))) {
+    rlang::abort("`source` must be one of 'ledgr', 'TTR', or 'custom'.", class = "ledgr_invalid_args")
+  }
   ledgr_assert_indicator_fn_pure(fn)
   ledgr_assert_indicator_safe(fn)
   if (!is.null(series_fn)) {
@@ -65,7 +77,8 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after
       series_fn = series_fn,
       requires_bars = as.integer(requires_bars),
       stable_after = as.integer(stable_after),
-      params = params
+      params = params,
+      source = source
     ),
     class = "ledgr_indicator"
   )

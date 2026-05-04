@@ -62,7 +62,7 @@ ledgr_test_macd_warmup_cases <- function() {
 testthat::test_that("TTR warmup rules table has the documented schema", {
   rules <- ledgr_ttr_warmup_rules()
 
-  testthat::expect_s3_class(rules, "data.frame")
+  testthat::expect_s3_class(rules, "tbl_df")
   testthat::expect_true(all(c("ttr_fn", "input", "formula", "required_args", "id_args") %in% names(rules)))
   testthat::expect_true(is.list(rules$required_args))
   testthat::expect_true(is.list(rules$id_args))

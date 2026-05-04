@@ -416,6 +416,58 @@ The docs should show both:
 - the feature-map pattern as the preferred readable pattern for feature-heavy
   strategies.
 
+### A6 - Feature Inspection Views
+
+Add a small inspection layer so users can see the runtime feature data that
+feature contracts produce.
+
+The teaching principle is:
+
+```text
+ledgr computes feature contracts into pulse-known data; the accessors are
+different views into that same pulse.
+```
+
+Implement and export:
+
+```r
+ledgr_feature_contracts(features)
+ledgr_pulse_features(pulse, feature_map = NULL)
+ledgr_pulse_wide(pulse, feature_map = NULL)
+```
+
+`ledgr_feature_contracts()` accepts a `ledgr_feature_map`, a named list of
+indicators, or an unnamed list of indicators. It returns one row per feature
+with columns `alias`, `feature_id`, `source`, `requires_bars`, and
+`stable_after`. Alias rules are:
+
+- feature map: aliases are authoritative;
+- named list: list names are aliases;
+- unnamed list: `alias = NA_character_`.
+
+The `source` column uses `"ledgr"` for built-in ledgr indicators, `"TTR"` for
+TTR-backed indicators, and `"custom"` for user or adapter indicators.
+
+`ledgr_pulse_features(pulse)` returns the long pulse-known feature view with a
+stable `alias` column. Without a feature map, `alias` is `NA_character_`. With
+a feature map, rows are filtered and ordered to the map and aliases are filled.
+
+`ledgr_pulse_wide(pulse)` returns one row for the pulse, including pulse
+metadata, portfolio state, raw OHLCV values, and computed feature values. Wide
+columns must use stable engine names rather than aliases:
+
+```text
+{instrument_id}__ohlcv_{field}
+{instrument_id}__feature_{feature_id}
+```
+
+A supplied feature map may filter and order feature columns but must not rename
+wide columns to aliases. OHLCV columns are always present. This preserves
+stackability and reserves the same naming contract for a future
+`ledgr_training_frame()`.
+
+`ledgr_training_frame()` is out of scope for v0.1.7.4.
+
 ---
 
 ## 5. Track B Scope - Auditr Documentation Fixes
@@ -594,6 +646,10 @@ The release is not ready until:
 
 - `ledgr_feature_map()`, `ctx$features()`, and `passed_warmup()` are
   implemented, documented, and tested;
+- `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
+  `ledgr_pulse_wide()` are implemented, documented, and tested;
+- pulse-wide columns use stable `{instrument_id}__ohlcv_{field}` and
+  `{instrument_id}__feature_{feature_id}` names;
 - feature maps and equivalent plain feature lists register equivalent feature
   definitions;
 - feature maps and equivalent plain feature lists produce the same

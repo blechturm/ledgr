@@ -1,6 +1,6 @@
 #' Inspect supported TTR warmup inference rules
 #'
-#' @return A data frame with columns:
+#' @return A tibble with columns:
 #'   - `ttr_fn`: TTR function name.
 #'   - `input`: ledgr input shape.
 #'   - `formula`: human-readable warmup formula.
@@ -11,7 +11,7 @@
 #' ledgr_ttr_warmup_rules()
 #' @export
 ledgr_ttr_warmup_rules <- function() {
-  rules <- data.frame(
+  rules <- tibble::tibble(
     ttr_fn = c(
       "RSI", "SMA", "EMA", "ATR", "MACD",
       "WMA", "ROC", "momentum", "CCI", "BBands",
@@ -29,21 +29,20 @@ ledgr_ttr_warmup_rules <- function() {
       "n", "n + 1", "n + 1", "n", "n",
       "n", "n", "n + 1", "n",
       "n", "n", "n", "n"
-    ),
-    stringsAsFactors = FALSE
+    )
   )
-  rules$required_args <- I(list(
+  rules$required_args <- list(
     "n", "n", "n", "n", c("nFast", "nSlow", "nSig"),
     "n", "n", "n", "n", "n",
     "n", "n", "n", "n",
     "n", "n", "n", "n"
-  ))
-  rules$id_args <- I(list(
+  )
+  rules$id_args <- list(
     "n", "n", "n", "n", c("nFast", "nSlow", "nSig"),
     "n", "n", "n", "n", "n",
     "n", "n", "n", "n",
     "n", "n", "n", "n"
-  ))
+  )
   rules
 }
 
@@ -204,7 +203,8 @@ ledgr_ind_ttr <- function(ttr_fn,
     },
     requires_bars = requires_bars,
     stable_after = stable_after,
-    params = params
+    params = params,
+    source = "TTR"
   )
 }
 

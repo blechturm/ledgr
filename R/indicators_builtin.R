@@ -20,7 +20,8 @@ ledgr_ind_sma <- function(n) {
     },
     requires_bars = as.integer(n),
     stable_after = as.integer(n),
-    params = list(n = n)
+    params = list(n = n),
+    source = "ledgr"
   )
 }
 
@@ -54,7 +55,8 @@ ledgr_ind_ema <- function(n) {
     },
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
-    params = list(n = n)
+    params = list(n = n),
+    source = "ledgr"
   )
 }
 
@@ -91,7 +93,8 @@ ledgr_ind_rsi <- function(n = 14L) {
     },
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
-    params = list(n = n)
+    params = list(n = n),
+    source = "ledgr"
   )
 }
 
@@ -130,6 +133,7 @@ ledgr_ind_returns <- function(n = 1L) {
     },
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
-    params = list(n = n)
+    params = list(n = n),
+    source = "ledgr"
   )
 }

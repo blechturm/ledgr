@@ -7,7 +7,7 @@
 ledgr_ttr_warmup_rules()
 }
 \value{
-A data frame with columns:
+A tibble with columns:
 \itemize{
 \item \code{ttr_fn}: TTR function name.
 \item \code{input}: ledgr input shape.

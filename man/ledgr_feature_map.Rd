@@ -26,3 +26,30 @@ definitions. The map is an authoring convenience: experiments register the
 underlying indicators, while strategies can later use the aliases for
 pulse-time feature lookup.
 }
+\details{
+A feature map is also accepted anywhere \code{features = list(...)} is accepted.
+Plain lists remain valid; use a feature map when readable aliases make
+strategy code clearer. The map is validated at construction time, and
+\code{ledgr_feature_id()} returns a named character vector keyed by alias.
+}
+\section{Articles}{
+
+Feature maps are taught in the strategy-development article:
+
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+
+Indicator configuration is covered in:
+
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+}
+
+\examples{
+features <- ledgr_feature_map(
+  ret_5 = ledgr_ind_returns(5),
+  sma_10 = ledgr_ind_sma(10)
+)
+
+ledgr_feature_id(features)
+}

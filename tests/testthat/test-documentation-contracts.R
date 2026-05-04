@@ -24,11 +24,16 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ttr_bbands_20_up", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ttr_macd_12_26_9_false_macd", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ttr_macd_12_26_9_false_signal", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "built-in ledgr indicators and TTR-backed indicators", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Warmup `NA` is expected", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "built-in ledgr indicators, TTR-backed indicators")
+  testthat::expect_match(indicators_doc, "ledgr computes feature contracts into pulse-known data", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_feature_contracts", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_pulse_features", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_pulse_wide", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "{instrument_id}__ohlcv_{field}", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "{instrument_id}__feature_{feature_id}", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{BBands} exposes \\code{dn}, \\code{mavg}, \\code{up}, and", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{pctB}", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "ledgr_feature_id()", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_feature_id", fixed = TRUE)
 })
 
 testthat::test_that("helper docs state composition and whole-share target flooring", {
@@ -47,6 +52,46 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(signal_strategy_help, "called as \\code{fn(ctx)}", fixed = TRUE)
   testthat::expect_match(signal_strategy_help, "not \\code{params}", fixed = TRUE)
   testthat::expect_match(signal_strategy_help, "\\verb{function(ctx, params)}", fixed = TRUE)
+})
+
+testthat::test_that("feature-map docs preserve teaching order and semantic boundaries", {
+  strategy_lines <- readLines(ledgr_test_source_vignette("strategy-development.Rmd"), warn = FALSE)
+  strategy_doc <- paste(strategy_lines, collapse = "\n")
+  indicators_doc <- paste(readLines(ledgr_test_source_vignette("indicators.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  feature_map_help <- paste(readLines(file.path(root, "man", "ledgr_feature_map.Rd"), warn = FALSE), collapse = "\n")
+  warmup_help <- paste(readLines(file.path(root, "man", "passed_warmup.Rd"), warn = FALSE), collapse = "\n")
+
+  first_scalar_lookup <- grep("ctx\\$feature\\(", strategy_lines)[[1]]
+  first_feature_map <- grep("ledgr_feature_map", strategy_lines)[[1]]
+  testthat::expect_lt(first_scalar_lookup, first_feature_map)
+
+  testthat::expect_match(strategy_doc, "Feature Maps For Readable Feature Access", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "The strategy still returns an ordinary target vector.", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "Plain `features = list(...)` remains valid.", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "bt_mapped <- mapped_exp", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "Tier 2 is common for strategy functions", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "helper-pipeline strategy\\s+below is also tier 2")
+  testthat::expect_match(strategy_doc, "alias map object itself\\s+is not recovered")
+  testthat::expect_match(strategy_doc, "?ledgr_feature_map", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "?passed_warmup", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "zero-length input is a classed error", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "ledgr_empty_warmup_input", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "Debug One Pulse Before Running", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "ledgr_pulse_wide(pulse)", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "glimpse()", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "two ways of looking at the same\\s+pulse-known data")
+  testthat::expect_match(indicators_doc, "feature map gives\\s+readable aliases")
+  testthat::expect_match(indicators_doc, "feature_id` is the stable engine ID")
+  testthat::expect_match(indicators_doc, "Mapped access returns a named numeric vector keyed by alias")
+  testthat::expect_match(indicators_doc, "Feature columns use")
+  testthat::expect_match(indicators_doc, "The table views and the accessors are not competing APIs", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "uses the engine ID, not the alias", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_match(feature_map_help, "Plain lists remain valid", fixed = TRUE)
+  testthat::expect_match(feature_map_help, "keyed by alias", fixed = TRUE)
+  testthat::expect_match(warmup_help, "not a signal pipeline transformation", fixed = TRUE)
+  testthat::expect_match(warmup_help, "ledgr_empty_warmup_input", fixed = TRUE)
 })
 
 testthat::test_that("background articles stay pkgdown-only", {
@@ -136,12 +181,17 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_snapshot_from_csv = "experiment-store",
     ledgr_snapshot_from_yahoo = "experiment-store",
     ledgr_feature_id = "indicators",
+    ledgr_feature_contracts = "indicators",
     ledgr_ind_returns = "indicators",
     ledgr_ind_ttr = "indicators",
+    ledgr_pulse_features = "indicators",
+    ledgr_pulse_wide = "indicators",
     signal_return = "strategy-development",
     select_top_n = "strategy-development",
     weight_equal = "strategy-development",
-    target_rebalance = "strategy-development"
+    target_rebalance = "strategy-development",
+    ledgr_feature_map = c("strategy-development", "indicators"),
+    passed_warmup = c("strategy-development", "indicators")
   )
 
   for (page in names(expected)) {

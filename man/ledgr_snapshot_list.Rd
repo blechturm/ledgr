@@ -15,7 +15,7 @@ This function does not accept a \code{ledgr_snapshot} object; use
 \code{CREATED}, \code{SEALED}, \code{FAILED}).}
 }
 \value{
-A data.frame with snapshot metadata and counts.
+A tibble with snapshot metadata and counts.
 }
 \description{
 Returns snapshot metadata plus computed row counts for bars and instruments.

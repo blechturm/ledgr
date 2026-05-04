@@ -7,7 +7,7 @@
 #'
 #' @param con A DBI connection to DuckDB or a `ledgr_snapshot`.
 #' @param snapshot_id Snapshot id (must exist) when `con` is a connection.
-#' @return A 1-row data.frame with:
+#' @return A 1-row tibble with:
 #'   snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
 #'   bar_count, instrument_count, meta_json, error_msg.
 #' @details
@@ -85,7 +85,7 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
   df$bar_count <- as.integer(df$bar_count)
   df$instrument_count <- as.integer(df$instrument_count)
 
-  df[, c(
+  tibble::as_tibble(df[, c(
     "snapshot_id",
     "status",
     "created_at_utc",
@@ -95,5 +95,5 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
     "instrument_count",
     "meta_json",
     "error_msg"
-  ), drop = FALSE]
+  ), drop = FALSE])
 }

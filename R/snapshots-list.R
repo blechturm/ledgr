@@ -10,7 +10,7 @@
 #'   `ledgr_snapshot_info(snapshot)` for a single snapshot handle.
 #' @param status Optional status filter (NULL for all, or one/more of
 #'   `CREATED`, `SEALED`, `FAILED`).
-#' @return A data.frame with snapshot metadata and counts.
+#' @return A tibble with snapshot metadata and counts.
 #' @details
 #' Errors:
 #' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
@@ -103,7 +103,7 @@ ledgr_snapshot_list <- function(con, status = NULL) {
   )
 
   if (nrow(df) == 0) {
-    return(data.frame(
+    return(tibble::tibble(
       snapshot_id = character(),
       status = character(),
       created_at_utc = character(),
@@ -112,8 +112,7 @@ ledgr_snapshot_list <- function(con, status = NULL) {
       bar_count = integer(),
       instrument_count = integer(),
       meta_json = character(),
-      error_msg = character(),
-      stringsAsFactors = FALSE
+      error_msg = character()
     ))
   }
 
@@ -129,7 +128,7 @@ ledgr_snapshot_list <- function(con, status = NULL) {
   df$bar_count <- as.integer(df$bar_count)
   df$instrument_count <- as.integer(df$instrument_count)
 
-  df
+  tibble::as_tibble(df)
 }
 
 #' Load an existing sealed snapshot

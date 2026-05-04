@@ -154,7 +154,7 @@ tickets:
 
   - id: LDG-1404
     title: "Feature Map Documentation And Teaching Integration"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1403]
     tests:
@@ -346,11 +346,62 @@ tickets:
         - weakening hash verification
         - documenting undocumented metadata edits as normal workflow
 
+  - id: LDG-1410
+    title: "Feature Inspection Views And Indicators Teaching Flow"
+    status: done
+    priority: P1
+    dependencies: [LDG-1403]
+    tests:
+      - "feature-inspection unit tests"
+      - "pulse long/wide tests"
+      - "audit-log and db-live parity checks"
+      - "documentation contract tests"
+      - "vignette render"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Adds three public inspection helpers and rewrites the indicator
+        teaching flow, but does not change execution semantics, fill timing, or
+        strategy target validation. Tier H review is required because the
+        wide-column naming contract is future-facing.
+      invariants_at_risk:
+        - public API export boundary
+        - pulse context no-lookahead semantics
+        - feature-map alias semantics
+        - future training-frame naming compatibility
+        - indicators teaching flow
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
+        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/contracts.md (Context Contract, Documentation Contract)
+        - R/pulse-context.R
+        - R/feature-map.R
+        - R/indicator.R
+        - vignettes/indicators.Rmd
+      tests_required:
+        - feature-inspection unit tests
+        - pulse long/wide tests
+        - audit-log and db-live parity checks
+        - documentation contract tests
+      escalation_triggers:
+        - stable wide-column naming appears insufficient for future training frames
+        - implementation requires a new dependency such as tidyr
+        - inspection helpers expose future data
+        - indicators rewrite becomes a second strategy-development tutorial
+      forbidden_actions:
+        - adding ledgr_training_frame()
+        - using aliases in wide column names
+        - changing ctx$feature() or ctx$features() semantics
+        - adding feature roles, selectors, prep(), or bake()
+
   - id: LDG-1408
     title: "Contracts, Site Reference, Installed-Doc Hygiene, And NEWS"
     status: planned
     priority: P1
-    dependencies: [LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406]
+    dependencies: [LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406, LDG-1410]
     tests:
       - "documentation contract tests"
       - "installed-doc hygiene tests"
@@ -409,10 +460,12 @@ tickets:
       - LDG-1406
       - LDG-1407
       - LDG-1408
+      - LDG-1410
     tests:
       - "full package tests"
       - "feature-map test suite"
       - "pulse-context parity tests"
+      - "feature-inspection view tests"
       - "CSV snapshot workflow tests"
       - "R CMD check"
       - "README/article renders"
