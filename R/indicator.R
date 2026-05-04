@@ -77,10 +77,11 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after
 #' `ctx$feature(instrument_id, name)`. This helper reads the existing indicator
 #' IDs; it does not generate aliases or change the ID scheme.
 #'
-#' @param x A `ledgr_indicator` object, or a list of `ledgr_indicator` objects.
+#' @param x A `ledgr_indicator` object, a list of `ledgr_indicator` objects,
+#'   or a `ledgr_feature_map`.
 #'
 #' @return A character vector. List input returns a plain unnamed character
-#'   vector in list order.
+#'   vector in list order. Feature-map input returns IDs named by alias.
 #' @examples
 #' sma_20 <- ledgr_ind_sma(20)
 #' ledgr_feature_id(sma_20)
@@ -96,6 +97,10 @@ ledgr_indicator <- function(id, fn, requires_bars, params = list(), stable_after
 ledgr_feature_id <- function(x) {
   if (inherits(x, "ledgr_indicator")) {
     return(unname(as.character(x$id)))
+  }
+  if (inherits(x, "ledgr_feature_map")) {
+    ledgr_validate_feature_map_object(x)
+    return(x$feature_ids)
   }
   if (is.list(x)) {
     ids <- vapply(x, function(ind) {

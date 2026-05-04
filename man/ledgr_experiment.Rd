@@ -20,8 +20,9 @@ ledgr_experiment(
 
 \item{strategy}{A function with signature \verb{function(ctx, params)}.}
 
-\item{features}{List of \code{ledgr_indicator} objects, or a function with
-signature \verb{function(params)} returning such a list at run time.}
+\item{features}{List of \code{ledgr_indicator} objects, a \code{ledgr_feature_map}, or
+a function with signature \verb{function(params)} returning one of those forms
+at run time.}
 
 \item{opening}{A \code{ledgr_opening} object.}
 

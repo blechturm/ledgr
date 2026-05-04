@@ -138,7 +138,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1401  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Implement `ledgr_feature_map()` and make `ledgr_experiment(features = ...)`
@@ -163,15 +163,15 @@ feature-related `config_hash` identity for equivalent indicator definitions.
    feature-related `config_hash` for equivalent indicator definitions.
 
 **Acceptance Criteria:**
-- [ ] Valid named indicators create a `ledgr_feature_map`.
-- [ ] Invalid aliases and invalid mapped values fail with classed errors.
-- [ ] Duplicate resolved feature IDs fail before feature computation.
-- [ ] `ledgr_experiment(features = feature_map)` registers the same features as
+- [x] Valid named indicators create a `ledgr_feature_map`.
+- [x] Invalid aliases and invalid mapped values fail with classed errors.
+- [x] Duplicate resolved feature IDs fail before feature computation.
+- [x] `ledgr_experiment(features = feature_map)` registers the same features as
       the equivalent plain list.
-- [ ] Existing `ledgr_experiment(features = list(...))` tests still pass.
-- [ ] Mutating/rebinding the caller's map after experiment construction does
+- [x] Existing `ledgr_experiment(features = list(...))` tests still pass.
+- [x] Mutating/rebinding the caller's map after experiment construction does
       not alter the experiment's feature set.
-- [ ] Equivalent feature map and plain list registrations produce the same
+- [x] Equivalent feature map and plain list registrations produce the same
       feature-related `config_hash`.
 
 **Test Requirements:**

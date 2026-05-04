@@ -47,7 +47,7 @@ tickets:
 
   - id: LDG-1402
     title: "Feature Map Type, Experiment Registration, And Identity"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1401]
     tests:

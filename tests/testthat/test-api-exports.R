@@ -20,6 +20,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_extract_strategy",
     "ledgr_extract_fills",
     "ledgr_feature_id",
+    "ledgr_feature_map",
     "ledgr_get_indicator",
     "ledgr_ind_ema",
     "ledgr_ind_returns",

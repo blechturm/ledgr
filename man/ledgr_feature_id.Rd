@@ -7,11 +7,12 @@
 ledgr_feature_id(x)
 }
 \arguments{
-\item{x}{A \code{ledgr_indicator} object, or a list of \code{ledgr_indicator} objects.}
+\item{x}{A \code{ledgr_indicator} object, a list of \code{ledgr_indicator} objects,
+or a \code{ledgr_feature_map}.}
 }
 \value{
 A character vector. List input returns a plain unnamed character
-vector in list order.
+vector in list order. Feature-map input returns IDs named by alias.
 }
 \description{
 Returns the exact feature ID strings that strategies should pass to

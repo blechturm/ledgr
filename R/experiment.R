@@ -146,8 +146,9 @@ print.ledgr_opening <- function(x, ...) {
 #'
 #' @param snapshot A sealed `ledgr_snapshot`.
 #' @param strategy A function with signature `function(ctx, params)`.
-#' @param features List of `ledgr_indicator` objects, or a function with
-#'   signature `function(params)` returning such a list at run time.
+#' @param features List of `ledgr_indicator` objects, a `ledgr_feature_map`, or
+#'   a function with signature `function(params)` returning one of those forms
+#'   at run time.
 #' @param opening A `ledgr_opening` object.
 #' @param universe Character vector of instrument IDs, or `NULL` for all
 #'   instruments in the snapshot.
@@ -199,6 +200,7 @@ ledgr_experiment <- function(snapshot,
   universe <- ledgr_experiment_normalize_universe(universe, universe_all)
   ledgr_experiment_validate_strategy(strategy)
   features_mode <- ledgr_experiment_validate_features(features)
+  features <- ledgr_experiment_copy_features(features, features_mode)
 
   if (!inherits(opening, "ledgr_opening")) {
     rlang::abort("`opening` must be a ledgr_opening object.", class = "ledgr_invalid_experiment")
@@ -325,8 +327,15 @@ ledgr_experiment_validate_features <- function(features) {
     }
     return("function")
   }
+  if (inherits(features, "ledgr_feature_map")) {
+    ledgr_validate_feature_map_object(features)
+    return("feature_map")
+  }
   if (!is.list(features)) {
-    rlang::abort("`features` must be a list or function(params).", class = "ledgr_invalid_experiment_features")
+    rlang::abort(
+      "`features` must be a list of ledgr_indicator objects, a ledgr_feature_map, or function(params).",
+      class = "ledgr_invalid_experiment_features"
+    )
   }
   bad <- which(!vapply(features, inherits, logical(1), what = "ledgr_indicator"))
   if (length(bad) > 0L) {
@@ -338,6 +347,19 @@ ledgr_experiment_validate_features <- function(features) {
   "list"
 }
 
+ledgr_experiment_copy_features <- function(features, features_mode) {
+  if (identical(features_mode, "function")) {
+    return(features)
+  }
+  if (identical(features_mode, "feature_map")) {
+    return(do.call(ledgr_feature_map, ledgr_feature_map_indicators(features, named = TRUE)))
+  }
+  if (identical(features_mode, "list")) {
+    return(as.list(features))
+  }
+  rlang::abort("Unknown experiment feature mode.", class = "ledgr_invalid_experiment_features")
+}
+
 ledgr_experiment_materialize_features <- function(exp, params) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_experiment")
@@ -347,6 +369,9 @@ ledgr_experiment_materialize_features <- function(exp, params) {
     features <- features(params)
   }
   mode <- ledgr_experiment_validate_features(features)
+  if (identical(mode, "feature_map")) {
+    return(ledgr_feature_map_indicators(features))
+  }
   if (!identical(mode, "list")) {
     rlang::abort(
       "`features` must resolve to a list of ledgr_indicator objects.",
@@ -415,6 +440,8 @@ print.ledgr_experiment <- function(x, ...) {
   }
   feature_desc <- if (identical(x$features_mode, "function")) {
     "function(params)"
+  } else if (identical(x$features_mode, "feature_map")) {
+    paste0(length(x$features$aliases), " mapped")
   } else {
     paste0(length(x$features), " fixed")
   }
