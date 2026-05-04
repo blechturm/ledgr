@@ -42,7 +42,14 @@ ledgr_strategy_context_list <- function(x, max_items = 8L) {
 }
 
 ledgr_strategy_error_features <- function(ctx) {
-  features <- tryCatch(ledgr_feature_names(ctx$features), error = function(e) character())
+  feature_table <- ctx$feature_table
+  if (is.null(feature_table) && is.data.frame(ctx$features)) {
+    feature_table <- ctx$features
+  }
+  if (!is.data.frame(feature_table)) {
+    feature_table <- data.frame()
+  }
+  features <- tryCatch(ledgr_feature_names(feature_table), error = function(e) character())
   ledgr_strategy_context_list(features)
 }
 
@@ -1156,7 +1163,10 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     ts_utc = "",
     universe = instrument_ids,
     bars = if (isTRUE(use_bars_cache)) bars_df else empty_df,
-    features = if (length(feature_defs) > 0) features_df else empty_df,
+    feature_table = if (length(feature_defs) > 0) features_df else empty_df,
+    features = function(...) {
+      rlang::abort("Pulse context feature helpers have not been initialized.", class = "ledgr_invalid_pulse_context")
+    },
     features_wide = empty_df,
     feature = ledgr_feature_accessor(empty_df),
     positions = state_env$current$positions,
@@ -1421,7 +1431,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
         ctx$ts_utc <- ts_iso
         ctx$bars <- bars
-        ctx$features <- feat_df
+        ctx$feature_table <- feat_df
         ctx$positions <- state$positions
         ctx$cash <- state$cash
         ctx$equity <- state$cash + positions_value

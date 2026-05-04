@@ -186,9 +186,10 @@ the active versioned spec packet, currently
 ## Context Contract
 
 - Runtime and interactive pulse contexts expose data-frame-compatible
-  `ctx$bars` and long-table `ctx$features`.
-- Ergonomic helpers such as `ctx$feature()` and `ctx$features_wide` are derived
-  views over `ctx$features`; they do not change feature computation semantics.
+  `ctx$bars` and long-table `ctx$feature_table`.
+- Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, and
+  `ctx$features_wide` are derived views over `ctx$feature_table`; they do not
+  change feature computation semantics.
 - `ctx$flat(default = 0)` constructs a full target vector initialized to a
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default

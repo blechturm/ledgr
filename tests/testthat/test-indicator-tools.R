@@ -54,15 +54,16 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
   testthat::expect_s3_class(ctx, "ledgr_pulse_context")
   testthat::expect_true(is.data.frame(ctx$bars))
   testthat::expect_equal(nrow(ctx$bars), length(universe))
-  testthat::expect_true(is.data.frame(ctx$features))
-  testthat::expect_true(all(c("ts_utc", "instrument_id", "feature_name", "feature_value") %in% names(ctx$features)))
+  testthat::expect_true(is.function(ctx$features))
+  testthat::expect_true(is.data.frame(ctx$feature_table))
+  testthat::expect_true(all(c("ts_utc", "instrument_id", "feature_name", "feature_value") %in% names(ctx$feature_table)))
   testthat::expect_true(is.function(ctx$feature))
   testthat::expect_true(is.data.frame(ctx$features_wide))
   testthat::expect_true("sma_3" %in% names(ctx$features_wide))
 
-  long_value <- ctx$features$feature_value[
-    ctx$features$instrument_id == "TEST_A" &
-      ctx$features$feature_name == "sma_3"
+  long_value <- ctx$feature_table$feature_value[
+    ctx$feature_table$instrument_id == "TEST_A" &
+      ctx$feature_table$feature_name == "sma_3"
   ]
   testthat::expect_equal(ctx$feature("TEST_A", "sma_3"), long_value[[1]])
   testthat::expect_error(
@@ -72,6 +73,22 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
   testthat::expect_equal(
     ctx$features_wide$sma_3[ctx$features_wide$instrument_id == "TEST_A"],
     long_value[[1]]
+  )
+
+  feature_map <- ledgr_feature_map(signal = ledgr:::ledgr_ind_sma(3))
+  ctx2 <- ledgr:::ledgr_pulse_snapshot(
+    snapshot = snap,
+    universe = universe,
+    ts_utc = ts_utc,
+    features = feature_map,
+    initial_cash = 1000
+  )
+  on.exit(ledgr:::close.ledgr_pulse_context(ctx2), add = TRUE)
+
+  testthat::expect_true(is.function(ctx2$features))
+  testthat::expect_equal(
+    ctx2$features("TEST_A", feature_map)[["signal"]],
+    ctx2$feature("TEST_A", "sma_3")
   )
 
   printed <- capture.output(print(ctx))

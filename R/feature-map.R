@@ -159,3 +159,29 @@ print.ledgr_feature_map <- function(x, ...) {
   }
   invisible(x)
 }
+
+#' Check whether mapped feature values have passed warmup
+#'
+#' `passed_warmup()` is a strategy-authoring guard for named numeric vectors
+#' returned by `ctx$features(id, feature_map)`. For those vectors, `TRUE` means
+#' every requested feature is usable at the current pulse. For arbitrary
+#' vectors, it is only an `all(!is.na(x))` predicate.
+#'
+#' @param x A numeric vector, typically returned by `ctx$features()`.
+#' @return A logical scalar.
+#' @export
+passed_warmup <- function(x) {
+  if (!is.numeric(x)) {
+    rlang::abort(
+      "`x` must be a numeric vector.",
+      class = c("ledgr_invalid_warmup_input", "ledgr_invalid_args")
+    )
+  }
+  if (length(x) < 1L) {
+    rlang::abort(
+      "`x` must contain at least one feature value.",
+      class = c("ledgr_empty_warmup_input", "ledgr_invalid_warmup_input", "ledgr_invalid_args")
+    )
+  }
+  isTRUE(all(!is.na(x)))
+}

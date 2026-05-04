@@ -102,7 +102,7 @@ tickets:
 
   - id: LDG-1403
     title: "Pulse Feature Bundles And Warmup Predicate"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1402]
     tests:

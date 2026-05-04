@@ -2,7 +2,10 @@
 
 - Planned: add feature-map authoring UX with `ledgr_feature_map()`,
   `ctx$features()`, and `passed_warmup()` while preserving the existing
-  target-vector execution contract and `features = list(...)` registration.
+  target-vector execution contract and `features = list(...)` registration;
+  the raw long feature table moves from `ctx$features` to
+  `ctx$feature_table`, while `ctx$features` becomes the feature-map bundle
+  accessor.
 - Planned: resolve auditr documentation findings around hidden vignette
   helpers, helper-page discovery, feature IDs, warmup diagnosis,
   TTR-backed indicators, leakage examples, and first-path navigation.

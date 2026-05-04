@@ -244,8 +244,11 @@ ledgr_pulse_snapshot <- function(snapshot,
   if (anyDuplicated(universe)) {
     rlang::abort("`universe` must not contain duplicate instrument_ids.", class = "ledgr_invalid_args")
   }
+  if (inherits(features, "ledgr_feature_map")) {
+    features <- ledgr_feature_map_indicators(features)
+  }
   if (!is.list(features)) {
-    rlang::abort("`features` must be a list.", class = "ledgr_invalid_args")
+    rlang::abort("`features` must be a list or ledgr_feature_map.", class = "ledgr_invalid_args")
   }
   for (ind in features) {
     if (!inherits(ind, "ledgr_indicator")) {

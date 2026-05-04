@@ -13,7 +13,10 @@ ledgr_pulse_context <- function(run_id,
     ts_utc = ledgr_normalize_ts_utc(ts_utc),
     universe = universe,
     bars = bars,
-    features = features,
+    feature_table = features,
+    features = function(...) {
+      rlang::abort("Pulse context feature helpers have not been initialized.", class = "ledgr_invalid_pulse_context")
+    },
     positions = positions,
     cash = cash,
     equity = equity,
@@ -88,6 +91,47 @@ ledgr_feature_accessor <- function(features) {
   }
 }
 
+ledgr_feature_bundle_accessor <- function(features, universe) {
+  force(features)
+  feature <- ledgr_feature_accessor(features)
+  universe <- as.character(universe)
+
+  function(instrument_id, feature_map) {
+    if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
+      rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+    }
+    if (!(instrument_id %in% universe)) {
+      rlang::abort(
+        sprintf(
+          "Unknown instrument_id '%s'. Available ctx$universe: %s.",
+          instrument_id,
+          ledgr_pulse_context_universe_message(universe)
+        ),
+        class = "ledgr_invalid_pulse_context"
+      )
+    }
+
+    ledgr_validate_feature_map_object(feature_map)
+
+    values <- vapply(feature_map$feature_ids, function(feature_id) {
+      value <- feature(instrument_id, feature_id)
+      if (!is.numeric(value) || length(value) != 1L) {
+        rlang::abort(
+          sprintf(
+            "Feature `%s` for instrument_id `%s` must be a scalar numeric value.",
+            feature_id,
+            instrument_id
+          ),
+          class = "ledgr_invalid_feature_value"
+        )
+      }
+      as.numeric(value)
+    }, numeric(1))
+
+    stats::setNames(unname(values), names(feature_map$feature_ids))
+  }
+}
+
 ledgr_features_wide <- function(features) {
   if (!ledgr_feature_table_ready(features)) return(data.frame())
 
@@ -130,25 +174,29 @@ ledgr_features_wide <- function(features) {
   out
 }
 
-ledgr_attach_feature_helpers <- function(ctx, features = ctx$features) {
+ledgr_attach_feature_helpers <- function(ctx, features = ctx$feature_table, universe = ctx$universe) {
   if (is.environment(ctx)) {
+    ctx$feature_table <- features
     ctx$features_wide <- ledgr_features_wide(features)
     ctx$feature <- ledgr_feature_accessor(features)
+    ctx$features <- ledgr_feature_bundle_accessor(features, universe)
     return(invisible(ctx))
   }
 
+  ctx$feature_table <- features
   ctx$features_wide <- ledgr_features_wide(features)
   ctx$feature <- ledgr_feature_accessor(features)
+  ctx$features <- ledgr_feature_bundle_accessor(features, universe)
   ctx
 }
 
 ledgr_update_pulse_context_helpers <- function(ctx,
                                                bars = ctx$bars,
-                                               features = ctx$features,
+                                               features = if (is.data.frame(ctx$feature_table)) ctx$feature_table else data.frame(),
                                                positions = ctx$positions,
                                                universe = ctx$universe) {
   ctx <- ledgr_ensure_pulse_context_accessors(ctx)
-  ctx <- ledgr_attach_feature_helpers(ctx, features)
+  ctx <- ledgr_attach_feature_helpers(ctx, features, universe = universe)
   ledgr_refresh_pulse_context_lookup(ctx, bars = bars, positions = positions, universe = universe)
   ctx
 }
@@ -486,12 +534,20 @@ ledgr_validate_pulse_context <- function(ctx) {
   validate_df_ts(ctx$bars, "bars")
   validate_df_instruments(ctx$bars, "bars")
 
-  if (!is.data.frame(ctx$features)) {
-    rlang::abort("PulseContext `features` must be a data.frame (or tibble).", class = "ledgr_invalid_pulse_context")
+  if (!is.function(ctx$features)) {
+    rlang::abort("PulseContext `features` must be a function.", class = "ledgr_invalid_pulse_context")
   }
-  if (nrow(ctx$features) > 0) {
-    validate_df_ts(ctx$features, "features")
-    validate_df_instruments(ctx$features, "features")
+
+  feature_table <- ctx$feature_table
+  if (is.null(feature_table)) {
+    feature_table <- data.frame()
+  }
+  if (!is.data.frame(feature_table)) {
+    rlang::abort("PulseContext `feature_table` must be a data.frame (or tibble).", class = "ledgr_invalid_pulse_context")
+  }
+  if (nrow(feature_table) > 0) {
+    validate_df_ts(feature_table, "feature_table")
+    validate_df_instruments(feature_table, "feature_table")
   }
 
   if (!is.numeric(ctx$positions)) {

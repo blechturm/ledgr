@@ -225,7 +225,8 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
   ctx <- ledgr_pulse_snapshot(snap, universe = universe, ts_utc = ts_utc, features = list(ledgr_ind_sma(2)))
   on.exit(close(ctx), add = TRUE)
   testthat::expect_true(is.data.frame(ctx$bars))
-  testthat::expect_true(is.data.frame(ctx$features))
+  testthat::expect_true(is.function(ctx$features))
+  testthat::expect_true(is.data.frame(ctx$feature_table))
   testthat::expect_true(is.function(ctx$feature))
   testthat::expect_true(is.data.frame(ctx$features_wide))
   testthat::expect_true("sma_2" %in% names(ctx$features_wide))
@@ -234,8 +235,11 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
     if (!is.data.frame(ctx$bars) || nrow(ctx$bars) != length(ctx$universe)) {
       stop("runtime bars context is not data-frame compatible")
     }
-    if (!is.data.frame(ctx$features) || !all(c("instrument_id", "feature_name", "feature_value") %in% names(ctx$features))) {
+    if (!is.data.frame(ctx$feature_table) || !all(c("instrument_id", "feature_name", "feature_value") %in% names(ctx$feature_table))) {
       stop("runtime features context is not data-frame compatible")
+    }
+    if (!is.function(ctx$features)) {
+      stop("runtime mapped feature accessor is missing")
     }
     if (!is.function(ctx$feature)) {
       stop("runtime feature accessor is missing")
@@ -245,9 +249,9 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
     }
 
     feature_value <- ctx$feature("TEST_A", "sma_2")
-    long_value <- ctx$features$feature_value[
-      ctx$features$instrument_id == "TEST_A" &
-        ctx$features$feature_name == "sma_2"
+    long_value <- ctx$feature_table$feature_value[
+      ctx$feature_table$instrument_id == "TEST_A" &
+        ctx$feature_table$feature_name == "sma_2"
     ][[1]]
     if (!identical(feature_value, long_value)) {
       stop("runtime feature accessor does not match long feature table")

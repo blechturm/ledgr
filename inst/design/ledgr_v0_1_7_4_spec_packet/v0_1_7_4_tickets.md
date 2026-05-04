@@ -236,7 +236,7 @@ forbidden_actions:
 **Priority:** P1  
 **Effort:** 3-5 days  
 **Dependencies:** LDG-1402  
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Add `ctx$features(id, features)` and exported `passed_warmup()` so strategies
@@ -256,13 +256,13 @@ signal logic without repeated `!is.na()` checks.
 9. Test both standard mode and audit-log mode behavior.
 
 **Acceptance Criteria:**
-- [ ] `ctx$features(id, feature_map)` returns aliased scalar numeric values.
-- [ ] Warmup `NA` is preserved and not treated as an unknown feature.
-- [ ] Invalid instruments and unregistered mapped features fail loudly.
-- [ ] `ctx$features()` respects the existing no-lookahead pulse boundary.
-- [ ] `passed_warmup()` returns `TRUE` only when all values are non-`NA`.
-- [ ] `passed_warmup()` zero-length input aborts with a classed error.
-- [ ] Standard and audit-log execution modes behave identically.
+- [x] `ctx$features(id, feature_map)` returns aliased scalar numeric values.
+- [x] Warmup `NA` is preserved and not treated as an unknown feature.
+- [x] Invalid instruments and unregistered mapped features fail loudly.
+- [x] `ctx$features()` respects the existing no-lookahead pulse boundary.
+- [x] `passed_warmup()` returns `TRUE` only when all values are non-`NA`.
+- [x] `passed_warmup()` zero-length input aborts with a classed error.
+- [x] Standard and audit-log execution modes behave identically.
 
 **Test Requirements:**
 - Pulse-context accessor tests.
