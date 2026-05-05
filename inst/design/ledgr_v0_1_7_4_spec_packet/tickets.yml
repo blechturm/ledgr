@@ -399,7 +399,7 @@ tickets:
 
   - id: LDG-1408
     title: "Contracts, Site Reference, Installed-Doc Hygiene, And NEWS"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406, LDG-1410]
     tests:

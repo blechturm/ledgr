@@ -81,6 +81,9 @@ reference:
       - ledgr_indicator
       - print.ledgr_indicator
       - ledgr_feature_id
+      - ledgr_feature_contracts
+      - ledgr_pulse_features
+      - ledgr_pulse_wide
       - ledgr_register_indicator
       - ledgr_deregister_indicator
       - ledgr_get_indicator
@@ -97,6 +100,9 @@ reference:
       - ledgr_pulse_snapshot
       - print.ledgr_pulse_context
       - close.ledgr_pulse_context
+      - ledgr_feature_map
+      - print.ledgr_feature_map
+      - passed_warmup
       - ledgr_signal_strategy
       - ledgr_signal
       - ledgr_selection

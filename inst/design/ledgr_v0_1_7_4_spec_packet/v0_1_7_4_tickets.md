@@ -780,7 +780,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 2-3 days
 **Dependencies:** LDG-1402, LDG-1403, LDG-1404, LDG-1405, LDG-1406, LDG-1410
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Align contracts, NEWS, pkgdown reference structure, package help, and installed
@@ -802,14 +802,14 @@ change says otherwise.
 8. Render docs according to repo practice.
 
 **Acceptance Criteria:**
-- [ ] Contracts describe feature maps as authoring UX, not execution semantics.
-- [ ] Contracts describe `ctx$features()` and `passed_warmup()` boundaries.
-- [ ] NEWS accurately summarizes v0.1.7.4 delivered scope.
-- [ ] `_pkgdown.yml` includes new helper exports in the appropriate reference
+- [x] Contracts describe feature maps as authoring UX, not execution semantics.
+- [x] Contracts describe `ctx$features()` and `passed_warmup()` boundaries.
+- [x] NEWS accurately summarizes v0.1.7.4 delivered scope.
+- [x] `_pkgdown.yml` includes new helper exports in the appropriate reference
       section.
-- [ ] Stale installed `ttr-indicators` artifacts are absent or explicitly
+- [x] Stale installed `ttr-indicators` artifacts are absent or explicitly
       justified by a contract change.
-- [ ] Documentation tests guard installed article links and stale paths.
+- [x] Documentation tests guard installed article links and stale paths.
 
 **Test Requirements:**
 - Documentation contract tests.

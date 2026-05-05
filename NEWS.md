@@ -1,21 +1,22 @@
 # ledgr 0.1.7.4
 
-- Planned: add feature-map authoring UX with `ledgr_feature_map()`,
+- Breaking: the raw long feature table on pulse contexts moved from
+  `ctx$features` to `ctx$feature_table`; `ctx$features` is now the
+  feature-map bundle accessor. This keeps raw inspection data and strategy
+  authoring accessors separate.
+- Added feature-map authoring UX with `ledgr_feature_map()`,
   `ctx$features()`, and `passed_warmup()` while preserving the existing
-  target-vector execution contract and `features = list(...)` registration;
-  the raw long feature table moves from `ctx$features` to
-  `ctx$feature_table`, while `ctx$features` becomes the feature-map bundle
-  accessor.
-- Planned: add feature-inspection views with `ledgr_feature_contracts()`,
+  target-vector execution contract and `features = list(...)` registration.
+- Added feature-inspection views with `ledgr_feature_contracts()`,
   `ledgr_pulse_features()`, and `ledgr_pulse_wide()` so users can inspect
   contracts, long pulse rows, and stable wide pulse rows.
-- Planned: resolve auditr documentation findings around hidden vignette
-  helpers, helper-page discovery, feature IDs, warmup diagnosis,
-  TTR-backed indicators, leakage examples, and first-path navigation.
-- Planned: verify the documented CSV snapshot import, seal, experiment, and
-  run workflow, fixing ledgr if a real metadata bug is confirmed or clarifying
-  the supported path if the report is not reproducible.
-- Planned: clean installed-documentation hygiene, including stale retired
+- Resolved auditr documentation findings around hidden vignette helpers,
+  helper-page discovery, feature IDs, warmup diagnosis, TTR-backed indicators,
+  leakage examples, and first-path navigation.
+- Fixed the low-level CSV snapshot create/import/seal workflow so sealing
+  derives missing runnable metadata from imported bars and instruments without
+  changing snapshot hash identity.
+- Cleaned installed-documentation hygiene, including stale retired
   `ttr-indicators` artifacts, package/help-page article links, pkgdown
   reference entries, and documentation-contract tests.
 

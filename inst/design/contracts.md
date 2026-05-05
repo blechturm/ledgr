@@ -147,6 +147,9 @@ the active versioned spec packet, currently
 - Feature-map aliases are readable names for strategy authors. They are not
   roles, selectors, recipes-style preprocessing groups, or execution
   instructions.
+- `passed_warmup()` is a guard used inside strategy logic after feature values
+  have been read. It is not a helper-pipeline transformation and must not imply
+  a second signal/selection/weight/target execution path.
 - v0.1.x does not define a supported broker-style short-selling contract.
   Negative target quantities are outside the supported public workflow until
   explicit shorting semantics are specified.
@@ -187,9 +190,9 @@ the active versioned spec packet, currently
 
 - Runtime and interactive pulse contexts expose data-frame-compatible
   `ctx$bars` and long-table `ctx$feature_table`.
-- Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, and
-  `ctx$features_wide` are derived views over `ctx$feature_table`; they do not
-  change feature computation semantics.
+- Ergonomic helpers such as `ctx$feature()` and `ctx$features()` are derived
+  views over `ctx$feature_table`; they do not change feature computation
+  semantics.
 - `ctx$flat(default = 0)` constructs a full target vector initialized to a
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
@@ -205,8 +208,16 @@ the active versioned spec packet, currently
 - `passed_warmup()` is a strategy-authoring guard for named numeric vectors
   produced by `ctx$features()`. It is not a helper-pipeline transformation and
   zero-length input must fail loudly rather than returning vacuous success.
-- v0.1.7.4 feature maps do not add `ctx$features_wide()` or any new wide
-  feature-table API.
+- `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
+  `ledgr_pulse_wide()` are read-only inspection views over declared features
+  and pulse-known data. They must not precompute unavailable data, mutate
+  persistent ledgr tables, or change strategy execution semantics.
+- `ledgr_pulse_wide()` uses stable names
+  `{instrument_id}__ohlcv_{field}` and
+  `{instrument_id}__feature_{feature_id}`. Feature-map aliases may filter or
+  order the view but must not replace engine feature IDs in wide column names.
+- v0.1.7.4 feature maps do not add a new `ctx$features_wide()` contract; the
+  public wide pulse inspection API is `ledgr_pulse_wide()`.
 - Strategy evaluation errors are wrapped with pulse context while preserving the
   original condition as the parent. The wrapper must name the run, timestamp,
   instruments, and available feature IDs so users can distinguish strategy
@@ -343,6 +354,9 @@ the active versioned spec packet, currently
 - Core function-level help pages must point to relevant installed articles with
   both interactive and browser-free lookup paths. The browser-free form is
   `system.file("doc", "<article>.html", package = "ledgr")`.
+- Feature-map and pulse-inspection help pages must point to the installed
+  articles that teach them: `strategy-development` for strategy authoring and
+  `indicators` for indicator contracts and pulse views.
 - Package help (`?ledgr` / `?ledgr-package`) must include a compact "Start
   here" spine with `vignette(package = "ledgr")`,
   `system.file("doc", package = "ledgr")`, and direct paths for core installed

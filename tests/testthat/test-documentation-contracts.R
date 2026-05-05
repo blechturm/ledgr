@@ -126,6 +126,14 @@ testthat::test_that("background articles stay pkgdown-only", {
   testthat::expect_false(file.exists(file.path(root, "inst", "doc", "why-r.Rmd")))
 })
 
+testthat::test_that("retired TTR indicator article is not installed", {
+  root <- testthat::test_path("..", "..")
+  testthat::expect_false(file.exists(file.path(root, "vignettes", "ttr-indicators.Rmd")))
+  testthat::expect_false(file.exists(file.path(root, "inst", "doc", "ttr-indicators.Rmd")))
+  testthat::expect_false(file.exists(file.path(root, "inst", "doc", "ttr-indicators.R")))
+  testthat::expect_false(file.exists(file.path(root, "inst", "doc", "ttr-indicators.html")))
+})
+
 testthat::test_that("README documents noninteractive documentation discovery", {
   root <- testthat::test_path("..", "..")
   readme <- file.path(root, "README.Rmd")
@@ -163,6 +171,37 @@ testthat::test_that("first-path navigation avoids non-runnable examples", {
 
   testthat::expect_no_match(text, "examples/README", fixed = TRUE)
   testthat::expect_no_match(text, "non-executable development artifacts", fixed = TRUE)
+})
+
+testthat::test_that("pkgdown reference lists v0.1.7.4 helper exports", {
+  root <- testthat::test_path("..", "..")
+  pkgdown <- file.path(root, "_pkgdown.yml")
+  testthat::skip_if_not(file.exists(pkgdown), "pkgdown config unavailable")
+  text <- paste(readLines(pkgdown, warn = FALSE), collapse = "\n")
+
+  for (fn in c(
+    "ledgr_feature_map",
+    "passed_warmup",
+    "ledgr_feature_contracts",
+    "ledgr_pulse_features",
+    "ledgr_pulse_wide"
+  )) {
+    testthat::expect_match(text, paste0("- ", fn), fixed = TRUE)
+  }
+})
+
+testthat::test_that("NEWS summarizes delivered v0.1.7.4 scope", {
+  root <- testthat::test_path("..", "..")
+  news <- file.path(root, "NEWS.md")
+  testthat::skip_if_not(file.exists(news), "NEWS source unavailable")
+  text <- paste(readLines(news, warn = FALSE), collapse = "\n")
+  section <- sub("# ledgr 0[.]1[.]7[.]3.*$", "", text)
+
+  testthat::expect_no_match(section, "Planned:", fixed = TRUE)
+  testthat::expect_match(section, "Added feature-map authoring UX", fixed = TRUE)
+  testthat::expect_match(section, "Added feature-inspection views", fixed = TRUE)
+  testthat::expect_match(section, "Fixed the low-level CSV snapshot create/import/seal workflow", fixed = TRUE)
+  testthat::expect_match(section, "stale retired\\s+`ttr-indicators` artifacts")
 })
 
 testthat::test_that("auditr harness discovery bug is recorded externally", {
