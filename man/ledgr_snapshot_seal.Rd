@@ -21,6 +21,9 @@ Transitions a snapshot from \code{CREATED} to \code{SEALED} and stores a determi
 \details{
 Snapshot mutability rule: sealing is only allowed while status is \code{CREATED}.
 After sealing, snapshot write operations must be rejected by ledgr code paths.
+When basic metadata such as \code{start_date}, \code{end_date}, \code{n_bars}, or
+\code{n_instruments} is missing, sealing derives it from the imported snapshot
+tables. Metadata does not contribute to \code{snapshot_hash}.
 
 Errors:
 \itemize{

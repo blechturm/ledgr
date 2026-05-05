@@ -588,7 +588,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 2-4 days
 **Dependencies:** LDG-1401
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Investigate the auditr Task 008 report that the documented CSV
@@ -608,13 +608,22 @@ before `ledgr_run()` accepted the sealed snapshot.
 7. Preserve snapshot sealing, hashing, loading, and metadata invariants.
 
 **Acceptance Criteria:**
-- [ ] Raw Task 008 evidence has been reviewed and summarized.
-- [ ] Finding is classified with rationale.
-- [ ] Documented `ledgr_snapshot_from_csv()` -> `ledgr_experiment()` ->
+- [x] Raw Task 008 evidence has been reviewed and summarized.
+- [x] Finding is classified with rationale.
+- [x] Documented `ledgr_snapshot_from_csv()` -> `ledgr_experiment()` ->
       `ledgr_run()` path works without undocumented metadata edits, or the
       required documented path is clarified.
-- [ ] New test or documentation protects the supported workflow.
-- [ ] Snapshot sealing/hash/load invariants are unchanged.
+- [x] New test or documentation protects the supported workflow.
+- [x] Snapshot sealing/hash/load invariants are unchanged.
+
+**Implementation Notes:**
+Task 008 showed the high-level `ledgr_snapshot_from_csv()` path worked, but the
+lower-level `ledgr_snapshot_create()` -> `ledgr_snapshot_import_bars_csv()` ->
+`ledgr_snapshot_seal()` path produced a sealed snapshot with empty metadata.
+That snapshot could load and verify, but `ledgr_run()` could not infer
+start/end dates. The finding is a confirmed ledgr metadata bug in the low-level
+CSV import/seal workflow. Sealing now derives missing basic metadata from the
+imported snapshot tables while keeping metadata out of `snapshot_hash`.
 
 **Test Requirements:**
 - CSV snapshot import/seal/run regression.

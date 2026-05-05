@@ -5,6 +5,9 @@
 #'
 #' Snapshot mutability rule: sealing is only allowed while status is `CREATED`.
 #' After sealing, snapshot write operations must be rejected by ledgr code paths.
+#' When basic metadata such as `start_date`, `end_date`, `n_bars`, or
+#' `n_instruments` is missing, sealing derives it from the imported snapshot
+#' tables. Metadata does not contribute to `snapshot_hash`.
 #'
 #' @param con A DBI connection to DuckDB or a `ledgr_snapshot`.
 #' @param snapshot_id Snapshot id (must exist and be status `CREATED`) when `con` is a connection.
@@ -101,6 +104,8 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
   }
 
   ledgr_snapshot_validate_for_seal(con, snapshot_id)
+  metadata <- ledgr_snapshot_metadata_for_seal(con, snapshot_id)
+  meta_json <- as.character(canonical_json(metadata))
 
   seal_failed <- function(msg) {
     # Best-effort: mark CREATED snapshot as FAILED with error_msg (no partial seal).
@@ -147,11 +152,12 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
     SET status = 'SEALED',
         sealed_at_utc = CAST(? AS TIMESTAMP),
         snapshot_hash = ?,
+        meta_json = ?,
         error_msg = NULL
     WHERE snapshot_id = ?
       AND status = 'CREATED'
     ",
-    params = list(sealed_at_iso, hash, snapshot_id)
+    params = list(sealed_at_iso, hash, meta_json, snapshot_id)
   )
 
   check <- DBI::dbGetQuery(
@@ -170,11 +176,68 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
   on.exit(NULL, add = FALSE)
 
   if (!is.null(snapshot_obj)) {
+    snapshot_obj$metadata <- metadata
     snapshot_obj$metadata$snapshot_hash <- hash
     return(invisible(list(hash = hash, snapshot = snapshot_obj)))
   }
 
   hash
+}
+
+ledgr_snapshot_metadata_for_seal <- function(con, snapshot_id) {
+  raw <- DBI::dbGetQuery(
+    con,
+    "SELECT meta_json FROM snapshots WHERE snapshot_id = ?",
+    params = list(snapshot_id)
+  )$meta_json[[1]]
+
+  metadata <- list()
+  if (is.character(raw) && length(raw) == 1L && !is.na(raw) && nzchar(raw)) {
+    metadata <- tryCatch(
+      jsonlite::fromJSON(raw, simplifyVector = FALSE),
+      error = function(e) list()
+    )
+    if (!is.list(metadata) || is.data.frame(metadata)) {
+      metadata <- list()
+    }
+  }
+
+  bar_stats <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT
+      COUNT(*) AS n_bars,
+      MIN(ts_utc) AS start_date,
+      MAX(ts_utc) AS end_date
+    FROM snapshot_bars
+    WHERE snapshot_id = ?
+    ",
+    params = list(snapshot_id)
+  )
+  instrument_count <- DBI::dbGetQuery(
+    con,
+    "SELECT COUNT(*) AS n_instruments FROM snapshot_instruments WHERE snapshot_id = ?",
+    params = list(snapshot_id)
+  )$n_instruments[[1]]
+
+  put_if_missing <- function(x, name, value) {
+    existing <- x[[name]]
+    missing <- is.null(existing) ||
+      length(existing) == 0L ||
+      (length(existing) == 1L && is.atomic(existing) && is.na(existing)) ||
+      (is.character(existing) && length(existing) == 1L && !nzchar(existing))
+    if (isTRUE(missing)) {
+      x[[name]] <- value
+    }
+    x
+  }
+
+  metadata <- put_if_missing(metadata, "n_bars", as.integer(bar_stats$n_bars[[1]]))
+  metadata <- put_if_missing(metadata, "n_instruments", as.integer(instrument_count))
+  metadata <- put_if_missing(metadata, "start_date", ledgr_normalize_ts_utc(bar_stats$start_date[[1]]))
+  metadata <- put_if_missing(metadata, "end_date", ledgr_normalize_ts_utc(bar_stats$end_date[[1]]))
+
+  metadata
 }
 
 ledgr_snapshot_validate_for_seal <- function(con, snapshot_id) {

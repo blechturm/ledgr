@@ -298,7 +298,7 @@ tickets:
 
   - id: LDG-1407
     title: "CSV Snapshot Import/Seal Workflow Investigation"
-    status: planned
+    status: done
     priority: P0
     dependencies: [LDG-1401]
     tests:
