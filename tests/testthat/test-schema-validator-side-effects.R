@@ -4,11 +4,18 @@ testthat::test_that("schema validation is repeatable and does not persist test r
 
   ledgr_create_schema(con)
 
-  before <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM runs")$n[[1]]
-  testthat::expect_error(ledgr_validate_schema(con), NA)
-  testthat::expect_error(ledgr_validate_schema(con), NA)
-  after <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM runs")$n[[1]]
+  count <- function(table) DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", table))$n[[1]]
 
-  testthat::expect_identical(before, after)
+  before_runs     <- count("runs")
+  before_snaps    <- count("snapshots")
+  before_features <- count("features")
+  before_ledger   <- count("ledger_events")
+
+  testthat::expect_error(ledgr_validate_schema(con), NA)
+  testthat::expect_error(ledgr_validate_schema(con), NA)
+
+  testthat::expect_identical(count("runs"),          before_runs)
+  testthat::expect_identical(count("snapshots"),     before_snaps)
+  testthat::expect_identical(count("features"),      before_features)
+  testthat::expect_identical(count("ledger_events"), before_ledger)
 })
-
