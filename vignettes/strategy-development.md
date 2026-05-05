@@ -437,7 +437,7 @@ which features exist.
 
 Class-specific suppression is deliberately narrow: it keeps expected
 warmup noise out of a full run while still allowing unrelated warnings
-to surface. There is no `warn_empty = FALSE` argument in v0.1.7.3; use a
+to surface. There is no `warn_empty = FALSE` argument in v0.1.7.4; use a
 diagnostic pulse and call `select_top_n()` without suppression when a
 strategy produces no fills or no closed trades.
 

@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Indicators And Feature IDs</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Indicators And Feature IDs</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(ledgr)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;ledgr_demo_bars&quot;</span>, <span class="at">package =</span> <span class="st">&quot;ledgr&quot;</span>)</span></code></pre></div>
+<p>Indicators are how ledgr turns sealed market data into pulse-time
+features. This article teaches the runtime shape first, then the
+accessor APIs.</p>
+<p>The central model is:</p>
+<blockquote>
+<p>ledgr computes feature contracts into pulse-known data; the accessors
+are different views into that same pulse.</p>
+</blockquote>
+<p>That model is the same for built-in ledgr indicators, TTR-backed
+indicators, and custom indicators.</p>
+<div id="start-with-built-in-features" class="section level2">
+<h2>Start With Built-In Features</h2>
+<p>Use two demo instruments and two built-in features. The economic idea
+will be small on purpose:</p>
+<blockquote>
+<p>Own an instrument only when its recent return is positive enough and
+today’s close is above its moving average.</p>
+</blockquote>
+<p>That rule needs one momentum feature and one trend feature. A feature
+map gives readable aliases to your R code while preserving ledgr’s exact
+engine feature IDs.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>features <span class="ot">&lt;-</span> <span class="fu">ledgr_feature_map</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">ret_5 =</span> <span class="fu">ledgr_ind_returns</span>(<span class="dv">5</span>),</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">sma_10 =</span> <span class="fu">ledgr_ind_sma</span>(<span class="dv">10</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>)</span></code></pre></div>
+<p>There are two names in play:</p>
+<ul>
+<li>the <strong>alias</strong> is the readable name you choose, such as
+<code>ret_5</code> or <code>sma_10</code>;</li>
+<li>the <strong>feature ID</strong> is ledgr’s stable engine name, such
+as <code>return_5</code> or <code>sma_10</code>.</li>
+</ul>
+<p>Use aliases when you write strategy logic with
+<code>ctx$features()</code>. Use feature IDs when you need the explicit
+engine contract, for example with <code>ctx$feature()</code> or when
+inspecting stored feature metadata.</p>
+</div>
+<div id="inspect-one-pulse" class="section level2">
+<h2>Inspect One Pulse</h2>
+<p>Create a small sealed snapshot and inspect one decision pulse before
+running a full backtest. This keeps the runtime data visible before the
+article introduces more metadata.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>bars <span class="ot">&lt;-</span> ledgr_demo_bars <span class="sc">|&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>    instrument_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    <span class="fu">between</span>(</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>      ts_utc,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>      <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-01-01&quot;</span>),</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>      <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-06-30&quot;</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    )</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  )</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> <span class="fu">ledgr_snapshot_from_df</span>(</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  bars,</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>  <span class="at">snapshot_id =</span> <span class="fu">paste0</span>(<span class="st">&quot;indicators-vignette-&quot;</span>, <span class="fu">Sys.getpid</span>())</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>pulse <span class="ot">&lt;-</span> <span class="fu">ledgr_pulse_snapshot</span>(</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>  snapshot,</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  <span class="at">universe =</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>  <span class="at">ts_utc =</span> <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-03-01&quot;</span>),</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>  <span class="at">features =</span> features</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>)</span></code></pre></div>
+<p>At this timestamp, ledgr has computed the same two features for each
+instrument in the universe. The long pulse view shows that directly: one
+row per instrument and feature. Without a feature map,
+<code>alias</code> is <code>NA</code>. With the map, rows are filtered
+to the mapped features and aliases are filled.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">ledgr_pulse_features</span>(pulse, features)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 x 5</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt;   ts_utc              instrument_id feature_id feature_value alias </span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt;   &lt;dttm&gt;              &lt;chr&gt;         &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt; </span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; 1 2019-03-01 00:00:00 DEMO_01       return_5         0.0853  ret_5 </span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; 2 2019-03-01 00:00:00 DEMO_01       sma_10          99.8     sma_10</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; 3 2019-03-01 00:00:00 DEMO_02       return_5         0.00402 ret_5 </span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; 4 2019-03-01 00:00:00 DEMO_02       sma_10          68.2     sma_10</span></span></code></pre></div>
+<p>The wide pulse view is useful for debugging and future model-style
+workflows. It contains one OHLCV block and one feature block for each
+instrument. OHLCV columns use
+<code>{instrument_id}__ohlcv_{field}</code>. Feature columns use
+<code>{instrument_id}__feature_{feature_id}</code>. A feature map can
+filter and order feature columns, but it does not rename wide columns to
+aliases.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">ledgr_pulse_wide</span>(pulse, features)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 x 17</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;   ts_utc                cash equity DEMO_01__ohlcv_open DEMO_01__ohlcv_high</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt;   &lt;dttm&gt;               &lt;dbl&gt;  &lt;dbl&gt;               &lt;dbl&gt;               &lt;dbl&gt;</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; 1 2019-03-01 00:00:00 100000 100000                103.                107.</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; # i 12 more variables: DEMO_01__ohlcv_low &lt;dbl&gt;, DEMO_01__ohlcv_close &lt;dbl&gt;,</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; #   DEMO_01__ohlcv_volume &lt;dbl&gt;, DEMO_01__feature_return_5 &lt;dbl&gt;,</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; #   DEMO_01__feature_sma_10 &lt;dbl&gt;, DEMO_02__ohlcv_open &lt;dbl&gt;, DEMO_02__ohlcv_high &lt;dbl&gt;,</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; #   DEMO_02__ohlcv_low &lt;dbl&gt;, DEMO_02__ohlcv_close &lt;dbl&gt;, DEMO_02__ohlcv_volume &lt;dbl&gt;,</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; #   DEMO_02__feature_return_5 &lt;dbl&gt;, DEMO_02__feature_sma_10 &lt;dbl&gt;</span></span></code></pre></div>
+<p><code>ledgr_pulse_features()</code> and
+<code>ledgr_pulse_wide()</code> work on interactive pulse snapshots and
+on the <code>ctx</code> object inside an ordinary strategy function.
+They are inspection views over the same pulse-known data used by
+<code>ctx$feature()</code> and <code>ctx$features()</code>.</p>
+</div>
+<div id="access-features-in-a-strategy" class="section level2">
+<h2>Access Features In A Strategy</h2>
+<p>The long and wide pulse views are useful when you want to inspect the
+computed data, compare instruments, or think in model-like rows. They
+are not always the clearest shape for strategy code. A strategy often
+wants to ask a smaller question: “what are the current values for this
+instrument?”</p>
+<p>That is why ledgr also exposes the same pulse data through scalar and
+mapped accessors. The table views and the accessors are not competing
+APIs; they are different views over the same pulse-known data.</p>
+<p>The explicit scalar accessor is useful when you want to show or debug
+one value. It uses the engine ID, not the alias:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>ids <span class="ot">&lt;-</span> <span class="fu">ledgr_feature_id</span>(features)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>pulse<span class="sc">$</span><span class="fu">feature</span>(<span class="st">&quot;DEMO_01&quot;</span>, ids[[<span class="st">&quot;ret_5&quot;</span>]])</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; [1] 0.08531877</span></span></code></pre></div>
+<p>Mapped access returns a named numeric vector keyed by alias for one
+instrument at one pulse:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> pulse<span class="sc">$</span><span class="fu">features</span>(<span class="st">&quot;DEMO_01&quot;</span>, features)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>x</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt;       ret_5      sma_10 </span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;  0.08531877 99.79637070</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">passed_warmup</span>(x)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>Inside a strategy, loop over <code>ctx$universe</code> so the rule
+works for every instrument in the run.</p>
+<p>Read the body economically:</p>
+<ul>
+<li>start from <code>ctx$flat()</code>, so the default desired state is
+no positions;</li>
+<li>inspect each instrument’s current mapped features;</li>
+<li>skip the instrument while either feature is still in warmup;</li>
+<li>buy <code>params$qty</code> only when recent return is above the
+threshold and price is above the moving average;</li>
+<li>because the strategy starts flat on every pulse, an instrument is
+sold when the condition stops being true.</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    x <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">features</span>(id, features)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>    <span class="cf">if</span> (</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>      <span class="fu">passed_warmup</span>(x) <span class="sc">&amp;&amp;</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>        x[[<span class="st">&quot;ret_5&quot;</span>]] <span class="sc">&gt;</span> params<span class="sc">$</span>min_return <span class="sc">&amp;&amp;</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>        ctx<span class="sc">$</span><span class="fu">close</span>(id) <span class="sc">&gt;</span> x[[<span class="st">&quot;sma_10&quot;</span>]]</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>    ) {</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>    }</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  }</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>  targets</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>}</span></code></pre></div>
+<p>That pattern keeps the signal logic readable:</p>
+<ul>
+<li><code>features</code> is where feature identity and aliases
+live.</li>
+<li><code>ctx$features()</code> reads the current mapped values for one
+instrument.</li>
+<li><code>passed_warmup()</code> is the warmup gate for the mapped
+feature vector.</li>
+<li>The condition after the warmup gate is the economic rule.</li>
+<li>The strategy still returns ordinary target quantities.</li>
+</ul>
+</div>
+<div id="run-the-example" class="section level2">
+<h2>Run The Example</h2>
+<p>The experiment registers the indicator objects. ledgr computes those
+features for every instrument at each pulse, then gives the strategy
+only the pulse-time values.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>exp <span class="ot">&lt;-</span> <span class="fu">ledgr_experiment</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">snapshot =</span> snapshot,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">strategy =</span> strategy,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">features =</span> features,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">opening =</span> <span class="fu">ledgr_opening</span>(<span class="at">cash =</span> <span class="dv">10000</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>run_id <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;indicators-demo-&quot;</span>, <span class="fu">Sys.getpid</span>())</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>bt <span class="ot">&lt;-</span> exp <span class="sc">|&gt;</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>  <span class="fu">ledgr_run</span>(<span class="at">params =</span> <span class="fu">list</span>(<span class="at">min_return =</span> <span class="dv">0</span>, <span class="at">qty =</span> <span class="dv">10</span>), <span class="at">run_id =</span> run_id)</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; Warning: LEDGR_LAST_BAR_NO_FILL</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;fills&quot;</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; # A tibble: 39 x 9</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt;    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt;        &lt;int&gt; &lt;date&gt;     &lt;chr&gt;         &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt; </span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt;  1         1 2019-01-23 DEMO_01       BUY      10  88.0     0         0    OPEN  </span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt;  2         2 2019-01-30 DEMO_02       BUY      10  71.1     0         0    OPEN  </span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co">#&gt;  3         3 2019-02-01 DEMO_02       SELL     10  69.3     0       -17.9  CLOSE </span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt;  4         4 2019-02-06 DEMO_01       SELL     10  92.9     0        49.3  CLOSE </span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt;  5         5 2019-02-13 DEMO_01       BUY      10  93.9     0         0    OPEN  </span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt;  6         6 2019-02-19 DEMO_02       BUY      10  68.7     0         0    OPEN  </span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt;  7         7 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE </span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt;  8         8 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN  </span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt;  9         9 2019-03-11 DEMO_01       SELL     10 106.      0       123.   CLOSE </span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; 10        10 2019-03-11 DEMO_02       SELL     10  68.0     0        -9.18 CLOSE </span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; # i 29 more rows</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="fu">close</span>(pulse)</span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="fu">close</span>(bt)</span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="fu">ledgr_snapshot_close</span>(snapshot)</span></code></pre></div>
+</div>
+<div id="read-the-feature-contracts" class="section level2">
+<h2>Read The Feature Contracts</h2>
+<p>After you have seen the feature values at a pulse, the contract table
+is easier to read. The feature contracts are what ledgr will compute for
+every instrument in the run. <code>alias</code> is for your strategy
+code. <code>feature_id</code> is the stable engine ID. Warmup metadata
+tells you when a known feature may still be <code>NA</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">ledgr_feature_contracts</span>(features)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 5</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt;   alias  feature_id source requires_bars stable_after</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt;      &lt;chr&gt;          &lt;int&gt;        &lt;int&gt;</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; 1 ret_5  return_5   ledgr              6            6</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; 2 sma_10 sma_10     ledgr             10           10</span></span></code></pre></div>
+<p>Plain lists remain valid too. For a named list, names become aliases
+in the contract table. For an unnamed list, <code>alias</code> is
+<code>NA</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>plain_features <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">ledgr_ind_returns</span>(<span class="dv">5</span>), <span class="fu">ledgr_ind_sma</span>(<span class="dv">10</span>))</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">ledgr_feature_contracts</span>(plain_features)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 5</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt;   alias feature_id source requires_bars stable_after</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt; &lt;chr&gt;      &lt;chr&gt;          &lt;int&gt;        &lt;int&gt;</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt; 1 &lt;NA&gt;  return_5   ledgr              6            6</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt; 2 &lt;NA&gt;  sma_10     ledgr             10           10</span></span></code></pre></div>
+</div>
+<div id="parameter-grids-register-every-needed-feature" class="section level2">
+<h2>Parameter Grids Register Every Needed Feature</h2>
+<p>If a parameter grid changes a lookback, register every lookback
+variant before the run. ledgr does not create indicators dynamically
+from <code>params</code>; the run only computes the feature contracts
+registered on the experiment.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>swept_features <span class="ot">&lt;-</span> <span class="fu">ledgr_feature_map</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="at">ret_5 =</span> <span class="fu">ledgr_ind_returns</span>(<span class="dv">5</span>),</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">ret_10 =</span> <span class="fu">ledgr_ind_returns</span>(<span class="dv">10</span>),</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">ret_20 =</span> <span class="fu">ledgr_ind_returns</span>(<span class="dv">20</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>feature_ids <span class="ot">&lt;-</span> <span class="fu">ledgr_feature_id</span>(swept_features)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>parameterized_strategy <span class="ot">&lt;-</span> <span class="cf">function</span>(ctx, params) {</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>  targets <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">flat</span>()</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>  feature_id <span class="ot">&lt;-</span> feature_ids[[<span class="fu">paste0</span>(<span class="st">&quot;ret_&quot;</span>, params<span class="sc">$</span>lookback)]]</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>  <span class="cf">for</span> (id <span class="cf">in</span> ctx<span class="sc">$</span>universe) {</span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>    ret <span class="ot">&lt;-</span> ctx<span class="sc">$</span><span class="fu">feature</span>(id, feature_id)</span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.finite</span>(ret) <span class="sc">&amp;&amp;</span> ret <span class="sc">&gt;</span> params<span class="sc">$</span>min_return) {</span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>      targets[id] <span class="ot">&lt;-</span> params<span class="sc">$</span>qty</span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>    }</span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a>  }</span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a></span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a>  targets</span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a>}</span>
+<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a></span>
+<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="fu">ledgr_param_grid</span>(</span>
+<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a>  <span class="at">lookback =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>),</span>
+<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a>  <span class="at">min_return =</span> <span class="dv">0</span>,</span>
+<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a>  <span class="at">qty =</span> <span class="dv">10</span></span>
+<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a>)</span></code></pre></div>
+<p>The important rule is that the feature set covers the whole grid:
+<code>lookback = 20</code> means <code>return_20</code> must already be
+registered. A missing feature ID is an unknown-feature error, not
+warmup. The alias names in <code>swept_features</code> must also match
+the lookup key pattern used by the strategy, here
+<code>paste0(&quot;ret_&quot;, params$lookback)</code>.</p>
+</div>
+<div id="ttr-backed-indicators" class="section level2">
+<h2>TTR-Backed Indicators</h2>
+<p><code>ledgr_ind_ttr()</code> is the adapter for supported indicators
+from the suggested <code>TTR</code> package. TTR stays outside the core
+engine:</p>
+<pre class="text"><code>TTR -&gt; ledgr_ind_ttr() -&gt; ledgr_indicator -&gt; deterministic pulse engine</code></pre>
+<p>The engine sees a normal <code>ledgr_indicator</code>. That means
+TTR-backed indicators follow the same feature-ID, warmup, and pulse-view
+rules as built-in indicators. The examples below are skipped when
+<code>TTR</code> is not installed. In your own project, install TTR
+before creating TTR-backed indicators:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;TTR&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>ttr_features <span class="ot">&lt;-</span> <span class="fu">ledgr_feature_map</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="at">ttr_rsi =</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;RSI&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">n =</span> <span class="dv">14</span>),</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="at">bb_up =</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;BBands&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">output =</span> <span class="st">&quot;up&quot;</span>, <span class="at">n =</span> <span class="dv">20</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="at">macd =</span> <span class="fu">ledgr_ind_ttr</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>    <span class="st">&quot;MACD&quot;</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>    <span class="at">input =</span> <span class="st">&quot;close&quot;</span>,</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>    <span class="at">output =</span> <span class="st">&quot;macd&quot;</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>    <span class="at">nFast =</span> <span class="dv">12</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>    <span class="at">nSlow =</span> <span class="dv">26</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>    <span class="at">nSig =</span> <span class="dv">9</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>    <span class="at">percent =</span> <span class="cn">FALSE</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>  ),</span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>  <span class="at">macd_signal =</span> <span class="fu">ledgr_ind_ttr</span>(</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>    <span class="st">&quot;MACD&quot;</span>,</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>    <span class="at">input =</span> <span class="st">&quot;close&quot;</span>,</span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a>    <span class="at">output =</span> <span class="st">&quot;signal&quot;</span>,</span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>    <span class="at">nFast =</span> <span class="dv">12</span>,</span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a>    <span class="at">nSlow =</span> <span class="dv">26</span>,</span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a>    <span class="at">nSig =</span> <span class="dv">9</span>,</span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a>    <span class="at">percent =</span> <span class="cn">FALSE</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a>  )</span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a>)</span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a></span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="fu">ledgr_feature_contracts</span>(ttr_features)</span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 x 5</span></span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a><span class="co">#&gt;   alias       feature_id                    source requires_bars stable_after</span></span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                         &lt;chr&gt;          &lt;int&gt;        &lt;int&gt;</span></span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a><span class="co">#&gt; 1 ttr_rsi     ttr_rsi_14                    TTR               15           15</span></span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a><span class="co">#&gt; 2 bb_up       ttr_bbands_20_up              TTR               20           20</span></span>
+<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a><span class="co">#&gt; 3 macd        ttr_macd_12_26_9_false_macd   TTR               26           26</span></span>
+<span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a><span class="co">#&gt; 4 macd_signal ttr_macd_12_26_9_false_signal TTR               34           34</span></span></code></pre></div>
+<p>The examples produce IDs such as <code>ttr_bbands_20_up</code>,
+<code>ttr_macd_12_26_9_false_macd</code>, and
+<code>ttr_macd_12_26_9_false_signal</code>.</p>
+<p>Some TTR functions return several columns. For those functions,
+choose one column with <code>output</code> before asking ledgr for the
+feature ID. <code>BBands</code> exposes <code>dn</code>,
+<code>mavg</code>, <code>up</code>, and <code>pctB</code>.
+<code>MACD</code> exposes <code>macd</code> and <code>signal</code>;
+ledgr also supports a derived <code>histogram</code>.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">ledgr_feature_contracts</span>(<span class="fu">ledgr_feature_map</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">bb_dn =</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;BBands&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">output =</span> <span class="st">&quot;dn&quot;</span>, <span class="at">n =</span> <span class="dv">20</span>),</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">bb_mavg =</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;BBands&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">output =</span> <span class="st">&quot;mavg&quot;</span>, <span class="at">n =</span> <span class="dv">20</span>),</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="at">bb_up =</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;BBands&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">output =</span> <span class="st">&quot;up&quot;</span>, <span class="at">n =</span> <span class="dv">20</span>),</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  <span class="at">bb_pctB =</span> <span class="fu">ledgr_ind_ttr</span>(<span class="st">&quot;BBands&quot;</span>, <span class="at">input =</span> <span class="st">&quot;close&quot;</span>, <span class="at">output =</span> <span class="st">&quot;pctB&quot;</span>, <span class="at">n =</span> <span class="dv">20</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>))</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 x 5</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="co">#&gt;   alias   feature_id         source requires_bars stable_after</span></span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;   &lt;chr&gt;              &lt;chr&gt;          &lt;int&gt;        &lt;int&gt;</span></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="co">#&gt; 1 bb_dn   ttr_bbands_20_dn   TTR               20           20</span></span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="co">#&gt; 2 bb_mavg ttr_bbands_20_mavg TTR               20           20</span></span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="co">#&gt; 3 bb_up   ttr_bbands_20_up   TTR               20           20</span></span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a><span class="co">#&gt; 4 bb_pctB ttr_bbands_20_pctb TTR               20           20</span></span></code></pre></div>
+<p>The two MACD examples above use matching explicit arguments. Explicit
+arguments become part of the feature ID, so combine MACD outputs in one
+strategy only when their argument sets match the computation you intend.
+If one MACD output uses <code>percent = FALSE</code>, the paired
+<code>signal</code> output should usually set
+<code>percent = FALSE</code> too.</p>
+<p>TTR warmup inference is inspectable:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">ledgr_ttr_warmup_rules</span>() <span class="sc">|&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  <span class="fu">select</span>(ttr_fn, input, formula)</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 18 x 3</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co">#&gt;    ttr_fn          input formula                                        </span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;           &lt;chr&gt; &lt;chr&gt;                                          </span></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a><span class="co">#&gt;  1 RSI             close n + 1                                          </span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="co">#&gt;  2 SMA             close n                                              </span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a><span class="co">#&gt;  3 EMA             close n                                              </span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="co">#&gt;  4 ATR             hlc   n + 1                                          </span></span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="co">#&gt;  5 MACD            close macd: nSlow; signal/histogram: nSlow + nSig - 1</span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="co">#&gt;  6 WMA             close n                                              </span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="co">#&gt;  7 ROC             close n + 1                                          </span></span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="co">#&gt;  8 momentum        close n + 1                                          </span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co">#&gt;  9 CCI             hlc   n                                              </span></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a><span class="co">#&gt; 10 BBands          close n                                              </span></span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a><span class="co">#&gt; 11 aroon           hl    n                                              </span></span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="co">#&gt; 12 DonchianChannel hl    n                                              </span></span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a><span class="co">#&gt; 13 MFI             hlcv  n + 1                                          </span></span>
+<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a><span class="co">#&gt; 14 CMF             hlcv  n                                              </span></span>
+<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a><span class="co">#&gt; 15 runMean         close n                                              </span></span>
+<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a><span class="co">#&gt; 16 runSD           close n                                              </span></span>
+<span id="cb17-22"><a href="#cb17-22" tabindex="-1"></a><span class="co">#&gt; 17 runVar          close n                                              </span></span>
+<span id="cb17-23"><a href="#cb17-23" tabindex="-1"></a><span class="co">#&gt; 18 runMAD          close n</span></span></code></pre></div>
+<p>For MACD, ledgr verifies the supported warmup rules against direct
+TTR output. With current TTR behavior, the <code>macd</code> output is
+first valid at <code>nSlow</code>, while <code>signal</code> and the
+derived ledgr <code>histogram</code> output are first valid at
+<code>nSlow + nSig - 1</code>. The same rule is verified for both
+<code>percent = TRUE</code> and <code>percent = FALSE</code>.</p>
+<p>To debug a TTR-backed feature at one decision time, use an active
+snapshot handle, choose a timestamp late enough for the indicator
+warmup, and pass the same TTR feature map to
+<code>ledgr_pulse_snapshot()</code>. A completed backtest proves the run
+succeeded, but it does not replace the snapshot handle needed for
+interactive pulse inspection.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>ttr_pulse <span class="ot">&lt;-</span> <span class="fu">ledgr_pulse_snapshot</span>(</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>  snapshot,</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>  <span class="at">universe =</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>  <span class="at">ts_utc =</span> <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-06-03&quot;</span>),</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>  <span class="at">features =</span> ttr_features</span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a>)</span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="fu">ledgr_pulse_features</span>(ttr_pulse, ttr_features)</span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="fu">close</span>(ttr_pulse)</span></code></pre></div>
+</div>
+<div id="unsupported-or-custom-indicators" class="section level2">
+<h2>Unsupported Or Custom Indicators</h2>
+<p>When a TTR function is not in the warmup rules table, provide
+<code>requires_bars</code> explicitly:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">ledgr_ind_ttr</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>  <span class="st">&quot;DEMA&quot;</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>  <span class="at">input =</span> <span class="st">&quot;close&quot;</span>,</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>  <span class="at">n =</span> <span class="dv">10</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>  <span class="at">requires_bars =</span> <span class="dv">20</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>)<span class="sc">$</span>id</span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;ttr_dema_10&quot;</span></span></code></pre></div>
+<p>For non-TTR sources or more specialized logic, use
+<code>ledgr_indicator()</code> directly with a <code>series_fn</code>.
+That is the adapter escape hatch: external logic remains at the
+boundary, while the engine keeps the same deterministic indicator
+contract.</p>
+</div>
+<div id="whats-next" class="section level2">
+<h2>What’s Next?</h2>
+<p>For strategy authoring, read
+<code>vignette(&quot;strategy-development&quot;, package = &quot;ledgr&quot;)</code>. For
+accounting and summary metrics, read
+<code>vignette(&quot;metrics-and-accounting&quot;, package = &quot;ledgr&quot;)</code>. For
+formal help on the inspection views, see
+<code>?ledgr_feature_contracts</code>,
+<code>?ledgr_pulse_features</code>, and <code>?ledgr_pulse_wide</code>.
+For TTR-specific output names and supported warmup inference, see
+<code>?ledgr_ind_ttr</code> and
+<code>?ledgr_ttr_warmup_rules</code>.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

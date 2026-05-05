@@ -108,8 +108,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260504_221453_96df
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpGcW5Wl\ledgr_102b425d53ae1.duckdb
+#> Snapshot ID: snapshot_20260505_122537_4ac8
+#> Database:    C:\Users\maxth\AppData\Local\Temp\Rtmp0ireMu\ledgr_191285f21aa9.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -254,5 +254,5 @@ agent workflows where opening pkgdown in a browser is not the first
 step. The pkgdown-only background articles are on the website, while
 installed vignettes focus on package workflows.
 
-Design packets are in `inst/design/`, including the current v0.1.7.3
+Design packets are in `inst/design/`, including the current v0.1.7.4
 packet.

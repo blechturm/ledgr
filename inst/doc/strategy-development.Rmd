@@ -54,6 +54,48 @@ price while deciding today's trade, the backtest can look profitable for the
 wrong reason. ledgr's strategy interface is built to make that mistake harder:
 your strategy receives one pulse context, not the whole future.
 
+## Wrong And Right: Leakage
+
+The tempting vectorized pattern is to compute a future-looking column first and
+then trade from it. In the example below, `lead(close)` shifts tomorrow's close
+onto today's row. The resulting `buy_signal` looks like an ordinary column, but
+it answers a question the strategy could not have answered at today's decision
+time: "will tomorrow's close be higher than today's close?" Trading from that
+column lets the backtest use future market data as if it were already known.
+
+```{r leakage-wrong, eval=FALSE}
+leaky_signals <- ledgr_demo_bars |>
+  group_by(instrument_id) |>
+  arrange(ts_utc, .by_group = TRUE) |>
+  mutate(
+    tomorrow_close = lead(close),
+    buy_signal = tomorrow_close > close
+  )
+```
+
+The ledgr version expresses the rule at one pulse. The strategy can read the
+current bar for the current instrument. Later sections add registered features
+to the same pulse model. The strategy cannot reach into the next row of the
+market-data table. That is the same information shape a live trading strategy
+gets as time passes: each pulse is a new slice of the knowable universe.
+
+```{r leakage-right}
+no_leak_bar_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    if (ctx$close(id) > ctx$open(id)) {
+      targets[id] <- 1
+    }
+  }
+
+  targets
+}
+```
+
+The ledgr strategy has no object from which it can accidentally read tomorrow's
+close.
+
 ## A Strategy That Does Nothing
 
 The simplest economic policy is: hold cash and own no instruments.
@@ -197,7 +239,11 @@ Use two instruments from the offline demo data so the examples run anywhere.
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    between(
+      ts_utc,
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
+    )
   )
 
 snapshot <- ledgr_snapshot_from_df(
@@ -249,6 +295,19 @@ pulse$feature("DEMO_01", "return_5")
 pulse$hold()
 ```
 
+The same pulse can also be viewed as one wide row. This is useful when you want
+to see prices, portfolio state, and computed features together.
+
+```{r pulse-wide}
+ledgr_pulse_wide(pulse) |>
+  glimpse()
+```
+
+The wide row and the scalar accessors are two ways of looking at the same
+pulse-known data. The wide row is good for inspection and model-like thinking.
+The rest of this vignette uses the non-wide accessors because they keep the
+step-by-step strategy logic easier to read.
+
 Now build the strategy logic one transformation at a time.
 
 The economic idea:
@@ -264,10 +323,14 @@ The helper pipeline has four stages:
 
 | Stage | Input | Output | Question answered |
 |---|---|---|---|
-| signal | pulse context | numeric scores | What looks attractive? |
-| selection | signal | logical inclusion | What should be considered? |
-| weights | selection | allocation weights | How should capital be split? |
-| target | weights and context | share quantities | What should the portfolio hold? |
+| signal | pulse context | numeric scores with origin metadata | What looks attractive? |
+| selection | signal | logical inclusion with the same origin | What should be considered? |
+| weights | selection | allocation weights with the same origin | How should capital be split? |
+| target | weights and context | full-universe share quantities | What should the portfolio hold? |
+
+Execution semantics begin only at the target stage. `signal`, `selection`, and
+`weights` are research objects that help author the strategy; `target` is the
+ordinary full named target vector shape the runner validates and executes.
 
 ```{r pulse-pipeline}
 signal <- signal_return(pulse, lookback = 5)
@@ -281,6 +344,15 @@ weights
 
 target <- target_rebalance(weights, pulse, equity_fraction = 0.1)
 target
+```
+
+`target_rebalance()` sizes with current pulse equity and current close prices,
+then floors to whole shares. For the selected `DEMO_01` pulse above, 10% of
+equity is allocated to the one selected instrument:
+
+```{r floor-sizing}
+raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
+c(pre_floor = raw_qty, target_qty = unclass(target)[["DEMO_01"]])
 ```
 
 The helper objects are not a second execution path. They are authoring aids.
@@ -308,12 +380,18 @@ returning an empty selection, empty weights, and a flat target.
 
 The warning exists because an empty selection can mean either "normal warmup"
 or "my signal is broken." The helper cannot know which one is true, so it warns
-and lets the strategy decide how to handle that case.
+and lets the strategy decide how to handle that case. The warning includes the
+signal origin and non-missing count; if a run finishes with zero trades, inspect
+a late pulse without suppression before assuming the empty selection was only
+early warmup.
 
 ```{r helper-strategy}
 top_return_strategy <- function(ctx, params) {
   signal <- signal_return(ctx, lookback = params$lookback)
-  selection <- suppressWarnings(select_top_n(signal, n = params$n))
+  selection <- suppressWarnings(
+    select_top_n(signal, n = params$n),
+    classes = "ledgr_empty_selection"
+  )
 
   weights <- weight_equal(selection)
   target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
@@ -325,10 +403,16 @@ Read it economically:
 1. `signal_return()` scores each instrument by recent return.
 2. `select_top_n()` keeps the highest scores and ignores warmup `NA`.
 3. `weight_equal()` splits the chosen allocation equally.
-4. `target_rebalance()` converts weights into full target quantities.
+4. `target_rebalance()` converts weights into floored full target quantities.
 
 No helper registers indicators automatically. The experiment must say which
 features exist.
+
+Class-specific suppression is deliberately narrow: it keeps expected warmup
+noise out of a full run while still allowing unrelated warnings to surface.
+There is no `warn_empty = FALSE` argument in v0.1.7.4; use a diagnostic pulse
+and call `select_top_n()` without suppression when a strategy produces no
+fills or no closed trades.
 
 ```{r experiment}
 exp <- ledgr_experiment(
@@ -338,6 +422,102 @@ exp <- ledgr_experiment(
   opening = ledgr_opening(cash = 10000)
 )
 ```
+
+## Feature Maps For Readable Feature Access
+
+The examples above keep the exact feature ID contract visible:
+`ctx$feature(id, feature_id)` reads one registered feature for one instrument at
+one pulse. That contract remains the foundation.
+
+When a strategy reads several features per instrument, repeating feature ID
+strings can obscure the trading idea. A feature map bundles indicator objects
+with strategy-facing aliases. The same object can be registered with the
+experiment and used by the strategy for pulse-time lookup.
+
+```{r feature-map-setup}
+mapped_features <- ledgr_feature_map(
+  ret_5 = ledgr_ind_returns(5),
+  sma_10 = ledgr_ind_sma(10)
+)
+
+ledgr_feature_id(mapped_features)
+```
+
+The strategy closes over `mapped_features`. Inside the universe loop,
+`ctx$features(id, mapped_features)` returns a named numeric vector keyed by the
+aliases. `passed_warmup()` is a guard for that vector: for values returned by
+`ctx$features()`, it means every requested indicator is usable at this pulse.
+It is not a signal pipeline transformation, and it is not a data-quality
+diagnostic for arbitrary vectors. A zero-length input is a classed error because
+an empty feature bundle cannot prove warmup has passed. The specific error
+classes are `ledgr_empty_warmup_input` and `ledgr_invalid_warmup_input`.
+
+```{r feature-map-strategy}
+mapped_return_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    x <- ctx$features(id, mapped_features)
+
+    if (
+      passed_warmup(x) &&
+        x[["ret_5"]] > params$min_return &&
+        ctx$close(id) > x[["sma_10"]]
+    ) {
+      targets[id] <- params$qty
+    }
+  }
+
+  targets
+}
+```
+
+Read that as one pulse-time decision:
+
+1. `ctx$features()` reads the mapped feature values for one instrument.
+2. `passed_warmup()` keeps the rule inactive until the mapped indicators are
+   usable.
+3. The condition states the trading idea.
+4. The strategy still returns an ordinary target vector.
+
+Plain `features = list(...)` remains valid. Use it when exact IDs are clearest.
+Use a feature map when aliases make a feature-heavy strategy easier to read.
+
+```{r feature-map-experiment}
+mapped_exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = mapped_return_strategy,
+  features = mapped_features,
+  opening = ledgr_opening(cash = 10000)
+)
+```
+
+Run it the same way as any other experiment. The strategy still returns target
+quantities; the feature map only changes how the strategy reads features.
+
+```{r run-feature-map}
+bt_mapped <- mapped_exp |>
+  ledgr_run(
+    params = list(min_return = 0, qty = 5),
+    run_id = "mapped_return"
+  )
+
+summary(bt_mapped)
+```
+
+Feature-map strategies commonly close over the feature map object. That is the
+single-definition pattern: one object defines aliases, registers indicators,
+and drives pulse-time lookup.
+
+This has a provenance consequence. Tier 2 is common for strategy functions that
+call package helpers or depend on external symbols; the helper-pipeline strategy
+below is also tier 2. Feature maps add a more specific concern: the recovered
+strategy source may reference `mapped_features`, but the alias map object itself
+is not recovered as a standalone object from strategy provenance. The experiment
+store records the registered feature definitions, while the human-readable alias
+construction remains part of your research code. Keep the feature-map
+construction code with the research record when you need to rerun the strategy
+later.
 
 ## Run One Backtest
 
@@ -477,12 +657,16 @@ explicitly avoids lock and resource warnings.
 close(bt_top_1)
 close(bt_top_2)
 close(bt_flat)
+close(bt_mapped)
 ledgr_snapshot_close(snapshot)
 ```
 
 ## What's Next?
 
 If you want the formal contract, read the strategy and context sections in
-`inst/design/contracts.md`. If you want the deployment story, continue with
-`vignette("research-to-production", package = "ledgr")`. If you want to inspect
-or compare durable runs, read `vignette("experiment-store", package = "ledgr")`.
+`inst/design/contracts.md`. If you want the indicator story, read
+`vignette("indicators", package = "ledgr")`. For formal feature-map help, see
+`?ledgr_feature_map` and `?passed_warmup`. If you want the deployment story,
+continue with `vignette("research-to-production", package = "ledgr")`. If you
+want to inspect or compare durable runs, read `vignette("experiment-store",
+package = "ledgr")`.

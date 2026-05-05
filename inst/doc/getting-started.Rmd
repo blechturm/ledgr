@@ -66,7 +66,11 @@ files or network access.
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    between(
+      ts_utc,
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
+    )
   )
 
 bars |>
@@ -255,3 +259,10 @@ close(bt)
 close(bt_qty_20)
 ledgr_snapshot_close(snapshot)
 ```
+
+## What's Next?
+
+For strategy authoring, read
+`vignette("strategy-development", package = "ledgr")`. For indicators and
+feature IDs, read `vignette("indicators", package = "ledgr")`. For durable run
+inspection, read `vignette("experiment-store", package = "ledgr")`.

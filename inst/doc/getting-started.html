@@ -363,20 +363,24 @@ do not need local files or network access.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>bars <span class="ot">&lt;-</span> ledgr_demo_bars <span class="sc">|&gt;</span></span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>    instrument_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;DEMO_01&quot;</span>, <span class="st">&quot;DEMO_02&quot;</span>),</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>    <span class="fu">between</span>(ts_utc, <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-01-01&quot;</span>), <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-06-30&quot;</span>))</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  )</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>bars <span class="sc">|&gt;</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">6</span>)</span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 7</span></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;   ts_utc              instrument_id  open  high   low close volume</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt;   &lt;dttm&gt;              &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;</span></span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; 1 2019-01-01 00:00:00 DEMO_01        89.7  91.8  89.7  91.5 468600</span></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; 2 2019-01-02 00:00:00 DEMO_01        91.5  91.6  91.0  91.3 438315</span></span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; 3 2019-01-03 00:00:00 DEMO_01        91.3  92.1  89.6  90.5 576390</span></span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; 4 2019-01-04 00:00:00 DEMO_01        90.7  91.1  89.5  89.8 458921</span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; 5 2019-01-07 00:00:00 DEMO_01        89.7  90.1  89.2  89.2 597429</span></span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; 6 2019-01-08 00:00:00 DEMO_01        88.9  89.4  88.3  88.6 396353</span></span></code></pre></div>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>    <span class="fu">between</span>(</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>      ts_utc,</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>      <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-01-01&quot;</span>),</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>      <span class="fu">ledgr_utc</span>(<span class="st">&quot;2019-06-30&quot;</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>    )</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  )</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>bars <span class="sc">|&gt;</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">6</span>)</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 7</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt;   ts_utc              instrument_id  open  high   low close volume</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;   &lt;dttm&gt;              &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; 1 2019-01-01 00:00:00 DEMO_01        89.7  91.8  89.7  91.5 468600</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; 2 2019-01-02 00:00:00 DEMO_01        91.5  91.6  91.0  91.3 438315</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; 3 2019-01-03 00:00:00 DEMO_01        91.3  92.1  89.6  90.5 576390</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; 4 2019-01-04 00:00:00 DEMO_01        90.7  91.1  89.5  89.8 458921</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; 5 2019-01-07 00:00:00 DEMO_01        89.7  90.1  89.2  89.2 597429</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt; 6 2019-01-08 00:00:00 DEMO_01        88.9  89.4  88.3  88.6 396353</span></span></code></pre></div>
 <p>Create a sealed snapshot. This is the immutable input artifact for
 all runs in the experiment.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>snapshot <span class="ot">&lt;-</span> <span class="fu">ledgr_snapshot_from_df</span>(bars)</span>
@@ -386,8 +390,8 @@ all runs in the experiment.</p>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; Bars:         258</span></span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; Instruments:  2</span></span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; Database:     C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638391c4686.duckdb</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; Snapshot ID:  snapshot_20260502_114742_aebd</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; Database:     C:\Users\maxth\AppData\Local\Temp\RtmpQv8qQ9\ledgr_1a4f038ed795a.duckdb</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; Snapshot ID:  snapshot_20260505_140324_ea1c</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; Connection:  Closed (opens on-demand)</span></span></code></pre></div>
 <p>For durable work, pass a stable <code>db_path</code> at snapshot
 creation. After that, normal run and store operations use the snapshot
@@ -439,8 +443,8 @@ options; it does not execute the strategy.</p>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>exp</span>
 <span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; ledgr_experiment</span></span>
 <span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; ================</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; Snapshot ID: snapshot_20260502_114742_aebd</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; Database:    C:\Users\maxth\AppData\Local\Temp\RtmpKib8eC\ledgr_16638391c4686.duckdb</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; Snapshot ID: snapshot_20260505_140324_ea1c</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; Database:    C:\Users\maxth\AppData\Local\Temp\RtmpQv8qQ9\ledgr_1a4f038ed795a.duckdb</span></span>
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; Universe:    2 instruments</span></span>
 <span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; Features:    1 fixed</span></span>
 <span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; Opening:     cash=10000, positions=0</span></span>
@@ -458,8 +462,8 @@ options; it does not execute the strategy.</p>
 <span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; Date Range:     2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z</span></span>
 <span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; Execution Mode: audit_log</span></span>
 <span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt; Initial Cash:   $10000.00</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; Final Equity:   $10685.17</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; P&amp;L:            $685.17 (6.85%)</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; Final Equity:   $10083.54</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; P&amp;L:            $83.54 (0.84%)</span></span>
 <span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; Use summary(bt) for detailed metrics</span></span>
 <span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; Use plot(bt) for equity curve visualization</span></span></code></pre></div>
@@ -477,12 +481,12 @@ tests, explicit-open workflows, and lazy result cursors.</p>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; ======================</span></span>
 <span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; Performance Metrics:</span></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt;   Total Return:        6.85%</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt;   Annualized Return:   13.94%</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt;   Max Drawdown:        -13.51%</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt;   Total Return:        0.84%</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt;   Annualized Return:   1.65%</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt;   Max Drawdown:        -0.99%</span></span>
 <span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; Risk Metrics:</span></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt;   Volatility (annual): 54.72%</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt;   Volatility (annual): 1.96%</span></span>
 <span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; Trade Statistics:</span></span>
 <span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;   Total Trades:        12</span></span>
@@ -490,7 +494,7 @@ tests, explicit-open workflows, and lazy result cursors.</p>
 <span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt;   Avg Trade:           $6.96</span></span>
 <span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt; Exposure:</span></span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt;   Time in Market:      65.12%</span></span></code></pre></div>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt;   Time in Market:      66.67%</span></span></code></pre></div>
 <p>Results are derived views over recorded events.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;trades&quot;</span>)</span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 12 x 9</span></span>
@@ -510,12 +514,12 @@ tests, explicit-open workflows, and lazy result cursors.</p>
 <span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; 12        24 2019-06-05 DEMO_02       SELL     10  79.3     0       -14.6  CLOSE</span></span>
 <span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="fu">tail</span>(<span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;equity&quot;</span>), <span class="dv">4</span>)</span>
 <span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 x 6</span></span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;   ts_utc     equity  cash positions_value running_max drawdown</span></span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;   &lt;date&gt;      &lt;dbl&gt; &lt;dbl&gt;           &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;</span></span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt; 1 2019-06-25 10030. 8394.           1637.      10899.  -0.0797</span></span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; 2 2019-06-26 10031. 8394.           1637.      10899.  -0.0796</span></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt; 3 2019-06-27 10032. 8394.           1638.      10899.  -0.0796</span></span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt; 4 2019-06-28 10685. 9069.           1616.      10899.  -0.0196</span></span></code></pre></div>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;   ts_utc     equity   cash positions_value running_max drawdown</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;   &lt;date&gt;      &lt;dbl&gt;  &lt;dbl&gt;           &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt;</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt; 1 2019-06-25 10084. 10084.               0      10134. -0.00499</span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; 2 2019-06-26 10084. 10084.               0      10134. -0.00499</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt; 3 2019-06-27 10084. 10084.               0      10134. -0.00499</span></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt; 4 2019-06-28 10084. 10084.               0      10134. -0.00499</span></span></code></pre></div>
 <p>The ledger is the source of truth.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">ledgr_results</span>(bt, <span class="at">what =</span> <span class="st">&quot;ledger&quot;</span>), <span class="dv">6</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 x 11</span></span>
@@ -561,8 +565,8 @@ decision without rerunning an entire experiment.</p>
 <span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 8</span></span>
 <span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt;   run_id                 label final_equity total_return max_drawdown n_trades win_rate</span></span>
 <span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                  &lt;chr&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;           &lt;int&gt; &lt;chr&gt;</span></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt; 1 getting_started_qty_10 &lt;NA&gt;        10685. +6.9%        -13.5%             12 25.0%</span></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; 2 getting_started_qty_20 &lt;NA&gt;        11370. +13.7%       -25.3%             12 25.0%</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt; 1 getting_started_qty_10 &lt;NA&gt;        10084. +0.8%        -1.0%              12 25.0%</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; 2 getting_started_qty_20 &lt;NA&gt;        10167. +1.7%        -2.0%              12 25.0%</span></span>
 <span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; # i 1 more variable: reproducibility_level &lt;chr&gt;</span></span>
 <span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
@@ -599,8 +603,8 @@ in real work, replace that with a project path such as
 <span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co">#&gt; # ledgr run list</span></span>
 <span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 x 8</span></span>
 <span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt;   run_id label tags  status final_equity total_return execution_mode reproducibility_level</span></span>
-<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
-<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt; 1 durab~ &lt;NA&gt;  &lt;NA&gt;  DONE         10685. +6.9%        audit_log      tier_1</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;  &lt;chr&gt; &lt;lgl&gt; &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;chr&gt;</span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt; 1 durab~ &lt;NA&gt;  NA    DONE         10084. +0.8%        audit_log      tier_1</span></span>
 <span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt;</span></span>
 <span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="co">#&gt; # i Full identity and telemetry columns remain available on this tibble.</span></span>
 <span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt; # i Inspect one run with ledgr_run_info(snapshot, run_id).</span></span>
@@ -615,12 +619,12 @@ in real work, replace that with a project path such as
 <span id="cb14-39"><a href="#cb14-39" tabindex="-1"></a><span class="co">#&gt; Tags:            NA</span></span>
 <span id="cb14-40"><a href="#cb14-40" tabindex="-1"></a><span class="co">#&gt; Snapshot:        getting_started_snapshot</span></span>
 <span id="cb14-41"><a href="#cb14-41" tabindex="-1"></a><span class="co">#&gt; Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e</span></span>
-<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a><span class="co">#&gt; Config Hash:     1b863424104f49506d905a31040a3cf5b9069139f76f7f4612cda4e4a90d4810</span></span>
+<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a><span class="co">#&gt; Config Hash:     d1080eaf0461c841ed12475b98b878547722c8d47fc1187139b4080e05d12a5e</span></span>
 <span id="cb14-43"><a href="#cb14-43" tabindex="-1"></a><span class="co">#&gt; Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236</span></span>
 <span id="cb14-44"><a href="#cb14-44" tabindex="-1"></a><span class="co">#&gt; Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7</span></span>
 <span id="cb14-45"><a href="#cb14-45" tabindex="-1"></a><span class="co">#&gt; Reproducibility: tier_1</span></span>
 <span id="cb14-46"><a href="#cb14-46" tabindex="-1"></a><span class="co">#&gt; Execution Mode:  audit_log</span></span>
-<span id="cb14-47"><a href="#cb14-47" tabindex="-1"></a><span class="co">#&gt; Elapsed Sec:     1.06</span></span>
+<span id="cb14-47"><a href="#cb14-47" tabindex="-1"></a><span class="co">#&gt; Elapsed Sec:     1.27</span></span>
 <span id="cb14-48"><a href="#cb14-48" tabindex="-1"></a><span class="co">#&gt; Persist Features:TRUE</span></span>
 <span id="cb14-49"><a href="#cb14-49" tabindex="-1"></a><span class="co">#&gt; Cache Hits:      2</span></span>
 <span id="cb14-50"><a href="#cb14-50" tabindex="-1"></a><span class="co">#&gt; Cache Misses:    0</span></span>
@@ -639,6 +643,15 @@ execution. Sweep and tune APIs are reserved for later versions.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">close</span>(bt)</span>
 <span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">close</span>(bt_qty_20)</span>
 <span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="fu">ledgr_snapshot_close</span>(snapshot)</span></code></pre></div>
+</div>
+<div id="whats-next" class="section level2">
+<h2>What’s Next?</h2>
+<p>For strategy authoring, read
+<code>vignette(&quot;strategy-development&quot;, package = &quot;ledgr&quot;)</code>. For
+indicators and feature IDs, read
+<code>vignette(&quot;indicators&quot;, package = &quot;ledgr&quot;)</code>. For durable run
+inspection, read
+<code>vignette(&quot;experiment-store&quot;, package = &quot;ledgr&quot;)</code>.</p>
 </div>
 
 

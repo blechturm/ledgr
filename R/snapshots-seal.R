@@ -174,6 +174,7 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   DBI::dbExecute(con, "COMMIT")
   on.exit(NULL, add = FALSE)
+  ledgr_checkpoint_duckdb(con, strict = TRUE)
 
   if (!is.null(snapshot_obj)) {
     snapshot_obj$metadata <- metadata

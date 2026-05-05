@@ -873,6 +873,11 @@ forbidden_actions:
 **Description:**
 Final validation gate for v0.1.7.4.
 
+**Local Gate Notes:**
+The local Windows and WSL/Ubuntu gates have been run on the release branch.
+Remote branch CI, main CI, and tag CI remain release-gate evidence and are
+intentionally not marked complete before push/merge/tag.
+
 **Tasks:**
 1. Verify spec, tickets, contracts, NEWS, DESCRIPTION, README, help pages,
    vignettes, and pkgdown agree.
@@ -901,19 +906,19 @@ Final validation gate for v0.1.7.4.
 19. Confirm no open P0/P1 review findings remain.
 
 **Acceptance Criteria:**
-- [ ] Full tests pass.
-- [ ] Feature-map and pulse-bundle tests pass.
-- [ ] Config-hash parity tests pass.
-- [ ] CSV snapshot workflow test or classification is present.
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+- [x] Full tests pass.
+- [x] Feature-map and pulse-bundle tests pass.
+- [x] Config-hash parity tests pass.
+- [x] CSV snapshot workflow test or classification is present.
+- [x] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
-- [ ] `DESCRIPTION` version is `0.1.7.4` before release tagging.
-- [ ] README and changed articles render.
-- [ ] pkgdown builds if navigation/reference/articles changed.
-- [ ] Local WSL/Ubuntu gate passes on the release branch.
+- [x] `DESCRIPTION` version is `0.1.7.4` before release tagging.
+- [x] README and changed articles render.
+- [x] pkgdown builds if navigation/reference/articles changed.
+- [x] Local WSL/Ubuntu gate passes on the release branch.
 - [ ] Remote Windows and Ubuntu CI are green on the target commit.
-- [ ] Contracts, NEWS, help pages, and vignettes match the implemented scope.
-- [ ] No accidental future-cycle API exposure exists.
+- [x] Contracts, NEWS, help pages, and vignettes match the implemented scope.
+- [x] No accidental future-cycle API exposure exists.
 - [ ] No open P0/P1 review findings remain.
 
 **Test Requirements:**
