@@ -32,8 +32,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      article_utc("2019-01-01"),
-      article_utc("2019-06-30")
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
     )
   )
 
@@ -61,8 +61,8 @@ snapshot
 #> Bars:         258
 #> Instruments:  2
 #> Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
-#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpmuuwuV\ledgr_b8643f321c0d.duckdb
-#> Snapshot ID:  snapshot_20260503_074023_314b
+#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpGcW5Wl\ledgr_102b482d3e94.duckdb
+#> Snapshot ID:  snapshot_20260504_221502_0030
 #> Connection:  Closed (opens on-demand)
 ```
 
@@ -124,8 +124,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260503_074023_314b
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpmuuwuV\ledgr_b8643f321c0d.duckdb
+#> Snapshot ID: snapshot_20260504_221502_0030
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpGcW5Wl\ledgr_102b482d3e94.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -326,12 +326,12 @@ ledgr_run_info(reloaded, "durable_qty_10")
 #> Tags:            NA
 #> Snapshot:        getting_started_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     58e553a5920abf24b8f695d89c77d870c0e0e1c125a406859c468f6143a9794a
+#> Config Hash:     de35318158410a808feea97edd9f4c7a8e0a64b90a992426ea0070f0688794b8
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.25
+#> Elapsed Sec:     1.19
 #> Persist Features:TRUE
 #> Cache Hits:      2
 #> Cache Misses:    0

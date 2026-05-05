@@ -21,7 +21,6 @@ knitr::opts_chunk$set(
 )
 options(width = 90)
 options(cli.unicode = FALSE)
-article_utc <- function(x) as.POSIXct(x, tz = "UTC")
 default_output_hook <- knitr::knit_hooks$get("output")
 knitr::knit_hooks$set(
   output = function(x, options) {
@@ -69,8 +68,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      article_utc("2019-01-01"),
-      article_utc("2019-06-30")
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
     )
   )
 

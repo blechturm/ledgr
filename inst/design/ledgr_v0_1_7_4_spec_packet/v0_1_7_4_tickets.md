@@ -409,7 +409,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 2-3 days
 **Dependencies:** LDG-1401
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Apply the confirmed external-review and auditr documentation fixes that do not
@@ -433,13 +433,13 @@ example, and first-path navigation cleanup.
 8. Regenerate README/vignette markdown where applicable.
 
 **Acceptance Criteria:**
-- [ ] Visible vignette code no longer calls hidden `article_utc()`.
-- [ ] Homepage contains the audit-trail framing sentence.
-- [ ] `metrics-and-accounting` labels `ledgr_backtest()` as a compact fixture
+- [x] Visible vignette code no longer calls hidden `article_utc()`.
+- [x] Homepage contains the audit-trail framing sentence.
+- [x] `metrics-and-accounting` labels `ledgr_backtest()` as a compact fixture
       helper and names the canonical workflow.
-- [ ] Leakage wrong/right example is present and uses the required closing line.
-- [ ] First-path navigation does not send users to non-runnable placeholders.
-- [ ] Rendered docs remain in sync with source docs.
+- [x] Leakage wrong/right example is present and uses the required closing line.
+- [x] First-path navigation does not send users to non-runnable placeholders.
+- [x] Rendered docs remain in sync with source docs.
 
 **Test Requirements:**
 - Documentation scans for `article_utc(` in visible docs.

@@ -92,6 +92,7 @@ bars |>
 
 Create a sealed snapshot. A snapshot is the immutable data artifact every run
 uses.
+The setup is not overhead. The setup is the audit trail.
 
 ```{r snapshot}
 snapshot <- ledgr_snapshot_from_df(bars)

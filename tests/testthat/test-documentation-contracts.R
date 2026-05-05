@@ -67,6 +67,9 @@ testthat::test_that("feature-map docs preserve teaching order and semantic bound
   testthat::expect_lt(first_scalar_lookup, first_feature_map)
 
   testthat::expect_match(strategy_doc, "Feature Maps For Readable Feature Access", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "Wrong And Right: Leakage", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "tomorrow_close = lead\\(close\\)")
+  testthat::expect_match(strategy_doc, "The ledgr strategy has no object from which it can accidentally read tomorrow's\\s+close.")
   testthat::expect_match(strategy_doc, "The strategy still returns an ordinary target vector.", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Plain `features = list(...)` remains valid.", fixed = TRUE)
   testthat::expect_match(strategy_doc, "bt_mapped <- mapped_exp", fixed = TRUE)
@@ -116,6 +119,34 @@ testthat::test_that("README documents noninteractive documentation discovery", {
   testthat::expect_match(text, "vignette\\(package = \"ledgr\"\\)")
   testthat::expect_match(text, "system.file\\(\"doc\", package = \"ledgr\"\\)")
   testthat::expect_match(text, "noninteractive `Rscript` and agent\\s+workflows")
+  testthat::expect_match(text, "The setup is not overhead. The setup is the audit trail.", fixed = TRUE)
+})
+
+testthat::test_that("visible docs avoid hidden article helpers", {
+  root <- testthat::test_path("..", "..")
+  paths <- c(
+    file.path(root, "README.Rmd"),
+    list.files(file.path(root, "vignettes"), pattern = "[.](Rmd|md)$", full.names = TRUE)
+  )
+  paths <- paths[file.exists(paths)]
+  text <- paste(unlist(lapply(paths, readLines, warn = FALSE)), collapse = "\n")
+
+  testthat::expect_no_match(text, "article_utc\\(")
+})
+
+testthat::test_that("first-path navigation avoids non-runnable examples", {
+  root <- testthat::test_path("..", "..")
+  pkgdown <- file.path(root, "_pkgdown.yml")
+  readme <- file.path(root, "README.Rmd")
+  testthat::skip_if_not(file.exists(pkgdown) && file.exists(readme), "navigation sources unavailable")
+  text <- paste(
+    paste(readLines(pkgdown, warn = FALSE), collapse = "\n"),
+    paste(readLines(readme, warn = FALSE), collapse = "\n"),
+    sep = "\n"
+  )
+
+  testthat::expect_no_match(text, "examples/README", fixed = TRUE)
+  testthat::expect_no_match(text, "non-executable development artifacts", fixed = TRUE)
 })
 
 testthat::test_that("metrics and accounting docs define public result semantics", {
@@ -137,6 +168,8 @@ testthat::test_that("metrics and accounting docs define public result semantics"
     testthat::expect_match(metrics_doc, term, fixed = TRUE)
   }
   testthat::expect_match(metrics_doc, "Diagnose A Successful Run With Zero Trades", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "compact fixture helper for accounting\\s+examples")
+  testthat::expect_match(metrics_doc, "snapshot -> `ledgr_experiment\\(\\)` -> `ledgr_run\\(\\)`")
   testthat::expect_match(metrics_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Expected warmup is local to the beginning of a run", fixed = TRUE)
 

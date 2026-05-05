@@ -25,7 +25,9 @@ library(tibble)
 ## A Tiny Run
 
 Use a five-bar in-memory fixture so the accounting can be checked by
-hand.
+hand. This article uses `ledgr_backtest()` as a compact fixture helper
+for accounting examples. The canonical research workflow remains:
+snapshot -\> `ledgr_experiment()` -\> `ledgr_run()`.
 
 ``` r
 bars <- data.frame(
@@ -40,7 +42,7 @@ bars <- data.frame(
 
 one_day_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (article_utc(ctx$ts_utc) == article_utc("2020-01-01")) {
+  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) {
     targets["AAA"] <- 1
   }
   targets
@@ -281,7 +283,7 @@ last target change.
 ``` r
 final_bar_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (article_utc(ctx$ts_utc) == article_utc("2020-01-05")) {
+  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-05")) {
     targets["AAA"] <- 1
   }
   targets

@@ -44,8 +44,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      article_utc("2019-01-01"),
-      article_utc("2019-06-30")
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
     )
   )
 
@@ -177,15 +177,15 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     ff5c159854c0e1a046f87456d84fc2791535391bc155f862f997730e262d30da
+#> Config Hash:     eb8f71db6bd29094682ae8c068881dd62fd762589e55370b246e2499d44b6309
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     2.14
+#> Elapsed Sec:     1.21
 #> Persist Features:TRUE
-#> Cache Hits:      0
-#> Cache Misses:    2
+#> Cache Hits:      2
+#> Cache Misses:    0
 ```
 
 `ledgr_run_info()` is the detailed metadata view. It includes execution

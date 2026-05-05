@@ -66,7 +66,7 @@ bars |>
 ```
 
 Create a sealed snapshot. A snapshot is the immutable data artifact
-every run uses.
+every run uses. The setup is not overhead. The setup is the audit trail.
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(bars)
@@ -108,8 +108,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260503_083212_d6f4
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpWcKWJ2\ledgr_1a3ac7f3df2.duckdb
+#> Snapshot ID: snapshot_20260504_221453_96df
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpGcW5Wl\ledgr_102b425d53ae1.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0

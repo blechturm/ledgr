@@ -200,7 +200,7 @@ tickets:
 
   - id: LDG-1405
     title: "External Review And Copy-Paste Documentation Fixes"
-    status: planned
+    status: done
     priority: P2
     dependencies: [LDG-1401]
     tests:

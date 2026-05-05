@@ -24,6 +24,50 @@ profitable for the wrong reason. ledgr’s strategy interface is built to
 make that mistake harder: your strategy receives one pulse context, not
 the whole future.
 
+## Wrong And Right: Leakage
+
+The tempting vectorized pattern is to compute a future-looking column
+first and then trade from it. In the example below, `lead(close)` shifts
+tomorrow’s close onto today’s row. The resulting `buy_signal` looks like
+an ordinary column, but it answers a question the strategy could not
+have answered at today’s decision time: “will tomorrow’s close be higher
+than today’s close?” Trading from that column lets the backtest use
+future market data as if it were already known.
+
+``` r
+leaky_signals <- ledgr_demo_bars |>
+  group_by(instrument_id) |>
+  arrange(ts_utc, .by_group = TRUE) |>
+  mutate(
+    tomorrow_close = lead(close),
+    buy_signal = tomorrow_close > close
+  )
+```
+
+The ledgr version expresses the rule at one pulse. The strategy can read
+the current bar for the current instrument. Later sections add
+registered features to the same pulse model. The strategy cannot reach
+into the next row of the market-data table. That is the same information
+shape a live trading strategy gets as time passes: each pulse is a new
+slice of the knowable universe.
+
+``` r
+no_leak_bar_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    if (ctx$close(id) > ctx$open(id)) {
+      targets[id] <- 1
+    }
+  }
+
+  targets
+}
+```
+
+The ledgr strategy has no object from which it can accidentally read
+tomorrow’s close.
+
 ## A Strategy That Does Nothing
 
 The simplest economic policy is: hold cash and own no instruments.
