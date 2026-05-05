@@ -21,3 +21,14 @@ A \code{ledgr_weights} object.
 strategy helper pipelines. Weights are intermediate objects; strategies must
 not return them directly.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}
+
+\examples{
+ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))
+
+}

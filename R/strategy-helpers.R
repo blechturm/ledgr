@@ -49,6 +49,13 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #' @param ctx ledgr strategy context.
 #' @param lookback Positive integer return lookback.
 #' @return A `ledgr_signal` object.
+#' @examples
+#' ctx <- list(
+#'   universe = c("AAA", "BBB"),
+#'   feature = function(id, feature_id) c(AAA = 0.03, BBB = NA_real_)[[id]]
+#' )
+#' signal_return(ctx, lookback = 5)
+#'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
@@ -78,6 +85,10 @@ signal_return <- function(ctx, lookback = 20L) {
 #' @param signal A `ledgr_signal` object.
 #' @param n Number of instruments to select.
 #' @return A `ledgr_selection` object.
+#' @examples
+#' signal <- ledgr_signal(c(AAA = 0.03, BBB = NA, CCC = 0.01), origin = "return_5")
+#' select_top_n(signal, n = 1)
+#'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
@@ -132,6 +143,10 @@ select_top_n <- function(signal, n) {
 #'
 #' @param selection A `ledgr_selection` object.
 #' @return A `ledgr_weights` object.
+#' @examples
+#' selection <- ledgr_selection(c(AAA = TRUE, BBB = TRUE), universe = c("AAA", "BBB"))
+#' weight_equal(selection)
+#'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
@@ -165,6 +180,15 @@ weight_equal <- function(selection) {
 #' @param equity_fraction Fraction of current equity to allocate, between 0 and
 #'   1.
 #' @return A full-universe `ledgr_target` object.
+#' @examples
+#' weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))
+#' ctx <- list(
+#'   universe = c("AAA", "BBB"),
+#'   equity = 1000,
+#'   close = function(id) c(AAA = 50, BBB = 100)[[id]]
+#' )
+#' target_rebalance(weights, ctx, equity_fraction = 0.5)
+#'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`

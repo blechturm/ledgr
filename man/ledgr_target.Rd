@@ -20,3 +20,14 @@ A \code{ledgr_target} object.
 \code{ledgr_target()} creates a thin wrapper around the full named numeric target
 quantity vector consumed by ledgr's existing strategy-result validator.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}
+
+\examples{
+ledgr_target(c(AAA = 1, BBB = 0), universe = c("AAA", "BBB"))
+
+}

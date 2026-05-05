@@ -50,6 +50,14 @@ does not execute ledgr workflows, and does not decide final defect truth.
 
 No high priority themes.
 
+## External Follow-Ups
+
+- `THEME-001` is an auditr harness issue, not a ledgr package API requirement.
+  The failing path is `DOC_DISCOVERY.R` calling `readLines(..., n = Inf)` through
+  `ledgr_read_vignette()`. ledgr v0.1.7.4 should not add a `ledgr_docs()`
+  workaround for this. The follow-up belongs in auditr: use a finite default
+  line count or make full-read behavior explicit in the helper.
+
 ## Issue Candidate Themes
 
 These are grouped findings suitable for maintainer review. They are not GitHub issues yet.

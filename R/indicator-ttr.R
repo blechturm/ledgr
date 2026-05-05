@@ -48,6 +48,11 @@ ledgr_ttr_warmup_rules <- function() {
 
 #' Construct a ledgr indicator from a supported TTR indicator
 #'
+#' `ledgr_ind_ttr()` requires the suggested `TTR` package at construction time.
+#' Install TTR before creating TTR-backed indicators. For interactive debugging
+#' with `ledgr_pulse_snapshot()`, pass an active snapshot handle and the same
+#' TTR-backed feature declarations used by the experiment.
+#'
 #' @param ttr_fn TTR function name, for example `"RSI"`, `"ATR"`, or `"MACD"`.
 #' @param input ledgr input shape. Supported values are `"close"`, `"hl"`,
 #'   `"hlc"`, `"ohlc"`, and `"hlcv"`.

@@ -494,7 +494,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 2-4 days
 **Dependencies:** LDG-1401
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Resolve ledgr-side auditr documentation findings around helper discoverability,
@@ -519,14 +519,14 @@ and TTR multi-output examples.
    not a ledgr package API requirement.
 
 **Acceptance Criteria:**
-- [ ] Helper and value-type help pages are useful before reading the vignette.
-- [ ] Feature-ID docs cover aliases and parameter-grid registration.
-- [ ] Parameter-grid example registers all swept lookback feature variants.
-- [ ] Warmup docs cover short data, per-instrument warmup, and final-bar
+- [x] Helper and value-type help pages are useful before reading the vignette.
+- [x] Feature-ID docs cover aliases and parameter-grid registration.
+- [x] Parameter-grid example registers all swept lookback feature variants.
+- [x] Warmup docs cover short data, per-instrument warmup, and final-bar
       no-fill.
-- [ ] TTR docs cover dependency, multi-output, MACD, warmup, and pulse snapshot
+- [x] TTR docs cover dependency, multi-output, MACD, warmup, and pulse snapshot
       prerequisites.
-- [ ] Auditr harness bug is recorded as external follow-up.
+- [x] Auditr harness bug is recorded as external follow-up.
 
 **Test Requirements:**
 - Rd documentation scans.

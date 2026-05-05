@@ -97,6 +97,13 @@ ledgr_print_strategy_vector <- function(x, type, ...) {
 #' @param universe Optional universe used to reject extra instrument names.
 #' @param origin Optional helper/source label for printing.
 #' @return A `ledgr_signal` object.
+#' @examples
+#' ledgr_signal(c(AAA = 0.03, BBB = NA_real_), origin = "return_5")
+#'
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_signal <- function(x, universe = NULL, origin = NULL) {
   # Empty selections and weights are meaningful degenerate helper states; an
@@ -125,6 +132,13 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL) {
 #' @param universe Optional universe used to reject extra instrument names.
 #' @param origin Optional helper/source label for printing.
 #' @return A `ledgr_selection` object.
+#' @examples
+#' ledgr_selection(c(AAA = TRUE, BBB = FALSE), universe = c("AAA", "BBB"))
+#'
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_selection <- function(x, universe = NULL, origin = NULL) {
   if (!is.logical(x)) {
@@ -155,6 +169,13 @@ ledgr_selection <- function(x, universe = NULL, origin = NULL) {
 #' @param universe Optional universe used to reject extra instrument names.
 #' @param origin Optional helper/source label for printing.
 #' @return A `ledgr_weights` object.
+#' @examples
+#' ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))
+#'
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_weights <- function(x, universe = NULL, origin = NULL) {
   if (!is.numeric(x)) {
@@ -184,6 +205,13 @@ ledgr_weights <- function(x, universe = NULL, origin = NULL) {
 #' @param universe Optional universe. When supplied, names must exactly match it.
 #' @param origin Optional helper/source label for printing.
 #' @return A `ledgr_target` object.
+#' @examples
+#' ledgr_target(c(AAA = 1, BBB = 0), universe = c("AAA", "BBB"))
+#'
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_target <- function(x, universe = NULL, origin = NULL) {
   if (!is.numeric(x) || length(x) < 1L) {

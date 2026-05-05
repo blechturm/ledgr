@@ -266,6 +266,49 @@ ledgr_feature_contracts(plain_features)
 #> 2 <NA>  sma_10     ledgr             10           10
 ```
 
+## Parameter Grids Register Every Needed Feature
+
+If a parameter grid changes a lookback, register every lookback variant
+before the run. ledgr does not create indicators dynamically from
+`params`; the run only computes the feature contracts registered on the
+experiment.
+
+``` r
+swept_features <- ledgr_feature_map(
+  ret_5 = ledgr_ind_returns(5),
+  ret_10 = ledgr_ind_returns(10),
+  ret_20 = ledgr_ind_returns(20)
+)
+
+feature_ids <- ledgr_feature_id(swept_features)
+
+parameterized_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  feature_id <- feature_ids[[paste0("ret_", params$lookback)]]
+
+  for (id in ctx$universe) {
+    ret <- ctx$feature(id, feature_id)
+    if (is.finite(ret) && ret > params$min_return) {
+      targets[id] <- params$qty
+    }
+  }
+
+  targets
+}
+
+grid <- ledgr_param_grid(
+  lookback = c(5, 10, 20),
+  min_return = 0,
+  qty = 10
+)
+```
+
+The important rule is that the feature set covers the whole grid:
+`lookback = 20` means `return_20` must already be registered. A missing
+feature ID is an unknown-feature error, not warmup. The alias names in
+`swept_features` must also match the lookup key pattern used by the
+strategy, here `paste0("ret_", params$lookback)`.
+
 ## TTR-Backed Indicators
 
 `ledgr_ind_ttr()` is the adapter for supported indicators from the
@@ -278,7 +321,12 @@ TTR -> ledgr_ind_ttr() -> ledgr_indicator -> deterministic pulse engine
 The engine sees a normal `ledgr_indicator`. That means TTR-backed
 indicators follow the same feature-ID, warmup, and pulse-view rules as
 built-in indicators. The examples below are skipped when `TTR` is not
-installed.
+installed. In your own project, install TTR before creating TTR-backed
+indicators:
+
+``` r
+install.packages("TTR")
+```
 
 ``` r
 ttr_features <- ledgr_feature_map(
@@ -322,6 +370,22 @@ one column with `output` before asking ledgr for the feature ID.
 `BBands` exposes `dn`, `mavg`, `up`, and `pctB`. `MACD` exposes `macd`
 and `signal`; ledgr also supports a derived `histogram`.
 
+``` r
+ledgr_feature_contracts(ledgr_feature_map(
+  bb_dn = ledgr_ind_ttr("BBands", input = "close", output = "dn", n = 20),
+  bb_mavg = ledgr_ind_ttr("BBands", input = "close", output = "mavg", n = 20),
+  bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
+  bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
+))
+#> # A tibble: 4 × 5
+#>   alias   feature_id         source requires_bars stable_after
+#>   <chr>   <chr>              <chr>          <int>        <int>
+#> 1 bb_dn   ttr_bbands_20_dn   TTR               20           20
+#> 2 bb_mavg ttr_bbands_20_mavg TTR               20           20
+#> 3 bb_up   ttr_bbands_20_up   TTR               20           20
+#> 4 bb_pctB ttr_bbands_20_pctb TTR               20           20
+```
+
 The two MACD examples above use matching explicit arguments. Explicit
 arguments become part of the feature ID, so combine MACD outputs in one
 strategy only when their argument sets match the computation you intend.
@@ -361,6 +425,24 @@ output. With current TTR behavior, the `macd` output is first valid at
 `nSlow`, while `signal` and the derived ledgr `histogram` output are
 first valid at `nSlow + nSig - 1`. The same rule is verified for both
 `percent = TRUE` and `percent = FALSE`.
+
+To debug a TTR-backed feature at one decision time, use an active
+snapshot handle, choose a timestamp late enough for the indicator
+warmup, and pass the same TTR feature map to `ledgr_pulse_snapshot()`. A
+completed backtest proves the run succeeded, but it does not replace the
+snapshot handle needed for interactive pulse inspection.
+
+``` r
+ttr_pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = c("DEMO_01", "DEMO_02"),
+  ts_utc = ledgr_utc("2019-06-03"),
+  features = ttr_features
+)
+
+ledgr_pulse_features(ttr_pulse, ttr_features)
+close(ttr_pulse)
+```
 
 ## Unsupported Or Custom Indicators
 

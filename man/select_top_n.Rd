@@ -28,3 +28,8 @@ Strategy helper pipelines:
 \code{system.file("doc", "strategy-development.html", package = "ledgr")}
 }
 
+\examples{
+signal <- ledgr_signal(c(AAA = 0.03, BBB = NA, CCC = 0.01), origin = "return_5")
+select_top_n(signal, n = 1)
+
+}

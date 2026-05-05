@@ -23,3 +23,8 @@ Strategy helper pipelines:
 \code{system.file("doc", "strategy-development.html", package = "ledgr")}
 }
 
+\examples{
+selection <- ledgr_selection(c(AAA = TRUE, BBB = TRUE), universe = c("AAA", "BBB"))
+weight_equal(selection)
+
+}

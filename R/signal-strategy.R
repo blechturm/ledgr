@@ -23,6 +23,11 @@
 #'   long_qty = 10
 #' )
 #' strategy(list(universe = "AAA"), list())
+#'
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1) {
   if (!is.function(fn)) {

@@ -33,4 +33,10 @@ ledgr_feature_id(sma_20)
 features <- list(ledgr_ind_sma(20), ledgr_ind_returns(5))
 ledgr_feature_id(features)
 
+mapped <- ledgr_feature_map(
+  trend = ledgr_ind_sma(20),
+  momentum = ledgr_ind_returns(5)
+)
+ledgr_feature_id(mapped)
+
 }

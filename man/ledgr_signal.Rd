@@ -21,3 +21,14 @@ A \code{ledgr_signal} object.
 pipelines. Signals are intermediate objects; strategies must not return them
 directly.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}
+
+\examples{
+ledgr_signal(c(AAA = 0.03, BBB = NA_real_), origin = "return_5")
+
+}

@@ -31,3 +31,13 @@ Strategy helper pipelines:
 \code{system.file("doc", "strategy-development.html", package = "ledgr")}
 }
 
+\examples{
+weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))
+ctx <- list(
+  universe = c("AAA", "BBB"),
+  equity = 1000,
+  close = function(id) c(AAA = 50, BBB = 100)[[id]]
+)
+target_rebalance(weights, ctx, equity_fraction = 0.5)
+
+}

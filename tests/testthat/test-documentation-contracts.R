@@ -29,10 +29,20 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ledgr_feature_contracts", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_pulse_features", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_pulse_wide", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Parameter Grids Register Every Needed Feature", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_ind_returns\\(5\\)")
+  testthat::expect_match(indicators_doc, "ledgr_ind_returns\\(10\\)")
+  testthat::expect_match(indicators_doc, "ledgr_ind_returns\\(20\\)")
+  testthat::expect_match(indicators_doc, "params\\$lookback")
+  testthat::expect_match(indicators_doc, "A missing feature\\s+ID is an unknown-feature error, not warmup.")
   testthat::expect_match(indicators_doc, "{instrument_id}__ohlcv_{field}", fixed = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__feature_{feature_id}", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "install.packages\\(\"TTR\"\\)")
+  testthat::expect_match(indicators_doc, "choose a timestamp late enough for the indicator warmup", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "same TTR feature map to `ledgr_pulse_snapshot()`", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{BBands} exposes \\code{dn}, \\code{mavg}, \\code{up}, and", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{pctB}", fixed = TRUE)
+  testthat::expect_match(ttr_help, "requires the suggested \\code{TTR} package", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_id", fixed = TRUE)
 })
 
@@ -41,6 +51,8 @@ testthat::test_that("helper docs state composition and whole-share target floori
   root <- testthat::test_path("..", "..")
   target_help <- paste(readLines(file.path(root, "man", "target_rebalance.Rd"), warn = FALSE), collapse = "\n")
   signal_strategy_help <- paste(readLines(file.path(root, "man", "ledgr_signal_strategy.Rd"), warn = FALSE), collapse = "\n")
+  signal_help <- paste(readLines(file.path(root, "man", "signal_return.Rd"), warn = FALSE), collapse = "\n")
+  selection_type_help <- paste(readLines(file.path(root, "man", "ledgr_selection.Rd"), warn = FALSE), collapse = "\n")
 
   testthat::expect_match(strategy_doc, "Execution semantics begin only at the target stage", fixed = TRUE)
   testthat::expect_match(strategy_doc, "floors to whole shares", fixed = TRUE)
@@ -52,6 +64,10 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(signal_strategy_help, "called as \\code{fn(ctx)}", fixed = TRUE)
   testthat::expect_match(signal_strategy_help, "not \\code{params}", fixed = TRUE)
   testthat::expect_match(signal_strategy_help, "\\verb{function(ctx, params)}", fixed = TRUE)
+  testthat::expect_match(signal_strategy_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_match(signal_help, "\\examples{", fixed = TRUE)
+  testthat::expect_match(signal_help, "signal_return(ctx, lookback = 5)", fixed = TRUE)
+  testthat::expect_match(selection_type_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
 })
 
 testthat::test_that("feature-map docs preserve teaching order and semantic boundaries", {
@@ -149,6 +165,18 @@ testthat::test_that("first-path navigation avoids non-runnable examples", {
   testthat::expect_no_match(text, "non-executable development artifacts", fixed = TRUE)
 })
 
+testthat::test_that("auditr harness discovery bug is recorded externally", {
+  root <- testthat::test_path("..", "..")
+  triage <- file.path(root, "inst", "design", "ledgr_v0_1_7_4_spec_packet", "ledgr_triage_report.md")
+  testthat::skip_if_not(file.exists(triage), "triage report unavailable")
+  text <- paste(readLines(triage, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "External Follow-Ups", fixed = TRUE)
+  testthat::expect_match(text, "DOC_DISCOVERY.R", fixed = TRUE)
+  testthat::expect_match(text, "n = Inf", fixed = TRUE)
+  testthat::expect_match(text, "not a ledgr package API requirement", fixed = TRUE)
+})
+
 testthat::test_that("metrics and accounting docs define public result semantics", {
   metrics_doc <- paste(readLines(ledgr_test_source_vignette("metrics-and-accounting.Rmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
@@ -170,8 +198,12 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "Diagnose A Successful Run With Zero Trades", fixed = TRUE)
   testthat::expect_match(metrics_doc, "compact fixture helper for accounting\\s+examples")
   testthat::expect_match(metrics_doc, "snapshot -> `ledgr_experiment\\(\\)` -> `ledgr_run\\(\\)`")
+  testthat::expect_match(metrics_doc, "requires_bars", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "stable_after", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Warmup is per instrument", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
   testthat::expect_match(metrics_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Expected warmup is local to the beginning of a run", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Expected\\s+warmup is local to the beginning of each instrument's usable sample")
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)
@@ -219,6 +251,11 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_ind_ttr = "indicators",
     ledgr_pulse_features = "indicators",
     ledgr_pulse_wide = "indicators",
+    ledgr_signal_strategy = "strategy-development",
+    ledgr_signal = "strategy-development",
+    ledgr_selection = "strategy-development",
+    ledgr_weights = "strategy-development",
+    ledgr_target = "strategy-development",
     signal_return = "strategy-development",
     select_top_n = "strategy-development",
     weight_equal = "strategy-development",

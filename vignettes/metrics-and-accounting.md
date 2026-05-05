@@ -329,18 +329,31 @@ Use this checklist before changing the strategy:
 3.  Confirm the feature IDs with `ledgr_feature_id(features)`. A helper
     such as `signal_return(ctx, lookback = 60)` reads `return_60`; that
     indicator must be registered before the run.
-4.  Inspect a late pulse with `ledgr_pulse_snapshot()`. If the feature
+4.  Compare feature contracts with sample length before assuming the
+    strategy is broken. `ledgr_feature_contracts(features)` shows
+    `requires_bars` and `stable_after`. If an instrument has fewer
+    available bars than a feature’s `requires_bars`, that feature cannot
+    become usable for that instrument.
+5.  Inspect a late pulse with `ledgr_pulse_snapshot()`. If the feature
     is still `NA` for every instrument near the end of the sample, the
     issue is no longer ordinary early warmup. Check the lookback length,
     sample length, universe, and feature registration.
-5.  If the strategy suppresses `ledgr_empty_selection` warnings during a
+6.  If the strategy suppresses `ledgr_empty_selection` warnings during a
     full run, rerun the same helper pipeline on the diagnostic pulse
     without suppression. The warning message reports the signal origin
     and non-missing count.
 
-Expected warmup is local to the beginning of a run. A signal that has
-zero usable values over the whole sample is a different condition, even
-though both appear as `NA` feature values at a single pulse.
+Warmup is per instrument. One instrument can have a usable value while
+another is still `NA` because it has fewer bars or a different data
+history. Expected warmup is local to the beginning of each instrument’s
+usable sample. A signal that has zero usable values over the whole run
+is a different condition, even though both appear as `NA` feature values
+at a single pulse.
+
+A final-bar target is separate from warmup. Under the next-open fill
+model, there is no later bar available to fill a target emitted on the
+last pulse, so ledgr reports `LEDGR_LAST_BAR_NO_FILL` and leaves the
+ledger unchanged for that target change.
 
 ## Cleanup
 

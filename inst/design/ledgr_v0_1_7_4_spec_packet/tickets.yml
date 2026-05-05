@@ -246,7 +246,7 @@ tickets:
 
   - id: LDG-1406
     title: "Helper, Feature-ID, Warmup, And TTR Docs"
-    status: planned
+    status: done
     priority: P2
     dependencies: [LDG-1401]
     tests:

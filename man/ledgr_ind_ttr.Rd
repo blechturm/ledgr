@@ -39,7 +39,10 @@ functions. For known functions this is inferred from explicit arguments.}
 A \code{ledgr_indicator} object.
 }
 \description{
-Construct a ledgr indicator from a supported TTR indicator
+\code{ledgr_ind_ttr()} requires the suggested \code{TTR} package at construction time.
+Install TTR before creating TTR-backed indicators. For interactive debugging
+with \code{ledgr_pulse_snapshot()}, pass an active snapshot handle and the same
+TTR-backed feature declarations used by the experiment.
 }
 \section{Articles}{
 

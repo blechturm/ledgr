@@ -21,3 +21,14 @@ A \code{ledgr_selection} object.
 pipelines. Selections are intermediate objects; strategies must not return
 them directly.
 }
+\section{Articles}{
+
+Strategy helper pipelines:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}
+
+\examples{
+ledgr_selection(c(AAA = TRUE, BBB = FALSE), universe = c("AAA", "BBB"))
+
+}
