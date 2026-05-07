@@ -328,6 +328,10 @@ testthat::test_that("TTR ledgr output matches direct TTR output after normalizat
     testthat::expect_identical(ind$requires_bars, case$requires_bars, info = label)
     testthat::expect_identical(first_callable_from_ttr, case$requires_bars, info = label)
     testthat::expect_identical(first_valid_from_ledgr, case$requires_bars, info = label)
+    # ledgr_test_ttr_expected_values() forces rows 1:(requires_bars-1) to NA for
+    # all cases. For MACD output="macd", full-series TTR returns finite values at
+    # rows nSlow:(nSlow+nSig-2), but those rows are warmup in pulse-by-pulse
+    # execution, so equality in that zone is NA == NA, not raw value comparison.
     testthat::expect_equal(values_from_ledgr, values_from_ttr, tolerance = 1e-12, info = label)
     testthat::expect_equal(ind$fn(bars), utils::tail(values_from_ledgr, 1), tolerance = 1e-12, info = label)
   }

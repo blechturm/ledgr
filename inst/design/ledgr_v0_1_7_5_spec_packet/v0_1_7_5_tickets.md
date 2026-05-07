@@ -623,7 +623,21 @@ and user-facing positioning with the implemented v0.1.7.5 scope.
 1. Update `contracts.md` for any changed TTR warmup behavior and the new
    warmup diagnostic surface.
 2. Update `NEWS.md` from planned bullets to delivered v0.1.7.5 bullets.
-3. Add adapter-positioning language to README or a positioning article.
+3. Add adapter-positioning language to three locations:
+   - **README.Rmd intro** — add one sentence after the existing flow diagram,
+     using "connects to" framing (not "replacement" framing):
+     > ledgr connects to the R finance ecosystem through adapters.
+   - **README.Rmd new `## Ecosystem` section** — between `## Durable Research`
+     and `## Scope`. Lead with the flow-first version:
+     > ledgr connects to the R finance ecosystem through adapters. The core is
+     > narrow by design: `data → pulse → decision → fill → ledger event →
+     > portfolio state`. Everything outside that sequence — data vendors,
+     > indicators, charting, analytics — can be provided by packages that
+     > already do those things well.
+     Follow with what ledgr owns vs. does not own (two-column list, no talib
+     row until the adapter is shipped), and the "not for everyone" paragraph.
+   - **`R/ledgr-package.R` new `@section Ecosystem:`** — two-paragraph brief
+     version of the above, linking to the pkgdown `who-ledgr-is-for` article.
 4. Ensure package help and function help article links match the updated docs.
 5. Ensure `release_ci_playbook.md` includes remote-log-first debugging,
    DuckDB constraint-probe rollback, and stop-and-review rules.
@@ -634,7 +648,10 @@ and user-facing positioning with the implemented v0.1.7.5 scope.
 - [ ] Contracts match shipped TTR, warmup diagnostic, and documentation
       behavior.
 - [ ] NEWS accurately summarizes delivered v0.1.7.5 scope.
-- [ ] Adapter-positioning language is present in user-facing docs.
+- [ ] Adapter-positioning language is present in README intro, a new
+      `## Ecosystem` README section, and `?ledgr` package help.
+- [ ] Positioning uses "connects to" framing; does not mention talib as a
+      shipped adapter; does not frame ledgr as a replacement for any package.
 - [ ] Release playbook includes the v0.1.7.4 post-mortem guardrails.
 - [ ] Package help, function help, and pkgdown navigation remain coherent.
 - [ ] Documentation contract tests cover the new release-critical doc claims.
