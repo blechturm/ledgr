@@ -250,7 +250,7 @@ tickets:
 
   - id: LDG-1506
     title: "Indicator, Helper, And Feature-Map Discoverability"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1502, LDG-1503, LDG-1504, LDG-1505]
     tests:

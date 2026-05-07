@@ -31,6 +31,10 @@ A feature map is also accepted anywhere \code{features = list(...)} is accepted.
 Plain lists remain valid; use a feature map when readable aliases make
 strategy code clearer. The map is validated at construction time, and
 \code{ledgr_feature_id()} returns a named character vector keyed by alias.
+Inside a strategy body, \code{ctx$features(instrument_id, feature_map)} returns a
+named numeric vector keyed by the feature-map aliases. Use \code{passed_warmup()}
+on that vector before applying rules that require all mapped values to be
+finite.
 }
 \section{Articles}{
 
@@ -52,4 +56,15 @@ features <- ledgr_feature_map(
 )
 
 ledgr_feature_id(features)
+
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  for (id in ctx$universe) {
+    x <- ctx$features(id, features)
+    if (passed_warmup(x) && x[["ret_5"]] > params$min_return) {
+      targets[id] <- params$qty
+    }
+  }
+  targets
+}
 }

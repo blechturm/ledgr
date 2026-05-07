@@ -532,7 +532,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 3-5 days
 **Dependencies:** LDG-1502, LDG-1503, LDG-1504, LDG-1505
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Improve the high-friction documentation surfaces identified by both auditr
@@ -562,20 +562,20 @@ runs: indicators, strategy helpers, feature maps, and `ctx$features()`.
 12. Render checked-in vignette companions.
 
 **Acceptance Criteria:**
-- [ ] Indicators docs cover SMA crossover, RSI mean-reversion, mixed
+- [x] Indicators docs cover SMA crossover, RSI mean-reversion, mixed
       built-in/TTR usage, explicit feature IDs, and alias-vs-feature-ID
       language.
-- [ ] Warmup troubleshooting links feature contracts, available bars, and
+- [x] Warmup troubleshooting links feature contracts, available bars, and
       zero-trade diagnostics.
-- [ ] Helper docs name warning/error classes where relevant.
-- [ ] `ctx$features()` is reachable from `?ledgr_feature_map` and shown in a
+- [x] Helper docs name warning/error classes where relevant.
+- [x] `ctx$features()` is reachable from `?ledgr_feature_map` and shown in a
       tiny strategy-body snippet.
-- [ ] Starter navigation points to runnable examples, not placeholder artifacts.
-- [ ] Installed-vignette Articles sections include both `vignette()` and
+- [x] Starter navigation points to runnable examples, not placeholder artifacts.
+- [x] Installed-vignette Articles sections include both `vignette()` and
       `system.file("doc", ..., package = "ledgr")` forms for headless users.
-- [ ] Helper and indicator docs explain pre-run registration of all swept
+- [x] Helper and indicator docs explain pre-run registration of all swept
       feature parameter values, with a compact multi-lookback example.
-- [ ] Rendered docs are in sync.
+- [x] Rendered docs are in sync.
 
 **Test Requirements:**
 - Documentation render.

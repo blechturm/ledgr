@@ -21,6 +21,13 @@ ID in alphabetical order. If no values are usable, the warning includes the
 signal origin and non-missing count so warmup can be distinguished from a
 signal that never becomes usable.
 }
+\details{
+Warning classes:
+\itemize{
+\item \code{ledgr_empty_selection} when every signal value is missing;
+\item \code{ledgr_partial_selection} when fewer than \code{n} finite values are available.
+}
+}
 \section{Articles}{
 
 Strategy helper pipelines:

@@ -46,6 +46,12 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #' `features = list(ledgr_ind_returns(20))`; this helper never auto-registers
 #' indicators.
 #'
+#' If `lookback` is supplied through `params$lookback` in a strategy or
+#' parameter grid, register every concrete `return_<lookback>` feature before
+#' `ledgr_run()`. For example, a sweep over 5, 10, and 20 bars needs
+#' `ledgr_ind_returns(5)`, `ledgr_ind_returns(10)`, and
+#' `ledgr_ind_returns(20)` in the experiment's `features`.
+#'
 #' @param ctx ledgr strategy context.
 #' @param lookback Positive integer return lookback.
 #' @return A `ledgr_signal` object.
@@ -81,6 +87,10 @@ signal_return <- function(ctx, lookback = 20L) {
 #' ID in alphabetical order. If no values are usable, the warning includes the
 #' signal origin and non-missing count so warmup can be distinguished from a
 #' signal that never becomes usable.
+#'
+#' Warning classes:
+#' - `ledgr_empty_selection` when every signal value is missing;
+#' - `ledgr_partial_selection` when fewer than `n` finite values are available.
 #'
 #' @param signal A `ledgr_signal` object.
 #' @param n Number of instruments to select.
@@ -174,6 +184,12 @@ weight_equal <- function(selection) {
 #' decision-time sizing and fill-time value is expected. Share quantities are
 #' floored to whole numbers with `floor(weight * equity_fraction * equity /
 #' close_price)`.
+#'
+#' Warning and error classes:
+#' - `ledgr_invalid_target_price` when a selected instrument has missing,
+#'   non-finite, or non-positive close price;
+#' - `ledgr_negative_weights` for negative weights;
+#' - `ledgr_levered_weights` when `sum(abs(weights)) > 1`.
 #'
 #' @param weights A `ledgr_weights` object.
 #' @param ctx ledgr strategy context.

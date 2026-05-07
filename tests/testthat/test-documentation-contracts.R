@@ -25,6 +25,16 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ttr_macd_12_26_9_false_macd", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ttr_macd_12_26_9_false_signal", fixed = TRUE)
   testthat::expect_match(indicators_doc, "built-in ledgr indicators, TTR-backed indicators")
+  testthat::expect_match(indicators_doc, "SMA crossover", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "fast trend above slow trend", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "sma_fast", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "sma_slow", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "RSI is a common mean-reversion input", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "rsi_exp <- ledgr_experiment", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "rsi_bt <- ledgr_run", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "mixed feature map combines a built-in return feature", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "return_5", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ttr_rsi_14", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr computes feature contracts into pulse-known data", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_contracts", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_pulse_features", fixed = TRUE)
@@ -34,12 +44,18 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ledgr_ind_returns\\(10\\)")
   testthat::expect_match(indicators_doc, "ledgr_ind_returns\\(20\\)")
   testthat::expect_match(indicators_doc, "params\\$lookback")
+  testthat::expect_match(indicators_doc, "register every lookback variant before\\s+the run")
+  testthat::expect_match(indicators_doc, "all feature parameter values must be registered before `ledgr_run\\(\\)`")
   testthat::expect_match(indicators_doc, "A missing feature\\s+ID is an unknown-feature error, not warmup.")
   testthat::expect_match(indicators_doc, "{instrument_id}__ohlcv_{field}", fixed = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__feature_{feature_id}", fixed = TRUE)
   testthat::expect_match(indicators_doc, "install.packages\\(\"TTR\"\\)")
   testthat::expect_match(indicators_doc, "choose a timestamp late enough for the indicator warmup", fixed = TRUE)
   testthat::expect_match(indicators_doc, "same TTR feature map to `ledgr_pulse_snapshot()`", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Troubleshoot Warmup And Zero Trades", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "available bars are below the feature contract", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "`summary(bt)` prints `Warmup Diagnostics`", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Impossible warmup is different", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{BBands} exposes \\code{dn}, \\code{mavg}, \\code{up}, and", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{pctB}", fixed = TRUE)
   testthat::expect_match(ttr_help, "requires the suggested \\code{TTR} package", fixed = TRUE)
@@ -52,6 +68,8 @@ testthat::test_that("helper docs state composition and whole-share target floori
   target_help <- paste(readLines(file.path(root, "man", "target_rebalance.Rd"), warn = FALSE), collapse = "\n")
   signal_strategy_help <- paste(readLines(file.path(root, "man", "ledgr_signal_strategy.Rd"), warn = FALSE), collapse = "\n")
   signal_help <- paste(readLines(file.path(root, "man", "signal_return.Rd"), warn = FALSE), collapse = "\n")
+  select_help <- paste(readLines(file.path(root, "man", "select_top_n.Rd"), warn = FALSE), collapse = "\n")
+  target_rebalance_help <- paste(readLines(file.path(root, "man", "target_rebalance.Rd"), warn = FALSE), collapse = "\n")
   selection_type_help <- paste(readLines(file.path(root, "man", "ledgr_selection.Rd"), warn = FALSE), collapse = "\n")
 
   testthat::expect_match(strategy_doc, "Execution semantics begin only at the target stage", fixed = TRUE)
@@ -67,6 +85,13 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(signal_strategy_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(signal_help, "\\examples{", fixed = TRUE)
   testthat::expect_match(signal_help, "signal_return(ctx, lookback = 5)", fixed = TRUE)
+  testthat::expect_match(signal_help, "register every concrete \\verb{return_<lookback>} feature before", fixed = TRUE)
+  testthat::expect_match(signal_help, "\\code{ledgr_ind_returns(5)}", fixed = TRUE)
+  testthat::expect_match(select_help, "\\code{ledgr_empty_selection}", fixed = TRUE)
+  testthat::expect_match(select_help, "\\code{ledgr_partial_selection}", fixed = TRUE)
+  testthat::expect_match(target_rebalance_help, "\\code{ledgr_invalid_target_price}", fixed = TRUE)
+  testthat::expect_match(target_rebalance_help, "\\code{ledgr_negative_weights}", fixed = TRUE)
+  testthat::expect_match(target_rebalance_help, "\\code{ledgr_levered_weights}", fixed = TRUE)
   testthat::expect_match(selection_type_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
 })
 
@@ -109,6 +134,9 @@ testthat::test_that("feature-map docs preserve teaching order and semantic bound
   testthat::expect_match(indicators_doc, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(feature_map_help, "Plain lists remain valid", fixed = TRUE)
   testthat::expect_match(feature_map_help, "keyed by alias", fixed = TRUE)
+  testthat::expect_match(feature_map_help, "ctx$features", fixed = TRUE)
+  testthat::expect_match(feature_map_help, "passed_warmup", fixed = TRUE)
+  testthat::expect_match(feature_map_help, "x[[\"ret_5\"]]", fixed = TRUE)
   testthat::expect_match(warmup_help, "not a signal pipeline transformation", fixed = TRUE)
   testthat::expect_match(warmup_help, "ledgr_empty_warmup_input", fixed = TRUE)
 })
@@ -171,6 +199,31 @@ testthat::test_that("first-path navigation avoids non-runnable examples", {
 
   testthat::expect_no_match(text, "examples/README", fixed = TRUE)
   testthat::expect_no_match(text, "non-executable development artifacts", fixed = TRUE)
+})
+
+testthat::test_that("help-page article sections include browser-free installed paths", {
+  root <- testthat::test_path("..", "..")
+  man_dir <- file.path(root, "man")
+  testthat::skip_if_not(dir.exists(man_dir), "man pages not available during installed-package tests")
+
+  paths <- list.files(man_dir, pattern = "[.]Rd$", full.names = TRUE)
+  for (path in paths) {
+    text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+    linked <- unique(unlist(regmatches(
+      text,
+      gregexpr('vignette\\("[^"]+", package = "ledgr"\\)', text)
+    )))
+    if (length(linked) == 0L) next
+    articles <- sub('^vignette\\("([^"]+)", package = "ledgr"\\)$', "\\1", linked)
+    for (article in articles) {
+      testthat::expect_match(
+        text,
+        sprintf('system.file("doc", "%s.html", package = "ledgr")', article),
+        fixed = TRUE,
+        info = basename(path)
+      )
+    }
+  }
 })
 
 testthat::test_that("pkgdown reference lists v0.1.7.4 helper exports", {

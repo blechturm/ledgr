@@ -24,6 +24,15 @@ decision time; fills still occur at the next open, so small drift between
 decision-time sizing and fill-time value is expected. Share quantities are
 floored to whole numbers with \code{floor(weight * equity_fraction * equity / close_price)}.
 }
+\details{
+Warning and error classes:
+\itemize{
+\item \code{ledgr_invalid_target_price} when a selected instrument has missing,
+non-finite, or non-positive close price;
+\item \code{ledgr_negative_weights} for negative weights;
+\item \code{ledgr_levered_weights} when \code{sum(abs(weights)) > 1}.
+}
+}
 \section{Articles}{
 
 Strategy helper pipelines:

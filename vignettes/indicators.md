@@ -49,6 +49,36 @@ Use aliases when you write strategy logic with `ctx$features()`. Use
 feature IDs when you need the explicit engine contract, for example with
 `ctx$feature()` or when inspecting stored feature metadata.
 
+The same idea works for crossover rules. An SMA crossover registers two
+separate indicators: one short moving average and one long moving
+average. The economic meaning is "fast trend above slow trend" rather
+than "close above one trend line." Each moving average has its own
+feature ID, warmup, and stored values.
+
+``` r
+crossover_features <- ledgr_feature_map(
+  sma_fast = ledgr_ind_sma(10),
+  sma_slow = ledgr_ind_sma(30)
+)
+
+ledgr_feature_contracts(crossover_features)
+#> # A tibble: 2 × 5
+#>   alias    feature_id source requires_bars stable_after
+#>   <chr>    <chr>      <chr>          <int>        <int>
+#> 1 sma_fast sma_10     ledgr             10           10
+#> 2 sma_slow sma_30     ledgr             30           30
+```
+
+In a strategy, the crossover condition is just a comparison of the two
+mapped aliases after warmup:
+
+``` r
+x <- ctx$features(id, crossover_features)
+if (passed_warmup(x) && x[["sma_fast"]] > x[["sma_slow"]]) {
+  targets[id] <- params$qty
+}
+```
+
 ## Inspect One Pulse
 
 Create a small sealed snapshot and inspect one decision pulse before
@@ -307,7 +337,9 @@ The important rule is that the feature set covers the whole grid:
 `lookback = 20` means `return_20` must already be registered. A missing
 feature ID is an unknown-feature error, not warmup. The alias names in
 `swept_features` must also match the lookup key pattern used by the
-strategy, here `paste0("ret_", params$lookback)`.
+strategy, here `paste0("ret_", params$lookback)`. In short, all feature
+parameter values must be registered before `ledgr_run()`; do not create
+`ledgr_ind_returns(params$lookback)` lazily inside the strategy.
 
 ## TTR-Backed Indicators
 
@@ -330,6 +362,7 @@ install.packages("TTR")
 
 ``` r
 ttr_features <- ledgr_feature_map(
+  ret_5 = ledgr_ind_returns(5),
   ttr_rsi = ledgr_ind_ttr("RSI", input = "close", n = 14),
   bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
   macd = ledgr_ind_ttr(
@@ -353,17 +386,84 @@ ttr_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(ttr_features)
-#> # A tibble: 4 × 5
+#> # A tibble: 5 × 5
 #>   alias       feature_id                    source requires_bars stable_after
 #>   <chr>       <chr>                         <chr>          <int>        <int>
-#> 1 ttr_rsi     ttr_rsi_14                    TTR               15           15
-#> 2 bb_up       ttr_bbands_20_up              TTR               20           20
-#> 3 macd        ttr_macd_12_26_9_false_macd   TTR               34           34
-#> 4 macd_signal ttr_macd_12_26_9_false_signal TTR               34           34
+#> 1 ret_5       return_5                      ledgr              6            6
+#> 2 ttr_rsi     ttr_rsi_14                    TTR               15           15
+#> 3 bb_up       ttr_bbands_20_up              TTR               20           20
+#> 4 macd        ttr_macd_12_26_9_false_macd   TTR               34           34
+#> 5 macd_signal ttr_macd_12_26_9_false_signal TTR               34           34
+ledgr_feature_id(ttr_features)
+#>                           ret_5                         ttr_rsi
+#>                      "return_5"                    "ttr_rsi_14"
+#>                           bb_up                            macd
+#>              "ttr_bbands_20_up"   "ttr_macd_12_26_9_false_macd"
+#>                     macd_signal
+#> "ttr_macd_12_26_9_false_signal"
 ```
 
-The examples produce IDs such as `ttr_bbands_20_up`,
+This mixed feature map combines a built-in return feature with
+TTR-backed RSI, BBands, and MACD features. The examples produce IDs such
+as `return_5`, `ttr_rsi_14`, `ttr_bbands_20_up`,
 `ttr_macd_12_26_9_false_macd`, and `ttr_macd_12_26_9_false_signal`.
+
+RSI is a common mean-reversion input. One compact rule is: buy when RSI
+is below 30, then return to flat when the condition is no longer true.
+The experiment registers the RSI indicator before the run; the strategy
+only reads the pulse-time value.
+
+``` r
+rsi_features <- ledgr_feature_map(
+  rsi_14 = ledgr_ind_ttr("RSI", input = "close", n = 14)
+)
+
+rsi_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  for (id in ctx$universe) {
+    x <- ctx$features(id, rsi_features)
+    if (passed_warmup(x) && x[["rsi_14"]] < params$oversold) {
+      targets[id] <- params$qty
+    }
+  }
+  targets
+}
+
+rsi_snapshot <- ledgr_snapshot_from_df(
+  bars,
+  snapshot_id = paste0("rsi-vignette-", Sys.getpid())
+)
+
+rsi_exp <- ledgr_experiment(
+  snapshot = rsi_snapshot,
+  strategy = rsi_strategy,
+  features = rsi_features,
+  opening = ledgr_opening(cash = 10000)
+)
+
+rsi_bt <- ledgr_run(
+  rsi_exp,
+  params = list(oversold = 30, qty = 10),
+  run_id = paste0("rsi-demo-", Sys.getpid())
+)
+
+ledgr_results(rsi_bt, what = "fills")
+#> # A tibble: 10 × 9
+#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
+#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
+#>  1         1 2019-01-22 DEMO_01       BUY      10  87.2     0        0     OPEN
+#>  2         2 2019-01-24 DEMO_01       SELL     10  89.0     0       17.9   CLOSE
+#>  3         3 2019-02-12 DEMO_02       BUY      10  66.1     0        0     OPEN
+#>  4         4 2019-02-14 DEMO_02       SELL     10  66.5     0        3.85  CLOSE
+#>  5         5 2019-06-10 DEMO_01       BUY      10  91.2     0        0     OPEN
+#>  6         6 2019-06-18 DEMO_01       SELL     10  87.7     0      -35.1   CLOSE
+#>  7         7 2019-06-19 DEMO_01       BUY      10  87.3     0        0     OPEN
+#>  8         8 2019-06-21 DEMO_01       SELL     10  87.3     0        0.267 CLOSE
+#>  9         9 2019-06-24 DEMO_01       BUY      10  86.5     0        0     OPEN
+#> 10        10 2019-06-26 DEMO_01       SELL     10  86.8     0        2.87  CLOSE
+close(rsi_bt)
+ledgr_snapshot_close(rsi_snapshot)
+```
 
 Some TTR functions return several columns. For those functions, choose
 one column with `output` before asking ledgr for the feature ID.
@@ -444,6 +544,27 @@ ttr_pulse <- ledgr_pulse_snapshot(
 ledgr_pulse_features(ttr_pulse, ttr_features)
 close(ttr_pulse)
 ```
+
+## Troubleshoot Warmup And Zero Trades
+
+Warmup problems are easiest to diagnose by connecting three facts:
+
+1.  `ledgr_feature_contracts(features)` tells you how many bars each
+    feature needs before it can produce a usable value.
+2.  `ledgr_pulse_features(pulse, features)` shows the current
+    pulse-known values for the instruments and aliases you registered.
+3.  `summary(bt)` prints `Warmup Diagnostics` when a completed run has
+    registered features that can never become usable for an instrument
+    because available bars are below the feature contract.
+
+Normal early warmup is temporary: a feature is `NA` near the beginning
+of an instrument's sample and later becomes finite. Impossible warmup is
+different: the instrument never has enough available bars for that
+feature. In that case, zero trades can be a valid completed run plus a
+useful diagnostic, not a failed run.
+
+For result-table interpretation after a zero-trade run, read
+`vignette("metrics-and-accounting", package = "ledgr")`.
 
 ## Unsupported Or Custom Indicators
 

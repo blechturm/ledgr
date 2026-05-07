@@ -9,6 +9,10 @@
 #' Plain lists remain valid; use a feature map when readable aliases make
 #' strategy code clearer. The map is validated at construction time, and
 #' `ledgr_feature_id()` returns a named character vector keyed by alias.
+#' Inside a strategy body, `ctx$features(instrument_id, feature_map)` returns a
+#' named numeric vector keyed by the feature-map aliases. Use `passed_warmup()`
+#' on that vector before applying rules that require all mapped values to be
+#' finite.
 #'
 #' @param ... For `ledgr_feature_map()`, named `ledgr_indicator` objects.
 #'   Names are strategy-facing aliases. For the print method, unused.
@@ -30,6 +34,17 @@
 #' )
 #'
 #' ledgr_feature_id(features)
+#'
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
+#'   for (id in ctx$universe) {
+#'     x <- ctx$features(id, features)
+#'     if (passed_warmup(x) && x[["ret_5"]] > params$min_return) {
+#'       targets[id] <- params$qty
+#'     }
+#'   }
+#'   targets
+#' }
 #' @export
 ledgr_feature_map <- function(...) {
   indicators <- list(...)
