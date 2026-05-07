@@ -248,6 +248,9 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
   if (is.null(params)) params <- list()
 
   n <- nrow(bars_df)
+  if (n < stable_after) {
+    return(rep(NA_real_, n))
+  }
   if (!is.null(series_fn)) {
     value <- ledgr_call_feature_series_fn(series_fn, bars_df, params)
     return(ledgr_normalize_feature_series_output(value, n, stable_after, feature_def$id))

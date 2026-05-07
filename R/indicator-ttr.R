@@ -25,7 +25,7 @@ ledgr_ttr_warmup_rules <- function() {
       "close", "close", "close", "close"
     ),
     formula = c(
-      "n + 1", "n", "n", "n + 1", "macd: nSlow; signal/histogram: nSlow + nSig - 1",
+      "n + 1", "n", "n", "n + 1", "nSlow + nSig - 1",
       "n", "n + 1", "n + 1", "n", "n",
       "n", "n", "n + 1", "n",
       "n", "n", "n", "n"
@@ -291,11 +291,7 @@ ledgr_ttr_infer_requires_bars <- function(ttr_fn, args, output = NULL) {
     runVar = integer_arg("n"),
     runMAD = integer_arg("n"),
     MACD = {
-      if (identical(output, "signal") || identical(output, "histogram")) {
-        integer_arg("nSlow") + integer_arg("nSig") - 1L
-      } else {
-        integer_arg("nSlow")
-      }
+      integer_arg("nSlow") + integer_arg("nSig") - 1L
     },
     rlang::abort(sprintf("No warmup rule for TTR::%s.", ttr_fn), class = "ledgr_invalid_args")
   )

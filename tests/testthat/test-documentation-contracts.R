@@ -195,7 +195,11 @@ testthat::test_that("NEWS summarizes delivered v0.1.7.4 scope", {
   news <- file.path(root, "NEWS.md")
   testthat::skip_if_not(file.exists(news), "NEWS source unavailable")
   text <- paste(readLines(news, warn = FALSE), collapse = "\n")
-  section <- sub("# ledgr 0[.]1[.]7[.]3.*$", "", text)
+  start <- regexpr("# ledgr 0[.]1[.]7[.]4", text)
+  end <- regexpr("# ledgr 0[.]1[.]7[.]3", text)
+  testthat::expect_true(start > 0L)
+  testthat::expect_true(end > start)
+  section <- substr(text, start, end - 1L)
 
   testthat::expect_no_match(section, "Planned:", fixed = TRUE)
   testthat::expect_match(section, "Added feature-map authoring UX", fixed = TRUE)

@@ -4,7 +4,7 @@ ledgr_test_ttr_cases <- function() {
     list(fn = "SMA", input = "close", output = NULL, args = list(n = 20), requires_bars = 20L, id = "ttr_sma_20"),
     list(fn = "EMA", input = "close", output = NULL, args = list(n = 20), requires_bars = 20L, id = "ttr_ema_20"),
     list(fn = "ATR", input = "hlc", output = "atr", args = list(n = 20), requires_bars = 21L, id = "ttr_atr_20_atr"),
-    list(fn = "MACD", input = "close", output = "macd", args = list(nFast = 12, nSlow = 26, nSig = 9), requires_bars = 26L, id = "ttr_macd_12_26_9_macd"),
+    list(fn = "MACD", input = "close", output = "macd", args = list(nFast = 12, nSlow = 26, nSig = 9), requires_bars = 34L, id = "ttr_macd_12_26_9_macd"),
     list(fn = "WMA", input = "close", output = NULL, args = list(n = 10), requires_bars = 10L, id = "ttr_wma_10"),
     list(fn = "ROC", input = "close", output = NULL, args = list(n = 10), requires_bars = 11L, id = "ttr_roc_10"),
     list(fn = "momentum", input = "close", output = NULL, args = list(n = 10), requires_bars = 11L, id = "ttr_momentum_10"),
@@ -21,6 +21,25 @@ ledgr_test_ttr_cases <- function() {
   )
 }
 
+ledgr_test_ttr_parity_cases <- function() {
+  single_output <- ledgr_test_ttr_cases()
+  multi_output <- list(
+    list(fn = "ATR", input = "hlc", output = "tr", args = list(n = 20), requires_bars = 21L, id = "ttr_atr_20_tr"),
+    list(fn = "ATR", input = "hlc", output = "trueHigh", args = list(n = 20), requires_bars = 21L, id = "ttr_atr_20_truehigh"),
+    list(fn = "ATR", input = "hlc", output = "trueLow", args = list(n = 20), requires_bars = 21L, id = "ttr_atr_20_truelow"),
+    list(fn = "MACD", input = "close", output = "signal", args = list(nFast = 12, nSlow = 26, nSig = 9), requires_bars = 34L, id = "ttr_macd_12_26_9_signal"),
+    list(fn = "MACD", input = "close", output = "histogram", args = list(nFast = 12, nSlow = 26, nSig = 9), requires_bars = 34L, id = "ttr_macd_12_26_9_histogram"),
+    list(fn = "BBands", input = "close", output = "dn", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_dn"),
+    list(fn = "BBands", input = "close", output = "mavg", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_mavg"),
+    list(fn = "BBands", input = "close", output = "pctB", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_pctb"),
+    list(fn = "aroon", input = "hl", output = "aroonUp", args = list(n = 20), requires_bars = 20L, id = "ttr_aroon_20_aroonup"),
+    list(fn = "aroon", input = "hl", output = "aroonDn", args = list(n = 20), requires_bars = 20L, id = "ttr_aroon_20_aroondn"),
+    list(fn = "DonchianChannel", input = "hl", output = "high", args = list(n = 20), requires_bars = 20L, id = "ttr_donchianchannel_20_high"),
+    list(fn = "DonchianChannel", input = "hl", output = "low", args = list(n = 20), requires_bars = 20L, id = "ttr_donchianchannel_20_low")
+  )
+  c(single_output, multi_output)
+}
+
 ledgr_test_ttr_bars <- function(n = 80L) {
   x <- seq_len(n)
   data.frame(
@@ -34,11 +53,87 @@ ledgr_test_ttr_bars <- function(n = 80L) {
   )
 }
 
+ledgr_test_ttr_case_label <- function(case) {
+  sprintf(
+    "%s input=%s output=%s args=%s TTR=%s",
+    case$fn,
+    case$input,
+    if (is.null(case$output)) "<vector>" else case$output,
+    paste(sprintf("%s=%s", names(case$args), unlist(case$args, use.names = FALSE)), collapse = ","),
+    as.character(utils::packageVersion("TTR"))
+  )
+}
+
 ledgr_test_ind_ttr_from_case <- function(case) {
   do.call(
     ledgr_ind_ttr,
     c(list(case$fn, input = case$input, output = case$output), case$args)
   )
+}
+
+ledgr_test_ttr_raw_result <- function(bars, case) {
+  x <- ledgr:::ledgr_ttr_build_input(bars, case$input)
+  ttr_fn <- getExportedValue("TTR", case$fn)
+  if (identical(case$input, "hlcv") && case$fn %in% c("MFI", "CMF")) {
+    do.call(ttr_fn, c(list(x[, c("High", "Low", "Close"), drop = FALSE], x[, "Volume"]), case$args))
+  } else {
+    do.call(ttr_fn, c(list(x), case$args))
+  }
+}
+
+ledgr_test_ttr_select_direct <- function(result, case) {
+  if (is.null(dim(result))) {
+    if (!is.null(case$output)) {
+      stop(sprintf("TTR::%s returned a vector for output %s.", case$fn, case$output))
+    }
+    return(as.numeric(result))
+  }
+  cols <- colnames(result)
+  if (is.null(cols) || any(!nzchar(cols))) {
+    cols <- as.character(seq_len(ncol(result)))
+  }
+  if (identical(case$fn, "MACD") && identical(case$output, "histogram")) {
+    return(as.numeric(result[, "macd"] - result[, "signal"]))
+  }
+  output <- case$output
+  if (is.null(output)) {
+    if (ncol(result) != 1L) {
+      stop(sprintf("TTR::%s returned multiple columns without an output.", case$fn))
+    }
+    output <- cols[[1L]]
+  }
+  if (!output %in% cols) {
+    stop(sprintf("Missing output %s from TTR::%s. Available: %s", output, case$fn, paste(cols, collapse = ", ")))
+  }
+  as.numeric(result[, output])
+}
+
+ledgr_test_ttr_direct_values <- function(bars, case) {
+  values <- ledgr_test_ttr_select_direct(ledgr_test_ttr_raw_result(bars, case), case)
+  values[is.nan(values)] <- NA_real_
+  unname(values)
+}
+
+ledgr_test_ttr_expected_values <- function(bars, case) {
+  values <- ledgr_test_ttr_direct_values(bars, case)
+  if (case$requires_bars > 1L && length(values) > 0L) {
+    values[seq_len(min(case$requires_bars - 1L, length(values)))] <- NA_real_
+  }
+  values
+}
+
+ledgr_test_ttr_first_callable <- function(case, max_n = 80L) {
+  for (n in seq_len(max_n)) {
+    bars <- ledgr_test_ttr_bars(n)
+    value <- tryCatch({
+      values <- ledgr_test_ttr_direct_values(bars, case)
+      utils::tail(values, 1L)
+    }, error = function(e) NA_real_)
+    if (is.numeric(value) && length(value) == 1L && !is.na(value) && is.finite(value)) {
+      return(n)
+    }
+  }
+  NA_integer_
 }
 
 ledgr_test_macd_warmup_cases <- function() {
@@ -47,11 +142,15 @@ ledgr_test_macd_warmup_cases <- function() {
   unlist(
     lapply(outputs, function(output) {
       lapply(percents, function(percent) {
+        args <- list(nFast = 12, nSlow = 26, nSig = 9, percent = percent)
         list(
+          fn = "MACD",
+          input = "close",
           output = output,
           percent = percent,
-          args = list(nFast = 12, nSlow = 26, nSig = 9, percent = percent),
-          requires_bars = if (identical(output, "macd")) 26L else 34L
+          args = args,
+          requires_bars = 34L,
+          id = ledgr:::ledgr_ttr_default_id("MACD", c("nFast", "nSlow", "nSig"), args, output)
         )
       })
     }),
@@ -168,6 +267,10 @@ testthat::test_that("TTR warmup inference is implemented for every rules-table e
   }
   macd_args <- list(nFast = 12, nSlow = 26, nSig = 9)
   testthat::expect_identical(
+    ledgr:::ledgr_ttr_infer_requires_bars("MACD", macd_args, output = "macd"),
+    34L
+  )
+  testthat::expect_identical(
     ledgr:::ledgr_ttr_infer_requires_bars("MACD", macd_args, output = "signal"),
     34L
   )
@@ -177,60 +280,56 @@ testthat::test_that("TTR warmup inference is implemented for every rules-table e
   )
 })
 
-testthat::test_that("TTR series_fn normalizes warmup at inferred requires_bars", {
+testthat::test_that("TTR parity matrix covers every supported rule and output", {
   testthat::skip_if_not_installed("TTR")
 
   bars <- ledgr_test_ttr_bars()
-  indicators <- lapply(ledgr_test_ttr_cases(), ledgr_test_ind_ttr_from_case)
+  cases <- ledgr_test_ttr_parity_cases()
+  rules <- ledgr_ttr_warmup_rules()
+  covered <- unique(vapply(cases, `[[`, character(1), "fn"))
 
-  for (ind in indicators) {
-    values <- ledgr:::ledgr_compute_feature_series(bars, ind)
-    first_valid <- which(!is.na(values))[1]
-    testthat::expect_identical(first_valid, ind$requires_bars)
-    testthat::expect_length(values, nrow(bars))
-    testthat::expect_equal(ind$fn(bars), utils::tail(values, 1), tolerance = 1e-12)
-  }
+  testthat::expect_setequal(covered, rules$ttr_fn)
+  testthat::expect_setequal(
+    vapply(cases[vapply(cases, `[[`, character(1), "fn") == "ATR"], `[[`, character(1), "output"),
+    c("atr", "tr", "trueHigh", "trueLow")
+  )
+  testthat::expect_setequal(
+    vapply(cases[vapply(cases, `[[`, character(1), "fn") == "BBands"], `[[`, character(1), "output"),
+    c("up", "dn", "mavg", "pctB")
+  )
+  testthat::expect_setequal(
+    vapply(cases[vapply(cases, `[[`, character(1), "fn") == "MACD"], `[[`, character(1), "output"),
+    c("macd", "signal", "histogram")
+  )
+  testthat::expect_setequal(
+    vapply(cases[vapply(cases, `[[`, character(1), "fn") == "aroon"], `[[`, character(1), "output"),
+    c("oscillator", "aroonUp", "aroonDn")
+  )
+  testthat::expect_setequal(
+    vapply(cases[vapply(cases, `[[`, character(1), "fn") == "DonchianChannel"], `[[`, character(1), "output"),
+    c("mid", "high", "low")
+  )
 })
 
-testthat::test_that("TTR warmup rules match direct TTR output", {
+testthat::test_that("TTR ledgr output matches direct TTR output after normalization", {
   testthat::skip_if_not_installed("TTR")
 
   bars <- ledgr_test_ttr_bars()
 
-  for (case in ledgr_test_ttr_cases()) {
-    params <- list(
-      ttr_fn = case$fn,
-      ttr_version = as.character(utils::packageVersion("TTR")),
-      input = case$input,
-      output = case$output,
-      args = case$args
-    )
-    values_from_ttr <- ledgr:::ledgr_ttr_call(bars, params)
-    first_valid_from_ttr <- min(which(!is.na(values_from_ttr)))
+  for (case in ledgr_test_ttr_parity_cases()) {
+    label <- ledgr_test_ttr_case_label(case)
     ind <- ledgr_test_ind_ttr_from_case(case)
-    testthat::expect_identical(first_valid_from_ttr, ind$requires_bars)
-  }
+    values_from_ttr <- ledgr_test_ttr_expected_values(bars, case)
+    values_from_ledgr <- ledgr:::ledgr_compute_feature_series(bars, ind)
+    first_valid_from_ledgr <- which(!is.na(values_from_ledgr))[1]
+    first_callable_from_ttr <- ledgr_test_ttr_first_callable(case, max_n = nrow(bars))
 
-  macd_args <- list(nFast = 12, nSlow = 26, nSig = 9)
-  for (output in c("signal", "histogram")) {
-    params <- list(
-      ttr_fn = "MACD",
-      ttr_version = as.character(utils::packageVersion("TTR")),
-      input = "close",
-      output = output,
-      args = macd_args
-    )
-    values_from_ttr <- ledgr:::ledgr_ttr_call(bars, params)
-    first_valid_from_ttr <- min(which(!is.na(values_from_ttr)))
-    ind <- ledgr_ind_ttr(
-      "MACD",
-      input = "close",
-      output = output,
-      nFast = macd_args$nFast,
-      nSlow = macd_args$nSlow,
-      nSig = macd_args$nSig
-    )
-    testthat::expect_identical(first_valid_from_ttr, ind$requires_bars)
+    testthat::expect_identical(ind$id, case$id, info = label)
+    testthat::expect_identical(ind$requires_bars, case$requires_bars, info = label)
+    testthat::expect_identical(first_callable_from_ttr, case$requires_bars, info = label)
+    testthat::expect_identical(first_valid_from_ledgr, case$requires_bars, info = label)
+    testthat::expect_equal(values_from_ledgr, values_from_ttr, tolerance = 1e-12, info = label)
+    testthat::expect_equal(ind$fn(bars), utils::tail(values_from_ledgr, 1), tolerance = 1e-12, info = label)
   }
 })
 
@@ -248,17 +347,23 @@ testthat::test_that("MACD audit case uses direct TTR warmup with percent false",
     percent = FALSE
   )
 
-  testthat::expect_identical(ind$requires_bars, 26L)
-  testthat::expect_identical(ind$stable_after, 26L)
+  testthat::expect_identical(ind$requires_bars, 34L)
+  testthat::expect_identical(ind$stable_after, 34L)
 
   values <- ledgr:::ledgr_compute_feature_series(bars, ind)
   first_valid <- which(!is.na(values))[1]
-  testthat::expect_identical(first_valid, 26L)
+  testthat::expect_identical(first_valid, 34L)
   testthat::expect_false(any(is.na(values[seq.int(ind$stable_after, length(values))])))
 
-  direct_values <- ledgr:::ledgr_ttr_call(bars, ind$params)
-  first_valid_from_ttr <- min(which(!is.na(direct_values)))
-  testthat::expect_identical(first_valid_from_ttr, ind$requires_bars)
+  first_callable_from_ttr <- ledgr_test_ttr_first_callable(list(
+    fn = "MACD",
+    input = "close",
+    output = "macd",
+    args = list(nFast = 12, nSlow = 26, nSig = 9, percent = FALSE),
+    requires_bars = 34L,
+    id = "ttr_macd_12_26_9_false_macd"
+  ))
+  testthat::expect_identical(first_callable_from_ttr, ind$requires_bars)
 })
 
 testthat::test_that("MACD warmup matches direct TTR output for all percent/output cases", {
@@ -267,22 +372,14 @@ testthat::test_that("MACD warmup matches direct TTR output for all percent/outpu
   bars <- ledgr_test_ttr_bars()
   ttr_version <- as.character(utils::packageVersion("TTR"))
 
-  # LDG-1102: the audit reported that MACD output = "macd" with
-  # percent = FALSE needed 34 bars. Against the installed TTR version recorded
-  # here, direct TTR output is first valid at row 26 for the macd column and at
-  # row 34 for signal/histogram, for both percent values. If ledgr inferred too
-  # small a stable_after, the feature engine would abort on NA after warmup
-  # rather than silently trading late.
+  # LDG-1502: long direct TTR output can contain macd values before row 34,
+  # but TTR::MACD itself cannot be called at pulse lengths 26-33 because it
+  # computes the signal EMA internally. ledgr therefore treats all MACD outputs
+  # as first callable at nSlow + nSig - 1.
   for (case in ledgr_test_macd_warmup_cases()) {
-    params <- list(
-      ttr_fn = "MACD",
-      ttr_version = ttr_version,
-      input = "close",
-      output = case$output,
-      args = case$args
-    )
-    values_from_ttr <- ledgr:::ledgr_ttr_call(bars, params)
-    first_valid_from_ttr <- min(which(!is.na(values_from_ttr)))
+    label <- ledgr_test_ttr_case_label(case)
+    values_from_ttr <- ledgr_test_ttr_expected_values(bars, case)
+    first_callable_from_ttr <- ledgr_test_ttr_first_callable(case, max_n = nrow(bars))
 
     ind <- do.call(
       ledgr_ind_ttr,
@@ -291,9 +388,42 @@ testthat::test_that("MACD warmup matches direct TTR output for all percent/outpu
     values_from_ledgr <- ledgr:::ledgr_compute_feature_series(bars, ind)
     first_valid_from_ledgr <- which(!is.na(values_from_ledgr))[1]
 
-    testthat::expect_identical(ind$requires_bars, case$requires_bars)
-    testthat::expect_identical(first_valid_from_ttr, case$requires_bars)
-    testthat::expect_identical(first_valid_from_ledgr, case$requires_bars)
+    testthat::expect_identical(ind$requires_bars, case$requires_bars, info = label)
+    testthat::expect_identical(first_callable_from_ttr, case$requires_bars, info = label)
+    testthat::expect_identical(first_valid_from_ledgr, case$requires_bars, info = label)
+    # For MACD macd output, direct full-series TTR has finite values at rows
+    # 26-33. Ledgr masks those rows because pulse-by-pulse TTR is not callable
+    # until row 34, so equality there is intentionally warmup NA == warmup NA.
+    testthat::expect_equal(values_from_ledgr, values_from_ttr, tolerance = 1e-12, info = label)
+  }
+})
+
+testthat::test_that("TTR short samples return aligned warmup NA instead of low-level TTR errors", {
+  testthat::skip_if_not_installed("TTR")
+
+  cases <- c(
+    ledgr_test_macd_warmup_cases(),
+    list(
+      list(fn = "RSI", input = "close", output = NULL, args = list(n = 14), requires_bars = 15L, id = "ttr_rsi_14"),
+      list(fn = "ATR", input = "hlc", output = "atr", args = list(n = 20), requires_bars = 21L, id = "ttr_atr_20_atr"),
+      list(fn = "BBands", input = "close", output = "up", args = list(n = 20), requires_bars = 20L, id = "ttr_bbands_20_up"),
+      list(fn = "aroon", input = "hl", output = "oscillator", args = list(n = 20), requires_bars = 20L, id = "ttr_aroon_20_oscillator"),
+      list(fn = "DonchianChannel", input = "hl", output = "mid", args = list(n = 20), requires_bars = 20L, id = "ttr_donchianchannel_20_mid")
+    )
+  )
+
+  for (case in cases) {
+    ind <- ledgr_test_ind_ttr_from_case(case)
+    for (n in unique(pmax(1L, c(case$requires_bars - 1L, case$requires_bars, case$requires_bars + 1L)))) {
+      values <- ledgr:::ledgr_compute_feature_series(ledgr_test_ttr_bars(n), ind)
+      label <- paste(ledgr_test_ttr_case_label(case), "n=", n)
+      testthat::expect_equal(length(values), n, info = label)
+      if (n < case$requires_bars) {
+        testthat::expect_true(all(is.na(values)), info = label)
+      } else {
+        testthat::expect_false(is.na(utils::tail(values, 1L)), info = label)
+      }
+    }
   }
 })
 

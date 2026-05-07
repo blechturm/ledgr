@@ -229,6 +229,9 @@ the active versioned spec packet, currently
 - Indicators may provide an optional `series_fn(bars, params)` for full-series
   precomputation. The input is one instrument's full bar series in ascending
   time order, and the output must be a numeric vector aligned to `nrow(bars)`.
+- Full-series precomputation may return warmup `NA_real_` directly without
+  calling `series_fn()` when `nrow(bars) < stable_after`; strategy-visible
+  output remains an aligned all-`NA_real_` series for that feature/instrument.
 - Feature warmup `NA_real_` and warmup `NaN` are normalized to `NA_real_`.
   Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
 - Indicator fingerprints include `series_fn` when present. Changing `fn`,

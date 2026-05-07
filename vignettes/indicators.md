@@ -358,7 +358,7 @@ ledgr_feature_contracts(ttr_features)
 #>   <chr>       <chr>                         <chr>          <int>        <int>
 #> 1 ttr_rsi     ttr_rsi_14                    TTR               15           15
 #> 2 bb_up       ttr_bbands_20_up              TTR               20           20
-#> 3 macd        ttr_macd_12_26_9_false_macd   TTR               26           26
+#> 3 macd        ttr_macd_12_26_9_false_macd   TTR               34           34
 #> 4 macd_signal ttr_macd_12_26_9_false_signal TTR               34           34
 ```
 
@@ -404,7 +404,7 @@ ledgr_ttr_warmup_rules() |>
 #>  2 SMA             close n
 #>  3 EMA             close n
 #>  4 ATR             hlc   n + 1
-#>  5 MACD            close macd: nSlow; signal/histogram: nSlow + nSig - 1
+#>  5 MACD            close nSlow + nSig - 1
 #>  6 WMA             close n
 #>  7 ROC             close n + 1
 #>  8 momentum        close n + 1
@@ -421,10 +421,11 @@ ledgr_ttr_warmup_rules() |>
 ```
 
 For MACD, ledgr verifies the supported warmup rules against direct TTR
-output. With current TTR behavior, the `macd` output is first valid at
-`nSlow`, while `signal` and the derived ledgr `histogram` output are
-first valid at `nSlow + nSig - 1`. The same rule is verified for both
-`percent = TRUE` and `percent = FALSE`.
+output. TTR computes the signal EMA internally even when you select only
+the `macd` column. In a pulse-by-pulse backtest, all supported MACD
+outputs are therefore first callable at `nSlow + nSig - 1`. The same
+rule is verified for `macd`, `signal`, the derived ledgr `histogram`,
+and both `percent = TRUE` and `percent = FALSE`.
 
 To debug a TTR-backed feature at one decision time, use an active
 snapshot handle, choose a timestamp late enough for the indicator

@@ -140,7 +140,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 2-4 days
 **Dependencies:** LDG-1501
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Build a systematic parity matrix across every supported `ledgr_ind_ttr()` rule
@@ -166,16 +166,30 @@ whether the reported MACD `output = "macd"` warmup issue is real and isolated.
    and add a regression for the actual failing path if found.
 
 **Acceptance Criteria:**
-- [ ] Every `ledgr_ttr_warmup_rules()` row has at least one parity case.
-- [ ] Every documented multi-output column has a parity case.
-- [ ] Direct TTR output and ledgr output match after defined normalization.
-- [ ] MACD `histogram` parity uses direct `macd - signal`.
-- [ ] MACD boundary behavior is decided by direct TTR output.
-- [ ] Short-sample supported TTR indicators return aligned warmup `NA` rather
+- [x] Every `ledgr_ttr_warmup_rules()` row has at least one parity case.
+- [x] Every documented multi-output column has a parity case.
+- [x] Direct TTR output and ledgr output match after defined normalization.
+- [x] MACD `histogram` parity uses direct `macd - signal`.
+- [x] MACD boundary behavior is decided by direct TTR output.
+- [x] Short-sample supported TTR indicators return aligned warmup `NA` rather
       than leaking low-level TTR errors.
-- [ ] TTR version and case metadata are visible in failure context.
-- [ ] `indicators.Rmd`, checked-in `indicators.md`, and Rd docs match any
+- [x] TTR version and case metadata are visible in failure context.
+- [x] `indicators.Rmd`, checked-in `indicators.md`, and Rd docs match any
       changed MACD contract.
+
+**Implementation Notes:**
+- Direct TTR evidence confirms the MACD report: `TTR::MACD()` cannot be called
+  successfully at pulse lengths 26-33 because it computes the signal EMA
+  internally even when only `output = "macd"` is selected.
+- `ledgr_ind_ttr("MACD", ...)` now infers `requires_bars = nSlow + nSig - 1`
+  for `macd`, `signal`, and ledgr-derived `histogram` outputs.
+- The parity matrix covers all 18 warmup-rule functions and every documented
+  multi-output column for ATR, BBands, MACD, aroon, and DonchianChannel.
+- Non-MACD TTR indicators matched direct TTR output after normalization; no
+  additional warmup-rule defects were found.
+- Feature precomputation now returns aligned warmup `NA_real_` values when a
+  valid supported indicator receives fewer rows than `stable_after`, avoiding
+  low-level TTR short-sample errors during ordinary warmup.
 
 **Test Requirements:**
 - TTR parity matrix tests.
