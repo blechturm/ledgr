@@ -249,6 +249,10 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "Ordinary feature warmup", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Impossible warmup", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Current-bar absence", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Ledger Events", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "append-only accounting record", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "what = \"metrics\"", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "There is no `what = \"metrics\"` result table", fixed = TRUE)
   testthat::expect_match(metrics_doc, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
   testthat::expect_match(metrics_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Ordinary feature warmup is local to the beginning of each instrument's usable\\s+sample")
@@ -258,11 +262,13 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(summary_help, "time in market", fixed = TRUE)
   testthat::expect_match(summary_help, "closed trade rows", fixed = TRUE)
   testthat::expect_match(summary_help, "Warmup Diagnostics", fixed = TRUE)
+  testthat::expect_match(summary_help, "metrics-and-accounting.html", fixed = TRUE)
 
   testthat::expect_match(results_help, "execution fill rows", fixed = TRUE)
   testthat::expect_match(results_help, "zero-row schema", fixed = TRUE)
   testthat::expect_match(results_help, "action = \"CLOSE\"", fixed = TRUE)
   testthat::expect_match(results_help, "Open positions can affect equity", fixed = TRUE)
+  testthat::expect_match(results_help, "does not support \\code{what = \"metrics\"}", fixed = TRUE)
 })
 
 testthat::test_that("package help exposes an installed-documentation spine", {

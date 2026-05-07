@@ -357,7 +357,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 1-2 days
 **Dependencies:** LDG-1501
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Add one compact result-inspection example that opens and closes a position, then
@@ -375,11 +375,11 @@ interpretation side by side.
 7. Render checked-in vignette companions.
 
 **Acceptance Criteria:**
-- [ ] Example produces at least one fill row and one closed trade row.
-- [ ] Docs distinguish fills, trades, ledger, equity, and summary metrics.
-- [ ] Docs state `ledgr_results(..., what = "metrics")` is unsupported.
-- [ ] Result-related help pages point to the example.
-- [ ] Rendered docs are in sync.
+- [x] Example produces at least one fill row and one closed trade row.
+- [x] Docs distinguish fills, trades, ledger, equity, and summary metrics.
+- [x] Docs state `ledgr_results(..., what = "metrics")` is unsupported.
+- [x] Result-related help pages point to the example.
+- [x] Rendered docs are in sync.
 
 **Test Requirements:**
 - Documentation render.

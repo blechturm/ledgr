@@ -60,6 +60,24 @@ The strategy asks to hold one share on the first pulse and then returns
 to flat. In these examples, decisions fill at the next open. The buy
 therefore fills on the second bar, and the exit fills on the third bar.
 
+## Ledger Events
+
+The ledger is the append-only accounting record for the run. It is the
+most literal view: rows record what ledgr wrote when an execution
+changed cash, positions, or run state. The friendlier result tables
+below are derived from these events.
+
+``` r
+ledger <- ledgr_results(bt, what = "ledger")
+ledger
+#> # A tibble: 2 x 11
+#>   event_id    run_id ts_utc     event_type instrument_id side    qty price   fee meta_json
+#>   <chr>       <chr>  <date>     <chr>      <chr>         <chr> <dbl> <dbl> <dbl> <chr>
+#> 1 accounting~ accou~ 2020-01-02 FILL       AAA           BUY       1   101     0 "{\"cash~
+#> 2 accounting~ accou~ 2020-01-03 FILL       AAA           SELL      1   105     0 "{\"cash~
+#> # i 1 more variable: event_seq <int>
+```
+
 ## Fills And Trades
 
 `what = "fills"` returns execution fill rows. Opening and closing fills
@@ -167,6 +185,11 @@ Those are the same definitions used by `summary(bt)` and
 equity for return calculations. Max drawdown is the maximum
 peak-to-trough decline in the public equity rows. Time in market is the
 share of equity rows with absolute `positions_value > 1e-6`.
+
+`ledgr_results()` returns persisted result tables: `equity`, `fills`,
+`trades`, or `ledger`. There is no `what = "metrics"` result table. Use
+`summary(bt)` for printed interpretation, or `ledgr_compute_metrics(bt)`
+when you need the named metric values in code.
 
 This small example uses `bars_per_year <- 252` because the bars are
 daily. ledgr detects bar frequency for `ledgr_compute_metrics()` and

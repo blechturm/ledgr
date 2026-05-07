@@ -152,7 +152,7 @@ tickets:
 
   - id: LDG-1504
     title: "Result Inspection Lifecycle Documentation"
-    status: planned
+    status: done
     priority: P2
     dependencies: [LDG-1501]
     tests:

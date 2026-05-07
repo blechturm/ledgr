@@ -1783,6 +1783,11 @@ print.ledgr_backtest <- function(x, ...) {
 #' become usable because an instrument has fewer bars than the feature contract
 #' requires, the summary prints a compact Warmup Diagnostics section naming the
 #' feature ID, instrument ID, required bars, and available bars.
+#'
+#' @section Articles:
+#' Metrics and accounting:
+#' `vignette("metrics-and-accounting", package = "ledgr")`
+#' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -2047,6 +2052,10 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' drawdown, volatility, and exposure metrics. Open positions can affect equity
 #' through `positions_value` even when there are zero closed trade rows.
 #'
+#' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
+#' from the public result tables; use `summary(bt)` for printed interpretation
+#' or `ledgr_compute_metrics(bt)` for a named list.
+#'
 #' @section Articles:
 #' Metrics and accounting:
 #' `vignette("metrics-and-accounting", package = "ledgr")`
@@ -2126,6 +2135,10 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' `what = "equity"` returns the public equity curve used for return,
 #' drawdown, volatility, and exposure metrics. Open positions can affect equity
 #' through `positions_value` even when there are zero closed trade rows.
+#'
+#' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
+#' from the public result tables; use `summary(bt)` for printed interpretation
+#' or `ledgr_compute_metrics(bt)` for a named list.
 #'
 #' @section Articles:
 #' Metrics and accounting:
