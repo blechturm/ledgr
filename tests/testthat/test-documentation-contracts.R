@@ -300,6 +300,11 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_snapshot_from_df = "experiment-store",
     ledgr_snapshot_from_csv = "experiment-store",
     ledgr_snapshot_from_yahoo = "experiment-store",
+    ledgr_snapshot_create = "experiment-store",
+    ledgr_snapshot_import_bars_csv = "experiment-store",
+    ledgr_snapshot_seal = "experiment-store",
+    ledgr_snapshot_load = "experiment-store",
+    ledgr_snapshot_info = "experiment-store",
     ledgr_feature_id = "indicators",
     ledgr_feature_contracts = "indicators",
     ledgr_ind_returns = "indicators",
@@ -327,6 +332,24 @@ testthat::test_that("core help pages point to installed articles with browser-fr
       testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE, info = page)
     }
   }
+})
+
+testthat::test_that("experiment-store docs show the low-level CSV bridge", {
+  doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  info_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_info.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(doc, "Bridge A Low-Level CSV Import", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_snapshot_create", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_snapshot_import_bars_csv", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_snapshot_seal", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_snapshot_load\\(\\s*csv_db_path,\\s+snapshot_id = csv_snapshot_id,\\s+verify = TRUE")
+  testthat::expect_match(doc, "ledgr_experiment", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_run", fixed = TRUE)
+  testthat::expect_match(doc, "seal-time\\s+metadata inside it uses `n_bars` and `n_instruments`")
+  testthat::expect_match(doc, "Snapshot identity does not\\s+come from that metadata")
+  testthat::expect_match(info_help, "start_date, end_date", fixed = TRUE)
+  testthat::expect_match(info_help, "Metadata is not part of \\code{snapshot_hash}", fixed = TRUE)
 })
 
 testthat::test_that("help-page article links target installed vignettes only", {

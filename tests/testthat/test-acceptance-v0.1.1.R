@@ -373,6 +373,8 @@ testthat::test_that("AT10: Snapshot discovery APIs (list + info)", {
       "snapshot_hash",
       "bar_count",
       "instrument_count",
+      "start_date",
+      "end_date",
       "meta_json",
       "error_msg"
     )
@@ -412,4 +414,3 @@ testthat::test_that("AT12: UTF-8 BOM tolerated", {
   ids <- DBI::dbGetQuery(con, "SELECT instrument_id FROM snapshot_bars WHERE snapshot_id = ?", params = list(snapshot_id))$instrument_id
   testthat::expect_identical(as.character(ids), "AAA")
 })
-

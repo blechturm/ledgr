@@ -431,7 +431,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 1-3 days
 **Dependencies:** LDG-1501
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Add one complete low-level CSV workflow example that bridges from
@@ -455,13 +455,13 @@ metadata inspection, experiment construction, and `ledgr_run()`.
 8. Add a regression if the example reveals workflow drift.
 
 **Acceptance Criteria:**
-- [ ] One documented example shows the full low-level CSV bridge.
-- [ ] Example explains seal metadata versus artifact hash.
-- [ ] Example uses `ledgr_snapshot_load(verify = TRUE)` before experiment use.
-- [ ] The `ledgr_snapshot_info()` metadata naming gap has an explicit recorded
+- [x] One documented example shows the full low-level CSV bridge.
+- [x] Example explains seal metadata versus artifact hash.
+- [x] Example uses `ledgr_snapshot_load(verify = TRUE)` before experiment use.
+- [x] The `ledgr_snapshot_info()` metadata naming gap has an explicit recorded
       decision, with a code change or documented parsing pattern as appropriate.
-- [ ] Relevant help pages link to the bridge.
-- [ ] Example runs or has a clearly justified non-executed chunk with tested
+- [x] Relevant help pages link to the bridge.
+- [x] Example runs or has a clearly justified non-executed chunk with tested
       equivalent coverage.
 
 **Test Requirements:**
@@ -471,6 +471,17 @@ metadata inspection, experiment construction, and `ledgr_run()`.
 - Existing snapshot adapter/load tests.
 
 **Source Reference:** v0.1.7.5 spec sections R7, C2.
+
+**Implementation Notes:**
+- Decision: `ledgr_snapshot_info()` now exposes parsed `start_date` and
+  `end_date` as top-level read-only columns when seal metadata contains them.
+  `bar_count` and `instrument_count` remain live table counts, while raw
+  `meta_json` remains visible as envelope metadata. Snapshot metadata remains
+  outside `snapshot_hash`.
+- The bridge example is executable in `experiment-store.Rmd` and follows
+  `ledgr_snapshot_create()` -> `ledgr_snapshot_import_bars_csv()` ->
+  `ledgr_snapshot_seal()` -> `ledgr_snapshot_load(verify = TRUE)` ->
+  `ledgr_experiment()` -> `ledgr_run()`.
 
 **Classification:**
 ```yaml

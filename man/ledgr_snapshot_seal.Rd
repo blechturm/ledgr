@@ -36,6 +36,13 @@ Errors:
 \item \code{LEDGR_SNAPSHOT_SEAL_FAILED} on hashing/transaction failures (snapshot is marked \code{FAILED}).
 }
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 db_path <- tempfile(fileext = ".duckdb")
 con <- ledgr_db_init(db_path)

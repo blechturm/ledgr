@@ -14,7 +14,12 @@ ledgr_snapshot_info(con, snapshot_id)
 \value{
 A 1-row tibble with:
 snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
-bar_count, instrument_count, meta_json, error_msg.
+bar_count, instrument_count, start_date, end_date, meta_json, error_msg.
+
+\code{bar_count} and \code{instrument_count} are live counts from the snapshot tables.
+\code{start_date} and \code{end_date} are parsed from seal metadata when present.
+\code{meta_json} remains available as the raw envelope metadata written on the
+snapshot row. Metadata is not part of \code{snapshot_hash}.
 }
 \description{
 Returns snapshot metadata plus computed row counts for bars and instruments.
@@ -30,6 +35,13 @@ Errors:
 \item \code{LEDGR_SNAPSHOT_NOT_FOUND} if \code{snapshot_id} does not exist.
 }
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 db_path <- tempfile(fileext = ".duckdb")
 con <- ledgr_db_init(db_path)

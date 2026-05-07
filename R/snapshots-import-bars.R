@@ -26,6 +26,11 @@
 #' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if snapshot status is not `CREATED`.
 #' - `LEDGR_CSV_FORMAT_ERROR` on CSV contract/parse violations or duplicate PKs.
 #'
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#'
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
 #' con <- ledgr_db_init(db_path)

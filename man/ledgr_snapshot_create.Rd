@@ -33,6 +33,13 @@ Errors:
 \item \code{ledgr_snapshot_exists} if \code{snapshot_id} already exists.
 }
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 db_path <- tempfile(fileext = ".duckdb")
 con <- ledgr_db_init(db_path)

@@ -28,6 +28,13 @@ snapshot once, then load it by path and snapshot id in later R sessions.
 a handle to an existing sealed snapshot. Closing the returned object releases
 its DuckDB connection; it does not delete the database file.
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 db_path <- tempfile(fileext = ".duckdb")
 bars <- data.frame(

@@ -9,12 +9,22 @@
 #' @param snapshot_id Snapshot id (must exist) when `con` is a connection.
 #' @return A 1-row tibble with:
 #'   snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
-#'   bar_count, instrument_count, meta_json, error_msg.
+#'   bar_count, instrument_count, start_date, end_date, meta_json, error_msg.
+#'
+#' `bar_count` and `instrument_count` are live counts from the snapshot tables.
+#' `start_date` and `end_date` are parsed from seal metadata when present.
+#' `meta_json` remains available as the raw envelope metadata written on the
+#' snapshot row. Metadata is not part of `snapshot_hash`.
 #' @details
 #' Errors:
 #' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
 #' - `ledgr_invalid_args` if `snapshot_id` is not a non-empty character scalar.
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
+#'
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
 #'
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
@@ -84,6 +94,9 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
   }
   df$bar_count <- as.integer(df$bar_count)
   df$instrument_count <- as.integer(df$instrument_count)
+  metadata <- ledgr_snapshot_info_parse_meta(df$meta_json[[1]])
+  df$start_date <- ledgr_snapshot_info_meta_chr(metadata, "start_date")
+  df$end_date <- ledgr_snapshot_info_meta_chr(metadata, "end_date")
 
   tibble::as_tibble(df[, c(
     "snapshot_id",
@@ -93,7 +106,28 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
     "snapshot_hash",
     "bar_count",
     "instrument_count",
+    "start_date",
+    "end_date",
     "meta_json",
     "error_msg"
   ), drop = FALSE])
+}
+
+ledgr_snapshot_info_parse_meta <- function(meta_json) {
+  if (is.null(meta_json) || length(meta_json) != 1L || is.na(meta_json) || !nzchar(meta_json)) {
+    return(list())
+  }
+  out <- tryCatch(
+    jsonlite::fromJSON(meta_json, simplifyVector = FALSE),
+    error = function(e) list()
+  )
+  if (!is.list(out)) list() else out
+}
+
+ledgr_snapshot_info_meta_chr <- function(metadata, field) {
+  value <- metadata[[field]]
+  if (is.null(value) || length(value) != 1L || is.na(value) || !nzchar(as.character(value))) {
+    return(NA_character_)
+  }
+  as.character(value)
 }

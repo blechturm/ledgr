@@ -55,6 +55,13 @@ Errors:
 \item \code{LEDGR_CSV_FORMAT_ERROR} on CSV contract/parse violations or duplicate PKs.
 }
 }
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+}
+
 \examples{
 db_path <- tempfile(fileext = ".duckdb")
 con <- ledgr_db_init(db_path)

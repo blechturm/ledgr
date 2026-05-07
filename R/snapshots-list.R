@@ -148,6 +148,11 @@ ledgr_snapshot_list <- function(con, status = NULL) {
 #' a handle to an existing sealed snapshot. Closing the returned object releases
 #' its DuckDB connection; it does not delete the database file.
 #'
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#'
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
 #' bars <- data.frame(

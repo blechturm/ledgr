@@ -18,6 +18,11 @@
 #' Errors:
 #' - `ledgr_snapshot_exists` if `snapshot_id` already exists.
 #'
+#' @section Articles:
+#' Durable experiment stores:
+#' `vignette("experiment-store", package = "ledgr")`
+#' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#'
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
 #' con <- ledgr_db_init(db_path)

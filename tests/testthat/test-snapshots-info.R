@@ -19,6 +19,8 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
       "snapshot_hash",
       "bar_count",
       "instrument_count",
+      "start_date",
+      "end_date",
       "meta_json",
       "error_msg"
     )
@@ -29,6 +31,8 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
   testthat::expect_true(is.na(info0$snapshot_hash[[1]]))
   testthat::expect_equal(info0$bar_count[[1]], 0L)
   testthat::expect_equal(info0$instrument_count[[1]], 0L)
+  testthat::expect_true(is.na(info0$start_date[[1]]))
+  testthat::expect_true(is.na(info0$end_date[[1]]))
 
   instruments_csv <- tempfile(fileext = ".csv")
   writeLines(
@@ -66,6 +70,8 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
   testthat::expect_true(is.character(info1$snapshot_hash[[1]]) && nzchar(info1$snapshot_hash[[1]]))
   testthat::expect_equal(info1$bar_count[[1]], 1L)
   testthat::expect_equal(info1$instrument_count[[1]], 1L)
+  testthat::expect_equal(info1$start_date[[1]], "2020-01-01T00:00:00Z")
+  testthat::expect_equal(info1$end_date[[1]], "2020-01-01T00:00:00Z")
 })
 
 testthat::test_that("ledgr_snapshot_info errors with LEDGR_SNAPSHOT_NOT_FOUND", {

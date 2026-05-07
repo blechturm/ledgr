@@ -78,6 +78,110 @@ In any later session, recover the handle without re-sealing the data:
 snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "eod_2019_h1")
 ```
 
+## Bridge A Low-Level CSV Import
+
+The high-level CSV helper above is the normal path. The lower-level path
+is useful when you want to create the snapshot row, import one or more
+CSV files, inspect the sealed metadata, and then load the sealed
+artifact in a separate step.
+
+The order is important:
+
+1.  create the snapshot envelope;
+2.  import bars into that CREATED snapshot;
+3.  seal it to validate bars and write the snapshot hash;
+4.  load it with `verify = TRUE`;
+5.  pass the loaded snapshot to `ledgr_experiment()` and `ledgr_run()`.
+
+``` r
+csv_db_path <- tempfile("ledgr_csv_bridge_", fileext = ".duckdb")
+csv_bars_path <- tempfile("ledgr_csv_bars_", fileext = ".csv")
+
+csv_bars <- bars |>
+  filter(ts_utc <= ledgr_utc("2019-01-15")) |>
+  mutate(ts_utc = format(ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
+
+utils::write.csv(csv_bars, csv_bars_path, row.names = FALSE)
+
+csv_con <- ledgr_db_init(csv_db_path)
+csv_snapshot_id <- ledgr_snapshot_create(
+  csv_con,
+  snapshot_id = "csv_bridge_snapshot",
+  meta = list(description = "low-level CSV bridge demo")
+)
+
+ledgr_snapshot_import_bars_csv(
+  csv_con,
+  csv_snapshot_id,
+  bars_csv_path = csv_bars_path,
+  instruments_csv_path = NULL,
+  auto_generate_instruments = TRUE
+)
+
+csv_hash <- ledgr_snapshot_seal(csv_con, csv_snapshot_id)
+csv_info <- ledgr_snapshot_info(csv_con, csv_snapshot_id)
+DBI::dbDisconnect(csv_con, shutdown = TRUE)
+
+csv_hash
+#> [1] "e80b4f4f7df20364e904804ebddd0626da16fc7fc0b5bde8f452e93fa3e733ff"
+csv_info |>
+  select(
+    snapshot_id,
+    status,
+    snapshot_hash,
+    bar_count,
+    instrument_count,
+    start_date,
+    end_date,
+    meta_json
+  )
+#> # A tibble: 1 x 8
+#>   snapshot_id         status snapshot_hash  bar_count instrument_count start_date end_date
+#>   <chr>               <chr>  <chr>              <int>            <int> <chr>      <chr>
+#> 1 csv_bridge_snapshot SEALED e80b4f4f7df20~        22                2 2019-01-0~ 2019-01~
+#> # i 1 more variable: meta_json <chr>
+```
+
+`bar_count` and `instrument_count` are live counts from the sealed
+snapshot tables. The raw `meta_json` is envelope metadata on the
+snapshot row; seal-time metadata inside it uses `n_bars` and
+`n_instruments`. Snapshot identity does not come from that metadata.
+`snapshot_hash` identifies the normalized bars and instruments only, so
+adding a human description to `meta_json` does not change the artifact
+hash.
+
+Load the sealed snapshot before constructing the experiment. This is the
+same handle you would use in a later R session.
+
+``` r
+csv_snapshot <- ledgr_snapshot_load(
+  csv_db_path,
+  snapshot_id = csv_snapshot_id,
+  verify = TRUE
+)
+
+csv_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  targets["DEMO_01"] <- params$qty
+  targets
+}
+
+csv_exp <- ledgr_experiment(
+  snapshot = csv_snapshot,
+  strategy = csv_strategy,
+  opening = ledgr_opening(cash = 10000)
+)
+
+csv_bt <- ledgr_run(csv_exp, params = list(qty = 1), run_id = "csv_bridge_run")
+tail(ledgr_results(csv_bt, what = "equity"), 3)
+#> # A tibble: 3 x 6
+#>   ts_utc     equity  cash positions_value running_max  drawdown
+#>   <date>      <dbl> <dbl>           <dbl>       <dbl>     <dbl>
+#> 1 2019-01-11  9997. 9909.            88.4       10000 -0.000311
+#> 2 2019-01-14  9996. 9909.            87.6       10000 -0.000388
+#> 3 2019-01-15  9996. 9909.            87.0       10000 -0.000445
+```
+
 ## Run Variants
 
 ``` r
@@ -177,15 +281,15 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     eb8f71db6bd29094682ae8c068881dd62fd762589e55370b246e2499d44b6309
+#> Config Hash:     608505ff98f12b71b3368283f4461f3b2fb7bd57ff7d3defe7180097f2593d37
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.21
+#> Elapsed Sec:     1.45
 #> Persist Features:TRUE
-#> Cache Hits:      2
-#> Cache Misses:    0
+#> Cache Hits:      0
+#> Cache Misses:    2
 ```
 
 `ledgr_run_info()` is the detailed metadata view. It includes execution
@@ -279,7 +383,10 @@ the snapshot handle when the workflow is finished.
 ``` r
 close(bt_small)
 close(bt_large)
+close(csv_bt)
+ledgr_snapshot_close(csv_snapshot)
 ledgr_snapshot_close(snapshot)
+unlink(csv_bars_path)
 ```
 
 ## What’s Next?
