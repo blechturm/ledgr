@@ -1,0 +1,413 @@
+version: "0.1.7.5-ttr-hardening-and-discoverability"
+source: "v0_1_7_5_tickets.md"
+tickets:
+  - id: LDG-1501
+    title: "Scope, Evidence, And Contract Baseline"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation consistency scan"
+      - "spec/ticket filename scan"
+      - "NEWS/scope scan"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Version scoping, evidence classification, contract scaffolding, and
+        ticket generation are Tier H by model_routing.md.
+      invariants_at_risk:
+        - release scope
+        - evidence quality
+        - public adapter boundary
+        - documentation contract
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/curated_ledgr_issue_subset.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/ledgr_triage_report.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/cycle_retrospective.md
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - NEWS.md
+      tests_required:
+        - documentation consistency scan
+        - spec/ticket filename scan
+        - NEWS/scope scan
+      escalation_triggers:
+        - raw evidence contradicts curated scope
+        - TTR parity requires broader indicator redesign
+        - talib adapter is promoted into current release scope
+      forbidden_actions:
+        - implementing code changes
+        - changing execution behavior
+        - adding talib adapter APIs
+        - weakening release gates
+
+  - id: LDG-1502
+    title: "TTR Adapter Parity And MACD Warmup Investigation"
+    status: planned
+    priority: P0
+    dependencies: [LDG-1501]
+    tests:
+      - "TTR parity matrix tests"
+      - "MACD boundary tests"
+      - "short-sample TTR tests"
+      - "existing indicator/TTR tests"
+      - "documentation render if docs change"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        TTR indicators are an explicit hard-context area in model_routing.md.
+        This ticket may change adapter warmup contracts, feature IDs in docs,
+        and feature precomputation behavior.
+      invariants_at_risk:
+        - TTR adapter contract
+        - feature warmup semantics
+        - feature ID documentation
+        - series_fn precomputation
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/curated_ledgr_issue_subset.md
+        - inst/design/contracts.md (Context Contract)
+        - R/indicator-ttr.R
+        - R/indicator.R
+        - tests/testthat/test-indicator-ttr.R
+        - vignettes/indicators.Rmd
+        - man/ledgr_ind_ttr.Rd
+        - man/ledgr_ttr_warmup_rules.Rd
+      tests_required:
+        - TTR parity matrix tests
+        - MACD boundary tests
+        - short-sample TTR tests
+        - existing indicator/TTR tests
+      escalation_triggers:
+        - direct TTR output differs across installed TTR versions
+        - parity requires changing feature-engine validation
+        - supported TTR functions require per-function special cases beyond warmup
+        - short-sample behavior cannot be normalized without masking real errors
+      forbidden_actions:
+        - assuming the auditr MACD claim without direct evidence
+        - changing fill or strategy execution semantics
+        - adding unsupported TTR functions without warmup rules
+        - changing feature IDs for documentation convenience
+
+  - id: LDG-1503
+    title: "Zero-Trade Warmup Diagnostics"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1501]
+    tests:
+      - "short-sample impossible-warmup run test"
+      - "summary diagnostic test"
+      - "multi-instrument uneven-sample test"
+      - "existing summary/result tests"
+      - "documentation contract tests if docs change"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        This ticket touches run diagnostics and summary behavior after feature
+        computation. It must preserve execution, result, metric, and identity
+        semantics, so Tier H implementation and review are required.
+      invariants_at_risk:
+        - run result semantics
+        - feature warmup semantics
+        - summary output contract
+        - run identity
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/curated_ledgr_issue_subset.md
+        - inst/design/contracts.md (Context Contract, Result Contract)
+        - R/backtest-runner.R
+        - R/backtest.R
+        - R/feature-inspection.R
+        - R/features-engine.R
+        - tests/testthat/test-backtest-s3.R
+        - tests/testthat/test-results-wrapper.R
+        - tests/testthat/test-feature-inspection.R
+      tests_required:
+        - short-sample impossible-warmup run test
+        - summary diagnostic test
+        - multi-instrument sample coverage test
+        - existing summary/result tests
+      escalation_triggers:
+        - diagnostic requires changing persistent schema
+        - diagnostic affects metrics or result rows
+        - available-bar accounting cannot be derived from registered feature metadata
+        - warning noise appears in normal warmup cases
+      forbidden_actions:
+        - treating zero-trade runs as failed runs
+        - changing fill timing
+        - changing ledger/equity/metric computation
+        - string-parsing feature IDs when metadata is available
+
+  - id: LDG-1504
+    title: "Result Inspection Lifecycle Documentation"
+    status: planned
+    priority: P2
+    dependencies: [LDG-1501]
+    tests:
+      - "documentation render"
+      - "documentation contract scans for result lifecycle language"
+      - "existing result/summary tests if examples execute"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation-focused work with executable examples over public result
+        APIs. Tier H review is required because it teaches result semantics and
+        metric interpretation.
+      invariants_at_risk:
+        - result documentation contract
+        - metric interpretation
+        - first-contact result inspection
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/contracts.md (Result Contract, Documentation Contract)
+        - R/backtest.R
+        - R/result-table.R
+        - R/run-store.R
+        - vignettes/metrics-and-accounting.Rmd
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - documentation render
+        - documentation contract scans
+        - existing result/summary tests if examples execute
+      escalation_triggers:
+        - example cannot produce a closed trade without changing execution behavior
+        - docs reveal mismatch in metric formulas
+        - ledgr_results needs new result table types
+      forbidden_actions:
+        - adding what = "metrics"
+        - changing metric definitions
+        - changing result table schemas for documentation convenience
+
+  - id: LDG-1505
+    title: "Low-Level CSV Snapshot Bridge Example"
+    status: planned
+    priority: P2
+    dependencies: [LDG-1501]
+    tests:
+      - "documentation render"
+      - "CSV snapshot create/import/seal/load/run test if needed"
+      - "snapshot help-page documentation scans"
+      - "existing snapshot adapter/load tests"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Primarily documentation, but it teaches snapshot creation, sealing,
+        loading, metadata, and run workflow. Snapshot semantics are hard
+        escalation areas, so review is Tier H and implementation must stop if
+        code behavior changes.
+      invariants_at_risk:
+        - snapshot sealing
+        - snapshot load verification
+        - snapshot metadata interpretation
+        - canonical experiment workflow
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/contracts.md (Snapshot Contract, Persistence Contract, Documentation Contract)
+        - R/snapshot.R
+        - R/snapshot_adapters.R
+        - R/snapshots-seal.R
+        - R/snapshots-list.R
+        - vignettes/experiment-store.Rmd
+        - tests/testthat/test-snapshot-adapters.R
+        - tests/testthat/test-snapshots-load.R
+      tests_required:
+        - documentation render
+        - CSV snapshot create/import/seal/load/run test if needed
+        - snapshot help documentation scans
+        - existing snapshot adapter/load tests
+      escalation_triggers:
+        - example requires changing snapshot metadata behavior
+        - verified load path fails
+        - docs imply metadata is part of snapshot hash
+        - low-level workflow bypasses canonical experiment path
+      forbidden_actions:
+        - bypassing snapshot sealing
+        - weakening hash verification
+        - mutating sealed snapshot data
+        - documenting manual meta_json edits as normal workflow
+
+  - id: LDG-1506
+    title: "Indicator, Helper, And Feature-Map Discoverability"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1502, LDG-1503, LDG-1504, LDG-1505]
+    tests:
+      - "documentation render"
+      - "documentation contract scans"
+      - "Rd scans for links and ctx$features snippet"
+      - "existing indicator/helper documentation tests"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation implementation is bounded, but it teaches feature
+        contracts, helper pipelines, ctx$features(), and TTR behavior. Tier H
+        review is required for contract accuracy and discoverability.
+      invariants_at_risk:
+        - indicator teaching flow
+        - feature-map alias semantics
+        - helper composition documentation
+        - ctx$features discoverability
+        - installed documentation spine
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/contracts.md (Strategy Contract, Context Contract, Documentation Contract)
+        - R/feature-map.R
+        - R/strategy-helpers.R
+        - R/indicator-ttr.R
+        - vignettes/indicators.Rmd
+        - vignettes/strategy-development.Rmd
+        - README.Rmd
+        - _pkgdown.yml
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - documentation render
+        - documentation contract scans
+        - Rd scans for links and ctx$features snippet
+        - existing indicator/helper documentation tests
+      escalation_triggers:
+        - docs require new helper APIs
+        - examples reveal unresolved TTR parity defect
+        - indicators article becomes a duplicate strategy tutorial
+        - ctx$features docs imply direct raw table access is preferred
+      forbidden_actions:
+        - adding ctx$features_wide
+        - adding feature roles/selectors/prep/bake
+        - hiding explicit feature ID contract
+        - presenting examples/README.md as runnable if it is not
+
+  - id: LDG-1507
+    title: "Contracts, NEWS, Playbook, And Adapter Positioning"
+    status: planned
+    priority: P1
+    dependencies: [LDG-1502, LDG-1503, LDG-1504, LDG-1505, LDG-1506]
+    tests:
+      - "documentation contract tests"
+      - "NEWS/scope scan"
+      - "Rd article-link scans"
+      - "pkgdown build if navigation/reference changes"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Mostly documentation, metadata, and contract alignment, but it modifies
+        contracts and release-facing documentation. Tier H review is required.
+      invariants_at_risk:
+        - documentation contract
+        - release notes accuracy
+        - release-gate process
+        - public ecosystem positioning
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - NEWS.md
+        - README.Rmd
+        - R/ledgr-package.R
+        - _pkgdown.yml
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - documentation contract tests
+        - NEWS/scope scan
+        - Rd article-link scans
+        - pkgdown build if navigation/reference changes
+      escalation_triggers:
+        - contracts need behavior not implemented by prior tickets
+        - adapter positioning implies talib implementation is shipped
+        - playbook guidance conflicts with current CI workflow
+      forbidden_actions:
+        - claiming talib adapter support
+        - blessing unimplemented behavior in contracts
+        - weakening release-gate checks
+        - moving pkgdown-only positioning articles into installed vignettes
+
+  - id: LDG-1508
+    title: "v0.1.7.5 Release Gate"
+    status: planned
+    priority: P0
+    dependencies:
+      - LDG-1501
+      - LDG-1502
+      - LDG-1503
+      - LDG-1504
+      - LDG-1505
+      - LDG-1506
+      - LDG-1507
+    tests:
+      - "full package tests"
+      - "TTR parity suite"
+      - "warmup diagnostic tests"
+      - "documentation contract tests"
+      - "R CMD check"
+      - "coverage gate"
+      - "README/article renders"
+      - "pkgdown build if applicable"
+      - "local WSL/Ubuntu gate"
+      - "remote CI verification"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gates are Tier H by routing rule. This ticket validates
+        executable behavior, documentation, package metadata, CI, and release
+        tagging readiness.
+      invariants_at_risk:
+        - release correctness
+        - TTR adapter contract
+        - warmup diagnostics
+        - documentation accuracy
+        - CI/release process
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_spec.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/v0_1_7_5_tickets.md
+        - inst/design/ledgr_v0_1_7_5_spec_packet/tickets.yml
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - DESCRIPTION
+        - NEWS.md
+        - README.Rmd
+        - _pkgdown.yml
+      tests_required:
+        - full package tests
+        - TTR parity suite
+        - warmup diagnostic tests
+        - documentation contract tests
+        - R CMD check
+        - coverage gate
+        - README/article renders
+        - pkgdown build if applicable
+        - local WSL/Ubuntu gate
+        - remote CI verification
+      escalation_triggers:
+        - any CI failure remains unexplained
+        - TTR parity is version-dependent without documentation
+        - R CMD check warnings require scope decisions
+        - documentation examples cannot run offline
+        - remote branch/main/tag evidence disagrees
+      forbidden_actions:
+        - tagging before remote CI is green
+        - ignoring R CMD check warnings
+        - weakening Ubuntu or coverage gates to pass release
+        - accepting the gate with open P0 or P1 issues

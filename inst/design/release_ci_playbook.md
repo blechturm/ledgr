@@ -96,6 +96,68 @@ When Ubuntu CI fails around experiment-store behavior:
 Do not weaken tests just because Ubuntu exposed the issue. If the assertion is
 about ledgr's persistence contract, fix the persistence path.
 
+### Release-Gate Debugging Guardrails
+
+Remote CI logs define the initial scope. Before editing, record the first
+package stack frame and the smallest owning file. The first fix attempt should
+stay inside that file and its direct tests unless a minimal reproduction proves
+the issue lives elsewhere.
+
+Use this sequence for release-gate failures:
+
+1. Fetch the failed remote log before changing code:
+
+   ```sh
+   gh run view <run-id> --repo blechturm/ledgr --log-failed
+   ```
+
+2. Write down a one-sentence hypothesis:
+
+   ```text
+   The failure is caused by X because Y.
+   ```
+
+3. Run the narrowest reproduction first:
+   - the exact failing test file;
+   - the exact failing test file under targeted `covr` if coverage failed;
+   - then the related subsystem tests;
+   - only then broader gates.
+4. Keep release-gate fixes small. A typical release-gate correction should touch
+   one production file and one direct test file. If the fix expands beyond three
+   production files, stop and request review before continuing.
+5. Do not make broad DuckDB persistence, snapshot, or runner changes unless the
+   failed stack points there directly or a minimal reproduction proves that
+   subsystem owns the failure.
+
+Full local WSL runs are useful evidence, but they can be noisy. A broad local
+failure should not override the first remote stack frame unless the local run
+reproduces the same failing path.
+
+### DuckDB Constraint Probe Rule
+
+Schema validators sometimes intentionally trigger constraint violations to
+prove that DuckDB enforces the expected contract. Any ledgr code that catches an
+expected DuckDB constraint error must leave the connection usable for the next
+probe. On Ubuntu under `covr`, a caught constraint violation can leave the
+connection in a dirty transaction state unless it is cleared explicitly.
+
+Use an isolated disposable connection, or issue a safe rollback before the error
+handler returns:
+
+```r
+try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
+```
+
+The rollback may fail harmlessly when no transaction is active. The important
+contract is that an expected failed probe must not contaminate later DML on the
+same connection, and validators must prove they leave no persistent rows behind.
+
+### Stop Rule
+
+If a release-gate debugging session starts producing edits outside the initially
+failing subsystem, pause and ask for review. Do not continue accumulating
+speculative fixes while the root cause is still uncertain.
+
 ## Coverage Triage
 
 The coverage gate enforces the numeric threshold, but it also reruns tests under
@@ -129,4 +191,3 @@ A release tag is ready only when all of the following are true:
 Old failed runs can remain in the GitHub history. They are acceptable only when
 a newer run on the same intended release commit or tag is green and the failure
 mode is understood.
-

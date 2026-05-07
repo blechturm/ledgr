@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_4_spec_packet/`.
+`inst/design/ledgr_v0_1_7_5_spec_packet/`.
 
 ## Execution Contract
 
@@ -15,6 +15,10 @@ the active versioned spec packet, currently
   implement alternate pulse, fill, ledger, feature, or replay semantics.
 - Convenience APIs may reduce setup friction, but must not implement alternate
   execution semantics.
+- ledgr is a deterministic backtesting core with adapter boundaries to the R
+  finance ecosystem. Indicator, data, and visualization packages should plug
+  into ledgr through explicit adapters rather than replacing or bypassing the
+  canonical execution path.
 - The runner owns pulse order, fills, strategy state, ledger events, features,
   and equity output.
 - v0.1.7 is an intentional hard public API reset. It explicitly overrides the
@@ -236,6 +240,13 @@ the active versioned spec packet, currently
 - TTR warmup inference is allowed only for functions listed by
   `ledgr_ttr_warmup_rules()`. Each listed rule must be deterministic from
   explicit arguments alone and verified against direct TTR output in tests.
+- TTR adapter parity tests must cover every listed warmup rule and every
+  documented multi-output column. Derived outputs such as MACD `histogram` are
+  verified against the documented derivation applied to direct TTR output, not
+  against a nonexistent TTR column.
+- Supported TTR indicators must handle short samples consistently: validly
+  constructed indicators should produce aligned warmup `NA_real_` values rather
+  than leaking low-level TTR errors from ordinary feature precomputation.
 - TTR input mappings are adapter contracts: `close` maps to `bars$close`, `hl`
   maps to `High/Low`, `hlc` maps to `High/Low/Close`, `ohlc` maps to
   `Open/High/Low/Close`, and `hlcv` maps to `High/Low/Close/Volume`.
@@ -273,6 +284,9 @@ the active versioned spec packet, currently
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
   backtest object or persistent run state.
+- Warmup and zero-trade diagnostics may appear on result-inspection surfaces
+  such as `summary(bt)`, but they must not mutate the backtest object,
+  persistent run state, result tables, metrics, or run identity.
 - Ordinary result-access APIs over durable `ledgr_backtest` handles should use
   per-operation read connections where practical so inspecting results does not
   leave a DuckDB connection open and block a later write in the same session.
@@ -369,6 +383,10 @@ the active versioned spec packet, currently
 - TTR-specific reference facts, including multi-output column names and
   detailed warmup formulas, belong in function help such as `?ledgr_ind_ttr`
   and `?ledgr_ttr_warmup_rules`.
+- Indicator documentation should make the adapter boundary explicit: ledgr owns
+  feature contracts and execution semantics, while calculation packages such as
+  TTR and future adapters supply indicator computations through normal
+  `ledgr_indicator` objects.
 - Help pages must not present pkgdown-only background articles as installed
   vignettes.
 - Visible vignette code must not depend on hidden setup helpers. Prefer
