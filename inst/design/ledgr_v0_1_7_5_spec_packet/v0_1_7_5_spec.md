@@ -263,6 +263,11 @@ The example must make clear that:
 - low-level import writes into a created snapshot;
 - sealing derives missing basic metadata where supported;
 - `meta_json` is snapshot envelope metadata, not part of the artifact hash;
+- before documenting `ledgr_snapshot_info()`, the implementation must decide
+  whether parsed `start_date` and `end_date` should be exposed as top-level
+  info columns alongside `bar_count` and `instrument_count`; if they remain
+  only in `meta_json`, the example must document why and show a compact parsing
+  pattern rather than silently working around the mismatch;
 - a sealed DBI snapshot should be bridged back into a `ledgr_snapshot` object
   with `ledgr_snapshot_load()` for the normal experiment path;
 - the loaded snapshot remains the object passed to `ledgr_experiment()`.
@@ -455,6 +460,11 @@ Acceptance points:
 
 - docs connect `ledgr_feature_contracts()` to available bars per instrument;
 - docs distinguish impossible warmup from early warmup;
+- docs explicitly distinguish three warmup-adjacent failure modes:
+  ordinary feature warmup where a known feature is `NA` and later recovers,
+  impossible warmup where every value for an instrument/feature remains `NA`
+  because the sample never reaches the feature contract, and current-bar
+  absence where no pulse can be constructed and the strategy is not called;
 - docs state that warmup is per instrument;
 - docs preserve the final-bar no-fill distinction from v0.1.7.4.
 
@@ -502,6 +512,9 @@ Acceptance points:
 - helper pages name their warning/error classes where relevant;
 - `select_top_n()` documents the empty-selection warning class;
 - common helper mistakes have one compact negative example or diagnostic note;
+- helper and indicator docs explain that all feature parameter values used by a
+  parameter sweep must be registered before `ledgr_run()`, with a compact
+  multi-lookback registration example;
 - synthetic multi-asset helper setup is available from either
   `strategy-development` or helper help pages;
 - `ctx$features()` is searchable or clearly reachable from help.
@@ -516,7 +529,10 @@ Acceptance points:
 - non-executable development artifacts, especially `examples/README.md` if it
   remains a placeholder, are not presented as the first path;
 - no-browser installed documentation paths remain present for agents and
-  headless users.
+  headless users;
+- every help-page Articles section that links to an installed vignette shows
+  both the `vignette("name", package = "ledgr")` discovery call and the
+  `system.file("doc", "name.html", package = "ledgr")` installed-file path.
 
 ---
 

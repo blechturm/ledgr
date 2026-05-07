@@ -107,6 +107,7 @@ tickets:
       - "multi-instrument uneven-sample test"
       - "existing summary/result tests"
       - "documentation contract tests if docs change"
+      - "documentation scan for ordinary warmup vs impossible warmup vs current-bar absence"
     classification:
       risk_level: high
       implementation_tier: H
@@ -137,6 +138,7 @@ tickets:
         - summary diagnostic test
         - multi-instrument sample coverage test
         - existing summary/result tests
+        - documentation scan for the three warmup-adjacent failure modes
       escalation_triggers:
         - diagnostic requires changing persistent schema
         - diagnostic affects metrics or result rows
@@ -201,6 +203,7 @@ tickets:
       - "CSV snapshot create/import/seal/load/run test if needed"
       - "snapshot help-page documentation scans"
       - "existing snapshot adapter/load tests"
+      - "snapshot_info metadata naming decision coverage if API changes"
     classification:
       risk_level: high
       implementation_tier: M
@@ -226,13 +229,16 @@ tickets:
         - vignettes/experiment-store.Rmd
         - tests/testthat/test-snapshot-adapters.R
         - tests/testthat/test-snapshots-load.R
+        - tests/testthat/test-snapshots-list.R
       tests_required:
         - documentation render
         - CSV snapshot create/import/seal/load/run test if needed
         - snapshot help documentation scans
         - existing snapshot adapter/load tests
+        - snapshot_info metadata naming test if API changes
       escalation_triggers:
         - example requires changing snapshot metadata behavior
+        - snapshot_info needs top-level start_date/end_date columns
         - verified load path fails
         - docs imply metadata is part of snapshot hash
         - low-level workflow bypasses canonical experiment path
@@ -251,6 +257,8 @@ tickets:
       - "documentation render"
       - "documentation contract scans"
       - "Rd scans for links and ctx$features snippet"
+      - "Rd scans for vignette/system.file installed-article path pairs"
+      - "documentation scan for multi-lookback feature registration guidance"
       - "existing indicator/helper documentation tests"
     classification:
       risk_level: medium
@@ -282,6 +290,8 @@ tickets:
         - documentation render
         - documentation contract scans
         - Rd scans for links and ctx$features snippet
+        - Rd scans for vignette/system.file installed-article path pairs
+        - documentation scan for multi-lookback feature registration guidance
         - existing indicator/helper documentation tests
       escalation_triggers:
         - docs require new helper APIs

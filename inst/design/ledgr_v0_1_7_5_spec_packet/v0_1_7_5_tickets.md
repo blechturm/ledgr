@@ -268,6 +268,11 @@ Prefer `summary(bt)` as the primary surface.
 6. Ensure diagnostics do not alter fills, ledger events, equity, metrics, run
    identity, or persistent tables.
 7. Document how to interpret the diagnostic in warmup troubleshooting docs.
+8. Document the three warmup-adjacent failure modes separately: normal feature
+   warmup where a known feature is `NA` and later recovers, impossible warmup
+   where all values remain `NA` because the instrument never reaches the
+   feature contract, and current-bar absence where no pulse is constructed and
+   the strategy is not called.
 
 **Acceptance Criteria:**
 - [ ] A short-sample `sma_20` on 10 bars produces a visible warmup diagnostic.
@@ -278,6 +283,8 @@ Prefer `summary(bt)` as the primary surface.
 - [ ] Multiple instruments with different sample starts are handled.
 - [ ] Docs connect the diagnostic to `ledgr_feature_contracts()` and warmup
       troubleshooting.
+- [ ] Docs include a named three-way distinction between ordinary warmup,
+      impossible warmup, and current-bar absence/pulse construction failure.
 
 **Test Requirements:**
 - Short-sample impossible-warmup run test.
@@ -424,15 +431,23 @@ metadata inspection, experiment construction, and `ledgr_run()`.
 2. Add a compact end-to-end example in `experiment-store` or snapshot help.
 3. Show `ledgr_snapshot_create()` -> `ledgr_snapshot_import_bars_csv()` ->
    `ledgr_snapshot_seal()` -> `ledgr_snapshot_load(verify = TRUE)`.
-4. Show `ledgr_snapshot_info()` and explain `meta_json` as envelope metadata.
-5. Show the loaded snapshot passed to `ledgr_experiment()` and `ledgr_run()`.
-6. Cross-link relevant snapshot help pages to the full bridge.
-7. Add a regression if the example reveals workflow drift.
+4. Before writing the example, decide whether `ledgr_snapshot_info()` should
+   expose parsed `start_date` and `end_date` as top-level columns alongside
+   `bar_count` and `instrument_count`. If yes, implement the scoped API change;
+   if no, record the reason and show a compact `meta_json` parsing pattern.
+5. Show `ledgr_snapshot_info()` and explain `meta_json` as envelope metadata
+   without hiding the naming boundary between `n_bars`/`n_instruments` in
+   metadata and `bar_count`/`instrument_count` in the info surface.
+6. Show the loaded snapshot passed to `ledgr_experiment()` and `ledgr_run()`.
+7. Cross-link relevant snapshot help pages to the full bridge.
+8. Add a regression if the example reveals workflow drift.
 
 **Acceptance Criteria:**
 - [ ] One documented example shows the full low-level CSV bridge.
 - [ ] Example explains seal metadata versus artifact hash.
 - [ ] Example uses `ledgr_snapshot_load(verify = TRUE)` before experiment use.
+- [ ] The `ledgr_snapshot_info()` metadata naming gap has an explicit recorded
+      decision, with a code change or documented parsing pattern as appropriate.
 - [ ] Relevant help pages link to the bridge.
 - [ ] Example runs or has a clearly justified non-executed chunk with tested
       equivalent coverage.
@@ -514,7 +529,14 @@ runs: indicators, strategy helpers, feature maps, and `ctx$features()`.
    `?passed_warmup` as a secondary cross-link.
 9. Review starter navigation and ensure `examples/README.md` is not presented
    as a first runnable path if it remains a placeholder.
-10. Render checked-in vignette companions.
+10. Ensure every help-page Articles section that links to an installed vignette
+    shows both the `vignette("name", package = "ledgr")` discovery call and the
+    `system.file("doc", "name.html", package = "ledgr")` installed-file path.
+11. Add a compact parameterized-feature registration example showing that all
+    swept feature values, such as `ret_5`, `ret_10`, and `ret_20`, must be
+    registered before `ledgr_run()` rather than created lazily inside strategy
+    logic from `params$lookback`.
+12. Render checked-in vignette companions.
 
 **Acceptance Criteria:**
 - [ ] Indicators docs cover SMA crossover, RSI mean-reversion, mixed
@@ -526,6 +548,10 @@ runs: indicators, strategy helpers, feature maps, and `ctx$features()`.
 - [ ] `ctx$features()` is reachable from `?ledgr_feature_map` and shown in a
       tiny strategy-body snippet.
 - [ ] Starter navigation points to runnable examples, not placeholder artifacts.
+- [ ] Installed-vignette Articles sections include both `vignette()` and
+      `system.file("doc", ..., package = "ledgr")` forms for headless users.
+- [ ] Helper and indicator docs explain pre-run registration of all swept
+      feature parameter values, with a compact multi-lookback example.
 - [ ] Rendered docs are in sync.
 
 **Test Requirements:**
