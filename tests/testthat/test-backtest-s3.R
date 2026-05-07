@@ -70,3 +70,97 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
 
   testthat::expect_error(close(bt), NA)
 })
+
+testthat::test_that("summary surfaces impossible warmup diagnostics without changing results", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  ts <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:9
+  bars <- data.frame(
+    ts_utc = ts,
+    instrument_id = "AAA",
+    open = 100 + seq_along(ts),
+    high = 101 + seq_along(ts),
+    low = 99 + seq_along(ts),
+    close = 100 + seq_along(ts),
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  features <- list(ledgr_ind_sma(20))
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    value <- ctx$feature("AAA", "sma_20")
+    if (is.finite(value)) {
+      targets["AAA"] <- 1
+    }
+    targets
+  }
+
+  bt <- ledgr_backtest(
+    data = bars,
+    strategy = strategy,
+    features = features,
+    db_path = db_path,
+    run_id = "warmup-diagnostic-run"
+  )
+  on.exit(close(bt), add = TRUE)
+
+  diagnostics <- ledgr:::ledgr_backtest_warmup_diagnostics(bt)
+  testthat::expect_s3_class(diagnostics, "ledgr_warmup_diagnostics")
+  testthat::expect_equal(nrow(diagnostics), 1L)
+  testthat::expect_identical(diagnostics$feature_id[[1]], "sma_20")
+  testthat::expect_identical(diagnostics$instrument_id[[1]], "AAA")
+  testthat::expect_identical(diagnostics$required_bars[[1]], 20L)
+  testthat::expect_identical(diagnostics$available_bars[[1]], 10L)
+
+  fills_before <- ledgr_results(bt, what = "fills")
+  trades_before <- ledgr_results(bt, what = "trades")
+  metrics_before <- ledgr_compute_metrics(bt)
+  opened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  run_before <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT status, config_hash, data_hash FROM runs WHERE run_id = ?",
+    params = list(bt$run_id)
+  )
+
+  out <- utils::capture.output(summary(bt))
+  testthat::expect_true(any(grepl("Warmup Diagnostics", out, fixed = TRUE)))
+  testthat::expect_true(any(grepl("sma_20", out, fixed = TRUE)))
+  testthat::expect_true(any(grepl("AAA", out, fixed = TRUE)))
+  testthat::expect_true(any(grepl("required bars 20", out, fixed = TRUE)))
+  testthat::expect_true(any(grepl("available bars 10", out, fixed = TRUE)))
+
+  testthat::expect_equal(ledgr_results(bt, what = "fills"), fills_before)
+  testthat::expect_equal(ledgr_results(bt, what = "trades"), trades_before)
+  testthat::expect_equal(ledgr_compute_metrics(bt), metrics_before)
+  run_after <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT status, config_hash, data_hash FROM runs WHERE run_id = ?",
+    params = list(bt$run_id)
+  )
+  testthat::expect_equal(run_after, run_before)
+  testthat::expect_equal(nrow(trades_before), 0L)
+
+  broken_diagnostic_bt <- bt
+  broken_diagnostic_bt$config$backtest$start_ts_utc <- "not-a-timestamp"
+  testthat::expect_error(utils::capture.output(summary(broken_diagnostic_bt)), NA)
+})
+
+testthat::test_that("warmup diagnostic matching handles uneven instrument sample counts", {
+  feature_contracts <- tibble::tibble(
+    feature_id = c("sma_20", "return_5"),
+    required_bars = c(20L, 6L),
+    stable_after = c(20L, 6L)
+  )
+  bar_counts <- tibble::tibble(
+    instrument_id = c("AAA", "BBB"),
+    available_bars = c(10L, 25L)
+  )
+
+  diagnostics <- ledgr:::ledgr_warmup_diagnostics_from_counts(feature_contracts, bar_counts)
+  testthat::expect_s3_class(diagnostics, "ledgr_warmup_diagnostics")
+  testthat::expect_equal(nrow(diagnostics), 1L)
+  testthat::expect_identical(diagnostics$feature_id[[1]], "sma_20")
+  testthat::expect_identical(diagnostics$instrument_id[[1]], "AAA")
+})

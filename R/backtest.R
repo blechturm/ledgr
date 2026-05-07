@@ -1779,7 +1779,10 @@ print.ledgr_backtest <- function(x, ...) {
 #'   `positions_value > 1e-6`.
 #'
 #' If there are no closed trade rows, total trades is zero and win rate and
-#' average trade are printed as not available.
+#' average trade are printed as not available. If registered features cannot
+#' become usable because an instrument has fewer bars than the feature contract
+#' requires, the summary prints a compact Warmup Diagnostics section naming the
+#' feature ID, instrument ID, required bars, and available bars.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -1830,7 +1833,196 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
   cat("\nExposure:\n")
   cat(sprintf("  Time in Market:      %.2f%%\n", computed$time_in_market * 100))
 
+  diagnostics <- tryCatch(
+    ledgr_backtest_warmup_diagnostics(object),
+    error = function(e) NULL
+  )
+  ledgr_print_warmup_diagnostics(diagnostics)
+
   invisible(object)
+}
+
+ledgr_empty_warmup_diagnostics <- function() {
+  out <- tibble::tibble(
+    feature_id = character(),
+    instrument_id = character(),
+    required_bars = integer(),
+    stable_after = integer(),
+    available_bars = integer()
+  )
+  class(out) <- unique(c("ledgr_warmup_diagnostics", class(out)))
+  out
+}
+
+ledgr_warmup_diagnostics_from_counts <- function(feature_contracts, bar_counts) {
+  if (!is.data.frame(feature_contracts) || nrow(feature_contracts) == 0L ||
+    !is.data.frame(bar_counts) || nrow(bar_counts) == 0L) {
+    return(ledgr_empty_warmup_diagnostics())
+  }
+
+  required_cols <- c("feature_id", "required_bars", "stable_after")
+  if (!all(required_cols %in% names(feature_contracts))) {
+    rlang::abort("`feature_contracts` must include feature_id, required_bars, and stable_after.", class = "ledgr_invalid_args")
+  }
+  if (!all(c("instrument_id", "available_bars") %in% names(bar_counts))) {
+    rlang::abort("`bar_counts` must include instrument_id and available_bars.", class = "ledgr_invalid_args")
+  }
+
+  feature_idx <- rep(seq_len(nrow(feature_contracts)), each = nrow(bar_counts))
+  count_idx <- rep(seq_len(nrow(bar_counts)), times = nrow(feature_contracts))
+  pairs <- data.frame(
+    feature_contracts[feature_idx, required_cols, drop = FALSE],
+    bar_counts[count_idx, c("instrument_id", "available_bars"), drop = FALSE],
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+  pairs$required_bars <- as.integer(pairs$required_bars)
+  pairs$stable_after <- as.integer(pairs$stable_after)
+  pairs$available_bars <- as.integer(pairs$available_bars)
+  needed_bars <- pairs$stable_after
+  out <- pairs[pairs$available_bars < needed_bars, , drop = FALSE]
+  if (nrow(out) == 0L) {
+    return(ledgr_empty_warmup_diagnostics())
+  }
+  out <- out[order(out$instrument_id, out$feature_id), , drop = FALSE]
+  out <- tibble::as_tibble(out[, c("feature_id", "instrument_id", "required_bars", "stable_after", "available_bars"), drop = FALSE])
+  class(out) <- unique(c("ledgr_warmup_diagnostics", class(out)))
+  out
+}
+
+ledgr_feature_contracts_from_backtest_config <- function(bt) {
+  cfg <- bt$config
+  feats <- cfg$features
+  if (is.null(feats) || !isTRUE(feats$enabled) || !is.list(feats$defs) || length(feats$defs) == 0L) {
+    return(tibble::tibble(feature_id = character(), required_bars = integer(), stable_after = integer()))
+  }
+  rows <- lapply(feats$defs, function(def) {
+    feature_id <- def$id
+    if (is.null(feature_id)) feature_id <- def$name
+    if (is.null(feature_id) || !is.character(feature_id) || length(feature_id) != 1L || is.na(feature_id) || !nzchar(feature_id)) {
+      return(NULL)
+    }
+    required_bars <- def$requires_bars
+    stable_after <- def$stable_after
+    if (is.null(stable_after)) stable_after <- required_bars
+    if (is.null(required_bars) || is.null(stable_after)) {
+      return(NULL)
+    }
+    data.frame(
+      feature_id = feature_id,
+      required_bars = as.integer(required_bars),
+      stable_after = as.integer(stable_after),
+      stringsAsFactors = FALSE
+    )
+  })
+  rows <- Filter(Negate(is.null), rows)
+  if (length(rows) == 0L) {
+    return(tibble::tibble(feature_id = character(), required_bars = integer(), stable_after = integer()))
+  }
+  tibble::as_tibble(do.call(rbind, rows))
+}
+
+ledgr_backtest_bar_counts <- function(bt, con = NULL) {
+  cfg <- bt$config
+  instrument_ids <- cfg$universe$instrument_ids
+  if (!is.character(instrument_ids) || length(instrument_ids) == 0L) {
+    return(tibble::tibble(instrument_id = character(), available_bars = integer()))
+  }
+
+  snapshot_id <- cfg$data$snapshot_id
+  snapshot_db_path <- ledgr_snapshot_db_path_from_config(cfg, bt$db_path)
+  use_existing <- !is.null(con) && DBI::dbIsValid(con)
+  query_con <- con
+  close_query <- function() invisible(FALSE)
+  if (!isTRUE(use_existing)) {
+    opened <- ledgr_open_duckdb_with_retry(bt$db_path)
+    query_con <- opened$con
+    close_query <- function() {
+      suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))
+      suppressWarnings(try(duckdb::duckdb_shutdown(opened$drv), silent = TRUE))
+      invisible(TRUE)
+    }
+  }
+  on.exit(close_query(), add = TRUE)
+
+  start_iso <- ledgr_normalize_ts_utc(cfg$backtest$start_ts_utc)
+  end_iso <- ledgr_normalize_ts_utc(cfg$backtest$end_ts_utc)
+  start_str <- sub("Z$", "", sub("T", " ", start_iso))
+  end_str <- sub("Z$", "", sub("T", " ", end_iso))
+  ids_sql <- paste(DBI::dbQuoteString(query_con, instrument_ids), collapse = ", ")
+
+  if (!is.null(snapshot_id) && is.character(snapshot_id) && length(snapshot_id) == 1L && !is.na(snapshot_id) && nzchar(snapshot_id)) {
+    ledgr_prepare_snapshot_source_tables(query_con, snapshot_db_path, bt$db_path)
+    ledgr_prepare_snapshot_runtime_views(
+      query_con,
+      snapshot_id = snapshot_id,
+      instrument_ids = instrument_ids,
+      start_ts_utc = cfg$backtest$start_ts_utc,
+      end_ts_utc = cfg$backtest$end_ts_utc
+    )
+  }
+  counts <- DBI::dbGetQuery(
+    query_con,
+    paste0(
+      "SELECT instrument_id, COUNT(*) AS available_bars ",
+      "FROM bars ",
+      "WHERE instrument_id IN (", ids_sql, ") ",
+      "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
+      "GROUP BY instrument_id"
+    ),
+    params = list(start_str, end_str)
+  )
+
+  out <- data.frame(instrument_id = instrument_ids, stringsAsFactors = FALSE)
+  idx <- match(out$instrument_id, as.character(counts$instrument_id))
+  out$available_bars <- ifelse(is.na(idx), 0L, as.integer(counts$available_bars[idx]))
+  tibble::as_tibble(out)
+}
+
+ledgr_backtest_warmup_diagnostics <- function(bt, con = NULL) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
+  feature_contracts <- ledgr_feature_contracts_from_backtest_config(bt)
+  if (nrow(feature_contracts) == 0L) {
+    return(ledgr_empty_warmup_diagnostics())
+  }
+  opened <- NULL
+  query_con <- con
+  if (is.null(query_con) || !DBI::dbIsValid(query_con)) {
+    opened <- ledgr_backtest_read_connection(bt)
+    query_con <- opened$con
+    on.exit(opened$close(), add = TRUE)
+  }
+  bar_counts <- ledgr_backtest_bar_counts(bt, con = query_con)
+  ledgr_warmup_diagnostics_from_counts(feature_contracts, bar_counts)
+}
+
+ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
+  if (!inherits(diagnostics, "ledgr_warmup_diagnostics") || nrow(diagnostics) == 0L) {
+    return(invisible(FALSE))
+  }
+  cat("\nWarmup Diagnostics:\n")
+  shown <- utils::head(diagnostics, max_rows)
+  for (i in seq_len(nrow(shown))) {
+    stable_note <- ""
+    if (!identical(shown$stable_after[[i]], shown$required_bars[[i]])) {
+      stable_note <- sprintf(", stable after %d", shown$stable_after[[i]])
+    }
+    cat(sprintf(
+      "  Feature `%s` for `%s` never became usable: required bars %d%s, available bars %d.\n",
+      shown$feature_id[[i]],
+      shown$instrument_id[[i]],
+      shown$required_bars[[i]],
+      stable_note,
+      shown$available_bars[[i]]
+    ))
+  }
+  remaining <- nrow(diagnostics) - nrow(shown)
+  if (remaining > 0L) {
+    cat(sprintf("  ... %d more warmup diagnostics omitted.\n", remaining))
+  }
+  invisible(TRUE)
 }
 
 #' Extract tidy backtest tables

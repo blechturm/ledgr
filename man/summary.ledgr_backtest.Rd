@@ -40,7 +40,10 @@ multiplied by \code{sqrt(bars_per_year)};
 }
 
 If there are no closed trade rows, total trades is zero and win rate and
-average trade are printed as not available.
+average trade are printed as not available. If registered features cannot
+become usable because an instrument has fewer bars than the feature contract
+requires, the summary prints a compact Warmup Diagnostics section naming the
+feature ID, instrument ID, required bars, and available bars.
 }
 \examples{
 bars <- data.frame(

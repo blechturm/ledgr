@@ -249,7 +249,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 2-4 days
 **Dependencies:** LDG-1501
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Surface a user-facing diagnostic when a registered feature is all warmup `NA`
@@ -275,16 +275,28 @@ Prefer `summary(bt)` as the primary surface.
    the strategy is not called.
 
 **Acceptance Criteria:**
-- [ ] A short-sample `sma_20` on 10 bars produces a visible warmup diagnostic.
-- [ ] Diagnostic includes feature ID, instrument ID, required bars, and
+- [x] A short-sample `sma_20` on 10 bars produces a visible warmup diagnostic.
+- [x] Diagnostic includes feature ID, instrument ID, required bars, and
       available bars.
-- [ ] Zero-trade runs remain valid completed runs.
-- [ ] Diagnostics do not affect result tables, metrics, or config/run identity.
-- [ ] Multiple instruments with different sample starts are handled.
-- [ ] Docs connect the diagnostic to `ledgr_feature_contracts()` and warmup
+- [x] Zero-trade runs remain valid completed runs.
+- [x] Diagnostics do not affect result tables, metrics, or config/run identity.
+- [x] Multiple instruments with different sample starts are handled.
+- [x] Docs connect the diagnostic to `ledgr_feature_contracts()` and warmup
       troubleshooting.
-- [ ] Docs include a named three-way distinction between ordinary warmup,
+- [x] Docs include a named three-way distinction between ordinary warmup,
       impossible warmup, and current-bar absence/pulse construction failure.
+
+**Implementation Notes:**
+- `summary(bt)` now prints a `Warmup Diagnostics` section when a registered
+  feature cannot become usable for an instrument because available bars are
+  below the feature contract.
+- Diagnostics are computed read-only from `bt$config` feature metadata and
+  per-instrument snapshot bar counts; no feature-ID string parsing is used.
+- The internal diagnostic object is classed as `ledgr_warmup_diagnostics`.
+- Result tables, metrics, run state, and config/data hash identity are not
+  changed by diagnostic inspection.
+- Documentation now distinguishes ordinary warmup, impossible warmup, and
+  current-bar absence/pulse construction failure.
 
 **Test Requirements:**
 - Short-sample impossible-warmup run test.

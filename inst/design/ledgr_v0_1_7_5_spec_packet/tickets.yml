@@ -98,7 +98,7 @@ tickets:
 
   - id: LDG-1503
     title: "Zero-Trade Warmup Diagnostics"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1501]
     tests:

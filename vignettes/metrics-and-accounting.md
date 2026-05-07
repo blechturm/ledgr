@@ -322,7 +322,10 @@ the sample, but no closed round trips were recorded.
 Use this checklist before changing the strategy:
 
 1.  Start with `summary(bt)`. If `Total Trades` is zero, `win_rate` and
-    `avg_trade` should be `NA`, not zero.
+    `avg_trade` should be `NA`, not zero. If a registered feature can
+    never become usable because the sample is too short, `summary(bt)`
+    also prints a `Warmup Diagnostics` note with the feature ID,
+    instrument ID, required bars, and available bars.
 2.  Inspect `ledgr_results(bt, what = "fills")`. Empty fills mean
     nothing ever executed. Non-empty fills with empty trades mean
     positions opened but did not close.
@@ -343,12 +346,26 @@ Use this checklist before changing the strategy:
     without suppression. The warning message reports the signal origin
     and non-missing count.
 
+### Three Warmup-Adjacent Cases
+
 Warmup is per instrument. One instrument can have a usable value while
 another is still `NA` because it has fewer bars or a different data
-history. Expected warmup is local to the beginning of each instrument’s
-usable sample. A signal that has zero usable values over the whole run
-is a different condition, even though both appear as `NA` feature values
-at a single pulse.
+history.
+
+Ordinary feature warmup is local to the beginning of each instrument’s
+usable sample. A known feature is `NA` for early pulses, then becomes
+usable once the feature contract has enough bars.
+
+Impossible warmup is different: every value for an instrument/feature
+remains `NA` because the instrument never reaches the feature contract.
+That is the case reported by the `Warmup Diagnostics` note in
+`summary(bt)`.
+
+Current-bar absence is a third failure mode. If ledgr cannot construct
+the pulse sequence because a current bar is absent for an instrument in
+the requested universe, the run fails before strategy evaluation for
+that incomplete pulse; this is a pulse construction error, not a feature
+warmup value.
 
 A final-bar target is separate from warmup. Under the next-open fill
 model, there is no later bar available to fill a target emitted on the
