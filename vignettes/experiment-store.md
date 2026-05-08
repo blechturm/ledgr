@@ -281,12 +281,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     608505ff98f12b71b3368283f4461f3b2fb7bd57ff7d3defe7180097f2593d37
+#> Config Hash:     892c5a85101a75a202e7497960f53ad7c0aeb268edbff3a3d031ae37addf56bb
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.45
+#> Elapsed Sec:     1.66
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    2
@@ -383,7 +383,6 @@ the snapshot handle when the workflow is finished.
 ``` r
 close(bt_small)
 close(bt_large)
-close(csv_bt)
 ledgr_snapshot_close(csv_snapshot)
 ledgr_snapshot_close(snapshot)
 unlink(csv_bars_path)

@@ -314,7 +314,6 @@ is finished.
 ```{r cleanup}
 close(bt_small)
 close(bt_large)
-close(csv_bt)
 ledgr_snapshot_close(csv_snapshot)
 ledgr_snapshot_close(snapshot)
 unlink(csv_bars_path)
