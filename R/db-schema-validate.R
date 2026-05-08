@@ -276,25 +276,6 @@ ledgr_validate_schema <- function(con) {
     split(out$column_name, out$constraint_name)
   }
 
-  schema_check_prefix <- paste0(
-    "__ledgr_schema_check__",
-    Sys.getpid(),
-    "_",
-    sample.int(.Machine$integer.max, 1L)
-  )
-
-  cleanup_probe_rows <- function(table_name, id_col, id_value) {
-    try(
-      DBI::dbExecute(
-        con,
-        sprintf("DELETE FROM %s WHERE %s = ?", table_name, id_col),
-        params = list(id_value)
-      ),
-      silent = TRUE
-    )
-    invisible(TRUE)
-  }
-
   check_status_constraint_metadata <- function(table_name, expected_values, label) {
     checks <- tryCatch(
       DBI::dbGetQuery(
@@ -331,58 +312,6 @@ ledgr_validate_schema <- function(con) {
     invisible(TRUE)
   }
 
-  runs_insert_status_ok <- function(status_value) {
-    cols <- get_columns("runs")
-    required_cols <- cols$column_name[cols$is_nullable == "NO"]
-    types <- normalize_type(cols$data_type)
-    names(types) <- cols$column_name
-
-    probe_run_id <- paste0(schema_check_prefix, "_runs_", status_value)
-    cleanup_probe_rows("runs", "run_id", probe_run_id)
-    on.exit(cleanup_probe_rows("runs", "run_id", probe_run_id), add = TRUE)
-
-    vals <- vector("list", length(required_cols))
-    names(vals) <- required_cols
-    for (col in required_cols) {
-      t <- unname(types[[col]])
-      if (col == "run_id") {
-        vals[[col]] <- probe_run_id
-      } else if (col == "status") {
-        vals[[col]] <- status_value
-      } else if (t == "TEXT") {
-        vals[[col]] <- "x"
-      } else if (t == "INTEGER") {
-        vals[[col]] <- 1L
-      } else if (t == "DOUBLE") {
-        vals[[col]] <- 1.0
-      } else if (t == "TIMESTAMP") {
-        vals[[col]] <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
-      } else if (t == "BOOLEAN") {
-        vals[[col]] <- FALSE
-      } else {
-        vals[[col]] <- "x"
-      }
-    }
-
-    sql <- sprintf(
-      "INSERT INTO runs (%s) VALUES (%s)",
-      paste(required_cols, collapse = ", "),
-      paste(rep("?", length(required_cols)), collapse = ", ")
-    )
-
-    ok <- tryCatch(
-      {
-        DBI::dbExecute(con, sql, params = unname(vals))
-        TRUE
-      },
-      error = function(e) {
-        try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
-        FALSE
-      }
-    )
-    ok
-  }
-
   check_runs_status_constraint <- function() {
     check_status_constraint_metadata(
       "runs",
@@ -398,88 +327,6 @@ ledgr_validate_schema <- function(con) {
       c("CREATED", "SEALED", "FAILED"),
       "snapshots.status"
     )
-    invisible(TRUE)
-  }
-
-  check_features_pk_enforced <- function() {
-    run_id <- paste0(schema_check_prefix, "_features_pk")
-    instrument_id <- "ABC"
-    ts_utc <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
-    feature_name <- "x"
-
-    cleanup_probe_rows("features", "run_id", run_id)
-    on.exit(cleanup_probe_rows("features", "run_id", run_id), add = TRUE)
-
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
-      VALUES (?, ?, ?, ?, 1.0)
-      "
-      ,
-      params = list(run_id, instrument_id, ts_utc, feature_name)
-    )
-    ok <- tryCatch(
-      {
-        DBI::dbExecute(
-          con,
-          "
-          INSERT INTO features (run_id, instrument_id, ts_utc, feature_name, feature_value)
-          VALUES (?, ?, ?, ?, 2.0)
-          "
-          ,
-          params = list(run_id, instrument_id, ts_utc, feature_name)
-        )
-        TRUE
-      },
-      error = function(e) {
-        try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
-        FALSE
-      }
-    )
-    if (ok) {
-      stop("features primary key is not enforced.", call. = FALSE)
-    }
-    invisible(TRUE)
-  }
-
-  check_ledger_events_run_seq_unique <- function() {
-    run_id <- paste0(schema_check_prefix, "_ledger_seq")
-    ts_utc <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
-
-    cleanup_probe_rows("ledger_events", "run_id", run_id)
-    on.exit(cleanup_probe_rows("ledger_events", "run_id", run_id), add = TRUE)
-
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
-      VALUES (?, ?, ?, 'FILL', 1)
-      "
-      ,
-      params = list(paste0(run_id, "_00000001"), run_id, ts_utc)
-    )
-    ok <- tryCatch(
-      {
-        DBI::dbExecute(
-          con,
-          "
-          INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
-          VALUES (?, ?, ?, 'FILL', 1)
-          "
-          ,
-          params = list(paste0(run_id, "_00000002"), run_id, ts_utc)
-        )
-        TRUE
-      },
-      error = function(e) {
-        try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
-        FALSE
-      }
-    )
-    if (ok) {
-      stop("ledger_events must enforce uniqueness of (run_id, event_seq).", call. = FALSE)
-    }
     invisible(TRUE)
   }
 
@@ -576,8 +423,6 @@ ledgr_validate_schema <- function(con) {
 
   check_runs_status_constraint()
   check_snapshots_status_constraint()
-  check_features_pk_enforced()
-  check_ledger_events_run_seq_unique()
 
   invisible(TRUE)
 }

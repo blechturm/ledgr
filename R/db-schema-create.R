@@ -74,73 +74,29 @@ ledgr_create_schema <- function(con) {
     invisible(TRUE)
   }
 
-  runs_status_allows <- function(status_value) {
+  runs_status_constraint_matches <- function() {
     if (!table_exists("runs")) return(FALSE)
-
-    cols <- get_columns("runs")
-    required_cols <- cols$column_name[cols$is_nullable == "NO"]
-    types <- normalize_type(cols$data_type)
-    names(types) <- cols$column_name
-
-    probe_run_id <- paste0(
-      "__ledgr_schema_check__",
-      Sys.getpid(),
-      "_",
-      sample.int(.Machine$integer.max, 1L),
-      "_",
-      status_value
+    checks <- tryCatch(
+      DBI::dbGetQuery(
+        con,
+        "
+        SELECT expression
+        FROM duckdb_constraints()
+        WHERE table_name = 'runs'
+          AND constraint_type = 'CHECK'
+        "
+      ),
+      error = function(e) data.frame(expression = character())
     )
-    cleanup_probe <- function() {
-      try(
-        DBI::dbExecute(con, "DELETE FROM runs WHERE run_id = ?", params = list(probe_run_id)),
-        silent = TRUE
-      )
-      invisible(TRUE)
-    }
-
-    cleanup_probe()
-    on.exit(cleanup_probe(), add = TRUE)
-
-    vals <- vector("list", length(required_cols))
-    names(vals) <- required_cols
-    for (col in required_cols) {
-      t <- unname(types[[col]])
-      if (col == "run_id") {
-        vals[[col]] <- probe_run_id
-      } else if (col == "status") {
-        vals[[col]] <- status_value
-      } else if (t == "TEXT") {
-        vals[[col]] <- "x"
-      } else if (t == "INTEGER") {
-        vals[[col]] <- 1L
-      } else if (t == "DOUBLE") {
-        vals[[col]] <- 1.0
-      } else if (t == "TIMESTAMP") {
-        vals[[col]] <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
-      } else if (t == "BOOLEAN") {
-        vals[[col]] <- FALSE
-      } else {
-        vals[[col]] <- "x"
-      }
-    }
-
-    sql <- sprintf(
-      "INSERT INTO runs (%s) VALUES (%s)",
-      paste(required_cols, collapse = ", "),
-      paste(rep("?", length(required_cols)), collapse = ", ")
-    )
-
-    ok <- tryCatch(
-      {
-        DBI::dbExecute(con, sql, params = unname(vals))
-        TRUE
-      },
-      error = function(e) {
-        try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
-        FALSE
-      }
-    )
-    ok
+    expressions <- as.character(checks$expression)
+    status_expr <- expressions[grepl("\\bstatus\\b\\s+IN\\s*\\(", expressions, ignore.case = TRUE)]
+    if (length(status_expr) == 0L) return(FALSE)
+    values <- unique(unlist(regmatches(
+      status_expr,
+      gregexpr("'[^']+'", status_expr)
+    )))
+    values <- gsub("^'|'$", "", values)
+    setequal(values, c("CREATED", "RUNNING", "DONE", "FAILED"))
   }
 
   runs_is_compliant <- function() {
@@ -157,8 +113,7 @@ ledgr_create_schema <- function(con) {
       "error_msg"
     )
     if (!all(required_cols %in% cols)) return(FALSE)
-    if (!runs_status_allows("DONE")) return(FALSE)
-    if (runs_status_allows("INVALID")) return(FALSE)
+    if (!runs_status_constraint_matches()) return(FALSE)
     TRUE
   }
 
