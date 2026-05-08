@@ -733,7 +733,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1 day
 **Dependencies:** LDG-1501, LDG-1502, LDG-1503, LDG-1504, LDG-1505, LDG-1506, LDG-1507
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Final validation gate for v0.1.7.5. Follow
@@ -765,21 +765,33 @@ separate evidence.
 20. Confirm no open P0/P1 review findings remain.
 
 **Acceptance Criteria:**
-- [ ] Full tests pass.
-- [ ] TTR parity and MACD boundary tests pass.
-- [ ] Warmup diagnostic tests pass.
-- [ ] Result lifecycle and CSV bridge docs are present and rendered.
-- [ ] Documentation contract tests pass.
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
+- [x] Full tests pass.
+- [x] TTR parity and MACD boundary tests pass.
+- [x] Warmup diagnostic tests pass.
+- [x] Result lifecycle and CSV bridge docs are present and rendered.
+- [x] Documentation contract tests pass.
+- [x] `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
       0 warnings.
-- [ ] `DESCRIPTION` version is `0.1.7.5` before release tagging.
-- [ ] README and changed articles render.
-- [ ] Pkgdown builds if navigation/reference/articles changed.
-- [ ] Local WSL/Ubuntu gate passes where required.
-- [ ] Remote branch CI is green on the target commit.
-- [ ] `main` CI is green.
-- [ ] Tag-triggered CI is green.
-- [ ] No open P0/P1 review findings remain.
+- [x] `DESCRIPTION` version is `0.1.7.5` before release tagging.
+- [x] README and changed articles render.
+- [x] Pkgdown builds if navigation/reference/articles changed.
+- [x] Local WSL/Ubuntu gate passes where required.
+- [x] Remote branch CI is green on the target commit.
+- [x] `main` CI is green.
+- [x] Tag-triggered CI is green.
+- [x] No open P0/P1 review findings remain.
+
+**Implementation Notes:**
+- Local targeted schema, TTR, warmup, and documentation-contract tests passed.
+- Full local package tests passed with the expected optional-package skip.
+- Local Windows `R CMD check --no-manual --no-build-vignettes` completed with
+  `Status: OK`.
+- Local WSL pkgdown reproduced the Ubuntu failure and then passed after schema
+  checks were made read-only.
+- Remote branch CI passed on run `25550851905`.
+- `main` R-CMD-check passed on run `25551583995`; `main` pkgdown passed on run
+  `25551584016`.
+- Tag-triggered CI passed on run `25552274945`.
 
 **Test Requirements:**
 - Full package tests.

@@ -353,7 +353,7 @@ tickets:
 
   - id: LDG-1508
     title: "v0.1.7.5 Release Gate"
-    status: planned
+    status: done
     priority: P0
     dependencies:
       - LDG-1501
