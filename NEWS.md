@@ -1,26 +1,23 @@
 # ledgr 0.1.7.5
 
-- Planned: harden the TTR adapter with parity tests across every supported
-  `ledgr_ttr_warmup_rules()` entry and resolve the reported MACD warmup
-  boundary with direct TTR evidence.
-- Planned: add a user-facing warmup diagnostic for zero-trade runs where a
-  registered feature never becomes finite because an instrument has too few
-  bars.
+- Hardened the TTR adapter with parity tests across every supported
+  `ledgr_ttr_warmup_rules()` entry and resolved the MACD warmup boundary with
+  direct TTR evidence.
+- Added a user-facing warmup diagnostic for zero-trade runs where a registered
+  feature never becomes finite because an instrument has too few bars.
 - Fixed: schema validation probes now issue an explicit rollback after expected
   constraint violations, preventing DuckDB connection-state contamination on
   Ubuntu under coverage instrumentation.
-- Planned: improve result-inspection documentation with a compact closed-trade
-  example that distinguishes equity, fills, trades, ledger rows, and summary
-  metrics.
-- Planned: add a complete low-level CSV snapshot bridge from create/import/seal
+- Improved result-inspection documentation with a compact closed-trade example
+  that distinguishes equity, fills, trades, ledger rows, and summary metrics.
+- Added a complete low-level CSV snapshot bridge from create/import/seal
   through verified load, metadata inspection, experiment construction, and
   `ledgr_run()`.
-- Planned: strengthen indicator, helper, feature-map, and `ctx$features()`
+- Strengthened indicator, helper, feature-map, and `ctx$features()`
   discoverability while keeping feature-map aliases distinct from engine
   feature IDs.
-- Planned: document ledgr's adapter posture as a deterministic backtesting core
-  that integrates with R finance ecosystem packages through explicit adapter
-  boundaries.
+- Documented ledgr's adapter posture as a deterministic backtesting core that
+  connects to R finance ecosystem packages through explicit adapter boundaries.
 
 # ledgr 0.1.7.4
 

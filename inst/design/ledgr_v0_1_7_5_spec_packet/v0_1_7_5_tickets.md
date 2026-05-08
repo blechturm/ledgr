@@ -636,7 +636,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-1502, LDG-1503, LDG-1504, LDG-1505, LDG-1506
-**Status:** Planned
+**Status:** Done
 
 **Description:**
 Align contracts, NEWS, package help, release playbook, pkgdown/reference links,
@@ -668,16 +668,16 @@ and user-facing positioning with the implemented v0.1.7.5 scope.
 7. Add or update documentation contract tests.
 
 **Acceptance Criteria:**
-- [ ] Contracts match shipped TTR, warmup diagnostic, and documentation
+- [x] Contracts match shipped TTR, warmup diagnostic, and documentation
       behavior.
-- [ ] NEWS accurately summarizes delivered v0.1.7.5 scope.
-- [ ] Adapter-positioning language is present in README intro, a new
+- [x] NEWS accurately summarizes delivered v0.1.7.5 scope.
+- [x] Adapter-positioning language is present in README intro, a new
       `## Ecosystem` README section, and `?ledgr` package help.
-- [ ] Positioning uses "connects to" framing; does not mention talib as a
+- [x] Positioning uses "connects to" framing; does not mention talib as a
       shipped adapter; does not frame ledgr as a replacement for any package.
-- [ ] Release playbook includes the v0.1.7.4 post-mortem guardrails.
-- [ ] Package help, function help, and pkgdown navigation remain coherent.
-- [ ] Documentation contract tests cover the new release-critical doc claims.
+- [x] Release playbook includes the v0.1.7.4 post-mortem guardrails.
+- [x] Package help, function help, and pkgdown navigation remain coherent.
+- [x] Documentation contract tests cover the new release-critical doc claims.
 
 **Test Requirements:**
 - Documentation contract tests.

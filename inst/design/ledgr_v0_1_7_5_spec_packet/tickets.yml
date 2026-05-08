@@ -306,7 +306,7 @@ tickets:
 
   - id: LDG-1507
     title: "Contracts, NEWS, Playbook, And Adapter Positioning"
-    status: planned
+    status: done
     priority: P1
     dependencies: [LDG-1502, LDG-1503, LDG-1504, LDG-1505, LDG-1506]
     tests:

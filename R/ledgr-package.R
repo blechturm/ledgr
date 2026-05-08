@@ -26,6 +26,19 @@
 #' - `vignette("indicators", package = "ledgr")`
 #' - `system.file("doc", "indicators.html", package = "ledgr")`
 #'
+#' @section Ecosystem:
+#' ledgr connects to the R finance ecosystem through adapters. The core owns
+#' the deterministic path from data to pulse, decision, fill, ledger event, and
+#' portfolio state. Data vendors, indicator libraries, visualization tools, and
+#' downstream analytics can plug in at adapter boundaries while the canonical
+#' execution path remains unchanged.
+#'
+#' ledgr is not intended to replace every finance package. It is for workflows
+#' where sealed snapshots, no-lookahead pulse execution, event-sourced ledgers,
+#' and reproducible run identity matter more than an all-in-one interface. For
+#' positioning detail, see the pkgdown-only "Who ledgr is for" article:
+#' `https://blechturm.github.io/ledgr/articles/who-ledgr-is-for.html`.
+#'
 "_PACKAGE"
 
 .onLoad <- function(libname, pkgname) {

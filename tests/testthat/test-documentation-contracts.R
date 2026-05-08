@@ -261,6 +261,82 @@ testthat::test_that("NEWS summarizes delivered v0.1.7.4 scope", {
   testthat::expect_match(section, "stale retired\\s+`ttr-indicators` artifacts")
 })
 
+testthat::test_that("NEWS summarizes delivered v0.1.7.5 scope", {
+  root <- testthat::test_path("..", "..")
+  news <- file.path(root, "NEWS.md")
+  testthat::skip_if_not(file.exists(news), "NEWS source unavailable")
+  text <- paste(readLines(news, warn = FALSE), collapse = "\n")
+  start <- regexpr("# ledgr 0[.]1[.]7[.]5", text)
+  end <- regexpr("# ledgr 0[.]1[.]7[.]4", text)
+  testthat::expect_true(start > 0L)
+  testthat::expect_true(end > start)
+  section <- substr(text, start, end - 1L)
+
+  testthat::expect_no_match(section, "Planned:", fixed = TRUE)
+  testthat::expect_match(section, "Hardened the TTR adapter", fixed = TRUE)
+  testthat::expect_match(section, "MACD warmup boundary", fixed = TRUE)
+  testthat::expect_match(section, "warmup diagnostic", fixed = TRUE)
+  testthat::expect_match(section, "schema validation probes", fixed = TRUE)
+  testthat::expect_match(section, "closed-trade example", fixed = TRUE)
+  testthat::expect_match(section, "low-level CSV snapshot bridge", fixed = TRUE)
+  testthat::expect_match(section, "feature-map aliases distinct from engine\\s+feature IDs")
+  testthat::expect_match(section, "connects to R finance ecosystem packages", fixed = TRUE)
+  testthat::expect_no_match(tolower(section), "talib", fixed = TRUE)
+})
+
+testthat::test_that("release playbook preserves v0.1.7.4 post-mortem guardrails", {
+  root <- testthat::test_path("..", "..")
+  playbook <- file.path(root, "inst", "design", "release_ci_playbook.md")
+  testthat::skip_if_not(file.exists(playbook), "release playbook unavailable")
+  text <- paste(readLines(playbook, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "gh run view <run-id> --repo blechturm/ledgr --log-failed", fixed = TRUE)
+  testthat::expect_match(text, "Remote CI logs define the initial scope", fixed = TRUE)
+  testthat::expect_match(text, "ROLLBACK", fixed = TRUE)
+  testthat::expect_match(text, "DuckDB Constraint Probe Rule", fixed = TRUE)
+  testthat::expect_match(text, "Stop Rule", fixed = TRUE)
+  testthat::expect_match(text, "stop and request review", fixed = TRUE)
+})
+
+testthat::test_that("contracts record v0.1.7.5 TTR warmup and adapter boundaries", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "Derived outputs such as MACD `histogram`", fixed = TRUE)
+  testthat::expect_match(text, "aligned warmup `NA_real_` values", fixed = TRUE)
+  testthat::expect_match(text, "without\\s+calling `series_fn\\(\\)` when `nrow\\(bars\\) < stable_after`")
+  testthat::expect_match(text, "Warmup and zero-trade diagnostics", fixed = TRUE)
+  testthat::expect_match(text, "connects to the R finance ecosystem through adapters", fixed = TRUE)
+  testthat::expect_no_match(tolower(text), "talib", fixed = TRUE)
+})
+
+testthat::test_that("README and package help state adapter positioning", {
+  root <- testthat::test_path("..", "..")
+  readme <- file.path(root, "README.Rmd")
+  pkg_help <- file.path(root, "man", "ledgr-package.Rd")
+  testthat::skip_if_not(file.exists(readme) && file.exists(pkg_help), "README or package help unavailable")
+  readme_text <- paste(readLines(readme, warn = FALSE), collapse = "\n")
+  help_text <- paste(readLines(pkg_help, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(readme_text, "ledgr connects to the R finance ecosystem through adapters.", fixed = TRUE)
+  testthat::expect_match(readme_text, "## Ecosystem", fixed = TRUE)
+  testthat::expect_match(readme_text, "data -> pulse -> decision -> fill -> ledger event -> portfolio\\s+state")
+  testthat::expect_match(readme_text, "ledgr owns", fixed = TRUE)
+  testthat::expect_match(readme_text, "Other packages can own", fixed = TRUE)
+  testthat::expect_match(readme_text, "all-in-one charting or\\s+array-backtesting package")
+  testthat::expect_match(readme_text, "adapter boundary to be explicit", fixed = TRUE)
+  testthat::expect_no_match(tolower(readme_text), "talib", fixed = TRUE)
+
+  testthat::expect_match(help_text, "\\section{Ecosystem}", fixed = TRUE)
+  testthat::expect_match(help_text, "connects to the R finance ecosystem through adapters", fixed = TRUE)
+  testthat::expect_match(help_text, "canonical\\s+execution path remains unchanged")
+  testthat::expect_match(help_text, "not intended to replace every finance package", fixed = TRUE)
+  testthat::expect_match(help_text, "Who ledgr is for", fixed = TRUE)
+  testthat::expect_no_match(tolower(help_text), "talib", fixed = TRUE)
+})
+
 testthat::test_that("auditr harness discovery bug is recorded externally", {
   root <- testthat::test_path("..", "..")
   triage <- file.path(root, "inst", "design", "ledgr_v0_1_7_4_spec_packet", "ledgr_triage_report.md")

@@ -390,6 +390,10 @@ the active versioned spec packet, currently
   feature contracts and execution semantics, while calculation packages such as
   TTR and future adapters supply indicator computations through normal
   `ledgr_indicator` objects.
+- README and package help should describe ledgr as a deterministic backtesting
+  core that connects to the R finance ecosystem through adapters. This
+  positioning must not claim unshipped adapters or frame ledgr as replacing
+  existing finance packages.
 - Help pages must not present pkgdown-only background articles as installed
   vignettes.
 - Visible vignette code must not depend on hidden setup helpers. Prefer

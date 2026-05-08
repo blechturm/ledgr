@@ -17,6 +17,8 @@ derives trades, equity, and metrics from that ledger.
 sealed snapshot -> experiment -> run -> event ledger -> results
 ```
 
+ledgr connects to the R finance ecosystem through adapters.
+
 For the longer design arc, see the
 [`research-to-production`](https://blechturm.github.io/ledgr/articles/research-to-production.html)
 article on the pkgdown site.
@@ -108,8 +110,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260507_194551_a068
-#> Database:    C:\Users\maxth\AppData\Local\Temp\Rtmpmeekm7\ledgr_1b92468122eba.duckdb
+#> Snapshot ID: snapshot_20260507_195954_adc8
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpemoR2r\ledgr_640c77c72f3a.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -220,6 +222,26 @@ ledgr_run_info(snapshot, "readme_sma_20")
 
 After snapshot creation or loading, normal experiment-store operations
 take the snapshot handle rather than a raw database path.
+
+## Ecosystem
+
+ledgr connects to the R finance ecosystem through adapters. The core is
+narrow by design:
+`data -> pulse -> decision -> fill -> ledger event -> portfolio state`.
+Everything outside that sequence, such as data vendors, indicators,
+charting, and analytics, can be provided by packages that already do
+those things well.
+
+| ledgr owns | Other packages can own |
+|----|----|
+| sealed snapshots and hashes | market-data acquisition |
+| pulse construction and no-lookahead contexts | indicator calculations through adapters |
+| target validation, fills, and ledger events | charting and visualization |
+| run identity, provenance, and result reconstruction | downstream analytics and reporting |
+
+This posture is deliberate. If you want an all-in-one charting or
+array-backtesting package, ledgr may not be the shortest path. Choose
+ledgr when you want the audit trail and adapter boundary to be explicit.
 
 ## Scope
 
