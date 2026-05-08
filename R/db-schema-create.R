@@ -86,11 +86,18 @@ ledgr_create_schema <- function(con) {
           AND constraint_type = 'CHECK'
         "
       ),
-      error = function(e) data.frame(expression = character())
+      error = function(e) {
+        stop(
+          sprintf("Cannot inspect runs.status constraint metadata: %s", conditionMessage(e)),
+          call. = FALSE
+        )
+      }
     )
     expressions <- as.character(checks$expression)
     status_expr <- expressions[grepl("\\bstatus\\b\\s+IN\\s*\\(", expressions, ignore.case = TRUE)]
     if (length(status_expr) == 0L) return(FALSE)
+    # DuckDB currently exposes CHECK expressions in SQL text form.
+    # If that metadata format changes, fail review rather than adding write probes.
     values <- unique(unlist(regmatches(
       status_expr,
       gregexpr("'[^']+'", status_expr)

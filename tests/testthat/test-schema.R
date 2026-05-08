@@ -127,6 +127,48 @@ testthat::test_that("runs.status CHECK constraint is enforced", {
   )
 })
 
+testthat::test_that("snapshots.status CHECK constraint is enforced", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  ledgr_create_schema(con)
+
+  insert_snapshot <- function(snapshot_id, status) {
+    DBI::dbExecute(
+      con,
+      "
+      INSERT INTO snapshots (
+        snapshot_id,
+        status,
+        created_at_utc,
+        sealed_at_utc,
+        snapshot_hash,
+        meta_json,
+        error_msg
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ",
+      params = list(
+        snapshot_id,
+        status,
+        as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+        NA,
+        NA_character_,
+        "{}",
+        NA_character_
+      )
+    )
+  }
+
+  testthat::expect_error(
+    insert_snapshot("snapshot-1", "OPEN")
+  )
+
+  testthat::expect_error(
+    insert_snapshot("snapshot-2", "SEALED"),
+    NA
+  )
+})
+
 testthat::test_that("missing features table fails validation", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

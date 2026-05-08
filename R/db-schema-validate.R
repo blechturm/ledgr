@@ -298,6 +298,8 @@ ledgr_validate_schema <- function(con) {
         call. = FALSE
       )
     }
+    # DuckDB currently exposes CHECK expressions in SQL text form.
+    # If that metadata format changes, fail validation rather than adding write probes.
     values <- unique(unlist(regmatches(
       status_expr,
       gregexpr("'[^']+'", status_expr)

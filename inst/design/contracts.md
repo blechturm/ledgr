@@ -75,6 +75,11 @@ the active versioned spec packet, currently
 - Cross-connection read-back is part of the persistence contract: completed
   runs and their `ledger_events`, `features`, and `equity_curve` rows must be
   visible from a newly opened connection.
+- Runtime schema creation and validation must be read-only with respect to
+  data rows in ledgr tables except for deliberate schema migration or DDL. They may
+  inspect DuckDB metadata to verify table shape and constraints, but must not
+  prove constraints by writing invalid probe rows into ledgr tables. Constraint
+  enforcement belongs in isolated tests with disposable database connections.
 - Completed run artifacts are durable when `ledgr_run()` returns. User-facing
   `close(bt)` and `ledgr_snapshot_close(snapshot)` calls are resource-management
   tools for long sessions, explicit opens, and lazy cursors; documentation must

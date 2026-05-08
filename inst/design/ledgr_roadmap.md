@@ -824,6 +824,71 @@ ledgr-side finding:
 
 ---
 
+## v0.1.7.6 - DuckDB Persistence Architecture Review
+
+**Goal:** Make DuckDB persistence boring across Windows, Ubuntu, pkgdown, and
+CI before v0.1.8 adds sweep-mode pressure around the execution core.
+
+v0.1.7.5 proved that Ubuntu CI can expose real persistence design issues even
+when Windows appears green. The response must be deliberate architecture work,
+not release-gate surgery. This milestone audits and consolidates ledgr's DuckDB
+connection, transaction, checkpoint, schema-validation, and fresh-read
+contracts so future releases can keep platform parity without long CI-debugging
+sessions.
+
+### Scope
+
+- Produce a connection-lifecycle map for all public DuckDB entry points:
+  snapshot creation/loading, experiment runs, run-store discovery, result
+  access, metadata mutation, and vignette/pkgdown examples.
+- Produce a mutating-API checkpoint matrix:
+  every public function that writes durable state must state whether it
+  checkpoints before returning, why, and which fresh-connection read path proves
+  it.
+- Audit all direct `DBI::dbConnect()`, `dbDisconnect()`, `CHECKPOINT`,
+  transaction, temporary view, and `duckdb_register()` paths.
+- Confirm whether every connection open should go through a single helper, or
+  document the few allowed exceptions.
+- Keep runtime schema creation and validation read-only with respect to data
+  rows in ledgr tables, except deliberate schema migration or DDL.
+- Keep constraint-enforcement probes out of runtime validators; enforcement
+  belongs in isolated tests with disposable DuckDB connections.
+- Verify DuckDB metadata assumptions, including `duckdb_constraints()` output
+  shape, and document how DuckDB version upgrades are checked.
+- Review residual lifecycle decisions from the v0.1.7.5 post-release review:
+  runner checkpoint strictness, redundant shutdown ownership, and
+  `duckdb_constraints()` expression-format dependency during DuckDB upgrades.
+- Define a small local WSL/Ubuntu parity gate that exercises the historically
+  fragile paths without requiring a full release run.
+- Update contracts, release playbook, and tests based on the architecture
+  review.
+
+### Definition of Done
+
+- A written DuckDB persistence architecture review exists under
+  `inst/design/`, with connection ownership, transaction, checkpoint, and
+  schema-validation rules.
+- `contracts.md` states the final persistence invariants.
+- `release_ci_playbook.md` contains the local WSL/Ubuntu parity gate and the
+  hard stop rule for Ubuntu-driven release surgery.
+- Targeted tests prove:
+  - schema validation has no row side effects;
+  - constraint enforcement is tested only in isolated disposable databases;
+  - completed runs are visible from a fresh connection;
+  - snapshot create/import/seal/load works from a fresh connection;
+  - the low-level CSV snapshot workflow used by pkgdown works under WSL.
+- Any remaining direct DuckDB connection or transaction exception is documented
+  with a reason.
+- The DuckDB architecture review records explicit decisions for runner
+  checkpoint strictness, shutdown ownership, and DuckDB metadata-format upgrade
+  checks.
+- External code review confirms the architecture is sound before the release
+  gate.
+- Ubuntu and Windows CI are green without broad release-gate infrastructure
+  edits.
+
+---
+
 ## v0.1.8 - Lightweight Parameter Sweep Mode
 
 **Goal:** Let users run fast exploratory parameter sweeps without DuckDB

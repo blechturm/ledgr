@@ -133,13 +133,40 @@ Full local WSL runs are useful evidence, but they can be noisy. A broad local
 failure should not override the first remote stack frame unless the local run
 reproduces the same failing path.
 
+### Ubuntu CI Surgery Stop Rule
+
+Ubuntu CI doing its job is not a reason to perform live release-gate surgery.
+If making Ubuntu green appears to require broad changes to schema creation,
+schema validation, snapshots, persistence, runner behavior, or other core
+infrastructure, stop immediately. Do not continue editing toward a green run.
+
+Create a blocker ticket before touching more production code. The ticket must
+include:
+
+- the failed CI run id and first package stack frame;
+- the exact failing command or narrow local reproduction;
+- the smallest known evidence for the suspected root cause;
+- the files believed to own the problem;
+- a definition of done, including the targeted tests and remote gate that must
+  pass;
+- a rollback or containment plan if the fix expands.
+
+The release gate should verify release readiness. If it uncovers a design issue,
+the correct response is deliberate design work with review, not speculative
+editing across the codebase. The release tag is not valid until the blocker is
+resolved and the required release gates are green.
+
 ### DuckDB Constraint Probe Rule
 
-Schema validators sometimes intentionally trigger constraint violations to
-prove that DuckDB enforces the expected contract. Any ledgr code that catches an
-expected DuckDB constraint error must leave the connection usable for the next
-probe. On Ubuntu under `covr`, a caught constraint violation can leave the
-connection in a dirty transaction state unless it is cleared explicitly.
+Runtime schema validators must be read-only. They inspect table and constraint
+metadata; they do not intentionally write invalid rows into ledgr tables to
+prove constraints are enforced. Constraint enforcement belongs in isolated
+tests that own their disposable database connection.
+
+If a test or isolated development helper intentionally triggers a DuckDB
+constraint violation, it must leave the connection usable for the next probe. On
+Ubuntu under `covr`, a caught constraint violation can leave the connection in a
+dirty transaction state unless it is cleared explicitly.
 
 Use an isolated disposable connection, or issue a safe rollback before the error
 handler returns:
@@ -150,7 +177,7 @@ try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
 
 The rollback may fail harmlessly when no transaction is active. The important
 contract is that an expected failed probe must not contaminate later DML on the
-same connection, and validators must prove they leave no persistent rows behind.
+same connection. Runtime validators should avoid this pattern entirely.
 
 ### Stop Rule
 
