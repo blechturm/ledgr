@@ -283,7 +283,7 @@ testthat::test_that("validator fails if runs.status does not accept DONE", {
 
   testthat::expect_error(
     ledgr_validate_schema(con),
-    "runs.status must accept DONE",
+    "runs.status must enforce status values",
     fixed = TRUE
   )
 })

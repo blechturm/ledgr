@@ -276,7 +276,12 @@ ledgr_validate_schema <- function(con) {
     split(out$column_name, out$constraint_name)
   }
 
-  schema_check_prefix <- paste0("__ledgr_schema_check__", Sys.getpid())
+  schema_check_prefix <- paste0(
+    "__ledgr_schema_check__",
+    Sys.getpid(),
+    "_",
+    sample.int(.Machine$integer.max, 1L)
+  )
 
   cleanup_probe_rows <- function(table_name, id_col, id_value) {
     try(
@@ -287,6 +292,42 @@ ledgr_validate_schema <- function(con) {
       ),
       silent = TRUE
     )
+    invisible(TRUE)
+  }
+
+  check_status_constraint_metadata <- function(table_name, expected_values, label) {
+    checks <- tryCatch(
+      DBI::dbGetQuery(
+        con,
+        "
+        SELECT expression
+        FROM duckdb_constraints()
+        WHERE table_name = ?
+          AND constraint_type = 'CHECK'
+        ",
+        params = list(table_name)
+      ),
+      error = function(e) data.frame(expression = character())
+    )
+    expressions <- as.character(checks$expression)
+    status_expr <- expressions[grepl("\\bstatus\\b\\s+IN\\s*\\(", expressions, ignore.case = TRUE)]
+    if (length(status_expr) == 0L) {
+      stop(
+        sprintf("%s must enforce status values (%s).", label, paste(expected_values, collapse = ", ")),
+        call. = FALSE
+      )
+    }
+    values <- unique(unlist(regmatches(
+      status_expr,
+      gregexpr("'[^']+'", status_expr)
+    )))
+    values <- gsub("^'|'$", "", values)
+    if (!setequal(values, expected_values)) {
+      stop(
+        sprintf("%s must enforce status values (%s).", label, paste(expected_values, collapse = ", ")),
+        call. = FALSE
+      )
+    }
     invisible(TRUE)
   }
 
@@ -343,61 +384,20 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_runs_status_constraint <- function() {
-    if (!runs_insert_status_ok("DONE")) {
-      stop(
-        "runs.status must accept DONE (expected IN ('CREATED','RUNNING','DONE','FAILED')).",
-        call. = FALSE
-      )
-    }
-    if (runs_insert_status_ok("INVALID")) {
-      stop(
-        "runs.status must reject invalid values (expected IN ('CREATED','RUNNING','DONE','FAILED')).",
-        call. = FALSE
-      )
-    }
+    check_status_constraint_metadata(
+      "runs",
+      c("CREATED", "RUNNING", "DONE", "FAILED"),
+      "runs.status"
+    )
     invisible(TRUE)
   }
 
   check_snapshots_status_constraint <- function() {
-    created_at <- as.POSIXct("2000-01-01 00:00:00", tz = "UTC")
-    insert_ok <- function(status_value) {
-      snapshot_id <- paste0(schema_check_prefix, "_snapshots_", status_value)
-      cleanup_probe_rows("snapshots", "snapshot_id", snapshot_id)
-      on.exit(cleanup_probe_rows("snapshots", "snapshot_id", snapshot_id), add = TRUE)
-
-      tryCatch(
-        {
-          DBI::dbExecute(
-            con,
-            "
-            INSERT INTO snapshots (snapshot_id, status, created_at_utc)
-            VALUES (?, ?, ?)
-            ",
-            params = list(snapshot_id, status_value, created_at)
-          )
-          TRUE
-        },
-        error = function(e) {
-          try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
-          FALSE
-        }
-      )
-    }
-
-    if (isTRUE(insert_ok("INVALID"))) {
-      stop(
-        "snapshots.status must reject invalid values (expected IN ('CREATED','SEALED','FAILED')).",
-        call. = FALSE
-      )
-    }
-
-    if (!isTRUE(insert_ok("SEALED"))) {
-      stop(
-        "snapshots.status must accept SEALED (expected IN ('CREATED','SEALED','FAILED')).",
-        call. = FALSE
-      )
-    }
-
+    check_status_constraint_metadata(
+      "snapshots",
+      c("CREATED", "SEALED", "FAILED"),
+      "snapshots.status"
+    )
     invisible(TRUE)
   }
 

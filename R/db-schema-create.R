@@ -82,7 +82,14 @@ ledgr_create_schema <- function(con) {
     types <- normalize_type(cols$data_type)
     names(types) <- cols$column_name
 
-    probe_run_id <- paste0("__ledgr_schema_check__", Sys.getpid(), "_", status_value)
+    probe_run_id <- paste0(
+      "__ledgr_schema_check__",
+      Sys.getpid(),
+      "_",
+      sample.int(.Machine$integer.max, 1L),
+      "_",
+      status_value
+    )
     cleanup_probe <- function() {
       try(
         DBI::dbExecute(con, "DELETE FROM runs WHERE run_id = ?", params = list(probe_run_id)),
@@ -128,7 +135,10 @@ ledgr_create_schema <- function(con) {
         DBI::dbExecute(con, sql, params = unname(vals))
         TRUE
       },
-      error = function(e) FALSE
+      error = function(e) {
+        try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
+        FALSE
+      }
     )
     ok
   }
