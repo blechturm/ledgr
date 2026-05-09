@@ -365,6 +365,23 @@ testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
   testthat::expect_match(text, "create/import/seal followed by `ledgr_snapshot_load\\(verify = TRUE\\)`")
 })
 
+testthat::test_that("contracts record v0.1.7.7 risk metric boundary", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "standard\\s+metric set ships `sharpe_ratio`")
+  testthat::expect_match(text, "excess_return[t] = equity_return[t] - rf_period_return[t]", fixed = TRUE)
+  testthat::expect_match(text, "0.02` means two percent per year", fixed = TRUE)
+  testthat::expect_match(text, "\\(1 \\+ rf_annual\\)\\^\\(1 / bars_per_year\\) - 1")
+  testthat::expect_match(text, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
+  testthat::expect_match(text, "FRED", fixed = TRUE)
+  testthat::expect_match(text, "must not silently assume daily bars", fixed = TRUE)
+  testthat::expect_match(text, "Infinite Sharpe values\\s+must not be emitted silently")
+  testthat::expect_match(text, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
+})
+
 testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 sequencing", {
   root <- testthat::test_path("..", "..")
   roadmap <- file.path(root, "inst", "design", "ledgr_roadmap.md")
@@ -455,6 +472,13 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
   testthat::expect_match(metrics_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Ordinary feature warmup is local to the beginning of each instrument's usable\\s+sample")
+  testthat::expect_match(metrics_doc, "Risk Metric Contract", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "sharpe_ratio", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "excess_return[t] = equity_return[t] - rf_period_return[t]", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "0.02` means two percent per year", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "rf_period_return = \\(1 \\+ rf_annual\\)\\^\\(1 / bars_per_year\\) - 1")
+  testthat::expect_match(metrics_doc, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)

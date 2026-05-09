@@ -361,6 +361,35 @@ the active versioned spec packet, currently
   `period_returns` are adjacent public equity-row returns
   `equity[t] / equity[t - 1] - 1`. If fewer than two period returns exist, the
   metric is `NA`.
+- v0.1.7.7 adds the first explicit risk-adjusted metric contract. The standard
+  metric set ships `sharpe_ratio` unless an implementation ticket records a
+  public deferral and an alternate v0.1.8 sweep-ranking path.
+- Sharpe-style metrics are computed from period excess returns:
+  `excess_return[t] = equity_return[t] - rf_period_return[t]`. The annualized
+  ratio is `mean(excess_return) / sd(excess_return) * sqrt(bars_per_year)`.
+  The formula consumes a pulse-aligned per-period risk-free return vector; the
+  source of that vector must not change the formula.
+- The first v0.1.7.7 risk-free-rate provider is a scalar annual rate expressed
+  as a decimal, so `0.02` means two percent per year. The default is `0`.
+  Conversion to a per-period return is geometric:
+  `(1 + rf_annual)^(1 / bars_per_year) - 1`. Non-finite rates, rates less than
+  or equal to `-1`, or invalid `bars_per_year` values make the metric `NA`
+  rather than producing misleading values.
+- Time-varying risk-free-rate series and real data providers such as FRED,
+  Treasury, ECB, or central-bank adapters are deferred. Future providers must
+  produce the same pulse-aligned `rf_period_return` vector consumed by the
+  v0.1.7.7 formula.
+- Risk-adjusted metrics must not silently assume daily bars. They reuse the
+  documented `bars_per_year` cadence contract and must either snap known
+  cadences, accept an explicit provider value, or fail/defer loudly when
+  cadence is unknown.
+- Sharpe-style metrics return `NA_real_` for short samples, all-missing return
+  inputs, invalid adjacent equity returns, zero or near-zero excess-return
+  volatility, flat equity, and constant-return cases. Infinite Sharpe values
+  must not be emitted silently.
+- Sortino, Calmar, Omega, information ratio, alpha/beta, benchmark-relative
+  metrics, VaR, and tail-risk metrics are deferred until the standard
+  risk-metric contract is stable.
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.

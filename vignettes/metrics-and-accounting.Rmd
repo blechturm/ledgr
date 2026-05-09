@@ -191,6 +191,49 @@ such as daily and weekly, to standard annualization constants. Use the detected
 value if you need an external calculation to match ledgr exactly on non-daily
 data.
 
+## Risk Metric Contract
+
+The v0.1.7.7 standard metric contract adds `sharpe_ratio` as the first
+risk-adjusted metric. It is a ledgr-owned metric computed from the same public
+equity rows as volatility, not from hidden runner state and not from an external
+metrics package.
+
+The return series is still the adjacent public equity-row return:
+
+```text
+equity_return[t] = equity[t] / equity[t - 1] - 1
+```
+
+Sharpe-style metrics use period excess returns:
+
+```text
+excess_return[t] = equity_return[t] - rf_period_return[t]
+sharpe_ratio = mean(excess_return) / sd(excess_return) * sqrt(bars_per_year)
+```
+
+The first risk-free-rate provider is a scalar annual rate expressed as a
+decimal, so `0.02` means two percent per year. The default is `0`. ledgr
+converts that scalar annual rate to a per-period return with the same
+`bars_per_year` used for annualized return and volatility:
+
+```text
+rf_period_return = (1 + rf_annual)^(1 / bars_per_year) - 1
+```
+
+Time-varying risk-free-rate series and real data providers such as FRED,
+Treasury, ECB, or central-bank adapters are deferred. Future providers must
+feed the same pulse-aligned `rf_period_return` vector into the formula above;
+they must not create a separate Sharpe formula branch.
+
+The metric is intentionally conservative around edge cases. Short samples,
+invalid adjacent equity returns, flat equity, constant-return series, zero or
+near-zero excess-return volatility, and all-missing return inputs return
+`NA_real_` rather than an infinite or misleading Sharpe value.
+
+Other risk-adjusted or benchmark-relative metrics are deferred in this release:
+Sortino, Calmar, Omega, information ratio, alpha/beta, benchmark-relative
+metrics, VaR, and tail-risk metrics.
+
 ```{r summary}
 summary(bt)
 ```

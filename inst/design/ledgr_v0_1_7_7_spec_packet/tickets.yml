@@ -1,0 +1,316 @@
+version: "0.1.7.7-risk-metrics-contract"
+source: "v0_1_7_7_tickets.md"
+tickets:
+  - id: LDG-1701
+    title: "Risk Metric Contract Baseline"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation contract scan"
+      - "scope grep for forbidden feature work"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Metric semantics, frequency safety, risk-free-rate assumptions, and
+        sweep ranking prerequisites affect public API behavior and future
+        architecture.
+      invariants_at_risk:
+        - metric definition stability
+        - future sweep ranking semantics
+        - frequency safety
+        - risk-free-rate provider boundary
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_spec.md
+        - inst/design/ledgr_roadmap.md
+        - inst/design/contracts.md
+        - R/backtest.R
+        - vignettes/metrics-and-accounting.Rmd
+        - tests/testthat/test-metric-oracles.R
+      tests_required:
+        - documentation contract scan
+        - scope grep for forbidden feature work
+      escalation_triggers:
+        - Sharpe cannot be defined without changing run identity
+        - annualization cannot be made frequency-safe
+        - real risk-free-rate data is needed to ship the metric
+      forbidden_actions:
+        - adding reference-data adapters
+        - adding PerformanceAnalytics runtime dependency
+        - adding sweep or target-risk APIs
+        - changing result table semantics without a spec update
+
+  - id: LDG-1702
+    title: "Ledgr-Native Risk Metrics And Public-Table Oracles"
+    status: todo
+    priority: P0
+    dependencies: [LDG-1701]
+    tests:
+      - "tests/testthat/test-metric-oracles.R"
+      - "tests/testthat/test-metrics-zero-trades.R"
+      - "tests/testthat/test-backtest-s3.R"
+      - "tests/testthat/test-documentation-contracts.R"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Core metric computation affects public API, summary output, comparison
+        surfaces, future sweep ranking, and documented formulas.
+      invariants_at_risk:
+        - public metric definitions
+        - public-table derivability
+        - summary output consistency
+        - frequency-safe annualization
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_spec.md
+        - inst/design/contracts.md
+        - R/backtest.R
+        - tests/testthat/test-metric-oracles.R
+        - tests/testthat/test-metrics-zero-trades.R
+        - vignettes/metrics-and-accounting.Rmd
+      tests_required:
+        - tests/testthat/test-metric-oracles.R
+        - tests/testthat/test-metrics-zero-trades.R
+        - tests/testthat/test-backtest-s3.R
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - metric requires hidden runner state
+        - metric changes existing public result table semantics
+        - metric cannot be made frequency-safe
+      forbidden_actions:
+        - relying on PerformanceAnalytics for canonical computation
+        - adding a metrics result table
+        - mutating stores during metric computation
+        - weakening existing metric oracles
+
+  - id: LDG-1703
+    title: "Optional PerformanceAnalytics Parity Tests"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1702]
+    tests:
+      - "optional PerformanceAnalytics parity tests"
+      - "metric oracle tests"
+      - "documentation contract tests"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Optional ecosystem parity must not become a runtime dependency or
+        silently redefine ledgr-owned metrics.
+      invariants_at_risk:
+        - optional dependency boundary
+        - metric definition ownership
+        - run identity stability
+        - documentation accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_spec.md
+        - DESCRIPTION
+        - R/backtest.R
+        - tests/testthat/test-metric-oracles.R
+        - vignettes/metrics-and-accounting.Rmd
+      tests_required:
+        - optional PerformanceAnalytics parity tests
+        - metric oracle tests
+        - documentation contract tests
+      escalation_triggers:
+        - parity definitions cannot be aligned
+        - PerformanceAnalytics must become mandatory
+        - adapter API is needed to satisfy parity
+      forbidden_actions:
+        - adding a public PerformanceAnalytics adapter
+        - importing PerformanceAnalytics
+        - using PerformanceAnalytics as canonical metric implementation
+        - changing run identity based on optional package versions
+
+  - id: LDG-1704
+    title: "Raw Numeric Comparison Columns"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1702]
+    tests:
+      - "tests/testthat/test-run-compare.R"
+      - "tests/testthat/test-run-print.R"
+      - "tests/testthat/test-metric-oracles.R"
+      - "tests/testthat/test-documentation-contracts.R"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Comparison output is a public ranking surface and future sweep results
+        must inherit its metric-column conventions.
+      invariants_at_risk:
+        - programmatic comparison output
+        - print/data separation
+        - future sweep ranking surface
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_spec.md
+        - R/run-store.R
+        - tests/testthat/test-run-compare.R
+        - tests/testthat/test-run-print.R
+        - tests/testthat/test-metric-oracles.R
+      tests_required:
+        - tests/testthat/test-run-compare.R
+        - tests/testthat/test-run-print.R
+        - tests/testthat/test-metric-oracles.R
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - raw columns require changing stored run schema
+        - print method cannot preserve curated display
+        - new columns break existing comparison tests
+      forbidden_actions:
+        - parsing formatted strings internally
+        - removing existing comparison columns without a spec update
+        - changing run-store persistence schema for display-only reasons
+
+  - id: LDG-1705
+    title: "Provenance And Snapshot/Yahoo Documentation Hygiene"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1701]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "documentation grep for strategy extraction examples"
+      - "documentation grep for snapshot/Yahoo corrections"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation work, but it teaches provenance trust boundaries and
+        snapshot lifecycle semantics that users rely on for safe inspection and
+        ingestion.
+      invariants_at_risk:
+        - stored strategy provenance trust boundary
+        - snapshot seal lifecycle documentation
+        - Yahoo adapter documentation accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_spec.md
+        - README.Rmd
+        - README.md
+        - R/strategy-extract.R
+        - R/snapshot_adapters.R
+        - R/snapshots-seal.R
+        - vignettes/experiment-store.Rmd
+        - vignettes/strategy-development.Rmd
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+        - documentation grep for strategy extraction examples
+        - documentation grep for snapshot/Yahoo corrections
+      escalation_triggers:
+        - docs require changing strategy extraction behavior
+        - docs require changing snapshot seal behavior
+        - Yahoo adapter behavior differs from documented sealed-state claim
+      forbidden_actions:
+        - evaluating stored strategy source in safe examples
+        - weakening trust-boundary language
+        - changing snapshot hashes for documentation convenience
+
+  - id: LDG-1706
+    title: "Logo Asset Placement"
+    status: todo
+    priority: P2
+    dependencies: [LDG-1701]
+    tests:
+      - "README render check"
+      - "pkgdown build when feasible"
+      - "documentation contract logo-path scan"
+    classification:
+      risk_level: low
+      implementation_tier: L
+      review_tier: M
+      classification_reason: >
+        Branding/documentation asset work with low runtime risk, but
+        package-visible paths and generated artifacts need review.
+      invariants_at_risk:
+        - package documentation asset paths
+        - README/pkgdown rendering
+        - generated artifact hygiene
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_spec.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/ledgr.svg
+        - README.Rmd
+        - README.md
+        - _pkgdown.yml
+        - man/figures/
+      tests_required:
+        - README render check
+        - pkgdown build when feasible
+        - documentation contract logo-path scan
+      escalation_triggers:
+        - SVG cannot render on GitHub or pkgdown
+        - logo asset is too large for package-facing docs
+        - raster generation becomes necessary
+      forbidden_actions:
+        - committing local absolute paths
+        - committing generated artifacts outside package-visible docs
+        - replacing the package title with an image-only header
+
+  - id: LDG-1707
+    title: "v0.1.7.7 Release Gate"
+    status: todo
+    priority: P0
+    dependencies: [LDG-1703, LDG-1704, LDG-1705, LDG-1706]
+    tests:
+      - "tests/testthat/test-metric-oracles.R"
+      - "tests/testthat/test-run-compare.R"
+      - "tests/testthat/test-run-print.R"
+      - "tests/testthat/test-documentation-contracts.R"
+      - "optional PerformanceAnalytics parity tests"
+      - "full local test suite"
+      - "R CMD check"
+      - "coverage"
+      - "pkgdown"
+      - "remote CI"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gates, CI interpretation, tag movement, metric correctness, and
+        documentation rendering are release-critical and must follow the
+        playbook.
+      invariants_at_risk:
+        - release validity
+        - CI discipline
+        - metric contract correctness
+        - documentation rendering
+        - tag correctness
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_spec.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/v0_1_7_7_tickets.md
+        - inst/design/ledgr_v0_1_7_7_spec_packet/tickets.yml
+        - inst/design/release_ci_playbook.md
+        - inst/design/contracts.md
+      tests_required:
+        - targeted metric/comparison/docs/logo tests
+        - optional PerformanceAnalytics parity tests
+        - full local test suite
+        - R CMD check
+        - coverage
+        - pkgdown
+        - remote CI
+      escalation_triggers:
+        - Ubuntu failure points to broad core infrastructure
+        - CI failure cannot be reproduced narrowly
+        - fix expands outside initially failing subsystem
+        - metric contract conflict appears during release gate
+        - main and tag CI disagree
+      forbidden_actions:
+        - broad release-gate surgery
+        - moving a release tag before main CI is green
+        - declaring release valid before tag CI is green
+        - weakening tests to pass CI
