@@ -578,14 +578,68 @@ stop and create a blocker ticket.
 
 **Acceptance Criteria:**
 - [ ] All v0.1.7.6 ticket statuses are complete and synchronized.
-- [ ] Targeted persistence tests pass.
-- [ ] Full local Windows tests pass.
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes.
-- [ ] Coverage and pkgdown gates pass when required.
-- [ ] Local WSL/Ubuntu gate passes when required and available.
+- [x] Targeted persistence tests pass.
+- [x] Full local Windows tests pass.
+- [x] `R CMD check --no-manual --no-build-vignettes` passes.
+- [x] Coverage and pkgdown gates pass when required.
+- [x] Local WSL/Ubuntu gate passes when required and available.
 - [ ] Remote branch CI is green.
 - [ ] Main CI is green after merge.
 - [ ] Tag-triggered CI is green before release is declared valid.
+
+**Implementation Notes:**
+- Bumped `DESCRIPTION` to `0.1.7.6`.
+- Updated README source and rendered README to point to the current v0.1.7.6
+  design packet.
+- Local WSL was not available in this session: `wsl.exe -l -v` returned
+  `E_ACCESSDENIED`. Per the playbook, this is recorded as unavailable local
+  evidence, not as a replacement for remote CI.
+
+**Verification:**
+```text
+pkgload::load_all('.', quiet=TRUE);
+testthat::test_file('tests/testthat/test-schema-validator-side-effects.R');
+testthat::test_file('tests/testthat/test-schema-snapshots.R');
+testthat::test_file('tests/testthat/test-schema.R');
+testthat::test_file('tests/testthat/test-persistence-fresh-connection.R');
+testthat::test_file('tests/testthat/test-documentation-contracts.R')
+```
+
+Result: passed on Windows.
+
+```text
+pkgload::load_all('.', quiet=TRUE);
+testthat::test_local('.', reporter='summary')
+```
+
+Result: passed on Windows. One expected optional-package-path skip occurred in
+`test-snapshot-adapters.R`.
+
+```text
+R CMD build .
+R CMD check --no-manual --no-build-vignettes ledgr_0.1.7.6.tar.gz
+```
+
+Result: passed on Windows with `Status: OK`. The first build attempt failed
+because Pandoc was not on R's path; rerunning with the local `RSTUDIO_PANDOC`
+path succeeded. `R CMD check` emitted repository-index warnings from offline
+package index access and a Windows `du` warning, but returned `Status: OK`.
+
+```text
+Rscript tools/check-coverage.R
+```
+
+Result: passed on Windows with `ledgr coverage: 84.47%`.
+
+```text
+pkgdown::build_site(new_process = FALSE)
+```
+
+Result: passed on Windows in normal install mode. The sandboxed
+`install = FALSE` shortcut failed while rendering `experiment-store.Rmd`, and
+the sandboxed normal install-mode run failed with `EPERM` while statting the
+user directory. The same normal install-mode pkgdown gate passed outside the
+sandbox.
 
 **Test Requirements:**
 - Targeted schema/persistence tests.

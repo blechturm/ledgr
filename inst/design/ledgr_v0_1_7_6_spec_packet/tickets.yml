@@ -228,6 +228,15 @@ tickets:
       - "pkgdown if required"
       - "local WSL/Ubuntu gate when applicable"
       - "remote CI"
+    local_verification:
+      description_version: "0.1.7.6"
+      targeted_schema_persistence: passed
+      full_windows_tests: passed
+      r_cmd_check: passed
+      coverage: "passed at 84.47%"
+      pkgdown: "passed in normal install mode outside sandbox"
+      local_wsl: "unavailable: wsl.exe -l -v returned E_ACCESSDENIED"
+      remote_ci: pending
     classification:
       risk_level: release-critical
       implementation_tier: H
