@@ -324,7 +324,8 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
   empty <- tibble::tibble(
     run_id = run_ids,
     n_trades = rep(0L, length(run_ids)),
-    win_rate = rep(NA_real_, length(run_ids))
+    win_rate = rep(NA_real_, length(run_ids)),
+    avg_trade = rep(NA_real_, length(run_ids))
   )
   if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "ledger_events")) {
     return(empty)
@@ -351,7 +352,7 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
   stats <- lapply(run_ids, function(run_id) {
     run_rows <- rows[rows$run_id == run_id, , drop = FALSE]
     if (nrow(run_rows) == 0L) {
-      return(data.frame(run_id = run_id, n_trades = 0L, win_rate = NA_real_, stringsAsFactors = FALSE))
+      return(data.frame(run_id = run_id, n_trades = 0L, win_rate = NA_real_, avg_trade = NA_real_, stringsAsFactors = FALSE))
     }
 
     fifo <- new.env(parent = emptyenv())
@@ -436,6 +437,7 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
       run_id = run_id,
       n_trades = as.integer(n_trades),
       win_rate = if (n_trades > 0L) sum(realized > 0, na.rm = TRUE) / n_trades else NA_real_,
+      avg_trade = if (n_trades > 0L) mean(realized, na.rm = TRUE) else NA_real_,
       stringsAsFactors = FALSE
     )
   })
@@ -443,14 +445,85 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
   tibble::as_tibble(do.call(rbind, stats))
 }
 
-ledgr_compare_runs_select <- function(rows, fill_stats) {
+ledgr_compare_runs_metric_stats <- function(con, run_ids) {
+  empty <- tibble::tibble(
+    run_id = run_ids,
+    annualized_return = rep(NA_real_, length(run_ids)),
+    volatility = rep(NA_real_, length(run_ids)),
+    sharpe_ratio = rep(NA_real_, length(run_ids)),
+    time_in_market = rep(NA_real_, length(run_ids))
+  )
+  if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "equity_curve")) {
+    return(empty)
+  }
+
+  equity_cols <- ledgr_experiment_store_columns(con, "equity_curve")
+  select_cols <- intersect(c("run_id", "ts_utc", "equity", "positions_value"), equity_cols)
+  if (!all(c("run_id", "ts_utc", "equity") %in% select_cols)) {
+    return(empty)
+  }
+  placeholders <- paste(rep("?", length(run_ids)), collapse = ", ")
+  rows <- DBI::dbGetQuery(
+    con,
+    sprintf(
+      "SELECT %s FROM equity_curve WHERE run_id IN (%s) ORDER BY run_id, ts_utc",
+      paste(select_cols, collapse = ", "),
+      placeholders
+    ),
+    params = as.list(run_ids)
+  )
+  if (nrow(rows) == 0L) {
+    return(empty)
+  }
+
+  stats <- lapply(run_ids, function(run_id) {
+    run_rows <- rows[as.character(rows$run_id) == run_id, , drop = FALSE]
+    if (nrow(run_rows) == 0L) {
+      return(empty[match(run_id, empty$run_id), , drop = FALSE])
+    }
+    equity <- data.frame(equity = as.numeric(run_rows$equity))
+    returns <- compute_period_returns(equity$equity)
+    bars_per_year <- ledgr_compare_runs_bars_per_year(run_rows$ts_utc)
+    positions_value <- if ("positions_value" %in% names(run_rows)) as.numeric(run_rows$positions_value) else numeric(0)
+    tibble::tibble(
+      run_id = run_id,
+      annualized_return = compute_annualized_return(equity, bars_per_year),
+      volatility = compute_annualized_volatility(returns, bars_per_year),
+      sharpe_ratio = compute_sharpe_ratio(returns, bars_per_year, risk_free_rate = 0),
+      time_in_market = if (length(positions_value) > 0L) mean(abs(positions_value) > 1e-6) else NA_real_
+    )
+  })
+
+  tibble::as_tibble(do.call(rbind, stats))
+}
+
+ledgr_compare_runs_bars_per_year <- function(ts_utc) {
+  if (length(ts_utc) < 2L) return(252)
+  ts <- suppressWarnings(as.POSIXct(ts_utc, tz = "UTC"))
+  ts <- ts[is.finite(as.numeric(ts))]
+  if (length(ts) < 2L) return(252)
+  diffs <- diff(sort(ts))
+  seconds <- as.numeric(diffs, units = "secs")
+  seconds <- seconds[is.finite(seconds) & seconds > 0]
+  if (length(seconds) == 0L) return(252)
+  snap_to_frequency(stats::median(seconds))
+}
+
+ledgr_compare_runs_select <- function(rows, fill_stats, metric_stats = NULL) {
   out <- rows
   out$n_trades <- NULL
   fill_idx <- match(out$run_id, fill_stats$run_id)
   out$n_trades <- fill_stats$n_trades[fill_idx]
   out$win_rate <- fill_stats$win_rate[fill_idx]
+  out$avg_trade <- fill_stats$avg_trade[fill_idx]
   out$n_trades[is.na(out$n_trades)] <- 0L
   out$n_trades <- as.integer(out$n_trades)
+  if (!is.null(metric_stats)) {
+    metric_idx <- match(out$run_id, metric_stats$run_id)
+    for (col in intersect(c("annualized_return", "volatility", "sharpe_ratio", "time_in_market"), names(metric_stats))) {
+      out[[col]] <- metric_stats[[col]][metric_idx]
+    }
+  }
   cols <- c(
     "run_id",
     "label",
@@ -460,9 +533,14 @@ ledgr_compare_runs_select <- function(rows, fill_stats) {
     "status",
     "final_equity",
     "total_return",
+    "annualized_return",
+    "volatility",
+    "sharpe_ratio",
     "max_drawdown",
     "n_trades",
     "win_rate",
+    "avg_trade",
+    "time_in_market",
     "execution_mode",
     "elapsed_sec",
     "reproducibility_level",
@@ -535,8 +613,12 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
 #' @param metrics Metrics set. Only `"standard"` is supported in v0.1.7.
 #' @return A `ledgr_comparison` object, which is a classed tibble with one row
-#'   per completed run. `n_trades` counts closed trade rows, not open-only fill
-#'   rows; `win_rate` is computed over those closed trade rows.
+#'   per completed run. Metric columns are raw numeric values for ranking and
+#'   filtering; formatted percentages are a print-only concern. `n_trades`
+#'   counts closed trade rows, not open-only fill rows; `win_rate` and
+#'   `avg_trade` are computed over those closed trade rows. `sharpe_ratio` uses
+#'   the default risk-free rate of `0`; use [ledgr_compute_metrics()] directly
+#'   when comparing a run with a non-zero risk-free rate.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
@@ -612,10 +694,22 @@ ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALS
   }
 
   if (nrow(rows) == 0L) {
-    return(ledgr_compare_runs_select(rows, tibble::tibble(run_id = character(), n_trades = integer(), win_rate = numeric())))
+    return(ledgr_compare_runs_select(
+      rows,
+      tibble::tibble(run_id = character(), n_trades = integer(), win_rate = numeric(), avg_trade = numeric()),
+      tibble::tibble(
+        run_id = character(),
+        annualized_return = numeric(),
+        volatility = numeric(),
+        sharpe_ratio = numeric(),
+        time_in_market = numeric()
+      )
+    ))
   }
-  fill_stats <- ledgr_compare_runs_fill_stats(opened$con, as.character(unique(rows$run_id)))
-  out <- ledgr_compare_runs_select(rows, fill_stats)
+  unique_run_ids <- as.character(unique(rows$run_id))
+  fill_stats <- ledgr_compare_runs_fill_stats(opened$con, unique_run_ids)
+  metric_stats <- ledgr_compare_runs_metric_stats(opened$con, unique_run_ids)
+  out <- ledgr_compare_runs_select(rows, fill_stats, metric_stats)
   out
 }
 
@@ -631,7 +725,8 @@ print.ledgr_comparison <- function(x, ...) {
     x,
     cols = c(
       "run_id", "label", "final_equity", "total_return",
-      "max_drawdown", "n_trades", "win_rate", "reproducibility_level"
+      "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
+      "reproducibility_level"
     ),
     footer = c(
       "Full identity and telemetry columns remain available on this tibble.",

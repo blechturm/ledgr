@@ -132,7 +132,7 @@ tickets:
 
   - id: LDG-1704
     title: "Raw Numeric Comparison Columns"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1702]
     tests:

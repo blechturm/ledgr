@@ -26,8 +26,12 @@ completed runs. If \code{NULL}, compares all non-archived completed runs.}
 }
 \value{
 A \code{ledgr_comparison} object, which is a classed tibble with one row
-per completed run. \code{n_trades} counts closed trade rows, not open-only fill
-rows; \code{win_rate} is computed over those closed trade rows.
+per completed run. Metric columns are raw numeric values for ranking and
+filtering; formatted percentages are a print-only concern. \code{n_trades}
+counts closed trade rows, not open-only fill rows; \code{win_rate} and
+\code{avg_trade} are computed over those closed trade rows. \code{sharpe_ratio} uses
+the default risk-free rate of \code{0}; use \code{\link[=ledgr_compute_metrics]{ledgr_compute_metrics()}} directly
+when comparing a run with a non-zero risk-free rate.
 }
 \description{
 Reads stored run metadata, provenance, telemetry, and result artifacts from a

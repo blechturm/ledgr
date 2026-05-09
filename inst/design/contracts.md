@@ -332,6 +332,9 @@ the active versioned spec packet, currently
 - `ledgr_compare_runs()` reads stored completed-run artifacts only. It must not
   rerun strategy code, evaluate recovered source, or mutate the experiment
   store while producing comparison tables.
+- `ledgr_compare_runs()` returns raw numeric metric columns for ranking and
+  filtering. Percentage formatting is a print-only concern; users must not need
+  to parse display strings such as `"+5.2%"` to rank runs.
 - `ledgr_run_tag()`, `ledgr_run_untag()`, and `ledgr_run_tags()` manage mutable
   run grouping metadata in `run_tags`. Tags must not alter run identity hashes,
   stored artifacts, comparison semantics, or strategy provenance.

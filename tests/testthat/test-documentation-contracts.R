@@ -489,6 +489,12 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(summary_help, "closed trade rows", fixed = TRUE)
   testthat::expect_match(summary_help, "Warmup Diagnostics", fixed = TRUE)
   testthat::expect_match(summary_help, "metrics-and-accounting.html", fixed = TRUE)
+  compare_help <- paste(readLines(file.path(root, "man", "ledgr_compare_runs.Rd"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(compare_help, "raw numeric values for ranking", fixed = TRUE)
+  testthat::expect_match(compare_help, "formatted percentages are a print-only concern", fixed = TRUE)
+  testthat::expect_match(compare_help, "default risk-free rate of", fixed = TRUE)
+  testthat::expect_match(compare_help, "\\code{0}", fixed = TRUE)
+  testthat::expect_match(compare_help, "non-zero risk-free rate", fixed = TRUE)
 
   testthat::expect_match(results_help, "execution fill rows", fixed = TRUE)
   testthat::expect_match(results_help, "zero-row schema", fixed = TRUE)

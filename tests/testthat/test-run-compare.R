@@ -59,12 +59,21 @@ testthat::test_that("ledgr_compare_runs compares stored completed runs without r
   testthat::expect_identical(after_counts, before_counts)
   testthat::expect_identical(cmp$run_id, c("compare-qty-2", "compare-qty-1"))
   testthat::expect_true(all(c(
-    "final_equity", "total_return", "max_drawdown", "n_trades", "win_rate",
+    "final_equity", "total_return", "annualized_return", "volatility",
+    "sharpe_ratio", "max_drawdown", "n_trades", "win_rate", "avg_trade",
+    "time_in_market",
     "execution_mode", "elapsed_sec", "strategy_source_hash",
     "strategy_params_hash", "config_hash", "snapshot_hash"
   ) %in% names(cmp)))
   testthat::expect_true(all(cmp$status == "DONE"))
   testthat::expect_true(all(is.finite(cmp$final_equity)))
+  testthat::expect_type(cmp$total_return, "double")
+  testthat::expect_type(cmp$max_drawdown, "double")
+  testthat::expect_type(cmp$sharpe_ratio, "double")
+  testthat::expect_identical(
+    cmp$run_id[order(cmp$total_return, decreasing = TRUE)],
+    cmp$run_id[order(as.numeric(cmp$total_return), decreasing = TRUE)]
+  )
   testthat::expect_true(all(!is.na(cmp$strategy_params_hash)))
 })
 

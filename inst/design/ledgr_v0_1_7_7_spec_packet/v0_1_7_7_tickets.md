@@ -362,7 +362,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1 day
 **Dependencies:** LDG-1702
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Make `ledgr_compare_runs()` useful for programmatic ranking by exposing raw
@@ -379,15 +379,30 @@ Users must not parse strings such as `"+5.2%"` to rank runs.
 6. Update documentation and contract tests.
 
 **Acceptance Criteria:**
-- [ ] Users can rank by numeric total return without parsing display strings.
-- [ ] Users can rank by numeric max drawdown without parsing display strings.
-- [ ] Users can rank by any shipped risk metric without parsing display strings.
-- [ ] Printed comparison output remains readable and curated.
-- [ ] Tests cover raw column access and printed display.
-- [ ] Future sweep result docs can reference the same metric-column convention.
+- [x] Users can rank by numeric total return without parsing display strings.
+- [x] Users can rank by numeric max drawdown without parsing display strings.
+- [x] Users can rank by any shipped risk metric without parsing display strings.
+- [x] Printed comparison output remains readable and curated.
+- [x] Tests cover raw column access and printed display.
+- [x] Future sweep result docs can reference the same metric-column convention.
 
 **Implementation Notes:**
-- Pending.
+- Extended `ledgr_compare_runs()` with raw numeric standard metric columns:
+  `annualized_return`, `volatility`, `sharpe_ratio`, `avg_trade`, and
+  `time_in_market`, while preserving existing raw `total_return` and
+  `max_drawdown`.
+- Computed comparison metrics from stored `equity_curve` and `ledger_events`
+  artifacts only; no run-store schema changes, strategy reruns, or formatted
+  string parsing were introduced.
+- Kept formatted percentages as a print-only concern and added `sharpe_ratio`
+  to the curated comparison print view.
+- Documented the raw numeric comparison contract in `contracts.md` and
+  `?ledgr_compare_runs`.
+- Verification passed:
+  `testthat::test_file("tests/testthat/test-run-compare.R")`,
+  `testthat::test_file("tests/testthat/test-run-print.R")`,
+  `testthat::test_file("tests/testthat/test-metric-oracles.R")`, and
+  `testthat::test_file("tests/testthat/test-documentation-contracts.R")`.
 
 **Test Requirements:**
 - `tests/testthat/test-run-compare.R`

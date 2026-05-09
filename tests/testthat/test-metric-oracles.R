@@ -263,14 +263,14 @@ testthat::test_that("summary, comparison, and run-list metrics use the same defi
   listed <- listed[match(bt$run_id, listed$run_id), , drop = FALSE]
 
   testthat::expect_equal(cmp$total_return[[1]], expected$total_return, tolerance = 1e-10)
+  testthat::expect_equal(cmp$annualized_return[[1]], expected$annualized_return, tolerance = 1e-10)
+  testthat::expect_equal(cmp$volatility[[1]], expected$volatility, tolerance = 1e-10)
+  testthat::expect_equal(cmp$sharpe_ratio[[1]], expected$sharpe_ratio, tolerance = 1e-10)
   testthat::expect_equal(cmp$max_drawdown[[1]], expected$max_drawdown, tolerance = 1e-10)
   testthat::expect_identical(cmp$n_trades[[1]], expected$n_trades)
   testthat::expect_equal(cmp$win_rate[[1]], expected$win_rate, tolerance = 1e-10)
-  testthat::expect_false("annualized_return" %in% names(cmp))
-  testthat::expect_false("volatility" %in% names(cmp))
-  testthat::expect_false("sharpe_ratio" %in% names(cmp))
-  testthat::expect_false("avg_trade" %in% names(cmp))
-  testthat::expect_false("time_in_market" %in% names(cmp))
+  testthat::expect_equal(cmp$avg_trade[[1]], expected$avg_trade, tolerance = 1e-10)
+  testthat::expect_equal(cmp$time_in_market[[1]], expected$time_in_market, tolerance = 1e-10)
 
   testthat::expect_equal(listed$total_return[[1]], actual$total_return, tolerance = 1e-10)
   testthat::expect_equal(listed$max_drawdown[[1]], actual$max_drawdown, tolerance = 1e-10)
