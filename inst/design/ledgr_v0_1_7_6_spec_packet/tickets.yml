@@ -48,7 +48,7 @@ tickets:
 
   - id: LDG-1602
     title: "DuckDB Connection, Checkpoint, And Transaction Review"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-1601]
     tests:

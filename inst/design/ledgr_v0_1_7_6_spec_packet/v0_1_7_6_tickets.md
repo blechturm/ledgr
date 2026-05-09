@@ -143,7 +143,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1-2 days
 **Dependencies:** LDG-1601
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Produce the architecture review artifact that maps ledgr's DuckDB connection
@@ -163,13 +163,31 @@ DuckDB metadata-format dependencies.
    decision artifact.
 
 **Acceptance Criteria:**
-- [ ] Connection-lifecycle map covers all public DuckDB entry points.
-- [ ] Every durable public write path appears in the checkpoint matrix.
-- [ ] Every direct connection exception is documented with a reason.
-- [ ] Multi-statement durable writes have explicit transaction ownership.
-- [ ] Runner checkpoint strictness decision is recorded.
-- [ ] Shutdown ownership decision is recorded.
-- [ ] DuckDB metadata-format dependency and upgrade check are recorded.
+- [x] Connection-lifecycle map covers all public DuckDB entry points.
+- [x] Every durable public write path appears in the checkpoint matrix.
+- [x] Every direct connection exception is documented with a reason.
+- [x] Multi-statement durable writes have explicit transaction ownership.
+- [x] Runner checkpoint strictness decision is recorded.
+- [x] Shutdown ownership decision is recorded.
+- [x] DuckDB metadata-format dependency and upgrade check are recorded.
+
+**Implementation Notes:**
+- Replaced the seed `duckdb_architecture_review.md` with the final LDG-1602
+  architecture review artifact.
+- Added a connection-lifecycle map for low-level DB init, snapshot creation,
+  snapshot load/open/close, runner execution, backtest result reads,
+  run-store discovery, mutable run metadata, migration, and executable docs.
+- Added a checkpoint matrix that distinguishes best-effort cleanup checkpoints
+  from strict user-facing mutation checkpoints.
+- Recorded final decisions:
+  - keep runner cleanup checkpointing best-effort;
+  - keep defensive double-shutdown cleanup;
+  - keep `duckdb_constraints()` expression parsing as a
+    DuckDB-version-sensitive metadata contract protected by loud failures and
+    upgrade checks.
+- Audited transaction boundaries by static scan. No production code changes
+  were made.
+- Follow-up implementation remains in LDG-1603 and LDG-1604.
 
 **Test Requirements:**
 - Static scan for DuckDB connection/checkpoint/transaction calls.
