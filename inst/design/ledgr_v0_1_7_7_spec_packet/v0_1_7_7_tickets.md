@@ -453,7 +453,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1 day
 **Dependencies:** LDG-1701
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Close documentation gaps that are not metric implementation work: make
@@ -475,19 +475,31 @@ retrospective.
 8. Update rendered companion markdown and documentation contract tests.
 
 **Acceptance Criteria:**
-- [ ] README shows `ledgr_extract_strategy(..., trust = FALSE)` as the safe
+- [x] README shows `ledgr_extract_strategy(..., trust = FALSE)` as the safe
       stored-strategy inspection path.
-- [ ] Experiment-store docs teach source inspection from a completed run without
+- [x] Experiment-store docs teach source inspection from a completed run without
       rerunning strategy code.
-- [ ] Trust-boundary prose is explicit: source identity is not code safety.
-- [ ] Legacy/pre-provenance limitations are mentioned.
-- [ ] `?ledgr_snapshot_from_yahoo` states the returned handle is sealed.
-- [ ] `?ledgr_snapshot_seal` documents idempotent behavior on sealed handles.
-- [ ] Yahoo snapshot docs mention expected `quantmod` stderr noise.
-- [ ] Rd, Rmd, rendered markdown, and doc-contract tests agree.
+- [x] Trust-boundary prose is explicit: source identity is not code safety.
+- [x] Legacy/pre-provenance limitations are mentioned.
+- [x] `?ledgr_snapshot_from_yahoo` states the returned handle is sealed.
+- [x] `?ledgr_snapshot_seal` documents idempotent behavior on sealed handles.
+- [x] Yahoo snapshot docs mention expected `quantmod` stderr noise.
+- [x] Rd, Rmd, rendered markdown, and doc-contract tests agree.
 
 **Implementation Notes:**
-- Pending.
+- Added safe `trust = FALSE` stored-strategy inspection examples to README and
+  the experiment-store vignette, including source-text inspection without
+  rerunning, parsing, evaluating, or executing strategy code.
+- Clarified that hash verification proves stored-text identity, not code
+  safety, and that legacy/pre-provenance runs may not have recoverable source.
+- Added experiment-store and strategy-development article links to
+  `?ledgr_extract_strategy`.
+- Documented that Yahoo snapshots return already-sealed handles, that quantmod
+  can emit harmless stderr startup/S3 messages, and that
+  `ledgr_snapshot_seal()` is idempotent on already-sealed snapshots.
+- Regenerated Rd, README markdown, and the experiment-store companion markdown.
+- Verification passed:
+  `testthat::test_file("tests/testthat/test-documentation-contracts.R")`.
 
 **Test Requirements:**
 - `tests/testthat/test-documentation-contracts.R`

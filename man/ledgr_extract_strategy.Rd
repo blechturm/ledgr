@@ -48,6 +48,27 @@ evaluate, or execute the stored source unless \code{trust = TRUE}. Stored source
 hash mismatches abort in all modes because a mismatch means the stored
 artifact is corrupt.
 }
+\details{
+\code{trust = FALSE} is the safe provenance-inspection path. It can tell you which
+source text and parameter artifacts produced a completed run without running
+that source. \code{trust = TRUE} is a recovery path for experiment stores you
+already trust and intentionally want ledgr to parse/evaluate: it verifies
+source identity before parsing/evaluating the stored text, but hash
+verification proves identity only; it is not a code-safety guarantee.
+Legacy/pre-provenance runs and strategy types without capturable source may
+return \code{NA} for \code{strategy_source_text}.
+}
+\section{Articles}{
+
+Durable experiment stores:
+\code{vignette("experiment-store", package = "ledgr")}
+\code{system.file("doc", "experiment-store.html", package = "ledgr")}
+
+Strategy authoring:
+\code{vignette("strategy-development", package = "ledgr")}
+\code{system.file("doc", "strategy-development.html", package = "ledgr")}
+}
+
 \examples{
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
@@ -58,7 +79,7 @@ strategy <- function(ctx, params) {
 }
 exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
 bt <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
-ledgr_extract_strategy(snapshot, bt$run_id)
+ledgr_extract_strategy(snapshot, bt$run_id, trust = FALSE)
 close(bt)
 ledgr_snapshot_close(snapshot)
 }

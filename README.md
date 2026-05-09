@@ -110,8 +110,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260507_195954_adc8
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpemoR2r\ledgr_640c77c72f3a.duckdb
+#> Snapshot ID: snapshot_20260509_183655_7850
+#> Database:    C:\Users\maxth\AppData\Local\Temp\Rtmp8Eh9Nb\ledgr_1d1c45a0b25c5.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -202,6 +202,20 @@ ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
+
+Stored strategy provenance is inspectable without rerunning or
+evaluating the strategy source. Use the default `trust = FALSE` path for
+safe source and metadata inspection:
+
+``` r
+stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_20", trust = FALSE)
+stored_strategy$strategy_source_text
+#> [1] "function (ctx, params) \n{\n    targets <- ctx$flat()\n    for (id in ctx$universe) {\n        sma <- ctx$feature(id, \"sma_20\")\n        if (is.finite(sma) && ctx$close(id) > sma) {\n            targets[id] <- params$qty\n        }\n    }\n    targets\n}"
+```
+
+Hash verification proves stored-text identity, not code safety. Use
+`trust = TRUE` only when you already trust the store and intentionally
+want to recover a function object.
 
 ## Durable Research
 

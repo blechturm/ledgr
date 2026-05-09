@@ -27,11 +27,18 @@ ledgr_snapshot_from_yahoo(
 \item{...}{Additional arguments passed to \code{quantmod::getSymbols()}.}
 }
 \value{
-A \code{ledgr_snapshot} object.
+A sealed \code{ledgr_snapshot} object.
 }
 \description{
 Fetches historical data from Yahoo Finance via quantmod and delegates to
-\code{ledgr_snapshot_from_df()}.
+\code{ledgr_snapshot_from_df()}. The returned handle is already sealed; pass it
+directly to \code{ledgr_experiment()} or reopen it later with
+\code{ledgr_snapshot_load()}.
+}
+\details{
+quantmod may emit harmless package startup or S3 method-overwrite messages to
+stderr while loading its dependencies. Those messages are not ledgr snapshot
+warnings. Data availability and content still depend on Yahoo Finance.
 }
 \section{Articles}{
 

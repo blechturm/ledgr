@@ -164,6 +164,19 @@ bt_qty_20 <- exp |>
 ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))
 ```
 
+Stored strategy provenance is inspectable without rerunning or evaluating the
+strategy source. Use the default `trust = FALSE` path for safe source and
+metadata inspection:
+
+```{r extract-strategy}
+stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_20", trust = FALSE)
+stored_strategy$strategy_source_text
+```
+
+Hash verification proves stored-text identity, not code safety. Use
+`trust = TRUE` only when you already trust the store and intentionally want to
+recover a function object.
+
 ## Durable Research
 
 For durable research, create the snapshot in a project DuckDB file:

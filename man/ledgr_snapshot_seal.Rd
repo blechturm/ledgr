@@ -9,7 +9,8 @@ ledgr_snapshot_seal(con, snapshot_id)
 \arguments{
 \item{con}{A DBI connection to DuckDB or a \code{ledgr_snapshot}.}
 
-\item{snapshot_id}{Snapshot id (must exist and be status \code{CREATED}) when \code{con} is a connection.}
+\item{snapshot_id}{Snapshot id (must exist and be status \code{CREATED} or
+\code{SEALED}) when \code{con} is a connection.}
 }
 \value{
 The computed snapshot hash (character(1)) or a list when called with a snapshot object.
@@ -19,8 +20,11 @@ Transitions a snapshot from \code{CREATED} to \code{SEALED} and stores a determi
 \code{snapshot_hash} in a single DuckDB transaction.
 }
 \details{
-Snapshot mutability rule: sealing is only allowed while status is \code{CREATED}.
-After sealing, snapshot write operations must be rejected by ledgr code paths.
+Snapshot mutability rule: sealing computes the hash while status is
+\code{CREATED}. Calling \code{ledgr_snapshot_seal()} again on an already sealed
+snapshot is idempotent: it returns the existing snapshot hash and does not
+mutate snapshot contents. After sealing, snapshot write operations must be
+rejected by ledgr code paths.
 When basic metadata such as \code{start_date}, \code{end_date}, \code{n_bars}, or
 \code{n_instruments} is missing, sealing derives it from the imported snapshot
 tables. Metadata does not contribute to \code{snapshot_hash}.
@@ -28,7 +32,7 @@ tables. Metadata does not contribute to \code{snapshot_hash}.
 Errors:
 \itemize{
 \item \code{LEDGR_SNAPSHOT_NOT_FOUND} if \code{snapshot_id} does not exist.
-\item \code{LEDGR_SNAPSHOT_ALREADY_SEALED} if the snapshot is already \code{SEALED}.
+\item Already sealed snapshots return their existing hash idempotently.
 \item \code{LEDGR_SNAPSHOT_NOT_MUTABLE} if the snapshot status is not \code{CREATED}.
 \item \code{LEDGR_SNAPSHOT_EMPTY} if there are 0 bars or 0 instruments.
 \item \code{LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY} if bars reference missing instruments.

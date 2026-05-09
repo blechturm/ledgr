@@ -3,19 +3,23 @@
 #' Transitions a snapshot from `CREATED` to `SEALED` and stores a deterministic
 #' `snapshot_hash` in a single DuckDB transaction.
 #'
-#' Snapshot mutability rule: sealing is only allowed while status is `CREATED`.
-#' After sealing, snapshot write operations must be rejected by ledgr code paths.
+#' Snapshot mutability rule: sealing computes the hash while status is
+#' `CREATED`. Calling `ledgr_snapshot_seal()` again on an already sealed
+#' snapshot is idempotent: it returns the existing snapshot hash and does not
+#' mutate snapshot contents. After sealing, snapshot write operations must be
+#' rejected by ledgr code paths.
 #' When basic metadata such as `start_date`, `end_date`, `n_bars`, or
 #' `n_instruments` is missing, sealing derives it from the imported snapshot
 #' tables. Metadata does not contribute to `snapshot_hash`.
 #'
 #' @param con A DBI connection to DuckDB or a `ledgr_snapshot`.
-#' @param snapshot_id Snapshot id (must exist and be status `CREATED`) when `con` is a connection.
+#' @param snapshot_id Snapshot id (must exist and be status `CREATED` or
+#'   `SEALED`) when `con` is a connection.
 #' @return The computed snapshot hash (character(1)) or a list when called with a snapshot object.
 #' @details
 #' Errors:
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
-#' - `LEDGR_SNAPSHOT_ALREADY_SEALED` if the snapshot is already `SEALED`.
+#' - Already sealed snapshots return their existing hash idempotently.
 #' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if the snapshot status is not `CREATED`.
 #' - `LEDGR_SNAPSHOT_EMPTY` if there are 0 bars or 0 instruments.
 #' - `LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY` if bars reference missing instruments.

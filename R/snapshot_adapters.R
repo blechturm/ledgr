@@ -511,7 +511,13 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' Create a snapshot from Yahoo Finance data (quantmod)
 #'
 #' Fetches historical data from Yahoo Finance via quantmod and delegates to
-#' `ledgr_snapshot_from_df()`.
+#' `ledgr_snapshot_from_df()`. The returned handle is already sealed; pass it
+#' directly to `ledgr_experiment()` or reopen it later with
+#' `ledgr_snapshot_load()`.
+#'
+#' quantmod may emit harmless package startup or S3 method-overwrite messages to
+#' stderr while loading its dependencies. Those messages are not ledgr snapshot
+#' warnings. Data availability and content still depend on Yahoo Finance.
 #'
 #' @param symbols Character vector of ticker symbols.
 #' @param from Start date (character, Date, or POSIXct).
@@ -519,7 +525,7 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
 #' @param ... Additional arguments passed to `quantmod::getSymbols()`.
-#' @return A `ledgr_snapshot` object.
+#' @return A sealed `ledgr_snapshot` object.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`

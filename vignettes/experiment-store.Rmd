@@ -277,6 +277,35 @@ Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have fills but no
 closed trades yet, in which case win rate is not defined.
 
+## Inspect Stored Strategy Source
+
+Completed runs keep strategy provenance in the experiment store. This is one of
+the most useful audit artifacts: you can inspect the source text that produced a
+run without reopening the backtest handle and without rerunning the strategy.
+
+Use `trust = FALSE` for safe inspection. It returns stored source text,
+parameters, hashes, dependency metadata, and warnings without parsing,
+evaluating, or executing the source.
+
+```{r extract-source}
+stored_strategy <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = FALSE)
+stored_strategy
+```
+
+The source text is just data in this mode.
+
+```{r extract-source-text}
+writeLines(stored_strategy$strategy_source_text)
+```
+
+Hash verification proves stored-text identity, not code safety. Use
+`trust = TRUE` only when you already trust the experiment store and
+intentionally want ledgr to parse and evaluate the stored text into a function
+object. Legacy/pre-provenance runs and strategy types without capturable source
+may report `strategy_source_text = NA`; those runs remain inspectable through
+`ledgr_run_info()` and stored result tables, but their strategy function cannot
+be recovered from provenance alone.
+
 ## Reopen A Completed Run In A Later Session
 
 `ledgr_run_open()` reconstructs a completed run handle from stored artifacts. It

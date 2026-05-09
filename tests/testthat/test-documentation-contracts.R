@@ -388,7 +388,7 @@ testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 sequencing", {
   testthat::skip_if_not(file.exists(roadmap), "roadmap unavailable")
   text <- paste(readLines(roadmap, warn = FALSE), collapse = "\n")
 
-  for (version in c("0[.]1[.]7[.]6", "0[.]1[.]7[.]7", "0[.]1[.]7[.]8", "0[.]1[.]8", "0[.]1[.]8[.]1")) {
+  for (version in c("0[.]1[.]7[.]6", "0[.]1[.]7[.]7", "0[.]1[.]7[.]8", "0[.]1[.]7[.]9", "0[.]1[.]8", "0[.]1[.]8[.]1")) {
     testthat::expect_match(text, paste0("## v", version))
   }
   testthat::expect_match(text, "DuckDB Persistence Architecture Review", fixed = TRUE)
@@ -582,6 +582,41 @@ testthat::test_that("experiment-store docs show the low-level CSV bridge", {
   testthat::expect_match(doc, "Snapshot identity does not\\s+come from that metadata")
   testthat::expect_match(info_help, "start_date, end_date", fixed = TRUE)
   testthat::expect_match(info_help, "Metadata is not part of \\code{snapshot_hash}", fixed = TRUE)
+})
+
+testthat::test_that("provenance docs teach safe stored-strategy inspection", {
+  root <- testthat::test_path("..", "..")
+  readme <- paste(readLines(file.path(root, "README.Rmd"), warn = FALSE), collapse = "\n")
+  exp_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.Rmd"), warn = FALSE), collapse = "\n")
+  extract_help <- paste(readLines(file.path(root, "man", "ledgr_extract_strategy.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(readme, "ledgr_extract_strategy\\(snapshot, \"readme_sma_20\", trust = FALSE\\)")
+  testthat::expect_match(readme, "without rerunning or evaluating the\\s+strategy source")
+  testthat::expect_match(exp_doc, "Inspect Stored Strategy Source", fixed = TRUE)
+  testthat::expect_match(exp_doc, "without parsing,\\s+evaluating, or executing the source")
+  testthat::expect_match(exp_doc, "Hash verification proves stored-text identity, not code safety", fixed = TRUE)
+  testthat::expect_match(exp_doc, "Legacy/pre-provenance runs", fixed = TRUE)
+  testthat::expect_match(extract_help, "trust = FALSE", fixed = TRUE)
+  testthat::expect_match(extract_help, "trust = TRUE", fixed = TRUE)
+  testthat::expect_match(extract_help, "not a code-safety guarantee", fixed = TRUE)
+  testthat::expect_match(extract_help, "legacy/pre-provenance runs", ignore.case = TRUE)
+  for (article in c("experiment-store", "strategy-development")) {
+    testthat::expect_match(extract_help, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
+    testthat::expect_match(extract_help, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
+  }
+})
+
+testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {
+  root <- testthat::test_path("..", "..")
+  yahoo_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_from_yahoo.Rd"), warn = FALSE), collapse = "\n")
+  seal_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_seal.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(yahoo_help, "returned handle is already sealed", fixed = TRUE)
+  testthat::expect_match(yahoo_help, "quantmod may emit harmless", fixed = TRUE)
+  testthat::expect_match(yahoo_help, "S3 method-overwrite messages", fixed = TRUE)
+  testthat::expect_match(yahoo_help, "stderr", fixed = TRUE)
+  testthat::expect_match(seal_help, "idempotent", fixed = TRUE)
+  testthat::expect_match(seal_help, "Already sealed snapshots return their existing hash", fixed = TRUE)
 })
 
 testthat::test_that("help-page article links target installed vignettes only", {

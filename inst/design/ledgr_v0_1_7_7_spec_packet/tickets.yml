@@ -174,7 +174,7 @@ tickets:
 
   - id: LDG-1705
     title: "Provenance And Snapshot/Yahoo Documentation Hygiene"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1701]
     tests:

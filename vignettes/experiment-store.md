@@ -281,12 +281,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     892c5a85101a75a202e7497960f53ad7c0aeb268edbff3a3d031ae37addf56bb
+#> Config Hash:     77110348339dbd6f4b94960ccc45052d393a90153d468a714b7fffbee4b3b48f
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.66
+#> Elapsed Sec:     1.17
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    2
@@ -313,6 +313,57 @@ ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
 Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have
 fills but no closed trades yet, in which case win rate is not defined.
+
+## Inspect Stored Strategy Source
+
+Completed runs keep strategy provenance in the experiment store. This is
+one of the most useful audit artifacts: you can inspect the source text
+that produced a run without reopening the backtest handle and without
+rerunning the strategy.
+
+Use `trust = FALSE` for safe inspection. It returns stored source text,
+parameters, hashes, dependency metadata, and warnings without parsing,
+evaluating, or executing the source.
+
+``` r
+stored_strategy <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = FALSE)
+stored_strategy
+#> ledgr Extracted Strategy
+#> ========================
+#>
+#> Run ID:          trend_qty_5
+#> Reproducibility: tier_1
+#> Source Hash:     c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+#> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
+#> Hash Verified:   TRUE
+#> Trust:           FALSE
+#> Source Available:TRUE
+```
+
+The source text is just data in this mode.
+
+``` r
+writeLines(stored_strategy$strategy_source_text)
+#> function (ctx, params)
+#> {
+#>     targets <- ctx$flat()
+#>     for (id in ctx$universe) {
+#>         sma <- ctx$feature(id, "sma_20")
+#>         if (is.finite(sma) && ctx$close(id) > sma) {
+#>             targets[id] <- params$qty
+#>         }
+#>     }
+#>     targets
+#> }
+```
+
+Hash verification proves stored-text identity, not code safety. Use
+`trust = TRUE` only when you already trust the experiment store and
+intentionally want ledgr to parse and evaluate the stored text into a
+function object. Legacy/pre-provenance runs and strategy types without
+capturable source may report `strategy_source_text = NA`; those runs
+remain inspectable through `ledgr_run_info()` and stored result tables,
+but their strategy function cannot be recovered from provenance alone.
 
 ## Reopen A Completed Run In A Later Session
 
