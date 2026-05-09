@@ -57,6 +57,38 @@ without ledgr taking hard dependencies on them.
 
 ---
 
+## Roadmap Discipline
+
+The active roadmap prioritizes the core research-to-paper-trading arc over
+expanding strategy-family and asset-class coverage.
+
+The near-term goal is not to support every trading style. The near-term goal is
+to prove that one deterministic, event-sourced research workflow can travel from
+sealed historical data to paper-trading operations with the same audit trail:
+
+```text
+sealed data
+  -> deterministic research backtest
+  -> durable experiment store
+  -> reproducible strategy provenance
+  -> comparison and metrics
+  -> parameter sweep
+  -> target risk layer
+  -> OMS simulation
+  -> paper trading
+  -> observability
+```
+
+A new strategy family is not admitted to the active roadmap until ledgr has the
+data model, accounting model, execution semantics, and provenance contract to
+support it without weakening sealed snapshots, no-lookahead execution,
+event-sourced accounting, or run provenance.
+
+Strategy-family expansions remain valuable, but they are deferred until the
+backtest-to-paper arc is proven.
+
+---
+
 ## v0.0.x - Package Foundation (DONE)
 
 **Goal:** Establish a clean, professional R package skeleton aligned with the
@@ -824,6 +856,46 @@ ledgr-side finding:
 
 ---
 
+## v0.1.7.5 - Indicator, Diagnostics, And Documentation Hardening (DONE)
+
+**Goal:** Resolve the v0.1.7.4 follow-up work and harden the user-facing
+research workflow before returning to persistence architecture and sweep-mode
+preparation.
+
+This release converted the external-review and auditr feedback into concrete
+package behavior, documentation, and contract tests. It kept the execution model
+unchanged: all strategies still flow through sealed snapshots, feature
+precomputation, no-lookahead pulse execution, event-sourced accounting, and
+durable experiment-store runs.
+
+### Scope
+
+- Correct TTR warmup contracts, including MACD's full signal-EMA warmup, and
+  add parity coverage across the supported TTR adapter surface.
+- Add diagnostics and documentation for impossible warmup and zero-trade runs.
+- Expand result-inspection documentation so users can see equity, fills, trades,
+  ledger events, metrics, and summaries in one coherent workflow.
+- Document the low-level CSV snapshot create/import/seal/load/run path.
+- Improve helper and feature-map discoverability, including parameterized
+  feature-registration guidance for future sweeps.
+- Add ecosystem positioning: ledgr is a ports/adapters architecture around a
+  deterministic core, not a replacement for the broader R finance ecosystem.
+- Record release-CI lessons from Ubuntu/DuckDB failures in the playbook and
+  contracts.
+
+### Definition of Done
+
+- MACD and other supported TTR indicators have deterministic warmup contracts
+  and regression tests.
+- Zero-trade warmup diagnostics are visible but non-fatal.
+- The primary vignettes explain result inspection, CSV snapshots, warmup
+  troubleshooting, helper usage, and ecosystem positioning.
+- Documentation contract tests protect installed article links and headless
+  discovery paths.
+- Ubuntu and Windows CI are green.
+
+---
+
 ## v0.1.7.6 - DuckDB Persistence Architecture Review
 
 **Goal:** Make DuckDB persistence boring across Windows, Ubuntu, pkgdown, and
@@ -940,17 +1012,44 @@ roadmap drivers and must not block this metric milestone or v0.1.8.
   information ratio are in scope or explicitly deferred.
 - Decide whether ledgr owns a minimal core risk metric set, exposes optional
   adapters to established metric packages, or both.
+- Use `{PerformanceAnalytics}` as an optional parity oracle where definitions
+  match ledgr-owned metrics. Parity tests must skip cleanly when the package is
+  absent. A public `{PerformanceAnalytics}` adapter is deferred until the ledgr
+  risk metric contract is stable.
 - Ensure `summary(bt)`, `ledgr_compute_metrics()`, `ledgr_compare_runs()`, and
   future sweep-ranking design can use the same metric definitions.
 - Add independent public-table oracles for any new metrics, following the
   existing metric-oracle pattern.
 - Update the metrics-and-accounting documentation with formulas, assumptions,
   edge cases, and examples.
+- Add raw numeric companion columns alongside formatted display strings in
+  `ledgr_compare_runs()` output. The v0.1.7.5 auditr retrospective showed that
+  every agent or user who tries to rank runs programmatically must parse
+  formatted percent strings such as `"+5.2%"`. Raw columns (`total_return_num`,
+  `max_drawdown_num`, etc.) make ranking composable without brittle string
+  parsing. This is a natural addition here because `ledgr_compare_runs()` is
+  already in scope for the new risk metric, and sweep mode will need the same
+  programmatic ranking surface.
+- Close three documentation gaps identified in the v0.1.7.5 auditr retrospective:
+  - `?ledgr_snapshot_from_yahoo` must state that the returned handle is already
+    sealed.
+  - `?ledgr_snapshot_seal` must document that calling seal on an already-sealed
+    snapshot handle is idempotent: it returns the existing hash without
+    re-sealing or erroring.
+  - `?ledgr_snapshot_from_yahoo` must note that `quantmod` may emit harmless
+    startup and S3-method-overwrite messages to stderr during Yahoo fetches;
+    these do not indicate failure.
+- Make `ledgr_extract_strategy(..., trust = FALSE)` more prominent in the
+  README and experiment-store documentation as a safe stored-strategy
+  provenance inspection path.
+- Add the ledgr logo to package-visible documentation assets and display it in
+  the GitHub README and pkgdown site.
 
 ### Non-Goals
 
 - No full performance-analytics metric zoo.
 - No mandatory dependency on `{PerformanceAnalytics}` or other metric packages.
+- No public `{PerformanceAnalytics}` adapter in this milestone.
 - No FRED, Treasury, ECB, central-bank, or other risk-free-rate data adapters.
 - No arbitrary user-supplied risk-free time series until the alignment and
   provenance contract is implemented.
@@ -978,13 +1077,24 @@ roadmap drivers and must not block this metric milestone or v0.1.8.
   fail/defer loudly rather than silently applying a daily-only convention.
 - `ledgr_compute_metrics()` and `summary(bt)` expose the shipped metric
   consistently.
-- `ledgr_compare_runs()` either includes the new metric or documents why its
-  curated comparison surface remains unchanged.
+- `ledgr_compare_runs()` includes the new risk metric and exposes raw numeric
+  companion columns for all metrics alongside formatted display strings.
+- Programmatic ranking of `ledgr_compare_runs()` output does not require string
+  parsing.
 - Public-table oracle tests independently recompute every shipped risk metric.
+- Optional `{PerformanceAnalytics}` parity tests cover matching ledgr-owned
+  metric definitions where practical and skip cleanly when the package is not
+  installed.
 - Zero-trade, flat-equity, constant-return, and short-sample cases are tested.
 - Documentation explains that ledgr provides a small auditable metric layer and
   may interoperate with the broader R finance ecosystem rather than replacing
   it.
+- `?ledgr_snapshot_from_yahoo` states the returned handle is sealed.
+- `?ledgr_snapshot_seal` documents idempotent behavior on already-sealed handles.
+- `?ledgr_snapshot_from_yahoo` notes expected `quantmod` stderr messages.
+- README and experiment-store documentation show `ledgr_extract_strategy(...,
+  trust = FALSE)` as the safe stored-strategy inspection path.
+- GitHub README and pkgdown display the ledgr logo from package-visible assets.
 - Ubuntu and Windows CI are green.
 
 ---
@@ -1054,6 +1164,141 @@ with user-facing diagnostics and documentation.
 
 ---
 
+## v0.1.7.9 - Strategy Author Ergonomics
+
+**Goal:** Close the remaining feedback from the v0.1.7.5 auditr retrospective
+that does not belong in the risk-metrics or reproducibility-preflight milestones.
+After those two milestones stabilise the measurement and correctness surfaces,
+this milestone improves the experience of writing and validating multi-instrument
+strategies from documentation alone.
+
+This milestone is deliberately placed after v0.1.7.8 and before v0.1.8. One
+item — `ctx$all_features()` — is consciously deferred to v0.1.8 and recorded
+here so the reasons are available when the fold-core design work begins.
+
+### Scope
+
+- Implement `ledgr_feature_contract_check(snapshot, features)`. The v0.1.7.5
+  auditr retrospective showed that every agent or first-time user who needs to
+  confirm warmup feasibility before a run must manually combine
+  `ledgr_feature_contracts()` (which reports `requires_bars` per feature) with
+  `ledgr_snapshot_info()` (which reports only total bar count and instrument
+  count). That manual combination is a heuristic: dividing total bars by
+  instrument count works only for balanced snapshots where every instrument has
+  the same date range. For snapshots where instruments start at different dates
+  or contain gaps, the floor is wrong and impossible-warmup cases are
+  silently missed.
+  `ledgr_feature_contract_check(snapshot, features)` must:
+  - query per-instrument bar counts from the sealed snapshot;
+  - join them against `ledgr_feature_contracts(features)$requires_bars`;
+  - return a data frame with one row per (instrument, feature), with columns
+    `instrument_id`, `feature_id`, `requires_bars`, `available_bars`, and
+    `warmup_achievable`;
+  - be usable as a pre-run validation step and in vignette examples.
+- Change `select_top_n()` to return a classed empty result instead of emitting
+  a warning when no instruments are selected. The current behavior forces callers
+  to write `suppressWarnings(..., classes = "ledgr_empty_selection")` to handle
+  the expected no-signal path explicitly. Per the design philosophy
+  (§2.6 Explicit over implicit), an expected code path should not require warning
+  suppression — the caller should be able to check the result type. The classed
+  empty result must be compatible with `weight_equal()` and `target_rebalance()`
+  so the helper pipeline continues to work without change. The existing
+  `ledgr_empty_selection` class name may be reused as the result class.
+- Document the canonical whole-share allocation formula in the
+  strategy-development vignette for users who write raw strategies outside the
+  helper pipeline:
+  `floor(equity_fraction * ctx$equity / ctx$close(instrument_id))`
+  This is what `target_rebalance()` does internally. Users who write the momentum
+  or other allocation strategies manually need this documented as the correct
+  pattern, not an incidental choice.
+- Record the `ctx$all_features()` deferral with full rationale (see below).
+
+### Deferred To v0.1.8: `ctx$all_features(feature_map)`
+
+The v0.1.7.5 auditr retrospective showed that every raw multi-instrument
+strategy uses the same imperative per-instrument for-loop:
+
+```r
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  for (id in ctx$universe) {
+    x <- ctx$features(id, feature_map)        # per-instrument call
+    if (passed_warmup(x) && <condition>) {
+      targets[id] <- params$qty
+    }
+  }
+  targets
+}
+```
+
+This is verbose and not idiomatic R. A vectorized alternative would be:
+
+```r
+all_features <- ctx$all_features(feature_map)  # named list by instrument
+crossed <- vapply(all_features, function(x) passed_warmup(x) && x[["sma_fast"]] > x[["sma_slow"]], logical(1))
+targets[crossed] <- params$qty
+```
+
+or even more concise patterns using the named list. **This is parked at v0.1.8,
+not implemented here, for the following reasons:**
+
+1. **The `ctx` object shape is defined by the fold core.** The fold core
+   extraction in v0.1.8 is the right moment to decide whether `ctx` grows a
+   vectorized surface. A naive implementation now — `lapply(ctx$universe,
+   ctx$features, feature_map)` with a wrapper — would work but would lock in an
+   API before the fold core's internal data layout is settled.
+
+2. **Consistency with `ledgr_precompute_features()`.** In v0.1.8, features are
+   precomputed and shared zero-copy across sweep workers via
+   `ledgr_precompute_features()`. The precomputed object carries per-instrument
+   feature matrices indexed by instrument and pulse. `ctx$all_features()` and
+   `ledgr_precompute_features()` both give the strategy access to the same
+   underlying data; they should use the same shape and naming conventions. If
+   `ctx$all_features()` is designed before the precomputed-features interface is
+   finalized, the two surfaces risk being inconsistent.
+
+3. **The helper pipeline already solves the most common case.** `signal_return()`
+   → `select_top_n()` → `weight_equal()` → `target_rebalance()` abstracts the
+   per-instrument loop entirely and produces more readable strategy code for the
+   common ranking-and-weighting pattern. The vectorized ctx accessor primarily
+   benefits raw strategies with custom per-instrument logic that the helper
+   pipeline cannot express. That is a real use case, but not urgent enough to
+   justify designing the API before the fold core is stable.
+
+**When v0.1.8 opens:** revisit whether `ctx$all_features(feature_map)` returns
+a named list (one element per instrument, each a named numeric vector of feature
+values) or a wide data frame (rows = instruments, columns = feature aliases).
+The named-list form is more consistent with `ctx$features(id, feature_map)`; the
+data frame form is more convenient for `dplyr`-style filtering. The decision
+should be made in the context of how `ledgr_precompute_features()` structures its
+output, since strategies in sweep mode may eventually receive feature data through
+the same channel.
+
+### Non-Goals
+
+- No sweep or parallel execution APIs.
+- No change to the `function(ctx, params)` strategy signature.
+- No automatic warmup repair or imputation.
+- No `ctx$all_features()` — deliberately deferred to v0.1.8.
+
+### Definition of Done
+
+- `ledgr_feature_contract_check(snapshot, features)` is implemented, exported,
+  and documented; it returns per-instrument bar counts, `requires_bars`, and
+  `warmup_achievable` flags; it is used in at least one vignette example.
+- `select_top_n()` returns a classed empty result when no instruments are
+  selected; callers can check the result class explicitly; the helper pipeline
+  (`weight_equal()`, `target_rebalance()`) handles the classed empty result
+  without change; the `suppressWarnings(classes = "ledgr_empty_selection")`
+  pattern is no longer required.
+- The canonical whole-share allocation formula is documented in the
+  strategy-development vignette.
+- The `ctx$all_features()` deferral rationale is recorded in this roadmap entry
+  and referenced in the v0.1.8 section.
+- Ubuntu and Windows CI are green.
+
+---
+
 ## v0.1.8 - Lightweight Parameter Sweep Mode
 
 **Goal:** Let users run fast exploratory parameter sweeps without DuckDB
@@ -1117,6 +1362,37 @@ strategies are fully self-contained. Tier 2 strategies are accepted when their
 external package/environment requirements are explicit enough for users to
 manage on workers, for example package-qualified calls such as `pkg::fn()`.
 Tier 3 strategies are rejected before execution.
+
+### Context API: Resolve `ctx$all_features()` Deferral
+
+v0.1.7.9 deliberately parked `ctx$all_features(feature_map)` here. The
+outstanding design question is: should `ctx` grow a vectorized surface that
+returns feature values for all instruments at once, and if so, what shape should
+it take?
+
+This must be resolved when the fold core is extracted. The fold core defines
+exactly what `ctx` is — its shape, what data it carries at each pulse, and how
+sweep workers receive it. `ctx$all_features()` is a question about that shape.
+
+The two candidate shapes are:
+
+- **Named list** — `list(AAPL = c(sma_fast = 101.2, sma_slow = 99.8), MSFT = ...)`.
+  Consistent with `ctx$features(id, feature_map)`, easy to iterate with
+  `vapply()`.
+- **Wide data frame** — rows = instruments, columns = feature aliases.
+  More convenient for `dplyr`-style filtering and ranking; closer to how
+  `ledgr_precompute_features()` might structure its output.
+
+The decision should be made in the context of `ledgr_precompute_features()`.
+If precomputed feature matrices are exposed as wide per-instrument slices, the
+ctx accessor should follow the same convention so strategies written for ordinary
+runs and strategies written to consume precomputed features use the same mental
+model. If they diverge, document why.
+
+If `ctx$all_features()` is implemented in this milestone, it must also be
+reflected in the fold-core parity contract: the same result from
+`ctx$all_features()` in a `ledgr_run()` context and from the equivalent access
+pattern in a sweep worker context.
 
 ### Deterministic Random State
 
@@ -1450,238 +1726,6 @@ Risk: composed[no_short, max_weight(10%), max_gross_exposure(100%)]
 
 ---
 
-## v0.1.10 - Portfolio Optimization Support
-
-**Goal:** Make portfolio optimization a first-class research workflow in ledgr.
-
-An optimizer is a strategy that computes target weights mathematically rather
-than by rules. The strategy contract already supports this output; what is
-missing is the tooling that makes writing optimizer strategies natural rather
-than awkward.
-
-ledgr is the harness, not the solver. The optimization math stays external
-(quadprog, CVXR, PortfolioAnalytics, or any other solver the user chooses).
-ledgr provides the clean inputs and the clean output conversion so that plugging
-in a solver feels like one function call, not an exercise in data wrangling.
-
-### Scope
-
-#### Context Accessors
-
-- `ctx$returns_matrix(lookback)` -- a numeric matrix of shape
-  `instruments x time` covering the lookback window, ready for covariance
-  estimation or any return-based optimization input. Respects the no-lookahead
-  guarantee: only bars available at the current pulse are included.
-- `ctx$weights_to_targets(weights)` -- converts a named weight vector
-  (e.g. `c(SPY = 0.6, TLT = 0.4)`) to share quantities using current equity
-  and close prices. Validates that weights sum to at most 1 and that all names
-  are in `ctx$universe`.
-
-#### Vignette
-
-A worked vignette demonstrating the full research workflow:
-
-1. Write a mean-variance strategy using `ctx$returns_matrix()` and an external
-   solver.
-2. Sweep over lookback window and risk-target combinations using
-   `ledgr_precompute_features()` and `ledgr_sweep()`.
-3. Persist the winning configuration with `ledgr_run()` and label it in
-   the experiment store.
-4. Compare runs with `ledgr_compare_runs()`.
-
-The vignette is the primary deliverable -- the context accessors exist to make
-it readable.
-
-#### Reproducibility Note
-
-Strategies that call external solvers (quadprog, CVXR) reference package
-functions that are outside the base-R namespace. These strategies are classified
-Tier 2 (source captured, replay requires solver package). This is documented
-explicitly in the vignette and in `ledgr_run_info()` output.
-
-### Definition of Done
-
-- A mean-variance strategy can be written in under 30 lines of strategy code
-  using `ctx$returns_matrix()` and a standard solver
-- `ctx$weights_to_targets()` handles weight-to-quantity conversion correctly
-  under edge cases: zero equity, missing prices, weights that do not span the
-  full universe
-- The sweep-to-persist-to-compare workflow is demonstrated end-to-end in the
-  vignette against the canonical demo dataset
-- `ctx$returns_matrix()` is covered by no-lookahead tests
-
----
-
-## v0.1.11 - Calendar And Event-Driven Strategies
-
-**Goal:** Give strategies a structured temporal context so calendar and
-event-driven logic does not require manual date arithmetic inside the strategy
-function.
-
-Calendar strategies are among the most common in systematic research --
-month-end rebalancing, quarter-end drift correction, regime detection by
-calendar period. Today a ledgr strategy can read `ctx$ts_utc` and compute
-everything manually, but every user rewrites the same boilerplate. A thin
-calendar layer eliminates that without adding hidden state or breaking the
-no-lookahead guarantee.
-
-### Scope
-
-#### Calendar Context Accessors
-
-- `ctx$calendar$is_month_end` -- logical, TRUE if the current pulse is the last
-  trading day of the calendar month
-- `ctx$calendar$is_quarter_end` -- logical, TRUE if the current pulse is the
-  last trading day of the calendar quarter
-- `ctx$calendar$days_since(reference_ts)` -- integer count of trading days
-  between `reference_ts` and the current pulse, using the universe calendar
-  derived from the sealed snapshot
-- `ctx$calendar$trading_day` -- integer position of the current pulse within
-  the sealed snapshot (1 = first pulse)
-
-All accessors are derived from the sealed snapshot calendar, not from a live
-clock. No-lookahead is preserved by construction.
-
-#### Rebalance Throttle Helper
-
-- `ctx$calendar$periods_since_rebalance(frequency)` where `frequency` is one
-  of `"daily"`, `"weekly"`, `"monthly"`, `"quarterly"` -- returns an integer
-  count of full periods elapsed since the last pulse on which the strategy
-  returned a non-flat target change. Intended for strategies that want to
-  rebalance on a schedule without tracking their own rebalance timestamp.
-
-#### Vignette Extension
-
-Extend the strategy-authoring vignette with a calendar-driven rebalancing
-example: a monthly rebalancing portfolio that acts only on month-end pulses and
-holds otherwise.
-
-### Definition of Done
-
-- All calendar accessors are derived from sealed snapshot data with no
-  wall-clock calls
-- `ctx$calendar$days_since()` is tested against known trading calendars with
-  gaps and holidays present in the snapshot
-- No-lookahead tests cover calendar accessor paths
-- Calendar-driven rebalancing is demonstrated in the strategy-authoring vignette
-
----
-
-## v0.1.12 - Pairs And Spread Trading
-
-**Goal:** Make cross-instrument spread strategies natural to write without
-manual cross-instrument data assembly inside the strategy function.
-
-Pairs trading and statistical arbitrage are distinct from universe-level
-portfolio optimization: they operate on instrument pairs, require spread
-z-scores and rolling cointegration residuals, and produce relative rather than
-absolute target positions. The returns matrix from v0.1.8 partially addresses
-this, but the pair-level spread computation is specific enough to warrant its
-own accessor layer.
-
-### Scope
-
-#### Spread Accessors
-
-- `ctx$spread(id_a, id_b, lookback)` -- the current price spread between two
-  instruments, normalized as a rolling z-score over `lookback` bars. Uses
-  log-price difference by default; raw difference available via a `method`
-  argument.
-- `ctx$spread_history(id_a, id_b, lookback)` -- the full lookback window of
-  spread values as a numeric vector, for strategies that need to fit a
-  cointegration model or compute their own statistics.
-
-Both accessors respect the no-lookahead guarantee and are computed from the
-sealed snapshot bars available at the current pulse.
-
-#### Position Helpers
-
-- `ctx$net_exposure(id_a, id_b)` -- the current net dollar exposure of a pair
-  as a signed scalar: positive means long `id_a` / short `id_b`, negative
-  means the reverse. Simplifies the position-sizing logic common to
-  pairs strategies.
-
-#### Vignette
-
-A worked vignette demonstrating a z-score mean-reversion pairs strategy:
-entry on spread z-score threshold, exit on reversion to zero, position sizing
-using `ctx$net_exposure()`. Sweep over lookback and entry threshold using
-`ledgr_sweep()`, persist the winner.
-
-### Definition of Done
-
-- `ctx$spread()` and `ctx$spread_history()` respect no-lookahead across all
-  lookback window sizes
-- `ctx$net_exposure()` is consistent with the ledger-derived position state
-- A pairs strategy can be written in under 40 lines of strategy code
-- The sweep-to-persist workflow is demonstrated in the vignette against the
-  canonical demo dataset with at least two instruments
-
----
-
-## v0.1.13 - ML Strategy Artifact Management
-
-**Goal:** Make ML-based strategies first-class experiment-store citizens by
-giving model artifacts their own provenance slot in run identity.
-
-The design document specifies that ML models are trained outside the engine,
-loaded as immutable artifacts per run, and treated as deterministic functions
-at decision time. The strategy contract already supports this at runtime --
-a strategy can load and call any model. What is missing is the provenance
-layer: a trained model is not JSON-safe, cannot go in `strategy_params`, and
-cannot be fingerprinted by the existing source-hash mechanism. Without artifact
-management, ML strategies are always Tier 3 and the experiment store cannot
-distinguish two runs that used different model versions.
-
-### Scope
-
-#### Artifact Registry
-
-- `ledgr_artifact_register(path, label = NULL)` -- hashes a model artifact
-  file (any format: `.rds`, `.onnx`, `.pt`, etc.) and registers it in the
-  experiment store with a content hash, file size, and optional label. Returns
-  an artifact handle.
-- `ledgr_artifact_load(db_path, artifact_hash)` -- retrieves a registered
-  artifact path by hash. Does not load the model itself; loading is the
-  user's responsibility and keeps ledgr framework-agnostic.
-- Artifact hashes are stored in a new `run_artifacts` table linked to
-  `run_provenance`. A run that references an artifact carries the artifact
-  hash as part of its experiment identity.
-
-#### Strategy Integration
-
-- `strategy_params` accepts artifact handles as values. An artifact handle
-  serializes to its content hash in JSON, making it canonical-JSON-safe and
-  hashable. The `strategy_params_hash` therefore changes when the model
-  changes, even if no other parameter changes.
-- Strategies that load a model via an artifact handle are classified Tier 2
-  (source captured, artifact hash recorded, but replay requires the artifact
-  file to be present). This is documented explicitly.
-- Strategies that load a model by raw file path (bypassing the artifact
-  registry) are classified Tier 3.
-
-#### Vignette
-
-A worked vignette: train a classification model offline (e.g. logistic
-regression or xgboost), register it as an artifact, write a strategy that
-loads and calls it at each pulse, run two experiments with different model
-versions, compare run provenance to show the artifact hashes differ.
-
-### Definition of Done
-
-- A model artifact can be registered and its hash stored as part of run
-  identity
-- Two runs using different model versions produce different
-  `strategy_params_hash` values even when all other parameters are identical
-- `ledgr_run_info()` displays artifact hashes for runs that reference
-  artifacts
-- Tier 2 vs. Tier 3 classification is correctly applied based on whether
-  the artifact registry was used
-- The vignette demonstrates the full workflow: train, register, backtest,
-  compare
-
----
-
 ## v0.2.0 - OMS Semantics (Simulation Only)
 
 **Goal:** Introduce realistic order lifecycle handling without a real broker.
@@ -1816,11 +1860,384 @@ appendable data source lives outside the snapshot.
 
 ---
 
+## Deferred Strategy Families (After Research-To-Paper Arc)
+
+These milestones are valuable, but they are deliberately parked until the
+research-to-paper-trading arc is proven. They should not block risk metrics,
+sweep mode, target risk, OMS simulation, paper trading, or observability.
+
+They may be promoted back into the active roadmap only when the relevant data
+model, accounting model, execution semantics, and provenance contract are clear.
+The "formerly v0.1.x" labels are historical provenance only; they do not reserve
+future version numbers.
+
+### Portfolio Optimization Support (deferred; formerly v0.1.10)
+
+**Goal:** Make portfolio optimization a first-class research workflow in ledgr.
+
+An optimizer is a strategy that computes target weights mathematically rather
+than by rules. The strategy contract already supports this output; what is
+missing is the tooling that makes writing optimizer strategies natural rather
+than awkward.
+
+ledgr is the harness, not the solver. The optimization math stays external
+(quadprog, CVXR, PortfolioAnalytics, or any other solver the user chooses).
+ledgr provides the clean inputs and the clean output conversion so that plugging
+in a solver feels like one function call, not an exercise in data wrangling.
+
+#### Scope
+
+##### Context Accessors
+
+- `ctx$returns_matrix(lookback)` -- a numeric matrix of shape
+  `instruments x time` covering the lookback window, ready for covariance
+  estimation or any return-based optimization input. Respects the no-lookahead
+  guarantee: only bars available at the current pulse are included.
+- `ctx$weights_to_targets(weights)` -- converts a named weight vector
+  (e.g. `c(SPY = 0.6, TLT = 0.4)`) to share quantities using current equity
+  and close prices. Validates that weights sum to at most 1 and that all names
+  are in `ctx$universe`.
+
+##### Vignette
+
+A worked vignette demonstrating the full research workflow:
+
+1. Write a mean-variance strategy using `ctx$returns_matrix()` and an external
+   solver.
+2. Sweep over lookback window and risk-target combinations using
+   `ledgr_precompute_features()` and `ledgr_sweep()`.
+3. Persist the winning configuration with `ledgr_run()` and label it in
+   the experiment store.
+4. Compare runs with `ledgr_compare_runs()`.
+
+The vignette is the primary deliverable -- the context accessors exist to make
+it readable.
+
+##### Reproducibility Note
+
+Strategies that call external solvers (quadprog, CVXR) reference package
+functions that are outside the base-R namespace. These strategies are classified
+Tier 2 (source captured, replay requires solver package). This is documented
+explicitly in the vignette and in `ledgr_run_info()` output.
+
+#### Definition of Done
+
+- A mean-variance strategy can be written in under 30 lines of strategy code
+  using `ctx$returns_matrix()` and a standard solver
+- `ctx$weights_to_targets()` handles weight-to-quantity conversion correctly
+  under edge cases: zero equity, missing prices, weights that do not span the
+  full universe
+- The sweep-to-persist-to-compare workflow is demonstrated end-to-end in the
+  vignette against the canonical demo dataset
+- `ctx$returns_matrix()` is covered by no-lookahead tests
+
+---
+
+### Calendar And Event-Driven Strategies (deferred; formerly v0.1.11)
+
+**Goal:** Give strategies a structured temporal context so calendar and
+event-driven logic does not require manual date arithmetic inside the strategy
+function.
+
+Calendar strategies are among the most common in systematic research --
+month-end rebalancing, quarter-end drift correction, regime detection by
+calendar period. Today a ledgr strategy can read `ctx$ts_utc` and compute
+everything manually, but every user rewrites the same boilerplate. A thin
+calendar layer eliminates that without adding hidden state or breaking the
+no-lookahead guarantee.
+
+#### Scope
+
+##### Calendar Context Accessors
+
+- `ctx$calendar$is_month_end` -- logical, TRUE if the current pulse is the last
+  trading day of the calendar month
+- `ctx$calendar$is_quarter_end` -- logical, TRUE if the current pulse is the
+  last trading day of the calendar quarter
+- `ctx$calendar$days_since(reference_ts)` -- integer count of trading days
+  between `reference_ts` and the current pulse, using the universe calendar
+  derived from the sealed snapshot
+- `ctx$calendar$trading_day` -- integer position of the current pulse within
+  the sealed snapshot (1 = first pulse)
+
+All accessors are derived from the sealed snapshot calendar, not from a live
+clock. No-lookahead is preserved by construction.
+
+##### Rebalance Throttle Helper
+
+- `ctx$calendar$periods_since_rebalance(frequency)` where `frequency` is one
+  of `"daily"`, `"weekly"`, `"monthly"`, `"quarterly"` -- returns an integer
+  count of full periods elapsed since the last pulse on which the strategy
+  returned a non-flat target change. Intended for strategies that want to
+  rebalance on a schedule without tracking their own rebalance timestamp.
+
+##### Vignette Extension
+
+Extend the strategy-authoring vignette with a calendar-driven rebalancing
+example: a monthly rebalancing portfolio that acts only on month-end pulses and
+holds otherwise.
+
+#### Definition of Done
+
+- All calendar accessors are derived from sealed snapshot data with no
+  wall-clock calls
+- `ctx$calendar$days_since()` is tested against known trading calendars with
+  gaps and holidays present in the snapshot
+- No-lookahead tests cover calendar accessor paths
+- Calendar-driven rebalancing is demonstrated in the strategy-authoring vignette
+
+---
+
+### Pairs And Spread Trading (deferred; formerly v0.1.12)
+
+**Goal:** Make cross-instrument spread strategies natural to write without
+manual cross-instrument data assembly inside the strategy function.
+
+Pairs trading and statistical arbitrage are distinct from universe-level
+portfolio optimization: they operate on instrument pairs, require spread
+z-scores and rolling cointegration residuals, and produce relative rather than
+absolute target positions. The returns matrix from v0.1.8 partially addresses
+this, but the pair-level spread computation is specific enough to warrant its
+own accessor layer.
+
+#### Scope
+
+##### Spread Accessors
+
+- `ctx$spread(id_a, id_b, lookback)` -- the current price spread between two
+  instruments, normalized as a rolling z-score over `lookback` bars. Uses
+  log-price difference by default; raw difference available via a `method`
+  argument.
+- `ctx$spread_history(id_a, id_b, lookback)` -- the full lookback window of
+  spread values as a numeric vector, for strategies that need to fit a
+  cointegration model or compute their own statistics.
+
+Both accessors respect the no-lookahead guarantee and are computed from the
+sealed snapshot bars available at the current pulse.
+
+##### Position Helpers
+
+- `ctx$net_exposure(id_a, id_b)` -- the current net dollar exposure of a pair
+  as a signed scalar: positive means long `id_a` / short `id_b`, negative
+  means the reverse. Simplifies the position-sizing logic common to
+  pairs strategies.
+
+##### Vignette
+
+A worked vignette demonstrating a z-score mean-reversion pairs strategy:
+entry on spread z-score threshold, exit on reversion to zero, position sizing
+using `ctx$net_exposure()`. Sweep over lookback and entry threshold using
+`ledgr_sweep()`, persist the winner.
+
+#### Definition of Done
+
+- `ctx$spread()` and `ctx$spread_history()` respect no-lookahead across all
+  lookback window sizes
+- `ctx$net_exposure()` is consistent with the ledger-derived position state
+- A pairs strategy can be written in under 40 lines of strategy code
+- The sweep-to-persist workflow is demonstrated in the vignette against the
+  canonical demo dataset with at least two instruments
+
+---
+
+## Deferred Interoperability And Reporting Ports
+
+These ports fit ledgr's hexagonal architecture, but they are not prerequisites
+for the research-to-paper-trading arc. They may land opportunistically if they
+stay thin, optional, and compatible with ledgr's core contracts; otherwise they
+wait until the core arc is proven.
+
+### PerformanceAnalytics Reporting Adapter
+
+**Goal:** Add an optional reporting adapter that lets ledgr users pass completed
+runs and return streams into `{PerformanceAnalytics}` without changing ledgr's
+execution or metric semantics.
+
+This milestone depends on the v0.1.7.7 risk metric contract. It must not define
+ledgr's canonical metrics. ledgr-owned metrics remain computed from public
+result tables. `{PerformanceAnalytics}` is an optional analysis and reporting
+port around that core.
+
+#### Scope
+
+- Export a ledgr return-series conversion helper, such as `ledgr_as_returns()`,
+  that derives adjacent equity-row returns from public ledgr result tables.
+- Add optional `{PerformanceAnalytics}` examples for completed ledgr runs.
+- Add adapter helpers only if they stay thin wrappers over public result tables.
+- Support parity checks against ledgr-native metrics where definitions match.
+- Document differences in assumptions, sign conventions, risk-free-rate units,
+  annualization, geometric vs. arithmetic conventions, and benchmark handling.
+
+#### Non-Goals
+
+- No mandatory `{PerformanceAnalytics}` dependency.
+- No replacement of ledgr-native metric computation.
+- No metric zoo in core ledgr.
+- No mutation of ledgr stores.
+- No effect on run identity unless adapter outputs are explicitly persisted in a
+  later milestone.
+
+#### Definition of Done
+
+- Users can obtain a `{PerformanceAnalytics}`-compatible return series from a
+  completed ledgr run.
+- Optional `{PerformanceAnalytics}` examples skip cleanly when the package is
+  absent.
+- Any adapter-computed metrics clearly identify whether they are ledgr-native,
+  `{PerformanceAnalytics}`-native, or parity-checked.
+- Documentation explains that this is an interoperability adapter, not the
+  source of ledgr's metric contract.
+- Ubuntu and Windows CI are green.
+
+### TA-Lib Indicator Adapter
+
+**Goal:** Accept an optional `{talib}` indicator adapter if it arrives as a thin
+port that returns ordinary `ledgr_indicator` objects and preserves ledgr's
+feature-precompute and no-lookahead contracts.
+
+This work may arrive as an external PR against main. It is welcome, but it must
+not drive the release sequence or block the research-to-paper arc.
+
+#### Scope
+
+- Keep `{talib}` optional.
+- Use ledgr's indicator adapter boundary and deterministic feature identities.
+- Prefer full-series `series_fn()` integration and `{talib}` lookback metadata
+  for warmup contracts.
+- Restrict initial scope to continuous numeric indicators; charting and
+  candlestick-pattern semantics require separate design.
+
+#### Definition of Done
+
+- The adapter produces normal ledgr indicators and appears in
+  `ledgr_feature_contracts()` with `source = "talib"`.
+- Tests skip cleanly when `{talib}` is absent.
+- Direct-output parity and warmup tests cover the supported initial surface.
+
+---
+
+## Deferred Provenance And Artifact Infrastructure
+
+This is not a strategy family. It is provenance infrastructure that becomes
+important if ledgr is expected to carry trained-model strategies toward paper
+trading. It is deferred for now, but should be reconsidered before v0.3.0 if
+ML-based strategies become a target use case for the first paper-trading arc.
+
+### ML Strategy Artifact Management (deferred; formerly v0.1.13)
+
+**Goal:** Make ML-based strategies first-class experiment-store citizens by
+giving model artifacts their own provenance slot in run identity.
+
+The design document specifies that ML models are trained outside the engine,
+loaded as immutable artifacts per run, and treated as deterministic functions
+at decision time. The strategy contract already supports this at runtime --
+a strategy can load and call any model. What is missing is the provenance
+layer: a trained model is not JSON-safe, cannot go in `strategy_params`, and
+cannot be fingerprinted by the existing source-hash mechanism. Without artifact
+management, ML strategies are always Tier 3 and the experiment store cannot
+distinguish two runs that used different model versions.
+
+#### Scope
+
+##### Artifact Registry
+
+- `ledgr_artifact_register(path, label = NULL)` -- hashes a model artifact
+  file (any format: `.rds`, `.onnx`, `.pt`, etc.) and registers it in the
+  experiment store with a content hash, file size, and optional label. Returns
+  an artifact handle.
+- `ledgr_artifact_load(db_path, artifact_hash)` -- retrieves a registered
+  artifact path by hash. Does not load the model itself; loading is the
+  user's responsibility and keeps ledgr framework-agnostic.
+- Artifact hashes are stored in a new `run_artifacts` table linked to
+  `run_provenance`. A run that references an artifact carries the artifact
+  hash as part of its experiment identity.
+
+##### Strategy Integration
+
+- `strategy_params` accepts artifact handles as values. An artifact handle
+  serializes to its content hash in JSON, making it canonical-JSON-safe and
+  hashable. The `strategy_params_hash` therefore changes when the model
+  changes, even if no other parameter changes.
+- Strategies that load a model via an artifact handle are classified Tier 2
+  (source captured, artifact hash recorded, but replay requires the artifact
+  file to be present). This is documented explicitly.
+- Strategies that load a model by raw file path (bypassing the artifact
+  registry) are classified Tier 3.
+
+##### Vignette
+
+A worked vignette: train a classification model offline (e.g. logistic
+regression or xgboost), register it as an artifact, write a strategy that
+loads and calls it at each pulse, run two experiments with different model
+versions, compare run provenance to show the artifact hashes differ.
+
+#### Definition of Done
+
+- A model artifact can be registered and its hash stored as part of run
+  identity.
+- Two runs using different model versions produce different
+  `strategy_params_hash` values even when all other parameters are identical.
+- `ledgr_run_info()` displays artifact hashes for runs that reference
+  artifacts.
+- Tier 2 vs. Tier 3 classification is correctly applied based on whether
+  the artifact registry was used.
+- The vignette demonstrates the full workflow: train, register, backtest,
+  compare.
+
+---
+
+## Deferred Asset-Class And Market-Structure Families
+
+These areas are not rejected; they are parked until the core product has proven
+that sealed research data can travel through sweep, target risk, OMS simulation,
+paper trading, and observability without changing execution semantics.
+
+- **Shorting, margin, borrow, and leverage** require explicit borrow cost,
+  collateral, liquidation, and risk-limit semantics. The current target-risk
+  layer should stay long-only or explicitly constrained until those accounting
+  rules exist.
+- **Futures and rolls** require contract metadata, expiry, margin, roll policy,
+  settlement, and continuous-series provenance. They should not be modeled as
+  ordinary equities with different symbols.
+- **Options and multi-leg derivatives** require Greeks, expiry, assignment,
+  exercise, contract multipliers, and multi-leg order semantics. They are
+  outside the current ledger and fill model.
+- **FX and multi-currency accounting** require currency conversion rates,
+  cash ledgers by currency, base-currency reporting, and rate provenance.
+- **Crypto exchange support** requires 24/7 calendars, venue-specific fees,
+  custody assumptions, and exchange adapter boundaries.
+- **Corporate actions** such as dividends, splits, and adjusted/unadjusted
+  price policy require explicit data-source and accounting contracts.
+- **Order-book, tick, and market microstructure strategies** require data and
+  fill assumptions beyond OHLCV bars. They should not be approximated silently
+  through daily-bar semantics.
+- **Advanced slippage, liquidity, and market-impact models** belong in the
+  execution/fill layer, not in ad hoc strategy code.
+
+---
+
+## Permanently Unsupported Patterns
+
+Some patterns are not deferred; they are incompatible with ledgr's core
+contract.
+
+- Strategies that require lookahead or future data access.
+- Strategies whose result depends on unrecorded wall-clock time, live API calls,
+  mutable global state, hidden files, or non-reproducible randomness.
+- Claims about intrabar order, queue position, or tick sequencing when the
+  sealed input contains only OHLCV bars and the fill model does not state the
+  assumption explicitly.
+- Human discretionary decisions inside the strategy loop unless those decisions
+  are represented as sealed, timestamped input data.
+
+---
+
 ## Future Extensions (Explicitly Deferred)
 
-- Additional asset classes (crypto, futures, FX)
+These ideas remain valid but are not part of the active research-to-paper arc
+unless a future version promotes them with a concrete contract.
+
 - Intraday / multi-pulse scheduling
-- Advanced transaction cost models
 - Modular validation zoo:
   - read-only validation suites for data quality, snapshot integrity,
     indicators, strategy outputs, fill assumptions, ledger reconciliation,
@@ -1829,13 +2246,6 @@ appendable data source lives outside the snapshot.
     and classed failures/warnings
   - explicit extension mechanism so package or user-defined checks can be
     composed without changing core execution semantics
-- Advanced cost and slippage modeling:
-  - keep costs and slippage in fill/execution models, not strategy code
-  - expose traceable fill components such as reference price, execution price,
-    spread, slippage, fixed commission, and future percentage/market-impact
-    cost terms
-  - preserve zero-cost defaults for controlled examples while documenting that
-    realistic research should opt into explicit execution-cost assumptions
 - Tax-aware accounting (wash sales, lot selection)
 - UI / dashboards
 
