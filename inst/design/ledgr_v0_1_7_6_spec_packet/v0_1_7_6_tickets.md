@@ -235,7 +235,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1-2 days
 **Dependencies:** LDG-1602
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Lock the separation between runtime schema validation and constraint
@@ -256,21 +256,49 @@ constraint checks happen only in isolated disposable databases.
    changes shape.
 
 **Acceptance Criteria:**
-- [ ] Runtime schema validation performs no invalid-row DML probes.
-- [ ] Schema validation can run repeatedly on one connection without dirtying
+- [x] Runtime schema validation performs no invalid-row DML probes.
+- [x] Schema validation can run repeatedly on one connection without dirtying
       connection state.
-- [ ] Core ledgr table row counts are unchanged before and after validation.
-- [ ] Invalid `runs.status` values are rejected by DuckDB in an isolated test.
-- [ ] Invalid `snapshots.status` values are rejected by DuckDB in an isolated
+- [x] Core ledgr table row counts are unchanged before and after validation.
+- [x] Invalid `runs.status` values are rejected by DuckDB in an isolated test.
+- [x] Invalid `snapshots.status` values are rejected by DuckDB in an isolated
       test.
-- [ ] DuckDB constraint metadata lookup failures fail loudly or are explicitly
+- [x] DuckDB constraint metadata lookup failures fail loudly or are explicitly
       documented as safe.
+
+**Implementation Notes:**
+- Hardened the create-side `runs.status` metadata parser in
+  `R/db-schema-create.R`: if `duckdb_constraints()` returns a status-related
+  CHECK expression that is not the expected `status IN (...)` shape, schema
+  creation now fails loudly instead of silently recreating `runs`.
+- Kept no-constraint and old-enum migration behavior intact. Existing
+  `COMPLETED`-to-`DONE` migration still uses the interpretable `IN (...)`
+  expression path.
+- Strengthened `runs.status` and `snapshots.status` DML tests to assert all
+  valid status values and to issue safe `ROLLBACK` calls after expected
+  constraint violations so later assertions do not inherit dirty DuckDB
+  transaction state under Linux/covr.
+- Added create-side coverage proving an unexpected status CHECK expression
+  fails loudly and preserves the existing `runs` row.
+- Confirmed the side-effect validator test already covers repeated validation
+  without row mutations across `runs`, `snapshots`, `features`, and
+  `ledger_events`.
 
 **Test Requirements:**
 - `tests/testthat/test-schema-validator-side-effects.R`
 - `tests/testthat/test-schema.R`
 - `tests/testthat/test-schema-snapshots.R`
 - Targeted schema tests under local Windows and WSL/Ubuntu where available.
+
+**Verification:**
+```text
+pkgload::load_all('.', quiet=TRUE);
+testthat::test_file('tests/testthat/test-schema-validator-side-effects.R');
+testthat::test_file('tests/testthat/test-schema-snapshots.R');
+testthat::test_file('tests/testthat/test-schema.R')
+```
+
+Result: all targeted schema tests passed on Windows.
 
 **Source Reference:** v0.1.7.6 spec sections R2, R5, B1-B3.
 
