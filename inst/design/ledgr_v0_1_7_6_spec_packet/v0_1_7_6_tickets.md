@@ -462,7 +462,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 0.5-1 day
 **Dependencies:** LDG-1603, LDG-1604
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Align the written package contracts and release-facing documentation with the
@@ -478,17 +478,41 @@ final v0.1.7.6 persistence decisions.
 5. Update `v0_1_7_6_tickets.md` and `tickets.yml` statuses together.
 
 **Acceptance Criteria:**
-- [ ] `contracts.md` matches final persistence behavior.
-- [ ] `release_ci_playbook.md` names the local WSL/Ubuntu gate and stop rule.
-- [ ] `NEWS.md` summarizes delivered v0.1.7.6 scope.
-- [ ] Roadmap sequencing is coherent and does not make `{talib}` a release
+- [x] `contracts.md` matches final persistence behavior.
+- [x] `release_ci_playbook.md` names the local WSL/Ubuntu gate and stop rule.
+- [x] `NEWS.md` summarizes delivered v0.1.7.6 scope.
+- [x] Roadmap sequencing is coherent and does not make `{talib}` a release
       blocker.
-- [ ] Ticket markdown and YAML statuses agree.
+- [x] Ticket markdown and YAML statuses agree.
+
+**Implementation Notes:**
+- Added the v0.1.7.6 `NEWS.md` section covering the DuckDB architecture review,
+  read-only schema validation boundary, isolated status constraint tests,
+  fresh-connection persistence tests, local WSL/Ubuntu gate, and auditr routing.
+- Updated `contracts.md` with the final v0.1.7.6 persistence invariants:
+  read-only runtime validation, loud DuckDB metadata failures,
+  fresh-connection visibility, strict public metadata-write durability,
+  best-effort cleanup checkpoint limits, and low-level CSV reopen behavior.
+- Confirmed `release_ci_playbook.md` names the local WSL/Ubuntu DuckDB gate,
+  stop rule, and separate branch/`main`/tag CI gates.
+- Confirmed `ledgr_roadmap.md` keeps v0.1.7.6, v0.1.7.7, v0.1.7.8, v0.1.8,
+  and v0.1.8.1 sequencing coherent and does not make `{talib}` a release
+  blocker.
+- Added documentation-contract tests for the v0.1.7.6 NEWS, contracts,
+  playbook, and roadmap invariants.
 
 **Test Requirements:**
 - Documentation contract scans if tests exist.
 - NEWS section scan.
 - Ticket/YAML consistency scan.
+
+**Verification:**
+```text
+pkgload::load_all('.', quiet=TRUE);
+testthat::test_file('tests/testthat/test-documentation-contracts.R')
+```
+
+Result: passed on Windows.
 
 **Source Reference:** v0.1.7.6 spec sections 8, 9.
 

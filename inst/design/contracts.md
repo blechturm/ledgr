@@ -76,14 +76,29 @@ the active versioned spec packet, currently
   runs and their `ledger_events`, `features`, and `equity_curve` rows must be
   visible from a newly opened connection.
 - Runtime schema creation and validation must be read-only with respect to
-  data rows in ledgr tables except for deliberate schema migration or DDL. They may
-  inspect DuckDB metadata to verify table shape and constraints, but must not
-  prove constraints by writing invalid probe rows into ledgr tables. Constraint
-  enforcement belongs in isolated tests with disposable database connections.
+  data rows in ledgr tables except for deliberate schema migration or DDL. They
+  may inspect DuckDB metadata to verify table shape and constraints, but must
+  not prove constraints by writing invalid probe rows into ledgr tables.
+  Constraint enforcement belongs in isolated tests with disposable database
+  connections.
+- DuckDB constraint metadata is an introspection contract. If a runtime
+  validator or create-side compatibility check cannot interpret expected
+  constraint metadata, it must fail loudly rather than mutate user rows or
+  silently recreate durable tables.
 - Completed run artifacts are durable when `ledgr_run()` returns. User-facing
   `close(bt)` and `ledgr_snapshot_close(snapshot)` calls are resource-management
   tools for long sessions, explicit opens, and lazy cursors; documentation must
   not frame them as data-loss prevention.
+- User-facing metadata mutations such as run labels, archives, and tags promise
+  immediate fresh-connection visibility. They must use strict checkpointing or
+  an equivalent durable-read guarantee before returning.
+- Best-effort checkpointing is reserved for cleanup paths where a secondary
+  checkpoint error would mask the primary run or cleanup error. It must not be
+  used as the only durability mechanism for public mutating APIs.
+- Low-level CSV snapshot workflows must survive close and reopen:
+  create/import/seal followed by `ledgr_snapshot_load(verify = TRUE)` must
+  preserve hash verification, seal-time metadata, and subsequent `ledgr_run()`
+  execution.
 - v0.1.7 public experiment-store APIs are snapshot-first. A `db_path` appears
   in normal workflows only at snapshot creation or snapshot loading.
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store

@@ -176,7 +176,7 @@ tickets:
 
   - id: LDG-1605
     title: "Contracts, NEWS, Roadmap, And Release-Hygiene Alignment"
-    status: todo
+    status: done
     priority: P2
     dependencies: [LDG-1603, LDG-1604]
     tests:
