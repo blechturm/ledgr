@@ -1397,6 +1397,62 @@ compute_time_in_market <- function(equity) {
   mean(abs(equity$positions_value) > 1e-6)
 }
 
+ledgr_metric_sd_epsilon <- function() .Machine$double.eps
+
+compute_period_returns <- function(equity_values) {
+  equity_values <- as.numeric(equity_values)
+  if (length(equity_values) < 2L) return(numeric(0))
+  prev <- equity_values[-length(equity_values)]
+  cur <- equity_values[-1L]
+  out <- rep(NA_real_, length(cur))
+  ok <- is.finite(prev) & is.finite(cur) & prev != 0
+  out[ok] <- (cur[ok] / prev[ok]) - 1
+  out
+}
+
+compute_rf_period_return <- function(risk_free_rate, bars_per_year) {
+  if (!is.numeric(risk_free_rate) || length(risk_free_rate) != 1L ||
+    !is.finite(risk_free_rate) || risk_free_rate <= -1) {
+    return(NA_real_)
+  }
+  if (!is.numeric(bars_per_year) || length(bars_per_year) != 1L ||
+    !is.finite(bars_per_year) || bars_per_year <= 0) {
+    return(NA_real_)
+  }
+  (1 + risk_free_rate)^(1 / bars_per_year) - 1
+}
+
+compute_annualized_volatility <- function(returns, bars_per_year) {
+  returns <- as.numeric(returns)
+  if (length(returns) < 2L || any(!is.finite(returns))) return(NA_real_)
+  if (!is.numeric(bars_per_year) || length(bars_per_year) != 1L ||
+    !is.finite(bars_per_year) || bars_per_year <= 0) {
+    return(NA_real_)
+  }
+  sd_returns <- stats::sd(returns)
+  if (!is.finite(sd_returns)) {
+    return(NA_real_)
+  }
+  sd_returns * sqrt(bars_per_year)
+}
+
+compute_sharpe_ratio <- function(returns, bars_per_year, risk_free_rate = 0) {
+  returns <- as.numeric(returns)
+  if (length(returns) < 2L || any(!is.finite(returns))) return(NA_real_)
+  if (!is.numeric(bars_per_year) || length(bars_per_year) != 1L ||
+    !is.finite(bars_per_year) || bars_per_year <= 0) {
+    return(NA_real_)
+  }
+  rf_period_return <- compute_rf_period_return(risk_free_rate, bars_per_year)
+  if (!is.finite(rf_period_return)) return(NA_real_)
+  excess_returns <- returns - rf_period_return
+  sd_excess <- stats::sd(excess_returns)
+  if (!is.finite(sd_excess) || sd_excess <= ledgr_metric_sd_epsilon()) {
+    return(NA_real_)
+  }
+  mean(excess_returns) / sd_excess * sqrt(bars_per_year)
+}
+
 ledgr_estimate_bars_per_year <- function(bt, equity, con = NULL) {
   fallback <- 252
   if (!inherits(bt, "ledgr_backtest")) return(fallback)
@@ -1463,10 +1519,17 @@ snap_to_frequency <- function(median_seconds) {
   252
 }
 
-ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
+ledgr_compute_metrics_internal <- function(bt, metrics = "standard", risk_free_rate = 0) {
   if (!identical(metrics, "standard")) {
     rlang::abort(
-      "Only metrics='standard' supported in v0.1.2. Advanced metrics are deferred to v0.1.3.",
+      "Only metrics = 'standard' is supported.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  if (!is.numeric(risk_free_rate) || length(risk_free_rate) != 1L ||
+    !is.finite(risk_free_rate) || risk_free_rate <= -1) {
+    rlang::abort(
+      "`risk_free_rate` must be a finite scalar annual rate greater than -1.",
       class = "ledgr_invalid_args"
     )
   }
@@ -1481,12 +1544,7 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
   fills <- ledgr_extract_fills_impl(bt, con = con)
   trades <- ledgr_closed_trade_rows(fills)
 
-  returns <- numeric(0)
-  if (nrow(equity) > 1) {
-    prev <- equity$equity[-nrow(equity)]
-    cur <- equity$equity[-1]
-    returns <- (cur / prev) - 1
-  }
+  returns <- compute_period_returns(equity$equity)
   bars_per_year <- ledgr_estimate_bars_per_year(bt, equity, con = con)
   initial_equity <- if (nrow(equity) > 0) as.numeric(equity$equity[[1]]) else NA_real_
   final_equity <- if (nrow(equity) > 0) as.numeric(equity$equity[[nrow(equity)]]) else NA_real_
@@ -1499,7 +1557,8 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard") {
   list(
     total_return = total_return,
     annualized_return = compute_annualized_return(equity, bars_per_year),
-    volatility = if (length(returns) > 1) stats::sd(returns, na.rm = TRUE) * sqrt(bars_per_year) else NA_real_,
+    volatility = compute_annualized_volatility(returns, bars_per_year),
+    sharpe_ratio = compute_sharpe_ratio(returns, bars_per_year, risk_free_rate = risk_free_rate),
     max_drawdown = compute_max_drawdown(equity$equity),
     n_trades = nrow(trades),
     win_rate = if (nrow(trades) > 0) sum(trades$realized_pnl > 0, na.rm = TRUE) / nrow(trades) else NA_real_,
@@ -1632,6 +1691,8 @@ ledgr_backtest_bench <- function(bt) {
 #' @param bt A `ledgr_backtest` object. This function does not accept an equity
 #'   tibble directly.
 #' @param metrics Only `"standard"` is supported in v0.1.7.
+#' @param risk_free_rate Scalar annual risk-free rate as a decimal. The default
+#'   is `0`. For example, `0.02` means two percent per year.
 #' @return Named list of metric values.
 #'
 #' @details
@@ -1643,6 +1704,10 @@ ledgr_backtest_bench <- function(bt) {
 #'   frequencies such as daily or weekly.
 #' - `volatility`: annualized standard deviation of adjacent public equity-row
 #'   returns.
+#' - `sharpe_ratio`: annualized Sharpe ratio over adjacent public equity-row
+#'   excess returns, using the scalar annual `risk_free_rate` converted to a
+#'   per-period return with the detected bar frequency. Flat, constant-return,
+#'   invalid, or short return series return `NA_real_`.
 #' - `max_drawdown`: maximum peak-to-trough percentage decline,
 #'   `min(equity / cummax(equity) - 1)`.
 #' - `n_trades`: number of closed trade rows. Open-only fills do not count until
@@ -1673,8 +1738,8 @@ ledgr_backtest_bench <- function(bt) {
 #' ledgr_compute_metrics(bt)
 #' close(bt)
 #' @export
-ledgr_compute_metrics <- function(bt, metrics = "standard") {
-  ledgr_compute_metrics_internal(bt, metrics = metrics)
+ledgr_compute_metrics <- function(bt, metrics = "standard", risk_free_rate = 0) {
+  ledgr_compute_metrics_internal(bt, metrics = metrics, risk_free_rate = risk_free_rate)
 }
 
 #' Print a backtest result
@@ -1757,6 +1822,8 @@ print.ledgr_backtest <- function(x, ...) {
 #'
 #' @param object A `ledgr_backtest` object.
 #' @param metrics Only `"standard"` is supported in v0.1.7.
+#' @param risk_free_rate Scalar annual risk-free rate as a decimal. The default
+#'   is `0`.
 #' @param ... Unused.
 #' @return The input `ledgr_backtest` object, invisibly. The printed values are
 #'   descriptive output; use `ledgr_compute_metrics()` for a named list of the
@@ -1772,6 +1839,9 @@ print.ledgr_backtest <- function(x, ...) {
 #'   `min(equity / cummax(equity) - 1)`;
 #' - annualized volatility: standard deviation of adjacent equity-row returns
 #'   multiplied by `sqrt(bars_per_year)`;
+#' - Sharpe ratio: annualized ratio of average period excess return to
+#'   excess-return standard deviation, using the scalar annual `risk_free_rate`
+#'   converted to a per-period return;
 #' - total trades: number of closed trade rows, not number of fill rows;
 #' - win rate: share of closed trade rows with strict `realized_pnl > 0`;
 #' - average trade: mean `realized_pnl` across closed trade rows;
@@ -1807,12 +1877,12 @@ print.ledgr_backtest <- function(x, ...) {
 #' summary(bt)
 #' close(bt)
 #' @export
-summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
+summary.ledgr_backtest <- function(object, metrics = "standard", risk_free_rate = 0, ...) {
   if (!inherits(object, "ledgr_backtest")) {
     rlang::abort("`object` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
 
-  computed <- ledgr_compute_metrics(object, metrics = metrics)
+  computed <- ledgr_compute_metrics(object, metrics = metrics, risk_free_rate = risk_free_rate)
 
   cat("ledgr Backtest Summary\n")
   cat("======================\n\n")
@@ -1824,6 +1894,8 @@ summary.ledgr_backtest <- function(object, metrics = "standard", ...) {
 
   cat("\nRisk Metrics:\n")
   cat(sprintf("  Volatility (annual): %.2f%%\n", computed$volatility * 100))
+  sharpe_label <- if (is.finite(computed$sharpe_ratio)) sprintf("%.3f", computed$sharpe_ratio) else "N/A"
+  cat(sprintf("  Sharpe Ratio:        %s\n", sharpe_label))
 
   cat("\nTrade Statistics:\n")
   cat(sprintf("  Total Trades:        %d\n", computed$n_trades))

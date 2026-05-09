@@ -378,7 +378,7 @@ testthat::test_that("contracts record v0.1.7.7 risk metric boundary", {
   testthat::expect_match(text, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
   testthat::expect_match(text, "FRED", fixed = TRUE)
   testthat::expect_match(text, "must not silently assume daily bars", fixed = TRUE)
-  testthat::expect_match(text, "Infinite Sharpe values\\s+must not be emitted silently")
+  testthat::expect_match(text, "Infinite Sharpe values\\s+must not\\s+be emitted silently")
   testthat::expect_match(text, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
 })
 
@@ -477,11 +477,14 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "excess_return[t] = equity_return[t] - rf_period_return[t]", fixed = TRUE)
   testthat::expect_match(metrics_doc, "0.02` means two percent per year", fixed = TRUE)
   testthat::expect_match(metrics_doc, "rf_period_return = \\(1 \\+ rf_annual\\)\\^\\(1 / bars_per_year\\) - 1")
+  testthat::expect_match(metrics_doc, "sd\\(excess_return\\) <= .Machine\\$double.eps")
   testthat::expect_match(metrics_doc, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)
+  testthat::expect_match(summary_help, "Sharpe ratio", fixed = TRUE)
+  testthat::expect_match(summary_help, "risk_free_rate", fixed = TRUE)
   testthat::expect_match(summary_help, "time in market", fixed = TRUE)
   testthat::expect_match(summary_help, "closed trade rows", fixed = TRUE)
   testthat::expect_match(summary_help, "Warmup Diagnostics", fixed = TRUE)

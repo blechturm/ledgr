@@ -161,7 +161,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1-2 days
 **Dependencies:** LDG-1701
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Implement the shipped ledgr-owned metric definitions, preferably including
@@ -185,18 +185,34 @@ public tables.
 7. Update Rd and metrics-and-accounting documentation.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_compute_metrics(bt)` exposes every shipped metric consistently.
-- [ ] `summary(bt)` prints shipped risk metrics when available.
-- [ ] Metric code does not mutate ledgr stores.
-- [ ] Public-table oracle tests independently recompute every shipped metric.
-- [ ] Tests cover zero trades, flat equity, constant returns, near-zero
+- [x] `ledgr_compute_metrics(bt)` exposes every shipped metric consistently.
+- [x] `summary(bt)` prints shipped risk metrics when available.
+- [x] Metric code does not mutate ledgr stores.
+- [x] Public-table oracle tests independently recompute every shipped metric.
+- [x] Tests cover zero trades, flat equity, constant returns, near-zero
       volatility, and short samples.
-- [ ] Infinite Sharpe-style values are not emitted silently.
-- [ ] Documentation explains formulas, risk-free assumptions, annualization, and
+- [x] Infinite Sharpe-style values are not emitted silently.
+- [x] Documentation explains formulas, risk-free assumptions, annualization, and
       edge cases.
 
 **Implementation Notes:**
-- Pending.
+- Added `sharpe_ratio` to the standard ledgr-owned metric surface and to
+  `summary.ledgr_backtest()`.
+- Added adjacent-equity-row return helpers, geometric scalar annual
+  risk-free-rate conversion, and an explicit zero-denominator Sharpe guard.
+- Extended public-table oracle tests so expected metrics are independently
+  recomputed from `ledgr_results(bt, what = "equity")` and
+  `ledgr_results(bt, what = "trades")`.
+- Documented the formulas, scalar risk-free-rate assumptions, annualization, and
+  `sd(excess_return) <= .Machine$double.eps` edge policy in contracts and the
+  metrics article.
+- Added a NEWS entry calling out the new Sharpe metric and the existing
+  volatility metric's stricter invalid-return behavior.
+- Verification passed:
+  `testthat::test_file("tests/testthat/test-metric-oracles.R")`,
+  `testthat::test_file("tests/testthat/test-metrics-zero-trades.R")`,
+  `testthat::test_file("tests/testthat/test-backtest-s3.R")`, and
+  `testthat::test_file("tests/testthat/test-documentation-contracts.R")`.
 
 **Test Requirements:**
 - `tests/testthat/test-metric-oracles.R`

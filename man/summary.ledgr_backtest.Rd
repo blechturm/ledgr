@@ -4,12 +4,15 @@
 \alias{summary.ledgr_backtest}
 \title{Summarize a backtest result}
 \usage{
-\method{summary}{ledgr_backtest}(object, metrics = "standard", ...)
+\method{summary}{ledgr_backtest}(object, metrics = "standard", risk_free_rate = 0, ...)
 }
 \arguments{
 \item{object}{A \code{ledgr_backtest} object.}
 
 \item{metrics}{Only \code{"standard"} is supported in v0.1.7.}
+
+\item{risk_free_rate}{Scalar annual risk-free rate as a decimal. The default
+is \code{0}.}
 
 \item{...}{Unused.}
 }
@@ -32,6 +35,9 @@ public equity rows using the detected bar frequency;
 \code{min(equity / cummax(equity) - 1)};
 \item annualized volatility: standard deviation of adjacent equity-row returns
 multiplied by \code{sqrt(bars_per_year)};
+\item Sharpe ratio: annualized ratio of average period excess return to
+excess-return standard deviation, using the scalar annual \code{risk_free_rate}
+converted to a per-period return;
 \item total trades: number of closed trade rows, not number of fill rows;
 \item win rate: share of closed trade rows with strict \code{realized_pnl > 0};
 \item average trade: mean \code{realized_pnl} across closed trade rows;

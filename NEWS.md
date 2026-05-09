@@ -1,3 +1,12 @@
+# ledgr 0.1.7.7
+
+- Added the first ledgr-owned risk-adjusted standard metric, `sharpe_ratio`,
+  computed from adjacent public equity-row excess returns with a scalar annual
+  risk-free rate converted geometrically to a per-period return.
+- Tightened standard metric return-series handling so invalid adjacent equity
+  returns make annualized volatility and Sharpe-style metrics `NA` instead of
+  silently dropping structurally invalid return rows.
+
 # ledgr 0.1.7.6
 
 - Completed a DuckDB persistence architecture review covering connection

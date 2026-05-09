@@ -38,5 +38,6 @@ testthat::test_that("metrics handle zero-trade backtests", {
   testthat::expect_equal(metrics$n_trades, 0L)
   testthat::expect_true(is.na(metrics$win_rate))
   testthat::expect_true(is.na(metrics$avg_trade))
+  testthat::expect_true(is.na(metrics$sharpe_ratio))
   testthat::expect_true(is.finite(metrics$total_return))
 })

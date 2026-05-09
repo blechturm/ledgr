@@ -45,7 +45,7 @@ tickets:
 
   - id: LDG-1702
     title: "Ledgr-Native Risk Metrics And Public-Table Oracles"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-1701]
     tests:

@@ -4,13 +4,16 @@
 \alias{ledgr_compute_metrics}
 \title{Compute standard metrics from backtest results}
 \usage{
-ledgr_compute_metrics(bt, metrics = "standard")
+ledgr_compute_metrics(bt, metrics = "standard", risk_free_rate = 0)
 }
 \arguments{
 \item{bt}{A \code{ledgr_backtest} object. This function does not accept an equity
 tibble directly.}
 
 \item{metrics}{Only \code{"standard"} is supported in v0.1.7.}
+
+\item{risk_free_rate}{Scalar annual risk-free rate as a decimal. The default
+is \code{0}. For example, \code{0.02} means two percent per year.}
 }
 \value{
 Named list of metric values.
@@ -28,6 +31,10 @@ public equity rows using the detected bar frequency, snapped to common
 frequencies such as daily or weekly.
 \item \code{volatility}: annualized standard deviation of adjacent public equity-row
 returns.
+\item \code{sharpe_ratio}: annualized Sharpe ratio over adjacent public equity-row
+excess returns, using the scalar annual \code{risk_free_rate} converted to a
+per-period return with the detected bar frequency. Flat, constant-return,
+invalid, or short return series return \code{NA_real_}.
 \item \code{max_drawdown}: maximum peak-to-trough percentage decline,
 \code{min(equity / cummax(equity) - 1)}.
 \item \code{n_trades}: number of closed trade rows. Open-only fills do not count until

@@ -149,6 +149,9 @@ The summary metrics can be recomputed from public result tables.
 equity_values <- equity$equity
 period_returns <- equity_values[-1] / equity_values[-length(equity_values)] - 1
 bars_per_year <- 252
+rf_annual <- 0
+rf_period_return <- (1 + rf_annual)^(1 / bars_per_year) - 1
+excess_returns <- period_returns - rf_period_return
 
 metric_check <- tibble(
   total_return =
@@ -159,6 +162,8 @@ metric_check <- tibble(
     ) - 1,
   volatility =
     sd(period_returns) * sqrt(bars_per_year),
+  sharpe_ratio =
+    mean(excess_returns) / sd(excess_returns) * sqrt(bars_per_year),
   max_drawdown =
     min(equity_values / cummax(equity_values) - 1),
   n_trades =
@@ -226,9 +231,10 @@ feed the same pulse-aligned `rf_period_return` vector into the formula above;
 they must not create a separate Sharpe formula branch.
 
 The metric is intentionally conservative around edge cases. Short samples,
-invalid adjacent equity returns, flat equity, constant-return series, zero or
-near-zero excess-return volatility, and all-missing return inputs return
-`NA_real_` rather than an infinite or misleading Sharpe value.
+invalid adjacent equity returns, flat equity, constant-return series, all-missing
+return inputs, and near-zero excess-return volatility return `NA_real_` rather
+than an infinite or misleading Sharpe value. Near-zero means
+`sd(excess_return) <= .Machine$double.eps`.
 
 Other risk-adjusted or benchmark-relative metrics are deferred in this release:
 Sortino, Calmar, Omega, information ratio, alpha/beta, benchmark-relative

@@ -1,4 +1,31 @@
-ledgr_metric_oracle <- function(bt, bars_per_year = 252) {
+ledgr_metric_oracle_rf_period_return <- function(risk_free_rate, bars_per_year) {
+  if (!is.numeric(risk_free_rate) || length(risk_free_rate) != 1L ||
+    !is.finite(risk_free_rate) || risk_free_rate <= -1) {
+    return(NA_real_)
+  }
+  if (!is.numeric(bars_per_year) || length(bars_per_year) != 1L ||
+    !is.finite(bars_per_year) || bars_per_year <= 0) {
+    return(NA_real_)
+  }
+  (1 + risk_free_rate)^(1 / bars_per_year) - 1
+}
+
+ledgr_metric_oracle_sharpe <- function(period_returns, bars_per_year, risk_free_rate = 0) {
+  period_returns <- as.numeric(period_returns)
+  if (length(period_returns) < 2L || any(!is.finite(period_returns))) {
+    return(NA_real_)
+  }
+  rf_period_return <- ledgr_metric_oracle_rf_period_return(risk_free_rate, bars_per_year)
+  if (!is.finite(rf_period_return)) return(NA_real_)
+  excess_returns <- period_returns - rf_period_return
+  sd_excess <- stats::sd(excess_returns)
+  if (!is.finite(sd_excess) || sd_excess <= .Machine$double.eps) {
+    return(NA_real_)
+  }
+  mean(excess_returns) / sd_excess * sqrt(bars_per_year)
+}
+
+ledgr_metric_oracle <- function(bt, bars_per_year = 252, risk_free_rate = 0) {
   equity <- tibble::as_tibble(ledgr_results(bt, what = "equity"))
   trades <- tibble::as_tibble(ledgr_results(bt, what = "trades"))
 
@@ -22,7 +49,11 @@ ledgr_metric_oracle <- function(bt, bars_per_year = 252) {
 
   period_returns <- numeric()
   if (length(eq) > 1L) {
-    period_returns <- eq[-1L] / eq[-length(eq)] - 1
+    prev <- eq[-length(eq)]
+    cur <- eq[-1L]
+    period_returns <- rep(NA_real_, length(cur))
+    ok <- is.finite(prev) & is.finite(cur) & prev != 0
+    period_returns[ok] <- cur[ok] / prev[ok] - 1
   }
 
   running_max <- cummax(eq)
@@ -36,7 +67,13 @@ ledgr_metric_oracle <- function(bt, bars_per_year = 252) {
   list(
     total_return = total_return,
     annualized_return = annualized_return,
-    volatility = if (length(period_returns) > 1L) stats::sd(period_returns, na.rm = TRUE) * sqrt(bars_per_year) else NA_real_,
+    volatility = if (length(period_returns) > 1L && all(is.finite(period_returns))) {
+      sd_returns <- stats::sd(period_returns)
+      if (is.finite(sd_returns)) sd_returns * sqrt(bars_per_year) else NA_real_
+    } else {
+      NA_real_
+    },
+    sharpe_ratio = ledgr_metric_oracle_sharpe(period_returns, bars_per_year, risk_free_rate = risk_free_rate),
     max_drawdown = max_drawdown,
     n_trades = as.integer(n_trades),
     win_rate = if (n_trades > 0L) sum(realized > 0, na.rm = TRUE) / n_trades else NA_real_,
@@ -231,6 +268,7 @@ testthat::test_that("summary, comparison, and run-list metrics use the same defi
   testthat::expect_equal(cmp$win_rate[[1]], expected$win_rate, tolerance = 1e-10)
   testthat::expect_false("annualized_return" %in% names(cmp))
   testthat::expect_false("volatility" %in% names(cmp))
+  testthat::expect_false("sharpe_ratio" %in% names(cmp))
   testthat::expect_false("avg_trade" %in% names(cmp))
   testthat::expect_false("time_in_market" %in% names(cmp))
 
@@ -239,8 +277,42 @@ testthat::test_that("summary, comparison, and run-list metrics use the same defi
   testthat::expect_identical(listed$n_trades[[1]], actual$n_trades)
   testthat::expect_false("annualized_return" %in% names(listed))
   testthat::expect_false("volatility" %in% names(listed))
+  testthat::expect_false("sharpe_ratio" %in% names(listed))
   testthat::expect_false("avg_trade" %in% names(listed))
   testthat::expect_false("time_in_market" %in% names(listed))
+})
+
+testthat::test_that("sharpe ratio uses geometric scalar risk-free conversion", {
+  run <- ledgr_run_metric_fixture("multi_instrument")
+  bt <- run$bt
+  on.exit(close(bt), add = TRUE)
+  on.exit(unlink(run$db_path), add = TRUE)
+
+  expected_zero <- ledgr_metric_oracle(bt, bars_per_year = 252, risk_free_rate = 0)
+  expected_rf <- ledgr_metric_oracle(bt, bars_per_year = 252, risk_free_rate = 0.02)
+  actual_zero <- ledgr_compute_metrics(bt, risk_free_rate = 0)
+  actual_rf <- ledgr_compute_metrics(bt, risk_free_rate = 0.02)
+
+  testthat::expect_equal(actual_zero$sharpe_ratio, expected_zero$sharpe_ratio, tolerance = 1e-10)
+  testthat::expect_equal(actual_rf$sharpe_ratio, expected_rf$sharpe_ratio, tolerance = 1e-10)
+  testthat::expect_false(isTRUE(all.equal(actual_zero$sharpe_ratio, actual_rf$sharpe_ratio, tolerance = 1e-12)))
+
+  summary_out <- capture.output(summary(bt, risk_free_rate = 0.02))
+  testthat::expect_true(any(grepl("Sharpe Ratio", summary_out, fixed = TRUE)))
+  testthat::expect_error(
+    ledgr_compute_metrics(bt, risk_free_rate = -1),
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("sharpe ratio edge cases return NA instead of Inf", {
+  testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(numeric(0), 252)))
+  testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(0.01, 252)))
+  testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(c(0, 0, 0), 252)))
+  testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(c(0.01, 0.01, 0.01), 252)))
+  testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(c(0.01, NA_real_, 0.02), 252)))
+  testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(c(0.01, 0.02, 0.03), NA_real_)))
+  testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(c(0.01, 0.02, 0.03), 252, risk_free_rate = -1)))
 })
 
 testthat::test_that("zero-row trade metrics are explicit", {
@@ -256,4 +328,5 @@ testthat::test_that("zero-row trade metrics are explicit", {
   testthat::expect_identical(metrics$n_trades, 0L)
   testthat::expect_true(is.na(metrics$win_rate))
   testthat::expect_true(is.na(metrics$avg_trade))
+  testthat::expect_true(is.na(metrics$sharpe_ratio))
 })

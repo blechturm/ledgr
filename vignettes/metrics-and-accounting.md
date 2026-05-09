@@ -150,6 +150,9 @@ The summary metrics can be recomputed from public result tables.
 equity_values <- equity$equity
 period_returns <- equity_values[-1] / equity_values[-length(equity_values)] - 1
 bars_per_year <- 252
+rf_annual <- 0
+rf_period_return <- (1 + rf_annual)^(1 / bars_per_year) - 1
+excess_returns <- period_returns - rf_period_return
 
 metric_check <- tibble(
   total_return =
@@ -160,6 +163,8 @@ metric_check <- tibble(
     ) - 1,
   volatility =
     sd(period_returns) * sqrt(bars_per_year),
+  sharpe_ratio =
+    mean(excess_returns) / sd(excess_returns) * sqrt(bars_per_year),
   max_drawdown =
     min(equity_values / cummax(equity_values) - 1),
   n_trades =
@@ -173,11 +178,11 @@ metric_check <- tibble(
 )
 
 metric_check
-#> # A tibble: 1 x 8
-#>   total_return annualized_return volatility max_drawdown n_trades win_rate avg_trade
-#>          <dbl>             <dbl>      <dbl>        <dbl>    <int>    <dbl>     <dbl>
-#> 1      0.00400             0.286     0.0317            0        1        1         4
-#> # i 1 more variable: time_in_market <dbl>
+#> # A tibble: 1 x 9
+#>   total_return annualized_return volatility sharpe_ratio max_drawdown n_trades win_rate
+#>          <dbl>             <dbl>      <dbl>        <dbl>        <dbl>    <int>    <dbl>
+#> 1      0.00400             0.286     0.0317         7.94            0        1        1
+#> # i 2 more variables: avg_trade <dbl>, time_in_market <dbl>
 ```
 
 Those are the same definitions used by `summary(bt)` and
@@ -233,9 +238,10 @@ formula above; they must not create a separate Sharpe formula branch.
 
 The metric is intentionally conservative around edge cases. Short
 samples, invalid adjacent equity returns, flat equity, constant-return
-series, zero or near-zero excess-return volatility, and all-missing
-return inputs return `NA_real_` rather than an infinite or misleading
-Sharpe value.
+series, all-missing return inputs, and near-zero excess-return
+volatility return `NA_real_` rather than an infinite or misleading
+Sharpe value. Near-zero means
+`sd(excess_return) <= .Machine$double.eps`.
 
 Other risk-adjusted or benchmark-relative metrics are deferred in this
 release: Sortino, Calmar, Omega, information ratio, alpha/beta,
@@ -253,6 +259,7 @@ summary(bt)
 #>
 #> Risk Metrics:
 #>   Volatility (annual): 3.17%
+#>   Sharpe Ratio:        7.937
 #>
 #> Trade Statistics:
 #>   Total Trades:        1

@@ -384,9 +384,10 @@ the active versioned spec packet, currently
   cadences, accept an explicit provider value, or fail/defer loudly when
   cadence is unknown.
 - Sharpe-style metrics return `NA_real_` for short samples, all-missing return
-  inputs, invalid adjacent equity returns, zero or near-zero excess-return
-  volatility, flat equity, and constant-return cases. Infinite Sharpe values
-  must not be emitted silently.
+  inputs, invalid adjacent equity returns, flat equity, and constant-return
+  cases. Near-zero excess-return volatility is defined as
+  `sd(excess_return) <= .Machine$double.eps`. Infinite Sharpe values must not
+  be emitted silently.
 - Sortino, Calmar, Omega, information ratio, alpha/beta, benchmark-relative
   metrics, VaR, and tail-risk metrics are deferred until the standard
   risk-metric contract is stable.
