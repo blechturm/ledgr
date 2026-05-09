@@ -22,6 +22,10 @@ testthat::test_that("README and package docs use the package-visible logo asset"
   testthat::expect_lt(file.info(package_logo)$size, 500 * 1024)
   testthat::expect_match(readme_rmd, 'src="man/figures/logo.svg"', fixed = TRUE)
   testthat::expect_match(readme_md, 'src="man/figures/logo.svg"', fixed = TRUE)
+  testthat::expect_match(readme_rmd, 'class="ledgr-readme-logo"', fixed = TRUE)
+  testthat::expect_match(readme_md, 'class="ledgr-readme-logo"', fixed = TRUE)
+  testthat::expect_match(readme_rmd, ".template-home .ledgr-readme-logo", fixed = TRUE)
+  testthat::expect_match(readme_md, ".template-home .ledgr-readme-logo", fixed = TRUE)
   readme_rmd_logo <- grep("logo.svg", strsplit(readme_rmd, "\n", fixed = TRUE)[[1]], value = TRUE)
   readme_md_logo <- grep("logo.svg", strsplit(readme_md, "\n", fixed = TRUE)[[1]], value = TRUE)
   testthat::expect_no_match(paste(readme_rmd_logo, collapse = "\n"), "C:/|C:\\\\")
@@ -31,6 +35,8 @@ testthat::test_that("README and package docs use the package-visible logo asset"
   if (file.exists(pkgdown_home)) {
     home <- paste(readLines(pkgdown_home, warn = FALSE), collapse = "\n")
     testthat::expect_match(home, "logo.svg", fixed = TRUE)
+    testthat::expect_match(home, ".template-home .ledgr-readme-logo", fixed = TRUE)
+    testthat::expect_match(home, 'class="ledgr-readme-logo"', fixed = TRUE)
     home_logo <- grep("logo.svg", strsplit(home, "\n", fixed = TRUE)[[1]], value = TRUE)
     testthat::expect_no_match(paste(home_logo, collapse = "\n"), "C:/|C:\\\\")
   }

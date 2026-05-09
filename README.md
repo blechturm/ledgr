@@ -1,7 +1,13 @@
 
 # ledgr
 
-<img src="man/figures/logo.svg" align="right" alt="ledgr logo" width="160" />
+<style>
+.template-home .ledgr-readme-logo {
+  display: none;
+}
+</style>
+
+<img src="man/figures/logo.svg" align="right" alt="ledgr logo" width="160" class="ledgr-readme-logo" />
 
 ledgr is an event-sourced systematic trading research framework for R.
 
