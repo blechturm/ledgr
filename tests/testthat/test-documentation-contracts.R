@@ -8,12 +8,14 @@ testthat::test_that("README and package docs use the package-visible logo asset"
   root <- testthat::test_path("..", "..")
   source_logo <- file.path(root, "inst", "design", "ledgr_v0_1_7_7_spec_packet", "ledgr.svg")
   package_logo <- file.path(root, "man", "figures", "logo.svg")
+  pkgdown_css_path <- file.path(root, "pkgdown", "extra.css")
   readme_rmd_path <- file.path(root, "README.Rmd")
   readme_md_path <- file.path(root, "README.md")
   testthat::skip_if_not(
-    file.exists(source_logo) && file.exists(package_logo) && file.exists(readme_rmd_path) && file.exists(readme_md_path),
+    file.exists(source_logo) && file.exists(package_logo) && file.exists(pkgdown_css_path) && file.exists(readme_rmd_path) && file.exists(readme_md_path),
     "source README/logo files not available during installed-package tests"
   )
+  pkgdown_css <- paste(readLines(pkgdown_css_path, warn = FALSE), collapse = "\n")
   readme_rmd <- paste(readLines(readme_rmd_path, warn = FALSE), collapse = "\n")
   readme_md <- paste(readLines(readme_md_path, warn = FALSE), collapse = "\n")
 
@@ -24,8 +26,9 @@ testthat::test_that("README and package docs use the package-visible logo asset"
   testthat::expect_match(readme_md, 'src="man/figures/logo.svg"', fixed = TRUE)
   testthat::expect_match(readme_rmd, 'class="ledgr-readme-logo"', fixed = TRUE)
   testthat::expect_match(readme_md, 'class="ledgr-readme-logo"', fixed = TRUE)
-  testthat::expect_match(readme_rmd, ".template-home .ledgr-readme-logo", fixed = TRUE)
-  testthat::expect_match(readme_md, ".template-home .ledgr-readme-logo", fixed = TRUE)
+  testthat::expect_no_match(readme_rmd, "<style>", fixed = TRUE)
+  testthat::expect_no_match(readme_md, "<style>", fixed = TRUE)
+  testthat::expect_match(pkgdown_css, ".template-home .ledgr-readme-logo", fixed = TRUE)
   readme_rmd_logo <- grep("logo.svg", strsplit(readme_rmd, "\n", fixed = TRUE)[[1]], value = TRUE)
   readme_md_logo <- grep("logo.svg", strsplit(readme_md, "\n", fixed = TRUE)[[1]], value = TRUE)
   testthat::expect_no_match(paste(readme_rmd_logo, collapse = "\n"), "C:/|C:\\\\")
@@ -35,7 +38,7 @@ testthat::test_that("README and package docs use the package-visible logo asset"
   if (file.exists(pkgdown_home)) {
     home <- paste(readLines(pkgdown_home, warn = FALSE), collapse = "\n")
     testthat::expect_match(home, "logo.svg", fixed = TRUE)
-    testthat::expect_match(home, ".template-home .ledgr-readme-logo", fixed = TRUE)
+    testthat::expect_match(home, 'href="extra.css"', fixed = TRUE)
     testthat::expect_match(home, 'class="ledgr-readme-logo"', fixed = TRUE)
     home_logo <- grep("logo.svg", strsplit(home, "\n", fixed = TRUE)[[1]], value = TRUE)
     testthat::expect_no_match(paste(home_logo, collapse = "\n"), "C:/|C:\\\\")
