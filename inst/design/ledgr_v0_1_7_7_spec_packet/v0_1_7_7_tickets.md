@@ -266,7 +266,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 0.5-1 day
 **Dependencies:** LDG-1702
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Use `{PerformanceAnalytics}` only as an optional parity oracle where definitions
@@ -283,16 +283,35 @@ or make the package a runtime dependency.
 5. Document that parity tests are not the source of ledgr's metric contract.
 
 **Acceptance Criteria:**
-- [ ] `{PerformanceAnalytics}` is optional.
-- [ ] Absence of `{PerformanceAnalytics}` does not affect ledgr metric output.
-- [ ] Parity tests name the exact PerformanceAnalytics functions used.
-- [ ] Annualization scale and risk-free-rate units are explicit.
-- [ ] No public PerformanceAnalytics adapter is exported.
-- [ ] No hashes, run identity, config identity, or snapshot identity change
+- [x] `{PerformanceAnalytics}` is optional.
+- [x] Absence of `{PerformanceAnalytics}` does not affect ledgr metric output.
+- [x] Parity tests name the exact PerformanceAnalytics functions used.
+- [x] Annualization scale and risk-free-rate units are explicit.
+- [x] No public PerformanceAnalytics adapter is exported.
+- [x] No hashes, run identity, config identity, or snapshot identity change
       because of optional parity tests.
 
 **Implementation Notes:**
-- Pending.
+- Added `{PerformanceAnalytics}` to `Suggests` only; it is not imported and no
+  public adapter or export was added.
+- Added optional parity tests guarded by
+  `testthat::skip_if_not_installed("PerformanceAnalytics")` and
+  `testthat::skip_if_not_installed("xts")`.
+- Compared ledgr metrics against explicitly aligned PerformanceAnalytics
+  functions:
+  `PerformanceAnalytics::Return.annualized(scale = 252, geometric = TRUE)`,
+  `PerformanceAnalytics::StdDev.annualized(scale = 252)`, and
+  `PerformanceAnalytics::SharpeRatio.annualized(scale = 252, geometric = FALSE,
+  Rf = rf_period_return)`.
+- The test converts ledgr's scalar annual risk-free rate to the same per-period
+  risk-free return that PerformanceAnalytics receives as `Rf`.
+- Added a contract note that optional PerformanceAnalytics parity is external
+  evidence only and must not redefine ledgr-owned metric formulas or become a
+  runtime dependency.
+- Verification passed:
+  `testthat::test_file("tests/testthat/test-metrics-performanceanalytics.R")`,
+  `testthat::test_file("tests/testthat/test-metric-oracles.R")`, and
+  `testthat::test_file("tests/testthat/test-documentation-contracts.R")`.
 
 **Test Requirements:**
 - `tests/testthat/test-metrics-performanceanalytics.R` if created.

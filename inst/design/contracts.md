@@ -391,6 +391,10 @@ the active versioned spec packet, currently
 - Sortino, Calmar, Omega, information ratio, alpha/beta, benchmark-relative
   metrics, VaR, and tail-risk metrics are deferred until the standard
   risk-metric contract is stable.
+- Optional PerformanceAnalytics parity tests are external evidence only. They
+  must name the exact PerformanceAnalytics functions, annualization scale, and
+  risk-free-rate units used for comparison, and they must not redefine ledgr's
+  owned metric formulas or become a runtime dependency.
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.

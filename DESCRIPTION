@@ -37,6 +37,7 @@ Suggests:
     knitr,
     microbenchmark,
     nanotime,
+    PerformanceAnalytics,
     rmarkdown,
     testthat (>= 3.0.0),
     TTR,

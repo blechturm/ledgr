@@ -90,7 +90,7 @@ tickets:
 
   - id: LDG-1703
     title: "Optional PerformanceAnalytics Parity Tests"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1702]
     tests:
