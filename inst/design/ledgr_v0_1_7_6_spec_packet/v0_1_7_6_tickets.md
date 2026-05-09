@@ -1,0 +1,515 @@
+# ledgr v0.1.7.6 Tickets
+
+**Version:** 0.1.7.6
+**Date:** May 9, 2026
+**Total Tickets:** 6
+
+---
+
+## Ticket Organization
+
+v0.1.7.6 is a persistence-architecture stabilization cycle. The release should
+turn the v0.1.7.5 Ubuntu CI lessons into durable contracts, tests, and release
+gates without expanding into unrelated documentation or feature work.
+
+Tracks:
+
+1. **Scope and evidence:** classify the post-release DuckDB findings and route
+   v0.1.7.5 auditr feedback without turning it into broad docs work.
+2. **DuckDB architecture review:** map connections, checkpoints, transactions,
+   shutdown ownership, and metadata dependencies.
+3. **Persistence contract tests:** keep schema validation metadata-only, prove
+   constraint enforcement in isolated databases, and verify fresh-connection
+   read-back.
+4. **Ubuntu parity gate:** add a small WSL/Ubuntu gate and stop-rule workflow to
+   the release playbook.
+5. **Release alignment:** update contracts, NEWS, docs, and ticket state.
+
+### Dependency DAG
+
+```text
+LDG-1601 -> LDG-1602 -> LDG-1603 -> LDG-1605 -> LDG-1606
+LDG-1601 -> LDG-1604 -------------> LDG-1605
+LDG-1602 -> LDG-1604
+```
+
+`LDG-1606` is the v0.1.7.6 release gate.
+
+### Priority Levels
+
+- **P0 (Blocker):** Required for release correctness or scope coherence.
+- **P1 (Critical):** Required for the v0.1.7.6 architecture story to hold.
+- **P2 (Important):** Required for release hygiene and future maintainability.
+- **P3 (Optional):** Useful, but not a release blocker.
+
+---
+
+## LDG-1601: Scope, Evidence, And auditr Routing Baseline
+
+**Priority:** P0
+**Effort:** 0.5-1 day
+**Dependencies:** None
+**Status:** Todo
+
+**Description:**
+Finalize the v0.1.7.6 release boundary before implementation. Confirm that the
+release is DuckDB persistence architecture work, not a broad documentation
+cleanup cycle, and route the v0.1.7.5 auditr findings into the correct later
+milestones.
+
+**Tasks:**
+1. Review `v0_1_7_6_spec.md`, `duckdb_architecture_review.md`,
+   `cycle_retrospective.md`, `ledgr_triage_report.md`, and
+   `auditr_v0_1_7_5_followup_plan.md`.
+2. Confirm `THEME-010` remains excluded from ledgr handoff unless reframed as
+   auditr harness work.
+3. Confirm only persistence-adjacent `THEME-005` findings may enter v0.1.7.6.
+4. Confirm risk metrics, reproducibility preflight, sweep mode, risk-free-rate
+   adapters, and `{talib}` are out of v0.1.7.6 implementation scope.
+5. Verify ticket markdown and YAML agree on IDs, dependencies, classifications,
+   and forbidden actions.
+
+**Acceptance Criteria:**
+- [ ] v0.1.7.6 scope is documented as DuckDB persistence architecture work.
+- [ ] Every auditr theme has a routing decision or explicit exclusion.
+- [ ] `THEME-010` is excluded from ledgr implementation scope.
+- [ ] `{talib}` remains issue-draft/contributor context, not release scope.
+- [ ] Ticket markdown and YAML classifications agree.
+
+**Test Requirements:**
+- Documentation consistency scan.
+- Spec/ticket filename scan.
+- Scope grep for excluded feature work.
+
+**Source Reference:** v0.1.7.6 spec sections 1, 1.1, 2, 3, 7, 8.
+
+**Classification:**
+```yaml
+risk_level: release-critical
+implementation_tier: H
+review_tier: H
+classification_reason: >
+  Version scoping, evidence classification, persistence architecture routing,
+  and release-boundary decisions are Tier H by model_routing.md.
+invariants_at_risk:
+  - release scope
+  - evidence quality
+  - persistence architecture boundary
+  - documentation backlog routing
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/duckdb_architecture_review.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/cycle_retrospective.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/ledgr_triage_report.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/auditr_v0_1_7_5_followup_plan.md
+  - inst/design/contracts.md
+  - inst/design/release_ci_playbook.md
+tests_required:
+  - documentation consistency scan
+  - spec/ticket filename scan
+  - scope grep for excluded feature work
+escalation_triggers:
+  - auditr evidence reveals a new runtime defect
+  - persistence-adjacent findings require broad docs or API work
+  - talib adapter is promoted into current release scope
+forbidden_actions:
+  - implementing feature work
+  - changing execution behavior
+  - adding talib adapter APIs
+  - adding risk metrics or sweep APIs
+  - weakening release gates
+```
+
+---
+
+## LDG-1602: DuckDB Connection, Checkpoint, And Transaction Review
+
+**Priority:** P0
+**Effort:** 1-2 days
+**Dependencies:** LDG-1601
+**Status:** Todo
+
+**Description:**
+Produce the architecture review artifact that maps ledgr's DuckDB connection
+ownership, checkpoint behavior, transaction boundaries, shutdown ownership, and
+DuckDB metadata-format dependencies.
+
+**Tasks:**
+1. Map all public DuckDB entry points: snapshot creation/loading, CSV import,
+   sealing, experiments, `ledgr_run()`, result access, run discovery, metadata
+   mutation, and executable docs.
+2. Build a mutating-API checkpoint matrix with strict vs best-effort behavior.
+3. Audit all direct `DBI::dbConnect()`, `dbDisconnect()`, `CHECKPOINT`,
+   transaction, temporary view, and `duckdb_register()` paths.
+4. Record final decisions for runner checkpoint strictness, shutdown ownership,
+   and `duckdb_constraints()` expression parsing.
+5. Update `duckdb_architecture_review.md` from seed notes into the final
+   decision artifact.
+
+**Acceptance Criteria:**
+- [ ] Connection-lifecycle map covers all public DuckDB entry points.
+- [ ] Every durable public write path appears in the checkpoint matrix.
+- [ ] Every direct connection exception is documented with a reason.
+- [ ] Multi-statement durable writes have explicit transaction ownership.
+- [ ] Runner checkpoint strictness decision is recorded.
+- [ ] Shutdown ownership decision is recorded.
+- [ ] DuckDB metadata-format dependency and upgrade check are recorded.
+
+**Test Requirements:**
+- Static scan for DuckDB connection/checkpoint/transaction calls.
+- Documentation consistency scan.
+
+**Source Reference:** v0.1.7.6 spec sections 4, A1-A4.
+
+**Classification:**
+```yaml
+risk_level: release-critical
+implementation_tier: H
+review_tier: H
+classification_reason: >
+  DuckDB connection ownership, checkpoints, transactions, and metadata
+  dependencies are core persistence architecture and require Tier H review.
+invariants_at_risk:
+  - DuckDB connection ownership
+  - durable write visibility
+  - transaction atomicity
+  - snapshot and run-store persistence
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/duckdb_architecture_review.md
+  - inst/design/contracts.md
+  - R/
+tests_required:
+  - static DuckDB call scan
+  - documentation consistency scan
+escalation_triggers:
+  - review reveals missing checkpoint on public write path
+  - review reveals transaction boundary bug
+  - resolving a finding requires touching more than three production files
+forbidden_actions:
+  - speculative broad persistence edits
+  - changing runner execution semantics
+  - changing snapshot hash semantics
+  - weakening tests to match current behavior
+```
+
+---
+
+## LDG-1603: Schema Validation And Constraint Enforcement Tests
+
+**Priority:** P0
+**Effort:** 1-2 days
+**Dependencies:** LDG-1602
+**Status:** Todo
+
+**Description:**
+Lock the separation between runtime schema validation and constraint
+enforcement testing. Runtime validators inspect metadata only; live DML
+constraint checks happen only in isolated disposable databases.
+
+**Tasks:**
+1. Verify runtime schema validation is read-only with respect to ledgr data
+   rows.
+2. Extend side-effect tests so repeated schema validation leaves core table row
+   counts unchanged.
+3. Ensure invalid `runs.status` values are rejected in isolated tests.
+4. Add the missing isolated live DML test for invalid `snapshots.status`
+   values.
+5. Confirm valid status values needed by normal workflows remain accepted.
+6. Harden or document any create-side DuckDB metadata fallback that could
+   silently trigger destructive table recreation if `duckdb_constraints()`
+   changes shape.
+
+**Acceptance Criteria:**
+- [ ] Runtime schema validation performs no invalid-row DML probes.
+- [ ] Schema validation can run repeatedly on one connection without dirtying
+      connection state.
+- [ ] Core ledgr table row counts are unchanged before and after validation.
+- [ ] Invalid `runs.status` values are rejected by DuckDB in an isolated test.
+- [ ] Invalid `snapshots.status` values are rejected by DuckDB in an isolated
+      test.
+- [ ] DuckDB constraint metadata lookup failures fail loudly or are explicitly
+      documented as safe.
+
+**Test Requirements:**
+- `tests/testthat/test-schema-validator-side-effects.R`
+- `tests/testthat/test-schema.R`
+- `tests/testthat/test-schema-snapshots.R`
+- Targeted schema tests under local Windows and WSL/Ubuntu where available.
+
+**Source Reference:** v0.1.7.6 spec sections R2, R5, B1-B3.
+
+**Classification:**
+```yaml
+risk_level: release-critical
+implementation_tier: H
+review_tier: H
+classification_reason: >
+  Schema creation, validation, and DuckDB constraint checks affect package
+  persistence safety and caused prior Ubuntu release-gate failures.
+invariants_at_risk:
+  - schema validation read-only contract
+  - constraint enforcement
+  - DuckDB connection state
+  - migration safety
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+  - inst/design/contracts.md (Persistence Contract)
+  - R/db-schema-create.R
+  - R/db-schema-validate.R
+  - tests/testthat/test-schema.R
+  - tests/testthat/test-schema-snapshots.R
+  - tests/testthat/test-schema-validator-side-effects.R
+tests_required:
+  - tests/testthat/test-schema-validator-side-effects.R
+  - tests/testthat/test-schema.R
+  - tests/testthat/test-schema-snapshots.R
+escalation_triggers:
+  - schema validation requires writing probe rows
+  - DuckDB metadata APIs cannot identify constraints reliably
+  - fixing the test requires broad schema migration changes
+forbidden_actions:
+  - invalid-row probes in runtime validators
+  - silent destructive table recreation on metadata lookup failure
+  - weakening constraint tests
+  - changing public snapshot or run status values without a spec update
+```
+
+---
+
+## LDG-1604: Fresh-Connection Persistence And Local Ubuntu Gate
+
+**Priority:** P1
+**Effort:** 1-2 days
+**Dependencies:** LDG-1601, LDG-1602
+**Status:** Todo
+
+**Description:**
+Prove the persistence paths that historically diverged between Windows and
+Ubuntu: completed run read-back from a fresh connection, low-level CSV
+snapshot create/import/seal/load, and pkgdown-sensitive executable workflows.
+Document the local WSL/Ubuntu gate in the release playbook.
+
+**Tasks:**
+1. Add or confirm fresh-connection read-back tests for completed run artifacts.
+2. Add or confirm fresh-connection read-back tests for public run metadata
+   mutations that promise immediate durability.
+3. Add or confirm low-level CSV create/import/seal/load tests after closing and
+   reopening the database.
+4. Define the narrow local WSL/Ubuntu DuckDB gate in `release_ci_playbook.md`.
+5. Ensure the playbook states that local WSL evidence does not replace remote
+   branch, main, or tag CI.
+
+**Acceptance Criteria:**
+- [ ] Completed run artifacts are visible from a fresh connection after
+      `ledgr_run()` returns.
+- [ ] Durable run metadata mutations are visible from a fresh connection.
+- [ ] Low-level CSV snapshot create/import/seal/load works after reopen.
+- [ ] The local WSL/Ubuntu gate lists targeted tests or command classes.
+- [ ] The playbook says when the local Linux gate is required.
+- [ ] The playbook preserves remote branch, main, and tag CI as separate gates.
+
+**Test Requirements:**
+- Fresh-connection run artifact tests.
+- Snapshot CSV create/import/seal/load tests.
+- Targeted local WSL/Ubuntu command when available.
+
+**Source Reference:** v0.1.7.6 spec sections R3, 6, B4, C1-C3.
+
+**Classification:**
+```yaml
+risk_level: high
+implementation_tier: H
+review_tier: H
+classification_reason: >
+  Fresh-connection read-back, CSV snapshot workflows, and Ubuntu parity gates
+  are persistence-sensitive and release-gate-sensitive.
+invariants_at_risk:
+  - completed run durability
+  - snapshot seal/load durability
+  - cross-connection visibility
+  - release CI discipline
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+  - inst/design/release_ci_playbook.md
+  - inst/design/contracts.md (Persistence Contract, Snapshot Contract)
+  - R/backtest-runner.R
+  - R/run-store.R
+  - R/snapshot*.R
+  - tests/testthat/
+tests_required:
+  - fresh-connection run artifact tests
+  - snapshot CSV create/import/seal/load tests
+  - targeted local WSL/Ubuntu gate when available
+escalation_triggers:
+  - fresh connections miss committed writes
+  - checkpoint placement requires runner or snapshot redesign
+  - WSL reproduces a different failure than remote CI
+forbidden_actions:
+  - broad release-gate surgery
+  - weakening Ubuntu gates
+  - changing snapshot hashes for visibility convenience
+  - treating local WSL as a replacement for remote CI
+```
+
+---
+
+## LDG-1605: Contracts, NEWS, Roadmap, And Release-Hygiene Alignment
+
+**Priority:** P2
+**Effort:** 0.5-1 day
+**Dependencies:** LDG-1603, LDG-1604
+**Status:** Todo
+
+**Description:**
+Align the written package contracts and release-facing documentation with the
+final v0.1.7.6 persistence decisions.
+
+**Tasks:**
+1. Update `contracts.md` with the final persistence invariants.
+2. Update `release_ci_playbook.md` with the WSL/Ubuntu gate and stop-rule
+   details from the implemented tickets.
+3. Add or update the `NEWS.md` v0.1.7.6 section.
+4. Confirm `ledgr_roadmap.md` reflects v0.1.7.6, v0.1.7.7, v0.1.7.8,
+   v0.1.8, and v0.1.8.1 sequencing.
+5. Update `v0_1_7_6_tickets.md` and `tickets.yml` statuses together.
+
+**Acceptance Criteria:**
+- [ ] `contracts.md` matches final persistence behavior.
+- [ ] `release_ci_playbook.md` names the local WSL/Ubuntu gate and stop rule.
+- [ ] `NEWS.md` summarizes delivered v0.1.7.6 scope.
+- [ ] Roadmap sequencing is coherent and does not make `{talib}` a release
+      blocker.
+- [ ] Ticket markdown and YAML statuses agree.
+
+**Test Requirements:**
+- Documentation contract scans if tests exist.
+- NEWS section scan.
+- Ticket/YAML consistency scan.
+
+**Source Reference:** v0.1.7.6 spec sections 8, 9.
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: M
+review_tier: H
+classification_reason: >
+  Documentation and release-hygiene work, but it records persistence contracts
+  and release gates. Tier H review is required.
+invariants_at_risk:
+  - persistence contract documentation
+  - release gate documentation
+  - roadmap sequencing
+  - ticket state accuracy
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+  - inst/design/contracts.md
+  - inst/design/release_ci_playbook.md
+  - inst/design/ledgr_roadmap.md
+  - NEWS.md
+tests_required:
+  - documentation contract scans if applicable
+  - NEWS section scan
+  - ticket/YAML consistency scan
+escalation_triggers:
+  - docs imply unimplemented persistence behavior
+  - NEWS claims a shipped feature not implemented
+  - talib or sweep work becomes release-critical
+forbidden_actions:
+  - implementing non-persistence features
+  - making talib a release blocker
+  - weakening release gates
+```
+
+---
+
+## LDG-1606: v0.1.7.6 Release Gate
+
+**Priority:** P0
+**Effort:** 1 day
+**Dependencies:** LDG-1605
+**Status:** Todo
+
+**Description:**
+Run the v0.1.7.6 release gate according to the release CI playbook. Do not
+perform broad release-gate surgery. If a gate exposes a new core design issue,
+stop and create a blocker ticket.
+
+**Tasks:**
+1. Confirm every v0.1.7.6 ticket is done and status matches in markdown/YAML.
+2. Run targeted schema, snapshot, and fresh-connection persistence tests.
+3. Run full local Windows package tests.
+4. Run `R CMD check --no-manual --no-build-vignettes`.
+5. Run coverage gate if executable code changed in a way that affects coverage.
+6. Run pkgdown build if documentation or executable vignettes changed.
+7. Run the local WSL/Ubuntu gate when available.
+8. Push branch and wait for branch CI.
+9. Merge only after branch CI is green.
+10. Wait for main CI and tag-triggered CI before considering the release valid.
+
+**Acceptance Criteria:**
+- [ ] All v0.1.7.6 ticket statuses are complete and synchronized.
+- [ ] Targeted persistence tests pass.
+- [ ] Full local Windows tests pass.
+- [ ] `R CMD check --no-manual --no-build-vignettes` passes.
+- [ ] Coverage and pkgdown gates pass when required.
+- [ ] Local WSL/Ubuntu gate passes when required and available.
+- [ ] Remote branch CI is green.
+- [ ] Main CI is green after merge.
+- [ ] Tag-triggered CI is green before release is declared valid.
+
+**Test Requirements:**
+- Targeted schema/persistence tests.
+- Full local test suite.
+- R CMD check.
+- Coverage if needed.
+- pkgdown if docs changed.
+- Local WSL/Ubuntu gate when applicable.
+- Remote branch/main/tag CI.
+
+**Source Reference:** v0.1.7.6 spec section 9.
+
+**Classification:**
+```yaml
+risk_level: release-critical
+implementation_tier: H
+review_tier: H
+classification_reason: >
+  Release gates, CI interpretation, tag movement, and persistence-sensitive
+  validation are Tier H and must follow the release CI playbook.
+invariants_at_risk:
+  - release validity
+  - CI discipline
+  - persistence parity
+  - tag correctness
+required_context:
+  - inst/design/model_routing.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_tickets.md
+  - inst/design/ledgr_v0_1_7_6_spec_packet/tickets.yml
+  - inst/design/release_ci_playbook.md
+tests_required:
+  - targeted schema/persistence tests
+  - full local test suite
+  - R CMD check
+  - coverage if required
+  - pkgdown if required
+  - local WSL/Ubuntu gate when applicable
+  - remote CI
+escalation_triggers:
+  - Ubuntu failure points to broad core infrastructure
+  - CI failure cannot be reproduced narrowly
+  - fix expands outside initially failing subsystem
+  - main and tag CI disagree
+forbidden_actions:
+  - broad release-gate surgery
+  - moving a release tag before main CI is green
+  - declaring release valid before tag CI is green
+  - weakening tests to pass CI
+```

@@ -858,6 +858,10 @@ sessions.
 - Review residual lifecycle decisions from the v0.1.7.5 post-release review:
   runner checkpoint strictness, redundant shutdown ownership, and
   `duckdb_constraints()` expression-format dependency during DuckDB upgrades.
+- Curate the v0.1.7.5 auditr retrospective and triage report into a routing
+  artifact. Only pull findings into v0.1.7.6 when they directly affect DuckDB
+  persistence, low-level CSV snapshot workflows, sealed metadata inspection, or
+  fresh-connection release-gate verification.
 - Define a small local WSL/Ubuntu parity gate that exercises the historically
   fragile paths without requiring a full release run.
 - Update contracts, release playbook, and tests based on the architecture
@@ -882,10 +886,171 @@ sessions.
 - The DuckDB architecture review records explicit decisions for runner
   checkpoint strictness, shutdown ownership, and DuckDB metadata-format upgrade
   checks.
+- The v0.1.7.5 auditr retrospective and triage report are routed in a written
+  follow-up artifact. `THEME-010` remains excluded from ledgr handoff unless it
+  is reframed as auditr harness work, and broad documentation themes are
+  deferred to the appropriate later milestone rather than absorbed into
+  v0.1.7.6.
 - External code review confirms the architecture is sound before the release
   gate.
 - Ubuntu and Windows CI are green without broad release-gate infrastructure
   edits.
+
+---
+
+## v0.1.7.7 - Risk Metrics Contract
+
+**Goal:** Define the first small, auditable risk-adjusted metric layer before
+v0.1.8 sweep mode needs ranking and scoring criteria.
+
+The current standard metric set covers total return, annualized return,
+annualized volatility, max drawdown, trade counts, win rate, average trade, and
+time in market. It does not yet include Sharpe ratio or related risk-adjusted
+metrics. This milestone decides what ledgr owns directly, what remains
+adapter/documentation territory for packages such as `{PerformanceAnalytics}`,
+and how those definitions will be reused by comparison and future sweep
+workflows.
+
+External ecosystem adapters, including a possible `{talib}` adapter PR, may land
+opportunistically when they satisfy ledgr's adapter contracts. They are not
+roadmap drivers and must not block this metric milestone or v0.1.8.
+
+### Scope
+
+- Add a documented Sharpe ratio metric or explicitly defer it with a recorded
+  rationale.
+- Define the return series used for risk metrics. The default candidate is
+  adjacent public equity-row returns, matching current volatility semantics.
+- Define annualization behavior and reuse ledgr's existing detected
+  `bars_per_year` convention unless a deliberate alternative is chosen. The
+  design must remain valid for future intraday and tick/pulse frequencies; it
+  must not hard-code daily assumptions into metric identity or public semantics.
+- Sharpe-style metrics must be implemented over excess returns:
+  `excess_return[t] = equity_return[t] - rf_period_return[t]`. The formula must
+  consume a pulse-aligned per-period risk-free return vector; a scalar annual
+  risk-free rate is only the first provider for that vector, not a special
+  formula branch.
+- Define risk-free rate handling:
+  - default value;
+  - scalar vs. time-varying support;
+  - units and annualization assumptions.
+- Define zero-volatility and near-zero-volatility behavior so flat, constant,
+  and tiny samples do not produce misleading infinite values.
+- Decide whether additional metrics such as Sortino ratio, Calmar ratio, or
+  information ratio are in scope or explicitly deferred.
+- Decide whether ledgr owns a minimal core risk metric set, exposes optional
+  adapters to established metric packages, or both.
+- Ensure `summary(bt)`, `ledgr_compute_metrics()`, `ledgr_compare_runs()`, and
+  future sweep-ranking design can use the same metric definitions.
+- Add independent public-table oracles for any new metrics, following the
+  existing metric-oracle pattern.
+- Update the metrics-and-accounting documentation with formulas, assumptions,
+  edge cases, and examples.
+
+### Non-Goals
+
+- No full performance-analytics metric zoo.
+- No mandatory dependency on `{PerformanceAnalytics}` or other metric packages.
+- No FRED, Treasury, ECB, central-bank, or other risk-free-rate data adapters.
+- No arbitrary user-supplied risk-free time series until the alignment and
+  provenance contract is implemented.
+- No sweep, tune, or parallel execution APIs.
+- No indicator-adapter work such as `{talib}`.
+
+### Definition of Done
+
+- At least one risk-adjusted metric ships and is tested, or the deferral
+  rationale is public and v0.1.8's sweep ranking design is unblocked by another
+  explicit scoring mechanism.
+- The risk metric contract states exactly which risk-adjusted metrics ship and
+  which are deferred.
+- Any shipped Sharpe-style metric has documented return-source, annualization,
+  risk-free-rate, and zero-volatility semantics.
+- Any shipped Sharpe-style metric is computed from excess returns through a
+  risk-free-rate provider boundary, even when the first provider is only a
+  scalar annual rate.
+- Time-varying risk-free rates are explicitly shipped or explicitly deferred;
+  they must not be implied by a scalar-only implementation.
+- The metric contract records the decision on ecosystem metric interoperability,
+  such as `{PerformanceAnalytics}` or equivalent packages.
+- Metric definitions are frequency-safe: daily, weekly, intraday, and future
+  tick/pulse data must either compute with documented annualization semantics or
+  fail/defer loudly rather than silently applying a daily-only convention.
+- `ledgr_compute_metrics()` and `summary(bt)` expose the shipped metric
+  consistently.
+- `ledgr_compare_runs()` either includes the new metric or documents why its
+  curated comparison surface remains unchanged.
+- Public-table oracle tests independently recompute every shipped risk metric.
+- Zero-trade, flat-equity, constant-return, and short-sample cases are tested.
+- Documentation explains that ledgr provides a small auditable metric layer and
+  may interoperate with the broader R finance ecosystem rather than replacing
+  it.
+- Ubuntu and Windows CI are green.
+
+---
+
+## v0.1.7.8 - Strategy Reproducibility Preflight
+
+**Goal:** Lock the strategy reproducibility-tier contract before v0.1.8 sweep
+mode runs user strategies across parameter grids and optional worker processes.
+
+Sweep mode may allow practical Tier 2 strategies, but it must not accept Tier 3
+strategies whose behavior depends on unresolved, non-recoverable external state.
+This milestone turns the existing provenance-tier concept into a preflight check
+with user-facing diagnostics and documentation.
+
+### Scope
+
+- Add a strategy reproducibility preflight for user-written strategy functions.
+- Classify strategies as Tier 1, Tier 2, or Tier 3 before execution.
+- Accept Tier 1 and Tier 2 strategies for ordinary runs and future sweep mode.
+- Reject Tier 3 strategies with a classed error that names unresolved external
+  symbols or environment dependencies where possible.
+- Treat base R and standard-library references as Tier 1-compatible.
+- Treat package-qualified calls such as `pkg::fn()` as Tier 2-compatible.
+- Treat unresolved free variables and unqualified external helper calls such as
+  `my_helper(ctx)` as Tier 3 unless a future explicit dependency-declaration
+  contract upgrades them.
+- Use static analysis, initially via `codetools::findGlobals()`, while
+  documenting its limits for dynamic dispatch patterns such as `do.call()`,
+  `get()`, and dynamically constructed strategies.
+- Document hidden mutable state as a known preflight blind spot. Static global
+  analysis cannot reliably catch `<<-` assignments or closures that mutate
+  captured environments. The vignette must warn that these patterns can produce
+  order-dependent sweep results even when symbol resolution appears to be Tier 2.
+- Add a reproducibility-tiers vignette that explains:
+  - Tier 1 is self-contained and fully reproducible from stored source and
+    params;
+  - Tier 2 requires user-managed package/environment parity;
+  - Tier 3 is not accepted for sweep because worker execution cannot recover
+    hidden state reliably.
+- Sign off the v0.1.8 fold-core/output-handler boundary as a written contract
+  without duplicating the v0.1.8 implementation scope. The sign-off must be
+  recorded in `contracts.md` or a design document under `inst/design/`.
+
+### Non-Goals
+
+- No sweep, tune, or parallel execution APIs.
+- No strategy dependency declaration API in this milestone.
+- No automatic package installation or worker environment management.
+- No attempt to prove dynamic dispatch targets statically.
+
+### Definition of Done
+
+- Strategy preflight assigns Tier 1, Tier 2, or Tier 3 before execution.
+- Tier 3 strategies fail with a classed error and actionable diagnostics.
+- Tier 1 and Tier 2 strategy examples are tested and documented.
+- Package-qualified calls are documented as Tier 2, not Tier 3.
+- Unqualified external helper dependencies are documented as Tier 3 unless a
+  later dependency-declaration contract changes that rule.
+- Hidden mutable state patterns such as `<<-` and captured mutable environments
+  are documented as unsupported for sweep even when static analysis cannot prove
+  them unsafe.
+- The reproducibility-tiers vignette explains consequences for ordinary runs,
+  future sweep workers, and later production use.
+- The preflight API has a stable interface designed so v0.1.8 can invoke it
+  directly without v0.1.8-specific tiering parameters.
+- Ubuntu and Windows CI are green.
 
 ---
 
@@ -938,14 +1103,20 @@ Sweep mode requires sweep-compatible strategies:
 ```text
 sweep-compatible strategy =
   function(ctx, params)         # functional, explicit params
-  + no hidden mutable state     # no closures capturing external env state
   + no DuckDB side effects      # no reads/writes to the run store
-  + Tier 1 reproducibility      # as defined in LDG-702
+  + Tier 1 or Tier 2 reproducibility
+  + no Tier 3 unresolved external state
 ```
 
 R6 strategies are excluded from sweep mode in the initial implementation unless
 they can be freshly instantiated per parameter set with no shared state. Sweep
 mode fails loudly with a clear error for non-compatible strategies.
+
+Sweep inherits the v0.1.7.8 strategy reproducibility preflight. Tier 1
+strategies are fully self-contained. Tier 2 strategies are accepted when their
+external package/environment requirements are explicit enough for users to
+manage on workers, for example package-qualified calls such as `pkg::fn()`.
+Tier 3 strategies are rejected before execution.
 
 ### Deterministic Random State
 
@@ -1105,7 +1276,9 @@ loop for the fold-core extraction, not as a standalone edit.
   `error_class`, `error_msg`, and `NA` metric columns; `stop_on_error = FALSE`
   is the default; `stop_on_error = TRUE` aborts on first error
 - `ledgr_sweep_results` S3 print method follows the same conventions as
-  `ledgr_comparison` (curated columns, percentage formatting, footer)
+  `ledgr_comparison` (curated columns, percentage formatting, footer), and its
+  metric columns are chosen from the v0.1.7.7 risk metric contract rather than
+  redefined locally
 - `params` list column in results enables clean candidate promotion:
   `results |> slice(1) |> pull(params) |> first()` passes directly to `ledgr_run()`
 - Warning emitted when grid exceeds the threshold size and no precomputed
@@ -1118,6 +1291,49 @@ loop for the fold-core extraction, not as a standalone edit.
 - Explicit `seed = NA` opt-out is documented with a clear warning about
   non-determinism
 - `ledgr_tune()` is explicitly out of scope for this milestone; it is a candidate post-v0.1.8 convenience wrapper once the fold core is stable, not an indefinite deferral
+
+---
+
+## v0.1.8.1 - Reference Data And Risk-Free Rate Adapters
+
+**Goal:** Add reproducible non-price reference data series, starting with
+risk-free-rate sources, so risk metrics can use real rate curves without
+changing the metric semantics defined in v0.1.7.7.
+
+This milestone is deliberately after sweep mode. v0.1.7.7 reserves the internal
+excess-return contract so scalar risk-free rates and future pulse-aligned rate
+series feed the same metric engine. This release adds the data-provider layer.
+
+### Scope
+
+- Design reference-data adapters for risk-free-rate sources such as FRED,
+  Treasury, ECB, or other central-bank data.
+- Snapshot external rate series with source identity, retrieval/vintage
+  metadata, currency/region, and query parameters.
+- Align rate observations to ledgr pulse calendars with documented
+  forward-fill, interpolation, or missing-value policy.
+- Convert external rate quotes into pulse-aligned per-period risk-free returns
+  consumed by the v0.1.7.7 metric contract.
+- Define whether and how reference-rate series affect snapshot hashes, config
+  hashes, and run identity.
+- Document how scalar risk-free rates, adapter-backed curves, and missing-rate
+  cases differ.
+
+### Non-Goals
+
+- No broad macro-data warehouse.
+- No live broker or live market-data integration.
+- No change to the Sharpe-style metric formula defined in v0.1.7.7.
+
+### Definition of Done
+
+- At least one risk-free-rate source adapter is implemented or all adapters are
+  explicitly deferred with a documented reason.
+- Adapter-backed rate series align to pulse calendars before metric computation.
+- Provenance and run-identity implications are documented and tested.
+- Risk metrics consume the same pulse-aligned excess-return contract used by
+  scalar rates.
+- Ubuntu and Windows CI are green.
 
 ---
 
