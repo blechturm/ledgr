@@ -4,6 +4,32 @@ ledgr_test_source_vignette <- function(file) {
   path
 }
 
+testthat::test_that("README and package docs use the package-visible logo asset", {
+  root <- testthat::test_path("..", "..")
+  source_logo <- file.path(root, "inst", "design", "ledgr_v0_1_7_7_spec_packet", "ledgr.svg")
+  package_logo <- file.path(root, "man", "figures", "logo.svg")
+  readme_rmd <- paste(readLines(file.path(root, "README.Rmd"), warn = FALSE), collapse = "\n")
+  readme_md <- paste(readLines(file.path(root, "README.md"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_true(file.exists(source_logo))
+  testthat::expect_true(file.exists(package_logo))
+  testthat::expect_lt(file.info(package_logo)$size, 500 * 1024)
+  testthat::expect_match(readme_rmd, 'src="man/figures/logo.svg"', fixed = TRUE)
+  testthat::expect_match(readme_md, 'src="man/figures/logo.svg"', fixed = TRUE)
+  readme_rmd_logo <- grep("logo.svg", strsplit(readme_rmd, "\n", fixed = TRUE)[[1]], value = TRUE)
+  readme_md_logo <- grep("logo.svg", strsplit(readme_md, "\n", fixed = TRUE)[[1]], value = TRUE)
+  testthat::expect_no_match(paste(readme_rmd_logo, collapse = "\n"), "C:/|C:\\\\")
+  testthat::expect_no_match(paste(readme_md_logo, collapse = "\n"), "C:/|C:\\\\")
+
+  pkgdown_home <- file.path(root, "docs", "index.html")
+  if (file.exists(pkgdown_home)) {
+    home <- paste(readLines(pkgdown_home, warn = FALSE), collapse = "\n")
+    testthat::expect_match(home, "logo.svg", fixed = TRUE)
+    home_logo <- grep("logo.svg", strsplit(home, "\n", fixed = TRUE)[[1]], value = TRUE)
+    testthat::expect_no_match(paste(home_logo, collapse = "\n"), "C:/|C:\\\\")
+  }
+})
+
 testthat::test_that("strategy docs show feature ID discovery before feature lookup", {
   strategy_doc <- readLines(ledgr_test_source_vignette("strategy-development.Rmd"), warn = FALSE)
   indicators_doc <- readLines(ledgr_test_source_vignette("indicators.Rmd"), warn = FALSE)

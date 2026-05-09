@@ -1,6 +1,8 @@
 
 # ledgr
 
+<img src="man/figures/logo.svg" align="right" alt="ledgr logo" width="160" />
+
 ledgr is an event-sourced systematic trading research framework for R.
 
 In v0.1.x, ledgr focuses on deterministic research: sealed market-data
@@ -110,8 +112,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260509_183655_7850
-#> Database:    C:\Users\maxth\AppData\Local\Temp\Rtmp8Eh9Nb\ledgr_1d1c45a0b25c5.duckdb
+#> Snapshot ID: snapshot_20260509_185545_6259
+#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpuS96Qp\ledgr_f3601fa110a.duckdb
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0

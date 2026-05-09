@@ -552,7 +552,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 0.5-1 day
 **Dependencies:** LDG-1701
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Promote the source logo from the design packet into package-visible
@@ -570,16 +570,30 @@ documentation assets and display it in the GitHub README and pkgdown site.
 7. Add or update documentation contract tests for logo paths.
 
 **Acceptance Criteria:**
-- [ ] Source logo remains in the v0.1.7.7 design packet.
-- [ ] Package-facing logo asset exists under `man/figures/`.
-- [ ] README displays the logo through a repository-relative path.
-- [ ] pkgdown displays the logo.
-- [ ] No local absolute paths are used.
-- [ ] Raster derivative is committed only if needed and documented.
-- [ ] Local rendering/build checks confirm paths.
+- [x] Source logo remains in the v0.1.7.7 design packet.
+- [x] Package-facing logo asset exists under `man/figures/`.
+- [x] README displays the logo through a repository-relative path.
+- [x] pkgdown displays the logo.
+- [x] No local absolute paths are used.
+- [x] Raster derivative is committed only if needed and documented.
+- [x] Local rendering/build checks confirm paths.
 
 **Implementation Notes:**
-- Pending.
+- Copied the source design-packet SVG to `man/figures/logo.svg`, preserving
+  the original source asset in `inst/design/ledgr_v0_1_7_7_spec_packet/`.
+- Added the package-facing SVG to the top of `README.Rmd` through the
+  repository-relative `man/figures/logo.svg` path and regenerated `README.md`.
+- Did not add a raster derivative or edit `_pkgdown.yml`; pkgdown's default
+  `man/figures/logo.svg` convention discovered the logo and rendered it in the
+  ignored local `docs/index.html` output.
+- Added documentation contract coverage for source/package-facing logo paths,
+  README references, package asset size, and absence of absolute paths in logo
+  references.
+- Verification passed:
+  `testthat::test_file("tests/testthat/test-documentation-contracts.R")`.
+  The local pkgdown run confirmed logo discovery and rendering before hitting a
+  local filesystem permission error during site initialization; no generated
+  pkgdown cache or raster favicon artifacts were committed.
 
 **Test Requirements:**
 - README source/render check.

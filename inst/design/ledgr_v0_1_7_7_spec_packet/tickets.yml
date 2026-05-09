@@ -219,7 +219,7 @@ tickets:
 
   - id: LDG-1706
     title: "Logo Asset Placement"
-    status: todo
+    status: done
     priority: P2
     dependencies: [LDG-1701]
     tests:

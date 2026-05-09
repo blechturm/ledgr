@@ -33,6 +33,8 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 
 # ledgr
 
+<img src="man/figures/logo.svg" align="right" alt="ledgr logo" width="160" />
+
 ledgr is an event-sourced systematic trading research framework for R.
 
 In v0.1.x, ledgr focuses on deterministic research: sealed market-data
