@@ -90,6 +90,7 @@ testthat::test_that("snapshots.status enum and PK/NOT NULL constraints are enfor
       "
     )
   )
+  try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
 
   testthat::expect_error(
     DBI::dbExecute(
@@ -112,6 +113,7 @@ testthat::test_that("snapshots.status enum and PK/NOT NULL constraints are enfor
       "
     )
   )
+  try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
 
   # NOT NULL enforcement on snapshot_bars OHLC columns.
   testthat::expect_error(
@@ -123,6 +125,7 @@ testthat::test_that("snapshots.status enum and PK/NOT NULL constraints are enfor
       "
     )
   )
+  try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
 
   # PK enforcement on snapshot_bars.
   DBI::dbExecute(

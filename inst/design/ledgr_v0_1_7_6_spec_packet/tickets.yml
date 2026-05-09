@@ -1,0 +1,276 @@
+version: "0.1.7.6-duckdb-persistence-architecture"
+source: "v0_1_7_6_tickets.md"
+tickets:
+  - id: LDG-1601
+    title: "Scope, Evidence, And auditr Routing Baseline"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation consistency scan"
+      - "spec/ticket filename scan"
+      - "scope grep for excluded feature work"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Version scoping, evidence classification, persistence architecture
+        routing, and release-boundary decisions are Tier H by model_routing.md.
+      invariants_at_risk:
+        - release scope
+        - evidence quality
+        - persistence architecture boundary
+        - documentation backlog routing
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/duckdb_architecture_review.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/cycle_retrospective.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/ledgr_triage_report.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/auditr_v0_1_7_5_followup_plan.md
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+      tests_required:
+        - documentation consistency scan
+        - spec/ticket filename scan
+        - scope grep for excluded feature work
+      escalation_triggers:
+        - auditr evidence reveals a new runtime defect
+        - persistence-adjacent findings require broad docs or API work
+        - talib adapter is promoted into current release scope
+      forbidden_actions:
+        - implementing feature work
+        - changing execution behavior
+        - adding talib adapter APIs
+        - adding risk metrics or sweep APIs
+        - weakening release gates
+
+  - id: LDG-1602
+    title: "DuckDB Connection, Checkpoint, And Transaction Review"
+    status: done
+    priority: P0
+    dependencies: [LDG-1601]
+    tests:
+      - "static DuckDB call scan"
+      - "documentation consistency scan"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        DuckDB connection ownership, checkpoints, transactions, and metadata
+        dependencies are core persistence architecture and require Tier H review.
+      invariants_at_risk:
+        - DuckDB connection ownership
+        - durable write visibility
+        - transaction atomicity
+        - snapshot and run-store persistence
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/duckdb_architecture_review.md
+        - inst/design/contracts.md
+        - R/
+      tests_required:
+        - static DuckDB call scan
+        - documentation consistency scan
+      escalation_triggers:
+        - review reveals missing checkpoint on public write path
+        - review reveals transaction boundary bug
+        - resolving a finding requires touching more than three production files
+      forbidden_actions:
+        - speculative broad persistence edits
+        - changing runner execution semantics
+        - changing snapshot hash semantics
+        - weakening tests to match current behavior
+
+  - id: LDG-1603
+    title: "Schema Validation And Constraint Enforcement Tests"
+    status: done
+    priority: P0
+    dependencies: [LDG-1602]
+    tests:
+      - "tests/testthat/test-schema-validator-side-effects.R"
+      - "tests/testthat/test-schema.R"
+      - "tests/testthat/test-schema-snapshots.R"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Schema creation, validation, and DuckDB constraint checks affect
+        package persistence safety and caused prior Ubuntu release-gate
+        failures.
+      invariants_at_risk:
+        - schema validation read-only contract
+        - constraint enforcement
+        - DuckDB connection state
+        - migration safety
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+        - inst/design/contracts.md (Persistence Contract)
+        - R/db-schema-create.R
+        - R/db-schema-validate.R
+        - tests/testthat/test-schema.R
+        - tests/testthat/test-schema-snapshots.R
+        - tests/testthat/test-schema-validator-side-effects.R
+      tests_required:
+        - tests/testthat/test-schema-validator-side-effects.R
+        - tests/testthat/test-schema.R
+        - tests/testthat/test-schema-snapshots.R
+      escalation_triggers:
+        - schema validation requires writing probe rows
+        - DuckDB metadata APIs cannot identify constraints reliably
+        - fixing the test requires broad schema migration changes
+      forbidden_actions:
+        - invalid-row probes in runtime validators
+        - silent destructive table recreation on metadata lookup failure
+        - weakening constraint tests
+        - changing public snapshot or run status values without a spec update
+
+  - id: LDG-1604
+    title: "Fresh-Connection Persistence And Local Ubuntu Gate"
+    status: done
+    priority: P1
+    dependencies: [LDG-1601, LDG-1602]
+    tests:
+      - "fresh-connection run artifact tests"
+      - "snapshot CSV create/import/seal/load tests"
+      - "targeted local WSL/Ubuntu gate when available"
+    classification:
+      risk_level: high
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Fresh-connection read-back, CSV snapshot workflows, and Ubuntu parity
+        gates are persistence-sensitive and release-gate-sensitive.
+      invariants_at_risk:
+        - completed run durability
+        - snapshot seal/load durability
+        - cross-connection visibility
+        - release CI discipline
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+        - inst/design/release_ci_playbook.md
+        - inst/design/contracts.md (Persistence Contract, Snapshot Contract)
+        - R/backtest-runner.R
+        - R/run-store.R
+        - R/snapshot*.R
+        - tests/testthat/
+      tests_required:
+        - fresh-connection run artifact tests
+        - snapshot CSV create/import/seal/load tests
+        - targeted local WSL/Ubuntu gate when available
+      escalation_triggers:
+        - fresh connections miss committed writes
+        - checkpoint placement requires runner or snapshot redesign
+        - WSL reproduces a different failure than remote CI
+      forbidden_actions:
+        - broad release-gate surgery
+        - weakening Ubuntu gates
+        - changing snapshot hashes for visibility convenience
+        - treating local WSL as a replacement for remote CI
+
+  - id: LDG-1605
+    title: "Contracts, NEWS, Roadmap, And Release-Hygiene Alignment"
+    status: done
+    priority: P2
+    dependencies: [LDG-1603, LDG-1604]
+    tests:
+      - "documentation contract scans if applicable"
+      - "NEWS section scan"
+      - "ticket/YAML consistency scan"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Documentation and release-hygiene work, but it records persistence
+        contracts and release gates. Tier H review is required.
+      invariants_at_risk:
+        - persistence contract documentation
+        - release gate documentation
+        - roadmap sequencing
+        - ticket state accuracy
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+        - inst/design/contracts.md
+        - inst/design/release_ci_playbook.md
+        - inst/design/ledgr_roadmap.md
+        - NEWS.md
+      tests_required:
+        - documentation contract scans if applicable
+        - NEWS section scan
+        - ticket/YAML consistency scan
+      escalation_triggers:
+        - docs imply unimplemented persistence behavior
+        - NEWS claims a shipped feature not implemented
+        - talib or sweep work becomes release-critical
+      forbidden_actions:
+        - implementing non-persistence features
+        - making talib a release blocker
+        - weakening release gates
+
+  - id: LDG-1606
+    title: "v0.1.7.6 Release Gate"
+    status: todo
+    priority: P0
+    dependencies: [LDG-1605]
+    tests:
+      - "targeted schema/persistence tests"
+      - "full local test suite"
+      - "R CMD check"
+      - "coverage if required"
+      - "pkgdown if required"
+      - "local WSL/Ubuntu gate when applicable"
+      - "remote CI"
+    local_verification:
+      description_version: "0.1.7.6"
+      targeted_schema_persistence: passed
+      full_windows_tests: passed
+      r_cmd_check: passed
+      coverage: "passed at 84.47%"
+      pkgdown: "passed in normal install mode outside sandbox"
+      local_wsl: "unavailable: wsl.exe -l -v returned E_ACCESSDENIED"
+      remote_ci: pending
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        Release gates, CI interpretation, tag movement, and
+        persistence-sensitive validation are Tier H and must follow the release
+        CI playbook.
+      invariants_at_risk:
+        - release validity
+        - CI discipline
+        - persistence parity
+        - tag correctness
+      required_context:
+        - inst/design/model_routing.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_spec.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/v0_1_7_6_tickets.md
+        - inst/design/ledgr_v0_1_7_6_spec_packet/tickets.yml
+        - inst/design/release_ci_playbook.md
+      tests_required:
+        - targeted schema/persistence tests
+        - full local test suite
+        - R CMD check
+        - coverage if required
+        - pkgdown if required
+        - local WSL/Ubuntu gate when applicable
+        - remote CI
+      escalation_triggers:
+        - Ubuntu failure points to broad core infrastructure
+        - CI failure cannot be reproduced narrowly
+        - fix expands outside initially failing subsystem
+        - main and tag CI disagree
+      forbidden_actions:
+        - broad release-gate surgery
+        - moving a release tag before main CI is green
+        - declaring release valid before tag CI is green
+        - weakening tests to pass CI

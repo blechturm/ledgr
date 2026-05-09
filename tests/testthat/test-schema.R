@@ -120,11 +120,59 @@ testthat::test_that("runs.status CHECK constraint is enforced", {
   testthat::expect_error(
     insert_runs("run-1", "INVALID")
   )
+  try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
+
+  for (status in c("CREATED", "RUNNING", "DONE", "FAILED")) {
+    testthat::expect_error(
+      insert_runs(paste0("run-", tolower(status)), status),
+      NA
+    )
+  }
+})
+
+testthat::test_that("snapshots.status CHECK constraint is enforced", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  ledgr_create_schema(con)
+
+  insert_snapshot <- function(snapshot_id, status) {
+    DBI::dbExecute(
+      con,
+      "
+      INSERT INTO snapshots (
+        snapshot_id,
+        status,
+        created_at_utc,
+        sealed_at_utc,
+        snapshot_hash,
+        meta_json,
+        error_msg
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ",
+      params = list(
+        snapshot_id,
+        status,
+        as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+        NA,
+        NA_character_,
+        "{}",
+        NA_character_
+      )
+    )
+  }
 
   testthat::expect_error(
-    insert_runs("run-2", "DONE"),
-    NA
+    insert_snapshot("snapshot-1", "OPEN")
   )
+  try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE)
+
+  for (status in c("CREATED", "SEALED", "FAILED")) {
+    testthat::expect_error(
+      insert_snapshot(paste0("snapshot-", tolower(status)), status),
+      NA
+    )
+  }
 })
 
 testthat::test_that("missing features table fails validation", {
@@ -286,4 +334,57 @@ testthat::test_that("validator fails if runs.status does not accept DONE", {
     "runs.status must enforce status values",
     fixed = TRUE
   )
+})
+
+testthat::test_that("create-side runs.status metadata parser fails loudly on unexpected expressions", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE runs (
+      run_id TEXT NOT NULL PRIMARY KEY,
+      created_at_utc TIMESTAMP NOT NULL,
+      engine_version TEXT,
+      config_json TEXT,
+      config_hash TEXT,
+      data_hash TEXT,
+      snapshot_id TEXT,
+      status TEXT NOT NULL CHECK (length(status) > 0),
+      error_msg TEXT,
+      label TEXT,
+      archived BOOLEAN NOT NULL DEFAULT FALSE,
+      archived_at_utc TIMESTAMP,
+      archive_reason TEXT,
+      execution_mode TEXT,
+      schema_version INTEGER NOT NULL DEFAULT 106
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO runs (
+      run_id, created_at_utc, engine_version, config_json, config_hash,
+      data_hash, snapshot_id, status, error_msg, label, archived,
+      archived_at_utc, archive_reason, execution_mode, schema_version
+    )
+    VALUES (
+      'bad-check', TIMESTAMP '2020-01-01 00:00:00', '0.1.0', '{}',
+      'config', 'data', NULL, 'DONE', NULL, NULL, FALSE, NULL, NULL,
+      NULL, 106
+    )
+    "
+  )
+
+  testthat::expect_error(
+    ledgr_create_schema(con),
+    "Cannot interpret runs.status constraint metadata",
+    fixed = TRUE
+  )
+
+  row <- DBI::dbGetQuery(con, "SELECT run_id, status FROM runs")
+  testthat::expect_identical(row$run_id, "bad-check")
+  testthat::expect_identical(row$status, "DONE")
 })

@@ -276,5 +276,5 @@ agent workflows where opening pkgdown in a browser is not the first
 step. The pkgdown-only background articles are on the website, while
 installed vignettes focus on package workflows.
 
-Design packets are in `inst/design/`, including the current v0.1.7.5
+Design packets are in `inst/design/`, including the current v0.1.7.6
 packet.

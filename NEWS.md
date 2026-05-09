@@ -1,3 +1,22 @@
+# ledgr 0.1.7.6
+
+- Completed a DuckDB persistence architecture review covering connection
+  ownership, checkpoint placement, transaction boundaries, shutdown behavior,
+  and DuckDB metadata assumptions.
+- Hardened schema validation boundaries so runtime validators remain read-only
+  with respect to ledgr data rows while constraint enforcement is tested in
+  isolated disposable databases.
+- Added explicit live DML coverage for `runs.status` and `snapshots.status`
+  constraints, including valid status values and safe cleanup after expected
+  DuckDB constraint failures.
+- Added fresh-connection persistence tests proving completed runs, public run
+  metadata mutations, and low-level CSV snapshot create/import/seal/load
+  workflows are readable after reopen.
+- Documented a narrow local WSL/Ubuntu DuckDB gate and preserved branch,
+  `main`, and tag-triggered CI as separate release evidence.
+- Routed the v0.1.7.5 auditr retrospective into later roadmap milestones so
+  v0.1.7.6 stays focused on persistence architecture.
+
 # ledgr 0.1.7.5
 
 - Hardened the TTR adapter with parity tests across every supported

@@ -284,6 +284,27 @@ testthat::test_that("NEWS summarizes delivered v0.1.7.5 scope", {
   testthat::expect_no_match(tolower(section), "talib", fixed = TRUE)
 })
 
+testthat::test_that("NEWS summarizes delivered v0.1.7.6 persistence scope", {
+  root <- testthat::test_path("..", "..")
+  news <- file.path(root, "NEWS.md")
+  testthat::skip_if_not(file.exists(news), "NEWS source unavailable")
+  text <- paste(readLines(news, warn = FALSE), collapse = "\n")
+  start <- regexpr("# ledgr 0[.]1[.]7[.]6", text)
+  end <- regexpr("# ledgr 0[.]1[.]7[.]5", text)
+  testthat::expect_true(start > 0L)
+  testthat::expect_true(end > start)
+  section <- substr(text, start, end - 1L)
+
+  testthat::expect_no_match(section, "Planned:", fixed = TRUE)
+  testthat::expect_match(section, "DuckDB persistence architecture review", fixed = TRUE)
+  testthat::expect_match(section, "runtime validators remain read-only", fixed = TRUE)
+  testthat::expect_match(section, "`runs.status` and `snapshots.status`", fixed = TRUE)
+  testthat::expect_match(section, "fresh-connection persistence tests", fixed = TRUE)
+  testthat::expect_match(section, "local WSL/Ubuntu DuckDB gate", fixed = TRUE)
+  testthat::expect_match(section, "auditr retrospective", fixed = TRUE)
+  testthat::expect_no_match(tolower(section), "talib", fixed = TRUE)
+})
+
 testthat::test_that("release playbook preserves v0.1.7.4 post-mortem guardrails", {
   root <- testthat::test_path("..", "..")
   playbook <- file.path(root, "inst", "design", "release_ci_playbook.md")
@@ -298,6 +319,22 @@ testthat::test_that("release playbook preserves v0.1.7.4 post-mortem guardrails"
   testthat::expect_match(text, "stop and request review", fixed = TRUE)
 })
 
+testthat::test_that("release playbook records v0.1.7.6 Ubuntu and DuckDB gates", {
+  root <- testthat::test_path("..", "..")
+  playbook <- file.path(root, "inst", "design", "release_ci_playbook.md")
+  testthat::skip_if_not(file.exists(playbook), "release playbook unavailable")
+  text <- paste(readLines(playbook, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "Local WSL/Ubuntu DuckDB Gate", fixed = TRUE)
+  testthat::expect_match(text, "test-schema-validator-side-effects.R", fixed = TRUE)
+  testthat::expect_match(text, "test-schema-snapshots.R", fixed = TRUE)
+  testthat::expect_match(text, "test-schema.R", fixed = TRUE)
+  testthat::expect_match(text, "test-persistence-fresh-connection.R", fixed = TRUE)
+  testthat::expect_match(text, "does not replace branch CI", fixed = TRUE)
+  testthat::expect_match(text, "tag-triggered CI", fixed = TRUE)
+  testthat::expect_match(text, "release certificate", fixed = TRUE)
+})
+
 testthat::test_that("contracts record v0.1.7.5 TTR warmup and adapter boundaries", {
   root <- testthat::test_path("..", "..")
   contracts <- file.path(root, "inst", "design", "contracts.md")
@@ -310,6 +347,39 @@ testthat::test_that("contracts record v0.1.7.5 TTR warmup and adapter boundaries
   testthat::expect_match(text, "Warmup and zero-trade diagnostics", fixed = TRUE)
   testthat::expect_match(text, "connects to the R finance ecosystem through adapters", fixed = TRUE)
   testthat::expect_no_match(tolower(text), "talib", fixed = TRUE)
+})
+
+testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "Cross-connection read-back is part of the persistence contract", fixed = TRUE)
+  testthat::expect_match(text, "completed\\s+runs and their `ledger_events`, `features`, and `equity_curve` rows")
+  testthat::expect_match(text, "Runtime schema creation and validation must be read-only", fixed = TRUE)
+  testthat::expect_match(text, "must\\s+not prove constraints by writing invalid probe rows")
+  testthat::expect_match(text, "must fail loudly rather than mutate user rows", fixed = TRUE)
+  testthat::expect_match(text, "labels, archives, and tags promise\\s+immediate fresh-connection visibility")
+  testthat::expect_match(text, "Best-effort checkpointing is reserved for cleanup paths", fixed = TRUE)
+  testthat::expect_match(text, "create/import/seal followed by `ledgr_snapshot_load\\(verify = TRUE\\)`")
+})
+
+testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 sequencing", {
+  root <- testthat::test_path("..", "..")
+  roadmap <- file.path(root, "inst", "design", "ledgr_roadmap.md")
+  testthat::skip_if_not(file.exists(roadmap), "roadmap unavailable")
+  text <- paste(readLines(roadmap, warn = FALSE), collapse = "\n")
+
+  for (version in c("0[.]1[.]7[.]6", "0[.]1[.]7[.]7", "0[.]1[.]7[.]8", "0[.]1[.]8", "0[.]1[.]8[.]1")) {
+    testthat::expect_match(text, paste0("## v", version))
+  }
+  testthat::expect_match(text, "DuckDB Persistence Architecture Review", fixed = TRUE)
+  testthat::expect_match(text, "Risk Metrics Contract", fixed = TRUE)
+  testthat::expect_match(text, "Strategy Reproducibility Preflight", fixed = TRUE)
+  testthat::expect_match(text, "Lightweight Parameter Sweep Mode", fixed = TRUE)
+  testthat::expect_match(text, "Reference Data And Risk-Free Rate Adapters", fixed = TRUE)
+  testthat::expect_match(text, "They are not\\s+roadmap drivers and must not block this metric milestone or v0.1.8")
 })
 
 testthat::test_that("README and package help state adapter positioning", {
