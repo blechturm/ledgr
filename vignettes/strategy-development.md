@@ -217,8 +217,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      ledgr_utc("2019-01-01"),
-      ledgr_utc("2019-06-30")
+      ledgr::ledgr_utc("2019-01-01"),
+      ledgr::ledgr_utc("2019-06-30")
     )
   )
 
@@ -261,7 +261,7 @@ way to understand what your strategy will see.
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-03-01"),
+  ts_utc = ledgr::ledgr_utc("2019-03-01"),
   features = features
 )
 

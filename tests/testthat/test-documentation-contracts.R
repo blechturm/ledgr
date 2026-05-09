@@ -8,8 +8,14 @@ testthat::test_that("README and package docs use the package-visible logo asset"
   root <- testthat::test_path("..", "..")
   source_logo <- file.path(root, "inst", "design", "ledgr_v0_1_7_7_spec_packet", "ledgr.svg")
   package_logo <- file.path(root, "man", "figures", "logo.svg")
-  readme_rmd <- paste(readLines(file.path(root, "README.Rmd"), warn = FALSE), collapse = "\n")
-  readme_md <- paste(readLines(file.path(root, "README.md"), warn = FALSE), collapse = "\n")
+  readme_rmd_path <- file.path(root, "README.Rmd")
+  readme_md_path <- file.path(root, "README.md")
+  testthat::skip_if_not(
+    file.exists(source_logo) && file.exists(package_logo) && file.exists(readme_rmd_path) && file.exists(readme_md_path),
+    "source README/logo files not available during installed-package tests"
+  )
+  readme_rmd <- paste(readLines(readme_rmd_path, warn = FALSE), collapse = "\n")
+  readme_md <- paste(readLines(readme_md_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_true(file.exists(source_logo))
   testthat::expect_true(file.exists(package_logo))
@@ -612,9 +618,15 @@ testthat::test_that("experiment-store docs show the low-level CSV bridge", {
 
 testthat::test_that("provenance docs teach safe stored-strategy inspection", {
   root <- testthat::test_path("..", "..")
-  readme <- paste(readLines(file.path(root, "README.Rmd"), warn = FALSE), collapse = "\n")
+  readme_path <- file.path(root, "README.Rmd")
+  extract_path <- file.path(root, "man", "ledgr_extract_strategy.Rd")
+  testthat::skip_if_not(
+    file.exists(readme_path) && file.exists(extract_path),
+    "source README/help files not available during installed-package tests"
+  )
+  readme <- paste(readLines(readme_path, warn = FALSE), collapse = "\n")
   exp_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.Rmd"), warn = FALSE), collapse = "\n")
-  extract_help <- paste(readLines(file.path(root, "man", "ledgr_extract_strategy.Rd"), warn = FALSE), collapse = "\n")
+  extract_help <- paste(readLines(extract_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_match(readme, "ledgr_extract_strategy\\(snapshot, \"readme_sma_20\", trust = FALSE\\)")
   testthat::expect_match(readme, "without rerunning or evaluating the\\s+strategy source")
@@ -634,8 +646,11 @@ testthat::test_that("provenance docs teach safe stored-strategy inspection", {
 
 testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {
   root <- testthat::test_path("..", "..")
-  yahoo_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_from_yahoo.Rd"), warn = FALSE), collapse = "\n")
-  seal_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_seal.Rd"), warn = FALSE), collapse = "\n")
+  yahoo_path <- file.path(root, "man", "ledgr_snapshot_from_yahoo.Rd")
+  seal_path <- file.path(root, "man", "ledgr_snapshot_seal.Rd")
+  testthat::skip_if_not(file.exists(yahoo_path) && file.exists(seal_path), "man pages not available during installed-package tests")
+  yahoo_help <- paste(readLines(yahoo_path, warn = FALSE), collapse = "\n")
+  seal_help <- paste(readLines(seal_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_match(yahoo_help, "returned handle is already sealed", fixed = TRUE)
   testthat::expect_match(yahoo_help, "quantmod may emit harmless", fixed = TRUE)

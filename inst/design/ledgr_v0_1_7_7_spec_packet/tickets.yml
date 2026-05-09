@@ -260,7 +260,7 @@ tickets:
 
   - id: LDG-1707
     title: "v0.1.7.7 Release Gate"
-    status: todo
+    status: pending_remote_ci
     priority: P0
     dependencies: [LDG-1703, LDG-1704, LDG-1705, LDG-1706]
     tests:

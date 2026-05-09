@@ -32,8 +32,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      ledgr_utc("2019-01-01"),
-      ledgr_utc("2019-06-30")
+      ledgr::ledgr_utc("2019-01-01"),
+      ledgr::ledgr_utc("2019-06-30")
     )
   )
 

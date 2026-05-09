@@ -64,13 +64,20 @@ testthat::test_that("optional PerformanceAnalytics parity matches aligned ledgr 
 
 testthat::test_that("PerformanceAnalytics remains optional parity evidence only", {
   root <- testthat::test_path("..", "..")
-  description <- read.dcf(file.path(root, "DESCRIPTION"))
+  description_path <- file.path(root, "DESCRIPTION")
+  namespace_path <- file.path(root, "NAMESPACE")
+  contracts_path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(
+    file.exists(description_path) && file.exists(namespace_path) && file.exists(contracts_path),
+    "source package metadata not available during installed-package tests"
+  )
+  description <- read.dcf(description_path)
   imports <- unlist(strsplit(description[, "Imports"], "[,\n]"))
   imports <- trimws(imports)
   suggests <- unlist(strsplit(description[, "Suggests"], "[,\n]"))
   suggests <- trimws(suggests)
-  namespace <- paste(readLines(file.path(root, "NAMESPACE"), warn = FALSE), collapse = "\n")
-  contracts <- paste(readLines(file.path(root, "inst", "design", "contracts.md"), warn = FALSE), collapse = "\n")
+  namespace <- paste(readLines(namespace_path, warn = FALSE), collapse = "\n")
+  contracts <- paste(readLines(contracts_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_true("PerformanceAnalytics" %in% suggests)
   testthat::expect_false("PerformanceAnalytics" %in% imports)

@@ -91,8 +91,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      ledgr_utc("2019-01-01"),
-      ledgr_utc("2019-06-30")
+      ledgr::ledgr_utc("2019-01-01"),
+      ledgr::ledgr_utc("2019-06-30")
     )
   )
 
@@ -104,7 +104,7 @@ snapshot <- ledgr_snapshot_from_df(
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-03-01"),
+  ts_utc = ledgr::ledgr_utc("2019-03-01"),
   features = features
 )
 ```
@@ -537,7 +537,7 @@ snapshot handle needed for interactive pulse inspection.
 ttr_pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-06-03"),
+  ts_utc = ledgr::ledgr_utc("2019-06-03"),
   features = ttr_features
 )
 

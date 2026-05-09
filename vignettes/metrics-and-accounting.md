@@ -42,7 +42,7 @@ bars <- data.frame(
 
 one_day_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) {
+  if (ledgr::ledgr_utc(ctx$ts_utc) == ledgr::ledgr_utc("2020-01-01")) {
     targets["AAA"] <- 1
   }
   targets
@@ -357,7 +357,7 @@ last target change.
 ``` r
 final_bar_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-05")) {
+  if (ledgr::ledgr_utc(ctx$ts_utc) == ledgr::ledgr_utc("2020-01-05")) {
     targets["AAA"] <- 1
   }
   targets

@@ -44,8 +44,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      ledgr_utc("2019-01-01"),
-      ledgr_utc("2019-06-30")
+      ledgr::ledgr_utc("2019-01-01"),
+      ledgr::ledgr_utc("2019-06-30")
     )
   )
 
@@ -98,7 +98,7 @@ csv_db_path <- tempfile("ledgr_csv_bridge_", fileext = ".duckdb")
 csv_bars_path <- tempfile("ledgr_csv_bars_", fileext = ".csv")
 
 csv_bars <- bars |>
-  filter(ts_utc <= ledgr_utc("2019-01-15")) |>
+  filter(ts_utc <= ledgr::ledgr_utc("2019-01-15")) |>
   mutate(ts_utc = format(ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
 
 utils::write.csv(csv_bars, csv_bars_path, row.names = FALSE)

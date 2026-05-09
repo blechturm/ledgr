@@ -643,7 +643,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1 day
 **Dependencies:** LDG-1703, LDG-1704, LDG-1705, LDG-1706
-**Status:** Todo
+**Status:** pending_remote_ci (local gates accepted 2026-05-09)
 
 **Description:**
 Run the v0.1.7.7 release gate according to the release CI playbook. Do not do
@@ -651,34 +651,52 @@ broad release-gate surgery. If CI exposes a core design issue, stop and create a
 blocker ticket with a problem statement and definition of done.
 
 **Tasks:**
-1. Confirm every v0.1.7.7 ticket is done and status matches in markdown/YAML.
-2. Run targeted metric, comparison, documentation, README, and logo checks.
-3. Run optional PerformanceAnalytics parity tests when installed.
-4. Run full local Windows tests.
-5. Run `R CMD check --no-manual --no-build-vignettes`.
-6. Run coverage gate.
-7. Run pkgdown build because README/pkgdown/docs changed.
-8. Run local WSL/Ubuntu gate if DuckDB-sensitive files were touched.
+1. [x] Confirm every v0.1.7.7 implementation ticket is done and status matches
+   in markdown/YAML.
+2. [x] Run targeted metric, comparison, documentation, README, and logo checks.
+3. [x] Run optional PerformanceAnalytics parity tests when installed.
+4. [x] Run full local Windows tests.
+5. [x] Run `R CMD check --no-manual --no-build-vignettes`.
+6. [x] Run coverage gate.
+7. [x] Run pkgdown build because README/pkgdown/docs changed.
+8. [x] Run local WSL/Ubuntu gate if DuckDB-sensitive files were touched.
 9. Push branch and wait for branch CI.
 10. Merge only after branch CI is green.
 11. Wait for main CI and tag-triggered CI before declaring the release valid.
 
 **Acceptance Criteria:**
 - [ ] All v0.1.7.7 ticket statuses are complete and synchronized.
-- [ ] Targeted metric/comparison/docs/logo tests pass.
-- [ ] Optional PerformanceAnalytics parity tests pass when installed or skip
+- [x] Targeted metric/comparison/docs/logo tests pass.
+- [x] Optional PerformanceAnalytics parity tests pass when installed or skip
       cleanly when absent.
-- [ ] Full local Windows tests pass.
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes.
-- [ ] Coverage gate passes.
-- [ ] pkgdown build passes.
-- [ ] Local WSL/Ubuntu gate passes when required and available.
+- [x] Full local Windows tests pass.
+- [x] `R CMD check --no-manual --no-build-vignettes` passes.
+- [x] Coverage gate passes.
+- [x] pkgdown build passes.
+- [x] Local WSL/Ubuntu gate passes when required and available.
 - [ ] Remote branch CI is green.
 - [ ] Main CI is green after merge.
 - [ ] Tag-triggered CI is green before release is declared valid.
 
 **Implementation Notes:**
-- Pending.
+- Bumped `DESCRIPTION` to `0.1.7.7` to match the v0.1.7.7 NEWS/spec packet.
+- Added installed-package-safe guards to source-only documentation contract
+  tests so `R CMD check` can run them from the installed test directory.
+- Namespace-qualified `ledgr::ledgr_utc()` in README and vignette examples so
+  pkgdown article rendering does not depend on package attachment state.
+- Local verification passed:
+  `testthat::test_file("tests/testthat/test-metric-oracles.R")`,
+  `testthat::test_file("tests/testthat/test-run-compare.R")`,
+  `testthat::test_file("tests/testthat/test-run-print.R")`,
+  `testthat::test_file("tests/testthat/test-documentation-contracts.R")`,
+  `testthat::test_file("tests/testthat/test-metrics-performanceanalytics.R")`,
+  full Windows `testthat::test_local(".")`, `R CMD check
+  --no-manual --no-build-vignettes`, coverage (`84.59%`), and pkgdown.
+- Local WSL/Ubuntu DuckDB gate passed for
+  `test-schema-validator-side-effects.R`, `test-schema-snapshots.R`,
+  `test-schema.R`, and `test-persistence-fresh-connection.R`.
+- Remote branch CI, main CI, and tag-triggered CI remain pending until push,
+  merge, and tag.
 
 **Test Requirements:**
 - `tests/testthat/test-metric-oracles.R`
