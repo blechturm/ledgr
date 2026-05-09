@@ -49,7 +49,7 @@ LDG-1602 -> LDG-1604
 **Priority:** P0
 **Effort:** 0.5-1 day
 **Dependencies:** None
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Finalize the v0.1.7.6 release boundary before implementation. Confirm that the
@@ -70,11 +70,26 @@ milestones.
    and forbidden actions.
 
 **Acceptance Criteria:**
-- [ ] v0.1.7.6 scope is documented as DuckDB persistence architecture work.
-- [ ] Every auditr theme has a routing decision or explicit exclusion.
-- [ ] `THEME-010` is excluded from ledgr implementation scope.
-- [ ] `{talib}` remains issue-draft/contributor context, not release scope.
-- [ ] Ticket markdown and YAML classifications agree.
+- [x] v0.1.7.6 scope is documented as DuckDB persistence architecture work.
+- [x] Every auditr theme has a routing decision or explicit exclusion.
+- [x] `THEME-010` is excluded from ledgr implementation scope.
+- [x] `{talib}` remains issue-draft/contributor context, not release scope.
+- [x] Ticket markdown and YAML classifications agree.
+
+**Implementation Notes:**
+- Reviewed the v0.1.7.6 spec, DuckDB architecture seed review, auditr
+  retrospective, triage report, and follow-up plan.
+- Confirmed the current release boundary is DuckDB persistence architecture,
+  not broad documentation cleanup.
+- Confirmed `THEME-010` is auditr runner/environment scope and excluded from
+  ledgr implementation.
+- Confirmed `THEME-005` may enter v0.1.7.6 only when directly
+  persistence-adjacent: low-level CSV, sealing, sealed metadata, or
+  fresh-connection workflows.
+- Confirmed risk metrics, reproducibility preflight, sweep mode,
+  risk-free-rate adapters, and `{talib}` are excluded from v0.1.7.6
+  implementation scope.
+- Ran scope and ticket/YAML consistency greps; no production code changed.
 
 **Test Requirements:**
 - Documentation consistency scan.

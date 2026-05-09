@@ -3,7 +3,7 @@ source: "v0_1_7_6_tickets.md"
 tickets:
   - id: LDG-1601
     title: "Scope, Evidence, And auditr Routing Baseline"
-    status: todo
+    status: done
     priority: P0
     dependencies: []
     tests:
