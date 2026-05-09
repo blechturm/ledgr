@@ -96,6 +96,30 @@ When Ubuntu CI fails around experiment-store behavior:
 Do not weaken tests just because Ubuntu exposed the issue. If the assertion is
 about ledgr's persistence contract, fix the persistence path.
 
+### Local WSL/Ubuntu DuckDB Gate
+
+For changes touching DuckDB persistence, schema creation or validation,
+snapshots, low-level CSV workflows, executable vignettes, pkgdown, file paths,
+time zones, or release CI, run a narrow Linux gate before pushing when WSL or
+another local Ubuntu environment is available.
+
+The minimum DuckDB-sensitive gate is:
+
+```sh
+Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-schema-validator-side-effects.R')"
+Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-schema-snapshots.R')"
+Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-schema.R')"
+Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-persistence-fresh-connection.R')"
+```
+
+If the ticket touched executable documentation or pkgdown-sensitive examples,
+also run the narrow documentation path that owns the changed example, or a local
+pkgdown build when the example owner is not obvious.
+
+This local Linux gate is early warning only. It does not replace branch CI,
+`main` CI, or tag-triggered CI. A local WSL pass is useful evidence; it is not a
+release certificate.
+
 ### Release-Gate Debugging Guardrails
 
 Remote CI logs define the initial scope. Before editing, record the first

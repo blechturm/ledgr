@@ -346,7 +346,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-1601, LDG-1602
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Prove the persistence paths that historically diverged between Windows and
@@ -365,18 +365,56 @@ Document the local WSL/Ubuntu gate in the release playbook.
    branch, main, or tag CI.
 
 **Acceptance Criteria:**
-- [ ] Completed run artifacts are visible from a fresh connection after
+- [x] Completed run artifacts are visible from a fresh connection after
       `ledgr_run()` returns.
-- [ ] Durable run metadata mutations are visible from a fresh connection.
-- [ ] Low-level CSV snapshot create/import/seal/load works after reopen.
-- [ ] The local WSL/Ubuntu gate lists targeted tests or command classes.
-- [ ] The playbook says when the local Linux gate is required.
-- [ ] The playbook preserves remote branch, main, and tag CI as separate gates.
+- [x] Durable run metadata mutations are visible from a fresh connection.
+- [x] Low-level CSV snapshot create/import/seal/load works after reopen.
+- [x] The local WSL/Ubuntu gate lists targeted tests or command classes.
+- [x] The playbook says when the local Linux gate is required.
+- [x] The playbook preserves remote branch, main, and tag CI as separate gates.
+
+**Implementation Notes:**
+- Added `tests/testthat/test-persistence-fresh-connection.R`.
+- The new run-artifact test opens a fresh DuckDB connection after
+  `ledgr_run()` returns and verifies the completed run row, identity hashes,
+  ledger events, and equity curve are visible.
+- The new metadata test verifies `ledgr_run_label()`, `ledgr_run_archive()`,
+  `ledgr_run_tag()`, and `ledgr_run_untag()` are visible through a fresh
+  connection after the public mutation APIs return.
+- The new low-level CSV test exercises create -> import -> seal -> disconnect
+  -> `ledgr_snapshot_load(verify = TRUE)` -> `ledgr_run()` -> fresh-connection
+  read-back.
+- Updated `release_ci_playbook.md` with a local WSL/Ubuntu DuckDB gate, the
+  ticket classes that require it, and the rule that local Linux evidence does
+  not replace branch, `main`, or tag CI.
 
 **Test Requirements:**
 - Fresh-connection run artifact tests.
 - Snapshot CSV create/import/seal/load tests.
 - Targeted local WSL/Ubuntu command when available.
+
+**Verification:**
+```text
+pkgload::load_all('.', quiet=TRUE);
+testthat::test_file('tests/testthat/test-persistence-fresh-connection.R')
+```
+
+Result: passed on Windows.
+
+```text
+pkgload::load_all('.', quiet=TRUE);
+testthat::test_file('tests/testthat/test-schema-validator-side-effects.R');
+testthat::test_file('tests/testthat/test-schema-snapshots.R');
+testthat::test_file('tests/testthat/test-schema.R');
+testthat::test_file('tests/testthat/test-snapshot-adapters.R');
+testthat::test_file('tests/testthat/test-run-store.R');
+testthat::test_file('tests/testthat/test-run-metadata.R');
+testthat::test_file('tests/testthat/test-run-tags.R')
+```
+
+Result: passed on Windows. One expected optional-package-path skip occurred in
+`test-snapshot-adapters.R`. Local WSL execution was not available in this
+session: `wsl.exe -l -v` returned `E_ACCESSDENIED`.
 
 **Source Reference:** v0.1.7.6 spec sections R3, 6, B4, C1-C3.
 

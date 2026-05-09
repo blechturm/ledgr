@@ -132,7 +132,7 @@ tickets:
 
   - id: LDG-1604
     title: "Fresh-Connection Persistence And Local Ubuntu Gate"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1601, LDG-1602]
     tests:
