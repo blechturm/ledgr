@@ -1166,15 +1166,23 @@ with user-facing diagnostics and documentation.
 
 ## v0.1.7.9 - Strategy Author Ergonomics
 
-**Goal:** Close the remaining feedback from the v0.1.7.5 auditr retrospective
-that does not belong in the risk-metrics or reproducibility-preflight milestones.
-After those two milestones stabilise the measurement and correctness surfaces,
-this milestone improves the experience of writing and validating multi-instrument
-strategies from documentation alone.
+**Goal:** Close the remaining strategy-author ergonomics feedback from the
+v0.1.7.5 and v0.1.7.7 auditr retrospectives that does not belong in the
+risk-metrics or reproducibility-preflight milestones. After those two milestones
+stabilise the measurement and correctness surfaces, this milestone improves the
+experience of writing and validating multi-instrument strategies from
+documentation alone.
 
 This milestone is deliberately placed after v0.1.7.8 and before v0.1.8. One
 item — `ctx$all_features()` — is consciously deferred to v0.1.8 and recorded
 here so the reasons are available when the fold-core design work begins.
+
+The v0.1.7.7 auditr run added a second source of ergonomics evidence. v0.1.7.8
+owns only the reproducibility, leakage-boundary, custom-indicator, and provenance
+pieces from that report. The remaining ledgr-owned themes are parked here:
+feature-map and ctx accessor discoverability, warmup/current-bar
+troubleshooting, first-run entry points, comparison/summary print semantics,
+snapshot metadata clarity, and selected helper/error-message UX.
 
 ### Scope
 
@@ -1211,6 +1219,24 @@ here so the reasons are available when the fold-core design work begins.
   This is what `target_rebalance()` does internally. Users who write the momentum
   or other allocation strategies manually need this documented as the correct
   pattern, not an incidental choice.
+- Add a strategy-context/accessor reference surface that explains engine feature
+  IDs, feature-map aliases, `ctx$feature()`, `ctx$features()`, and accepted
+  feature object shapes for `ledgr_experiment()` versus lower-level backtest
+  helpers.
+- Add first-run entry-point links from primary run/experiment help pages to the
+  installed Getting Started article and document config-hash stability
+  expectations at the user-facing level.
+- Improve warmup/current-bar troubleshooting examples, including how summary
+  diagnostics map to feature contract fields and snapshot-specific bar counts.
+- Document comparison and summary output semantics: formatted print views versus
+  raw numeric columns, summary print/return behavior, and exact-ID helpers when
+  tibble output truncates identifiers.
+- Improve snapshot metadata and seal lifecycle examples, including
+  `ledgr_snapshot_info()` on sealed handles, parsed metadata fields, counts, and
+  ISO UTC date formats.
+- Review targeted helper, target, and parameter error-message findings from the
+  v0.1.7.7 auditr report; promote only item-level findings that raw evidence
+  classifies as ledgr UX bugs or durable docs gaps.
 - Record the `ctx$all_features()` deferral with full rationale (see below).
 
 ### Deferred To v0.1.8: `ctx$all_features(feature_map)`
