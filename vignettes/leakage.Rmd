@@ -140,11 +140,9 @@ computed over a full series. They are also a residual risk. Output shape and
 value checks can prove that a vector has the right length and valid values. They
 cannot prove that the function avoided future rows internally.
 
-The current custom-indicator notes are in
-[`custom-indicators.md`](custom-indicators.html). A forthcoming documentation
-update promotes that material into the current custom-indicator article and
-keeps the same warning: full-series custom feature code must be written with
-causal discipline.
+The [custom-indicator article](custom-indicators.html) explains this boundary in
+more detail. The core warning is the same: full-series custom feature code must
+be written with causal discipline.
 
 ## What Ledgr Enforces
 

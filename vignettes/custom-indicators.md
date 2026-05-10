@@ -1,58 +1,232 @@
-# Developing Custom Indicators
+Custom Indicators And External Features
+================
 
-Full content in v0.1.3.
+``` r
+library(ledgr)
+```
 
-This vignette outline covers deterministic indicator construction, registry
-usage, built-in indicators, R-function adapters, CSV adapters, and replay-safe
-fingerprints.
+Custom indicators are ledgr’s extension point for derived market data.
+They are useful when the built-in indicators and TTR-backed indicators
+do not express the feature you want.
 
-## Outline
+They are also the highest-risk feature boundary. A custom indicator can
+keep a strategy pulse-safe, or it can hide future information in an
+ordinary-looking feature value. This article explains the authoring
+contract.
 
-- Build indicators with `ledgr_indicator()`
-- Add `series_fn` for full-series precomputation in backtests
-- Use `ledgr_ind_sma()`, `ledgr_ind_ema()`, `ledgr_ind_rsi()`, and `ledgr_ind_returns()`
-- Register and retrieve indicators
-- Wrap package functions with `ledgr_adapter_r()`
-- Use precomputed values with `ledgr_adapter_csv()`
-- Understand purity and fingerprint requirements
+## The Indicator Object
 
-## Vectorized Backtest Path
+`ledgr_indicator()` creates a feature definition. The important fields
+are:
 
-Custom indicators can provide two functions:
+| Field | Meaning |
+|----|----|
+| `id` | Stable feature ID used as the `name` in `ctx$feature(instrument_id, name)`. |
+| `fn` | Scalar function for one bounded historical window. |
+| `series_fn` | Optional vectorized function for one instrument’s full bar series. |
+| `requires_bars` | Minimum lookback requirement for the indicator definition. |
+| `stable_after` | First row where the output is considered usable. |
+| `params` | Named deterministic parameter list included in the fingerprint. |
+| `source` | Source label: `"ledgr"`, `"TTR"`, or `"custom"`. |
 
-- `fn(window, params)` computes the latest value from a bounded window. This is
-  used for interactive pulse development and as a fallback.
-- `series_fn(bars, params)` computes the full numeric series for one instrument,
-  aligned to the input rows. This is the preferred backtest path.
+Use `params` for intentional configuration. Do not close over mutable
+session objects when the value should be part of the feature definition.
 
-```r
-atr_20 <- ledgr_indicator(
-  id = "atr_20",
+## Scalar Indicators
+
+The scalar path is the simplest contract:
+
+``` r
+range_3 <- ledgr_indicator(
+  id = "range_3",
   fn = function(window, params) {
-    hlc <- cbind(High = window$high, Low = window$low, Close = window$close)
-    as.numeric(utils::tail(TTR::ATR(hlc, n = params$n)[, "atr"], 1))
+    mean(window$high - window$low)
   },
-  series_fn = function(bars, params) {
-    hlc <- cbind(High = bars$high, Low = bars$low, Close = bars$close)
-    as.numeric(TTR::ATR(hlc, n = params$n)[, "atr"])
-  },
-  requires_bars = 21,
-  stable_after = 21,
-  params = list(n = 20)
+  requires_bars = 3,
+  stable_after = 3,
+  params = list()
 )
 ```
 
-The `series_fn` contract is strict:
+The engine calls `fn(window, params)` on a bounded historical window
+ending at the current bar. Before `stable_after`, ledgr returns
+`NA_real_` for that feature. After warmup, the scalar result must be one
+finite numeric value.
 
-- input is one instrument's bars in ascending time order;
-- output is a numeric vector of length `nrow(bars)`;
-- output position `i` belongs to bar row `i`;
-- warmup `NA_real_` and `NaN` are normalized to `NA_real_`;
-- infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
+This path is easy to reason about because the function receives only
+historical rows up to the current decision point. It is the right first
+implementation for most custom features.
 
-If an indicator has no `series_fn`, ledgr still supports `fn`. In v0.1.4 the
-fallback uses bounded windows instead of expanding full-history slices, so
-custom indicators do not accidentally do O(n^2) work by default.
+## Vectorized Indicators
 
-The ATR example above uses `TTR`; production package examples should guard
-optional dependencies before running them.
+`series_fn` is the fast path for indicators that are naturally computed
+over a whole series:
+
+``` r
+sma_3_custom <- ledgr_indicator(
+  id = "sma_3_custom",
+  fn = function(window, params) {
+    mean(utils::tail(window$close, params$n))
+  },
+  series_fn = function(bars, params) {
+    stats::filter(
+      bars$close,
+      rep(1 / params$n, params$n),
+      sides = 1
+    ) |>
+      as.numeric()
+  },
+  requires_bars = 3,
+  stable_after = 3,
+  params = list(n = 3)
+)
+```
+
+The `series_fn(bars, params)` contract is strict:
+
+- `bars` contains one instrument’s bars in ascending timestamp order;
+- the return value must be an atomic numeric vector;
+- the return length must equal `nrow(bars)`;
+- output position `i` belongs to input row `i`;
+- warmup rows before `stable_after` are normalized to `NA_real_`;
+- post-warmup `NA`, `NaN`, and infinite values are errors.
+
+Output validation proves shape and value validity. It does not prove
+causal correctness. Because `series_fn` receives the full bar series, a
+badly written vectorized function can still use future rows internally
+while returning a correctly shaped vector.
+
+That is why scalar `fn` is often the safer first version. Add
+`series_fn` when the feature logic is stable and the alignment is
+obvious.
+
+## Warmup And Stability
+
+`requires_bars` and `stable_after` are related but not identical.
+
+`requires_bars` says how much history the indicator definition needs.
+`stable_after` says when the output is usable in the feature series. It
+must be greater than or equal to `requires_bars`.
+
+For a three-bar moving average, both are usually `3`. For indicators
+with a longer settling period, `stable_after` can be larger. ledgr
+treats rows before `stable_after` as warmup and exposes them as
+`NA_real_`.
+
+Warmup `NA` is expected. Post-warmup `NA`, `NaN`, or infinite values
+mean the feature did not satisfy its contract.
+
+## Fingerprints
+
+Indicator definitions are fingerprinted so runs can later verify that
+the registered feature definition still matches the one recorded with
+the run.
+
+The fingerprint includes the feature ID, scalar function, vectorized
+function when present, `requires_bars`, `stable_after`, and
+deterministic `params`.
+
+Fingerprints are an identity check, not a semantic proof. They help
+ledgr answer “is this the same feature definition?” They do not prove
+that a custom `series_fn` avoided lookahead or that an external data
+source was historically available at the simulated decision time.
+
+## Deterministic Parameters And Unsafe Calls
+
+`params` must be a named list of deterministic values. Use strings for
+dates and timestamps when they are part of the feature definition. Do
+not pass open connections, environments, external pointers, or live
+session objects.
+
+Indicator functions are checked for common unsafe patterns. Examples
+include:
+
+- global assignment with `<<-`;
+- wall-clock calls such as `Sys.time()` and `Sys.Date()`;
+- randomness such as `runif()`, `rnorm()`, and `sample()`;
+- dynamic lookup and execution helpers such as `get()`, `eval()`, and
+  `assign()`;
+- environment reads such as `Sys.getenv()`.
+
+These checks are guardrails. They do not replace careful review of the
+feature logic.
+
+## Adapter Helpers
+
+`ledgr_adapter_r()` wraps a function that operates on the close series
+of the bounded window. It is useful for simple package or base R
+functions:
+
+``` r
+median_close <- ledgr_adapter_r(
+  stats::median,
+  id = "median_close_5",
+  requires_bars = 5
+)
+```
+
+The adapter stores the adapted function identity and arguments in
+indicator parameters. It still creates an ordinary `ledgr_indicator`.
+
+`ledgr_adapter_csv()` adapts a CSV of precomputed values:
+
+``` r
+csv_indicator <- ledgr_adapter_csv(
+  "features/my_values.csv",
+  value_col = "my_value",
+  id = "my_value"
+)
+```
+
+The CSV must identify timestamp, instrument, and value columns. This is
+useful for external feature pipelines, but it moves availability
+discipline outside ledgr. The CSV values must already respect the
+simulated decision times. ledgr can hash and look up the values; it
+cannot know whether the upstream pipeline used future information.
+
+## Register And Read
+
+Custom indicators are registered with the experiment just like built-in
+indicators:
+
+``` r
+features <- list(range_3)
+
+exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = strategy,
+  features = features,
+  opening = ledgr_opening(cash = 10000)
+)
+
+ledgr_feature_id(features)
+```
+
+Inside a strategy, read the exact feature ID from the pulse context:
+
+``` r
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  value <- ctx$feature("AAA", "range_3")
+  if (is.finite(value) && value < params$max_range) {
+    targets["AAA"] <- params$qty
+  }
+  targets
+}
+```
+
+Unknown feature IDs fail loudly. Warmup for a known feature is
+represented by `NA_real_`.
+
+## What To Remember
+
+Custom indicators let external feature logic enter ledgr’s deterministic
+pulse engine. Keep the boundary explicit:
+
+- prefer scalar `fn` until the logic is stable;
+- add `series_fn` only when full-series alignment is clear;
+- treat `series_fn` and CSV adapters as review points for leakage;
+- keep all intentional configuration in deterministic `params`;
+- register every feature before `ledgr_run()`;
+- use `ledgr_feature_id()` to confirm the exact ID a strategy should
+  read.

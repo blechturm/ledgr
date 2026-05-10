@@ -595,7 +595,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1 day
 **Dependencies:** LDG-1801
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Resolve the stale public vignette placeholders and promote custom-indicator
@@ -623,22 +623,42 @@ determinism, and the residual leakage risk of full-series code.
 9. Add documentation contract tests.
 
 **Acceptance Criteria:**
-- [ ] `custom-indicators.md` no longer contains stale "Full content in v0.1.3"
+- [x] `custom-indicators.md` no longer contains stale "Full content in v0.1.3"
       placeholder text.
-- [ ] Custom indicator docs explain scalar and vectorized paths.
-- [ ] Custom indicator docs explain `series_fn` leakage residual risk.
-- [ ] `interactive-strategy-development.md` is moved, removed, or routed with a
+- [x] Custom indicator docs explain scalar and vectorized paths.
+- [x] Custom indicator docs explain `series_fn` leakage residual risk.
+- [x] `interactive-strategy-development.md` is moved, removed, or routed with a
       recorded reason.
-- [ ] Leakage article can link to current custom-indicator documentation.
-- [ ] Documentation contract tests pin the absence of stale placeholder text.
+- [x] Leakage article can link to current custom-indicator documentation.
+- [x] Documentation contract tests pin the absence of stale placeholder text.
 
 **Implementation Notes:**
-- Pending.
+- Added `vignettes/custom-indicators.Rmd` and rendered companion markdown,
+  replacing the stale `custom-indicators.md` placeholder.
+- Added the custom-indicator article to pkgdown Core Concepts navigation.
+- The article explains `ledgr_indicator()`, scalar `fn(window, params)`,
+  vectorized `series_fn(bars, params)`, warmup, shape/value validation,
+  fingerprints, deterministic params, unsafe function patterns, and the
+  residual leakage risk of full-series code.
+- Covered `ledgr_adapter_r()` and `ledgr_adapter_csv()` as boundary helpers
+  without adding optional package dependencies.
+- Removed `vignettes/interactive-strategy-development.md`; its current useful
+  content is already covered by `strategy-development.Rmd` and
+  `indicators.Rmd`.
+- Updated the leakage article to link to the current custom-indicator article
+  rather than a forthcoming documentation update.
+- Added documentation contract coverage for stale placeholder removal, article
+  navigation, custom indicator boundaries, adapter warnings, and removal of the
+  stale interactive placeholder.
 
 **Verification:**
 ```text
-pkgload::load_all('.', quiet=TRUE);
-testthat::test_file('tests/testthat/test-documentation-contracts.R')
+PASS: pkgload::load_all('.', quiet=TRUE);
+      testthat::test_file('tests/testthat/test-documentation-contracts.R',
+                          reporter='summary')
+
+PASS: Rendered vignettes/custom-indicators.Rmd and vignettes/leakage.Rmd to
+      companion markdown.
 ```
 
 **Test Requirements:**

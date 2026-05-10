@@ -202,7 +202,7 @@ tickets:
 
   - id: LDG-1806
     title: "Custom Indicator Article And Placeholder Cleanup"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1801]
     tests:

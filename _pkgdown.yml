@@ -20,6 +20,7 @@ articles:
     contents:
       - metrics-and-accounting
       - indicators
+      - custom-indicators
   - title: Research Workflow
     navbar: ~
     contents:

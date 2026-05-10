@@ -733,9 +733,45 @@ testthat::test_that("leakage article teaches boundaries without overclaiming", {
   testthat::expect_match(doc, "survivorship-biased universe", ignore.case = TRUE)
   testthat::expect_match(doc, "research-loop leakage", ignore.case = TRUE)
   testthat::expect_match(doc, "custom-indicators.html", fixed = TRUE)
+  testthat::expect_no_match(doc, "forthcoming documentation", fixed = TRUE)
   testthat::expect_false(grepl("ledgr_check_no_lookahead", doc, fixed = TRUE))
   testthat::expect_match(strategy_doc, "vignette\\(\"leakage\", package = \"ledgr\"\\)")
   testthat::expect_false(grepl("has no object from which it can accidentally read tomorrow", strategy_doc, fixed = TRUE))
+})
+
+testthat::test_that("custom indicator article replaces stale placeholders", {
+  root <- testthat::test_path("..", "..")
+  custom_rmd <- file.path(root, "vignettes", "custom-indicators.Rmd")
+  custom_md <- file.path(root, "vignettes", "custom-indicators.md")
+  interactive_md <- file.path(root, "vignettes", "interactive-strategy-development.md")
+  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_true(file.exists(custom_rmd))
+  testthat::expect_true(file.exists(custom_md))
+  testthat::expect_false(file.exists(interactive_md))
+  testthat::expect_match(pkgdown, "- custom-indicators", fixed = TRUE)
+
+  doc <- paste(readLines(custom_rmd, warn = FALSE), collapse = "\n")
+  rendered <- paste(readLines(custom_md, warn = FALSE), collapse = "\n")
+
+  for (text in list(doc, rendered)) {
+    testthat::expect_no_match(text, "Full content in v0.1.3", fixed = TRUE)
+  }
+
+  testthat::expect_match(doc, "ledgr_indicator", fixed = TRUE)
+  testthat::expect_match(doc, "fn\\(window, params\\)")
+  testthat::expect_match(doc, "series_fn\\(bars, params\\)")
+  testthat::expect_match(doc, "requires_bars", fixed = TRUE)
+  testthat::expect_match(doc, "stable_after", fixed = TRUE)
+  testthat::expect_match(doc, "NA_real_", fixed = TRUE)
+  testthat::expect_match(doc, "post-warmup `NA`, `NaN`, and infinite values are errors", fixed = TRUE)
+  testthat::expect_match(doc, "fingerprint", ignore.case = TRUE)
+  testthat::expect_match(doc, "Output validation proves shape and value validity", fixed = TRUE)
+  testthat::expect_match(doc, "does not prove causal\\s+correctness")
+  testthat::expect_match(doc, "ledgr_adapter_r", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_adapter_csv", fixed = TRUE)
+  testthat::expect_match(doc, "The CSV values must already respect the simulated decision times", fixed = TRUE)
+  testthat::expect_match(doc, "Unknown feature IDs fail loudly", fixed = TRUE)
 })
 
 testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {
