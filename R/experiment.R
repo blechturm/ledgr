@@ -165,6 +165,10 @@ print.ledgr_opening <- function(x, ...) {
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
 #' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#'
+#' Reproducibility model:
+#' `vignette("reproducibility", package = "ledgr")`
+#' `system.file("doc", "reproducibility.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,

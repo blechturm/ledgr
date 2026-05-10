@@ -144,6 +144,10 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #' `vignette("experiment-store", package = "ledgr")`
 #' `system.file("doc", "experiment-store.html", package = "ledgr")`
 #'
+#' Reproducibility model:
+#' `vignette("reproducibility", package = "ledgr")`
+#' `system.file("doc", "reproducibility.html", package = "ledgr")`
+#'
 #' Strategy authoring:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`

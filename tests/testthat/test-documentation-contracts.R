@@ -151,7 +151,8 @@ testthat::test_that("feature-map docs preserve teaching order and semantic bound
   testthat::expect_match(strategy_doc, "Feature Maps For Readable Feature Access", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Wrong And Right: Leakage", fixed = TRUE)
   testthat::expect_match(strategy_doc, "tomorrow_close = lead\\(close\\)")
-  testthat::expect_match(strategy_doc, "The ledgr strategy has no object from which it can accidentally read tomorrow's\\s+close.")
+  testthat::expect_match(strategy_doc, "market-data table from which it can\\s+casually index tomorrow's bar")
+  testthat::expect_match(strategy_doc, "does not certify that\\s+snapshots, feature definitions, event timestamps")
   testthat::expect_match(strategy_doc, "The strategy still returns an ordinary target vector.", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Plain `features = list(...)` remains valid.", fixed = TRUE)
   testthat::expect_match(strategy_doc, "bt_mapped <- mapped_exp", fixed = TRUE)
@@ -598,7 +599,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
 
   expected <- list(
     ledgr_run = c("strategy-development", "metrics-and-accounting"),
-    ledgr_experiment = c("strategy-development", "experiment-store"),
+    ledgr_experiment = c("strategy-development", "experiment-store", "reproducibility"),
     ledgr_backtest = c("strategy-development", "metrics-and-accounting"),
     ledgr_results = "metrics-and-accounting",
     ledgr_compare_runs = c("experiment-store", "metrics-and-accounting"),
@@ -626,7 +627,8 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     weight_equal = "strategy-development",
     target_rebalance = "strategy-development",
     ledgr_feature_map = c("strategy-development", "indicators"),
-    passed_warmup = c("strategy-development", "indicators")
+    passed_warmup = c("strategy-development", "indicators"),
+    ledgr_strategy_preflight = "reproducibility"
   )
 
   for (page in names(expected)) {
@@ -679,10 +681,61 @@ testthat::test_that("provenance docs teach safe stored-strategy inspection", {
   testthat::expect_match(extract_help, "trust = TRUE", fixed = TRUE)
   testthat::expect_match(extract_help, "not a code-safety guarantee", fixed = TRUE)
   testthat::expect_match(extract_help, "legacy/pre-provenance runs", ignore.case = TRUE)
-  for (article in c("experiment-store", "strategy-development")) {
+  for (article in c("experiment-store", "strategy-development", "reproducibility")) {
     testthat::expect_match(extract_help, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(extract_help, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
+})
+
+testthat::test_that("reproducibility article teaches provenance tiers and safe extraction", {
+  doc <- paste(readLines(ledgr_test_source_vignette("reproducibility.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
+  exp_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.Rmd"), warn = FALSE), collapse = "\n")
+  experiment_help <- paste(readLines(file.path(root, "man", "ledgr_experiment.Rd"), warn = FALSE), collapse = "\n")
+  preflight_help <- paste(readLines(file.path(root, "man", "ledgr_strategy_preflight.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(pkgdown, "- reproducibility", fixed = TRUE)
+  testthat::expect_match(doc, "sealed snapshot", fixed = TRUE)
+  testthat::expect_match(doc, "strategy function", fixed = TRUE)
+  testthat::expect_match(doc, "strategy parameters", fixed = TRUE)
+  testthat::expect_match(doc, "registered feature definitions", fixed = TRUE)
+  testthat::expect_match(doc, "stored strategy source", ignore.case = TRUE)
+  testthat::expect_match(doc, "trust = FALSE", fixed = TRUE)
+  testthat::expect_match(doc, "without parsing, evaluating, or\\s+executing")
+  testthat::expect_match(doc, "Hash verification proves stored-text identity, not code safety", fixed = TRUE)
+  testthat::expect_match(doc, "Tier 1", fixed = TRUE)
+  testthat::expect_match(doc, "Tier 2", fixed = TRUE)
+  testthat::expect_match(doc, "Tier 3", fixed = TRUE)
+  testthat::expect_match(doc, "There is no\\s+`force = TRUE`\\s+override")
+  testthat::expect_match(doc, "renv", fixed = TRUE)
+  testthat::expect_match(doc, "Docker", fixed = TRUE)
+  testthat::expect_match(doc, "github.com/ropensci/rix", fixed = TRUE)
+  testthat::expect_match(doc, "github.com/nbafrank/uvr", fixed = TRUE)
+  testthat::expect_match(exp_doc, "vignette\\(\"reproducibility\", package =\\s+\"ledgr\"\\)")
+  testthat::expect_match(experiment_help, "vignette(\"reproducibility\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_match(preflight_help, "vignette(\"reproducibility\", package = \"ledgr\")", fixed = TRUE)
+})
+
+testthat::test_that("leakage article teaches boundaries without overclaiming", {
+  doc <- paste(readLines(ledgr_test_source_vignette("leakage.Rmd"), warn = FALSE), collapse = "\n")
+  strategy_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(pkgdown, "- leakage", fixed = TRUE)
+  testthat::expect_match(doc, "lead\\(close\\)")
+  testthat::expect_match(doc, "quantile\\(ret_5, 0.75")
+  testthat::expect_match(doc, "pulse context", fixed = TRUE)
+  testthat::expect_match(doc, "registered indicators", ignore.case = TRUE)
+  testthat::expect_match(doc, "series_fn", fixed = TRUE)
+  testthat::expect_match(doc, "does not certify that the dataset", fixed = TRUE)
+  testthat::expect_match(doc, "survivorship-biased universe", ignore.case = TRUE)
+  testthat::expect_match(doc, "research-loop leakage", ignore.case = TRUE)
+  testthat::expect_match(doc, "custom-indicators.html", fixed = TRUE)
+  testthat::expect_false(grepl("ledgr_check_no_lookahead", doc, fixed = TRUE))
+  testthat::expect_match(strategy_doc, "vignette\\(\"leakage\", package = \"ledgr\"\\)")
+  testthat::expect_false(grepl("has no object from which it can accidentally read tomorrow", strategy_doc, fixed = TRUE))
 })
 
 testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {

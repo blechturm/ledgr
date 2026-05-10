@@ -11,6 +11,8 @@ articles:
     navbar: ~
     contents:
       - getting-started
+      - reproducibility
+      - leakage
       - strategy-development
       - experiment-store
   - title: Core Concepts

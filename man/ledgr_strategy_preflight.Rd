@@ -35,6 +35,13 @@ The preflight is static analysis, not proof of semantic reproducibility.
 Dynamic dispatch, mutable captured environments, and dynamically constructed
 code remain user responsibilities.
 }
+\section{Articles}{
+
+Reproducibility model:
+\code{vignette("reproducibility", package = "ledgr")}
+\code{system.file("doc", "reproducibility.html", package = "ledgr")}
+}
+
 \examples{
 strategy <- function(ctx, params) {
   targets <- ctx$flat()

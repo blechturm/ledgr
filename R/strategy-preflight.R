@@ -20,6 +20,10 @@
 #' @param strategy A function with signature `function(ctx, params)`.
 #' @return A `ledgr_strategy_preflight` object with fields `tier`, `allowed`,
 #'   `reason`, `unresolved_symbols`, `package_dependencies`, and `notes`.
+#' @section Articles:
+#' Reproducibility model:
+#' `vignette("reproducibility", package = "ledgr")`
+#' `system.file("doc", "reproducibility.html", package = "ledgr")`
 #' @examples
 #' strategy <- function(ctx, params) {
 #'   targets <- ctx$flat()

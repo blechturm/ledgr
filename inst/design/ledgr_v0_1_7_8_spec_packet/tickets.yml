@@ -126,7 +126,7 @@ tickets:
 
   - id: LDG-1804
     title: "On Reproducibility Article And Reference Links"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1802]
     tests:
@@ -164,7 +164,7 @@ tickets:
 
   - id: LDG-1805
     title: "On Leakage Article And Strategy Vignette Cleanup"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1806]
     tests:

@@ -381,7 +381,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1 day
 **Dependencies:** LDG-1802
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Create `vignettes/reproducibility.Rmd` as the authoritative narrative article
@@ -409,24 +409,36 @@ semantics, reproducibility tiers, and Tier 2 user responsibilities.
 12. Add documentation contract tests.
 
 **Acceptance Criteria:**
-- [ ] `vignettes/reproducibility.Rmd` exists and is linked in pkgdown.
-- [ ] Rendered companion markdown exists if this repo keeps one for the article.
-- [ ] The article is authoritative for provenance, extraction, trust semantics,
+- [x] `vignettes/reproducibility.Rmd` exists and is linked in pkgdown.
+- [x] Rendered companion markdown exists if this repo keeps one for the article.
+- [x] The article is authoritative for provenance, extraction, trust semantics,
       and tiers.
-- [ ] `experiment-store.Rmd` links to the article and does not duplicate the
+- [x] `experiment-store.Rmd` links to the article and does not duplicate the
       full trust-boundary explanation.
-- [ ] Public docs explain Tier 2 environment responsibility without teaching
+- [x] Public docs explain Tier 2 environment responsibility without teaching
       environment-management tools.
-- [ ] Documentation contract tests pin the experiment/provenance model, safe
+- [x] Documentation contract tests pin the experiment/provenance model, safe
       extraction boundary, tier definitions, and Tier 3 behavior.
 
 **Implementation Notes:**
-- Pending.
+- Added `vignettes/reproducibility.Rmd` and rendered companion markdown.
+- Added the article to pkgdown Start Here navigation.
+- Linked `ledgr_extract_strategy()`, `ledgr_experiment()`, and
+  `ledgr_strategy_preflight()` reference docs to the installed article.
+- Trimmed `experiment-store.Rmd` strategy extraction material to a workflow
+  example and pointed the full trust/tier explanation to the reproducibility
+  article.
+- Added documentation contract coverage for experiment inputs, provenance,
+  safe extraction, trust semantics, Tier 1/2/3, Tier 3 failure, and Tier 2
+  environment responsibility.
 
 **Verification:**
 ```text
-pkgload::load_all('.', quiet=TRUE);
-testthat::test_file('tests/testthat/test-documentation-contracts.R')
+PASS: pkgload::load_all('.', quiet=TRUE);
+      testthat::test_file('tests/testthat/test-documentation-contracts.R',
+                          reporter='summary')
+
+PASS: Rendered vignettes/reproducibility.Rmd to companion markdown.
 ```
 
 **Test Requirements:**
@@ -474,7 +486,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1 day
 **Dependencies:** LDG-1806
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Create `vignettes/leakage.Rmd` as the public narrative article for ledgr's
@@ -502,23 +514,40 @@ ledgr certifies all research processes.
 10. Add documentation contract tests.
 
 **Acceptance Criteria:**
-- [ ] `vignettes/leakage.Rmd` exists and is linked in pkgdown.
-- [ ] The subtle feature-construction leak is explained.
-- [ ] The article distinguishes ledgr-enforced boundaries from user
+- [x] `vignettes/leakage.Rmd` exists and is linked in pkgdown.
+- [x] The subtle feature-construction leak is explained.
+- [x] The article distinguishes ledgr-enforced boundaries from user
       responsibilities.
-- [ ] Public docs do not cite `ledgr_check_no_lookahead()` as public API.
-- [ ] `strategy-development.Rmd` links to the leakage article and softens the
+- [x] Public docs do not cite `ledgr_check_no_lookahead()` as public API.
+- [x] `strategy-development.Rmd` links to the leakage article and softens the
       old overclaim.
-- [ ] The leakage article links to the custom-indicator article.
-- [ ] Documentation contract tests pin the key leakage-boundary claims.
+- [x] The leakage article links to the custom-indicator article.
+- [x] Documentation contract tests pin the key leakage-boundary claims.
 
 **Implementation Notes:**
-- Pending.
+- Added `vignettes/leakage.Rmd` and rendered companion markdown.
+- Added the article to pkgdown Start Here navigation.
+- Replaced the old strategy-development overclaim with the softer boundary:
+  strategies have no future market-data table to casually index, while
+  snapshots, feature definitions, timestamps, universe selection, and parameter
+  selection still require user discipline.
+- The article teaches both the blunt `lead(close)` leak and subtler full-sample
+  `quantile()` threshold leakage, then separates ledgr-enforced boundaries from
+  user responsibilities.
+- LDG-1805 was executed before LDG-1806 by maintainer request. The leakage
+  article links to the current custom-indicator notes at `custom-indicators.html`;
+  LDG-1806 remains responsible for promoting that placeholder into the current
+  custom-indicator article.
+- Added documentation contract coverage for the leakage article and the softened
+  strategy-development wording.
 
 **Verification:**
 ```text
-pkgload::load_all('.', quiet=TRUE);
-testthat::test_file('tests/testthat/test-documentation-contracts.R')
+PASS: pkgload::load_all('.', quiet=TRUE);
+      testthat::test_file('tests/testthat/test-documentation-contracts.R',
+                          reporter='summary')
+
+PASS: Rendered vignettes/leakage.Rmd to companion markdown.
 ```
 
 **Test Requirements:**

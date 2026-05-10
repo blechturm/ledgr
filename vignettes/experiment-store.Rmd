@@ -107,6 +107,142 @@ In any later session, recover the handle without re-sealing the data:
 snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "eod_2019_h1")
 ```
 
+## Run Variants
+
+```{r experiment}
+features <- list(ledgr_ind_sma(20))
+
+trend_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  for (id in ctx$universe) {
+    sma <- ctx$feature(id, "sma_20")
+    if (is.finite(sma) && ctx$close(id) > sma) {
+      targets[id] <- params$qty
+    }
+  }
+  targets
+}
+
+exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = trend_strategy,
+  features = features,
+  opening = ledgr_opening(cash = 10000)
+)
+
+bt_small <- exp |>
+  ledgr_run(params = list(qty = 5), run_id = "trend_qty_5")
+
+bt_large <- exp |>
+  ledgr_run(params = list(qty = 15), run_id = "trend_qty_15")
+```
+
+## Discover Runs
+
+`ledgr_run_list()` is the store discovery view.
+
+```{r list}
+ledgr_run_list(snapshot)
+```
+
+Use labels and tags for mutable human-facing organization.
+
+```{r label-tags}
+snapshot <- snapshot |>
+  ledgr_run_label("trend_qty_5", "Baseline quantity") |>
+  ledgr_run_tag("trend_qty_5", c("baseline", "trend")) |>
+  ledgr_run_tag("trend_qty_15", c("trend", "larger-size"))
+
+ledgr_run_list(snapshot)
+```
+
+Tags and labels do not alter snapshot hashes, strategy hashes, parameter hashes,
+config hashes, or result artifacts.
+
+The returned objects are still tibbles. When you need a custom view, convert to
+a tibble and select the columns you want.
+
+```{r list-deeper}
+ledgr_run_list(snapshot) |>
+  as_tibble() |>
+  select(run_id, label, tags, status, final_equity, execution_mode)
+```
+
+## Inspect And Compare
+
+```{r info}
+info <- ledgr_run_info(snapshot, "trend_qty_5")
+info
+```
+
+`ledgr_run_info()` is the detailed metadata view. It includes execution mode,
+compact telemetry, status, identity hashes, and reproducibility tier.
+
+```{r compare}
+ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
+```
+
+Comparison is read-only and does not rerun strategies. `n_trades` counts
+closed, realised trade observations, not every fill. A run can have fills but no
+closed trades yet, in which case win rate is not defined.
+
+## Inspect Stored Strategy Source
+
+Completed runs keep strategy provenance in the experiment store. This is one of
+the most useful audit artifacts: you can inspect the source text that produced a
+run without reopening the backtest handle and without rerunning the strategy.
+The full trust and tier model lives in `vignette("reproducibility", package =
+"ledgr")`; this section shows the store workflow.
+
+Use `trust = FALSE` for safe inspection. It returns stored source text,
+parameters, hashes, dependency metadata, and warnings without parsing,
+evaluating, or executing the source.
+
+```{r extract-source}
+stored_strategy <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = FALSE)
+stored_strategy
+```
+
+The source text is just data in this mode.
+
+```{r extract-source-text}
+writeLines(stored_strategy$strategy_source_text)
+```
+
+Hash verification proves stored-text identity, not code safety. Use
+`trust = TRUE` only when you already trust the experiment store and
+intentionally want ledgr to parse and evaluate the stored text into a function
+object. Legacy/pre-provenance runs remain inspectable through `ledgr_run_info()`
+and stored result tables, but their strategy function cannot be recovered from
+provenance alone.
+
+## Reopen A Completed Run In A Later Session
+
+`ledgr_run_open()` reconstructs a completed run handle from stored artifacts. It
+does not recompute the strategy. This is useful when you want full result
+tables or plots after restarting R.
+
+```{r open}
+reopened <- ledgr_run_open(snapshot, "trend_qty_5")
+summary(reopened)
+tail(ledgr_results(reopened, what = "equity"), 3)
+close(reopened)
+```
+
+Only completed runs can be reopened. Failed or incomplete runs remain
+inspectable through `ledgr_run_info()`.
+
+## Archive Without Deleting
+
+```{r archive}
+snapshot <- snapshot |>
+  ledgr_run_archive("trend_qty_15", reason = "larger position kept for reference")
+
+ledgr_run_list(snapshot)
+```
+
+Archiving hides a run from default listings without deleting artifacts.
+
 ## Bridge A Low-Level CSV Import
 
 The high-level CSV helper above is the normal path. The lower-level path is
@@ -198,147 +334,12 @@ csv_bt <- ledgr_run(csv_exp, params = list(qty = 1), run_id = "csv_bridge_run")
 tail(ledgr_results(csv_bt, what = "equity"), 3)
 ```
 
-## Run Variants
-
-```{r experiment}
-features <- list(ledgr_ind_sma(20))
-
-trend_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  for (id in ctx$universe) {
-    sma <- ctx$feature(id, "sma_20")
-    if (is.finite(sma) && ctx$close(id) > sma) {
-      targets[id] <- params$qty
-    }
-  }
-  targets
-}
-
-exp <- ledgr_experiment(
-  snapshot = snapshot,
-  strategy = trend_strategy,
-  features = features,
-  opening = ledgr_opening(cash = 10000)
-)
-
-bt_small <- exp |>
-  ledgr_run(params = list(qty = 5), run_id = "trend_qty_5")
-
-bt_large <- exp |>
-  ledgr_run(params = list(qty = 15), run_id = "trend_qty_15")
-```
-
-## Discover Runs
-
-`ledgr_run_list()` is the store discovery view.
-
-```{r list}
-ledgr_run_list(snapshot)
-```
-
-Use labels and tags for mutable human-facing organization.
-
-```{r label-tags}
-snapshot <- snapshot |>
-  ledgr_run_label("trend_qty_5", "Baseline quantity") |>
-  ledgr_run_tag("trend_qty_5", c("baseline", "trend")) |>
-  ledgr_run_tag("trend_qty_15", c("trend", "larger-size"))
-
-ledgr_run_list(snapshot)
-```
-
-Tags and labels do not alter snapshot hashes, strategy hashes, parameter hashes,
-config hashes, or result artifacts.
-
-The returned objects are still tibbles. When you need a custom view, convert to
-a tibble and select the columns you want.
-
-```{r list-deeper}
-ledgr_run_list(snapshot) |>
-  as_tibble() |>
-  select(run_id, label, tags, status, final_equity, execution_mode)
-```
-
-## Inspect And Compare
-
-```{r info}
-info <- ledgr_run_info(snapshot, "trend_qty_5")
-info
-```
-
-`ledgr_run_info()` is the detailed metadata view. It includes execution mode,
-compact telemetry, status, identity hashes, and reproducibility tier.
-
-```{r compare}
-ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
-```
-
-Comparison is read-only and does not rerun strategies. `n_trades` counts
-closed, realised trade observations, not every fill. A run can have fills but no
-closed trades yet, in which case win rate is not defined.
-
-## Inspect Stored Strategy Source
-
-Completed runs keep strategy provenance in the experiment store. This is one of
-the most useful audit artifacts: you can inspect the source text that produced a
-run without reopening the backtest handle and without rerunning the strategy.
-
-Use `trust = FALSE` for safe inspection. It returns stored source text,
-parameters, hashes, dependency metadata, and warnings without parsing,
-evaluating, or executing the source.
-
-```{r extract-source}
-stored_strategy <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = FALSE)
-stored_strategy
-```
-
-The source text is just data in this mode.
-
-```{r extract-source-text}
-writeLines(stored_strategy$strategy_source_text)
-```
-
-Hash verification proves stored-text identity, not code safety. Use
-`trust = TRUE` only when you already trust the experiment store and
-intentionally want ledgr to parse and evaluate the stored text into a function
-object. Legacy/pre-provenance runs and strategy types without capturable source
-may report `strategy_source_text = NA`; those runs remain inspectable through
-`ledgr_run_info()` and stored result tables, but their strategy function cannot
-be recovered from provenance alone.
-
-## Reopen A Completed Run In A Later Session
-
-`ledgr_run_open()` reconstructs a completed run handle from stored artifacts. It
-does not recompute the strategy. This is useful when you want full result
-tables or plots after restarting R.
-
-```{r open}
-reopened <- ledgr_run_open(snapshot, "trend_qty_5")
-summary(reopened)
-tail(ledgr_results(reopened, what = "equity"), 3)
-close(reopened)
-```
-
-Only completed runs can be reopened. Failed or incomplete runs remain
-inspectable through `ledgr_run_info()`.
-
-## Archive Without Deleting
-
-```{r archive}
-snapshot <- snapshot |>
-  ledgr_run_archive("trend_qty_15", reason = "larger position kept for reference")
-
-ledgr_run_list(snapshot)
-```
-
-Archiving hides a run from default listings without deleting artifacts.
-
 `ledgr_run()` and `ledgr_run_open()` return live handles for durable run
 artifacts. The artifacts are already durable when a run completes, and ordinary
 result inspection opens and closes read connections per operation. Use
 `close(bt)` as explicit resource cleanup in long sessions, tests, explicit-open
-workflows, and lazy result cursors. Close the snapshot handle when the workflow
-is finished.
+workflows, and lazy result cursors. Close snapshot handles when the workflow is
+finished.
 
 ```{r cleanup}
 close(bt_small)

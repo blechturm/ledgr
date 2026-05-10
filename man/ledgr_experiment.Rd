@@ -54,6 +54,10 @@ Strategy authoring:
 Durable experiment stores:
 \code{vignette("experiment-store", package = "ledgr")}
 \code{system.file("doc", "experiment-store.html", package = "ledgr")}
+
+Reproducibility model:
+\code{vignette("reproducibility", package = "ledgr")}
+\code{system.file("doc", "reproducibility.html", package = "ledgr")}
 }
 
 \examples{
