@@ -106,6 +106,7 @@ reference:
       - ledgr_feature_map
       - print.ledgr_feature_map
       - passed_warmup
+      - ledgr_strategy_preflight
       - ledgr_signal_strategy
       - ledgr_signal
       - ledgr_selection
