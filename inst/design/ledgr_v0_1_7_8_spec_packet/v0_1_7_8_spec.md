@@ -136,6 +136,10 @@ single-run APIs may provide an explicit maintainer-approved override such as
 `force = TRUE`, but the default semantics must match sweep: Tier 3 is not
 accepted silently and is not downgraded to a warning.
 
+The `force = TRUE` override is deferred out of LDG-1803. LDG-1803 must implement
+the default hard-stop behavior only. If a later ticket adds an override, the run
+must still record `tier_3` in provenance rather than upgrading the tier.
+
 ### R2 - Tier 1 Is Self-Contained
 
 Tier 1 means a `function(ctx, params)` strategy can be understood from stored
@@ -172,7 +176,7 @@ from stored metadata.
 Examples include:
 
 - unqualified user helper calls such as `my_helper(ctx)` that cannot be resolved
-  to base R or ledgr's documented public strategy-helper surface;
+  to base R or ledgr's exported public namespace;
 - free variables not supplied through `params` or explicit strategy source;
 - dependency on hidden files, global options, environment variables, or mutable
   external objects;
@@ -186,12 +190,12 @@ Unqualified external helpers are Tier 3 unless and until ledgr ships an explicit
 dependency-declaration contract. Do not infer that a helper is safe because it
 exists in the current interactive session.
 
-Unqualified calls to ledgr's documented public strategy-helper surface, such as
-`signal_return()`, `select_top_n()`, `weight_equal()`, and
-`target_rebalance()`, are not user-defined external helpers. They may be
-classified as Tier 1-compatible because ledgr itself is the required execution
-environment for any ledgr experiment. They must not be treated as unresolved
-Tier 3 symbols merely because examples call them without `ledgr::`.
+Unqualified calls to ledgr's exported public namespace are not user-defined
+external helpers. Documented strategy helpers such as `signal_return()`,
+`select_top_n()`, `weight_equal()`, `target_rebalance()`, and `passed_warmup()`
+are Tier 1-compatible because ledgr itself is the required execution environment
+for any ledgr experiment. They must not be treated as unresolved Tier 3 symbols
+merely because examples call them without `ledgr::`.
 
 ### R6 - Static Analysis Limits Are Part Of The Contract
 
@@ -242,6 +246,8 @@ structure(
 
 The final implementation may add fields, but these fields are the minimum
 contract unless a ticket records a better shape before implementation starts.
+In v0.1.7.8, `allowed` means `TRUE` for `tier_1` and `tier_2`, and `FALSE` for
+`tier_3`.
 
 The API may also expose:
 
@@ -368,6 +374,10 @@ Acceptance criteria:
 - `contracts.md` does not promise semantic proof beyond static analysis.
 - The contract states that future sweep mode inherits these tier semantics.
 - The classed preflight result shape is documented before implementation.
+- The contract defines `allowed` as `TRUE` for `tier_1` and `tier_2`, and
+  `FALSE` for `tier_3`.
+- The contract records that the optional single-run force override is deferred
+  out of LDG-1803.
 
 ---
 
@@ -394,11 +404,14 @@ The implementation should:
 - preserve existing strategy validation;
 - classify base-R-distribution calls as Tier 1-compatible without relying on a
   fixed hand-maintained allowlist;
+- classify calls that resolve to ledgr's exported public namespace as
+  Tier 1-compatible;
 - classify package-qualified calls outside the active R distribution as
   Tier 2-compatible;
 - classify unresolved free variables as Tier 3;
 - produce a classed error for Tier 3;
 - include enough detail for actionable user messages.
+- not implement the optional single-run `force = TRUE` override in LDG-1803.
 
 If the API name changes during implementation, the ticket must record the final
 name and rationale.
@@ -407,9 +420,12 @@ Acceptance criteria:
 
 - Tier 1 example passes.
 - Tier 2 package-qualified example passes with Tier 2 classification.
+- Ledgr public helper example returns Tier 1.
 - Tier 3 unqualified helper example stops execution with a classed error.
 - `ledgr_run()` calls the preflight automatically before strategy execution.
 - Tier 3 default execution stops with a classed error, not a warning.
+- The optional single-run `force = TRUE` override is not implemented in
+  LDG-1803.
 - Diagnostics name unresolved symbols where possible.
 - Existing `ledgr_run()` tests still pass.
 - No second execution path is introduced.

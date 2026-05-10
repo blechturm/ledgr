@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_5_spec_packet/`.
+`inst/design/ledgr_v0_1_7_8_spec_packet/`.
 
 ## Execution Contract
 
@@ -191,10 +191,43 @@ the active versioned spec packet, currently
   - Tier 1: self-contained `function(ctx, params)` style logic with explicit
     parameters and no unresolved external objects.
   - Tier 2: logic that can be inspected but not fully replayed without external
-    context, including R6 strategies unless they provide explicit source and
-    parameter metadata.
+    context. Tier 2 is allowed, but users own package installation, package
+    version parity, and non-ledgr environment management.
   - Tier 3: environment-dependent logic whose execution identity cannot be
     recovered from stored metadata.
+- Strategy preflight classifies functional strategies before execution. Tier 3
+  is a classed error by default in ordinary runs and future sweep mode. A
+  single-run override may exist only as an explicit opt-in; Tier 3 must not be
+  accepted silently or downgraded to warning-only behavior. v0.1.7.8 does not
+  implement a single-run override; if a later explicit override is added,
+  forced Tier 3 runs must still record `tier_3` in provenance.
+- Base R references are Tier 1-compatible when they are ordinary function calls
+  or constants and do not introduce hidden mutable state. This classification is
+  based on packages distributed with the active R installation, discovered from
+  package metadata such as `Priority: base` or `Priority: recommended`, not from
+  a hand-maintained package-name allowlist.
+- Package-qualified calls to packages outside the active R distribution, such
+  as `pkg::fn()`, are Tier 2-compatible. Unqualified user helper calls such as
+  `my_helper(ctx)` are Tier 3 unless a later dependency-declaration contract
+  records them explicitly.
+- Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
+  is the required execution environment for ledgr experiments. Documented
+  strategy helpers such as `signal_return()`, `select_top_n()`,
+  `weight_equal()`, `target_rebalance()`, and `passed_warmup()` must not be
+  treated as unresolved Tier 3 symbols merely because examples omit the
+  `ledgr::` qualifier.
+- Static analysis is not a proof of semantic reproducibility. The preflight may
+  use `codetools::findGlobals()` or a similar mechanism, but it must document
+  limits around dynamic dispatch, `do.call()`, `get()`, `eval()`, dynamically
+  constructed strategies, S3/S4/R6 runtime state, `<<-`, and closures that
+  mutate captured environments.
+- The minimum `ledgr_strategy_preflight` result contract contains `tier`,
+  `allowed`, `reason`, `unresolved_symbols`, `package_dependencies`, and
+  `notes`, and has class `ledgr_strategy_preflight`. In v0.1.7.8, `allowed` is
+  `TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
+- Future sweep mode inherits the v0.1.7.8 preflight semantics. Sweep may accept
+  Tier 1 and Tier 2 strategies, but Tier 3 strategies must be rejected before
+  execution.
 - v0.1.5 run provenance stores `strategy_source_hash`,
   `strategy_params_hash`, captured strategy source where available,
   dependency versions, R version, and reproducibility tier. R6 strategies are

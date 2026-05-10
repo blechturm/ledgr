@@ -54,7 +54,7 @@ LDG-1801 -----------------------^
 **Priority:** P0
 **Effort:** 0.5 day
 **Dependencies:** None
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Finalize the v0.1.7.8 scope baseline before implementation. Confirm that the
@@ -75,21 +75,31 @@ and provenance-facing findings are promoted into this cycle.
    change.
 
 **Acceptance Criteria:**
-- [ ] `auditr_v0_1_7_7_followup_plan.md` is the accepted routing artifact.
-- [ ] Every auditr theme has a v0.1.7.8, v0.1.7.9, backlog, or auditr-owned
+- [x] `auditr_v0_1_7_7_followup_plan.md` is the accepted routing artifact.
+- [x] Every auditr theme has a v0.1.7.8, v0.1.7.9, backlog, or auditr-owned
       routing decision.
-- [ ] No auditr finding is promoted without a raw-evidence requirement.
-- [ ] v0.1.7.8 scope remains limited to reproducibility, leakage, provenance,
+- [x] No auditr finding is promoted without a raw-evidence requirement.
+- [x] v0.1.7.8 scope remains limited to reproducibility, leakage, provenance,
       custom indicators, and fold-core sign-off.
-- [ ] v0.1.7.9 roadmap retains the deferred ergonomics themes.
+- [x] v0.1.7.9 roadmap retains the deferred ergonomics themes.
 
 **Implementation Notes:**
-- Pending.
+- Reviewed the v0.1.7.7 auditr retrospective and triage report through
+  `auditr_v0_1_7_7_followup_plan.md`.
+- Confirmed `THEME-008` and the discovery/runner/task-brief findings are
+  auditr-owned and excluded from ledgr package work.
+- Confirmed only reproducibility/leakage/provenance/custom-indicator boundary
+  pieces are promoted to v0.1.7.8.
+- Confirmed broad strategy-author ergonomics findings are parked in the
+  v0.1.7.9 roadmap section.
 
 **Verification:**
 ```text
 documentation review only
 ```
+
+Result: completed by review of the routing artifact, spec, triage report, and
+roadmap.
 
 **Test Requirements:**
 - Documentation/routing review.
@@ -133,7 +143,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 0.5-1 day
 **Dependencies:** LDG-1801
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Record the strategy preflight contract before implementation. The contract must
@@ -151,30 +161,48 @@ the `ledgr_strategy_preflight` result shape.
    Tier 1-compatible based on package metadata rather than a hard-coded
    allowlist.
 5. Record that non-standard package-qualified calls are Tier 2.
-6. Record that ledgr's documented public strategy-helper surface is
-   Tier 1-compatible.
+6. Record that ledgr's exported public namespace is Tier 1-compatible.
 7. Record static-analysis limits and mutable-state caveats.
 8. Define the minimum `ledgr_strategy_preflight` result object fields.
+9. Record that the optional single-run force override is deferred out of
+   LDG-1803.
 
 **Acceptance Criteria:**
-- [ ] `contracts.md` defines Tier 1, Tier 2, and Tier 3.
-- [ ] Tier 3 is specified as a classed error by default.
-- [ ] Base-R-distribution classification is metadata-based, not a
+- [x] `contracts.md` defines Tier 1, Tier 2, and Tier 3.
+- [x] Tier 3 is specified as a classed error by default.
+- [x] Base-R-distribution classification is metadata-based, not a
       hand-maintained package allowlist.
-- [ ] Ledgr's documented public strategy-helper surface is Tier 1-compatible.
-- [ ] Static-analysis limits and mutable closure state are documented.
-- [ ] The minimum result shape includes `tier`, `allowed`, `reason`,
+- [x] Ledgr's exported public namespace is Tier 1-compatible.
+- [x] Static-analysis limits and mutable closure state are documented.
+- [x] The minimum result shape includes `tier`, `allowed`, `reason`,
       `unresolved_symbols`, `package_dependencies`, and `notes`.
-- [ ] Future sweep mode is specified to inherit these tier semantics.
+- [x] `allowed` is defined as `TRUE` for `tier_1` and `tier_2`, and `FALSE`
+      for `tier_3`.
+- [x] The optional single-run force override is deferred out of LDG-1803.
+- [x] Future sweep mode is specified to inherit these tier semantics.
 
 **Implementation Notes:**
-- Pending.
+- Expanded the strategy reproducibility contract in `contracts.md`.
+- Recorded Tier 1, Tier 2, and Tier 3 with explicit Tier 2 environment
+  responsibility and Tier 3 classed-error semantics.
+- Recorded metadata-based base-R-distribution classification using package
+  metadata such as `Priority: base` and `Priority: recommended`.
+- Recorded ledgr's exported public namespace as Tier 1-compatible, including
+  documented helper examples such as `signal_return()`, `select_top_n()`,
+  `weight_equal()`, `target_rebalance()`, and `passed_warmup()`.
+- Recorded static-analysis limits, including dynamic dispatch, `do.call()`,
+  `get()`, `eval()`, R runtime state, `<<-`, and captured mutable closures.
+- Recorded the minimum `ledgr_strategy_preflight` result fields, `allowed`
+  semantics, optional force-override deferral, and future sweep inheritance.
+- Added documentation-contract assertions for the v0.1.7.8 preflight boundary.
 
 **Verification:**
 ```text
 pkgload::load_all('.', quiet=TRUE);
 testthat::test_file('tests/testthat/test-documentation-contracts.R')
 ```
+
+Result: passed on Windows.
 
 **Test Requirements:**
 - Documentation contract tests for the preflight contract.
@@ -205,7 +233,7 @@ tests_required:
 escalation_triggers:
   - Tier 3 semantics require breaking existing public strategy APIs
   - base R package classification cannot be made metadata-based
-  - ledgr public helper calls cannot be classified without false positives
+  - ledgr exported public namespace calls cannot be classified without false positives
 forbidden_actions:
   - implementing sweep mode
   - adding dependency declaration APIs
@@ -234,20 +262,24 @@ classed error by default. Tier 1 and Tier 2 strategies must remain accepted.
    exposing codetools output shape as public API.
 4. Classify base-R-distribution calls as Tier 1-compatible using package
    metadata.
-5. Classify ledgr public strategy helpers as Tier 1-compatible.
+5. Classify ledgr exported public namespace calls as Tier 1-compatible.
 6. Classify non-standard package-qualified calls as Tier 2.
 7. Classify unresolved user helpers/free variables as Tier 3.
-8. Wire the preflight into `ledgr_run()` before strategy execution.
-9. Add classed errors for Tier 3 default execution.
-10. Add tests for Tier 1, Tier 2, Tier 3, ledgr helper calls, and run
+8. Do not implement the optional single-run `force = TRUE` override in this
+   ticket.
+9. Wire the preflight into `ledgr_run()` before strategy execution.
+10. Add classed errors for Tier 3 default execution.
+11. Add tests for Tier 1, Tier 2, Tier 3, ledgr helper calls, and run
     integration.
 
 **Acceptance Criteria:**
 - [ ] Tier 1 example passes and returns `tier_1`.
 - [ ] Tier 2 package-qualified example passes and returns `tier_2`.
-- [ ] Ledgr public helper example is not Tier 3.
+- [ ] Ledgr public helper example returns `tier_1`.
 - [ ] Tier 3 unqualified helper example stops `ledgr_run()` with a classed
       error.
+- [ ] The optional single-run `force = TRUE` override is not implemented in
+      this ticket.
 - [ ] Diagnostics name unresolved symbols where possible.
 - [ ] `ledgr_run()` calls preflight automatically before strategy execution.
 - [ ] Existing strategy, runner, and provenance tests still pass.
@@ -306,10 +338,12 @@ escalation_triggers:
   - preflight rejects existing documented ledgr examples
   - Tier 3 cannot be detected without high false positives
   - ledgr_run integration changes run identity or result tables
+  - a single-run force override is required before Tier 3 can be enforced
 forbidden_actions:
   - implementing sweep mode
   - adding worker environment management
-  - treating ledgr public helpers as unresolved Tier 3 symbols
+  - implementing the optional `force = TRUE` override
+  - treating ledgr exported public namespace calls as unresolved Tier 3 symbols
   - weakening existing strategy result validation
 ```
 

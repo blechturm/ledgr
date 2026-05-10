@@ -3,7 +3,7 @@ source: "v0_1_7_8_tickets.md"
 tickets:
   - id: LDG-1801
     title: "Scope, auditr Routing, And Release Baseline"
-    status: todo
+    status: done
     priority: P0
     dependencies: []
     tests:
@@ -38,7 +38,7 @@ tickets:
 
   - id: LDG-1802
     title: "Strategy Reproducibility Preflight Contract"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-1801]
     tests:
@@ -66,7 +66,7 @@ tickets:
       escalation_triggers:
         - Tier 3 semantics require breaking existing public strategy APIs
         - base R package classification cannot be made metadata-based
-        - ledgr public helper calls cannot be classified without false positives
+        - ledgr exported public namespace calls cannot be classified without false positives
       forbidden_actions:
         - implementing sweep mode
         - adding dependency declaration APIs
@@ -116,10 +116,12 @@ tickets:
         - preflight rejects existing documented ledgr examples
         - Tier 3 cannot be detected without high false positives
         - ledgr_run integration changes run identity or result tables
+        - a single-run force override is required before Tier 3 can be enforced
       forbidden_actions:
         - implementing sweep mode
         - adding worker environment management
-        - treating ledgr public helpers as unresolved Tier 3 symbols
+        - implementing the optional force = TRUE override
+        - treating ledgr exported public namespace calls as unresolved Tier 3 symbols
         - weakening existing strategy result validation
 
   - id: LDG-1804

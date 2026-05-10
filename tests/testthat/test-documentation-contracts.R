@@ -423,6 +423,37 @@ testthat::test_that("contracts record v0.1.7.7 risk metric boundary", {
   testthat::expect_match(text, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
 })
 
+testthat::test_that("contracts record v0.1.7.8 strategy preflight boundary", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "ledgr_v0_1_7_8_spec_packet", fixed = TRUE)
+  testthat::expect_match(text, "Strategy preflight classifies functional strategies before execution", fixed = TRUE)
+  testthat::expect_match(text, "Tier 3\\s+is a classed error by default")
+  testthat::expect_match(text, "must not be\\s+accepted silently or downgraded to warning-only behavior")
+  testthat::expect_match(text, "v0.1.7.8 does not\\s+implement a single-run override")
+  testthat::expect_match(text, "forced Tier 3 runs must still record `tier_3` in provenance", fixed = TRUE)
+  testthat::expect_match(text, "Priority: base", fixed = TRUE)
+  testthat::expect_match(text, "Priority: recommended", fixed = TRUE)
+  testthat::expect_match(text, "not from\\s+a hand-maintained package-name allowlist")
+  testthat::expect_match(text, "Package-qualified calls to packages outside the active R distribution", fixed = TRUE)
+  testthat::expect_match(text, "Ledgr's exported public namespace is Tier 1-compatible", fixed = TRUE)
+  testthat::expect_match(text, "signal_return()", fixed = TRUE)
+  testthat::expect_match(text, "select_top_n()", fixed = TRUE)
+  testthat::expect_match(text, "passed_warmup()", fixed = TRUE)
+  testthat::expect_match(text, "Static analysis is not a proof of semantic reproducibility", fixed = TRUE)
+  testthat::expect_match(text, "codetools::findGlobals()", fixed = TRUE)
+  testthat::expect_match(text, "closures that\\s+mutate captured environments")
+  testthat::expect_match(text, "minimum `ledgr_strategy_preflight` result contract", fixed = TRUE)
+  for (field in c("tier", "allowed", "reason", "unresolved_symbols", "package_dependencies", "notes")) {
+    testthat::expect_match(text, field, fixed = TRUE)
+  }
+  testthat::expect_match(text, "`allowed` is\\s+`TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`")
+  testthat::expect_match(text, "Future sweep mode inherits the v0.1.7.8 preflight semantics", fixed = TRUE)
+})
+
 testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 sequencing", {
   root <- testthat::test_path("..", "..")
   roadmap <- file.path(root, "inst", "design", "ledgr_roadmap.md")
