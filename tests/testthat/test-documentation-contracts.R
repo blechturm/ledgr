@@ -777,7 +777,12 @@ testthat::test_that("custom indicator article replaces stale placeholders", {
   custom_rmd <- file.path(root, "vignettes", "custom-indicators.Rmd")
   custom_md <- file.path(root, "vignettes", "custom-indicators.md")
   interactive_md <- file.path(root, "vignettes", "interactive-strategy-development.md")
-  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
+  pkgdown_path <- file.path(root, "_pkgdown.yml")
+  testthat::skip_if_not(
+    file.exists(custom_rmd) && file.exists(custom_md) && file.exists(pkgdown_path),
+    "source custom-indicator docs unavailable during installed-package tests"
+  )
+  pkgdown <- paste(readLines(pkgdown_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_true(file.exists(custom_rmd))
   testthat::expect_true(file.exists(custom_md))
