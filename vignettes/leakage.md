@@ -1,6 +1,22 @@
 On Leakage: ledgr Design Choices
 ================
 
+``` r
+library(ledgr)
+library(dplyr)
+data("ledgr_demo_bars", package = "ledgr")
+
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(
+      ts_utc,
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
+    )
+  )
+```
+
 A backtest is valid only if each decision uses information that was
 knowable at that point in time – and nothing else.
 
@@ -20,10 +36,10 @@ row.
 
 ``` r
 leaky_signals <- bars |>
-  dplyr::group_by(instrument_id) |>
-  dplyr::arrange(ts_utc, .by_group = TRUE) |>
-  dplyr::mutate(
-    tomorrow_close = dplyr::lead(close),
+  group_by(instrument_id) |>
+  arrange(ts_utc, .by_group = TRUE) |>
+  mutate(
+    tomorrow_close = lead(close),
     buy_signal = tomorrow_close > close
   )
 ```
@@ -32,12 +48,11 @@ The resulting `buy_signal` looks like an ordinary column, but it answers
 a question the strategy could not have answered at today’s decision
 time.
 
-A strategy that trades on this signal will appear highly predictive in
-backtesting – the signal answers the directional question by definition,
-because it literally contains tomorrow’s outcome. The arithmetic is
-correct; the inputs are not. Those numbers describe how well the
-strategy would perform if it could read tomorrow’s close at today’s
-open. That is not a question worth measuring.
+A strategy that trades on this signal is contaminated even if the
+resulting trades are not all profitable. The signal was created from
+tomorrow’s outcome, so the backtest is no longer measuring a decision
+rule that could have existed in real time. The arithmetic may be
+correct; the question being measured is not.
 
 ## The Subtle Leak
 
@@ -46,11 +61,11 @@ without calling `lead()`.
 
 ``` r
 leaky_features <- bars |>
-  dplyr::group_by(instrument_id) |>
-  dplyr::arrange(ts_utc, .by_group = TRUE) |>
-  dplyr::mutate(
-    ret_5 = close / dplyr::lag(close, 5) - 1,
-    strong_return = ret_5 > stats::quantile(ret_5, 0.75, na.rm = TRUE)
+  group_by(instrument_id) |>
+  arrange(ts_utc, .by_group = TRUE) |>
+  mutate(
+    ret_5 = close / lag(close, 5) - 1,
+    strong_return = ret_5 > quantile(ret_5, 0.75, na.rm = TRUE)
   )
 ```
 
@@ -58,6 +73,11 @@ There is no future row reference in the final rule. The leak happened
 earlier: the January rows are compared against a return distribution
 that includes later months. Future information has been baked into a
 normal-looking feature.
+
+A threshold estimated on a prior training sample and then frozen for
+later evaluation can be valid. The leak appears when the threshold is
+estimated from the same future-inclusive sample on which early decisions
+are judged.
 
 The gap is concrete. Suppose the first quarter of the sample has strong
 returns and the remaining three quarters are weak:
@@ -69,12 +89,17 @@ ret_5 <- c(
   rnorm(189, mean = -0.001, sd = 0.012)   # remaining three quarters: weak
 )
 
-full_sample <- stats::quantile(ret_5, 0.75, na.rm = TRUE)
-early_window <- stats::quantile(ret_5[seq_len(63)], 0.75, na.rm = TRUE)
+full_sample <- quantile(ret_5, 0.75, na.rm = TRUE)
+early_window <- quantile(ret_5[seq_len(63)], 0.75, na.rm = TRUE)
 
-c(full_sample = round(full_sample, 4), early_window = round(early_window, 4))
-#>  full_sample.75% early_window.75% 
-#>           0.0077           0.0104
+thresholds <- c(
+  full_sample = unname(full_sample),
+  early_window = unname(early_window)
+)
+
+cat(sprintf("full_sample  %.4f\nearly_window %.4f\n", thresholds[["full_sample"]], thresholds[["early_window"]]))
+#> full_sample  0.0077
+#> early_window 0.0104
 ```
 
 The full-sample threshold is lower because the later weak-return period
@@ -137,7 +162,7 @@ The [custom-indicator article](custom-indicators.html) explains this
 boundary in more detail. The core warning is the same: full-series
 custom feature code must be written with causal discipline.
 
-## What Ledgr Enforces
+## What ledgr Enforces At These Boundaries
 
 | Boundary | ledgr behavior |
 |----|----|
@@ -145,7 +170,8 @@ custom feature code must be written with causal discipline.
 | Unknown feature ID | `ctx$feature()` fails loudly instead of returning warmup. |
 | Known feature in warmup | Values are explicitly `NA_real_` until usable. |
 | Invalid target shape | Missing or extra target instruments are rejected. |
-| Tier 3 strategy dependency | Preflight stops execution before run artifacts are written. |
+| Scalar indicator history | Scalar indicators are evaluated on bounded windows ending at the current bar. |
+| Vectorized feature output | `series_fn` output must be aligned, numeric, and valid after warmup. |
 
 ## What Remains Your Responsibility
 
@@ -176,6 +202,8 @@ causally clean.
 ## What To Remember
 
 ledgr protects the strategy boundary and makes the feature boundary
-explicit. That is necessary, not sufficient. A causally honest backtest
-still depends on clean data availability, disciplined feature
-engineering, and honest research process.
+explicit. That is necessary, not sufficient.
+
+A causally honest backtest still depends on clean data availability,
+honest universe construction, disciplined feature authoring, and a
+research process that does not turn the test sample into training data.

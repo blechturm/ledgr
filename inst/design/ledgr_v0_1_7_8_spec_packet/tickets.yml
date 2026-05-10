@@ -241,7 +241,7 @@ tickets:
 
   - id: LDG-1807
     title: "Fold-Core And Output-Handler Boundary Sign-Off"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1802]
     tests:

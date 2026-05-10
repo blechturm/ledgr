@@ -707,7 +707,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 0.5-1 day
 **Dependencies:** LDG-1802
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Record the written fold-core/output-handler boundary that v0.1.8 sweep mode must
@@ -729,19 +729,39 @@ mode or refactor the runner.
    `inst/design/`.
 
 **Acceptance Criteria:**
-- [ ] Fold-core and output-handler are defined in a written contract.
-- [ ] Contract states sweep and run share execution semantics.
-- [ ] Contract states output handling may differ but strategy, target, fill,
+- [x] Fold-core and output-handler are defined in a written contract.
+- [x] Contract states sweep and run share execution semantics.
+- [x] Contract states output handling may differ but strategy, target, fill,
       state, and feature semantics may not.
-- [ ] Contract states future sweep inherits v0.1.7.8 preflight semantics.
-- [ ] No runner refactor or sweep implementation is performed in this ticket.
+- [x] Contract states future sweep inherits v0.1.7.8 preflight semantics.
+- [x] No runner refactor or sweep implementation is performed in this ticket.
 
 **Implementation Notes:**
-- Pending.
+- Added the fold-core/output-handler contract to `inst/design/contracts.md`.
+- Defined the fold core as the deterministic per-pulse execution engine:
+  pulse calendar order, context construction, feature lookup, strategy
+  invocation, target validation, fill timing, final-bar no-fill behavior,
+  cash/position/state transitions, and canonical in-memory event stream.
+- Defined output handlers as persistence/accumulation layers that materialize
+  fold outputs into `ledger_events`, `features`, `strategy_state`,
+  `equity_curve`, telemetry, summaries, comparison rows, or future in-memory
+  sweep result objects.
+- Recorded that future `ledgr_run()` and `ledgr_sweep()` must call the same
+  fold core. Sweep may use a cheaper output handler or omit DuckDB persistence,
+  but must not change execution semantics.
+- Recorded that strategy preflight runs before entering the fold core and that
+  future sweep mode inherits the v0.1.7.8 Tier 1/Tier 2/Tier 3 semantics.
+- Added documentation contract coverage. No production runner code, sweep API,
+  or parallel backend code was changed.
 
 **Verification:**
 ```text
-documentation review only
+PASS: pkgload::load_all('.', quiet=TRUE);
+      testthat::test_file('tests/testthat/test-documentation-contracts.R',
+                          reporter='summary')
+
+PASS: Scope grep found no sweep/tune/precompute API additions in R/,
+      NAMESPACE, or DESCRIPTION.
 ```
 
 **Test Requirements:**
