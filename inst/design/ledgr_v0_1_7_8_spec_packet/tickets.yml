@@ -280,7 +280,7 @@ tickets:
 
   - id: LDG-1808
     title: "v0.1.7.8 Release Gate, NEWS, And Packet Finalization"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-1801, LDG-1803, LDG-1804, LDG-1805, LDG-1807]
     tests:

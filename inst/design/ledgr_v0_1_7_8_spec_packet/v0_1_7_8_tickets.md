@@ -810,7 +810,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 0.5-1 day
 **Dependencies:** LDG-1801, LDG-1803, LDG-1804, LDG-1805, LDG-1807
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Finalize the v0.1.7.8 release after all implementation and documentation tracks
@@ -829,23 +829,53 @@ run local verification and ensure Ubuntu/Windows CI pass before merge.
 8. Do not move release tags unless explicitly requested after the release gate.
 
 **Acceptance Criteria:**
-- [ ] NEWS summarizes delivered v0.1.7.8 scope in past tense.
-- [ ] Tickets and `tickets.yml` statuses are consistent.
-- [ ] Documentation contract tests pass.
-- [ ] Strategy preflight tests pass.
-- [ ] Full Windows tests pass locally.
-- [ ] Remote Ubuntu/Windows CI is green.
-- [ ] No generated local artifacts are committed.
-- [ ] No sweep, paper/live, OMS, dependency-management, or broad ergonomics APIs
+- [x] NEWS summarizes delivered v0.1.7.8 scope in past tense.
+- [x] Tickets and `tickets.yml` statuses are consistent.
+- [x] Documentation contract tests pass.
+- [x] Strategy preflight tests pass.
+- [x] Full Windows tests pass locally.
+- [x] Remote Ubuntu/Windows CI is green.
+- [x] No generated local artifacts are committed.
+- [x] No sweep, paper/live, OMS, dependency-management, or broad ergonomics APIs
       were added.
 
 **Implementation Notes:**
-- Pending.
+- Updated `DESCRIPTION` to version `0.1.7.8`.
+- Added `NEWS.md` bullets for strategy preflight, Tier 3 enforcement,
+  provenance recording, reproducibility/leakage/custom-indicator articles,
+  auditr follow-up routing, and the fold-core/output-handler contract.
+- Confirmed `auditr_v0_1_7_7_followup_plan.md` still routes only
+  reproducibility, leakage, provenance, and custom-indicator boundary findings
+  into v0.1.7.8, with broad ergonomics deferred.
+- Confirmed the v0.1.7.9 roadmap section still owns strategy-author
+  ergonomics follow-up such as accessor documentation, warmup/current-bar
+  troubleshooting, feature-map discoverability, first-run links, comparison
+  print/raw schema clarity, and snapshot metadata examples.
+- Confirmed the release scope did not add sweep, paper/live, OMS,
+  dependency-management, or broad ergonomics APIs.
 
 **Verification:**
 ```text
-pkgload::load_all('.', quiet=TRUE);
-testthat::test_local('.', reporter='summary')
+PASS: pkgload::load_all('.', quiet=TRUE);
+      testthat::test_file('tests/testthat/test-documentation-contracts.R',
+                          reporter='summary')
+
+PASS: pkgload::load_all('.', quiet=TRUE);
+      testthat::test_file('tests/testthat/test-strategy-preflight.R',
+                          reporter='summary')
+
+PASS: pkgload::load_all('.', quiet=TRUE);
+      testthat::test_local('.', reporter='summary')
+      One expected skip:
+      ledgr_snapshot_from_yahoo requires quantmod; missing-package path not
+      exercised when quantmod is installed.
+
+PASS: Scope grep found no sweep, tune, precompute, paper/live, OMS,
+      dependency-management, or broad ergonomics API additions in `R/`,
+      `NAMESPACE`, or `DESCRIPTION`.
+
+PASS: Remote Ubuntu/Windows CI was green for the release-gate branch after
+      push.
 ```
 
 **Test Requirements:**

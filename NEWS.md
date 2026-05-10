@@ -1,3 +1,24 @@
+# ledgr 0.1.7.8
+
+- Added strategy reproducibility preflight with `ledgr_strategy_preflight()`,
+  classifying functional strategies as `tier_1`, `tier_2`, or `tier_3` before
+  ordinary `ledgr_run()` execution.
+- Integrated Tier 3 enforcement into the existing run path so unresolved
+  unqualified helper dependencies stop execution with a classed error before
+  run artifacts are written.
+- Recorded strategy preflight results in run provenance and exposed the
+  reproducibility tier through existing run-info, comparison, and strategy
+  extraction surfaces.
+- Added public design articles for reproducibility, leakage, and custom
+  indicator authoring, including the `trust = FALSE` strategy-extraction
+  boundary and the residual risk of custom vectorized `series_fn` code.
+- Routed the v0.1.7.7 auditr follow-up findings so reproducibility, leakage,
+  provenance, and custom-indicator boundary work shipped in v0.1.7.8 while
+  broader strategy-author ergonomics remained deferred to v0.1.7.9.
+- Documented the fold-core/output-handler contract that future sweep mode must
+  inherit so `ledgr_sweep()` can remove persistence overhead without becoming a
+  second execution engine.
+
 # ledgr 0.1.7.7
 
 - Added the first ledgr-owned risk-adjusted standard metric, `sharpe_ratio`,
