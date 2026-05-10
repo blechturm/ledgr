@@ -58,13 +58,14 @@ ledgr_strategy_params_info <- function(strategy_params = list()) {
 
 ledgr_strategy_source_info <- function(fn) {
   source <- tryCatch(ledgr_deparse_one(fn), error = function(e) NA_character_)
-  globals <- tryCatch(ledgr_strategy_external_symbols(fn), error = function(e) character())
+  preflight <- ledgr_strategy_preflight(fn)
   if (!is.character(source) || length(source) != 1 || is.na(source) || !nzchar(source)) {
     return(list(
       source = NA_character_,
       hash = NA_character_,
       capture_method = "functional_no_source",
-      external_symbols = globals
+      external_symbols = preflight$unresolved_symbols,
+      preflight = preflight
     ))
   }
 
@@ -72,50 +73,30 @@ ledgr_strategy_source_info <- function(fn) {
     source = source,
     hash = digest::digest(source, algo = "sha256"),
     capture_method = "deparse_function",
-    external_symbols = globals
+    external_symbols = preflight$unresolved_symbols,
+    preflight = preflight
   )
 }
 
 ledgr_strategy_external_symbols <- function(fn) {
-  globals <- codetools::findGlobals(fn, merge = FALSE)
-  functions <- globals$functions
-  variables <- globals$variables
-
-  syntax_functions <- c(
-    "{", "(", "<-", "=", "if", "else", "for", "while", "repeat",
-    "break", "next", "return", "[", "[[", "$", "[<-", "[[<-", "$<-",
-    "::", ":", "+", "-", "*", "/", "^", "<", ">", "<=", ">=", "==",
-    "!=", "&&", "||", "!", "&", "|", "%in%", "c", "list"
-  )
-  base_namespaces <- c("base", "stats", "utils", "methods", "grDevices", "graphics")
-  is_base_or_recommended <- function(sym) {
-    if (sym %in% syntax_functions) {
-      return(TRUE)
-    }
-    any(vapply(
-      base_namespaces,
-      function(pkg) exists(sym, envir = asNamespace(pkg), inherits = FALSE),
-      logical(1)
-    ))
-  }
-
-  external_functions <- functions[!vapply(functions, is_base_or_recommended, logical(1))]
-
-  sort(unique(c(
-    external_functions,
-    setdiff(variables, c("ctx", "params"))
-  )))
+  ledgr_strategy_preflight(fn)$unresolved_symbols
 }
 
 ledgr_strategy_reproducibility_level <- function(strategy_type, signature = NULL, source_info = NULL) {
   if (identical(strategy_type, "functional")) {
+    if (is.list(source_info) &&
+        inherits(source_info$preflight, "ledgr_strategy_preflight") &&
+        source_info$preflight$tier %in% c("tier_2", "tier_3")) {
+      return(source_info$preflight$tier)
+    }
     if (identical(signature, "ctx_params") &&
         is.list(source_info) &&
         is.character(source_info$source) &&
         length(source_info$source) == 1 &&
         !is.na(source_info$source) &&
         nzchar(source_info$source) &&
-        length(source_info$external_symbols) == 0L) {
+        inherits(source_info$preflight, "ledgr_strategy_preflight") &&
+        identical(source_info$preflight$tier, "tier_1")) {
       return("tier_1")
     }
     return("tier_2")

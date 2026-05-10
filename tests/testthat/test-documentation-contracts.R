@@ -439,6 +439,7 @@ testthat::test_that("contracts record v0.1.7.8 strategy preflight boundary", {
   testthat::expect_match(text, "Priority: recommended", fixed = TRUE)
   testthat::expect_match(text, "not from\\s+a hand-maintained package-name allowlist")
   testthat::expect_match(text, "Package-qualified calls to packages outside the active R distribution", fixed = TRUE)
+  testthat::expect_match(text, "resolved non-function closure objects", fixed = TRUE)
   testthat::expect_match(text, "Ledgr's exported public namespace is Tier 1-compatible", fixed = TRUE)
   testthat::expect_match(text, "signal_return()", fixed = TRUE)
   testthat::expect_match(text, "select_top_n()", fixed = TRUE)

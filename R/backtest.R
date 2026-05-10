@@ -682,8 +682,11 @@ ledgr_fill_model_instant <- function() {
 ledgr_strategy_spec <- function(strategy) {
   if (is.function(strategy)) {
     signature <- ledgr_strategy_signature(strategy)
-    key <- ledgr_register_strategy_fn(strategy)
     source_info <- ledgr_strategy_source_info(strategy)
+    if (!isTRUE(source_info$preflight$allowed)) {
+      ledgr_abort_strategy_preflight(source_info$preflight)
+    }
+    key <- ledgr_register_strategy_fn(strategy)
     return(list(
       id = "functional",
       params = list(strategy_key = key, call_signature = signature),

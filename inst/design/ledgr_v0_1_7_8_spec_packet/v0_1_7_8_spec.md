@@ -160,7 +160,11 @@ such as `stats::sd(x)`.
 
 Tier 2 means the strategy is inspectable but requires user-managed environment
 parity. Package-qualified calls to packages outside the active R distribution,
-such as `pkg::fn()`, are Tier 2-compatible.
+such as `pkg::fn()`, are Tier 2-compatible. Resolved non-function closure
+objects, such as scalar constants or feature-map objects captured from the
+strategy environment, are also Tier 2-compatible: ledgr can see that they exist
+in the current session, but it does not store those objects as standalone
+replayable artifacts.
 
 Tier 2 is allowed for ordinary runs and future sweep mode, but documentation
 must state that users own package installation, package version parity, and any
@@ -177,9 +181,10 @@ Examples include:
 
 - unqualified user helper calls such as `my_helper(ctx)` that cannot be resolved
   to base R or ledgr's exported public namespace;
-- free variables not supplied through `params` or explicit strategy source;
-- dependency on hidden files, global options, environment variables, or mutable
-  external objects;
+- unresolved free variables not supplied through `params` or explicit strategy
+  source;
+- dependency on hidden files, global options, environment variables, or
+  unrecorded mutable external objects;
 - dynamic dispatch patterns whose target cannot be statically resolved.
 
 Tier 3 diagnostics must be classed and actionable.
@@ -408,6 +413,7 @@ The implementation should:
   Tier 1-compatible;
 - classify package-qualified calls outside the active R distribution as
   Tier 2-compatible;
+- classify resolved non-function closure objects as Tier 2-compatible;
 - classify unresolved free variables as Tier 3;
 - produce a classed error for Tier 3;
 - include enough detail for actionable user messages.

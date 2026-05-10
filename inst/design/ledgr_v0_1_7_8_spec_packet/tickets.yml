@@ -74,7 +74,7 @@ tickets:
 
   - id: LDG-1803
     title: "Strategy Preflight Implementation And ledgr_run Integration"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-1802]
     tests:

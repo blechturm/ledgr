@@ -247,7 +247,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1-2 days
 **Dependencies:** LDG-1802
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Implement the strategy preflight API and wire it into `ledgr_run()` so
@@ -264,7 +264,8 @@ classed error by default. Tier 1 and Tier 2 strategies must remain accepted.
    metadata.
 5. Classify ledgr exported public namespace calls as Tier 1-compatible.
 6. Classify non-standard package-qualified calls as Tier 2.
-7. Classify unresolved user helpers/free variables as Tier 3.
+7. Classify resolved non-function closure objects as Tier 2 and unresolved
+   user helpers/free variables as Tier 3.
 8. Do not implement the optional single-run `force = TRUE` override in this
    ticket.
 9. Wire the preflight into `ledgr_run()` before strategy execution.
@@ -273,29 +274,55 @@ classed error by default. Tier 1 and Tier 2 strategies must remain accepted.
     integration.
 
 **Acceptance Criteria:**
-- [ ] Tier 1 example passes and returns `tier_1`.
-- [ ] Tier 2 package-qualified example passes and returns `tier_2`.
-- [ ] Ledgr public helper example returns `tier_1`.
-- [ ] Tier 3 unqualified helper example stops `ledgr_run()` with a classed
+- [x] Tier 1 example passes and returns `tier_1`.
+- [x] Tier 2 package-qualified example passes and returns `tier_2`.
+- [x] Ledgr public helper example returns `tier_1`.
+- [x] Tier 3 unqualified helper example stops `ledgr_run()` with a classed
       error.
-- [ ] The optional single-run `force = TRUE` override is not implemented in
+- [x] The optional single-run `force = TRUE` override is not implemented in
       this ticket.
-- [ ] Diagnostics name unresolved symbols where possible.
-- [ ] `ledgr_run()` calls preflight automatically before strategy execution.
-- [ ] Existing strategy, runner, and provenance tests still pass.
-- [ ] No second execution path is introduced.
+- [x] Diagnostics name unresolved symbols where possible.
+- [x] `ledgr_run()` calls preflight automatically before strategy execution.
+- [x] Existing strategy, runner, and provenance tests still pass.
+- [x] No second execution path is introduced.
 
 **Implementation Notes:**
-- Pending.
+- Added `ledgr_strategy_preflight()` as a public API returning a classed
+  `ledgr_strategy_preflight` object with the LDG-1802 fields.
+- Implemented static classification using `codetools::findGlobals()` plus
+  syntax filtering, package-qualified call collection, metadata-based
+  base/recommended package detection, and ledgr exported namespace detection.
+- Classified package-qualified calls outside the active R distribution as
+  Tier 2 with `package_dependencies`.
+- Classified resolved non-function closure objects as Tier 2 with notes, and
+  unresolved user helpers/free variables as Tier 3 with diagnostics naming
+  unresolved symbols where possible.
+- Wired preflight enforcement through `ledgr_strategy_spec()`, the existing
+  config path used by `ledgr_run()` and the data-first wrapper.
+- Added a classed Tier 3 error before strategy registration/execution.
+- Kept the optional `force = TRUE` override out of scope and absent from
+  `ledgr_run()` and `ledgr_strategy_preflight()` formals.
+- Preserved the explicit `ledgr_signal_strategy()` compatibility wrapper by
+  classifying it as allowed Tier 2 rather than adding a general dependency
+  declaration escape hatch.
 
 **Verification:**
 ```text
 pkgload::load_all('.', quiet=TRUE);
+testthat::test_file('tests/testthat/test-strategy-preflight.R')
 testthat::test_file('tests/testthat/test-strategy-provenance.R')
 testthat::test_file('tests/testthat/test-strategy-contracts.R')
 testthat::test_file('tests/testthat/test-experiment-run.R')
 testthat::test_file('tests/testthat/test-runner.R')
+testthat::test_file('tests/testthat/test-strategy-reference.R')
+testthat::test_file('tests/testthat/test-strategy-types.R')
+testthat::test_file('tests/testthat/test-signal-strategy.R')
+testthat::test_file('tests/testthat/test-api-exports.R')
+testthat::test_local('.', reporter='summary')
 ```
+
+Result: targeted checks and full local test suite passed on Windows. Full suite
+had one expected skip for the missing-package branch of the Yahoo adapter test.
 
 **Test Requirements:**
 - New or updated preflight tests.

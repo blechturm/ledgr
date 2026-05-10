@@ -191,8 +191,10 @@ the active versioned spec packet, currently
   - Tier 1: self-contained `function(ctx, params)` style logic with explicit
     parameters and no unresolved external objects.
   - Tier 2: logic that can be inspected but not fully replayed without external
-    context. Tier 2 is allowed, but users own package installation, package
-    version parity, and non-ledgr environment management.
+    context, including package-qualified calls outside the active R
+    distribution and resolved non-function closure objects. Tier 2 is allowed,
+    but users own package installation, package version parity, and non-ledgr
+    environment management.
   - Tier 3: environment-dependent logic whose execution identity cannot be
     recovered from stored metadata.
 - Strategy preflight classifies functional strategies before execution. Tier 3
@@ -207,9 +209,10 @@ the active versioned spec packet, currently
   package metadata such as `Priority: base` or `Priority: recommended`, not from
   a hand-maintained package-name allowlist.
 - Package-qualified calls to packages outside the active R distribution, such
-  as `pkg::fn()`, are Tier 2-compatible. Unqualified user helper calls such as
-  `my_helper(ctx)` are Tier 3 unless a later dependency-declaration contract
-  records them explicitly.
+  as `pkg::fn()`, and resolved non-function closure objects are
+  Tier 2-compatible. Unqualified user helper calls such as `my_helper(ctx)` are
+  Tier 3 unless a later dependency-declaration contract records them
+  explicitly.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
   strategy helpers such as `signal_return()`, `select_top_n()`,
