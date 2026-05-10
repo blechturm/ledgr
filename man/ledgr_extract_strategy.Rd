@@ -64,6 +64,10 @@ Durable experiment stores:
 \code{vignette("experiment-store", package = "ledgr")}
 \code{system.file("doc", "experiment-store.html", package = "ledgr")}
 
+Reproducibility model:
+\code{vignette("reproducibility", package = "ledgr")}
+\code{system.file("doc", "reproducibility.html", package = "ledgr")}
+
 Strategy authoring:
 \code{vignette("strategy-development", package = "ledgr")}
 \code{system.file("doc", "strategy-development.html", package = "ledgr")}

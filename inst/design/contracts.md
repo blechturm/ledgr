@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_5_spec_packet/`.
+`inst/design/ledgr_v0_1_7_8_spec_packet/`.
 
 ## Execution Contract
 
@@ -21,6 +21,30 @@ the active versioned spec packet, currently
   canonical execution path.
 - The runner owns pulse order, fills, strategy state, ledger events, features,
   and equity output.
+- The v0.1.8 fold-core/output-handler boundary is a required architecture
+  contract before sweep mode. The fold core is the deterministic per-pulse
+  execution engine: pulse calendar order, context construction, feature lookup,
+  strategy invocation, target validation, fill timing, final-bar no-fill
+  behavior, cash/position/state transitions, and the canonical in-memory event
+  stream. The output handler is the persistence or accumulation layer that
+  materializes fold outputs into `ledger_events`, `features`, `strategy_state`,
+  `equity_curve`, telemetry, summaries, comparison rows, or future in-memory
+  sweep result objects.
+- Future `ledgr_run()` and `ledgr_sweep()` must call the same fold core. Sweep
+  mode may use a cheaper output handler, skip DuckDB persistence, batch
+  materialization, or keep only summary/ranking output. It must not change
+  strategy semantics, target validation, feature values, pulse order, fill
+  timing, state transitions, random-state semantics, final-bar behavior, or
+  event-stream meaning.
+- Output handlers may differ only after the fold has produced the same semantic
+  result for the same experiment, params, seed, snapshot, universe, feature
+  definitions, and date range. A persisted run's ledger rows and a sweep
+  candidate's in-memory event stream must be semantically equivalent even when
+  one is written to DuckDB and the other is accumulated in memory.
+- Strategy preflight runs before entering the fold core. Future sweep mode
+  inherits the v0.1.7.8 preflight semantics: Tier 1 and Tier 2 strategies may
+  execute, and Tier 3 strategies must stop before any fold execution or output
+  handler side effects.
 - v0.1.7 is an intentional hard public API reset. It explicitly overrides the
   earlier "deprecate where practical" posture for the research workflow because
   carrying both old and new public surfaces into sweep mode would create
@@ -191,10 +215,46 @@ the active versioned spec packet, currently
   - Tier 1: self-contained `function(ctx, params)` style logic with explicit
     parameters and no unresolved external objects.
   - Tier 2: logic that can be inspected but not fully replayed without external
-    context, including R6 strategies unless they provide explicit source and
-    parameter metadata.
+    context, including package-qualified calls outside the active R
+    distribution and resolved non-function closure objects. Tier 2 is allowed,
+    but users own package installation, package version parity, and non-ledgr
+    environment management.
   - Tier 3: environment-dependent logic whose execution identity cannot be
     recovered from stored metadata.
+- Strategy preflight classifies functional strategies before execution. Tier 3
+  is a classed error by default in ordinary runs and future sweep mode. A
+  single-run override may exist only as an explicit opt-in; Tier 3 must not be
+  accepted silently or downgraded to warning-only behavior. v0.1.7.8 does not
+  implement a single-run override; if a later explicit override is added,
+  forced Tier 3 runs must still record `tier_3` in provenance.
+- Base R references are Tier 1-compatible when they are ordinary function calls
+  or constants and do not introduce hidden mutable state. This classification is
+  based on packages distributed with the active R installation, discovered from
+  package metadata such as `Priority: base` or `Priority: recommended`, not from
+  a hand-maintained package-name allowlist.
+- Package-qualified calls to packages outside the active R distribution, such
+  as `pkg::fn()`, and resolved non-function closure objects are
+  Tier 2-compatible. Unqualified user helper calls such as `my_helper(ctx)` are
+  Tier 3 unless a later dependency-declaration contract records them
+  explicitly.
+- Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
+  is the required execution environment for ledgr experiments. Documented
+  strategy helpers such as `signal_return()`, `select_top_n()`,
+  `weight_equal()`, `target_rebalance()`, and `passed_warmup()` must not be
+  treated as unresolved Tier 3 symbols merely because examples omit the
+  `ledgr::` qualifier.
+- Static analysis is not a proof of semantic reproducibility. The preflight may
+  use `codetools::findGlobals()` or a similar mechanism, but it must document
+  limits around dynamic dispatch, `do.call()`, `get()`, `eval()`, dynamically
+  constructed strategies, S3/S4/R6 runtime state, `<<-`, and closures that
+  mutate captured environments.
+- The minimum `ledgr_strategy_preflight` result contract contains `tier`,
+  `allowed`, `reason`, `unresolved_symbols`, `package_dependencies`, and
+  `notes`, and has class `ledgr_strategy_preflight`. In v0.1.7.8, `allowed` is
+  `TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
+- Future sweep mode inherits the v0.1.7.8 preflight semantics. Sweep may accept
+  Tier 1 and Tier 2 strategies, but Tier 3 strategies must be rejected before
+  execution.
 - v0.1.5 run provenance stores `strategy_source_hash`,
   `strategy_params_hash`, captured strategy source where available,
   dependency versions, R version, and reproducibility tier. R6 strategies are

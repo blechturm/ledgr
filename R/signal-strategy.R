@@ -50,7 +50,7 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
   force(flat_qty)
   force(short_qty)
 
-  function(ctx, params) {
+  out <- function(ctx, params) {
     universe <- ctx$universe
     if (!is.character(universe) || length(universe) < 1L || anyNA(universe) || any(!nzchar(universe))) {
       rlang::abort("Signal strategy context must include a non-empty character `universe`.", class = "ledgr_invalid_strategy_result")
@@ -101,4 +101,6 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
     names(targets) <- signal_names
     ledgr_validate_strategy_targets(targets, universe)
   }
+  attr(out, "ledgr_signal_strategy_wrapper") <- TRUE
+  out
 }

@@ -11,6 +11,8 @@ articles:
     navbar: ~
     contents:
       - getting-started
+      - reproducibility
+      - leakage
       - strategy-development
       - experiment-store
   - title: Core Concepts
@@ -18,6 +20,7 @@ articles:
     contents:
       - metrics-and-accounting
       - indicators
+      - custom-indicators
   - title: Research Workflow
     navbar: ~
     contents:
@@ -103,6 +106,7 @@ reference:
       - ledgr_feature_map
       - print.ledgr_feature_map
       - passed_warmup
+      - ledgr_strategy_preflight
       - ledgr_signal_strategy
       - ledgr_signal
       - ledgr_selection

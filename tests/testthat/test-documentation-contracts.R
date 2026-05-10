@@ -151,7 +151,8 @@ testthat::test_that("feature-map docs preserve teaching order and semantic bound
   testthat::expect_match(strategy_doc, "Feature Maps For Readable Feature Access", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Wrong And Right: Leakage", fixed = TRUE)
   testthat::expect_match(strategy_doc, "tomorrow_close = lead\\(close\\)")
-  testthat::expect_match(strategy_doc, "The ledgr strategy has no object from which it can accidentally read tomorrow's\\s+close.")
+  testthat::expect_match(strategy_doc, "market-data table from which it can\\s+casually index tomorrow's bar")
+  testthat::expect_match(strategy_doc, "does not certify that\\s+snapshots, feature definitions, event timestamps")
   testthat::expect_match(strategy_doc, "The strategy still returns an ordinary target vector.", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Plain `features = list(...)` remains valid.", fixed = TRUE)
   testthat::expect_match(strategy_doc, "bt_mapped <- mapped_exp", fixed = TRUE)
@@ -423,6 +424,66 @@ testthat::test_that("contracts record v0.1.7.7 risk metric boundary", {
   testthat::expect_match(text, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
 })
 
+testthat::test_that("contracts record v0.1.7.8 strategy preflight boundary", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "ledgr_v0_1_7_8_spec_packet", fixed = TRUE)
+  testthat::expect_match(text, "Strategy preflight classifies functional strategies before execution", fixed = TRUE)
+  testthat::expect_match(text, "Tier 3\\s+is a classed error by default")
+  testthat::expect_match(text, "must not be\\s+accepted silently or downgraded to warning-only behavior")
+  testthat::expect_match(text, "v0.1.7.8 does not\\s+implement a single-run override")
+  testthat::expect_match(text, "forced Tier 3 runs must still record `tier_3` in provenance", fixed = TRUE)
+  testthat::expect_match(text, "Priority: base", fixed = TRUE)
+  testthat::expect_match(text, "Priority: recommended", fixed = TRUE)
+  testthat::expect_match(text, "not from\\s+a hand-maintained package-name allowlist")
+  testthat::expect_match(text, "Package-qualified calls to packages outside the active R distribution", fixed = TRUE)
+  testthat::expect_match(text, "resolved non-function closure objects", fixed = TRUE)
+  testthat::expect_match(text, "Ledgr's exported public namespace is Tier 1-compatible", fixed = TRUE)
+  testthat::expect_match(text, "signal_return()", fixed = TRUE)
+  testthat::expect_match(text, "select_top_n()", fixed = TRUE)
+  testthat::expect_match(text, "passed_warmup()", fixed = TRUE)
+  testthat::expect_match(text, "Static analysis is not a proof of semantic reproducibility", fixed = TRUE)
+  testthat::expect_match(text, "codetools::findGlobals()", fixed = TRUE)
+  testthat::expect_match(text, "closures that\\s+mutate captured environments")
+  testthat::expect_match(text, "minimum `ledgr_strategy_preflight` result contract", fixed = TRUE)
+  for (field in c("tier", "allowed", "reason", "unresolved_symbols", "package_dependencies", "notes")) {
+    testthat::expect_match(text, field, fixed = TRUE)
+  }
+  testthat::expect_match(text, "`allowed` is\\s+`TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`")
+  testthat::expect_match(text, "Future sweep mode inherits the v0.1.7.8 preflight semantics", fixed = TRUE)
+})
+
+testthat::test_that("contracts record v0.1.8 fold-core and output-handler boundary", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "fold-core/output-handler boundary", fixed = TRUE)
+  testthat::expect_match(text, "The fold core is the deterministic per-pulse\\s+execution engine")
+  testthat::expect_match(text, "pulse calendar order", fixed = TRUE)
+  testthat::expect_match(text, "context construction", fixed = TRUE)
+  testthat::expect_match(text, "strategy invocation", fixed = TRUE)
+  testthat::expect_match(text, "target validation", fixed = TRUE)
+  testthat::expect_match(text, "fill timing", fixed = TRUE)
+  testthat::expect_match(text, "final-bar no-fill\\s+behavior")
+  testthat::expect_match(text, "canonical in-memory event\\s+stream")
+  testthat::expect_match(text, "The output handler is the persistence or accumulation layer", fixed = TRUE)
+  testthat::expect_match(text, "`ledger_events`", fixed = TRUE)
+  testthat::expect_match(text, "`features`", fixed = TRUE)
+  testthat::expect_match(text, "`strategy_state`", fixed = TRUE)
+  testthat::expect_match(text, "`equity_curve`", fixed = TRUE)
+  testthat::expect_match(text, "Future `ledgr_run\\(\\)` and `ledgr_sweep\\(\\)` must call the same fold core")
+  testthat::expect_match(text, "Sweep\\s+mode may use a cheaper output handler")
+  testthat::expect_match(text, "must not change\\s+strategy semantics")
+  testthat::expect_match(text, "event-stream meaning", fixed = TRUE)
+  testthat::expect_match(text, "Strategy preflight runs before entering the fold core", fixed = TRUE)
+  testthat::expect_match(text, "Tier 3 strategies must stop before any fold execution or output\\s+handler side effects")
+})
+
 testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 sequencing", {
   root <- testthat::test_path("..", "..")
   roadmap <- file.path(root, "inst", "design", "ledgr_roadmap.md")
@@ -566,7 +627,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
 
   expected <- list(
     ledgr_run = c("strategy-development", "metrics-and-accounting"),
-    ledgr_experiment = c("strategy-development", "experiment-store"),
+    ledgr_experiment = c("strategy-development", "experiment-store", "reproducibility"),
     ledgr_backtest = c("strategy-development", "metrics-and-accounting"),
     ledgr_results = "metrics-and-accounting",
     ledgr_compare_runs = c("experiment-store", "metrics-and-accounting"),
@@ -594,7 +655,8 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     weight_equal = "strategy-development",
     target_rebalance = "strategy-development",
     ledgr_feature_map = c("strategy-development", "indicators"),
-    passed_warmup = c("strategy-development", "indicators")
+    passed_warmup = c("strategy-development", "indicators"),
+    ledgr_strategy_preflight = "reproducibility"
   )
 
   for (page in names(expected)) {
@@ -647,10 +709,107 @@ testthat::test_that("provenance docs teach safe stored-strategy inspection", {
   testthat::expect_match(extract_help, "trust = TRUE", fixed = TRUE)
   testthat::expect_match(extract_help, "not a code-safety guarantee", fixed = TRUE)
   testthat::expect_match(extract_help, "legacy/pre-provenance runs", ignore.case = TRUE)
-  for (article in c("experiment-store", "strategy-development")) {
+  for (article in c("experiment-store", "strategy-development", "reproducibility")) {
     testthat::expect_match(extract_help, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(extract_help, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
+})
+
+testthat::test_that("reproducibility article teaches provenance tiers and safe extraction", {
+  doc <- paste(readLines(ledgr_test_source_vignette("reproducibility.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
+  exp_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.Rmd"), warn = FALSE), collapse = "\n")
+  experiment_help <- paste(readLines(file.path(root, "man", "ledgr_experiment.Rd"), warn = FALSE), collapse = "\n")
+  preflight_help <- paste(readLines(file.path(root, "man", "ledgr_strategy_preflight.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(pkgdown, "- reproducibility", fixed = TRUE)
+  testthat::expect_match(doc, "sealed snapshot", fixed = TRUE)
+  testthat::expect_match(doc, "strategy function", fixed = TRUE)
+  testthat::expect_match(doc, "strategy parameters", fixed = TRUE)
+  testthat::expect_match(doc, "registered feature definitions", fixed = TRUE)
+  testthat::expect_no_match(doc, "AAA", fixed = TRUE)
+  testthat::expect_match(doc, "stored strategy source", ignore.case = TRUE)
+  testthat::expect_match(doc, "trust = FALSE", fixed = TRUE)
+  testthat::expect_match(doc, "without parsing, evaluating, or\\s+executing")
+  testthat::expect_match(doc, "Hash verification proves stored-text identity, not code safety", fixed = TRUE)
+  testthat::expect_match(doc, "Tier 1", fixed = TRUE)
+  testthat::expect_match(doc, "Tier 2", fixed = TRUE)
+  testthat::expect_match(doc, "Tier 3", fixed = TRUE)
+  testthat::expect_match(doc, "There is no\\s+`force = TRUE`\\s+override")
+  testthat::expect_match(doc, "renv", fixed = TRUE)
+  testthat::expect_match(doc, "Docker", fixed = TRUE)
+  testthat::expect_match(doc, "github.com/ropensci/rix", fixed = TRUE)
+  testthat::expect_match(doc, "github.com/nbafrank/uvr", fixed = TRUE)
+  testthat::expect_match(exp_doc, "vignette\\(\"reproducibility\", package =\\s+\"ledgr\"\\)")
+  testthat::expect_match(experiment_help, "vignette(\"reproducibility\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_match(preflight_help, "vignette(\"reproducibility\", package = \"ledgr\")", fixed = TRUE)
+})
+
+testthat::test_that("leakage article teaches boundaries without overclaiming", {
+  doc <- paste(readLines(ledgr_test_source_vignette("leakage.Rmd"), warn = FALSE), collapse = "\n")
+  strategy_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(pkgdown, "- leakage", fixed = TRUE)
+  testthat::expect_match(doc, "lead\\(close\\)")
+  testthat::expect_match(doc, "quantile\\(ret_5, 0.75")
+  testthat::expect_match(doc, "pulse context", fixed = TRUE)
+  testthat::expect_match(doc, "registered indicators", ignore.case = TRUE)
+  testthat::expect_match(doc, "series_fn", fixed = TRUE)
+  testthat::expect_match(doc, "does not certify that the dataset", fixed = TRUE)
+  testthat::expect_match(doc, "survivorship-biased universe", ignore.case = TRUE)
+  testthat::expect_match(doc, "research-loop leakage", ignore.case = TRUE)
+  testthat::expect_match(doc, "prior training sample", fixed = TRUE)
+  testthat::expect_match(doc, "Scalar indicator history", fixed = TRUE)
+  testthat::expect_match(doc, "Vectorized feature output", fixed = TRUE)
+  testthat::expect_match(doc, "custom-indicators.html", fixed = TRUE)
+  testthat::expect_no_match(doc, "Tier 3 strategy dependency", fixed = TRUE)
+  testthat::expect_no_match(doc, "forthcoming documentation", fixed = TRUE)
+  testthat::expect_false(grepl("ledgr_check_no_lookahead", doc, fixed = TRUE))
+  testthat::expect_match(strategy_doc, "vignette\\(\"leakage\", package = \"ledgr\"\\)")
+  testthat::expect_false(grepl("has no object from which it can accidentally read tomorrow", strategy_doc, fixed = TRUE))
+})
+
+testthat::test_that("custom indicator article replaces stale placeholders", {
+  root <- testthat::test_path("..", "..")
+  custom_rmd <- file.path(root, "vignettes", "custom-indicators.Rmd")
+  custom_md <- file.path(root, "vignettes", "custom-indicators.md")
+  interactive_md <- file.path(root, "vignettes", "interactive-strategy-development.md")
+  pkgdown_path <- file.path(root, "_pkgdown.yml")
+  testthat::skip_if_not(
+    file.exists(custom_rmd) && file.exists(custom_md) && file.exists(pkgdown_path),
+    "source custom-indicator docs unavailable during installed-package tests"
+  )
+  pkgdown <- paste(readLines(pkgdown_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_true(file.exists(custom_rmd))
+  testthat::expect_true(file.exists(custom_md))
+  testthat::expect_false(file.exists(interactive_md))
+  testthat::expect_match(pkgdown, "- custom-indicators", fixed = TRUE)
+
+  doc <- paste(readLines(custom_rmd, warn = FALSE), collapse = "\n")
+  rendered <- paste(readLines(custom_md, warn = FALSE), collapse = "\n")
+
+  for (text in list(doc, rendered)) {
+    testthat::expect_no_match(text, "Full content in v0.1.3", fixed = TRUE)
+  }
+
+  testthat::expect_match(doc, "ledgr_indicator", fixed = TRUE)
+  testthat::expect_match(doc, "fn\\(window, params\\)")
+  testthat::expect_match(doc, "series_fn\\(bars, params\\)")
+  testthat::expect_match(doc, "requires_bars", fixed = TRUE)
+  testthat::expect_match(doc, "stable_after", fixed = TRUE)
+  testthat::expect_match(doc, "NA_real_", fixed = TRUE)
+  testthat::expect_match(doc, "post-warmup `NA`, `NaN`, and infinite values are errors", fixed = TRUE)
+  testthat::expect_match(doc, "fingerprint", ignore.case = TRUE)
+  testthat::expect_match(doc, "Output validation proves shape and value validity", fixed = TRUE)
+  testthat::expect_match(doc, "does not prove causal\\s+correctness")
+  testthat::expect_match(doc, "ledgr_adapter_r", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_adapter_csv", fixed = TRUE)
+  testthat::expect_match(doc, "The CSV values must already respect the simulated decision times", fixed = TRUE)
+  testthat::expect_match(doc, "Unknown feature IDs fail loudly", fixed = TRUE)
 })
 
 testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {

@@ -109,8 +109,6 @@ ledgr_metric_bars <- function(prices, instrument_id = "AAA", start = "2020-01-01
 }
 
 ledgr_metric_fixture <- function(name) {
-  day <- function(n) ledgr_utc(as.POSIXct("2020-01-01", tz = "UTC") + 86400 * (n - 1L))
-
   switch(
     name,
     flat = list(
@@ -131,7 +129,7 @@ ledgr_metric_fixture <- function(name) {
       bars = ledgr_metric_bars(c(100, 101, 105, 106, 106)),
       strategy = function(ctx, params) {
         targets <- ctx$flat()
-        if (ledgr_utc(ctx$ts_utc) == day(1)) targets["AAA"] <- 1
+        if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) targets["AAA"] <- 1
         targets
       },
       initial_cash = 1000
@@ -140,7 +138,7 @@ ledgr_metric_fixture <- function(name) {
       bars = ledgr_metric_bars(c(100, 105, 101, 101, 101)),
       strategy = function(ctx, params) {
         targets <- ctx$flat()
-        if (ledgr_utc(ctx$ts_utc) == day(1)) targets["AAA"] <- 1
+        if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) targets["AAA"] <- 1
         targets
       },
       initial_cash = 1000
@@ -154,7 +152,7 @@ ledgr_metric_fixture <- function(name) {
         bars = bars,
         strategy = function(ctx, params) {
           targets <- ctx$flat()
-          if (ledgr_utc(ctx$ts_utc) == day(1)) {
+          if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) {
             targets["AAA"] <- 1
             targets["BBB"] <- 2
           }
@@ -167,7 +165,7 @@ ledgr_metric_fixture <- function(name) {
       bars = ledgr_metric_bars(c(100, 101, 102, 103, 104)),
       strategy = function(ctx, params) {
         targets <- ctx$flat()
-        if (ledgr_utc(ctx$ts_utc) == day(5)) targets["AAA"] <- 1
+        if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-05")) targets["AAA"] <- 1
         targets
       },
       initial_cash = 1000,

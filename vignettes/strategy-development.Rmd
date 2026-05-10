@@ -49,10 +49,12 @@ shows the strategy only what could have been known at that time. The strategy
 answers with desired holdings. ledgr records the decision, applies the fill
 model, and moves to the next pulse.
 
-This matters because leakage is easy. If a strategy accidentally sees tomorrow's
-price while deciding today's trade, the backtest can look profitable for the
-wrong reason. ledgr's strategy interface is built to make that mistake harder:
-your strategy receives one pulse context, not the whole future.
+This matters because leakage is easy. If future information enters a historical
+decision, the backtest can look profitable for the wrong reason. ledgr's
+strategy interface is built to make one common mistake harder: your strategy
+receives one pulse context, not the whole future. For the broader leakage model,
+including feature-construction leakage and remaining user responsibilities, see
+`vignette("leakage", package = "ledgr")`.
 
 ## Wrong And Right: Leakage
 
@@ -75,9 +77,10 @@ leaky_signals <- ledgr_demo_bars |>
 
 The ledgr version expresses the rule at one pulse. The strategy can read the
 current bar for the current instrument. Later sections add registered features
-to the same pulse model. The strategy cannot reach into the next row of the
-market-data table. That is the same information shape a live trading strategy
-gets as time passes: each pulse is a new slice of the knowable universe.
+to the same pulse model. The strategy has no market-data table from which it can
+casually index tomorrow's bar. That is the same information shape a live trading
+strategy gets as time passes: each pulse is a new slice of the knowable
+universe.
 
 ```{r leakage-right}
 no_leak_bar_strategy <- function(ctx, params) {
@@ -93,8 +96,9 @@ no_leak_bar_strategy <- function(ctx, params) {
 }
 ```
 
-The ledgr strategy has no object from which it can accidentally read tomorrow's
-close.
+This removes one common source of leakage, but it does not certify that
+snapshots, feature definitions, event timestamps, universe construction, or
+parameter selection are causally clean.
 
 ## A Strategy That Does Nothing
 

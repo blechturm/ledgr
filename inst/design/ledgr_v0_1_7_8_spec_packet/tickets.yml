@@ -1,0 +1,322 @@
+version: "0.1.7.8-strategy-reproducibility-preflight"
+source: "v0_1_7_8_tickets.md"
+tickets:
+  - id: LDG-1801
+    title: "Scope, auditr Routing, And Release Baseline"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation/routing review"
+      - "scope grep for forbidden release expansion"
+    classification:
+      risk_level: release-critical
+      implementation_tier: L
+      review_tier: M
+      classification_reason: >
+        Scope routing determines which auditr findings become implementation work
+        and prevents v0.1.7.8 from expanding into broad strategy-author ergonomics.
+      invariants_at_risk:
+        - release scope discipline
+        - auditr evidence routing
+        - roadmap sequencing
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - inst/design/ledgr_v0_1_7_8_spec_packet/auditr_v0_1_7_7_followup_plan.md
+        - inst/design/ledgr_v0_1_7_8_spec_packet/cycle_retrospective.md
+        - inst/design/ledgr_v0_1_7_8_spec_packet/ledgr_triage_report.md
+        - inst/design/ledgr_roadmap.md
+      tests_required:
+        - documentation/routing review
+      escalation_triggers:
+        - auditr evidence reveals a confirmed runtime defect outside current scope
+        - broad ergonomics work is needed to satisfy reproducibility preflight
+      forbidden_actions:
+        - implementing runtime changes
+        - adding ledgr APIs for auditr harness issues
+        - promoting unclear auditr rows without raw evidence
+
+  - id: LDG-1802
+    title: "Strategy Reproducibility Preflight Contract"
+    status: done
+    priority: P0
+    dependencies: [LDG-1801]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "scope grep for sweep APIs"
+    classification:
+      risk_level: release-critical
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The tier contract gates future sweep execution and changes how strategy
+        reproducibility is enforced before user code runs.
+      invariants_at_risk:
+        - strategy reproducibility semantics
+        - future sweep compatibility
+        - Tier 3 enforcement
+        - static analysis boundary honesty
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - inst/design/contracts.md
+        - inst/design/ledgr_design_document.md
+        - inst/design/ledgr_design_philosophy.md
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - Tier 3 semantics require breaking existing public strategy APIs
+        - base R package classification cannot be made metadata-based
+        - ledgr exported public namespace calls cannot be classified without false positives
+      forbidden_actions:
+        - implementing sweep mode
+        - adding dependency declaration APIs
+        - downgrading Tier 3 to warning-only behavior
+
+  - id: LDG-1803
+    title: "Strategy Preflight Implementation And ledgr_run Integration"
+    status: done
+    priority: P0
+    dependencies: [LDG-1802]
+    tests:
+      - "preflight classification tests"
+      - "tests/testthat/test-strategy-provenance.R"
+      - "tests/testthat/test-strategy-contracts.R"
+      - "tests/testthat/test-experiment-run.R"
+      - "tests/testthat/test-runner.R"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        The implementation runs before user strategies and affects accepted
+        strategy code, future sweep eligibility, and reproducibility classifications.
+      invariants_at_risk:
+        - ledgr_run execution contract
+        - functional strategy validation
+        - reproducibility tier correctness
+        - no second execution path
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - inst/design/contracts.md
+        - R/backtest-runner.R
+        - R/experiment.R
+        - R/strategy-provenance.R
+        - R/strategy-contracts.R
+        - tests/testthat/test-strategy-provenance.R
+        - tests/testthat/test-strategy-contracts.R
+        - tests/testthat/test-experiment-run.R
+        - tests/testthat/test-runner.R
+      tests_required:
+        - preflight classification tests
+        - tests/testthat/test-strategy-provenance.R
+        - tests/testthat/test-strategy-contracts.R
+        - tests/testthat/test-experiment-run.R
+        - tests/testthat/test-runner.R
+      escalation_triggers:
+        - preflight rejects existing documented ledgr examples
+        - Tier 3 cannot be detected without high false positives
+        - ledgr_run integration changes run identity or result tables
+        - a single-run force override is required before Tier 3 can be enforced
+      forbidden_actions:
+        - implementing sweep mode
+        - adding worker environment management
+        - implementing the optional force = TRUE override
+        - treating ledgr exported public namespace calls as unresolved Tier 3 symbols
+        - weakening existing strategy result validation
+
+  - id: LDG-1804
+    title: "On Reproducibility Article And Reference Links"
+    status: done
+    priority: P1
+    dependencies: [LDG-1802]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "vignette render check if examples execute"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The article teaches trust and provenance semantics; misleading wording
+        could cause users to over-trust stored source or misunderstand Tier 2.
+      invariants_at_risk:
+        - provenance trust boundary
+        - safe strategy extraction semantics
+        - reproducibility tier documentation
+        - experiment-store docs consistency
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - inst/design/contracts.md
+        - R/strategy-extract.R
+        - R/experiment.R
+        - vignettes/experiment-store.Rmd
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - docs require changing strategy extraction behavior
+        - trust semantics conflict with existing tests
+        - Tier 2 environment language implies ledgr manages external environments
+      forbidden_actions:
+        - evaluating stored strategy source in safe examples
+        - making renv, Docker, rix, or uvr package dependencies
+        - duplicating long trust-boundary explanations across multiple articles
+
+  - id: LDG-1805
+    title: "On Leakage Article And Strategy Vignette Cleanup"
+    status: done
+    priority: P1
+    dependencies: [LDG-1806]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "vignette render check if examples execute"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Leakage documentation is a core positioning and correctness surface.
+        Overclaim or underclaim can mislead users about what ledgr prevents.
+      invariants_at_risk:
+        - no-lookahead teaching accuracy
+        - feature-boundary honesty
+        - custom series_fn residual risk
+        - public API boundary for internal diagnostics
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - vignettes/strategy-development.Rmd
+        - vignettes/indicators.Rmd
+        - vignettes/custom-indicators.md
+        - R/features-engine.R
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - leakage article requires exporting internal diagnostics
+        - custom-indicator article is not ready to link
+        - docs imply ledgr certifies external data availability or research-loop purity
+      forbidden_actions:
+        - exporting ledgr_check_no_lookahead without a separate ticket
+        - claiming ledgr eliminates all leakage
+        - adding new runtime feature APIs for documentation convenience
+
+  - id: LDG-1806
+    title: "Custom Indicator Article And Placeholder Cleanup"
+    status: done
+    priority: P1
+    dependencies: [LDG-1801]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "vignette render check if promoted to Rmd"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Custom indicators are the highest-risk user-extensible feature boundary
+        for accidental leakage and deterministic reproducibility drift.
+      invariants_at_risk:
+        - feature generation contract
+        - custom series_fn leakage caveat
+        - public documentation freshness
+        - pkgdown article navigation
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - vignettes/custom-indicators.md
+        - vignettes/interactive-strategy-development.md
+        - R/indicator.R
+        - R/features-engine.R
+        - R/indicator_adapters.R
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - docs require changing custom indicator API
+        - adapter docs conflict with existing tests
+        - placeholder cleanup would remove useful public content without replacement
+      forbidden_actions:
+        - changing feature computation behavior
+        - exporting internal diagnostics
+        - adding optional package dependencies for examples
+
+  - id: LDG-1807
+    title: "Fold-Core And Output-Handler Boundary Sign-Off"
+    status: done
+    priority: P1
+    dependencies: [LDG-1802]
+    tests:
+      - "documentation contract scan if contracts.md changes"
+      - "scope grep for sweep APIs"
+    classification:
+      risk_level: high
+      implementation_tier: L
+      review_tier: H
+      classification_reason: >
+        The boundary constrains the v0.1.8 sweep architecture. If it is vague,
+        sweep can drift into a second execution engine.
+      invariants_at_risk:
+        - run/sweep semantic parity
+        - no second execution path
+        - fold/output separation
+        - preflight inheritance by sweep
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - inst/design/ledgr_roadmap.md
+        - inst/design/contracts.md
+        - R/backtest-runner.R
+        - R/run-store.R
+      tests_required:
+        - documentation contract scan if contracts.md changes
+        - scope grep for sweep APIs
+      escalation_triggers:
+        - boundary cannot be defined without runner refactor
+        - v0.1.8 roadmap contradicts current runner semantics
+        - output handler separation requires production code changes now
+      forbidden_actions:
+        - implementing ledgr_sweep
+        - refactoring the runner
+        - adding parallel backend code
+        - changing result table semantics
+
+  - id: LDG-1808
+    title: "v0.1.7.8 Release Gate, NEWS, And Packet Finalization"
+    status: done
+    priority: P0
+    dependencies: [LDG-1801, LDG-1803, LDG-1804, LDG-1805, LDG-1807]
+    tests:
+      - "full test suite"
+      - "documentation contract tests"
+      - "strategy preflight tests"
+      - "remote CI"
+    classification:
+      risk_level: release-critical
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Release-gate work verifies the whole v0.1.7.8 contract and protects
+        against scope creep, stale tickets, generated artifacts, and CI regressions.
+      invariants_at_risk:
+        - release integrity
+        - CI parity
+        - ticket/status consistency
+        - forbidden scope exclusions
+      required_context:
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_spec.md
+        - inst/design/ledgr_v0_1_7_8_spec_packet/v0_1_7_8_tickets.md
+        - inst/design/ledgr_v0_1_7_8_spec_packet/tickets.yml
+        - NEWS.md
+        - tests/testthat/test-documentation-contracts.R
+      tests_required:
+        - full test suite
+        - documentation contract tests
+        - strategy preflight tests
+        - remote CI
+      escalation_triggers:
+        - Ubuntu CI fails on preflight or docs changes
+        - generated artifacts appear in git status
+        - release gate reveals scope creep into v0.1.8 or v0.1.7.9 work
+      forbidden_actions:
+        - committing generated local artifacts
+        - moving tags without explicit maintainer request
+        - weakening tests to pass CI
+        - adding release-scope features during the gate
