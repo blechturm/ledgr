@@ -28,6 +28,6 @@ bars <- data.frame(
   volume = 1000
 )
 snapshot <- ledgr_snapshot_from_df(bars)
-print(snapshot)
+if (interactive()) print(snapshot)
 ledgr_snapshot_close(snapshot)
 }

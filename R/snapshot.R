@@ -165,7 +165,7 @@ close.ledgr_snapshot <- function(con, ...) {
 #'   volume = 1000
 #' )
 #' snapshot <- ledgr_snapshot_from_df(bars)
-#' print(snapshot)
+#' if (interactive()) print(snapshot)
 #' ledgr_snapshot_close(snapshot)
 #' @export
 print.ledgr_snapshot <- function(x, ...) {
@@ -211,7 +211,7 @@ print.ledgr_snapshot <- function(x, ...) {
 #'   volume = 1000
 #' )
 #' snapshot <- ledgr_snapshot_from_df(bars)
-#' summary(snapshot)
+#' if (interactive()) summary(snapshot)
 #' ledgr_snapshot_close(snapshot)
 #' @export
 summary.ledgr_snapshot <- function(object, ...) {

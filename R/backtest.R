@@ -938,7 +938,7 @@ ledgr_config_normalize_opening <- function(opening, initial_cash) {
 #' )
 #' strategy <- function(ctx, params) ctx$flat()
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
-#' print(bt$config)
+#' if (interactive()) print(bt$config)
 #' close(bt)
 #' @export
 print.ledgr_config <- function(x, ...) {

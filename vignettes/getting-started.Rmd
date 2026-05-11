@@ -24,7 +24,9 @@ options(cli.unicode = FALSE)
 default_output_hook <- knitr::knit_hooks$get("output")
 knitr::knit_hooks$set(
   output = function(x, options) {
-    default_output_hook(gsub("[ \t]+(?=\n)", "", x, perl = TRUE), options)
+    x <- gsub("Database:(\\s+)[^\\r\\n]+[.]duckdb", "Database:\\1<temporary DuckDB path>", x, perl = TRUE)
+    x <- gsub("[ \t]+(?=\n)", "", x, perl = TRUE)
+    default_output_hook(x, options)
   }
 )
 demo_data_path <- if (file.exists("data/ledgr_demo_bars.rda")) {

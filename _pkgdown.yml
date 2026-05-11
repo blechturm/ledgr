@@ -10,21 +10,21 @@ articles:
   - title: Start Here
     navbar: ~
     contents:
+      - articles/who-ledgr-is-for
       - getting-started
-      - reproducibility
       - leakage
-      - strategy-development
-      - experiment-store
-  - title: Core Concepts
+      - reproducibility
+  - title: Core Workflow
     navbar: ~
     contents:
-      - metrics-and-accounting
+      - strategy-development
       - indicators
       - custom-indicators
-  - title: Research Workflow
+      - metrics-and-accounting
+      - experiment-store
+  - title: Design / Background
     navbar: ~
     contents:
-      - articles/who-ledgr-is-for
       - research-to-production
       - articles/why-r
 reference:

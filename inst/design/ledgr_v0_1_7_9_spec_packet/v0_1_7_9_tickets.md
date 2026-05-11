@@ -593,7 +593,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 1-2 days
 **Dependencies:** LDG-1901
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Polish the public-facing documentation surface after the v0.1.7.8 concept
@@ -620,24 +620,43 @@ explicit while keeping ledgr tidyverse-adjacent.
 10. Remove `Rprof.out` and ignore generated profiling artifacts.
 
 **Acceptance Criteria:**
-- [ ] Pkgdown article order matches the v0.1.7.9 reader journey.
-- [ ] Homepage preserves the core product pitch while removing internal/stale
+- [x] Pkgdown article order matches the v0.1.7.9 reader journey.
+- [x] Homepage preserves the core product pitch while removing internal/stale
       material.
-- [ ] Public docs contain no local `C:\Users\` paths.
-- [ ] Public docs contain no stale `custom-indicators.md` visible link text.
-- [ ] Public docs contain no unintended stale version references.
-- [ ] `dplyr` usage is intentional and documented as example data preparation.
-- [ ] `Rprof.out` is absent from the repository and ignored going forward.
-- [ ] pkgdown builds after the polish pass.
+- [x] Public docs contain no local `C:\Users\` paths.
+- [x] Public docs contain no stale `custom-indicators.md` visible link text.
+- [x] Public docs contain no unintended stale version references.
+- [x] `dplyr` usage is intentional and documented as example data preparation.
+- [x] `Rprof.out` is absent from the repository and ignored going forward.
+- [x] pkgdown builds after the polish pass.
 
 **Implementation Notes:**
-- Pending.
+- Reordered the pkgdown article groups into Start Here, Core Workflow, and
+  Design / Background, with `who-ledgr-is-for`, Getting Started, Leakage, and
+  Reproducibility as the first reader path.
+- Trimmed internal `system.file()` and versioned design-packet material from
+  the README while preserving package help and vignette discovery.
+- Sanitized rendered README and Getting Started temporary DuckDB paths to
+  `<temporary DuckDB path>`.
+- Removed stale `v0.1.7.2 helper layer` wording from background articles and
+  softened the `auditr` reference to a planned companion package.
+- Removed tracked `Rprof.out` and added profiling artifacts to `.gitignore`.
+- Adjusted noninteractive reference examples that printed temporary local DB
+  paths during pkgdown builds.
 
 **Verification:**
 ```text
-pkgdown build
-documentation contract tests
-rendered-site grep for stale artifacts
+PASS: testthat::test_file("tests/testthat/test-documentation-contracts.R", reporter = "summary")
+PASS: rmarkdown::render("README.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: rmarkdown::render("vignettes/getting-started.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: pkgdown::build_site(new_process = FALSE, install = TRUE)
+PASS: git diff --check
+PASS: source/rendered-doc grep found no `C:\Users`, `custom-indicators.md`,
+      `v0.1.7.2 helper layer`, `current v0.1.7.6`, `no DISPLAY variable`, or
+      reconciliation-overclaim text in README, vignettes, man, or R sources.
+NOTE: pkgdown's generated markdown/LLM files use `.md` URLs for article links;
+      the source and HTML visible text do not contain stale
+      `custom-indicators.md` display text.
 ```
 
 **Test Requirements:**

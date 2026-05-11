@@ -18,7 +18,9 @@ options(cli.unicode = FALSE)
 default_output_hook <- knitr::knit_hooks$get("output")
 knitr::knit_hooks$set(
   output = function(x, options) {
-    default_output_hook(gsub("[ \t]+(?=\n)", "", x, perl = TRUE), options)
+    x <- gsub("Database:(\\s+)[^\\r\\n]+[.]duckdb", "Database:\\1<temporary DuckDB path>", x, perl = TRUE)
+    x <- gsub("[ \t]+(?=\n)", "", x, perl = TRUE)
+    default_output_hook(x, options)
   }
 )
 demo_data_path <- if (file.exists("data/ledgr_demo_bars.rda")) {
@@ -238,17 +240,12 @@ ledgr_snapshot_close(snapshot)
 
 ## Documentation
 
+Start with the pkgdown site for the full article set:
+<https://blechturm.github.io/ledgr/>.
+
+Installed package help remains available from R:
+
 ```{r docs, eval=FALSE}
 help(package = "ledgr")
-utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
 vignette(package = "ledgr")
-system.file("doc", package = "ledgr")
-system.file("doc", "strategy-development.html", package = "ledgr")
 ```
-
-The `system.file()` calls are useful in noninteractive `Rscript` and agent
-workflows where opening pkgdown in a browser is not the first step. The
-pkgdown-only background articles are on the website, while installed vignettes
-focus on package workflows.
-
-Design packets are in `inst/design/`, including the current v0.1.7.6 packet.

@@ -75,6 +75,6 @@ strategy <- function(ctx, params) {
   stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
 }
 exp <- ledgr_experiment(snapshot, strategy)
-print(exp)
+inherits(exp, "ledgr_experiment")
 ledgr_snapshot_close(snapshot)
 }

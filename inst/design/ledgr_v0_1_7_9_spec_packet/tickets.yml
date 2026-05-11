@@ -200,7 +200,7 @@ tickets:
 
   - id: LDG-1906
     title: "Public Site Polish, Article Order, And Repo Hygiene"
-    status: todo
+    status: done
     priority: P2
     dependencies: [LDG-1901]
     tests:

@@ -33,7 +33,7 @@ paying for infrastructure they do not need.
 
 **People who value readable code.** ledgr's current strategy API uses ordinary
 `function(ctx, params)` functions that return explicit target quantities. The
-v0.1.7.2 helper layer makes that same contract read like economic logic:
+strategy helper layer makes that same contract read like economic logic:
 
 ```r
 ctx |>
@@ -55,8 +55,8 @@ dependency boundaries are useful for humans, and they are also what makes a
 package safer to hand to LLM agents for unattended research. ledgr's design
 assumes agents may write strategies, run experiments, and produce reports, and
 that you still need to audit everything they did. The companion `auditr` package
-builds an orchestration layer around that idea; ledgr is the correctness-first
-foundation it sits on.
+is planned as an orchestration layer around that idea; ledgr is the
+correctness-first foundation it sits on.
 
 **People who plan to deploy what they research.** ledgr's vision is the full
 arc from research to paper trading to live trading on hardware you own. The

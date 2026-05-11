@@ -61,8 +61,8 @@ snapshot
 #> Bars:         258
 #> Instruments:  2
 #> Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
-#> Database:     C:\Users\maxth\AppData\Local\Temp\RtmpGcW5Wl\ledgr_102b482d3e94.duckdb
-#> Snapshot ID:  snapshot_20260504_221502_0030
+#> Database:     <temporary DuckDB path>
+#> Snapshot ID:  snapshot_20260511_123143_b0ce
 #> Connection:  Closed (opens on-demand)
 ```
 
@@ -124,8 +124,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260504_221502_0030
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpGcW5Wl\ledgr_102b482d3e94.duckdb
+#> Snapshot ID: snapshot_20260511_123143_b0ce
+#> Database:    <temporary DuckDB path>
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -178,6 +178,7 @@ summary(bt)
 #>
 #> Risk Metrics:
 #>   Volatility (annual): 1.96%
+#>   Sharpe Ratio:        0.845
 #>
 #> Trade Statistics:
 #>   Total Trades:        12
@@ -267,11 +268,11 @@ bt_qty_20 <- exp |>
 
 ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_started_qty_20"))
 #> # ledgr comparison
-#> # A tibble: 2 x 8
-#>   run_id                 label final_equity total_return max_drawdown n_trades win_rate
-#>   <chr>                  <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 getting_started_qty_10 <NA>        10084. +0.8%        -1.0%              12 25.0%
-#> 2 getting_started_qty_20 <NA>        10167. +1.7%        -2.0%              12 25.0%
+#> # A tibble: 2 x 9
+#>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
+#>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
+#> 1 getting_sta~ <NA>        10084. +0.8%               0.845 -1.0%              12 25.0%
+#> 2 getting_sta~ <NA>        10167. +1.7%               0.858 -2.0%              12 25.0%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -326,12 +327,12 @@ ledgr_run_info(reloaded, "durable_qty_10")
 #> Tags:            NA
 #> Snapshot:        getting_started_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     de35318158410a808feea97edd9f4c7a8e0a64b90a992426ea0070f0688794b8
+#> Config Hash:     f38487eecc4a81bb775140ac3a4140b7c33eca9b05cbad0cd3a53cbf7c577d05
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.19
+#> Elapsed Sec:     1.22
 #> Persist Features:TRUE
 #> Cache Hits:      2
 #> Cache Misses:    0

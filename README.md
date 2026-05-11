@@ -112,8 +112,8 @@ exp <- ledgr_experiment(
 exp
 #> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260509_185545_6259
-#> Database:    C:\Users\maxth\AppData\Local\Temp\RtmpuS96Qp\ledgr_f3601fa110a.duckdb
+#> Snapshot ID: snapshot_20260511_123144_9432
+#> Database:    <temporary DuckDB path>
 #> Universe:    2 instruments
 #> Features:    1 fixed
 #> Opening:     cash=10000, positions=0
@@ -156,6 +156,7 @@ summary(bt)
 #>
 #> Risk Metrics:
 #>   Volatility (annual): 1.96%
+#>   Sharpe Ratio:        0.845
 #>
 #> Trade Statistics:
 #>   Total Trades:        12
@@ -194,11 +195,11 @@ bt_qty_20 <- exp |>
 
 ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))
 #> # ledgr comparison
-#> # A tibble: 2 x 8
-#>   run_id               label final_equity total_return max_drawdown n_trades win_rate
-#>   <chr>                <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 readme_sma_20        <NA>        10084. +0.8%        -1.0%              12 25.0%
-#> 2 readme_sma_20_qty_20 <NA>        10167. +1.7%        -2.0%              12 25.0%
+#> # A tibble: 2 x 9
+#>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
+#>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
+#> 1 readme_sma_~ <NA>        10084. +0.8%               0.845 -1.0%              12 25.0%
+#> 2 readme_sma_~ <NA>        10167. +1.7%               0.858 -2.0%              12 25.0%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -279,18 +280,12 @@ ledgr_snapshot_close(snapshot)
 
 ## Documentation
 
+Start with the pkgdown site for the full article set:
+<https://blechturm.github.io/ledgr/>.
+
+Installed package help remains available from R:
+
 ``` r
 help(package = "ledgr")
-utils::packageDescription("ledgr")[c("Package", "Version", "Title")]
 vignette(package = "ledgr")
-system.file("doc", package = "ledgr")
-system.file("doc", "strategy-development.html", package = "ledgr")
 ```
-
-The `system.file()` calls are useful in noninteractive `Rscript` and
-agent workflows where opening pkgdown in a browser is not the first
-step. The pkgdown-only background articles are on the website, while
-installed vignettes focus on package workflows.
-
-Design packets are in `inst/design/`, including the current v0.1.7.6
-packet.

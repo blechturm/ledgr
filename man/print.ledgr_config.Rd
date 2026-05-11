@@ -29,6 +29,6 @@ bars <- data.frame(
 )
 strategy <- function(ctx, params) ctx$flat()
 bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
-print(bt$config)
+if (interactive()) print(bt$config)
 close(bt)
 }

@@ -22,6 +22,10 @@
 /coverage.html
 /lib/
 
+# Profiling artifacts
+Rprof.out
+*.Rprof
+
 # RStudio files
 .Rproj.user/
 

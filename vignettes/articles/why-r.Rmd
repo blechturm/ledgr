@@ -38,7 +38,7 @@ research demands: strategies you can audit, modify, and trust years after you
 wrote them.
 
 ledgr's strategy API uses ordinary `function(ctx, params)` functions. The
-v0.1.7.2 helper layer makes those functions read like their economic logic:
+strategy helper layer makes those functions read like their economic logic:
 
 ```r
 ctx |>

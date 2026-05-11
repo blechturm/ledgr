@@ -221,15 +221,16 @@ testthat::test_that("retired TTR indicator article is not installed", {
   testthat::expect_false(file.exists(file.path(root, "inst", "doc", "ttr-indicators.html")))
 })
 
-testthat::test_that("README documents noninteractive documentation discovery", {
+testthat::test_that("README documents public documentation discovery", {
   root <- testthat::test_path("..", "..")
   readme <- file.path(root, "README.Rmd")
   testthat::skip_if_not(file.exists(readme), "README source not available during installed-package tests")
   text <- paste(readLines(readme, warn = FALSE), collapse = "\n")
 
   testthat::expect_match(text, "vignette\\(package = \"ledgr\"\\)")
-  testthat::expect_match(text, "system.file\\(\"doc\", package = \"ledgr\"\\)")
-  testthat::expect_match(text, "noninteractive `Rscript` and agent\\s+workflows")
+  testthat::expect_match(text, "https://blechturm.github.io/ledgr/", fixed = TRUE)
+  testthat::expect_no_match(text, "system.file(\"doc\"", fixed = TRUE)
+  testthat::expect_no_match(text, "Design packets are in", fixed = TRUE)
   testthat::expect_match(text, "The setup is not overhead. The setup is the audit trail.", fixed = TRUE)
 })
 
@@ -623,6 +624,48 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "print-oriented view", fixed = TRUE)
   testthat::expect_match(metrics_doc, "returns the backtest handle\\s+invisibly")
   testthat::expect_match(metrics_doc, "Use `ledgr_compute_metrics\\(\\)` for scripted")
+})
+
+testthat::test_that("public site polish avoids stale public artifacts", {
+  root <- testthat::test_path("..", "..")
+  pkgdown <- file.path(root, "_pkgdown.yml")
+  public_paths <- c(
+    file.path(root, "README.Rmd"),
+    file.path(root, "README.md"),
+    list.files(file.path(root, "vignettes"), pattern = "[.](Rmd|md)$", full.names = TRUE),
+    list.files(file.path(root, "vignettes", "articles"), pattern = "[.]Rmd$", full.names = TRUE)
+  )
+  public_paths <- public_paths[file.exists(public_paths)]
+  text <- paste(unlist(lapply(public_paths, readLines, warn = FALSE)), collapse = "\n")
+  pkgdown_text <- paste(readLines(pkgdown, warn = FALSE), collapse = "\n")
+
+  start_here <- regexpr("  - title: Start Here", pkgdown_text, fixed = TRUE)
+  core_workflow <- regexpr("  - title: Core Workflow", pkgdown_text, fixed = TRUE)
+  design <- regexpr("  - title: Design / Background", pkgdown_text, fixed = TRUE)
+  testthat::expect_gt(start_here[[1]], 0)
+  testthat::expect_gt(core_workflow[[1]], start_here[[1]])
+  testthat::expect_gt(design[[1]], core_workflow[[1]])
+
+  start_block <- substr(pkgdown_text, start_here[[1]], core_workflow[[1]] - 1L)
+  testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
+  testthat::expect_match(start_block, "- getting-started", fixed = TRUE)
+  testthat::expect_match(start_block, "- leakage", fixed = TRUE)
+  testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
+
+  core_block <- substr(pkgdown_text, core_workflow[[1]], design[[1]] - 1L)
+  testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
+  testthat::expect_match(core_block, "- indicators", fixed = TRUE)
+  testthat::expect_match(core_block, "- custom-indicators", fixed = TRUE)
+  testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
+  testthat::expect_match(core_block, "- experiment-store", fixed = TRUE)
+
+  testthat::expect_no_match(text, "C:\\Users", fixed = TRUE)
+  testthat::expect_no_match(text, "custom-indicators.md", fixed = TRUE)
+  testthat::expect_no_match(text, "v0.1.7.2 helper layer", fixed = TRUE)
+  testthat::expect_no_match(text, "current v0.1.7.6", fixed = TRUE)
+  testthat::expect_no_match(text, "no DISPLAY variable", fixed = TRUE)
+  testthat::expect_false(file.exists(file.path(root, "Rprof.out")))
+  testthat::expect_match(paste(readLines(file.path(root, ".gitignore"), warn = FALSE), collapse = "\n"), "Rprof.out", fixed = TRUE)
 })
 
 testthat::test_that("package help exposes an installed-documentation spine", {
