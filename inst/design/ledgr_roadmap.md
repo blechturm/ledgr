@@ -1347,7 +1347,7 @@ Parameter sweeps expose two naturally parallel map dimensions:
 
 ```text
 map(instruments x indicators -> feature series)   # pure, no dependencies
-  -> share zero-copy (mori)
+  -> share (e.g., mori zero-copy pending SPIKE-3; plain R objects otherwise)
 map(parameter combinations -> fold result)        # pure, no dependencies
   ->
 reduce(fold results -> comparison table)          # cheap, sequential
@@ -1576,16 +1576,23 @@ All five spikes must complete before the v0.1.8 parallel design is finalized.
 
 ### Implementation Note
 
-When extracting the internal fold core, remove the dead in-loop equity
-tracking from `backtest-runner.R`. The six pre-allocated `eq_*` arrays
-(`eq_cash`, `eq_positions_value`, `eq_equity`, `eq_ts`, `eq_realized`,
-`eq_unrealized`) and their per-pulse assignments are superseded by the
-post-run derived-state reconstruction and are never persisted. The in-loop
-FIFO lot tracking (lines ~1552–1606) that feeds `eq_unrealized` and
-`eq_realized` is also dead in the forward path; note that the pre-loop
-resume replay (lines ~1166–1225) shares the same `lot_map`/`kahan_add`
-structures and must be preserved. Clean this up as part of opening the
-loop for the fold-core extraction, not as a standalone edit.
+**Dead equity tracking — completed in v0.1.7.9 (LDG-1910).** The six
+pre-allocated `eq_*` arrays (`eq_cash`, `eq_positions_value`, `eq_equity`,
+`eq_ts`, `eq_realized`, `eq_unrealized`) and the live-loop FIFO lot-accounting
+that fed them have been removed from `backtest-runner.R`. The resume-replay
+lot-accounting that shared the same `lot_map`/`kahan_add` structures was also
+removed because it exclusively fed those dead arrays. The authoritative equity
+and P&L output is the post-run derived-state reconstruction; that path is
+unchanged.
+
+**Remaining fold-core extraction work for v0.1.8.** The dead-array cleanup is
+done. The outstanding work is the output-handler boundary split: `fail_run` and
+`write_persistent_telemetry` are closures that capture the DuckDB `con` from the
+outer runner frame and currently prevent a clean fold-only path. Moving them out
+of fold scope, and routing telemetry through the result/output-handler path
+instead of `.ledgr_telemetry_registry`, is the concrete v0.1.8 refactor that
+enables a sweep candidate to evaluate without a live DuckDB connection or
+persistent-run status mutation.
 
 ### Pre-Spec Prerequisite: Parallelism Spike
 

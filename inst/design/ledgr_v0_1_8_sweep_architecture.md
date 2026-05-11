@@ -626,3 +626,17 @@ Before v0.1.8 tickets are cut, the spec must answer:
 21. What are the memory expectations for large sequential sweeps?
 22. What are the interrupt semantics, and are partial results returned or
     discarded?
+23. Before locking in the once-per-sweep preflight contract: does
+    `ledgr_strategy_preflight()` inspect feature definitions or candidate-varying
+    referenced symbols, or does it classify only the strategy function body and
+    its non-candidate-specific environment? If preflight is not strategy-body-only,
+    it must run once per candidate.
+24. Where does per-candidate seed derivation happen: inside the fold core, in the
+    sweep dispatcher before dispatch, or in the output handler? This determines
+    whether `ctx$seed` comes from the fold-core input signature directly or is
+    injected by the sweep layer. The spec must state the derivation boundary
+    explicitly.
+25. What is the write-isolation pattern for future parallel sweep: per-worker temp
+    databases with orchestrated merge, or a serialized write queue? No spike covers
+    this; the v0.1.8 spec must take a position from first principles, even if
+    parallel write isolation itself is deferred.
