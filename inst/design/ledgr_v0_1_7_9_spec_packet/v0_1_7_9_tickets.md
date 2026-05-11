@@ -2,7 +2,7 @@
 
 **Version:** 0.1.7.9
 **Date:** May 11, 2026
-**Total Tickets:** 7
+**Total Tickets:** 10
 
 ---
 
@@ -13,6 +13,9 @@ work that remains after v0.1.7.7 risk metrics and v0.1.7.8 reproducibility
 preflight. It improves warmup feasibility inspection, helper-pipeline behavior,
 feature-map/context documentation, custom-indicator contract clarity,
 programmatic result examples, snapshot lifecycle docs, and public site flow.
+After a late execution-engine audit, the release also includes a
+release-blocking opening-position cost-basis fix plus narrow fill-model
+documentation and runner cleanup follow-ups.
 
 The release remains conservative. It does not add sweep mode,
 `ledgr_precompute_features()`, `ctx$all_features()`, `ledgr_snapshot_split()`,
@@ -30,7 +33,12 @@ Tracks:
    store examples, and targeted runtime-message polish.
 6. **Public site polish:** pkgdown order, homepage cleanup, stale artifacts, and
    repo hygiene.
-7. **Release gate:** NEWS, ticket status, verification, and CI.
+7. **Runtime blocker:** opening-position lot accounting and shared FIFO helper.
+8. **Fill-model docs:** document spread semantics as a per-leg price
+   adjustment.
+9. **Runner cleanup:** remove dead equity buffers and route minor audit
+   follow-ups.
+10. **Release gate:** NEWS, ticket status, verification, and CI.
 
 ### Dependency DAG
 
@@ -38,7 +46,10 @@ Tracks:
 LDG-1901 -> LDG-1902 ----.
 LDG-1901 -> LDG-1903 ----+-> LDG-1904 ----.
 LDG-1901 -> LDG-1905 ---------------------+-> LDG-1907
-LDG-1901 -> LDG-1906 ---------------------'
+LDG-1901 -> LDG-1906 ---------------------+
+LDG-1901 -> LDG-1908 ---------------------+
+LDG-1901 -> LDG-1909 ---------------------+
+LDG-1901 -> LDG-1910 ---------------------'
 ```
 
 `LDG-1907` is the v0.1.7.9 release gate.
@@ -700,11 +711,316 @@ forbidden_actions:
 
 ---
 
+## LDG-1908: Opening-Position Lot Accounting And Shared FIFO Helper
+
+**Priority:** P0
+**Effort:** 1-2 days
+**Dependencies:** LDG-1901
+**Status:** Todo
+
+**Description:**
+Fix the release-blocking execution-engine bug found in
+`inst/design/execution_engine_audit.md`: opening positions created through
+`ledgr_opening(positions = ..., cost_basis = ...)` are written as `CASHFLOW`
+events, but the lot maps used by the runner, reconstruction, fill extraction,
+and run-comparison stats only process `FILL` events. Liquidating an opening
+position is therefore classified as an `OPEN`, produces no closed trade row, and
+reports wrong realized/unrealized P&L and trade metrics.
+
+This ticket must centralize FIFO lot accounting rather than patching the same
+logic inline in every location.
+
+**Tasks:**
+1. Add regression tests that reproduce the bug with an opening long position at
+   a nonzero cost basis and a later sale at a different price.
+2. Add a shared internal lot-accounting helper that can:
+   - seed opening lots from opening-position `CASHFLOW` event metadata;
+   - apply ordinary `FILL` events using the existing FIFO semantics;
+   - return realized P&L, open/close quantities, remaining lots, and remaining
+     cost basis in a shape usable by the current result paths.
+3. Replace or route all five existing FIFO paths through the shared helper:
+   resume replay, live-loop accounting, post-run equity reconstruction,
+   standalone derived-state reconstruction, and run-store comparison stats.
+4. Ensure opening-position `CASHFLOW` events are interpreted only when their
+   metadata identifies them as opening-position events with finite quantity and
+   cost basis.
+5. Preserve existing behavior for runs without opening positions.
+6. Preserve the event ledger shape; do not convert opening positions into fake
+   `FILL` events.
+7. Confirm `ledgr_extract_fills()`, `ledgr_results(..., "trades")`,
+   `ledgr_compute_metrics()`, run comparison stats, and reconstructed equity
+   agree for the opening-position regression.
+8. Update documentation only if the fix exposes a user-facing clarification
+   about opening-position cost basis.
+
+**Acceptance Criteria:**
+- [ ] Selling an opening long with cost basis below the sale price produces a
+      `CLOSE` fill row with positive realized P&L.
+- [ ] The same scenario produces a closed trade row and correct `n_trades`,
+      `win_rate`, and `avg_trade` in run comparison/metrics outputs.
+- [ ] Run comparison stats for the opening-position regression reflect correct
+      realized P&L and trade counts.
+- [ ] Equity reconstruction reports realized and unrealized P&L against opening
+      cost basis, not against zero.
+- [ ] `ledgr_state_reconstruct()` and the persisted equity curve agree for the
+      regression scenario.
+- [ ] All five FIFO/lot-accounting paths use the shared helper or an explicitly
+      documented common internal primitive.
+- [ ] Existing FIFO torture tests and accounting consistency tests still pass.
+- [ ] Opening-position events remain `CASHFLOW` events; no fake fill events are
+      introduced.
+
+**Implementation Notes:**
+- Pending.
+
+**Verification:**
+```text
+targeted opening-position accounting regression tests
+tests/testthat/test-fifo-torture.R
+tests/testthat/test-accounting-consistency.R
+tests/testthat/test-derived-state.R
+tests/testthat/test-run-compare.R
+full testthat recommended
+```
+
+**Test Requirements:**
+- Regression test for opening-position liquidation.
+- Regression test for extracted fills/trades and metrics.
+- Regression test for derived-state reconstruction.
+- Existing FIFO/accounting/run-compare tests.
+
+**Source Reference:** `inst/design/execution_engine_audit.md`; runner FIFO paths
+in `R/backtest-runner.R`, `R/derived-state.R`, and `R/run-store.R`.
+
+**Classification:**
+```yaml
+risk_level: release-critical
+implementation_tier: H
+review_tier: H
+classification_reason: >
+  This ticket changes execution-engine lot accounting, realized/unrealized P&L,
+  fill action classification, and trade metrics for public opening-position
+  workflows. It is release-blocking because the current behavior silently
+  reports wrong accounting.
+invariants_at_risk:
+  - event-sourced accounting correctness
+  - opening-position cost basis semantics
+  - FIFO trade matching
+  - fill/trade/metric consistency
+  - resume determinism
+required_context:
+  - inst/design/execution_engine_audit.md
+  - R/backtest-runner.R
+  - R/derived-state.R
+  - R/run-store.R
+  - R/backtest.R
+  - tests/testthat/test-fifo-torture.R
+  - tests/testthat/test-derived-state.R
+  - tests/testthat/test-run-compare.R
+tests_required:
+  - targeted opening-position accounting regression tests
+  - tests/testthat/test-fifo-torture.R
+  - tests/testthat/test-accounting-consistency.R
+  - tests/testthat/test-derived-state.R
+  - tests/testthat/test-run-compare.R
+escalation_triggers:
+  - opening-position CASHFLOW metadata is insufficient to seed lots safely
+  - shared helper cannot preserve existing FIFO behavior
+  - resume replay and post-run reconstruction disagree after the fix
+forbidden_actions:
+  - adding a second execution path
+  - converting opening positions into fake FILL events
+  - silently dropping opening-position cost basis
+  - patching only one FIFO path while leaving others divergent
+```
+
+---
+
+## LDG-1909: Fill-Model Spread Semantics Documentation
+
+**Priority:** P2
+**Effort:** 0.5 day
+**Dependencies:** LDG-1901
+**Status:** Todo
+
+**Description:**
+Document the existing `spread_bps` convention identified in
+`inst/design/execution_engine_audit.md`. The current next-open fill model
+applies `spread_bps` as a full per-leg price adjustment: buys fill at
+`open * (1 + spread_bps / 10000)` and sells fill at
+`open * (1 - spread_bps / 10000)`. A round trip therefore costs approximately
+`2 * spread_bps` basis points of notional. The behavior is tested in code but
+not explained clearly in public docs.
+
+This ticket is documentation/contract clarification only. It must not change
+fill prices or rename public fields.
+
+**Tasks:**
+1. Add clear public documentation for `spread_bps` in fill-model argument docs
+   and any relevant vignette/accounting text.
+2. State explicitly that `spread_bps` is a per-leg price adjustment, not a
+   quoted bid/ask spread split across buy and sell legs.
+3. Include a small numeric example or sentence explaining the round-trip effect.
+4. Add or update documentation contract tests if a suitable public-doc contract
+   already exists for fill-model wording.
+5. Leave runtime fill-model behavior unchanged.
+
+**Acceptance Criteria:**
+- [ ] Public docs explain that `spread_bps` is applied once on each fill leg.
+- [ ] Public docs explain that a buy/sell round trip costs approximately
+      `2 * spread_bps` basis points before commissions.
+- [ ] Existing fill-model tests still pass with no behavior change.
+- [ ] No new fill-model parameter or rename is introduced.
+
+**Implementation Notes:**
+- Pending.
+
+**Verification:**
+```text
+tests/testthat/test-fill-model.R
+tests/testthat/test-documentation-contracts.R if updated
+targeted Rd/vignette render if docs changed
+```
+
+**Test Requirements:**
+- Existing fill-model tests.
+- Documentation contract tests if wording is pinned.
+
+**Source Reference:** `inst/design/execution_engine_audit.md`; `R/fill-model.R`.
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: L
+review_tier: M
+classification_reason: >
+  This ticket documents an existing execution-cost convention. The primary risk
+  is public misunderstanding; runtime behavior must not change.
+invariants_at_risk:
+  - fill-model contract clarity
+  - public documentation accuracy
+required_context:
+  - inst/design/execution_engine_audit.md
+  - R/fill-model.R
+  - R/backtest.R
+  - vignettes/metrics-and-accounting.Rmd
+  - man/ledgr_backtest.Rd
+tests_required:
+  - tests/testthat/test-fill-model.R
+  - tests/testthat/test-documentation-contracts.R
+escalation_triggers:
+  - docs reveal disagreement between tests and implementation
+  - maintainer chooses to change semantics instead of documenting current behavior
+forbidden_actions:
+  - changing fill prices
+  - renaming spread_bps
+  - adding a new fill-model API
+```
+
+---
+
+## LDG-1910: Execution Engine Audit Cleanup And Minor Finding Routing
+
+**Priority:** P2
+**Effort:** 0.5-1 day
+**Dependencies:** LDG-1901
+**Status:** Todo
+
+**Description:**
+Address the non-blocking execution-engine audit cleanup that is safe inside
+v0.1.7.9 and explicitly route the remaining minor findings. The main cleanup is
+removing six live equity arrays in `R/backtest-runner.R` that are updated on
+every pulse but never read because the equity curve is reconstructed from the
+persisted ledger after the run.
+
+This ticket must stay narrow. It must not change execution semantics except for
+adding a defensive validation guard if the lower-level opening-position config
+gap is confirmed reachable.
+
+**Tasks:**
+1. Remove the unused `eq_ts`, `eq_cash`, `eq_positions_value`, `eq_equity`,
+   `eq_realized`, and `eq_unrealized` arrays if tests confirm they are dead.
+2. Confirm no downstream code reads those arrays or depends on their side
+   effects.
+3. Review the lower-level opening-position universe validation gap below
+   `ledgr_experiment()` and either:
+   - add a small defensive runner/config validation if reachable through public
+     APIs; or
+   - record why it remains internal-only and already protected by public
+     experiment validation.
+4. Record decisions for the RNG side effect and
+   `commission_fixed > qty * fill_price` SELL cash-delta behavior. Do not change
+   either behavior without a separate maintainer decision.
+5. Confirm the pending-buffer `>` guard remains unchanged because the audit
+   false positive has been corrected.
+
+**Acceptance Criteria:**
+- [ ] Dead live equity arrays are removed or a specific reason for retaining
+      them is recorded.
+- [ ] Targeted runner/accounting tests still pass after the cleanup.
+- [ ] The lower-level opening-position universe validation gap is either closed
+      with a defensive check or explicitly routed as internal-only.
+- [ ] RNG side-effect and negative SELL cash-delta findings are recorded as
+      deferred/design-decision items unless separately promoted.
+- [ ] The pending-buffer guard is not changed to `>=`.
+
+**Implementation Notes:**
+- Pending.
+
+**Verification:**
+```text
+targeted runner/accounting tests
+scope grep for removed equity arrays
+documentation/ticket routing review for deferred minor findings
+```
+
+**Test Requirements:**
+- Targeted runner/accounting tests.
+- Scope grep for dead arrays.
+
+**Source Reference:** `inst/design/execution_engine_audit.md`; live equity
+buffer code in `R/backtest-runner.R`.
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: M
+review_tier: M
+classification_reason: >
+  This ticket removes dead runner work and routes minor audit findings without
+  changing core execution behavior. The risk is accidental behavior drift in the
+  runner during cleanup.
+invariants_at_risk:
+  - runner accounting behavior
+  - release-scope discipline
+  - internal/public API boundary
+required_context:
+  - inst/design/execution_engine_audit.md
+  - R/backtest-runner.R
+  - R/backtest.R
+  - R/experiment.R
+  - tests/testthat/test-runner.R
+  - tests/testthat/test-accounting-consistency.R
+tests_required:
+  - targeted runner/accounting tests
+escalation_triggers:
+  - equity arrays are discovered to feed a hidden side effect
+  - lower-level validation gap is reachable through a supported public API
+  - RNG behavior change is required to satisfy tests
+forbidden_actions:
+  - changing fill timing
+  - changing RNG semantics without a separate decision
+  - changing commission semantics without a separate decision
+  - changing the pending-buffer guard to >=
+```
+
+---
+
 ## LDG-1907: v0.1.7.9 Release Gate, NEWS, And Packet Finalization
 
 **Priority:** P0
 **Effort:** 1 day
-**Dependencies:** LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906
+**Dependencies:** LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910
 **Status:** Todo
 
 **Description:**
@@ -719,16 +1035,19 @@ deferred, and ensure Ubuntu/Windows CI are green before merge/tag.
 4. Confirm v0.1.7.8 auditr findings are routed or explicitly deferred.
 5. Confirm deferred items remain deferred: sweep, precompute, `ctx$all_features`,
    persisted feature retrieval, and `ledgr_snapshot_split`.
-6. Run targeted tests for changed code.
-7. Run documentation contract tests.
-8. Run full local tests.
-9. Run package check and pkgdown build.
-10. Confirm generated artifacts are not committed.
+6. Confirm execution-engine audit findings are fixed, documented, or explicitly
+   routed, including the opening-position cost-basis blocker.
+7. Run targeted tests for changed code.
+8. Run documentation contract tests.
+9. Run full local tests.
+10. Run package check and pkgdown build.
+11. Confirm generated artifacts are not committed.
 
 **Acceptance Criteria:**
 - [ ] All prior v0.1.7.9 tickets are complete or explicitly deferred.
 - [ ] NEWS and version metadata match the shipped scope.
 - [ ] `v0_1_7_9_tickets.md` and `tickets.yml` are synchronized.
+- [ ] Opening-position lot accounting regressions pass.
 - [ ] Documentation contract tests pass.
 - [ ] Full local tests pass.
 - [ ] `R CMD check --no-manual --no-build-vignettes` passes.

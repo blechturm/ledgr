@@ -1,4 +1,4 @@
-version: "0.1.7.9-strategy-author-ergonomics"
+version: "0.1.7.9-strategy-author-ergonomics-and-engine-audit"
 source: "v0_1_7_9_tickets.md"
 tickets:
   - id: LDG-1901
@@ -237,11 +237,136 @@ tickets:
         - removing tidyverse-adjacent examples solely for agent convenience
         - adding new concept articles without maintainer approval
 
+  - id: LDG-1908
+    title: "Opening-Position Lot Accounting And Shared FIFO Helper"
+    status: todo
+    priority: P0
+    dependencies: [LDG-1901]
+    tests:
+      - "targeted opening-position accounting regression tests"
+      - "tests/testthat/test-fifo-torture.R"
+      - "tests/testthat/test-accounting-consistency.R"
+      - "tests/testthat/test-derived-state.R"
+      - "tests/testthat/test-run-compare.R"
+    classification:
+      risk_level: release-critical
+      implementation_tier: H
+      review_tier: H
+      classification_reason: >
+        This ticket changes execution-engine lot accounting, realized/unrealized
+        P&L, fill action classification, and trade metrics for public
+        opening-position workflows. It is release-blocking because the current
+        behavior silently reports wrong accounting.
+      invariants_at_risk:
+        - event-sourced accounting correctness
+        - opening-position cost basis semantics
+        - FIFO trade matching
+        - fill/trade/metric consistency
+        - resume determinism
+      required_context:
+        - inst/design/execution_engine_audit.md
+        - R/backtest-runner.R
+        - R/derived-state.R
+        - R/run-store.R
+        - R/backtest.R
+        - tests/testthat/test-fifo-torture.R
+        - tests/testthat/test-derived-state.R
+        - tests/testthat/test-run-compare.R
+      tests_required:
+        - targeted opening-position accounting regression tests
+        - tests/testthat/test-fifo-torture.R
+        - tests/testthat/test-accounting-consistency.R
+        - tests/testthat/test-derived-state.R
+        - tests/testthat/test-run-compare.R
+      escalation_triggers:
+        - opening-position CASHFLOW metadata is insufficient to seed lots safely
+        - shared helper cannot preserve existing FIFO behavior
+        - resume replay and post-run reconstruction disagree after the fix
+      forbidden_actions:
+        - adding a second execution path
+        - converting opening positions into fake FILL events
+        - silently dropping opening-position cost basis
+        - patching only one FIFO path while leaving others divergent
+
+  - id: LDG-1909
+    title: "Fill-Model Spread Semantics Documentation"
+    status: todo
+    priority: P2
+    dependencies: [LDG-1901]
+    tests:
+      - "tests/testthat/test-fill-model.R"
+      - "tests/testthat/test-documentation-contracts.R"
+    classification:
+      risk_level: medium
+      implementation_tier: L
+      review_tier: M
+      classification_reason: >
+        This ticket documents an existing execution-cost convention. The primary
+        risk is public misunderstanding; runtime behavior must not change.
+      invariants_at_risk:
+        - fill-model contract clarity
+        - public documentation accuracy
+      required_context:
+        - inst/design/execution_engine_audit.md
+        - R/fill-model.R
+        - R/backtest.R
+        - vignettes/metrics-and-accounting.Rmd
+        - man/ledgr_backtest.Rd
+      tests_required:
+        - tests/testthat/test-fill-model.R
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - docs reveal disagreement between tests and implementation
+        - maintainer chooses to change semantics instead of documenting current behavior
+      forbidden_actions:
+        - changing fill prices
+        - renaming spread_bps
+        - adding a new fill-model API
+
+  - id: LDG-1910
+    title: "Execution Engine Audit Cleanup And Minor Finding Routing"
+    status: todo
+    priority: P2
+    dependencies: [LDG-1901]
+    tests:
+      - "targeted runner/accounting tests"
+      - "scope grep for removed equity arrays"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: M
+      classification_reason: >
+        This ticket removes dead runner work and routes minor audit findings
+        without changing core execution behavior. The risk is accidental
+        behavior drift in the runner during cleanup.
+      invariants_at_risk:
+        - runner accounting behavior
+        - release-scope discipline
+        - internal/public API boundary
+      required_context:
+        - inst/design/execution_engine_audit.md
+        - R/backtest-runner.R
+        - R/backtest.R
+        - R/experiment.R
+        - tests/testthat/test-runner.R
+        - tests/testthat/test-accounting-consistency.R
+      tests_required:
+        - targeted runner/accounting tests
+      escalation_triggers:
+        - equity arrays are discovered to feed a hidden side effect
+        - lower-level validation gap is reachable through a supported public API
+        - RNG behavior change is required to satisfy tests
+      forbidden_actions:
+        - changing fill timing
+        - changing RNG semantics without a separate decision
+        - changing commission semantics without a separate decision
+        - changing the pending-buffer guard to >=
+
   - id: LDG-1907
     title: "v0.1.7.9 Release Gate, NEWS, And Packet Finalization"
     status: todo
     priority: P0
-    dependencies: [LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906]
+    dependencies: [LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910]
     tests:
       - "targeted tests"
       - "tests/testthat/test-documentation-contracts.R"
@@ -261,6 +386,7 @@ tickets:
         - CI health
         - documentation contract consistency
         - deferred scope boundaries
+        - opening-position accounting correctness
       required_context:
         - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
         - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_tickets.md
@@ -269,6 +395,7 @@ tickets:
         - DESCRIPTION
       tests_required:
         - targeted tests
+        - opening-position accounting regression tests
         - tests/testthat/test-documentation-contracts.R
         - full testthat
         - R CMD check

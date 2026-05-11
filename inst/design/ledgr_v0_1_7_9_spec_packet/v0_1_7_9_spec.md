@@ -727,6 +727,31 @@ The default is conservative: do not expand v0.1.7.9 unless the finding matches
 the strategy-author ergonomics or public-docs polish scope, or blocks v0.1.8
 sweep readiness.
 
+### 7.1 Late Execution-Engine Audit Intake
+
+After the original v0.1.7.9 ticket cut, a focused execution-engine audit was
+added at `inst/design/execution_engine_audit.md`. The audit is promoted into
+v0.1.7.9 only where it affects release correctness or public contract clarity:
+
+- Opening-position cost basis is a release-blocking correctness bug. Runs that
+  use `ledgr_opening(positions = ..., cost_basis = ...)` currently record the
+  opening lots as `CASHFLOW` events, while FIFO lot matching only processes
+  `FILL` events. Liquidating an opening position therefore produces wrong
+  realized/unrealized P&L and wrong trade metrics. This is in scope for
+  v0.1.7.9 as a P0 bug ticket.
+- FIFO lot-accounting duplication is part of the same bug surface. The fix must
+  avoid patching only one result path; it should introduce or route through a
+  shared internal lot-accounting primitive.
+- `spread_bps` already applies as a full per-leg price adjustment. The behavior
+  is not changed in v0.1.7.9, but public docs must explain the convention.
+- Dead live equity arrays in the runner may be removed as a narrow cleanup if
+  targeted tests confirm no behavior depends on them.
+- Minor audit findings about lower-level opening-position validation, RNG
+  side effects, and fixed-commission SELL cash deltas must be explicitly routed
+  before release. They are not automatically behavior-change tickets.
+- The pending-buffer `>` guard is a corrected false positive and must not be
+  changed to `>=`.
+
 ---
 
 ## 8. Suggested Ticket Families
@@ -740,7 +765,10 @@ likely ticket family split is:
 4. Strategy context/accessor, feature-map, warmup, and sizing documentation.
 5. Metrics/comparison/summary/snapshot/store discoverability docs.
 6. Public site polish, pkgdown article order, homepage cleanup, and repo hygiene.
-7. Release gate, NEWS, verification, and final auditr routing confirmation.
+7. Opening-position cost-basis and shared FIFO lot-accounting bug fix.
+8. Fill-model spread semantics documentation.
+9. Execution-engine cleanup and minor audit finding routing.
+10. Release gate, NEWS, verification, and final auditr routing confirmation.
 
 ---
 
@@ -767,5 +795,11 @@ v0.1.7.9 is complete when:
 - the research-to-production article no longer overclaims reconciliation;
 - the v0.1.7.8 auditr report is routed and deferred findings are recorded
   explicitly;
+- opening-position lot accounting correctly honors opening cost basis across
+  fills, trades, equity reconstruction, derived state, and run comparison
+  metrics;
+- `spread_bps` per-leg semantics are documented without changing fill behavior;
+- execution-engine audit cleanup and minor findings are fixed, documented, or
+  explicitly deferred;
 - NEWS and ticket statuses match the shipped scope;
 - local verification and Ubuntu/Windows CI are green.
