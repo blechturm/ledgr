@@ -75,7 +75,13 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "rsi_bt <- ledgr_run", fixed = TRUE)
   testthat::expect_match(indicators_doc, "mixed feature map combines a built-in return feature", fixed = TRUE)
   testthat::expect_match(indicators_doc, "return_5", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Native RSI", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_ind_rsi\\(14\\)")
+  testthat::expect_match(indicators_doc, "rsi_14", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ttr_rsi_14", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Feature objects appear in three related places", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ctx\\$feature\\(id, feature_id\\)")
+  testthat::expect_match(indicators_doc, "ctx\\$features\\(id, feature_map\\)")
   testthat::expect_match(indicators_doc, "ledgr computes feature contracts into pulse-known data", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_contracts", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_contract_check", fixed = TRUE)
@@ -114,11 +120,14 @@ testthat::test_that("helper docs state composition and whole-share target floori
   select_help <- paste(readLines(file.path(root, "man", "select_top_n.Rd"), warn = FALSE), collapse = "\n")
   target_rebalance_help <- paste(readLines(file.path(root, "man", "target_rebalance.Rd"), warn = FALSE), collapse = "\n")
   selection_type_help <- paste(readLines(file.path(root, "man", "ledgr_selection.Rd"), warn = FALSE), collapse = "\n")
+  context_help <- paste(readLines(file.path(root, "man", "ledgr_strategy_context.Rd"), warn = FALSE), collapse = "\n")
 
   testthat::expect_match(strategy_doc, "Execution semantics begin only at the target stage", fixed = TRUE)
   testthat::expect_match(strategy_doc, "floors to whole shares", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "floor\\(equity_fraction \\* ctx\\$equity / ctx\\$close\\(instrument_id\\)\\)")
   testthat::expect_match(strategy_doc, "classed empty selection", fixed = TRUE)
   testthat::expect_match(strategy_doc, "No warning suppression is needed", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "?ledgr_strategy_context", fixed = TRUE)
   testthat::expect_match(target_help, "floored to whole numbers", fixed = TRUE)
   testthat::expect_match(target_help, "floor(weight * equity_fraction * equity /", fixed = TRUE)
 
@@ -137,6 +146,11 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(target_rebalance_help, "\\code{ledgr_negative_weights}", fixed = TRUE)
   testthat::expect_match(target_rebalance_help, "\\code{ledgr_levered_weights}", fixed = TRUE)
   testthat::expect_match(selection_type_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_match(context_help, "\\code{ctx$feature(id, feature_id)}", fixed = TRUE)
+  testthat::expect_match(context_help, "\\code{ctx$features(id, feature_map)}", fixed = TRUE)
+  testthat::expect_match(context_help, "\\code{ctx$flat()}", fixed = TRUE)
+  testthat::expect_match(context_help, "\\code{ctx$hold()}", fixed = TRUE)
+  testthat::expect_match(context_help, "Feature Object Compatibility", fixed = TRUE)
 })
 
 testthat::test_that("feature-map docs preserve teaching order and semantic boundaries", {
@@ -606,6 +620,9 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(results_help, "action = \"CLOSE\"", fixed = TRUE)
   testthat::expect_match(results_help, "Open positions can affect equity", fixed = TRUE)
   testthat::expect_match(results_help, "does not support \\code{what = \"metrics\"}", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "print-oriented view", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "returns the backtest handle\\s+invisibly")
+  testthat::expect_match(metrics_doc, "Use `ledgr_compute_metrics\\(\\)` for scripted")
 })
 
 testthat::test_that("package help exposes an installed-documentation spine", {
@@ -632,6 +649,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_run = c("strategy-development", "metrics-and-accounting"),
     ledgr_experiment = c("strategy-development", "experiment-store", "reproducibility"),
     ledgr_backtest = c("strategy-development", "metrics-and-accounting"),
+    ledgr_strategy_context = c("strategy-development", "indicators"),
     ledgr_results = "metrics-and-accounting",
     ledgr_compare_runs = c("experiment-store", "metrics-and-accounting"),
     ledgr_snapshot_from_df = "experiment-store",
@@ -688,6 +706,17 @@ testthat::test_that("experiment-store docs show the low-level CSV bridge", {
   info_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_info.Rd"), warn = FALSE), collapse = "\n")
 
   testthat::expect_match(doc, "Bridge A Low-Level CSV Import", fixed = TRUE)
+  testthat::expect_match(doc, "advanced import material", fixed = TRUE)
+  testthat::expect_match(doc, "Data Input And Snapshot\\s+Creation")
+  testthat::expect_match(doc, "ledgr_snapshot_from_yahoo", fixed = TRUE)
+  testthat::expect_match(doc, "The returned handle is already sealed", fixed = TRUE)
+  testthat::expect_match(doc, "Useful fields include", fixed = TRUE)
+  testthat::expect_match(doc, "raw numeric columns", fixed = TRUE)
+  testthat::expect_match(doc, "best_run_id", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_run_not_found", fixed = TRUE)
+  testthat::expect_match(doc, "trend_qty_5_rerun", fixed = TRUE)
+  testthat::expect_match(doc, "Current Feature Persistence Boundary", fixed = TRUE)
+  testthat::expect_match(doc, "full persisted feature-series retrieval API is deferred", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_snapshot_create", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_snapshot_import_bars_csv", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_snapshot_seal", fixed = TRUE)
@@ -785,6 +814,15 @@ testthat::test_that("leakage article teaches boundaries without overclaiming", {
   testthat::expect_false(grepl("has no object from which it can accidentally read tomorrow", strategy_doc, fixed = TRUE))
 })
 
+testthat::test_that("research-to-production docs do not overclaim broker reconciliation", {
+  doc <- paste(readLines(ledgr_test_source_vignette("research-to-production.Rmd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_no_match(doc, "No reconciliation step is needed", fixed = TRUE)
+  testthat::expect_no_match(doc, "The ledger is the state", fixed = TRUE)
+  testthat::expect_match(doc, "The ledger reconstructs ledgr's expected state", fixed = TRUE)
+  testthat::expect_match(doc, "reconciled against broker-reported", fixed = TRUE)
+})
+
 testthat::test_that("custom indicator article replaces stale placeholders", {
   root <- testthat::test_path("..", "..")
   custom_rmd <- file.path(root, "vignettes", "custom-indicators.Rmd")
@@ -812,6 +850,9 @@ testthat::test_that("custom indicator article replaces stale placeholders", {
   testthat::expect_match(doc, "ledgr_indicator", fixed = TRUE)
   testthat::expect_match(doc, "fn\\(window, params\\)")
   testthat::expect_match(doc, "series_fn\\(bars, params\\)")
+  testthat::expect_match(doc, "uses\\s+`series_fn` for full-series feature computation")
+  testthat::expect_match(doc, "They should be equivalent after warmup", fixed = TRUE)
+  testthat::expect_match(doc, "sides = 1", fixed = TRUE)
   testthat::expect_match(doc, "requires_bars", fixed = TRUE)
   testthat::expect_match(doc, "stable_after", fixed = TRUE)
   testthat::expect_match(doc, "NA_real_", fixed = TRUE)
@@ -823,6 +864,8 @@ testthat::test_that("custom indicator article replaces stale placeholders", {
   testthat::expect_match(doc, "ledgr_adapter_csv", fixed = TRUE)
   testthat::expect_match(doc, "The CSV values must already respect the simulated decision times", fixed = TRUE)
   testthat::expect_match(doc, "Unknown feature IDs fail loudly", fixed = TRUE)
+  testthat::expect_no_match(doc, "ctx\\$feature\\(\"AAA\"")
+  testthat::expect_match(doc, "for \\(id in ctx\\$universe\\)")
 })
 
 testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {

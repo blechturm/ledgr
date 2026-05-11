@@ -350,7 +350,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 2-3 days
 **Dependencies:** LDG-1902, LDG-1903
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Close strategy-author documentation gaps around feature IDs, feature-map aliases,
@@ -382,28 +382,45 @@ multi-lookback pre-registration, and raw whole-share sizing.
     only where useful.
 
 **Acceptance Criteria:**
-- [ ] Users can find `ctx$feature()` and `ctx$features()` from installed help or
+- [x] Users can find `ctx$feature()` and `ctx$features()` from installed help or
       pkgdown docs without text-searching vignettes.
-- [ ] Feature-map alias versus engine-ID semantics are explained with examples.
-- [ ] Docs state which APIs accept feature maps and which are narrower.
-- [ ] Built-in, native RSI, TTR-backed, and multi-output indicator examples show
+- [x] Feature-map alias versus engine-ID semantics are explained with examples.
+- [x] Docs state which APIs accept feature maps and which are narrower.
+- [x] Built-in, native RSI, TTR-backed, and multi-output indicator examples show
       or explain expected feature IDs.
-- [ ] Parameterized lookback examples show registering every concrete feature
+- [x] Parameterized lookback examples show registering every concrete feature
       variant before `ledgr_run()`.
-- [ ] Custom-indicator docs consistently use `fn(window, params)` and
+- [x] Custom-indicator docs consistently use `fn(window, params)` and
       `series_fn(bars, params)`.
-- [ ] At least one corrected causal `series_fn` example is shown.
-- [ ] Raw whole-share sizing formula matches `target_rebalance()`.
-- [ ] No docs imply helpers lazily create features from `params`.
-- [ ] No `ctx$all_features()` API is added.
+- [x] At least one corrected causal `series_fn` example is shown.
+- [x] Raw whole-share sizing formula matches `target_rebalance()`.
+- [x] No docs imply helpers lazily create features from `params`.
+- [x] No `ctx$all_features()` API is added.
 
 **Implementation Notes:**
-- Pending.
+- Added installed help topic `?ledgr_strategy_context` and pkgdown reference
+  entry for context accessors including `ctx$feature()`, `ctx$features()`,
+  `ctx$flat()`, and `ctx$hold()`.
+- Updated strategy and indicator docs to distinguish feature-map aliases,
+  engine feature IDs, accepted feature object shapes, and narrower lower-level
+  surfaces.
+- Added native RSI feature-ID/warmup coverage alongside existing built-in,
+  TTR-backed, and multi-output examples.
+- Updated custom-indicator docs for `fn(window, params)`,
+  `series_fn(bars, params)`, scalar/vectorized precedence, equivalence
+  expectations, deterministic params, and a causal `sides = 1` vectorized
+  example.
+- Made the custom-indicator register/read section self-contained with demo
+  data, a real snapshot, and a universe loop instead of hard-coded `AAA`.
+- Documented the raw and weighted whole-share sizing formulas used by
+  `target_rebalance()`.
 
 **Verification:**
 ```text
-documentation contract tests
-targeted help-page render checks
+PASS: testthat::test_file("tests/testthat/test-documentation-contracts.R", reporter = "summary")
+PASS: rmarkdown::render("vignettes/strategy-development.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: rmarkdown::render("vignettes/indicators.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: rmarkdown::render("vignettes/custom-indicators.Rmd", output_format = "github_document", quiet = TRUE)
 ```
 
 **Test Requirements:**
@@ -455,7 +472,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 2-3 days
 **Dependencies:** LDG-1901
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Improve programmatic examples and selected diagnostics for experiment-store
@@ -486,26 +503,44 @@ error-message improvements.
     low risk and backed by raw evidence.
 
 **Acceptance Criteria:**
-- [ ] Programmatic comparison examples show raw numeric extraction, not string
+- [x] Programmatic comparison examples show raw numeric extraction, not string
       parsing.
-- [ ] Docs show how to inspect or compare equity curves after selecting runs.
-- [ ] `summary(bt)` and `ledgr_compute_metrics()` scripted usage are clear.
-- [ ] Sharpe `NA` edge cases and annualization assumptions are documented.
-- [ ] `ledgr_run_info()` fields are documented or cross-linked.
-- [ ] Strategy recovery docs include rerun boundaries and missing-run class.
-- [ ] Snapshot lifecycle docs cover CSV, Yahoo, sealing state, metadata columns,
+- [x] Docs show how to inspect or compare equity curves after selecting runs.
+- [x] `summary(bt)` and `ledgr_compute_metrics()` scripted usage are clear.
+- [x] Sharpe `NA` edge cases and annualization assumptions are documented.
+- [x] `ledgr_run_info()` fields are documented or cross-linked.
+- [x] Strategy recovery docs include rerun boundaries and missing-run class.
+- [x] Snapshot lifecycle docs cover CSV, Yahoo, sealing state, metadata columns,
       and `meta_json` keys.
-- [ ] `experiment-store.Rmd` clearly marks the CSV bridge as advanced material.
-- [ ] Persisted feature-series retrieval is explicitly deferred.
-- [ ] Any runtime-message changes are covered by targeted tests.
+- [x] `experiment-store.Rmd` clearly marks the CSV bridge as advanced material.
+- [x] Persisted feature-series retrieval is explicitly deferred.
+- [x] Any runtime-message changes are covered by targeted tests.
 
 **Implementation Notes:**
-- Pending.
+- Added raw `ledgr_compare_runs()` extraction and follow-up equity inspection
+  examples after selecting the best run.
+- Clarified that `summary(bt)` is print-oriented and that
+  `ledgr_compute_metrics()` is the scripted metric extraction path.
+- Expanded `ledgr_run_info()` field references in the store article and help.
+- Added stored-strategy trusted rerun sketch and `ledgr_run_not_found`
+  boundary.
+- Consolidated CSV/Yahoo snapshot lifecycle, sealing, `ledgr_snapshot_info()`
+  fields, `meta_json`, counts, and ISO UTC dates.
+- Marked the low-level CSV bridge as advanced material and recorded the future
+  "Data Input And Snapshot Creation" article candidate.
+- Documented the current persisted-feature boundary and explicitly deferred
+  feature-series retrieval to v0.1.8 precompute/sweep design.
+- Narrowly improved `ledgr_results(bt, what = "metrics")` and unknown result
+  table errors with a ledgr-specific class and `ledgr_compute_metrics()` hint.
+- Softened the research-to-production reconciliation overclaim.
 
 **Verification:**
 ```text
-documentation contract tests
-targeted tests for any changed errors
+PASS: testthat::test_file("tests/testthat/test-documentation-contracts.R", reporter = "summary")
+PASS: testthat::test_file("tests/testthat/test-results-wrapper.R", reporter = "summary")
+PASS: rmarkdown::render("vignettes/experiment-store.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: rmarkdown::render("vignettes/metrics-and-accounting.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: rmarkdown::render("vignettes/research-to-production.Rmd", output_format = "github_document", quiet = TRUE)
 ```
 
 **Test Requirements:**

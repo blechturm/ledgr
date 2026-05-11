@@ -2161,7 +2161,7 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
   }
 
   if (!is.null(type)) what <- type
-  what <- match.arg(what, c("equity", "fills", "trades", "ledger"))
+  what <- ledgr_match_result_table(what)
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con
   on.exit(opened$close(), add = TRUE)
@@ -2245,6 +2245,29 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' close(bt)
 #' @export
 ledgr_results <- function(bt, what = c("equity", "fills", "trades", "ledger")) {
-  what <- match.arg(what)
+  what <- ledgr_match_result_table(what)
   ledgr_result_table(tibble::as_tibble(bt, what = what), what = what)
+}
+
+ledgr_match_result_table <- function(what) {
+  choices <- c("equity", "fills", "trades", "ledger")
+  if (length(what) > 1L) {
+    return(match.arg(what, choices))
+  }
+  if (!is.character(what) || length(what) != 1L || is.na(what) || !nzchar(what)) {
+    rlang::abort("`what` must be one of: equity, fills, trades, ledger.", class = "ledgr_invalid_result_table")
+  }
+  if (identical(what, "metrics")) {
+    rlang::abort(
+      "`ledgr_results()` does not support `what = \"metrics\"`. Use `summary(bt)` for printed interpretation or `ledgr_compute_metrics(bt)` for a named list.",
+      class = "ledgr_invalid_result_table"
+    )
+  }
+  if (!(what %in% choices)) {
+    rlang::abort(
+      sprintf("Unknown ledgr result table `%s`. Use one of: %s.", what, paste(choices, collapse = ", ")),
+      class = "ledgr_invalid_result_table"
+    )
+  }
+  what
 }

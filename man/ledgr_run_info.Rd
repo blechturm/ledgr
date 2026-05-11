@@ -14,7 +14,12 @@ DuckDB file in a new R session.}
 \item{run_id}{Run identifier.}
 }
 \value{
-A \code{ledgr_run_info} object.
+A \code{ledgr_run_info} object. Important fields include \code{run_id},
+\code{status}, \code{snapshot_id}, \code{snapshot_hash},
+\code{strategy_source_hash}, \code{strategy_params_hash}, \code{config_hash},
+\code{reproducibility_level}, \code{execution_mode}, \code{elapsed_sec},
+\code{pulse_count}, \code{persist_features}, feature-cache counts, and
+\code{error_msg} for failed runs.
 }
 \description{
 Returns a structured \code{ledgr_run_info} object for a stored run. This function

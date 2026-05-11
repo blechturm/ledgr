@@ -806,7 +806,11 @@ print.ledgr_run_list <- function(x, ...) {
 #'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
-#' @return A `ledgr_run_info` object.
+#' @return A `ledgr_run_info` object. Important fields include `run_id`,
+#'   `status`, `snapshot_id`, `snapshot_hash`, `strategy_source_hash`,
+#'   `strategy_params_hash`, `config_hash`, `reproducibility_level`,
+#'   `execution_mode`, `elapsed_sec`, `pulse_count`, `persist_features`,
+#'   feature-cache counts, and `error_msg` for failed runs.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))

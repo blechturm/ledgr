@@ -144,11 +144,14 @@ It is deliberately not the full dataset.
 | `ctx$ts_utc` | current decision timestamp |
 | `ctx$universe` | instruments in the run |
 | `ctx$open(id)`, `ctx$close(id)` | current bar values for one instrument |
-| `ctx$feature(id, name)` | current indicator value for one instrument |
+| `ctx$feature(id, feature_id)` | current indicator value for one instrument by engine feature ID |
+| `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias |
 | `ctx$position(id)` | current simulated position |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
 | `ctx$flat()` | target zero positions unless changed |
 | `ctx$hold()` | target current positions unless changed |
+
+For the installed accessor reference, see `?ledgr_strategy_context`.
 
 Use `ctx$flat()` when the strategy should be flat unless it sees a reason to
 act. Use `ctx$hold()` when the strategy should keep existing positions unless
@@ -359,6 +362,22 @@ raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
 c(pre_floor = raw_qty, target_qty = unclass(target)[["DEMO_01"]])
 ```
 
+The general weighted sizing formula is:
+
+```text
+floor(weight * equity_fraction * ctx$equity / ctx$close(instrument_id))
+```
+
+For a raw target strategy that does not use weights, the same idea reduces to:
+
+```text
+floor(equity_fraction * ctx$equity / ctx$close(instrument_id))
+```
+
+Both formulas use decision-time close and current pulse equity. Fills still
+occur at the configured later fill point, so fill value can drift from
+decision-time sizing.
+
 The helper objects are not a second execution path. They are authoring aids.
 The pipeline still ends in a `ledgr_target`, which unwraps to the same target
 quantity vector the runner has always consumed.
@@ -482,6 +501,11 @@ Read that as one pulse-time decision:
 
 Plain `features = list(...)` remains valid. Use it when exact IDs are clearest.
 Use a feature map when aliases make a feature-heavy strategy easier to read.
+The modern `ledgr_experiment(features = ...)` path accepts indicators, lists,
+named lists, feature maps, and feature factories. The strategy context then
+uses either the exact-ID scalar accessor `ctx$feature()` or the mapped accessor
+`ctx$features()`. Lower-level and legacy helpers may be narrower; when in
+doubt, prefer the experiment-first workflow.
 
 ```{r feature-map-experiment}
 mapped_exp <- ledgr_experiment(
@@ -666,7 +690,7 @@ ledgr_snapshot_close(snapshot)
 If you want the formal contract, read the strategy and context sections in
 `inst/design/contracts.md`. If you want the indicator story, read
 `vignette("indicators", package = "ledgr")`. For formal feature-map help, see
-`?ledgr_feature_map` and `?passed_warmup`. If you want the deployment story,
-continue with `vignette("research-to-production", package = "ledgr")`. If you
-want to inspect or compare durable runs, read `vignette("experiment-store",
-package = "ledgr")`.
+`?ledgr_strategy_context`, `?ledgr_feature_map`, and `?passed_warmup`. If you
+want the deployment story, continue with `vignette("research-to-production",
+package = "ledgr")`. If you want to inspect or compare durable runs, read
+`vignette("experiment-store", package = "ledgr")`.

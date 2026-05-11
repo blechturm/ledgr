@@ -78,6 +78,26 @@ In any later session, recover the handle without re-sealing the data:
 snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "eod_2019_h1")
 ```
 
+Yahoo imports follow the same lifecycle, but the adapter downloads bars
+before sealing the snapshot:
+
+``` r
+snapshot <- ledgr_snapshot_from_yahoo(
+  symbols = c("SPY", "QQQ"),
+  from = "2019-01-01",
+  to = "2019-06-30",
+  db_path = "research.duckdb",
+  snapshot_id = "yahoo_2019_h1"
+)
+```
+
+The returned handle is already sealed. Use
+`ledgr_snapshot_info(snapshot)` to inspect `status`, `snapshot_hash`,
+`bar_count`, `instrument_count`, `start_date`, `end_date`, and raw
+`meta_json`. The dates are ISO UTC values. `meta_json` is envelope
+metadata; snapshot identity comes from normalized bars and instruments,
+not from human descriptions.
+
 ## Run Variants
 
 ``` r
@@ -177,12 +197,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     256af9881754ae7c9b5e8fdc6be25b9c07a092ff5bc68f916162c285d4f7e404
+#> Config Hash:     5a2bfcfb89d3d5873ebaa4ffd3c9349075a0b4a8e00f4aceddd3997848f4eb83
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     2.18
+#> Elapsed Sec:     2.08
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    2
@@ -192,8 +212,21 @@ info
 mode, compact telemetry, status, identity hashes, and reproducibility
 tier.
 
+Useful fields include:
+
+| Field | Meaning |
+|----|----|
+| `run_id`, `status`, `label`, `tags`, `archived` | mutable and immutable run organization fields |
+| `snapshot_id`, `snapshot_hash`, `data_hash` | sealed data identity |
+| `strategy_source_hash`, `strategy_params_hash`, `config_hash` | strategy, parameter, and run-configuration identity |
+| `reproducibility_level` | strategy preflight tier recorded with the run |
+| `execution_mode`, `elapsed_sec`, `pulse_count` | execution telemetry |
+| `persist_features`, `feature_cache_hits`, `feature_cache_misses` | compact feature-engine telemetry |
+| `error_msg` | failure diagnostic for non-completed runs |
+
 ``` r
-ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
+comparison <- ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
+comparison
 #> # ledgr comparison
 #> # A tibble: 2 x 9
 #>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
@@ -209,6 +242,43 @@ ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
 Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have
 fills but no closed trades yet, in which case win rate is not defined.
+
+The printed comparison formats some columns for reading. Programmatic
+code gets raw numeric columns from the tibble:
+
+``` r
+comparison |>
+  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)
+#> # ledgr comparison
+#> # A tibble: 2 x 6
+#>   run_id       final_equity total_return sharpe_ratio max_drawdown n_trades
+#>   <chr>               <dbl> <chr>               <dbl> <chr>           <int>
+#> 1 trend_qty_5        10042. +0.4%               0.838 -0.5%              12
+#> 2 trend_qty_15       10125. +1.3%               0.851 -1.5%              12
+#>
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
+```
+
+After selecting a run, reopen it and inspect the underlying result
+tables rather than parsing the printed comparison:
+
+``` r
+best_run_id <- comparison |>
+  arrange(desc(total_return)) |>
+  pull(run_id) |>
+  first()
+
+best_bt <- ledgr_run_open(snapshot, best_run_id)
+tail(ledgr_results(best_bt, what = "equity"), 3)
+#> # A tibble: 3 x 6
+#>   ts_utc     equity   cash positions_value running_max drawdown
+#>   <date>      <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
+#> 1 2019-06-26 10125. 10125.               0      10201. -0.00743
+#> 2 2019-06-27 10125. 10125.               0      10201. -0.00743
+#> 3 2019-06-28 10125. 10125.               0      10201. -0.00743
+close(best_bt)
+```
 
 ## Inspect Stored Strategy Source
 
@@ -262,6 +332,33 @@ function object. Legacy/pre-provenance runs remain inspectable through
 `ledgr_run_info()` and stored result tables, but their strategy function
 cannot be recovered from provenance alone.
 
+When a run ID is missing, store lookup helpers fail with class
+`ledgr_run_not_found`:
+
+``` r
+ledgr_run_info(snapshot, "missing_run")
+```
+
+Trusted recovery can be used to rerun a stored strategy only after you
+have decided that evaluating the stored source is acceptable:
+
+``` r
+recovered <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = TRUE)
+
+rerun_exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = recovered$strategy_function,
+  features = features,
+  opening = ledgr_opening(cash = 10000)
+)
+
+ledgr_run(
+  rerun_exp,
+  params = recovered$strategy_params,
+  run_id = "trend_qty_5_rerun"
+)
+```
+
 ## Reopen A Completed Run In A Later Session
 
 `ledgr_run_open()` reconstructs a completed run handle from stored
@@ -303,6 +400,11 @@ close(reopened)
 Only completed runs can be reopened. Failed or incomplete runs remain
 inspectable through `ledgr_run_info()`.
 
+Store-level helpers such as `ledgr_run_info()`, `ledgr_run_list()`, and
+`ledgr_compare_runs()` use the snapshot handle and remain available
+after a completed run handle is closed. Result-table helpers such as
+`ledgr_results()` need a live or reopened backtest handle.
+
 ## Archive Without Deleting
 
 ``` r
@@ -324,10 +426,12 @@ Archiving hides a run from default listings without deleting artifacts.
 
 ## Bridge A Low-Level CSV Import
 
-The high-level CSV helper above is the normal path. The lower-level path
-is useful when you want to create the snapshot row, import one or more
-CSV files, inspect the sealed metadata, and then load the sealed
-artifact in a separate step.
+This is advanced import material. The high-level CSV helper above is the
+normal path. The lower-level path is useful when you want to create the
+snapshot row, import one or more CSV files, inspect the sealed metadata,
+and then load the sealed artifact in a separate step. A future article,
+“Data Input And Snapshot Creation”, may move this bridge out of the
+store workflow.
 
 The order is important:
 
@@ -426,6 +530,23 @@ tail(ledgr_results(csv_bt, what = "equity"), 3)
 #> 3 2019-01-15  9996. 9909.            87.0       10000 -0.000445
 ```
 
+## Current Feature Persistence Boundary
+
+Run metadata records whether feature persistence was enabled, and pulse
+inspection lets you view registered feature values at one decision time.
+Public feature inspection in v0.1.7.9 is intentionally scoped to feature
+contracts, warmup feasibility, and pulse-time feature views:
+
+- `ledgr_feature_contracts(features)` shows declared feature
+  requirements;
+- `ledgr_feature_contract_check(snapshot, features)` checks whether
+  those requirements are achievable in a sealed snapshot;
+- `ledgr_pulse_snapshot()` plus `ledgr_pulse_features()` or
+  `ledgr_pulse_wide()` inspects one pulse.
+
+A full persisted feature-series retrieval API is deferred to the v0.1.8
+precompute and sweep-result design.
+
 `ledgr_run()` and `ledgr_run_open()` return live handles for durable run
 artifacts. The artifacts are already durable when a run completes, and
 ordinary result inspection opens and closes read connections per
@@ -436,6 +557,7 @@ snapshot handles when the workflow is finished.
 ``` r
 close(bt_small)
 close(bt_large)
+close(csv_bt)
 ledgr_snapshot_close(csv_snapshot)
 ledgr_snapshot_close(snapshot)
 unlink(csv_bars_path)

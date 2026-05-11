@@ -270,6 +270,26 @@ summary(bt)
 #>   Time in Market:      20.00%
 ```
 
+`summary(bt)` is a print-oriented view. It returns the backtest handle
+invisibly, not a metrics object. Use `ledgr_compute_metrics()` for
+scripted workflows:
+
+``` r
+metrics <- ledgr_compute_metrics(bt)
+metrics[c("total_return", "sharpe_ratio", "n_trades", "win_rate")]
+#> $total_return
+#> [1] 0.004
+#>
+#> $sharpe_ratio
+#> [1] 7.937254
+#>
+#> $n_trades
+#> [1] 1
+#>
+#> $win_rate
+#> [1] 1
+```
+
 ## Zero Trades Can Be Correct
 
 A flat strategy produces no fills and no closed trades. The result

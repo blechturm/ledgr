@@ -3,6 +3,8 @@ Custom Indicators And External Features
 
 ``` r
 library(ledgr)
+library(dplyr)
+data("ledgr_demo_bars", package = "ledgr")
 ```
 
 Custom indicators are ledgr’s extension point for derived market data.
@@ -21,7 +23,7 @@ are:
 
 | Field | Meaning |
 |----|----|
-| `id` | Stable feature ID used as the `name` in `ctx$feature(instrument_id, name)`. |
+| `id` | Stable feature ID used in `ctx$feature(instrument_id, feature_id)`. |
 | `fn` | Scalar function for one bounded historical window. |
 | `series_fn` | Optional vectorized function for one instrument’s full bar series. |
 | `requires_bars` | Minimum lookback requirement for the indicator definition. |
@@ -60,7 +62,10 @@ implementation for most custom features.
 ## Vectorized Indicators
 
 `series_fn` is the fast path for indicators that are naturally computed
-over a whole series:
+over a whole series. When both `fn` and `series_fn` are supplied, the
+engine uses `series_fn` for full-series feature computation and keeps
+`fn` as the scalar definition for the same feature. They should be
+equivalent after warmup.
 
 ``` r
 sma_3_custom <- ledgr_indicator(
@@ -90,6 +95,10 @@ The `series_fn(bars, params)` contract is strict:
 - output position `i` belongs to input row `i`;
 - warmup rows before `stable_after` are normalized to `NA_real_`;
 - post-warmup `NA`, `NaN`, and infinite values are errors.
+
+The example uses `sides = 1`, so row `i` is computed from row `i` and
+earlier rows only. That is the causal alignment a vectorized feature
+must preserve.
 
 Output validation proves shape and value validity. It does not prove
 causal correctness. Because `series_fn` receives the full bar series, a
@@ -190,7 +199,35 @@ Custom indicators are registered with the experiment just like built-in
 indicators:
 
 ``` r
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(
+      ts_utc,
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-02-28")
+    )
+  )
+
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  snapshot_id = paste0("custom-indicators-", Sys.getpid())
+)
+
 features <- list(range_3)
+
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    value <- ctx$feature(id, "range_3")
+    if (is.finite(value) && value < params$max_range) {
+      targets[id] <- params$qty
+    }
+  }
+
+  targets
+}
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
@@ -200,23 +237,13 @@ exp <- ledgr_experiment(
 )
 
 ledgr_feature_id(features)
+#> [1] "range_3"
 ```
 
-Inside a strategy, read the exact feature ID from the pulse context:
-
-``` r
-strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  value <- ctx$feature("AAA", "range_3")
-  if (is.finite(value) && value < params$max_range) {
-    targets["AAA"] <- params$qty
-  }
-  targets
-}
-```
-
-Unknown feature IDs fail loudly. Warmup for a known feature is
-represented by `NA_real_`.
+Inside the strategy, `ctx$feature(id, "range_3")` reads the exact
+feature ID from the pulse context for one instrument. Unknown feature
+IDs fail loudly. Warmup for a known feature is represented by
+`NA_real_`.
 
 ## What To Remember
 

@@ -73,6 +73,20 @@ Use aliases when you write strategy logic with `ctx$features()`. Use feature IDs
 when you need the explicit engine contract, for example with `ctx$feature()` or
 when inspecting stored feature metadata.
 
+Feature objects appear in three related places:
+
+| Surface | Accepted feature shape | How names are used |
+|---|---|---|
+| `ledgr_experiment(features = ...)` | indicator, list, named list, feature map, or `function(params)` factory | registers feature definitions for the run |
+| `ledgr_feature_contracts()` / `ledgr_feature_contract_check()` | static indicator, list, named list, or feature map | reports aliases and engine IDs; factories must be materialized first |
+| `ledgr_pulse_snapshot(features = ...)` | static list or feature map | computes pulse-known values for inspection |
+| `ctx$feature(id, feature_id)` | engine feature ID string | reads one scalar value by exact ID |
+| `ctx$features(id, feature_map)` | feature map | returns a named vector keyed by alias |
+
+Lower-level and legacy helpers may be narrower. The canonical workflow is:
+register features on `ledgr_experiment()`, then read pulse-known values through
+`ctx$feature()` or `ctx$features()` inside the strategy.
+
 The same idea works for crossover rules. An SMA crossover registers two
 separate indicators: one short moving average and one long moving average. The
 economic meaning is "fast trend above slow trend" rather than "close above one
@@ -361,6 +375,25 @@ BBands, and MACD features. The examples produce IDs such as `return_5`,
 `ttr_rsi_14`, `ttr_bbands_20_up`,
 `ttr_macd_12_26_9_false_macd`, and
 `ttr_macd_12_26_9_false_signal`.
+
+## Native RSI
+
+ledgr also includes a native RSI helper. It does not require TTR and follows the
+same ID and warmup contract as other built-in indicators:
+
+```{r native-rsi-contract}
+native_rsi_features <- ledgr_feature_map(
+  rsi_14 = ledgr_ind_rsi(14)
+)
+
+ledgr_feature_contracts(native_rsi_features)
+ledgr_feature_id(native_rsi_features)
+```
+
+The native RSI feature ID is `rsi_14`. The TTR-backed RSI feature ID above is
+`ttr_rsi_14`. Those are different feature definitions and should not be treated
+as interchangeable without checking that their calculation and warmup behavior
+match your research intent.
 
 RSI is a common mean-reversion input. One compact rule is: buy when RSI is below
 30, then return to flat when the condition is no longer true. The experiment

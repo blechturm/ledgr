@@ -244,6 +244,15 @@ metrics, VaR, and tail-risk metrics.
 summary(bt)
 ```
 
+`summary(bt)` is a print-oriented view. It returns the backtest handle
+invisibly, not a metrics object. Use `ledgr_compute_metrics()` for scripted
+workflows:
+
+```{r metric-object}
+metrics <- ledgr_compute_metrics(bt)
+metrics[c("total_return", "sharpe_ratio", "n_trades", "win_rate")]
+```
+
 ## Zero Trades Can Be Correct
 
 A flat strategy produces no fills and no closed trades. The result tables still

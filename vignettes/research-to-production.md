@@ -104,8 +104,10 @@ broker adapter.
 The device maintains its own ledger, appending live fills to the same
 schema the backtest used. If the device restarts,
 `ledgr_state_reconstruct()` rebuilds current positions and cash from the
-ledger events. No state is held in memory across restarts. No
-reconciliation step is needed. The ledger is the state.
+ledger events. No in-memory state is trusted across restarts. The ledger
+reconstructs ledgr's expected state. In paper and live modes, that
+expected state must still be reconciled against broker-reported orders,
+positions, cash, and fills before trading resumes.
 
 This makes the deployment target simpler than traditional production
 systems. There is no separate database, no separate execution engine, no

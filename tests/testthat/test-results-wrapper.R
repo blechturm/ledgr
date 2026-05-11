@@ -30,5 +30,14 @@ testthat::test_that("ledgr_results delegates to tibble::as_tibble for supported 
       testthat::expect_s3_class(tibble::as_tibble(result)$ts_utc, "POSIXct")
     }
   }
-  testthat::expect_error(ledgr_results(bt, what = "positions"))
+  testthat::expect_error(
+    ledgr_results(bt, what = "metrics"),
+    "ledgr_compute_metrics\\(bt\\)",
+    class = "ledgr_invalid_result_table"
+  )
+  testthat::expect_error(
+    ledgr_results(bt, what = "positions"),
+    "Unknown ledgr result table `positions`",
+    class = "ledgr_invalid_result_table"
+  )
 })

@@ -101,6 +101,7 @@ reference:
       - close.ledgr_indicator_dev
   - title: Strategy Development
     contents:
+      - ledgr_strategy_context
       - ledgr_pulse_snapshot
       - print.ledgr_pulse_context
       - close.ledgr_pulse_context
