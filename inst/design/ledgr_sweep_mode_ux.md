@@ -20,6 +20,75 @@ Sweep produces a ranked summary. The user picks candidates from it and
 commits them deliberately with `ledgr_run()`. Sweep results are never
 auto-promoted to the experiment store.
 
+## Evaluation Discipline
+
+Sweep mode makes parameter selection fast and easy. That creates a second
+leakage risk that is distinct from no-lookahead strategy execution:
+
+```text
+full snapshot -> sweep -> pick best params -> ledgr_run() on the same full
+snapshot -> report the committed run
+```
+
+That workflow produces a legitimate ledgr artifact, but it is still an
+in-sample artifact. The provenance trail records what ran; it does not prove
+that the selected parameters were evaluated on data held out from development.
+
+The intended sweep discipline is:
+
+```text
+source bars
+  -> train snapshot
+  -> test snapshot
+  -> sweep on train snapshot
+  -> persist selected candidate on train snapshot
+  -> evaluate locked params on test snapshot
+```
+
+The first v0.1.8 sweep documentation must teach this as the normal promotion
+path. Sweep is for exploration. A held-out snapshot is for evaluation.
+
+### Future Split-Snapshot Helper
+
+A future helper may make the convention explicit:
+
+```r
+splits <- ledgr_snapshot_split(
+  bars,
+  split_date = "2020-01-01",
+  train_snapshot_id = "momentum_train",
+  test_snapshot_id = "momentum_test",
+  db_path = "research/momentum.duckdb"
+)
+
+train_snapshot <- splits$train
+test_snapshot <- splits$test
+```
+
+The exact surface is intentionally not locked here. The minimum design intent
+is:
+
+- derive both snapshots from the same source bars;
+- seal both snapshots independently;
+- preserve snapshot provenance and parent/source metadata where possible;
+- make the train/test role visible in snapshot metadata or run provenance;
+- keep the promoted test run tied to locked params selected before evaluation.
+
+This helper is not part of v0.1.7.9 and is not required for the first sweep
+implementation. Users can already create train and test snapshots manually by
+filtering bars before snapshot creation. The helper is a UX layer around that
+discipline.
+
+### Walk-Forward Deferred
+
+Walk-forward analysis belongs after sweep mode exists. It depends on the sweep
+fold core, parameter-grid execution, feature precomputation, and a clear result
+shape for repeated train/evaluate windows.
+
+v0.1.8 should not ship a walk-forward API. It should document the simpler
+train/sweep/evaluate workflow first and leave rolling or expanding
+walk-forward analysis for a later milestone.
+
 ---
 
 ## v0.1.7 API Surface

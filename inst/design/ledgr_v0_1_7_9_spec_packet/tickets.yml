@@ -1,0 +1,283 @@
+version: "0.1.7.9-strategy-author-ergonomics"
+source: "v0_1_7_9_tickets.md"
+tickets:
+  - id: LDG-1901
+    title: "Scope, auditr Routing, And Maintainer Decisions"
+    status: done
+    priority: P0
+    dependencies: []
+    tests:
+      - "documentation/routing review"
+      - "scope grep for forbidden API expansion"
+    classification:
+      risk_level: release-critical
+      implementation_tier: L
+      review_tier: M
+      classification_reason: >
+        Scope routing determines which auditr findings become implementation work
+        and prevents v0.1.7.9 from expanding into sweep, train/test split
+        helpers, or feature-retrieval APIs.
+      invariants_at_risk:
+        - release scope discipline
+        - auditr evidence routing
+        - roadmap sequencing
+      required_context:
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
+        - inst/design/ledgr_v0_1_7_9_spec_packet/cycle_retrospective.md
+        - inst/design/ledgr_v0_1_7_9_spec_packet/ledgr_triage_report.md
+        - inst/design/ledgr_roadmap.md
+      tests_required:
+        - documentation/routing review
+      escalation_triggers:
+        - auditr evidence reveals a confirmed runtime defect outside current scope
+        - a deferred API is required to satisfy a v0.1.8 blocker
+      forbidden_actions:
+        - implementing runtime changes
+        - adding ledgr APIs for auditr harness issues
+        - promoting unclear auditr rows without raw evidence
+
+  - id: LDG-1902
+    title: "Feature Contract Feasibility Helper"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1901]
+    tests:
+      - "tests/testthat/test-feature-inspection.R"
+      - "tests/testthat/test-documentation-contracts.R"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The helper introduces a new exported inspection API over sealed snapshot
+        data and feature contracts, and it must not weaken snapshot immutability
+        or feature-generation semantics.
+      invariants_at_risk:
+        - sealed snapshot immutability
+        - feature contract semantics
+        - warmup diagnostics accuracy
+        - no feature computation in inspection helper
+      required_context:
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
+        - inst/design/contracts.md
+        - R/feature-inspection.R
+        - R/snapshots-info.R
+        - tests/testthat/test-feature-inspection.R
+      tests_required:
+        - tests/testthat/test-feature-inspection.R
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - feature factories require params-aware inspection to be useful
+        - snapshot bar counts cannot be queried without changing snapshot APIs
+        - feature-map alias semantics conflict with existing feature contracts
+      forbidden_actions:
+        - mutating sealed snapshots
+        - computing or persisting feature values
+        - adding persisted feature-series retrieval
+        - silently accepting feature factories without concrete params
+
+  - id: LDG-1903
+    title: "`select_top_n()` Empty-Selection Semantics"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1901]
+    tests:
+      - "tests/testthat/test-strategy-reference.R"
+      - "tests/testthat/test-documentation-contracts.R"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        This changes strategy-helper behavior used inside user strategy functions
+        and must preserve the target-vector contract and helper-pipeline semantics.
+      invariants_at_risk:
+        - strategy helper pipeline behavior
+        - full-universe target construction
+        - no silent missing-target treatment
+      required_context:
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
+        - R/strategy-helpers.R
+        - tests/testthat/test-strategy-reference.R
+        - vignettes/strategy-development.Rmd
+      tests_required:
+        - tests/testthat/test-strategy-reference.R
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - empty selection cannot preserve universe without changing helper classes
+        - documented strategies depend on the old warning path
+        - downstream helpers produce partial or unnamed targets
+      forbidden_actions:
+        - treating missing strategy targets as zero
+        - changing the strategy function signature
+        - changing fill or execution semantics
+
+  - id: LDG-1904
+    title: "Strategy Context, Feature Map, Warmup, And Custom Indicator Docs"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1902, LDG-1903]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "targeted vignette render checks"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        These docs teach the user-facing strategy-author contract. Inaccurate
+        wording can create feature leakage, wrong feature registration, or
+        incompatible helper usage.
+      invariants_at_risk:
+        - feature ID contract
+        - feature-map alias semantics
+        - pulse-context no-lookahead model
+        - custom indicator determinism
+        - target sizing semantics
+      required_context:
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
+        - vignettes/strategy-development.Rmd
+        - vignettes/indicators.Rmd
+        - vignettes/custom-indicators.Rmd
+        - R/feature-map.R
+        - R/feature-inspection.R
+        - R/pulse-context.R
+        - R/indicator_dev.R
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+      escalation_triggers:
+        - feature-map compatibility requires nontrivial runtime normalization
+        - custom indicator docs reveal behavior inconsistent with implementation
+        - raw sizing formula conflicts with target_rebalance tests
+      forbidden_actions:
+        - implementing ctx$all_features()
+        - implementing sweep/precompute APIs
+        - claiming ledgr certifies custom series_fn causal correctness
+
+  - id: LDG-1905
+    title: "Result, Store, Snapshot, Metrics, And Targeted Message Polish"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1901]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "targeted tests for changed runtime messages/classes"
+    classification:
+      risk_level: high
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        Result, metric, store, and snapshot docs are central to ledgr's
+        auditability. Runtime-message changes must stay narrow and avoid
+        changing behavior.
+      invariants_at_risk:
+        - result table semantics
+        - metric contract documentation
+        - snapshot lifecycle clarity
+        - strategy provenance trust boundary
+        - no persisted feature retrieval in v0.1.7.9
+      required_context:
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
+        - vignettes/experiment-store.Rmd
+        - vignettes/metrics-and-accounting.Rmd
+        - vignettes/research-to-production.Rmd
+        - R/run-store.R
+        - R/backtest.R
+        - R/snapshots-info.R
+        - R/snapshot_adapters.R
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+        - targeted tests for changed error messages
+      escalation_triggers:
+        - docs require adding feature-series retrieval
+        - snapshot metadata docs reveal schema inconsistency
+        - runtime-message improvements require behavior changes
+      forbidden_actions:
+        - adding ledgr_results(..., what = "features")
+        - changing metric definitions
+        - changing snapshot seal semantics
+        - implementing data-input article split unless explicitly promoted
+
+  - id: LDG-1906
+    title: "Public Site Polish, Article Order, And Repo Hygiene"
+    status: todo
+    priority: P2
+    dependencies: [LDG-1901]
+    tests:
+      - "tests/testthat/test-documentation-contracts.R"
+      - "pkgdown build"
+    classification:
+      risk_level: medium
+      implementation_tier: M
+      review_tier: M
+      classification_reason: >
+        Public site polish affects first impressions and discoverability, but
+        should not change runtime semantics.
+      invariants_at_risk:
+        - public documentation accuracy
+        - package positioning
+        - release hygiene
+      required_context:
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
+        - _pkgdown.yml
+        - README.md
+        - vignettes/articles/who-ledgr-is-for.Rmd
+        - vignettes/articles/why-r.Rmd
+        - vignettes/leakage.Rmd
+        - vignettes/reproducibility.Rmd
+      tests_required:
+        - tests/testthat/test-documentation-contracts.R
+        - pkgdown build
+      escalation_triggers:
+        - pkgdown ordering conflicts with generated site structure
+        - local path output comes from a print method rather than rendered examples
+        - removing Rprof.out exposes broader ignore hygiene issues
+      forbidden_actions:
+        - changing runtime behavior for site polish
+        - removing tidyverse-adjacent examples solely for agent convenience
+        - adding new concept articles without maintainer approval
+
+  - id: LDG-1907
+    title: "v0.1.7.9 Release Gate, NEWS, And Packet Finalization"
+    status: todo
+    priority: P0
+    dependencies: [LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906]
+    tests:
+      - "targeted tests"
+      - "tests/testthat/test-documentation-contracts.R"
+      - "full testthat"
+      - "R CMD check"
+      - "pkgdown build"
+      - "CI"
+    classification:
+      risk_level: release-critical
+      implementation_tier: M
+      review_tier: H
+      classification_reason: >
+        The release gate validates all scoped docs/API work and ensures deferred
+        sweep-related features did not leak into v0.1.7.9.
+      invariants_at_risk:
+        - release correctness
+        - CI health
+        - documentation contract consistency
+        - deferred scope boundaries
+      required_context:
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_spec.md
+        - inst/design/ledgr_v0_1_7_9_spec_packet/v0_1_7_9_tickets.md
+        - inst/design/ledgr_v0_1_7_9_spec_packet/tickets.yml
+        - NEWS.md
+        - DESCRIPTION
+      tests_required:
+        - targeted tests
+        - tests/testthat/test-documentation-contracts.R
+        - full testthat
+        - R CMD check
+        - pkgdown build
+      escalation_triggers:
+        - release gate reveals scope creep into v0.1.8 work
+        - CI failure requires code changes outside completed tickets
+        - generated artifacts are produced by verification
+      forbidden_actions:
+        - merging with failing CI
+        - committing generated local artifacts
+        - adding release-scope features during the gate without a ticket
