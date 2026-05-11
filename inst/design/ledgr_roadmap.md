@@ -1615,6 +1615,9 @@ prerequisite for the v0.1.8 spec cut, not for the current release cycle.
   warmup behaviour, fee model, long-only enforcement, and random draws
 - Parity is enforced by CI, not by convention
 - Both functions call the same internal fold core; no copied runner code
+- `write_persistent_telemetry` and `fail_run` do not capture the DuckDB
+  connection from fold scope; telemetry travels through the output-handler
+  path, not `.ledgr_telemetry_registry`
 - `ledgr_precompute_features()` is implemented, typed, and validates against
   the requesting sweep call
 - Indicator-parameter sweeps are supported through `features = function(params)`;
@@ -1635,7 +1638,9 @@ prerequisite for the v0.1.8 spec cut, not for the current release cycle.
 - Single-process sweep is documented with a working example
 - Recommended parallel stack is documented separately as optional guidance;
   not part of first-release user docs
-- Default seed derivation from grid label is documented and tested
+- Default seed derivation from grid label is documented and tested; the spec
+  states explicitly whether derivation happens inside the fold core, in the
+  sweep dispatcher before dispatch, or in the output handler
 - `ctx$seed` is available at every pulse in both run and sweep modes
 - Explicit `seed = NA` opt-out is documented with a clear warning about
   non-determinism
