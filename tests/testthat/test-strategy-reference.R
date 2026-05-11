@@ -50,18 +50,44 @@ testthat::test_that("select_top_n handles NA, partial, empty, and ties", {
   testthat::expect_identical(unclass(partial), c(BBB = TRUE, AAA = TRUE, CCC = FALSE, DDD = TRUE))
 
   empty_signal <- ledgr_signal(c(AAA = NA_real_, BBB = NA_real_), origin = "return_60")
-  testthat::expect_warning(
-    empty <- select_top_n(empty_signal, 1),
-    regexp = "return_60.*non-missing 0/2",
-    class = "ledgr_empty_selection"
+  testthat::expect_silent(
+    empty <- select_top_n(empty_signal, 1)
   )
+  testthat::expect_s3_class(empty, "ledgr_empty_selection")
   testthat::expect_s3_class(empty, "ledgr_selection")
   testthat::expect_identical(length(empty), 0L)
+  testthat::expect_identical(attr(empty, "universe"), c("AAA", "BBB"))
+  testthat::expect_identical(attr(empty, "origin"), "return_60")
 
-  testthat::expect_silent(
-    suppressed_empty <- suppressWarnings(select_top_n(empty_signal, 1), classes = "ledgr_empty_selection")
+  weights <- weight_equal(empty)
+  testthat::expect_s3_class(weights, "ledgr_weights")
+  testthat::expect_identical(length(weights), 0L)
+  testthat::expect_identical(attr(weights, "universe"), c("AAA", "BBB"))
+  testthat::expect_identical(attr(weights, "origin"), "return_60")
+
+  ts <- ledgr_utc("2020-01-03")
+  bars <- data.frame(
+    ts_utc = rep(ts, 2),
+    instrument_id = c("AAA", "BBB"),
+    open = c(100, 50),
+    high = c(100, 50),
+    low = c(100, 50),
+    close = c(100, 50),
+    volume = c(1000, 1000)
   )
-  testthat::expect_identical(length(suppressed_empty), 0L)
+  ctx <- ledgr:::ledgr_pulse_context(
+    "helper-run",
+    ts,
+    c("AAA", "BBB"),
+    bars,
+    cash = 1000,
+    equity = 1000
+  )
+  target <- target_rebalance(weights, ctx, equity_fraction = 0.5)
+  testthat::expect_s3_class(target, "ledgr_target")
+  testthat::expect_identical(as.numeric(target), c(0, 0))
+  testthat::expect_identical(names(target), c("AAA", "BBB"))
+  testthat::expect_identical(attr(target, "origin"), "return_60")
 })
 
 testthat::test_that("weight_equal creates long-only equal weights", {
@@ -74,6 +100,7 @@ testthat::test_that("weight_equal creates long-only equal weights", {
   empty <- weight_equal(ledgr_selection(c(AAA = FALSE, BBB = FALSE)))
   testthat::expect_s3_class(empty, "ledgr_weights")
   testthat::expect_identical(length(empty), 0L)
+  testthat::expect_identical(attr(empty, "universe"), c("AAA", "BBB"))
 })
 
 testthat::test_that("target_rebalance builds full-universe targets and rejects invalid weights", {
@@ -141,10 +168,7 @@ testthat::test_that("reference helper pipeline runs through ledgr_run", {
 
   strategy <- function(ctx, params) {
     signal <- signal_return(ctx, lookback = params$lookback)
-    selection <- suppressWarnings(
-      select_top_n(signal, params$n),
-      classes = "ledgr_empty_selection"
-    )
+    selection <- select_top_n(signal, params$n)
     weights <- weight_equal(selection)
     target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
   }

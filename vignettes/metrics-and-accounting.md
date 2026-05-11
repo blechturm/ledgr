@@ -415,10 +415,10 @@ Use this checklist before changing the strategy:
     is still `NA` for every instrument near the end of the sample, the
     issue is no longer ordinary early warmup. Check the lookback length,
     sample length, universe, and feature registration.
-6.  If the strategy suppresses `ledgr_empty_selection` warnings during a
-    full run, rerun the same helper pipeline on the diagnostic pulse
-    without suppression. The warning message reports the signal origin
-    and non-missing count.
+6.  If the helper pipeline returns a `ledgr_empty_selection` on a late
+    diagnostic pulse, inspect the signal values directly. Ordinary early
+    warmup should have passed by then; a late all-missing signal usually
+    points to sample length, universe, or feature-registration issues.
 
 ### Three Warmup-Adjacent Cases
 

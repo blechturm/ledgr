@@ -12,20 +12,24 @@ select_top_n(signal, n)
 \item{n}{Number of instruments to select.}
 }
 \value{
-A \code{ledgr_selection} object.
+A \code{ledgr_selection} object. When all signal values are missing, the
+object also inherits from \code{ledgr_empty_selection}.
 }
 \description{
 \code{select_top_n()} selects the highest finite/non-missing signal values.
 Missing values are ignored. Ties are broken deterministically by instrument
-ID in alphabetical order. If no values are usable, the warning includes the
-signal origin and non-missing count so warmup can be distinguished from a
-signal that never becomes usable.
+ID in alphabetical order. If no values are usable, the function returns a
+classed empty selection without warning. The empty selection carries the
+original universe and signal origin so it can flow through \code{weight_equal()}
+and \code{target_rebalance()} to a flat full-universe target.
 }
 \details{
-Warning classes:
+Selection and warning classes:
 \itemize{
-\item \code{ledgr_empty_selection} when every signal value is missing;
-\item \code{ledgr_partial_selection} when fewer than \code{n} finite values are available.
+\item \code{ledgr_empty_selection} for the classed object returned when every signal
+value is missing;
+\item \code{ledgr_partial_selection} for the warning emitted when fewer than \code{n}
+finite values are available.
 }
 }
 \section{Articles}{

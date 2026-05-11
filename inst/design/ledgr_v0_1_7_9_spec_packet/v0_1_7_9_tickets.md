@@ -254,7 +254,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1 day
 **Dependencies:** LDG-1901
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Change the all-missing/no-usable-signal path in `select_top_n()` from a warning
@@ -274,27 +274,37 @@ classed empty selection that flows through `weight_equal()` and
    warmup pattern where appropriate.
 
 **Acceptance Criteria:**
-- [ ] All-missing signals return an object inheriting from both
+- [x] All-missing signals return an object inheriting from both
       `ledgr_empty_selection` and `ledgr_selection`.
-- [ ] No warning is emitted for the all-missing path.
-- [ ] Empty selections preserve the full original universe for downstream target
+- [x] No warning is emitted for the all-missing path.
+- [x] Empty selections preserve the full original universe for downstream target
       construction.
-- [ ] `weight_equal(select_top_n(empty_signal, n))` returns empty weights with
+- [x] `weight_equal(select_top_n(empty_signal, n))` returns empty weights with
       universe metadata preserved.
-- [ ] `target_rebalance(weight_equal(select_top_n(empty_signal, n)), ctx, ...)`
+- [x] `target_rebalance(weight_equal(select_top_n(empty_signal, n)), ctx, ...)`
       returns a flat full-universe target.
-- [ ] Partial-selection warnings remain deterministic unless explicitly changed
+- [x] Partial-selection warnings remain deterministic unless explicitly changed
       by raw evidence.
-- [ ] Strategy-development docs no longer teach warning suppression as the
+- [x] Strategy-development docs no longer teach warning suppression as the
       expected warmup path.
 
 **Implementation Notes:**
-- Pending.
+- Updated `select_top_n()` so all-missing signals return a
+  `ledgr_empty_selection`/`ledgr_selection` object without warning.
+- Preserved signal origin and full-universe metadata on the empty selection so
+  `weight_equal()` and `target_rebalance()` produce a flat full-universe target.
+- Kept deterministic tie-breaking and `ledgr_partial_selection` warning
+  behavior unchanged.
+- Updated helper tests, reference docs, and strategy/metrics vignette prose to
+  remove the normal warmup `suppressWarnings()` pattern.
+- Re-rendered `strategy-development.md` and `metrics-and-accounting.md`.
 
 **Verification:**
 ```text
-targeted strategy-helper tests
-documentation contract tests
+PASS: testthat::test_file("tests/testthat/test-strategy-reference.R", reporter = "summary")
+PASS: testthat::test_file("tests/testthat/test-documentation-contracts.R", reporter = "summary")
+PASS: rmarkdown::render("vignettes/strategy-development.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: rmarkdown::render("vignettes/metrics-and-accounting.Rmd", output_format = "github_document", quiet = TRUE)
 ```
 
 **Test Requirements:**

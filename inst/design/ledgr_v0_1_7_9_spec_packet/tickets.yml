@@ -78,7 +78,7 @@ tickets:
 
   - id: LDG-1903
     title: "`select_top_n()` Empty-Selection Semantics"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1901]
     tests:

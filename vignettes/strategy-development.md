@@ -18,11 +18,13 @@ ledgr shows the strategy only what could have been known at that time.
 The strategy answers with desired holdings. ledgr records the decision,
 applies the fill model, and moves to the next pulse.
 
-This matters because leakage is easy. If a strategy accidentally sees
-tomorrow’s price while deciding today’s trade, the backtest can look
-profitable for the wrong reason. ledgr’s strategy interface is built to
-make that mistake harder: your strategy receives one pulse context, not
-the whole future.
+This matters because leakage is easy. If future information enters a
+historical decision, the backtest can look profitable for the wrong
+reason. ledgr’s strategy interface is built to make one common mistake
+harder: your strategy receives one pulse context, not the whole future.
+For the broader leakage model, including feature-construction leakage
+and remaining user responsibilities, see
+`vignette("leakage", package = "ledgr")`.
 
 ## Wrong And Right: Leakage
 
@@ -46,10 +48,10 @@ leaky_signals <- ledgr_demo_bars |>
 
 The ledgr version expresses the rule at one pulse. The strategy can read
 the current bar for the current instrument. Later sections add
-registered features to the same pulse model. The strategy cannot reach
-into the next row of the market-data table. That is the same information
-shape a live trading strategy gets as time passes: each pulse is a new
-slice of the knowable universe.
+registered features to the same pulse model. The strategy has no
+market-data table from which it can casually index tomorrow’s bar. That
+is the same information shape a live trading strategy gets as time
+passes: each pulse is a new slice of the knowable universe.
 
 ``` r
 no_leak_bar_strategy <- function(ctx, params) {
@@ -65,8 +67,9 @@ no_leak_bar_strategy <- function(ctx, params) {
 }
 ```
 
-The ledgr strategy has no object from which it can accidentally read
-tomorrow’s close.
+This removes one common source of leakage, but it does not certify that
+snapshots, feature definitions, event timestamps, universe construction,
+or parameter selection are causally clean.
 
 ## A Strategy That Does Nothing
 
@@ -399,25 +402,22 @@ The same transformations become an ordinary strategy function.
 The full backtest replays every bar, including the earliest warmup
 pulses. During those first pulses, `return_5` is `NA` for every
 instrument because five prior bars do not exist yet. `select_top_n()`
-warns when a signal has no usable values; that warning is useful during
-pulse debugging, but expected during a full run. The strategy suppresses
-that specific warmup noise while still returning an empty selection,
-empty weights, and a flat target.
+treats that all-missing signal as a classed empty selection, not as a
+warning. That object still carries the original universe and signal
+origin. `weight_equal()` turns it into empty weights, and
+`target_rebalance()` turns those weights into a flat full-universe
+target.
 
-The warning exists because an empty selection can mean either “normal
-warmup” or “my signal is broken.” The helper cannot know which one is
-true, so it warns and lets the strategy decide how to handle that case.
-The warning includes the signal origin and non-missing count; if a run
-finishes with zero trades, inspect a late pulse without suppression
-before assuming the empty selection was only early warmup.
+No warning suppression is needed for ordinary early warmup. A
+partial-selection warning can still appear when some signal values are
+usable but fewer than `n` instruments can be selected. If a run finishes
+with zero trades, inspect a late pulse before assuming the empty
+selection was only early warmup.
 
 ``` r
 top_return_strategy <- function(ctx, params) {
   signal <- signal_return(ctx, lookback = params$lookback)
-  selection <- suppressWarnings(
-    select_top_n(signal, n = params$n),
-    classes = "ledgr_empty_selection"
-  )
+  selection <- select_top_n(signal, n = params$n)
 
   weights <- weight_equal(selection)
   target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
@@ -435,11 +435,12 @@ Read it economically:
 No helper registers indicators automatically. The experiment must say
 which features exist.
 
-Class-specific suppression is deliberately narrow: it keeps expected
-warmup noise out of a full run while still allowing unrelated warnings
-to surface. There is no `warn_empty = FALSE` argument in v0.1.7.4; use a
-diagnostic pulse and call `select_top_n()` without suppression when a
-strategy produces no fills or no closed trades.
+The empty-selection path is intentionally an object path rather than a
+condition path. It lets expected warmup and “no signal today” flow
+through the same helper pipeline as an ordinary selection. Diagnostics
+still belong at the pulse level: when a strategy produces no fills or no
+closed trades, inspect a late pulse and confirm whether the feature
+values are usable.
 
 ``` r
 exp <- ledgr_experiment(
@@ -546,6 +547,7 @@ summary(bt_mapped)
 #>
 #> Risk Metrics:
 #>   Volatility (annual): 0.82%
+#>   Sharpe Ratio:        1.523
 #>
 #> Trade Statistics:
 #>   Total Trades:        19
@@ -591,6 +593,7 @@ summary(bt_top_1)
 #>
 #> Risk Metrics:
 #>   Volatility (annual): 2.02%
+#>   Sharpe Ratio:        0.450
 #>
 #> Trade Statistics:
 #>   Total Trades:        24
@@ -656,11 +659,11 @@ bt_top_2 <- exp |>
 
 ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2"))
 #> # ledgr comparison
-#> # A tibble: 2 x 8
-#>   run_id       label final_equity total_return max_drawdown n_trades win_rate
-#>   <chr>        <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 top_return_1 <NA>        10045. +0.5%        -1.1%              24 45.8%
-#> 2 top_return_2 <NA>        10004. +0.0%        -1.1%               7 57.1%
+#> # A tibble: 2 x 9
+#>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
+#>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
+#> 1 top_return_1 <NA>        10045. +0.5%              0.450  -1.1%              24 45.8%
+#> 2 top_return_2 <NA>        10004. +0.0%              0.0661 -1.1%               7 57.1%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -702,12 +705,12 @@ bt_flat <- flat_exp |>
 
 ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2", "flat_baseline"))
 #> # ledgr comparison
-#> # A tibble: 3 x 8
-#>   run_id        label final_equity total_return max_drawdown n_trades win_rate
-#>   <chr>         <chr>        <dbl> <chr>        <chr>           <int> <chr>
-#> 1 top_return_1  <NA>        10045. +0.5%        -1.1%              24 45.8%
-#> 2 top_return_2  <NA>        10004. +0.0%        -1.1%               7 57.1%
-#> 3 flat_baseline <NA>        10000  +0.0%        0.0%                0 <NA>
+#> # A tibble: 3 x 9
+#>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
+#>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
+#> 1 top_return_1 <NA>        10045. +0.5%              0.450  -1.1%              24 45.8%
+#> 2 top_return_2 <NA>        10004. +0.0%              0.0661 -1.1%               7 57.1%
+#> 3 flat_baseli~ <NA>        10000  +0.0%             NA      0.0%                0 <NA>
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -754,15 +757,12 @@ ledgr_extract_strategy(snapshot, "top_return_1", trust = FALSE)
 #> ========================
 #>
 #> Run ID:          top_return_1
-#> Reproducibility: tier_2
-#> Source Hash:     b706d30745a9bbbb0793f14aa6fcc3e74e4b65fb0585e8045fa326fbb00c6316
+#> Reproducibility: tier_1
+#> Source Hash:     a724d2475b8e5f75c6d1d0ba5c1b99e0f33cb1d88f2d93ed261a2772276cc29d
 #> Params Hash:     3caea9cbe019dbfa16b53b9bbeee913bdb2f16e4c6f196e0f5a3c8332cac270c
 #> Hash Verified:   TRUE
 #> Trust:           FALSE
 #> Source Available:TRUE
-#>
-#> Warnings:
-#> - This run is tier_2; recovered source may depend on external state or not be executable by itself.
 ```
 
 Use `trust = TRUE` only when you explicitly trust the experiment store

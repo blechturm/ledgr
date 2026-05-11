@@ -117,8 +117,8 @@ testthat::test_that("helper docs state composition and whole-share target floori
 
   testthat::expect_match(strategy_doc, "Execution semantics begin only at the target stage", fixed = TRUE)
   testthat::expect_match(strategy_doc, "floors to whole shares", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "signal origin and non-missing count", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "There is no `warn_empty = FALSE` argument", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "classed empty selection", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "No warning suppression is needed", fixed = TRUE)
   testthat::expect_match(target_help, "floored to whole numbers", fixed = TRUE)
   testthat::expect_match(target_help, "floor(weight * equity_fraction * equity /", fixed = TRUE)
 
@@ -131,6 +131,7 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(signal_help, "register every concrete \\verb{return_<lookback>} feature before", fixed = TRUE)
   testthat::expect_match(signal_help, "\\code{ledgr_ind_returns(5)}", fixed = TRUE)
   testthat::expect_match(select_help, "\\code{ledgr_empty_selection}", fixed = TRUE)
+  testthat::expect_match(select_help, "without warning", fixed = TRUE)
   testthat::expect_match(select_help, "\\code{ledgr_partial_selection}", fixed = TRUE)
   testthat::expect_match(target_rebalance_help, "\\code{ledgr_invalid_target_price}", fixed = TRUE)
   testthat::expect_match(target_rebalance_help, "\\code{ledgr_negative_weights}", fixed = TRUE)

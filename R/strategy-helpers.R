@@ -30,6 +30,12 @@ ledgr_strategy_helper_validate_equity_fraction <- function(equity_fraction) {
   as.numeric(equity_fraction)
 }
 
+ledgr_strategy_empty_selection <- function(universe, origin = NULL) {
+  selection <- ledgr_selection(logical(), universe = universe, origin = origin)
+  class(selection) <- c("ledgr_empty_selection", class(selection))
+  selection
+}
+
 ledgr_strategy_helper_context_equity <- function(ctx) {
   equity <- ctx$equity
   if (!is.numeric(equity) || length(equity) != 1L || is.na(equity) || !is.finite(equity) || equity < 0) {
@@ -84,17 +90,21 @@ signal_return <- function(ctx, lookback = 20L) {
 #'
 #' `select_top_n()` selects the highest finite/non-missing signal values.
 #' Missing values are ignored. Ties are broken deterministically by instrument
-#' ID in alphabetical order. If no values are usable, the warning includes the
-#' signal origin and non-missing count so warmup can be distinguished from a
-#' signal that never becomes usable.
+#' ID in alphabetical order. If no values are usable, the function returns a
+#' classed empty selection without warning. The empty selection carries the
+#' original universe and signal origin so it can flow through `weight_equal()`
+#' and `target_rebalance()` to a flat full-universe target.
 #'
-#' Warning classes:
-#' - `ledgr_empty_selection` when every signal value is missing;
-#' - `ledgr_partial_selection` when fewer than `n` finite values are available.
+#' Selection and warning classes:
+#' - `ledgr_empty_selection` for the classed object returned when every signal
+#'   value is missing;
+#' - `ledgr_partial_selection` for the warning emitted when fewer than `n`
+#'   finite values are available.
 #'
 #' @param signal A `ledgr_signal` object.
 #' @param n Number of instruments to select.
-#' @return A `ledgr_selection` object.
+#' @return A `ledgr_selection` object. When all signal values are missing, the
+#'   object also inherits from `ledgr_empty_selection`.
 #' @examples
 #' signal <- ledgr_signal(c(AAA = 0.03, BBB = NA, CCC = 0.01), origin = "return_5")
 #' select_top_n(signal, n = 1)
@@ -114,19 +124,7 @@ select_top_n <- function(signal, n) {
   ids <- names(signal)
   available <- !is.na(values)
   if (!any(available)) {
-    origin <- attr(signal, "origin")
-    if (is.null(origin) || is.na(origin) || !nzchar(origin)) {
-      origin <- "<unknown>"
-    }
-    rlang::warn(
-      sprintf(
-        "No available signal values for origin `%s` (non-missing 0/%d); returning an empty selection.",
-        origin,
-        length(ids)
-      ),
-      class = "ledgr_empty_selection"
-    )
-    return(ledgr_selection(logical(), universe = ids, origin = attr(signal, "origin")))
+    return(ledgr_strategy_empty_selection(ids, origin = attr(signal, "origin")))
   }
 
   available_ids <- ids[available]
