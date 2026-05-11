@@ -1098,16 +1098,17 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
   ledger_res <- DBI::dbSendQuery(
     con,
     "
-    SELECT event_seq, ts_utc, instrument_id, side, qty, price, fee, meta_json
+    SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json
     FROM ledger_events
-    WHERE run_id = ? AND event_type IN ('FILL', 'FILL_PARTIAL')
+    WHERE run_id = ?
+      AND event_type IN ('CASHFLOW', 'FILL', 'FILL_PARTIAL')
     ORDER BY event_seq
     ",
     params = list(bt$run_id)
   )
   on.exit(DBI::dbClearResult(ledger_res), add = TRUE)
 
-  fifo <- new.env(parent = emptyenv())
+  lot_state <- ledgr_lot_state()
   fetch_size <- 50000L
 
   repeat {
@@ -1118,10 +1119,37 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
     out_idx <- 0L
 
     for (i in seq_len(nrow(rows))) {
+      event_type <- as.character(rows$event_type[[i]])
       inst <- as.character(rows$instrument_id[[i]])
       side <- as.character(rows$side[[i]])
       qty <- suppressWarnings(as.numeric(rows$qty[[i]]))
       price <- suppressWarnings(as.numeric(rows$price[[i]]))
+      fee <- suppressWarnings(as.numeric(rows$fee[[i]]))
+      meta_raw <- rows$meta_json[[i]]
+      meta_parse_error <- FALSE
+      meta <- NULL
+      if (!is.null(meta_raw) &&
+        !(is.atomic(meta_raw) && length(meta_raw) == 1 && is.na(meta_raw)) &&
+        !(is.character(meta_raw) && length(meta_raw) == 1 && !nzchar(meta_raw))) {
+        meta <- tryCatch(
+          jsonlite::fromJSON(meta_raw, simplifyVector = FALSE),
+          error = function(e) {
+            meta_parse_error <<- TRUE
+            NULL
+          }
+        )
+      }
+
+      if (identical(event_type, "CASHFLOW")) {
+        lot_res <- ledgr_lot_apply_event(
+          lot_state,
+          event_type = event_type,
+          instrument_id = inst,
+          meta = meta
+        )
+        lot_state <- lot_res$state
+        next
+      }
 
       if (is.na(qty) || qty <= 0 || is.na(price)) {
         out_idx <- out_idx + 1L
@@ -1132,7 +1160,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           side = side,
           qty = qty,
           price = price,
-          fee = rows$fee[[i]],
+          fee = fee,
           realized_pnl = NA_real_,
           action = NA_character_,
           stringsAsFactors = FALSE
@@ -1141,11 +1169,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
       }
 
       side_norm <- toupper(side)
-      if (side_norm %in% c("BUY", "COVER", "BUY_TO_COVER")) {
-        direction <- 1L
-      } else if (side_norm %in% c("SELL", "SHORT", "SELL_SHORT")) {
-        direction <- -1L
-      } else {
+      if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
         out_idx <- out_idx + 1L
         out_rows[[out_idx]] <- data.frame(
           event_seq = rows$event_seq[[i]],
@@ -1154,7 +1178,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           side = side,
           qty = qty,
           price = price,
-          fee = rows$fee[[i]],
+          fee = fee,
           realized_pnl = NA_real_,
           action = NA_character_,
           stringsAsFactors = FALSE
@@ -1162,14 +1186,12 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
         next
       }
 
-      key <- inst
-      lots <- if (exists(key, envir = fifo, inherits = FALSE)) {
-        get(key, envir = fifo, inherits = FALSE)
+      lots <- ledgr_lot_get(lot_state, inst)
+      net_pos <- if (length(lots) > 0L) {
+        sum(vapply(lots, function(lot) as.numeric(lot$qty), numeric(1)))
       } else {
-        data.frame(qty = numeric(), price = numeric(), stringsAsFactors = FALSE)
+        0
       }
-
-      net_pos <- if (nrow(lots) > 0) sum(lots$qty) else 0
       if (side_norm == "BUY_TO_COVER" && net_pos >= 0) {
         warning(
           sprintf("[%s:%d] Semantic Violation: BUY_TO_COVER rejected (currently Long)", inst, rows$event_seq[[i]]),
@@ -1183,7 +1205,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           side = side,
           qty = qty,
           price = price,
-          fee = rows$fee[[i]],
+          fee = fee,
           realized_pnl = NA_real_,
           action = "REJECTED",
           stringsAsFactors = FALSE
@@ -1203,7 +1225,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           side = side,
           qty = qty,
           price = price,
-          fee = rows$fee[[i]],
+          fee = fee,
           realized_pnl = NA_real_,
           action = "REJECTED",
           stringsAsFactors = FALSE
@@ -1211,76 +1233,25 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
         next
       }
 
-      remaining <- qty
-      realized_close <- 0
-      compensation <- 0
-      close_qty <- 0
-      open_qty <- 0
+      lot_res <- ledgr_lot_apply_event(
+        lot_state,
+        event_type = event_type,
+        instrument_id = inst,
+        side = side,
+        qty = qty,
+        price = price,
+        fee = fee,
+        meta = meta
+      )
+      lot_state <- lot_res$state
+      close_qty <- lot_res$close_qty
+      open_qty <- lot_res$open_qty
+      realized_close <- lot_res$realized_close
 
-      if (direction > 0) {
-        if (net_pos < 0) {
-          close_qty <- min(remaining, abs(net_pos))
-        }
-      } else if (net_pos > 0) {
-        close_qty <- min(remaining, net_pos)
-      }
-      open_qty <- remaining - close_qty
-
-      if (close_qty > 0) {
-        remaining_close <- close_qty
-        if (direction > 0) {
-          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] < 0) {
-            cover_qty <- min(remaining_close, abs(lots$qty[[1]]))
-            delta <- (lots$price[[1]] - price) * cover_qty
-            y <- delta - compensation
-            t <- realized_close + y
-            compensation <- (t - realized_close) - y
-            realized_close <- t
-            lots$qty[[1]] <- lots$qty[[1]] + cover_qty
-            remaining_close <- remaining_close - cover_qty
-            if (abs(lots$qty[[1]]) < 1e-12) {
-              lots <- lots[-1, , drop = FALSE]
-            }
-          }
-        } else {
-          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] > 0) {
-            cover_qty <- min(remaining_close, lots$qty[[1]])
-            delta <- (price - lots$price[[1]]) * cover_qty
-            y <- delta - compensation
-            t <- realized_close + y
-            compensation <- (t - realized_close) - y
-            realized_close <- t
-            lots$qty[[1]] <- lots$qty[[1]] - cover_qty
-            remaining_close <- remaining_close - cover_qty
-            if (abs(lots$qty[[1]]) < 1e-12) {
-              lots <- lots[-1, , drop = FALSE]
-            }
-          }
-        }
-      }
-
-      if (open_qty > 0) {
-        if (direction > 0) {
-          lots <- rbind(
-            lots,
-            data.frame(qty = open_qty, price = price, stringsAsFactors = FALSE)
-          )
-        } else {
-          lots <- rbind(
-            lots,
-            data.frame(qty = -open_qty, price = price, stringsAsFactors = FALSE)
-          )
-        }
-      }
-
-      assign(key, lots, envir = fifo)
-
-      meta_raw <- rows$meta_json[[i]]
       if (!is.null(meta_raw) &&
         !(is.atomic(meta_raw) && length(meta_raw) == 1 && is.na(meta_raw)) &&
         !(is.character(meta_raw) && length(meta_raw) == 1 && !nzchar(meta_raw))) {
-        meta <- tryCatch(jsonlite::fromJSON(meta_raw, simplifyVector = TRUE), error = function(e) e)
-        if (inherits(meta, "error")) {
+        if (isTRUE(meta_parse_error)) {
           warning("Malformed meta_json for fill; realized_pnl set to NA.", call. = FALSE)
         } else if (!is.null(meta$realized_pnl)) {
           meta_val <- suppressWarnings(as.numeric(meta$realized_pnl))
@@ -1313,7 +1284,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           side = side,
           qty = close_qty,
           price = price,
-          fee = rows$fee[[i]],
+          fee = fee,
           realized_pnl = realized_close,
           action = "CLOSE",
           stringsAsFactors = FALSE
@@ -1328,7 +1299,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           side = side,
           qty = open_qty,
           price = price,
-          fee = rows$fee[[i]],
+          fee = fee,
           realized_pnl = 0,
           action = "OPEN",
           stringsAsFactors = FALSE

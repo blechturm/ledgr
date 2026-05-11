@@ -155,6 +155,74 @@ testthat::test_that("ledgr_run records opening positions as ledger events", {
   testthat::expect_equal(state$cash$cash[[nrow(state$cash)]], 1000)
 })
 
+testthat::test_that("opening position cost basis seeds FIFO accounting", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+    instrument_id = "AAA",
+    open = c(60, 60, 60),
+    high = c(60, 60, 60),
+    low = c(60, 60, 60),
+    close = c(60, 60, 60),
+    volume = c(1000, 1000, 1000),
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) ctx$flat()
+  run_id <- "opening-position-cost-basis-run"
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 50))
+  )
+
+  bt <- ledgr_run(exp, run_id = run_id)
+  on.exit(close(bt), add = TRUE)
+
+  fills <- ledgr_results(bt, what = "fills")
+  testthat::expect_equal(nrow(fills), 1L)
+  testthat::expect_identical(fills$side[[1]], "SELL")
+  testthat::expect_identical(fills$action[[1]], "CLOSE")
+  testthat::expect_equal(fills$realized_pnl[[1]], 10)
+
+  trades <- ledgr_results(bt, what = "trades")
+  testthat::expect_equal(nrow(trades), 1L)
+  testthat::expect_equal(trades$realized_pnl[[1]], 10)
+
+  equity <- ledgr_results(bt, what = "equity")
+  testthat::expect_equal(equity$cash[[nrow(equity)]], 1060)
+  testthat::expect_equal(equity$equity[[nrow(equity)]], 1060)
+
+  metrics <- ledgr_compute_metrics(bt)
+  testthat::expect_identical(metrics$n_trades, 1L)
+  testthat::expect_equal(metrics$win_rate, 1)
+  testthat::expect_equal(metrics$avg_trade, 10)
+
+  cmp <- ledgr_compare_runs(snapshot, run_ids = run_id)
+  testthat::expect_identical(cmp$n_trades, 1L)
+  testthat::expect_equal(cmp$win_rate, 1)
+  testthat::expect_equal(cmp$avg_trade, 10)
+
+  opened <- ledgr_test_open_duckdb(db_path)
+  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+  persisted_equity <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT realized_pnl, unrealized_pnl FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
+    params = list(run_id)
+  )
+  testthat::expect_equal(persisted_equity$unrealized_pnl[[1]], 10)
+  testthat::expect_equal(persisted_equity$realized_pnl[[nrow(persisted_equity)]], 10)
+  testthat::expect_equal(persisted_equity$unrealized_pnl[[nrow(persisted_equity)]], 0)
+
+  rebuilt <- ledgr_state_reconstruct(run_id, opened$con)
+  testthat::expect_equal(rebuilt$equity_curve$realized_pnl[[nrow(rebuilt$equity_curve)]], 10)
+  testthat::expect_equal(rebuilt$equity_curve$unrealized_pnl[[nrow(rebuilt$equity_curve)]], 0)
+})
+
 testthat::test_that("ledgr_run accepts params = list()", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

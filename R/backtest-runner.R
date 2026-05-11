@@ -1184,16 +1184,20 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     universe = instrument_ids
   )
 
-  lot_map <- stats::setNames(vector("list", length(instrument_ids)), instrument_ids)
-  cost_basis_by_inst <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
-  realized_pnl <- 0
-  realized_comp <- 0
-  kahan_add <- function(delta) {
-    y <- delta - realized_comp
-    t <- realized_pnl + y
-    realized_comp <<- (t - realized_pnl) - y
-    realized_pnl <<- t
+  lot_state <- ledgr_lot_state(instrument_ids)
+  if (!is_resume && length(opening_positions) > 0L) {
+    for (id in names(opening_positions)) {
+      lot_state <- ledgr_lot_apply_opening(
+        lot_state,
+        instrument_id = id,
+        qty = opening_positions[[id]],
+        cost_basis = opening_cost_basis[[id]]
+      )
+    }
   }
+  lot_map <- lot_state$lots
+  cost_basis_by_inst <- lot_state$cost_basis_by_inst
+  realized_pnl <- lot_state$realized_pnl
 
   total_pulses_len <- length(pulses)
   eq_cash <- numeric(total_pulses_len)
@@ -1217,63 +1221,21 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     existing_events_all <- existing_events
     if (nrow(existing_events) > 0) {
       for (i in seq_len(nrow(existing_events))) {
-        if (!identical(existing_events$event_type[[i]], "FILL")) next
-        instrument_id <- as.character(existing_events$instrument_id[[i]])
-        side <- as.character(existing_events$side[[i]])
-        qty <- as.numeric(existing_events$qty[[i]])
-        price <- as.numeric(existing_events$price[[i]])
-        fee <- as.numeric(existing_events$fee[[i]])
-        inst_lots <- lot_map[[instrument_id]]
-        if (is.null(inst_lots)) inst_lots <- list()
-        if (side == "BUY") {
-          qty_to_buy <- qty
-          trade_pnl <- 0
-          while (qty_to_buy > 0 && length(inst_lots) > 0 && as.numeric(inst_lots[[1]]$qty) < 0) {
-            lot_qty <- abs(as.numeric(inst_lots[[1]]$qty))
-            lot_price <- as.numeric(inst_lots[[1]]$price)
-            take <- min(lot_qty, qty_to_buy)
-            trade_pnl <- trade_pnl + (lot_price - price) * take
-            lot_qty <- lot_qty - take
-            qty_to_buy <- qty_to_buy - take
-            if (lot_qty <= 0) {
-              inst_lots <- inst_lots[-1]
-            } else {
-              inst_lots[[1]]$qty <- -lot_qty
-            }
-          }
-          if (qty_to_buy > 0) {
-            inst_lots[[length(inst_lots) + 1L]] <- list(qty = qty_to_buy, price = price)
-          }
-          lot_map[[instrument_id]] <- inst_lots
-          kahan_add(trade_pnl - fee)
-        } else {
-          qty_to_sell <- qty
-          trade_pnl <- 0
-          while (qty_to_sell > 0 && length(inst_lots) > 0 && as.numeric(inst_lots[[1]]$qty) > 0) {
-            lot_qty <- as.numeric(inst_lots[[1]]$qty)
-            lot_price <- as.numeric(inst_lots[[1]]$price)
-            take <- min(lot_qty, qty_to_sell)
-            trade_pnl <- trade_pnl + (price - lot_price) * take
-            lot_qty <- lot_qty - take
-            qty_to_sell <- qty_to_sell - take
-            if (lot_qty <= 0) {
-              inst_lots <- inst_lots[-1]
-            } else {
-              inst_lots[[1]]$qty <- lot_qty
-            }
-          }
-          if (qty_to_sell > 0) {
-            inst_lots[[length(inst_lots) + 1L]] <- list(qty = -qty_to_sell, price = price)
-          }
-          lot_map[[instrument_id]] <- inst_lots
-          kahan_add(trade_pnl - fee)
-        }
-        if (length(inst_lots) > 0) {
-          cost_basis_by_inst[[instrument_id]] <- sum(vapply(inst_lots, function(l) as.numeric(l$qty) * as.numeric(l$price), numeric(1)))
-        } else {
-          cost_basis_by_inst[[instrument_id]] <- 0
-        }
+        lot_res <- ledgr_lot_apply_event(
+          lot_state,
+          event_type = existing_events$event_type[[i]],
+          instrument_id = as.character(existing_events$instrument_id[[i]]),
+          side = as.character(existing_events$side[[i]]),
+          qty = existing_events$qty[[i]],
+          price = existing_events$price[[i]],
+          fee = existing_events$fee[[i]],
+          meta = ledgr_lot_parse_meta(existing_events$meta_json[[i]])
+        )
+        lot_state <- lot_res$state
       }
+      lot_map <- lot_state$lots
+      cost_basis_by_inst <- lot_state$cost_basis_by_inst
+      realized_pnl <- lot_state$realized_pnl
     }
   }
 
@@ -1609,61 +1571,21 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
               t_state <- t_state + time_end(t_state_start, TRUE)
             }
             next_event_seq <<- write_res$next_event_seq
-            if (identical(write_res$row$event_type, "FILL")) {
-              side <- write_res$row$side
-              qty <- as.numeric(write_res$row$qty)
-              price <- as.numeric(write_res$row$price)
-              fee <- as.numeric(write_res$row$fee)
-              inst_lots <- lot_map[[instrument_id]]
-              if (is.null(inst_lots)) inst_lots <- list()
-              if (side == "BUY") {
-                qty_to_buy <- qty
-                trade_pnl <- 0
-                while (qty_to_buy > 0 && length(inst_lots) > 0 && as.numeric(inst_lots[[1]]$qty) < 0) {
-                  lot_qty <- abs(as.numeric(inst_lots[[1]]$qty))
-                  lot_price <- as.numeric(inst_lots[[1]]$price)
-                  take <- min(lot_qty, qty_to_buy)
-                  trade_pnl <- trade_pnl + (lot_price - price) * take
-                  lot_qty <- lot_qty - take
-                  qty_to_buy <- qty_to_buy - take
-                  if (lot_qty <= 0) {
-                    inst_lots <- inst_lots[-1]
-                  } else {
-                    inst_lots[[1]]$qty <- -lot_qty
-                  }
-                }
-                if (qty_to_buy > 0) {
-                  inst_lots[[length(inst_lots) + 1L]] <- list(qty = qty_to_buy, price = price)
-                }
-                lot_map[[instrument_id]] <- inst_lots
-                kahan_add(trade_pnl - fee)
-              } else {
-                qty_to_sell <- qty
-                trade_pnl <- 0
-                while (qty_to_sell > 0 && length(inst_lots) > 0 && as.numeric(inst_lots[[1]]$qty) > 0) {
-                  lot_qty <- as.numeric(inst_lots[[1]]$qty)
-                  lot_price <- as.numeric(inst_lots[[1]]$price)
-                  take <- min(lot_qty, qty_to_sell)
-                  trade_pnl <- trade_pnl + (price - lot_price) * take
-                  lot_qty <- lot_qty - take
-                  qty_to_sell <- qty_to_sell - take
-                  if (lot_qty <= 0) {
-                    inst_lots <- inst_lots[-1]
-                  } else {
-                    inst_lots[[1]]$qty <- lot_qty
-                  }
-                }
-                if (qty_to_sell > 0) {
-                  inst_lots[[length(inst_lots) + 1L]] <- list(qty = -qty_to_sell, price = price)
-                }
-                lot_map[[instrument_id]] <- inst_lots
-                kahan_add(trade_pnl - fee)
-              }
-              if (length(inst_lots) > 0) {
-                cost_basis_by_inst[[instrument_id]] <- sum(vapply(inst_lots, function(l) as.numeric(l$qty) * as.numeric(l$price), numeric(1)))
-              } else {
-                cost_basis_by_inst[[instrument_id]] <- 0
-              }
+            if (isTRUE(write_res$row$event_type %in% c("FILL", "FILL_PARTIAL"))) {
+              lot_res <- ledgr_lot_apply_event(
+                lot_state,
+                event_type = write_res$row$event_type,
+                instrument_id = instrument_id,
+                side = write_res$row$side,
+                qty = write_res$row$qty,
+                price = write_res$row$price,
+                fee = write_res$row$fee,
+                meta = ledgr_lot_parse_meta(write_res$row$meta_json)
+              )
+              lot_state <- lot_res$state
+              lot_map <- lot_state$lots
+              cost_basis_by_inst <- lot_state$cost_basis_by_inst
+              realized_pnl <- lot_state$realized_pnl
             }
           }
         }
@@ -1828,9 +1750,11 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
   cash_delta <- numeric(n_events)
   position_delta <- numeric(n_events)
+  event_meta <- vector("list", n_events)
   if (n_events > 0) {
     for (i in seq_len(n_events)) {
       meta <- jsonlite::fromJSON(events_df$meta_json[[i]], simplifyVector = FALSE)
+      event_meta[[i]] <- meta
       cash_delta[[i]] <- as.numeric(meta$cash_delta)
       position_delta[[i]] <- as.numeric(meta$position_delta)
     }
@@ -1863,93 +1787,27 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
   positions_value <- if (n_pulses > 0) colSums(positions_mat * close_mat) else numeric(0)
 
-  realized_pnl <- 0
-  realized_comp <- 0
-  kahan_add <- function(delta) {
-    y <- delta - realized_comp
-    t <- realized_pnl + y
-    realized_comp <<- (t - realized_pnl) - y
-    realized_pnl <<- t
-  }
-  lots <- list()
-  cost_basis_by_inst <- stats::setNames(rep(0, n_inst), instrument_ids)
-  total_cost_basis <- 0
+  reconstruction_lots <- ledgr_lot_state(instrument_ids)
   event_realized <- numeric(n_events)
   event_cost_basis <- numeric(n_events)
 
   if (n_events > 0) {
     for (i in seq_len(n_events)) {
       instrument_id <- events_df$instrument_id[[i]]
-      if (!is.na(instrument_id) && nzchar(instrument_id)) {
-        if (is.null(lots[[instrument_id]])) lots[[instrument_id]] <- list()
-      }
+      lot_res <- ledgr_lot_apply_event(
+        reconstruction_lots,
+        event_type = events_df$event_type[[i]],
+        instrument_id = instrument_id,
+        side = events_df$side[[i]],
+        qty = events_df$qty[[i]],
+        price = events_df$price[[i]],
+        fee = events_df$fee[[i]],
+        meta = event_meta[[i]]
+      )
+      reconstruction_lots <- lot_res$state
 
-      if (!identical(events_df$event_type[[i]], "FILL") || is.na(instrument_id) || !nzchar(instrument_id)) {
-        event_realized[[i]] <- realized_pnl
-        event_cost_basis[[i]] <- total_cost_basis
-        next
-      }
-
-      side <- events_df$side[[i]]
-      qty <- as.numeric(events_df$qty[[i]])
-      price <- as.numeric(events_df$price[[i]])
-      fee <- as.numeric(events_df$fee[[i]])
-
-      inst_lots <- lots[[instrument_id]]
-      old_basis <- cost_basis_by_inst[[instrument_id]]
-      trade_pnl <- 0
-
-      if (side == "BUY") {
-        qty_to_buy <- qty
-        while (qty_to_buy > 0 && length(inst_lots) > 0 && as.numeric(inst_lots[[1]]$qty) < 0) {
-          lot_qty <- abs(as.numeric(inst_lots[[1]]$qty))
-          lot_price <- as.numeric(inst_lots[[1]]$price)
-          take <- min(lot_qty, qty_to_buy)
-          trade_pnl <- trade_pnl + (lot_price - price) * take
-          lot_qty <- lot_qty - take
-          qty_to_buy <- qty_to_buy - take
-          if (lot_qty <= 0) {
-            inst_lots <- inst_lots[-1]
-          } else {
-            inst_lots[[1]]$qty <- -lot_qty
-          }
-        }
-        if (qty_to_buy > 0) {
-          inst_lots[[length(inst_lots) + 1L]] <- list(qty = qty_to_buy, price = price)
-        }
-      } else {
-        qty_to_sell <- qty
-        while (qty_to_sell > 0 && length(inst_lots) > 0 && as.numeric(inst_lots[[1]]$qty) > 0) {
-          lot_qty <- as.numeric(inst_lots[[1]]$qty)
-          lot_price <- as.numeric(inst_lots[[1]]$price)
-          take <- min(lot_qty, qty_to_sell)
-          trade_pnl <- trade_pnl + (price - lot_price) * take
-          lot_qty <- lot_qty - take
-          qty_to_sell <- qty_to_sell - take
-          if (lot_qty <= 0) {
-            inst_lots <- inst_lots[-1]
-          } else {
-            inst_lots[[1]]$qty <- lot_qty
-          }
-        }
-        if (qty_to_sell > 0) {
-          inst_lots[[length(inst_lots) + 1L]] <- list(qty = -qty_to_sell, price = price)
-        }
-      }
-
-      lots[[instrument_id]] <- inst_lots
-      kahan_add(trade_pnl - fee)
-
-      if (length(inst_lots) > 0) {
-        new_basis <- sum(vapply(inst_lots, function(l) as.numeric(l$qty) * as.numeric(l$price), numeric(1)))
-      } else {
-        new_basis <- 0
-      }
-      cost_basis_by_inst[[instrument_id]] <- new_basis
-      total_cost_basis <- total_cost_basis - old_basis + new_basis
-
-      event_realized[[i]] <- realized_pnl
-      event_cost_basis[[i]] <- total_cost_basis
+      event_realized[[i]] <- reconstruction_lots$realized_pnl
+      event_cost_basis[[i]] <- reconstruction_lots$total_cost_basis
     }
   }
 

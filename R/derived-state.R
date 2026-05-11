@@ -210,9 +210,8 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
 
   cash <- as.numeric(initial_cash)
   positions <- numeric(0)
-  lots <- list()
+  lot_state <- ledgr_lot_state(instrument_ids)
   realized_pnl <- 0
-  realized_comp <- 0
 
   event_idx <- 1L
   n_events <- nrow(events)
@@ -236,7 +235,19 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
       positions[instrument_id] <<- positions[instrument_id] + as.numeric(position_delta)
     }
 
-    if (!identical(row$event_type[[1]], "FILL") || is.na(instrument_id) || !nzchar(instrument_id)) {
+    if (identical(row$event_type[[1]], "CASHFLOW")) {
+      lot_res <- ledgr_lot_apply_event(
+        lot_state,
+        event_type = row$event_type[[1]],
+        instrument_id = instrument_id,
+        meta = meta
+      )
+      lot_state <<- lot_res$state
+      realized_pnl <<- lot_state$realized_pnl
+      return(invisible(TRUE))
+    }
+
+    if (!(row$event_type[[1]] %in% c("FILL", "FILL_PARTIAL")) || is.na(instrument_id) || !nzchar(instrument_id)) {
       return(invisible(TRUE))
     }
 
@@ -258,72 +269,18 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
       rlang::abort("ledger_events.fee must be a finite numeric scalar >= 0 for FILL events.", class = "ledgr_invalid_ledger_event")
     }
 
-    if (is.null(lots[[instrument_id]])) lots[[instrument_id]] <<- list()
-    lot_list <- lots[[instrument_id]]
-
-    kahan_add <- function(delta) {
-      y <- delta - realized_comp
-      t <- realized_pnl + y
-      realized_comp <<- (t - realized_pnl) - y
-      realized_pnl <<- t
-    }
-
-    if (side == "BUY") {
-      qty_to_buy <- qty
-      trade_pnl <- 0
-
-      while (qty_to_buy > 0 && length(lot_list) > 0 && as.numeric(lot_list[[1]]$qty) < 0) {
-        lot_qty <- abs(as.numeric(lot_list[[1]]$qty))
-        lot_price <- as.numeric(lot_list[[1]]$price)
-        take <- min(lot_qty, qty_to_buy)
-
-        trade_pnl <- trade_pnl + (lot_price - price) * take
-
-        lot_qty <- lot_qty - take
-        qty_to_buy <- qty_to_buy - take
-
-        if (lot_qty <= 0) {
-          lot_list <- lot_list[-1]
-        } else {
-          lot_list[[1]]$qty <- -lot_qty
-        }
-      }
-
-      if (qty_to_buy > 0) {
-        lot_list[[length(lot_list) + 1L]] <- list(qty = qty_to_buy, price = price)
-      }
-
-      lots[[instrument_id]] <<- lot_list
-      kahan_add(trade_pnl - fee)
-      return(invisible(TRUE))
-    }
-
-    qty_to_sell <- qty
-    trade_pnl <- 0
-
-    while (qty_to_sell > 0 && length(lot_list) > 0 && as.numeric(lot_list[[1]]$qty) > 0) {
-      lot_qty <- as.numeric(lot_list[[1]]$qty)
-      lot_price <- as.numeric(lot_list[[1]]$price)
-      take <- min(lot_qty, qty_to_sell)
-
-      trade_pnl <- trade_pnl + (price - lot_price) * take
-
-      lot_qty <- lot_qty - take
-      qty_to_sell <- qty_to_sell - take
-
-      if (lot_qty <= 0) {
-        lot_list <- lot_list[-1]
-      } else {
-        lot_list[[1]]$qty <- lot_qty
-      }
-    }
-
-    if (qty_to_sell > 0) {
-      lot_list[[length(lot_list) + 1L]] <- list(qty = -qty_to_sell, price = price)
-    }
-
-    lots[[instrument_id]] <<- lot_list
-    kahan_add(trade_pnl - fee)
+    lot_res <- ledgr_lot_apply_event(
+      lot_state,
+      event_type = row$event_type[[1]],
+      instrument_id = instrument_id,
+      side = side,
+      qty = qty,
+      price = price,
+      fee = fee,
+      meta = meta
+    )
+    lot_state <<- lot_res$state
+    realized_pnl <<- lot_state$realized_pnl
     invisible(TRUE)
   }
 
@@ -349,9 +306,9 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     }
 
     cost_basis_remaining <- 0
-    if (length(lots) > 0) {
-      for (id in names(lots)) {
-        for (lot in lots[[id]]) {
+    if (length(lot_state$lots) > 0) {
+      for (id in names(lot_state$lots)) {
+        for (lot in lot_state$lots[[id]]) {
           cost_basis_remaining <- cost_basis_remaining + (as.numeric(lot$qty) * as.numeric(lot$price))
         }
       }

@@ -716,7 +716,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1-2 days
 **Dependencies:** LDG-1901
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Fix the release-blocking execution-engine bug found in
@@ -738,9 +738,10 @@ logic inline in every location.
    - apply ordinary `FILL` events using the existing FIFO semantics;
    - return realized P&L, open/close quantities, remaining lots, and remaining
      cost basis in a shape usable by the current result paths.
-3. Replace or route all five existing FIFO paths through the shared helper:
+3. Replace or route all six existing FIFO paths through the shared helper:
    resume replay, live-loop accounting, post-run equity reconstruction,
-   standalone derived-state reconstruction, and run-store comparison stats.
+   standalone derived-state reconstruction, extracted fill/trade derivation,
+   and run-store comparison stats.
 4. Ensure opening-position `CASHFLOW` events are interpreted only when their
    metadata identifies them as opening-position events with finite quantity and
    cost basis.
@@ -754,34 +755,54 @@ logic inline in every location.
    about opening-position cost basis.
 
 **Acceptance Criteria:**
-- [ ] Selling an opening long with cost basis below the sale price produces a
+- [x] Selling an opening long with cost basis below the sale price produces a
       `CLOSE` fill row with positive realized P&L.
-- [ ] The same scenario produces a closed trade row and correct `n_trades`,
+- [x] The same scenario produces a closed trade row and correct `n_trades`,
       `win_rate`, and `avg_trade` in run comparison/metrics outputs.
-- [ ] Run comparison stats for the opening-position regression reflect correct
+- [x] Run comparison stats for the opening-position regression reflect correct
       realized P&L and trade counts.
-- [ ] Equity reconstruction reports realized and unrealized P&L against opening
+- [x] Equity reconstruction reports realized and unrealized P&L against opening
       cost basis, not against zero.
-- [ ] `ledgr_state_reconstruct()` and the persisted equity curve agree for the
+- [x] `ledgr_state_reconstruct()` and the persisted equity curve agree for the
       regression scenario.
-- [ ] All five FIFO/lot-accounting paths use the shared helper or an explicitly
+- [x] All six FIFO/lot-accounting paths use the shared helper or an explicitly
       documented common internal primitive.
-- [ ] Existing FIFO torture tests and accounting consistency tests still pass.
-- [ ] Opening-position events remain `CASHFLOW` events; no fake fill events are
+- [x] Existing FIFO torture tests and accounting consistency tests still pass.
+- [x] Opening-position events remain `CASHFLOW` events; no fake fill events are
       introduced.
 
 **Implementation Notes:**
-- Pending.
+- Added `R/lot-accounting.R` as the shared FIFO lot-accounting primitive.
+- Routed the runner resume replay, live-loop lot state, post-run equity
+  reconstruction, standalone derived-state reconstruction, extracted
+  fill/trade derivation, and run-store comparison stats through the shared
+  helper.
+- Seeded fresh-run live-loop lot state from normalized opening positions so the
+  runner's in-loop accounting stays consistent with replay/reconstruction paths.
+- Updated the live-loop event guard to accept `FILL` and `FILL_PARTIAL`, while
+  preserving the prior no-row safety for DB-live writes.
+- Opening-position `CASHFLOW` events now seed lots only when their metadata has
+  `source = "opening_position"` plus finite `position_delta` and `cost_basis`.
+- Added a regression in `test-experiment-run.R` covering extracted fills,
+  trades, metrics, comparison stats, persisted equity P&L, and
+  `ledgr_state_reconstruct()` for a sale of an opening long position.
+- Opening-position events remain `CASHFLOW` events; the ledger shape is
+  unchanged.
 
 **Verification:**
 ```text
-targeted opening-position accounting regression tests
+tests/testthat/test-experiment-run.R
 tests/testthat/test-fifo-torture.R
 tests/testthat/test-accounting-consistency.R
 tests/testthat/test-derived-state.R
 tests/testthat/test-run-compare.R
-full testthat recommended
+full testthat
 ```
+
+Result: passed on Windows with one expected skip in the full suite
+(`ledgr_snapshot_from_yahoo` missing-package path not exercised because
+`quantmod` is installed). After review fixes, reran the same targeted tests and
+full local test suite with the same result.
 
 **Test Requirements:**
 - Regression test for opening-position liquidation.
@@ -810,6 +831,7 @@ invariants_at_risk:
   - resume determinism
 required_context:
   - inst/design/execution_engine_audit.md
+  - R/lot-accounting.R
   - R/backtest-runner.R
   - R/derived-state.R
   - R/run-store.R

@@ -239,7 +239,7 @@ tickets:
 
   - id: LDG-1908
     title: "Opening-Position Lot Accounting And Shared FIFO Helper"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-1901]
     tests:
@@ -265,6 +265,7 @@ tickets:
         - resume determinism
       required_context:
         - inst/design/execution_engine_audit.md
+        - R/lot-accounting.R
         - R/backtest-runner.R
         - R/derived-state.R
         - R/run-store.R

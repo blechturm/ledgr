@@ -53,27 +53,29 @@ stats) does the same. Affected metrics for any run that uses
 
 **Fix:** Extract a shared FIFO lot-accounting helper that accepts an optional
 `seed_lots` argument. Seed opening lots from `CASHFLOW` events' `meta_json`
-before the event replay loop in every reconstruction path. Apply the helper in
-all five locations (see below).
+before the event replay loop in every reconstruction/result path. Apply the
+helper in all six locations (see below).
 
 ---
 
 ## Important
 
-### 2. FIFO lot-matching logic is duplicated in five places
+### 2. FIFO lot-matching logic is duplicated in six places
 
 The initial audit counted four locations. The fifth is `run-store.R:341`
-(comparison-stats computation). All five must receive the same opening-position
-fix or they will diverge:
+(comparison-stats computation). The sixth is the `ledgr_extract_fills()` FIFO in
+`backtest.R`. All six must receive the same opening-position fix or they will
+diverge:
 
 1. `backtest-runner.R` — resume replay (lines ~1220–1276)
 2. `backtest-runner.R` — live loop (lines ~1617–1667)
 3. `backtest-runner.R` — post-run reconstruction (lines ~1880–1953)
 4. `derived-state.R` — standalone reconstruction (`apply_event`)
 5. `run-store.R` — comparison-stats FIFO (line ~341)
+6. `backtest.R` — extracted fills/trades FIFO (`ledgr_extract_fills()`)
 
 **Recommendation:** One `ledgr_lot_accounting` helper function with a clear
-signature. All five paths call it. The opening-position patch is then applied
+signature. All six paths call it. The opening-position patch is then applied
 in exactly one place.
 
 ### 3. `spread_bps` applies the full spread per leg — underdocumented
@@ -195,7 +197,7 @@ state at and after the resume point are deleted before re-running.
 | Severity | Issue |
 |---|---|
 | **Critical / release-blocking** | Opening position cost basis not seeded into lot map — realized/unrealized P&L, n_trades, win_rate, avg_trade all wrong for runs using `ledgr_opening(positions = ...)` |
-| **Important** | FIFO lot-matching duplicated in five places — patch must be applied consistently |
+| **Important** | FIFO lot-matching duplicated in six places — patch must be applied consistently |
 | **Important** | `spread_bps` full-spread-per-leg semantics underdocumented |
 | **Important** | Six live equity arrays are dead code |
 | **Minor** | Non-universe opening positions bypass validation below `ledgr_experiment()` |

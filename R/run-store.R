@@ -336,9 +336,9 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
     con,
     sprintf(
       "
-      SELECT run_id, event_seq, instrument_id, side, qty, price
+      SELECT run_id, event_seq, event_type, instrument_id, side, qty, price, fee, meta_json
       FROM ledger_events
-      WHERE run_id IN (%s) AND event_type IN ('FILL', 'FILL_PARTIAL')
+      WHERE run_id IN (%s) AND event_type IN ('CASHFLOW', 'FILL', 'FILL_PARTIAL')
       ORDER BY run_id, event_seq
       ",
       placeholders
@@ -355,81 +355,49 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
       return(data.frame(run_id = run_id, n_trades = 0L, win_rate = NA_real_, avg_trade = NA_real_, stringsAsFactors = FALSE))
     }
 
-    fifo <- new.env(parent = emptyenv())
+    lot_state <- ledgr_lot_state()
     realized <- numeric(0)
 
     for (i in seq_len(nrow(run_rows))) {
+      event_type <- as.character(run_rows$event_type[[i]])
       inst <- as.character(run_rows$instrument_id[[i]])
+      meta <- ledgr_lot_parse_meta(run_rows$meta_json[[i]])
+      if (identical(event_type, "CASHFLOW")) {
+        lot_res <- ledgr_lot_apply_event(
+          lot_state,
+          event_type = event_type,
+          instrument_id = inst,
+          meta = meta
+        )
+        lot_state <- lot_res$state
+        next
+      }
+
       side_norm <- toupper(as.character(run_rows$side[[i]]))
       qty <- suppressWarnings(as.numeric(run_rows$qty[[i]]))
       price <- suppressWarnings(as.numeric(run_rows$price[[i]]))
       if (is.na(qty) || qty <= 0 || is.na(price)) {
         next
       }
-      if (side_norm %in% c("BUY", "COVER", "BUY_TO_COVER")) {
-        direction <- 1L
-      } else if (side_norm %in% c("SELL", "SHORT", "SELL_SHORT")) {
-        direction <- -1L
-      } else {
+      if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
         next
       }
 
-      lots <- if (exists(inst, envir = fifo, inherits = FALSE)) {
-        get(inst, envir = fifo, inherits = FALSE)
-      } else {
-        data.frame(qty = numeric(), price = numeric(), stringsAsFactors = FALSE)
-      }
+      lot_res <- ledgr_lot_apply_event(
+        lot_state,
+        event_type = event_type,
+        instrument_id = inst,
+        side = side_norm,
+        qty = qty,
+        price = price,
+        fee = suppressWarnings(as.numeric(run_rows$fee[[i]])),
+        meta = meta
+      )
+      lot_state <- lot_res$state
 
-      net_pos <- if (nrow(lots) > 0L) sum(lots$qty) else 0
-      close_qty <- 0
-      if (direction > 0L && net_pos < 0) {
-        close_qty <- min(qty, abs(net_pos))
-      } else if (direction < 0L && net_pos > 0) {
-        close_qty <- min(qty, net_pos)
+      if (is.finite(lot_res$close_qty) && lot_res$close_qty > 0) {
+        realized <- c(realized, lot_res$realized_close)
       }
-      open_qty <- qty - close_qty
-
-      if (close_qty > 0) {
-        remaining_close <- close_qty
-        realized_close <- 0
-        compensation <- 0
-        if (direction > 0L) {
-          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] < 0) {
-            cover_qty <- min(remaining_close, abs(lots$qty[[1]]))
-            delta <- (lots$price[[1]] - price) * cover_qty
-            y <- delta - compensation
-            t <- realized_close + y
-            compensation <- (t - realized_close) - y
-            realized_close <- t
-            lots$qty[[1]] <- lots$qty[[1]] + cover_qty
-            remaining_close <- remaining_close - cover_qty
-            if (abs(lots$qty[[1]]) < 1e-12) lots <- lots[-1, , drop = FALSE]
-          }
-        } else {
-          while (remaining_close > 0 && nrow(lots) > 0 && lots$qty[[1]] > 0) {
-            cover_qty <- min(remaining_close, lots$qty[[1]])
-            delta <- (price - lots$price[[1]]) * cover_qty
-            y <- delta - compensation
-            t <- realized_close + y
-            compensation <- (t - realized_close) - y
-            realized_close <- t
-            lots$qty[[1]] <- lots$qty[[1]] - cover_qty
-            remaining_close <- remaining_close - cover_qty
-            if (abs(lots$qty[[1]]) < 1e-12) lots <- lots[-1, , drop = FALSE]
-          }
-        }
-        realized <- c(realized, realized_close)
-      }
-
-      if (open_qty > 0) {
-        lot_qty <- if (direction > 0L) open_qty else -open_qty
-        lots <- rbind(
-          lots,
-          data.frame(qty = lot_qty, price = price, stringsAsFactors = FALSE)
-        )
-      }
-
-      assign(inst, lots, envir = fifo)
     }
 
     n_trades <- length(realized)
