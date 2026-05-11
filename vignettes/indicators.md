@@ -28,7 +28,7 @@ will be small on purpose:
 > today's close is above its moving average.
 
 That rule needs one momentum feature and one trend feature. A feature
-map gives readable aliases to your R code while preserving ledgr's exact
+map gives readable aliases to your R code while preserving ledgr's exac
 engine feature IDs.
 
 ``` r
@@ -298,7 +298,7 @@ ledgr_feature_contracts(plain_features)
 
 ## Parameter Grids Register Every Needed Feature
 
-If a parameter grid changes a lookback, register every lookback variant
+If a parameter grid changes a lookback, register every lookback varian
 before the run. ledgr does not create indicators dynamically from
 `params`; the run only computes the feature contracts registered on the
 experiment.
@@ -346,13 +346,13 @@ parameter values must be registered before `ledgr_run()`; do not create
 `ledgr_ind_ttr()` is the adapter for supported indicators from the
 suggested `TTR` package. TTR stays outside the core engine:
 
-``` text
+``` tex
 TTR -> ledgr_ind_ttr() -> ledgr_indicator -> deterministic pulse engine
 ```
 
 The engine sees a normal `ledgr_indicator`. That means TTR-backed
 indicators follow the same feature-ID, warmup, and pulse-view rules as
-built-in indicators. The examples below are skipped when `TTR` is not
+built-in indicators. The examples below are skipped when `TTR` is no
 installed. In your own project, install TTR before creating TTR-backed
 indicators:
 
@@ -486,10 +486,10 @@ ledgr_feature_contracts(ledgr_feature_map(
 #> 4 bb_pctB ttr_bbands_20_pctb TTR               20           20
 ```
 
-The two MACD examples above use matching explicit arguments. Explicit
+The two MACD examples above use matching explicit arguments. Explici
 arguments become part of the feature ID, so combine MACD outputs in one
 strategy only when their argument sets match the computation you intend.
-If one MACD output uses `percent = FALSE`, the paired `signal` output
+If one MACD output uses `percent = FALSE`, the paired `signal` outpu
 should usually set `percent = FALSE` too.
 
 TTR warmup inference is inspectable:
@@ -551,15 +551,41 @@ Warmup problems are easiest to diagnose by connecting three facts:
 
 1.  `ledgr_feature_contracts(features)` tells you how many bars each
     feature needs before it can produce a usable value.
-2.  `ledgr_pulse_features(pulse, features)` shows the current
+2.  `ledgr_feature_contract_check(snapshot, features)` joins those
+    contracts to the actual per-instrument bar counts in the snapshot.
+3.  `ledgr_pulse_features(pulse, features)` shows the curren
     pulse-known values for the instruments and aliases you registered.
-3.  `summary(bt)` prints `Warmup Diagnostics` when a completed run has
-    registered features that can never become usable for an instrument
+4.  `summary(bt)` prints `Warmup Diagnostics` when a completed run has
+    registered features that can never become usable for an instrumen
     because available bars are below the feature contract.
+
+``` r
+warmup_check_snapshot <- ledgr_snapshot_from_df(
+  bars |>
+    filter(!(instrument_id == "DEMO_02" & ts_utc > ledgr_utc("2019-01-25"))),
+  snapshot_id = paste0("warmup-check-", Sys.getpid())
+)
+
+ledgr_feature_contract_check(warmup_check_snapshot, features)
+#> # A tibble: 4 × 8
+#>   alias  instrument_id feature_id source requires_bars stable_after available_bars
+#>   <chr>  <chr>         <chr>      <chr>          <int>        <int>          <int>
+#> 1 ret_5  DEMO_01       return_5   ledgr              6            6            129
+#> 2 sma_10 DEMO_01       sma_10     ledgr             10           10            129
+#> 3 ret_5  DEMO_02       return_5   ledgr              6            6             19
+#> 4 sma_10 DEMO_02       sma_10     ledgr             10           10             19
+#> # ℹ 1 more variable: warmup_achievable <lgl>
+
+ledgr_snapshot_close(warmup_check_snapshot)
+```
+
+The `warmup_achievable` column is `FALSE` when an instrument does no
+have enough available bars to satisfy a feature's `stable_after`
+contract.
 
 Normal early warmup is temporary: a feature is `NA` near the beginning
 of an instrument's sample and later becomes finite. Impossible warmup is
-different: the instrument never has enough available bars for that
+different: the instrument never has enough available bars for tha
 feature. In that case, zero trades can be a valid completed run plus a
 useful diagnostic, not a failed run.
 
@@ -593,6 +619,6 @@ For strategy authoring, read
 and summary metrics, read
 `vignette("metrics-and-accounting", package = "ledgr")`. For formal help
 on the inspection views, see `?ledgr_feature_contracts`,
-`?ledgr_pulse_features`, and `?ledgr_pulse_wide`. For TTR-specific
-output names and supported warmup inference, see `?ledgr_ind_ttr` and
-`?ledgr_ttr_warmup_rules`.
+`?ledgr_feature_contract_check`, `?ledgr_pulse_features`, and
+`?ledgr_pulse_wide`. For TTR-specific output names and supported warmup
+inference, see `?ledgr_ind_ttr` and `?ledgr_ttr_warmup_rules`.

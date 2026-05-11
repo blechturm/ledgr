@@ -78,6 +78,8 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ttr_rsi_14", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr computes feature contracts into pulse-known data", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_contracts", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_feature_contract_check", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "warmup_achievable", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_pulse_features", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_pulse_wide", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Parameter Grids Register Every Needed Feature", fixed = TRUE)
@@ -641,6 +643,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_snapshot_info = "experiment-store",
     ledgr_feature_id = "indicators",
     ledgr_feature_contracts = "indicators",
+    ledgr_feature_contract_check = "indicators",
     ledgr_ind_returns = "indicators",
     ledgr_ind_ttr = "indicators",
     ledgr_pulse_features = "indicators",
@@ -667,6 +670,15 @@ testthat::test_that("core help pages point to installed articles with browser-fr
       testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE, info = page)
     }
   }
+})
+
+testthat::test_that("feature contract check docs state factory materialization boundary", {
+  root <- testthat::test_path("..", "..")
+  help <- paste(readLines(file.path(root, "man", "ledgr_feature_contract_check.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(help, "feature factories", ignore.case = TRUE)
+  testthat::expect_match(help, "Materialize the factory first", fixed = TRUE)
+  testthat::expect_match(help, "ledgr_feature_factory_requires_params", fixed = TRUE)
 })
 
 testthat::test_that("experiment-store docs show the low-level CSV bridge", {

@@ -38,6 +38,136 @@ ledgr_feature_contracts <- function(features) {
   )
 }
 
+#' Check feature warmup feasibility against a snapshot
+#'
+#' `ledgr_feature_contract_check()` joins declared feature contracts to the
+#' actual per-instrument bar counts in a sealed snapshot. It is a pre-run
+#' inspection helper: it tells you whether each feature can become usable for
+#' each instrument in this snapshot. It does not compute feature values and does
+#' not mutate the snapshot.
+#'
+#' Feature factories of the form `function(params)` are intentionally rejected
+#' here because the helper cannot know which concrete parameter set to use.
+#' Materialize the factory first, then pass the resulting indicators or feature
+#' map. The error class is `ledgr_feature_factory_requires_params`.
+#'
+#' @param snapshot A sealed `ledgr_snapshot`.
+#' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` objects,
+#'   or one `ledgr_indicator`.
+#'
+#' @return A tibble with one row per `(instrument_id, feature_id)` pair. It
+#'   includes `alias`, `instrument_id`, `feature_id`, `source`,
+#'   `requires_bars`, `stable_after`, `available_bars`, and
+#'   `warmup_achievable`. `warmup_achievable` is `TRUE` when the instrument has
+#'   at least `stable_after` bars.
+#' @examples
+#' bars <- data.frame(
+#'   ts_utc = ledgr_utc("2020-01-01") + 86400 * 0:4,
+#'   instrument_id = "AAA",
+#'   open = 100:104,
+#'   high = 101:105,
+#'   low = 99:103,
+#'   close = 100:104,
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' features <- list(ledgr_ind_returns(3), ledgr_ind_sma(10))
+#' ledgr_feature_contract_check(snapshot, features)
+#' ledgr_snapshot_close(snapshot)
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and pulse feature views:
+#'
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
+#' @export
+ledgr_feature_contract_check <- function(snapshot, features) {
+  ledgr_feature_contract_check_validate_snapshot(snapshot)
+  if (is.function(features) && !inherits(features, "ledgr_indicator")) {
+    rlang::abort(
+      paste(
+        "`features` must be materialized before feature-contract feasibility can be checked.",
+        "Pass the concrete indicators or feature map returned by the feature factory for a specific params list."
+      ),
+      class = c("ledgr_feature_factory_requires_params", "ledgr_invalid_args")
+    )
+  }
+
+  contracts <- ledgr_feature_contracts(features)
+  counts <- ledgr_snapshot_bar_counts(snapshot)
+
+  if (nrow(contracts) == 0L || nrow(counts) == 0L) {
+    return(tibble::tibble(
+      alias = character(),
+      instrument_id = character(),
+      feature_id = character(),
+      source = character(),
+      requires_bars = integer(),
+      stable_after = integer(),
+      available_bars = integer(),
+      warmup_achievable = logical()
+    ))
+  }
+
+  contract_idx <- rep(seq_len(nrow(contracts)), each = nrow(counts))
+  count_idx <- rep(seq_len(nrow(counts)), times = nrow(contracts))
+  out <- tibble::tibble(
+    alias = contracts$alias[contract_idx],
+    instrument_id = counts$instrument_id[count_idx],
+    feature_id = contracts$feature_id[contract_idx],
+    source = contracts$source[contract_idx],
+    requires_bars = as.integer(contracts$requires_bars[contract_idx]),
+    stable_after = as.integer(contracts$stable_after[contract_idx]),
+    available_bars = as.integer(counts$available_bars[count_idx])
+  )
+  out$warmup_achievable <- out$available_bars >= out$stable_after
+  out <- out[order(out$instrument_id, out$feature_id), , drop = FALSE]
+  rownames(out) <- NULL
+  out
+}
+
+ledgr_feature_contract_check_validate_snapshot <- function(snapshot) {
+  if (!inherits(snapshot, "ledgr_snapshot")) {
+    rlang::abort("`snapshot` must be a ledgr_snapshot.", class = "ledgr_invalid_args")
+  }
+  con <- get_connection(snapshot)
+  if (!DBI::dbIsValid(con)) {
+    rlang::abort("`snapshot` must have a valid database connection.", class = "ledgr_invalid_snapshot")
+  }
+  info <- ledgr_snapshot_info(snapshot)
+  if (!identical(info$status[[1]], "SEALED")) {
+    rlang::abort(
+      sprintf("`snapshot` must be SEALED for feature-contract feasibility checks; current status is %s.", info$status[[1]]),
+      class = c("ledgr_snapshot_not_sealed", "ledgr_invalid_snapshot")
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_snapshot_bar_counts <- function(snapshot) {
+  con <- get_connection(snapshot)
+  rows <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT
+      i.instrument_id,
+      COALESCE(COUNT(b.ts_utc), 0) AS available_bars
+    FROM snapshot_instruments i
+    LEFT JOIN snapshot_bars b
+      ON i.snapshot_id = b.snapshot_id
+     AND i.instrument_id = b.instrument_id
+    WHERE i.snapshot_id = ?
+    GROUP BY i.instrument_id
+    ORDER BY i.instrument_id
+    ",
+    params = list(snapshot$snapshot_id)
+  )
+  tibble::tibble(
+    instrument_id = as.character(rows$instrument_id),
+    available_bars = as.integer(rows$available_bars)
+  )
+}
+
 ledgr_feature_contract_input <- function(features) {
   if (inherits(features, "ledgr_feature_map")) {
     ledgr_validate_feature_map_object(features)

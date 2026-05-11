@@ -152,7 +152,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-1901
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Implement `ledgr_feature_contract_check(snapshot, features)` as a pre-run
@@ -175,24 +175,36 @@ achievable for each instrument-feature pair.
 8. Add a concise example in a vignette or help page.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_feature_contract_check()` is exported and documented.
-- [ ] Balanced snapshots with sufficient history report `warmup_achievable =
+- [x] `ledgr_feature_contract_check()` is exported and documented.
+- [x] Balanced snapshots with sufficient history report `warmup_achievable =
       TRUE`.
-- [ ] Short or uneven snapshots report `warmup_achievable = FALSE` for affected
+- [x] Short or uneven snapshots report `warmup_achievable = FALSE` for affected
       instrument-feature pairs.
-- [ ] Feature maps preserve alias/engine-ID clarity in output or docs.
-- [ ] Feature factories fail with a classed actionable error.
-- [ ] The helper does not mutate snapshot tables or compute feature values.
-- [ ] At least one public doc example demonstrates pre-run warmup feasibility
+- [x] Feature maps preserve alias/engine-ID clarity in output or docs.
+- [x] Feature factories fail with a classed actionable error.
+- [x] The helper does not mutate snapshot tables or compute feature values.
+- [x] At least one public doc example demonstrates pre-run warmup feasibility
       checking.
 
 **Implementation Notes:**
-- Pending.
+- Added exported `ledgr_feature_contract_check(snapshot, features)` in
+  `R/feature-inspection.R`.
+- The helper reuses `ledgr_feature_contracts()` input normalization, rejects
+  feature factories with class `ledgr_feature_factory_requires_params`, and
+  requires a sealed snapshot.
+- Output preserves feature aliases and engine IDs and adds `available_bars` plus
+  `warmup_achievable` per instrument-feature pair without computing feature
+  values.
+- Added help, pkgdown reference entry, API export registration, and a warmup
+  feasibility example in `vignettes/indicators.Rmd`.
 
 **Verification:**
 ```text
-targeted feature-inspection tests
-documentation contract tests
+PASS: testthat::test_file("tests/testthat/test-feature-inspection.R", reporter = "summary")
+PASS: testthat::test_file("tests/testthat/test-api-exports.R", reporter = "summary")
+PASS: testthat::test_file("tests/testthat/test-documentation-contracts.R", reporter = "summary")
+PASS: rmarkdown::render("vignettes/indicators.Rmd", output_format = "github_document", quiet = TRUE)
+PASS: testthat::test_local(".", reporter = "summary") with 1 expected skip
 ```
 
 **Test Requirements:**

@@ -38,7 +38,7 @@ tickets:
 
   - id: LDG-1902
     title: "Feature Contract Feasibility Helper"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1901]
     tests:

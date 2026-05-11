@@ -55,6 +55,83 @@ testthat::test_that("ledgr_feature_contracts identifies TTR-backed indicators wh
   testthat::expect_equal(contracts$feature_id, "ttr_rsi_14")
 })
 
+testthat::test_that("ledgr_feature_contract_check reports snapshot-specific warmup feasibility", {
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
+  bars <- bars[!(bars$instrument_id == "BBB" & bars$ts_utc > ledgr_utc("2020-01-04")), , drop = FALSE]
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  features <- ledgr_feature_map(
+    ret = ledgr_ind_returns(3),
+    sma = ledgr_ind_sma(6)
+  )
+  check <- ledgr_feature_contract_check(snapshot, features)
+
+  testthat::expect_s3_class(check, "tbl_df")
+  testthat::expect_equal(
+    names(check),
+    c(
+      "alias", "instrument_id", "feature_id", "source",
+      "requires_bars", "stable_after", "available_bars", "warmup_achievable"
+    )
+  )
+  testthat::expect_equal(nrow(check), 4L)
+  testthat::expect_equal(check$instrument_id, c("AAA", "AAA", "BBB", "BBB"))
+  testthat::expect_equal(check$feature_id, rep(c("return_3", "sma_6"), times = 2))
+  testthat::expect_equal(check$alias, rep(c("ret", "sma"), times = 2))
+
+  aaa_sma <- check[check$instrument_id == "AAA" & check$feature_id == "sma_6", , drop = FALSE]
+  bbb_sma <- check[check$instrument_id == "BBB" & check$feature_id == "sma_6", , drop = FALSE]
+  testthat::expect_equal(aaa_sma$available_bars, 8L)
+  testthat::expect_true(aaa_sma$warmup_achievable)
+  testthat::expect_equal(bbb_sma$available_bars, 4L)
+  testthat::expect_false(bbb_sma$warmup_achievable)
+})
+
+testthat::test_that("ledgr_feature_contract_check supports indicator and list inputs without mutating snapshots", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  before <- ledgr_snapshot_info(snapshot)$bar_count[[1]]
+
+  single <- ledgr_feature_contract_check(snapshot, ledgr_ind_sma(3))
+  testthat::expect_equal(single$feature_id, "sma_3")
+  testthat::expect_true(is.na(single$alias[[1]]))
+  testthat::expect_true(single$warmup_achievable[[1]])
+
+  named <- ledgr_feature_contract_check(snapshot, list(signal = ledgr_ind_returns(2)))
+  testthat::expect_equal(named$alias, "signal")
+  testthat::expect_equal(named$feature_id, "return_2")
+
+  after <- ledgr_snapshot_info(snapshot)$bar_count[[1]]
+  testthat::expect_identical(after, before)
+})
+
+testthat::test_that("ledgr_feature_contract_check rejects feature factories without concrete params", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  factory <- function(params) {
+    list(ledgr_ind_sma(params$n))
+  }
+
+  testthat::expect_error(
+    ledgr_feature_contract_check(snapshot, factory),
+    class = "ledgr_feature_factory_requires_params"
+  )
+})
+
 testthat::test_that("pulse feature views expose long and wide pulse-known data", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:5)
   db_path <- tempfile(fileext = ".duckdb")

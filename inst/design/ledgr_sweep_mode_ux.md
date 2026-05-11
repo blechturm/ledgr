@@ -1,6 +1,6 @@
 # ledgr Sweep Mode -- UX Design
 
-**Status:** Accepted proposal. Decisions ready for v0.1.7 ticket cut.
+**Status:** Accepted proposal. Decisions ready for v0.1.8 ticket cut.
 **Scope:** User-facing API, object model, failure semantics, parity contract,
 and parallelism guidance for sweep mode. `ledgr_tune()` explicitly deferred
 (see Version Assignment).
@@ -12,13 +12,15 @@ and parallelism guidance for sweep mode. `ledgr_tune()` explicitly deferred
 The research workflow has two distinct phases:
 
 ```
-ledgr_sweep()              explore     ephemeral, fast, no provenance
+ledgr_sweep()              explore     lightweight, no durable run artifact
 ledgr_run() / ledgr_tune() commit      durable, full provenance, auditable
 ```
 
-Sweep produces a ranked summary. The user picks candidates from it and
+Sweep produces a candidate summary table. The user picks candidates from it and
 commits them deliberately with `ledgr_run()`. Sweep results are never
-auto-promoted to the experiment store.
+auto-promoted to the experiment store. A sweep result may carry in-memory
+candidate identity metadata needed to promote, rerun, or reject a candidate
+deliberately; that metadata is not a durable experiment-store provenance record.
 
 ## Evaluation Discipline
 
@@ -41,8 +43,9 @@ source bars
   -> train snapshot
   -> test snapshot
   -> sweep on train snapshot
-  -> persist selected candidate on train snapshot
-  -> evaluate locked params on test snapshot
+  -> lock selected params
+  -> optionally commit selected params on the train snapshot
+  -> evaluate locked params on the test snapshot with ledgr_run()
 ```
 
 The first v0.1.8 sweep documentation must teach this as the normal promotion
@@ -91,11 +94,12 @@ walk-forward analysis for a later milestone.
 
 ---
 
-## v0.1.7 API Surface
+## v0.1.8 API Surface
 
 ### `ledgr_param_grid()`
 
-Typed grid constructor. Names become result identifiers in sweep output.
+Typed grid constructor. Returns a `ledgr_param_grid` object. Names become
+result identifiers in sweep output.
 
 ```r
 # Named -- user-supplied labels (preferred)
@@ -153,9 +157,17 @@ experiment snapshot, universe, or date range of the requested sweep.
 may use the same range or a narrower sub-range; it must fail if the requested
 pulse range or warmup requirements are not covered by the feature object.
 
+When `start` and `end` are supplied, they define the scoring/pulse range. The
+precompute step must also cover the warmup lookback range needed before `start`
+for every requested indicator. The exact v0.1.8 surface can expose this as
+implicit lookback extension or as explicit metadata, but it must not confuse the
+first scored pulse with the first bar needed for feature warmup.
+
 **Indicator deduplication.** When `features` in `ledgr_experiment()` is
-`function(params) list(...)`, the precompute step evaluates it for every
-unique indicator configuration across the param grid and deduplicates by
+already a concrete list of indicators or a feature map, the precompute step
+computes that fixed feature set once and reuses it across all candidates. When
+`features` is `function(params) list(...)`, the precompute step evaluates it for
+every unique indicator configuration across the param grid and deduplicates by
 fingerprint. Parameter combinations that share the same indicators (e.g.
 `sma_n = 20` appearing in multiple param rows) pay the compute cost once.
 
@@ -196,7 +208,15 @@ a result row with:
 - All metric columns (`final_equity`, `total_return`, etc.) set to `NA`
 
 With `stop_on_error = TRUE`, the first error aborts the sweep and re-throws the
-condition. This is the debugging path.
+condition. This is primarily the sequential debugging path. In future parallel
+execution, at least one non-failing candidate may complete before an error is
+observed and propagated by the worker framework; "first error" ordering is not
+guaranteed across workers.
+
+`stop_on_error` controls candidate-level execution failures. Contract
+validation errors are not candidates: invalid parameter grids, snapshot
+mismatches, universe mismatches, and invalid or mismatched precomputed feature
+objects always abort the sweep before candidate evaluation.
 
 **Parallelism.** `ledgr_sweep()` respects a `future` plan if one has been set
 by the user. Sequential by default. ledgr takes no hard dependency on future,
@@ -223,6 +243,15 @@ curated summary with the same formatting conventions as `ledgr_comparison`.
 | `error_class` | chr | NA on success |
 | `error_msg` | chr | NA on success |
 | `params` | list | The full params list for each combination |
+| `warnings` | list | Candidate-level warning conditions and non-fatal ledgr interpretation warnings |
+| `feature_fingerprints` | list | Feature identities required by this candidate; varies for feature factories and is constant for concrete feature lists/maps |
+
+**Object metadata:** The result object also carries in-memory identity metadata
+as attributes, not repeated visible columns: snapshot id/hash, strategy source
+hash or preflight identity, strategy preflight result, opening state, execution
+assumptions, evaluation scope, and RNG contract. These attributes are promotion
+and audit aids for the current R session; they are not durable experiment-store
+provenance.
 
 **Print output:**
 
@@ -230,18 +259,20 @@ curated summary with the same formatting conventions as `ledgr_comparison`.
 # ledgr sweep -- momentum.duckdb
 # 48 combinations: 46 done, 2 failed
 
-# A tibble: 48 x 7
+# A tibble: 48 x 12
   run_id             status  final_equity   return  drawdown  n_trades  win_rate
   <chr>              <chr>          <dbl>   <chr>    <chr>       <int>    <chr>
-1 conservative       DONE          112300  +12.3%   -11.2%        201     54%
-2 moderate           DONE          108930   +8.9%   -12.4%        287     51%
-3 grid_3a7f2c1e      DONE          105420   +5.4%    -8.1%        143     54%
+1 conservative       DONE          105420   +5.4%    -8.1%        143     54%
+2 moderate           DONE          112300  +12.3%   -11.2%        201     54%
+3 grid_3a7f2c1e      DONE          108930   +8.9%   -12.4%        287     51%
 4 grid_9b1d4e8a      FAILED            NA      NA       NA         NA      NA
 ...
 
+# i Rows are in parameter-grid order; rank explicitly with dplyr when needed.
 # i Promote a candidate: exp |> ledgr_run(params = ..., run_id = "...")
 # i Extract params:      results |> filter(run_id == "conservative") |> pull(params) |> first()
 # i Failed rows:         results |> filter(status == "FAILED")
+# i Hidden columns:      params, warnings, feature_fingerprints, error_class, error_msg
 ```
 
 **Promoting a candidate to a committed run:**
@@ -255,6 +286,13 @@ winner <- results |>
   first()
 
 bt <- exp |> ledgr_run(params = winner, run_id = "momentum_v1")
+```
+
+When following the train/test discipline, the committed evaluation run uses a
+test-snapshot experiment rather than the sweep's train-snapshot experiment:
+
+```r
+bt_test <- test_exp |> ledgr_run(params = winner, run_id = "momentum_v1_test")
 ```
 
 ---
@@ -281,11 +319,17 @@ persistence writes to DuckDB; sweep accumulates an in-memory summary.
 
 This parity is enforced by CI, not by convention. A dedicated parity test suite
 runs the same strategy and params through both paths and compares the above
-quantities exactly. Numeric equality (not approximate) is required for
-deterministic strategies. Any divergence is a CI failure.
+quantities exactly on the same R version and platform. Cross-platform numeric
+behaviour may be documented separately if BLAS, CPU, or dependency differences
+make bit-for-bit equality unrealistic. Any same-platform divergence is a CI
+failure.
 
-**Boundary:** Sweep does not produce provenance metadata, DuckDB artifacts,
-telemetry, or identity hashes. That is the only permitted difference.
+**Boundary:** Sweep does not produce durable run provenance, DuckDB run
+artifacts, or persisted telemetry. Sweep may retain in-memory candidate
+identity metadata such as params, snapshot identity, feature identity, strategy
+preflight classification, and execution assumptions so a candidate can be
+promoted to a committed `ledgr_run()` deliberately. That identity metadata is
+not a substitute for the durable provenance created by the committed run.
 
 ---
 
@@ -302,9 +346,13 @@ snapshot <- ledgr_demo_bars |>
 momentum <- function(ctx, params) {
   targets <- ctx$hold()
   for (id in ctx$universe) {
-    ret <- ctx$feature(id, paste0("sma_", params$sma_n))
-    if (!is.na(ret) && ret >  params$threshold) targets[id] <- params$qty
-    if (!is.na(ret) && ret < -params$threshold) targets[id] <- 0
+    sma <- ctx$feature(id, paste0("sma_", params$sma_n))
+    if (is.finite(sma) && ctx$close(id) > sma * (1 + params$threshold)) {
+      targets[id] <- params$qty
+    }
+    if (is.finite(sma) && ctx$close(id) < sma) {
+      targets[id] <- 0
+    }
   }
   targets
 }
@@ -352,7 +400,7 @@ snapshot |> ledgr_run_info("momentum_v1")
 
 ---
 
-## Advanced Parallelism (Post-v0.1.7 Documentation)
+## Advanced Parallelism (Post-v0.1.8 Documentation)
 
 The following pattern is the intended high-performance path but uses young
 ecosystem APIs. It is documented as optional guidance, not first-release user
@@ -388,8 +436,13 @@ It is deferred from v0.1.8 for two reasons:
    `ledgr_run()` or calls the same fold core as `ledgr_sweep()` -- should be
    resolved after sweep mode is shipped and the fold core is stable.
 
-`ledgr_tune()` appears in the v0.1.7 UX decisions document as part of the
-`ledgr_experiment()` API. Its implementation is held until v0.1.7 is complete.
+The fold core/output-handler split planned for v0.1.8 likely resolves the
+second question: `ledgr_tune()` would call the same fold core with a persistence
+output handler, making each candidate semantically equivalent to `ledgr_run()`.
+The API remains deferred until sweep is shipped and the use case is proven.
+
+`ledgr_tune()` appears in the earlier UX decisions document as part of the
+`ledgr_experiment()` API. Its implementation is held until after v0.1.8.
 
 ---
 
@@ -402,7 +455,10 @@ It is deferred from v0.1.8 for two reasons:
 - `ledgr_sweep()` with `stop_on_error = FALSE` default, future-compatible
 - `ledgr_sweep_results` S3 print method
 - Failure rows with `status`, `error_class`, `error_msg`
-- `params` list column for candidate promotion
+- `params`, `warnings`, and `feature_fingerprints` list columns for candidate
+  promotion and interpretation
+- In-memory result metadata for snapshot identity, strategy preflight, opening
+  state, execution assumptions, evaluation scope, and RNG contract
 - Parity test suite (strict CI gate)
 - Warning when grid > threshold and features not precomputed
 - No `ledgr_tune()` in this milestone
@@ -421,14 +477,15 @@ optimisation vignette (v0.1.9) uses `ledgr_sweep()` + `ledgr_run()`.
    heuristic. Decide the final value and whether it is user-configurable via
    an option.
 
-2. **`ledgr_precompute_features()` with no `start`/`end`** -- confirm that
-   defaulting to the full snapshot range is safe for warmup: the feature object
-   covers the warmup bars before `opening$date`, so sweep runs that start at
-   `opening$date` always have warm indicators.
+2. **`ledgr_precompute_features()` range semantics** -- confirm that omitted
+   `start`/`end` covers the full snapshot range, and supplied `start`/`end`
+   define the scoring/pulse range while the precompute object separately covers
+   required warmup lookback bars before `start`.
 
 3. **Auto-hash label stability across R versions** -- `grid_<short_hash>` must
    be stable. Canonical JSON serialization via `jsonlite::toJSON()` with sorted
    keys is the proposed approach. Verify stability across platforms.
 
-4. **`ledgr_tune()` internal design** -- loop over `ledgr_run()` (simple, proven)
-   vs shared fold core (faster). Decide after v0.1.7 ships.
+4. **`ledgr_tune()` internal design** -- confirm that the v0.1.8 fold
+   core/output-handler split makes a persistence-output-handler tune path
+   semantically equivalent to repeated `ledgr_run()` calls.

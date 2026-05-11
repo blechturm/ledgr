@@ -1,0 +1,469 @@
+# ledgr v0.1.8 Sweep Architecture Note
+
+**Status:** Pre-spec architecture input.
+**Scope:** Internal execution contracts for v0.1.8 sweep mode and the future
+research-validation layers built on top of sweep.
+**Non-scope:** Final v0.1.8 API, ticket cut, parallel implementation,
+walk-forward implementation, PBO/CSCV implementation, and
+`ledgr_snapshot_split()`.
+
+This note is intentionally separate from `inst/design/ledgr_sweep_mode_ux.md`.
+The UX note describes the user-facing sweep workflow. This architecture note
+describes the internal constraints that must hold so sweep does not become a
+dead-end execution path. It uses the same provenance boundary as the UX note:
+sweep does not create durable experiment-store run provenance, but it may carry
+in-memory candidate identity metadata needed to promote, rerun, or reject a
+candidate deliberately.
+
+## Thesis
+
+v0.1.8 sweep may be sequential and modest. It must not entrench runner/output
+coupling that blocks later parallel sweep, walk-forward analysis, or PBO/CSCV
+diagnostics.
+
+The target stack is:
+
+```text
+fold core
+  -> ledgr_run()           single persisted run
+  -> ledgr_sweep()         candidate evaluation with lighter output
+  -> ledgr_walk_forward()  repeated train/sweep/test protocol
+  -> PBO/CSCV diagnostic   combinatorial selection-bias measurement
+```
+
+The internal primitive should be closer to:
+
+```text
+evaluate(candidate, data_slice, output_policy)
+```
+
+than to:
+
+```text
+for each params row, run the whole snapshot and write less to DuckDB
+```
+
+## Core Principle
+
+Reproducibility and selection integrity are orthogonal. Provenance records what
+happened. It does not prove that the candidate-selection process was sound.
+
+This principle must appear in the v0.1.8 sweep documentation. Sweep results are
+exploratory unless the selected candidate is evaluated on data held out from
+development.
+
+## Fold Core And Output Handler Split
+
+The UX proposal names the shared private fold core `ledgr_run_fold()`. The final
+function name can be settled in the v0.1.8 spec, but the contract is clear: the
+fold core is a private shared execution primitive, not an exported user API.
+
+The fold core is the deterministic per-bar execution engine:
+
+- pulse calendar order;
+- pulse context construction;
+- registered feature lookup;
+- strategy invocation;
+- target validation;
+- fill timing;
+- final-bar no-fill behavior;
+- cash, position, and state transitions;
+- event-stream meaning.
+
+Strategy preflight is a pre-fold gate. It classifies the strategy before normal
+execution begins and must feed its result into the output handler. It should not
+be hidden inside candidate ranking or persistence code. The v0.1.8 spec must
+decide whether preflight is implemented as fold setup or as a separate pre-fold
+step, but it must happen before any candidate fold is evaluated.
+
+For the v0.1.8 sweep shape, the strategy function is fixed across candidates and
+only `params` varies. That means strategy preflight can run once per sweep and
+its result can be attached to the sweep result object. Candidate-specific
+feature factories affect feature identity and precompute validation, not the
+strategy preflight tier, unless a future API introduces candidate-specific
+strategy factories. This assumes `ledgr_strategy_preflight()` classifies only
+the strategy function body and its referenced symbols, not the registered
+feature definitions for a particular params set; verify that assumption before
+finalizing the once-per-sweep preflight contract.
+
+The output handler is the layer that receives fold events and decides what to
+retain or persist:
+
+- full DuckDB ledger rows for `ledgr_run()`;
+- in-memory summary rows for sweep;
+- top-N or selected-candidate event streams;
+- failure records;
+- worker-local output for future parallel execution.
+
+Future `ledgr_run()` and `ledgr_sweep()` must call the same fold core. Sweep may
+use a cheaper output handler, but it must not change strategy semantics, feature
+values, pulse order, fill timing, state transitions, final-bar behavior, random
+draws, or event-stream meaning.
+
+This parity must be enforced by tests. The v0.1.8 suite should run the same
+strategy, params, snapshot, features, opening state, and execution assumptions
+through `ledgr_run()` and `ledgr_sweep()` and compare the quantities listed in
+`inst/design/ledgr_sweep_mode_ux.md`: final equity, cash, positions, trades,
+fills, equity curve, fill timing, warmup behavior, costs, long-only
+enforcement, and random-draw semantics.
+
+## Current Coupling Points
+
+The pre-sweep code review in `inst/design/sweep_mode_code_review.md` identified
+two closures inside `ledgr_backtest_run_internal()` that currently capture the
+DuckDB connection from the outer runner frame:
+
+- `write_persistent_telemetry`
+- `fail_run`
+
+Those closures are the concrete coupling points that prevent a clean fold-only
+path. They mean there is no current execution path that can run the fold without
+DuckDB writes or persistent-run status mutation.
+
+The telemetry coupling also includes the session-global side channel:
+
+- `.ledgr_telemetry_registry`
+- `ledgr_store_run_telemetry()`
+- `ledgr_get_run_telemetry()`
+
+The related `.ledgr_preflight_registry` is a weaker but still real shared-state
+coupling. It currently tracks preflight timing metadata. Running preflight once
+per sweep reduces the risk for sequential v0.1.8 sweep, but future concurrent
+sweeps must not let preflight timing from one sweep leak into another.
+
+The current runner stores telemetry into `.ledgr_telemetry_registry` keyed by
+`run_id`, then `write_persistent_telemetry()` reads back from that registry and
+writes telemetry to DuckDB. That is acceptable for sequential persisted runs,
+but it is the wrong boundary for sweep. Sweep needs telemetry to travel through
+the candidate result/output-handler path, not through a package-global
+side-channel.
+
+For v0.1.8, the runner refactor must make these responsibilities output-handler
+concerns. If they remain fold-core concerns, sweep will either duplicate the
+runner or carry hidden persistence side effects.
+
+## Requirement 1: Sweep Is An Evaluation Primitive
+
+`ledgr_sweep()` evaluates candidates through the shared fold core. It is not a
+second execution engine.
+
+The v0.1.8 user API may look like a simple parameter-grid runner, but the
+implementation must preserve a reusable evaluation unit:
+
+```text
+candidate + data slice + output policy -> candidate result
+```
+
+This keeps future walk-forward and PBO/CSCV workflows from reimplementing
+strategy execution.
+
+## Requirement 2: Output Policy Is A Contract
+
+Sweep output is lightweight, not throwaway.
+
+Even when sweep does not persist full ledger rows for every candidate, each
+candidate result must retain enough identity to reproduce the candidate with a
+committed `ledgr_run()` later.
+
+This is in-memory candidate identity metadata, not durable run provenance. The
+durable provenance record is created only when the user deliberately promotes a
+candidate through `ledgr_run()`.
+
+The always-kept candidate record should include at least:
+
+- candidate label;
+- params;
+- status;
+- objective value, when computed. This is absent in the v0.1.8 summary-only
+  design when ranking is caller-owned, and is reserved for a future default or
+  user-supplied objective;
+- core summary metrics used for ranking;
+- error class and message on failure;
+- warnings relevant to interpretation;
+- snapshot id and snapshot hash;
+- strategy fingerprint or stored-source identity;
+- feature fingerprints or feature-contract identity;
+- opening state and execution assumptions;
+- reproducibility tier, meaning the `ledgr_strategy_preflight()` classification
+  such as `tier_1`, `tier_2`, or `tier_3`;
+- random seed and pulse-level random-draw contract.
+
+The exact v0.1.8 result shape can be narrower than a full run object, but it
+must not be disposable. A sweep result should tell the user enough to promote,
+re-run, or reject a candidate deliberately.
+
+Open design decision for v0.1.8:
+
+- The UX proposal resolves v0.1.8 as summary-only for all candidates. When, and
+  for which workflows, should event-stream retention be introduced later?
+- How are failed candidates represented and sorted?
+
+This decision affects future walk-forward OOS stitching and whether PBO/CSCV
+can be computed from sweep outputs without re-running candidates.
+
+## Requirement 3: Objective Function Is Pluggable
+
+The candidate ranking rule must not be hard-coded into the sweep engine.
+
+v0.1.8 may satisfy this requirement by not owning ranking at all: sweep can
+return a tibble and let users rank with `dplyr::arrange()` or other ordinary R
+code. If v0.1.8 does provide a default objective, the objective should be a
+user-visible or at least internally pluggable function that maps a candidate
+result to a scalar ranking value.
+
+The hard constraint is that the sweep engine must not embed ranking logic that
+would resist a future objective argument.
+
+Future walk-forward needs to call the same ranking rule inside each training
+fold:
+
+```text
+train slice -> evaluate candidates -> rank by objective -> select params
+test slice  -> evaluate selected params
+```
+
+If ranking is baked into `ledgr_sweep()` rather than passed into or separated
+from it, walk-forward will either duplicate sweep logic or require a later
+contract rewrite.
+
+Open design decision for v0.1.8:
+
+- What is the default objective?
+- Is the objective supplied as a function, a metric name, or both?
+- What candidate-result fields are guaranteed available to the objective?
+- How are objective errors represented?
+- Is an objective error a candidate failure, a sweep-level failure, or a
+  separate ranking failure distinct from strategy-execution failure?
+
+## Requirement 4: Data Slice Is An Internal Concept
+
+The v0.1.8 public API may initially sweep the full snapshot. The internal
+evaluation unit must not assume that "full snapshot" is the only possible pulse
+range.
+
+Future workflows need slice-aware evaluation:
+
+- manual train/test snapshots;
+- rolling or expanding walk-forward folds;
+- CSCV/PBO block partitions;
+- narrower date ranges inside a larger sealed snapshot.
+
+A data slice should eventually carry at least:
+
+- start timestamp;
+- end timestamp;
+- universe, if narrower than the experiment universe;
+- warmup policy;
+- feature/precompute coverage requirements;
+- whether the slice is training, testing, or exploratory metadata.
+
+The first v0.1.8 implementation does not need to export a data-slice object, but
+it should avoid APIs or internals that make slice-aware evaluation awkward.
+
+The sweep result should also leave room to label evaluation scope. Because a
+single `ledgr_sweep_results` object evaluates one experiment/snapshot/scope,
+this label belongs on the result object as metadata or a printed annotation, not
+as a per-row column. At minimum, the v0.1.8 spec should decide whether a sweep
+result is unlabeled, `exploratory`, `in_sample`, `holdout`, or something else.
+The label does not make the process honest by itself, but it prevents sweep
+output from implying that all evaluated objects have the same evidentiary role.
+
+## Precomputed Feature Input
+
+The UX proposal defines `ledgr_precompute_features()` as the intended mechanism
+for computing shared feature series once across a parameter grid. The returned
+`ledgr_precomputed_features` object is expected to carry snapshot hash, universe,
+date range, indicator fingerprints, and feature-engine version.
+
+The architecture consequence is that sweep's fold path must validate a
+precomputed feature object against the experiment snapshot, universe, requested
+date/slice range, and feature definitions before evaluating candidates. A
+mismatched precompute object is an execution-contract error, not a cache miss.
+
+For `features = function(params) list(...)`, validation must cover the union of
+all indicator fingerprints that any candidate in the parameter grid may request.
+It is not enough to validate one nominal feature definition or one candidate's
+feature set. Changing the grid after precompute must trigger a loud mismatch if
+the precomputed object does not cover the new union.
+
+This object is also the natural future input for parallel workers: compute and
+validate once, then share or copy the validated feature payload into candidate
+evaluation.
+
+## Slice-Aware Warmup And Feature Feasibility
+
+`ledgr_feature_contract_check(snapshot, features)` is intentionally
+snapshot-scoped. It answers:
+
+```text
+Does this instrument have enough history in the full sealed snapshot?
+```
+
+Walk-forward and CSCV/PBO need a different question:
+
+```text
+Does this instrument have enough usable history for this evaluation slice?
+```
+
+Those are not equivalent. An instrument can have enough history in the full
+snapshot while still being unwarmed at the start of a fold. Conversely, a fold
+may need pre-slice warmup history that is not part of the scored training or
+test interval.
+
+The practical rule is:
+
+```text
+scoring/pulse range != warmup lookback range
+```
+
+For example, a walk-forward fold scored from 2017-01-01 may need late-2016 bars
+to compute `sma_10` at the first scored pulse. Those warmup bars are required
+for feature correctness, but they are not part of the fold's scored P&L range.
+Any slice-aware design must represent both intervals.
+
+The v0.1.8 design packet must decide how the fold core represents effective
+bars available at a slice boundary. This does not require exporting a
+slice-aware `ledgr_feature_contract_check()` in v0.1.8, but the internal design
+must leave room for one of these patterns:
+
+- an internal `feature_contract_check(snapshot, features, data_slice)`;
+- a data-slice object with explicit warmup lookback metadata;
+- sealed train/test snapshots for simple holdout workflows plus internal slice
+  metadata for walk-forward and PBO/CSCV;
+- precomputed feature coverage checks that are aware of both scoring range and
+  warmup range.
+
+This is a design decision, not a late implementation detail.
+
+The existing feature cache is a useful building block because its key already
+includes `start_ts_utc` and `end_ts_utc` along with snapshot hash, instrument,
+indicator fingerprint, and feature-engine version. That makes it range-aware,
+but it does not by itself define which range is the scoring range and which
+range is the warmup lookback range.
+
+## Evaluation Discipline
+
+Sweep makes selection leakage easier:
+
+```text
+full snapshot -> sweep -> pick best params -> committed run on same snapshot
+```
+
+The resulting artifact may be perfectly reproducible and still be an in-sample
+selection artifact.
+
+The v0.1.8 sweep documentation must teach the manual holdout workflow:
+
+```text
+source bars
+  -> train snapshot
+  -> test snapshot
+  -> sweep on train snapshot
+  -> lock selected params
+  -> evaluate locked params on test snapshot with ledgr_run()
+```
+
+`ledgr_snapshot_split()` is useful future UX, but it is not a v0.1.8
+prerequisite. Users can already create separate sealed train and test snapshots
+by filtering bars before snapshot creation.
+
+## Parallel Sweep Prerequisites
+
+Parallel sweep is not required for the first v0.1.8 sweep release. The
+architecture must still avoid choices that make it harder.
+
+Known prerequisites from `inst/design/sweep_mode_code_review.md`:
+
+1. **Telemetry side-channel removal.**
+   `.ledgr_telemetry_registry` is a shared mutable environment keyed by
+   `run_id`. It is unsafe for concurrent worker writes. Telemetry should travel
+   through the result/output-handler path rather than a package-global
+   side-channel.
+
+2. **DuckDB write isolation.**
+   Parallel candidates must not write to the same DuckDB file concurrently.
+   Future options include per-worker temp databases with orchestrated merge, or
+   a serialized write queue. v0.1.8 sequential sweep can defer this, but must
+   not deepen the current fold/output coupling.
+
+3. **Feature cache strategy.**
+   Two future sharing patterns are plausible:
+   - pre-fork cache population, where all shared feature series are computed
+     before spawning workers and forked workers read from copy-on-write cache
+     pages;
+   - explicit shared-memory feature payloads, such as the `mori::share()` /
+     `future.mirai::mirai_multisession` pattern sketched in
+     `inst/design/ledgr_sweep_mode_ux.md`.
+
+   v0.1.8 sequential sweep does not need to choose between these. The common
+   requirement is that workers must not concurrently write to session-global R
+   environments or shared DuckDB files.
+
+## Memory And Interrupt Semantics
+
+Summary-only sweep output limits the size of the returned result object, but it
+does not eliminate in-flight memory pressure during evaluation. The current
+`audit_log` path buffers data proportional to pulses and universe size. Large
+grids multiply that pressure across candidates, and future parallel execution
+multiplies it across workers. v0.1.8 does not need a full memory model, but the
+spec should state the expected peak-memory behavior for sequential sweep and
+avoid retaining full event streams by default.
+
+Long sweeps also need explicit interrupt semantics. The v0.1.8 spec should
+decide whether `Ctrl-C` / user interrupts discard all completed candidate
+results, return a classed partial `ledgr_sweep_results` object, or write partial
+results through a user-selected output policy. Returning partial results is
+attractive UX, but it must not silently swallow interrupts or present an
+incomplete sweep as complete.
+
+## Roadmap Placement
+
+| Milestone | Scope |
+|---|---|
+| v0.1.8 | Fold core/output-handler split; sequential `ledgr_sweep()` as modular evaluation primitive; evaluation-discipline docs with manual holdout workflow |
+| v0.1.9 | `ledgr_snapshot_split()` once sweep UX is stable |
+| v0.1.9 or v0.2.x | `ledgr_walk_forward()` built on sweep plus run |
+| later | PBO/CSCV diagnostic; parallel sweep after telemetry and DuckDB write isolation are solved |
+
+## Non-Goals For v0.1.8
+
+- No walk-forward API.
+- No PBO/CSCV API.
+- No required `ledgr_snapshot_split()` helper.
+- No mandatory parallel sweep.
+- No persisted feature-series retrieval API.
+- No new execution semantics that differ from `ledgr_run()`.
+
+## Design Checklist For The v0.1.8 Spec
+
+Before v0.1.8 tickets are cut, the spec must answer:
+
+1. What is the fold-core boundary?
+2. What is the output-handler boundary?
+3. What exact candidate summary fields does sweep always keep?
+4. How does a user promote a sweep candidate to a committed `ledgr_run()`?
+5. What is the default objective, and how can it be replaced?
+6. What does the objective receive as input?
+7. How are candidate errors represented?
+8. How are strategy preflight results recorded in sweep output?
+9. Where does preflight live: fold setup, separate pre-fold gate, or output
+   handler input?
+10. How are objective errors represented, and are they distinct from
+    strategy-execution errors?
+11. What is the sweep result's evaluation-scope label: exploratory, in-sample,
+    holdout, committed, or unlabeled?
+12. What date/slice assumptions are hard-coded in v0.1.8, and which are left
+   deliberately flexible?
+13. How are scoring range and warmup lookback range represented separately?
+14. How will slice-aware warmup checks be represented later?
+15. How does `ledgr_precompute_features()` validate snapshot, universe, feature,
+    and date/slice identity?
+16. Which current runner closures and telemetry side channels must move into
+    output-handler responsibility?
+17. What does the parity test suite cover?
+18. What parallel prerequisites are explicitly deferred?
+19. Does strategy preflight run once per sweep or once per candidate, and under
+    what future API would that change?
+20. What are the memory expectations for large sequential sweeps?
+21. What are the interrupt semantics, and are partial results returned or
+    discarded?
