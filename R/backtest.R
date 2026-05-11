@@ -15,7 +15,11 @@
 #' @param initial_cash Starting capital. Must be a finite numeric scalar > 0.
 #' @param features List of ledgr indicator definitions (optional).
 #' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
-#'   model with zero spread and zero fixed commission.
+#'   model with zero spread and zero fixed commission. For
+#'   `fill_model$spread_bps`, ledgr applies the full value on each fill leg:
+#'   buys fill at `open * (1 + spread_bps / 10000)` and sells fill at
+#'   `open * (1 - spread_bps / 10000)`. A buy/sell round trip therefore costs
+#'   approximately `2 * spread_bps` basis points before commissions.
 #' @param execution_mode Execution mode ("db_live" or "audit_log").
 #' @param checkpoint_every Flush interval for audit_log mode.
 #' @param db_path Database path for the run ledger (NULL = snapshot DB).
@@ -34,6 +38,12 @@
 #' target decided at pulse `t` is filled at the next available bar. Targets on
 #' the final pulse therefore cannot be filled unless another bar exists after
 #' `end`.
+#'
+#' `spread_bps` is a per-leg execution adjustment, not a quoted bid/ask spread
+#' split across the buy and sell legs. With `spread_bps = 5`, a buy fills five
+#' basis points above the next open and a sell fills five basis points below the
+#' next open, for an approximate ten basis-point round-trip cost before fixed
+#' commissions.
 #'
 #' v0.1.x does not provide a supported broker-style short-selling contract.
 #' Strategy authors should treat negative target quantities as outside the

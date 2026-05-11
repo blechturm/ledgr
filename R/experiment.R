@@ -153,7 +153,11 @@ print.ledgr_opening <- function(x, ...) {
 #' @param universe Character vector of instrument IDs, or `NULL` for all
 #'   instruments in the snapshot.
 #' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
-#'   model with zero spread and zero fixed commission.
+#'   model with zero spread and zero fixed commission. For
+#'   `fill_model$spread_bps`, ledgr applies the full value on each fill leg:
+#'   buys fill at `open * (1 + spread_bps / 10000)` and sells fill at
+#'   `open * (1 - spread_bps / 10000)`. A buy/sell round trip therefore costs
+#'   approximately `2 * spread_bps` basis points before commissions.
 #' @param persist_features Logical scalar.
 #' @param execution_mode Execution mode (`"audit_log"` or `"db_live"`).
 #' @return A `ledgr_experiment` object.

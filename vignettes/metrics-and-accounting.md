@@ -60,6 +60,13 @@ The strategy asks to hold one share on the first pulse and then returns
 to flat. In these examples, decisions fill at the next open. The buy
 therefore fills on the second bar, and the exit fills on the third bar.
 
+When a fill model uses `spread_bps`, ledgr applies the full spread
+adjustment on each fill leg. A buy fills at
+`open * (1 + spread_bps / 10000)` and a sell fills at
+`open * (1 - spread_bps / 10000)`. That value is not split across the
+two sides of a quoted bid/ask spread: a buy/sell round trip costs
+approximately `2 * spread_bps` basis points before fixed commissions.
+
 ## Ledger Events
 
 The ledger is the append-only accounting record for the run. It is the

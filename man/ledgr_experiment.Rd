@@ -30,7 +30,11 @@ at run time.}
 instruments in the snapshot.}
 
 \item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
-model with zero spread and zero fixed commission.}
+model with zero spread and zero fixed commission. For
+\verb{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
+buys fill at \code{open * (1 + spread_bps / 10000)} and sells fill at
+\code{open * (1 - spread_bps / 10000)}. A buy/sell round trip therefore costs
+approximately \code{2 * spread_bps} basis points before commissions.}
 
 \item{persist_features}{Logical scalar.}
 

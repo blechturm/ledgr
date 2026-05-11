@@ -863,7 +863,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 0.5 day
 **Dependencies:** LDG-1901
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Document the existing `spread_bps` convention identified in
@@ -888,20 +888,26 @@ fill prices or rename public fields.
 5. Leave runtime fill-model behavior unchanged.
 
 **Acceptance Criteria:**
-- [ ] Public docs explain that `spread_bps` is applied once on each fill leg.
-- [ ] Public docs explain that a buy/sell round trip costs approximately
+- [x] Public docs explain that `spread_bps` is applied once on each fill leg.
+- [x] Public docs explain that a buy/sell round trip costs approximately
       `2 * spread_bps` basis points before commissions.
-- [ ] Existing fill-model tests still pass with no behavior change.
-- [ ] No new fill-model parameter or rename is introduced.
+- [x] Existing fill-model tests still pass with no behavior change.
+- [x] No new fill-model parameter or rename is introduced.
 
 **Implementation Notes:**
-- Pending.
+- Added per-leg `spread_bps` wording to `ledgr_backtest()` and
+  `ledgr_experiment()` public argument docs and generated Rd files.
+- Added metrics/accounting vignette text explaining that the adjustment is not
+  split across bid/ask legs and that a round trip costs approximately
+  `2 * spread_bps` basis points before fixed commissions.
+- Added documentation-contract assertions for the fill-model wording.
+- Left runtime fill-model behavior unchanged.
 
 **Verification:**
 ```text
-tests/testthat/test-fill-model.R
-tests/testthat/test-documentation-contracts.R if updated
-targeted Rd/vignette render if docs changed
+PASS: tests/testthat/test-fill-model.R
+PASS: tests/testthat/test-documentation-contracts.R
+PASS: rendered vignettes/metrics-and-accounting.Rmd to github_document
 ```
 
 **Test Requirements:**

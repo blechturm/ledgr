@@ -45,7 +45,11 @@ strategies and stored as part of run provenance.}
 \item{features}{List of ledgr indicator definitions (optional).}
 
 \item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
-model with zero spread and zero fixed commission.}
+model with zero spread and zero fixed commission. For
+\verb{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
+buys fill at \code{open * (1 + spread_bps / 10000)} and sells fill at
+\code{open * (1 - spread_bps / 10000)}. A buy/sell round trip therefore costs
+approximately \code{2 * spread_bps} basis points before commissions.}
 
 \item{execution_mode}{Execution mode ("db_live" or "audit_log").}
 
@@ -77,6 +81,12 @@ Strategies return target holdings. The default fill model is \code{next_open}: a
 target decided at pulse \code{t} is filled at the next available bar. Targets on
 the final pulse therefore cannot be filled unless another bar exists after
 \code{end}.
+
+\code{spread_bps} is a per-leg execution adjustment, not a quoted bid/ask spread
+split across the buy and sell legs. With \code{spread_bps = 5}, a buy fills five
+basis points above the next open and a sell fills five basis points below the
+next open, for an approximate ten basis-point round-trip cost before fixed
+commissions.
 
 v0.1.x does not provide a supported broker-style short-selling contract.
 Strategy authors should treat negative target quantities as outside the

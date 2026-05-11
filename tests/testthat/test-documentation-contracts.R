@@ -559,6 +559,8 @@ testthat::test_that("auditr harness discovery bug is recorded externally", {
 testthat::test_that("metrics and accounting docs define public result semantics", {
   metrics_doc <- paste(readLines(ledgr_test_source_vignette("metrics-and-accounting.Rmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
+  backtest_help <- paste(readLines(file.path(root, "man", "ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
+  experiment_help <- paste(readLines(file.path(root, "man", "ledgr_experiment.Rd"), warn = FALSE), collapse = "\n")
   summary_help <- paste(readLines(file.path(root, "man", "summary.ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
   results_help <- paste(readLines(file.path(root, "man", "ledgr_results.Rd"), warn = FALSE), collapse = "\n")
 
@@ -600,6 +602,14 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "sd\\(excess_return\\) <= .Machine\\$double.eps")
   testthat::expect_match(metrics_doc, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
+  testthat::expect_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
+
+  testthat::expect_match(backtest_help, "full value on each fill leg", fixed = TRUE)
+  testthat::expect_match(backtest_help, "approximately \\code{2 * spread_bps} basis points before commissions", fixed = TRUE)
+  testthat::expect_match(backtest_help, "not a quoted bid/ask spread", fixed = TRUE)
+  testthat::expect_match(experiment_help, "full value on each fill leg", fixed = TRUE)
+  testthat::expect_match(experiment_help, "approximately \\code{2 * spread_bps} basis points before commissions", fixed = TRUE)
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)
