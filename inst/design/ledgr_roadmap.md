@@ -1499,6 +1499,20 @@ precompute step evaluates it for every unique indicator configuration across
 the param grid and deduplicates by fingerprint. Combinations that share the
 same indicators pay the compute cost once.
 
+Indicator parameters are first-class sweep parameters. A grid that varies
+`sma_n`, `rsi_n`, or another indicator adapter argument is represented as an
+ordinary `ledgr_param_grid()` plus `features = function(params) ...`; v0.1.8
+does not add a separate indicator-sweep API. The sweep result must retain both
+the original params and the resolved per-candidate feature fingerprints so a
+candidate with different feature construction is not conflated with a candidate
+that only differs in strategy thresholds.
+
+Warmup feasibility is also candidate-specific when features are parameterized.
+A short training snapshot may support `sma_n = 20` and reject or flag
+`sma_n = 200`. `ledgr_precompute_features()` and `ledgr_sweep()` must validate
+coverage against each candidate's resolved feature set and the union of all
+feature fingerprints requested by the grid.
+
 If `start` and `end` are `NULL`, `ledgr_precompute_features()` computes the full
 sealed snapshot range. A sweep may request the same range or a narrower covered
 range; it must fail if the requested pulse range or warmup requirements are not
@@ -1543,13 +1557,22 @@ results <- exp |> ledgr_sweep(param_grid, precomputed_features = features)
   executable examples must be checked against current package APIs before
   publication
 - **mori** -- OS-level shared memory via ALTREP; feature series shared
-  zero-copy across all workers; mori objects are transparent at the R API
-  boundary
+  zero-copy across all workers; mori objects are transparent at the ledgr API
+  boundary, but cross-process serialization behavior with mirai's NNG layer
+  requires explicit verification before this pattern is documented as working
+  (see `inst/design/ledgr_parallelism_spike.md`, SPIKE-3)
 
 ledgr takes no hard dependency on any of these. `ledgr_sweep()` respects a
-`future` plan if set by the user; otherwise runs sequentially. The
-`precomputed_features` interface accepts normal R objects; mori-shared objects
-work because they are indistinguishable from plain R objects at the API boundary.
+`future` plan if set by the user; otherwise runs sequentially. mirai is
+`Suggests` at most, conditional on platform spike results. mori is not a
+declared dependency until cross-process shared-memory access is confirmed on
+Windows and Ubuntu. The `precomputed_features` interface accepts normal R
+objects; the mori zero-copy path is an optional user-configured optimization,
+not a ledgr API contract.
+
+The platform viability and serialization assumptions underlying this parallel
+pattern are verified by the spikes at `inst/design/ledgr_parallelism_spike.md`.
+All five spikes must complete before the v0.1.8 parallel design is finalized.
 
 ### Implementation Note
 
@@ -1564,6 +1587,20 @@ resume replay (lines ~1166–1225) shares the same `lot_map`/`kahan_add`
 structures and must be preserved. Clean this up as part of opening the
 loop for the fold-core extraction, not as a standalone edit.
 
+### Pre-Spec Prerequisite: Parallelism Spike
+
+Before the v0.1.8 spec packet is opened, the five spikes at
+`inst/design/ledgr_parallelism_spike.md` must produce recorded findings. The
+spike results determine: mirai dependency classification (`Suggests` vs.
+user-managed), whether the mori zero-copy pattern is documented as working,
+whether workers use pre-fetched bar data or per-worker read-only DuckDB
+connections, and whether the daemon cache-warming optimization is real. Any of
+these that remain unresolved will require mid-spec decisions that carry higher
+revision risk.
+
+The spikes do not block v0.1.7.9 or v0.1.7.x patch work. They are a
+prerequisite for the v0.1.8 spec cut, not for the current release cycle.
+
 ### Definition of Done
 
 - `ledgr_sweep()` and `ledgr_run()` produce identical results on the same
@@ -1573,6 +1610,9 @@ loop for the fold-core extraction, not as a standalone edit.
 - Both functions call the same internal fold core; no copied runner code
 - `ledgr_precompute_features()` is implemented, typed, and validates against
   the requesting sweep call
+- Indicator-parameter sweeps are supported through `features = function(params)`;
+  candidate results retain per-candidate feature fingerprints, and validation
+  covers the union of all feature fingerprints requested by the param grid
 - Strategy compatibility contract is enforced with clear errors
 - Failed combinations produce result rows with `status = "FAILED"`,
   `error_class`, `error_msg`, and `NA` metric columns; `stop_on_error = FALSE`

@@ -268,6 +268,38 @@ result is unlabeled, `exploratory`, `in_sample`, `holdout`, or something else.
 The label does not make the process honest by itself, but it prevents sweep
 output from implying that all evaluated objects have the same evidentiary role.
 
+## Requirement 5: Indicator Parameter Sweeps Are First-Class
+
+Sweep candidates are not limited to strategy constants. Indicator lookbacks,
+TTR adapter parameters, and other feature-construction parameters are ordinary
+candidate parameters when `ledgr_experiment(features = function(params) ...)`
+uses them to build feature definitions.
+
+This is a core research workflow, not a convenience extension. Users will
+naturally sweep values such as `sma_n`, `rsi_n`, volatility lookbacks, and
+feature thresholds together. The v0.1.8 sweep architecture must support that
+without a separate "indicator sweep" API.
+
+The architectural consequences are:
+
+- candidate identity includes both strategy-use parameters and feature-factory
+  parameters;
+- feature factories are evaluated against each candidate params list before
+  fold evaluation;
+- candidate rows retain the original `params` and the resolved
+  `feature_fingerprints`;
+- precompute validation uses the union of all resolved feature fingerprints
+  across the param grid;
+- warmup feasibility is candidate-specific when feature factories produce
+  different indicators for different params;
+- parity tests must include at least one sweep where changing params changes
+  the registered feature set, not only the strategy threshold.
+
+This requirement does not imply a new exported API. `ledgr_param_grid()`,
+`features = function(params)`, `ledgr_precompute_features()`, and
+`ledgr_sweep()` are sufficient if they preserve the identity and validation
+rules above.
+
 ## Precomputed Feature Input
 
 The UX proposal defines `ledgr_precompute_features()` as the intended mechanism
@@ -285,6 +317,13 @@ all indicator fingerprints that any candidate in the parameter grid may request.
 It is not enough to validate one nominal feature definition or one candidate's
 feature set. Changing the grid after precompute must trigger a loud mismatch if
 the precomputed object does not cover the new union.
+
+For concrete feature lists or feature maps, the union is just the fixed feature
+set. For feature factories, the union is discovered by evaluating the factory
+for each params row, normalizing the returned feature objects, and computing
+their fingerprints. Deduplication may avoid repeated computation, but it must
+not collapse candidate identity: two candidates with identical strategy
+thresholds and different indicator fingerprints remain different candidates.
 
 This object is also the natural future input for parallel workers: compute and
 validate once, then share or copy the validated feature payload into candidate
@@ -388,16 +427,132 @@ Known prerequisites from `inst/design/sweep_mode_code_review.md`:
 
 3. **Feature cache strategy.**
    Two future sharing patterns are plausible:
-   - pre-fork cache population, where all shared feature series are computed
-     before spawning workers and forked workers read from copy-on-write cache
-     pages;
+   - pre-dispatch cache population: compute all shared feature series before
+     spawning workers, then distribute via `everywhere()` pre-load (mirai) or
+     copy-on-write pages (fork-based backends such as `future::multicore`);
    - explicit shared-memory feature payloads, such as the `mori::share()` /
      `future.mirai::mirai_multisession` pattern sketched in
      `inst/design/ledgr_sweep_mode_ux.md`.
 
+   The pre-fork copy-on-write pattern applies only to fork-based backends.
+   mirai workers are separate processes with no shared heap; the mirai
+   equivalent is `everywhere()` pre-population, whose cache-survival semantics
+   must be confirmed by SPIKE-5 before the design can rely on it.
+
    v0.1.8 sequential sweep does not need to choose between these. The common
    requirement is that workers must not concurrently write to session-global R
    environments or shared DuckDB files.
+
+## mirai Process Model Constraints
+
+This section records findings from a focused mirai analysis conducted during
+v0.1.7.9. The analysis informs the v0.1.8 spec before the parallel design is
+finalized and must be read alongside the platform spike results at
+`inst/design/ledgr_parallelism_spike.md`.
+
+### Workers are separate processes, not threads or forks
+
+mirai workers are separate R processes. Every object that crosses the worker
+boundary must be serialized over an NNG socket. There is no shared heap, no
+shared R environment, and no shared file handle between the orchestrating
+session and any worker. This makes several design choices concrete that were
+previously left open.
+
+### Fold core signature must not take a live DuckDB connection
+
+DuckDB connections hold external pointers and cannot be serialized to a worker
+process. The fold core must accept either a pre-fetched bar payload (R matrices
+or data frames) or a snapshot file path so the worker can open its own
+read-only connection locally.
+
+The pre-fetch approach — materialize all required bars before dispatch, send as
+plain R objects — is simpler and works for remote workers without filesystem
+access to the snapshot file. The path approach requires every worker environment
+to have filesystem access to the snapshot. The v0.1.8 spec must choose one; this
+is a forced decision before the fold core signature is finalized.
+
+### Dependency classification
+
+**mirai: `Suggests` at most, not `Imports`.**
+Parallel sweep is optional; sequential sweep must work without mirai installed.
+mirai's NNG-backed socket infrastructure has platform-specific build
+requirements that must not gate `library(ledgr)`. Whether mirai reaches
+`Suggests` is conditional on SPIKE-1 confirming reliable daemon lifecycle on
+Windows (native) and Ubuntu/WSL.
+
+**mori: not a declared dependency until cross-process serialization is
+verified.**
+The UX doc states that mori objects are "indistinguishable from plain R objects
+at the API boundary." This holds at the ledgr API surface but may not hold at
+mirai's NNG serialization layer. mori objects backed by external shared-memory
+pointers require either a confirmed native serialization path or explicit
+`register_serial()` registration in mirai's serialization registry. This is
+unverified. Until SPIKE-3 confirms the cross-process behavior on both platforms,
+mori is documented as an optional user-managed pattern only, not a `Suggests`
+dependency.
+
+### Per-candidate seed derivation
+
+mirai daemons support L'Ecuyer-CMRG independent random streams via
+`daemons(n, seed = L)`. The current fold core calls `set.seed(runtime_seed)`
+unconditionally at entry, which overrides the daemon's stream and breaks the
+reproducibility guarantee in a parallel context.
+
+For parallel sweep, the fold core must accept a per-candidate seed derived from
+`(master_seed, candidate_label)` and apply it explicitly, rather than calling
+`set.seed()` globally at entry. The roadmap's per-candidate seed design —
+derive from candidate label when `seed = NULL` — is compatible with this
+requirement. The implementation must pass the derived seed into the fold core
+explicitly.
+
+### Feature cache cross-task survival
+
+mirai's `cleanup = TRUE` (default) restores the global R environment after each
+task. Package-level environments (created at load time and stored in a package
+binding) are generally not affected by this cleanup and persist across tasks
+within the same daemon's lifetime.
+
+If `.ledgr_feature_cache_registry` survives between tasks on the same daemon,
+candidates sharing feature configurations (the common case in a param grid) will
+reuse cached feature series without resending the payload per task. This is the
+"daemon cache warming" optimization.
+
+**This must be verified by SPIKE-5 before the parallel design relies on it.**
+If cleanup wipes package-level environments, the optimization does not exist
+and precomputed feature payloads must be pre-loaded via `everywhere()` at daemon
+startup or resent with each task.
+
+### Partial result collection on interrupt
+
+mirai's `x[.progress]` blocks until all tasks complete and does not return
+partial results on Ctrl-C. The interrupt semantics requirement — return a classed
+partial `ledgr_sweep_results` object on user interrupt — requires a polling loop
+over `unresolved()` rather than delegating to mirai's built-in collection:
+
+```r
+# pattern only
+while (any(vapply(tasks, unresolved, logical(1)))) {
+  newly_done <- !vapply(tasks, unresolved, logical(1)) & !already_collected
+  completed <- c(completed, tasks[newly_done])
+  already_collected[newly_done] <- TRUE
+  Sys.sleep(poll_interval)
+}
+```
+
+The v0.1.8 spec must decide between this pattern and discarding in-flight
+results on interrupt (see Design Checklist item 21).
+
+### Telemetry side-channel failure mode
+
+The code review correctly flags `.ledgr_telemetry_registry` as unsafe for
+parallel sweep. In mirai specifically, the failure mode is different from
+fork-based parallelism: each daemon is an isolated process with its own copy of
+the registry, so cross-worker contamination of registry entries cannot occur.
+The actual failure is that `write_persistent_telemetry` and `fail_run` capture
+a DuckDB `con` from the outer runner frame, which cannot cross the process
+boundary. The worker errors before telemetry corruption is possible. The
+fold/output-handler split resolves both the fork-model concern and the
+mirai-model concern through the same refactor.
 
 ## Memory And Interrupt Semantics
 
@@ -458,12 +613,16 @@ Before v0.1.8 tickets are cut, the spec must answer:
 14. How will slice-aware warmup checks be represented later?
 15. How does `ledgr_precompute_features()` validate snapshot, universe, feature,
     and date/slice identity?
-16. Which current runner closures and telemetry side channels must move into
+16. How are indicator-parameter sweeps represented: candidate params,
+    feature-factory evaluation, per-candidate feature fingerprints, and
+    candidate-specific warmup feasibility?
+17. Which current runner closures and telemetry side channels must move into
     output-handler responsibility?
-17. What does the parity test suite cover?
-18. What parallel prerequisites are explicitly deferred?
-19. Does strategy preflight run once per sweep or once per candidate, and under
+18. What does the parity test suite cover, including at least one candidate
+    grid where params change the registered feature set?
+19. What parallel prerequisites are explicitly deferred?
+20. Does strategy preflight run once per sweep or once per candidate, and under
     what future API would that change?
-20. What are the memory expectations for large sequential sweeps?
-21. What are the interrupt semantics, and are partial results returned or
+21. What are the memory expectations for large sequential sweeps?
+22. What are the interrupt semantics, and are partial results returned or
     discarded?

@@ -101,6 +101,12 @@ walk-forward analysis for a later milestone.
 Typed grid constructor. Returns a `ledgr_param_grid` object. Names become
 result identifiers in sweep output.
 
+The params grid is the candidate identity. It may contain ordinary strategy
+parameters such as thresholds and quantities, and it may also contain indicator
+parameters used by a feature factory. There is no separate "indicator sweep"
+API in v0.1.8; indicator-period sweeps are ordinary sweep params routed through
+`features = function(params)`.
+
 ```r
 # Named -- user-supplied labels (preferred)
 ledgr_param_grid(
@@ -170,6 +176,39 @@ computes that fixed feature set once and reuses it across all candidates. When
 every unique indicator configuration across the param grid and deduplicates by
 fingerprint. Parameter combinations that share the same indicators (e.g.
 `sma_n = 20` appearing in multiple param rows) pay the compute cost once.
+
+**Indicator parameter sweeps.** Indicator lookbacks and adapter parameters are
+first-class sweep parameters when they appear in the params grid and are used
+by a feature factory:
+
+```r
+exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = momentum,
+  features = function(params) list(
+    ledgr_ind_sma(params$sma_n),
+    ledgr_ind_rsi(params$rsi_n)
+  )
+)
+
+param_grid <- ledgr_param_grid(
+  list(sma_n = 20, rsi_n = 14, threshold = 0.010, qty = 10),
+  list(sma_n = 50, rsi_n = 14, threshold = 0.010, qty = 10),
+  list(sma_n = 50, rsi_n = 21, threshold = 0.005, qty = 10)
+)
+```
+
+The sweep engine must treat those candidates as different experiment
+configurations even if their strategy thresholds match. Candidate rows therefore
+carry `params` and `feature_fingerprints`: the former records the requested
+indicator parameters, while the latter records the resolved indicator identities
+actually used by that candidate.
+
+Candidate-specific feature factories also make warmup candidate-specific. A
+candidate using `sma_n = 200` may be infeasible on a short training snapshot
+even if `sma_n = 20` is feasible. `ledgr_precompute_features()` and
+`ledgr_sweep()` must validate warmup and feature coverage against each
+candidate's resolved feature set, not just against the first params row.
 
 ### `ledgr_sweep()`
 
@@ -452,6 +491,8 @@ The API remains deferred until sweep is shipped and the use case is proven.
 
 - `ledgr_param_grid()` with named and auto-hash labeling
 - `ledgr_precompute_features()` with full typed object contract
+- Indicator-parameter sweeps through `features = function(params)` and
+  candidate-specific feature fingerprints
 - `ledgr_sweep()` with `stop_on_error = FALSE` default, future-compatible
 - `ledgr_sweep_results` S3 print method
 - Failure rows with `status`, `error_class`, `error_msg`
