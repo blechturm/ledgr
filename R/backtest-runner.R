@@ -263,25 +263,6 @@ ledgr_write_run_telemetry <- function(con,
   invisible(TRUE)
 }
 
-ledgr_config_named_numeric <- function(x) {
-  if (is.null(x)) {
-    return(stats::setNames(numeric(), character()))
-  }
-  if (is.list(x) && !is.data.frame(x)) {
-    x <- unlist(x, use.names = TRUE)
-  }
-  if (!is.numeric(x) || length(x) < 1L) {
-    return(stats::setNames(numeric(), character()))
-  }
-  x_names <- names(x)
-  if (is.null(x_names)) {
-    return(stats::setNames(numeric(), character()))
-  }
-  valid <- !is.na(x_names) & nzchar(x_names) & !is.na(x) & is.finite(x)
-  as.numeric(x[valid]) |>
-    stats::setNames(x_names[valid])
-}
-
 ledgr_config_opening_positions <- function(cfg) {
   positions <- ledgr_config_named_numeric(cfg$opening$positions)
   positions[positions != 0]
@@ -1184,59 +1165,9 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     universe = instrument_ids
   )
 
-  lot_state <- ledgr_lot_state(instrument_ids)
-  if (!is_resume && length(opening_positions) > 0L) {
-    for (id in names(opening_positions)) {
-      lot_state <- ledgr_lot_apply_opening(
-        lot_state,
-        instrument_id = id,
-        qty = opening_positions[[id]],
-        cost_basis = opening_cost_basis[[id]]
-      )
-    }
-  }
-  lot_map <- lot_state$lots
-  cost_basis_by_inst <- lot_state$cost_basis_by_inst
-  realized_pnl <- lot_state$realized_pnl
-
-  total_pulses_len <- length(pulses)
-  eq_cash <- numeric(total_pulses_len)
-  eq_positions_value <- numeric(total_pulses_len)
-  eq_equity <- numeric(total_pulses_len)
-  eq_realized <- numeric(total_pulses_len)
-  eq_unrealized <- numeric(total_pulses_len)
-  eq_ts <- vector("list", total_pulses_len)
-
   state_prev_mem <- NULL
-  existing_events_all <- NULL
   if (identical(execution_mode, "audit_log") && is_resume) {
     state_prev_mem <- ledgr_strategy_state_prev(con, run_id, resume_iso)
-  }
-  if (is_resume) {
-    existing_events <- DBI::dbGetQuery(
-      con,
-      "SELECT event_seq, ts_utc, instrument_id, side, qty, price, fee, meta_json, event_type FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
-      params = list(run_id)
-    )
-    existing_events_all <- existing_events
-    if (nrow(existing_events) > 0) {
-      for (i in seq_len(nrow(existing_events))) {
-        lot_res <- ledgr_lot_apply_event(
-          lot_state,
-          event_type = existing_events$event_type[[i]],
-          instrument_id = as.character(existing_events$instrument_id[[i]]),
-          side = as.character(existing_events$side[[i]]),
-          qty = existing_events$qty[[i]],
-          price = existing_events$price[[i]],
-          fee = existing_events$fee[[i]],
-          meta = ledgr_lot_parse_meta(existing_events$meta_json[[i]])
-        )
-        lot_state <- lot_res$state
-      }
-      lot_map <- lot_state$lots
-      cost_basis_by_inst <- lot_state$cost_basis_by_inst
-      realized_pnl <- lot_state$realized_pnl
-    }
   }
 
   full_run <- TRUE
@@ -1571,22 +1502,6 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
               t_state <- t_state + time_end(t_state_start, TRUE)
             }
             next_event_seq <<- write_res$next_event_seq
-            if (isTRUE(write_res$row$event_type %in% c("FILL", "FILL_PARTIAL"))) {
-              lot_res <- ledgr_lot_apply_event(
-                lot_state,
-                event_type = write_res$row$event_type,
-                instrument_id = instrument_id,
-                side = write_res$row$side,
-                qty = write_res$row$qty,
-                price = write_res$row$price,
-                fee = write_res$row$fee,
-                meta = ledgr_lot_parse_meta(write_res$row$meta_json)
-              )
-              lot_state <- lot_res$state
-              lot_map <- lot_state$lots
-              cost_basis_by_inst <- lot_state$cost_basis_by_inst
-              realized_pnl <- lot_state$realized_pnl
-            }
           }
         }
         if (!is.null(db_live_state_json)) {
@@ -1605,13 +1520,6 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
           t_exec <- time_end(t_exec_start, TRUE)
         }
         state_env$current <- state
-        idx <- processed + 1L
-        eq_ts[[idx]] <<- ts
-        eq_cash[[idx]] <<- as.numeric(state$cash)
-        eq_positions_value[[idx]] <<- positions_value
-        eq_equity[[idx]] <<- as.numeric(state$cash) + positions_value
-        eq_realized[[idx]] <<- realized_pnl
-        eq_unrealized[[idx]] <<- positions_value - sum(cost_basis_by_inst)
 
         t_pulse <- NA_real_
         if (sample_now) {

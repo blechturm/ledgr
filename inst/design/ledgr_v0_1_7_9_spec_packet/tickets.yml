@@ -326,7 +326,7 @@ tickets:
 
   - id: LDG-1910
     title: "Execution Engine Audit Cleanup And Minor Finding Routing"
-    status: todo
+    status: done
     priority: P2
     dependencies: [LDG-1901]
     tests:
@@ -363,11 +363,52 @@ tickets:
         - changing commission semantics without a separate decision
         - changing the pending-buffer guard to >=
 
+  - id: LDG-1911
+    title: "Opening-Position FIFO Edge-Case Test Coverage"
+    status: todo
+    priority: P1
+    dependencies: [LDG-1908]
+    tests:
+      - "tests/testthat/test-fifo-opening-positions.R"
+      - "full testthat"
+    classification:
+      risk_level: low
+      implementation_tier: L
+      review_tier: M
+      classification_reason: >
+        Pure test addition. No production code changes. The risk is tests that do not
+        actually exercise the intended paths, providing false confidence in the LDG-1908 fix.
+      invariants_at_risk:
+        - opening-position accounting correctness
+        - FIFO lot ordering under accumulation
+        - resume checkpoint correctness
+        - fee/P&L convention consistency
+      required_context:
+        - R/lot-accounting.R
+        - R/backtest-runner.R
+        - R/derived-state.R
+        - R/run-store.R
+        - R/backtest.R
+        - tests/testthat/test-experiment-run.R
+        - tests/testthat/test-fifo-torture.R
+        - tests/testthat/test-accounting-consistency.R
+      tests_required:
+        - tests/testthat/test-fifo-opening-positions.R
+        - full testthat
+      escalation_triggers:
+        - a scenario reveals a remaining bug in the LDG-1908 paths
+        - resume checkpoint seeding is found to be incorrect
+        - db_live and audit_log produce different results for opening positions
+      forbidden_actions:
+        - changing production code (tests only)
+        - skipping the resume scenario
+        - using fee=0 for scenario 4
+
   - id: LDG-1907
     title: "v0.1.7.9 Release Gate, NEWS, And Packet Finalization"
     status: todo
     priority: P0
-    dependencies: [LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910]
+    dependencies: [LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910, LDG-1911]
     tests:
       - "targeted tests"
       - "tests/testthat/test-documentation-contracts.R"

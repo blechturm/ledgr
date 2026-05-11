@@ -38,7 +38,9 @@ Tracks:
    adjustment.
 9. **Runner cleanup:** remove dead equity buffers and route minor audit
    follow-ups.
-10. **Release gate:** NEWS, ticket status, verification, and CI.
+10. **FIFO edge-case tests:** add opening-position accounting regression
+    coverage before release.
+11. **Release gate:** NEWS, ticket status, verification, and CI.
 
 ### Dependency DAG
 
@@ -49,7 +51,8 @@ LDG-1901 -> LDG-1905 ---------------------+-> LDG-1907
 LDG-1901 -> LDG-1906 ---------------------+
 LDG-1901 -> LDG-1908 ---------------------+
 LDG-1901 -> LDG-1909 ---------------------+
-LDG-1901 -> LDG-1910 ---------------------'
+LDG-1901 -> LDG-1910 ---------------------+
+LDG-1908 -> LDG-1911 ---------------------'
 ```
 
 `LDG-1907` is the v0.1.7.9 release gate.
@@ -952,7 +955,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 0.5-1 day
 **Dependencies:** LDG-1901
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Address the non-blocking execution-engine audit cleanup that is safe inside
@@ -983,23 +986,40 @@ gap is confirmed reachable.
    false positive has been corrected.
 
 **Acceptance Criteria:**
-- [ ] Dead live equity arrays are removed or a specific reason for retaining
+- [x] Dead live equity arrays are removed or a specific reason for retaining
       them is recorded.
-- [ ] Targeted runner/accounting tests still pass after the cleanup.
-- [ ] The lower-level opening-position universe validation gap is either closed
+- [x] Targeted runner/accounting tests still pass after the cleanup.
+- [x] The lower-level opening-position universe validation gap is either closed
       with a defensive check or explicitly routed as internal-only.
-- [ ] RNG side-effect and negative SELL cash-delta findings are recorded as
+- [x] RNG side-effect and negative SELL cash-delta findings are recorded as
       deferred/design-decision items unless separately promoted.
-- [ ] The pending-buffer guard is not changed to `>=`.
+- [x] The pending-buffer guard is not changed to `>=`.
 
 **Implementation Notes:**
-- Pending.
+- Removed the unused live equity vectors and the live-loop lot-accounting work
+  that only fed those vectors. The authoritative equity output remains the
+  post-run ledger reconstruction.
+- Added a defensive `validate_ledgr_config()` guard so low-level
+  `ledgr_backtest_run()` configs reject `opening.positions` instruments outside
+  `universe.instrument_ids`.
+- Recorded LDG-1910 routing in `execution_engine_audit.md`: RNG global-state
+  behavior is deferred to v0.1.8 stochastic/sweep design; negative SELL
+  cash-delta behavior requires a post-v0.1.7.9 follow-up or explicit WONTFIX at
+  the release gate; and the pending-buffer `>` guard remains unchanged.
 
 **Verification:**
 ```text
-targeted runner/accounting tests
-scope grep for removed equity arrays
-documentation/ticket routing review for deferred minor findings
+PASS: tests/testthat/test-runner.R
+PASS: tests/testthat/test-accounting-consistency.R
+PASS: tests/testthat/test-config.R
+PASS: tests/testthat/test-experiment-run.R
+PASS: tests/testthat/test-derived-state.R
+PASS: tests/testthat/test-run-compare.R
+PASS: scope grep found no eq_ts, eq_cash, eq_positions_value, eq_equity,
+      eq_realized, eq_unrealized, total_pulses_len, or existing_events_all in
+      R/backtest-runner.R
+PASS: scope grep confirmed pending_idx uses `>` and not `>=`
+PASS: execution-engine audit records deferred RNG and SELL cash-delta decisions
 ```
 
 **Test Requirements:**
@@ -1044,11 +1064,137 @@ forbidden_actions:
 
 ---
 
+## LDG-1911: Opening-Position FIFO Edge-Case Test Coverage
+
+**Priority:** P1
+**Effort:** 1 day
+**Dependencies:** LDG-1908
+**Status:** Todo
+
+**Description:**
+The existing opening-position test (`test-experiment-run.R:158`) covers only the
+simplest scenario: a single instrument, single lot, fee=0, no resume, `audit_log`
+mode. LDG-1908 introduced `ledgr_lot_accounting()` and seeded all six FIFO paths;
+this ticket adds the edge-case scenarios that exercise those paths under realistic
+conditions. These tests ensure the fix holds under resume, accumulation,
+multi-instrument isolation, non-zero fees, position flips, and `db_live` mode.
+
+**Tasks:**
+1. Add test: resume after partial opening-position liquidation.
+   - Fresh run, open 100 shares of AAA at cost_basis=50. Sell 40 shares (close).
+   - Resume from that checkpoint. Sell remaining 60 shares (close).
+   - Verify: resumed run's fills and equity_curve have correct realized P&L for the
+     second partial close; lot map is empty at end; no cost-basis double-count.
+2. Add test: opening position + subsequent accumulation before liquidation.
+   - Open 50 shares at cost_basis=40 via opening_positions.
+   - Strategy buys 50 more shares at market (FILL event, price=60).
+   - Strategy then sells all 100 shares (FIFO: opening lot first at cost=40, then
+     accumulated lot at cost=60).
+   - Verify: two separate realized P&L amounts are correct; FIFO lot ordering is
+     preserved (opening lot drains before accumulated lot).
+3. Add test: multi-instrument opening positions with independent lot isolation.
+   - Opening positions: AAA=100 shares at cost_basis=50, BBB=200 shares at cost_basis=30.
+   - Both instruments close out; strategy does nothing additional.
+   - Verify: AAA realized P&L is computed from cost 50, BBB from cost 30;
+     no cross-instrument lot contamination.
+4. Add test: non-zero fee with opening position.
+   - Open 100 shares at cost_basis=50; close all shares, fee=5.
+   - Verify: `fills$realized_pnl` is pre-fee gross (realized_close);
+     `equity_curve$realized_pnl` cumulates post-fee (realized_close - fee);
+     trade metrics are consistent with the post-fee convention.
+5. Add test: position flip originating from an opening position.
+   - Open 100 shares at cost_basis=50. Strategy issues a sell-250 signal.
+   - Expected: closes the 100-share opening lot (FIFO), opens a 150-share short.
+   - Verify: realized P&L from the close is correct; lot map contains the short lot
+     with correct cost basis; no phantom opening-position residual.
+6. Add test: `db_live` execution mode with opening positions.
+   - Re-run the base opening-position scenario (`test-experiment-run.R:158`) with
+     `mode = "db_live"`.
+   - Verify: fills, equity_curve, and `ledgr_state_reconstruct()` output are
+     identical to the `audit_log` mode result.
+
+**Acceptance Criteria:**
+- [ ] All six test scenarios are implemented and pass.
+- [ ] Resume scenario confirms no cost-basis double-count at the checkpoint boundary.
+- [ ] Accumulation scenario confirms FIFO lot ordering: opening lot drains before accumulated lot.
+- [ ] Multi-instrument scenario confirms lot isolation: no cross-instrument contamination.
+- [ ] Fee scenario confirms `fills$realized_pnl` is pre-fee gross and
+      `equity_curve$realized_pnl` is post-fee cumulative.
+- [ ] Position-flip scenario confirms FILL_PARTIAL handling closes the opening lot and
+      seeds the resulting short lot correctly.
+- [ ] `db_live` scenario output matches `audit_log` mode output exactly.
+- [ ] No regressions in the existing test suite.
+
+**Implementation Notes:**
+- All tests live in `tests/testthat/test-fifo-opening-positions.R` (new file).
+- Scenario 1 (resume) must exercise the resume replay path
+  (`backtest-runner.R:~1215`), not just the fresh-run seeding block.
+- Scenario 2 (accumulation) verifies FIFO ordering when both an opening-position lot
+  and an ordinary-fill lot coexist; opening lot must drain first.
+- Scenario 5 (position flip) specifically exercises the FILL_PARTIAL guard added
+  in LDG-1908 for the live-loop path.
+- Scenario 6 (`db_live`) confirms consistency across execution modes; the two paths
+  that diverge by mode are the live-loop and the post-run reconstruction.
+- Fee convention: `fills$realized_pnl = realized_close` (pre-fee gross);
+  `equity_curve$realized_pnl = cumsum(realized_close - fee)` (post-fee);
+  trade metrics aggregate post-fee. This is a pre-existing convention, not introduced
+  by LDG-1908; scenario 4 verifies it holds with opening positions.
+
+**Verification:**
+```text
+targeted opening-position FIFO tests
+full testthat (regression guard)
+```
+
+**Test Requirements:**
+- `tests/testthat/test-fifo-opening-positions.R`: all six scenarios.
+- Full test suite for regression guard.
+
+**Source Reference:** LDG-1908 implementation; `tests/testthat/test-experiment-run.R:158`
+(base scenario); v0.1.7.9 spec §7.1.
+
+**Classification:**
+```yaml
+risk_level: low
+implementation_tier: L
+review_tier: M
+classification_reason: >
+  Pure test addition. No production code changes. The risk is tests that do not
+  actually exercise the intended paths, providing false confidence in the LDG-1908 fix.
+invariants_at_risk:
+  - opening-position accounting correctness
+  - FIFO lot ordering under accumulation
+  - resume checkpoint correctness
+  - fee/P&L convention consistency
+required_context:
+  - R/lot-accounting.R
+  - R/backtest-runner.R
+  - R/derived-state.R
+  - R/run-store.R
+  - R/backtest.R
+  - tests/testthat/test-experiment-run.R
+  - tests/testthat/test-fifo-torture.R
+  - tests/testthat/test-accounting-consistency.R
+tests_required:
+  - tests/testthat/test-fifo-opening-positions.R
+  - full testthat
+escalation_triggers:
+  - a scenario reveals a remaining bug in the LDG-1908 paths
+  - resume checkpoint seeding is found to be incorrect
+  - db_live and audit_log produce different results for opening positions
+forbidden_actions:
+  - changing production code (tests only)
+  - skipping the resume scenario
+  - using fee=0 for scenario 4
+```
+
+---
+
 ## LDG-1907: v0.1.7.9 Release Gate, NEWS, And Packet Finalization
 
 **Priority:** P0
 **Effort:** 1 day
-**Dependencies:** LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910
+**Dependencies:** LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910, LDG-1911
 **Status:** Todo
 
 **Description:**

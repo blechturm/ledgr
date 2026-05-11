@@ -1,3 +1,22 @@
+ledgr_config_named_numeric <- function(x) {
+  if (is.null(x)) {
+    return(stats::setNames(numeric(), character()))
+  }
+  if (is.list(x) && !is.data.frame(x)) {
+    x <- unlist(x, use.names = TRUE)
+  }
+  if (!is.numeric(x) || length(x) < 1L) {
+    return(stats::setNames(numeric(), character()))
+  }
+  x_names <- names(x)
+  if (is.null(x_names)) {
+    return(stats::setNames(numeric(), character()))
+  }
+  valid <- !is.na(x_names) & nzchar(x_names) & !is.na(x) & is.finite(x)
+  as.numeric(x[valid]) |>
+    stats::setNames(x_names[valid])
+}
+
 validate_ledgr_config <- function(config) {
   if (is.character(config) && length(config) == 1 && !is.na(config)) {
     config <- tryCatch(
@@ -70,6 +89,21 @@ validate_ledgr_config <- function(config) {
       "Config field universe.instrument_ids must be a non-empty character vector of non-empty strings.",
       class = "ledgr_invalid_config"
     )
+  }
+
+  opening_positions <- ledgr_config_named_numeric(config$opening$positions)
+  opening_positions <- opening_positions[opening_positions != 0]
+  if (length(opening_positions) > 0L) {
+    missing_opening <- setdiff(names(opening_positions), instrument_ids)
+    if (length(missing_opening) > 0L) {
+      rlang::abort(
+        sprintf(
+          "Config field opening.positions contains instruments outside universe.instrument_ids: %s.",
+          paste(missing_opening, collapse = ", ")
+        ),
+        class = "ledgr_invalid_config"
+      )
+    }
   }
 
   start_ts <- cfg_get(c("backtest", "start_ts_utc"))

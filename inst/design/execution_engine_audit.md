@@ -111,6 +111,10 @@ daily run on 500 instruments that is ~7.5 million unused assignments.
 
 Safe cleanup candidate after confirming test coverage.
 
+**LDG-1910 routing:** Removed from `R/backtest-runner.R`. The runner now relies
+only on the authoritative post-run equity reconstruction from persisted ledger
+events; no public result surface used the live arrays.
+
 ---
 
 ## Minor
@@ -124,6 +128,10 @@ calls that bypass `ledgr_experiment()` can still reach the runner with
 out-of-universe opening positions without validation. Not a user-facing footgun
 via the public API.
 
+**LDG-1910 routing:** Closed with a defensive `validate_ledgr_config()` guard.
+The low-level `ledgr_backtest_run()` path now rejects `opening.positions`
+instruments that are outside `universe.instrument_ids`.
+
 ### 6. Global RNG side effect
 
 **File:** `backtest-runner.R:403`
@@ -133,6 +141,10 @@ to seed 1 when `cfg$engine$seed` is `NULL`. Reproducible by design, but mutates
 caller session RNG state. Strategy code using `runif()` or `sample()` gets
 seed-1 output even when no seed was explicitly requested. Affects other
 session-level RNG-dependent code including test suites.
+
+**LDG-1910 routing:** Deferred as a design decision. v0.1.7.9 does not change
+RNG semantics; the v0.1.8 stochastic/sweep design should decide whether ledgr
+continues to use global `set.seed()` or moves to a scoped RNG contract.
 
 ### 7. `commission_fixed` can make small SELL fills lose cash
 
@@ -146,6 +158,12 @@ If `commission_fixed > qty * fill_price`, cash_delta is negative for a SELL.
 No guard. Unlikely with default config but possible with small fractional-share
 trades and aggressive fixed commissions.
 
+**LDG-1910 routing:** Deferred as a fill-model/commission semantics decision.
+v0.1.7.9 keeps the current fixed-commission behavior unchanged. This is not a
+v0.1.8 sweep prerequisite. The v0.1.7.9 release gate must either open a
+post-v0.1.7.9 follow-up for fixed-commission cash-delta policy or record an
+explicit WONTFIX decision before release.
+
 ---
 
 ## Corrected from initial audit
@@ -154,6 +172,8 @@ trades and aggressive fixed commissions.
 bug. This was a false positive. `pending_idx` is incremented before the guard
 check (`backtest-runner.R:1568`). Using `>=` would reject the last valid slot.
 The current `>` is correct.
+
+**LDG-1910 routing:** Confirmed unchanged.
 
 **Non-universe opening positions via public API** — corrected above (§5).
 

@@ -75,6 +75,24 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
   testthat::expect_equal(n_state, 3L)
 })
 
+testthat::test_that("low-level runner rejects opening positions outside the universe", {
+  db_path <- make_runner_fixture_db()
+  cfg <- base_runner_config(db_path)
+  cfg$opening <- list(
+    cash = 1000,
+    date = NULL,
+    positions = c(BBB = 1),
+    cost_basis = c(BBB = 10)
+  )
+
+  testthat::expect_error(
+    ledgr_backtest_run(cfg),
+    "opening.positions contains instruments outside universe.instrument_ids",
+    fixed = TRUE,
+    class = "ledgr_invalid_config"
+  )
+})
+
 testthat::test_that("runner resume appends ledger events without duplicate event_seq and rebuilds tail", {
   db_path <- make_runner_fixture_db()
 
