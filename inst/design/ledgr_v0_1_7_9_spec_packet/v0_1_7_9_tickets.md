@@ -1203,7 +1203,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1 day
 **Dependencies:** LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910, LDG-1911
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Finalize v0.1.7.9 after all implementation and documentation tickets are done.
@@ -1235,7 +1235,7 @@ deferred, and ensure Ubuntu/Windows CI are green before merge/tag.
 - [x] `R CMD check --no-manual --no-build-vignettes` passes.
 - [x] pkgdown builds.
 - [x] No generated artifacts are committed.
-- [ ] Ubuntu and Windows CI are green.
+- [x] Ubuntu and Windows CI are green.
 
 **Implementation Notes:**
 - Bumped `DESCRIPTION` to `0.1.7.9`.
@@ -1253,7 +1253,7 @@ deferred, and ensure Ubuntu/Windows CI are green before merge/tag.
 - Adjusted two source-tree documentation-contract checks so installed-package
   `R CMD check` skips them when `_pkgdown.yml` or source `man/` files are not
   available in the check tree.
-- External Ubuntu/Windows CI remains pending until the branch is pushed.
+- Branch, main, and tag CI are green on Ubuntu and Windows.
 
 **Verification:**
 ```text
@@ -1275,8 +1275,16 @@ PASS R CMD check:
 PASS pkgdown build:
 $env:RSTUDIO_PANDOC='C:\Program Files\RStudio\resources\app\bin\quarto\bin\tools'; & "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e ".libPaths(c(normalizePath('lib', winslash='/'), .libPaths())); pkgdown::build_site(new_process = FALSE, install = TRUE)"
 
-PENDING CI:
-Ubuntu and Windows CI can be confirmed only after push.
+PASS branch CI:
+GitHub Actions R-CMD-check run 25722219193 passed on
+`v0.1.7.9` before merge.
+
+PASS main CI:
+GitHub Actions R-CMD-check run 25723836818 passed on `main`.
+GitHub Actions pkgdown run 25723836828 passed on `main` and deployed Pages.
+
+PASS tag CI:
+GitHub Actions R-CMD-check run 25724929625 passed for tag `v0.1.7.9`.
 ```
 
 **Test Requirements:**

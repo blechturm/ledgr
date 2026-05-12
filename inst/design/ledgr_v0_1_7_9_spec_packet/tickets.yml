@@ -406,7 +406,7 @@ tickets:
 
   - id: LDG-1907
     title: "v0.1.7.9 Release Gate, NEWS, And Packet Finalization"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-1902, LDG-1903, LDG-1904, LDG-1905, LDG-1906, LDG-1908, LDG-1909, LDG-1910, LDG-1911]
     tests:
