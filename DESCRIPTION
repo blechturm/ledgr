@@ -1,6 +1,6 @@
 Package: ledgr
 Title: Deterministic Event-Sourced Backtesting
-Version: 0.1.7.8
+Version: 0.1.7.9
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",

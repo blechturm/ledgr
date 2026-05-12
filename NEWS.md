@@ -1,3 +1,20 @@
+# ledgr 0.1.7.9
+
+- Added `ledgr_feature_contract_check()` so users can inspect feature warmup
+  feasibility before running a strategy, including explicit handling for
+  deferred feature factories.
+- Improved strategy-author ergonomics around empty selections, feature maps,
+  strategy context helpers, custom indicators, and zero-trade/warmup diagnosis.
+- Polished public documentation flow, article ordering, snapshot/store examples,
+  result-inspection guidance, and release-site hygiene.
+- Fixed opening-position lot accounting so cost basis is honored consistently
+  across fills, trades, metrics, equity reconstruction, derived state, and run
+  comparison output.
+- Documented current per-leg `spread_bps` semantics without changing fill-model
+  behavior.
+- Removed dead live equity-array bookkeeping and routed remaining execution
+  engine audit findings to explicit release or roadmap decisions.
+
 # ledgr 0.1.7.8
 
 - Added strategy reproducibility preflight with `ledgr_strategy_preflight()`,

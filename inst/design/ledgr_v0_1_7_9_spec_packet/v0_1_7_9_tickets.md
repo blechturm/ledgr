@@ -1226,28 +1226,57 @@ deferred, and ensure Ubuntu/Windows CI are green before merge/tag.
 11. Confirm generated artifacts are not committed.
 
 **Acceptance Criteria:**
-- [ ] All prior v0.1.7.9 tickets are complete or explicitly deferred.
-- [ ] NEWS and version metadata match the shipped scope.
-- [ ] `v0_1_7_9_tickets.md` and `tickets.yml` are synchronized.
-- [ ] Opening-position lot accounting regressions pass.
-- [ ] Documentation contract tests pass.
-- [ ] Full local tests pass.
-- [ ] `R CMD check --no-manual --no-build-vignettes` passes.
-- [ ] pkgdown builds.
-- [ ] No generated artifacts are committed.
+- [x] All prior v0.1.7.9 tickets are complete or explicitly deferred.
+- [x] NEWS and version metadata match the shipped scope.
+- [x] `v0_1_7_9_tickets.md` and `tickets.yml` are synchronized.
+- [x] Opening-position lot accounting regressions pass.
+- [x] Documentation contract tests pass.
+- [x] Full local tests pass.
+- [x] `R CMD check --no-manual --no-build-vignettes` passes.
+- [x] pkgdown builds.
+- [x] No generated artifacts are committed.
 - [ ] Ubuntu and Windows CI are green.
 
 **Implementation Notes:**
-- Pending.
+- Bumped `DESCRIPTION` to `0.1.7.9`.
+- Added the v0.1.7.9 `NEWS.md` entry covering feature-contract checks,
+  strategy-author docs/UX polish, public-site cleanup, opening-position FIFO
+  accounting, spread semantics documentation, and execution-engine audit
+  routing.
+- Kept all deferred v0.1.8+ scope deferred: sweep mode, feature precompute,
+  `ctx$all_features()`, persisted feature retrieval, and
+  `ledgr_snapshot_split()`.
+- Confirmed execution-engine audit findings are fixed, documented, or routed:
+  opening-position cost basis and FIFO edge cases are covered by LDG-1908 and
+  LDG-1911; spread semantics by LDG-1909; dead arrays and minor audit routing by
+  LDG-1910; future cost-policy questions by the roadmap/RFC response.
+- Adjusted two source-tree documentation-contract checks so installed-package
+  `R CMD check` skips them when `_pkgdown.yml` or source `man/` files are not
+  available in the check tree.
+- External Ubuntu/Windows CI remains pending until the branch is pushed.
 
 **Verification:**
 ```text
-targeted tests
-documentation contract tests
-full testthat
-R CMD check
-pkgdown build
-CI
+PASS targeted opening-position tests:
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-fifo-opening-positions.R', reporter='summary')"
+
+PASS documentation contract tests:
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-documentation-contracts.R', reporter='summary')"
+
+PASS full local testthat:
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
+
+PASS package build:
+$env:RSTUDIO_PANDOC='C:\Program Files\RStudio\resources\app\bin\quarto\bin\tools'; & "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build .
+
+PASS R CMD check:
+& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_0.1.7.9.tar.gz
+
+PASS pkgdown build:
+$env:RSTUDIO_PANDOC='C:\Program Files\RStudio\resources\app\bin\quarto\bin\tools'; & "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e ".libPaths(c(normalizePath('lib', winslash='/'), .libPaths())); pkgdown::build_site(new_process = FALSE, install = TRUE)"
+
+PENDING CI:
+Ubuntu and Windows CI can be confirmed only after push.
 ```
 
 **Test Requirements:**

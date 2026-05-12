@@ -647,6 +647,7 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   )
   public_paths <- public_paths[file.exists(public_paths)]
   text <- paste(unlist(lapply(public_paths, readLines, warn = FALSE)), collapse = "\n")
+  testthat::skip_if_not(file.exists(pkgdown), "pkgdown config unavailable during installed-package tests")
   pkgdown_text <- paste(readLines(pkgdown, warn = FALSE), collapse = "\n")
 
   start_here <- regexpr("  - title: Start Here", pkgdown_text, fixed = TRUE)
@@ -746,7 +747,9 @@ testthat::test_that("core help pages point to installed articles with browser-fr
 
 testthat::test_that("feature contract check docs state factory materialization boundary", {
   root <- testthat::test_path("..", "..")
-  help <- paste(readLines(file.path(root, "man", "ledgr_feature_contract_check.Rd"), warn = FALSE), collapse = "\n")
+  help_path <- file.path(root, "man", "ledgr_feature_contract_check.Rd")
+  testthat::skip_if_not(file.exists(help_path), "man page source unavailable during installed-package tests")
+  help <- paste(readLines(help_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_match(help, "feature factories", ignore.case = TRUE)
   testthat::expect_match(help, "Materialize the factory first", fixed = TRUE)

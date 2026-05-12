@@ -26,9 +26,9 @@ the active versioned spec packet, currently
   execution engine: pulse calendar order, context construction, feature lookup,
   strategy invocation, target validation, fill timing, cost resolution,
   final-bar no-fill behavior, cash/position/state transitions, and the
-  canonical in-memory event stream. The output handler is the persistence or
-  accumulation layer that
-  materializes fold outputs into `ledger_events`, `features`, `strategy_state`,
+  canonical in-memory event stream.
+  The output handler is the persistence or accumulation layer that materializes
+  fold outputs into `ledger_events`, `features`, `strategy_state`,
   `equity_curve`, telemetry, summaries, comparison rows, or future in-memory
   sweep result objects.
 - Future `ledgr_run()` and `ledgr_sweep()` must call the same fold core. Sweep
