@@ -365,7 +365,7 @@ tickets:
 
   - id: LDG-1911
     title: "Opening-Position FIFO Edge-Case Test Coverage"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-1908]
     tests:

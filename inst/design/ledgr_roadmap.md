@@ -1367,6 +1367,30 @@ The implementation must extract an internal fold core that both
 copying the runner and deleting DuckDB calls is explicitly prohibited because
 that path leads to silent parity drift.
 
+The fold-core extraction also reserves the private boundary between fill timing
+and cost resolution. v0.1.8 does not export a cost-model API, but the fold core
+must not hard-code `spread_bps` and `commission_fixed` as primitive fold
+arguments. The internal chain is:
+
+```text
+targets_risked
+  -> next-open fill proposals for the pulse
+  -> internal cost resolver derived from fill_model
+  -> fill intents / fold events
+```
+
+The public `fill_model = list(type = "next_open", spread_bps = ...,
+commission_fixed = ...)` surface remains unchanged. The internal refactor must
+preserve current fill prices, fees, cash deltas, ledger rows, equity curves,
+metrics, comparison outputs, and `config_hash` values for the same canonical
+config.
+
+The future fill context is distinct from the strategy `ctx`: strategy code sees
+decision-time data only, while cost resolution may use execution-bar data such
+as next-bar open and volume. The internal proposal/fill context should reserve
+full execution-bar OHLCV even though v0.1.8's default cost resolver only uses
+open.
+
 ### Strategy Contract
 
 Sweep mode requires sweep-compatible strategies:
@@ -1467,6 +1491,8 @@ same seed, same pulse order, same draws.
 - same final positions and cash balance
 - same target/fill timing behaviour
 - same final-bar no-fill behaviour
+- same cost semantics, including fill price, fee, cash delta, and scalar
+  fill-model `config_hash`
 - same random draws at each pulse (same seed, same pulse order)
 
 The in-memory event stream produced by sweep mode must be semantically
@@ -1612,9 +1638,13 @@ prerequisite for the v0.1.8 spec cut, not for the current release cycle.
 
 - `ledgr_sweep()` and `ledgr_run()` produce identical results on the same
   input: equity curve, trades, fills, final positions, cash, fill timing,
-  warmup behaviour, fee model, long-only enforcement, and random draws
+  warmup behaviour, fee model, cash deltas, scalar fill-model `config_hash`,
+  long-only enforcement, and random draws
 - Parity is enforced by CI, not by convention
 - Both functions call the same internal fold core; no copied runner code
+- The fold core separates next-open fill timing from internal cost resolution
+  without exporting a public cost-model API or changing current
+  `spread_bps` / `commission_fixed` semantics
 - `write_persistent_telemetry` and `fail_run` do not capture the DuckDB
   connection from fold scope; telemetry travels through the output-handler
   path, not `.ledgr_telemetry_registry`
@@ -1645,6 +1675,8 @@ prerequisite for the v0.1.8 spec cut, not for the current release cycle.
 - Explicit `seed = NA` opt-out is documented with a clear warning about
   non-determinism
 - `ledgr_tune()` is explicitly out of scope for this milestone; it is a candidate post-v0.1.8 convenience wrapper once the fold core is stable, not an indefinite deferral
+- No exported cost-model factories, broker fee templates, market-impact models,
+  liquidity clipping, or separate sweep execution grid ship in this milestone
 
 ---
 
@@ -1707,11 +1739,17 @@ layer that constrains what the fill model receives.
   ```text
   strategy(ctx, params)           -> targets_raw
   risk(targets_raw, ctx, params)  -> targets_risked
-  fill_model(targets_risked, state) -> trades
+  fill timing + cost resolution   -> fills
   ```
 - Contract: `function(targets, ctx, params) -> targets` where `targets` is the
   named numeric vector from the strategy. The return must be a named numeric
   vector of the same shape.
+- In v0.1.9, risk functions receive the same decision-time `ctx` shape as
+  strategy functions, including helpers such as `ctx$hold()`, `ctx$flat()`,
+  `ctx$close()`, and `ctx$position()`. This is intentionally different from the
+  future fill/cost context, which may carry execution-bar data. If a later
+  milestone introduces a distinct `risk_context`, it must preserve the
+  hold-current-position pattern explicitly.
 - `risk = NULL` is the default and is stored as `null` in `config_json`. Two
   runs that differ only in risk configuration produce different `config_hash`
   values.
@@ -1742,6 +1780,20 @@ All weight and exposure helpers compute implied weights from current close price
 and current portfolio value. The Rd documentation states this assumption
 explicitly for each helper. Actual fill values may differ under next-open
 execution.
+
+#### Cost-Estimation Bridge (Known Gap)
+
+Pre-trade cost filters belong in the risk layer, not in the execution cost
+resolver. A rule such as "trade only when expected alpha exceeds estimated
+transaction cost" must suppress or alter targets before fill proposals are
+generated.
+
+v0.1.9 does not need to solve the public cost-model API, but the risk spec must
+record the bridge explicitly: future cost factories should expose an estimation
+function, or risk helpers should receive a cost-estimation helper that mirrors
+the active cost policy without committing a fill. Until that exists, helpers
+such as `ledgr_risk_min_trade_value()` use current close prices and documented
+approximations rather than true execution-cost estimates.
 
 #### Explicit Semantics
 
@@ -1783,6 +1835,8 @@ Risk: composed[no_short, max_weight(10%), max_gross_exposure(100%)]
 - No persisted risk-event ledger (risk decisions are not recorded as ledger
   events)
 - No HALT or hold sentinel -- use `ctx$hold()` directly
+- No full transaction-cost estimation API; the cost-estimation bridge is
+  recorded for the later public cost-model milestone
 
 ### Definition of Done
 
@@ -1801,6 +1855,51 @@ Risk: composed[no_short, max_weight(10%), max_gross_exposure(100%)]
 - `R CMD check --no-manual --no-build-vignettes` passes with 0 errors and
   0 warnings
 - Coverage gate passes
+
+---
+
+## v0.1.9.x or v0.2.0 - Public Transaction Cost Model API
+
+**Goal:** Turn the private v0.1.8 fill-timing/cost-resolution boundary into a
+public, composable cost-model API without changing next-open timing semantics.
+
+This milestone deliberately follows the v0.1.9 risk layer so ledgr can reuse the
+function identity, source capture, fingerprinting, and captured-object policy
+developed for function-valued execution layers.
+
+### Scope
+
+- Export cost-model factories for core primitives: spread, fixed fee,
+  proportional fee, min/max fee, and composition.
+- Preserve the no-lookahead boundary: strategy receives decision-time `ctx`;
+  cost models receive a separate fill context with execution-bar data.
+- Cost resolvers operate on the batch of fill proposals generated for one pulse
+  and preserve instrument, side, quantity, and execution timestamp in the first
+  public contract.
+- Define cost-model identity in `config_json` / `config_hash` and sweep
+  candidate metadata.
+- Define whether and how cost factories expose pre-trade cost-estimation helpers
+  for risk-layer filters.
+- Decide fixed-commission negative sale-proceeds policy, including whether
+  default factories allow or reject `fee > qty * fill_price` for SELL fills.
+
+### Non-Goals
+
+- No intraday or tick-data timing model.
+- No order-book simulation.
+- No quantity-changing liquidity model in the first public cost contract.
+- No authoritative broker/exchange fee templates in core ledgr. Broker-specific
+  schedules belong in adapter packages or user-maintained code.
+
+### Definition of Done
+
+- Default public cost factory reproduces current `spread_bps` /
+  `commission_fixed` behavior exactly.
+- Existing scalar fill-model configs retain byte-identical `config_hash` values.
+- `ledgr_run()` and `ledgr_sweep()` apply identical cost resolution for
+  identical inputs.
+- Documentation states that core ledgr primitives are execution assumptions,
+  not certified broker schedules.
 
 ---
 

@@ -288,9 +288,9 @@ curated summary with the same formatting conventions as `ledgr_comparison`.
 **Object metadata:** The result object also carries in-memory identity metadata
 as attributes, not repeated visible columns: snapshot id/hash, strategy source
 hash or preflight identity, strategy preflight result, opening state, execution
-assumptions, evaluation scope, and RNG contract. These attributes are promotion
-and audit aids for the current R session; they are not durable experiment-store
-provenance.
+assumptions, fill/cost assumptions, evaluation scope, and RNG contract. These
+attributes are promotion and audit aids for the current R session; they are not
+durable experiment-store provenance.
 
 **Print output:**
 
@@ -353,6 +353,7 @@ persistence writes to DuckDB; sweep accumulates an in-memory summary.
 - Fill timing (next-open fill model, final-bar no-fill rule)
 - Warmup behaviour (NA features before `stable_after`)
 - Fee and commission calculation
+- Existing scalar fill-model config identity (`config_hash`)
 - Long-only enforcement
 - Random draws (same `seed` argument, same pulse-level seed derivation)
 
@@ -366,9 +367,10 @@ failure.
 **Boundary:** Sweep does not produce durable run provenance, DuckDB run
 artifacts, or persisted telemetry. Sweep may retain in-memory candidate
 identity metadata such as params, snapshot identity, feature identity, strategy
-preflight classification, and execution assumptions so a candidate can be
-promoted to a committed `ledgr_run()` deliberately. That identity metadata is
-not a substitute for the durable provenance created by the committed run.
+preflight classification, execution assumptions, fill/cost assumptions, and RNG
+contract so a candidate can be promoted to a committed `ledgr_run()`
+deliberately. That identity metadata is not a substitute for the durable
+provenance created by the committed run.
 
 ---
 
@@ -499,7 +501,11 @@ The API remains deferred until sweep is shipped and the use case is proven.
 - `params`, `warnings`, and `feature_fingerprints` list columns for candidate
   promotion and interpretation
 - In-memory result metadata for snapshot identity, strategy preflight, opening
-  state, execution assumptions, evaluation scope, and RNG contract
+  state, execution assumptions, fill/cost assumptions, evaluation scope, and
+  RNG contract
+- Private fill-timing/cost-resolution boundary that preserves current
+  `spread_bps` / `commission_fixed` behavior and `config_hash`; no exported
+  cost-model API
 - Parity test suite (strict CI gate)
 - Warning when grid > threshold and features not precomputed
 - No `ledgr_tune()` in this milestone

@@ -56,6 +56,11 @@ stats) does the same. Affected metrics for any run that uses
 before the event replay loop in every reconstruction/result path. Apply the
 helper in all six locations (see below).
 
+**LDG-1908 / LDG-1911 routing:** Fixed by LDG-1908 through the shared
+lot-accounting helper and opening-position `CASHFLOW` seeding. LDG-1911 adds
+edge-case coverage for resume, accumulation, multi-instrument isolation,
+non-zero fees, position flips, and `db_live` parity.
+
 ---
 
 ## Important
@@ -78,6 +83,10 @@ diverge:
 signature. All six paths call it. The opening-position patch is then applied
 in exactly one place.
 
+**LDG-1908 / LDG-1911 routing:** LDG-1908 centralizes FIFO behavior in the
+shared helper. LDG-1911 verifies the helper across the opening-position
+edge-case surfaces most likely to regress.
+
 ### 3. `spread_bps` applies the full spread per leg — underdocumented
 
 **File:** `fill-model.R:62–64`
@@ -95,6 +104,10 @@ decision (the comment is explicit), but it is not surfaced in any public docs.
 **Recommendation:** Document the full-spread-per-leg convention prominently in
 `ledgr_opening()` and fill-model parameter docs, or rename to `round_trip_bps`
 to make the semantics self-describing.
+
+**LDG-1909 routing:** Documented as current behavior without changing runtime
+semantics. `spread_bps` remains a per-leg execution adjustment: a round trip
+costs approximately `2 * spread_bps` basis points before fixed commissions.
 
 ### 4. Six preallocated live equity arrays are dead code
 
@@ -160,9 +173,12 @@ trades and aggressive fixed commissions.
 
 **LDG-1910 routing:** Deferred as a fill-model/commission semantics decision.
 v0.1.7.9 keeps the current fixed-commission behavior unchanged. This is not a
-v0.1.8 sweep prerequisite. The v0.1.7.9 release gate must either open a
-post-v0.1.7.9 follow-up for fixed-commission cash-delta policy or record an
-explicit WONTFIX decision before release.
+v0.1.8 sweep prerequisite. The follow-up owner is the future public
+transaction-cost model milestone recorded in `inst/design/ledgr_roadmap.md` and
+the cost-model RFC response: default cost factories must decide whether to allow
+or reject negative sale proceeds (`fee > qty * fill_price`) for SELL fills. If
+ledgr later bans this globally, it must be an explicit execution-contract
+change in the ledger writer rather than a hidden behavior of one cost factory.
 
 ---
 

@@ -66,6 +66,7 @@ The fold core is the deterministic per-bar execution engine:
 - strategy invocation;
 - target validation;
 - fill timing;
+- cost resolution;
 - final-bar no-fill behavior;
 - cash, position, and state transitions;
 - event-stream meaning.
@@ -106,6 +107,12 @@ through `ledgr_run()` and `ledgr_sweep()` and compare the quantities listed in
 `inst/design/ledgr_sweep_mode_ux.md`: final equity, cash, positions, trades,
 fills, equity curve, fill timing, warmup behavior, costs, long-only
 enforcement, and random-draw semantics.
+
+The internal cost boundary is part of that parity contract. If v0.1.8 extracts
+fill timing and cost resolution into separate internal steps, the refactor must
+produce identical fill prices, fees, cash deltas, ledger rows, equity curves,
+metrics, comparison outputs, and `config_hash` values to the current scalar
+`spread_bps` / `commission_fixed` implementation.
 
 ## Current Coupling Points
 
@@ -299,6 +306,118 @@ This requirement does not imply a new exported API. `ledgr_param_grid()`,
 `features = function(params)`, `ledgr_precompute_features()`, and
 `ledgr_sweep()` are sufficient if they preserve the identity and validation
 rules above.
+
+## Requirement 6: Fill Timing And Cost Resolution Are Separable
+
+v0.1.8 does not export a public cost-model API. It should still avoid locking
+the fold core to `spread_bps` and `commission_fixed` as primitive fold
+arguments.
+
+The fold core should preserve this internal chain:
+
+```text
+targets_risked
+  -> next_open_timing()
+  -> ledgr_fill_proposals for the pulse
+  -> internal cost resolver
+  -> ledgr_fill_intent
+  -> fold event
+```
+
+The current public fill configuration remains unchanged:
+
+```r
+fill_model = list(
+  type = "next_open",
+  spread_bps = 0,
+  commission_fixed = 0
+)
+```
+
+v0.1.8 may represent that configuration internally as the default cost
+resolver. The resolver must wrap the current behavior exactly: buys fill at
+`open * (1 + spread_bps / 10000)`, sells fill at
+`open * (1 - spread_bps / 10000)`, and fixed commission is recorded as the fill
+fee.
+
+The current `ledgr_fill_next_open()` helper may remain as a compatibility or
+internal helper used by the default resolver. The architecture constraint is
+that the fold core must not be locked to its scalar signature as the primitive
+execution boundary.
+
+This boundary keeps execution timing and cost application distinct:
+
+```text
+timing model: decides when and at what reference bar a fill can occur
+cost model:   resolves price and fees for an already proposed fill
+ledger:       validates and records the resulting event
+```
+
+The ordinary strategy context remains decision-time only. A future
+function-valued cost model must not receive the same `ctx` object that strategy
+code sees, because cost resolution may legitimately need execution-bar data
+such as next-bar open or volume. That data is post-strategy execution
+information and must not leak into the strategy decision boundary.
+
+The future cost signature should therefore use a separate fill context:
+
+```r
+cost_model <- function(fill_proposals, fill_context, params) {
+  # returns fill intents with resolved fill_price and fee
+}
+```
+
+The fill context may carry decision timestamp, execution timestamp, current-bar
+data, next-bar execution data, current cash/positions/equity before the fill,
+universe, and execution assumptions. It is an execution-pricing context, not a
+strategy authoring context.
+
+The execution-bar payload should reserve full OHLCV fields, not only `open`.
+The current scalar cost model only needs next-bar open, but market-impact,
+participation-rate, and liquidity diagnostics require execution-bar volume, and
+some future cost policies may need high/low/close. In `audit_log` mode the full
+bar is already available in the cached bar payload; in `db_live` mode the
+current next-bar query must be widened when the proposal boundary is extracted.
+
+The first cost-model contract should preserve instrument, side, quantity, and
+execution timestamp. The initial internal resolver is stateless across pulses
+and receives the batch of proposals generated for one pulse. This batch shape
+leaves room for same-pulse fee allocation later, but it does not support daily
+turnover budgets, cumulative commission budgets, soft-dollar tracking, or
+cross-pulse liquidity state.
+
+Quantity-changing behavior is not cost. Minimum trade filters, volume clipping,
+partial fills, liquidity refusal, and participation limits change what fills
+happen and must be deferred to a separate execution or liquidity contract
+unless they are expressed as a target/risk transform before fill timing.
+
+Pre-trade cost filters belong before timing, usually in the risk layer. A rule
+such as "trade only when expected alpha exceeds estimated cost" must suppress
+or alter targets before fill proposals exist. The v0.1.9 risk-layer spec should
+record the future bridge: either cost factories expose an estimation function,
+or risk helpers receive a cost-estimation helper that mirrors the chosen cost
+policy without committing a fill.
+
+Function-valued public cost models also require identity work before they can
+be exported: source capture, fingerprinting, captured-object representation,
+and preflight or contract classification. v0.1.8 avoids that unresolved public
+API surface by keeping the resolver private and derived from scalar config.
+
+Cost resolution happens inside the fold before output handlers receive events.
+Output handlers must not compute, reinterpret, or rewrite costs. This preserves
+the sweep parity guarantee:
+
+```text
+same proposal + same cost resolver -> same fold event
+```
+
+whether the output handler writes DuckDB rows for `ledgr_run()` or in-memory
+summary rows for `ledgr_sweep()`.
+
+The internal refactor must not alter run identity. The canonical config
+serialization for the existing scalar fill model must remain byte-identical so
+stored run resume, run comparison, and experiment identity keep working across
+the fold-core extraction.
 
 ## Precomputed Feature Input
 
@@ -540,7 +659,11 @@ while (any(vapply(tasks, unresolved, logical(1)))) {
 ```
 
 The v0.1.8 spec must decide between this pattern and discarding in-flight
-results on interrupt (see Design Checklist item 21).
+results on interrupt (see Design Checklist item 26). The architecture
+recommendation is to return a classed partial `ledgr_sweep_results` object with
+completed candidates marked clearly as partial and in-flight candidates
+discarded; if the v0.1.8 spec rejects that direction, it must explicitly choose
+discard-all semantics instead.
 
 ### Telemetry side-channel failure mode
 
@@ -565,19 +688,21 @@ spec should state the expected peak-memory behavior for sequential sweep and
 avoid retaining full event streams by default.
 
 Long sweeps also need explicit interrupt semantics. The v0.1.8 spec should
-decide whether `Ctrl-C` / user interrupts discard all completed candidate
-results, return a classed partial `ledgr_sweep_results` object, or write partial
-results through a user-selected output policy. Returning partial results is
-attractive UX, but it must not silently swallow interrupts or present an
-incomplete sweep as complete.
+return a classed partial `ledgr_sweep_results` object on `Ctrl-C` / user
+interrupt after collecting completed candidates and discarding in-flight
+candidates. The object must be marked partial in class, metadata, and print
+output so an incomplete sweep is never presented as complete. If this proves too
+complex for v0.1.8, the spec must explicitly choose discard-all semantics
+instead of leaving interrupt behavior accidental.
 
 ## Roadmap Placement
 
 | Milestone | Scope |
 |---|---|
-| v0.1.8 | Fold core/output-handler split; sequential `ledgr_sweep()` as modular evaluation primitive; evaluation-discipline docs with manual holdout workflow |
-| v0.1.9 | `ledgr_snapshot_split()` once sweep UX is stable |
+| v0.1.8 | Fold core/output-handler split; private fill-timing/cost-resolution boundary; sequential `ledgr_sweep()` as modular evaluation primitive; evaluation-discipline docs with manual holdout workflow |
+| v0.1.9 | Risk layer; `ledgr_snapshot_split()` once sweep UX is stable |
 | v0.1.9 or v0.2.x | `ledgr_walk_forward()` built on sweep plus run |
+| v0.1.9.x or v0.2.x | Public cost-model API after risk/function identity work stabilizes |
 | later | PBO/CSCV diagnostic; parallel sweep after telemetry and DuckDB write isolation are solved |
 
 ## Non-Goals For v0.1.8
@@ -588,6 +713,11 @@ incomplete sweep as complete.
 - No mandatory parallel sweep.
 - No persisted feature-series retrieval API.
 - No new execution semantics that differ from `ledgr_run()`.
+- No exported cost-model factories.
+- No exchange or broker fee templates.
+- No market-impact models.
+- No liquidity clipping, partial-fill, or volume-participation model.
+- No separate sweep execution grid for cost assumptions.
 
 ## Design Checklist For The v0.1.8 Spec
 
@@ -616,27 +746,35 @@ Before v0.1.8 tickets are cut, the spec must answer:
 16. How are indicator-parameter sweeps represented: candidate params,
     feature-factory evaluation, per-candidate feature fingerprints, and
     candidate-specific warmup feasibility?
-17. Which current runner closures and telemetry side channels must move into
+17. How does the fold core separate next-open fill timing from cost resolution
+    without changing current spread/commission behavior?
+18. What typed internal fields does `ledgr_fill_proposal` carry?
+19. What fields are available in `fill_context`, and how is it kept separate
+    from the no-lookahead strategy `ctx`?
+20. What parity assertions prove the internal cost-boundary refactor is
+    behavior-preserving: fill prices, fees, cash deltas, ledger rows, equity
+    curves, metrics, comparison outputs, and `config_hash` values?
+21. Which current runner closures and telemetry side channels must move into
     output-handler responsibility?
-18. What does the parity test suite cover, including at least one candidate
+22. What does the parity test suite cover, including at least one candidate
     grid where params change the registered feature set?
-19. What parallel prerequisites are explicitly deferred?
-20. Does strategy preflight run once per sweep or once per candidate, and under
+23. What parallel prerequisites are explicitly deferred?
+24. Does strategy preflight run once per sweep or once per candidate, and under
     what future API would that change?
-21. What are the memory expectations for large sequential sweeps?
-22. What are the interrupt semantics, and are partial results returned or
+25. What are the memory expectations for large sequential sweeps?
+26. What are the interrupt semantics, and are partial results returned or
     discarded?
-23. Before locking in the once-per-sweep preflight contract: does
+27. Before locking in the once-per-sweep preflight contract: does
     `ledgr_strategy_preflight()` inspect feature definitions or candidate-varying
     referenced symbols, or does it classify only the strategy function body and
     its non-candidate-specific environment? If preflight is not strategy-body-only,
     it must run once per candidate.
-24. Where does per-candidate seed derivation happen: inside the fold core, in the
+28. Where does per-candidate seed derivation happen: inside the fold core, in the
     sweep dispatcher before dispatch, or in the output handler? This determines
     whether `ctx$seed` comes from the fold-core input signature directly or is
     injected by the sweep layer. The spec must state the derivation boundary
     explicitly.
-25. What is the write-isolation pattern for future parallel sweep: per-worker temp
+29. What is the write-isolation pattern for future parallel sweep: per-worker temp
     databases with orchestrated merge, or a serialized write queue? No spike covers
     this; the v0.1.8 spec must take a position from first principles, even if
     parallel write isolation itself is deferred.

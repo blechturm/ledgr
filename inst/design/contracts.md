@@ -24,9 +24,10 @@ the active versioned spec packet, currently
 - The v0.1.8 fold-core/output-handler boundary is a required architecture
   contract before sweep mode. The fold core is the deterministic per-pulse
   execution engine: pulse calendar order, context construction, feature lookup,
-  strategy invocation, target validation, fill timing, final-bar no-fill
-  behavior, cash/position/state transitions, and the canonical in-memory event
-  stream. The output handler is the persistence or accumulation layer that
+  strategy invocation, target validation, fill timing, cost resolution,
+  final-bar no-fill behavior, cash/position/state transitions, and the
+  canonical in-memory event stream. The output handler is the persistence or
+  accumulation layer that
   materializes fold outputs into `ledger_events`, `features`, `strategy_state`,
   `equity_curve`, telemetry, summaries, comparison rows, or future in-memory
   sweep result objects.
@@ -34,13 +35,23 @@ the active versioned spec packet, currently
   mode may use a cheaper output handler, skip DuckDB persistence, batch
   materialization, or keep only summary/ranking output. It must not change
   strategy semantics, target validation, feature values, pulse order, fill
-  timing, state transitions, random-state semantics, final-bar behavior, or
-  event-stream meaning.
+  timing, cost semantics, state transitions, random-state semantics, final-bar
+  behavior, or event-stream meaning.
 - Output handlers may differ only after the fold has produced the same semantic
   result for the same experiment, params, seed, snapshot, universe, feature
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
+- Cost resolution belongs inside the fold before any output handler sees
+  events. Output handlers must not compute, reinterpret, or rewrite fill prices,
+  fees, cash deltas, or cost metadata.
+- Strategy contexts carry decision-time information only. Future cost/fill
+  contexts may carry execution-bar data for pricing, but those objects must
+  remain separate so next-bar execution data cannot leak into strategy
+  decisions.
+- The v0.1.8 private fill-timing/cost-resolution boundary must preserve the
+  existing scalar `fill_model` config identity. A behavior-preserving internal
+  refactor must not change `config_hash` for the same canonical config.
 - Strategy preflight runs before entering the fold core. Future sweep mode
   inherits the v0.1.7.8 preflight semantics: Tier 1 and Tier 2 strategies may
   execute, and Tier 3 strategies must stop before any fold execution or output
