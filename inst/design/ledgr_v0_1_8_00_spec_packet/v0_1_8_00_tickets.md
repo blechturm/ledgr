@@ -26,7 +26,7 @@ Tracks:
 4. **Roadmap density:** shorten the roadmap to stable arc plus active horizon.
 5. **pkgdown discoverability:** fix the Articles navbar and verify LLM site
    artefacts.
-6. **Parallelism spike session:** run all five spikes and record outcomes for
+6. **Parallelism spike session:** run all six spikes and record outcomes for
    v0.1.8 spec prep.
 7. **Closeout:** verify paths, directory shape, prep-track completion, and no
    runtime drift.
@@ -632,7 +632,7 @@ forbidden_actions:
 
 ---
 
-## LDG-2007: Parallelism Spike Session
+## LDG-2007: Parallelism And Scale-Shape Spike Session
 
 **Priority:** P1
 **Effort:** 2-3 days
@@ -640,10 +640,11 @@ forbidden_actions:
 **Status:** Todo
 
 **Description:**
-Execute the five parallelism spikes defined in `inst/design/spikes/ledgr_parallelism_spike.md`
+Execute the six parallelism and scale-shape spikes defined in `inst/design/spikes/ledgr_parallelism_spike.md`
 and record findings in that document. The spike results determine key v0.1.8
 design decisions: mirai dependency classification, mori serialization viability,
-bar-data fetch strategy, and feature-cache warming semantics. All five spikes
+bar-data fetch strategy, feature-cache warming semantics, and scale-shape
+limits for wide feature maps and future intraday payloads. All six spikes
 must complete before the v0.1.8 spec can be opened.
 
 This ticket extends the v0.1.8.00 governance scope at the maintainer's request.
@@ -652,10 +653,11 @@ here avoids a separate micro-cycle.
 
 **Spike Inventory (from `spikes/ledgr_parallelism_spike.md`):**
 - SPIKE-1: mirai daemon lifecycle on Windows (native) and Ubuntu/WSL
-- SPIKE-2: mirai task serialization - plain R objects, closures, environments
+- SPIKE-2: serialization cost for ledgr-sized payloads
 - SPIKE-3: mori cross-process serialization with mirai's NNG layer
 - SPIKE-4: bar-data fetch strategy - pre-fetch vs. per-worker read-only DuckDB
 - SPIKE-5: feature-cache cross-task survival in mirai daemon processes
+- SPIKE-6: scale-shape probe for sweep data movement
 
 **Tasks:**
 1. Create `dev/spikes/` directory and add it to `.Rbuildignore`.
@@ -668,12 +670,12 @@ here avoids a separate micro-cycle.
 5. For each spike, record: outcome (confirmed / refuted / inconclusive),
    platform results, blocking implications for v0.1.8, and any required
    follow-up.
-6. After all five spikes complete, summarize the v0.1.8 design decisions that
+6. After all six spikes complete, summarize the v0.1.8 design decisions that
    are now unblocked or newly constrained.
 
 **Acceptance Criteria:**
 - [ ] `dev/spikes/` exists and is in `.Rbuildignore`.
-- [ ] All five spikes have recorded outcomes in the spike document.
+- [ ] All six spikes have recorded outcomes in the spike document.
 - [ ] Each spike outcome includes platform results (Windows, Ubuntu/WSL as
       applicable).
 - [ ] The spike document summarizes which v0.1.8 design decisions are resolved.
@@ -682,6 +684,8 @@ here avoids a separate micro-cycle.
 - [ ] mori cross-process serialization outcome is stated.
 - [ ] Bar-data fetch strategy recommendation is stated.
 - [ ] Feature-cache warming recommendation is stated.
+- [ ] Scale-shape recommendation is stated for feature-width and future
+      intraday-like payloads.
 - [ ] No production package code is changed by this ticket.
 
 **Implementation Notes:**
@@ -690,14 +694,14 @@ here avoids a separate micro-cycle.
 - Results are tracked in the spike document, not in this tickets file.
 - Context paths use post-LDG-2003 locations under `inst/design/architecture/`
   and `inst/design/spikes/`.
-- The five spikes can be run sequentially or opportunistically; the acceptance
-  criteria require all five to have outcomes before this ticket closes.
+- The six spikes can be run sequentially or opportunistically; the acceptance
+  criteria require all six to have outcomes before this ticket closes.
 - If a spike is inconclusive, record what was tested, what the blocker was, and
   what additional environment or information is needed.
 
 **Verification:**
 ```text
-inst/design/spikes/ledgr_parallelism_spike.md has findings for all 5 spikes
+inst/design/spikes/ledgr_parallelism_spike.md has findings for all 6 spikes
 dev/spikes/ exists and is listed in .Rbuildignore
 no R/ or tests/ files changed
 ```
@@ -733,8 +737,9 @@ escalation_triggers:
   - a spike is impossible to run in the available environment
   - mirai is found to be non-viable on Windows, blocking the parallel design
   - mori cross-process behavior is unresolvable without a package patch
+  - scale-shape payloads make the proposed v0.1.8 transport boundary untenable
 forbidden_actions:
   - committing spike code to R/ or tests/
   - recording spike outcomes in tickets.yml rather than the spike document
-  - opening the v0.1.8 spec before all five spikes have outcomes
+  - opening the v0.1.8 spec before all six spikes have outcomes
 ```

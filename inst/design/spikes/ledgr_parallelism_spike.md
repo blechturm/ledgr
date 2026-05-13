@@ -2,15 +2,19 @@
 
 **Status:** Pre-spec investigation. Results feed the v0.1.8 parallel sweep
 design before the spec packet is opened.
-**Scope:** Platform viability and serialization behavior of mirai and mori as
-the intended parallel backend for `ledgr_sweep()`.
+**Scope:** Platform viability, serialization behavior, and scale-shape limits
+of mirai and mori as the intended parallel backend for `ledgr_sweep()`.
 **Non-scope:** ledgr implementation work, fold-core refactor, v0.1.8 API
 design.
 
-The five spikes below answer concrete unknowns identified during a focused mirai
-analysis. Each spike is a short, self-contained investigation — not a feature
+The six spikes below answer concrete unknowns identified during a focused mirai
+analysis. Each spike is a short, self-contained investigation - not a feature
 implementation. Results are recorded in the "Findings" section at the bottom of
 this document.
+
+SPIKE-6 is deliberately not a promise of intraday support. It measures whether
+v0.1.8 sweep data-movement choices leave a plausible future path for intraday
+workloads and wide feature maps.
 
 Platform matrix for all spikes: **Windows 11 (native R)** and **Ubuntu/WSL**.
 Spikes that fail on one platform should record the failure mode, not be
@@ -68,7 +72,7 @@ the objects ledgr would send to mirai workers at realistic sweep scale?
    Measure wall time from dispatch to `m$data` being available.
 4. Send via `everywhere(shared_features <<- obj)` (once to all 4 daemons).
    Measure wall time for the `everywhere()` synchronization point.
-5. Repeat steps 3–4 for the medium payload.
+5. Repeat steps 3-4 for the medium payload.
 6. Send a bar data matrix at realistic scale: 100 instruments × 2520 bars ×
    5 OHLCV columns (plain numeric matrix). Measure size and round-trip time.
 
@@ -86,7 +90,7 @@ SPIKE-3 decision.
 
 ## SPIKE-3: mori::share() Cross-Process Semantics with mirai
 
-**Effort:** 0.5–1 day
+**Effort:** 0.5-1 day
 **Blocking:** mori dependency classification; zero-copy pattern in UX doc.
 
 **Question:** Does a `mori::share()` object survive mirai's NNG serialization
@@ -114,7 +118,7 @@ registration in mirai to cross the process boundary.
      ufunc = <reconstruct from raw>
    )
    ```
-   and repeat steps 3–4.
+   and repeat steps 3-4.
 6. If step 5 is not possible (mori does not expose a serializable handle),
    record that the zero-copy pattern is not supported via standard mirai
    dispatch.
@@ -213,6 +217,69 @@ daemon. If cleanup wipes it, the optimization does not exist.
 
 ---
 
+## SPIKE-6: Scale-Shape Probe for Sweep Data Movement
+
+**Effort:** 0.5-1 day
+**Blocking:** v0.1.8 precompute/transport shape; future intraday feasibility
+assessment.
+
+**Question:** Do the v0.1.8 sweep data-movement assumptions leave a plausible
+path for larger feature maps and future intraday workloads, or do they imply a
+different transport strategy before the fold-core spec is cut?
+
+**Context:** EOD scale and intraday scale stress different parts of the
+architecture. Testing only a small number of simulated instruments with a few
+features does not represent the width created by feature maps and indicator
+parameter sweeps. Intraday is not a v0.1.8 feature commitment, but v0.1.8 should
+not accidentally choose a payload or cache shape that makes future intraday work
+implausible.
+
+**Non-goal:** This spike does not add intraday support. It only measures
+synthetic payload shapes that approximate future pressure points.
+
+**Synthetic shapes:**
+1. EOD, many instruments, few features:
+   - 1000 instruments x 2520 daily bars x 5 features
+2. EOD, moderate instruments, many features:
+   - 250 instruments x 2520 daily bars x 50 features
+3. Intraday, moderate instruments, realistic features:
+   - 100 instruments x 100 trading days x 390 one-minute bars/day x 10 features
+4. Intraday, feature-width stress:
+   - 100 instruments x 20 trading days x 390 one-minute bars/day x 50 features
+
+**Tasks:**
+1. Build plain-R synthetic payloads representing the four shapes above. Use a
+   simple long or nested-list representation close to the current feature
+   precompute discussion, and record the chosen representation.
+2. Measure object size with `object.size()` and serialized size with
+   `length(serialize(obj, NULL))`.
+3. Send each payload to one mirai worker and measure dispatch-to-result wall
+   time.
+4. Send each payload with `everywhere()` to four workers and measure the
+   synchronization time.
+5. If mori is viable from SPIKE-3, repeat the largest feasible shape with
+   `mori::share()` and measure whether worker access avoids a copy.
+6. Measure a simple lookup loop inside a worker: read all features for one
+   instrument at one timestamp, and read one feature across all instruments at
+   one timestamp.
+7. Record memory growth and any failure modes, including allocation errors,
+   slow serialization, or worker crashes.
+
+**Record:**
+- Chosen payload representation
+- Object size and serialized size for each shape
+- Per-task send time and `everywhere()` send time
+- Lookup timings for row-like and column-like access patterns
+- Whether the shape suggests pre-fetch, worker-local DuckDB reads, shared
+  memory, or a hybrid strategy
+
+**Decision gate:** If large feature-width or intraday-like payloads are too
+large or slow to ship with plain serialization, v0.1.8 should avoid baking in a
+pre-fetch-only design and should keep worker-local DuckDB reads or shared-memory
+transport available as future architecture paths.
+
+---
+
 ## Decision Gates Summary
 
 | Spike | Primary decision |
@@ -222,8 +289,9 @@ daemon. If cleanup wipes it, the optimization does not exist.
 | SPIKE-3 | mori dependency classification and zero-copy pattern validity |
 | SPIKE-4 | Per-worker read-only DuckDB connection vs. pre-fetch-only design |
 | SPIKE-5 | Daemon cache-warming optimization: confirmed or removed from design |
+| SPIKE-6 | Scale-shape limits for feature-width and future intraday payloads |
 
-All five spikes must complete before the v0.1.8 spec packet is opened and the
+All six spikes must complete before the v0.1.8 spec packet is opened and the
 parallel sweep design is finalized.
 
 ---
@@ -278,3 +346,14 @@ parallel sweep design is finalized.
 | Confirmed with .ledgr_feature_cache_registry | pending |
 
 **Cache-warming optimization:** pending
+
+### SPIKE-6
+
+| Shape | Representation | Object size (MB) | Serialized size (MB) | Per-task send (s) | everywhere() send (s) | Lookup notes |
+|---|---|---:|---:|---:|---:|---|
+| EOD many instruments / few features | pending | pending | pending | pending | pending | pending |
+| EOD moderate instruments / many features | pending | pending | pending | pending | pending | pending |
+| Intraday moderate instruments / realistic features | pending | pending | pending | pending | pending | pending |
+| Intraday feature-width stress | pending | pending | pending | pending | pending | pending |
+
+**Scale-shape recommendation:** pending

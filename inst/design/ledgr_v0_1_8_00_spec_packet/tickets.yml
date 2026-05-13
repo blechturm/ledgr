@@ -227,7 +227,7 @@ tickets:
         - adding llm-docs: false to _pkgdown.yml
 
   - id: LDG-2007
-    title: "Parallelism Spike Session"
+    title: "Parallelism And Scale-Shape Spike Session"
     status: todo
     priority: P1
     dependencies: [LDG-2001]
@@ -246,6 +246,7 @@ tickets:
       invariants_at_risk:
         - v0.1.8 spec coherence
         - mirai/mori dependency classification
+        - sweep scale-shape feasibility
         - no production code changes
       required_context:
         - inst/design/spikes/ledgr_parallelism_spike.md
@@ -260,7 +261,8 @@ tickets:
         - a spike is impossible to run in the available environment
         - mirai is found to be non-viable on Windows, blocking the parallel design
         - mori cross-process behavior is unresolvable without a package patch
+        - scale-shape payloads make the proposed v0.1.8 transport boundary untenable
       forbidden_actions:
         - committing spike code to R/ or tests/
         - recording spike outcomes in tickets.yml rather than the spike document
-        - opening the v0.1.8 spec before all five spikes have outcomes
+        - opening the v0.1.8 spec before all six spikes have outcomes
