@@ -50,7 +50,7 @@ inst/design/
   ledgr_design_document.md
   ledgr_design_philosophy.md
   ledgr_feature_map_ux.md
-  ledgr_parallelism_spike.md
+  ledgr_parallelism_spike/
   ledgr_roadmap.md
   ledgr_sweep_mode_ux.md
   ledgr_ux_decisions.md
@@ -108,7 +108,8 @@ inst/design/
     execution_engine_audit.md
 
   spikes/
-    ledgr_parallelism_spike.md
+    ledgr_parallelism_spike/
+      README.md
 
   ledgr_v0_1_7_9_spec_packet/
   ledgr_v0_1_7_8_spec_packet/
@@ -138,7 +139,7 @@ Proposed README structure:
 - audits/execution_engine_audit.md
 
 ## Platform spikes
-- spikes/ledgr_parallelism_spike.md
+- spikes/ledgr_parallelism_spike/README.md
 
 ## Historical spec packets
 - ledgr_v0_1_7_9_spec_packet/ (active)

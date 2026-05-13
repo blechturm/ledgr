@@ -150,7 +150,7 @@ Specific placements:
 | `ledgr_feature_map_ux.md` | `architecture/` | Feature-map design input; active architecture surface. |
 | `ledgr_ux_decisions.md` | root | Cross-cutting decision log; ADR-like but not ADR format. |
 | `execution_engine_audit.md` | `audits/` | Formal audit findings and routing. |
-| `ledgr_parallelism_spike.md` | `spikes/` | Technical research, not binding contract. |
+| `ledgr_parallelism_spike/` | `spikes/ledgr_parallelism_spike/README.md` | Technical research episode, not binding contract. |
 | RFCs and responses | `rfc/` | Proposal/response pairs belong together. |
 
 `sweep_mode_code_review.md` is the only debatable file. Put it in

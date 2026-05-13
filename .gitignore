@@ -21,6 +21,7 @@
 # Coverage reports
 /coverage.html
 /lib/
+/lib-wsl/
 
 # Profiling artifacts
 Rprof.out

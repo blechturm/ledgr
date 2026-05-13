@@ -545,31 +545,33 @@ Known prerequisites from `inst/design/architecture/sweep_mode_code_review.md`:
    not deepen the current fold/output coupling.
 
 3. **Feature cache strategy.**
-   Two future sharing patterns are plausible:
-   - pre-dispatch cache population: compute all shared feature series before
-     spawning workers, then distribute via `everywhere()` pre-load (mirai) or
-     copy-on-write pages (fork-based backends such as `future::multicore`);
-   - explicit shared-memory feature payloads, such as the `mori::share()` /
-     `future.mirai::mirai_multisession` pattern sketched in
-     `inst/design/architecture/ledgr_sweep_mode_ux.md`.
+   The spike supports a preload-once pattern for parallel sweep:
+   precomputed feature payloads should be installed during worker setup, not
+   serialized with every candidate task. The first implementation can use plain
+   R payloads; future transports may use shared-memory handles or worker-local
+   read-only snapshot access.
 
-   The pre-fork copy-on-write pattern applies only to fork-based backends.
-   mirai workers are separate processes with no shared heap; the mirai
-   equivalent is `everywhere()` pre-population, whose cache-survival semantics
-   must be confirmed by SPIKE-5 before the design can rely on it.
+   Cache warming is an optimization only. Correctness must come from explicit
+   candidate inputs, not daemon assignment, execution order, or package-global
+   cache warmth. When a precomputed feature payload is supplied, fold-core
+   feature lookup must route to that payload or explicit lookup source rather
+   than silently falling back to live feature computation.
 
-   v0.1.8 sequential sweep does not need to choose between these. The common
-   requirement is that workers must not concurrently write to session-global R
-   environments or shared DuckDB files.
+4. **Tier 2 worker setup.**
+   Parallel Tier 2 strategy code needs an explicit worker setup phase for
+   packages and runtime options. Package-qualified calls can work without
+   `library(pkg)`, but unqualified calls require setup. Helper objects must not
+   be smuggled through `.GlobalEnv`; helper code must be package code, explicit
+   task payload, or deliberate package-registry state with identity.
 
 ## mirai Process Model Constraints
 
-This section records findings from a focused mirai analysis conducted during
-v0.1.7.9. The analysis informs the v0.1.8 spec before the parallel design is
-finalized and must be read alongside the platform spike results at
-`inst/design/spikes/ledgr_parallelism_spike.md`.
+This section records findings from the LDG-2007 parallelism spike conducted
+during v0.1.8.00 preparation. The analysis informs the v0.1.8 spec before the
+parallel design is finalized and must be read alongside the spike summary and
+architecture synthesis in `inst/design/spikes/ledgr_parallelism_spike/`.
 
-### Workers are separate processes, not threads or forks
+### Workers are isolated R processes
 
 mirai workers are separate R processes. Every object that crosses the worker
 boundary must be serialized over an NNG socket. There is no shared heap, no
@@ -577,38 +579,43 @@ shared R environment, and no shared file handle between the orchestrating
 session and any worker. This makes several design choices concrete that were
 previously left open.
 
-### Fold core signature must not take a live DuckDB connection
+### Fold core input source must abstract over payload and snapshot path
 
 DuckDB connections hold external pointers and cannot be serialized to a worker
-process. The fold core must accept either a pre-fetched bar payload (R matrices
-or data frames) or a snapshot file path so the worker can open its own
-read-only connection locally.
+process. The fold core must not accept a live DBI connection from the
+orchestrator.
 
-The pre-fetch approach — materialize all required bars before dispatch, send as
-plain R objects — is simpler and works for remote workers without filesystem
-access to the snapshot file. The path approach requires every worker environment
-to have filesystem access to the snapshot. The v0.1.8 spec must choose one; this
-is a forced decision before the fold core signature is finalized.
+The fold input abstraction should accommodate both of these shapes from the
+start:
+
+- a precomputed in-memory R payload;
+- a sealed snapshot path plus enough metadata for a worker to open a read-only
+  local connection and build lookup state.
+
+Designing for both shapes now is cheaper than refactoring the fold-core
+interface after the sweep parity contract is established. v0.1.8 should
+implement the in-memory payload path first. Worker-local snapshot reads can
+remain an opt-in future transport, but the fold interface should not be
+payload-only.
 
 ### Dependency classification
 
 **mirai: `Suggests` at most, not `Imports`.**
 Parallel sweep is optional; sequential sweep must work without mirai installed.
 mirai's NNG-backed socket infrastructure has platform-specific build
-requirements that must not gate `library(ledgr)`. Whether mirai reaches
-`Suggests` is conditional on SPIKE-1 confirming reliable daemon lifecycle on
-Windows (native) and Ubuntu/WSL.
+requirements that must not gate `library(ledgr)`. SPIKE-1 confirmed viable
+daemon lifecycle on Windows native R and Ubuntu/WSL. If a future parallel sweep
+API accepts `workers > 1` and mirai is not installed, the failure mode should be
+a loud error, not a silent fallback to sequential execution.
 
-**mori: not a declared dependency until cross-process serialization is
-verified.**
-The UX doc states that mori objects are "indistinguishable from plain R objects
-at the API boundary." This holds at the ledgr API surface but may not hold at
-mirai's NNG serialization layer. mori objects backed by external shared-memory
-pointers require either a confirmed native serialization path or explicit
-`register_serial()` registration in mirai's serialization registry. This is
-unverified. Until SPIKE-3 confirms the cross-process behavior on both platforms,
-mori is documented as an optional user-managed pattern only, not a `Suggests`
-dependency.
+**mori: future transport only.**
+SPIKE-7 confirmed that `mori::share()` objects cross the mirai worker boundary
+on Windows and Ubuntu/WSL and sharply reduce serialized payload size. The same
+spike also showed slower lookup than plain in-process matrices for fold-like
+feature access. `mori` is therefore boundary-compatible and may matter when
+transport bandwidth or memory pressure dominates, such as repeated
+walk-forward/CSCV redispatches or very high worker counts. It should not be the
+default v0.1.8 fold-core feature representation.
 
 ### Per-candidate seed derivation
 
@@ -619,51 +626,58 @@ reproducibility guarantee in a parallel context.
 
 For parallel sweep, the fold core must accept a per-candidate seed derived from
 `(master_seed, candidate_label)` and apply it explicitly, rather than calling
-`set.seed()` globally at entry. The roadmap's per-candidate seed design —
-derive from candidate label when `seed = NULL` — is compatible with this
+`set.seed()` globally at entry. The roadmap's per-candidate seed design --
+derive from candidate label when `seed = NULL` -- is compatible with this
 requirement. The implementation must pass the derived seed into the fold core
 explicitly.
 
-### Feature cache cross-task survival
+### Feature lookup and worker state
 
-mirai's `cleanup = TRUE` (default) restores the global R environment after each
-task. Package-level environments (created at load time and stored in a package
-binding) are generally not affected by this cleanup and persist across tasks
-within the same daemon's lifetime.
+SPIKE-5 confirmed that package-level ledgr registry state can persist across
+tasks on the same daemon, while a plain `.GlobalEnv` test object assigned in a
+task did not persist under mirai's default `cleanup = TRUE`. SPIKE-8 separately
+confirmed that helper functions assigned during Tier 2 setup also did not
+persist. Runtime options set during setup persisted in the tested workers.
 
-If `.ledgr_feature_cache_registry` survives between tasks on the same daemon,
-candidates sharing feature configurations (the common case in a param grid) will
-reuse cached feature series without resending the payload per task. This is the
-"daemon cache warming" optimization.
+The architecture consequence is narrow: package-level cache warming can be used
+as an optimization, but it is not a correctness boundary. Two candidate
+evaluations with identical inputs must produce identical results regardless of
+daemon assignment, execution order, or cache warmth.
 
-**This must be verified by SPIKE-5 before the parallel design relies on it.**
-If cleanup wipes package-level environments, the optimization does not exist
-and precomputed feature payloads must be pre-loaded via `everywhere()` at daemon
-startup or resent with each task.
+For sweep mode, feature lookup inside the fold must be able to route to a
+precomputed feature payload supplied as an explicit input. It must not silently
+fall back to live feature computation or ambient session registry state when a
+precomputed payload was supplied.
 
-### Partial result collection on interrupt
+### Tier 2 worker setup and dependency information
+
+SPIKE-8 confirmed that package-qualified calls such as `dplyr::mutate()` work
+on a worker without package attachment if the package is installed. Unqualified
+calls such as `mutate()` or `SMA()` require an explicit worker setup phase, for
+example via `everywhere({ library(dplyr); library(TTR) })`.
+
+Parallel Tier 2 support therefore needs package dependency information before
+candidate dispatch begins. A tier label alone is not enough. The v0.1.8 spec
+must decide whether this comes from an explicit `worker_packages`-style
+argument, from strategy preflight output, from a companion dependency check, or
+from a combination. The conservative first parallel design is explicit package
+declaration for unqualified calls, with preflight reporting discovered
+package-qualified namespaces but not silently attaching packages by inference.
+The current `ledgr_strategy_preflight()` contract returns tier classification,
+not package dependency information; any of these approaches requires extending
+or augmenting the preflight/dependency contract.
+
+### Interrupt semantics
 
 mirai's `x[.progress]` blocks until all tasks complete and does not return
-partial results on Ctrl-C. The interrupt semantics requirement — return a classed
-partial `ledgr_sweep_results` object on user interrupt — requires a polling loop
-over `unresolved()` rather than delegating to mirai's built-in collection:
+partial results on Ctrl-C. Returning a classed partial `ledgr_sweep_results`
+object would require a polling collector, checkpoint semantics, cancellation
+rules, and clear atomicity guarantees.
 
-```r
-# pattern only
-while (any(vapply(tasks, unresolved, logical(1)))) {
-  newly_done <- !vapply(tasks, unresolved, logical(1)) & !already_collected
-  completed <- c(completed, tasks[newly_done])
-  already_collected[newly_done] <- TRUE
-  Sys.sleep(poll_interval)
-}
-```
-
-The v0.1.8 spec must decide between this pattern and discarding in-flight
-results on interrupt (see Design Checklist item 26). The architecture
-recommendation is to return a classed partial `ledgr_sweep_results` object with
-completed candidates marked clearly as partial and in-flight candidates
-discarded; if the v0.1.8 spec rejects that direction, it must explicitly choose
-discard-all semantics instead.
+The architecture recommendation for v0.1.8 is discard-all semantics: an
+interrupted sweep does not produce a valid `ledgr_sweep_results` object. Partial
+result return can be reconsidered after the first sweep implementation is
+stable.
 
 ### Telemetry side-channel failure mode
 
@@ -688,12 +702,10 @@ spec should state the expected peak-memory behavior for sequential sweep and
 avoid retaining full event streams by default.
 
 Long sweeps also need explicit interrupt semantics. The v0.1.8 spec should
-return a classed partial `ledgr_sweep_results` object on `Ctrl-C` / user
-interrupt after collecting completed candidates and discarding in-flight
-candidates. The object must be marked partial in class, metadata, and print
-output so an incomplete sweep is never presented as complete. If this proves too
-complex for v0.1.8, the spec must explicitly choose discard-all semantics
-instead of leaving interrupt behavior accidental.
+choose discard-all semantics on `Ctrl-C` / user interrupt. An interrupted sweep
+does not produce a valid `ledgr_sweep_results` object in v0.1.8. Partial result
+return requires checkpoint, cancellation, and atomicity semantics that should be
+deferred until the first sweep implementation is stable.
 
 ## Roadmap Placement
 
@@ -765,10 +777,10 @@ Before v0.1.8 tickets are cut, the spec must answer:
 26. What are the interrupt semantics, and are partial results returned or
     discarded?
 27. Before locking in the once-per-sweep preflight contract: does
-    `ledgr_strategy_preflight()` inspect feature definitions or candidate-varying
-    referenced symbols, or does it classify only the strategy function body and
-    its non-candidate-specific environment? If preflight is not strategy-body-only,
-    it must run once per candidate.
+    `ledgr_strategy_preflight()` classify only the strategy function body and
+    its non-candidate-specific environment, or does it also inspect feature
+    definitions or candidate-varying referenced symbols? If the latter, preflight
+    must run once per candidate, not once per sweep.
 28. Where does per-candidate seed derivation happen: inside the fold core, in the
     sweep dispatcher before dispatch, or in the output handler? This determines
     whether `ctx$seed` comes from the fold-core input signature directly or is
@@ -778,3 +790,10 @@ Before v0.1.8 tickets are cut, the spec must answer:
     databases with orchestrated merge, or a serialized write queue? No spike covers
     this; the v0.1.8 spec must take a position from first principles, even if
     parallel write isolation itself is deferred.
+30. What is the fold-core input source abstraction, and how does it preserve both
+    precomputed in-memory payloads and future worker-local snapshot-path lookup?
+31. If parallel sweep ships, where does worker package dependency information
+    come from: explicit `worker_packages`, preflight output, a dependency check,
+    or a combination?
+32. What is the failure mode when `workers > 1` is requested and mirai is not
+    installed?

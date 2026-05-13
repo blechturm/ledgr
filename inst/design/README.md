@@ -76,14 +76,17 @@ These files are active inputs for v0.1.8 planning.
 - `rfc/rfc_design_doc_governance_response.md`
 - `rfc/rfc_cost_model_architecture.md`
 - `rfc/rfc_cost_model_architecture_response.md`
+- `rfc/rfc_parallelism_spike_architecture_consequences.md`
+- `rfc/rfc_parallelism_spike_architecture_consequences_response.md`
 
 The governance RFC and response are active inputs for `v0.1.8.00`. The cost
 model response is an active downstream constraint for v0.1.8 fold-core design.
+The parallelism spike RFC and response are active inputs for the v0.1.8 spec.
 
 ## Audits And Spikes
 
 - `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
-- `spikes/ledgr_parallelism_spike.md` - v0.1.8 parallelism spike plan.
+- `spikes/ledgr_parallelism_spike/` - v0.1.8 parallelism spike episode.
 
 ## ADRs
 

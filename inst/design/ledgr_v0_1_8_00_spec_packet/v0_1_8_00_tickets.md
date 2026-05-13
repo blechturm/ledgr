@@ -269,7 +269,7 @@ not an acceptable intermediate state.
    - `rfc_design_doc_governance_response.md`.
 5. Move audit and spike files:
    - `execution_engine_audit.md`;
-   - `ledgr_parallelism_spike.md`.
+   - `ledgr_parallelism_spike/README.md`.
 6. Keep versioned spec packet directories in place.
 7. Update active path references in design docs and `AGENTS.md`.
 8. Update `inst/design/README.md` to list final paths.
@@ -447,7 +447,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 0.5 day
 **Dependencies:** LDG-2004, LDG-2006, LDG-2007
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Close the prep cycle by verifying directory shape, path references, agent
@@ -640,7 +640,7 @@ forbidden_actions:
 **Status:** Todo
 
 **Description:**
-Execute the six parallelism and scale-shape spikes defined in `inst/design/spikes/ledgr_parallelism_spike.md`
+Execute the six parallelism and scale-shape spikes defined in `inst/design/spikes/ledgr_parallelism_spike/README.md`
 and record findings in that document. The spike results determine key v0.1.8
 design decisions: mirai dependency classification, mori serialization viability,
 bar-data fetch strategy, feature-cache warming semantics, and scale-shape
@@ -651,7 +651,7 @@ This ticket extends the v0.1.8.00 governance scope at the maintainer's request.
 The spike work is v0.1.8 prep, not a governance deliverable, but including it
 here avoids a separate micro-cycle.
 
-**Spike Inventory (from `spikes/ledgr_parallelism_spike.md`):**
+**Spike Inventory (from `spikes/ledgr_parallelism_spike/README.md`):**
 - SPIKE-1: mirai daemon lifecycle on Windows (native) and Ubuntu/WSL
 - SPIKE-2: serialization cost for ledgr-sized payloads
 - SPIKE-3: mori cross-process serialization with mirai's NNG layer
@@ -660,13 +660,15 @@ here avoids a separate micro-cycle.
 - SPIKE-6: scale-shape probe for sweep data movement
 
 **Tasks:**
-1. Create `dev/spikes/` directory and add it to `.Rbuildignore`.
-2. For each spike, create a subdirectory `dev/spikes/0N_<name>/` with
-   exploratory scripts. Spike code is not package code; it does not need tests,
-   documentation, or R package conventions.
+1. Create `dev/spikes/ledgr_parallelism_spike/` directory and confirm `dev/`
+   is in `.Rbuildignore`.
+2. Keep the spike episode under `dev/spikes/ledgr_parallelism_spike/`.
+   Per-spike subdirectories may hold scratch notes or future split-out probes;
+   a shared runner may live at the episode root. Spike code is not package
+   code; it does not need tests, documentation, or R package conventions.
 3. Execute each spike against the local environment (Windows primary,
    Ubuntu/WSL secondary where relevant).
-4. Record findings in `inst/design/spikes/ledgr_parallelism_spike.md`.
+4. Record findings in `inst/design/spikes/ledgr_parallelism_spike/README.md`.
 5. For each spike, record: outcome (confirmed / refuted / inconclusive),
    platform results, blocking implications for v0.1.8, and any required
    follow-up.
@@ -674,22 +676,24 @@ here avoids a separate micro-cycle.
    are now unblocked or newly constrained.
 
 **Acceptance Criteria:**
-- [ ] `dev/spikes/` exists and is in `.Rbuildignore`.
-- [ ] All six spikes have recorded outcomes in the spike document.
-- [ ] Each spike outcome includes platform results (Windows, Ubuntu/WSL as
+- [x] `dev/spikes/ledgr_parallelism_spike/` exists and `dev/` is in
+      `.Rbuildignore`.
+- [x] All six spikes have recorded outcomes in the spike document.
+- [x] Each spike outcome includes platform results (Windows, Ubuntu/WSL as
       applicable).
-- [ ] The spike document summarizes which v0.1.8 design decisions are resolved.
-- [ ] mirai dependency classification is stated (Suggests / user-managed / not
+- [x] The spike document summarizes which v0.1.8 design decisions are resolved.
+- [x] mirai dependency classification is stated (Suggests / user-managed / not
       viable).
-- [ ] mori cross-process serialization outcome is stated.
-- [ ] Bar-data fetch strategy recommendation is stated.
-- [ ] Feature-cache warming recommendation is stated.
-- [ ] Scale-shape recommendation is stated for feature-width and future
+- [x] mori cross-process serialization outcome is stated.
+- [x] Bar-data fetch strategy recommendation is stated.
+- [x] Feature-cache warming recommendation is stated.
+- [x] Scale-shape recommendation is stated for feature-width and future
       intraday-like payloads.
-- [ ] No production package code is changed by this ticket.
+- [x] No production package code is changed by this ticket.
 
 **Implementation Notes:**
-- Spike code lives in `dev/spikes/` and is excluded from the package build.
+- Spike code lives in `dev/spikes/ledgr_parallelism_spike/` and is excluded
+  from the package build.
   It does not need to follow R package conventions.
 - Results are tracked in the spike document, not in this tickets file.
 - Context paths use post-LDG-2003 locations under `inst/design/architecture/`
@@ -698,11 +702,22 @@ here avoids a separate micro-cycle.
   criteria require all six to have outcomes before this ticket closes.
 - If a spike is inconclusive, record what was tested, what the blocker was, and
   what additional environment or information is needed.
+- Windows native R completed all six spike probes. Ubuntu/WSL was reachable,
+  but `mirai` could not be installed because `nanonext` requires `cmake` in
+  this WSL image; that blocker is recorded as the WSL platform outcome in the
+  spike document.
+- After `cmake` was installed in WSL, Ubuntu/WSL completed all six spike probes.
+  Claude review identified insufficient `mori` performance testing; SPIKE-7 was
+  added to the spike episode as a follow-up that does not reopen LDG-2007's
+  first-six-spike completion criteria.
+- SPIKE-8 was added to test Tier 2 worker environment initialization with
+  `mirai::everywhere()` and stricter setup blocks. This is a v0.1.8 parallel
+  Tier 2 design input, not a reopening of LDG-2007.
 
 **Verification:**
 ```text
-inst/design/spikes/ledgr_parallelism_spike.md has findings for all 6 spikes
-dev/spikes/ exists and is listed in .Rbuildignore
+inst/design/spikes/ledgr_parallelism_spike/README.md has findings for all 6 spikes
+dev/spikes/ledgr_parallelism_spike/ exists and dev/ is listed in .Rbuildignore
 no R/ or tests/ files changed
 ```
 
@@ -710,7 +725,7 @@ no R/ or tests/ files changed
 - Manual review of spike findings document.
 - `.Rbuildignore` spot check.
 
-**Source Reference:** `inst/design/spikes/ledgr_parallelism_spike.md`;
+**Source Reference:** `inst/design/spikes/ledgr_parallelism_spike/README.md`;
 `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md` - mirai process
 model constraints section.
 
@@ -728,7 +743,7 @@ invariants_at_risk:
   - mirai/mori dependency classification
   - no production code changes
 required_context:
-  - inst/design/spikes/ledgr_parallelism_spike.md
+  - inst/design/spikes/ledgr_parallelism_spike/README.md
   - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
   - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
 tests_required:

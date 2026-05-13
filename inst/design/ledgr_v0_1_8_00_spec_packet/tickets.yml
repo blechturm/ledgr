@@ -228,7 +228,7 @@ tickets:
 
   - id: LDG-2007
     title: "Parallelism And Scale-Shape Spike Session"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2001]
     tests:
@@ -249,7 +249,7 @@ tickets:
         - sweep scale-shape feasibility
         - no production code changes
       required_context:
-        - inst/design/spikes/ledgr_parallelism_spike.md
+        - inst/design/spikes/ledgr_parallelism_spike/README.md
         - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
         - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
       context_note: >

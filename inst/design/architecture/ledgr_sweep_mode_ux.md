@@ -1,6 +1,7 @@
 # ledgr Sweep Mode -- UX Design
 
-**Status:** Accepted proposal. Decisions ready for v0.1.8 ticket cut.
+**Status:** Accepted proposal. Architecture and API surface ready for v0.1.8
+ticket cut; implementation questions remain in Open Questions.
 **Scope:** User-facing API, object model, failure semantics, parity contract,
 and parallelism guidance for sweep mode. `ledgr_tune()` explicitly deferred
 (see Version Assignment).
@@ -257,9 +258,10 @@ validation errors are not candidates: invalid parameter grids, snapshot
 mismatches, universe mismatches, and invalid or mismatched precomputed feature
 objects always abort the sweep before candidate evaluation.
 
-**Parallelism.** `ledgr_sweep()` respects a `future` plan if one has been set
-by the user. Sequential by default. ledgr takes no hard dependency on future,
-mori, or furrr. See the Advanced Parallelism section.
+**Parallelism.** Sequential sweep is the first-release baseline. Future
+parallel sweep should be candidate-dispatch parallelism over the same fold core,
+not a second execution engine. ledgr takes no hard dependency on future, mirai,
+mori, or furrr. See the Parallel Transport Notes section.
 
 ---
 
@@ -441,25 +443,43 @@ snapshot |> ledgr_run_info("momentum_v1")
 
 ---
 
-## Advanced Parallelism (Post-v0.1.8 Documentation)
+## Parallel Transport Notes (Post-v0.1.8 Design Input)
 
-The following pattern is the intended high-performance path but uses young
-ecosystem APIs. It is documented as optional guidance, not first-release user
-docs. Verify against current package APIs before publication.
+The parallelism spike supports a sequential-first design that remains ready for
+parallel candidate dispatch. The first parallel transport path should be
+explicit precomputation plus worker setup:
 
-```r
-future::plan(future.mirai::mirai_multisession, workers = 8)
-
-# Zero-copy shared features across workers (mori)
-features <- mori::share(ledgr_precompute_features(exp, param_grid))
-
-results <- exp |> ledgr_sweep(param_grid, precomputed_features = features)
+```text
+precompute feature payload once
+  -> start workers
+  -> setup workers with ledgr, packages, options, and payload/lookup state
+  -> dispatch cheap candidate tasks
+  -> aggregate candidate summaries in the orchestrator
 ```
 
-ledgr takes no hard dependency on future, mori, or furrr. `ledgr_sweep()`
-respects a future plan if set; the feature object is passed transparently to
-workers because mori objects are indistinguishable from plain R objects at
-the API boundary.
+This is design input, not first-release user documentation. v0.1.8 should not
+publish a broad parallel API unless the spec explicitly takes on that scope.
+
+Transport constraints:
+
+- plain R precomputed payloads are sufficient for first EOD sweep workloads;
+- payloads should be sent once during worker setup, not with every candidate;
+- `mori` is boundary-compatible and may help when transport bandwidth or memory
+  pressure dominates, but SPIKE-7 showed lookup was 2.6-3.3x slower than plain
+  in-process matrices, so it is not the default fold-core feature
+  representation;
+- worker-local read-only DuckDB access is viable for sealed snapshots in the
+  spike and should remain a reserved future transport;
+- if `workers > 1` is ever exposed and mirai is missing, ledgr should error
+  loudly instead of silently falling back to sequential execution.
+
+Tier 2 strategy code also needs worker setup. Package-qualified calls can work
+without package attachment when the package is installed, but unqualified calls
+such as `mutate()` or `SMA()` require explicit package setup. The conservative
+first parallel design is an explicit `worker_packages`-style declaration for
+unqualified calls, with preflight or a companion dependency check reporting
+package-qualified namespaces. ledgr should not silently attach inferred
+packages in the first parallel design.
 
 ---
 
