@@ -49,6 +49,14 @@ convenience wrapper such as `ledgr_tune()` is useful. This should remain parked
 until sweep result shape, objective/ranking ownership, and candidate promotion
 are stable.
 
+### 2026-05-13 [research] Deferred strategy and integration families
+
+The shortened roadmap no longer carries detailed scope for portfolio
+optimization support, calendar/event-driven strategies, pairs and spread
+trading, reporting adapters, additional indicator backends, ML strategy
+artifact management, or expanded asset-class support. Keep these families
+parked until the research-to-paper arc is stable enough for focused RFCs.
+
 ## Resolved
 
 No resolved horizon entries yet.

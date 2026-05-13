@@ -114,7 +114,7 @@ tickets:
 
   - id: LDG-2004
     title: "Roadmap Shortening And Future Constraint Preservation"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2003]
     tests:

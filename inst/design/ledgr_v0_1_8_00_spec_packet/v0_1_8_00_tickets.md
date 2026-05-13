@@ -351,7 +351,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2003
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Shorten `inst/design/ledgr_roadmap.md` so it carries stable project direction,
@@ -374,21 +374,26 @@ duplicating completed spec packets or speculative far-future DoDs.
    - deliberate drop with implementation note.
 
 **Acceptance Criteria:**
-- [ ] Roadmap retains stable vision and roadmap discipline.
-- [ ] Completed milestones no longer duplicate ticket-level or DoD detail.
-- [ ] Current and next milestone retain sufficient detail for agent alignment.
-- [ ] Future milestones beyond next are intent-level only.
-- [ ] v0.1.8 sweep/fold-core and downstream cost/risk constraints remain
+- [x] Roadmap retains stable vision and roadmap discipline.
+- [x] Completed milestones no longer duplicate ticket-level or DoD detail.
+- [x] Current and next milestone retain sufficient detail for agent alignment.
+- [x] Future milestones beyond next are intent-level only.
+- [x] v0.1.8 sweep/fold-core and downstream cost/risk constraints remain
       discoverable.
-- [ ] Removed speculative content is preserved or deliberately dropped with a
+- [x] Removed speculative content is preserved or deliberately dropped with a
       note.
-- [ ] No runtime/package files are touched by this ticket.
+- [x] No runtime/package files are touched by this ticket.
 
 **Implementation Notes:**
-- The `required_context` paths use post-reorganization locations
-  (`inst/design/architecture/`, `inst/design/rfc/`). These paths are correct
-  because LDG-2004 depends on LDG-2003. If picking up this ticket, confirm
-  LDG-2003 has completed and those paths exist.
+- Replaced the long roadmap with a compact authority document: vision,
+  principles, roadmap discipline, milestone sequence table, completed milestone
+  records, active v0.1.8.00 prep detail, next v0.1.8 sweep detail, and concise
+  downstream constraints.
+- Preserved load-bearing v0.1.8 constraints by linking to the sweep
+  architecture note, sweep UX note, parallelism spike, contracts, and cost-model
+  RFC response.
+- Parked broad deferred strategy/integration families in `horizon.md` rather
+  than duplicating far-future DoDs in the roadmap.
 
 **Verification:**
 ```text
