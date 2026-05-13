@@ -39,15 +39,44 @@ release ready because a similar run passed elsewhere.
    - `R CMD check --no-manual --no-build-vignettes`;
    - `tools/check-coverage.R` when coverage behavior changed;
    - pkgdown build when documentation, vignettes, or pkgdown changed.
-3. Run the local WSL/Ubuntu gate for any change touching executable R code,
+3. Verify agent-facing release context:
+   - `AGENTS.md` names the current active spec packet and tickets;
+   - `AGENTS.md` does not point agents at a completed packet as the active
+     source of truth;
+   - `AGENTS.md` keeps the one-execution-path/fold-core invariant aligned with
+     `inst/design/contracts.md`;
+   - `inst/design/README.md`, when present, lists any new, moved, or
+     retired design files and keeps the current-cycle pointer accurate;
+   - any cycle-specific instructions that will become stale after release are
+     either updated during the release gate or explicitly scheduled as the first
+     prep task for the next cycle.
+4. Run the local WSL/Ubuntu gate for any change touching executable R code,
    DuckDB persistence, snapshots, file paths, time zones, vignettes, pkgdown, or
    CI.
-4. Push the branch and wait for branch CI.
-5. Merge to `main` only after branch CI is green.
-6. Wait for `main` CI to be green on both workflows.
-7. Move the release tag only after `main` is green.
-8. Wait for the tag-triggered CI. The tag is not release-valid until its own CI
+5. Push the branch and wait for branch CI.
+6. Merge to `main` only after branch CI is green.
+7. Wait for `main` CI to be green on both workflows.
+8. Move the release tag only after `main` is green.
+9. Wait for the tag-triggered CI. The tag is not release-valid until its own CI
    is green.
+
+## Design Index Maintenance
+
+`inst/design/README.md` is the canonical map of design documents once it exists.
+Keep it current as part of ordinary work, not only at release time.
+
+When adding, moving, renaming, or retiring any cross-cycle design document:
+
+1. Update `inst/design/README.md` in the same change, or record why the document
+   is intentionally not indexed.
+2. Update `AGENTS.md` if the active packet, current-cycle pointer, or agent
+   startup reading order changes.
+3. Update path references in affected design documents.
+4. At the latest, verify the design README during the release gate before merge
+   and tagging.
+
+Versioned spec packet internals do not need every file listed individually, but
+the active packet directory itself should be discoverable from the design index.
 
 ## Tag Handling
 
@@ -234,6 +263,10 @@ A release tag is ready only when all of the following are true:
 
 - local Windows or primary development checks passed;
 - local WSL/Ubuntu gate passed when the ticket touched OS-sensitive behavior;
+- `AGENTS.md` points to the active design context for the release or the next
+  prep cycle, and does not contain stale active-cycle instructions;
+- `inst/design/README.md`, when present, reflects all design-document additions,
+  moves, removals, and current-cycle context;
 - `main` `R-CMD-check` workflow is green;
 - `main` pkgdown workflow is green;
 - tag `R-CMD-check` workflow is green;
