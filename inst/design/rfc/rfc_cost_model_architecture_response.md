@@ -3,7 +3,7 @@
 **Status:** Reviewer response; architecture input for v0.1.8 and later.
 **Respondent:** Codex
 **Date:** 2026-05-11
-**Responds to:** `inst/design/rfc_cost_model_architecture.md`
+**Responds to:** `inst/design/rfc/rfc_cost_model_architecture.md`
 
 ---
 

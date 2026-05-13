@@ -67,8 +67,8 @@ governance RFC and response are recorded, confirm v0.1.7.9 has shipped, and
 lock the non-runtime scope for this prep cycle.
 
 **Tasks:**
-1. Read `v0_1_8_00_spec.md`, `rfc_design_doc_governance.md`, and
-   `rfc_design_doc_governance_response.md`.
+1. Read `v0_1_8_00_spec.md`, `rfc/rfc_design_doc_governance.md`, and
+   `rfc/rfc_design_doc_governance_response.md`.
 2. Confirm v0.1.7.9 release gate completion is the baseline for this cycle.
 3. Confirm the accepted governance model:
    - design README as canonical entry point;
@@ -126,8 +126,8 @@ invariants_at_risk:
   - non-runtime boundary
 required_context:
   - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
-  - inst/design/rfc_design_doc_governance.md
-  - inst/design/rfc_design_doc_governance_response.md
+  - inst/design/rfc/rfc_design_doc_governance.md
+  - inst/design/rfc/rfc_design_doc_governance_response.md
 tests_required:
   - documentation/routing review
 escalation_triggers:
@@ -219,7 +219,7 @@ invariants_at_risk:
   - horizon is not a backlog
 required_context:
   - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
-  - inst/design/rfc_design_doc_governance_response.md
+  - inst/design/rfc/rfc_design_doc_governance_response.md
   - inst/design/ledgr_roadmap.md
   - inst/design/contracts.md
 tests_required:
@@ -240,7 +240,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2002
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Move loose cross-cycle design documents into role-based subdirectories and
@@ -276,17 +276,22 @@ not an acceptable intermediate state.
 9. Run before/after path greps for all moved filenames.
 
 **Acceptance Criteria:**
-- [ ] All moved files are moved with `git mv`.
-- [ ] Root load-bearing files remain at root.
-- [ ] Versioned spec packet directories remain in place.
-- [ ] `AGENTS.md` points at `inst/design/README.md`, `contracts.md`,
+- [x] All moved files are moved with `git mv`.
+- [x] Root load-bearing files remain at root.
+- [x] Versioned spec packet directories remain in place.
+- [x] `AGENTS.md` points at `inst/design/README.md`, `contracts.md`,
       `ledgr_roadmap.md`, and the active packet.
-- [ ] Active references to moved files are updated.
-- [ ] Stale references that remain are explicitly historical text.
-- [ ] Directory shape matches the v0.1.8.00 spec.
+- [x] Active references to moved files are updated.
+- [x] Stale references that remain are explicitly historical text.
+- [x] Directory shape matches the v0.1.8.00 spec.
 
 **Implementation Notes:**
-- Pending.
+- Created the role-based directories and moved all LDG-2003 files with
+  `git mv`.
+- Updated the design README, AGENTS.md, roadmap, UX decisions, architecture
+  notes, RFC responses, active spec packet, and active ticket metadata to point
+  at the final locations.
+- Left historical spec-packet references in place where they are archival text.
 
 **Verification:**
 ```text
@@ -615,7 +620,7 @@ forbidden_actions:
 **Status:** Todo
 
 **Description:**
-Execute the five parallelism spikes defined in `inst/design/ledgr_parallelism_spike.md`
+Execute the five parallelism spikes defined in `inst/design/spikes/ledgr_parallelism_spike.md`
 and record findings in that document. The spike results determine key v0.1.8
 design decisions: mirai dependency classification, mori serialization viability,
 bar-data fetch strategy, and feature-cache warming semantics. All five spikes
@@ -625,7 +630,7 @@ This ticket extends the v0.1.8.00 governance scope at the maintainer's request.
 The spike work is v0.1.8 prep, not a governance deliverable, but including it
 here avoids a separate micro-cycle.
 
-**Spike Inventory (from `ledgr_parallelism_spike.md`):**
+**Spike Inventory (from `spikes/ledgr_parallelism_spike.md`):**
 - SPIKE-1: mirai daemon lifecycle on Windows (native) and Ubuntu/WSL
 - SPIKE-2: mirai task serialization - plain R objects, closures, environments
 - SPIKE-3: mori cross-process serialization with mirai's NNG layer
@@ -639,8 +644,7 @@ here avoids a separate micro-cycle.
    documentation, or R package conventions.
 3. Execute each spike against the local environment (Windows primary,
    Ubuntu/WSL secondary where relevant).
-4. Record findings in `inst/design/spikes/ledgr_parallelism_spike.md`
-   (post-LDG-2003 path) or the current root path if LDG-2003 has not run.
+4. Record findings in `inst/design/spikes/ledgr_parallelism_spike.md`.
 5. For each spike, record: outcome (confirmed / refuted / inconclusive),
    platform results, blocking implications for v0.1.8, and any required
    follow-up.
@@ -664,9 +668,8 @@ here avoids a separate micro-cycle.
 - Spike code lives in `dev/spikes/` and is excluded from the package build.
   It does not need to follow R package conventions.
 - Results are tracked in the spike document, not in this tickets file.
-- Some context paths in this ticket use post-LDG-2003 locations under
-  `inst/design/architecture/`. If LDG-2007 is picked up before LDG-2003, use
-  the current root paths instead and record that in the implementation notes.
+- Context paths use post-LDG-2003 locations under `inst/design/architecture/`
+  and `inst/design/spikes/`.
 - The five spikes can be run sequentially or opportunistically; the acceptance
   criteria require all five to have outcomes before this ticket closes.
 - If a spike is inconclusive, record what was tested, what the blocker was, and
@@ -683,7 +686,7 @@ no R/ or tests/ files changed
 - Manual review of spike findings document.
 - `.Rbuildignore` spot check.
 
-**Source Reference:** `inst/design/ledgr_parallelism_spike.md`;
+**Source Reference:** `inst/design/spikes/ledgr_parallelism_spike.md`;
 `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md` - mirai process
 model constraints section.
 
@@ -701,7 +704,7 @@ invariants_at_risk:
   - mirai/mori dependency classification
   - no production code changes
 required_context:
-  - inst/design/ledgr_parallelism_spike.md
+  - inst/design/spikes/ledgr_parallelism_spike.md
   - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
   - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
 tests_required:

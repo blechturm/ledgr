@@ -8,7 +8,7 @@
 - `inst/design/` — current directory (see listing below)
 - `inst/design/ledgr_roadmap.md` — active roadmap
 - `inst/design/contracts.md` — execution contracts
-- `inst/design/ledgr_v0_1_8_sweep_architecture.md` — active architecture input
+- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md` - active architecture input
 
 ---
 

@@ -63,50 +63,44 @@ not implemented in this prep cycle.
 
 ## Current Architecture Inputs
 
-These files are active inputs for v0.1.8 planning. They remain at the design
-root until LDG-2003 moves them into `inst/design/architecture/`.
+These files are active inputs for v0.1.8 planning.
 
-- `ledgr_v0_1_8_sweep_architecture.md`
-- `ledgr_sweep_mode_ux.md`
-- `sweep_mode_code_review.md`
-- `ledgr_feature_map_ux.md`
+- `architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `architecture/ledgr_sweep_mode_ux.md`
+- `architecture/sweep_mode_code_review.md`
+- `architecture/ledgr_feature_map_ux.md`
 
 ## RFCs
 
-These files remain at the design root until LDG-2003 moves them into
-`inst/design/rfc/`.
-
-- `rfc_design_doc_governance.md`
-- `rfc_design_doc_governance_response.md`
-- `rfc_cost_model_architecture.md`
-- `rfc_cost_model_architecture_response.md`
+- `rfc/rfc_design_doc_governance.md`
+- `rfc/rfc_design_doc_governance_response.md`
+- `rfc/rfc_cost_model_architecture.md`
+- `rfc/rfc_cost_model_architecture_response.md`
 
 The governance RFC and response are active inputs for `v0.1.8.00`. The cost
 model response is an active downstream constraint for v0.1.8 fold-core design.
 
 ## Audits And Spikes
 
-These files remain at the design root until LDG-2003 moves them into
-role-based subdirectories.
-
-- `execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
-- `ledgr_parallelism_spike.md` - v0.1.8 parallelism spike plan.
+- `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
+- `spikes/ledgr_parallelism_spike.md` - v0.1.8 parallelism spike plan.
 
 ## ADRs
 
 ADRs live under `adr/`.
 
-- `adr/0001-split-db-semantics.md`
-- `adr/0002-registry-fingerprint-policy.md`
-- `adr/0003-closure-fingerprinting.md`
+- `adr/0001-split-db-semantics.md` - snapshot and run database split.
+- `adr/0002-registry-fingerprint-policy.md` - registry fingerprint policy.
+- `adr/0003-closure-fingerprinting.md` - closure fingerprinting policy.
 
 ## Spec Packets
 
-Versioned spec packets are archival records. Keep them in place.
+Versioned spec packets include the active prep packet and archival release
+records. Keep them in place.
 
+- `ledgr_v0_1_8_00_spec_packet/` - active prep packet.
 - `ledgr_v0_1_7_9_spec_packet/` - latest shipped release packet.
 - `ledgr_v0_1_7_8_spec_packet/` and older - historical records.
-- `ledgr_v0_1_8_00_spec_packet/` - active prep packet.
 
 Do not treat an older packet as current just because it contains detailed
 instructions. Current work follows the active packet plus the contract index.
@@ -116,8 +110,8 @@ instructions. Current work follows the active packet plus the contract index.
 | Task | Read |
 | --- | --- |
 | Runtime/execution change | `contracts.md`, active packet, relevant architecture note |
-| Sweep/fold-core planning | `contracts.md`, `ledgr_v0_1_8_sweep_architecture.md`, `ledgr_sweep_mode_ux.md` |
-| Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, governance RFC and response |
+| Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
+| Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, `rfc/rfc_design_doc_governance.md`, `rfc/rfc_design_doc_governance_response.md` |
 | Release operation | `release_ci_playbook.md`, active release/closeout ticket |
 | Audit intake | relevant audit, active packet, tickets |
 | RFC response | source RFC, related contract section, related roadmap section |

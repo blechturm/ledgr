@@ -3,7 +3,7 @@
 **Status:** Reviewer response; recommended governance input for v0.1.8 prep.
 **Respondent:** Codex
 **Date:** 2026-05-12
-**Responds to:** `inst/design/rfc_design_doc_governance.md`
+**Responds to:** `inst/design/rfc/rfc_design_doc_governance.md`
 
 ---
 
@@ -249,7 +249,7 @@ if the default cost resolver only uses open.
 ## Resolved
 
 - 2026-05-20 [cost] Fill context should reserve OHLCV -> promoted to
-  `inst/design/ledgr_v0_1_8_sweep_architecture.md`.
+  `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`.
 ```
 
 Required fields:

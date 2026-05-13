@@ -6,14 +6,17 @@ the execution contracts in `inst/design/contracts.md`.
 
 ## Core Rules
 
-- Do not add a second execution engine. `ledgr_run()` is the current execution
-  entry point. Future `ledgr_sweep()` must share the same internal fold core and
-  must not introduce a second execution path.
+- Do not add a second execution engine.
+  [`ledgr_run()`](https://blechturm.github.io/ledgr/reference/ledgr_run.html)
+  is the current execution entry point. Future `ledgr_sweep()` must share the
+  same internal fold core and must not introduce a second execution path.
 - Do not bypass snapshot creation, sealing, hash verification, or no-lookahead
   pulse execution.
 - Interactive tools must remain read-only against persistent ledgr tables.
 - Functional strategies must return full named numeric target vectors, or use an
-  explicit wrapper such as `ledgr_signal_strategy()` that maps to those targets.
+  explicit wrapper such as
+  [`ledgr_signal_strategy()`](https://blechturm.github.io/ledgr/reference/ledgr_signal_strategy.html)
+  that maps to those targets.
 - Do not silently treat missing strategy targets as zero.
 - Do not commit generated local artifacts: `*.tar.gz`, `*.Rcheck/`,
   `coverage.html`, `tests/testthat/Rplots.pdf`.
@@ -39,7 +42,7 @@ Active cycle (v0.1.8.00 - update this block each cycle):
 
 Windows R path used in this workspace:
 
-```powershell
+``` powershell
 & "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
 & "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build .
 & "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_<version>.tar.gz
@@ -51,9 +54,10 @@ check before committing release-ticket work.
 
 ## Ticket Workflow
 
-1. Read the ticket, its dependencies, and the relevant contract section.
-2. Add or update tests for the acceptance criteria.
-3. Implement the smallest change that satisfies the ticket.
-4. Run targeted tests, then full tests/package checks when the change affects
-   public API, runner behavior, snapshots, CI, or release gates.
-5. Update the active `tickets.md` checkboxes and `tickets.yml` status together.
+1.  Read the ticket, its dependencies, and the relevant contract section.
+2.  Add or update tests for the acceptance criteria.
+3.  Implement the smallest change that satisfies the ticket.
+4.  Run targeted tests, then full tests/package checks when the change affects
+    public API, runner behavior, snapshots, CI, or release gates.
+5.  Update the active `tickets.md` checkboxes and `tickets.yml` status
+    together.

@@ -695,7 +695,7 @@ surface.
 - Retire `ttr-indicators` as a parallel installed teaching vignette once the
   general indicators article exists. Do not keep redundant installed docs for
   the same indicator mental model.
-- Keep the feature-map API proposal in `inst/design/ledgr_feature_map_ux.md` as
+- Keep the feature-map API proposal in `inst/design/architecture/ledgr_feature_map_ux.md` as
   future design work. Do not export `ledgr_feature_map()`, `ctx$features()`, or
   `passed_warmup()` in this release.
 
@@ -776,7 +776,7 @@ obvious rather than only architecturally described.
 
 **Feature-map authoring UX**
 
-Promote the design in `inst/design/ledgr_feature_map_ux.md` into this release.
+Promote the design in `inst/design/architecture/ledgr_feature_map_ux.md` into this release.
 The goal is to remove stringly typed feature lookup from ordinary strategy code
 without adding a second execution path.
 
@@ -1586,7 +1586,7 @@ results <- exp |> ledgr_sweep(param_grid, precomputed_features = features)
   zero-copy across all workers; mori objects are transparent at the ledgr API
   boundary, but cross-process serialization behavior with mirai's NNG layer
   requires explicit verification before this pattern is documented as working
-  (see `inst/design/ledgr_parallelism_spike.md`, SPIKE-3)
+  (see `inst/design/spikes/ledgr_parallelism_spike.md`, SPIKE-3)
 
 ledgr takes no hard dependency on any of these. `ledgr_sweep()` respects a
 `future` plan if set by the user; otherwise runs sequentially. mirai is
@@ -1597,7 +1597,7 @@ objects; the mori zero-copy path is an optional user-configured optimization,
 not a ledgr API contract.
 
 The platform viability and serialization assumptions underlying this parallel
-pattern are verified by the spikes at `inst/design/ledgr_parallelism_spike.md`.
+pattern are verified by the spikes at `inst/design/spikes/ledgr_parallelism_spike.md`.
 All five spikes must complete before the v0.1.8 parallel design is finalized.
 
 ### Implementation Note
@@ -1623,7 +1623,7 @@ persistent-run status mutation.
 ### Pre-Spec Prerequisite: Parallelism Spike
 
 Before the v0.1.8 spec packet is opened, the five spikes at
-`inst/design/ledgr_parallelism_spike.md` must produce recorded findings. The
+`inst/design/spikes/ledgr_parallelism_spike.md` must produce recorded findings. The
 spike results determine: mirai dependency classification (`Suggests` vs.
 user-managed), whether the mori zero-copy pattern is documented as working,
 whether workers use pre-fetched bar data or per-worker read-only DuckDB

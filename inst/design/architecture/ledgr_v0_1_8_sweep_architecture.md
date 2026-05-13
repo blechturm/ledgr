@@ -7,7 +7,7 @@ research-validation layers built on top of sweep.
 walk-forward implementation, PBO/CSCV implementation, and
 `ledgr_snapshot_split()`.
 
-This note is intentionally separate from `inst/design/ledgr_sweep_mode_ux.md`.
+This note is intentionally separate from `inst/design/architecture/ledgr_sweep_mode_ux.md`.
 The UX note describes the user-facing sweep workflow. This architecture note
 describes the internal constraints that must hold so sweep does not become a
 dead-end execution path. It uses the same provenance boundary as the UX note:
@@ -104,7 +104,7 @@ draws, or event-stream meaning.
 This parity must be enforced by tests. The v0.1.8 suite should run the same
 strategy, params, snapshot, features, opening state, and execution assumptions
 through `ledgr_run()` and `ledgr_sweep()` and compare the quantities listed in
-`inst/design/ledgr_sweep_mode_ux.md`: final equity, cash, positions, trades,
+`inst/design/architecture/ledgr_sweep_mode_ux.md`: final equity, cash, positions, trades,
 fills, equity curve, fill timing, warmup behavior, costs, long-only
 enforcement, and random-draw semantics.
 
@@ -116,7 +116,7 @@ metrics, comparison outputs, and `config_hash` values to the current scalar
 
 ## Current Coupling Points
 
-The pre-sweep code review in `inst/design/sweep_mode_code_review.md` identified
+The pre-sweep code review in `inst/design/architecture/sweep_mode_code_review.md` identified
 two closures inside `ledgr_backtest_run_internal()` that currently capture the
 DuckDB connection from the outer runner frame:
 
@@ -530,7 +530,7 @@ by filtering bars before snapshot creation.
 Parallel sweep is not required for the first v0.1.8 sweep release. The
 architecture must still avoid choices that make it harder.
 
-Known prerequisites from `inst/design/sweep_mode_code_review.md`:
+Known prerequisites from `inst/design/architecture/sweep_mode_code_review.md`:
 
 1. **Telemetry side-channel removal.**
    `.ledgr_telemetry_registry` is a shared mutable environment keyed by
@@ -551,7 +551,7 @@ Known prerequisites from `inst/design/sweep_mode_code_review.md`:
      copy-on-write pages (fork-based backends such as `future::multicore`);
    - explicit shared-memory feature payloads, such as the `mori::share()` /
      `future.mirai::mirai_multisession` pattern sketched in
-     `inst/design/ledgr_sweep_mode_ux.md`.
+     `inst/design/architecture/ledgr_sweep_mode_ux.md`.
 
    The pre-fork copy-on-write pattern applies only to fork-based backends.
    mirai workers are separate processes with no shared heap; the mirai
@@ -567,7 +567,7 @@ Known prerequisites from `inst/design/sweep_mode_code_review.md`:
 This section records findings from a focused mirai analysis conducted during
 v0.1.7.9. The analysis informs the v0.1.8 spec before the parallel design is
 finalized and must be read alongside the platform spike results at
-`inst/design/ledgr_parallelism_spike.md`.
+`inst/design/spikes/ledgr_parallelism_spike.md`.
 
 ### Workers are separate processes, not threads or forks
 

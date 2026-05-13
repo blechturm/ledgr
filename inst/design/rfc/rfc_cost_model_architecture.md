@@ -6,7 +6,7 @@
 **Date:** 2026-05-11
 **Context files:**
 - `R/fill-model.R` — current fill model implementation
-- `inst/design/ledgr_v0_1_8_sweep_architecture.md` — fold-core/output-handler split
+- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md` - fold-core/output-handler split
 - `inst/design/ledgr_roadmap.md` — v0.1.8, v0.1.9, v0.2.0, v0.3.0 milestones
 - `inst/design/contracts.md` — execution contracts
 

@@ -23,8 +23,8 @@ tickets:
         - non-runtime boundary
       required_context:
         - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
-        - inst/design/rfc_design_doc_governance.md
-        - inst/design/rfc_design_doc_governance_response.md
+        - inst/design/rfc/rfc_design_doc_governance.md
+        - inst/design/rfc/rfc_design_doc_governance_response.md
       tests_required:
         - documentation/routing review
       escalation_triggers:
@@ -57,7 +57,7 @@ tickets:
         - horizon is not a backlog
       required_context:
         - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
-        - inst/design/rfc_design_doc_governance_response.md
+        - inst/design/rfc/rfc_design_doc_governance_response.md
         - inst/design/ledgr_roadmap.md
         - inst/design/contracts.md
       tests_required:
@@ -72,7 +72,7 @@ tickets:
 
   - id: LDG-2003
     title: "Atomic Design-Doc Reorganization And Reference Updates"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2002]
     tests:
@@ -248,14 +248,12 @@ tickets:
         - mirai/mori dependency classification
         - no production code changes
       required_context:
-        - inst/design/ledgr_parallelism_spike.md
+        - inst/design/spikes/ledgr_parallelism_spike.md
         - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
         - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
       context_note: >
-        The architecture path is the post-LDG-2003 location. If LDG-2007 is
-        picked up before LDG-2003, use the current root path
-        inst/design/ledgr_v0_1_8_sweep_architecture.md and record that in the
-        implementation notes.
+        Context paths use post-LDG-2003 locations under inst/design/architecture/
+        and inst/design/spikes/.
       tests_required:
         - manual review of spike findings
       escalation_triggers:

@@ -510,5 +510,5 @@ discussion to follow once v0.1.6 is shipped. Confirmed scope:
 
 Sweep mode (`ledgr_sweep()`, `ledgr_precompute_features()`) builds on the
 `ledgr_experiment()` foundation established in v0.1.7. Full spec in
-`inst/design/ledgr_sweep_mode_ux.md`. Reconcile `ledgr_tune()` naming with
+`inst/design/architecture/ledgr_sweep_mode_ux.md`. Reconcile `ledgr_tune()` naming with
 v0.1.8 sweep architecture before cutting v0.1.7 tickets.
