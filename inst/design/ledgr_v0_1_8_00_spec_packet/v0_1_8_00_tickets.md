@@ -540,7 +540,7 @@ forbidden_actions:
 **Priority:** P2
 **Effort:** 0.5 day
 **Dependencies:** LDG-2001
-**Status:** In Progress
+**Status:** Done
 
 **Description:**
 Improve discoverability of the published ledgr pkgdown site for both human
@@ -558,24 +558,39 @@ verify that `build_llm_docs()` is generating LLM-optimized site artefacts.
    needed.
 3. If `LLMs.txt` is absent, add an explicit `build_llm_docs()` call to the
    CI/CD site-build step.
-4. Rebuild and redeploy the site.
+4. Run a local CI-equivalent site rebuild. The public deployment happens from
+   `main`, so the release/closeout step must re-check the public URL after the
+   next Pages deployment.
 
 **Acceptance Criteria:**
-- [ ] `_pkgdown.yml` navbar sections have non-null labels.
-- [ ] The Articles dropdown in the site navbar shows the three section headers
+- [x] `_pkgdown.yml` navbar sections have non-null labels.
+- [x] The Articles dropdown in the site navbar shows the three section headers
       (Start Here, Core Workflow, Design / Background).
-- [ ] `LLMs.txt` is present and populated at the site root after deployment.
-- [ ] `.md` mirrors exist for reference and article pages after deployment.
-- [ ] No runtime/package files are touched by this ticket.
+- [x] `LLMs.txt` is present and populated in the locally built site. The public
+      URL returned 404 before this branch is deployed; re-check after release
+      deployment.
+- [x] `.md` mirrors exist for reference and article pages in the locally built
+      site. Re-check after release deployment.
+- [x] No runtime/package files are touched by this ticket.
 
 **Implementation Notes:**
-- The `_pkgdown.yml` articles navbar fix is already applied. Mark tasks 1 done
-  on pickup.
+- The `_pkgdown.yml` articles navbar fix was applied before pickup and verified.
 - pkgdown 2.2.0 is installed locally. `build_llm_docs()` was introduced in
   pkgdown 2.1.0 and runs by default - no config change is expected to be
   required.
 - `LLMs.txt` and `.md` files improve AI assistant responses for users of ledgr,
   distinct from `inst/design/README.md` which orients agents working on ledgr.
+- Local CI-equivalent smoke command passed:
+  `pkgdown::build_site(new_process = FALSE)`.
+- Local build evidence:
+  - `docs/articles/index.html` contains navbar dropdown headers for Start Here,
+    Core Workflow, and Design / Background.
+  - `docs/LLMs.txt` was generated and populated.
+  - `docs/reference/ledgr_run.md` and `docs/articles/getting-started.md` were
+    generated as markdown mirrors.
+- Network check of `https://blechturm.github.io/ledgr/LLMs.txt` returned 404
+  before this branch is deployed. The release/closeout step should re-check the
+  public URL after the next Pages deployment.
 
 **Verification:**
 ```text

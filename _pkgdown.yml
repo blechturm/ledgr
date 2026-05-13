@@ -8,14 +8,14 @@ development:
 
 articles:
   - title: Start Here
-    navbar: ~
+    navbar: Start Here
     contents:
       - articles/who-ledgr-is-for
       - getting-started
       - leakage
       - reproducibility
   - title: Core Workflow
-    navbar: ~
+    navbar: Core Workflow
     contents:
       - strategy-development
       - indicators
@@ -23,7 +23,7 @@ articles:
       - metrics-and-accounting
       - experiment-store
   - title: Design / Background
-    navbar: ~
+    navbar: Design / Background
     contents:
       - research-to-production
       - articles/why-r

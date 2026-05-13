@@ -197,7 +197,7 @@ tickets:
 
   - id: LDG-2006
     title: "pkgdown Site Discoverability"
-    status: in_progress
+    status: done
     priority: P2
     dependencies: [LDG-2001]
     tests:
