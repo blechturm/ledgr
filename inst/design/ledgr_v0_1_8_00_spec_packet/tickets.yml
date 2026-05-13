@@ -154,7 +154,7 @@ tickets:
 
   - id: LDG-2005
     title: "v0.1.8.00 Closeout"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-2004, LDG-2006, LDG-2007]
     tests:

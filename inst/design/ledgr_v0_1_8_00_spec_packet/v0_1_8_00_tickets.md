@@ -468,26 +468,44 @@ non-runtime scope. This is the merge gate for v0.1.8.00.
 11. Update ticket statuses and `tickets.yml`.
 
 **Acceptance Criteria:**
-- [ ] Design README, horizon, subdirectories, and roadmap changes are complete.
-- [ ] Path greps show no broken active references to moved files.
-- [ ] `AGENTS.md` is aligned with the new design-document system.
-- [ ] Historical packet references are either preserved as historical text or
+- [x] Design README, horizon, subdirectories, and roadmap changes are complete.
+- [x] Path greps show no broken active references to moved files.
+- [x] `AGENTS.md` is aligned with the new design-document system.
+- [x] Historical packet references are either preserved as historical text or
       updated where active.
-- [ ] No runtime/package behavior changes are included.
-- [ ] LDG-2006 is complete or explicitly deferred with maintainer approval.
-- [ ] LDG-2007 is complete or explicitly deferred with maintainer approval.
-- [ ] `v0_1_8_00_tickets.md` and `tickets.yml` are synchronized.
-- [ ] Branch is ready to merge as v0.1.8 prep.
+- [x] No runtime/package behavior changes are included.
+- [x] LDG-2006 is complete or explicitly deferred with maintainer approval.
+- [x] LDG-2007 is complete or explicitly deferred with maintainer approval.
+- [x] `v0_1_8_00_tickets.md` and `tickets.yml` are synchronized.
+- [x] Branch is ready to merge as v0.1.8 prep.
 
 **Implementation Notes:**
-- Pending.
+- `rg` path sweep was run for all moved-file search terms across `inst/design`,
+  `AGENTS.md`, `docs/AGENTS.md`, and `README.Rmd`.
+- Active references point at the post-LDG-2003 locations. Remaining old paths
+  occur in historical spec packets or pre-move RFC discussion context.
+- `inst/design/README.md`, `inst/design/horizon.md`, role-based subdirectories,
+  and versioned packet directories were spot-checked.
+- `AGENTS.md` and `docs/AGENTS.md` both point at `inst/design/README.md`, the
+  active v0.1.8.00 packet, and the current ticket files.
+- `_pkgdown.yml` has labelled article navbar sections and `docs/LLMs.txt`
+  exists from the local site build.
+- LDG-2007 spike outcomes are recorded in
+  `inst/design/spikes/ledgr_parallelism_spike/README.md` and summarized in
+  `summary_report.md` and `architecture_synthesis.md`.
+- Final diff for closeout only updates this packet's ticket status/checklist;
+  the cycle's committed work did not touch `R/` or `tests/`.
 
 **Verification:**
 ```text
-path grep for moved filenames
-directory shape check
-manual link/path spot check
-git diff --name-only
+rg "rfc_cost_model_architecture|rfc_cost_model_architecture_response|rfc_design_doc_governance|rfc_design_doc_governance_response|sweep_mode_code_review|execution_engine_audit|ledgr_parallelism_spike|ledgr_sweep_mode_ux|ledgr_feature_map_ux|ledgr_v0_1_8_sweep_architecture" inst/design AGENTS.md docs/AGENTS.md README.Rmd
+Get-ChildItem -Path inst/design -Directory
+Get-ChildItem -Path inst/design/architecture,inst/design/rfc,inst/design/audits,inst/design/spikes -Recurse -File
+rg "v0\\.1\\.7\\.9|v0_1_7_9|v0\\.1\\.2|v0_1_2|inst/design/README.md|v0_1_8_00" AGENTS.md docs/AGENTS.md
+rg "dev|^dev/$|^dev$" .Rbuildignore
+Test-Path docs/LLMs.txt
+rg "Start Here|Core Workflow|Design / Background|navbar:" _pkgdown.yml
+git diff --name-only HEAD
 git status --short
 ```
 
@@ -637,7 +655,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 2-3 days
 **Dependencies:** LDG-2001
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Execute the six parallelism and scale-shape spikes defined in `inst/design/spikes/ledgr_parallelism_spike/README.md`
