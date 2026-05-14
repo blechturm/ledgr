@@ -16,6 +16,7 @@ testthat::test_that("ledgr_param_grid generates stable labels for unnamed params
 
   testthat::expect_match(grid_a$labels, "^grid_[0-9a-f]{12}$")
   testthat::expect_identical(grid_a$labels, grid_b$labels)
+  testthat::expect_identical(grid_a$labels, "grid_ac205cddf9cf")
 })
 
 testthat::test_that("ledgr_param_grid rejects duplicate labels and invalid entries", {
@@ -25,6 +26,13 @@ testthat::test_that("ledgr_param_grid rejects duplicate labels and invalid entri
   )
   testthat::expect_error(
     ledgr_param_grid(list(qty = 1), list(qty = 1)),
+    class = "ledgr_duplicate_param_grid_labels"
+  )
+  auto_label <- ledgr_param_grid(list(qty = 1))$labels
+  colliding_args <- list(list(qty = 1), list(qty = 2))
+  names(colliding_args) <- c("", auto_label)
+  testthat::expect_error(
+    do.call(ledgr_param_grid, colliding_args),
     class = "ledgr_duplicate_param_grid_labels"
   )
   testthat::expect_error(
@@ -48,11 +56,12 @@ testthat::test_that("ledgr_param_grid prints its non-executing contract", {
 
   testthat::expect_true(any(grepl("ledgr_param_grid", out, fixed = TRUE)))
   testthat::expect_true(any(grepl("Combinations: 2", out, fixed = TRUE)))
-  testthat::expect_true(any(grepl("not run IDs", out, fixed = TRUE)))
-  testthat::expect_true(any(grepl("sweep/tune execution is not exported", out, fixed = TRUE)))
+  testthat::expect_true(any(grepl("sweep candidates", out, fixed = TRUE)))
+  testthat::expect_true(any(grepl("not committed run IDs", out, fixed = TRUE)))
+  testthat::expect_false(any(grepl("sweep/tune execution is not exported", out, fixed = TRUE)))
 })
 
-testthat::test_that("v0.1.7 does not export sweep or tune execution APIs", {
+testthat::test_that("param-grid ticket does not add sweep or tune execution APIs", {
   exports <- getNamespaceExports("ledgr")
   testthat::expect_false("ledgr_sweep" %in% exports)
   testthat::expect_false("ledgr_tune" %in% exports)

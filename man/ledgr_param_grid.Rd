@@ -13,9 +13,9 @@ ledgr_param_grid(...)
 A \code{ledgr_param_grid} object with \code{labels} and \code{params} fields.
 }
 \description{
-\code{ledgr_param_grid()} creates a validated, non-executing parameter-grid object.
-It is a naming and identity helper for future sweep/tune workflows; v0.1.7
-does not execute the grid.
+\code{ledgr_param_grid()} creates a validated parameter-grid object for sweep
+candidate identity. The grid stores parameter combinations and labels;
+it does not execute candidates by itself.
 }
 \details{
 Each argument must be a JSON-safe list of strategy parameters. Named

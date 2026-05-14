@@ -482,7 +482,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1 day
 **Dependencies:** LDG-2101
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Audit and update the existing exported `ledgr_param_grid()` object for sweep
@@ -501,17 +501,34 @@ still frames sweep execution as unavailable.
    promotion identity.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_param_grid()` remains the typed grid object for v0.1.8.
-- [ ] Auto labels are stable and based on `canonical_json()`.
-- [ ] Duplicate labels error loudly.
-- [ ] Print/help text no longer says sweep execution is not exported once sweep
+- [x] `ledgr_param_grid()` remains the typed grid object for v0.1.8.
+- [x] Auto labels are stable and based on `canonical_json()`.
+- [x] Duplicate labels error loudly.
+- [x] Print/help text no longer says sweep execution is not exported once sweep
       work lands.
-- [ ] No second parameter-grid class is added.
+- [x] No second parameter-grid class is added.
+
+**Implementation Notes:**
+- Kept the existing exported `ledgr_param_grid` class and constructor.
+- Pinned the canonical auto-label fixture for a representative unnamed params
+  list and kept the existing key-order stability test.
+- Added duplicate detection coverage for a collision between an unnamed
+  auto-label and an explicitly supplied label.
+- Updated `ledgr_param_grid()` help and print text to describe v0.1.8 sweep
+  candidate identity without treating grid labels as committed run IDs.
+- Did not add another grid class or any sweep execution API.
 
 **Verification:**
 ```text
 tests/testthat targeted param-grid tests
 documentation contract tests if help text changes
+```
+
+**Verification Run:**
+```text
+test-param-grid.R
+test-api-exports.R
+test-documentation-contracts.R
 ```
 
 **Source Reference:** v0.1.8 spec section 4.1.

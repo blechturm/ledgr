@@ -1,8 +1,8 @@
 #' Create a typed parameter grid
 #'
-#' `ledgr_param_grid()` creates a validated, non-executing parameter-grid object.
-#' It is a naming and identity helper for future sweep/tune workflows; v0.1.7
-#' does not execute the grid.
+#' `ledgr_param_grid()` creates a validated parameter-grid object for sweep
+#' candidate identity. The grid stores parameter combinations and labels;
+#' it does not execute candidates by itself.
 #'
 #' Each argument must be a JSON-safe list of strategy parameters. Named
 #' arguments preserve their names as grid labels. Unnamed arguments receive a
@@ -89,6 +89,6 @@ print.ledgr_param_grid <- function(x, ...) {
     cat("              ... ", n - length(shown), " more\n", sep = "")
   }
   cat("\n")
-  cat("Grid labels are not run IDs. v0.1.7 stores this object only; sweep/tune execution is not exported.\n")
+  cat("Grid labels identify sweep candidates; they are not committed run IDs.\n")
   invisible(x)
 }

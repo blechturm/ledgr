@@ -162,7 +162,7 @@ tickets:
 
   - id: LDG-2105
     title: "Parameter Grid Audit And Label Stability"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2101]
     tests:
