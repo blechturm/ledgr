@@ -61,8 +61,8 @@ testthat::test_that("ledgr_param_grid prints its non-executing contract", {
   testthat::expect_false(any(grepl("sweep/tune execution is not exported", out, fixed = TRUE)))
 })
 
-testthat::test_that("param-grid ticket does not add sweep or tune execution APIs", {
+testthat::test_that("param-grid support coexists with deferred tune execution API", {
   exports <- getNamespaceExports("ledgr")
-  testthat::expect_false("ledgr_sweep" %in% exports)
+  testthat::expect_true("ledgr_sweep" %in% exports)
   testthat::expect_false("ledgr_tune" %in% exports)
 })

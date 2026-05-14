@@ -276,6 +276,10 @@ ledgr_persistent_output_handler <- function(con,
 
   handler <- list()
 
+  handler$run_transaction <- function(fn) {
+    DBI::dbWithTransaction(con, fn())
+  }
+
   handler$record_run_status <- function(status, error_msg = NA_character_) {
     DBI::dbExecute(
       con,
@@ -404,14 +408,21 @@ ledgr_persistent_output_handler <- function(con,
     invisible(TRUE)
   }
 
-  handler$write_fill_events <- function(fill, event_seq_start, use_transaction = FALSE) {
+  handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
     ledgr_write_fill_events(
       con = con,
       run_id = run_id,
-      fill_intent = fill,
-      event_seq_start = event_seq_start,
+      fill_intent = fill_intent,
+      event_seq_start = event_seq,
       use_transaction = use_transaction
     )
+  }
+
+  handler$append_event_rows <- function(rows) {
+    if (!is.null(rows) && nrow(rows) > 0L) {
+      DBI::dbAppendTable(con, "ledger_events", rows)
+    }
+    invisible(TRUE)
   }
 
   handler$write_strategy_state <- function(ts_utc, state_json) {
@@ -480,44 +491,17 @@ ledgr_write_opening_position_events <- function(con,
                                                 positions,
                                                 cost_basis,
                                                 event_seq_start) {
-  if (length(positions) < 1L) {
-    return(as.integer(event_seq_start))
+  rows <- ledgr_opening_position_event_rows(
+    run_id = run_id,
+    ts_utc = ts_utc,
+    positions = positions,
+    cost_basis = cost_basis,
+    event_seq_start = event_seq_start
+  )
+  if (nrow(rows) > 0L) {
+    DBI::dbAppendTable(con, "ledger_events", rows)
   }
-  ts_exec_iso <- ledgr_normalize_ts_utc(ts_utc)
-  ts_exec_posix <- as.POSIXct(ts_exec_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  if (is.na(ts_exec_posix)) {
-    rlang::abort("Opening position timestamp must be a valid UTC timestamp.", class = "ledgr_invalid_config")
-  }
-  event_seq <- as.integer(event_seq_start)
-  rows <- vector("list", length(positions))
-  for (i in seq_along(positions)) {
-    instrument_id <- names(positions)[[i]]
-    qty <- as.numeric(positions[[i]])
-    basis <- as.numeric(cost_basis[[i]])
-    meta_json <- canonical_json(list(
-      cash_delta = 0,
-      position_delta = qty,
-      cost_basis = if (is.na(basis)) NULL else basis,
-      source = "opening_position"
-    ))
-    rows[[i]] <- data.frame(
-      event_id = paste0(run_id, "_", sprintf("%08d", event_seq)),
-      run_id = run_id,
-      ts_utc = ts_exec_posix,
-      event_type = "CASHFLOW",
-      instrument_id = instrument_id,
-      side = NA_character_,
-      qty = qty,
-      price = if (is.na(basis)) NA_real_ else basis,
-      fee = 0,
-      meta_json = meta_json,
-      event_seq = event_seq,
-      stringsAsFactors = FALSE
-    )
-    event_seq <- event_seq + 1L
-  }
-  DBI::dbAppendTable(con, "ledger_events", do.call(rbind, rows))
-  as.integer(event_seq)
+  as.integer(event_seq_start) + as.integer(nrow(rows))
 }
 
 ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list()) {
@@ -887,6 +871,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
   DBI::dbExecute(con, "UPDATE runs SET data_hash = ? WHERE run_id = ?", params = list(data_hash, run_id))
 
   feature_defs <- ledgr_feature_defs_from_config(cfg)
+  run_feature_matrix <- list()
   if (length(feature_defs) > 0) {
     feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]
   }
@@ -1097,8 +1082,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
     gap_type = 8L,
     is_synthetic = 9L
   )
-  use_bars_cache <- length(feature_defs) > 0 || identical(execution_mode, "audit_log")
-  use_fast_context <- isTRUE(fast_context) && identical(execution_mode, "audit_log") && isTRUE(strategy_is_functional)
+  use_bars_cache <- TRUE
+  use_fast_context <- FALSE
   if (isTRUE(use_bars_cache)) {
     start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
     end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
@@ -1242,6 +1227,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
       }
       run_feature_matrix[[d]] <- mat
     }
+    names(run_feature_matrix) <- def_ids
     features_df <- data.frame(
       instrument_id = rep(instrument_ids, each = n_def),
       ts_utc = as.POSIXct(rep(NA_character_, n_inst * n_def), tz = "UTC"),
@@ -1261,449 +1247,77 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
   }
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
 
-  max_events <- as.integer(max(1L, total_pulses * length(instrument_ids)))
-  output_handler$init_buffers(max_events)
-  empty_df <- data.frame()
-  ctx <- list(
-    run_id = run_id,
-    ts_utc = "",
-    universe = instrument_ids,
-    bars = if (isTRUE(use_bars_cache)) bars_df else empty_df,
-    feature_table = if (length(feature_defs) > 0) features_df else empty_df,
-    features = function(...) {
-      rlang::abort("Pulse context feature helpers have not been initialized.", class = "ledgr_invalid_pulse_context")
-    },
-    features_wide = empty_df,
-    feature = ledgr_feature_accessor(empty_df),
-    positions = state_env$current$positions,
-    cash = state_env$current$cash,
-    equity = state_env$current$cash,
-    state_prev = NULL,
-    safety_state = "GREEN"
-  )
-  class(ctx) <- "ledgr_pulse_context"
-  ctx <- ledgr_update_pulse_context_helpers(
-    ctx,
-    bars = empty_df,
-    features = empty_df,
-    positions = state_env$current$positions,
-    universe = instrument_ids
-  )
-
   state_prev_mem <- NULL
-  if (identical(execution_mode, "audit_log") && is_resume) {
+  if (is_resume) {
     state_prev_mem <- ledgr_strategy_state_prev(con, run_id, resume_iso)
   }
-
-  full_run <- TRUE
-  finalize_telemetry <- function(status, strict = TRUE) {
-    telemetry_names <- ls(telemetry, all.names = TRUE)
-    telemetry_scalars <- c(
-      "t_pre",
-      "t_post",
-      "t_loop",
-      "telemetry_stride",
-      "telemetry_samples",
-      "feature_cache_hits",
-      "feature_cache_misses"
-    )
-    trimmed <- lapply(telemetry_names, function(name) {
-      x <- telemetry[[name]]
-      if (name %in% telemetry_scalars) return(x)
-      if (telemetry_idx > 0) x[seq_len(telemetry_idx)] else numeric(0)
-    })
-    names(trimmed) <- telemetry_names
-    output_handler$store_session_telemetry(trimmed)
-    output_handler$write_telemetry(status, strict = strict, telemetry = trimmed, processed = processed)
-    invisible(TRUE)
+  current_positions <- state_env$current$positions
+  full_positions <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
+  if (!is.null(current_positions) && length(current_positions) > 0L) {
+    matched_positions <- intersect(names(current_positions), instrument_ids)
+    full_positions[matched_positions] <- as.numeric(current_positions[matched_positions])
   }
+  state_env$current$positions <- full_positions
 
-  run_ok <- tryCatch(
-    {
-      process_pulse <- function(i, sample_now) {
-        sample_now <- isTRUE(sample_now)
-        time_start <- function(active) {
-          if (active) proc.time()[["elapsed"]] else NA_real_
-        }
-        time_end <- function(start, active) {
-          if (!active) return(NA_real_)
-          proc.time()[["elapsed"]] - start
-        }
-        t_pulse_start <- time_start(sample_now)
-        ts <- pulses_posix[[i]]
-        ts_iso <- pulses_iso[[i]]
+  fold_execution <- list(
+    run_id = run_id,
+    instrument_ids = instrument_ids,
+    strategy_fn = strategy_fn,
+    strategy_params = strategy_params,
+    strategy_call_signature = strategy_call_signature,
+    strategy_is_functional = strategy_is_functional,
+    pulses_posix = pulses_posix,
+    pulses_iso = pulses_iso,
+    start_idx = start_idx,
+    max_pulses = max_pulses,
+    checkpoint_every = checkpoint_every,
+    telemetry_stride = telemetry_stride,
+    state = state_env$current,
+    state_prev = state_prev_mem,
+    bars_by_id = bars_by_id,
+    bars_mat = bars_mat,
+    feature_defs = feature_defs,
+    run_feature_matrix = run_feature_matrix,
+    cost_resolver = cost_resolver,
+    event_seq_start = next_event_seq,
+    telemetry = telemetry,
+    seed = seed,
+    event_mode = if (identical(execution_mode, "db_live")) "live" else "buffered",
+    use_fast_context = use_fast_context
+  )
 
-        t_bars <- NA_real_
-        t_ctx <- NA_real_
-        t_fill <- NA_real_
-        t_state <- NA_real_
-        t_feats <- NA_real_
-        t_strat <- NA_real_
-        t_exec <- NA_real_
-
-        state <- state_env$current
-
-        t_bars_start <- time_start(sample_now)
-        if (isTRUE(use_bars_cache)) {
-          if (isTRUE(use_fast_context) && !is.null(bars_proxy)) {
-            bars_proxy$ts_utc <- rep(pulses_posix[[i]], length(instrument_ids))
-            bars_proxy$open <- bars_mat$open[, i]
-            bars_proxy$high <- bars_mat$high[, i]
-            bars_proxy$low <- bars_mat$low[, i]
-            bars_proxy$close <- bars_mat$close[, i]
-            bars_proxy$volume <- bars_mat$volume[, i]
-            bars_proxy$gap_type <- bars_mat$gap_type[, i]
-            bars_proxy$is_synthetic <- bars_mat$is_synthetic[, i]
-            bars <- bars_proxy
-          } else {
-            bars_df$ts_utc[] <- pulses_posix[[i]]
-            bars_df$open[] <- bars_mat$open[, i]
-            bars_df$high[] <- bars_mat$high[, i]
-            bars_df$low[] <- bars_mat$low[, i]
-            bars_df$close[] <- bars_mat$close[, i]
-            bars_df$volume[] <- bars_mat$volume[, i]
-            bars_df$gap_type[] <- bars_mat$gap_type[, i]
-            bars_df$is_synthetic[] <- bars_mat$is_synthetic[, i]
-            bars <- bars_df
-          }
-        } else {
-          bars <- DBI::dbGetQuery(
-            con,
-            sprintf(
-              "
-              SELECT instrument_id, ts_utc, open, high, low, close, volume, gap_type, is_synthetic
-              FROM bars
-              WHERE instrument_id IN (%s) AND ts_utc = ?
-              ORDER BY instrument_id
-              ",
-              paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-            ),
-            params = list(ts)
-          )
-        }
-        if (sample_now) {
-          t_bars <- time_end(t_bars_start, TRUE)
-        }
-
-        bars_n <- if (is.data.frame(bars)) nrow(bars) else length(bars$instrument_id)
-        if (is.na(bars_n) || bars_n != length(instrument_ids)) {
-          rlang::abort(
-            sprintf("Missing bars for universe at ts_utc=%s.", ts_iso),
-            class = "ledgr_missing_bars"
-          )
-        }
-
-        feat_df <- empty_df
-        if (length(feature_defs) > 0) {
-          t_feats_start <- time_start(sample_now)
-          if (identical(execution_mode, "audit_log")) {
-            n_inst <- length(instrument_ids)
-            n_def <- length(feature_defs)
-            if (isTRUE(use_fast_context) && !is.null(features_proxy)) {
-              features_proxy$ts_utc <- rep(pulses_posix[[i]], n_inst * n_def)
-              for (d in seq_len(n_def)) {
-                idx <- seq(from = d, by = n_def, length.out = n_inst)
-                features_proxy$feature_value[idx] <- run_feature_matrix[[d]][, i]
-              }
-              feat_df <- features_proxy
-            } else {
-              features_df$ts_utc[] <- pulses_posix[[i]]
-              for (d in seq_len(n_def)) {
-                idx <- seq(from = d, by = n_def, length.out = n_inst)
-                features_df$feature_value[idx] <- run_feature_matrix[[d]][, i]
-              }
-              feat_df <- features_df
-            }
-          } else {
-            feat_df <- ledgr_features_at_pulse_cached(
-              con,
-              run_id,
-              instrument_ids,
-              ts,
-              feature_defs,
-              run_feature_series,
-              i,
-              persist_features
-            )
-          }
-          if (sample_now) {
-            t_feats <- time_end(t_feats_start, TRUE)
-          }
-        }
-
-        t_ctx_start <- time_start(sample_now)
-        positions_value <- 0
-        if (!is.null(state$positions) && length(state$positions) > 0) {
-          if (identical(execution_mode, "audit_log")) {
-            positions_value <- sum(as.numeric(state$positions) * bars_mat$close[, i])
-          } else {
-            close_by_id <- stats::setNames(as.numeric(bars$close), bars$instrument_id)
-            pos_ids <- intersect(names(state$positions), names(close_by_id))
-            if (length(pos_ids) > 0) {
-              positions_value <- sum(as.numeric(state$positions[pos_ids]) * close_by_id[pos_ids])
-            }
-          }
-        }
-
-        state_prev <- if (identical(execution_mode, "audit_log")) state_prev_mem else ledgr_strategy_state_prev(con, run_id, ts)
-
-        ctx$ts_utc <- ts_iso
-        ctx$bars <- bars
-        ctx$feature_table <- feat_df
-        ctx$positions <- state$positions
-        ctx$cash <- state$cash
-        ctx$equity <- state$cash + positions_value
-        ctx$state_prev <- state_prev
-        ctx <- ledgr_update_pulse_context_helpers(
-          ctx,
-          bars = bars,
-          features = feat_df,
-          positions = state$positions,
-          universe = instrument_ids
-        )
-        if (sample_now) {
-          t_ctx <- time_end(t_ctx_start, TRUE)
-        }
-
-        t_strat_start <- time_start(sample_now)
-        result <- tryCatch(
-          {
-            if (isTRUE(strategy_is_functional)) {
-              ledgr_call_strategy_fn(strategy_fn, ctx, strategy_params, strategy_call_signature)
-            } else {
-              strategy_fn(ctx)
-            }
-          },
-          error = function(e) ledgr_abort_strategy_error(e, ctx)
-        )
-        if (sample_now) {
-          t_strat <- time_end(t_strat_start, TRUE)
-        }
-        if (ledgr_is_strategy_intermediate(result)) {
-          ledgr_abort_intermediate_strategy_result(result)
-        }
-        numeric_result <- is.numeric(result)
-        if (numeric_result) {
-          result <- list(targets = result, state_update = NULL)
-        }
-        if (!is.list(result) || is.null(result$targets)) {
-          rlang::abort(
-            sprintf(
-              "Strategy must return %s or a list with `targets`.",
-              ledgr_strategy_targets_contract()
-            ),
-            class = "ledgr_invalid_strategy_result"
-          )
-        }
-        targets <- ledgr_validate_strategy_targets(result$targets, instrument_ids)
-        targets <- ledgr_apply_target_risk_noop(targets, ctx, strategy_params)
-
-        db_live_state_json <- NULL
-        if (!is.null(result$state_update)) {
-          state_json <- canonical_json(result$state_update)
-          if (identical(execution_mode, "audit_log")) {
-            output_handler$buffer_strategy_state(ts_utc = ts_iso, state_json = state_json)
-            state_prev_mem <<- result$state_update
-          } else {
-            db_live_state_json <- state_json
-          }
-        }
-
-        t_exec_start <- time_start(sample_now)
-        for (instrument_id in instrument_ids) {
-          cur_qty <- 0
-          if (!is.null(state$positions) && length(state$positions) > 0) {
-            if (identical(execution_mode, "audit_log")) {
-              cur_qty <- as.numeric(state$positions[[instrument_index[[instrument_id]]]])
-            } else {
-              pos <- state$positions
-              if (!is.null(names(pos)) && instrument_id %in% names(pos)) {
-                cur_qty <- as.numeric(pos[instrument_id])
-              }
-            }
-          }
-          target_qty <- as.numeric(targets[[instrument_id]])
-          delta <- target_qty - cur_qty
-          if (delta == 0) next
-
-          t_fill_start <- time_start(sample_now)
-          next_bar_row <- NULL
-          if (isTRUE(use_bars_cache)) {
-            b <- bars_by_id[[instrument_id]]
-            if (i < nrow(b)) {
-              next_row <- b[i + 1L, , drop = FALSE]
-              if (nrow(next_row) == 1) {
-                next_bar_row <- list(
-                  instrument_id = next_row$instrument_id[[1]],
-                  ts_utc = next_row$ts_utc[[1]],
-                  open = next_row$open[[1]],
-                  high = next_row$high[[1]],
-                  low = next_row$low[[1]],
-                  close = next_row$close[[1]],
-                  volume = next_row$volume[[1]]
-                )
-              }
-            }
-          } else {
-            next_bar <- DBI::dbGetQuery(
-              con,
-              "
-              SELECT instrument_id, ts_utc, open, high, low, close, volume
-              FROM bars
-              WHERE instrument_id = ? AND ts_utc > ?
-              ORDER BY ts_utc
-              LIMIT 1
-              ",
-              params = list(instrument_id, ts)
-            )
-            if (nrow(next_bar) == 1) {
-              next_bar_row <- list(
-                instrument_id = next_bar$instrument_id[[1]],
-                ts_utc = next_bar$ts_utc[[1]],
-                open = next_bar$open[[1]],
-                high = next_bar$high[[1]],
-                low = next_bar$low[[1]],
-                close = next_bar$close[[1]],
-                volume = next_bar$volume[[1]]
-              )
-            }
-          }
-
-          proposal <- ledgr_next_open_fill_proposal(
-            desired_qty_delta = delta,
-            next_bar = next_bar_row
-          )
-          fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
-
-          if (inherits(fill, "ledgr_fill_none") && is.character(fill$warn_code) && identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
-            warning("LEDGR_LAST_BAR_NO_FILL", call. = FALSE)
-          }
-
-          if (identical(execution_mode, "audit_log")) {
-            write_res <- ledgr_fill_event_row(run_id, fill, event_seq = next_event_seq)
-            output_handler$buffer_event(write_res)
-          } else {
-            write_res <- output_handler$write_fill_events(fill, event_seq_start = next_event_seq, use_transaction = FALSE)
-          }
-          if (sample_now) {
-            if (is.na(t_fill)) t_fill <- 0
-            t_fill <- t_fill + time_end(t_fill_start, TRUE)
-          }
-
-          if (inherits(write_res, "ledgr_ledger_write_result") && identical(write_res$status, "WROTE")) {
-            t_state_start <- time_start(sample_now)
-            state$cash <- as.numeric(state$cash) + as.numeric(write_res$cash_delta)
-            if (identical(execution_mode, "audit_log")) {
-              idx <- instrument_index[[instrument_id]]
-              state$positions[[idx]] <- as.numeric(state$positions[[idx]]) + as.numeric(write_res$position_delta)
-            } else {
-              pos <- state$positions
-              if (is.null(pos)) pos <- numeric(0)
-              if (is.null(names(pos))) names(pos) <- character(0)
-              prev <- pos[instrument_id]
-              if (length(prev) == 0 || is.na(prev)) prev <- 0
-              pos[instrument_id] <- as.numeric(prev) + as.numeric(write_res$position_delta)
-              state$positions <- pos
-            }
-            if (sample_now) {
-              if (is.na(t_state)) t_state <- 0
-              t_state <- t_state + time_end(t_state_start, TRUE)
-            }
-            next_event_seq <<- write_res$next_event_seq
-          }
-        }
-        if (!is.null(db_live_state_json)) {
-          t_state_start <- time_start(sample_now)
-          output_handler$write_strategy_state(ts_utc = ts_iso, state_json = db_live_state_json)
-          if (sample_now) {
-            if (is.na(t_state)) t_state <- 0
-            t_state <- t_state + time_end(t_state_start, TRUE)
-          }
-        }
-        if (sample_now) {
-          t_exec <- time_end(t_exec_start, TRUE)
-        }
-        state_env$current <- state
-
-        t_pulse <- NA_real_
-        if (sample_now) {
-          t_pulse <- time_end(t_pulse_start, TRUE)
-        }
-        list(
-          t_pulse = t_pulse,
-          t_bars = t_bars,
-          t_ctx = t_ctx,
-          t_fill = t_fill,
-          t_state = t_state,
-          t_feats = t_feats,
-          t_strat = t_strat,
-          t_exec = t_exec
-        )
-      }
-
-      run_loop <- function() {
-        for (i in seq(from = start_idx, to = length(pulses))) {
-          if (processed >= max_pulses) break
-
-          sample_now <- isTRUE(telemetry_stride > 0 && (((i - start_idx + 1L) %% telemetry_stride) == 0L))
-          pulse_res <- process_pulse(i, sample_now)
-
-          if (isTRUE(sample_now) && telemetry_idx < length(telemetry$t_state)) {
-            telemetry_idx <<- telemetry_idx + 1L
-            telemetry$telemetry_samples <- telemetry_idx
-            telemetry$t_pulse[[telemetry_idx]] <- pulse_res$t_pulse
-            telemetry$t_bars[[telemetry_idx]] <- pulse_res$t_bars
-            telemetry$t_ctx[[telemetry_idx]] <- pulse_res$t_ctx
-            telemetry$t_fill[[telemetry_idx]] <- pulse_res$t_fill
-            telemetry$t_state[[telemetry_idx]] <- pulse_res$t_state
-            telemetry$t_feats[[telemetry_idx]] <- pulse_res$t_feats
-            telemetry$t_strat[[telemetry_idx]] <- pulse_res$t_strat
-            telemetry$t_exec[[telemetry_idx]] <- pulse_res$t_exec
-          }
-
-          processed <<- processed + 1L
-          if (identical(execution_mode, "audit_log") && checkpoint_every > 0 &&
-              (processed %% checkpoint_every) == 0L && output_handler$pending_event_count() > 0) {
-            output_handler$flush_pending()
-          }
-
-        }
-      }
-
-      flush_time <- 0
-      loop_start <- ledgr_time_now()
-      DBI::dbWithTransaction(con, {
-        run_loop()
-        if (identical(execution_mode, "audit_log")) {
-          flush_start <- ledgr_time_now()
-          output_handler$flush_pending()
-          flush_time <<- ledgr_time_elapsed(flush_start, ledgr_time_now())
-        }
-      })
-      telemetry$t_loop <- ledgr_time_elapsed(loop_start, ledgr_time_now())
-      if (is.finite(max_pulses) && processed >= max_pulses) {
-        full_run <<- FALSE
-      }
-      if (flush_time > 0 && telemetry_idx > 0) {
-        telemetry$t_exec[[telemetry_idx]] <- telemetry$t_exec[[telemetry_idx]] + flush_time
-        telemetry$t_pulse[[telemetry_idx]] <- telemetry$t_pulse[[telemetry_idx]] + flush_time
-      }
-
-      TRUE
-    },
+  fold_result <- tryCatch(
+    ledgr_execute_fold(fold_execution, output_handler),
     error = function(e) {
       output_handler$record_failure(conditionMessage(e))
-      finalize_telemetry("FAILED", strict = FALSE)
+      ledgr_finalize_fold_telemetry(
+        output_handler = output_handler,
+        status = "FAILED",
+        telemetry = telemetry,
+        processed = 0L,
+        strict = FALSE
+      )
       rlang::cnd_signal(e)
     }
   )
 
-  if (isTRUE(run_ok) && is.finite(max_pulses) && processed >= max_pulses) {
-    # Simulated interruption for tests.
-    finalize_telemetry("RUNNING")
+  processed <- fold_result$processed
+  full_run <- fold_result$full_run
+  telemetry <- fold_result$telemetry
+  state_env$current <- fold_result$state
+  state_prev_mem <- fold_result$state_prev
+  next_event_seq <- fold_result$next_event_seq
+  run_feature_matrix <- fold_result$run_feature_matrix
+
+  if (!isTRUE(full_run)) {
+    ledgr_finalize_fold_telemetry(
+      output_handler = output_handler,
+      status = "RUNNING",
+      telemetry = telemetry,
+      processed = processed
+    )
     return(list(run_id = run_id, db_path = db_path))
   }
-
   post_start <- ledgr_time_now()
   events_df <- DBI::dbGetQuery(
     con,
@@ -1852,7 +1466,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
       stringsAsFactors = FALSE
     )
   }
-  if (identical(execution_mode, "audit_log") && isTRUE(persist_features) && length(feature_defs) > 0) {
+  if (isTRUE(persist_features) && length(feature_defs) > 0) {
     def_ids <- vapply(feature_defs, function(d) d$id, character(1))
     n_def <- length(def_ids)
     n_p <- length(pulses_posix)
@@ -1887,7 +1501,12 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
   })
   telemetry$t_post <- ledgr_time_elapsed(post_start, ledgr_time_now())
 
-  finalize_telemetry("DONE")
+  ledgr_finalize_fold_telemetry(
+    output_handler = output_handler,
+    status = "DONE",
+    telemetry = telemetry,
+    processed = processed
+  )
 
   list(run_id = run_id, db_path = db_path)
 }

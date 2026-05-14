@@ -78,7 +78,12 @@ print.ledgr_precomputed_features <- function(x, ...) {
   invisible(x)
 }
 
-ledgr_validate_precomputed_features <- function(precomputed, exp, param_grid, start = NULL, end = NULL) {
+ledgr_validate_precomputed_features <- function(precomputed,
+                                                exp,
+                                                param_grid,
+                                                start = NULL,
+                                                end = NULL,
+                                                resolve_features = TRUE) {
   if (!inherits(precomputed, "ledgr_precomputed_features")) {
     rlang::abort("`precomputed_features` must be a ledgr_precomputed_features object.", class = "ledgr_invalid_precomputed_features")
   }
@@ -109,6 +114,21 @@ ledgr_validate_precomputed_features <- function(precomputed, exp, param_grid, st
       "`precomputed_features` was built with a different feature engine version. Rerun ledgr_precompute_features().",
       class = "ledgr_precomputed_engine_mismatch"
     )
+  }
+  params_hashes <- vapply(
+    param_grid$params,
+    function(params) digest::digest(canonical_json(params), algo = "sha256"),
+    character(1)
+  )
+  if (!identical(as.character(precomputed$candidate_features$params_hash), params_hashes)) {
+    rlang::abort(
+      "`precomputed_features` candidate parameter hashes do not match `param_grid`.",
+      class = "ledgr_precomputed_feature_mismatch"
+    )
+  }
+
+  if (!isTRUE(resolve_features)) {
+    return(invisible(TRUE))
   }
 
   resolved <- ledgr_precompute_resolve_grid(exp, param_grid)

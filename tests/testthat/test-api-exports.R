@@ -42,6 +42,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_register_indicator",
     "ledgr_results",
     "ledgr_run",
+    "ledgr_sweep",
     "ledgr_run_archive",
     "ledgr_run_info",
     "ledgr_run_label",
@@ -87,6 +88,9 @@ testthat::test_that("exported API surface is locked", {
   testthat::expect_false("ledgr_resolve_fill_proposal" %in% exports)
   testthat::expect_false("ledgr_fill_context" %in% exports)
   testthat::expect_false("ledgr_default_cost_resolve" %in% exports)
+  testthat::expect_false("ledgr_execute_fold" %in% exports)
+  testthat::expect_false("ledgr_memory_output_handler" %in% exports)
   testthat::expect_true(exists("ledgr_run_fold", envir = asNamespace("ledgr"), inherits = FALSE))
+  testthat::expect_true(exists("ledgr_execute_fold", envir = asNamespace("ledgr"), inherits = FALSE))
 })
 

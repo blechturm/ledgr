@@ -768,54 +768,144 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 2-4 days
 **Dependencies:** LDG-2102, LDG-2104, LDG-2105, LDG-2106
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Add the first public sequential `ledgr_sweep()` runner and classed
 `ledgr_sweep_results` object. The sweep must call the shared fold core and
 return summary-only candidate rows in parameter-grid order.
 
+This ticket was reopened after the memory-output-handler RFC review. The
+ephemeral DuckDB clone implementation is not acceptable for v0.1.8. Sweep mode
+must evaluate candidates without writing DuckDB run artifacts, without writing to
+a tempfile store, and without using throwaway persistence as an implementation
+shortcut.
+
 **Tasks:**
 1. Add exported `ledgr_sweep()`.
-2. Evaluate candidates sequentially through the shared fold core.
-3. Generate a non-RNG `sweep_id` at sweep start and carry it into the result
-   object.
-4. Add fold-core output-handler injection: `NULL` keeps the current persistent
-   `ledgr_run()` handler; a supplied handler is used for sweep candidates.
-5. Move the loop transaction boundary behind the output handler or equivalent
-   control method so persistent runs wrap writes in a DuckDB transaction while
-   sweep candidates do not require a store connection.
-6. Route post-loop output materialization through the handler boundary:
-   persisted runs continue writing features/equity/run status; sweep candidates
-   retain only the summary data needed for result rows.
-7. Support optional `ledgr_precomputed_features`.
-8. Capture candidate-level execution failures by default.
-9. Implement `stop_on_error = TRUE` for sequential debugging.
-10. Abort unconditionally for contract validation errors.
-11. Return a `ledgr_sweep_results` tibble subclass with standard metric columns.
-12. Keep row order in parameter-grid order; ranking remains caller-owned.
+2. Delete/supersede the ephemeral snapshot-clone path; sweep candidates must not
+   run through `ledgr_run()` against a temporary DuckDB store.
+3. Extract a true shared execution core below persistent run orchestration. The
+   extracted core must contain no DuckDB calls. Persistent run orchestration may
+   remain in `ledgr_run_fold()`, but strategy invocation, target validation,
+   reserved risk slot, fill timing, cost resolution, state transitions, and event
+   emission must live in a named private function that is called by both
+   `ledgr_run_fold()` and the sweep candidate path.
+4. Add private memory output-handler support for sweep candidates. It must
+   capture opening `CASHFLOW` rows, fill rows, candidate-local warning/status
+   information, final equity, standard metrics, and summary artifacts without
+   opening or writing DuckDB.
+5. Route loop transaction scope through the handler or equivalent control
+   method: persistent runs wrap writes in DuckDB transactions; memory sweep
+   candidates execute without a store transaction.
+6. Route opening-position event construction through reusable event-row helpers
+   so persistent and memory handlers observe identical opening-position events.
+7. Route post-loop output materialization through pure/helper boundaries:
+   reconstruct equity and fills from in-memory events, compute metrics from
+   in-memory equity/fills, and write persistent features/equity/status only in
+   the persistent handler path.
+8. Make sweep input preparation explicit. Source snapshot bars and optional
+   `ledgr_precomputed_features` are fold inputs, not output-handler state.
+   Feature-consuming strategies must receive the same feature values they would
+   receive under `ledgr_run()`.
+9. Preserve candidate feature resolution metadata from LDG-2107, but do not make
+   execution depend on resolved metadata fields instead of the source
+   experiment's feature factory/static feature list.
+10. Generate a non-RNG `sweep_id` at sweep start and carry it into the result
+    object.
+11. Support optional `ledgr_precomputed_features`.
+12. Capture candidate-level execution failures by default.
+13. Implement `stop_on_error = TRUE` for sequential debugging, preserving the
+    original candidate-level condition class.
+14. Abort unconditionally for contract validation errors.
+15. Return a `ledgr_sweep_results` tibble subclass with standard metric columns.
+16. Keep row order in parameter-grid order; ranking remains caller-owned.
 
 **Acceptance Criteria:**
-- [ ] Successful candidates produce summary rows with standard metric columns.
-- [ ] Failed candidates keep params, status, error class, and error message.
-- [ ] Contract errors abort regardless of `stop_on_error`.
-- [ ] `stop_on_error = TRUE` rethrows candidate-level errors in sequential
+- [x] Successful candidates produce summary rows with standard metric columns.
+- [x] Failed candidates keep params, status, error class, and error message.
+- [x] Contract errors abort regardless of `stop_on_error`.
+- [x] `stop_on_error = TRUE` rethrows candidate-level errors in sequential
       mode.
-- [ ] Result rows remain in parameter-grid order.
-- [ ] `ledgr_sweep()` does not write DuckDB run artifacts or persisted
-      telemetry.
-- [ ] `evaluation_scope` defaults to `"exploratory"`.
-- [ ] A non-RNG `sweep_id` is generated at sweep start and attached to the
+- [x] Result rows remain in parameter-grid order.
+- [x] `ledgr_sweep()` does not write DuckDB run artifacts, tempfile DuckDB
+      artifacts, source-store run rows, source-store ledger/equity/features
+      rows, or persisted telemetry.
+- [x] Sweep candidate evaluation does not mutate `.ledgr_telemetry_registry` or
+      rely on `.ledgr_preflight_registry` timing side channels.
+- [x] Opening positions participate in memory-handler event reconstruction with
+      the same `CASHFLOW` semantics as persistent runs.
+- [x] A named private function, for example `ledgr_execute_fold()`, exists that
+      is called by both the persistent `ledgr_run_fold()` path and the sweep
+      candidate path. This function contains no DuckDB calls. An internal test
+      asserts it exists and is not exported.
+- [x] A feature-consuming strategy that calls `ctx$feature()` produces the same
+      feature value in a sweep candidate row as `ledgr_run()` produces for the
+      same strategy, params, snapshot, and feature. A test asserts this equality,
+      not merely that the strategy runs without error.
+- [x] `precomputed_features`, when supplied, is used as candidate input rather
+      than merely validated and ignored.
+- [x] `evaluation_scope` defaults to `"exploratory"`.
+- [x] A non-RNG `sweep_id` is generated at sweep start and attached to the
       `ledgr_sweep_results` object.
+
+**Reopen Notes:**
+- The prior LDG-2108 implementation used an ephemeral cloned DuckDB snapshot and
+  called `ledgr_run()` against that clone. This was rejected: sweep mode must
+  eliminate hidden persistence, not redirect it to a throwaway store.
+- The current `ledgr_run_fold()` name is ahead of the boundary: it still opens
+  DuckDB, registers/mutates persistent run rows, writes opening-position events,
+  wraps the loop in `DBI::dbWithTransaction()`, reads `ledger_events`, and writes
+  post-loop `features` and `equity_curve`.
+- Adding an `output_handler` argument alone is not enough unless persistent run
+  orchestration is separated from the true execution core.
+- Candidate feature resolution remains identity/validation metadata; execution
+  should still use the source experiment's feature factory/static list and
+  candidate params through the shared fold semantics.
+
+**Implementation Notes:**
+- Superseded implementation notes from the rejected clone approach should not be
+  used as evidence for closure.
+- The preferred refactor shape from the RFC response is:
+  `ledgr_run_fold()` remains the persistent wrapper, while a deeper private
+  execution core (for example `ledgr_execute_fold()`) is shared by persistent
+  runs and sweep candidates.
+- The memory output handler is private. It is not a public API and must not be
+  exported or documented as user surface.
+- The memory handler may retain an in-memory ledger event stream for the current
+  candidate. v0.1.8 sweep still returns summary rows only; full sweep artifact
+  persistence remains deferred.
+- Metrics should be computed from in-memory event/equity helpers, not by
+  constructing a fake DuckDB-backed `ledgr_backtest` object.
 
 **Verification:**
 ```text
 targeted ledgr_sweep tests
+memory-output-handler tests
 failure semantics tests
 standard metric column tests
+feature-consuming strategy tests
+no DuckDB write artifact tests
+shared-core export-surface tests
+feature value parity tests
+precomputed feature factory call-counter tests
 ```
 
-**Source Reference:** v0.1.8 spec sections 4.3, 4.4, 7, 8.
+**Verification Run:**
+```text
+test-sweep.R
+test-api-exports.R
+test-documentation-contracts.R
+test-precompute-features.R
+test-experiment-run.R
+test-strategy-reference.R
+test-run-compare.R
+test-rng.R
+full testthat::test_local('.', reporter='summary') - PASS
+```
+
+**Source Reference:** v0.1.8 spec sections 4.3, 4.4, 7, 8; memory-output-handler
+RFC and response.
 
 **Classification:**
 ```yaml
@@ -830,16 +920,27 @@ invariants_at_risk:
   - candidate failure isolation
   - contract error handling
   - summary metric correctness
+  - no hidden throwaway persistence
+  - opening-position FIFO/cost-basis parity
+  - feature-consuming strategy parity
 required_context:
   - inst/design/architecture/ledgr_sweep_mode_ux.md
+  - inst/design/rfc/rfc_sweep_memory_output_handler_v0_1_8.md
+  - inst/design/rfc/rfc_sweep_memory_output_handler_v0_1_8_response.md
   - inst/design/contracts.md
   - R/backtest.R
   - R/backtest-runner.R
 tests_required:
   - targeted sweep tests
+  - memory-output-handler tests
   - failure semantics tests
+  - feature-consuming strategy tests
+  - shared-core export-surface tests
+  - feature value parity tests
+  - precomputed feature factory call-counter tests
 escalation_triggers:
   - sweep requires a second execution loop
+  - sweep requires writing candidate runs to DuckDB, even temporarily
   - summary metrics cannot be produced without retaining full event streams
   - contract errors cannot be separated from candidate failures
   - injected output handlers cannot preserve current ledgr_run transaction
@@ -848,6 +949,8 @@ escalation_triggers:
     candidate summary output
 forbidden_actions:
   - writing run artifacts for sweep candidates
+  - writing tempfile DuckDB run artifacts for sweep candidates
+  - using ledgr_run() against a throwaway store as the sweep execution path
   - adding objective/ranking arguments
   - adding public parallel execution
 ```
