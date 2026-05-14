@@ -677,7 +677,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2105, LDG-2106
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Make indicator-parameter sweeps first-class by ensuring `features =
@@ -693,18 +693,42 @@ candidate failures.
 5. Add parity fixtures where changing params changes the registered feature set.
 
 **Acceptance Criteria:**
-- [ ] Candidate params can change indicator lookbacks or adapter parameters.
-- [ ] Per-candidate `feature_fingerprints` differ when resolved features differ.
-- [ ] `feature_set_hash` is derived from normalized candidate fingerprints.
-- [ ] Invalid candidate-specific feature configs are captured as failed
+- [x] Candidate params can change indicator lookbacks or adapter parameters.
+- [x] Per-candidate `feature_fingerprints` differ when resolved features differ.
+- [x] `feature_set_hash` is derived from normalized candidate fingerprints.
+- [x] Invalid candidate-specific feature configs are captured as failed
       candidates when `stop_on_error = FALSE`.
-- [ ] Structural feature-factory invalidity aborts before candidate evaluation.
+- [x] Structural feature-factory invalidity aborts before candidate evaluation.
+
+**Implementation Notes:**
+- Added internal candidate-feature resolution helpers used by precompute and
+  future sweep evaluation.
+- Candidate feature metadata now includes candidate label, params hash, status,
+  error class/message, feature IDs, feature fingerprints, and
+  `feature_set_hash`.
+- `feature_set_hash` is derived from sorted unique candidate feature
+  fingerprints through canonical JSON and SHA-256.
+- Candidate-specific feature materialization failures can be captured as
+  failed candidate rows when `stop_on_error = FALSE`, while
+  `stop_on_error = TRUE` rethrows the original condition.
+- Structural feature-factory invalidity remains handled by
+  `ledgr_experiment()` shape validation before candidate evaluation begins.
+- Did not add a separate indicator-sweep API or public `ledgr_sweep()` surface.
 
 **Verification:**
 ```text
 targeted feature-factory sweep tests
 candidate failure tests
 parity fixture setup for LDG-2112
+```
+
+**Verification Run:**
+```text
+test-precompute-features.R
+test-api-exports.R
+test-documentation-contracts.R
+test-experiment.R
+test-feature-inspection.R
 ```
 
 **Source Reference:** v0.1.8 spec R4 and sections 4.2, 7, 11.

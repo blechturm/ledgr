@@ -235,7 +235,7 @@ tickets:
 
   - id: LDG-2107
     title: "Feature-Factory Indicator Sweep Support"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2105, LDG-2106]
     tests:

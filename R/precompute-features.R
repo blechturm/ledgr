@@ -235,32 +235,110 @@ ledgr_precompute_ts_key <- function(x) {
 }
 
 ledgr_precompute_resolve_grid <- function(exp, param_grid) {
+  resolved <- ledgr_resolve_feature_candidates(exp, param_grid, stop_on_error = TRUE)
+  list(candidates = resolved$candidates, candidate_features = resolved$candidate_features)
+}
+
+ledgr_resolve_feature_candidates <- function(exp, param_grid, stop_on_error = FALSE) {
+  if (!inherits(exp, "ledgr_experiment")) {
+    rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_experiment")
+  }
+  if (!inherits(param_grid, "ledgr_param_grid")) {
+    rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
+  }
+  if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
+    rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+
   candidates <- vector("list", length(param_grid$params))
-  run_ids <- character(length(param_grid$params))
+  candidate_labels <- character(length(param_grid$params))
   params_hashes <- character(length(param_grid$params))
+  statuses <- character(length(param_grid$params))
+  error_classes <- character(length(param_grid$params))
+  error_msgs <- character(length(param_grid$params))
   feature_ids <- vector("list", length(param_grid$params))
   feature_fingerprints <- vector("list", length(param_grid$params))
+  feature_set_hashes <- character(length(param_grid$params))
   for (i in seq_along(param_grid$params)) {
     params <- param_grid$params[[i]]
     label <- param_grid$labels[[i]]
-    features <- ledgr_experiment_materialize_features(exp, params)
-    feature_defs <- ledgr_precompute_feature_defs_from_indicators(features)
-    fingerprints <- vapply(feature_defs, ledgr_feature_def_fingerprint, character(1))
-    candidates[[i]] <- list(label = label, params = params, feature_defs = feature_defs, fingerprints = fingerprints)
-    run_ids[[i]] <- label
+    candidate_labels[[i]] <- label
     params_hashes[[i]] <- ledgr_strategy_params_info(params)$hash
-    feature_ids[[i]] <- vapply(feature_defs, function(def) def$id, character(1))
-    feature_fingerprints[[i]] <- unname(fingerprints)
+    resolved <- tryCatch(
+      ledgr_resolve_candidate_features(exp, params, label),
+      error = function(e) {
+        if (isTRUE(stop_on_error)) {
+          stop(e)
+        }
+        e
+      }
+    )
+    if (inherits(resolved, "error")) {
+      candidates[[i]] <- list(label = label, params = params, feature_defs = list(), fingerprints = character(), error = resolved)
+      statuses[[i]] <- "failed"
+      error_classes[[i]] <- ledgr_condition_class(resolved)
+      error_msgs[[i]] <- conditionMessage(resolved)
+      feature_ids[[i]] <- character()
+      feature_fingerprints[[i]] <- character()
+      feature_set_hashes[[i]] <- NA_character_
+    } else {
+      candidates[[i]] <- resolved
+      statuses[[i]] <- "ok"
+      error_classes[[i]] <- NA_character_
+      error_msgs[[i]] <- NA_character_
+      feature_ids[[i]] <- resolved$feature_ids
+      feature_fingerprints[[i]] <- resolved$fingerprints
+      feature_set_hashes[[i]] <- resolved$feature_set_hash
+    }
   }
   list(
     candidates = candidates,
     candidate_features = tibble::tibble(
-      candidate_label = run_ids,
+      candidate_label = candidate_labels,
       params_hash = params_hashes,
+      status = statuses,
+      error_class = error_classes,
+      error_msg = error_msgs,
       feature_ids = feature_ids,
-      feature_fingerprints = feature_fingerprints
+      feature_fingerprints = feature_fingerprints,
+      feature_set_hash = feature_set_hashes
     )
   )
+}
+
+ledgr_resolve_candidate_features <- function(exp, params, candidate_label = NULL) {
+  features <- ledgr_experiment_materialize_features(exp, params)
+  feature_defs <- ledgr_precompute_feature_defs_from_indicators(features)
+  fingerprints <- unname(vapply(feature_defs, ledgr_feature_def_fingerprint, character(1)))
+  feature_ids <- unname(vapply(feature_defs, function(def) def$id, character(1)))
+  list(
+    label = candidate_label,
+    params = params,
+    feature_defs = feature_defs,
+    feature_ids = feature_ids,
+    fingerprints = fingerprints,
+    feature_set_hash = ledgr_feature_set_hash(fingerprints)
+  )
+}
+
+ledgr_feature_set_hash <- function(feature_fingerprints) {
+  if (is.null(feature_fingerprints)) {
+    feature_fingerprints <- character()
+  }
+  if (!is.character(feature_fingerprints) || anyNA(feature_fingerprints) || any(!nzchar(feature_fingerprints))) {
+    rlang::abort("`feature_fingerprints` must be a character vector of non-empty strings.", class = "ledgr_invalid_args")
+  }
+  normalized <- sort(unique(unname(feature_fingerprints)))
+  digest::digest(canonical_json(list(feature_fingerprints = normalized)), algo = "sha256")
+}
+
+ledgr_condition_class <- function(condition) {
+  classes <- class(condition)
+  classes <- classes[!classes %in% c("rlang_error", "error", "condition")]
+  if (length(classes) < 1L) {
+    return(class(condition)[[1]])
+  }
+  classes[[1]]
 }
 
 ledgr_precompute_feature_defs_from_indicators <- function(indicators) {

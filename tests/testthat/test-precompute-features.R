@@ -26,8 +26,12 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
   testthat::expect_equal(nrow(precomputed$candidate_features), 2L)
   testthat::expect_equal(
     names(precomputed$candidate_features),
-    c("candidate_label", "params_hash", "feature_ids", "feature_fingerprints")
+    c(
+      "candidate_label", "params_hash", "status", "error_class", "error_msg",
+      "feature_ids", "feature_fingerprints", "feature_set_hash"
+    )
   )
+  testthat::expect_identical(precomputed$candidate_features$status, c("ok", "ok"))
   testthat::expect_identical(
     precomputed$candidate_features$feature_fingerprints[[1]],
     precomputed$candidate_features$feature_fingerprints[[2]]
@@ -66,6 +70,15 @@ testthat::test_that("feature factories resolve per candidate and dedupe by finge
 
   testthat::expect_equal(calls$n, 3L)
   testthat::expect_equal(nrow(precomputed$feature_union), 2L)
+  testthat::expect_match(precomputed$candidate_features$feature_set_hash[[1]], "^[0-9a-f]{64}$")
+  testthat::expect_identical(
+    precomputed$candidate_features$feature_set_hash[[1]],
+    precomputed$candidate_features$feature_set_hash[[2]]
+  )
+  testthat::expect_false(identical(
+    precomputed$candidate_features$feature_set_hash[[1]],
+    precomputed$candidate_features$feature_set_hash[[3]]
+  ))
   testthat::expect_identical(
     precomputed$candidate_features$feature_fingerprints[[1]],
     precomputed$candidate_features$feature_fingerprints[[2]]
@@ -219,5 +232,75 @@ testthat::test_that("large grids without precomputed features warn through the r
   )
   testthat::expect_silent(
     ledgr:::ledgr_warn_large_grid_without_precomputed_features(grid, list())
+  )
+})
+
+testthat::test_that("candidate feature resolution captures candidate-specific factory failures", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    universe = "AAA",
+    features = function(params) list(ledgr_ind_sma(params$n))
+  )
+  grid <- ledgr_param_grid(good = list(n = 2), bad = list(n = 0), also_good = list(n = 4))
+
+  resolved <- ledgr:::ledgr_resolve_feature_candidates(exp, grid, stop_on_error = FALSE)
+
+  testthat::expect_equal(resolved$candidate_features$candidate_label, c("good", "bad", "also_good"))
+  testthat::expect_equal(resolved$candidate_features$status, c("ok", "failed", "ok"))
+  testthat::expect_identical(resolved$candidate_features$error_class[[2]], "ledgr_invalid_args")
+  testthat::expect_true(is.na(resolved$candidate_features$feature_set_hash[[2]]))
+  testthat::expect_match(resolved$candidate_features$feature_set_hash[[1]], "^[0-9a-f]{64}$")
+  testthat::expect_match(resolved$candidate_features$feature_set_hash[[3]], "^[0-9a-f]{64}$")
+
+  testthat::expect_error(
+    ledgr:::ledgr_resolve_feature_candidates(exp, grid, stop_on_error = TRUE),
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("structural feature-factory invalidity aborts before candidate resolution", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:3)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) ctx$flat()
+
+  testthat::expect_error(
+    ledgr_experiment(
+      snapshot = snapshot,
+      strategy = strategy,
+      universe = "AAA",
+      features = function() list(ledgr_ind_sma(2))
+    ),
+    class = "ledgr_invalid_experiment_features"
+  )
+})
+
+testthat::test_that("feature set hashes are normalized by sorted candidate fingerprints", {
+  fingerprints <- c("fff", "aaa", "fff")
+
+  testthat::expect_identical(
+    ledgr:::ledgr_feature_set_hash(fingerprints),
+    ledgr:::ledgr_feature_set_hash(c("aaa", "fff"))
+  )
+  testthat::expect_false(identical(
+    ledgr:::ledgr_feature_set_hash(fingerprints),
+    ledgr:::ledgr_feature_set_hash(c("aaa", "bbb"))
+  ))
+  testthat::expect_error(
+    ledgr:::ledgr_feature_set_hash(c("aaa", NA_character_)),
+    class = "ledgr_invalid_args"
   )
 })
