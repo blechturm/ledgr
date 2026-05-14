@@ -7,7 +7,7 @@ ledgr_register_strategy_fn <- function(fn, include_captures = TRUE, key = NULL) 
   }
   ledgr_strategy_signature(fn)
   if (is.null(key)) {
-    key <- ledgr_function_fingerprint(fn, include_captures = include_captures, label = "`strategy`")
+    key <- ledgr_function_fingerprint(fn, include_captures = include_captures, label = "`strategy`", allow_rng = TRUE)
   }
   assign(key, fn, envir = ledgr_strategy_registry)
   key

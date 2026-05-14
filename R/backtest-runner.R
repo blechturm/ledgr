@@ -544,7 +544,6 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
   opening_positions <- ledgr_config_opening_positions(cfg)
   opening_cost_basis <- ledgr_config_opening_cost_basis(cfg, opening_positions)
   seed <- cfg$engine$seed
-  runtime_seed <- if (is.null(seed)) 1L else as.integer(seed)
   run_wall_start <- ledgr_time_now()
 
   persist_features <- TRUE
@@ -580,7 +579,9 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
   }
   snapshot_hash_for_features <- NULL
 
-  set.seed(runtime_seed)
+  if (!is.null(seed)) {
+    set.seed(as.integer(seed))
+  }
 
   opened <- ledgr_open_duckdb_with_retry(db_path)
   drv <- opened$drv

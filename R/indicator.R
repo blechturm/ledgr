@@ -262,13 +262,16 @@ ledgr_stable_payload <- function(x, path = "`value`") {
   )
 }
 
-ledgr_function_fingerprint <- function(fn, include_captures = FALSE, label = "`function`") {
+ledgr_function_fingerprint <- function(fn, include_captures = FALSE, label = "`function`", allow_rng = FALSE) {
   if (!is.function(fn)) {
     rlang::abort(sprintf("%s must be a function.", label), class = "ledgr_invalid_args")
   }
 
   body_symbols <- all.names(body(fn), functions = TRUE, unique = TRUE)
   forbidden <- c("Sys.time", "Sys.Date", "date", "runif", "rnorm", "sample", "get", "eval", "assign", "Sys.getenv")
+  if (isTRUE(allow_rng)) {
+    forbidden <- setdiff(forbidden, ledgr_strategy_ambient_rng_functions())
+  }
   if (any(body_symbols %in% forbidden)) {
     rlang::abort(
       sprintf("%s uses non-deterministic calls and cannot be fingerprinted safely.", label),

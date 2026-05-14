@@ -14,8 +14,8 @@ ledgr_run(exp, params = list(), run_id = NULL, seed = NULL)
 
 \item{run_id}{Optional run identifier.}
 
-\item{seed}{Reserved for future deterministic stochastic workflows. v0.1.7
-stores \code{seed = NULL} in run identity and rejects non-NULL seeds.}
+\item{seed}{Optional integer-like execution seed. When non-\code{NULL}, ledgr
+applies it at fold entry and stores it in run identity.}
 }
 \value{
 A \code{ledgr_backtest} object.

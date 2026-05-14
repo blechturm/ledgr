@@ -83,6 +83,43 @@ testthat::test_that("strategy preflight allows explicit ledgr_signal_strategy wr
   testthat::expect_identical(preflight$unresolved_symbols, character())
 })
 
+testthat::test_that("strategy preflight rejects RNG state mutation as Tier 3", {
+  strategy <- function(ctx, params) {
+    set.seed(1)
+    ctx$flat()
+  }
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_3")
+  testthat::expect_false(preflight$allowed)
+  testthat::expect_match(preflight$reason, "set.seed", fixed = TRUE)
+
+  strategy_kind <- function(ctx, params) {
+    base::RNGkind("Mersenne-Twister")
+    ctx$flat()
+  }
+  preflight_kind <- ledgr_strategy_preflight(strategy_kind)
+  testthat::expect_identical(preflight_kind$tier, "tier_3")
+  testthat::expect_false(preflight_kind$allowed)
+  testthat::expect_match(preflight_kind$reason, "RNGkind", fixed = TRUE)
+})
+
+testthat::test_that("strategy preflight flags ambient RNG as Tier 2, not certified Tier 1", {
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (stats::runif(1) > 0.5) {
+      targets["TEST_A"] <- 1
+    }
+    targets
+  }
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_2")
+  testthat::expect_true(preflight$allowed)
+  testthat::expect_identical(preflight$unresolved_symbols, character())
+  testthat::expect_true(any(grepl("Ambient RNG", preflight$notes, fixed = TRUE)))
+})
+
 testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

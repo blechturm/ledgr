@@ -54,27 +54,60 @@ testthat::test_that("ledgr_run evaluates feature functions once per run", {
   testthat::expect_s3_class(bt, "ledgr_backtest")
 })
 
-testthat::test_that("ledgr_run rejects non-NULL seeds while storing seed NULL in config identity", {
+testthat::test_that("ledgr_run accepts execution seeds and stores them in config identity", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  strategy <- function(ctx, params) ctx$flat()
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (stats::runif(1) > 0) {
+      targets["AAA"] <- 1
+    }
+    targets
+  }
   exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy)
 
-  testthat::expect_error(
-    ledgr_run(exp, seed = 1L, run_id = "seeded-run"),
-    class = "ledgr_seed_not_supported"
-  )
+  bt_seeded <- ledgr_run(exp, seed = 123L, run_id = "seeded-run")
+  on.exit(close(bt_seeded), add = TRUE)
+  seeded_config_json <- ledgr_run_info(snapshot, "seeded-run")$config_json
+  seeded_cfg <- jsonlite::fromJSON(seeded_config_json, simplifyVector = FALSE)
+  testthat::expect_identical(seeded_cfg$engine$seed, 123L)
 
   bt <- ledgr_run(exp, run_id = "null-seed-run")
   on.exit(close(bt), add = TRUE)
   config_json <- ledgr_run_info(snapshot, "null-seed-run")$config_json
   cfg <- jsonlite::fromJSON(config_json, simplifyVector = FALSE)
   testthat::expect_null(cfg$engine$seed)
+})
+
+testthat::test_that("ledgr_run with seed NULL uses ambient strategy RNG without resetting it", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$hold()
+    if (all(targets == 0)) {
+      targets["AAA"] <- floor(stats::runif(1) * 10) + 1
+    }
+    targets
+  }
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy)
+
+  set.seed(9876)
+  expected_qty <- floor(stats::runif(1) * 10) + 1
+  set.seed(9876)
+  bt <- ledgr_run(exp, run_id = "null-seed-rng-state", seed = NULL)
+  on.exit(close(bt), add = TRUE)
+  fills <- ledgr_extract_fills(bt)
+  testthat::expect_equal(fills$qty[[1]], expected_qty)
 })
 
 testthat::test_that("ledgr_run matches equivalent ledgr_backtest output", {

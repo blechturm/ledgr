@@ -235,6 +235,24 @@ locator hints, strategy/feature recovery metadata, and verification helpers.
 Useful for expensive sweeps and offline audit. Deferred because v0.1.8 stores
 selection context on promoted runs instead.
 
+### 2026-05-14 [execution] Structured RNG preflight metadata
+
+LDG-2104 added human-readable strategy preflight notes for RNG state mutation
+and ambient RNG use. Future sweep audit/provenance work may want structured
+fields such as `ambient_rng_symbols` and `rng_mutation_symbols` instead of
+parsing notes or reasons.
+
+Source: LDG-2104 code review.
+
+### 2026-05-14 [execution] Broader ambient RNG detection
+
+LDG-2104 classifies `runif()`, `rnorm()`, and `sample()` as ambient RNG Tier 2
+calls. Future preflight hardening should consider the broader `stats` RNG
+family, such as `rbinom()`, `rpois()`, `rexp()`, and `rgamma()`, so stochastic
+strategies are not accidentally classified Tier 1.
+
+Source: LDG-2104 code review.
+
 ## Resolved
 
 No resolved horizon entries yet.

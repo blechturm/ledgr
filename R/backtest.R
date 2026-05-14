@@ -285,8 +285,8 @@ ledgr_run_config <- function(config, run_id = NULL) {
 #' @param params JSON-safe list passed to `function(ctx, params)` strategy and
 #'   `function(params)` feature definitions.
 #' @param run_id Optional run identifier.
-#' @param seed Reserved for future deterministic stochastic workflows. v0.1.7
-#'   stores `seed = NULL` in run identity and rejects non-NULL seeds.
+#' @param seed Optional integer-like execution seed. When non-`NULL`, ledgr
+#'   applies it at fold entry and stores it in run identity.
 #' @return A `ledgr_backtest` object.
 #' @section Articles:
 #' Strategy authoring:
@@ -332,12 +332,6 @@ ledgr_run_experiment <- function(exp, params = list(), run_id = NULL, seed = NUL
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
   params_info <- ledgr_strategy_params_info(params)
-  if (!is.null(seed)) {
-    rlang::abort(
-      "`seed` is reserved for v0.1.8 stochastic workflows. v0.1.7 stores seed = NULL in run identity.",
-      class = "ledgr_seed_not_supported"
-    )
-  }
   if (!is.null(run_id) && (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id))) {
     rlang::abort("`run_id` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -361,7 +355,7 @@ ledgr_run_experiment <- function(exp, params = list(), run_id = NULL, seed = NUL
     db_path = exp$snapshot$db_path,
     run_id = run_id,
     opening = exp$opening,
-    seed = NULL
+    seed = seed
   )
 
   result <- ledgr_run_config(config)
@@ -813,12 +807,7 @@ ledgr_config <- function(snapshot,
   if (!is.list(control)) {
     rlang::abort("`control` must be a list.", class = "ledgr_invalid_args")
   }
-  if (!is.null(seed)) {
-    if (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || !is.finite(seed) || (seed %% 1) != 0) {
-      rlang::abort("`seed` must be NULL or an integer-like scalar.", class = "ledgr_invalid_args")
-    }
-    seed <- as.integer(seed)
-  }
+  seed <- ledgr_seed_normalize(seed)
 
   if (!is.null(control$execution_mode)) {
     execution_mode <- control$execution_mode

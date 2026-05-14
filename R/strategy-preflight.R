@@ -55,16 +55,25 @@ ledgr_strategy_preflight <- function(strategy) {
   unresolved_symbols <- analysis$unresolved_symbols
   package_dependencies <- analysis$package_dependencies
   external_objects <- analysis$external_objects
+  rng_mutation_symbols <- analysis$rng_mutation_symbols
+  ambient_rng_symbols <- analysis$ambient_rng_symbols
   notes <- analysis$notes
 
-  if (length(unresolved_symbols) > 0L) {
+  if (length(rng_mutation_symbols) > 0L) {
+    tier <- "tier_3"
+    allowed <- FALSE
+    reason <- sprintf(
+      "Strategy mutates RNG state with forbidden call(s): %s.",
+      paste(rng_mutation_symbols, collapse = ", ")
+    )
+  } else if (length(unresolved_symbols) > 0L) {
     tier <- "tier_3"
     allowed <- FALSE
     reason <- sprintf(
       "Strategy references unresolved symbol(s): %s.",
       paste(unresolved_symbols, collapse = ", ")
     )
-  } else if (length(package_dependencies) > 0L || length(external_objects) > 0L) {
+  } else if (length(package_dependencies) > 0L || length(external_objects) > 0L || length(ambient_rng_symbols) > 0L) {
     tier <- "tier_2"
     allowed <- TRUE
     reason_parts <- c(
@@ -80,6 +89,13 @@ ledgr_strategy_preflight <- function(strategy) {
           "resolved external object%s: %s",
           if (length(external_objects) == 1L) "" else "s",
           paste(external_objects, collapse = ", ")
+        )
+      },
+      if (length(ambient_rng_symbols) > 0L) {
+        sprintf(
+          "ambient RNG call%s: %s",
+          if (length(ambient_rng_symbols) == 1L) "" else "s",
+          paste(ambient_rng_symbols, collapse = ", ")
         )
       }
     )
@@ -131,6 +147,16 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   variables <- sort(unique(as.character(globals$variables)))
   qualified <- ledgr_strategy_qualified_calls(body(strategy))
   string_constants <- unique(ledgr_strategy_character_constants(body(strategy)))
+  raw_functions <- functions
+  qualified_names <- if (nrow(qualified) > 0L) as.character(qualified$name) else character()
+  rng_mutation_symbols <- sort(unique(c(
+    intersect(raw_functions, ledgr_strategy_rng_mutation_functions()),
+    intersect(qualified_names, ledgr_strategy_rng_mutation_functions())
+  )))
+  ambient_rng_symbols <- sort(unique(c(
+    intersect(raw_functions, ledgr_strategy_ambient_rng_functions()),
+    intersect(qualified_names, ledgr_strategy_ambient_rng_functions())
+  )))
 
   functions <- setdiff(functions, ledgr_strategy_syntax_functions())
   functions <- setdiff(functions, ledgr_strategy_dynamic_qualified_operator(qualified))
@@ -174,13 +200,32 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
       )
     )
   }
+  if (length(ambient_rng_symbols) > 0L) {
+    notes <- c(
+      notes,
+      sprintf(
+        "Ambient RNG call(s) detected (%s); static preflight allows execution but does not certify stochastic reproducibility without explicit ledgr seed helpers.",
+        paste(ambient_rng_symbols, collapse = ", ")
+      )
+    )
+  }
 
   list(
     unresolved_symbols = sort(unique(c(functions, variables))),
     package_dependencies = sort(unique(dependency_packages)),
     external_objects = sort(unique(resolved_external_objects)),
+    rng_mutation_symbols = rng_mutation_symbols,
+    ambient_rng_symbols = ambient_rng_symbols,
     notes = notes
   )
+}
+
+ledgr_strategy_rng_mutation_functions <- function() {
+  c("set.seed", "RNGkind")
+}
+
+ledgr_strategy_ambient_rng_functions <- function() {
+  c("runif", "rnorm", "sample")
 }
 
 ledgr_strategy_syntax_functions <- function() {

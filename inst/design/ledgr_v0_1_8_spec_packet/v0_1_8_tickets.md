@@ -380,7 +380,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 1-2 days
 **Dependencies:** LDG-2102
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Make execution seeds first-class fold-core inputs. `ledgr_run(seed = integer)`
@@ -398,20 +398,48 @@ per-candidate execution seeds before dispatch.
 6. Leave user-facing `ctx$seed()` helpers deferred unless explicitly promoted.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_run(seed = integer)` executes and stores the seed in run identity.
-- [ ] `ledgr_run(seed = NULL)` preserves existing deterministic behavior and
+- [x] `ledgr_run(seed = integer)` executes and stores the seed in run identity.
+- [x] `ledgr_run(seed = NULL)` preserves existing deterministic behavior and
       does not call `set.seed()` at fold entry.
-- [ ] `ledgr_derive_seed()` is deterministic across sessions and independent
+- [x] `ledgr_derive_seed()` is deterministic across sessions and independent
       of `.Random.seed`.
-- [ ] Strategy bodies that call `set.seed()` or `RNGkind()` remain Tier 3.
-- [ ] Ambient RNG strategy calls without ledgr seed helpers are not silently
+- [x] Strategy bodies that call `set.seed()` or `RNGkind()` remain Tier 3.
+- [x] Ambient RNG strategy calls without ledgr seed helpers are not silently
       certified as reproducible.
+
+**Implementation Notes:**
+- Removed the public non-`NULL` seed rejection in `ledgr_run()` and now pass
+  the accepted seed into canonical config identity.
+- Added private `ledgr_seed_normalize()` and `ledgr_derive_seed()` helpers.
+  Seed derivation uses canonical JSON plus SHA-256 digest material and does not
+  read or mutate `.Random.seed`.
+- Changed fold entry so `set.seed()` is called only when `engine.seed` is
+  non-`NULL`; `seed = NULL` no longer resets execution to seed `1`.
+- Kept indicator/feature fingerprinting strict, but allow ambient RNG calls in
+  strategy fingerprint keys so preflight can classify them as Tier 2 rather
+  than blocking them before execution.
+- Updated strategy preflight so `set.seed()` and `RNGkind()` are Tier 3, while
+  ambient `runif()`, `rnorm()`, and `sample()` calls are Tier 2 with an
+  explicit non-certification note.
+- Did not add `ctx$seed()` or any public stochastic helper API.
 
 **Verification:**
 ```text
 targeted seed tests
 preflight tests for RNG mutation patterns
 config/provenance seed identity tests
+```
+
+**Verification Run:**
+```text
+test-rng.R
+test-strategy-preflight.R
+test-experiment-run.R
+test-config.R
+test-api-exports.R
+test-release-coverage-branches.R
+test-runner.R
+full testthat suite
 ```
 
 **Source Reference:** v0.1.8 spec R6 and RNG RFC/response.
