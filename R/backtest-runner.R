@@ -1004,6 +1004,10 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
 
   max_pulses <- control$max_pulses
   if (is.null(max_pulses)) max_pulses <- Inf
+  cost_resolver <- ledgr_cost_spread_commission_internal(
+    spread_bps = cfg$fill_model$spread_bps,
+    commission_fixed = cfg$fill_model$commission_fixed
+  )
 
   output_handler$record_run_status("RUNNING", NA_character_)
 
@@ -1531,7 +1535,11 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
                 next_bar_row <- list(
                   instrument_id = next_row$instrument_id[[1]],
                   ts_utc = next_row$ts_utc[[1]],
-                  open = next_row$open[[1]]
+                  open = next_row$open[[1]],
+                  high = next_row$high[[1]],
+                  low = next_row$low[[1]],
+                  close = next_row$close[[1]],
+                  volume = next_row$volume[[1]]
                 )
               }
             }
@@ -1539,7 +1547,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
             next_bar <- DBI::dbGetQuery(
               con,
               "
-              SELECT instrument_id, ts_utc, open
+              SELECT instrument_id, ts_utc, open, high, low, close, volume
               FROM bars
               WHERE instrument_id = ? AND ts_utc > ?
               ORDER BY ts_utc
@@ -1551,17 +1559,20 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
               next_bar_row <- list(
                 instrument_id = next_bar$instrument_id[[1]],
                 ts_utc = next_bar$ts_utc[[1]],
-                open = next_bar$open[[1]]
+                open = next_bar$open[[1]],
+                high = next_bar$high[[1]],
+                low = next_bar$low[[1]],
+                close = next_bar$close[[1]],
+                volume = next_bar$volume[[1]]
               )
             }
           }
 
-          fill <- ledgr_fill_next_open(
+          proposal <- ledgr_next_open_fill_proposal(
             desired_qty_delta = delta,
-            next_bar = next_bar_row,
-            spread_bps = cfg$fill_model$spread_bps,
-            commission_fixed = cfg$fill_model$commission_fixed
+            next_bar = next_bar_row
           )
+          fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
 
           if (inherits(fill, "ledgr_fill_none") && is.character(fill$warn_code) && identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
             warning("LEDGR_LAST_BAR_NO_FILL", call. = FALSE)

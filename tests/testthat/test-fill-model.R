@@ -24,6 +24,43 @@ testthat::test_that("fill model is deterministic and rounds fill_price", {
   testthat::expect_equal(a$fill_price, round(100.123456789 * (1 + 7 / 10000), 8))
 })
 
+testthat::test_that("next-open proposal and internal cost resolver preserve legacy fill intents", {
+  bar <- list(
+    instrument_id = "AAA",
+    ts_utc = "2020-01-02T00:00:00Z",
+    open = 100,
+    high = 101,
+    low = 99,
+    close = 100.5,
+    volume = 100000
+  )
+
+  proposal <- ledgr:::ledgr_next_open_fill_proposal(10, bar)
+  testthat::expect_s3_class(proposal, "ledgr_fill_proposal")
+  testthat::expect_identical(proposal$instrument_id, "AAA")
+  testthat::expect_identical(proposal$side, "BUY")
+  testthat::expect_equal(proposal$qty, 10)
+  testthat::expect_identical(
+    names(proposal$execution_bar),
+    c("instrument_id", "ts_utc", "open", "high", "low", "close", "volume")
+  )
+  testthat::expect_equal(proposal$execution_bar$volume, 100000)
+
+  resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+    spread_bps = 7,
+    commission_fixed = 1.25
+  )
+  via_boundary <- ledgr:::ledgr_resolve_fill_proposal(proposal, resolver)
+  legacy <- ledgr:::ledgr_fill_next_open(
+    desired_qty_delta = 10,
+    next_bar = bar,
+    spread_bps = 7,
+    commission_fixed = 1.25
+  )
+
+  testthat::expect_identical(via_boundary, legacy)
+})
+
 testthat::test_that("BUY/SELL spread adjustment is symmetric and spread=0 yields open", {
   bar <- list(
     instrument_id = "AAA",

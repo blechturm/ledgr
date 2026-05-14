@@ -279,7 +279,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2102
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Preserve the private fill-timing/cost-resolution boundary needed for future cost
@@ -297,19 +297,47 @@ behavior byte-for-byte compatible.
    `config_hash` stay unchanged.
 
 **Acceptance Criteria:**
-- [ ] Current `spread_bps` and `commission_fixed` behavior is unchanged.
-- [ ] `config_hash` is byte-identical for unchanged scalar fill config.
-- [ ] Output handlers do not compute or reinterpret costs.
-- [ ] The fold core does not expose public cost-model factories or exchange fee
+- [x] Current `spread_bps` and `commission_fixed` behavior is unchanged.
+- [x] `config_hash` is byte-identical for unchanged scalar fill config.
+- [x] Output handlers do not compute or reinterpret costs.
+- [x] The fold core does not expose public cost-model factories or exchange fee
       templates.
-- [ ] No quantity mutation, liquidity clipping, partial-fill, or
+- [x] No quantity mutation, liquidity clipping, partial-fill, or
       volume-participation model is added.
+
+**Implementation Notes:**
+- Kept `ledgr_fill_next_open()` as the compatibility helper, but rewired it
+  through an internal `ledgr_fill_proposal` plus internal spread/commission
+  cost resolver.
+- Routed the fold hot path through `ledgr_next_open_fill_proposal()` and
+  `ledgr_resolve_fill_proposal()` instead of passing `spread_bps` and
+  `commission_fixed` directly to `ledgr_fill_next_open()`.
+- Added a private `ledgr_fill_context` carrying execution-bar data separately
+  from strategy `ctx`.
+- Reserved execution-bar OHLCV fields, including `volume`, in the proposal.
+- Added a config-hash fixture for unchanged scalar fill-model config.
+- Added export-surface checks that no cost-model/proposal API was exported.
+- Did not add quantity mutation, public cost factories, exchange templates,
+  liquidity clipping, partial-fill behavior, or volume-participation behavior.
 
 **Verification:**
 ```text
 targeted fill/cash-delta tests
 config_hash fixture test
 comparison metric parity checks
+```
+
+**Verification Run:**
+```text
+test-fill-model.R
+test-ledger-writer.R
+test-config.R
+test-runner.R
+test-backtest-audit-log-equivalence.R
+test-accounting-consistency.R
+test-run-compare.R
+test-api-exports.R
+full testthat suite
 ```
 
 **Source Reference:** v0.1.8 spec R5 and sections 6, 11.

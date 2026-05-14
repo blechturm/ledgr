@@ -58,6 +58,27 @@ testthat::test_that("hash is deterministic and sensitive to small changes", {
   testthat::expect_false(identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg2)))
 })
 
+testthat::test_that("scalar fill-model config hash is stable across internal cost-boundary refactors", {
+  cfg <- list(
+    db_path = "db.duckdb",
+    engine = list(seed = 1L, tz = "UTC"),
+    universe = list(instrument_ids = c("A")),
+    backtest = list(
+      start_ts_utc = "2020-01-01T00:00:00Z",
+      end_ts_utc = "2020-01-02T00:00:00Z",
+      pulse = "EOD",
+      initial_cash = 1000
+    ),
+    fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1.25),
+    strategy = list(id = "x", params = list())
+  )
+
+  testthat::expect_identical(
+    ledgr:::config_hash(cfg),
+    "948146c214583b5bf2e200113d0bc5c065d834624b0701b1d099157b15833b3f"
+  )
+})
+
 testthat::test_that("instrument_ids ordering affects canonical JSON and hash", {
   cfg1 <- list(
     db_path = "db.duckdb",

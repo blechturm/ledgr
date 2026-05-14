@@ -84,7 +84,7 @@ tickets:
 
   - id: LDG-2103
     title: "Internal Fill Timing And Cost Boundary Preservation"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2102]
     tests:
