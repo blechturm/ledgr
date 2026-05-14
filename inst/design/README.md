@@ -3,8 +3,8 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Current release:** v0.1.7.9 shipped.
-**Current prep branch:** `v0.1.8.00`.
-**Active packet:** `inst/design/ledgr_v0_1_8_00_spec_packet/`.
+**Current implementation branch:** `v0.1.8`.
+**Active packet:** `inst/design/ledgr_v0_1_8_spec_packet/`.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -17,8 +17,8 @@ For any non-trivial change, read in this order:
 1. `contracts.md` - current execution, snapshot, persistence, feature, and
    strategy contracts.
 2. `ledgr_roadmap.md` - milestone arc and active horizon.
-3. `ledgr_v0_1_8_00_spec_packet/` - active prep packet for design-document
-   governance and v0.1.8 readiness.
+3. `ledgr_v0_1_8_spec_packet/` - active implementation spec packet for
+   v0.1.8 sweep/fold-core work.
 4. Only the architecture, RFC, audit, or spike documents relevant to the active
    ticket.
 
@@ -41,14 +41,13 @@ explicitly asks you to inspect one.
 
 ## Active Cycle
 
-The active prep cycle is `v0.1.8.00`.
+The active implementation cycle is `v0.1.8`.
 
-- Spec: `ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md`
-- Tickets: `ledgr_v0_1_8_00_spec_packet/v0_1_8_00_tickets.md`
-- Machine-readable tickets: `ledgr_v0_1_8_00_spec_packet/tickets.yml`
+- Spec: `ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
+- Tickets: `ledgr_v0_1_8_spec_packet/v0_1_8_tickets.md`
+- Machine-readable tickets: `ledgr_v0_1_8_spec_packet/tickets.yml`
 
-The next implementation target is v0.1.8 sweep/fold-core work. That design is
-not implemented in this prep cycle.
+The active implementation target is v0.1.8 sweep/fold-core work.
 
 ## Core Documents
 
@@ -76,16 +75,35 @@ These files are active inputs for v0.1.8 planning.
 - `rfc/rfc_design_doc_governance_response.md`
 - `rfc/rfc_cost_model_architecture.md`
 - `rfc/rfc_cost_model_architecture_response.md`
+- `rfc/rfc_rng_contract_v0_1_8.md`
+- `rfc/rfc_rng_contract_v0_1_8_response.md`
+- `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8.md`
+- `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_response.md`
+- `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`
+- `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis_response.md`
+- `rfc/rfc_sweep_promotion_context_v0_1_8.md`
+- `rfc/rfc_sweep_promotion_context_v0_1_8_response.md`
+- `rfc/rfc_sweep_promotion_context_v0_1_8_synthesis.md`
+- `rfc/rfc_sweep_promotion_context_v0_1_8_synthesis_response.md`
+- `rfc/rfc_sweep_promotion_context_v0_1_8_decision.md`
 - `rfc/rfc_parallelism_spike_architecture_consequences.md`
 - `rfc/rfc_parallelism_spike_architecture_consequences_response.md`
 
-The governance RFC and response are active inputs for `v0.1.8.00`. The cost
-model response is an active downstream constraint for v0.1.8 fold-core design.
+The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
+The cost model response is an active downstream constraint for v0.1.8 fold-core design.
 The parallelism spike RFC and response are active inputs for the v0.1.8 spec.
+The RNG RFC and response split v0.1.8 seed boundary work from later stochastic
+strategy helpers.
+The promotion RFC and response add `execution_seed` as a visible column and
+establish `ledgr_candidate()` / `ledgr_promote()` as the canonical promotion API.
+The promotion-context decision adds durable `run_promotion_context`
+selection-audit metadata for runs promoted from sweep candidates; full sweep
+artifact persistence remains future work.
 
 ## Audits And Spikes
 
 - `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
+- `audits/v0_1_8_spec_deep_review.md` - v0.1.8 spec review and routing.
 - `spikes/ledgr_parallelism_spike/` - v0.1.8 parallelism spike episode.
 
 ## ADRs
@@ -98,10 +116,11 @@ ADRs live under `adr/`.
 
 ## Spec Packets
 
-Versioned spec packets include the active prep packet and archival release
+Versioned spec packets include the active implementation packet and archival release
 records. Keep them in place.
 
-- `ledgr_v0_1_8_00_spec_packet/` - active prep packet.
+- `ledgr_v0_1_8_spec_packet/` - active implementation packet.
+- `ledgr_v0_1_8_00_spec_packet/` - completed design-governance prep packet.
 - `ledgr_v0_1_7_9_spec_packet/` - latest shipped release packet.
 - `ledgr_v0_1_7_8_spec_packet/` and older - historical records.
 

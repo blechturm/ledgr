@@ -32,11 +32,11 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Active cycle (v0.1.8.00 - update this block each cycle):
+Active cycle (v0.1.8 - update this block each cycle):
 
-- Spec: `inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md`
-- Tickets: `inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_tickets.md`
-- Machine-readable tickets: `inst/design/ledgr_v0_1_8_00_spec_packet/tickets.yml`
+- Spec: `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
+- Tickets: `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_tickets.md`
+- Machine-readable tickets: `inst/design/ledgr_v0_1_8_spec_packet/tickets.yml`
 
 ## Local Verification
 

@@ -228,6 +228,13 @@ templates are considered. Real fee schedules are account-specific,
 jurisdiction-specific, and change over time. If templates are added later, they
 should likely live in adapter packages or be clearly labelled approximations.
 
+### 2026-05-14 [sweep] Promotion-grade sweep artifacts
+
+Future design: save/load complete sweep result bundles with manifest, snapshot
+locator hints, strategy/feature recovery metadata, and verification helpers.
+Useful for expensive sweeps and offline audit. Deferred because v0.1.8 stores
+selection context on promoted runs instead.
+
 ## Resolved
 
 No resolved horizon entries yet.

@@ -128,6 +128,10 @@ targets_risked
   -> ledger event
 ```
 
+Later v0.1.8 spec drafting refines `targets_risked` to `validated_targets` plus
+a reserved future risk step. The cost-boundary conclusion is unchanged: target
+validation/risk adjustment must finish before timing and cost resolution begin.
+
 The proposal is the audit boundary between "the strategy wanted this quantity
 change" and "the execution assumptions priced it this way."
 

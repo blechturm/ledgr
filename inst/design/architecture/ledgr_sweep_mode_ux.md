@@ -18,10 +18,12 @@ ledgr_run() / ledgr_tune() commit      durable, full provenance, auditable
 ```
 
 Sweep produces a candidate summary table. The user picks candidates from it and
-commits them deliberately with `ledgr_run()`. Sweep results are never
-auto-promoted to the experiment store. A sweep result may carry in-memory
-candidate identity metadata needed to promote, rerun, or reject a candidate
-deliberately; that metadata is not a durable experiment-store provenance record.
+commits them deliberately with `ledgr_candidate()` and `ledgr_promote()` (which
+calls `ledgr_run()`). Sweep results are never auto-promoted to the experiment
+store. A sweep result carries compact candidate identity needed to promote,
+rerun, or reject a candidate deliberately; promoted runs also store durable
+promotion context. Neither the sweep table nor promotion context is a full
+replacement for committed run provenance.
 
 ## Evaluation Discipline
 
@@ -278,19 +280,29 @@ curated summary with the same formatting conventions as `ledgr_comparison`.
 | `status` | chr | `"DONE"` or `"FAILED"` |
 | `final_equity` | dbl | NA on failure |
 | `total_return` | dbl | Ratio; printed as % |
+| `annualized_return` | dbl | Ratio; NA on failure |
+| `volatility` | dbl | Annualized volatility; NA on failure |
+| `sharpe_ratio` | dbl | Risk-adjusted metric from the standard metric set; NA on failure |
 | `max_drawdown` | dbl | Ratio; printed as % |
 | `n_trades` | int | NA on failure |
 | `win_rate` | dbl | Ratio; printed as %; NA on failure |
+| `avg_trade` | dbl | Mean realized P&L across closed trades; NA on failure |
+| `time_in_market` | dbl | Share of equity rows with a non-zero position; NA on failure |
+| `execution_seed` | int | Actual fold seed used by this candidate; `NA_integer_` when unseeded |
 | `error_class` | chr | NA on success |
 | `error_msg` | chr | NA on success |
 | `params` | list | The full params list for each combination |
 | `warnings` | list | Candidate-level warning conditions and non-fatal ledgr interpretation warnings |
 | `feature_fingerprints` | list | Feature identities required by this candidate; varies for feature factories and is constant for concrete feature lists/maps |
+| `provenance` | list | Compact row-level lineage bundle with `provenance_version`, snapshot hash, strategy hash, feature-set hash, master seed, seed contract, and evaluation scope |
 
 **Object metadata:** The result object also carries in-memory identity metadata
 as attributes, not repeated visible columns: snapshot id/hash, strategy source
 hash or preflight identity, strategy preflight result, opening state, execution
-assumptions, fill/cost assumptions, evaluation scope, and RNG contract. These
+assumptions, fill/cost assumptions, evaluation scope, and RNG contract. The
+per-candidate execution seed is the scalar `execution_seed` column; the sweep
+master seed and seed derivation contract live in result attributes and are
+duplicated in each row's `provenance` list for standalone candidate rows. These
 attributes are promotion and audit aids for the current R session; they are not
 durable experiment-store provenance.
 
@@ -300,41 +312,75 @@ durable experiment-store provenance.
 # ledgr sweep -- momentum.duckdb
 # 48 combinations: 46 done, 2 failed
 
-# A tibble: 48 x 12
-  run_id             status  final_equity   return  drawdown  n_trades  win_rate
-  <chr>              <chr>          <dbl>   <chr>    <chr>       <int>    <chr>
-1 conservative       DONE          105420   +5.4%    -8.1%        143     54%
-2 moderate           DONE          112300  +12.3%   -11.2%        201     54%
-3 grid_3a7f2c1e      DONE          108930   +8.9%   -12.4%        287     51%
-4 grid_9b1d4e8a      FAILED            NA      NA       NA         NA      NA
+# A tibble: 48 x 19
+  run_id             status  sharpe  return  drawdown  n_trades  execution_seed
+  <chr>              <chr>    <dbl>   <chr>    <chr>       <int>           <int>
+1 conservative       DONE      0.72   +5.4%    -8.1%        143              918
+2 moderate           DONE      1.10  +12.3%   -11.2%        201              552
+3 grid_3a7f2c1e      DONE      0.91   +8.9%   -12.4%        287              294
+4 grid_9b1d4e8a      FAILED      NA      NA       NA         NA              731
 ...
 
 # i Rows are in parameter-grid order; rank explicitly with dplyr when needed.
-# i Promote a candidate: exp |> ledgr_run(params = ..., run_id = "...")
-# i Extract params:      results |> filter(run_id == "conservative") |> pull(params) |> first()
+# i Promote a candidate: candidate <- results |> filter(...) |> ledgr_candidate(1)
+# i                    exp |> ledgr_promote(candidate, run_id = "...")
 # i Failed rows:         results |> filter(status == "FAILED")
-# i Hidden columns:      params, warnings, feature_fingerprints, error_class, error_msg
+# i Hidden columns:      final_equity, annualized_return, volatility, avg_trade,
+#                        time_in_market, win_rate, params, warnings,
+#                        feature_fingerprints, provenance, error_class, error_msg
 ```
 
 **Promoting a candidate to a committed run:**
 
 ```r
-winner <- results |>
+candidate <- results |>
   filter(status == "DONE") |>
   arrange(desc(total_return)) |>
-  slice(1) |>
-  pull(params) |>
-  first()
+  ledgr_candidate(1)
 
-bt <- exp |> ledgr_run(params = winner, run_id = "momentum_v1")
+bt <- exp |>
+  ledgr_promote(
+    candidate,
+    run_id = "momentum_v1",
+    note = "Selected highest-return candidate from sweep."
+  )
 ```
 
 When following the train/test discipline, the committed evaluation run uses a
 test-snapshot experiment rather than the sweep's train-snapshot experiment:
 
 ```r
-bt_test <- test_exp |> ledgr_run(params = winner, run_id = "momentum_v1_test")
+bt_test <- test_exp |>
+  ledgr_promote(
+    candidate,
+    run_id = "momentum_v1_test",
+    note = "Selected on train sweep; evaluated on held-out test snapshot."
+  )
 ```
+
+`ledgr_promote()` forwards the candidate params and `execution_seed` to
+`ledgr_run()` and writes durable promotion context after the committed run
+succeeds. Users should not need to manually extract `params[[1]]` or seed
+values from the sweep table.
+
+`ledgr_candidate()` returns a `ledgr_sweep_candidate` object. It should accept a
+classed `ledgr_sweep_results` object or a tibble-like selection view that still
+contains `run_id`, `params`, `execution_seed`, and `provenance`. Failed
+candidates error by default and can be extracted only for diagnostics with
+`allow_failed = TRUE`.
+
+The candidate print method should show a compact audit block: candidate label,
+status, params, execution seed, strategy name plus hash when available,
+snapshot hash, feature-set hash, and evaluation scope. If sweep-level metadata
+is missing because the user supplied a plain tibble, the candidate should still
+be usable for basic promotion when row-level params, seed, and provenance are
+present; metadata-dependent checks fail lazily with a specific message.
+
+Promotion context is intentionally smaller than a saved sweep artifact. For a
+promoted run, ledgr stores the selected candidate, sweep event identity, note,
+and compact selection-view summary in `run_promotion_context`. It does not
+store the full sweep table, full warnings, ledger rows, or equity curves for all
+candidates in v0.1.8.
 
 ---
 
@@ -370,9 +416,11 @@ failure.
 artifacts, or persisted telemetry. Sweep may retain in-memory candidate
 identity metadata such as params, snapshot identity, feature identity, strategy
 preflight classification, execution assumptions, fill/cost assumptions, and RNG
-contract so a candidate can be promoted to a committed `ledgr_run()`
-deliberately. That identity metadata is not a substitute for the durable
-provenance created by the committed run.
+contract so a candidate can be promoted deliberately. The row-level
+`execution_seed` and `provenance` fields are compact promotion identity, not
+full run provenance. `ledgr_promote()` creates a committed `ledgr_run()` and
+writes durable promotion context that records the selected candidate and the
+selection view that led to it.
 
 ---
 
@@ -428,10 +476,16 @@ results |> filter(status == "DONE") |> arrange(desc(total_return))
 
 # -- Commit candidates --------------------------------------------------------
 
+candidate <- results |>
+  filter(status == "DONE") |>
+  arrange(desc(total_return)) |>
+  ledgr_candidate(1)
+
 bt <- exp |>
-  ledgr_run(
-    params = list(threshold = 0.005, qty = 10, sma_n = 20),
-    run_id = "momentum_v1"
+  ledgr_promote(
+    candidate,
+    run_id = "momentum_v1",
+    note = "Selected highest-return candidate from exploratory sweep."
   )
 
 snapshot <- snapshot |>
@@ -518,8 +572,11 @@ The API remains deferred until sweep is shipped and the use case is proven.
 - `ledgr_sweep()` with `stop_on_error = FALSE` default, future-compatible
 - `ledgr_sweep_results` S3 print method
 - Failure rows with `status`, `error_class`, `error_msg`
-- `params`, `warnings`, and `feature_fingerprints` list columns for candidate
+- `execution_seed` scalar column plus `params`, `warnings`,
+  `feature_fingerprints`, and `provenance` list columns for candidate
   promotion and interpretation
+- `ledgr_candidate()` / `ledgr_promote()` promotion path with durable
+  promotion context for promoted runs
 - In-memory result metadata for snapshot identity, strategy preflight, opening
   state, execution assumptions, fill/cost assumptions, evaluation scope, and
   RNG contract

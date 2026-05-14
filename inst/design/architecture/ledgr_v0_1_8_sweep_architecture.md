@@ -11,9 +11,9 @@ This note is intentionally separate from `inst/design/architecture/ledgr_sweep_m
 The UX note describes the user-facing sweep workflow. This architecture note
 describes the internal constraints that must hold so sweep does not become a
 dead-end execution path. It uses the same provenance boundary as the UX note:
-sweep does not create durable experiment-store run provenance, but it may carry
-in-memory candidate identity metadata needed to promote, rerun, or reject a
-candidate deliberately.
+sweep does not create full durable experiment-store run provenance, but it does
+carry compact candidate identity and promotion context needed to promote, rerun,
+or reject a candidate deliberately.
 
 ## Thesis
 
@@ -65,6 +65,7 @@ The fold core is the deterministic per-bar execution engine:
 - registered feature lookup;
 - strategy invocation;
 - target validation;
+- reserved future target-risk step, a no-op in v0.1.8;
 - fill timing;
 - cost resolution;
 - final-bar no-fill behavior;
@@ -172,41 +173,71 @@ Even when sweep does not persist full ledger rows for every candidate, each
 candidate result must retain enough identity to reproduce the candidate with a
 committed `ledgr_run()` later.
 
-This is in-memory candidate identity metadata, not durable run provenance. The
-durable provenance record is created only when the user deliberately promotes a
-candidate through `ledgr_run()`.
+This is compact candidate identity metadata, not full durable run provenance.
+The durable run record is created only when the user deliberately promotes a
+candidate through `ledgr_promote()` / `ledgr_run()`. v0.1.8 also stores
+promotion context for promoted runs so the committed run records which selected
+candidate and selection view led to it.
 
 The always-kept candidate record should include at least:
 
 - candidate label;
 - params;
 - status;
+- execution seed actually used by the candidate, as a row-level scalar;
 - objective value, when computed. This is absent in the v0.1.8 summary-only
   design when ranking is caller-owned, and is reserved for a future default or
   user-supplied objective;
 - core summary metrics used for ranking;
 - error class and message on failure;
 - warnings relevant to interpretation;
-- snapshot id and snapshot hash;
-- strategy fingerprint or stored-source identity;
-- feature fingerprints or feature-contract identity;
+- row-level compact provenance, including provenance version, snapshot hash,
+  strategy_hash, feature-set hash, master seed, seed contract, and
+  evaluation scope;
+- candidate-specific feature fingerprints or feature-contract identity;
 - opening state and execution assumptions;
 - reproducibility tier, meaning the `ledgr_strategy_preflight()` classification
   such as `tier_1`, `tier_2`, or `tier_3`;
-- random seed and pulse-level random-draw contract.
+- pulse-level random-draw contract.
 
 The exact v0.1.8 result shape can be narrower than a full run object, but it
 must not be disposable. A sweep result should tell the user enough to promote,
 re-run, or reject a candidate deliberately.
 
-Open design decision for v0.1.8:
+Resolved v0.1.8 scope:
 
-- The UX proposal resolves v0.1.8 as summary-only for all candidates. When, and
-  for which workflows, should event-stream retention be introduced later?
-- How are failed candidates represented and sorted?
+- The UX proposal resolves v0.1.8 as summary-only for all candidates.
+  Event-stream retention is a future design question.
+- Full sweep persistence is deferred. Promoted runs store durable
+  `run_promotion_context` selection-audit metadata, not full sweep artifacts.
+- Failed candidates are represented as rows with failure status and error
+  fields; caller-owned sorting/ranking remains outside the sweep engine.
 
 This decision affects future walk-forward OOS stitching and whether PBO/CSCV
 can be computed from sweep outputs without re-running candidates.
+
+### Promotion Context Boundary
+
+Promotion context is the v0.1.8 bridge between lightweight sweep exploration and
+durable committed runs.
+
+Accepted boundary:
+
+```text
+ledgr_sweep_results -> ledgr_sweep_candidate -> ledgr_promote() -> ledgr_run()
+                                                        |
+                                                        v
+                                             run_promotion_context
+```
+
+The committed run remains the durable artifact. `run_promotion_context` records
+selection-audit metadata for that committed run: the selected candidate,
+`sweep_id`, source sweep metadata, user note, and the compact selection-view
+summary passed to `ledgr_candidate()`. It does not store full sweep results,
+full warning conditions, ledger rows, or equity curves for all candidates.
+
+This keeps v0.1.8 focused on reproducible promotion of selected candidates while
+leaving expensive full sweep artifact save/load for a future design.
 
 ## Requirement 3: Objective Function Is Pluggable
 
@@ -316,7 +347,8 @@ arguments.
 The fold core should preserve this internal chain:
 
 ```text
-targets_risked
+validated_targets
+  -> future risk step, no-op in v0.1.8
   -> next_open_timing()
   -> ledgr_fill_proposals for the pulse
   -> internal cost resolver
@@ -624,12 +656,14 @@ mirai daemons support L'Ecuyer-CMRG independent random streams via
 unconditionally at entry, which overrides the daemon's stream and breaks the
 reproducibility guarantee in a parallel context.
 
-For parallel sweep, the fold core must accept a per-candidate seed derived from
-`(master_seed, candidate_label)` and apply it explicitly, rather than calling
-`set.seed()` globally at entry. The roadmap's per-candidate seed design --
-derive from candidate label when `seed = NULL` -- is compatible with this
-requirement. The implementation must pass the derived seed into the fold core
-explicitly.
+For parallel sweep and sequential sweep parity, the fold core must accept an
+explicit candidate seed and apply it at fold entry only when a seed is supplied.
+When `seed = NULL`, no candidate seed is derived and no `set.seed()` call is
+made. When `seed` is an integer, the sweep dispatcher derives per-candidate
+seeds from `(master_seed, candidate_label)` before dispatch and passes the
+derived seed into the fold core explicitly. The derived seed is exposed as the
+row-level `execution_seed` column in `ledgr_sweep_results` so a promoted
+candidate can replay the exact stochastic path.
 
 ### Feature lookup and worker state
 
@@ -733,12 +767,18 @@ deferred until the first sweep implementation is stable.
 
 ## Design Checklist For The v0.1.8 Spec
 
-Before v0.1.8 tickets are cut, the spec must answer:
+This checklist is retained as traceability from architecture input to spec. The
+current spec resolves most items; items 5, 6, and 10 are resolved for v0.1.8 by
+caller-owned ranking and no objective API, item 14 is deferred to future
+slice-aware workflow design, and item 29 remains a future parallel-write
+isolation question.
 
 1. What is the fold-core boundary?
 2. What is the output-handler boundary?
 3. What exact candidate summary fields does sweep always keep?
-4. How does a user promote a sweep candidate to a committed `ledgr_run()`?
+4. Does `ledgr_candidate()` / `ledgr_promote()` preserve params, execution seed,
+   row-level provenance, and promotion context without requiring manual
+   `params[[1]]` extraction?
 5. What is the default objective, and how can it be replaced?
 6. What does the objective receive as input?
 7. How are candidate errors represented?
@@ -781,11 +821,10 @@ Before v0.1.8 tickets are cut, the spec must answer:
     its non-candidate-specific environment, or does it also inspect feature
     definitions or candidate-varying referenced symbols? If the latter, preflight
     must run once per candidate, not once per sweep.
-28. Where does per-candidate seed derivation happen: inside the fold core, in the
-    sweep dispatcher before dispatch, or in the output handler? This determines
-    whether `ctx$seed` comes from the fold-core input signature directly or is
-    injected by the sweep layer. The spec must state the derivation boundary
-    explicitly.
+28. [RESOLVED] Per-candidate seed derivation happens in the sweep dispatcher before
+    dispatch, not inside the fold core or output handler. The fold core receives
+    the derived seed as an explicit input. Future `ctx$seed` support must derive
+    from that fold-core input without depending on ambient RNG state.
 29. What is the write-isolation pattern for future parallel sweep: per-worker temp
     databases with orchestrated merge, or a serialized write queue? No spike covers
     this; the v0.1.8 spec must take a position from first principles, even if

@@ -3,7 +3,7 @@
 This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The authoritative narrative remains in
 the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_7_8_spec_packet/`.
+`inst/design/ledgr_v0_1_8_spec_packet/`.
 
 ## Execution Contract
 
@@ -24,9 +24,9 @@ the active versioned spec packet, currently
 - The v0.1.8 fold-core/output-handler boundary is a required architecture
   contract before sweep mode. The fold core is the deterministic per-pulse
   execution engine: pulse calendar order, context construction, feature lookup,
-  strategy invocation, target validation, fill timing, cost resolution,
-  final-bar no-fill behavior, cash/position/state transitions, and the
-  canonical in-memory event stream.
+  strategy invocation, target validation, the reserved future target-risk slot,
+  fill timing, cost resolution, final-bar no-fill behavior,
+  cash/position/state transitions, and the canonical in-memory event stream.
   The output handler is the persistence or accumulation layer that materializes
   fold outputs into `ledger_events`, `features`, `strategy_state`,
   `equity_curve`, telemetry, summaries, comparison rows, or future in-memory
@@ -64,6 +64,40 @@ the active versioned spec packet, currently
 - The default fill model is `next_open` with zero spread and zero fixed
   commission. A target emitted at pulse `t` is filled at the next available bar;
   a target emitted on the final pulse has no next bar and is not filled.
+
+## Sweep Promotion Contract
+
+- v0.1.8 sweep results are summary outputs, not committed run artifacts. They
+  must still carry enough compact candidate identity for deliberate promotion:
+  candidate label, params, status, standard summary metrics, warnings, error
+  fields, candidate-specific feature fingerprints, row-level `execution_seed`,
+  and row-level `provenance`.
+- `execution_seed` is the actual fold seed used by the candidate. It is
+  `NA_integer_` for unseeded candidates and maps to `seed = NULL` when
+  promoted. A non-`NA` value must be passed to `ledgr_run(seed = ...)` during
+  promotion so stochastic candidates can be replayed exactly on the same
+  snapshot and config.
+- Row-level `provenance` is compact lineage, not full durable run provenance.
+  Its v0.1.8 structure is versioned by
+  `provenance_version = "ledgr_provenance_v1"` and includes snapshot hash,
+  `strategy_hash`, feature-set hash, master seed, seed contract, and
+  evaluation scope.
+- `ledgr_candidate()` is the canonical extraction helper for a promotion-ready
+  candidate. `ledgr_promote()` is the canonical commit helper and must call
+  `ledgr_run()` with the candidate params and execution seed. Users should not
+  need to manually extract `params[[1]]` or seed values from a sweep row.
+- Runs created through `ledgr_promote()` store durable selection-audit metadata
+  in `run_promotion_context` with
+  `promotion_context_version = "ledgr_promotion_v1"`. Promotion context records
+  the selected candidate, `sweep_id`, source sweep metadata, user note, and the
+  compact selection-view summary passed to `ledgr_candidate()`.
+- Promotion context is written only after the committed run succeeds. If the
+  promotion-context write fails, ledgr warns and returns the committed run; it
+  must not roll back a successful run.
+- Direct `ledgr_run()` calls have no promotion context. Promotion context is
+  distinct from full run provenance and from future full sweep artifact
+  persistence. v0.1.8 does not add `ledgr_save_sweep()`,
+  `ledgr_load_sweep()`, or full sweep replay/verification helpers.
 
 ## Config Contract
 

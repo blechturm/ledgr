@@ -3,8 +3,8 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Current cycle:** v0.1.8.00 design-governance prep.
-**Active packet:** `inst/design/ledgr_v0_1_8_00_spec_packet/`.
+**Current cycle:** v0.1.8 lightweight sweep/fold-core implementation.
+**Active packet:** `inst/design/ledgr_v0_1_8_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -54,7 +54,8 @@ fold-core architecture are stable.
 Roadmap detail is intentionally uneven:
 
 - Completed milestones are one-line records with links to spec packets.
-- The active prep cycle and next implementation milestone carry detailed scope.
+- The active implementation milestone and next planned milestone carry detailed
+  scope.
 - Later milestones carry intent bullets and downstream constraints only.
 - Ticket-level acceptance criteria belong in spec packets, not here.
 - Non-binding ideas belong in `inst/design/horizon.md` until promoted.
@@ -85,8 +86,8 @@ versioned packet.
 | v0.1.7.7 | Done | Risk metrics contract. | `inst/design/ledgr_v0_1_7_7_spec_packet/` |
 | v0.1.7.8 | Done | Strategy reproducibility preflight. | `inst/design/ledgr_v0_1_7_8_spec_packet/` |
 | v0.1.7.9 | Done | Strategy author ergonomics and execution-engine stabilization. | `inst/design/ledgr_v0_1_7_9_spec_packet/` |
-| v0.1.8.00 | Active prep | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
-| v0.1.8 | Next | Lightweight parameter sweep mode and fold-core split. | To be cut after v0.1.8.00 |
+| v0.1.8.00 | Done | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
+| v0.1.8 | Active | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_spec_packet/` |
 | v0.1.8.x | Planned | Sweep stabilization and directly adjacent UX hardening. | Future packet |
 | v0.1.8.1 | Planned | Reference-data and risk-free-rate adapters. | Future packet |
 | v0.1.9 | Planned | Target risk layer. | Future packet |
@@ -121,9 +122,9 @@ The durable summary is:
 If a completed milestone detail matters for a new change, inspect its packet
 directly instead of treating old roadmap prose as current authority.
 
-## Active Prep: v0.1.8.00
+## Completed Prep: v0.1.8.00
 
-v0.1.8.00 prepares the repository for v0.1.8 implementation. It is a
+v0.1.8.00 prepared the repository for v0.1.8 implementation. It is a
 design-governance cycle, not a runtime feature release.
 
 Authoritative packet:
@@ -151,7 +152,7 @@ Non-goals:
 - no runner, snapshot, fill, or accounting behavior changes;
 - no package version metadata changes.
 
-## Next Milestone: v0.1.8 Lightweight Sweep Mode
+## Active Milestone: v0.1.8 Lightweight Sweep Mode
 
 v0.1.8 introduces the internal architecture needed for parameter sweeps without
 duplicating execution semantics.
@@ -201,7 +202,11 @@ v0.1.8 must define or reserve these internal boundaries:
 - pre-fold strategy preflight result passed into output handling;
 - parameter-grid candidate identity;
 - summary-only sweep result shape with enough identity to promote a candidate
-  through `ledgr_run()`;
+  through `ledgr_candidate()` / `ledgr_promote()`;
+- row-level `execution_seed` and compact row-level `provenance` so filtered,
+  sorted, sliced, or saved candidate rows remain promotion-ready;
+- durable `run_promotion_context` selection-audit metadata for runs promoted
+  from sweep candidates;
 - precomputed-feature object validated against snapshot hash and feature
   fingerprints;
 - fill timing and cost resolution as separable internal steps.
@@ -213,6 +218,7 @@ The fold core owns deterministic execution:
 - registered feature lookup;
 - strategy invocation;
 - target validation;
+- reserved future target-risk step, a no-op in v0.1.8;
 - fill timing;
 - cost resolution;
 - final-bar no-fill behavior;
@@ -223,6 +229,7 @@ Output handlers decide what to keep:
 
 - full DuckDB ledger and provenance for `ledgr_run()`;
 - in-memory candidate summaries for sweep;
+- promotion context for committed runs created through `ledgr_promote()`;
 - failure records and warnings;
 - future worker-local or selected-candidate outputs.
 
@@ -252,8 +259,13 @@ v0.1.8 sweep should support:
 
 - typed parameter grids;
 - candidate result tables;
+- row-level execution seed and compact provenance fields;
 - candidate status and failure capture;
 - caller-owned ranking through ordinary R/dplyr workflows;
+- candidate extraction and promotion through `ledgr_candidate()` and
+  `ledgr_promote()` rather than manual `params[[1]]` extraction;
+- durable promotion context that records the selected candidate and the
+  filtered/sorted selection view that led to a committed run;
 - optional precomputed features;
 - manual train/sweep/evaluate discipline in the docs.
 
@@ -316,6 +328,8 @@ Known constraints:
   candidate dispatch;
 - parallel sweep requires per-candidate seed derivation from explicit inputs so
   results do not depend on daemon assignment or global worker RNG state;
+- v0.1.8 seed work should accept explicit execution seeds, move seeding to the
+  fold-core boundary, and derive sweep candidate seeds in the dispatcher;
 - v0.1.8 should use discard-all interrupt semantics for sweeps rather than
   partial result objects.
 
@@ -332,7 +346,8 @@ cost-model factories.
 Internal chain:
 
 ```text
-targets_risked
+validated_targets
+  -> future risk step, no-op in v0.1.8
   -> next_open_timing()
   -> ledgr_fill_proposal
   -> cost resolver
@@ -345,6 +360,9 @@ Hard constraints:
 - strategy `ctx` remains decision-time only;
 - cost resolution uses a separate fill/execution context;
 - execution context may carry next-bar OHLCV for future cost models;
+- v0.1.8 must reserve the future risk insertion point between target
+  validation and fill timing rather than treating validated targets and fill
+  timing as one indivisible step;
 - quantity mutation is out of scope for the first cost contract;
 - output handlers must not compute or reinterpret costs;
 - existing `spread_bps` and `commission_fixed` behavior, including
@@ -366,6 +384,7 @@ v0.1.8 should not include:
 - public risk-layer API;
 - walk-forward analysis;
 - PBO/CSCV diagnostics;
+- full sweep artifact save/load/replay helpers;
 - mandatory `ledgr_snapshot_split()`;
 - paper/live adapter behavior.
 
