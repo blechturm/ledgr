@@ -186,7 +186,7 @@ testthat::test_that("reference helper pipeline runs through ledgr_run", {
   testthat::expect_true(all(fills$instrument_id %in% c("AAA", "BBB")))
 })
 
-testthat::test_that("no sweep or tune APIs are exported with strategy helpers", {
+testthat::test_that("no sweep or tune execution APIs are exported with strategy helpers", {
   exports <- getNamespaceExports("ledgr")
-  testthat::expect_false(any(c("ledgr_sweep", "ledgr_tune", "ledgr_precompute_features") %in% exports))
+  testthat::expect_false(any(c("ledgr_sweep", "ledgr_tune") %in% exports))
 })

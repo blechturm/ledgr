@@ -567,7 +567,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 2-3 days
 **Dependencies:** LDG-2102, LDG-2105
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Add `ledgr_precompute_features()` and a typed `ledgr_precomputed_features`
@@ -586,21 +586,55 @@ validates snapshot, universe, feature, scoring-range, and warmup coverage.
    are absent.
 
 **Acceptance Criteria:**
-- [ ] Concrete feature lists are computed once and reused across candidates.
-- [ ] Feature factories are resolved per candidate and deduplicated by
+- [x] Concrete feature lists are computed once and reused across candidates.
+- [x] Feature factories are resolved per candidate and deduplicated by
       fingerprint.
-- [ ] The object validates snapshot hash, universe, scoring range, and warmup
+- [x] The object validates snapshot hash, universe, scoring range, and warmup
       coverage.
-- [ ] The object covers the union of factory fingerprints across the grid.
-- [ ] Static coverage mismatches abort the sweep as contract errors.
-- [ ] Candidate-specific warmup infeasibility remains a candidate-level
+- [x] The object covers the union of factory fingerprints across the grid.
+- [x] Static coverage mismatches abort the sweep as contract errors.
+- [x] Candidate-specific warmup infeasibility remains a candidate-level
       failure.
+
+**Implementation Notes:**
+- Added exported `ledgr_precompute_features()` and typed
+  `ledgr_precomputed_features` objects.
+- Precompute objects bind to the sealed snapshot hash, experiment universe,
+  scoring range, feature engine version, parameter-grid labels, candidate
+  feature fingerprints, feature union, warmup metadata, and computed feature
+  payload.
+- Validation rejects stale payloads when the current feature engine version
+  differs from the version stored on the precompute object.
+- Concrete feature lists/maps are materialized once across the grid, while
+  params-aware feature factories are resolved per candidate and deduplicated by
+  feature fingerprint.
+- Static scoring-range coverage mismatches abort with
+  `ledgr_precomputed_coverage_error`; candidate-specific warmup infeasibility
+  is recorded in the warmup table without aborting precompute.
+- Added internal `ledgr_validate_precomputed_features()` for future
+  `ledgr_sweep()` contract checks and
+  `ledgr_warn_large_grid_without_precomputed_features()` for the LDG-2108
+  large-grid warning path.
+- Added print/help coverage for the new object and kept `ledgr_sweep()` itself
+  out of this ticket.
 
 **Verification:**
 ```text
 targeted feature precompute tests
 warmup/scoring-range validation tests
 snapshot mismatch tests
+```
+
+**Verification Run:**
+```text
+test-precompute-features.R
+test-api-exports.R
+test-documentation-contracts.R
+test-experiment.R
+test-feature-inspection.R
+test-feature-map.R
+test-feature-cache.R
+test-param-grid.R
 ```
 
 **Source Reference:** v0.1.8 spec sections 4.2, 7, 11.

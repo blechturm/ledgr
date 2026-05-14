@@ -196,7 +196,7 @@ tickets:
 
   - id: LDG-2106
     title: "Precomputed Feature Object And Warmup Validation"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2102, LDG-2105]
     tests:
