@@ -442,13 +442,13 @@ testthat::test_that("contracts record v0.1.7.7 risk metric boundary", {
   testthat::expect_match(text, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
 })
 
-testthat::test_that("contracts record v0.1.7.8 strategy preflight boundary", {
+testthat::test_that("contracts record strategy preflight boundary", {
   root <- testthat::test_path("..", "..")
   contracts <- file.path(root, "inst", "design", "contracts.md")
   testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
   text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
 
-  testthat::expect_match(text, "ledgr_v0_1_7_8_spec_packet", fixed = TRUE)
+  testthat::expect_match(text, "ledgr_v0_1_8_spec_packet", fixed = TRUE)
   testthat::expect_match(text, "Strategy preflight classifies functional strategies before execution", fixed = TRUE)
   testthat::expect_match(text, "Tier 3\\s+is a classed error by default")
   testthat::expect_match(text, "must not be\\s+accepted silently or downgraded to warning-only behavior")
@@ -502,21 +502,21 @@ testthat::test_that("contracts record v0.1.8 fold-core and output-handler bounda
   testthat::expect_match(text, "Tier 3 strategies must stop before any fold execution or output\\s+handler side effects")
 })
 
-testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 sequencing", {
+testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 milestone sequencing", {
   root <- testthat::test_path("..", "..")
   roadmap <- file.path(root, "inst", "design", "ledgr_roadmap.md")
   testthat::skip_if_not(file.exists(roadmap), "roadmap unavailable")
   text <- paste(readLines(roadmap, warn = FALSE), collapse = "\n")
 
   for (version in c("0[.]1[.]7[.]6", "0[.]1[.]7[.]7", "0[.]1[.]7[.]8", "0[.]1[.]7[.]9", "0[.]1[.]8", "0[.]1[.]8[.]1")) {
-    testthat::expect_match(text, paste0("## v", version))
+    testthat::expect_match(text, paste0("\\| v", version, " \\|"))
   }
-  testthat::expect_match(text, "DuckDB Persistence Architecture Review", fixed = TRUE)
-  testthat::expect_match(text, "Risk Metrics Contract", fixed = TRUE)
-  testthat::expect_match(text, "Strategy Reproducibility Preflight", fixed = TRUE)
-  testthat::expect_match(text, "Lightweight Parameter Sweep Mode", fixed = TRUE)
-  testthat::expect_match(text, "Reference Data And Risk-Free Rate Adapters", fixed = TRUE)
-  testthat::expect_match(text, "They are not\\s+roadmap drivers and must not block this metric milestone or v0.1.8")
+  testthat::expect_match(text, "DuckDB persistence architecture review", fixed = TRUE)
+  testthat::expect_match(text, "Risk metrics contract", fixed = TRUE)
+  testthat::expect_match(text, "Strategy reproducibility preflight", fixed = TRUE)
+  testthat::expect_match(text, "Lightweight parameter sweep mode", fixed = TRUE)
+  testthat::expect_match(text, "Reference-data and risk-free-rate adapters", fixed = TRUE)
+  testthat::expect_match(text, "Completed milestones are not expanded here", fixed = TRUE)
 })
 
 testthat::test_that("README and package help state adapter positioning", {

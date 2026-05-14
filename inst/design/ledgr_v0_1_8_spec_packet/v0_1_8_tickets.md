@@ -171,7 +171,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 2-4 days
 **Dependencies:** LDG-2101
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Extract or define the private shared fold core used by `ledgr_run()` and future
@@ -191,21 +191,47 @@ handler responsibilities without changing current `ledgr_run()` behavior.
    timing as a no-op.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_run()` executes through the private fold core.
-- [ ] The fold core is not exported, not in `NAMESPACE`, and not in pkgdown.
-- [ ] Persistent `ledgr_run()` output is produced through an output handler or
+- [x] `ledgr_run()` executes through the private fold core.
+- [x] The fold core is not exported, not in `NAMESPACE`, and not in pkgdown.
+- [x] Persistent `ledgr_run()` output is produced through an output handler or
       equivalent internal boundary.
-- [ ] Strategy preflight occurs before candidate fold execution.
-- [ ] Tier 3 strategies abort before fold execution or output-handler side
+- [x] Strategy preflight occurs before candidate fold execution.
+- [x] Tier 3 strategies abort before fold execution or output-handler side
       effects.
-- [ ] Existing `ledgr_run()` tests continue to pass.
-- [ ] No public sweep API is required by this ticket.
+- [x] Existing `ledgr_run()` tests continue to pass.
+- [x] No public sweep API is required by this ticket.
+
+**Implementation Notes:**
+- Added private `ledgr_run_fold()` and routed `ledgr_backtest_run_internal()`
+  through it without exporting the fold core.
+- Added a private persistent DuckDB output handler for run status, failure
+  recording, telemetry persistence, strategy-state writes, and audit-log event
+  buffering/flushing.
+- Kept strategy preflight in `ledgr_strategy_spec()` before low-level runner
+  config construction, preserving Tier 3 abort-before-fold behavior.
+- Added an explicit private no-op target-risk slot after target validation and
+  before fill timing.
+- Added an export-surface assertion that `ledgr_run_fold()` exists internally
+  but is not exported.
+- Did not add `ledgr_sweep()` or change fill, snapshot, config, or public run
+  semantics.
 
 **Verification:**
 ```text
 tests/testthat targeted runner tests
 tests/testthat targeted provenance/status/telemetry tests
 full testthat recommended before review
+```
+
+**Verification Run:**
+```text
+test-api-exports.R
+test-runner.R
+test-run-telemetry.R
+test-backtest-audit-log-equivalence.R
+test-accounting-consistency.R
+test-strategy-preflight.R
+full testthat suite
 ```
 
 **Source Reference:** v0.1.8 spec R1, R2, R3, sections 6 and 7.
@@ -623,12 +649,20 @@ return summary-only candidate rows in parameter-grid order.
 2. Evaluate candidates sequentially through the shared fold core.
 3. Generate a non-RNG `sweep_id` at sweep start and carry it into the result
    object.
-4. Support optional `ledgr_precomputed_features`.
-5. Capture candidate-level execution failures by default.
-6. Implement `stop_on_error = TRUE` for sequential debugging.
-7. Abort unconditionally for contract validation errors.
-8. Return a `ledgr_sweep_results` tibble subclass with standard metric columns.
-9. Keep row order in parameter-grid order; ranking remains caller-owned.
+4. Add fold-core output-handler injection: `NULL` keeps the current persistent
+   `ledgr_run()` handler; a supplied handler is used for sweep candidates.
+5. Move the loop transaction boundary behind the output handler or equivalent
+   control method so persistent runs wrap writes in a DuckDB transaction while
+   sweep candidates do not require a store connection.
+6. Route post-loop output materialization through the handler boundary:
+   persisted runs continue writing features/equity/run status; sweep candidates
+   retain only the summary data needed for result rows.
+7. Support optional `ledgr_precomputed_features`.
+8. Capture candidate-level execution failures by default.
+9. Implement `stop_on_error = TRUE` for sequential debugging.
+10. Abort unconditionally for contract validation errors.
+11. Return a `ledgr_sweep_results` tibble subclass with standard metric columns.
+12. Keep row order in parameter-grid order; ranking remains caller-owned.
 
 **Acceptance Criteria:**
 - [ ] Successful candidates produce summary rows with standard metric columns.
@@ -677,6 +711,10 @@ escalation_triggers:
   - sweep requires a second execution loop
   - summary metrics cannot be produced without retaining full event streams
   - contract errors cannot be separated from candidate failures
+  - injected output handlers cannot preserve current ledgr_run transaction
+    behavior
+  - post-loop feature/equity materialization cannot be separated cleanly from
+    candidate summary output
 forbidden_actions:
   - writing run artifacts for sweep candidates
   - adding objective/ranking arguments

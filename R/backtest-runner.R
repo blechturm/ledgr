@@ -263,6 +263,201 @@ ledgr_write_run_telemetry <- function(con,
   invisible(TRUE)
 }
 
+ledgr_persistent_output_handler <- function(con,
+                                            run_id,
+                                            run_wall_start,
+                                            execution_mode,
+                                            persist_features) {
+  state <- new.env(parent = emptyenv())
+  state$pending_idx <- 0L
+  state$pending_cols <- NULL
+  state$pending_states <- vector("list", 0)
+  state$pending_states_idx <- 0L
+
+  handler <- list()
+
+  handler$record_run_status <- function(status, error_msg = NA_character_) {
+    DBI::dbExecute(
+      con,
+      "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
+      params = list(status, error_msg, run_id)
+    )
+    invisible(TRUE)
+  }
+
+  handler$write_telemetry <- function(status,
+                                      strict = TRUE,
+                                      telemetry = NULL,
+                                      processed = NA_integer_) {
+    elapsed_sec <- ledgr_time_elapsed(run_wall_start, ledgr_time_now())
+    cache_hits <- if (is.environment(telemetry) || is.list(telemetry)) {
+      as.integer(telemetry$feature_cache_hits)
+    } else {
+      NA_integer_
+    }
+    cache_misses <- if (is.environment(telemetry) || is.list(telemetry)) {
+      as.integer(telemetry$feature_cache_misses)
+    } else {
+      NA_integer_
+    }
+
+    err <- tryCatch(
+      {
+        ledgr_write_run_telemetry(
+          con = con,
+          run_id = run_id,
+          status = status,
+          execution_mode = execution_mode,
+          elapsed_sec = elapsed_sec,
+          pulse_count = as.integer(processed),
+          persist_features = persist_features,
+          feature_cache_hits = cache_hits,
+          feature_cache_misses = cache_misses
+        )
+        NULL
+      },
+      error = function(e) e
+    )
+    if (!is.null(err) && isTRUE(strict)) {
+      rlang::abort("Failed to persist run telemetry.", class = "ledgr_run_telemetry_failed", parent = err)
+    }
+    invisible(is.null(err))
+  }
+
+  handler$store_session_telemetry <- function(telemetry) {
+    ledgr_store_run_telemetry(run_id, telemetry)
+    invisible(TRUE)
+  }
+
+  handler$record_failure <- function(msg) {
+    handler$record_run_status("FAILED", msg)
+    invisible(TRUE)
+  }
+
+  handler$abort_run <- function(msg, class = "ledgr_run_failed") {
+    handler$record_failure(msg)
+    try(handler$write_telemetry("FAILED", strict = FALSE), silent = TRUE)
+    rlang::abort(msg, class = class)
+  }
+
+  handler$init_buffers <- function(max_events) {
+    state$pending_idx <- 0L
+    state$pending_cols <- list(
+      event_id = character(max_events),
+      run_id = character(max_events),
+      ts_utc = as.POSIXct(rep(NA_character_, max_events), tz = "UTC"),
+      event_type = character(max_events),
+      instrument_id = character(max_events),
+      side = character(max_events),
+      qty = numeric(max_events),
+      price = numeric(max_events),
+      fee = numeric(max_events),
+      meta_json = character(max_events),
+      event_seq = integer(max_events)
+    )
+    state$pending_states <- vector("list", 0)
+    state$pending_states_idx <- 0L
+    invisible(TRUE)
+  }
+
+  handler$buffer_event <- function(write_res) {
+    if (!inherits(write_res, "ledgr_ledger_write_result") || !identical(write_res$status, "WROTE")) {
+      return(invisible(FALSE))
+    }
+    if (is.null(state$pending_cols)) {
+      rlang::abort("Ledger event buffer has not been initialized.", class = "ledgr_invalid_state")
+    }
+    state$pending_idx <- state$pending_idx + 1L
+    if (state$pending_idx > length(state$pending_cols$event_id)) {
+      rlang::abort("Ledger buffer exceeded preallocated capacity.", class = "ledgr_invalid_state")
+    }
+    i <- state$pending_idx
+    state$pending_cols$event_id[[i]] <- write_res$row$event_id
+    state$pending_cols$run_id[[i]] <- write_res$row$run_id
+    state$pending_cols$ts_utc[[i]] <- write_res$row$ts_utc
+    state$pending_cols$event_type[[i]] <- write_res$row$event_type
+    state$pending_cols$instrument_id[[i]] <- write_res$row$instrument_id
+    state$pending_cols$side[[i]] <- write_res$row$side
+    state$pending_cols$qty[[i]] <- as.numeric(write_res$row$qty)
+    state$pending_cols$price[[i]] <- as.numeric(write_res$row$price)
+    state$pending_cols$fee[[i]] <- as.numeric(write_res$row$fee)
+    state$pending_cols$meta_json[[i]] <- write_res$row$meta_json
+    state$pending_cols$event_seq[[i]] <- as.integer(write_res$row$event_seq)
+    invisible(TRUE)
+  }
+
+  handler$pending_event_count <- function() {
+    as.integer(state$pending_idx)
+  }
+
+  handler$buffer_strategy_state <- function(ts_utc, state_json) {
+    state$pending_states_idx <- state$pending_states_idx + 1L
+    if (state$pending_states_idx > length(state$pending_states)) {
+      state$pending_states <- c(state$pending_states, vector("list", max(1000L, length(state$pending_states))))
+    }
+    state$pending_states[[state$pending_states_idx]] <- data.frame(
+      run_id = run_id,
+      ts_utc = ts_utc,
+      state_json = state_json,
+      stringsAsFactors = FALSE
+    )
+    invisible(TRUE)
+  }
+
+  handler$write_fill_events <- function(fill, event_seq_start, use_transaction = FALSE) {
+    ledgr_write_fill_events(
+      con = con,
+      run_id = run_id,
+      fill_intent = fill,
+      event_seq_start = event_seq_start,
+      use_transaction = use_transaction
+    )
+  }
+
+  handler$write_strategy_state <- function(ts_utc, state_json) {
+    DBI::dbExecute(
+      con,
+      "INSERT INTO strategy_state (run_id, ts_utc, state_json) VALUES (?, ?, ?)",
+      params = list(run_id, ts_utc, state_json)
+    )
+    invisible(TRUE)
+  }
+
+  handler$flush_pending <- function() {
+    if (state$pending_idx > 0) {
+      cols <- state$pending_cols
+      out <- data.frame(
+        event_id = cols$event_id[seq_len(state$pending_idx)],
+        run_id = cols$run_id[seq_len(state$pending_idx)],
+        ts_utc = cols$ts_utc[seq_len(state$pending_idx)],
+        event_type = cols$event_type[seq_len(state$pending_idx)],
+        instrument_id = cols$instrument_id[seq_len(state$pending_idx)],
+        side = cols$side[seq_len(state$pending_idx)],
+        qty = cols$qty[seq_len(state$pending_idx)],
+        price = cols$price[seq_len(state$pending_idx)],
+        fee = cols$fee[seq_len(state$pending_idx)],
+        meta_json = cols$meta_json[seq_len(state$pending_idx)],
+        event_seq = cols$event_seq[seq_len(state$pending_idx)],
+        stringsAsFactors = FALSE
+      )
+      DBI::dbAppendTable(con, "ledger_events", out)
+      state$pending_idx <- 0L
+    }
+    if (state$pending_states_idx > 0) {
+      DBI::dbAppendTable(con, "strategy_state", do.call(rbind, state$pending_states[seq_len(state$pending_states_idx)]))
+      state$pending_states_idx <- 0L
+      state$pending_states <- vector("list", 0)
+    }
+    invisible(TRUE)
+  }
+
+  structure(handler, class = "ledgr_persistent_output_handler")
+}
+
+ledgr_apply_target_risk_noop <- function(targets, ctx, params) {
+  targets
+}
+
 ledgr_config_opening_positions <- function(cfg) {
   positions <- ledgr_config_named_numeric(cfg$opening$positions)
   positions[positions != 0]
@@ -326,6 +521,10 @@ ledgr_write_opening_position_events <- function(con,
 }
 
 ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list()) {
+  ledgr_run_fold(config = config, run_id = run_id, control = control)
+}
+
+ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
   validate_ledgr_config(config)
 
   cfg <- if (is.character(config)) {
@@ -496,52 +695,14 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     }
   }
 
-  write_persistent_telemetry <- function(status, strict = TRUE) {
-    elapsed_sec <- ledgr_time_elapsed(run_wall_start, ledgr_time_now())
-    pulse_count <- if (exists("processed", inherits = TRUE)) as.integer(processed) else NA_integer_
-    cache_hits <- if (exists("telemetry", inherits = TRUE) && is.environment(telemetry)) {
-      as.integer(telemetry$feature_cache_hits)
-    } else {
-      NA_integer_
-    }
-    cache_misses <- if (exists("telemetry", inherits = TRUE) && is.environment(telemetry)) {
-      as.integer(telemetry$feature_cache_misses)
-    } else {
-      NA_integer_
-    }
-
-    err <- tryCatch(
-      {
-        ledgr_write_run_telemetry(
-          con = con,
-          run_id = run_id,
-          status = status,
-          execution_mode = execution_mode,
-          elapsed_sec = elapsed_sec,
-          pulse_count = pulse_count,
-          persist_features = persist_features,
-          feature_cache_hits = cache_hits,
-          feature_cache_misses = cache_misses
-        )
-        NULL
-      },
-      error = function(e) e
-    )
-    if (!is.null(err) && isTRUE(strict)) {
-      rlang::abort("Failed to persist run telemetry.", class = "ledgr_run_telemetry_failed", parent = err)
-    }
-    invisible(is.null(err))
-  }
-
-  fail_run <- function(msg, class = "ledgr_run_failed") {
-    DBI::dbExecute(
-      con,
-      "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
-      params = list("FAILED", msg, run_id)
-    )
-    try(write_persistent_telemetry("FAILED", strict = FALSE), silent = TRUE)
-    rlang::abort(msg, class = class)
-  }
+  output_handler <- ledgr_persistent_output_handler(
+    con = con,
+    run_id = run_id,
+    run_wall_start = run_wall_start,
+    execution_mode = execution_mode,
+    persist_features = persist_features
+  )
+  fail_run <- output_handler$abort_run
 
   if (!is_resume) {
     run_created_at <- DBI::dbGetQuery(
@@ -844,7 +1005,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   max_pulses <- control$max_pulses
   if (is.null(max_pulses)) max_pulses <- Inf
 
-  DBI::dbExecute(con, "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?", params = list("RUNNING", NA_character_, run_id))
+  output_handler$record_run_status("RUNNING", NA_character_)
 
   processed <- 0L
   total_pulses <- length(pulses) - start_idx + 1L
@@ -1095,49 +1256,8 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
   }
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
 
-  pending_idx <- 0L
   max_events <- as.integer(max(1L, total_pulses * length(instrument_ids)))
-  pending_cols <- list(
-    event_id = character(max_events),
-    run_id = character(max_events),
-    ts_utc = as.POSIXct(rep(NA_character_, max_events), tz = "UTC"),
-    event_type = character(max_events),
-    instrument_id = character(max_events),
-    side = character(max_events),
-    qty = numeric(max_events),
-    price = numeric(max_events),
-    fee = numeric(max_events),
-    meta_json = character(max_events),
-    event_seq = integer(max_events)
-  )
-  pending_states <- vector("list", 0)
-  pending_states_idx <- 0L
-  flush_pending <- function() {
-    if (pending_idx > 0) {
-      out <- data.frame(
-        event_id = pending_cols$event_id[seq_len(pending_idx)],
-        run_id = pending_cols$run_id[seq_len(pending_idx)],
-        ts_utc = pending_cols$ts_utc[seq_len(pending_idx)],
-        event_type = pending_cols$event_type[seq_len(pending_idx)],
-        instrument_id = pending_cols$instrument_id[seq_len(pending_idx)],
-        side = pending_cols$side[seq_len(pending_idx)],
-        qty = pending_cols$qty[seq_len(pending_idx)],
-        price = pending_cols$price[seq_len(pending_idx)],
-        fee = pending_cols$fee[seq_len(pending_idx)],
-        meta_json = pending_cols$meta_json[seq_len(pending_idx)],
-        event_seq = pending_cols$event_seq[seq_len(pending_idx)],
-        stringsAsFactors = FALSE
-      )
-      DBI::dbAppendTable(con, "ledger_events", out)
-      pending_idx <<- 0L
-    }
-    if (pending_states_idx > 0) {
-      DBI::dbAppendTable(con, "strategy_state", do.call(rbind, pending_states[seq_len(pending_states_idx)]))
-      pending_states_idx <<- 0L
-      pending_states <<- vector("list", 0)
-    }
-    invisible(TRUE)
-  }
+  output_handler$init_buffers(max_events)
   empty_df <- data.frame()
   ctx <- list(
     run_id = run_id,
@@ -1188,8 +1308,8 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
       if (telemetry_idx > 0) x[seq_len(telemetry_idx)] else numeric(0)
     })
     names(trimmed) <- telemetry_names
-    ledgr_store_run_telemetry(run_id, trimmed)
-    write_persistent_telemetry(status, strict = strict)
+    output_handler$store_session_telemetry(trimmed)
+    output_handler$write_telemetry(status, strict = strict, telemetry = trimmed, processed = processed)
     invisible(TRUE)
   }
 
@@ -1371,21 +1491,13 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
           )
         }
         targets <- ledgr_validate_strategy_targets(result$targets, instrument_ids)
+        targets <- ledgr_apply_target_risk_noop(targets, ctx, strategy_params)
 
         db_live_state_json <- NULL
         if (!is.null(result$state_update)) {
           state_json <- canonical_json(result$state_update)
           if (identical(execution_mode, "audit_log")) {
-            pending_states_idx <<- pending_states_idx + 1L
-            if (pending_states_idx > length(pending_states)) {
-              pending_states <<- c(pending_states, vector("list", max(1000L, length(pending_states))))
-            }
-            pending_states[[pending_states_idx]] <<- data.frame(
-              run_id = run_id,
-              ts_utc = ts_iso,
-              state_json = state_json,
-              stringsAsFactors = FALSE
-            )
+            output_handler$buffer_strategy_state(ts_utc = ts_iso, state_json = state_json)
             state_prev_mem <<- result$state_update
           } else {
             db_live_state_json <- state_json
@@ -1457,25 +1569,9 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
           if (identical(execution_mode, "audit_log")) {
             write_res <- ledgr_fill_event_row(run_id, fill, event_seq = next_event_seq)
-            if (inherits(write_res, "ledgr_ledger_write_result") && identical(write_res$status, "WROTE")) {
-              pending_idx <<- pending_idx + 1L
-              if (pending_idx > length(pending_cols$event_id)) {
-                rlang::abort("Ledger buffer exceeded preallocated capacity.", class = "ledgr_invalid_state")
-              }
-              pending_cols$event_id[[pending_idx]] <<- write_res$row$event_id
-              pending_cols$run_id[[pending_idx]] <<- write_res$row$run_id
-              pending_cols$ts_utc[[pending_idx]] <<- write_res$row$ts_utc
-              pending_cols$event_type[[pending_idx]] <<- write_res$row$event_type
-              pending_cols$instrument_id[[pending_idx]] <<- write_res$row$instrument_id
-              pending_cols$side[[pending_idx]] <<- write_res$row$side
-              pending_cols$qty[[pending_idx]] <<- as.numeric(write_res$row$qty)
-              pending_cols$price[[pending_idx]] <<- as.numeric(write_res$row$price)
-              pending_cols$fee[[pending_idx]] <<- as.numeric(write_res$row$fee)
-              pending_cols$meta_json[[pending_idx]] <<- write_res$row$meta_json
-              pending_cols$event_seq[[pending_idx]] <<- as.integer(write_res$row$event_seq)
-            }
+            output_handler$buffer_event(write_res)
           } else {
-            write_res <- ledgr_write_fill_events(con, run_id, fill, event_seq_start = next_event_seq, use_transaction = FALSE)
+            write_res <- output_handler$write_fill_events(fill, event_seq_start = next_event_seq, use_transaction = FALSE)
           }
           if (sample_now) {
             if (is.na(t_fill)) t_fill <- 0
@@ -1506,11 +1602,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         }
         if (!is.null(db_live_state_json)) {
           t_state_start <- time_start(sample_now)
-          DBI::dbExecute(
-            con,
-            "INSERT INTO strategy_state (run_id, ts_utc, state_json) VALUES (?, ?, ?)",
-            params = list(run_id, ts_iso, db_live_state_json)
-          )
+          output_handler$write_strategy_state(ts_utc = ts_iso, state_json = db_live_state_json)
           if (sample_now) {
             if (is.na(t_state)) t_state <- 0
             t_state <- t_state + time_end(t_state_start, TRUE)
@@ -1559,8 +1651,8 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
 
           processed <<- processed + 1L
           if (identical(execution_mode, "audit_log") && checkpoint_every > 0 &&
-              (processed %% checkpoint_every) == 0L && pending_idx > 0) {
-            flush_pending()
+              (processed %% checkpoint_every) == 0L && output_handler$pending_event_count() > 0) {
+            output_handler$flush_pending()
           }
 
         }
@@ -1572,7 +1664,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
         run_loop()
         if (identical(execution_mode, "audit_log")) {
           flush_start <- ledgr_time_now()
-          flush_pending()
+          output_handler$flush_pending()
           flush_time <<- ledgr_time_elapsed(flush_start, ledgr_time_now())
         }
       })
@@ -1588,11 +1680,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
       TRUE
     },
     error = function(e) {
-      DBI::dbExecute(
-        con,
-        "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
-        params = list("FAILED", conditionMessage(e), run_id)
-      )
+      output_handler$record_failure(conditionMessage(e))
       finalize_telemetry("FAILED", strict = FALSE)
       rlang::cnd_signal(e)
     }
@@ -1783,11 +1871,7 @@ ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list())
     if (nrow(eq_df) > 0) {
       DBI::dbAppendTable(con, "equity_curve", eq_df)
     }
-    DBI::dbExecute(
-      con,
-      "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
-      params = list("DONE", NA_character_, run_id)
-    )
+    output_handler$record_run_status("DONE", NA_character_)
   })
   telemetry$t_post <- ledgr_time_elapsed(post_start, ledgr_time_now())
 

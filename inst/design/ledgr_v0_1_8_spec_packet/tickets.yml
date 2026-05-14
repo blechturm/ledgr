@@ -41,7 +41,7 @@ tickets:
 
   - id: LDG-2102
     title: "Private Fold Core And Output Handler Boundary"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-2101]
     tests:
@@ -304,6 +304,8 @@ tickets:
         - sweep requires a second execution loop
         - summary metrics cannot be produced without retaining full event streams
         - contract errors cannot be separated from candidate failures
+        - injected output handlers cannot preserve current ledgr_run transaction behavior
+        - post-loop feature/equity materialization cannot be separated cleanly from candidate summary output
       forbidden_actions:
         - writing run artifacts for sweep candidates
         - adding objective/ranking arguments
