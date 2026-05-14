@@ -3,7 +3,7 @@ source: "v0_1_8_tickets.md"
 tickets:
   - id: LDG-2101
     title: "Scope Baseline And Ticket Synchronization"
-    status: todo
+    status: done
     priority: P0
     dependencies: []
     tests:

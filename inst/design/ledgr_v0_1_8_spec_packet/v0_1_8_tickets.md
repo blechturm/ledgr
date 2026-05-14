@@ -82,7 +82,7 @@ and must not be deferred into release closeout.
 **Priority:** P0
 **Effort:** 0.5 day
 **Dependencies:** None
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Lock the v0.1.8 implementation scope before runtime work begins. Confirm the
@@ -101,11 +101,28 @@ metadata are coherent.
    statuses, dependencies, tests, and required context.
 
 **Acceptance Criteria:**
-- [ ] Active spec, contracts, roadmap, and design index point to v0.1.8.
-- [ ] Ticket IDs and dependencies match `tickets.yml`.
-- [ ] All v0.1.8 non-goals are preserved.
-- [ ] No implementation starts from an unresolved design question.
-- [ ] No runtime files are changed by this ticket.
+- [x] Active spec, contracts, roadmap, and design index point to v0.1.8.
+- [x] Ticket IDs and dependencies match `tickets.yml`.
+- [x] All v0.1.8 non-goals are preserved.
+- [x] No implementation starts from an unresolved design question.
+- [x] No runtime files are changed by this ticket.
+
+**Implementation Notes:**
+- Confirmed `inst/design/README.md`, `AGENTS.md`, `docs/AGENTS.md`,
+  `contracts.md`, and `ledgr_roadmap.md` point to the active v0.1.8 packet,
+  ticket file, and `tickets.yml`.
+- Confirmed `v0_1_8_tickets.md` and `tickets.yml` contain the same 14 ticket
+  IDs and titles, with valid dependency references and no duplicate IDs.
+- Confirmed the active spec carries the accepted RNG, cost-boundary,
+  parallelism, candidate-promotion, and promotion-context decisions.
+- Confirmed public parallel sweep, walk-forward, PBO/CSCV, public risk-layer
+  APIs, public cost-model factories, paper/live adapters, intraday semantics,
+  and full sweep artifact persistence remain non-goals or future constraints.
+- Scope grep found no active runtime definitions for `ledgr_sweep()`,
+  `ledgr_precompute_features()`, `ledgr_snapshot_split()`,
+  `ledgr_save_sweep()`, `ledgr_load_sweep()`, `ledgr_walk_forward()`,
+  `ledgr_tune()`, `risk_fn`, or public cost-model surfaces.
+- Touched only ticket metadata/design documentation for this ticket.
 
 **Verification:**
 ```text
