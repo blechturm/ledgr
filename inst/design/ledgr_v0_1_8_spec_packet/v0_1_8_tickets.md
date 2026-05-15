@@ -1265,7 +1265,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2109
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Add `ledgr_candidate()`, `ledgr_sweep_candidate`, and `ledgr_promote()` so users
@@ -1280,20 +1280,40 @@ values.
 4. Support degraded mode for tibble-like inputs that retain required columns
    but lack full sweep metadata.
 5. Implement `ledgr_promote(exp, candidate, run_id, note = NULL,
-   require_same_snapshot = FALSE)`.
+   require_same_snapshot = TRUE)`.
 6. Forward candidate params and `execution_seed` to `ledgr_run()`.
 7. Add candidate print output with strategy name plus hash when available.
 
 **Acceptance Criteria:**
-- [ ] `ledgr_candidate(results, "label")` selects by `run_id`.
-- [ ] `ledgr_candidate(results, 1)` selects by row position.
-- [ ] Failed candidates error by default.
-- [ ] Degraded tibble-like input emits a message, not warning/error, when
+- [x] `ledgr_candidate(results, "label")` selects by `run_id`.
+- [x] `ledgr_candidate(results, 1)` selects by row position.
+- [x] Failed candidates error by default.
+- [x] Degraded tibble-like input emits a message, not warning/error, when
       sweep metadata is missing.
-- [ ] `ledgr_promote()` calls `ledgr_run()` with the selected params and seed.
-- [ ] `require_same_snapshot = TRUE` validates `provenance$snapshot_hash`.
-- [ ] Candidate print shows strategy name plus hash when available and falls
+- [x] `ledgr_promote()` calls `ledgr_run()` with the selected params and seed.
+- [x] `require_same_snapshot = TRUE` validates `provenance$snapshot_hash`.
+- [x] Candidate print shows strategy name plus hash when available and falls
       back to hash only.
+
+**Implementation Notes:**
+- Added exported `ledgr_candidate()` and `ledgr_promote()` APIs plus a private
+  `ledgr_sweep_candidate` object shape.
+- Candidate extraction supports row-position and `run_id` selection, captures
+  the selected row, preserves sweep metadata when present, and supports
+  degraded tibble-like inputs with a message.
+- Promotion forwards `candidate$params` and `candidate$execution_seed` to
+  `ledgr_run()`, mapping unseeded candidates to `seed = NULL`.
+- Same-snapshot validation uses row-level `provenance$snapshot_hash`.
+- `require_same_snapshot` defaults to `TRUE`; cross-snapshot promotion must be
+  requested explicitly with `require_same_snapshot = FALSE`.
+- Candidate printing shows strategy name plus short hash when a strategy name
+  is present, otherwise hash-only.
+
+**Verification Run:**
+```text
+test-sweep.R
+test-api-exports.R
+```
 
 **Verification:**
 ```text

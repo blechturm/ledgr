@@ -354,14 +354,16 @@ bt_test <- test_exp |>
   ledgr_promote(
     candidate,
     run_id = "momentum_v1_test",
-    note = "Selected on train sweep; evaluated on held-out test snapshot."
+    note = "Selected on train sweep; evaluated on held-out test snapshot.",
+    require_same_snapshot = FALSE
   )
 ```
 
 `ledgr_promote()` forwards the candidate params and `execution_seed` to
 `ledgr_run()` and writes durable promotion context after the committed run
 succeeds. Users should not need to manually extract `params[[1]]` or seed
-values from the sweep table.
+values from the sweep table. Same-snapshot replay is the default; train/test or
+other cross-snapshot promotion must opt in with `require_same_snapshot = FALSE`.
 
 `ledgr_candidate()` returns a `ledgr_sweep_candidate` object. It should accept a
 classed `ledgr_sweep_results` object or a tibble-like selection view that still

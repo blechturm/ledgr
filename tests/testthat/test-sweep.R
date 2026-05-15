@@ -157,6 +157,166 @@ testthat::test_that("ledgr_sweep_results prints a curated view", {
   testthat::expect_true(any(grepl("provenance", printed, fixed = TRUE)))
 })
 
+testthat::test_that("ledgr_candidate selects by label or position and handles failures", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy)
+  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  out <- ledgr_sweep(exp, grid, seed = 123L)
+
+  by_label <- ledgr_candidate(out, "b")
+  by_position <- ledgr_candidate(out, 1)
+  testthat::expect_s3_class(by_label, "ledgr_sweep_candidate")
+  testthat::expect_identical(by_label$run_id, "b")
+  testthat::expect_identical(by_label$params, list(qty = 2))
+  testthat::expect_identical(by_position$run_id, "a")
+  testthat::expect_identical(by_position$params, list(qty = 1))
+  testthat::expect_identical(by_label$sweep_meta$sweep_id, attr(out, "sweep_id"))
+  testthat::expect_s3_class(by_label$selection_view, "tbl_df")
+  testthat::expect_identical(nrow(by_label$selection_view), 2L)
+  testthat::expect_identical(by_label$selection_view$run_id, c("a", "b"))
+
+  features <- function(params) {
+    if (params$n < 1) {
+      rlang::abort("bad feature params", class = "ledgr_test_bad_feature")
+    }
+    list(ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1))
+  }
+  failed_exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$flat(), features = features)
+  failed_grid <- ledgr_param_grid(good = list(n = 1), bad = list(n = 0))
+  failed <- ledgr_sweep(failed_exp, failed_grid)
+  testthat::expect_error(ledgr_candidate(failed, "bad"), class = "ledgr_failed_sweep_candidate")
+  diagnostic <- ledgr_candidate(failed, "bad", allow_failed = TRUE)
+  testthat::expect_identical(diagnostic$status, "FAILED")
+  testthat::expect_error(
+    ledgr_promote(exp, diagnostic, run_id = "should-not-promote"),
+    class = "ledgr_promote_failed_candidate"
+  )
+})
+
+testthat::test_that("ledgr_candidate supports degraded tibble-like inputs", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(snapshot, strategy)
+  grid <- ledgr_param_grid(candidate = list())
+  out <- ledgr_sweep(exp, grid, seed = 123L)
+  plain <- tibble::as_tibble(out)
+
+  candidate <- NULL
+  testthat::expect_message(
+    candidate <- ledgr_candidate(plain, "candidate"),
+    "not a `ledgr_sweep_results` object",
+    fixed = TRUE
+  )
+  testthat::expect_s3_class(candidate, "ledgr_sweep_candidate")
+  testthat::expect_null(candidate$sweep_meta)
+  testthat::expect_identical(candidate$params, list())
+})
+
+testthat::test_that("ledgr_promote forwards candidate params and execution seed", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy)
+  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  out <- ledgr_sweep(exp, grid, seed = 123L)
+  candidate <- ledgr_candidate(out, "b")
+
+  bt <- ledgr_promote(
+    exp,
+    candidate,
+    run_id = "promoted-candidate-run",
+    note = "reviewed candidate",
+    require_same_snapshot = TRUE
+  )
+  on.exit(close(bt), add = TRUE)
+
+  testthat::expect_s3_class(bt, "ledgr_backtest")
+  testthat::expect_identical(bt$config$strategy_params, list(qty = 2))
+  testthat::expect_identical(bt$config$engine$seed, candidate$execution_seed)
+  testthat::expect_identical(attr(bt, "promotion_note"), "reviewed candidate")
+
+  bt_no_note <- ledgr_promote(
+    exp,
+    candidate,
+    run_id = "promoted-candidate-run-no-note",
+    require_same_snapshot = TRUE
+  )
+  on.exit(close(bt_no_note), add = TRUE)
+  testthat::expect_null(attr(bt_no_note, "promotion_note", exact = TRUE))
+  testthat::expect_error(
+    ledgr_promote(exp, candidate, run_id = "empty-note", note = ""),
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("ledgr_promote validates same-snapshot provenance when requested", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  other_bars <- ledgr_sweep_test_bars()
+  other_bars$open <- other_bars$open + 10
+  other_bars$high <- other_bars$high + 10
+  other_bars$low <- other_bars$low + 10
+  other_bars$close <- other_bars$close + 10
+  other_snapshot <- ledgr_snapshot_from_df(other_bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  on.exit(ledgr_snapshot_close(other_snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(snapshot, strategy)
+  other_exp <- ledgr_experiment(other_snapshot, strategy)
+  grid <- ledgr_param_grid(candidate = list())
+  candidate <- ledgr_candidate(ledgr_sweep(exp, grid), "candidate")
+
+  testthat::expect_error(
+    ledgr_promote(other_exp, candidate, run_id = "wrong-snapshot"),
+    class = "ledgr_candidate_snapshot_mismatch"
+  )
+
+  bt_cross <- ledgr_promote(
+    other_exp,
+    candidate,
+    run_id = "cross-snapshot-explicit",
+    require_same_snapshot = FALSE
+  )
+  on.exit(close(bt_cross), add = TRUE)
+  testthat::expect_s3_class(bt_cross, "ledgr_backtest")
+
+  candidate$provenance$snapshot_hash <- NULL
+  testthat::expect_error(
+    ledgr_promote(exp, candidate, run_id = "missing-snapshot"),
+    class = "ledgr_candidate_missing_snapshot_hash"
+  )
+})
+
+testthat::test_that("ledgr_sweep_candidate print shows strategy name and hash when available", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) ctx$flat()
+  attr(strategy, "name") <- "named_strategy"
+  exp <- ledgr_experiment(snapshot, strategy)
+  grid <- ledgr_param_grid(candidate = list())
+  candidate <- ledgr_candidate(ledgr_sweep(exp, grid, seed = 123L), "candidate")
+
+  printed <- utils::capture.output(print(candidate))
+  testthat::expect_true(any(grepl("named_strategy", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Execution seed:", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Feature-set hash:", printed, fixed = TRUE)))
+})
+
 testthat::test_that("derived execution seeds are stable across sweep invocations", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

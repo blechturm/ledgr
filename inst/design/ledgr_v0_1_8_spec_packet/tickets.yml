@@ -447,7 +447,7 @@ tickets:
 
   - id: LDG-2110
     title: "Candidate Selection And Promotion API"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2109]
     tests:

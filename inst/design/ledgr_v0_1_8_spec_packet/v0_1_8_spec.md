@@ -417,7 +417,7 @@ must not need to remember how to extract `params[[1]]` or the candidate seed.
 Required public shape:
 
 ```r
-ledgr_promote(exp, candidate, run_id, note = NULL, require_same_snapshot = FALSE)
+ledgr_promote(exp, candidate, run_id, note = NULL, require_same_snapshot = TRUE)
 ```
 
 Required behavior:
@@ -433,6 +433,9 @@ Required behavior:
 - when `require_same_snapshot = TRUE`, verifies that the candidate
   `provenance$snapshot_hash` matches the target experiment snapshot hash and
   errors clearly if the field is missing or mismatched.
+- `require_same_snapshot` defaults to `TRUE`; train/test promotion and other
+  cross-snapshot evaluations must opt in explicitly with
+  `require_same_snapshot = FALSE`.
 
 Primary train/test promotion example:
 
@@ -446,7 +449,8 @@ bt_test <- test_exp |>
   ledgr_promote(
     candidate,
     run_id = "momentum_v1_test",
-    note = "Selected highest Sharpe candidate from train sweep."
+    note = "Selected highest Sharpe candidate from train sweep.",
+    require_same_snapshot = FALSE
   )
 ```
 

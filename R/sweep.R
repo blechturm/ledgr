@@ -71,6 +71,7 @@ ledgr_sweep <- function(exp,
   rows <- vector("list", length(param_grid$params))
   source_info <- ledgr_strategy_source_info(exp$strategy)
   strategy_hash <- source_info$hash
+  strategy_name <- ledgr_sweep_strategy_name(exp$strategy)
 
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]
@@ -166,6 +167,7 @@ ledgr_sweep <- function(exp,
   attr(out, "seed_contract") <- "ledgr_seed_v1"
   attr(out, "evaluation_scope") <- "exploratory"
   attr(out, "strategy_hash") <- strategy_hash
+  attr(out, "strategy_name") <- strategy_name
   attr(out, "strategy_source_capture_method") <- source_info$capture_method
   attr(out, "strategy_preflight") <- preflight
   attr(out, "feature_union") <- feature_union
@@ -180,6 +182,150 @@ ledgr_sweep <- function(exp,
   )
   class(out) <- c("ledgr_sweep_results", class(out))
   out
+}
+
+#' Select one sweep candidate for promotion
+#'
+#' @param results A `ledgr_sweep_results` object or tibble-like object with
+#'   `run_id`, `params`, `execution_seed`, and `provenance` columns.
+#' @param which Candidate selector. A character scalar selects by `run_id`; an
+#'   integer-like scalar selects by row position.
+#' @param allow_failed Logical. Failed candidates error by default.
+#' @return A `ledgr_sweep_candidate` object.
+#' @details The returned candidate carries `selection_view`, the tibble-like
+#'   view passed to `ledgr_candidate()`. Promotion-context storage uses that
+#'   view to record the filtered/sorted candidate table the user selected from.
+#' @export
+ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
+  if (!is.logical(allow_failed) || length(allow_failed) != 1L || is.na(allow_failed)) {
+    rlang::abort("`allow_failed` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  is_sweep_results <- inherits(results, "ledgr_sweep_results")
+  view <- tibble::as_tibble(results)
+  required <- c("run_id", "params", "execution_seed", "provenance")
+  missing <- setdiff(required, names(view))
+  if (length(missing) > 0L) {
+    rlang::abort(
+      sprintf("`results` is missing required candidate column(s): %s.", paste(missing, collapse = ", ")),
+      class = "ledgr_invalid_sweep_candidate_input"
+    )
+  }
+  if (nrow(view) < 1L) {
+    rlang::abort("`results` must contain at least one candidate row.", class = "ledgr_invalid_sweep_candidate_input")
+  }
+
+  row_idx <- ledgr_candidate_row_index(view, which)
+  row <- view[row_idx, , drop = FALSE]
+  status <- if ("status" %in% names(row)) as.character(row$status[[1]]) else NA_character_
+  if (!isTRUE(allow_failed) && identical(status, "FAILED")) {
+    rlang::abort(
+      sprintf("Candidate '%s' has status FAILED. Use `allow_failed = TRUE` for diagnostic extraction.", row$run_id[[1]]),
+      class = "ledgr_failed_sweep_candidate"
+    )
+  }
+
+  if (!is_sweep_results) {
+    message("Note: input is not a `ledgr_sweep_results` object; sweep-level metadata will not be available in the candidate.")
+  }
+
+  sweep_meta <- ledgr_candidate_sweep_meta(results, is_sweep_results)
+  out <- list(
+    run_id = as.character(row$run_id[[1]]),
+    status = status,
+    params = row$params[[1]],
+    execution_seed = as.integer(row$execution_seed[[1]]),
+    provenance = row$provenance[[1]],
+    row = row,
+    selection_view = view,
+    sweep_meta = sweep_meta
+  )
+  if ("warnings" %in% names(row)) out$warnings <- row$warnings[[1]]
+  if ("feature_fingerprints" %in% names(row)) out$feature_fingerprints <- row$feature_fingerprints[[1]]
+  structure(out, class = c("ledgr_sweep_candidate", "list"))
+}
+
+#' Promote a sweep candidate to a committed run
+#'
+#' @param exp A `ledgr_experiment`.
+#' @param candidate A `ledgr_sweep_candidate`.
+#' @param run_id Non-empty run identifier for the committed run.
+#' @param note Optional plain-text note. Stored by the promotion-context ticket.
+#' @param require_same_snapshot Logical. If `TRUE`, require the candidate
+#'   provenance snapshot hash to match `exp`. Defaults to `TRUE`; train/test
+#'   promotion must opt into cross-snapshot execution with `FALSE`.
+#' @return A committed `ledgr_backtest`.
+#' @export
+ledgr_promote <- function(exp,
+                          candidate,
+                          run_id,
+                          note = NULL,
+                          require_same_snapshot = TRUE) {
+  if (!inherits(exp, "ledgr_experiment")) {
+    rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
+  }
+  if (!inherits(candidate, "ledgr_sweep_candidate")) {
+    rlang::abort("`candidate` must be a ledgr_sweep_candidate object.", class = "ledgr_invalid_args")
+  }
+  if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
+    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  if (!is.null(note) && (!is.character(note) || length(note) != 1L || is.na(note) || !nzchar(note))) {
+    rlang::abort("`note` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  if (!is.logical(require_same_snapshot) || length(require_same_snapshot) != 1L || is.na(require_same_snapshot)) {
+    rlang::abort("`require_same_snapshot` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  if (identical(candidate$status, "FAILED")) {
+    rlang::abort(
+      sprintf(
+        "Cannot promote failed candidate '%s'. Use `allow_failed = TRUE` only for diagnostic extraction.",
+        candidate$run_id
+      ),
+      class = "ledgr_promote_failed_candidate"
+    )
+  }
+
+  if (isTRUE(require_same_snapshot)) {
+    ledgr_candidate_validate_same_snapshot(exp, candidate)
+  }
+
+  seed <- candidate$execution_seed
+  if (length(seed) != 1L || is.na(seed)) {
+    seed <- NULL
+  }
+  bt <- ledgr_run(
+    exp = exp,
+    params = candidate$params,
+    run_id = run_id,
+    seed = seed
+  )
+  attr(bt, "promotion_note") <- note
+  bt
+}
+
+#' @export
+print.ledgr_sweep_candidate <- function(x, ...) {
+  strategy <- ledgr_candidate_strategy_label(x)
+  seed <- if (length(x$execution_seed) == 1L && !is.na(x$execution_seed)) {
+    as.character(x$execution_seed)
+  } else {
+    "-"
+  }
+  feature_hash <- x$provenance$feature_set_hash %||% NA_character_
+  snapshot_hash <- x$provenance$snapshot_hash %||% NA_character_
+  evaluation_scope <- x$provenance$evaluation_scope %||% NA_character_
+
+  cat("ledgr_sweep_candidate\n")
+  cat("=====================\n")
+  cat("Run label:        ", x$run_id, "\n", sep = "")
+  cat("Status:           ", x$status %||% NA_character_, "\n", sep = "")
+  cat("Execution seed:   ", seed, "\n", sep = "")
+  cat("Strategy:         ", strategy, "\n", sep = "")
+  cat("Snapshot hash:    ", snapshot_hash, "\n", sep = "")
+  cat("Feature-set hash: ", feature_hash, "\n", sep = "")
+  cat("Evaluation scope: ", evaluation_scope, "\n", sep = "")
+  cat("Params:           ", canonical_json(x$params), "\n", sep = "")
+  invisible(x)
 }
 
 #' @export
@@ -203,6 +349,94 @@ print.ledgr_sweep_results <- function(x, ...) {
     ),
     ...
   )
+}
+
+ledgr_candidate_row_index <- function(view, which) {
+  if (is.character(which) && length(which) == 1L && !is.na(which) && nzchar(which)) {
+    matches <- base::which(as.character(view$run_id) == which)
+    if (length(matches) != 1L) {
+      rlang::abort(
+        sprintf("Expected exactly one candidate with run_id '%s'; found %d.", which, length(matches)),
+        class = "ledgr_sweep_candidate_not_found"
+      )
+    }
+    return(matches[[1]])
+  }
+  if (is.numeric(which) && length(which) == 1L && !is.na(which) &&
+      is.finite(which) && which == as.integer(which)) {
+    idx <- as.integer(which)
+    if (idx < 1L || idx > nrow(view)) {
+      rlang::abort("Candidate row position is out of bounds.", class = "ledgr_sweep_candidate_not_found")
+    }
+    return(idx)
+  }
+  rlang::abort("`which` must be a character run_id or integer row position.", class = "ledgr_invalid_args")
+}
+
+ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
+  if (!isTRUE(is_sweep_results)) {
+    return(NULL)
+  }
+  keys <- c(
+    "sweep_id", "snapshot_id", "snapshot_hash", "scoring_range", "universe",
+    "master_seed", "seed_contract", "evaluation_scope", "strategy_hash",
+    "strategy_name", "strategy_source_capture_method", "strategy_preflight",
+    "feature_union", "feature_union_hash", "execution_assumptions"
+  )
+  stats::setNames(lapply(keys, function(key) attr(results, key, exact = TRUE)), keys)
+}
+
+ledgr_candidate_validate_same_snapshot <- function(exp, candidate) {
+  provenance <- candidate$provenance
+  if (!is.list(provenance) ||
+      is.null(provenance$snapshot_hash) ||
+      !is.character(provenance$snapshot_hash) ||
+      length(provenance$snapshot_hash) != 1L ||
+      is.na(provenance$snapshot_hash) ||
+      !nzchar(provenance$snapshot_hash)) {
+    rlang::abort(
+      "`require_same_snapshot = TRUE` needs candidate provenance with `snapshot_hash`.",
+      class = "ledgr_candidate_missing_snapshot_hash"
+    )
+  }
+  meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
+  if (!identical(provenance$snapshot_hash, meta$snapshot_hash)) {
+    rlang::abort(
+      "Candidate snapshot hash does not match the target experiment snapshot.",
+      class = "ledgr_candidate_snapshot_mismatch"
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_candidate_strategy_label <- function(candidate) {
+  meta <- candidate$sweep_meta
+  name <- if (is.list(meta)) meta$strategy_name else NULL
+  hash <- if (is.list(meta)) meta$strategy_hash else candidate$provenance$strategy_hash
+  has_name <- is.character(name) && length(name) == 1L && !is.na(name) && nzchar(name)
+  has_hash <- is.character(hash) && length(hash) == 1L && !is.na(hash) && nzchar(hash)
+  if (has_name && has_hash) {
+    return(sprintf("%s (%s)", name, substr(hash, 1L, 12L)))
+  }
+  if (has_hash) {
+    return(substr(hash, 1L, 12L))
+  }
+  if (has_name) {
+    return(name)
+  }
+  "<unknown>"
+}
+
+ledgr_sweep_strategy_name <- function(strategy) {
+  name <- attr(strategy, "name", exact = TRUE)
+  if (is.character(name) && length(name) == 1L && !is.na(name) && nzchar(name)) {
+    return(name)
+  }
+  name <- attr(strategy, "ledgr_strategy_name", exact = TRUE)
+  if (is.character(name) && length(name) == 1L && !is.na(name) && nzchar(name)) {
+    return(name)
+  }
+  NULL
 }
 
 ledgr_generate_sweep_id <- function() {
