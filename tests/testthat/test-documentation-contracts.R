@@ -669,6 +669,7 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_match(core_block, "- custom-indicators", fixed = TRUE)
   testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
   testthat::expect_match(core_block, "- experiment-store", fixed = TRUE)
+  testthat::expect_match(core_block, "- sweeps", fixed = TRUE)
 
   testthat::expect_no_match(text, "C:\\Users", fixed = TRUE)
   testthat::expect_no_match(text, "custom-indicators.md", fixed = TRUE)
@@ -687,7 +688,7 @@ testthat::test_that("package help exposes an installed-documentation spine", {
 
   testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
-  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "indicators")) {
+  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "sweeps", "indicators")) {
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
@@ -703,6 +704,14 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_run = c("strategy-development", "metrics-and-accounting"),
     ledgr_experiment = c("strategy-development", "experiment-store", "reproducibility"),
     ledgr_backtest = c("strategy-development", "metrics-and-accounting"),
+    ledgr_param_grid = "sweeps",
+    ledgr_precompute_features = "sweeps",
+    ledgr_sweep = "sweeps",
+    ledgr_candidate = "sweeps",
+    ledgr_promote = "sweeps",
+    ledgr_promotion_context = "sweeps",
+    ledgr_run_promotion_context = "sweeps",
+    ledgr_run_info = "sweeps",
     ledgr_strategy_context = c("strategy-development", "indicators"),
     ledgr_results = "metrics-and-accounting",
     ledgr_compare_runs = c("experiment-store", "metrics-and-accounting"),
@@ -743,6 +752,57 @@ testthat::test_that("core help pages point to installed articles with browser-fr
       testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE, info = page)
     }
   }
+})
+
+testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
+  doc <- paste(readLines(ledgr_test_source_vignette("sweeps.Rmd"), warn = FALSE), collapse = "\n")
+  readme <- paste(readLines(file.path(testthat::test_path("..", ".."), "README.Rmd"), warn = FALSE), collapse = "\n")
+  root <- testthat::test_path("..", "..")
+  sweep_help <- paste(readLines(file.path(root, "man", "ledgr_sweep.Rd"), warn = FALSE), collapse = "\n")
+  candidate_help <- paste(readLines(file.path(root, "man", "ledgr_candidate.Rd"), warn = FALSE), collapse = "\n")
+  promote_help <- paste(readLines(file.path(root, "man", "ledgr_promote.Rd"), warn = FALSE), collapse = "\n")
+  precompute_help <- paste(readLines(file.path(root, "man", "ledgr_precompute_features.Rd"), warn = FALSE), collapse = "\n")
+  promotion_help <- paste(readLines(file.path(root, "man", "ledgr_promotion_context.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(doc, "Sweep Is Exploration", fixed = TRUE)
+  testthat::expect_match(doc, "does not choose a winner", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr does not own objective functions or\\s+automatic candidate ranking")
+  testthat::expect_match(doc, "source bars\\s+-> train snapshot\\s+-> test snapshot\\s+-> sweep on train snapshot")
+  testthat::expect_match(doc, "require_same_snapshot = FALSE", fixed = TRUE)
+  testthat::expect_match(doc, "Same-Snapshot Replay Is Secondary", fixed = TRUE)
+  testthat::expect_match(doc, "It remains in-sample", fixed = TRUE)
+  testthat::expect_match(doc, "more than 20 combinations", fixed = TRUE)
+  testthat::expect_match(doc, "status = \"FAILED\"", fixed = TRUE)
+  testthat::expect_match(doc, "execution_seed", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_run_info(test_exp$snapshot, \"momentum_locked_test\")$promotion_context", fixed = TRUE)
+  testthat::expect_match(doc, "metrics-and-accounting", fixed = TRUE)
+  testthat::expect_match(doc, "Provenance records what ran", fixed = TRUE)
+  testthat::expect_match(doc, "does not prove", fixed = TRUE)
+  testthat::expect_match(doc, "complete sweep artifact", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_tune()", fixed = TRUE)
+  testthat::expect_match(doc, "parallel sweep execution", fixed = TRUE)
+  testthat::expect_match(doc, "walk-forward, PBO, or CSCV", fixed = TRUE)
+  testthat::expect_match(doc, "full sweep artifact persistence", fixed = TRUE)
+  testthat::expect_no_match(doc, "ledgr_snapshot_split\\(")
+  testthat::expect_match(doc, "ledgr_save_sweep()", fixed = TRUE)
+
+  testthat::expect_match(readme, "Explore A Sweep", fixed = TRUE)
+  testthat::expect_match(readme, "filter(status == \"DONE\")", fixed = TRUE)
+  testthat::expect_match(readme, "arrange(desc(sharpe_ratio))", fixed = TRUE)
+  testthat::expect_match(readme, "does not\\s+rank candidates automatically")
+  testthat::expect_match(readme, "require_same_snapshot = FALSE", fixed = TRUE)
+  testthat::expect_match(readme, "v0.1.8 is the experiment-first research API with sequential exploratory sweep", fixed = TRUE)
+
+  for (help in list(sweep_help, candidate_help, promote_help, precompute_help, promotion_help)) {
+    testthat::expect_match(help, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
+    testthat::expect_match(help, "system.file(\"doc\", \"sweeps.html\", package = \"ledgr\")", fixed = TRUE)
+  }
+  testthat::expect_match(sweep_help, "does not rank candidates", fixed = TRUE)
+  testthat::expect_match(sweep_help, "more than 20 combinations", fixed = TRUE)
+  testthat::expect_match(promote_help, "require_same_snapshot = FALSE", fixed = TRUE)
+  testthat::expect_match(candidate_help, "execution_seed", fixed = TRUE)
+  testthat::expect_match(precompute_help, "feature engine version", fixed = TRUE)
+  testthat::expect_match(promotion_help, "not a full sweep artifact", fixed = TRUE)
 })
 
 testthat::test_that("feature contract check docs state factory materialization boundary", {

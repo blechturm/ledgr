@@ -49,6 +49,39 @@ convenience wrapper such as `ledgr_tune()` is useful. This should remain parked
 until sweep result shape, objective/ranking ownership, and candidate promotion
 are stable.
 
+### 2026-05-15 [ux] Parameter-grid construction helpers
+
+`ledgr_param_grid()` is the right explicit base contract, but larger studies
+will need ergonomic helpers for constructing grids without turning sweep into
+an objective/ranking API.
+
+Possible future helpers:
+
+```r
+ledgr_grid_cross(
+  sma_n = c(20, 50, 100),
+  threshold = c(0.005, 0.010),
+  qty = c(10, 20)
+)
+
+ledgr_grid_named(
+  conservative = list(...),
+  balanced = list(...),
+  aggressive = list(...)
+)
+
+ledgr_grid_add_baseline(
+  grid,
+  flat = list(qty = 0)
+)
+```
+
+These should only create candidate parameter sets. They should not rank,
+optimize, tune, choose objectives, select winners, or imply strategy-cookbook
+semantics. Keep the distinction sharp: grid-construction ergonomics are useful;
+`ledgr_tune()` and ledgr-owned objective semantics remain separate deferred
+questions.
+
 ### 2026-05-13 [ux] Research workflow templates
 
 ledgr may eventually benefit from templates, but the first templates should be

@@ -778,7 +778,12 @@ print.ledgr_run_list <- function(x, ...) {
 #'   `status`, `snapshot_id`, `snapshot_hash`, `strategy_source_hash`,
 #'   `strategy_params_hash`, `config_hash`, `reproducibility_level`,
 #'   `execution_mode`, `elapsed_sec`, `pulse_count`, `persist_features`,
-#'   feature-cache counts, and `error_msg` for failed runs.
+#'   feature-cache counts, `promotion_context` for runs created with
+#'   [ledgr_promote()], and `error_msg` for failed runs.
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))

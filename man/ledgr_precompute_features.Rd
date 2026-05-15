@@ -24,6 +24,19 @@ parameter grid, deduplicates identical indicators by fingerprint, computes
 their series once against a sealed snapshot, and returns a typed payload for
 future sweep execution.
 }
+\details{
+The payload is validated by \code{ledgr_sweep()} against the snapshot hash,
+universe, scoring range, feature engine version, grid labels, and resolved
+feature fingerprints. Use it for larger exploratory grids; \code{ledgr_sweep()}
+warns when more than 20 combinations run without precomputed features.
+}
+\section{Articles}{
+
+Exploratory sweeps and promotion:
+\code{vignette("sweeps", package = "ledgr")}
+\code{system.file("doc", "sweeps.html", package = "ledgr")}
+}
+
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,

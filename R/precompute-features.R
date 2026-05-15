@@ -5,6 +5,16 @@
 #' their series once against a sealed snapshot, and returns a typed payload for
 #' future sweep execution.
 #'
+#' The payload is validated by `ledgr_sweep()` against the snapshot hash,
+#' universe, scoring range, feature engine version, grid labels, and resolved
+#' feature fingerprints. Use it for larger exploratory grids; `ledgr_sweep()`
+#' warns when more than 20 combinations run without precomputed features.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
+#'
 #' @param exp A `ledgr_experiment` object.
 #' @param param_grid A `ledgr_param_grid` object.
 #' @param start Optional scoring-range start. Defaults to the snapshot start.
@@ -63,6 +73,11 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
   structure(out, class = c("ledgr_precomputed_features", "list"))
 }
 
+#' Print a precomputed feature payload
+#'
+#' @param x A `ledgr_precomputed_features` object.
+#' @param ... Unused.
+#' @return The input object, invisibly.
 #' @export
 print.ledgr_precomputed_features <- function(x, ...) {
   if (!inherits(x, "ledgr_precomputed_features")) {

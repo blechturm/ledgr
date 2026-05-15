@@ -23,6 +23,8 @@
 #' - `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #' - `vignette("experiment-store", package = "ledgr")`
 #' - `system.file("doc", "experiment-store.html", package = "ledgr")`
+#' - `vignette("sweeps", package = "ledgr")`
+#' - `system.file("doc", "sweeps.html", package = "ledgr")`
 #' - `vignette("indicators", package = "ledgr")`
 #' - `system.file("doc", "indicators.html", package = "ledgr")`
 #'

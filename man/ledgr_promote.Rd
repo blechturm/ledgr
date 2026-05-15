@@ -19,15 +19,32 @@ ledgr_promote(
 
 \item{run_id}{Non-empty run identifier for the committed run.}
 
-\item{note}{Optional non-empty plain-text note. Stored by the promotion-context ticket.}
+\item{note}{Optional plain-text note. Stored by the promotion-context ticket.}
 
 \item{require_same_snapshot}{Logical. If \code{TRUE}, require the candidate
-provenance snapshot hash to match \code{exp}. Defaults to \code{TRUE};
-train/test promotion must opt into cross-snapshot execution with \code{FALSE}.}
+provenance snapshot hash to match \code{exp}. Defaults to \code{TRUE}; train/test
+promotion must opt into cross-snapshot execution with \code{FALSE}.}
 }
 \value{
 A committed \code{ledgr_backtest}.
 }
 \description{
-Promote a sweep candidate to a committed run.
+Replays a selected sweep candidate through \code{ledgr_run()} so the result becomes
+a durable experiment-store run artifact.
+}
+\details{
+\code{ledgr_promote()} commits a selected sweep candidate by calling
+\code{\link[=ledgr_run]{ledgr_run()}} with the candidate params and exact \code{execution_seed}. Runs
+created this way store durable promotion context that can be read with
+\code{\link[=ledgr_promotion_context]{ledgr_promotion_context()}} or \code{\link[=ledgr_run_promotion_context]{ledgr_run_promotion_context()}}.
+
+The default \code{require_same_snapshot = TRUE} protects same-snapshot replay. For
+train/test evaluation, pass a candidate selected on the train snapshot to a
+test-snapshot experiment and set \code{require_same_snapshot = FALSE} deliberately.
+}
+\section{Articles}{
+
+Exploratory sweeps and promotion:
+\code{vignette("sweeps", package = "ledgr")}
+\code{system.file("doc", "sweeps.html", package = "ledgr")}
 }

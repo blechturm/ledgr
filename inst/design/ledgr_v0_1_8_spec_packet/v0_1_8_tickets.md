@@ -1570,7 +1570,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2110, LDG-2111, LDG-2112
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Document the v0.1.8 sweep workflow, including train/sweep/evaluate discipline,
@@ -1591,12 +1591,12 @@ sweeps, seed/provenance interpretation, and explicit non-goals.
 8. Add/update documentation contract tests for the new public surface.
 
 **Acceptance Criteria:**
-- [ ] Docs teach sweep as exploration and promoted runs as committed artifacts.
-- [ ] Train/test promotion uses `ledgr_candidate()` and `ledgr_promote()`.
-- [ ] Same-snapshot replay is shown as secondary and in-sample.
-- [ ] Docs mention warning threshold for large grids without precompute.
-- [ ] Docs do not imply ledgr ranks candidates automatically.
-- [ ] Docs do not advertise parallel sweep, walk-forward, PBO/CSCV,
+- [x] Docs teach sweep as exploration and promoted runs as committed artifacts.
+- [x] Train/test promotion uses `ledgr_candidate()` and `ledgr_promote()`.
+- [x] Same-snapshot replay is shown as secondary and in-sample.
+- [x] Docs mention warning threshold for large grids without precompute.
+- [x] Docs do not imply ledgr ranks candidates automatically.
+- [x] Docs do not advertise parallel sweep, walk-forward, PBO/CSCV,
       risk-layer, cost-model, paper/live, intraday, or full sweep persistence.
 
 **Verification:**
@@ -1604,6 +1604,22 @@ sweeps, seed/provenance interpretation, and explicit non-goals.
 documentation contract tests
 targeted vignette/render checks
 manual docs review
+```
+
+**Implementation Notes:**
+- Added the `sweeps` vignette and README section that frame sweep as
+  exploratory, promotion as the committed artifact boundary, and train/test
+  evaluation as the primary workflow.
+- Updated function documentation for `ledgr_param_grid()`,
+  `ledgr_precompute_features()`, `ledgr_sweep()`, `ledgr_candidate()`,
+  `ledgr_promote()`, and promotion-context readers.
+- Added documentation contract coverage for sweep evaluation discipline,
+  non-goals, installed article references, and public help-page links.
+
+**Verification Run:**
+```text
+pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-documentation-contracts.R', reporter='summary')
+RSTUDIO_PANDOC=...; rmarkdown::render('vignettes/sweeps.Rmd', output_file = tempfile(fileext = '.html'), quiet = TRUE)
 ```
 
 **Source Reference:** v0.1.8 spec section 10.

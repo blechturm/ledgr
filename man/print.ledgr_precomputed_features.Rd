@@ -2,7 +2,7 @@
 % Please edit documentation in R/precompute-features.R
 \name{print.ledgr_precomputed_features}
 \alias{print.ledgr_precomputed_features}
-\title{Precompute feature payloads for a parameter grid}
+\title{Print a precomputed feature payload}
 \usage{
 \method{print}{ledgr_precomputed_features}(x, ...)
 }
@@ -15,8 +15,5 @@
 The input object, invisibly.
 }
 \description{
-\code{ledgr_precompute_features()} resolves the feature definitions required by a
-parameter grid, deduplicates identical indicators by fingerprint, computes
-their series once against a sealed snapshot, and returns a typed payload for
-future sweep execution.
+Print a precomputed feature payload
 }

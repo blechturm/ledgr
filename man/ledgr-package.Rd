@@ -31,6 +31,8 @@ Core installed articles:
 \item \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
 \item \code{vignette("experiment-store", package = "ledgr")}
 \item \code{system.file("doc", "experiment-store.html", package = "ledgr")}
+\item \code{vignette("sweeps", package = "ledgr")}
+\item \code{system.file("doc", "sweeps.html", package = "ledgr")}
 \item \code{vignette("indicators", package = "ledgr")}
 \item \code{system.file("doc", "indicators.html", package = "ledgr")}
 }

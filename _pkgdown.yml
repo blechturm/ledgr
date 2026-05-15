@@ -22,6 +22,7 @@ articles:
       - custom-indicators
       - metrics-and-accounting
       - experiment-store
+      - sweeps
   - title: Design / Background
     navbar: Design / Background
     contents:
@@ -41,6 +42,15 @@ reference:
       - ledgr_run
       - ledgr_param_grid
       - print.ledgr_param_grid
+      - ledgr_precompute_features
+      - print.ledgr_precomputed_features
+      - ledgr_sweep
+      - print.ledgr_sweep_results
+      - ledgr_candidate
+      - print.ledgr_sweep_candidate
+      - ledgr_promote
+      - ledgr_promotion_context
+      - ledgr_run_promotion_context
   - title: Backtests
     contents:
       - ledgr_backtest

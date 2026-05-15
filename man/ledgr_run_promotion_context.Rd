@@ -15,5 +15,15 @@ ledgr_run_promotion_context(exp, run_id)
 Parsed promotion context, or \code{NULL} for direct runs.
 }
 \description{
-Read promotion context from an experiment store.
+Read promotion context from an experiment store
+}
+\details{
+Reads the same compact promotion context as \code{\link[=ledgr_promotion_context]{ledgr_promotion_context()}} from
+the experiment store without executing strategy code.
+}
+\section{Articles}{
+
+Exploratory sweeps and promotion:
+\code{vignette("sweeps", package = "ledgr")}
+\code{system.file("doc", "sweeps.html", package = "ledgr")}
 }

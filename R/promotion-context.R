@@ -182,6 +182,17 @@ ledgr_warning_classes <- function(warnings) {
 #'
 #' @param bt A `ledgr_backtest`.
 #' @return Parsed promotion context, or `NULL` for direct runs.
+#' @details
+#' Promotion context is compact selection-audit metadata written by
+#' [ledgr_promote()]. It stores the selected candidate, source sweep metadata,
+#' and the filtered/sorted candidate-summary view used at selection time. It is
+#' not a full sweep artifact and does not store full ledger rows or equity
+#' curves for all candidates.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
 ledgr_promotion_context <- function(bt) {
   if (!inherits(bt, "ledgr_backtest")) {
@@ -197,6 +208,14 @@ ledgr_promotion_context <- function(bt) {
 #' @param exp A `ledgr_experiment`.
 #' @param run_id Run identifier.
 #' @return Parsed promotion context, or `NULL` for direct runs.
+#' @details
+#' Reads the same compact promotion context as [ledgr_promotion_context()] from
+#' the experiment store without executing strategy code.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
 ledgr_run_promotion_context <- function(exp, run_id) {
   if (!inherits(exp, "ledgr_experiment")) {

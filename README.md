@@ -206,6 +206,44 @@ ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
+## Explore A Sweep
+
+Use `ledgr_sweep()` for lightweight exploration across a parameter grid.
+Sweep results are candidate summaries, not committed run artifacts, and
+ledgr does not rank candidates automatically. Filter and rank explicitly
+with ordinary R tools, then promote one candidate deliberately.
+
+``` r
+grid <- ledgr_param_grid(
+  qty_10 = list(qty = 10),
+  qty_20 = list(qty = 20)
+)
+
+features <- ledgr_precompute_features(exp, grid)
+results <- ledgr_sweep(exp, grid, precomputed_features = features, seed = 2026)
+
+candidate <- results |>
+  filter(status == "DONE") |>
+  arrange(desc(sharpe_ratio)) |>
+  ledgr_candidate(1)
+
+bt_promoted <- ledgr_promote(
+  exp,
+  candidate,
+  run_id = "readme_promoted_sweep_candidate",
+  note = "Same-snapshot replay of an exploratory candidate."
+)
+```
+
+Same-snapshot replay is useful for audit and debugging, but it remains
+in-sample. For evaluation, sweep on a manually created train snapshot,
+lock the selected params with `ledgr_candidate()`, and promote against a
+held-out test snapshot with `require_same_snapshot = FALSE`. The
+[`sweeps`](https://blechturm.github.io/ledgr/articles/sweeps.html)
+article shows that train/sweep/test discipline and explains
+`execution_seed`, row-level provenance, promotion context, failure rows,
+and deferred sweep artifact persistence.
+
 Stored strategy provenance is inspectable without rerunning or
 evaluating the strategy source. Use the default `trust = FALSE` path for
 safe source and metadata inspection:
@@ -262,8 +300,10 @@ ledgr when you want the audit trail and adapter boundary to be explicit.
 
 ## Scope
 
-v0.1.7 is the experiment-first research API. It does not ship parameter
-sweep execution, broker adapters, paper trading, live trading, or
+v0.1.8 is the experiment-first research API with sequential exploratory
+sweep support. It does not ship automatic ranking, `ledgr_tune()`,
+parallel sweep, walk-forward/PBO/CSCV helpers, full sweep artifact
+persistence, broker adapters, paper trading, live trading, or
 short-selling semantics. Those are separate roadmap items with different
 state and safety requirements.
 

@@ -10,8 +10,8 @@ ledgr_candidate(results, which = 1L, allow_failed = FALSE)
 \item{results}{A \code{ledgr_sweep_results} object or tibble-like object with
 \code{run_id}, \code{params}, \code{execution_seed}, and \code{provenance} columns.}
 
-\item{which}{Candidate selector. A character scalar selects by \code{run_id};
-an integer-like scalar selects by row position.}
+\item{which}{Candidate selector. A character scalar selects by \code{run_id}; an
+integer-like scalar selects by row position.}
 
 \item{allow_failed}{Logical. Failed candidates error by default.}
 }
@@ -19,10 +19,20 @@ an integer-like scalar selects by row position.}
 A \code{ledgr_sweep_candidate} object.
 }
 \description{
-Select one sweep candidate for promotion.
+Selects a single row from a sweep result table and packages its params, seed,
+and provenance for promotion or inspection.
 }
 \details{
-The returned candidate carries \code{selection_view}, the tibble-like view
-passed to \code{ledgr_candidate()}. Promotion-context storage uses that view to
-record the filtered/sorted candidate table the user selected from.
+The returned candidate carries \code{selection_view}, the tibble-like
+view passed to \code{ledgr_candidate()}. Promotion-context storage uses that
+view to record the filtered/sorted candidate table the user selected from.
+\code{ledgr_candidate()} is the supported way to extract params, execution seed,
+and row-level provenance for promotion. It avoids making users manually pull
+\code{params[[1]]} and \code{execution_seed} from a tibble row.
+}
+\section{Articles}{
+
+Exploratory sweeps and promotion:
+\code{vignette("sweeps", package = "ledgr")}
+\code{system.file("doc", "sweeps.html", package = "ledgr")}
 }

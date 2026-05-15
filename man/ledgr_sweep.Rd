@@ -30,5 +30,35 @@ A \code{ledgr_sweep_results} tibble.
 }
 \description{
 \code{ledgr_sweep()} evaluates a \code{ledgr_param_grid} against a \code{ledgr_experiment}
-without writing candidate runs to the experiment store.
+without writing candidate runs to the experiment store. Sweep is an
+exploratory surface: it returns candidate summaries, does not rank candidates
+automatically, and does not create committed run artifacts.
+}
+\details{
+For larger grids, precompute shared feature payloads with
+\code{\link[=ledgr_precompute_features]{ledgr_precompute_features()}}. When a grid has more than 20 combinations and
+\code{precomputed_features = NULL}, ledgr warns because feature computation may be
+repeated per candidate.
+
+The result carries row-level \code{execution_seed} and \code{provenance}. Provenance
+records what ran; it does not prove that parameter selection was
+out-of-sample. The normal discipline is to sweep on a train snapshot, select
+a candidate with \code{\link[=ledgr_candidate]{ledgr_candidate()}}, and evaluate the locked params on a
+held-out test snapshot with \code{\link[=ledgr_promote]{ledgr_promote()}} or \code{\link[=ledgr_run]{ledgr_run()}}. Same-snapshot
+promotion is useful for audit and replay, but remains in-sample.
+
+Failed candidates are retained as rows when \code{stop_on_error = FALSE}. Contract
+errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
+strategy preflight failures still abort.
+
+v0.1.8 does not ship automatic ranking, \code{ledgr_tune()}, parallel sweep,
+walk-forward/PBO/CSCV helpers, risk-layer insertion, public cost-model
+factories, paper/live adapters, intraday-specific support, or full sweep
+artifact persistence.
+}
+\section{Articles}{
+
+Exploratory sweeps and promotion:
+\code{vignette("sweeps", package = "ledgr")}
+\code{system.file("doc", "sweeps.html", package = "ledgr")}
 }

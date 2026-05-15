@@ -4,7 +4,9 @@
 #' Run a sequential parameter sweep
 #'
 #' `ledgr_sweep()` evaluates a `ledgr_param_grid` against a `ledgr_experiment`
-#' without writing candidate runs to the experiment store.
+#' without writing candidate runs to the experiment store. Sweep is an
+#' exploratory surface: it returns candidate summaries, does not rank candidates
+#' automatically, and does not create committed run artifacts.
 #'
 #' @param exp A `ledgr_experiment`.
 #' @param param_grid A `ledgr_param_grid`.
@@ -14,6 +16,32 @@
 #' @param stop_on_error Logical. When `FALSE`, candidate-level execution errors
 #'   are captured as failed rows; when `TRUE`, they are rethrown.
 #' @return A `ledgr_sweep_results` tibble.
+#' @details
+#' For larger grids, precompute shared feature payloads with
+#' [ledgr_precompute_features()]. When a grid has more than 20 combinations and
+#' `precomputed_features = NULL`, ledgr warns because feature computation may be
+#' repeated per candidate.
+#'
+#' The result carries row-level `execution_seed` and `provenance`. Provenance
+#' records what ran; it does not prove that parameter selection was
+#' out-of-sample. The normal discipline is to sweep on a train snapshot, select
+#' a candidate with [ledgr_candidate()], and evaluate the locked params on a
+#' held-out test snapshot with [ledgr_promote()] or [ledgr_run()]. Same-snapshot
+#' promotion is useful for audit and replay, but remains in-sample.
+#'
+#' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
+#' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
+#' strategy preflight failures still abort.
+#'
+#' v0.1.8 does not ship automatic ranking, `ledgr_tune()`, parallel sweep,
+#' walk-forward/PBO/CSCV helpers, risk-layer insertion, public cost-model
+#' factories, paper/live adapters, intraday-specific support, or full sweep
+#' artifact persistence.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
 ledgr_sweep <- function(exp,
                         param_grid,
@@ -186,6 +214,9 @@ ledgr_sweep <- function(exp,
 
 #' Select one sweep candidate for promotion
 #'
+#' Selects a single row from a sweep result table and packages its params, seed,
+#' and provenance for promotion or inspection.
+#'
 #' @param results A `ledgr_sweep_results` object or tibble-like object with
 #'   `run_id`, `params`, `execution_seed`, and `provenance` columns.
 #' @param which Candidate selector. A character scalar selects by `run_id`; an
@@ -195,6 +226,14 @@ ledgr_sweep <- function(exp,
 #' @details The returned candidate carries `selection_view`, the tibble-like
 #'   view passed to `ledgr_candidate()`. Promotion-context storage uses that
 #'   view to record the filtered/sorted candidate table the user selected from.
+#' `ledgr_candidate()` is the supported way to extract params, execution seed,
+#' and row-level provenance for promotion. It avoids making users manually pull
+#' `params[[1]]` and `execution_seed` from a tibble row.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
 ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
   if (!is.logical(allow_failed) || length(allow_failed) != 1L || is.na(allow_failed)) {
@@ -246,6 +285,9 @@ ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
 
 #' Promote a sweep candidate to a committed run
 #'
+#' Replays a selected sweep candidate through `ledgr_run()` so the result becomes
+#' a durable experiment-store run artifact.
+#'
 #' @param exp A `ledgr_experiment`.
 #' @param candidate A `ledgr_sweep_candidate`.
 #' @param run_id Non-empty run identifier for the committed run.
@@ -254,6 +296,20 @@ ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
 #'   provenance snapshot hash to match `exp`. Defaults to `TRUE`; train/test
 #'   promotion must opt into cross-snapshot execution with `FALSE`.
 #' @return A committed `ledgr_backtest`.
+#' @details
+#' `ledgr_promote()` commits a selected sweep candidate by calling
+#' [ledgr_run()] with the candidate params and exact `execution_seed`. Runs
+#' created this way store durable promotion context that can be read with
+#' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
+#'
+#' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
+#' train/test evaluation, pass a candidate selected on the train snapshot to a
+#' test-snapshot experiment and set `require_same_snapshot = FALSE` deliberately.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
 ledgr_promote <- function(exp,
                           candidate,
@@ -304,6 +360,11 @@ ledgr_promote <- function(exp,
   bt
 }
 
+#' Print a sweep candidate
+#'
+#' @param x A `ledgr_sweep_candidate` object.
+#' @param ... Unused.
+#' @return The input object, invisibly.
 #' @export
 print.ledgr_sweep_candidate <- function(x, ...) {
   strategy <- ledgr_candidate_strategy_label(x)
@@ -329,6 +390,11 @@ print.ledgr_sweep_candidate <- function(x, ...) {
   invisible(x)
 }
 
+#' Print sweep results
+#'
+#' @param x A `ledgr_sweep_results` object.
+#' @param ... Passed to the tibble print method.
+#' @return The input object, invisibly.
 #' @export
 print.ledgr_sweep_results <- function(x, ...) {
   status <- as.character(x$status)

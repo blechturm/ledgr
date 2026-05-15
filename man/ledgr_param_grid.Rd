@@ -22,7 +22,18 @@ Each argument must be a JSON-safe list of strategy parameters. Named
 arguments preserve their names as grid labels. Unnamed arguments receive a
 stable \verb{grid_<hash>} label derived from ledgr's canonical JSON encoding of
 the parameter list. Grid labels are labels only; they are not run IDs.
+
+Indicator parameters can live in the same list as strategy parameters when an
+experiment uses \code{features = function(params) ...}. There is no separate
+indicator-sweep API in v0.1.8.
 }
+\section{Articles}{
+
+Exploratory sweeps and promotion:
+\code{vignette("sweeps", package = "ledgr")}
+\code{system.file("doc", "sweeps.html", package = "ledgr")}
+}
+
 \examples{
 grid <- ledgr_param_grid(
   conservative = list(threshold = 0.01, qty = 1),

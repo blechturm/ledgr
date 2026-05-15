@@ -9,6 +9,15 @@
 #' stable `grid_<hash>` label derived from ledgr's canonical JSON encoding of
 #' the parameter list. Grid labels are labels only; they are not run IDs.
 #'
+#' Indicator parameters can live in the same list as strategy parameters when an
+#' experiment uses `features = function(params) ...`. There is no separate
+#' indicator-sweep API in v0.1.8.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
+#'
 #' @param ... Parameter-list entries.
 #' @return A `ledgr_param_grid` object with `labels` and `params` fields.
 #' @examples

@@ -13,5 +13,18 @@ ledgr_promotion_context(bt)
 Parsed promotion context, or \code{NULL} for direct runs.
 }
 \description{
-Read promotion context for a promoted run.
+Read promotion context for a promoted run
+}
+\details{
+Promotion context is compact selection-audit metadata written by
+\code{\link[=ledgr_promote]{ledgr_promote()}}. It stores the selected candidate, source sweep metadata,
+and the filtered/sorted candidate-summary view used at selection time. It is
+not a full sweep artifact and does not store full ledger rows or equity
+curves for all candidates.
+}
+\section{Articles}{
+
+Exploratory sweeps and promotion:
+\code{vignette("sweeps", package = "ledgr")}
+\code{system.file("doc", "sweeps.html", package = "ledgr")}
 }

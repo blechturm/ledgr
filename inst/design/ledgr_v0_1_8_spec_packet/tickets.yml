@@ -559,7 +559,7 @@ tickets:
 
   - id: LDG-2113
     title: "Evaluation Discipline And Sweep Documentation"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2110, LDG-2111, LDG-2112]
     tests:
