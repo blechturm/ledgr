@@ -408,7 +408,7 @@ tickets:
 
   - id: LDG-2109
     title: "Sweep Output Provenance Columns And Print Curation"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2107, LDG-2108, LDG-2108A, LDG-2108B]
     tests:

@@ -156,15 +156,53 @@ ledgr_sweep <- function(exp,
   }
 
   out <- tibble::as_tibble(do.call(rbind, rows))
+  feature_union <- ledgr_sweep_feature_union(resolved$candidate_features)
   attr(out, "sweep_id") <- sweep_id
+  attr(out, "snapshot_id") <- exp$snapshot$snapshot_id
   attr(out, "snapshot_hash") <- meta$snapshot_hash
+  attr(out, "scoring_range") <- list(start = range$scoring_start, end = range$scoring_end)
+  attr(out, "universe") <- exp$universe
   attr(out, "master_seed") <- seed
   attr(out, "seed_contract") <- "ledgr_seed_v1"
   attr(out, "evaluation_scope") <- "exploratory"
+  attr(out, "strategy_hash") <- strategy_hash
+  attr(out, "strategy_source_capture_method") <- source_info$capture_method
   attr(out, "strategy_preflight") <- preflight
+  attr(out, "feature_union") <- feature_union
+  attr(out, "feature_union_hash") <- ledgr_feature_set_hash(feature_union)
   attr(out, "candidate_features") <- resolved$candidate_features
+  attr(out, "execution_assumptions") <- list(
+    execution_mode = exp$execution_mode,
+    fill_model = exp$fill_model,
+    opening = exp$opening,
+    precomputed_features = !is.null(precomputed_features),
+    stop_on_error = stop_on_error
+  )
   class(out) <- c("ledgr_sweep_results", class(out))
   out
+}
+
+#' @export
+print.ledgr_sweep_results <- function(x, ...) {
+  status <- as.character(x$status)
+  n_done <- sum(status == "DONE", na.rm = TRUE)
+  n_failed <- sum(status == "FAILED", na.rm = TRUE)
+  visible <- c(
+    "run_id", "status", "sharpe_ratio", "total_return",
+    "max_drawdown", "n_trades", "execution_seed"
+  )
+  hidden <- setdiff(names(x), visible)
+  ledgr_print_curated_tibble(
+    sprintf("# ledgr sweep -- %s", attr(x, "sweep_id") %||% "<unknown>"),
+    x,
+    cols = visible,
+    footer = c(
+      sprintf("%d combinations: %d done, %d failed.", nrow(x), n_done, n_failed),
+      "Rows are in parameter-grid order; rank explicitly with dplyr when needed.",
+      sprintf("Hidden columns (%d): %s", length(hidden), paste(hidden, collapse = ", "))
+    ),
+    ...
+  )
 }
 
 ledgr_generate_sweep_id <- function() {
@@ -500,6 +538,14 @@ ledgr_sweep_provenance <- function(snapshot_hash,
     seed_contract = "ledgr_seed_v1",
     evaluation_scope = "exploratory"
   )
+}
+
+ledgr_sweep_feature_union <- function(candidate_features) {
+  if (!"feature_fingerprints" %in% names(candidate_features)) {
+    return(character())
+  }
+  values <- unlist(candidate_features$feature_fingerprints, use.names = FALSE)
+  sort(unique(as.character(values)))
 }
 
 ledgr_sweep_telemetry_env <- function() {

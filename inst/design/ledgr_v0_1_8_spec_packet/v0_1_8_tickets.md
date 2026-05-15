@@ -1167,7 +1167,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2107, LDG-2108, LDG-2108A, LDG-2108B
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Complete the v0.1.8 sweep result shape: row-level `execution_seed`, row-level
@@ -1191,16 +1191,34 @@ fingerprints, sweep metadata attributes, and curated print output.
    columns noted in the footer.
 
 **Acceptance Criteria:**
-- [ ] `execution_seed` is `NA_integer_` for unseeded sweeps and an integer for
+- [x] `execution_seed` is `NA_integer_` for unseeded sweeps and an integer for
       seeded candidates.
-- [ ] Every candidate row has `provenance_version = "ledgr_provenance_v1"`.
-- [ ] `warnings` preserves warning condition classes or condition objects as a
+- [x] Every candidate row has `provenance_version = "ledgr_provenance_v1"`.
+- [x] `warnings` preserves warning condition classes or condition objects as a
       list column.
-- [ ] Default print shows scalar ranking/selection fields and hides the four
+- [x] Default print shows scalar ranking/selection fields and hides the four
       list columns.
-- [ ] Footer accounts for all visible and hidden columns, including `win_rate`.
-- [ ] Result metadata lives in attributes, not duplicated scalar columns.
-- [ ] Result metadata includes `sweep_id`.
+- [x] Footer accounts for all visible and hidden columns, including `win_rate`.
+- [x] Result metadata lives in attributes, not duplicated scalar columns.
+- [x] Result metadata includes `sweep_id`.
+
+**Implementation Notes:**
+- Added a `print.ledgr_sweep_results()` method that shows the scalar
+  selection/ranking fields and leaves `params`, `warnings`,
+  `feature_fingerprints`, and `provenance` available but hidden from the
+  curated view.
+- Preserved `warnings` as a list column of condition objects so warning classes
+  survive candidate execution.
+- Added result metadata attributes for `sweep_id`, snapshot identity, scoring
+  range, universe, master seed, seed contract, evaluation scope, strategy
+  source/preflight identity, feature union/hash, candidate feature resolution,
+  and execution assumptions.
+
+**Verification Run:**
+```text
+test-sweep.R
+test-api-exports.R
+```
 
 **Verification:**
 ```text
