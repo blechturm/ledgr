@@ -330,11 +330,87 @@ tickets:
         - adding objective/ranking arguments
         - adding public parallel execution
 
+  - id: LDG-2108A
+    title: "Sweep Performance Measurement"
+    status: done
+    priority: P2
+    dependencies: [LDG-2108]
+    tests:
+      - "benchmark script smoke run"
+      - "performance report review"
+      - "git status artifact check"
+    classification:
+      risk_level: medium
+      implementation_tier: L
+      review_tier: M
+      classification_reason: >
+        This ticket measures the runtime effect of the memory-backed sweep core
+        before result/provenance polish. It should inform expectations without
+        changing runtime semantics.
+      invariants_at_risk:
+        - performance claim accuracy
+        - artifact cleanliness
+        - no benchmark-driven semantic changes
+      required_context:
+        - R/sweep.R
+        - R/fold-core.R
+        - inst/design/rfc/rfc_sweep_memory_output_handler_v0_1_8_response.md
+      tests_required:
+        - benchmark script smoke run
+        - git status artifact check
+      escalation_triggers:
+        - memory-backed sweep is not measurably faster than persistent run loop
+        - benchmark requires changing runtime code
+        - generated artifacts cannot be isolated from the workspace
+      forbidden_actions:
+        - changing runtime semantics to improve benchmark numbers
+        - committing generated benchmark databases or timing outputs
+        - treating benchmark timing as semantic parity evidence
+
+  - id: LDG-2108B
+    title: "Sweep Hot-Path Profiling Spike"
+    status: done
+    priority: P2
+    dependencies: [LDG-2108A]
+    tests:
+      - "profiling script smoke run"
+      - "profiling report review"
+      - "git status artifact check"
+    classification:
+      risk_level: medium
+      implementation_tier: L
+      review_tier: M
+      classification_reason: >
+        This ticket profiles the memory-backed sweep hot path after measured
+        speedups were modest. It exists to avoid blind optimization before the
+        provenance and promotion work continues.
+      invariants_at_risk:
+        - performance diagnosis accuracy
+        - no premature optimization
+        - artifact cleanliness
+      required_context:
+        - dev/spikes/ledgr_sweep_performance/run_benchmark.R
+        - inst/design/audits/sweep_performance_measurement.md
+        - R/sweep.R
+        - R/fold-core.R
+      tests_required:
+        - profiling script smoke run
+        - git status artifact check
+      escalation_triggers:
+        - profiling shows one low-risk hotspot large enough to justify immediate work
+        - profiling requires invasive runtime instrumentation
+        - generated profiler artifacts cannot be kept out of the workspace
+      forbidden_actions:
+        - changing runtime semantics in the profiling ticket
+        - adding public profiling or benchmarking APIs
+        - including optimization changes in this ticket
+        - treating profiler output as semantic parity evidence
+
   - id: LDG-2109
     title: "Sweep Output Provenance Columns And Print Curation"
     status: todo
     priority: P1
-    dependencies: [LDG-2107, LDG-2108]
+    dependencies: [LDG-2107, LDG-2108, LDG-2108A, LDG-2108B]
     tests:
       - "targeted ledgr_sweep_results tests"
       - "print snapshot tests"

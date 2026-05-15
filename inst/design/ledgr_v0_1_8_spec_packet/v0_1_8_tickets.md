@@ -2,7 +2,7 @@
 
 **Version:** 0.1.8
 **Date:** May 14, 2026
-**Total Tickets:** 14
+**Total Tickets:** 16
 
 ---
 
@@ -31,7 +31,8 @@ Tracks:
 5. **Feature factories:** support indicator-parameter sweeps through
    params-aware feature materialization.
 6. **Sweep output:** add sequential `ledgr_sweep()` and classed
-   `ledgr_sweep_results`.
+   `ledgr_sweep_results`, then measure and profile the memory-backed path
+   before provenance polish.
 7. **Promotion identity:** add row-level execution seed/provenance, candidate
    selection, and promotion helpers.
 8. **Promotion context:** store durable selection-audit metadata for promoted
@@ -51,16 +52,16 @@ LDG-2101 -> LDG-2105 -> LDG-2106 -> LDG-2107 ----------+  |
               |                                        |  |
               '------------------------------------.   |  |
                                                    v   v  v
-                                             LDG-2108 -> LDG-2109
-                                                            |
-                                                            v
-                                                      LDG-2110 -> LDG-2111
-                                                            |       |
-                                                            v       v
-                                                      LDG-2112 -> LDG-2113
-                                                            \       /
-                                                             v     v
-                                                            LDG-2114
+                                             LDG-2108 -> LDG-2108A -> LDG-2108B -> LDG-2109
+                                                                                   |
+                                                                                   v
+                                                                             LDG-2110 -> LDG-2111
+                                                                                   |       |
+                                                                                   v       v
+                                                                             LDG-2112 -> LDG-2113
+                                                                                   \       /
+                                                                                    v     v
+                                                                                   LDG-2114
 ```
 
 `LDG-2114` is the v0.1.8 release gate. `LDG-2112` is the semantic parity gate
@@ -111,8 +112,10 @@ metadata are coherent.
 - Confirmed `inst/design/README.md`, `AGENTS.md`, `docs/AGENTS.md`,
   `contracts.md`, and `ledgr_roadmap.md` point to the active v0.1.8 packet,
   ticket file, and `tickets.yml`.
-- Confirmed `v0_1_8_tickets.md` and `tickets.yml` contain the same 14 ticket
-  IDs and titles, with valid dependency references and no duplicate IDs.
+- Confirmed `v0_1_8_tickets.md` and `tickets.yml` contain the same ticket IDs
+  and titles, with valid dependency references and no duplicate IDs. LDG-2108A
+  and LDG-2108B were inserted later as post-LDG-2108 measurement/profiling
+  gates.
 - Confirmed the active spec carries the accepted RNG, cost-boundary,
   parallelism, candidate-promotion, and promotion-context decisions.
 - Confirmed public parallel sweep, walk-forward, PBO/CSCV, public risk-layer
@@ -957,11 +960,213 @@ forbidden_actions:
 
 ---
 
+## LDG-2108A: Sweep Performance Measurement
+
+**Priority:** P2
+**Effort:** 0.5-1 day
+**Dependencies:** LDG-2108
+**Status:** Done
+
+**Description:**
+Measure the runtime effect of the memory-backed sequential sweep implementation
+before continuing with output/provenance polish. This ticket is measurement-only:
+it must not change runtime semantics or optimize implementation unless a
+separate ticket is cut.
+
+**Tasks:**
+1. Add a reproducible benchmark script under `dev/spikes/` or
+   `dev/benchmarks/` that compares:
+   - memory-backed `ledgr_sweep()`;
+   - a baseline loop that calls `ledgr_run()` once per candidate against the
+     same sealed snapshot;
+   - both ordinary feature materialization and supplied
+     `ledgr_precomputed_features()`.
+2. Include at least two grid sizes, one small smoke size and one larger local
+   size, plus at least one indicator-parameter grid where candidate params
+   change the resolved feature set.
+3. Record wall-clock time, candidate count, candidates per second, and relative
+   speedup for each scenario.
+4. Confirm the benchmark does not leave committed run artifacts except inside
+   temporary benchmark stores that are deleted at the end.
+5. Write a short report under `inst/design/audits/` summarizing method,
+   environment, dataset shape, grid sizes, timings, speedup, and caveats.
+6. Add horizon notes only for evidence-backed follow-up performance risks.
+
+**Acceptance Criteria:**
+- [x] Benchmark script exists and is reproducible from a fresh local checkout.
+- [x] Report records Windows local environment, dataset shape, grid sizes,
+      feature/precompute setup, timings, speedup, and caveats.
+- [x] `ledgr_sweep()` is compared against a persistent `ledgr_run()` per-candidate
+      baseline.
+- [x] At least one feature-consuming strategy and one `precomputed_features`
+      path are measured.
+- [x] No runtime/package semantics are changed.
+- [x] No generated benchmark artifacts are committed.
+
+**Implementation Notes:**
+- Added `dev/spikes/ledgr_sweep_performance/run_benchmark.R`.
+- Added `inst/design/audits/sweep_performance_measurement.md`.
+- The benchmark uses 4 instruments, 252 EOD bars per instrument, and two grid
+  sizes: 5 and 50 candidates.
+- The feature factory varies `ledgr_ind_returns(params$lookback)` across
+  candidates, so the benchmark exercises indicator-parameter sweep behavior.
+- Timed sections suppress warnings to avoid measuring console output overhead.
+- Measured memory-backed plain sweep at roughly 1.7x faster than a persistent
+  `ledgr_run()` loop on the 50-candidate local workload.
+- No runtime R source was changed by this ticket.
+
+**Verification:**
+```text
+Rscript dev/spikes/ledgr_sweep_performance/run_benchmark.R - PASS
+performance report review - PASS
+git status artifact check - PASS
+```
+
+**Source Reference:** v0.1.8 spec sections 4.3, 6, 8; LDG-2108 memory-output
+handler implementation.
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: L
+review_tier: M
+classification_reason: >
+  This ticket measures the runtime effect of the memory-backed sweep core before
+  result/provenance polish. It should inform expectations without changing
+  runtime semantics.
+invariants_at_risk:
+  - performance claim accuracy
+  - artifact cleanliness
+  - no benchmark-driven semantic changes
+required_context:
+  - R/sweep.R
+  - R/fold-core.R
+  - inst/design/rfc/rfc_sweep_memory_output_handler_v0_1_8_response.md
+tests_required:
+  - benchmark script smoke run
+  - git status artifact check
+escalation_triggers:
+  - memory-backed sweep is not measurably faster than persistent run loop
+  - benchmark requires changing runtime code
+  - generated artifacts cannot be isolated from the workspace
+forbidden_actions:
+  - changing runtime semantics to improve benchmark numbers
+  - committing generated benchmark databases or timing outputs
+  - treating benchmark timing as semantic parity evidence
+```
+
+---
+
+## LDG-2108B: Sweep Hot-Path Profiling Spike
+
+**Priority:** P2
+**Effort:** 0.5-1 day
+**Dependencies:** LDG-2108A
+**Status:** Done
+
+**Description:**
+Profile the memory-backed sequential sweep path to identify where the remaining
+single-core runtime is spent. This is a diagnostic spike only. It must not change
+runtime behavior, public API, parity semantics, or output shape.
+
+The exit criterion is evidence: know where the 50-candidate benchmark time goes.
+Optimization work, if justified, must be cut as a separate ticket after review.
+
+**Tasks:**
+1. Add a profiling script under `dev/spikes/ledgr_sweep_performance/` that uses
+   the LDG-2108A benchmark fixture or an equivalent fixture.
+2. Collect coarse phase timing for:
+   - snapshot/bar fetch and normalization;
+   - feature resolution;
+   - feature matrix build or hydration;
+   - candidate fold execution;
+   - strategy/context work where measurable;
+   - target validation/fill/event handling where measurable;
+   - post-candidate equity/fill/metric reconstruction.
+3. Run `Rprof()` or an equivalent base-R profiler on the 50-candidate sweep
+   scenario.
+4. Microbenchmark only the top two or three suspects surfaced by profiling.
+5. Write a short report under `inst/design/audits/` with the profiling method,
+   measured hotspots, interpretation, and a recommendation:
+   - cut a small optimization ticket now;
+   - defer optimization to horizon;
+   - or continue v0.1.8 with no optimization.
+6. If optimization is deferred, add or update a concise `horizon.md` entry with
+   the evidence-backed bottleneck.
+
+**Acceptance Criteria:**
+- [x] Profiling script exists and is reproducible from a fresh local checkout.
+- [x] Report explains where the current sweep benchmark spends its time.
+- [x] Report distinguishes measured bottlenecks from hypotheses.
+- [x] No runtime/package semantics are changed.
+- [x] No optimization patch is included in this ticket.
+- [x] No generated profiler outputs or benchmark artifacts are committed unless
+      they are small, intentionally curated text artifacts in the report.
+
+**Implementation Notes:**
+- Added `dev/spikes/ledgr_sweep_performance/profile_hot_path.R`.
+- Added `inst/design/audits/sweep_hot_path_profile.md`.
+- Added a horizon entry for deferred single-core sweep hot-path optimization.
+- Profiling showed that feature matrix construction/hydration is not the
+  bottleneck for the LDG-2108A workload.
+- The dominant measured costs are `ledgr_execute_fold()` and post-candidate
+  event-derived reconstruction through `ledgr_equity_from_events()` and
+  `ledgr_fills_from_events()`.
+- `Rprof()` points to repeated pulse-context/data-frame helper work, especially
+  `ledgr_update_pulse_context_helpers()`, `ledgr_attach_feature_helpers()`, and
+  `ledgr_features_wide()`.
+- Recommendation: continue v0.1.8 without an optimization patch; revisit after
+  sweep provenance/promotion parity is stable.
+
+**Verification:**
+```text
+Rscript dev/spikes/ledgr_sweep_performance/profile_hot_path.R - PASS
+profiling report review - PASS
+git status artifact check - PASS
+```
+
+**Source Reference:** LDG-2108A performance report; v0.1.8 spec sections 4.3,
+6, 8; LDG-2108 memory-output handler implementation.
+
+**Classification:**
+```yaml
+risk_level: medium
+implementation_tier: L
+review_tier: M
+classification_reason: >
+  This ticket profiles the memory-backed sweep hot path after measured speedups
+  were modest. It exists to avoid blind optimization before the provenance and
+  promotion work continues.
+invariants_at_risk:
+  - performance diagnosis accuracy
+  - no premature optimization
+  - artifact cleanliness
+required_context:
+  - dev/spikes/ledgr_sweep_performance/run_benchmark.R
+  - inst/design/audits/sweep_performance_measurement.md
+  - R/sweep.R
+  - R/fold-core.R
+tests_required:
+  - profiling script smoke run
+  - git status artifact check
+escalation_triggers:
+  - profiling shows one low-risk hotspot large enough to justify immediate work
+  - profiling requires invasive runtime instrumentation
+  - generated profiler artifacts cannot be kept out of the workspace
+forbidden_actions:
+  - changing runtime semantics in the profiling ticket
+  - adding public profiling or benchmarking APIs
+  - including optimization changes in this ticket
+  - treating profiler output as semantic parity evidence
+```
+
+---
+
 ## LDG-2109: Sweep Output Provenance Columns And Print Curation
 
 **Priority:** P1
 **Effort:** 1-2 days
-**Dependencies:** LDG-2107, LDG-2108
+**Dependencies:** LDG-2107, LDG-2108, LDG-2108A, LDG-2108B
 **Status:** Todo
 
 **Description:**

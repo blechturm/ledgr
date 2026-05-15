@@ -253,6 +253,28 @@ strategies are not accidentally classified Tier 1.
 
 Source: LDG-2104 code review.
 
+### 2026-05-15 [execution] Single-core sweep hot-path optimization
+
+LDG-2108A/LDG-2108B showed that memory-backed sweep is faster than looping
+`ledgr_run()` calls, but the remaining single-core cost is dominated by
+pulse-context/data-frame churn and post-candidate event-derived reconstruction.
+On the 50-candidate EOD benchmark, feature matrix construction and hydration
+were negligible; `ledgr_execute_fold()` accounted for roughly two thirds of
+measured sweep time, while `ledgr_equity_from_events()` and
+`ledgr_fills_from_events()` together accounted for roughly one third.
+
+Future optimization work should investigate a faster sweep pulse context path
+that avoids rebuilding `features_wide` and helper closures every pulse, and a
+summary-only in-memory accounting path that avoids replaying the event stream
+multiple times per candidate while preserving ledger parity.
+
+Evidence:
+
+- `inst/design/audits/sweep_performance_measurement.md`
+- `inst/design/audits/sweep_hot_path_profile.md`
+- `dev/spikes/ledgr_sweep_performance/run_benchmark.R`
+- `dev/spikes/ledgr_sweep_performance/profile_hot_path.R`
+
 ## Resolved
 
 No resolved horizon entries yet.
