@@ -522,7 +522,7 @@ tickets:
 
   - id: LDG-2112
     title: "Sweep Parity Test Suite"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-2103, LDG-2107, LDG-2109, LDG-2111]
     tests:

@@ -1466,7 +1466,7 @@ forbidden_actions:
 **Priority:** P0
 **Effort:** 2-3 days
 **Dependencies:** LDG-2103, LDG-2107, LDG-2109, LDG-2111
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Build the parity test suite proving that `ledgr_run()` and `ledgr_sweep()` agree
@@ -1487,13 +1487,42 @@ strategies.
 7. Include promotion context verification for promoted sweep candidates.
 
 **Acceptance Criteria:**
-- [ ] Same inputs produce equivalent `ledgr_run()` and `ledgr_sweep()` summary
+- [x] Same inputs produce equivalent `ledgr_run()` and `ledgr_sweep()` summary
       metrics on the same platform/R version.
-- [ ] Feature-factory sweeps are covered by parity tests.
-- [ ] Seeded candidate promotion reproduces the selected candidate's result.
-- [ ] Cost/fill/cash semantics are unchanged.
-- [ ] `config_hash` stays stable for unchanged scalar execution config.
-- [ ] Parity failures are CI failures, not manual review notes.
+- [x] Feature-factory sweeps are covered by parity tests.
+- [x] Seeded candidate promotion reproduces the selected candidate's result.
+- [x] Cost/fill/cash semantics are unchanged.
+- [x] `config_hash` stays stable for unchanged scalar execution config.
+- [x] Parity failures are CI failures, not manual review notes.
+
+**Implementation Notes:**
+- Added `tests/testthat/test-sweep-parity.R` as the dedicated parity gate for
+  `ledgr_run()`, `ledgr_sweep()`, and `ledgr_promote()`.
+- Covered deterministic scheduled targets, explicit execution seeds,
+  stochastic seeded strategies, final-bar no-fill warnings, feature-factory
+  candidates with different feature sets, and feature warmup behavior.
+- Compared sweep summary metrics against promoted persistent runs, and compared
+  promoted/direct persistent run artifacts for ledger events, fills, trades,
+  equity, final positions, fill prices, fees, cash deltas, and pulse order.
+- Verified promotion context for promoted sweep candidates and pinned scalar
+  execution `config_hash` stability.
+- Aligned memory sweep reconstruction helpers with persistent run semantics:
+  `ledgr_equity_from_events()` now follows the same cumsum/findInterval
+  reconstruction shape as the persistent path, and `ledgr_fills_from_events()`
+  now splits close/open quantities the same way as `ledgr_results(...,
+  "fills")`.
+
+**Verification Run:**
+```text
+test-sweep-parity.R
+test-sweep.R
+test-promotion-context.R
+test-experiment-run.R
+test-fill-model.R
+test-derived-state.R
+test-fifo-opening-positions.R
+test-run-compare.R
+```
 
 **Verification:**
 ```text

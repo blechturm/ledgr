@@ -393,87 +393,105 @@ ledgr_equity_from_events <- function(events,
                                      initial_cash,
                                      instrument_ids,
                                      run_id) {
-  positions <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
-  cash <- initial_cash
-  lot_state <- ledgr_lot_state(instrument_ids)
-  realized_total <- 0
-
   n_pulses <- length(pulses_posix)
-  eq_rows <- vector("list", n_pulses)
   events <- if (is.null(events) || nrow(events) == 0L) {
     data.frame()
   } else {
     events[order(events$event_seq), , drop = FALSE]
   }
-  event_idx <- 1L
   n_events <- nrow(events)
 
-  for (i in seq_len(n_pulses)) {
-    pulse_ts <- as.POSIXct(pulses_posix[[i]], tz = "UTC")
-    ts_iso <- ledgr_normalize_ts_utc(pulse_ts)
-    while (event_idx <= n_events &&
-           as.POSIXct(events$ts_utc[[event_idx]], tz = "UTC") <= pulse_ts) {
-      ev <- events[event_idx, , drop = FALSE]
-      meta <- jsonlite::fromJSON(ev$meta_json[[1]], simplifyVector = FALSE)
-      cash_delta <- as.numeric(meta$cash_delta %||% 0)
-      position_delta <- as.numeric(meta$position_delta %||% 0)
-      lot_res <- ledgr_lot_apply_event(
-        lot_state,
-        event_type = ev$event_type[[1]],
-        instrument_id = ev$instrument_id[[1]],
-        side = ev$side[[1]],
-        qty = ev$qty[[1]],
-        price = ev$price[[1]],
-        fee = ev$fee[[1]],
-        meta = meta
-      )
-      lot_state <- lot_res$state
-      realized_total <- lot_state$realized_pnl
-      if (identical(ev$event_type[[1]], "FILL") ||
-          identical(ev$event_type[[1]], "FILL_PARTIAL")) {
-        inst <- ev$instrument_id[[1]]
-        positions[[inst]] <- positions[[inst]] + position_delta
-        cash <- cash + cash_delta
-      } else if (identical(ev$event_type[[1]], "CASHFLOW") &&
-                 isTRUE(ledgr_lot_meta_is_opening(meta))) {
-        inst <- ev$instrument_id[[1]]
-        positions[[inst]] <- positions[[inst]] + position_delta
-      }
-      event_idx <- event_idx + 1L
-    }
-
-    pos_val <- 0
-    for (inst in instrument_ids) {
-      qty <- positions[[inst]]
-      if (qty == 0) next
-      j <- match(inst, instrument_ids)
-      pos_val <- pos_val + qty * close_mat[j, i]
-    }
-    unreal <- 0
-    cost_basis_by_inst <- lot_state$cost_basis_by_inst
-    for (inst in intersect(names(positions), names(cost_basis_by_inst))) {
-      qty <- positions[[inst]]
-      if (qty == 0) next
-      j <- match(inst, instrument_ids)
-      unreal <- unreal + (qty * close_mat[j, i] - cost_basis_by_inst[[inst]])
-    }
-
-    eq_rows[[i]] <- data.frame(
-      run_id = run_id,
-      ts_utc = ts_iso,
-      cash = cash,
-      positions_value = pos_val,
-      equity = cash + pos_val,
-      realized_pnl = realized_total,
-      unrealized_pnl = unreal,
-      stringsAsFactors = FALSE
-    )
-  }
-
-  if (length(eq_rows) == 0L) {
+  if (n_pulses == 0L) {
     return(ledgr_empty_equity_curve())
   }
-  do.call(rbind, eq_rows)
+
+  event_ts <- if (n_events > 0L) {
+    as.POSIXct(events$ts_utc, tz = "UTC")
+  } else {
+    as.POSIXct(character(0), tz = "UTC")
+  }
+  event_ts_num <- as.numeric(event_ts)
+  pulse_ts_num <- as.numeric(pulses_posix)
+
+  cash_delta <- numeric(n_events)
+  position_delta <- numeric(n_events)
+  event_meta <- vector("list", n_events)
+  if (n_events > 0L) {
+    for (i in seq_len(n_events)) {
+      meta <- jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+      event_meta[[i]] <- meta
+      cash_delta[[i]] <- as.numeric(meta$cash_delta %||% 0)
+      position_delta[[i]] <- as.numeric(meta$position_delta %||% 0)
+    }
+  }
+
+  idx <- findInterval(pulse_ts_num, event_ts_num)
+  cash_cum <- if (n_events > 0L) cumsum(cash_delta) else numeric(0)
+  cash_at <- rep(as.numeric(initial_cash), length(idx))
+  has_event <- idx > 0L
+  if (any(has_event)) {
+    cash_at[has_event] <- as.numeric(initial_cash) + cash_cum[idx[has_event]]
+  }
+
+  n_inst <- length(instrument_ids)
+  positions_mat <- matrix(0, nrow = n_inst, ncol = n_pulses)
+  if (n_events > 0L) {
+    for (j in seq_along(instrument_ids)) {
+      id <- instrument_ids[[j]]
+      ev_idx <- which(events$instrument_id == id)
+      if (length(ev_idx) == 0L) next
+      pos_cum <- cumsum(position_delta[ev_idx])
+      idx_inst <- findInterval(pulse_ts_num, event_ts_num[ev_idx])
+      has_inst_event <- idx_inst > 0L
+      if (any(has_inst_event)) {
+        positions_mat[j, has_inst_event] <- pos_cum[idx_inst[has_inst_event]]
+      }
+    }
+  }
+
+  positions_value <- if (n_pulses > 0L) colSums(positions_mat * close_mat) else numeric(0)
+
+  reconstruction_lots <- ledgr_lot_state(instrument_ids)
+  event_realized <- numeric(n_events)
+  event_cost_basis <- numeric(n_events)
+  if (n_events > 0L) {
+    for (i in seq_len(n_events)) {
+      lot_res <- ledgr_lot_apply_event(
+        reconstruction_lots,
+        event_type = events$event_type[[i]],
+        instrument_id = events$instrument_id[[i]],
+        side = events$side[[i]],
+        qty = events$qty[[i]],
+        price = events$price[[i]],
+        fee = events$fee[[i]],
+        meta = event_meta[[i]]
+      )
+      reconstruction_lots <- lot_res$state
+      event_realized[[i]] <- reconstruction_lots$realized_pnl
+      event_cost_basis[[i]] <- reconstruction_lots$total_cost_basis
+    }
+  }
+
+  realized_at <- numeric(length(idx))
+  cost_basis_at <- numeric(length(idx))
+  if (any(has_event)) {
+    realized_at[has_event] <- event_realized[idx[has_event]]
+    cost_basis_at[has_event] <- event_cost_basis[idx[has_event]]
+  }
+
+  equity <- cash_at + positions_value
+  unrealized <- positions_value - cost_basis_at
+
+  data.frame(
+    run_id = rep(run_id, length(pulses_posix)),
+    ts_utc = pulses_posix,
+    cash = cash_at,
+    positions_value = positions_value,
+    equity = equity,
+    realized_pnl = realized_at,
+    unrealized_pnl = unrealized,
+    stringsAsFactors = FALSE
+  )
 }
 
 ledgr_fills_from_events <- function(events) {
@@ -489,16 +507,22 @@ ledgr_fills_from_events <- function(events) {
 
   for (i in seq_len(nrow(events))) {
     ev <- events[i, , drop = FALSE]
+    event_type <- as.character(ev$event_type[[1]])
+    inst <- as.character(ev$instrument_id[[1]])
+    side <- as.character(ev$side[[1]])
+    qty <- suppressWarnings(as.numeric(ev$qty[[1]]))
+    price <- suppressWarnings(as.numeric(ev$price[[1]]))
+    fee <- suppressWarnings(as.numeric(ev$fee[[1]]))
     if (identical(ev$event_type[[1]], "CASHFLOW")) {
       meta <- jsonlite::fromJSON(ev$meta_json[[1]], simplifyVector = FALSE)
       lot_res <- ledgr_lot_apply_event(
         lot_state,
-        event_type = ev$event_type[[1]],
-        instrument_id = ev$instrument_id[[1]],
-        side = ev$side[[1]],
-        qty = ev$qty[[1]],
-        price = ev$price[[1]],
-        fee = ev$fee[[1]],
+        event_type = event_type,
+        instrument_id = inst,
+        side = side,
+        qty = qty,
+        price = price,
+        fee = fee,
         meta = meta
       )
       lot_state <- lot_res$state
@@ -510,45 +534,86 @@ ledgr_fills_from_events <- function(events) {
     }
 
     meta <- jsonlite::fromJSON(ev$meta_json[[1]], simplifyVector = FALSE)
+    if (is.na(qty) || qty <= 0 || is.na(price)) {
+      out_idx <- out_idx + 1L
+      rows[[out_idx]] <- data.frame(
+        event_seq = ev$event_seq[[1]],
+        ts_utc = ev$ts_utc[[1]],
+        instrument_id = inst,
+        side = side,
+        qty = qty,
+        price = price,
+        fee = fee,
+        realized_pnl = NA_real_,
+        action = NA_character_,
+        stringsAsFactors = FALSE
+      )
+      next
+    }
+
+    side_norm <- toupper(side)
+    if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
+      out_idx <- out_idx + 1L
+      rows[[out_idx]] <- data.frame(
+        event_seq = ev$event_seq[[1]],
+        ts_utc = ev$ts_utc[[1]],
+        instrument_id = inst,
+        side = side,
+        qty = qty,
+        price = price,
+        fee = fee,
+        realized_pnl = NA_real_,
+        action = NA_character_,
+        stringsAsFactors = FALSE
+      )
+      next
+    }
+
     lot_res <- ledgr_lot_apply_event(
       lot_state,
-      event_type = ev$event_type[[1]],
-      instrument_id = ev$instrument_id[[1]],
-      side = ev$side[[1]],
-      qty = ev$qty[[1]],
-      price = ev$price[[1]],
-      fee = ev$fee[[1]],
+      event_type = event_type,
+      instrument_id = inst,
+      side = side,
+      qty = qty,
+      price = price,
+      fee = fee,
       meta = meta
     )
-    realized_close <- lot_res$realized_delta
+    close_qty <- lot_res$close_qty
+    open_qty <- lot_res$open_qty
+    realized_close <- lot_res$realized_close
     lot_state <- lot_res$state
-    cash_delta <- as.numeric(meta$cash_delta %||% NA_real_)
-    position_delta <- as.numeric(meta$position_delta %||% NA_real_)
-    side <- toupper(ev$side[[1]])
-    if (identical(side, "BUY")) {
-      action <- "OPEN"
-      signed_qty <- ev$qty[[1]]
-    } else {
-      action <- "CLOSE"
-      signed_qty <- -ev$qty[[1]]
+
+    if (close_qty > 0) {
+      out_idx <- out_idx + 1L
+      rows[[out_idx]] <- data.frame(
+        event_seq = ev$event_seq[[1]],
+        ts_utc = ev$ts_utc[[1]],
+        instrument_id = inst,
+        side = side,
+        qty = close_qty,
+        price = price,
+        fee = fee,
+        realized_pnl = realized_close,
+        action = "CLOSE",
+        stringsAsFactors = FALSE
+      )
     }
-    out_idx <- out_idx + 1L
-    rows[[out_idx]] <- data.frame(
-      run_id = ev$run_id[[1]],
-      ts_utc = ev$ts_utc[[1]],
-      instrument_id = ev$instrument_id[[1]],
-      action = action,
-      side = side,
-      qty = signed_qty,
-      abs_qty = abs(ev$qty[[1]]),
-      fill_price = ev$price[[1]],
-      fee = ev$fee[[1]],
-      cash_delta = cash_delta,
-      position_delta = position_delta,
-      realized_pnl = realized_close,
-      event_seq = ev$event_seq[[1]],
-      stringsAsFactors = FALSE
-    )
+    if (open_qty > 0) {
+      out_idx <- out_idx + 1L
+      rows[[out_idx]] <- data.frame(
+        event_seq = ev$event_seq[[1]],
+        ts_utc = ev$ts_utc[[1]],
+        instrument_id = inst,
+        side = side,
+        qty = open_qty,
+        price = price,
+        fee = fee,
+        realized_pnl = 0,
+        action = "OPEN",
+        stringsAsFactors = FALSE
+      )
+    }
   }
 
   if (out_idx == 0L) {
