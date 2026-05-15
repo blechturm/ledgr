@@ -14,7 +14,7 @@ testthat::test_that("schema can be created on an empty DuckDB", {
     "
   )$table_name
 
-  for (t in c("runs", "instruments", "bars", "features", "ledger_events", "equity_curve", "strategy_state")) {
+  for (t in c("runs", "instruments", "bars", "features", "ledger_events", "equity_curve", "strategy_state", "run_promotion_context")) {
     testthat::expect_true(t %in% tables, info = sprintf("expected table %s to exist", t))
   }
 })
@@ -358,7 +358,7 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
       archived_at_utc TIMESTAMP,
       archive_reason TEXT,
       execution_mode TEXT,
-      schema_version INTEGER NOT NULL DEFAULT 106
+      schema_version INTEGER NOT NULL DEFAULT 107
     )
     "
   )
@@ -373,7 +373,7 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
     VALUES (
       'bad-check', TIMESTAMP '2020-01-01 00:00:00', '0.1.0', '{}',
       'config', 'data', NULL, 'DONE', NULL, NULL, FALSE, NULL, NULL,
-      NULL, 106
+      NULL, 107
     )
     "
   )

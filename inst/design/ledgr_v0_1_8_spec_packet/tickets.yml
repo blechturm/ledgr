@@ -482,7 +482,7 @@ tickets:
 
   - id: LDG-2111
     title: "Promotion Context Store And Read Helpers"
-    status: todo
+    status: done
     priority: P1
     dependencies: [LDG-2110]
     tests:

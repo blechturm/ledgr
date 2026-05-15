@@ -803,7 +803,9 @@ ledgr_run_info <- function(snapshot, run_id) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
   }
 
-  ledgr_run_info_from_row(row, db_path)
+  info <- ledgr_run_info_from_row(row, db_path)
+  info$promotion_context <- ledgr_fetch_promotion_context(opened$con, run_id)
+  info
 }
 
 #' Print run information

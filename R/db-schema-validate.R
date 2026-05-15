@@ -90,6 +90,24 @@ ledgr_validate_schema <- function(con) {
       pk = c("run_id", "tag"),
       not_null = c("run_id", "tag", "created_at_utc")
     ),
+    run_promotion_context = list(
+      columns = c(
+        run_id = "TEXT",
+        promotion_context_version = "TEXT",
+        source = "TEXT",
+        promoted_at_utc = "TIMESTAMP",
+        note = "TEXT",
+        selected_candidate_json = "TEXT",
+        source_sweep_json = "TEXT",
+        candidate_summary_json = "TEXT"
+      ),
+      pk = c("run_id"),
+      not_null = c(
+        "run_id", "promotion_context_version", "source",
+        "promoted_at_utc", "selected_candidate_json",
+        "source_sweep_json", "candidate_summary_json"
+      )
+    ),
     instruments = list(
       columns = c(
         instrument_id = "TEXT",

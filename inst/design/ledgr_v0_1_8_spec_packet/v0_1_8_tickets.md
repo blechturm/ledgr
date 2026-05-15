@@ -1359,7 +1359,7 @@ forbidden_actions:
 **Priority:** P1
 **Effort:** 1-2 days
 **Dependencies:** LDG-2110
-**Status:** Todo
+**Status:** Done
 
 **Description:**
 Add durable `run_promotion_context` storage for runs created through
@@ -1382,15 +1382,40 @@ context.
    `ledgr_run_info(... )$promotion_context`.
 
 **Acceptance Criteria:**
-- [ ] Old/new stores can create or validate `run_promotion_context`.
-- [ ] Promoted runs have parsed promotion context.
-- [ ] Direct `ledgr_run()` runs return `NULL` promotion context.
-- [ ] `candidate_summary_json` preserves the filtered/sorted selection view
+- [x] Old/new stores can create or validate `run_promotion_context`.
+- [x] Promoted runs have parsed promotion context.
+- [x] Direct `ledgr_run()` runs return `NULL` promotion context.
+- [x] `candidate_summary_json` preserves the filtered/sorted selection view
       passed to `ledgr_candidate()`.
-- [ ] `source_sweep_json` records the `sweep_id` produced by the source sweep.
-- [ ] Promotion-context write failure warns without rolling back a successful
+- [x] `source_sweep_json` records the `sweep_id` produced by the source sweep.
+- [x] Promotion-context write failure warns without rolling back a successful
       run.
-- [ ] Read helpers are read-only and do not execute strategy code.
+- [x] Read helpers are read-only and do not execute strategy code.
+
+**Implementation Notes:**
+- Added schema version `107` and the `run_promotion_context` table to schema
+  creation, migration, and validation.
+- Added promotion-context write-after-success behavior to `ledgr_promote()`.
+  Write failures warn with class `ledgr_promotion_context_write_failed` and
+  return the committed run unchanged.
+- Durable JSON stores a compact selected-candidate record, source-sweep
+  metadata including `sweep_id`, and a candidate-summary view preserving the
+  filtered/sorted table passed to `ledgr_candidate()`.
+- Warning storage is reduced to `n_warnings` and `warning_classes`; no full R
+  condition objects are persisted.
+- Added read-only helpers `ledgr_promotion_context(bt)` and
+  `ledgr_run_promotion_context(exp, run_id)`, and added optional
+  `promotion_context` to `ledgr_run_info()`.
+
+**Verification Run:**
+```text
+test-promotion-context.R
+test-schema.R
+test-experiment-store-schema.R
+test-sweep.R
+test-run-store.R
+test-api-exports.R
+```
 
 **Verification:**
 ```text

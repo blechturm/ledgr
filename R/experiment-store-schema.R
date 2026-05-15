@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 106L
+ledgr_experiment_store_schema_version <- 107L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -39,6 +39,7 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "run_provenance",
     "run_telemetry",
     "run_tags",
+    "run_promotion_context",
     "ledgr_schema_metadata"
   )
   any(vapply(known_tables, function(table_name) ledgr_experiment_store_table_exists(con, table_name), logical(1)))
@@ -156,6 +157,22 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
         key TEXT NOT NULL PRIMARY KEY,
         value TEXT NOT NULL,
         updated_at_utc TIMESTAMP NOT NULL
+      )
+      "
+    )
+
+    DBI::dbExecute(
+      con,
+      "
+      CREATE TABLE IF NOT EXISTS run_promotion_context (
+        run_id TEXT NOT NULL PRIMARY KEY,
+        promotion_context_version TEXT NOT NULL,
+        source TEXT NOT NULL,
+        promoted_at_utc TIMESTAMP NOT NULL,
+        note TEXT,
+        selected_candidate_json TEXT NOT NULL,
+        source_sweep_json TEXT NOT NULL,
+        candidate_summary_json TEXT NOT NULL
       )
       "
     )

@@ -149,7 +149,7 @@ ledgr_create_schema <- function(con) {
       archived_at_utc TIMESTAMP,
       archive_reason TEXT,
       execution_mode TEXT CHECK (execution_mode IS NULL OR execution_mode IN ('audit_log','db_live')),
-      schema_version INTEGER NOT NULL DEFAULT 106
+      schema_version INTEGER NOT NULL DEFAULT 107
     )
   "
 

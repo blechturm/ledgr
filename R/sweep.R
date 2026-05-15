@@ -299,6 +299,7 @@ ledgr_promote <- function(exp,
     run_id = run_id,
     seed = seed
   )
+  ledgr_promote_write_context_or_warn(bt, candidate, note)
   attr(bt, "promotion_note") <- note
   bt
 }
