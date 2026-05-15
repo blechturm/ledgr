@@ -26,6 +26,29 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-05-15 [adapters] Multi-output indicator authoring bundles
+
+Consider a v0.1.8.x adapter/indicator UX slice for multi-output indicator
+authoring bundles. The accepted RFC direction is an explicit
+`ledgr_indicator_bundle` class that flattens at feature declaration boundaries
+and materializes to ordinary single-output `ledgr_indicator` objects. This
+should improve TTR and future talib multi-output ergonomics without changing
+the core `series_fn()` contract, feature provenance, or strategy feature
+lookup.
+
+Key design decisions to preserve: bundle UX first, grouped precompute batching
+later; no polymorphic `ledgr_ind_ttr()` return type; output-specific
+fingerprints remain the external identity; default multi-output feature IDs use
+a normalized function-family prefix such as `bbands_dn`; `prefix = NULL` is an
+explicit raw-output-name opt-in; instrument IDs never enter feature IDs.
+
+RFC thread:
+
+- `inst/design/rfc/rfc_multi_output_indicator_ux.md`
+- `inst/design/rfc/rfc_multi_output_indicator_ux_response.md`
+- `inst/design/rfc/rfc_multi_output_indicator_ux_maintainer_response.md`
+- `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md`
+
 ### 2026-05-13 [data] Data input and snapshot creation article
 
 The experiment-store article currently carries some advanced low-level CSV
