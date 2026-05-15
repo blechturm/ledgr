@@ -471,7 +471,7 @@ testthat::test_that("contracts record strategy preflight boundary", {
     testthat::expect_match(text, field, fixed = TRUE)
   }
   testthat::expect_match(text, "`allowed` is\\s+`TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`")
-  testthat::expect_match(text, "Future sweep mode inherits the v0.1.7.8 preflight semantics", fixed = TRUE)
+  testthat::expect_match(text, "Sweep mode inherits the v0.1.7.8 preflight semantics", fixed = TRUE)
 })
 
 testthat::test_that("contracts record v0.1.8 fold-core and output-handler boundary", {
@@ -494,7 +494,7 @@ testthat::test_that("contracts record v0.1.8 fold-core and output-handler bounda
   testthat::expect_match(text, "`features`", fixed = TRUE)
   testthat::expect_match(text, "`strategy_state`", fixed = TRUE)
   testthat::expect_match(text, "`equity_curve`", fixed = TRUE)
-  testthat::expect_match(text, "Future `ledgr_run\\(\\)` and `ledgr_sweep\\(\\)` must call the same fold core")
+  testthat::expect_match(text, "`ledgr_run\\(\\)` and `ledgr_sweep\\(\\)` must call the same fold core")
   testthat::expect_match(text, "Sweep\\s+mode may use a cheaper output handler")
   testthat::expect_match(text, "must not change\\s+strategy semantics")
   testthat::expect_match(text, "event-stream meaning", fixed = TRUE)

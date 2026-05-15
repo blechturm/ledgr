@@ -31,7 +31,7 @@ the active versioned spec packet, currently
   fold outputs into `ledger_events`, `features`, `strategy_state`,
   `equity_curve`, telemetry, summaries, comparison rows, or future in-memory
   sweep result objects.
-- Future `ledgr_run()` and `ledgr_sweep()` must call the same fold core. Sweep
+- `ledgr_run()` and `ledgr_sweep()` must call the same fold core. Sweep
   mode may use a cheaper output handler, skip DuckDB persistence, batch
   materialization, or keep only summary/ranking output. It must not change
   strategy semantics, target validation, feature values, pulse order, fill
@@ -52,8 +52,8 @@ the active versioned spec packet, currently
 - The v0.1.8 private fill-timing/cost-resolution boundary must preserve the
   existing scalar `fill_model` config identity. A behavior-preserving internal
   refactor must not change `config_hash` for the same canonical config.
-- Strategy preflight runs before entering the fold core. Future sweep mode
-  inherits the v0.1.7.8 preflight semantics: Tier 1 and Tier 2 strategies may
+- Strategy preflight runs before entering the fold core. Sweep mode inherits
+  the v0.1.7.8 preflight semantics: Tier 1 and Tier 2 strategies may
   execute, and Tier 3 strategies must stop before any fold execution or output
   handler side effects.
 - v0.1.7 is an intentional hard public API reset. It explicitly overrides the
@@ -267,7 +267,7 @@ the active versioned spec packet, currently
   - Tier 3: environment-dependent logic whose execution identity cannot be
     recovered from stored metadata.
 - Strategy preflight classifies functional strategies before execution. Tier 3
-  is a classed error by default in ordinary runs and future sweep mode. A
+  is a classed error by default in ordinary runs and sweep mode. A
   single-run override may exist only as an explicit opt-in; Tier 3 must not be
   accepted silently or downgraded to warning-only behavior. v0.1.7.8 does not
   implement a single-run override; if a later explicit override is added,
@@ -297,8 +297,8 @@ the active versioned spec packet, currently
   `allowed`, `reason`, `unresolved_symbols`, `package_dependencies`, and
   `notes`, and has class `ledgr_strategy_preflight`. In v0.1.7.8, `allowed` is
   `TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
-- Future sweep mode inherits the v0.1.7.8 preflight semantics. Sweep may accept
-  Tier 1 and Tier 2 strategies, but Tier 3 strategies must be rejected before
+- Sweep mode inherits the v0.1.7.8 preflight semantics. Sweep may accept Tier 1
+  and Tier 2 strategies, but Tier 3 strategies must be rejected before
   execution.
 - v0.1.5 run provenance stores `strategy_source_hash`,
   `strategy_params_hash`, captured strategy source where available,

@@ -599,7 +599,7 @@ tickets:
 
   - id: LDG-2114
     title: "v0.1.8 Release Gate"
-    status: todo
+    status: done
     priority: P0
     dependencies: [LDG-2112, LDG-2113]
     tests:

@@ -3,7 +3,7 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Current cycle:** v0.1.8 lightweight sweep/fold-core implementation.
+**Current cycle:** v0.1.8 release gate.
 **Active packet:** `inst/design/ledgr_v0_1_8_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
@@ -33,7 +33,7 @@ fold-core architecture are stable.
 
 ## Guiding Principles
 
-- **One execution semantics.** `ledgr_run()` and future `ledgr_sweep()` must
+- **One execution semantics.** `ledgr_run()` and `ledgr_sweep()` must
   share the same internal fold core. Sweep may use a lighter output handler, but
   it must not become a second execution engine.
 - **Causality first.** Strategy contexts expose decision-time information only.
@@ -87,7 +87,7 @@ versioned packet.
 | v0.1.7.8 | Done | Strategy reproducibility preflight. | `inst/design/ledgr_v0_1_7_8_spec_packet/` |
 | v0.1.7.9 | Done | Strategy author ergonomics and execution-engine stabilization. | `inst/design/ledgr_v0_1_7_9_spec_packet/` |
 | v0.1.8.00 | Done | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
-| v0.1.8 | Active | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_spec_packet/` |
+| v0.1.8 | Release gate | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_spec_packet/` |
 | v0.1.8.x | Planned | Sweep stabilization and directly adjacent UX hardening. | Future packet |
 | v0.1.8.1 | Planned | Reference-data and risk-free-rate adapters. | Future packet |
 | v0.1.9 | Planned | Target risk layer. | Future packet |

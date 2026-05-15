@@ -1,3 +1,27 @@
+# ledgr 0.1.8.0
+
+- Added sequential `ledgr_sweep()` for lightweight parameter-grid exploration
+  over the same private fold core used by `ledgr_run()`, with in-memory sweep
+  output rather than per-candidate DuckDB writes.
+- Added `ledgr_param_grid()`, `ledgr_precompute_features()`,
+  `ledgr_candidate()`, and `ledgr_promote()` support for explicit sweep
+  construction, candidate extraction, and committed run promotion.
+- Added row-level `execution_seed`, compact row-level provenance, and durable
+  `run_promotion_context` records so promoted runs remain traceable to their
+  source sweep candidate and selection view.
+- Added explicit execution seed support for `ledgr_run()` and deterministic
+  sweep candidate seed derivation from the master seed, candidate label, and
+  candidate parameters.
+- Refactored fold execution internals around a shared execution core, memory
+  and persistent output handlers, a reserved future target-risk slot, and a
+  private fill-timing/cost-resolution boundary.
+- Added parity coverage proving sweep, promotion, and direct run behavior agree
+  for deterministic strategies, seeded stochastic strategies, feature-factory
+  sweeps, fill timing, standard metrics, and config identity.
+- Added the `sweeps` vignette and README workflow section documenting
+  train/sweep/evaluate discipline, caller-owned ranking, failure rows, seeds,
+  provenance, promotion context, and deferred non-goals.
+
 # ledgr 0.1.7.9
 
 - Added `ledgr_feature_contract_check()` so users can inspect feature warmup

@@ -12,4 +12,5 @@
 ^.*\.tar\.gz$
 ^coverage\.html$
 ^lib$
+^lib-wsl$
 ^Rprof\.out$

@@ -2,7 +2,7 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Current release:** v0.1.7.9 shipped.
+**Current release candidate:** v0.1.8.0.
 **Current implementation branch:** `v0.1.8`.
 **Active packet:** `inst/design/ledgr_v0_1_8_spec_packet/`.
 
@@ -18,7 +18,7 @@ For any non-trivial change, read in this order:
    strategy contracts.
 2. `ledgr_roadmap.md` - milestone arc and active horizon.
 3. `ledgr_v0_1_8_spec_packet/` - active implementation spec packet for
-   v0.1.8 sweep/fold-core work.
+   v0.1.8 sweep/fold-core release gate.
 4. Only the architecture, RFC, audit, or spike documents relevant to the active
    ticket.
 
@@ -41,13 +41,13 @@ explicitly asks you to inspect one.
 
 ## Active Cycle
 
-The active implementation cycle is `v0.1.8`.
+The active implementation cycle is the `v0.1.8` release gate.
 
 - Spec: `ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
 - Tickets: `ledgr_v0_1_8_spec_packet/v0_1_8_tickets.md`
 - Machine-readable tickets: `ledgr_v0_1_8_spec_packet/tickets.yml`
 
-The active implementation target is v0.1.8 sweep/fold-core work.
+The active implementation target is v0.1.8 sweep/fold-core release closeout.
 
 ## Core Documents
 

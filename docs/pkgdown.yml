@@ -11,9 +11,10 @@ articles:
   reproducibility: reproducibility.html
   research-to-production: research-to-production.html
   strategy-development: strategy-development.html
+  sweeps: sweeps.html
   articles/who-ledgr-is-for: who-ledgr-is-for.html
   articles/why-r: why-r.html
-last_built: 2026-05-13T09:17Z
+last_built: 2026-05-15T15:33Z
 urls:
   reference: https://blechturm.github.io/ledgr/reference
   article: https://blechturm.github.io/ledgr/articles

@@ -13,7 +13,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE, purl = FALSE)
 ```
 
 The examples assume the usual vignette setup:
@@ -60,7 +60,7 @@ source bars
 You can create the train and test snapshots manually by filtering source bars
 before calling `ledgr_snapshot_from_df()`.
 
-```{r train-test}
+```r
 split_at <- ledgr_utc("2022-01-01")
 
 train_bars <- bars |>
@@ -99,7 +99,7 @@ results <- ledgr_sweep(train_exp, grid, precomputed_features = precomputed, seed
 Rank explicitly with ordinary R tools. ledgr does not own objective functions or
 automatic candidate ranking.
 
-```{r rank}
+```r
 ranked <- results |>
   filter(status == "DONE") |>
   arrange(desc(sharpe_ratio))
@@ -110,7 +110,7 @@ candidate <- ledgr_candidate(ranked, 1)
 To evaluate out of sample, promote against the held-out experiment and make the
 cross-snapshot choice explicit:
 
-```{r promote-test}
+```r
 test_run <- ledgr_promote(
   test_exp,
   candidate,
@@ -130,7 +130,7 @@ Sometimes you want to commit the selected candidate on the same snapshot that
 produced the sweep result. That is useful for audit, diagnostics, or comparing a
 single candidate against the sweep summary. It remains in-sample.
 
-```{r same-snapshot}
+```r
 train_run <- ledgr_promote(
   train_exp,
   candidate,
@@ -153,7 +153,7 @@ are not committed run IDs.
 Indicator parameters are ordinary sweep parameters when the experiment uses a
 feature factory:
 
-```{r feature-factory}
+```r
 features <- function(params) {
   list(
     ledgr_ind_sma(params$sma_n),
@@ -212,7 +212,7 @@ out-of-sample.
 
 Promoted runs write durable promotion context. You can inspect it later:
 
-```{r promotion-context}
+```r
 context <- ledgr_promotion_context(test_run)
 context$selected_candidate
 context$source_sweep

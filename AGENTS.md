@@ -6,8 +6,8 @@ the execution contracts in `inst/design/contracts.md`.
 
 ## Core Rules
 
-- Do not add a second execution engine. `ledgr_run()` is the current execution
-  entry point. Future `ledgr_sweep()` must share the same internal fold core and
+- Do not add a second execution engine. `ledgr_run()` is the committed-run
+  execution entry point. `ledgr_sweep()` must share the same internal fold core and
   must not introduce a second execution path.
 - Do not bypass snapshot creation, sealing, hash verification, or no-lookahead
   pulse execution.
@@ -29,7 +29,7 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Active cycle (v0.1.8 - update this block each cycle):
+Active cycle (v0.1.8 release gate - update this block each cycle):
 
 - Spec: `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
 - Tickets: `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_tickets.md`
