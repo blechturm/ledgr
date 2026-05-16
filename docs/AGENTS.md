@@ -35,12 +35,25 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Active cycle (v0.1.8 release gate - update this block each cycle):
+Active cycle (v0.1.8.1 — update this block each cycle):
 
-- Spec: `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
-- Tickets: `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_tickets.md`
+- Spec: `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_spec.md`
+- Tickets: `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_tickets.md`
 - Machine-readable tickets:
-  `inst/design/ledgr_v0_1_8_spec_packet/tickets.yml`
+  `inst/design/ledgr_v0_1_8_1_spec_packet/tickets.yml`
+
+## Active Design Entry Points
+
+Read these before working in the listed areas. They are accepted design
+decisions binding for their stated release scope unless marked otherwise.
+v0.1.8.1 implementation is limited to the active spec packet.
+
+| Area | Read |
+| --- | --- |
+| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md` |
+| Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
+| Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |
+| v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_response.md` (RFC under review) |
 
 ## Local Verification
 

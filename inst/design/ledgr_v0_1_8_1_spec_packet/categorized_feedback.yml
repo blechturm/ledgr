@@ -1,0 +1,961 @@
+summary:
+  episodes_reviewed: 42
+  feedback_items_reviewed: 97
+  high_priority_count: 0
+  unresolved_uncertainty: ["2026-05-15_008_snapshot_csv_seal_backtest/FB-001", "2026-05-15_012_multi_asset_rotation_with_helpers/FB-003", "2026-05-15_030_multi_lookback_pre_registration/FB-001", "2026-05-15_031_ctx_features_discoverability/FB-002", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-002", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-003", "2026-05-15_041_sweep_failure_rows/FB-003"]
+themes:
+  - theme_id: THEME-001
+    title: "Runnable first-run and vignette examples are incomplete or misleading"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-15_001_cold_start_readme", "2026-05-15_003_single_asset_sma_crossover", "2026-05-15_010_strategy_development_article", "2026-05-15_013_trades_fills_and_metrics", "2026-05-15_020_metrics_and_accounting_article", "2026-05-15_024_pulse_inspection_views", "2026-05-15_033_strategy_extraction_and_recovery", "2026-05-15_038_custom_indicator_authoring", "2026-05-15_039_sweep_basic_candidate_promotion", "2026-05-15_040_sweep_train_test_discipline", "2026-05-15_044_sweep_seed_and_promotion_context"]
+    feedback_ids: ["2026-05-15_001_cold_start_readme/FB-001", "2026-05-15_001_cold_start_readme/FB-002", "2026-05-15_003_single_asset_sma_crossover/FB-001", "2026-05-15_010_strategy_development_article/FB-001", "2026-05-15_013_trades_fills_and_metrics/FB-001", "2026-05-15_020_metrics_and_accounting_article/FB-001", "2026-05-15_024_pulse_inspection_views/FB-001", "2026-05-15_033_strategy_extraction_and_recovery/FB-002", "2026-05-15_038_custom_indicator_authoring/FB-004", "2026-05-15_039_sweep_basic_candidate_promotion/FB-001", "2026-05-15_040_sweep_train_test_discipline/FB-002", "2026-05-15_044_sweep_seed_and_promotion_context/FB-001"]
+    evidence: "Multiple episodes had to stitch together installed help pages, vignettes, or manual code because advertised runnable examples were absent, empty, or did not exercise the requested workflow."
+    recommended_action: "Audit installed runnable scripts and first-run examples; prioritize complete smoke tests for ledgr_run, closed-trade inspection, indicators, strategy recovery, custom indicators, and sweeps."
+    uncertainty: "Duplicate detection is advisory because some rows refer to different docs with the same underlying example gap."
+  - theme_id: THEME-002
+    title: "Feature, indicator, and warmup contracts need clearer user-facing guidance"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-15_005_rsi_mean_reversion", "2026-05-15_006_bbands_macd", "2026-05-15_009_edge_case_ten_bars", "2026-05-15_015_warmup_and_na_in_helpers", "2026-05-15_021_indicators_article", "2026-05-15_024_pulse_inspection_views", "2026-05-15_026_warmup_diagnostic_and_three_cases", "2026-05-15_029_mixed_builtin_ttr_feature_map", "2026-05-15_030_multi_lookback_pre_registration", "2026-05-15_031_ctx_features_discoverability", "2026-05-15_032_yahoo_five_strategies", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary", "2026-05-15_038_custom_indicator_authoring"]
+    feedback_ids: ["2026-05-15_005_rsi_mean_reversion/FB-001", "2026-05-15_005_rsi_mean_reversion/FB-002", "2026-05-15_006_bbands_macd/FB-001", "2026-05-15_006_bbands_macd/FB-002", "2026-05-15_009_edge_case_ten_bars/FB-001", "2026-05-15_009_edge_case_ten_bars/FB-002", "2026-05-15_015_warmup_and_na_in_helpers/FB-001", "2026-05-15_015_warmup_and_na_in_helpers/FB-002", "2026-05-15_021_indicators_article/FB-002", "2026-05-15_024_pulse_inspection_views/FB-002", "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-001", "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-002", "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-003", "2026-05-15_029_mixed_builtin_ttr_feature_map/FB-001", "2026-05-15_030_multi_lookback_pre_registration/FB-001", "2026-05-15_030_multi_lookback_pre_registration/FB-002", "2026-05-15_030_multi_lookback_pre_registration/FB-003", "2026-05-15_031_ctx_features_discoverability/FB-001", "2026-05-15_032_yahoo_five_strategies/FB-003", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-002", "2026-05-15_038_custom_indicator_authoring/FB-002", "2026-05-15_038_custom_indicator_authoring/FB-003"]
+    evidence: "Rows cluster around feature ID shapes, built-in versus custom indicator signatures, warmup/current-bar feasibility, pre-registration, and how to inspect mapped features."
+    recommended_action: "Add a compact feature lifecycle guide covering registration, IDs and aliases, map/list accepted shapes, warmup diagnostics, current-bar requirements, and live-object parameter errors."
+    uncertainty: "Some findings may be documentation gaps around intended behavior rather than runtime defects."
+  - theme_id: THEME-003
+    title: "Strategy helper pipeline docs lack troubleshooting and complete setup paths"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-15_003_single_asset_sma_crossover", "2026-05-15_011_strategy_helper_introduction", "2026-05-15_012_multi_asset_rotation_with_helpers", "2026-05-15_016_helper_type_errors", "2026-05-15_017_parametric_helper_comparison", "2026-05-15_019_zero_trade_diagnosis", "2026-05-15_032_yahoo_five_strategies", "2026-05-15_036_strategy_preflight_and_tier_classification"]
+    feedback_ids: ["2026-05-15_003_single_asset_sma_crossover/FB-003", "2026-05-15_011_strategy_helper_introduction/FB-001", "2026-05-15_011_strategy_helper_introduction/FB-002", "2026-05-15_012_multi_asset_rotation_with_helpers/FB-001", "2026-05-15_012_multi_asset_rotation_with_helpers/FB-002", "2026-05-15_016_helper_type_errors/FB-001", "2026-05-15_016_helper_type_errors/FB-002", "2026-05-15_016_helper_type_errors/FB-003", "2026-05-15_017_parametric_helper_comparison/FB-001", "2026-05-15_019_zero_trade_diagnosis/FB-001", "2026-05-15_019_zero_trade_diagnosis/FB-002", "2026-05-15_019_zero_trade_diagnosis/FB-003", "2026-05-15_032_yahoo_five_strategies/FB-001", "2026-05-15_036_strategy_preflight_and_tier_classification/FB-001"]
+    evidence: "Helper users repeatedly needed examples that bridge individual helper pages to full experiment setup and clearer guidance for type, selection, tier, and zero-trade diagnostics."
+    recommended_action: "Create a helper-pipeline troubleshooting table and one complete multi-asset example showing setup, parameter changes, validation failures, and zero-trade diagnosis."
+    uncertainty: "Some task wording itself contributed to confusion, so fixes may belong in task briefs as well as ledgr docs."
+  - theme_id: THEME-004
+    title: "Result inspection, metrics, and comparison outputs obscure schemas or numeric types"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-15_001_cold_start_readme", "2026-05-15_003_single_asset_sma_crossover", "2026-05-15_004_multi_asset_momentum", "2026-05-15_007_experiment_store_compare", "2026-05-15_014_close_lifecycle", "2026-05-15_017_parametric_helper_comparison", "2026-05-15_027_ledger_events_and_metrics_error", "2026-05-15_034_sharpe_ratio_and_risk_metrics", "2026-05-15_035_comparison_programmatic_ranking", "2026-05-15_038_custom_indicator_authoring", "2026-05-15_039_sweep_basic_candidate_promotion"]
+    feedback_ids: ["2026-05-15_001_cold_start_readme/FB-003", "2026-05-15_003_single_asset_sma_crossover/FB-002", "2026-05-15_004_multi_asset_momentum/FB-001", "2026-05-15_007_experiment_store_compare/FB-001", "2026-05-15_014_close_lifecycle/FB-001", "2026-05-15_017_parametric_helper_comparison/FB-002", "2026-05-15_027_ledger_events_and_metrics_error/FB-001", "2026-05-15_034_sharpe_ratio_and_risk_metrics/FB-001", "2026-05-15_034_sharpe_ratio_and_risk_metrics/FB-002", "2026-05-15_035_comparison_programmatic_ranking/FB-001", "2026-05-15_035_comparison_programmatic_ranking/FB-002", "2026-05-15_035_comparison_programmatic_ranking/FB-003", "2026-05-15_038_custom_indicator_authoring/FB-001", "2026-05-15_039_sweep_basic_candidate_promotion/FB-003"]
+    evidence: "Several rows show that printed summaries and comparison tables are useful for humans but leave scripts guessing about closed trades, raw numeric columns, schemas, constants, or persisted feature values."
+    recommended_action: "Document return values and schemas for summary, comparison, metrics, ledger/events, feature persistence, and closed-trade versus fill terminology; expose missing programmatic fields where appropriate."
+    uncertainty: "The rows do not prove all missing fields are intended public APIs; maintainer decision needed."
+  - theme_id: THEME-005
+    title: "Snapshot, sealing, and metadata docs need field-level examples"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-15_008_snapshot_csv_seal_backtest", "2026-05-15_025_low_level_csv_snapshot_seal_run", "2026-05-15_028_snapshot_info_metadata_columns", "2026-05-15_032_yahoo_five_strategies"]
+    feedback_ids: ["2026-05-15_008_snapshot_csv_seal_backtest/FB-001", "2026-05-15_008_snapshot_csv_seal_backtest/FB-002", "2026-05-15_008_snapshot_csv_seal_backtest/FB-003", "2026-05-15_025_low_level_csv_snapshot_seal_run/FB-001", "2026-05-15_028_snapshot_info_metadata_columns/FB-001", "2026-05-15_028_snapshot_info_metadata_columns/FB-002", "2026-05-15_032_yahoo_five_strategies/FB-002"]
+    evidence: "CSV import, one-argument snapshot inspection, seal metadata names, meta_json fields, and already-sealed Yahoo snapshots all caused avoidable ambiguity."
+    recommended_action: "Add a low-level CSV snapshot and sealing walkthrough plus a field-by-field snapshot_info/meta_json reference."
+    uncertainty: "One validation-error row is unclear because evidence supports poor locality but not necessarily an incorrect validator."
+  - theme_id: THEME-006
+    title: "Sweep, promotion, precompute, and seed workflows are present but underspecified"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-15_039_sweep_basic_candidate_promotion", "2026-05-15_040_sweep_train_test_discipline", "2026-05-15_041_sweep_failure_rows", "2026-05-15_042_sweep_feature_factory", "2026-05-15_043_sweep_precomputed_features", "2026-05-15_044_sweep_seed_and_promotion_context"]
+    feedback_ids: ["2026-05-15_039_sweep_basic_candidate_promotion/FB-002", "2026-05-15_040_sweep_train_test_discipline/FB-001", "2026-05-15_041_sweep_failure_rows/FB-001", "2026-05-15_041_sweep_failure_rows/FB-002", "2026-05-15_041_sweep_failure_rows/FB-003", "2026-05-15_042_sweep_feature_factory/FB-001", "2026-05-15_042_sweep_feature_factory/FB-002", "2026-05-15_042_sweep_feature_factory/FB-003", "2026-05-15_043_sweep_precomputed_features/FB-001", "2026-05-15_043_sweep_precomputed_features/FB-002", "2026-05-15_044_sweep_seed_and_promotion_context/FB-002", "2026-05-15_044_sweep_seed_and_promotion_context/FB-003"]
+    evidence: "Sweep episodes exposed gaps in current-version messaging, cross-snapshot promotion opt-in wording, list-column export guidance, failure-row promotion, feature factories, precompute payloads, and seed replay."
+    recommended_action: "Update sweeps docs around v0.1.8 support, failure rows, feature factories, precompute structure, promotion context schema, cross-snapshot opt-in, and stochastic seed replay."
+    uncertainty: "One runtime timeout is environmental and should inform task/runner defaults rather than ledgr behavior."
+  - theme_id: THEME-007
+    title: "Version and discoverability signals are stale or scattered"
+    bucket: docs_gap
+    severity: low
+    episode_ids: ["2026-05-15_002_cold_start_getting_started", "2026-05-15_010_strategy_development_article", "2026-05-15_020_metrics_and_accounting_article", "2026-05-15_022_help_page_discoverability"]
+    feedback_ids: ["2026-05-15_002_cold_start_getting_started/FB-001", "2026-05-15_010_strategy_development_article/FB-002", "2026-05-15_020_metrics_and_accounting_article/FB-002", "2026-05-15_022_help_page_discoverability/FB-001"]
+    evidence: "Users saw v0.1.7 labels in a v0.1.8 context, source-tree design-file pointers, and article links without a single installed help index."
+    recommended_action: "Refresh version labels and add a central installed article/help index with current workflow entry points."
+    uncertainty: "The workflows still generally ran, so this is mostly orientation risk."
+  - theme_id: THEME-008
+    title: "Runner and local environment friction affected reproducibility but is mostly expected user error"
+    bucket: expected_user_error
+    severity: low
+    episode_ids: ["2026-05-15_021_indicators_article", "2026-05-15_025_low_level_csv_snapshot_seal_run", "2026-05-15_026_warmup_diagnostic_and_three_cases", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary", "2026-05-15_043_sweep_precomputed_features"]
+    feedback_ids: ["2026-05-15_021_indicators_article/FB-003", "2026-05-15_025_low_level_csv_snapshot_seal_run/FB-002", "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-004", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-004", "2026-05-15_043_sweep_precomputed_features/FB-002"]
+    evidence: "Episodes hit PowerShell UTF-8 BOM parsing, active log files during recursive search, guessed help snapshot filenames, and short outer timeouts for long sweeps."
+    recommended_action: "Harden task briefs and runner templates with UTF-8/no-BOM guidance, safe log-search patterns, generated help index names, and longer sweep timeouts."
+    uncertainty: "These rows should not be treated as ledgr bugs without additional raw evidence."
+  - theme_id: THEME-009
+    title: "Terse or ambiguous warnings and errors make diagnosis harder"
+    bucket: unclear
+    severity: medium
+    episode_ids: ["2026-05-15_012_multi_asset_rotation_with_helpers", "2026-05-15_021_indicators_article", "2026-05-15_022_help_page_discoverability", "2026-05-15_031_ctx_features_discoverability", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary"]
+    feedback_ids: ["2026-05-15_012_multi_asset_rotation_with_helpers/FB-003", "2026-05-15_021_indicators_article/FB-001", "2026-05-15_022_help_page_discoverability/FB-002", "2026-05-15_031_ctx_features_discoverability/FB-002", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-001", "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-003"]
+    evidence: "Warnings around last-bar no-fill behavior and leakage/causality boundaries were repeatedly understandable only after extra investigation."
+    recommended_action: "Improve warning text and docs with origin, consequence, and next-step pointers; consider public validation support for causal vectorized features."
+    uncertainty: "Some rows are explicitly uncertain and should be validated by maintainers before issue creation."
+items:
+  - feedback_id: "2026-05-15_001_cold_start_readme/FB-001"
+    episode_id: "2026-05-15_001_cold_start_readme"
+    title: "Installed package lacks a runnable README-style overview"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked for the main README or equivalent package overview. DOC_DISCOVERY.R found no installed main README. The only README-style installed file was examples/README.md, and it says the examples are non-executable development artifacts with no implementations yet. raw_logs/ledgr_doc_snapshot.md; installed examples/README.md says \"Non-executable example configurations and walkthrough artifacts used during development; no implementations yet.\""
+    recommended_action: "Add an installed README.md or make ?ledgr-package explicitly label getting-started as the README-equivalent first-run workflow."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_001_cold_start_readme/FB-002"
+    episode_id: "2026-05-15_001_cold_start_readme"
+    title: "Minimal ledgr_run example does not print a smoke-test confirmation"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The ?ledgr_run example is a complete small run, but it assigns bt and then closes resources without printing the backtest, a result table, or any explicit success check. In a noninteractive script this gives a new user little confirmation that ledgr worked. raw_logs/ledgr_run.txt; raw_logs/reproducible_script_stdout.txt shows the added print output needed for a useful smoke test."
+    recommended_action: "Update the ?ledgr_run example to print the backtest and inspect one result table before closing resources."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_001_cold_start_readme/FB-003"
+    episode_id: "2026-05-15_001_cold_start_readme"
+    title: "Closed-trade terminology is easy to miss in first-run output"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "After adding summary output to the compact ledgr_run example, summary(bt) reported Total Trades: 0 while ledgr_results(bt, what = \"ledger\") showed one BUY fill. The detailed help later clarified that total trades counts closed trade rows only, not fill rows, but that distinction is not visible in the compact first-run example. raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "In the minimal example or summary output notes, use \"Closed Trades\" instead of \"Total Trades\", or add a one-line pointer that fills and closed trades are separate result tables."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_002_cold_start_getting_started/FB-001"
+    episode_id: "2026-05-15_002_cold_start_getting_started"
+    title: "Getting-started version context is ambiguous under ledgr 0.1.8"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The episode required ledgr >= 0.1.8 and preflight observed 0.1.8.0, but TASK.md listed ledgr_target v0.1.7.2 and the getting-started vignette introduced the workflow as the v0.1.7 research loop. raw_logs/preflight_stdout.txt; raw_logs/reproducible_script_status.json"
+    recommended_action: "Update the task packet and getting-started vignette introduction to state the current supported ledgr version range for the workflow, or explicitly say the v0.1.7 research loop remains valid in 0.1.8.x."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_003_single_asset_sma_crossover/FB-001"
+    episode_id: "2026-05-15_003_single_asset_sma_crossover"
+    title: "SMA crossover docs stop short of a complete runnable strategy"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The indicators vignette documents the SMA crossover feature map and the core condition, but the runnable example immediately below uses a return-plus-SMA rule instead of a full SMA crossover strategy. LEDGR_DOCS/indicators.md and raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add a short end-to-end SMA crossover example, preferably single-asset, immediately after the crossover snippet."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_003_single_asset_sma_crossover/FB-002"
+    episode_id: "2026-05-15_003_single_asset_sma_crossover"
+    title: "print(summary(bt)) prints both summary and backtest handle"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "In an exploratory script, wrapping `summary(bt)` in `print()` printed the ledgr Backtest Summary and then printed the ledgr Backtest Results handle. This made the log look like two different result objects were being emitted. Exploratory run showed both \"ledgr Backtest Summary\" and \"ledgr Backtest Results\" blocks after `print(summary(bt))`; final script uses bare `summary(bt)` as the workaround."
+    recommended_action: "Document the return value and recommended script usage for `summary.ledgr_backtest`, or return a printed summary object instead of the original backtest handle."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_003_single_asset_sma_crossover/FB-003"
+    episode_id: "2026-05-15_003_single_asset_sma_crossover"
+    title: "Signal terminology is easy to over-apply to simple feature rules"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The strategy-development vignette introduces a signal-selection-weight-target pipeline, while the SMA crossover example in the indicators vignette is just a mapped feature comparison that returns target holdings. As a first-time user, it was not immediately clear whether an SMA crossover should be represented as a `ledgr_signal` object or as direct strategy logic. LEDGR_DOCS/strategy-development.md and LEDGR_DOCS/indicators.md"
+    recommended_action: "Add a compact glossary or note near the SMA crossover section explaining indicators/features versus optional signal helper objects versus executable targets."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_004_multi_asset_momentum/FB-001"
+    episode_id: "2026-05-15_004_multi_asset_momentum"
+    title: "summary return value is surprising when printed explicitly"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_003_single_asset_sma_crossover/FB-002"
+    evidence: "While capturing a reproducible transcript, calling `print(summary(bt))` printed the ledgr backtest summary and then also printed the underlying `ledgr_backtest` object. The getting-started vignette shows `summary(bt)`, but the help and vignette did not make it obvious that wrapping it in `print()` can duplicate output. raw_logs/summary_print_duplicate_stdout.txt contains both `ledgr Backtest Summary` and `ledgr Backtest Results` from a minimal `print(summary(bt))` reproduction."
+    recommended_action: "Document the return value and printing behavior in `?summary.ledgr_backtest`, and consider returning the summary object invisibly if the function is intended primarily for formatted side-effect output."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_005_rsi_mean_reversion/FB-001"
+    episode_id: "2026-05-15_005_rsi_mean_reversion"
+    title: "Indicator function signature differs between custom indicator docs and built-in RSI object"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The custom indicator vignette describes the scalar indicator function as fn(window, params), while the built-in RSI help example calls ledgr_ind_rsi(3)$fn(window). When I tried the custom-indicator-style call against the built-in RSI object, it failed with an unused argument error. raw_logs/debug_rsi_docs_examples_stdout.txt"
+    recommended_action: "Add a sentence to ?ledgr_ind_rsi or the custom indicator vignette clarifying whether the $fn signature is part of the public contract for built-in indicators, or point users back to ledgr_feature_contracts(), ledgr_pulse_snapshot(), and ctx$features() for normal use."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_005_rsi_mean_reversion/FB-002"
+    episode_id: "2026-05-15_005_rsi_mean_reversion"
+    title: "Native RSI help page lacks feature ID and warmup contract context"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The native RSI help page only shows the constructor and a direct scalar $fn example. The feature ID, requires_bars, stable_after, and strategy usage pattern were available in the indicators vignette, but not on the function help page itself. raw_logs/ledgr_ind_rsi.txt"
+    recommended_action: "Expand ?ledgr_ind_rsi with a feature-map example, its generated feature ID, and the requires_bars/stable_after contract."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_006_bbands_macd/FB-001"
+    episode_id: "2026-05-15_006_bbands_macd"
+    title: "ledgr_ind_ttr help does not show rendered MACD feature IDs"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The help page example constructs matching MACD macd and signal indicators with percent = FALSE, then calls ledgr_feature_id(list(macd, macd_signal)), but the saved help text does not show the expected output strings. The rendered indicators vignette does show the exact IDs. raw_logs/ledgr_ind_ttr.txt"
+    recommended_action: "Add rendered expected output to the ledgr_ind_ttr MACD example or include a short note naming the expected default ID shape for matching percent = FALSE outputs."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_006_bbands_macd/FB-002"
+    episode_id: "2026-05-15_006_bbands_macd"
+    title: "Long multi-output feature IDs are truncated in pulse inspection output"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "ledgr_pulse_features() and ledgr_pulse_wide() returned correct MACD feature IDs, but the printed tibble abbreviated long IDs such as ttr_macd_12_26_9_false_signal with ellipses. This made exact column-name inspection harder during a task focused on feature ID naming. raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Add a small \"exact column names\" debugging snippet to the indicators vignette near the multi-output TTR examples."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_007_experiment_store_compare/FB-001"
+    episode_id: "2026-05-15_007_experiment_store_compare"
+    title: "Comparison print output shows formatted percentage columns as character"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The `ledgr_compare_runs()` print output displayed `total_return`, `max_drawdown`, and `win_rate` with `<chr>` type labels, even though `as_tibble(comparison)` exposed the corresponding columns as raw numeric values. As a first-time user, this made it unclear whether `arrange(desc(total_return))` from the vignette was doing numeric ranking or lexicographic ranking. `raw_logs/final_comparison_print.txt` shows `<chr>` for formatted percentage columns; `raw_logs/final_comparison_str.txt` shows the same columns as numeric after `as_tibble(comparison)`."
+    recommended_action: "Update the `ledgr_comparison` print method or vignette wording so the displayed type labels do not imply that metric columns are character data."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_008_snapshot_csv_seal_backtest/FB-001"
+    episode_id: "2026-05-15_008_snapshot_csv_seal_backtest"
+    title: "OHLC CSV validation error does not identify the bad row"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "An invalid generated CSV failed with \"bars CSV contains an OHLC violation (high/low bounds).\" The error did not identify the instrument, timestamp, row number, or offending values. raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Include row number, instrument_id, ts_utc, and the invalid OHLC values in LEDGR_CSV_FORMAT_ERROR messages."
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_008_snapshot_csv_seal_backtest/FB-002"
+    episode_id: "2026-05-15_008_snapshot_csv_seal_backtest"
+    title: "Explicit CSV seal workflow is buried behind experiment-store docs"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asks to create/import CSV data, seal the snapshot, and backtest from it. The high-level CSV help page shows ledgr_snapshot_from_csv(), while the explicit create/import/seal/load/run sequence appears later in the experiment-store vignette as a low-level CSV bridge. raw_logs/ledgr_snapshot_from_csv.txt and LEDGR_DOCS/experiment-store.md"
+    recommended_action: "Add a dedicated snapshot/CSV article or expand ?ledgr_snapshot_from_csv with an explicit link and short recipe for create/import/seal/load/backtest."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_008_snapshot_csv_seal_backtest/FB-003"
+    episode_id: "2026-05-15_008_snapshot_csv_seal_backtest"
+    title: "ledgr_snapshot_info usage omits the one-argument snapshot form"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "?ledgr_snapshot_info lists usage as ledgr_snapshot_info(con, snapshot_id), but other docs and examples call ledgr_snapshot_info(snapshot) with a ledgr_snapshot handle. The argument text implies this is valid, but the usage block does not show it. raw_logs/ledgr_snapshot_info.txt and raw_logs/ledgr_snapshot_from_csv.txt"
+    recommended_action: "Update the usage or examples to show ledgr_snapshot_info(snapshot) and ledgr_snapshot_info(con, snapshot_id)."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_009_edge_case_ten_bars/FB-001"
+    episode_id: "2026-05-15_009_edge_case_ten_bars"
+    title: "ledgr_pulse_features list input failure is easy to hit from getting-started examples"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "A first attempt used the getting-started feature shape `features <- list(ledgr_ind_sma(20))` and then called `ledgr_pulse_features(pulse, features)` while debugging a short-data warmup case. The call failed with \"`x` must be a ledgr_feature_map object.\" raw_logs/pulse_features_list_failure_stderr.txt"
+    recommended_action: "Update `?ledgr_pulse_features` and `LEDGR_DOCS/indicators.md` to contrast accepted feature shapes across inspection helpers, and improve the error to say \"feature_map must be NULL or a ledgr_feature_map; plain indicator lists are not accepted here.\""
+    uncertainty: ""
+  - feedback_id: "2026-05-15_009_edge_case_ten_bars/FB-002"
+    episode_id: "2026-05-15_009_edge_case_ten_bars"
+    title: "Impossible warmup is silent at ledgr_run time"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Running the documented SMA strategy shape with `ledgr_ind_sma(20)` on exactly 10 bars completed with no warning from `ledgr_run()`. The run produced zero trades. The useful explanation appeared only after calling `summary(bt)`, which printed a warmup diagnostic saying the feature never became usable. raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add a short \"short samples and impossible warmup\" callout near the first SMA example in `getting-started`, and consider emitting a low-noise warning from `ledgr_run()` when every registered feature for an instrument has `warmup_achievable = FALSE`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_010_strategy_development_article/FB-001"
+    episode_id: "2026-05-15_010_strategy_development_article"
+    title: "Strategy article does not contain the requested suppressWarnings example"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The task brief asks the user to verify a `suppressWarnings(..., classes = \"ledgr_empty_selection\")` helper-pipeline example and a note that `warn_empty = FALSE` is deferred, but the rendered `strategy-development` article contains neither `suppressWarnings` nor `warn_empty`. The article instead says ordinary early warmup needs no warning suppression. `Select-String -Path .\\LEDGR_DOCS\\*.md,.\\LEDGR_DOCS\\scripts\\*.R -Pattern \"suppressWarnings|ledgr_empty_selection|warn_empty|select_top_n\"` found no suppressWarnings or warn_empty entry in strategy-development; `raw_logs/select_top_n.txt` says all-missing signals return a classed empty selection without warning."
+    recommended_action: "Add a short strategy-development section that distinguishes `ledgr_empty_selection` as a no-warning object class from `ledgr_partial_selection` as the warning class, and include the intended class-specific `suppressWarnings()` example or update the task/regression expectation."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_010_strategy_development_article/FB-002"
+    episode_id: "2026-05-15_010_strategy_development_article"
+    title: "What Next points first-time users to an installed source-tree design file"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The `What's Next?` section says to read `inst/design/contracts.md` for the formal contract. In an installed-package documentation workflow, this path is not part of the public rendered docs surfaced by `LEDGR_DOCS/index.md` or `ledgr_write_doc_snapshot()`, and the episode rules prohibit reading package source. The article text says, \"If you want the formal contract, read the strategy and context sections in `inst/design/contracts.md`.\""
+    recommended_action: "Replace the source-tree path with installed help references or add a rendered contracts article to `LEDGR_DOCS/index.md`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_011_strategy_helper_introduction/FB-001"
+    episode_id: "2026-05-15_011_strategy_helper_introduction"
+    title: "Task names helpers while asking user to discover them"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "The task goal explicitly listed `signal_return`, `select_top_n`, `weight_equal`, and `target_rebalance`, but the same task also required arriving at the helper pipeline through documentation alone without being told the function names in advance. TASK.md"
+    recommended_action: "Move the helper function names out of the task prompt, or rephrase the task to say the user should verify and use the listed helpers from documentation."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_011_strategy_helper_introduction/FB-002"
+    episode_id: "2026-05-15_011_strategy_helper_introduction"
+    title: "Individual helper help pages are isolated from the full experiment setup"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The individual helper help pages document each helper and include small examples, but a first-time user still needs the strategy-development vignette to see the required feature registration, `ledgr_experiment()` setup, and full `ledgr_run()` workflow. raw_logs/signal_return.txt; raw_logs/select_top_n.txt; raw_logs/weight_equal.txt; raw_logs/target_rebalance.txt"
+    recommended_action: "Add a shared `See also` or minimal end-to-end example block to the four helper help pages, especially noting that `signal_return()` requires registered `ledgr_ind_returns(lookback)` features."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_012_multi_asset_rotation_with_helpers/FB-001"
+    episode_id: "2026-05-15_012_multi_asset_rotation_with_helpers"
+    title: "Strategy helper docs do not show a synthetic three-asset rotation example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The helper pipeline documentation matched the economic workflow, but the main runnable example used two packaged demo instruments. To satisfy the task's synthetic-data and at-least-three-instruments constraints, I had to combine the helper vignette with separate snapshot-from-data-frame examples and write my own synthetic bar generator. research_report.md; reproducible_script.R"
+    recommended_action: "Add a compact strategy-helper example that uses synthetic bars with three or more instruments and shows `ledgr_results(bt, what = \"fills\")` plus `ledgr_results(bt, what = \"trades\")`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_012_multi_asset_rotation_with_helpers/FB-002"
+    episode_id: "2026-05-15_012_multi_asset_rotation_with_helpers"
+    title: "Synthetic bar helper is not surfaced from the strategy-helper path"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "I only found `ledgr_sim_bars()` after direct help-topic discovery. The strategy-helper vignette did not point to it, even though it is specifically described as creating synthetic OHLCV bars suitable for `ledgr_snapshot_from_df()`. raw_logs/ledgr_sim_bars.txt"
+    recommended_action: "Mention `ledgr_sim_bars(n_instruments = 3, ...)` in `strategy-development` near the helper-pipeline example or in the task-intent docs for strategy helper pipelines."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_012_multi_asset_rotation_with_helpers/FB-003"
+    episode_id: "2026-05-15_012_multi_asset_rotation_with_helpers"
+    title: "Final-bar no-fill warning is terse in runner logs"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "The completed run printed two `LEDGR_LAST_BAR_NO_FILL` warnings to stderr with no run id, timestamp, instrument, or short explanation. The warning did not block the task, but it was initially unclear whether the backtest results were trustworthy until I found the metrics/accounting explanation and checked fills and trades. raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Include a short explanatory message with the warning, such as the affected run id and that no next bar exists to fill the final target change. Also consider documenting this warning in `?ledgr_run`."
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_013_trades_fills_and_metrics/FB-001"
+    episode_id: "2026-05-15_013_trades_fills_and_metrics"
+    title: "Result-inspection help examples do not produce a closed trade"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The help-page examples for result inspection use a strategy that always targets one share. Running that example creates one opening fill, zero closed trade rows, and metrics with n_trades equal to 0. That is technically valid, but it is a weak example for a first-time user trying to understand fills versus trades and verify trade metrics. raw_logs/help_example_open_only_stdout.txt shows one OPEN fill, zero trade rows, n_trades = 0, win_rate = NA, and avg_trade = NA."
+    recommended_action: "Change the help-page examples to use the five-bar round-trip fixture from the metrics-and-accounting vignette, or add a second compact example that exits the position and prints fills, trades, and metrics side by side."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_014_close_lifecycle/FB-001"
+    episode_id: "2026-05-15_014_close_lifecycle"
+    title: "Closed backtest result access semantics are inconsistent across docs"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "`experiment-store.md` says result-table helpers such as `ledgr_results()` need a live or reopened backtest handle, which led me to expect `ledgr_results(bt, ...)` might fail after `close(bt)`. In ledgr 0.1.8.0, `summary(bt)`, `ledgr_results(bt, 'equity')`, and `ledgr_results(bt, 'trades')` all succeeded on the same object after `close(bt)`. raw_logs/close_lifecycle_observations.txt"
+    recommended_action: "Revise lifecycle documentation to say that `close(bt)` releases held resources and checkpoints durable runs, but does not invalidate the R object for ordinary result helpers in the current implementation. If invalidation is intended instead, make post-close result helpers fail consistently with a clear error."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_014_close_lifecycle/FB-002"
+    episode_id: "2026-05-15_014_close_lifecycle"
+    title: "close() examples use compatibility workflow instead of primary experiment workflow"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The `close.ledgr_backtest` example creates a backtest with `ledgr_backtest(data = ..., strategy = ...)`, while the getting-started vignette says the v0.1.7+ public workflow is `ledgr_experiment()` plus `ledgr_run()`. As a first-time user working on object lifecycle, I had to decide whether to test close behavior with the compatibility wrapper or the primary experiment workflow. raw_logs/close.ledgr_backtest.txt"
+    recommended_action: "Add an experiment-first example to `?close.ledgr_backtest`, or add one sentence explaining that close behavior is identical for handles returned by `ledgr_backtest()` and `ledgr_run()`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_015_warmup_and_na_in_helpers/FB-001"
+    episode_id: "2026-05-15_015_warmup_and_na_in_helpers"
+    title: "Warmup pulse docs do not warn that every universe member still needs a current bar"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "To observe all-NA warmup behavior with staggered instrument histories, I first chose a timestamp where DEMO_01 had a current bar but DEMO_02 did not. ledgr_pulse_snapshot() failed with \"No bars available for instrument 'DEMO_02' at ts_utc.\" raw_logs/reproducible_script_attempt1_stderr.txt"
+    recommended_action: "Add a short note to warmup/pulse inspection docs explaining that NA feature warmup requires a valid current pulse row; missing current bars are a different setup error."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_015_warmup_and_na_in_helpers/FB-002"
+    episode_id: "2026-05-15_015_warmup_and_na_in_helpers"
+    title: "Partial-warmup inspection example runs into full-backtest coverage rules"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "A staggered-start snapshot was useful for creating a pulse where some signals were finite and others were NA, but ledgr_run() rejected the same snapshot with LEDGR_SNAPSHOT_COVERAGE_ERROR because per-instrument bar coverage was incomplete for the requested range. raw_logs/reproducible_script_attempt2_stderr.txt"
+    recommended_action: "Add a partial-warmup helper example that either uses an explicitly pulse-only staggered snapshot or documents the correct backtest range/universe setup for incomplete instrument histories."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_016_helper_type_errors/FB-001"
+    episode_id: "2026-05-15_016_helper_type_errors"
+    title: "target_rebalance help omits out-of-universe weight validation"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The out-of-universe weights error was clear at runtime, but the target_rebalance help page's warning and error classes list does not mention the validation path for weights containing names outside ctx$universe. raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Add an error-class bullet and short example to ?target_rebalance for weights whose names are not in ctx$universe."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_016_helper_type_errors/FB-002"
+    episode_id: "2026-05-15_016_helper_type_errors"
+    title: "ledgr_run help lacks a compact invalid helper return example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The runtime errors for returning ledgr_signal and ledgr_weights directly were clear, and the constructor help says these are intermediate objects, but ?ledgr_run does not show what the runner reports when a strategy returns an intermediate helper type. raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Add a \"Common strategy return errors\" note to ?ledgr_run or link directly to the helper pipeline return contract."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_016_helper_type_errors/FB-003"
+    episode_id: "2026-05-15_016_helper_type_errors"
+    title: "No single troubleshooting table for helper-pipeline error messages"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "I had to combine the vignette, several helper help pages, and runtime experiments to learn the likely errors for invalid helper return types, out-of-universe weights, and unregistered features. raw_logs/ledgr_doc_snapshot.md and raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Add a troubleshooting section with rows for \"returned signal\", \"returned selection\", \"returned weights\", \"unknown feature ID\", and \"weights outside universe\"."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_017_parametric_helper_comparison/FB-001"
+    episode_id: "2026-05-15_017_parametric_helper_comparison"
+    title: "Helper comparison example does not show changing lookback parameters"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The strategy-development comparison example changes `n` from 1 to 2 while keeping `lookback = 5`. The task asked for variants such as `lookback` and `n`, but the rendered vignette did not show the important extra step for a changed lookback: registering every concrete return indicator used by `params$lookback`. raw_logs/signal_return.txt"
+    recommended_action: "Add a short comparison example or note showing a lookback-changing variant and the corresponding multi-feature registration."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_017_parametric_helper_comparison/FB-002"
+    episode_id: "2026-05-15_017_parametric_helper_comparison"
+    title: "Comparison print output obscures raw numeric metric types"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_007_experiment_store_compare/FB-001"
+    evidence: "The rendered comparison examples print `total_return` and `max_drawdown` as formatted percentages with `<chr>` tibble types, while `?ledgr_compare_runs` says metric columns are raw numeric values. This made it unclear whether direct numeric comparison was supported until I converted the comparison object to a plain data frame and wrote it to CSV. raw_logs/reproducible_script_stdout.txt and raw_logs/comparison_metrics.csv"
+    recommended_action: "Update the experiment-store vignette and/or `?ledgr_compare_runs` examples to show how to extract raw numeric metrics from a `ledgr_comparison` object."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_019_zero_trade_diagnosis/FB-001"
+    episode_id: "2026-05-15_019_zero_trade_diagnosis"
+    title: "Empty-selection warning expectation conflicts with installed behavior"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The task expected a `ledgr_empty_selection` warning with signal origin and non-missing count, but ledgr 0.1.8.0 returned an all-missing empty selection without any warning. The installed `?select_top_n` help also says all-missing signals return a classed empty selection without warning. raw_logs/zero_trade_checklist.txt"
+    recommended_action: "Update the task/vignette wording or change `select_top_n()` so `ledgr_empty_selection` actually emits the documented enriched warning."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_019_zero_trade_diagnosis/FB-002"
+    episode_id: "2026-05-15_019_zero_trade_diagnosis"
+    title: "Partial-selection warning omits origin and non-missing denominator"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The warning emitted by `select_top_n()` for a partial selection was `Only 1 available signal value(s); selecting all available instruments.` It did not include the signal origin or total signal count. raw_logs/reproducible_script_stderr.txt and raw_logs/zero_trade_checklist.txt"
+    recommended_action: "Include `origin` and `non_missing/total` in the `ledgr_partial_selection` warning message."
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_019_zero_trade_diagnosis/FB-003"
+    episode_id: "2026-05-15_019_zero_trade_diagnosis"
+    title: "Pulse feature inspection is narrower than experiment feature registration"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "A plain feature list worked for `ledgr_experiment(features = ...)`, but passing the same list to `ledgr_pulse_features(pulse, features)` failed with `` `x` must be a ledgr_feature_map object.`` This was surprising after using plain lists in the helper-pipeline examples. raw_logs/pulse_features_plain_list_error.txt"
+    recommended_action: "Add a note near the helper-pipeline examples recommending feature maps when users plan to inspect pulse features, or broaden `ledgr_pulse_features()` input support."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_020_metrics_and_accounting_article/FB-001"
+    episode_id: "2026-05-15_020_metrics_and_accounting_article"
+    title: "Result-inspection help examples do not produce a closed trade"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_013_trades_fills_and_metrics/FB-001"
+    evidence: "The reference examples for result extraction, summary output, and metric computation use a strategy that stays long after the first executable bar. The run has one opening fill, zero closed trade rows, and NA trade metrics. raw_logs/help_example_check_stdout.txt"
+    recommended_action: "Update at least one result-inspection help example to return to flat and show one closed trade, or cross-link more explicitly to the metrics-and-accounting vignette's round-trip fixture."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_020_metrics_and_accounting_article/FB-002"
+    episode_id: "2026-05-15_020_metrics_and_accounting_article"
+    title: "Help pages mention v0.1.7 in a v0.1.8 installation"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The installed ledgr version is `0.1.8.0`, but the help pages for `summary.ledgr_backtest` and `ledgr_compute_metrics` say that only `metrics = \"standard\"` is supported in `v0.1.7`. raw_logs/preflight_stdout.txt; raw_logs/summary.ledgr_backtest.txt; raw_logs/ledgr_compute_metrics.txt"
+    recommended_action: "Replace `v0.1.7` with the current release line or rephrase as `Only \"standard\" is currently supported`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_021_indicators_article/FB-001"
+    episode_id: "2026-05-15_021_indicators_article"
+    title: "Indicators article shows LEDGR_LAST_BAR_NO_FILL but does not explain it"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The runnable indicators vignette completed but emitted `Warning message: LEDGR_LAST_BAR_NO_FILL`. The article includes the warning in example output, but the surrounding text does not explain whether it is expected, actionable, or safe to ignore for this tutorial. raw_logs/indicators_vignette_script_stderr.txt"
+    recommended_action: "Add a short note after the first `ledgr_run()` example in `indicators.md` explaining the warning and linking to the accounting or backtest documentation that covers final-bar fill behavior."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_021_indicators_article/FB-002"
+    episode_id: "2026-05-15_021_indicators_article"
+    title: "First finite warmup verification requires custom pulse-loop code"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The article documents `requires_bars`, `stable_after`, pulse inspection, and warmup guards, but it does not include a compact example that verifies the first non-`NA` pulse against `requires_bars`. The task required this check, so I wrote a custom loop over timestamps and pulse snapshots. raw_logs/indicator_first_finite_demo_01.csv"
+    recommended_action: "Add a short \"first finite warmup diagnostic\" example to the troubleshooting section, or provide a helper that summarizes first finite feature bars from a snapshot and feature map."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_021_indicators_article/FB-003"
+    episode_id: "2026-05-15_021_indicators_article"
+    title: "UTF-8 BOM in temporary R helper script caused a parse failure"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "I initially created `raw_logs/save_help_topics.R` with PowerShell `Set-Content -Encoding UTF8`. R failed before running the script with `Error: unexpected input in \"﻿\"`, caused by a UTF-8 BOM. raw_logs/save_help_topics_stderr.txt"
+    recommended_action: "Keep the existing runner warning about BOM-free temp scripts, and consider adding a one-line \"do not use `Set-Content -Encoding UTF8` for R scripts in Windows PowerShell 5.1\" note for agent episodes."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_022_help_page_discoverability/FB-001"
+    episode_id: "2026-05-15_022_help_page_discoverability"
+    title: "Article links are discoverable but not gathered in a single help index"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Starting from a known function worked because individual help pages include Articles sections, but discovering the broader teaching path required checking several related function pages manually. raw_logs/ledgr_run.txt, raw_logs/ledgr_experiment.txt, raw_logs/ledgr_backtest.txt"
+    recommended_action: "Add a shared \"Learning path\" or \"Articles\" cross-reference block to the primary workflow help pages, especially `?ledgr_run`, `?ledgr_experiment`, and `?ledgr_backtest`."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_022_help_page_discoverability/FB-002"
+    episode_id: "2026-05-15_022_help_page_discoverability"
+    title: "Last-bar no-fill warning is terse when vignette examples are run as a script"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_012_multi_asset_rotation_with_helpers/FB-003"
+    evidence: "Running the discovered `strategy-development` vignette script completed successfully but stderr contained only `Warning message: LEDGR_LAST_BAR_NO_FILL`. raw_logs/strategy_development_script_stderr.txt"
+    recommended_action: "Expand the warning text or add a short note near the mapped strategy example explaining why `LEDGR_LAST_BAR_NO_FILL` appears and whether it requires action."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_024_pulse_inspection_views/FB-001"
+    episode_id: "2026-05-15_024_pulse_inspection_views"
+    title: "Pulse inspection help examples are not runnable in isolation"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The help pages for `ledgr_pulse_features()` and `ledgr_pulse_wide()` show only calls using pre-existing `pulse` and `features` objects. As a first-time user, I had to switch to the indicators vignette and `?ledgr_pulse_snapshot` to learn how to create those objects. raw_logs/ledgr_pulse_features.txt and raw_logs/ledgr_pulse_wide.txt show examples limited to `ledgr_pulse_features(pulse, features)` and `ledgr_pulse_wide(pulse, features)`."
+    recommended_action: "Add a compact shared runnable example that creates demo bars, a snapshot, a feature map, and a pulse before calling the long and wide inspection helpers."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_024_pulse_inspection_views/FB-002"
+    episode_id: "2026-05-15_024_pulse_inspection_views"
+    title: "`ledgr_pulse_snapshot()` help understates accepted feature shapes"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The `?ledgr_pulse_snapshot` argument documentation says `features` is a list of `ledgr_indicator` objects, while the indicators vignette shows passing a `ledgr_feature_map`. The feature map worked in the final script, but this acceptance was not clear from the help page. `raw_logs/ledgr_pulse_snapshot.txt` describes `features` as `List of 'ledgr_indicator' objects to compute`; `reproducible_script.R` successfully passes a `ledgr_feature_map`."
+    recommended_action: "Update the `features` argument text and examples in `?ledgr_pulse_snapshot` to include `ledgr_feature_map`."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_025_low_level_csv_snapshot_seal_run/FB-001"
+    episode_id: "2026-05-15_025_low_level_csv_snapshot_seal_run"
+    title: "Seal metadata names differ between narrative and info columns"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task and seal help refer to inferred `n_bars` and `n_instruments`, but `ledgr_snapshot_info()` exposes the directly selectable columns as `bar_count` and `instrument_count`. The `n_bars` and `n_instruments` values are present inside raw `meta_json`, so a first-time user has to connect the alias manually. raw_logs/sealed_snapshot_info.csv"
+    recommended_action: "Add one sentence and a small output example to the low-level CSV bridge section clarifying the mapping between seal-time `n_*` metadata and `ledgr_snapshot_info()` count columns."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_025_low_level_csv_snapshot_seal_run/FB-002"
+    episode_id: "2026-05-15_025_low_level_csv_snapshot_seal_run"
+    title: "Active raw log files can make recursive text search fail"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "A recursive `rg` over `raw_logs/` reported Windows `os error 32` because active Codex stdout/stderr log files were locked by another process. raw_logs\\codex_2026_05_15T21_30_14_0200_stderr.log: The process cannot access the file because it is being used by another process. (os error 32)"
+    recommended_action: "Mention in episode environment guidance that active `raw_logs/codex_*` files may be locked on Windows and can be excluded from `rg` searches."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-001"
+    episode_id: "2026-05-15_026_warmup_diagnostic_and_three_cases"
+    title: "ledgr_backtest feature shape is unclear for feature maps"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "`ledgr_feature_contracts()` accepted a `ledgr_feature_map(sma_20 = ledgr_ind_sma(20))`, but passing the same object to `ledgr_backtest(features = features)` failed with `Each feature def must include id (or name) as a non-empty string`. raw_logs/reproducible_script_attempt1_stderr.txt"
+    recommended_action: "Update `?ledgr_backtest` and the indicators vignette to show the exact accepted feature shapes for `ledgr_backtest()`, or make `ledgr_backtest()` accept the same feature map shape accepted by contract and pulse helpers."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-002"
+    episode_id: "2026-05-15_026_warmup_diagnostic_and_three_cases"
+    title: "Warmup Diagnostics omits stable_after wording"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked to connect `summary(bt)` Warmup Diagnostics to both `requires_bars` and `stable_after`. The diagnostic printed `required bars 20, available bars 15`, but did not name `stable_after`; for SMA-20 the two values are equal, so the connection is inferable only after reading `ledgr_feature_contracts()`. raw_logs/impossible_summary.txt"
+    recommended_action: "Add `stable_after` to the Warmup Diagnostics output or expand `?summary.ledgr_backtest` to define the relationship between printed `required bars` and the feature contract columns."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-003"
+    episode_id: "2026-05-15_026_warmup_diagnostic_and_three_cases"
+    title: "Current-bar absence lacks a minimal reproducible example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The vignette describes current-bar absence as a pulse construction error, but does not show a minimal synthetic example or the expected error class/message. My first attempt with a missing universe instrument failed as `ledgr_invalid_args`; a second attempt with an existing instrument missing one timestamp failed as `LEDGR_SNAPSHOT_COVERAGE_ERROR`. raw_logs/current_bar_absence_attempt.txt and raw_logs/current_bar_gap_absence_attempt.txt"
+    recommended_action: "Add a short current-bar absence example to `metrics-and-accounting` or `strategy-development`, including the data shape and the exact expected error class."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_026_warmup_diagnostic_and_three_cases/FB-004"
+    episode_id: "2026-05-15_026_warmup_diagnostic_and_three_cases"
+    title: "PowerShell UTF-8 BOM caused R parse failure"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_021_indicators_article/FB-003"
+    evidence: "A temporary R script written with PowerShell `Set-Content -Encoding UTF8` began with a UTF-8 BOM, and R failed immediately with `Error: unexpected input`. raw_logs/doc_discovery_stderr.txt"
+    recommended_action: "Add a short note near the Windows quoting rules warning that Windows PowerShell `Set-Content -Encoding UTF8` may write a BOM in older shells."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_027_ledger_events_and_metrics_error/FB-001"
+    episode_id: "2026-05-15_027_ledger_events_and_metrics_error"
+    title: "Ledger docs do not explicitly resolve portfolio state update rows"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked what ledger events appear for portfolio state updates, but the installed vignette example and the reproduced 10-bar run returned only FILL rows in ledgr_results(bt, what = \"ledger\"). Portfolio state changes were visible in the equity table, not as separate ledger rows. raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add one sentence and/or a small table to the metrics-and-accounting vignette and ?ledgr_results clarifying which ledger event_type values users should expect today and where cash, position, and portfolio state changes are exposed."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_028_snapshot_info_metadata_columns/FB-001"
+    episode_id: "2026-05-15_028_snapshot_info_metadata_columns"
+    title: "meta_json schema is not documented field by field"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task required parsing meta_json manually to identify description, episode, start_date, end_date, n_bars, and n_instruments. The help page explains that meta_json is raw envelope metadata and that some values are seal metadata, but it does not provide a field-level schema or explicitly label which fields come from the create-time meta argument versus sealing. raw_logs/snapshot_info_run.txt shows parsed fields; raw_logs/ledgr_snapshot_info.txt documents meta_json only as raw envelope metadata."
+    recommended_action: "Add a small table to ?ledgr_snapshot_info or the experiment-store vignette listing reserved seal-written meta_json fields such as start_date, end_date, n_bars, and n_instruments, and state that other keys are user-provided create-time metadata."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_028_snapshot_info_metadata_columns/FB-002"
+    episode_id: "2026-05-15_028_snapshot_info_metadata_columns"
+    title: "Snapshot help topic version labels look older than installed ledgr"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The installed package version was 0.1.8.0, but the snapshot help pages displayed titles like \"Snapshot info (v0.1.1)\" and \"Seal a snapshot (v0.1.1)\". As a first-time user, this made me pause to check whether I was reading current help or older API documentation. raw_logs/preflight_stdout.txt reports 0.1.8.0; raw_logs/ledgr_snapshot_info.txt title says \"Snapshot info (v0.1.1)\"."
+    recommended_action: "Rename help titles or add a note such as \"API contract v0.1.1; package version may be newer\" to avoid apparent version mismatch."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_029_mixed_builtin_ttr_feature_map/FB-001"
+    episode_id: "2026-05-15_029_mixed_builtin_ttr_feature_map"
+    title: "ledgr_run params docs do not explicitly call out non-finite numeric rejection"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "I used `params = list(min_return = -Inf, max_rsi = 100, qty = 10)` as an always-pass threshold while testing the warmup gate. `ledgr_run()` rejected the run because canonical JSON does not allow `Inf`, `-Inf`, or `NaN`. raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Add an explicit sentence to `?ledgr_run` and strategy examples that `params` must be canonical-JSON serializable and numeric values must be finite; suggest using a finite sentinel threshold instead of `Inf` or `-Inf`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_030_multi_lookback_pre_registration/FB-001"
+    episode_id: "2026-05-15_030_multi_lookback_pre_registration"
+    title: "Unknown feature error does not state pre-registration fix"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "Registering only `ledgr_ind_returns(5)` and looking up `return_20` failed with `ledgr_unknown_feature_id`. The message listed available IDs, but did not say that all concrete lookback variants must be registered before `ledgr_run()`. raw_logs/reproducible_script_summary.txt"
+    recommended_action: "Add a hint to `ledgr_unknown_feature_id` when the unknown ID resembles `return_<n>`, such as \"If this lookback comes from params, register every required ledgr_ind_returns(n) in ledgr_experiment(features=...) before ledgr_run().\""
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_030_multi_lookback_pre_registration/FB-002"
+    episode_id: "2026-05-15_030_multi_lookback_pre_registration"
+    title: "Alias versus engine ID distinction is easy to miss in parameterized lookup"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "I initially had to verify whether `paste0(\"ret_\", params$lookback)` could be passed directly to `ctx$feature()`. It cannot; `ret_20` is an alias and `ctx$feature()` requires the engine ID `return_20`. Unknown feature ID `ret_20`; available feature IDs: return_10, return_20, return_5."
+    recommended_action: "Add an explicit failing/then-fixed mini-example near the parameter-grid section showing why `ret_20` is not valid for `ctx$feature()` and why `ledgr_feature_id()` is the safer bridge."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_030_multi_lookback_pre_registration/FB-003"
+    episode_id: "2026-05-15_030_multi_lookback_pre_registration"
+    title: "Sweep documentation can distract from ledgr_run pre-registration task"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task is framed as a parameter sweep but asks for `ledgr_run()` with pre-registered variants. `LEDGR_DOCS/sweeps.md` discusses feature factories where indicator parameters are ordinary sweep parameters, which is a different workflow from the pre-registration rule exercised here. raw_logs/ledgr_doc_snapshot.md"
+    recommended_action: "Cross-link the two sections with a short note explaining when to use a fixed pre-registered feature map for `ledgr_run()` variants versus a feature factory for `ledgr_sweep()`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_031_ctx_features_discoverability/FB-001"
+    episode_id: "2026-05-15_031_ctx_features_discoverability"
+    title: "Feature-map help lacks See Also links for related strategy accessors"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "`?ledgr_feature_map` directly mentions `ctx$features()` and `passed_warmup()`, but it does not provide a See Also section linking to the formal strategy context or warmup help pages. raw_logs/ledgr_feature_map.txt"
+    recommended_action: "Add a See Also section to `?ledgr_feature_map` with `passed_warmup`, `ledgr_strategy_context`, `ledgr_feature_id`, and the relevant indicator inspection helpers."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_031_ctx_features_discoverability/FB-002"
+    episode_id: "2026-05-15_031_ctx_features_discoverability"
+    title: "Last-bar no-fill warning is terse in ordinary ledgr_run output"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_012_multi_asset_rotation_with_helpers/FB-003"
+    evidence: "Both successful strategy runs emitted only `LEDGR_LAST_BAR_NO_FILL` on stderr. The warning code did not explain whether the run was valid, which order could not fill, or where to read more. raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Expand the warning text or document `LEDGR_LAST_BAR_NO_FILL` from `?ledgr_run`, including why it happens and whether it invalidates metrics."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_032_yahoo_five_strategies/FB-001"
+    episode_id: "2026-05-15_032_yahoo_five_strategies"
+    title: "Strategy preflight rejects ordinary external helper functions"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The first script factored position sizing into an external helper named `equity_fraction_qty()`. `ledgr_run()` rejected the strategy before execution as tier_3 because the helper was an unresolved symbol. raw_logs/reproducible_script_first_stderr.txt"
+    recommended_action: "Add a short \"preflight-safe helper code\" section to the strategy development or reproducibility docs, with examples of accepted package helpers, rejected global helpers, and recommended alternatives."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_032_yahoo_five_strategies/FB-002"
+    episode_id: "2026-05-15_032_yahoo_five_strategies"
+    title: "Yahoo snapshot is already sealed but task still required explicit seal"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task required sealing the snapshot with `ledgr_snapshot_seal()` after using `ledgr_snapshot_from_yahoo()`, while the Yahoo helper documentation says the returned handle is already sealed. Calling `ledgr_snapshot_seal(snapshot)` worked idempotently but returned a list containing the hash and snapshot handle rather than only a character hash. raw_logs/reproducible_script_second_stdout.txt"
+    recommended_action: "Cross-link `?ledgr_snapshot_from_yahoo` and `?ledgr_snapshot_seal` with a one-line example showing the idempotent seal-verification pattern for high-level imported snapshots."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_032_yahoo_five_strategies/FB-003"
+    episode_id: "2026-05-15_032_yahoo_five_strategies"
+    title: "Feature contracts alone do not confirm snapshot warmup feasibility"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task said to use `ledgr_feature_contracts()` before each run to confirm the feature lookback is achievable. That function reports required bars and stable-after metadata but does not know the snapshot's available bars. The actual feasibility confirmation requires `ledgr_feature_contract_check(snapshot, features)`. raw_logs/reproducible_script_second_stdout.txt"
+    recommended_action: "In docs and task templates, reserve `ledgr_feature_contracts()` for static feature metadata and name `ledgr_feature_contract_check()` whenever the goal is to confirm feasibility against a sealed snapshot."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_033_strategy_extraction_and_recovery/FB-001"
+    episode_id: "2026-05-15_033_strategy_extraction_and_recovery"
+    title: "Extraction help does not state missing-run error class"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task required recording the error class for `ledgr_extract_strategy()` with a missing run ID. `?ledgr_extract_strategy` explains trust, hash verification, and return fields, but does not state the missing-run error class. The experiment-store vignette states that store lookup helpers fail with `ledgr_run_not_found`, but its example is for `ledgr_run_info()`, not extraction. raw_logs/reproducible_script_details.txt: missing_run_error_class: ledgr_run_not_found, rlang_error, error, condition"
+    recommended_action: "Add a short Errors section or example to `?ledgr_extract_strategy` documenting that a missing run ID raises `ledgr_run_not_found`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_033_strategy_extraction_and_recovery/FB-002"
+    episode_id: "2026-05-15_033_strategy_extraction_and_recovery"
+    title: "Trusted recovery rerun example is not executable end-to-end"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The experiment-store vignette includes a trusted recovery rerun snippet, but it is marked `eval=FALSE` and does not demonstrate the full close-backtest, close-snapshot, reload-by-path, extract, rerun, and compare-results workflow requested by the task. LEDGR_DOCS/scripts/experiment-store.R: the trusted-rerun chunk is marked eval=FALSE; raw_logs/reproducible_script_details.txt contains the manually assembled passing workflow."
+    recommended_action: "Add an evaluated compact example or a separate recovery article section that closes handles, reloads the snapshot, extracts with both trust modes, reruns, and compares `equity`, `fills`, and `trades`."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_034_sharpe_ratio_and_risk_metrics/FB-001"
+    episode_id: "2026-05-15_034_sharpe_ratio_and_risk_metrics"
+    title: "Manual Sharpe recomputation needs a public annualization constant"
+    bucket: missing_api
+    severity: medium
+    duplicate_of: null
+    evidence: "The metrics vignette says ledgr detects bar frequency and snaps common cadences to standard annualization constants, and says to use the detected value to match ledgr exactly on non-daily data. I did not find a public field in ledgr_compute_metrics() or ledgr_results() that exposes the detected bars_per_year value used for Sharpe, volatility, and annualized return. raw_logs/ledgr_compute_metrics.txt and raw_logs/ledgr_results.txt document formulas and public tables but no annualization metadata."
+    recommended_action: "Add a public helper or metric field such as bars_per_year, or document exactly how users should retrieve or reproduce ledgr's detected annualization constant from a backtest object."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_034_sharpe_ratio_and_risk_metrics/FB-002"
+    episode_id: "2026-05-15_034_sharpe_ratio_and_risk_metrics"
+    title: "Summary output does not identify a nonzero risk-free rate"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "summary(bt, risk_free_rate = 0.04) changed the printed Sharpe Ratio from 0.845 to -1.155, but the summary output still printed only \"Sharpe Ratio\" with no indication that a nonzero annual risk-free rate was used. raw_logs/active_summary.txt and raw_logs/active_summary_rf_004.txt"
+    recommended_action: "When risk_free_rate is nonzero, print the annual risk-free rate in the Risk Metrics section or label the line as Sharpe Ratio (rf=4.00% annual)."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_035_comparison_programmatic_ranking/FB-001"
+    episode_id: "2026-05-15_035_comparison_programmatic_ranking"
+    title: "Raw comparison example still prints metric columns as character percentages"
+    bucket: duplicate
+    severity: medium
+    duplicate_of: "2026-05-15_007_experiment_store_compare/FB-001"
+    evidence: "The experiment-store vignette states that programmatic code gets raw numeric columns from the comparison tibble, but the immediately following `select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)` example prints `total_return` and `max_drawdown` with `<chr>` types and formatted percentages. The installed help page says metric columns are raw numeric values, and the actual object in this episode did return numeric columns. raw_logs/reproducible_script_stdout.txt shows `total_return`, `annualized_return`, `volatility`, `sharpe_ratio`, `max_drawdown`, `avg_trade`, and `time_in_market` are numeric; `LEDGR_DOCS/experiment-store.md` shows the selected comparison output as `<chr>` for formatted percentage columns."
+    recommended_action: "Update the vignette example to show raw numeric values by converting away from the `ledgr_comparison` print method when demonstrating programmatic access, or add a nearby note that the classed print method still formats selected percentage columns even though the underlying storage is numeric."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_035_comparison_programmatic_ranking/FB-002"
+    episode_id: "2026-05-15_035_comparison_programmatic_ranking"
+    title: "Max drawdown sort direction is easy to reverse"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task requested ranking `max_drawdown` ascending so the smallest drawdown ranks first. ledgr stores max drawdown as a negative return using `min(equity / cummax(equity) - 1)`, so ascending numeric order ranks the most negative and therefore most severe drawdown first. The raw column is usable, but first-time users can easily choose the wrong sort direction for \"least drawdown\". raw_logs/reproducible_script_stdout.txt shows ascending `max_drawdown` ranked `trend_qty_20` first with `-0.019571478`, while `trend_qty_3` had the least severe drawdown at `-0.003002357`."
+    recommended_action: "Add a short ranking example to `?ledgr_compare_runs` or the experiment-store vignette showing both return ranking and least-drawdown ranking with the correct sign convention."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_035_comparison_programmatic_ranking/FB-003"
+    episode_id: "2026-05-15_035_comparison_programmatic_ranking"
+    title: "Curated comparison print view hides several standard metric columns"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The raw comparison tibble contained `annualized_return`, `volatility`, `avg_trade`, and `time_in_market`, but `print(cmp)` did not show them in the curated comparison view. The print footer says full identity and telemetry columns remain available, but it does not specifically mention that additional standard metric columns are also present only through raw tibble access. raw_logs/compare_print_output.txt shows the curated print view; raw_logs/reproducible_script_stdout.txt shows the full column list including hidden metric columns."
+    recommended_action: "Add a documented table or note to `?ledgr_compare_runs` listing the curated print columns separately from the full raw metric columns."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_036_strategy_preflight_and_tier_classification/FB-001"
+    episode_id: "2026-05-15_036_strategy_preflight_and_tier_classification"
+    title: "Tier 3 run error implies a default override may exist"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The Tier 3 run error said ledgr \"will not execute it by default.\" As a first-time user, \"by default\" suggests there may be an override argument or alternate execution mode. The reproducibility vignette separately says there is no force = TRUE override in v0.1.7.8. raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Change the error wording from \"will not execute it by default\" to wording such as \"ledgr will not execute Tier 3 strategies in this version\" and mention moving external values into params or qualifying package calls."
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-001"
+    episode_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary"
+    title: "Leakage article warns about full-sample quantiles but does not show an end-to-end ledgr run"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The leakage article explains the full-sample quantile problem conceptually, but I had to compose the custom indicator, strategy, preflight, run comparison, and corrected expanding-window implementation from several documents. `raw_logs/reproducible_script_final_seed57_stdout.txt`"
+    recommended_action: "Add a leakage vignette section with a complete leaky-versus-expanding `series_fn` backtest and metrics comparison."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-002"
+    episode_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary"
+    title: "Replacing a feature definition with the same ID requires registry cleanup not shown in experiment docs"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "Running a corrected indicator with the same feature ID after a leaky run failed because the indicator was already registered with different logic. The error suggested `overwrite = TRUE`, but the `ledgr_run()` and `ledgr_experiment()` workflow did not expose where a first-time user should pass that. `raw_logs/reproducible_script_stderr.txt`"
+    recommended_action: "Mention `ledgr_deregister_indicator()` in the error message and document the same-ID comparison workflow in the custom-indicators or experiment documentation."
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-003"
+    episode_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary"
+    title: "No public validator proves causal correctness of a vectorized series_fn"
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: "The available checks validated feature shape, warmup feasibility, and finite post-warmup values, but I did not find a public function that tests whether `series_fn` output is causally equivalent to an expanding or scalar calculation. `raw_logs/ledgr_doc_snapshot.md`"
+    recommended_action: "Add a public helper such as `ledgr_check_series_fn_causality(indicator, bars)` that compares vectorized output to a scalar `fn` over bounded historical windows when both are supplied."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary/FB-004"
+    episode_id: "2026-05-15_037_leakage_diagnosis_and_series_fn_boundary"
+    title: "Help snapshot filenames were easy to guess incorrectly"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "After using `ledgr_save_help(\"ledgr_indicator\")`, I first tried to read `raw_logs/help_ledgr_indicator.md`, but the helper had written `raw_logs/ledgr_indicator.txt`. PowerShell reported that `raw_logs/help_ledgr_indicator.md` did not exist."
+    recommended_action: "Have `ledgr_save_help()` print or return the exact relative path prominently in examples."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_038_custom_indicator_authoring/FB-001"
+    episode_id: "2026-05-15_038_custom_indicator_authoring"
+    title: "Persisted feature values are not exposed through ledgr_results"
+    bucket: missing_api
+    severity: medium
+    duplicate_of: null
+    evidence: "The task required ledgr_results(bt, what = \"features\"), and ledgr_experiment() has persist_features = TRUE, but ledgr_results() rejected \"features\" even though the run database contained a features table. raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Add what = \"features\" support to ledgr_results()/as_tibble(), or update the task/docs to point to the supported public API for stored feature values."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_038_custom_indicator_authoring/FB-002"
+    episode_id: "2026-05-15_038_custom_indicator_authoring"
+    title: "ledgr_indicator help understates the scalar fn signature"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The help page argument text says fn is function(window) -> numeric | list, while the custom indicators article and task use fn(window, params). raw_logs/ledgr_indicator.txt"
+    recommended_action: "Update ?ledgr_indicator to document fn as function(window, params) and include a params-based scalar example."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_038_custom_indicator_authoring/FB-003"
+    episode_id: "2026-05-15_038_custom_indicator_authoring"
+    title: "Live-object params errors are not illustrated in custom indicator docs"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The article says not to pass connections, environments, external pointers, or live session objects, but it does not show where validation happens or what errors users should expect. An environment and a connection both failed during attempted use, with different messages. raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Add a short invalid params example to the \"Deterministic Parameters And Unsafe Calls\" section, including the expected error behavior."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_038_custom_indicator_authoring/FB-004"
+    episode_id: "2026-05-15_038_custom_indicator_authoring"
+    title: "Runnable custom-indicators script omits the vectorized indicator path"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The prepared runnable vignette script comments out the vectorized `sma_3_custom` example, so the most relevant saved script for this task does not exercise series_fn. LEDGR_DOCS/scripts/custom-indicators.R"
+    recommended_action: "Add a runnable vectorized custom-indicator example, or provide a separate script focused on scalar/vectorized equivalence checks."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_039_sweep_basic_candidate_promotion/FB-001"
+    episode_id: "2026-05-15_039_sweep_basic_candidate_promotion"
+    title: "Runnable sweeps vignette script contains no sweep workflow"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The episode index says runnable vignette scripts are available and should be preferred when present, but `LEDGR_DOCS/scripts/sweeps.R` contained only setup comments and no runnable `ledgr_param_grid()`, `ledgr_sweep()`, `ledgr_candidate()`, or `ledgr_promote()` example. `LEDGR_DOCS/scripts/sweeps.R` only contains the auditr preparation comments and a setup chunk marker."
+    recommended_action: "Add executable code chunks to the sweeps vignette source so the prepared script contains a minimal sweep, candidate, and promotion workflow, or omit the script from the runnable scripts list when it has no useful commands."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_039_sweep_basic_candidate_promotion/FB-002"
+    episode_id: "2026-05-15_039_sweep_basic_candidate_promotion"
+    title: "Getting started vignette still says sweep execution is reserved for later versions"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "`LEDGR_DOCS/getting-started.md` says it walks through the v0.1.7 research loop and its Scope section says sweep and tune APIs are reserved for later versions, while installed ledgr 0.1.8.0 includes `ledgr_sweep()` and the sweeps vignette documents the workflow. `LEDGR_DOCS/getting-started.md` says `Sweep and tune APIs are reserved for later versions.`"
+    recommended_action: "Update the getting-started Scope section for v0.1.8 so it points to `vignette(\"sweeps\", package = \"ledgr\")` for supported sweep execution and only marks tuning as deferred."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_039_sweep_basic_candidate_promotion/FB-003"
+    episode_id: "2026-05-15_039_sweep_basic_candidate_promotion"
+    title: "`ledgr_compute_metrics()` does not expose `final_equity` for sweep-row comparison"
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked to call `ledgr_compute_metrics()` on the promoted run and compare `final_equity` and `sharpe_ratio` against the sweep row. `ledgr_compute_metrics()` returned `sharpe_ratio` but did not include `final_equity`, so `metrics$final_equity` was empty in the first script run. `raw_logs/reproducible_script_v2_stdout.txt`"
+    recommended_action: "Add a note to sweep promotion documentation that `sharpe_ratio` comes from `ledgr_compute_metrics()` but final equity should be read from the final equity row, or include `final_equity` in the standard metrics list."
+    uncertainty: "Parsed with relaxed YAML; raw framework_feedback.md should be checked before promotion."
+  - feedback_id: "2026-05-15_040_sweep_train_test_discipline/FB-001"
+    episode_id: "2026-05-15_040_sweep_train_test_discipline"
+    title: "Cross-snapshot promotion error does not name the required opt-in"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Promoting a train-selected candidate on the test experiment without `require_same_snapshot = FALSE` failed as expected, but the error was only \"Candidate snapshot hash does not match the target experiment snapshot.\" raw_logs/reproducible_script_attempt1_stdout.txt"
+    recommended_action: "Add the opt-in argument name and a train/test hint to the snapshot mismatch error message."
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_040_sweep_train_test_discipline/FB-002"
+    episode_id: "2026-05-15_040_sweep_train_test_discipline"
+    title: "Listed runnable sweeps vignette script contains no runnable sweep workflow"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_039_sweep_basic_candidate_promotion/FB-001"
+    evidence: "`LEDGR_DOCS/index.md` says to prefer runnable vignette scripts when available, but `LEDGR_DOCS/scripts/sweeps.R` contained only the auditr wrapper/setup comments and no train/test sweep code. LEDGR_DOCS/scripts/sweeps.R"
+    recommended_action: "Populate `LEDGR_DOCS/scripts/sweeps.R` with executable chunks from the sweeps vignette, or omit it from the runnable script list when all chunks are non-executable or setup-only."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_041_sweep_failure_rows/FB-001"
+    episode_id: "2026-05-15_041_sweep_failure_rows"
+    title: "Sweep result export needs guidance for list columns"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "After a successful sweep, converting the result with as.data.frame() and writing it with utils::write.csv() failed because hidden list columns such as params and provenance cannot be encoded by write.csv(). raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Add a short sweep-results inspection/export example, such as selecting scalar columns before CSV export or saving the full object with saveRDS()."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_041_sweep_failure_rows/FB-002"
+    episode_id: "2026-05-15_041_sweep_failure_rows"
+    title: "Mixed failure sweep promotion example is missing"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The sweep vignette documents failure rows and candidate promotion separately, but does not show a compact workflow where a FAILED candidate is rejected and a DONE candidate from the same mixed sweep is still promoted successfully. raw_logs/reproducible_script_iter2_stdout.txt"
+    recommended_action: "Add a short \"promote after mixed sweep\" example to the sweeps vignette and cross-link it from ?ledgr_candidate or ?ledgr_promote."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_041_sweep_failure_rows/FB-003"
+    episode_id: "2026-05-15_041_sweep_failure_rows"
+    title: "stop_on_error class vector contains duplicate generic classes"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "The stop_on_error = TRUE path raised the expected failure, but class(error) contained duplicated generic classes: ledgr_strategy_error, simpleError, error, condition, rlang_error, error, condition. raw_logs/reproducible_script_iter2_stdout.txt"
+    recommended_action: "Normalize the condition class vector or document that users should assert on inherits(e, \"ledgr_strategy_error\") rather than exact class equality."
+    uncertainty: "Parser row reports an unclear error or evidence is not enough to classify as a definite ledgr defect."
+  - feedback_id: "2026-05-15_042_sweep_feature_factory/FB-001"
+    episode_id: "2026-05-15_042_sweep_feature_factory"
+    title: "Static feature registration guidance conflicts with feature factories"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The indicators vignette says that if a parameter grid changes a lookback, every lookback variant must be registered before the run and that ledgr does not create indicators dynamically from params. The task and sweeps vignette require `features = function(params)` and dynamic `ledgr_ind_sma(params$n)` feature definitions. research_report.md documents the conflict; the final workflow succeeds in raw_logs/reproducible_script_attempt1_stdout.txt."
+    recommended_action: "Update the indicators vignette to add a note that the static registration rule applies when `features` is a static list/map, and point parameterized indicator sweeps to the feature-factory section in the sweeps vignette."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_042_sweep_feature_factory/FB-002"
+    episode_id: "2026-05-15_042_sweep_feature_factory"
+    title: "Per-candidate feature_set_hash behavior lacks an explicit example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The sweeps vignette says rows carry `feature_fingerprints` and compact provenance with a feature-set hash, and `?ledgr_precompute_features` says factories are resolved and deduplicated by fingerprint. I did not find an explicit example showing how to extract `provenance$feature_set_hash` or stating that it should differ when `features = function(params)` produces different indicators per candidate. raw_logs/feature_set_hashes.csv shows three distinct hashes for n = 3, 5, and 10; raw_logs/provenance_structure.txt shows the nested field path."
+    recommended_action: "Add a vignette snippet showing how to extract `feature_set_hash` from each row's `provenance`, with expected output for a feature-factory grid."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_042_sweep_feature_factory/FB-003"
+    episode_id: "2026-05-15_042_sweep_feature_factory"
+    title: "Precompute help example does not demonstrate feature factories"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The `?ledgr_precompute_features` help topic is directly relevant to feature-factory sweeps, but its example uses a static feature list and does not show `features = function(params)`. raw_logs/ledgr_precompute_features.txt"
+    recommended_action: "Add a second example to `?ledgr_precompute_features` using `features <- function(params) list(ledgr_ind_sma(params$n))` and a grid with multiple `n` values."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_043_sweep_precomputed_features/FB-001"
+    episode_id: "2026-05-15_043_sweep_precomputed_features"
+    title: "Print help omits precomputed payload fields"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The print method help page only said \"Print a precomputed feature payload\" and did not describe that the printed object shows snapshot ID, candidate count, feature count, universe, and scoring range. raw_logs/print.ledgr_precomputed_features.txt and raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Expand ?print.ledgr_precomputed_features to list the printed fields and include a short example output."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_043_sweep_precomputed_features/FB-002"
+    episode_id: "2026-05-15_043_sweep_precomputed_features"
+    title: "Full no-precompute sweep exceeded short runner timeout"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "The required first sweep over 25 combinations without precomputed features took longer than the 120 second outer shell timeout used for the first script run. The wrapper timed out while the child Rscript process continued and later completed successfully. raw_logs/reproducible_script_timeout_note.md and raw_logs/reproducible_script_status.json"
+    recommended_action: "For this episode type, use a runner timeout above five minutes or mention expected runtime in the task brief."
+    uncertainty: ""
+  - feedback_id: "2026-05-15_044_sweep_seed_and_promotion_context/FB-001"
+    episode_id: "2026-05-15_044_sweep_seed_and_promotion_context"
+    title: "Sweeps runnable vignette script is empty"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-15_039_sweep_basic_candidate_promotion/FB-001"
+    evidence: "LEDGR_DOCS/index.md listed LEDGR_DOCS/scripts/sweeps.R as a runnable vignette script, but the file only contained wrapper comments and a setup marker. It did not contain the sweep, seed, candidate, promotion, or context code shown in the rendered sweeps vignette. raw_logs/reproducible_script_trace.txt records that the final workflow had to be assembled manually; direct inspection showed LEDGR_DOCS/scripts/sweeps.R contained only comments/setup."
+    recommended_action: "Populate LEDGR_DOCS/scripts/sweeps.R with runnable code chunks from the sweeps vignette, or omit the script from the runnable script list when no chunks are available."
+    uncertainty: "Advisory duplicate; human maintainer should confirm whether to merge with duplicate_of."
+  - feedback_id: "2026-05-15_044_sweep_seed_and_promotion_context/FB-002"
+    episode_id: "2026-05-15_044_sweep_seed_and_promotion_context"
+    title: "Promotion candidate_summary shape and fields are underspecified"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The docs say promotion context stores the filtered/sorted candidate-summary view passed to ledgr_candidate(), but do not describe the returned structure or fields. In practice, context$candidate_summary was a list of compact candidate records, so names(context$candidate_summary) was NULL and users need str() to inspect the metric fields. raw_logs/reproducible_script_trace.txt shows candidate_summary as a List of 2 compact records with scalar metric/audit fields and NULL top-level names."
+    recommended_action: "Document the promotion_context schema with a small example showing candidate_summary as returned by ledgr_promotion_context(), including retained scalar fields and a note that full equity, ledger, events, fills, and trades are intentionally excluded."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."
+  - feedback_id: "2026-05-15_044_sweep_seed_and_promotion_context/FB-003"
+    episode_id: "2026-05-15_044_sweep_seed_and_promotion_context"
+    title: "No complete stochastic seed replay example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The docs state that ledgr_sweep(seed = ...) derives per-candidate execution_seed values and that ledgr_promote() forwards the selected seed, but they do not include a complete example using a stochastic strategy and direct ledgr_run(seed = candidate$execution_seed) replay to verify identical results. reproducible_script.R contains the manual end-to-end script needed to verify the documented seed behavior."
+    recommended_action: "Add a runnable stochastic mini-example to the sweeps vignette that demonstrates per-candidate execution_seed values and exact replay with ledgr_run(seed = candidate$execution_seed)."
+    uncertainty: "Episode status was invalid, so preserve the finding but verify raw artifacts before promotion."

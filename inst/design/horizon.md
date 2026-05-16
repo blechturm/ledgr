@@ -155,6 +155,26 @@ trading, reporting adapters, additional indicator backends, ML strategy
 artifact management, or expanded asset-class support. Keep these families
 parked until the research-to-paper arc is stable enough for focused RFCs.
 
+### 2026-05-16 [research] Randomized and blocked slice diagnostics
+
+Walk-forward should ship before randomized slice protocols. For time series,
+"random slices" must not mean arbitrary row-level train/test splits that violate
+causality. Future designs should build on the walk-forward window model and
+make slice semantics explicit.
+
+Possible future protocols:
+
+- random contiguous train/test windows;
+- random anchored train/test windows;
+- blocked or bootstrapped windows with no-lookahead constraints;
+- combinatorial symmetric cross-validation;
+- PBO/CSCV-style selection-bias diagnostics.
+
+These should remain separate from the first `ledgr_walk_forward()` release.
+They require stable sweep result shapes, metric context, grid ergonomics,
+parallel dispatch, slice-aware feature validation, and a clear explanation that
+provenance records what happened but does not prove selection integrity.
+
 ### 2026-05-13 [infrastructure] Public parallel sweep backend
 
 The v0.1.8 architecture should stay parallel-ready, but a public parallel sweep

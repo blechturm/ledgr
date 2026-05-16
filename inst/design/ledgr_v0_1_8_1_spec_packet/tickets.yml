@@ -1,0 +1,181 @@
+version: "0.1.8.1"
+source: "v0_1_8_1_tickets.md"
+generated_from: "v0_1_8_1_spec.md"
+tickets:
+  - id: "LDG-2201"
+    title: "Scope Routing And Ticket Synchronization"
+    status: "todo"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.1"
+    tests:
+      - "manual_triage_cross_check"
+      - "git_diff_check"
+
+  - id: "LDG-2202"
+    title: "Feature Lifecycle And Warmup Guide"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "documentation"
+      surface: "features"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "documentation_generation_checks"
+
+  - id: "LDG-2203"
+    title: "Runnable Examples And First-Run Workflows"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "documentation"
+      surface: "examples"
+      scope: "installed_docs"
+    tests:
+      - "script_smoke_tests"
+      - "documentation_contract_tests"
+
+  - id: "LDG-2204"
+    title: "Result Inspection And Metrics Schema Documentation"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "documentation"
+      surface: "metrics"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "manual_metric_example_review"
+
+  - id: "LDG-2205"
+    title: "Strategy Helper Pipeline Documentation"
+    status: "todo"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "documentation"
+      surface: "strategy_helpers"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "example_smoke_checks"
+
+  - id: "LDG-2206"
+    title: "Sweep Documentation Polish And Runnable Sweep Script"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "documentation"
+      surface: "sweeps"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "sweep_example_smoke_test"
+
+  - id: "LDG-2207"
+    title: "Snapshot Metadata And CSV Walkthrough"
+    status: "todo"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "documentation"
+      surface: "snapshots"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "snapshot_example_smoke_check"
+
+  - id: "LDG-2208"
+    title: "Warning And Error Message Polish"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "diagnostics"
+      surface: "conditions"
+      scope: "runtime_and_docs"
+    tests:
+      - "targeted_condition_tests"
+      - "preflight_runtime_tests"
+      - "sweep_failure_tests"
+
+  - id: "LDG-2209"
+    title: "Discoverability And Version Labels"
+    status: "todo"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "documentation"
+      surface: "discoverability"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "pkgdown_navigation_review"
+
+  - id: "LDG-2210"
+    title: "Multi-Output Indicator Bundle Authoring UX"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "feature"
+      surface: "indicator_authoring"
+      scope: "public_api"
+    tests:
+      - "bundle_flattening_tests"
+      - "feature_id_tests"
+      - "fingerprint_tests"
+      - "single_output_regression_tests"
+      - "documentation_contract_tests"
+
+  - id: "LDG-2211"
+    title: "v0.1.8.1 Release Gate And Closeout"
+    status: "todo"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2202"
+      - "LDG-2203"
+      - "LDG-2204"
+      - "LDG-2205"
+      - "LDG-2206"
+      - "LDG-2207"
+      - "LDG-2208"
+      - "LDG-2209"
+      - "LDG-2210"
+    classification:
+      type: "release_gate"
+      surface: "package"
+      scope: "v0.1.8.1"
+    tests:
+      - "full_test_suite"
+      - "r_cmd_build"
+      - "r_cmd_check_no_manual_no_build_vignettes"
+      - "documentation_contract_tests"

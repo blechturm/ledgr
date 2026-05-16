@@ -1,6 +1,6 @@
 # RFC Synthesis: Sweep Single-Core Optimization Routes
 
-**Status:** Synthesis after Claude response and maintainer discussion.  
+**Status:** Accepted design — optimization arc accepted for v0.1.8.x; individual release assignments subject to ticket cut.
 **Date:** 2026-05-15  
 **Thread:**
 
@@ -201,22 +201,28 @@ v0.1.8.0
   Baseline sequential sweep, provenance, promotion, parity.
 
 v0.1.8.1
-  Typed memory events + single-pass sweep summary reconstruction.
+  Auditr stabilization + multi-output indicator bundle authoring.
 
 v0.1.8.2
-  Fast context scaffold via use_fast_context, starting with lookup/closure
-  initialization once per fold.
+  Metric context + risk-free-rate assumption model.
 
-v0.1.8.3+
-  Optional broader fast-context work, feature payload/cache improvements, or
-  parallel-readiness refinements.
+v0.1.8.3
+  Typed memory events + single-pass sweep summary reconstruction.
+  Parity design for persistent-path vs memory-path realized/unrealized PnL
+  must close before implementation begins.
+
+v0.1.8.4+
+  Fast context scaffold via use_fast_context, starting with lookup/closure
+  initialization once per fold, optional broader feature payload/cache
+  improvements, or parallel-readiness refinements.
 
 v0.1.9
   Target risk layer.
 ```
 
 This is a proposed arc, not an already-ticketed plan. It should be specified in
-the roadmap and cut into versioned tickets only after v0.1.8.0 ships.
+the roadmap and cut into versioned tickets only after each predecessor patch
+release is scoped.
 
 ---
 
@@ -380,9 +386,14 @@ For the current cycle:
 
 For future v0.1.8.x:
 
-1. Cut a design/implementation ticket for typed memory events plus single-pass
-   summary reconstruction.
-2. Then cut a fast-context ticket using the `use_fast_context` scaffold.
-3. Treat lazy `features_wide` as a separate API-design issue.
-4. Keep Rcpp and parallel dispatch deferred until the sequential contract is
+1. Keep v0.1.8.1 narrow: auditr stabilization plus multi-output indicator
+   bundle authoring.
+2. Land metric context and `metric_kernel` in v0.1.8.2 so the metric interface
+   is stable before the summary reconstruction changes.
+3. Cut the first optimization ticket for v0.1.8.3: typed memory events plus
+   single-pass summary reconstruction, after the realized/unrealized PnL parity
+   design is closed.
+4. Then cut a fast-context ticket using the `use_fast_context` scaffold.
+5. Treat lazy `features_wide` as a separate API-design issue.
+6. Keep Rcpp and parallel dispatch deferred until the sequential contract is
    stable and the R-level bottlenecks are better isolated.

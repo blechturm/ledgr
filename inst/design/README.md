@@ -2,9 +2,9 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Current release candidate:** v0.1.8.0.
-**Current implementation branch:** `v0.1.8`.
-**Active packet:** `inst/design/ledgr_v0_1_8_spec_packet/`.
+**Current release candidate:** v0.1.8.1.
+**Current implementation branch:** `v0.1.8.1`.
+**Active packet:** `inst/design/ledgr_v0_1_8_1_spec_packet/`.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -17,8 +17,8 @@ For any non-trivial change, read in this order:
 1. `contracts.md` - current execution, snapshot, persistence, feature, and
    strategy contracts.
 2. `ledgr_roadmap.md` - milestone arc and active horizon.
-3. `ledgr_v0_1_8_spec_packet/` - active implementation spec packet for
-   v0.1.8 sweep/fold-core release gate.
+3. `ledgr_v0_1_8_1_spec_packet/` - active implementation spec packet for
+   v0.1.8.1 auditr stabilisation and design work.
 4. Only the architecture, RFC, audit, or spike documents relevant to the active
    ticket.
 
@@ -33,6 +33,7 @@ explicitly asks you to inspect one.
 | Roadmap | Milestone sequence, active horizon, and downstream constraints. |
 | Spec packet | Versioned implementation plan and ticket record. |
 | Architecture input | Active design constraint for upcoming implementation. |
+| Accepted design decision | RFC synthesis accepted by the maintainer; binding for ticket cut and implementation planning within its stated scope until superseded by a spec packet, contract, ADR, or architecture note. |
 | RFC / response | Proposal or reviewer disposition; binding only after accepted into spec, roadmap, contract, or ADR. |
 | Audit / review | Findings that must be routed before release; not all findings remain active after routing. |
 | Spike | Exploratory technical research; informative unless promoted into spec or architecture. |
@@ -41,13 +42,15 @@ explicitly asks you to inspect one.
 
 ## Active Cycle
 
-The active implementation cycle is the `v0.1.8` release gate.
+The active implementation cycle is `v0.1.8.1`.
 
-- Spec: `ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
-- Tickets: `ledgr_v0_1_8_spec_packet/v0_1_8_tickets.md`
-- Machine-readable tickets: `ledgr_v0_1_8_spec_packet/tickets.yml`
+- Spec: `ledgr_v0_1_8_1_spec_packet/v0_1_8_1_spec.md`
+- Tickets: `ledgr_v0_1_8_1_spec_packet/v0_1_8_1_tickets.md`
+- Machine-readable tickets: `ledgr_v0_1_8_1_spec_packet/tickets.yml`
 
-The active implementation target is v0.1.8 sweep/fold-core release closeout.
+The active implementation targets are auditr UX stabilisation and multi-output
+indicator bundle authoring. Metric context and sweep optimization are accepted
+designs for later v0.1.8.x patch releases, not v0.1.8.1 implementation scope.
 
 ## Core Documents
 
@@ -62,12 +65,26 @@ The active implementation target is v0.1.8 sweep/fold-core release closeout.
 
 ## Current Architecture Inputs
 
-These files are active inputs for v0.1.8 planning.
+These files are active architecture inputs from the v0.1.8 cycle, still load-bearing for v0.1.8.1 sweep and fold-core work.
 
 - `architecture/ledgr_v0_1_8_sweep_architecture.md`
 - `architecture/ledgr_sweep_mode_ux.md`
 - `architecture/sweep_mode_code_review.md`
 - `architecture/ledgr_feature_map_ux.md`
+
+## Accepted Design Decisions
+
+These synthesis documents are accepted by the maintainer and binding for ticket
+cut and implementation planning within their stated scope. They live in `rfc/`
+as the end of their RFC thread. When a decision stabilises further it may be
+extracted into a standalone architecture note in `architecture/`.
+
+| Area | Document | Scope | Status |
+| --- | --- | --- | --- |
+| Sweep single-core optimization arc | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md` | v0.1.8.3 optimization sequence | Accepted |
+| Multi-output indicator bundle UX | `rfc/rfc_multi_output_indicator_ux_synthesis.md` | v0.1.8.1 bundle authoring | Accepted |
+| Metric context and risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` | v0.1.8.2 metric design | Accepted |
+| Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
 
 ## RFCs
 
@@ -88,6 +105,20 @@ These files are active inputs for v0.1.8 planning.
 - `rfc/rfc_sweep_promotion_context_v0_1_8_decision.md`
 - `rfc/rfc_parallelism_spike_architecture_consequences.md`
 - `rfc/rfc_parallelism_spike_architecture_consequences_response.md`
+- `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8.md`
+- `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_response.md`
+- `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`
+- `rfc/rfc_multi_output_indicator_ux.md`
+- `rfc/rfc_multi_output_indicator_ux_response.md`
+- `rfc/rfc_multi_output_indicator_ux_maintainer_response.md`
+- `rfc/rfc_multi_output_indicator_ux_synthesis.md`
+- `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1.md`
+- `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`
+- `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`
+- `rfc/rfc_chainable_risk_oms_policy_boundary.md`
+- `rfc/rfc_chainable_risk_oms_policy_boundary_response.md`
+- `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`
+- `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -99,6 +130,19 @@ establish `ledgr_candidate()` / `ledgr_promote()` as the canonical promotion API
 The promotion-context decision adds durable `run_promotion_context`
 selection-audit metadata for runs promoted from sweep candidates; full sweep
 artifact persistence remains future work.
+The sweep optimization synthesis defines the v0.1.8.3+ single-core optimization
+arc: typed memory events first, fast context second, Rcpp and parallelism later.
+The multi-output indicator synthesis defines `ledgr_indicator_bundle` and the
+`ledgr_ind_ttr_outputs()` authoring helper for v0.1.8.1.
+The metric context RFC and synthesis define the `ledgr_metric_context`,
+`ledgr_calendar`, and experiment-level assumption model for v0.1.8.2; the
+synthesis is accepted and binding for v0.1.8.2 ticket cut.
+The chainable risk/OMS synthesis accepts a narrow v0.1.9 target-risk chain and
+defers order-policy, public cost/liquidity chains, tiered output retention, and
+OMS semantics. The execution-policy north-star RFC carries the broader
+pipeline and audit-signal discussion for v0.1.9.x/v0.2.x planning; it is not
+binding implementation scope until promoted through synthesis or a future spec
+packet.
 
 ## Audits And Spikes
 
@@ -119,9 +163,10 @@ ADRs live under `adr/`.
 Versioned spec packets include the active implementation packet and archival release
 records. Keep them in place.
 
-- `ledgr_v0_1_8_spec_packet/` - active implementation packet.
+- `ledgr_v0_1_8_1_spec_packet/` - active implementation packet.
+- `ledgr_v0_1_8_0_spec_packet/` - v0.1.8 sweep/fold-core release record.
 - `ledgr_v0_1_8_00_spec_packet/` - completed design-governance prep packet.
-- `ledgr_v0_1_7_9_spec_packet/` - latest shipped release packet.
+- `ledgr_v0_1_7_9_spec_packet/` - latest prior shipped release packet.
 - `ledgr_v0_1_7_8_spec_packet/` and older - historical records.
 
 Do not treat an older packet as current just because it contains detailed
@@ -133,6 +178,11 @@ instructions. Current work follows the active packet plus the contract index.
 | --- | --- |
 | Runtime/execution change | `contracts.md`, active packet, relevant architecture note |
 | Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
+| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `contracts.md`, future packet when cut |
+| Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, active packet |
+| Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
+| Target risk planning | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md`, future packet when cut |
+| Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |
 | Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, `rfc/rfc_design_doc_governance.md`, `rfc/rfc_design_doc_governance_response.md` |
 | Release operation | `release_ci_playbook.md`, active release/closeout ticket |
 | Audit intake | relevant audit, active packet, tickets |

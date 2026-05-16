@@ -1,6 +1,6 @@
 # RFC Synthesis: Multi-Output Indicator UX And Contract
 
-**Status:** Approved synthesis.
+**Status:** Accepted design — binding for v0.1.8.1 ticket cut and implementation.
 **Date:** 2026-05-15
 **RFC:** `inst/design/rfc/rfc_multi_output_indicator_ux.md`
 **Inputs:**

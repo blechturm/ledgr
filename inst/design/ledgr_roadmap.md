@@ -3,8 +3,9 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Current cycle:** v0.1.8 release gate.
-**Active packet:** `inst/design/ledgr_v0_1_8_spec_packet/`.
+**Current cycle:** v0.1.8.1 auditr stabilization and multi-output indicator
+bundle authoring.
+**Active packet:** `inst/design/ledgr_v0_1_8_1_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -87,11 +88,14 @@ versioned packet.
 | v0.1.7.8 | Done | Strategy reproducibility preflight. | `inst/design/ledgr_v0_1_7_8_spec_packet/` |
 | v0.1.7.9 | Done | Strategy author ergonomics and execution-engine stabilization. | `inst/design/ledgr_v0_1_7_9_spec_packet/` |
 | v0.1.8.00 | Done | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
-| v0.1.8 | Release gate | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_spec_packet/` |
-| v0.1.8.x | Planned | Sweep stabilization and directly adjacent UX hardening. | Future packet |
-| v0.1.8.1 | Planned | Reference-data and risk-free-rate adapters. | Future packet |
+| v0.1.8 | Done | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_0_spec_packet/` |
+| v0.1.8.1 | Planned | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
+| v0.1.8.2 | Planned | Metric context and risk-free-rate assumptions. | Future packet |
+| v0.1.8.3 | Planned | Single-core sweep optimization after metric-kernel semantics settle. | Future packet |
+| v0.1.8.4 | Planned | Parameter-grid quality-of-life helpers after sweep performance stabilizes. | Future packet |
+| v0.1.8.5 | Planned | Parallel sweep dispatch after serial semantics, metrics, and grid UX stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer. | Future packet |
-| v0.1.9.x / v0.2.x | Planned | Walk-forward and selection-bias diagnostics. | Future packet |
+| v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet |
 | v0.1.9.x / v0.2.0 | Planned | Public transaction-cost model API after internal boundary stabilizes. | Future packet |
 | v0.2.x | Planned | OMS semantics, snapshot lineage, and roll-forward data sources. | Future packets |
 | v0.3.0 | Planned | Paper trading adapter and reconciliation. | Future packet |
@@ -152,7 +156,13 @@ Non-goals:
 - no runner, snapshot, fill, or accounting behavior changes;
 - no package version metadata changes.
 
-## Active Milestone: v0.1.8 Lightweight Sweep Mode
+## Completed Milestone: v0.1.8 Lightweight Sweep Mode
+
+This section records the completed v0.1.8 sweep design. It retains the original
+requirement language because those constraints remain useful background for
+patch work, but it is no longer the active implementation milestone. Active
+v0.1.8.x patch scope is defined in the sections below and in the relevant spec
+packet.
 
 v0.1.8 introduces the internal architecture needed for parameter sweeps without
 duplicating execution semantics.
@@ -388,48 +398,152 @@ v0.1.8 should not include:
 - mandatory `ledgr_snapshot_split()`;
 - paper/live adapter behavior.
 
-## Future Constraints Beyond v0.1.8
+## v0.1.8.x Patch Horizon
 
 The following milestones are intentionally brief. They are here only to keep
-downstream constraints visible while v0.1.8 is designed.
+downstream constraints visible while v0.1.8.x patch releases are scoped.
 
-### v0.1.8.x Sweep Stabilization
+### v0.1.8.1 Auditr Stabilization And Indicator Bundle UX
+
+Authoritative inputs:
+
+- `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_spec.md`;
+- `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md`.
 
 Intent:
 
-- harden v0.1.8 sweep behavior without opening a new architecture front;
-- fix bugs and parity gaps found after the first sweep release;
-- refine sweep result printing, failure capture, feature-factory coverage, and
-  warmup diagnostics;
-- improve evaluation-discipline documentation around manual train/test flows;
-- consider `ledgr_snapshot_split()` only if the manual holdout workflow proves
-  awkward after sweep ships.
+- route v0.1.8 auditr findings into documentation, example, diagnostic, and
+  small runtime-polish tickets without reopening sweep execution design;
+- add the accepted multi-output indicator authoring bundle UX as a narrow
+  authoring-layer improvement;
+- preserve the existing single-output feature contract, feature fingerprints,
+  sweep provenance, and fold-core execution semantics.
 
 Non-scope:
 
+- no metric context or risk-free-rate storage model;
+- no single-core sweep performance optimization;
 - no walk-forward API;
-- no PBO/CSCV diagnostics;
 - no public parallel sweep feature;
-- no public risk-layer API;
-- no public cost-model API;
-- no intraday semantics.
+- no target-risk layer.
 
-### v0.1.8.1 Reference Data And Risk-Free Rate Adapters
+### v0.1.8.2 Metric Context And Risk-Free-Rate Assumptions
+
+Authoritative input:
+
+- `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`.
 
 Intent:
 
-- add optional reference-data adapters for benchmark/risk-free-rate inputs;
-- keep external data provenance explicit;
-- avoid making external reference data a hidden dependency of core metrics;
-- keep current sealed snapshot semantics intact.
+- add experiment-level metric context as analysis metadata, not execution
+  identity;
+- provide market templates such as US equity and crypto metric contexts;
+- store a run's resolved metric context as run metadata;
+- thread one metric context through `summary()`, `ledgr_compute_metrics()`,
+  `ledgr_compare_runs()`, `ledgr_sweep()`, and promotion context;
+- replace hidden risk-free-rate and annualization assumptions with disclosed,
+  inspectable context.
+
+Constraints:
+
+- metric context must not enter execution config hash, strategy hash, snapshot
+  hash, feature-set hash, seed derivation, fills, or event ordering;
+- `metric_kernel` must be a plain serializable value object so later sweep
+  optimization and parallel dispatch can consume it safely;
+- intraday calendar inference remains a compatibility fallback, but explicit
+  calendars/templates are the teaching path.
+
+### v0.1.8.3 Single-Core Sweep Optimization
+
+Authoritative input:
+
+- `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`.
+
+Intent:
+
+- optimize no-DB sweep execution after metric-kernel semantics are stable;
+- introduce typed memory events and single-pass summary reconstruction if parity
+  design closes cleanly;
+- reduce fold-core context churn without changing strategy-facing context
+  semantics;
+- keep `ledgr_run()` and `ledgr_sweep()` on one execution core.
+
+Precondition:
+
+- persistent-path and memory-path realized/unrealized PnL semantics must be
+  resolved before implementation begins.
+
+### v0.1.8.4 Parameter-Grid Quality-Of-Life Helpers
+
+Intent:
+
+- reduce verbosity when users create ordinary sweep grids;
+- provide small authoring helpers around the existing parameter-grid contract
+  rather than replacing `ledgr_param_grid()`;
+- keep grid identity, labels, and candidate provenance stable;
+- use the v0.1.8.3 performance envelope to decide how strongly docs should
+  encourage larger grids.
+
+Constraints:
+
+- this is ergonomic sugar, not a new sweep execution mode;
+- do not add a broad tuning DSL or objective/ranking ownership to ledgr;
+- do not make grid helpers depend on metric context or optimization internals;
+- if v0.1.8.1 teaching needs a shorter example, prefer vignette-local helper
+  code rather than committing a public grid DSL early.
+
+### v0.1.8.5 Parallel Sweep Dispatch
+
+Intent:
+
+- add optional parallel candidate dispatch only after the single-core sweep path
+  remains the reference implementation;
+- preserve deterministic result row order, warning/error association, and seed
+  derivation regardless of worker completion order;
+- keep worker execution isolated from persistent stores and shared mutable
+  process state;
+- prefer Windows-safe worker assumptions, including PSOCK-style serialization.
+
+Readiness gates:
+
+- `ledgr_sweep()` candidate execution is fully isolated and no-DB;
+- `metric_kernel` and candidate payloads are plain serializable value objects;
+- single-core performance measurements show remaining candidate work is
+  CPU-bound enough to justify parallel overhead;
+- grid UX has stabilized enough that larger sweeps are an intentional public
+  workflow rather than accidental friction;
+- interrupt, progress, warning ordering, failure ordering, package state, and
+  worker setup semantics are explicitly specified before implementation.
+
+Non-scope:
+
+- no change to the sequential sweep contract;
+- no weakening of seed, warning, failure-row, or promotion provenance
+  guarantees to fit worker scheduling;
+- no public distributed execution API.
+
+### Later v0.1.8.x Sweep Stabilization
+
+Intent:
+
+- harden sweep behavior without opening a new architecture front;
+- refine sweep result printing, failure capture, feature-factory coverage, and
+  warmup diagnostics;
+- consider `ledgr_snapshot_split()` only if the manual holdout workflow proves
+  awkward after sweep ships.
 
 ### v0.1.9 Target Risk Layer
 
+Authoritative input:
+
+- `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`.
+
 Intent:
 
-- introduce `risk_fn(targets, ctx, params) -> targets` after sweep stabilizes;
-- provide helpers for max weight, long-only, sector/net exposure, and minimum
-  trade value;
+- introduce a chainable target-risk layer after sweep stabilizes;
+- provide classed ledgr risk-step objects first, not arbitrary user-supplied
+  risk functions;
+- provide long-only and max-weight helpers as the minimum adapter set;
 - preserve the same fold core parity contract by inserting risk between
   strategy targets and fill timing;
 - expose risk identity in experiment/sweep candidate metadata;
@@ -450,8 +564,10 @@ Cost-estimation bridge:
   cost estimates.
 - Future risk design should decide whether risk receives a cost-estimation
   function or a cost-policy object that mirrors the execution cost resolver.
+- Research order-policy chains, public cost/liquidity chains, and OMS lifecycle
+  semantics are deferred to the execution-policy north-star thread.
 
-### v0.1.9.x / v0.2.x Walk-Forward And Selection-Bias Diagnostics
+### v0.1.9.x Walk-Forward Evaluation
 
 Intent:
 
@@ -461,8 +577,8 @@ Intent:
   ranges and warmup lookback ranges;
 - reuse the same ranking/objective contract that sweep exposes instead of
   duplicating selection logic;
-- evaluate PBO/CSCV diagnostics after walk-forward and sweep result shapes are
-  stable enough to support combinatorial candidate-selection analysis.
+- promote or rerun selected training-window candidates on scoring windows with
+  explicit provenance.
 
 Known constraints:
 
@@ -472,6 +588,8 @@ Known constraints:
   and slice-aware warmup;
 - reproducibility and selection integrity remain orthogonal: provenance records
   what happened, not whether the selection protocol was statistically sound.
+- randomized/blocked slice protocols, PBO, and CSCV diagnostics are deferred
+  until the walk-forward window model is stable.
 
 ### v0.1.9.x / v0.2.0 Public Transaction-Cost Model API
 
@@ -487,6 +605,10 @@ Intent:
   models before public exposure.
 
 ### v0.2.x OMS Semantics And Snapshot Lineage
+
+Authoritative input:
+
+- `inst/design/rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`.
 
 Intent:
 
