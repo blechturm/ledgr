@@ -139,7 +139,7 @@ tickets:
 
   - id: "LDG-2212"
     title: "Indicator Determinism Extraction"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:

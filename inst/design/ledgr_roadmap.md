@@ -90,7 +90,7 @@ versioned packet.
 | v0.1.8.00 | Done | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
 | v0.1.8 | Done | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_0_spec_packet/` |
 | v0.1.8.1 | Planned | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
-| v0.1.8.2 | Planned | Metric context and risk-free-rate assumptions. | Future packet |
+| v0.1.8.2 | Planned | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | Future packet |
 | v0.1.8.3 | Planned | Single-core sweep optimization after metric-kernel semantics settle. | Future packet |
 | v0.1.8.4 | Planned | Parameter-grid quality-of-life helpers after sweep performance stabilizes. | Future packet |
 | v0.1.8.5 | Planned | Parallel sweep dispatch after serial semantics, metrics, and grid UX stabilize. | Future packet |
@@ -427,11 +427,12 @@ Non-scope:
 - no public parallel sweep feature;
 - no target-risk layer.
 
-### v0.1.8.2 Metric Context And Risk-Free-Rate Assumptions
+### v0.1.8.2 Metric Context And Indicator Codebase Phase 2 Cleanup
 
-Authoritative input:
+Authoritative inputs:
 
-- `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`.
+- `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`;
+- `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`.
 
 Intent:
 
@@ -442,7 +443,11 @@ Intent:
 - thread one metric context through `summary()`, `ledgr_compute_metrics()`,
   `ledgr_compare_runs()`, `ledgr_sweep()`, and promotion context;
 - replace hidden risk-free-rate and annualization assumptions with disclosed,
-  inspectable context.
+  inspectable context;
+- complete Phase 2 of the indicator codebase simplification: rename
+  `R/indicators_builtin.R` to `R/indicator-builtins.R` and
+  `R/indicator_adapters.R` to `R/indicator-adapters.R`, and split
+  `R/indicator_dev.R` into `R/indicator-dev.R` plus `R/pulse-snapshot.R`.
 
 Constraints:
 
@@ -451,7 +456,12 @@ Constraints:
 - `metric_kernel` must be a plain serializable value object so later sweep
   optimization and parallel dispatch can consume it safely;
 - intraday calendar inference remains a compatibility fallback, but explicit
-  calendars/templates are the teaching path.
+  calendars/templates are the teaching path;
+- Phase 2 file moves must preserve all public APIs, feature IDs, fingerprints,
+  exports, error classes, and roxygen prose; file-reference fields in
+  `man/*.Rd` may change as expected;
+- Phase 2 may only run after Phase 1 (LDG-2212) has shipped and completed at
+  least one CI cycle.
 
 ### v0.1.8.3 Single-Core Sweep Optimization
 

@@ -85,7 +85,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Multi-output indicator bundle UX | `rfc/rfc_multi_output_indicator_ux_synthesis.md` | v0.1.8.1 bundle authoring | Accepted |
 | Metric context and risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` | v0.1.8.2 metric design | Accepted |
 | Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
-| Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.x follow-up cleanup | Accepted |
+| Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
 
 ## RFCs
 
@@ -149,8 +149,9 @@ binding implementation scope until promoted through synthesis or a future spec
 packet.
 The indicator codebase simplification synthesis accepts a Phase 1
 determinism-extraction refactor. The active v0.1.8.1 spec includes that Phase 1
-work before multi-output bundle implementation; follow-up file naming and
-documentation polish remain deferred to later v0.1.8.x work.
+work before multi-output bundle implementation; the v0.1.8.2 roadmap entry
+carries the Phase 2 file/role cleanup (indicator file renames plus the
+`R/indicator_dev.R` split into `R/indicator-dev.R` and `R/pulse-snapshot.R`).
 
 ## Audits And Spikes
 

@@ -557,7 +557,7 @@ scope: installed_docs
 Priority: P1  
 Effort: M  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -643,6 +643,21 @@ grid <- ledgr_param_grid(short = list(n = 10L), long = list(n = 20L))
 - Precompute and sweep feature-factory tests.
 - API export lock tests.
 - `devtools::document()` diff review.
+
+### Completion Notes
+
+- Added hard fingerprint pins for core built-in indicators, an `ledgr_adapter_r()`
+  local-closure adapter, a functional strategy closure, and
+  `ledgr_feature_engine_version()`.
+- Added version-conditional TTR pins for TTR 0.24.4.
+- Added feature-factory sweep identity pins for the `n = 10L` / `n = 20L`
+  candidate grid, including candidate fingerprints, feature-set hashes,
+  feature union, and feature-union hash.
+- Added `R/determinism.R` and moved only the approved determinism/fingerprint
+  helpers from `R/indicator.R`.
+- Confirmed `devtools::document()` produces only unrelated generated
+  documentation ordering/content churn; those generated files were not retained
+  for this internal refactor.
 
 ### Source Reference
 
