@@ -3,8 +3,9 @@
 **Status:** Draft scoped implementation baseline.
 **Target Branch:** `v0.1.8.1`
 **Scope:** v0.1.8 auditr finding triage, documentation/UX stabilization,
-examples, diagnostics, narrow message polish, and the accepted multi-output
-indicator bundle authoring UX.
+examples, diagnostics, narrow message polish, the accepted indicator
+determinism-extraction refactor, and the accepted multi-output indicator bundle
+authoring UX.
 **Non-scope for this pass:** All other roadmap feature work, performance
 optimization, parallel sweep, parameter-grid QoL helpers, new research workflow
 templates, metric context/risk-free-rate storage, target-risk layers, execution
@@ -27,6 +28,7 @@ Supporting context:
 - `inst/design/ledgr_roadmap.md`
 - `inst/design/horizon.md`
 - `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md`
+- `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`
 - `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`
 - `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`
 - `inst/design/ledgr_v0_1_8_0_spec_packet/v0_1_8_spec.md`
@@ -63,15 +65,24 @@ The release should preserve the v0.1.8 execution architecture. It should not
 reopen sweep design, introduce a second execution path, or start broad roadmap
 features before auditr findings are routed.
 
-The only accepted roadmap add-on for this cycle is the multi-output indicator
-bundle authoring UX. Metric context is deferred to v0.1.8.2, and single-core
-sweep optimization is deferred to v0.1.8.3.
+The accepted non-auditr additions for this cycle are narrow and
+indicator-adjacent:
+
+- the Phase 1 indicator determinism-extraction refactor from
+  `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`;
+- the multi-output indicator bundle authoring UX from
+  `rfc/rfc_multi_output_indicator_ux_synthesis.md`.
+
+The determinism extraction must land before bundle/adapter implementation that
+touches `ledgr_function_fingerprint()` or indicator fingerprints. Metric context
+is deferred to v0.1.8.2, and single-core sweep optimization is deferred to
+v0.1.8.3.
 
 Roadmap placement for adjacent work:
 
 | Release | Scope |
 | --- | --- |
-| v0.1.8.1 | Auditr stabilization and multi-output indicator bundle authoring. |
+| v0.1.8.1 | Auditr stabilization, indicator determinism extraction, and multi-output indicator bundle authoring. |
 | v0.1.8.2 | Metric context and risk-free-rate assumptions. |
 | v0.1.8.3 | Single-core sweep optimization after metric-kernel semantics settle. |
 | v0.1.8.4 | Parameter-grid quality-of-life helpers. |
@@ -116,7 +127,7 @@ text, warning explanations, and installed documentation routing.
 
 ## 3. Release Goals
 
-v0.1.8.1 has six auditr-first goals and one accepted roadmap add-on:
+v0.1.8.1 has six auditr-first goals and two accepted non-auditr additions:
 
 1. Make feature, indicator, feature-map, and warmup contracts teachable from a
    compact installed guide.
@@ -133,6 +144,10 @@ v0.1.8.1 has six auditr-first goals and one accepted roadmap add-on:
    extra investigation to understand origin, consequence, or next action.
 7. Add the accepted multi-output indicator bundle authoring UX without changing
    the existing single-output feature contract or runtime feature semantics.
+8. Extract package-level determinism and fingerprint helpers from
+   `R/indicator.R` into `R/determinism.R` before indicator-adjacent bundle or
+   adapter work lands, without changing public APIs, hashes, feature IDs,
+   exports, or documentation output.
 
 Secondary goals:
 
@@ -382,6 +397,27 @@ Required v0.1.8.1 outcome:
 - ledgr package tickets should only reference THEME-008 when a concrete package
   doc can reduce avoidable user confusion.
 
+### LDG-2201 Routing Gate Disposition
+
+LDG-2201 closes the initial routing gate. Implementation tickets may refine
+wording and tests, but they should not reopen release scope without a spec
+amendment.
+
+| Theme | Disposition | Ticket |
+| --- | --- | --- |
+| THEME-001 runnable examples | In scope | LDG-2203 |
+| THEME-002 feature/indicator/warmup contracts | In scope | LDG-2202 |
+| THEME-003 strategy helper pipeline | In scope | LDG-2205 |
+| THEME-004 result inspection/metrics schemas | In scope, docs-first | LDG-2204 |
+| THEME-005 snapshot/sealing metadata | In scope | LDG-2207 |
+| THEME-006 sweep/promotion/precompute/seed workflows | In scope | LDG-2206 |
+| THEME-007 discoverability/version labels | In scope | LDG-2209 |
+| THEME-008 runner/local environment friction | Mostly out of ledgr package scope | No primary implementation ticket; referenced only if a package doc can reduce avoidable confusion |
+| THEME-009 warnings/errors | In scope after validation | LDG-2208, with coordination into LDG-2202 and LDG-2207 where the row is feature or snapshot specific |
+| Indicator determinism extraction | Accepted internal refactor for v0.1.8.1 | LDG-2212; must land before LDG-2210 and other indicator-adjacent code work |
+| Multi-output indicator bundle UX | Accepted roadmap add-on for v0.1.8.1 | LDG-2210 |
+| Release validation | In scope | LDG-2211 |
+
 ---
 
 ## 5. Missing-API Rows
@@ -405,9 +441,80 @@ Default disposition for this spec:
   to satisfy an existing public contract;
 - otherwise move to horizon or a later roadmap cycle.
 
+LDG-2201 maintainer dispositions:
+
+| Missing or proposed API | v0.1.8.1 disposition | Follow-up owner |
+| --- | --- | --- |
+| `ledgr_results(bt, what = "features")` for persisted feature values | Deferred. Do not add a new `ledgr_results()` result kind in v0.1.8.1. LDG-2202 and LDG-2204 should document the supported inspection paths and note the absence of a committed public persisted-feature table accessor. | Future feature inspection/results API design, if still needed after documentation pass |
+| Public causal validator for vectorized `series_fn` indicators | Deferred. Do not add a public validator in v0.1.8.1. LDG-2202 and LDG-2208 should clarify current causal expectations, preflight limits, and diagnostics. | Future feature QA/causality design |
+| `final_equity` in `ledgr_compute_metrics()` | Deferred. Do not change the metrics object schema in v0.1.8.1. LDG-2204 should document where final equity is available today, including equity results and sweep rows. | Future metrics schema/metric-context work if a schema change is justified |
+| Public annualization constant or bars-per-year accessor for Sharpe verification | Deferred to metric-context design. LDG-2204 should document current behavior: risk-free rate is currently fixed by the existing metric path and annualization is inferred from cadence. No second annualization source should be introduced in v0.1.8.1. | v0.1.8.2 metric context/risk-free-rate work |
+| Richer installed documentation indexes or navigation helpers | Documentation-only improvements are in scope under LDG-2209. Do not add a public runtime helper unless a later ticket explicitly scopes it. | LDG-2209 for docs; future API only if separately specified |
+
 ---
 
-## 6. Accepted Roadmap Add-On: Multi-Output Indicator Bundle UX
+## 6. Accepted Internal Refactor: Indicator Determinism Extraction
+
+v0.1.8.1 includes Phase 1 from
+`rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`.
+
+Required outcome:
+
+- add pre-refactor fingerprint-stability pins;
+- add pre-refactor feature-factory identity pins;
+- create `R/determinism.R`;
+- move only the accepted package-level determinism/fingerprint helpers out of
+  `R/indicator.R`:
+  - `ledgr_deparse_one()`;
+  - `ledgr_static_function_signature()`;
+  - `ledgr_stable_payload()`;
+  - `ledgr_function_fingerprint()`;
+  - `ledgr_are_params_deterministic()`;
+  - `ledgr_assert_indicator_fn_pure()`;
+  - `ledgr_assert_indicator_safe()`;
+- keep `ledgr_indicator_fingerprint()`, `ledgr_feature_id()`,
+  `ledgr_indicator()`, print methods, and indicator registry functions in
+  `R/indicator.R`;
+- preserve all current feature IDs, fingerprints, feature-cache keys,
+  feature-set hashes, strategy registry/config identity, error classes,
+  exports, and generated documentation output.
+
+Sequencing:
+
+- This ticket must land before multi-output bundle or talib-adapter work that
+  touches `ledgr_function_fingerprint()` or indicator fingerprints.
+- Pins must be added and pass before moving functions.
+- The move is complete only if pins still pass after the move.
+
+Required identity gates:
+
+- hard pins for built-in indicators, a local `ledgr_adapter_r()` closure,
+  `ledgr_function_fingerprint()` over a local strategy closure, and
+  `ledgr_feature_engine_version()`;
+- version-conditional pins for TTR indicators, keyed to the recorded
+  `packageVersion("TTR")`;
+- a feature-factory identity pin using:
+
+```r
+features = function(params) list(ledgr_ind_sma(params$n))
+grid <- ledgr_param_grid(short = list(n = 10L), long = list(n = 20L))
+```
+
+The feature-factory test should use the existing deterministic sweep fixture
+shape (`ledgr_sweep_test_bars()`, extracted if needed) and pin candidate feature
+fingerprints and feature-set hashes.
+
+Non-goals for this refactor:
+
+- no public API changes;
+- no hash changes;
+- no file renames beyond adding `R/determinism.R`;
+- no `R/indicator_dev.R` split;
+- no `ledgr_pulse_features()` input broadening;
+- no feature-shape normalization;
+- no documentation rewrite.
+
+## 7. Accepted Roadmap Add-On: Multi-Output Indicator Bundle UX
 
 v0.1.8.1 includes the accepted multi-output indicator authoring bundle from
 `rfc/rfc_multi_output_indicator_ux_synthesis.md`.
@@ -433,7 +540,7 @@ Non-goals for this add-on:
 
 ---
 
-## 7. Non-Goals
+## 8. Non-Goals
 
 v0.1.8.1 auditr-first scope must not silently include:
 
@@ -453,13 +560,15 @@ v0.1.8.1 auditr-first scope must not silently include:
 - new objective/ranking ownership in `ledgr_sweep()`;
 - broad public feature-retrieval or causality-validation APIs without ticketed
   maintainer approval.
+- indicator codebase Phase 2 cleanup, including file renames,
+  `R/indicator_dev.R` splitting, or `R/pulse-snapshot.R` extraction.
 
 Further roadmap work requires an explicit spec amendment. This spec intentionally
 keeps v0.1.8.2+ roadmap items out of v0.1.8.1.
 
 ---
 
-## 8. Documentation Standards For This Cycle
+## 9. Documentation Standards For This Cycle
 
 v0.1.8.1 documentation should follow these standards:
 
@@ -476,52 +585,62 @@ v0.1.8.1 documentation should follow these standards:
 
 ---
 
-## 9. Candidate Ticket Tracks
+## 10. Candidate Ticket Tracks
 
 Ticket cut should convert this spec into a small number of coherent tracks:
 
 1. **Scope routing and duplicate disposition**
    - Confirm every auditr theme has an explicit route.
    - Record which missing-api rows are deferred.
-   - This track must complete before ticket cut begins for tracks 2-10.
+   - This track must complete before ticket cut begins for implementation
+     tracks.
 
-2. **Feature lifecycle and warmup guide**
+2. **Indicator determinism extraction**
+   - Implement the accepted Phase 1 refactor from
+     `rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`.
+   - Must land before Track 11 bundle work or any talib-adapter work touching
+     indicator fingerprinting.
+   - Acceptance criteria must include pre-refactor pins, two-tier fingerprint
+     stability tests, the feature-factory identity pin, no public API changes,
+     no hash drift, and no unexpected `man/*.Rd` diffs.
+
+3. **Feature lifecycle and warmup guide**
    - Address THEME-002 and related parts of THEME-009.
-   - Coordinate with Track 10 so bundle flattening, derived feature IDs, and
+   - Coordinate with Track 11 so bundle flattening, derived feature IDs, and
      when to use bundle helpers versus single-output adapters are taught in the
      lifecycle guide rather than duplicated inconsistently.
 
-3. **Runnable examples and first-run workflow**
+4. **Runnable examples and first-run workflow**
    - Address THEME-001 and stale runnable-script findings.
 
-4. **Result inspection and metrics schemas**
+5. **Result inspection and metrics schemas**
    - Address THEME-004 and decide missing-api rows.
 
-5. **Strategy helper pipeline documentation**
+6. **Strategy helper pipeline documentation**
    - Address THEME-003.
 
-6. **Sweep documentation polish**
+7. **Sweep documentation polish**
    - Address THEME-006.
 
-7. **Snapshot and metadata documentation**
+8. **Snapshot and metadata documentation**
    - Address THEME-005.
 
-8. **Warning/error message polish**
+9. **Warning/error message polish**
    - Address validated THEME-009 rows.
 
-9. **Discoverability and version labels**
+10. **Discoverability and version labels**
    - Address THEME-007.
 
-10. **Multi-output indicator bundle authoring**
+11. **Multi-output indicator bundle authoring**
     - Implement the accepted bundle UX without changing the core feature series
       contract.
     - Acceptance criteria must cite the synthesis test requirements, including
       ordinary-indicator materialization, unique feature IDs, output-specific
       fingerprints, and unchanged existing single-output IDs/fingerprints.
-    - Function-level help should link to the Track 2 lifecycle guide rather than
+    - Function-level help should link to the Track 3 lifecycle guide rather than
       becoming a second conceptual guide.
 
-11. **Release gate**
+12. **Release gate**
     - Verify docs, examples, tests, NEWS, site build, and package check.
 
 No other roadmap-feature tickets should be added to v0.1.8.1 unless this spec
@@ -529,12 +648,14 @@ is explicitly amended.
 
 ---
 
-## 10. Verification Strategy
+## 11. Verification Strategy
 
 v0.1.8.1 verification should include:
 
 - targeted tests for any runtime message or API behavior changed by a ticket;
 - documentation contract tests for new links, examples, and required wording;
+- fingerprint-stability and feature-factory identity pins for the determinism
+  extraction refactor;
 - runnable script checks for examples advertised as runnable;
 - pkgdown build;
 - full `testthat` run;
@@ -547,11 +668,14 @@ must assert the new behavior directly.
 
 ---
 
-## 11. Definition Of Done
+## 12. Definition Of Done
 
 v0.1.8.1 is done when:
 
 - every v0.1.8 auditr theme has an explicit disposition;
+- the accepted indicator determinism extraction has shipped before
+  indicator-adjacent bundle/adapter work or has been explicitly deferred by
+  maintainer decision before such work starts;
 - the accepted multi-output indicator bundle UX has either shipped or been
   explicitly deferred by maintainer decision;
 - medium-severity documentation gaps are either fixed or deliberately deferred;

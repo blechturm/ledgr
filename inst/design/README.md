@@ -85,6 +85,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Multi-output indicator bundle UX | `rfc/rfc_multi_output_indicator_ux_synthesis.md` | v0.1.8.1 bundle authoring | Accepted |
 | Metric context and risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` | v0.1.8.2 metric design | Accepted |
 | Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
+| Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.x follow-up cleanup | Accepted |
 
 ## RFCs
 
@@ -119,6 +120,9 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_chainable_risk_oms_policy_boundary_response.md`
 - `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`
 - `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`
+- `rfc/rfc_indicator_codebase_simplification_v0_1_8_x.md`
+- `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_response.md`
+- `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -143,12 +147,22 @@ OMS semantics. The execution-policy north-star RFC carries the broader
 pipeline and audit-signal discussion for v0.1.9.x/v0.2.x planning; it is not
 binding implementation scope until promoted through synthesis or a future spec
 packet.
+The indicator codebase simplification synthesis accepts a Phase 1
+determinism-extraction refactor. The active v0.1.8.1 spec includes that Phase 1
+work before multi-output bundle implementation; follow-up file naming and
+documentation polish remain deferred to later v0.1.8.x work.
 
 ## Audits And Spikes
 
 - `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
 - `audits/v0_1_8_spec_deep_review.md` - v0.1.8 spec review and routing.
 - `spikes/ledgr_parallelism_spike/` - v0.1.8 parallelism spike episode.
+
+## Maintainer Review
+
+- `maintainer_review/feature_value_path_workbook.qmd` - internal notebook for tracing
+  how declared features become `ctx$feature()` values. This is a maintainer
+  code-review aid, not installed user documentation or a contract.
 
 ## ADRs
 
@@ -180,6 +194,8 @@ instructions. Current work follows the active packet plus the contract index.
 | Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
 | Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `contracts.md`, future packet when cut |
 | Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, active packet |
+| Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, active packet |
+| Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
 | Target risk planning | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md`, future packet when cut |
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |

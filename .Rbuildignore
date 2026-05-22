@@ -5,6 +5,7 @@
 ^data-raw$
 ^\.github$
 ^\.claude$
+^\.understand-anything$
 ^docs$
 ^pkgdown$
 ^_pkgdown\.yml$

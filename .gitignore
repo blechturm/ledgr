@@ -68,3 +68,4 @@ data-raw/*
 !data-raw/make_demo_bars.R
 inst/extdata/.DS_Store
 .claude
+.understand-anything/

@@ -4,7 +4,7 @@ generated_from: "v0_1_8_1_spec.md"
 tickets:
   - id: "LDG-2201"
     title: "Scope Routing And Ticket Synchronization"
-    status: "todo"
+    status: "in_review"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -137,6 +137,27 @@ tickets:
       - "documentation_contract_tests"
       - "pkgdown_navigation_review"
 
+  - id: "LDG-2212"
+    title: "Indicator Determinism Extraction"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2201"
+    classification:
+      type: "refactor"
+      surface: "indicator_determinism"
+      scope: "internal"
+    tests:
+      - "fingerprint_stability_tests"
+      - "feature_factory_identity_pins"
+      - "indicator_tests"
+      - "feature_cache_tests"
+      - "precompute_feature_factory_tests"
+      - "sweep_feature_factory_tests"
+      - "api_export_lock_tests"
+      - "devtools_document_diff_review"
+
   - id: "LDG-2210"
     title: "Multi-Output Indicator Bundle Authoring UX"
     status: "todo"
@@ -144,6 +165,7 @@ tickets:
     effort: "M"
     dependencies:
       - "LDG-2201"
+      - "LDG-2212"
     classification:
       type: "feature"
       surface: "indicator_authoring"
@@ -169,6 +191,7 @@ tickets:
       - "LDG-2207"
       - "LDG-2208"
       - "LDG-2209"
+      - "LDG-2212"
       - "LDG-2210"
     classification:
       type: "release_gate"

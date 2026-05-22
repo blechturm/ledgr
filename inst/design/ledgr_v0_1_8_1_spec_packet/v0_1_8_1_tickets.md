@@ -2,22 +2,25 @@
 
 Version: v0.1.8.1  
 Date: 2026-05-16  
-Total Tickets: 11
+Total Tickets: 12
 
 ## Ticket Organization
 
 This ticket packet implements the scoped v0.1.8.1 plan from
 `v0_1_8_1_spec.md`: auditr-driven stabilization, documentation and diagnostic
-polish, and the accepted multi-output indicator bundle authoring UX.
+polish, the accepted indicator determinism-extraction refactor, and the
+accepted multi-output indicator bundle authoring UX.
 
 Roadmap work explicitly deferred by the spec is not part of this packet:
 metric context/risk-free-rate storage, sweep optimization, parameter-grid QoL,
 parallel sweep, target-risk policy layers, execution-policy/OMS work,
 walk-forward validation, and random-slice validation.
 
-Track 1 is a gate. LDG-2202 through LDG-2210 are cut here as draft
-implementation tracks, but LDG-2201 must complete before implementation work
-begins on them.
+Track 1 is a gate. LDG-2202 through LDG-2210 plus LDG-2212 are cut here as
+draft implementation tracks, but LDG-2201 must complete before implementation
+work begins on them. LDG-2212 must land before LDG-2210 and any other
+indicator-adjacent code work that touches indicator construction,
+fingerprinting, feature factories, or adapter internals.
 
 ## Dependency DAG
 
@@ -31,15 +34,17 @@ LDG-2201 Scope routing gate
   |-- LDG-2207 Snapshot metadata and CSV walkthrough
   |-- LDG-2208 Warning and error message polish
   |-- LDG-2209 Discoverability and version labels
-  `-- LDG-2210 Multi-output indicator bundle authoring UX
+  `-- LDG-2212 Indicator determinism extraction
+        `-- LDG-2210 Multi-output indicator bundle authoring UX
 
-LDG-2211 Release gate depends on LDG-2202 through LDG-2210.
+LDG-2211 Release gate depends on LDG-2202 through LDG-2210 and LDG-2212.
 ```
 
 ## Priority Levels
 
 - P0: Release gate or scope gate.
-- P1: User-facing correctness, teachability, or new accepted public surface.
+- P1: User-facing correctness, teachability, sequencing-critical internal
+  refactor, or new accepted public surface.
 - P2: Documentation polish and discoverability improvements.
 
 ---
@@ -49,7 +54,7 @@ LDG-2211 Release gate depends on LDG-2202 through LDG-2210.
 Priority: P0  
 Effort: S  
 Dependencies: none  
-Status: Not Started
+Status: In Review
 
 ### Description
 
@@ -74,7 +79,7 @@ missing-api rows.
 ### Acceptance Criteria
 
 - Track 1 decisions are recorded in this packet or the spec packet notes before
-  LDG-2202 through LDG-2210 begin.
+  LDG-2202 through LDG-2210 or LDG-2212 begin.
 - Every auditr theme has an explicit disposition.
 - Missing-api rows have an explicit maintainer disposition: implement now,
   defer to a named future milestone, or reject.
@@ -86,6 +91,17 @@ missing-api rows.
 
 - Manual cross-check against the triage report and spec.
 - `git diff --check`.
+
+### Completion Notes
+
+- Added `LDG-2201 Routing Gate Disposition` to `v0_1_8_1_spec.md`.
+- Added explicit maintainer dispositions for missing/proposed APIs in
+  `v0_1_8_1_spec.md`.
+- Confirmed LDG-2202 through LDG-2210 and LDG-2212 remain draft implementation
+  tracks gated by LDG-2201 review.
+- Added LDG-2212 as the first indicator-adjacent code ticket and made LDG-2210
+  depend on it.
+- No runtime source files changed.
 
 ### Source Reference
 
@@ -536,11 +552,118 @@ scope: installed_docs
 
 ---
 
-## LDG-2210: Multi-Output Indicator Bundle Authoring UX
+## LDG-2212: Indicator Determinism Extraction
 
 Priority: P1  
 Effort: M  
 Dependencies: LDG-2201  
+Status: Not Started
+
+### Description
+
+Extract package-level determinism and fingerprint helpers from `R/indicator.R`
+into `R/determinism.R` before multi-output bundle or adapter work builds on the
+current file shape. This is a narrow internal refactor: it must not change
+public APIs, feature IDs, hashes, exports, error classes, or generated
+documentation output.
+
+This ticket must land before LDG-2210 and before any other indicator-adjacent
+code work that touches indicator construction, fingerprinting, feature
+factories, or adapter internals.
+
+### Tasks
+
+- Add `tests/testthat/test-fingerprint-stability.R` with pre-refactor hard pins
+  for:
+  - `ledgr_ind_sma(20)`;
+  - `ledgr_ind_ema(20)`;
+  - `ledgr_ind_rsi(14)`;
+  - `ledgr_ind_returns(5)`;
+  - `ledgr_adapter_r()` wrapping a local closure defined in the test file;
+  - `ledgr_function_fingerprint()` over a local strategy closure defined in the
+    test file;
+  - `ledgr_feature_engine_version()`.
+- Add version-conditional TTR fingerprint pins keyed to the recorded
+  `packageVersion("TTR")` for:
+  - `ledgr_ind_ttr("RSI", input = "close", n = 14)`;
+  - `ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20)`.
+- Add pre-refactor feature-factory identity pins using:
+
+```r
+features = function(params) list(ledgr_ind_sma(params$n))
+grid <- ledgr_param_grid(short = list(n = 10L), long = list(n = 20L))
+```
+
+- Use the existing deterministic sweep fixture shape (`ledgr_sweep_test_bars()`,
+  extracted if needed) and pin candidate feature fingerprints and feature-set
+  hashes.
+- Create `R/determinism.R`.
+- Move only these helpers from `R/indicator.R` to `R/determinism.R`, without
+  renaming:
+  - `ledgr_deparse_one()`;
+  - `ledgr_static_function_signature()`;
+  - `ledgr_stable_payload()`;
+  - `ledgr_function_fingerprint()`;
+  - `ledgr_are_params_deterministic()`;
+  - `ledgr_assert_indicator_fn_pure()`;
+  - `ledgr_assert_indicator_safe()`.
+- Keep `ledgr_indicator_fingerprint()`, `ledgr_feature_id()`,
+  `ledgr_indicator()`, print methods, and registry functions in `R/indicator.R`.
+- Add a short `R/determinism.R` file comment noting the helpers were moved from
+  `R/indicator.R` during LDG-2212 and that pre-refactor blame/history lives in
+  `R/indicator.R`.
+- Run `devtools::document()` and verify there are no unexpected `man/*.Rd`
+  diffs.
+
+### Acceptance Criteria
+
+- All hard fingerprint pins match after the move.
+- Version-conditional TTR pins either match under the recorded TTR version or
+  are explicitly skipped when the installed TTR version differs.
+- Feature-factory candidate feature fingerprints and feature-set hashes match
+  their pre-refactor pins.
+- Existing feature IDs are unchanged.
+- Existing feature-cache keys and `ledgr_feature_engine_version()` are
+  unchanged.
+- Existing functional strategy registry/config identity behavior is unchanged.
+- Error classes remain unchanged:
+  - `ledgr_invalid_args`;
+  - `ledgr_purity_violation`;
+  - `ledgr_config_non_deterministic`.
+- No public APIs, exports, docs, examples, or user-facing behavior change.
+- No file renames beyond adding `R/determinism.R`.
+- `R/indicator_dev.R` is not split.
+- `ledgr_pulse_features()` input support is not broadened.
+
+### Verification
+
+- `tests/testthat/test-fingerprint-stability.R`.
+- Targeted indicator tests.
+- Feature-cache tests.
+- Precompute and sweep feature-factory tests.
+- API export lock tests.
+- `devtools::document()` diff review.
+
+### Source Reference
+
+- `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`
+- `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_spec.md`
+
+### Classification
+
+```yaml
+type: refactor
+surface: indicator_determinism
+scope: internal
+```
+
+---
+
+## LDG-2210: Multi-Output Indicator Bundle Authoring UX
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2201, LDG-2212
 Status: Not Started
 
 ### Description
@@ -601,7 +724,7 @@ scope: public_api
 
 Priority: P0  
 Effort: S  
-Dependencies: LDG-2202, LDG-2203, LDG-2204, LDG-2205, LDG-2206, LDG-2207, LDG-2208, LDG-2209, LDG-2210  
+Dependencies: LDG-2202, LDG-2203, LDG-2204, LDG-2205, LDG-2206, LDG-2207, LDG-2208, LDG-2209, LDG-2212, LDG-2210
 Status: Not Started
 
 ### Description
