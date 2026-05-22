@@ -87,6 +87,42 @@ Lower-level and legacy helpers may be narrower. The canonical workflow is:
 register features on `ledgr_experiment()`, then read pulse-known values through
 `ctx$feature()` or `ctx$features()` inside the strategy.
 
+## Feature Lifecycle: From Declaration To Lookup
+
+The feature path has five steps:
+
+1. You declare feature definitions with `ledgr_indicator()` helpers, built-in
+   helpers such as `ledgr_ind_sma()`, TTR adapters, CSV/R adapters, a
+   `ledgr_feature_map()`, or a `features = function(params)` factory.
+2. `ledgr_experiment()` stores the declaration. Static lists and feature maps
+   are ready immediately. Factories are materialized later for each concrete
+   parameter list.
+3. Optional `ledgr_precompute_features()` resolves a parameter grid, computes
+   each candidate's concrete feature set, deduplicates shared indicator
+   fingerprints, and records candidate feature-set hashes.
+4. During `ledgr_run()` or `ledgr_sweep()`, the fold core computes the
+   registered feature values at each pulse without looking past the current
+   bar.
+5. Strategy code reads the current pulse-known values with `ctx$feature()` by
+   engine feature ID, or with `ctx$features()` by feature-map alias.
+
+Feature IDs identify values inside the pulse context. Fingerprints identify the
+feature definition used to compute those values. Changing a function body,
+`series_fn`, `params`, warmup requirement, source adapter, or selected output
+changes the fingerprint even when the feature ID is intentionally kept stable.
+For multi-output sources such as TTR `BBands` or `MACD`, each selected output is
+an ordinary indicator with its own feature ID and output-specific fingerprint.
+
+If two feature declarations produce the same engine feature ID, ledgr treats
+that as one feature name in the pulse context. Use distinct IDs or aliases when
+you need to compare two different definitions. A feature-map alias never changes
+the underlying engine feature ID or fingerprint; it only gives your strategy a
+readable name for mapped access.
+
+The upcoming multi-output bundle helper follows the same lifecycle. A bundle is
+an authoring convenience that flattens to ordinary indicator definitions before
+runtime. It is not a second feature system.
+
 The same idea works for crossover rules. An SMA crossover registers two
 separate indicators: one short moving average and one long moving average. The
 economic meaning is "fast trend above slow trend" rather than "close above one
@@ -322,6 +358,28 @@ The alias names in `swept_features` must also match the lookup key pattern used
 by the strategy, here `paste0("ret_", params$lookback)`.
 In short, all feature parameter values must be registered before `ledgr_run()`;
 do not create `ledgr_ind_returns(params$lookback)` lazily inside the strategy.
+
+For exploratory sweeps, prefer a feature factory when each candidate needs a
+different concrete feature set:
+
+```{r feature-factory-example, eval=FALSE}
+factory <- function(params) {
+  list(ledgr_ind_returns(params$lookback))
+}
+
+exp <- ledgr_experiment(snapshot, strategy, features = factory)
+grid <- ledgr_param_grid(
+  short = list(lookback = 5, qty = 10),
+  long = list(lookback = 20, qty = 10)
+)
+
+precomputed <- ledgr_precompute_features(exp, grid)
+results <- ledgr_sweep(exp, grid, precomputed_features = precomputed)
+```
+
+The factory is evaluated with each candidate's `params`. The resolved feature
+IDs, feature fingerprints, and candidate feature-set hash are then part of the
+sweep row provenance.
 
 ## TTR-Backed Indicators
 

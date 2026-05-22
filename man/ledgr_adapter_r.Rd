@@ -21,7 +21,19 @@ A \code{ledgr_indicator} object.
 \description{
 Adapt an R package function into a ledgr indicator
 }
+\section{Articles}{
+
+Indicators, feature IDs, and warmup:
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+
+Custom indicators and external feature inputs:
+\code{vignette("custom-indicators", package = "ledgr")}
+\code{system.file("doc", "custom-indicators.html", package = "ledgr")}
+}
+
 \examples{
 median_close <- ledgr_adapter_r(stats::median, id = "median_close", requires_bars = 3)
 median_close$id
+
 }

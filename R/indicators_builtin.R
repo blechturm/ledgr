@@ -5,6 +5,11 @@
 #' @examples
 #' window <- data.frame(close = c(100, 101, 103))
 #' ledgr_ind_sma(3)$fn(window)
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_ind_sma <- function(n) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {
@@ -32,6 +37,11 @@ ledgr_ind_sma <- function(n) {
 #' @examples
 #' window <- data.frame(close = c(100, 101, 103, 104))
 #' ledgr_ind_ema(3)$fn(window)
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_ind_ema <- function(n) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {
@@ -67,6 +77,11 @@ ledgr_ind_ema <- function(n) {
 #' @examples
 #' window <- data.frame(close = c(100, 101, 102, 101))
 #' ledgr_ind_rsi(3)$fn(window)
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_ind_rsi <- function(n = 14L) {
   if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 || n %% 1 != 0) {

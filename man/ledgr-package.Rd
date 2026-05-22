@@ -35,6 +35,8 @@ Core installed articles:
 \item \code{system.file("doc", "sweeps.html", package = "ledgr")}
 \item \code{vignette("indicators", package = "ledgr")}
 \item \code{system.file("doc", "indicators.html", package = "ledgr")}
+\item \code{vignette("custom-indicators", package = "ledgr")}
+\item \code{system.file("doc", "custom-indicators.html", package = "ledgr")}
 }
 }
 

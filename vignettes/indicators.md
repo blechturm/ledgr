@@ -28,7 +28,7 @@ will be small on purpose:
 > today's close is above its moving average.
 
 That rule needs one momentum feature and one trend feature. A feature
-map gives readable aliases to your R code while preserving ledgr's exact
+map gives readable aliases to your R code while preserving ledgr's exac
 engine feature IDs.
 
 ``` r
@@ -62,6 +62,46 @@ Feature objects appear in three related places:
 Lower-level and legacy helpers may be narrower. The canonical workflow
 is: register features on `ledgr_experiment()`, then read pulse-known
 values through `ctx$feature()` or `ctx$features()` inside the strategy.
+
+## Feature Lifecycle: From Declaration To Lookup
+
+The feature path has five steps:
+
+1.  You declare feature definitions with `ledgr_indicator()` helpers,
+    built-in helpers such as `ledgr_ind_sma()`, TTR adapters, CSV/R
+    adapters, a `ledgr_feature_map()`, or a
+    `features = function(params)` factory.
+2.  `ledgr_experiment()` stores the declaration. Static lists and
+    feature maps are ready immediately. Factories are materialized later
+    for each concrete parameter list.
+3.  Optional `ledgr_precompute_features()` resolves a parameter grid,
+    computes each candidate's concrete feature set, deduplicates shared
+    indicator fingerprints, and records candidate feature-set hashes.
+4.  During `ledgr_run()` or `ledgr_sweep()`, the fold core computes the
+    registered feature values at each pulse without looking past the
+    current bar.
+5.  Strategy code reads the current pulse-known values with
+    `ctx$feature()` by engine feature ID, or with `ctx$features()` by
+    feature-map alias.
+
+Feature IDs identify values inside the pulse context. Fingerprints
+identify the feature definition used to compute those values. Changing a
+function body, `series_fn`, `params`, warmup requirement, source
+adapter, or selected output changes the fingerprint even when the
+feature ID is intentionally kept stable. For multi-output sources such
+as TTR `BBands` or `MACD`, each selected output is an ordinary indicator
+with its own feature ID and output-specific fingerprint.
+
+If two feature declarations produce the same engine feature ID, ledgr
+treats that as one feature name in the pulse context. Use distinct IDs
+or aliases when you need to compare two different definitions. A
+feature-map alias never changes the underlying engine feature ID or
+fingerprint; it only gives your strategy a readable name for mapped
+access.
+
+The upcoming multi-output bundle helper follows the same lifecycle. A
+bundle is an authoring convenience that flattens to ordinary indicator
+definitions before runtime. It is not a second feature system.
 
 The same idea works for crossover rules. An SMA crossover registers two
 separate indicators: one short moving average and one long moving
@@ -312,7 +352,7 @@ ledgr_feature_contracts(plain_features)
 
 ## Parameter Grids Register Every Needed Feature
 
-If a parameter grid changes a lookback, register every lookback variant
+If a parameter grid changes a lookback, register every lookback varian
 before the run. ledgr does not create indicators dynamically from
 `params`; the run only computes the feature contracts registered on the
 experiment.
@@ -355,18 +395,40 @@ strategy, here `paste0("ret_", params$lookback)`. In short, all feature
 parameter values must be registered before `ledgr_run()`; do not create
 `ledgr_ind_returns(params$lookback)` lazily inside the strategy.
 
+For exploratory sweeps, prefer a feature factory when each candidate
+needs a different concrete feature set:
+
+``` r
+factory <- function(params) {
+  list(ledgr_ind_returns(params$lookback))
+}
+
+exp <- ledgr_experiment(snapshot, strategy, features = factory)
+grid <- ledgr_param_grid(
+  short = list(lookback = 5, qty = 10),
+  long = list(lookback = 20, qty = 10)
+)
+
+precomputed <- ledgr_precompute_features(exp, grid)
+results <- ledgr_sweep(exp, grid, precomputed_features = precomputed)
+```
+
+The factory is evaluated with each candidate's `params`. The resolved
+feature IDs, feature fingerprints, and candidate feature-set hash are
+then part of the sweep row provenance.
+
 ## TTR-Backed Indicators
 
 `ledgr_ind_ttr()` is the adapter for supported indicators from the
 suggested `TTR` package. TTR stays outside the core engine:
 
-``` text
+``` tex
 TTR -> ledgr_ind_ttr() -> ledgr_indicator -> deterministic pulse engine
 ```
 
 The engine sees a normal `ledgr_indicator`. That means TTR-backed
 indicators follow the same feature-ID, warmup, and pulse-view rules as
-built-in indicators. The examples below are skipped when `TTR` is not
+built-in indicators. The examples below are skipped when `TTR` is no
 installed. In your own project, install TTR before creating TTR-backed
 indicators:
 
@@ -525,10 +587,10 @@ ledgr_feature_contracts(ledgr_feature_map(
 #> 4 bb_pctB ttr_bbands_20_pctb TTR               20           20
 ```
 
-The two MACD examples above use matching explicit arguments. Explicit
+The two MACD examples above use matching explicit arguments. Explici
 arguments become part of the feature ID, so combine MACD outputs in one
 strategy only when their argument sets match the computation you intend.
-If one MACD output uses `percent = FALSE`, the paired `signal` output
+If one MACD output uses `percent = FALSE`, the paired `signal` outpu
 should usually set `percent = FALSE` too.
 
 TTR warmup inference is inspectable:
@@ -592,10 +654,10 @@ Warmup problems are easiest to diagnose by connecting three facts:
     feature needs before it can produce a usable value.
 2.  `ledgr_feature_contract_check(snapshot, features)` joins those
     contracts to the actual per-instrument bar counts in the snapshot.
-3.  `ledgr_pulse_features(pulse, features)` shows the current
+3.  `ledgr_pulse_features(pulse, features)` shows the curren
     pulse-known values for the instruments and aliases you registered.
 4.  `summary(bt)` prints `Warmup Diagnostics` when a completed run has
-    registered features that can never become usable for an instrument
+    registered features that can never become usable for an instrumen
     because available bars are below the feature contract.
 
 ``` r
@@ -618,13 +680,13 @@ ledgr_feature_contract_check(warmup_check_snapshot, features)
 ledgr_snapshot_close(warmup_check_snapshot)
 ```
 
-The `warmup_achievable` column is `FALSE` when an instrument does not
+The `warmup_achievable` column is `FALSE` when an instrument does no
 have enough available bars to satisfy a feature's `stable_after`
 contract.
 
 Normal early warmup is temporary: a feature is `NA` near the beginning
 of an instrument's sample and later becomes finite. Impossible warmup is
-different: the instrument never has enough available bars for that
+different: the instrument never has enough available bars for tha
 feature. In that case, zero trades can be a valid completed run plus a
 useful diagnostic, not a failed run.
 

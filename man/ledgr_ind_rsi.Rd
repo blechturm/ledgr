@@ -15,7 +15,15 @@ A \code{ledgr_indicator} object.
 \description{
 Relative Strength Index
 }
+\section{Articles}{
+
+Indicators, feature IDs, and warmup:
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+}
+
 \examples{
 window <- data.frame(close = c(100, 101, 102, 101))
 ledgr_ind_rsi(3)$fn(window)
+
 }

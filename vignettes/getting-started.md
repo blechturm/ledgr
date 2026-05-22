@@ -1,7 +1,7 @@
 Getting Started with ledgr
 ================
 
-This vignette walks through the v0.1.7 research loop:
+This vignette walks through the current experiment-first research loop:
 
 1.  start from deterministic demo bars;
 2.  seal them into a snapshot;
@@ -10,9 +10,9 @@ This vignette walks through the v0.1.7 research loop:
 5.  inspect the event-derived results;
 6.  reopen and compare stored runs.
 
-## Data And Snapshot
+## Data And Snapsho
 
-The examples use `dplyr` and `tibble` for data preparation and compact
+The examples use `dplyr` and `tibble` for data preparation and compac
 display. They are suggested packages used by the vignettes, not part of
 the strategy contract.
 
@@ -55,21 +55,21 @@ runs in the experiment.
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(bars)
-snapshot
-#> ledgr_snapshot
+snapsho
+#> ledgr_snapsho
 #> ==============
 #> Bars:         258
 #> Instruments:  2
 #> Date Range:   2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
 #> Database:     <temporary DuckDB path>
-#> Snapshot ID:  snapshot_20260511_123143_b0ce
+#> Snapshot ID:  snapshot_20260522_140023_3a5c
 #> Connection:  Closed (opens on-demand)
 ```
 
 For durable work, pass a stable `db_path` at snapshot creation. After
 that, normal run and store operations use the snapshot handle.
 
-## Strategy Contract
+## Strategy Contrac
 
 A ledgr strategy is `function(ctx, params)`. `ctx` is the pulse context;
 it contains only state observable at the current decision point.
@@ -122,9 +122,9 @@ exp <- ledgr_experiment(
 )
 
 exp
-#> ledgr_experiment
+#> ledgr_experimen
 #> ================
-#> Snapshot ID: snapshot_20260511_123143_b0ce
+#> Snapshot ID: snapshot_20260522_140023_3a5c
 #> Database:    <temporary DuckDB path>
 #> Universe:    2 instruments
 #> Features:    1 fixed
@@ -138,7 +138,7 @@ Run one parameter set.
 bt <- exp |>
   ledgr_run(params = list(qty = 10), run_id = "getting_started_qty_10")
 
-bt
+b
 #> ledgr Backtest Results
 #> ======================
 #>
@@ -155,7 +155,7 @@ bt
 ```
 
 A backtest handle points to stored run artifacts. The artifacts are
-already durable when `ledgr_run()` returns, and ordinary result
+already durable when `ledgr_run()` returns, and ordinary resul
 inspection opens and closes read connections per operation. Use
 `close(bt)` as explicit resource cleanup in long sessions, tests,
 explicit-open workflows, and lazy result cursors.
@@ -237,7 +237,7 @@ head(ledgr_results(bt, what = "ledger"), 6)
 ## Debug One Pulse
 
 `ledgr_pulse_snapshot()` builds the same pulse context a strategy sees
-at a single timestamp. It is useful for explaining one decision without
+at a single timestamp. It is useful for explaining one decision withou
 rerunning an entire experiment.
 
 ``` r
@@ -308,7 +308,7 @@ ledgr_snapshot_close(durable_snapshot)
 
 reloaded <- ledgr_snapshot_load(artifact_db, "getting_started_snapshot", verify = TRUE)
 ledgr_run_list(reloaded)
-#> # ledgr run list
+#> # ledgr run lis
 #> # A tibble: 1 x 8
 #>   run_id label tags  status final_equity total_return execution_mode reproducibility_level
 #>   <chr>  <chr> <lgl> <chr>         <dbl> <chr>        <chr>          <chr>
@@ -325,14 +325,14 @@ ledgr_run_info(reloaded, "durable_qty_10")
 #> Status:          DONE
 #> Archived:        FALSE
 #> Tags:            NA
-#> Snapshot:        getting_started_snapshot
+#> Snapshot:        getting_started_snapsho
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     f38487eecc4a81bb775140ac3a4140b7c33eca9b05cbad0cd3a53cbf7c577d05
+#> Config Hash:     2d0295cdbec2f135e11ba2409ff6bc142dc90bdc6cdd11a2f36067f476ea78f5
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     21625933895037a59ea8f5c0e5163b9205596490add264c97c747ac4fe9c87b7
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.22
+#> Elapsed Sec:     1.11
 #> Persist Features:TRUE
 #> Cache Hits:      2
 #> Cache Misses:    0
@@ -341,14 +341,17 @@ ledgr_snapshot_close(reloaded)
 
 `ledgr_snapshot_load()` is the new-session resumption path. Store APIs
 such as `ledgr_run_list()`, `ledgr_run_info()`, `ledgr_compare_runs()`,
-`ledgr_run_label()`, and `ledgr_run_archive()` operate on the snapshot
+`ledgr_run_label()`, and `ledgr_run_archive()` operate on the snapsho
 handle.
 
 ## Scope
 
-v0.1.7 is a research release. It does not provide live trading, broker
-integrations, short-selling semantics, or parameter sweep execution.
-Sweep and tune APIs are reserved for later versions.
+ledgr is currently a research package. It provides sealed snapshots,
+experiment-first backtests, durable run metadata, result inspection,
+comparison tables, and sequential exploratory sweeps. It does no
+provide live trading, broker integrations, short-selling semantics,
+automatic ranking, walk-forward/PBO/CSCV helpers, paper trading, or
+parallel sweep execution.
 
 ``` r
 close(bt)
@@ -362,4 +365,6 @@ For strategy authoring, read
 `vignette("strategy-development", package = "ledgr")`. For indicators
 and feature IDs, read `vignette("indicators", package = "ledgr")`. For
 durable run inspection, read
-`vignette("experiment-store", package = "ledgr")`.
+`vignette("experiment-store", package = "ledgr")`. For exploratory
+parameter sweeps and candidate promotion, read
+`vignette("sweeps", package = "ledgr")`.

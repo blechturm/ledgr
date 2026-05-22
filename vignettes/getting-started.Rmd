@@ -39,7 +39,7 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 }
 ```
 
-This vignette walks through the v0.1.7 research loop:
+This vignette walks through the current experiment-first research loop:
 
 1. start from deterministic demo bars;
 2. seal them into a snapshot;
@@ -252,9 +252,11 @@ ledgr_snapshot_close(reloaded)
 
 ## Scope
 
-v0.1.7 is a research release. It does not provide live trading, broker
-integrations, short-selling semantics, or parameter sweep execution. Sweep and
-tune APIs are reserved for later versions.
+ledgr is currently a research package. It provides sealed snapshots,
+experiment-first backtests, durable run metadata, result inspection, comparison
+tables, and sequential exploratory sweeps. It does not provide live trading,
+broker integrations, short-selling semantics, automatic ranking,
+walk-forward/PBO/CSCV helpers, paper trading, or parallel sweep execution.
 
 ```{r cleanup}
 close(bt)
@@ -267,4 +269,6 @@ ledgr_snapshot_close(snapshot)
 For strategy authoring, read
 `vignette("strategy-development", package = "ledgr")`. For indicators and
 feature IDs, read `vignette("indicators", package = "ledgr")`. For durable run
-inspection, read `vignette("experiment-store", package = "ledgr")`.
+inspection, read `vignette("experiment-store", package = "ledgr")`. For
+exploratory parameter sweeps and candidate promotion, read
+`vignette("sweeps", package = "ledgr")`.

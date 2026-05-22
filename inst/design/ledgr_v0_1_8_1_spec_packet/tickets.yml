@@ -18,7 +18,7 @@ tickets:
 
   - id: "LDG-2202"
     title: "Feature Lifecycle And Warmup Guide"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -33,7 +33,7 @@ tickets:
 
   - id: "LDG-2203"
     title: "Runnable Examples And First-Run Workflows"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -124,7 +124,7 @@ tickets:
 
   - id: "LDG-2209"
     title: "Discoverability And Version Labels"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "S"
     dependencies:

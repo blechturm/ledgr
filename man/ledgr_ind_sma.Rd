@@ -15,7 +15,15 @@ A \code{ledgr_indicator} object.
 \description{
 Simple Moving Average
 }
+\section{Articles}{
+
+Indicators, feature IDs, and warmup:
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+}
+
 \examples{
 window <- data.frame(close = c(100, 101, 103))
 ledgr_ind_sma(3)$fn(window)
+
 }

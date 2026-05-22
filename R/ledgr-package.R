@@ -27,6 +27,8 @@
 #' - `system.file("doc", "sweeps.html", package = "ledgr")`
 #' - `vignette("indicators", package = "ledgr")`
 #' - `system.file("doc", "indicators.html", package = "ledgr")`
+#' - `vignette("custom-indicators", package = "ledgr")`
+#' - `system.file("doc", "custom-indicators.html", package = "ledgr")`
 #'
 #' @section Ecosystem:
 #' ledgr connects to the R finance ecosystem through adapters. The core owns

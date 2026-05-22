@@ -255,7 +255,27 @@ Inside the strategy, `ctx$feature(id, "range_3")` reads the exact feature ID
 from the pulse context for one instrument. Unknown feature IDs fail loudly.
 Warmup for a known feature is represented by `NA_real_`.
 
+Run the experiment and inspect the event-derived result tables just as you
+would for built-in indicators:
+
+```{r custom-run}
+custom_bt <- ledgr_run(
+  exp,
+  params = list(max_range = 5, qty = 10),
+  run_id = paste0("custom-indicators-run-", Sys.getpid())
+)
+
+summary(custom_bt)
+ledgr_results(custom_bt, what = "fills")
+ledgr_results(custom_bt, what = "trades")
+```
+
+The custom feature only changes how pulse-known values are computed. It does
+not change the strategy return contract, fill model, ledger, result tables, or
+metric workflow.
+
 ```{r custom-cleanup, include=FALSE}
+close(custom_bt)
 ledgr_snapshot_close(snapshot)
 ```
 

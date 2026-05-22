@@ -124,7 +124,7 @@ scope: v0.1.8.1
 Priority: P1  
 Effort: M  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -165,6 +165,19 @@ system.
 - Targeted documentation contract tests.
 - `R CMD build` or documentation generation checks as appropriate.
 
+### Completion Notes
+
+- Expanded the installed `indicators` article with an explicit feature
+  lifecycle from declaration to precompute, runtime computation, and strategy
+  lookup.
+- Documented static feature declarations, feature maps, feature factories,
+  aliases, feature IDs, fingerprints, output-specific fingerprints, warmup, and
+  candidate feature-set hashes.
+- Added installed help links from built-in indicator and adapter help pages back
+  to the indicator/custom-indicator guides.
+- Added documentation contract assertions for the lifecycle claims and
+  discoverability links.
+
 ### Source Reference
 
 - THEME-002
@@ -186,7 +199,7 @@ scope: installed_docs
 Priority: P1  
 Effort: M  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -218,6 +231,19 @@ examples that end before the user can inspect what happened.
 
 - Targeted script smoke tests or equivalent documentation tests.
 - Manual run-through of changed first-run examples.
+
+### Completion Notes
+
+- Updated the current first-run scope language in README and Getting Started so
+  it no longer describes sweep as future-only.
+- Rebuilt README and changed vignette markdown companions for the modified
+  runnable workflows.
+- Completed the custom-indicator workflow with `ledgr_run()`, `summary()`,
+  fills, and trades inspection.
+- Reframed `inst/examples/README.md` as not a user-facing first-run path and
+  pointed users to installed vignettes.
+- Added documentation contract assertions for runnable workflow coverage and
+  stale-placeholder removal.
 
 ### Source Reference
 
@@ -508,7 +534,7 @@ scope: runtime_and_docs
 Priority: P2  
 Effort: S  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -536,6 +562,16 @@ pkgdown pages.
 
 - Documentation contract tests.
 - Manual pkgdown/reference navigation review if docs are rebuilt.
+
+### Completion Notes
+
+- Updated package-level help to include the custom-indicator article in the
+  installed documentation spine.
+- Added installed-vignette links to adapter and built-in indicator help pages.
+- Replaced stale current-scope version labels in README and Getting Started with
+  release-agnostic current-workflow wording.
+- Updated documentation contract tests for package help, core help links,
+  public stale-label checks, and `inst/examples` discoverability.
 
 ### Source Reference
 

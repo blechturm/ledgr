@@ -29,6 +29,17 @@ A \code{ledgr_indicator} object.
 \description{
 Adapt a CSV of precomputed indicators
 }
+\section{Articles}{
+
+Indicators, feature IDs, and warmup:
+\code{vignette("indicators", package = "ledgr")}
+\code{system.file("doc", "indicators.html", package = "ledgr")}
+
+Custom indicators and external feature inputs:
+\code{vignette("custom-indicators", package = "ledgr")}
+\code{system.file("doc", "custom-indicators.html", package = "ledgr")}
+}
+
 \examples{
 csv_path <- tempfile(fileext = ".csv")
 utils::write.csv(data.frame(
@@ -38,4 +49,5 @@ utils::write.csv(data.frame(
 ), csv_path, row.names = FALSE)
 ind <- ledgr_adapter_csv(csv_path, value_col = "my_value", id = "my_csv_value")
 ind$id
+
 }

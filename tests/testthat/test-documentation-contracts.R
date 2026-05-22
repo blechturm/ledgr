@@ -80,6 +80,15 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "rsi_14", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ttr_rsi_14", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Feature objects appear in three related places", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Feature Lifecycle: From Declaration To Lookup", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "declaration. Static lists and feature maps", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Factories are materialized later for each concrete", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "deduplicates shared indicator\\s+fingerprints")
+  testthat::expect_match(indicators_doc, "Feature IDs identify values inside the pulse context", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Fingerprints identify the\\s+feature definition")
+  testthat::expect_match(indicators_doc, "output-specific fingerprint", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "A feature-map alias never changes\\s+the underlying engine feature ID")
+  testthat::expect_match(indicators_doc, "The upcoming multi-output bundle helper follows the same lifecycle", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ctx\\$feature\\(id, feature_id\\)")
   testthat::expect_match(indicators_doc, "ctx\\$features\\(id, feature_map\\)")
   testthat::expect_match(indicators_doc, "ledgr computes feature contracts into pulse-known data", fixed = TRUE)
@@ -96,6 +105,8 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "register every lookback variant before\\s+the run")
   testthat::expect_match(indicators_doc, "all feature parameter values must be registered before `ledgr_run\\(\\)`")
   testthat::expect_match(indicators_doc, "A missing feature\\s+ID is an unknown-feature error, not warmup.")
+  testthat::expect_match(indicators_doc, "The factory is evaluated with each candidate's `params`", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "candidate feature-set hash", fixed = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__ohlcv_{field}", fixed = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__feature_{feature_id}", fixed = TRUE)
   testthat::expect_match(indicators_doc, "install.packages\\(\"TTR\"\\)")
@@ -250,6 +261,7 @@ testthat::test_that("first-path navigation avoids non-runnable examples", {
   root <- testthat::test_path("..", "..")
   pkgdown <- file.path(root, "_pkgdown.yml")
   readme <- file.path(root, "README.Rmd")
+  examples_readme <- file.path(root, "inst", "examples", "README.md")
   testthat::skip_if_not(file.exists(pkgdown) && file.exists(readme), "navigation sources unavailable")
   text <- paste(
     paste(readLines(pkgdown, warn = FALSE), collapse = "\n"),
@@ -259,6 +271,12 @@ testthat::test_that("first-path navigation avoids non-runnable examples", {
 
   testthat::expect_no_match(text, "examples/README", fixed = TRUE)
   testthat::expect_no_match(text, "non-executable development artifacts", fixed = TRUE)
+  if (file.exists(examples_readme)) {
+    examples_text <- paste(readLines(examples_readme, warn = FALSE), collapse = "\n")
+    testthat::expect_match(examples_text, "not a user-facing first-run path", fixed = TRUE)
+    testthat::expect_match(examples_text, "vignette\\(package = \"ledgr\"\\)")
+    testthat::expect_no_match(examples_text, "no implementations yet", fixed = TRUE)
+  }
 })
 
 testthat::test_that("help-page article sections include browser-free installed paths", {
@@ -515,7 +533,7 @@ testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 milestone sequencing",
   testthat::expect_match(text, "Risk metrics contract", fixed = TRUE)
   testthat::expect_match(text, "Strategy reproducibility preflight", fixed = TRUE)
   testthat::expect_match(text, "Lightweight parameter sweep mode", fixed = TRUE)
-  testthat::expect_match(text, "Reference-data and risk-free-rate adapters", fixed = TRUE)
+  testthat::expect_match(text, "Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup", fixed = TRUE)
   testthat::expect_match(text, "Completed milestones are not expanded here", fixed = TRUE)
 })
 
@@ -675,6 +693,9 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_no_match(text, "custom-indicators.md", fixed = TRUE)
   testthat::expect_no_match(text, "v0.1.7.2 helper layer", fixed = TRUE)
   testthat::expect_no_match(text, "current v0.1.7.6", fixed = TRUE)
+  testthat::expect_no_match(text, "This vignette walks through the v0.1.7 research loop", fixed = TRUE)
+  testthat::expect_no_match(text, "Sweep and tune APIs are reserved for later versions", fixed = TRUE)
+  testthat::expect_no_match(text, "v0.1.8 is the experiment-first research API", fixed = TRUE)
   testthat::expect_no_match(text, "no DISPLAY variable", fixed = TRUE)
   testthat::expect_false(file.exists(file.path(root, "Rprof.out")))
   testthat::expect_match(paste(readLines(file.path(root, ".gitignore"), warn = FALSE), collapse = "\n"), "Rprof.out", fixed = TRUE)
@@ -688,7 +709,7 @@ testthat::test_that("package help exposes an installed-documentation spine", {
 
   testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
-  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "sweeps", "indicators")) {
+  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "sweeps", "indicators", "custom-indicators")) {
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
@@ -727,7 +748,12 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_feature_contracts = "indicators",
     ledgr_feature_contract_check = "indicators",
     ledgr_ind_returns = "indicators",
+    ledgr_ind_sma = "indicators",
+    ledgr_ind_ema = "indicators",
+    ledgr_ind_rsi = "indicators",
     ledgr_ind_ttr = "indicators",
+    ledgr_adapter_r = c("indicators", "custom-indicators"),
+    ledgr_adapter_csv = c("indicators", "custom-indicators"),
     ledgr_pulse_features = "indicators",
     ledgr_pulse_wide = "indicators",
     ledgr_signal_strategy = "strategy-development",
@@ -791,7 +817,8 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(readme, "arrange(desc(sharpe_ratio))", fixed = TRUE)
   testthat::expect_match(readme, "does not\\s+rank candidates automatically")
   testthat::expect_match(readme, "require_same_snapshot = FALSE", fixed = TRUE)
-  testthat::expect_match(readme, "v0.1.8 is the experiment-first research API with sequential exploratory sweep", fixed = TRUE)
+  testthat::expect_match(readme, "The current ledgr research API is experiment-first", fixed = TRUE)
+  testthat::expect_match(readme, "includes sequential\\s+exploratory sweep support")
 
   for (help in list(sweep_help, candidate_help, promote_help, precompute_help, promotion_help)) {
     testthat::expect_match(help, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
@@ -980,6 +1007,10 @@ testthat::test_that("custom indicator article replaces stale placeholders", {
   testthat::expect_match(doc, "ledgr_adapter_csv", fixed = TRUE)
   testthat::expect_match(doc, "The CSV values must already respect the simulated decision times", fixed = TRUE)
   testthat::expect_match(doc, "Unknown feature IDs fail loudly", fixed = TRUE)
+  testthat::expect_match(doc, "summary\\(custom_bt\\)")
+  testthat::expect_match(doc, "ledgr_results\\(custom_bt, what = \"fills\"\\)")
+  testthat::expect_match(doc, "ledgr_results\\(custom_bt, what = \"trades\"\\)")
+  testthat::expect_match(doc, "does\\s+not change the strategy return contract")
   testthat::expect_no_match(doc, "ctx\\$feature\\(\"AAA\"")
   testthat::expect_match(doc, "for \\(id in ctx\\$universe\\)")
 })

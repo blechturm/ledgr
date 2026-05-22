@@ -15,7 +15,7 @@ Most backtesting tools compute results directly from price arrays. ledgr
 records each decision and state change as an immutable event, then
 derives trades, equity, and metrics from that ledger.
 
-``` text
+``` tex
 sealed snapshot -> experiment -> run -> event ledger -> results
 ```
 
@@ -46,7 +46,7 @@ library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-## First Experiment
+## First Experimen
 
 Use the bundled demo bars for a first run. They are deterministic and
 require no network access.
@@ -69,7 +69,7 @@ bars |>
 #> 4 2019-01-04 00:00:00 DEMO_01        90.7  91.1  89.5  89.8 458921
 ```
 
-Create a sealed snapshot. A snapshot is the immutable data artifact
+Create a sealed snapshot. A snapshot is the immutable data artifac
 every run uses. The setup is not overhead. The setup is the audit trail.
 
 ``` r
@@ -110,9 +110,9 @@ exp <- ledgr_experiment(
 )
 
 exp
-#> ledgr_experiment
+#> ledgr_experimen
 #> ================
-#> Snapshot ID: snapshot_20260511_123144_9432
+#> Snapshot ID: snapshot_20260522_140000_6ecc
 #> Database:    <temporary DuckDB path>
 #> Universe:    2 instruments
 #> Features:    1 fixed
@@ -126,7 +126,7 @@ Run the experiment with explicit parameters.
 bt <- exp |>
   ledgr_run(params = list(qty = 10), run_id = "readme_sma_20")
 
-bt
+b
 #> ledgr Backtest Results
 #> ======================
 #>
@@ -250,7 +250,7 @@ safe source and metadata inspection:
 
 ``` r
 stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_20", trust = FALSE)
-stored_strategy$strategy_source_text
+stored_strategy$strategy_source_tex
 #> [1] "function (ctx, params) \n{\n    targets <- ctx$flat()\n    for (id in ctx$universe) {\n        sma <- ctx$feature(id, \"sma_20\")\n        if (is.finite(sma) && ctx$close(id) > sma) {\n            targets[id] <- params$qty\n        }\n    }\n    targets\n}"
 ```
 
@@ -300,12 +300,12 @@ ledgr when you want the audit trail and adapter boundary to be explicit.
 
 ## Scope
 
-v0.1.8 is the experiment-first research API with sequential exploratory
-sweep support. It does not ship automatic ranking, `ledgr_tune()`,
-parallel sweep, walk-forward/PBO/CSCV helpers, full sweep artifact
-persistence, broker adapters, paper trading, live trading, or
-short-selling semantics. Those are separate roadmap items with different
-state and safety requirements.
+The current ledgr research API is experiment-first and includes
+sequential exploratory sweep support. It does not ship automatic
+ranking, `ledgr_tune()`, parallel sweep, walk-forward/PBO/CSCV helpers,
+full sweep artifact persistence, broker adapters, paper trading, live
+trading, or short-selling semantics. Those are separate roadmap items
+with different state and safety requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes

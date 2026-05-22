@@ -9,6 +9,15 @@
 #' @examples
 #' median_close <- ledgr_adapter_r(stats::median, id = "median_close", requires_bars = 3)
 #' median_close$id
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
+#'
+#' Custom indicators and external feature inputs:
+#' `vignette("custom-indicators", package = "ledgr")`
+#' `system.file("doc", "custom-indicators.html", package = "ledgr")`
 #' @export
 ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
   pkg_fn_label <- NULL
@@ -82,6 +91,15 @@ ledgr_adapter_r <- function(pkg_fn, id, requires_bars, ...) {
 #' ), csv_path, row.names = FALSE)
 #' ind <- ledgr_adapter_csv(csv_path, value_col = "my_value", id = "my_csv_value")
 #' ind$id
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
+#'
+#' Custom indicators and external feature inputs:
+#' `vignette("custom-indicators", package = "ledgr")`
+#' `system.file("doc", "custom-indicators.html", package = "ledgr")`
 #' @export
 ledgr_adapter_csv <- function(csv_path,
                               value_col,
