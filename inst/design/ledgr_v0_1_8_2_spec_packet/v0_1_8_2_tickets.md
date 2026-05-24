@@ -50,7 +50,7 @@ LDG-2313 Release gate depends on LDG-2303 through LDG-2312.
 Priority: P2
 Effort: S
 Dependencies: none
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -112,6 +112,20 @@ type: research
 surface: external_reference_data
 scope: pre_spec
 ```
+
+### Completion Notes
+
+- Ran SPIKE-1 and SPIKE-2 on Windows native R with `tidyfinance` 0.5.0
+  under R 4.5.2 and recorded provider output shapes, units, cadence, and
+  gap behavior in the spike README.
+- Completed optional SPIKE-3 on Windows native R and recorded Fama-French
+  type names, factor columns, decimal period-return units, and the standalone
+  risk-free versus factor-endpoint `risk_free` discrepancy.
+- Attempted the Ubuntu/WSL path. WSL R 4.5.2 could not install
+  `tidyfinance` 0.5.0 because dependencies `arrow` and `RPostgres` failed
+  from source; this is recorded as the WSL platform blocker.
+- Produced design memory only. No ledgr runtime files, public APIs,
+  DESCRIPTION dependency changes, or raw data artifacts were added.
 
 ---
 

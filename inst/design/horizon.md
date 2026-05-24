@@ -447,6 +447,27 @@ Per the accepted v0.1.8.2 metric-context synthesis, external adapters are
 deferred until the substrate they produce (`ledgr_metric_context` fields
 with aligned-provider contracts) is stable.
 
+### 2026-05-24 [data] Provider risk-free source divergence
+
+The `ledgr_tidyfinance_unit_probe` spike found that tidyfinance's standalone
+`download_data_risk_free()` endpoint and its Fama-French factor endpoint do
+not return interchangeable `risk_free` values for the same calendar period.
+For example, tidyfinance 0.5.0 returned January 2010 standalone monthly
+`risk_free = 0.000016898`, while the Fama-French 3-factor monthly endpoint
+returned `risk_free = 0` for the same month.
+
+This is not necessarily a provider bug. The standalone endpoint is
+FRED-derived and converted by tidyfinance; the Fama-French endpoint reflects
+the factor dataset's own rounded file. A future factor or reference-data
+adapter must preserve this distinction instead of silently treating every
+column named `risk_free` as the same source.
+
+Future RFCs that expose multiple risk-free sources should require explicit
+source selection and provenance fields for endpoint, dataset, provider
+version, and frequency. Metric-context construction must reject ambiguous
+"risk-free from provider" requests when more than one provider endpoint could
+produce the series.
+
 ## Resolved
 
 No resolved horizon entries yet.

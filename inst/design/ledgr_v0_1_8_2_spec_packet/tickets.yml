@@ -4,7 +4,7 @@ generated_from: "v0_1_8_2_spec.md"
 tickets:
   - id: "LDG-2301"
     title: "Run tidyfinance Unit Probe And Record Findings"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "S"
     dependencies: []

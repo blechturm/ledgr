@@ -179,12 +179,239 @@ output artifacts are local scratch and are not committed.
 
 ### SPIKE-1
 
-To be recorded.
+Status: Completed on Windows native R. Ubuntu/WSL blocked by package
+installation failure.
+
+Tested versions:
+
+- Windows native R: R 4.5.2, `tidyfinance` 0.5.0. The package emitted a
+  warning that it was built under R 4.5.3.
+- Ubuntu/WSL: R 4.5.2. `tidyfinance` 0.5.0 could not be installed because
+  source installation of dependencies failed: `arrow` requires a C++20
+  compiler and `RPostgres` failed configure. `tidyfinance` remained
+  unavailable on WSL.
+
+Observed Windows call:
+
+```r
+tidyfinance::download_data_risk_free(
+  start_date = "2010-01-04",
+  end_date = "2010-01-31",
+  frequency = "daily"
+)
+```
+
+First 20 returned rows:
+
+| date | risk_free |
+|---|---:|
+| 2010-01-04 | 0.000001944 |
+| 2010-01-05 | 0.000001167 |
+| 2010-01-06 | 0.000001167 |
+| 2010-01-07 | 0.000000778 |
+| 2010-01-08 | 0.000000778 |
+| 2010-01-11 | 0.000000389 |
+| 2010-01-12 | 0.000000778 |
+| 2010-01-13 | 0.000000778 |
+| 2010-01-14 | 0.000000778 |
+| 2010-01-15 | 0.000001167 |
+| 2010-01-18 | 0.000001167 |
+| 2010-01-19 | 0.000001167 |
+| 2010-01-20 | 0.000001167 |
+| 2010-01-21 | 0.000000778 |
+| 2010-01-22 | 0.000000778 |
+| 2010-01-25 | 0.000000778 |
+| 2010-01-26 | 0.000000778 |
+| 2010-01-27 | 0.000000389 |
+| 2010-01-28 | 0.000000389 |
+| 2010-01-29 | 0.000000778 |
+
+The daily result is a tibble with columns `date <Date>` and
+`risk_free <numeric>`. Returned rows are business days only for this window:
+weekends are omitted, not present as `NA` rows. Observed date gaps were one
+day and three days. The help page states that business-day gaps such as
+holidays are forward-filled from the most recent available rate.
+
+The returned `risk_free` values are period returns, not annualized quoted
+rates. The `download_data_risk_free()` help page states that upstream FRED
+T-bill discount rates are converted to the target period length. For the daily
+post-2001 series, the provider uses 4-week T-bill observations and an exponent
+of `1/20`. This matches the observed scale: the first value
+`0.000001944` implies roughly `0.0000389` over 20 trading days, or about
+`0.00389%`, which corresponds to a very low annualized bill-rate environment.
+
+Monthly call:
+
+```r
+tidyfinance::download_data_risk_free(
+  start_date = "2010-01-01",
+  end_date = "2010-03-31",
+  frequency = "monthly"
+)
+```
+
+Returned rows:
+
+| date | risk_free |
+|---|---:|
+| 2010-01-01 | 0.000016898 |
+| 2010-02-01 | 0.000076006 |
+| 2010-03-01 | 0.000126752 |
+
+Monthly output also uses `date <Date>` and `risk_free <numeric>`. Dates are
+month starts in this probe (`2010-01-01`, `2010-02-01`, `2010-03-01`), while
+the help page states that post-2001 monthly source observations are aggregated
+from the last non-`NA` daily observation per calendar month before conversion
+to the monthly target period.
+
+Decision note: a future `ledgr_risk_free_series()` wrapper should treat
+`tidyfinance::download_data_risk_free()` 0.5.0 output as already normalized to
+period returns for the requested frequency. It should not divide by 252 or 12.
+It should still record provider name, provider version, frequency, and the
+conversion convention because this is provider-version-specific.
 
 ### SPIKE-2
 
-To be recorded.
+Status: Completed on Windows native R. Ubuntu/WSL blocked by the same
+`tidyfinance` installation failure recorded in SPIKE-1.
+
+Observed Windows call:
+
+```r
+tidyfinance::download_data_stock_prices(
+  symbols = c("SPY", "AAPL"),
+  start_date = "2020-01-01",
+  end_date = "2020-12-31"
+)
+```
+
+Returned shape:
+
+- Rows: 504 for the two-symbol 2020 probe.
+- Columns: `symbol`, `date`, `volume`, `open`, `low`, `high`, `close`,
+  `adjusted_close`.
+- Types: `symbol <character>`, `date <Date>`, all price and volume columns
+  numeric.
+- Returned dates are trading days only. Non-trading days are omitted, not
+  present as `NA` rows. Observed within-symbol date gaps were one, two, three,
+  and four days.
+
+First 10 rows:
+
+| symbol | date | volume | open | low | high | close | adjusted_close |
+|---|---|---:|---:|---:|---:|---:|---:|
+| SPY | 2020-01-02 | 59151200 | 323.54 | 322.53 | 324.89 | 324.87 | 297.42 |
+| SPY | 2020-01-03 | 77709700 | 321.16 | 321.10 | 323.64 | 322.41 | 295.17 |
+| SPY | 2020-01-06 | 55653900 | 320.49 | 320.36 | 323.73 | 323.64 | 296.30 |
+| SPY | 2020-01-07 | 40496400 | 323.02 | 322.24 | 323.54 | 322.73 | 295.46 |
+| SPY | 2020-01-08 | 68296000 | 322.94 | 322.67 | 325.78 | 324.45 | 297.04 |
+| SPY | 2020-01-09 | 48473300 | 326.16 | 325.52 | 326.73 | 326.65 | 299.06 |
+| SPY | 2020-01-10 | 53029300 | 327.29 | 325.20 | 327.46 | 325.71 | 298.20 |
+| SPY | 2020-01-13 | 47086800 | 326.39 | 326.22 | 327.96 | 327.95 | 300.25 |
+| SPY | 2020-01-14 | 62832800 | 327.47 | 326.84 | 328.62 | 327.45 | 299.80 |
+| SPY | 2020-01-15 | 72056600 | 327.35 | 327.26 | 329.02 | 328.19 | 300.47 |
+
+Split behavior:
+
+- The AAPL split window around 2020-08-31 did not show a discontinuity in
+  `close` returns. `close` and `adjusted_close` returns were effectively equal
+  through the split window.
+- This indicates Yahoo/tidyfinance `close` is already split-adjusted in
+  historical rows.
+
+Dividend behavior:
+
+- `close` and `adjusted_close` differed on every returned row in the probe.
+- Return differences clustered on dividend dates. Examples:
+  - SPY 2020-03-20: `close_ret = -0.0487`, `adjusted_ret = -0.0431`.
+  - SPY 2020-06-19: `close_ret = -0.0101`, `adjusted_ret = -0.00571`.
+  - AAPL 2020-05-08: `close_ret = 0.0210`, `adjusted_ret = 0.0238`.
+  - AAPL 2020-02-07: `close_ret = -0.0159`, `adjusted_ret = -0.0136`.
+
+Decision note: for future benchmark-return adapters, `adjusted_close` is the
+right default return basis because it is split- and dividend-aware. `close`
+appears split-adjusted but not dividend-adjusted and should only be exposed as
+an explicit alternative if a future RFC needs price-return semantics.
 
 ### SPIKE-3
 
-To be recorded.
+Status: Optional spike completed on Windows native R. Ubuntu/WSL blocked by the
+same `tidyfinance` installation failure recorded in SPIKE-1.
+
+Discovery:
+
+```r
+tidyfinance::list_supported_types(domain = "Fama-French")
+```
+
+Returned 297 Fama-French rows in `tidyfinance` 0.5.0. The canonical 3-factor
+type names observed were:
+
+- `factors_ff_3_monthly`
+- `factors_ff_3_weekly`
+- `factors_ff_3_daily`
+
+Daily 3-factor probe:
+
+```r
+tidyfinance::download_data_factors_ff(
+  dataset = "factors_ff_3_daily",
+  start_date = "2010-01-04",
+  end_date = "2010-01-31"
+)
+```
+
+Returned 19 rows with columns `date`, `mkt_excess`, `smb`, `hml`, and
+`risk_free`. Types were `date <Date>` and numeric factor columns. Ranges:
+
+- `mkt_excess`: `-0.0213 .. 0.0169`
+- `smb`: `-0.0067 .. 0.0061`
+- `hml`: `-0.0128 .. 0.0122`
+- `risk_free`: `0 .. 0`
+
+Monthly 3-factor probe:
+
+```r
+tidyfinance::download_data_factors_ff(
+  dataset = "factors_ff_3_monthly",
+  start_date = "2010-01-01",
+  end_date = "2010-03-31"
+)
+```
+
+Returned 3 rows with the same columns. Ranges:
+
+- `mkt_excess`: `-0.0335 .. 0.063`
+- `smb`: `0.0043 .. 0.0146`
+- `hml`: `0.0033 .. 0.0219`
+- `risk_free`: `0 .. 0.0001`
+
+The factor endpoint uses decimal period returns, not percent values. It does
+not match the standalone `download_data_risk_free()` values exactly for the
+same dates. For example, standalone January 2010 monthly `risk_free` was
+`0.000016898`, while Fama-French January 2010 monthly `risk_free` was `0`.
+This is expected provider divergence: the factor endpoint reflects the
+Fama-French dataset's own rounded factor file, while the standalone risk-free
+endpoint is tidyfinance's FRED-derived converted series.
+
+Decision note: a future factor adapter must not assume factor `risk_free`
+equals `download_data_risk_free()` output. If both are exposed, provenance must
+record the endpoint and dataset name separately.
+
+### Known Gaps For Future Adapter RFC
+
+These are follow-up questions for a future external reference-data adapter RFC,
+not defects in this spike:
+
+- No independent FRED-direct cross-check was run. The risk-free period-return
+  conclusion is grounded in tidyfinance output plus the tidyfinance help-page
+  conversion formula, but an adapter test should still pin a small independent
+  FRED reference example.
+- No multi-regime probe was run. Adapter design should verify behavior across
+  at least one high-rate period and one modern low/zero-rate period.
+- Empty-range and missing-data behavior was not tested.
+- Ubuntu/WSL provider behavior remains unverified because `tidyfinance` could
+  not be installed on the available WSL environment.
+- Weekly risk-free behavior was not tested. The risk-free helper currently
+  documents `daily` and `monthly`; factor endpoints include weekly datasets,
+  which should be handled separately if factor adapters open.
