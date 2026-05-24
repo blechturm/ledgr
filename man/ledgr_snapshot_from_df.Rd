@@ -19,15 +19,14 @@ open, high, low, close. Optional: volume.}
 
 \item{db_path}{Optional DuckDB file path (default: tempfile).}
 
-\item{snapshot_id}{Optional snapshot id (default: v0.1.1 canonical generation).}
+\item{snapshot_id}{Optional snapshot id. When \code{NULL}, ledgr generates one.}
 }
 \value{
 A \code{ledgr_snapshot} object.
 }
 \description{
-Validates schema, normalizes timestamps, creates a snapshot via v0.1.1
-functions, imports bars, seals the snapshot, and returns a lazy snapshot
-object.
+Validates schema, normalizes timestamps, creates a snapshot, imports bars,
+seals the snapshot, and returns a lazy snapshot object.
 }
 \section{Articles}{
 

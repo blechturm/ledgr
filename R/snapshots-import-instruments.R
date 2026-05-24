@@ -1,9 +1,9 @@
-#' Import snapshot instruments from CSV (v0.1.1)
+#' Import snapshot instruments from CSV
 #'
 #' Imports instrument metadata into `snapshot_instruments` for a snapshot in
 #' status `CREATED` (snapshot mutability rule).
 #'
-#' CSV contract (v0.1.1 spec section 6.2):
+#' CSV contract:
 #' - Required columns: `instrument_id`, `symbol`
 #' - Optional columns (defaults): `currency` (`"USD"`), `asset_class` (`"EQUITY"`),
 #'   `multiplier` (`1.0`), `tick_size` (`0.01`)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/snapshots-import-instruments.R
 \name{ledgr_snapshot_import_instruments_csv}
 \alias{ledgr_snapshot_import_instruments_csv}
-\title{Import snapshot instruments from CSV (v0.1.1)}
+\title{Import snapshot instruments from CSV}
 \usage{
 ledgr_snapshot_import_instruments_csv(
   con,
@@ -31,7 +31,7 @@ Imports instrument metadata into \code{snapshot_instruments} for a snapshot in
 status \code{CREATED} (snapshot mutability rule).
 }
 \details{
-CSV contract (v0.1.1 spec section 6.2):
+CSV contract:
 \itemize{
 \item Required columns: \code{instrument_id}, \code{symbol}
 \item Optional columns (defaults): \code{currency} (\code{"USD"}), \code{asset_class} (\code{"EQUITY"}),

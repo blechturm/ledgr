@@ -2,7 +2,7 @@
 % Please edit documentation in R/snapshots-import-bars.R
 \name{ledgr_snapshot_import_bars_csv}
 \alias{ledgr_snapshot_import_bars_csv}
-\title{Import snapshot bars from CSV (v0.1.1)}
+\title{Import snapshot bars from CSV}
 \usage{
 ledgr_snapshot_import_bars_csv(
   con,
@@ -39,7 +39,7 @@ Imports EOD bars into \code{snapshot_bars} for a snapshot in status \code{CREATE
 auto-generates them from bars.
 }
 \details{
-CSV contract (v0.1.1 spec section 6.1):
+CSV contract:
 \itemize{
 \item Required columns: \code{instrument_id}, \code{ts_utc}, \code{open}, \code{high}, \code{low}, \code{close}
 \item Optional columns: \code{volume} (defaults to \code{NA})
@@ -54,6 +54,9 @@ Errors:
 \item \code{LEDGR_SNAPSHOT_NOT_MUTABLE} if snapshot status is not \code{CREATED}.
 \item \code{LEDGR_CSV_FORMAT_ERROR} on CSV contract/parse violations or duplicate PKs.
 }
+
+CSV and OHLC errors are import/seal errors. They occur before a snapshot can
+be loaded into an experiment or executed by a strategy.
 }
 \section{Articles}{
 

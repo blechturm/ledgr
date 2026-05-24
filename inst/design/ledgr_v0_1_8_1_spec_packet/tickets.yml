@@ -93,7 +93,7 @@ tickets:
 
   - id: "LDG-2207"
     title: "Snapshot Metadata And CSV Walkthrough"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "S"
     dependencies:

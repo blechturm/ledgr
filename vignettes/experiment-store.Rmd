@@ -107,6 +107,11 @@ In any later session, recover the handle without re-sealing the data:
 snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "eod_2019_h1")
 ```
 
+CSV and local data validation happens while the snapshot is created and sealed,
+before a strategy can run. Missing columns, unparseable timestamps, duplicate
+`instrument_id`/`ts_utc` rows, and OHLC violations are snapshot import problems.
+They are not strategy execution errors.
+
 Yahoo imports follow the same lifecycle, but the adapter downloads bars before
 sealing the snapshot:
 
@@ -125,6 +130,21 @@ inspect `status`, `snapshot_hash`, `bar_count`, `instrument_count`,
 `start_date`, `end_date`, and raw `meta_json`. The dates are ISO UTC values.
 `meta_json` is envelope metadata; snapshot identity comes from normalized bars
 and instruments, not from human descriptions.
+
+Snapshot metadata uses these public field names:
+
+| Field | Meaning |
+|---|---|
+| `status` | snapshot lifecycle state, usually `SEALED` after helper creation |
+| `snapshot_hash` | hash of normalized bars and instruments |
+| `bar_count` | current count of rows in `snapshot_bars` |
+| `instrument_count` | current count of rows in `snapshot_instruments` |
+| `start_date`, `end_date` | seal-time date range parsed from metadata |
+| `meta_json` | raw JSON envelope containing user metadata plus seal metadata |
+
+Seal metadata inside `meta_json` may use internal names such as `n_bars` and
+`n_instruments`. The structured columns from `ledgr_snapshot_info()` are
+`bar_count` and `instrument_count`; use those names in programmatic code.
 
 ## Run Variants
 
@@ -395,6 +415,12 @@ come from that metadata. `snapshot_hash` identifies the normalized bars and
 instruments only, so adding a human description to `meta_json` does not change
 the artifact hash.
 
+CSV/OHLC failures are local to the import and seal steps above. If a CSV omits a
+required column, uses a non-UTC timestamp, repeats an instrument/timestamp pair,
+or contains `high`/`low` values outside the open/close bounds, ledgr raises the
+CSV/snapshot error before `ledgr_snapshot_load()`, `ledgr_experiment()`, or
+`ledgr_run()` enters the picture.
+
 Load the sealed snapshot before constructing the experiment. This is the same
 handle you would use in a later R session.
 
@@ -425,8 +451,8 @@ tail(ledgr_results(csv_bt, what = "equity"), 3)
 
 Run metadata records whether feature persistence was enabled, and pulse
 inspection lets you view registered feature values at one decision time. Public
-feature inspection in v0.1.7.9 is intentionally scoped to feature contracts,
-warmup feasibility, and pulse-time feature views:
+feature inspection is intentionally scoped to feature contracts, warmup
+feasibility, and pulse-time feature views:
 
 - `ledgr_feature_contracts(features)` shows declared feature requirements;
 - `ledgr_feature_contract_check(snapshot, features)` checks whether those
@@ -434,8 +460,9 @@ warmup feasibility, and pulse-time feature views:
 - `ledgr_pulse_snapshot()` plus `ledgr_pulse_features()` or
   `ledgr_pulse_wide()` inspects one pulse.
 
-A full persisted feature-series retrieval API is deferred to the v0.1.8
-precompute and sweep-result design.
+A full persisted feature-series retrieval API remains outside the current
+experiment-store surface; use precompute and sweep provenance when you need
+feature-set identity at sweep scale.
 
 `ledgr_run()` and `ledgr_run_open()` return live handles for durable run
 artifacts. The artifacts are already durable when a run completes, and ordinary

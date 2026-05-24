@@ -468,7 +468,7 @@ scope: installed_docs
 Priority: P2  
 Effort: S  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -497,6 +497,23 @@ and reports, without changing snapshot semantics.
 
 - Documentation contract tests.
 - Targeted example smoke check where feasible.
+
+### Completion Notes
+
+- Expanded the experiment-store CSV/local snapshot walkthrough with explicit
+  snapshot metadata field names, seal-time `meta_json` mapping, and validation
+  locality for CSV/OHLC failures.
+- Updated snapshot help pages to remove stale version labels and document the
+  one-argument `ledgr_snapshot_info(snapshot)` form.
+- Added documentation contract assertions for the new snapshot metadata and
+  validation-locality claims.
+- Runtime CSV/OHLC diagnostics remain on the snapshot import/create path for
+  this cycle; LDG-2207 resolves the locality confusion through installed docs
+  rather than changing validation semantics.
+- Verification run:
+  `testthat::test_file("tests/testthat/test-documentation-contracts.R")`;
+  `test-snapshots-import-csv.R`, `test-snapshots-info.R`, and
+  `test-snapshot-adapters.R`.
 
 ### Source Reference
 

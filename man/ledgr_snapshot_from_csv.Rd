@@ -11,13 +11,18 @@ ledgr_snapshot_from_csv(csv_path, db_path = NULL, snapshot_id = NULL)
 
 \item{db_path}{Optional DuckDB file path (default: tempfile).}
 
-\item{snapshot_id}{Optional snapshot id (default: v0.1.1 canonical generation).}
+\item{snapshot_id}{Optional snapshot id. When \code{NULL}, ledgr generates one.}
 }
 \value{
 A \code{ledgr_snapshot} object.
 }
 \description{
 Reads a CSV file and delegates to \code{ledgr_snapshot_from_df()}.
+}
+\details{
+CSV parse and OHLC validation errors are snapshot creation errors. They are
+raised before a snapshot can be loaded into \code{ledgr_experiment()} or executed
+with \code{ledgr_run()}.
 }
 \section{Articles}{
 

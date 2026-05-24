@@ -1,10 +1,10 @@
-#' Import snapshot bars from CSV (v0.1.1)
+#' Import snapshot bars from CSV
 #'
 #' Imports EOD bars into `snapshot_bars` for a snapshot in status `CREATED`
 #' (snapshot mutability rule). Optionally imports instruments from CSV, or
 #' auto-generates them from bars.
 #'
-#' CSV contract (v0.1.1 spec section 6.1):
+#' CSV contract:
 #' - Required columns: `instrument_id`, `ts_utc`, `open`, `high`, `low`, `close`
 #' - Optional columns: `volume` (defaults to `NA`)
 #' - Timestamp format: ISO8601 UTC with trailing `Z`, e.g. `2020-01-01T00:00:00Z`
@@ -25,6 +25,9 @@
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
 #' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if snapshot status is not `CREATED`.
 #' - `LEDGR_CSV_FORMAT_ERROR` on CSV contract/parse violations or duplicate PKs.
+#'
+#' CSV and OHLC errors are import/seal errors. They occur before a snapshot can
+#' be loaded into an experiment or executed by a strategy.
 #'
 #' @section Articles:
 #' Durable experiment stores:

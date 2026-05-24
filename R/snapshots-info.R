@@ -1,9 +1,11 @@
-#' Snapshot info (v0.1.1)
+#' Snapshot info
 #'
 #' Returns snapshot metadata plus computed row counts for bars and instruments.
 #' This function does not mutate the database.
 #'
 #' Timestamps are returned as ISO8601 UTC strings with trailing `Z`.
+#' Call it as `ledgr_snapshot_info(snapshot)` for a `ledgr_snapshot` handle, or
+#' as `ledgr_snapshot_info(con, snapshot_id)` for a raw DuckDB connection.
 #'
 #' @param con A DBI connection to DuckDB or a `ledgr_snapshot`.
 #' @param snapshot_id Snapshot id (must exist) when `con` is a connection.
@@ -14,7 +16,9 @@
 #' `bar_count` and `instrument_count` are live counts from the snapshot tables.
 #' `start_date` and `end_date` are parsed from seal metadata when present.
 #' `meta_json` remains available as the raw envelope metadata written on the
-#' snapshot row. Metadata is not part of `snapshot_hash`.
+#' snapshot row. Seal-time metadata inside `meta_json` may use `n_bars` and
+#' `n_instruments`; the public columns are `bar_count` and
+#' `instrument_count`. Metadata is not part of `snapshot_hash`.
 #' @details
 #' Errors:
 #' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
@@ -27,6 +31,11 @@
 #' `system.file("doc", "experiment-store.html", package = "ledgr")`
 #'
 #' @examples
+#' bars <- ledgr_sim_bars(n_instruments = 1, n_days = 3, seed = 1)
+#' snapshot <- ledgr_snapshot_from_df(bars)
+#' ledgr_snapshot_info(snapshot)
+#' ledgr_snapshot_close(snapshot)
+#'
 #' db_path <- tempfile(fileext = ".duckdb")
 #' con <- ledgr_db_init(db_path)
 #' snapshot_id <- ledgr_snapshot_create(

@@ -1,14 +1,13 @@
 #' Create a snapshot from an in-memory data.frame
 #'
-#' Validates schema, normalizes timestamps, creates a snapshot via v0.1.1
-#' functions, imports bars, seals the snapshot, and returns a lazy snapshot
-#' object.
+#' Validates schema, normalizes timestamps, creates a snapshot, imports bars,
+#' seals the snapshot, and returns a lazy snapshot object.
 #'
 #' @param bars_df data.frame with required columns: ts_utc, instrument_id,
 #'   open, high, low, close. Optional: volume.
 #' @param instruments_df Optional data.frame with instrument metadata.
 #' @param db_path Optional DuckDB file path (default: tempfile).
-#' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
+#' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
 #' @return A `ledgr_snapshot` object.
 #' @section Articles:
 #' Durable experiment stores:
@@ -441,8 +440,12 @@ ledgr_snapshot_from_df <- function(bars_df,
 #'
 #' @param csv_path Path to a bars CSV file.
 #' @param db_path Optional DuckDB file path (default: tempfile).
-#' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
+#' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
 #' @return A `ledgr_snapshot` object.
+#' @details
+#' CSV parse and OHLC validation errors are snapshot creation errors. They are
+#' raised before a snapshot can be loaded into `ledgr_experiment()` or executed
+#' with `ledgr_run()`.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`

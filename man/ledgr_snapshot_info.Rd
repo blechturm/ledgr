@@ -2,7 +2,7 @@
 % Please edit documentation in R/snapshots-info.R
 \name{ledgr_snapshot_info}
 \alias{ledgr_snapshot_info}
-\title{Snapshot info (v0.1.1)}
+\title{Snapshot info}
 \usage{
 ledgr_snapshot_info(con, snapshot_id)
 }
@@ -19,7 +19,9 @@ bar_count, instrument_count, start_date, end_date, meta_json, error_msg.
 \code{bar_count} and \code{instrument_count} are live counts from the snapshot tables.
 \code{start_date} and \code{end_date} are parsed from seal metadata when present.
 \code{meta_json} remains available as the raw envelope metadata written on the
-snapshot row. Metadata is not part of \code{snapshot_hash}.
+snapshot row. Seal-time metadata inside \code{meta_json} may use \code{n_bars} and
+\code{n_instruments}; the public columns are \code{bar_count} and
+\code{instrument_count}. Metadata is not part of \code{snapshot_hash}.
 }
 \description{
 Returns snapshot metadata plus computed row counts for bars and instruments.
@@ -27,6 +29,8 @@ This function does not mutate the database.
 }
 \details{
 Timestamps are returned as ISO8601 UTC strings with trailing \code{Z}.
+Call it as \code{ledgr_snapshot_info(snapshot)} for a \code{ledgr_snapshot} handle, or
+as \code{ledgr_snapshot_info(con, snapshot_id)} for a raw DuckDB connection.
 
 Errors:
 \itemize{
@@ -43,6 +47,11 @@ Durable experiment stores:
 }
 
 \examples{
+bars <- ledgr_sim_bars(n_instruments = 1, n_days = 3, seed = 1)
+snapshot <- ledgr_snapshot_from_df(bars)
+ledgr_snapshot_info(snapshot)
+ledgr_snapshot_close(snapshot)
+
 db_path <- tempfile(fileext = ".duckdb")
 con <- ledgr_db_init(db_path)
 snapshot_id <- ledgr_snapshot_create(
