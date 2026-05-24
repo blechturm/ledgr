@@ -98,7 +98,7 @@ tickets:
 
   - id: "LDG-2307"
     title: "Metric Kernel, Summary, And Single-Run Metrics"
-    status: "todo"
+    status: "in_review"
     priority: "P1"
     effort: "L"
     dependencies:

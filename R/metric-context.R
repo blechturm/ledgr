@@ -196,6 +196,19 @@ ledgr_metric_context.ledgr_backtest <- function(x, ...) {
 }
 
 #' @export
+ledgr_metric_context.ledgr_metrics <- function(x, ...) {
+  ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
+  context <- attr(x, "metric_context", exact = TRUE)
+  if (inherits(context, "ledgr_metric_context")) {
+    return(context)
+  }
+  rlang::abort(
+    "`x` does not carry a ledgr metric context.",
+    class = c("ledgr_missing_metric_context", "ledgr_invalid_args")
+  )
+}
+
+#' @export
 ledgr_metric_context.default <- function(x, ...) {
   ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
   rlang::abort(
@@ -277,6 +290,61 @@ ledgr_metric_crypto <- function(risk_free_rate = 0, bars_per_day = 1L) {
 }
 
 ledgr_metric_context_version <- function() 1L
+
+ledgr_metric_kernel <- function(context = NULL,
+                                pulses = NULL,
+                                bars_per_year = NULL) {
+  if (is.null(context) && !is.null(bars_per_year)) {
+    bars_per_year <- ledgr_validate_positive_scalar(bars_per_year, "bars_per_year")
+    # Legacy fallback preserves the annualization product only; the
+    # trading_days_per_year/bars_per_day decomposition is synthetic.
+    context <- ledgr_new_metric_context(
+      calendar = ledgr_calendar(
+        trading_days_per_year = bars_per_year,
+        bars_per_day = 1,
+        label = "legacy inferred cadence",
+        source = "legacy_inference"
+      )
+    )
+  } else if (is.null(context) && !is.null(pulses)) {
+    inferred <- ledgr_bars_per_year_from_pulses(as.POSIXct(pulses, tz = "UTC"))
+    # Legacy fallback preserves the annualization product only; the
+    # trading_days_per_year/bars_per_day decomposition is synthetic.
+    context <- ledgr_new_metric_context(
+      calendar = ledgr_calendar(
+        trading_days_per_year = inferred,
+        bars_per_day = 1,
+        label = "legacy inferred cadence",
+        source = "legacy_inference"
+      )
+    )
+  } else {
+    context <- ledgr_metric_context_resolve(context)
+  }
+
+  bars_per_year <- ledgr_metric_context_bars_per_year(context)
+  rf_period_return <- ledgr_metric_context_rf_period_return(context, bars_per_year)
+
+  list(
+    metric_context = ledgr_metric_context_record(context),
+    metric_context_hash = ledgr_metric_context_hash(context),
+    metric_context_version = as.integer(context$metric_context_version),
+    bars_per_year = bars_per_year,
+    rf_period_return = rf_period_return,
+    calendar = ledgr_calendar_record(context$calendar)
+  )
+}
+
+ledgr_metric_context_rf_period_return <- function(context, bars_per_year = NULL) {
+  context <- ledgr_metric_context_resolve(context)
+  if (is.null(bars_per_year)) {
+    bars_per_year <- ledgr_metric_context_bars_per_year(context)
+  }
+  compute_rf_period_return(
+    context$risk_free_rate$annual_rate,
+    bars_per_year = bars_per_year
+  )
+}
 
 ledgr_metric_context_hash_from_context <- function(context) {
   digest::digest(canonical_json(ledgr_metric_context_payload(context)), algo = "sha256")
@@ -443,6 +511,13 @@ ledgr_metric_context_from_record <- function(payload) {
     market_factor = NULL,
     mar = NULL
   )
+}
+
+ledgr_metric_context_from_kernel <- function(kernel) {
+  if (!is.list(kernel) || !is.list(kernel$metric_context)) {
+    rlang::abort("`metric_kernel` must contain a metric_context record.", class = "ledgr_invalid_metric_context")
+  }
+  ledgr_metric_context_from_record(kernel$metric_context)
 }
 
 ledgr_risk_free_rate_payload <- function(x) {
@@ -675,4 +750,19 @@ ledgr_calendar_display <- function(calendar) {
     ledgr_format_number(calendar$bars_per_day),
     ledgr_format_number(calendar$bars_per_year)
   )
+}
+
+ledgr_metric_summary_risk_free_display <- function(context) {
+  context <- ledgr_metric_context_resolve(context)
+  label <- context$risk_free_rate$label
+  suffix <- if (!is.null(label)) sprintf(" (%s)", label) else ""
+  sprintf("%.2f%% annual%s", context$risk_free_rate$annual_rate * 100, suffix)
+}
+
+ledgr_metric_summary_annualization_display <- function(context) {
+  context <- ledgr_metric_context_resolve(context)
+  calendar <- context$calendar
+  label <- calendar$label
+  if (is.null(label)) label <- calendar$source
+  sprintf("%s periods/year (%s)", ledgr_format_number(calendar$bars_per_year), label)
 }

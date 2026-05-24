@@ -524,7 +524,7 @@ scope: v0.1.8.2
 Priority: P1
 Effort: L
 Dependencies: LDG-2304, LDG-2305, LDG-2306
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -574,6 +574,23 @@ type: feature
 surface: metrics_summary
 scope: public_api
 ```
+
+### Completion Notes
+
+- Added a serialization-safe internal `metric_kernel` plain-list contract with
+  resolved metric context, context hash/version, bars/year, per-period
+  risk-free return, and calendar record.
+- Updated single-run metric computation to use the stored run metric context by
+  default, with ephemeral `metric_context` and `risk_free_rate` call-time
+  overrides that do not mutate run metadata.
+- Returned classed, list-like `ledgr_metrics` objects and added
+  `ledgr_metric_context(metrics)` support for the context actually used.
+- Updated `summary.ledgr_backtest()` to disclose risk-free-rate and
+  annualization assumptions before annualized risk metrics.
+- Updated metric help pages and documentation contracts for the stored-context
+  default and list-like `ledgr_metrics` return.
+- Added metric-kernel serialization, stored-context default, override, and
+  summary-disclosure regression tests.
 
 ---
 
