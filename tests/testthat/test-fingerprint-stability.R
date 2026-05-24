@@ -12,6 +12,11 @@ ledgr_fingerprint_test_bars <- function() {
 }
 
 testthat::test_that("core indicator fingerprints remain stable", {
+  testthat::skip_if(
+    requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
+    "Core fingerprint pins are normal-runtime invariants; covr instruments closures."
+  )
+
   local_fn <- function(x) stats::median(x, na.rm = TRUE)
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
@@ -56,6 +61,11 @@ testthat::test_that("core indicator fingerprints remain stable", {
 })
 
 testthat::test_that("TTR indicator fingerprints remain stable by TTR version", {
+  testthat::skip_if(
+    requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
+    "TTR fingerprint pins are normal-runtime invariants; covr instruments closures."
+  )
+
   testthat::skip_if_not_installed("TTR")
   testthat::skip_if_not(
     identical(as.character(utils::packageVersion("TTR")), "0.24.4"),
