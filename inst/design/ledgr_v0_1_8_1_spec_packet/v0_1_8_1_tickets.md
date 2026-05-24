@@ -832,6 +832,10 @@ NEWS, and ticket metadata.
   documentation/example additions, warning/error message changes, and runtime
   bug fixes.
 - Verify no deferred roadmap feature was implemented accidentally.
+- Scan user-facing vignettes and README files for stale specific-version
+  claims. Remove or rephrase tutorial prose that presents old versions as the
+  current workflow, especially in `experiment-store`, `reproducibility`,
+  `research-to-production`, and `sweeps`.
 - Run targeted tests for changed surfaces.
 - Run full local tests and package checks appropriate for a release gate.
 - Rebuild or validate documentation/site artifacts as required by the release
@@ -844,6 +848,9 @@ NEWS, and ticket metadata.
 - Full test suite passes locally.
 - Package check passes with the agreed release flags.
 - Documentation contract tests pass.
+- User-facing tutorials avoid stale current-version claims; specific version
+  numbers remain only where they are explicitly historical or belong to release
+  notes/design provenance.
 - No generated local artifacts are committed.
 - Deferred v0.1.8.2+ roadmap features remain out of scope.
 
@@ -859,6 +866,8 @@ NEWS, and ticket metadata.
 
 - `v0_1_8_1_spec.md`
 - Release playbook
+- Stale-version scan:
+  `rg -n "v[0-9]+\\.[0-9]+\\.[0-9]+|0\\.[0-9]+\\.[0-9]+|current .*v|this release|release" vignettes README.Rmd README.md`
 
 ### Classification
 

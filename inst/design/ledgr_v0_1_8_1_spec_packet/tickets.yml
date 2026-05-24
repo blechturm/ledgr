@@ -202,3 +202,4 @@ tickets:
       - "r_cmd_build"
       - "r_cmd_check_no_manual_no_build_vignettes"
       - "documentation_contract_tests"
+      - "stale_version_scan"
