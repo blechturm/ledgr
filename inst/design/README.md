@@ -3,9 +3,10 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Current release candidate:** none.
-**Current implementation branch:** none cut for the next cycle.
-**Active packet:** none. The latest completed packet is
-`inst/design/ledgr_v0_1_8_1_spec_packet/`.
+**Current implementation branch:** `v0.1.8.2`.
+**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` contains a draft
+spec, auditr triage artifacts, and implementation tickets. The latest completed
+release packet is `inst/design/ledgr_v0_1_8_1_spec_packet/`.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -43,16 +44,26 @@ explicitly asks you to inspect one.
 
 ## Active Cycle
 
-There is no active implementation cycle after v0.1.8.1 release closeout.
-The next planned cycle is `v0.1.8.2`.
+The `v0.1.8.2` branch is open for implementation planning. A draft
+implementation spec exists, auditr triage artifacts are in the packet, and
+implementation tickets have been cut. Runtime work should start with the
+scope/decision gate ticket.
 
-- Spec: not cut yet.
-- Tickets: not cut yet.
-- Machine-readable tickets: not cut yet.
+- Spec: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md` is draft.
+- Auditr triage:
+  `ledgr_v0_1_8_2_spec_packet/ledgr_triage_report.md`,
+  `ledgr_v0_1_8_2_spec_packet/categorized_feedback.yml`, and
+  `ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`.
+- Tickets: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`
+  contains implementation tickets plus the independent tidyfinance research
+  ticket.
+- Machine-readable tickets: `ledgr_v0_1_8_2_spec_packet/tickets.yml`.
 
-The next planned implementation targets are metric context, risk-free-rate
-semantics, and indicator codebase Phase 2 cleanup. The accepted syntheses are
-planning inputs until promoted into the v0.1.8.2 spec packet.
+The planned implementation targets are metric context, risk-free-rate
+semantics, preflight classifier alignment, auditr documentation/message polish,
+and possible indicator codebase Phase 2 cleanup. The first implementation step
+is the scope/decision gate. The tidyfinance research ticket does not add
+runtime scope.
 
 ## Core Documents
 
@@ -160,6 +171,7 @@ entry carries the Phase 2 file/role cleanup (indicator file renames plus the
 - `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
 - `audits/v0_1_8_spec_deep_review.md` - v0.1.8 spec review and routing.
 - `spikes/ledgr_parallelism_spike/` - v0.1.8 parallelism spike episode.
+- `spikes/ledgr_tidyfinance_unit_probe/` - pre-RFC empirical probe of `tidyfinance` provider unit semantics for future external reference-data adapter design.
 
 ## Maintainer Review
 
@@ -180,6 +192,8 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
+- `ledgr_v0_1_8_2_spec_packet/` - v0.1.8.2 draft spec, auditr triage, and
+  implementation ticket packet.
 - `ledgr_v0_1_8_1_spec_packet/` - v0.1.8.1 release record.
 - `ledgr_v0_1_8_0_spec_packet/` - v0.1.8 sweep/fold-core release record.
 - `ledgr_v0_1_8_00_spec_packet/` - completed design-governance prep packet.

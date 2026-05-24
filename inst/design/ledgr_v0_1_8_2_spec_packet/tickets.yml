@@ -1,0 +1,234 @@
+version: "0.1.8.2"
+source: "v0_1_8_2_tickets.md"
+generated_from: "v0_1_8_2_spec.md"
+tickets:
+  - id: "LDG-2301"
+    title: "Run tidyfinance Unit Probe And Record Findings"
+    status: "todo"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "research"
+      surface: "external_reference_data"
+      scope: "pre_spec"
+    tests:
+      - "manual_spike_findings_review"
+      - "git_diff_check"
+
+  - id: "LDG-2302"
+    title: "Scope Routing And Maintainer Decision Gate"
+    status: "todo"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.2"
+    tests:
+      - "manual_packet_review"
+      - "git_diff_check"
+
+  - id: "LDG-2303"
+    title: "Strategy Preflight Contract Alignment"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2302"
+    classification:
+      type: "bugfix"
+      surface: "strategy_preflight"
+      scope: "runtime_contract"
+    tests:
+      - "strategy_preflight_tests"
+      - "sweep_tier3_tests"
+      - "backtest_wrapper_tests"
+
+  - id: "LDG-2304"
+    title: "Metric Context Constructors, Validation, And Hashing"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2302"
+    classification:
+      type: "feature"
+      surface: "metric_context"
+      scope: "public_api"
+    tests:
+      - "metric_context_constructor_tests"
+      - "metric_context_hash_tests"
+      - "documentation_contract_tests"
+
+  - id: "LDG-2305"
+    title: "Calendar Constructors And Annualization Policy"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2302"
+    classification:
+      type: "feature"
+      surface: "annualization"
+      scope: "public_api"
+    tests:
+      - "calendar_constructor_tests"
+      - "annualization_tests"
+      - "documentation_contract_tests"
+
+  - id: "LDG-2306"
+    title: "Experiment And Run Metric-Context Storage"
+    status: "todo"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2304"
+      - "LDG-2305"
+    classification:
+      type: "persistence"
+      surface: "experiment_run_metadata"
+      scope: "v0.1.8.2"
+    tests:
+      - "experiment_tests"
+      - "run_store_tests"
+      - "schema_tests"
+      - "hash_non_interference_tests"
+
+  - id: "LDG-2307"
+    title: "Metric Kernel, Summary, And Single-Run Metrics"
+    status: "todo"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2304"
+      - "LDG-2305"
+      - "LDG-2306"
+    classification:
+      type: "feature"
+      surface: "metrics_summary"
+      scope: "public_api"
+    tests:
+      - "metric_tests"
+      - "summary_tests"
+      - "metric_kernel_serialization_tests"
+      - "documentation_contract_tests"
+
+  - id: "LDG-2308"
+    title: "Comparison And Sweep Metric-Context Threading"
+    status: "todo"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2307"
+    classification:
+      type: "feature"
+      surface: "comparison_sweep_metrics"
+      scope: "public_api"
+    tests:
+      - "comparison_tests"
+      - "sweep_tests"
+      - "metric_kernel_threading_tests"
+      - "promotion_candidate_parity_checks"
+
+  - id: "LDG-2309"
+    title: "Promotion Context Metric Disclosure"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2308"
+    classification:
+      type: "feature"
+      surface: "promotion_context"
+      scope: "provenance"
+    tests:
+      - "promotion_context_tests"
+      - "documentation_contract_tests"
+
+  - id: "LDG-2310"
+    title: "Metric-Context Documentation And Inspection Updates"
+    status: "todo"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2307"
+      - "LDG-2308"
+      - "LDG-2309"
+    classification:
+      type: "documentation"
+      surface: "metric_context_inspection"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "vignette_checks"
+      - "stale_version_scan"
+      - "encoding_scan"
+
+  - id: "LDG-2311"
+    title: "Auditr Documentation And Message Polish"
+    status: "todo"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2302"
+    classification:
+      type: "documentation"
+      surface: "auditr_polish"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "message_tests"
+      - "stale_version_scan"
+      - "encoding_scan"
+
+  - id: "LDG-2312"
+    title: "Indicator Codebase Phase 2 Cleanup"
+    status: "todo"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2302"
+    classification:
+      type: "refactor"
+      surface: "indicator_codebase"
+      scope: "internal"
+    tests:
+      - "fingerprint_stability_tests"
+      - "indicator_tests"
+      - "indicator_ttr_tests"
+      - "indicator_adapter_tests"
+      - "feature_cache_tests"
+      - "precompute_feature_tests"
+      - "sweep_tests"
+      - "api_export_lock_tests"
+      - "devtools_document_diff_review"
+
+  - id: "LDG-2313"
+    title: "v0.1.8.2 Release Gate And Closeout"
+    status: "todo"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2303"
+      - "LDG-2304"
+      - "LDG-2305"
+      - "LDG-2306"
+      - "LDG-2307"
+      - "LDG-2308"
+      - "LDG-2309"
+      - "LDG-2310"
+      - "LDG-2311"
+      - "LDG-2312"
+    classification:
+      type: "release_gate"
+      surface: "package"
+      scope: "v0.1.8.2"
+    tests:
+      - "full_test_suite"
+      - "r_cmd_build"
+      - "r_cmd_check_no_manual_no_build_vignettes"
+      - "documentation_contract_tests"
+      - "stale_version_scan"
+      - "encoding_scan"

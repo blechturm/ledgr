@@ -29,14 +29,24 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.1 release; update this block when the
-next spec packet is cut):
+Current planning context (v0.1.8.2 implementation planning; update this block
+when the release closes or scope changes materially):
 
 - The completed v0.1.8.1 packet is an archival release record, not active
   implementation scope.
-- Next planned implementation scope is v0.1.8.2 metric context and indicator
-  codebase Phase 2 cleanup. No v0.1.8.2 spec packet has been cut yet.
-- Do not implement new v0.1.8.2 work until the spec packet and tickets exist.
+- The v0.1.8.2 packet currently contains a draft spec, auditr triage artifacts,
+  and implementation tickets:
+  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/ledgr_triage_report.md`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/categorized_feedback.yml`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`, and
+  `inst/design/ledgr_v0_1_8_2_spec_packet/tickets.yml`.
+- Next planned implementation scope is metric context and indicator codebase
+  Phase 2 cleanup, plus auditr-routed preflight classifier alignment, but final
+  runtime sequencing starts with the scope/decision gate.
+- Do not implement new v0.1.8.2 runtime work before LDG-2302 closes the
+  maintainer decisions.
 
 ## Active Design Entry Points
 

@@ -1,0 +1,436 @@
+summary:
+  episodes_reviewed: 8
+  feedback_items_reviewed: 30
+  high_priority_count: 2
+  unresolved_uncertainty:
+    - "2026-05-24_001_multi_output_indicator_bundles/FB-001: Evidence confirms an ID mismatch, but the maintainer decision is whether this is a ledgr bug or an intentional shortcut that needs documentation."
+    - "2026-05-24_003_adversarial_preflight_and_force_override/FB-003: Raw evidence shows resolved globals execute as tier_2, while task and docs imply stronger params-boundary guidance."
+    - "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-001: Evidence confirms high-level CSV helper classes differ from low-level CSV class expectations; intended class contract is unclear."
+    - "2026-05-24_006_inspection_surfaces_map/FB-002: Error behavior is technically correct, but it omits the documented pulse-time route for feature inspection."
+    - "2026-05-24_008_unguided_yahoo_research_question/FB-003: Warning text lacks run context in a multi-run script; raw artifacts do not identify the originating run."
+themes:
+  - theme_id: THEME-001
+    title: "Preflight Contract Alignment"
+    bucket: ledgr_bug
+    severity: high
+    episode_ids: ["2026-05-24_003_adversarial_preflight_and_force_override", "2026-05-24_007_helper_pipeline_troubleshooting", "2026-05-24_008_unguided_yahoo_research_question"]
+    feedback_ids: ["2026-05-24_003_adversarial_preflight_and_force_override/FB-001", "2026-05-24_003_adversarial_preflight_and_force_override/FB-002", "2026-05-24_003_adversarial_preflight_and_force_override/FB-003", "2026-05-24_003_adversarial_preflight_and_force_override/FB-004", "2026-05-24_003_adversarial_preflight_and_force_override/FB-005", "2026-05-24_007_helper_pipeline_troubleshooting/FB-004", "2026-05-24_008_unguided_yahoo_research_question/FB-002"]
+    evidence: >-
+      Raw feedback and reports show Sys.time and superassignment did not follow the expected tier_3 path, resolved globals conflicted with params-boundary guidance, examples did not reliably produce the expected tier, and helper functions were rejected as unresolved symbols.
+    recommended_action: >-
+      Reconcile ledgr_strategy_preflight behavior with the reproducibility documentation, then add compact examples for tier_1, tier_2, tier_3, helper reuse, and no-force rejection wording.
+    uncertainty: >-
+      Some rows are clear behavior bugs, while others may be intentional tier semantics that need stronger documentation rather than code changes.
+  - theme_id: THEME-002
+    title: "Workflow Documentation Gaps"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-24_002_yahoo_universe_sweep_per_strategy", "2026-05-24_006_inspection_surfaces_map", "2026-05-24_008_unguided_yahoo_research_question"]
+    feedback_ids: ["2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-001", "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-002", "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-003", "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-004", "2026-05-24_006_inspection_surfaces_map/FB-001", "2026-05-24_008_unguided_yahoo_research_question/FB-001", "2026-05-24_008_unguided_yahoo_research_question/FB-005"]
+    evidence: >-
+      Users had to infer Yahoo sealing semantics, Cartesian grid construction, promotion replay verification, warning handling in sweeps and promotions, experiment-first setup for comparison, Yahoo discoverability, and raw report-ready comparison exports.
+    recommended_action: >-
+      Add small end-to-end examples and task-intent map entries for Yahoo import, sweeps, promotion replay checks, compare-runs setup, and report-safe metric export.
+    uncertainty: >-
+      Evidence supports documentation work; only the grid helper row might become a missing API if maintainers prefer a helper over vignette guidance.
+  - theme_id: THEME-003
+    title: "Indicator Bundle Ergonomics"
+    bucket: unclear
+    severity: medium
+    episode_ids: ["2026-05-24_001_multi_output_indicator_bundles", "2026-05-24_004_adversarial_inputs_csv_bundle_registration"]
+    feedback_ids: ["2026-05-24_001_multi_output_indicator_bundles/FB-001", "2026-05-24_001_multi_output_indicator_bundles/FB-002", "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-004"]
+    evidence: >-
+      Bundle default IDs differed from equivalent single-output TTR IDs, partial naming needed explicit output filtering, and duplicate-prefix bundle flattening reported a duplicate alias without explaining the generated feature ID collision.
+    recommended_action: >-
+      Decide whether bundle IDs should be identity-compatible with single-output indicators, then document or change naming/filter behavior and improve duplicate bundle collision wording.
+    uncertainty: >-
+      The ID mismatch could be an API bug or an intentional shorter-ID convention that needs a prominent note.
+  - theme_id: THEME-004
+    title: "CSV Error Clarity"
+    bucket: unclear
+    severity: medium
+    episode_ids: ["2026-05-24_004_adversarial_inputs_csv_bundle_registration"]
+    feedback_ids: ["2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-001", "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-002", "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-003"]
+    evidence: >-
+      CSV validation failures surfaced high-level classes different from the documented low-level CSV class, timestamp errors did not name UTC or trailing-Z requirements, and failures did not state artifact state or next action.
+    recommended_action: >-
+      Document high-level CSV error classes or wrap failures consistently, then add standardized timestamp and snapshot-creation failure messages.
+    uncertainty: >-
+      The intended class boundary between ledgr_snapshot_from_csv and lower-level CSV import is not clear from the raw evidence.
+  - theme_id: THEME-005
+    title: "Inspection Troubleshooting Examples"
+    bucket: docs_gap
+    severity: low
+    episode_ids: ["2026-05-24_005_final_bar_no_fill_warning", "2026-05-24_006_inspection_surfaces_map", "2026-05-24_007_helper_pipeline_troubleshooting", "2026-05-24_008_unguided_yahoo_research_question"]
+    feedback_ids: ["2026-05-24_005_final_bar_no_fill_warning/FB-001", "2026-05-24_006_inspection_surfaces_map/FB-002", "2026-05-24_007_helper_pipeline_troubleshooting/FB-001", "2026-05-24_007_helper_pipeline_troubleshooting/FB-002", "2026-05-24_007_helper_pipeline_troubleshooting/FB-003", "2026-05-24_008_unguided_yahoo_research_question/FB-003"]
+    evidence: >-
+      Feedback repeatedly asks for runnable inspection snippets: final-bar extension verification, feature inspection via pulse snapshots, fills extraction, pre-validation target-name checks, closed-trade versus fill distinction, and run context in final-bar warnings.
+    recommended_action: >-
+      Expand troubleshooting and inspection docs with minimal runnable snippets and improve warning/error text where runtime context is missing.
+    uncertainty: >-
+      Most rows are docs gaps; the multi-run warning row may require ledgr warning metadata changes rather than documentation alone.
+  - theme_id: THEME-006
+    title: "Episode Environment Friction"
+    bucket: expected_user_error
+    severity: low
+    episode_ids: ["2026-05-24_002_yahoo_universe_sweep_per_strategy", "2026-05-24_004_adversarial_inputs_csv_bundle_registration", "2026-05-24_008_unguided_yahoo_research_question"]
+    feedback_ids: ["2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-005", "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-005", "2026-05-24_008_unguided_yahoo_research_question/FB-006"]
+    evidence: >-
+      Feedback covers scalar-only doc helper use, locked active Codex logs during recursive raw log search, and harmless quantmod startup output on stderr.
+    recommended_action: >-
+      Add auditr episode guidance for one-topic doc helper calls, targeted evidence-log searches on Windows, and expected Yahoo dependency stderr noise.
+    uncertainty: >-
+      These appear to be expected environment or helper-use issues, not ledgr core defects.
+  - theme_id: THEME-007
+    title: "Real Data Benchmarks"
+    bucket: docs_gap
+    severity: low
+    episode_ids: ["2026-05-24_008_unguided_yahoo_research_question"]
+    feedback_ids: ["2026-05-24_008_unguided_yahoo_research_question/FB-004"]
+    evidence: >-
+      The unguided Yahoo report found no obvious buy-and-hold or equal-weight real-data benchmark example and hand-rolled equal-weight target sizing.
+    recommended_action: >-
+      Add real-data benchmark examples for flat, buy-and-hold, equal-weight, and single-instrument comparisons using Yahoo snapshots.
+    uncertainty: >-
+      Evidence supports a docs gap; a dedicated benchmark helper could be considered later but is not required by the feedback.
+items:
+  - feedback_id: "2026-05-24_001_multi_output_indicator_bundles/FB-001"
+    episode_id: "2026-05-24_001_multi_output_indicator_bundles"
+    title: "Default BBands bundle IDs do not match hand-written single-output TTR IDs"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: >-
+      Bundle BBands output up had feature ID bbands_up, while the equivalent ledgr_ind_ttr call produced ttr_bbands_20_up.
+    recommended_action: >-
+      Decide whether IDs should align; either change generated IDs or document shorter bundle IDs and the explicit id workaround.
+    uncertainty: >-
+      Raw evidence proves a mismatch, but not whether this is an implementation bug or intentional API behavior.
+  - feedback_id: "2026-05-24_001_multi_output_indicator_bundles/FB-002"
+    episode_id: "2026-05-24_001_multi_output_indicator_bundles"
+    title: "Partial `naming` map needs explicit `outputs` filter"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      A naming vector for dn and up failed until outputs was also set to c("dn", "up").
+    recommended_action: >-
+      Document that naming is not an output filter and show subset renaming with outputs = names(naming).
+    uncertainty: ""
+  - feedback_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-001"
+    episode_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy"
+    title: "Yahoo snapshot sealing contract is easy to misread"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      ledgr_snapshot_from_yahoo returned a sealed handle, and ledgr_snapshot_seal on it behaved as an idempotent verification step.
+    recommended_action: >-
+      Add a Yahoo snapshot example showing ledgr_snapshot_info and explain that an extra seal call is optional/idempotent.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-002"
+    episode_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy"
+    title: "Large Cartesian grids require undocumented boilerplate"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      The agent had to infer an expand.grid plus do.call(ledgr_param_grid, entries) pattern for a 26-row sweep.
+    recommended_action: >-
+      Add a Cartesian grid vignette snippet or a small ledgr_param_grid_expand helper with stable candidate labels.
+    uncertainty: >-
+      Could be solved as documentation or as a missing helper API.
+  - feedback_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-003"
+    episode_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy"
+    title: "Promotion replay verification needs a direct example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      The report assembled a manual comparison between sweep row metrics and promoted ledgr_compute_metrics plus final equity results.
+    recommended_action: >-
+      Add a verify same-snapshot replay snippet to the sweeps documentation.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-004"
+    episode_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy"
+    title: "Last-bar no-fill warnings lack sweep and promotion context"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      Promoted runs completed and replayed metrics while emitting LEDGR_LAST_BAR_NO_FILL warnings to stderr.
+    recommended_action: >-
+      Add warning-handling guidance for sweeps and promotions, including how expected run warnings surface and affect candidate selection.
+    uncertainty: >-
+      Related to other final-bar rows but specific to sweep and promotion context, so not marked duplicate.
+  - feedback_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy/FB-005"
+    episode_id: "2026-05-24_002_yahoo_universe_sweep_per_strategy"
+    title: "Documentation helper scalar-only behavior was not obvious"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      ledgr_save_help failed when passed a vector of topics and worked one topic at a time.
+    recommended_action: >-
+      Document scalar-only usage or support vectors; include a loop example if scalar-only remains.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_003_adversarial_preflight_and_force_override/FB-001"
+    episode_id: "2026-05-24_003_adversarial_preflight_and_force_override"
+    title: "Sys.time preflight does not classify as Tier 3"
+    bucket: ledgr_bug
+    severity: high
+    duplicate_of: null
+    evidence: >-
+      A strategy using Sys.time was classified tier_1 and allowed, then ledgr_run failed with ledgr_config_non_deterministic instead of the tier_3 preflight path.
+    recommended_action: >-
+      Add nondeterministic calls such as Sys.time to tier_3 preflight classification or document the separate nondeterministic rejection contract.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_003_adversarial_preflight_and_force_override/FB-002"
+    episode_id: "2026-05-24_003_adversarial_preflight_and_force_override"
+    title: "Global assignment strategy is allowed and writes a run"
+    bucket: ledgr_bug
+    severity: high
+    duplicate_of: null
+    evidence: >-
+      A strategy using superassignment was classified tier_2, allowed to run, and wrote a DONE run.
+    recommended_action: >-
+      Treat superassignment or captured mutable state as tier_3, or explicitly document that it is currently allowed as tier_2.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_003_adversarial_preflight_and_force_override/FB-003"
+    episode_id: "2026-05-24_003_adversarial_preflight_and_force_override"
+    title: "Resolved global scalar conflicts with params-boundary guidance"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: >-
+      A resolved external scalar ran as tier_2, while task expectations and reproducibility prose pointed toward hidden globals being unrecoverable external state.
+    recommended_action: >-
+      Reconcile the task, vignette, and preflight help; if resolved globals are intentional tier_2, add an explicit warning and example.
+    uncertainty: >-
+      Maintainer intent is unclear: docs may be wrong, task expectations may be too strict, or classifier policy may need tightening.
+  - feedback_id: "2026-05-24_003_adversarial_preflight_and_force_override/FB-004"
+    episode_id: "2026-05-24_003_adversarial_preflight_and_force_override"
+    title: "stats-qualified function example does not produce Tier 2"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      stats::median classified as tier_1; jsonlite::toJSON was needed to create a tier_2 example.
+    recommended_action: >-
+      Replace stats::median examples with a non-recommended package-qualified call or document that recommended package calls remain tier_1.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_003_adversarial_preflight_and_force_override/FB-005"
+    episode_id: "2026-05-24_003_adversarial_preflight_and_force_override"
+    title: "No-force wording is absent for nondeterministic strategy rejection"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      The Sys.time strategy failed with ledgr_config_non_deterministic, and the message lacked the no-force override wording expected for tier_3-style rejections.
+    recommended_action: >-
+      Add no-force remediation wording or a cross-reference to nondeterministic strategy rejection messages.
+    uncertainty: >-
+      This depends on whether nondeterministic strategy calls remain outside preflight tier_3 classification.
+  - feedback_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-001"
+    episode_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration"
+    title: "High-level CSV helper does not raise documented CSV error class"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: >-
+      ledgr_snapshot_from_csv returned ledgr_invalid_args or ledgr_invalid_timestamp for malformed CSV cases where low-level docs suggested LEDGR_CSV_FORMAT_ERROR.
+    recommended_action: >-
+      Document high-level error classes on ledgr_snapshot_from_csv or wrap CSV contract failures in a consistent CSV/snapshot class.
+    uncertainty: >-
+      Intended class compatibility between high-level and low-level CSV helpers is unclear.
+  - feedback_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-002"
+    episode_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration"
+    title: "Non-UTC timestamp error does not say UTC or trailing Z"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      A non-UTC timestamp failed with Unsupported timestamp format in x, without naming ts_utc, UTC, or trailing-Z ISO8601.
+    recommended_action: >-
+      Update the timestamp parse error to name ts_utc and include a valid UTC trailing-Z example.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-003"
+    episode_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration"
+    title: "CSV validation errors do not state artifact state or next action"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      CSV failures occurred before a DB file or snapshot was left behind, but messages did not state that artifact state or the fix-and-rerun action.
+    recommended_action: >-
+      Add a standard suffix to CSV validation errors explaining that snapshot creation failed and the user should fix the CSV and rerun creation.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-004"
+    episode_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration"
+    title: "Bundle collision error reports alias instead of flattened feature ID"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      Two BBands bundles with the same prefix failed with duplicate alias same_dn, which obscured that bundle flattening created a duplicate feature ID/alias.
+    recommended_action: >-
+      Distinguish user aliases from bundle-generated aliases in duplicate feature-map errors and suggest changing the bundle prefix.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration/FB-005"
+    episode_id: "2026-05-24_004_adversarial_inputs_csv_bundle_registration"
+    title: "Recursive raw log search can hit locked Codex session logs"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      Recursive rg over raw_logs hit locked active Codex stdout/stderr files on Windows.
+    recommended_action: >-
+      Add auditr episode guidance to search specific evidence logs or exclude active runner logs.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_005_final_bar_no_fill_warning/FB-001"
+    episode_id: "2026-05-24_005_final_bar_no_fill_warning"
+    title: "Final-bar warning docs do not show the extension verification pattern"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      Docs show warning capture but not a full extend-by-one-bar verification, and the successful pattern required ctx$hold after the trigger.
+    recommended_action: >-
+      Add a before-and-after final-bar warning example with empty fills, one-bar extension, successful fill, and ctx$hold.
+    uncertainty: >-
+      Related to other final-bar rows but specific to extension verification, so not marked duplicate.
+  - feedback_id: "2026-05-24_006_inspection_surfaces_map/FB-001"
+    episode_id: "2026-05-24_006_inspection_surfaces_map"
+    title: "Compare-runs surface needs experiment-first setup cue"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      The Inspection Surfaces table pointed to ledgr_compare_runs but nearby examples used ledgr_backtest without a stored snapshot/run setup.
+    recommended_action: >-
+      Add a short experiment-first setup cue or route users to durable experiment-store docs for compare-runs.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_006_inspection_surfaces_map/FB-002"
+    episode_id: "2026-05-24_006_inspection_surfaces_map"
+    title: "Unsupported features result-table error omits pulse-time route"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      ledgr_results(bt, what = "features") correctly failed, but only listed valid result tables and did not mention ledgr_pulse_snapshot.
+    recommended_action: >-
+      Extend the invalid result-table error for features to point to pulse-time feature inspection.
+    uncertainty: >-
+      This is an error-message UX gap rather than evidence that feature results should be persisted.
+  - feedback_id: "2026-05-24_007_helper_pipeline_troubleshooting/FB-001"
+    episode_id: "2026-05-24_007_helper_pipeline_troubleshooting"
+    title: "Troubleshooting table does not name the fills extraction API"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      The troubleshooting table mentioned inspecting fills but did not show ledgr_results(bt, "fills").
+    recommended_action: >-
+      Add a zero-trade diagnostic snippet with summary, ledgr_results(bt, "fills"), and a late pulse snapshot.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_007_helper_pipeline_troubleshooting/FB-002"
+    episode_id: "2026-05-24_007_helper_pipeline_troubleshooting"
+    title: "Missing-name diagnostic omits how to obtain the target before validation"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      A failing ledgr_run stops at validation, so users still need a way to create a pulse or recreate target-building logic before validation.
+    recommended_action: >-
+      Add a runnable pulse-level setdiff check comparing target names to ctx$universe.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_007_helper_pipeline_troubleshooting/FB-003"
+    episode_id: "2026-05-24_007_helper_pipeline_troubleshooting"
+    title: "Zero trades and zero fills need clearer separation"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      One fixed strategy had n_trades 0 with one OPEN fill, while zero-sizing had n_trades 0 and zero fills.
+    recommended_action: >-
+      Explain that n_trades counts closed trades and that ledgr_results(bt, "fills") shows open and close fills.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_007_helper_pipeline_troubleshooting/FB-004"
+    episode_id: "2026-05-24_007_helper_pipeline_troubleshooting"
+    title: "Tier 3 hard-failure claim lacks a runnable example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      The vignette says tier_3 failures are hard failures but lacks a minimal unresolved-helper strategy and expected ledgr_run error example.
+    recommended_action: >-
+      Add a compact tier_3 helper-pipeline example near the compatibility-wrapper paragraph.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_008_unguided_yahoo_research_question/FB-001"
+    episode_id: "2026-05-24_008_unguided_yahoo_research_question"
+    title: "Yahoo workflow is hard to discover from the task-intent map"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: >-
+      The task-intent map omitted ledgr_snapshot_from_yahoo from the snapshots/import group, and the agent found it by searching docs for Yahoo.
+    recommended_action: >-
+      Add ledgr_snapshot_from_yahoo and experiment-store Yahoo guidance to the task-intent map when the topic exists.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_008_unguided_yahoo_research_question/FB-002"
+    episode_id: "2026-05-24_008_unguided_yahoo_research_question"
+    title: "Strategy helper functions trigger tier-3 preflight unless inlined"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: >-
+      File-level allocate_equal helper use caused tier_3 unresolved-symbol rejection; inlining allocation logic made strategies tier_1.
+    recommended_action: >-
+      Add strategy-authoring guidance for sharing helper logic safely, including a failing local-helper example and self-contained rewrite.
+    uncertainty: >-
+      This may also reflect a missing approved-helper mechanism, but the evidence directly supports a docs gap.
+  - feedback_id: "2026-05-24_008_unguided_yahoo_research_question/FB-003"
+    episode_id: "2026-05-24_008_unguided_yahoo_research_question"
+    title: "Final-bar no-fill warning lacks run context in multi-run scripts"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      A four-strategy script emitted one LEDGR_LAST_BAR_NO_FILL warning without run_id or strategy context.
+    recommended_action: >-
+      Include run_id and possibly snapshot_id in execution warnings from ledgr_run.
+    uncertainty: >-
+      Raw artifacts do not identify which run emitted the warning; related to other final-bar rows but not a duplicate.
+  - feedback_id: "2026-05-24_008_unguided_yahoo_research_question/FB-004"
+    episode_id: "2026-05-24_008_unguided_yahoo_research_question"
+    title: "No obvious real-data benchmark strategy example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      The report hand-rolled equal_weight_strategy because docs did not expose an obvious real Yahoo buy-and-hold or equal-weight benchmark pattern.
+    recommended_action: >-
+      Add benchmark examples for real-data snapshots, including flat, buy-and-hold, equal-weight, and single-instrument variants.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_008_unguided_yahoo_research_question/FB-005"
+    episode_id: "2026-05-24_008_unguided_yahoo_research_question"
+    title: "Printed comparison mixes human formatting with report-ready values"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      ledgr_compare_runs printed formatted percentages, while raw numeric values were available after converting/exporting the comparison object.
+    recommended_action: >-
+      Add a report-writing example using as.data.frame or tibble conversion for numeric comparison output.
+    uncertainty: ""
+  - feedback_id: "2026-05-24_008_unguided_yahoo_research_question/FB-006"
+    episode_id: "2026-05-24_008_unguided_yahoo_research_question"
+    title: "Quantmod startup message appears on stderr during Yahoo import"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: >-
+      Yahoo snapshot creation emitted a quantmod S3 method overwrite message to stderr, and help documented that such dependency startup output can be harmless.
+    recommended_action: >-
+      Keep the help note and consider repeating it in Yahoo workflow snippets or the episode doc map.
+    uncertainty: ""

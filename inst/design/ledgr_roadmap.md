@@ -4,7 +4,9 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Current cycle:** v0.1.8.2 planning.
-**Active packet:** not cut yet.
+**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` contains a draft
+spec, auditr triage artifacts, and implementation tickets. Runtime work starts
+with the scope/decision gate.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
