@@ -55,8 +55,41 @@ testthat::test_that("ledgr_experiment builds a validated experiment object", {
   testthat::expect_identical(exp$fill_model$type, "next_open")
   testthat::expect_true(exp$persist_features)
   testthat::expect_identical(exp$execution_mode, "audit_log")
+  testthat::expect_s3_class(exp$metric_context, "ledgr_metric_context")
+  testthat::expect_equal(exp$metric_context$risk_free_rate$annual_rate, 0)
   runs_after <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM runs")$n[[1]]
   testthat::expect_identical(runs_after, runs_before)
+})
+
+testthat::test_that("ledgr_experiment stores resolved metric context metadata only", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) ctx$flat()
+
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    metric_context = ledgr_metric_crypto(risk_free_rate = 0.03)
+  )
+  shorthand <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    risk_free_rate = 0.03
+  )
+
+  testthat::expect_s3_class(ledgr_metric_context(exp), "ledgr_metric_context")
+  testthat::expect_identical(exp$metric_context$calendar$source, "crypto")
+  testthat::expect_equal(shorthand$metric_context$risk_free_rate$annual_rate, 0.03)
+  testthat::expect_error(
+    ledgr_experiment(
+      snapshot = snapshot,
+      strategy = strategy,
+      metric_context = ledgr_metric_context(),
+      risk_free_rate = 0
+    ),
+    class = "ledgr_invalid_experiment"
+  )
 })
 
 testthat::test_that("ledgr_experiment defaults universe to all snapshot instruments", {

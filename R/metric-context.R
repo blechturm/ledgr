@@ -175,12 +175,29 @@ ledgr_metric_context <- function(x, ...) {
 
 #' @export
 ledgr_metric_context.ledgr_metric_context <- function(x, ...) {
+  ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
   ledgr_validate_metric_context_object(x)
   x
 }
 
 #' @export
+ledgr_metric_context.ledgr_experiment <- function(x, ...) {
+  ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
+  if (!is.null(x$metric_context)) {
+    return(ledgr_metric_context_resolve(x$metric_context))
+  }
+  ledgr_metric_context_resolve(NULL)
+}
+
+#' @export
+ledgr_metric_context.ledgr_backtest <- function(x, ...) {
+  ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
+  ledgr_backtest_metric_context(x)
+}
+
+#' @export
 ledgr_metric_context.default <- function(x, ...) {
+  ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
   rlang::abort(
     "`x` does not carry a ledgr metric context.",
     class = c("ledgr_missing_metric_context", "ledgr_invalid_args")
@@ -238,7 +255,7 @@ ledgr_metric_context_resolve <- function(x = NULL) {
 #' @export
 ledgr_metric_context_hash <- function(x) {
   context <- ledgr_metric_context_resolve(x)
-  digest::digest(canonical_json(ledgr_metric_context_payload(context)), algo = "sha256")
+  ledgr_metric_context_hash_from_context(context)
 }
 
 #' @rdname ledgr_metric_context
@@ -260,6 +277,24 @@ ledgr_metric_crypto <- function(risk_free_rate = 0, bars_per_day = 1L) {
 }
 
 ledgr_metric_context_version <- function() 1L
+
+ledgr_metric_context_hash_from_context <- function(context) {
+  digest::digest(canonical_json(ledgr_metric_context_payload(context)), algo = "sha256")
+}
+
+ledgr_metric_context_json <- function(context) {
+  context <- ledgr_metric_context_resolve(context)
+  unname(canonical_json(ledgr_metric_context_record(context)))
+}
+
+ledgr_metric_context_storage <- function(context) {
+  context <- ledgr_metric_context_resolve(context)
+  list(
+    json = ledgr_metric_context_json(context),
+    hash = ledgr_metric_context_hash_from_context(context),
+    version = as.integer(context$metric_context_version)
+  )
+}
 
 ledgr_new_metric_context <- function(risk_free_rate = 0,
                                      calendar = ledgr_calendar_us_equity(),
@@ -348,6 +383,8 @@ ledgr_validate_reserved_metric_provider <- function(x, arg) {
   invisible(TRUE)
 }
 
+# Hash payloads intentionally omit human display labels; storage records keep
+# them so labels remain inspectable without changing metric-context identity.
 ledgr_metric_context_payload <- function(context) {
   ledgr_validate_metric_context_object(context)
   out <- list(
@@ -362,6 +399,52 @@ ledgr_metric_context_payload <- function(context) {
   out
 }
 
+ledgr_metric_context_record <- function(context) {
+  ledgr_validate_metric_context_object(context)
+  out <- list(
+    metric_context_version = as.integer(context$metric_context_version),
+    risk_free_rate = ledgr_risk_free_rate_record(context$risk_free_rate),
+    calendar = ledgr_calendar_record(context$calendar)
+  )
+  for (field in c("benchmark", "market_factor", "mar")) {
+    value <- context[[field]]
+    if (!is.null(value)) out[[field]] <- value
+  }
+  out
+}
+
+ledgr_metric_context_from_json <- function(json) {
+  if (!is.character(json) || length(json) != 1L || is.na(json) || !nzchar(json)) {
+    return(ledgr_metric_context_resolve(NULL))
+  }
+  payload <- tryCatch(
+    jsonlite::fromJSON(json, simplifyVector = FALSE),
+    error = function(e) {
+      rlang::abort("Stored metric_context_json is not valid JSON.", class = "ledgr_invalid_metric_context", parent = e)
+    }
+  )
+  ledgr_metric_context_from_record(payload)
+}
+
+ledgr_metric_context_from_record <- function(payload) {
+  if (!is.list(payload)) {
+    rlang::abort("Stored metric context must be a JSON object.", class = "ledgr_invalid_metric_context")
+  }
+  version <- suppressWarnings(as.integer(payload$metric_context_version))
+  if (!identical(version, ledgr_metric_context_version())) {
+    rlang::abort("Unsupported stored metric_context_version.", class = "ledgr_invalid_metric_context")
+  }
+  # benchmark, market_factor, and mar must be NULL in metric_context_version 1L;
+  # extend reconstruction when external-provider RFCs make these fields real.
+  ledgr_new_metric_context(
+    risk_free_rate = ledgr_risk_free_rate_from_record(payload$risk_free_rate),
+    calendar = ledgr_calendar_from_record(payload$calendar),
+    benchmark = NULL,
+    market_factor = NULL,
+    mar = NULL
+  )
+}
+
 ledgr_risk_free_rate_payload <- function(x) {
   ledgr_validate_risk_free_rate_object(x)
   out <- list(
@@ -370,6 +453,25 @@ ledgr_risk_free_rate_payload <- function(x) {
   )
   if (!is.null(x$as_of)) out$as_of <- format(x$as_of, "%Y-%m-%d")
   out
+}
+
+ledgr_risk_free_rate_record <- function(x) {
+  ledgr_validate_risk_free_rate_object(x)
+  out <- ledgr_risk_free_rate_payload(x)
+  if (!is.null(x$label)) out$label <- x$label
+  out
+}
+
+ledgr_risk_free_rate_from_record <- function(x) {
+  if (!is.list(x)) {
+    rlang::abort("Stored risk_free_rate must be a JSON object.", class = "ledgr_invalid_metric_context")
+  }
+  ledgr_risk_free_rate(
+    annual_rate = x$annual_rate,
+    label = if (is.null(x$label)) NULL else x$label,
+    source = if (is.null(x$source)) "manual" else x$source,
+    as_of = if (is.null(x$as_of)) NULL else x$as_of
+  )
 }
 
 ledgr_calendar_payload <- function(x) {
@@ -381,6 +483,25 @@ ledgr_calendar_payload <- function(x) {
     source = x$source
   )
   out
+}
+
+ledgr_calendar_record <- function(x) {
+  ledgr_validate_calendar_object(x)
+  out <- ledgr_calendar_payload(x)
+  if (!is.null(x$label)) out$label <- x$label
+  out
+}
+
+ledgr_calendar_from_record <- function(x) {
+  if (!is.list(x)) {
+    rlang::abort("Stored calendar must be a JSON object.", class = "ledgr_invalid_metric_context")
+  }
+  ledgr_calendar(
+    trading_days_per_year = x$trading_days_per_year,
+    bars_per_day = x$bars_per_day,
+    label = if (is.null(x$label)) NULL else x$label,
+    source = if (is.null(x$source)) "custom" else x$source
+  )
 }
 
 ledgr_calendar_bars_per_year <- function(calendar) {
@@ -396,6 +517,59 @@ ledgr_metric_context_bars_per_year <- function(context) {
 ledgr_metric_context_annual_risk_free_rate <- function(context) {
   context <- ledgr_metric_context_resolve(context)
   context$risk_free_rate$annual_rate
+}
+
+ledgr_backtest_metric_context <- function(bt) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_args")
+  }
+  opened <- ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  ledgr_run_metric_context_from_db(opened$con, bt$run_id)
+}
+
+ledgr_run_metric_context_from_db <- function(con, run_id) {
+  if (!DBI::dbIsValid(con)) {
+    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_args")
+  }
+  if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
+    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  cols <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'main'
+      AND table_name = 'runs'
+    "
+  )$column_name
+  if (!("metric_context_json" %in% cols)) {
+    return(ledgr_metric_context_resolve(NULL))
+  }
+  row <- DBI::dbGetQuery(
+    con,
+    "SELECT metric_context_json, metric_context_hash, metric_context_version FROM runs WHERE run_id = ?",
+    params = list(run_id)
+  )
+  if (nrow(row) != 1L) {
+    rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
+  }
+  json <- row$metric_context_json[[1]]
+  if (is.null(json) || is.na(json) || !nzchar(json)) {
+    return(ledgr_metric_context_resolve(NULL))
+  }
+  context <- ledgr_metric_context_from_json(json)
+  stored_version <- suppressWarnings(as.integer(row$metric_context_version[[1]]))
+  if (!is.na(stored_version) && !identical(stored_version, as.integer(context$metric_context_version))) {
+    rlang::abort("Stored metric_context_version does not match metric_context_json.", class = "ledgr_invalid_metric_context")
+  }
+  stored_hash <- row$metric_context_hash[[1]]
+  if (is.character(stored_hash) && length(stored_hash) == 1L && !is.na(stored_hash) && nzchar(stored_hash) &&
+    !identical(stored_hash, ledgr_metric_context_hash(context))) {
+    rlang::abort("Stored metric_context_hash does not match metric_context_json.", class = "ledgr_invalid_metric_context")
+  }
+  context
 }
 
 ledgr_calendar_warn_if_inconsistent <- function(calendar,
@@ -467,6 +641,16 @@ ledgr_normalize_optional_date <- function(x, arg) {
     )
   }
   out
+}
+
+ledgr_check_empty_dots <- function(dots, context) {
+  if (length(dots) > 0L) {
+    rlang::abort(
+      sprintf("%s does not accept additional arguments.", context),
+      class = "ledgr_invalid_args"
+    )
+  }
+  invisible(TRUE)
 }
 
 ledgr_format_number <- function(x) {

@@ -295,7 +295,7 @@ scope: runtime_contract
 Priority: P1
 Effort: M
 Dependencies: LDG-2302
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -445,7 +445,7 @@ scope: public_api
 Priority: P1
 Effort: L
 Dependencies: LDG-2304, LDG-2305
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -498,6 +498,24 @@ type: persistence
 surface: experiment_run_metadata
 scope: v0.1.8.2
 ```
+
+### Completion Notes
+
+- Added `metric_context = NULL` and `risk_free_rate = NULL` to
+  `ledgr_experiment()`, with a fail-loud rejection when both are supplied.
+- Resolved and stored the experiment metric context on `ledgr_experiment`
+  objects without adding metric context to `ledgr_config()`.
+- Added `metric_context_json`, `metric_context_hash`, and
+  `metric_context_version` columns to the `runs` table and schema validation,
+  with migration support through experiment-store schema version 108.
+- Persisted resolved run metric context at run creation through separate run
+  metadata columns, not through metric computation and not through
+  `config_json` or `config_hash`.
+- Added `ledgr_metric_context()` S3 accessors for experiments and backtests;
+  backtest accessors recover stored run metadata and legacy/null rows fall back
+  to the default metric context.
+- Added regression coverage for stored context recovery, legacy fallback, and
+  config-hash non-interference across different metric contexts.
 
 ---
 

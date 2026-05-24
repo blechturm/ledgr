@@ -149,7 +149,10 @@ ledgr_create_schema <- function(con) {
       archived_at_utc TIMESTAMP,
       archive_reason TEXT,
       execution_mode TEXT CHECK (execution_mode IS NULL OR execution_mode IN ('audit_log','db_live')),
-      schema_version INTEGER NOT NULL DEFAULT 107
+      schema_version INTEGER NOT NULL DEFAULT 108,
+      metric_context_json TEXT,
+      metric_context_hash TEXT,
+      metric_context_version INTEGER
     )
   "
 
@@ -292,7 +295,11 @@ ledgr_create_schema <- function(con) {
         "NULL"
       }
 
-      target_cols <- c("run_id", "created_at_utc", "engine_version", "config_json", "config_hash", "data_hash", "snapshot_id", "status", "error_msg")
+      target_cols <- c(
+        "run_id", "created_at_utc", "engine_version", "config_json", "config_hash",
+        "data_hash", "snapshot_id", "status", "error_msg", "metric_context_json",
+        "metric_context_hash", "metric_context_version"
+      )
       insert_sql <- sprintf(
         "INSERT INTO runs_new (%s) SELECT %s FROM runs",
         paste(target_cols, collapse = ", "),
@@ -308,6 +315,9 @@ ledgr_create_schema <- function(con) {
   # v0.1.1: runs.snapshot_id is optional and must be nullable.
   if (table_exists("runs")) {
     add_column_if_missing("runs", "snapshot_id", "TEXT")
+    add_column_if_missing("runs", "metric_context_json", "TEXT")
+    add_column_if_missing("runs", "metric_context_hash", "TEXT")
+    add_column_if_missing("runs", "metric_context_version", "INTEGER")
   }
 
   # instruments: ensure required columns exist (no destructive migration)

@@ -270,8 +270,8 @@ ledgr_infer_universe_from_snapshot <- function(snapshot) {
   universe
 }
 
-ledgr_run_config <- function(config, run_id = NULL) {
-  ledgr_backtest_run(config = config, run_id = run_id)
+ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
+  ledgr_backtest_run(config = config, run_id = run_id, metric_context = metric_context)
 }
 
 #' Run a ledgr experiment
@@ -357,7 +357,7 @@ ledgr_run_experiment <- function(exp, params = list(), run_id = NULL, seed = NUL
     seed = seed
   )
 
-  result <- ledgr_run_config(config)
+  result <- ledgr_run_config(config, metric_context = exp$metric_context)
   new_ledgr_backtest(
     run_id = result$run_id,
     db_path = result$db_path,

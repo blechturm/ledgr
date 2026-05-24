@@ -179,7 +179,10 @@ testthat::test_that("write-triggered migration is additive and preserves v0.1.4 
       AND table_name = 'runs'
     "
   )$column_name
-  testthat::expect_true(all(c("label", "archived", "execution_mode", "schema_version") %in% runs_cols))
+  testthat::expect_true(all(c(
+    "label", "archived", "execution_mode", "schema_version",
+    "metric_context_json", "metric_context_hash", "metric_context_version"
+  ) %in% runs_cols))
   testthat::expect_true("run_tags" %in% DBI::dbGetQuery(
     con,
     "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"

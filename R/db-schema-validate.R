@@ -35,7 +35,10 @@ ledgr_validate_schema <- function(con) {
         archived_at_utc = "TIMESTAMP",
         archive_reason = "TEXT",
         execution_mode = "TEXT",
-        schema_version = "INTEGER"
+        schema_version = "INTEGER",
+        metric_context_json = "TEXT",
+        metric_context_hash = "TEXT",
+        metric_context_version = "INTEGER"
       ),
       pk = c("run_id")
     ),

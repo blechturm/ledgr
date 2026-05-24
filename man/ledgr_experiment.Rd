@@ -12,7 +12,9 @@ ledgr_experiment(
   universe = NULL,
   fill_model = NULL,
   persist_features = TRUE,
-  execution_mode = "audit_log"
+  execution_mode = "audit_log",
+  metric_context = NULL,
+  risk_free_rate = NULL
 )
 }
 \arguments{

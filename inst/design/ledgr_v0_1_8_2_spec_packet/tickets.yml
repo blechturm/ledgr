@@ -80,7 +80,7 @@ tickets:
 
   - id: "LDG-2306"
     title: "Experiment And Run Metric-Context Storage"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:

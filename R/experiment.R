@@ -198,9 +198,22 @@ ledgr_experiment <- function(snapshot,
                              universe = NULL,
                              fill_model = NULL,
                              persist_features = TRUE,
-                             execution_mode = "audit_log") {
+                             execution_mode = "audit_log",
+                             metric_context = NULL,
+                             risk_free_rate = NULL) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_experiment")
+  }
+  if (!is.null(metric_context) && !is.null(risk_free_rate)) {
+    rlang::abort(
+      "Supply either `metric_context` or `risk_free_rate`, not both.",
+      class = "ledgr_invalid_experiment"
+    )
+  }
+  metric_context <- if (!is.null(risk_free_rate)) {
+    ledgr_metric_context(risk_free_rate = risk_free_rate)
+  } else {
+    ledgr_metric_context_resolve(metric_context)
   }
   ledgr_experiment_validate_snapshot(snapshot)
 
@@ -237,7 +250,8 @@ ledgr_experiment <- function(snapshot,
       universe = universe,
       fill_model = fill_model,
       persist_features = isTRUE(persist_features),
-      execution_mode = execution_mode
+      execution_mode = execution_mode,
+      metric_context = metric_context
     ),
     class = "ledgr_experiment"
   )
@@ -462,6 +476,7 @@ print.ledgr_experiment <- function(x, ...) {
   cat("Opening:     cash=", format(x$opening$cash, scientific = FALSE, trim = TRUE),
       ", positions=", length(x$opening$positions), "\n", sep = "")
   cat("Mode:        ", x$execution_mode, "\n", sep = "")
+  cat("Metrics:     ", ledgr_calendar_display(x$metric_context$calendar), "\n", sep = "")
   invisible(x)
 }
 
