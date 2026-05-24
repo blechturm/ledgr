@@ -146,9 +146,9 @@ print.ledgr_opening <- function(x, ...) {
 #'
 #' @param snapshot A sealed `ledgr_snapshot`.
 #' @param strategy A function with signature `function(ctx, params)`.
-#' @param features List of `ledgr_indicator` objects, a `ledgr_feature_map`, or
-#'   a function with signature `function(params)` returning one of those forms
-#'   at run time.
+#' @param features List of `ledgr_indicator`/`ledgr_indicator_bundle` objects, a
+#'   single indicator or bundle, a `ledgr_feature_map`, or a function with
+#'   signature `function(params)` returning one of those forms at run time.
 #' @param opening A `ledgr_opening` object.
 #' @param universe Character vector of instrument IDs, or `NULL` for all
 #'   instruments in the snapshot.
@@ -339,19 +339,11 @@ ledgr_experiment_validate_features <- function(features) {
     ledgr_validate_feature_map_object(features)
     return("feature_map")
   }
-  if (!is.list(features)) {
-    rlang::abort(
-      "`features` must be a list of ledgr_indicator objects, a ledgr_feature_map, or function(params).",
-      class = "ledgr_invalid_experiment_features"
-    )
-  }
-  bad <- which(!vapply(features, inherits, logical(1), what = "ledgr_indicator"))
-  if (length(bad) > 0L) {
-    rlang::abort(
-      sprintf("`features` list entries must be ledgr_indicator objects; invalid index: %s.", bad[[1]]),
-      class = "ledgr_invalid_experiment_features"
-    )
-  }
+  ledgr_flatten_feature_list(
+    features,
+    context = "`features`",
+    class = "ledgr_invalid_experiment_features"
+  )
   "list"
 }
 
@@ -363,7 +355,11 @@ ledgr_experiment_copy_features <- function(features, features_mode) {
     return(do.call(ledgr_feature_map, ledgr_feature_map_indicators(features, named = TRUE)))
   }
   if (identical(features_mode, "list")) {
-    return(as.list(features))
+    return(ledgr_flatten_feature_list(
+      features,
+      context = "`features`",
+      class = "ledgr_invalid_experiment_features"
+    ))
   }
   rlang::abort("Unknown experiment feature mode.", class = "ledgr_invalid_experiment_features")
 }
@@ -386,7 +382,11 @@ ledgr_experiment_materialize_features <- function(exp, params) {
       class = "ledgr_invalid_experiment_features"
     )
   }
-  features
+  ledgr_flatten_feature_list(
+    features,
+    context = "`features`",
+    class = "ledgr_invalid_experiment_features"
+  )
 }
 
 ledgr_experiment_validate_opening <- function(opening, universe) {

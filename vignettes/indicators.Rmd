@@ -119,8 +119,8 @@ you need to compare two different definitions. A feature-map alias never changes
 the underlying engine feature ID or fingerprint; it only gives your strategy a
 readable name for mapped access.
 
-The upcoming multi-output bundle helper follows the same lifecycle. A bundle is
-an authoring convenience that flattens to ordinary indicator definitions before
+The multi-output bundle helper follows the same lifecycle. A bundle is an
+authoring convenience that flattens to ordinary indicator definitions before
 runtime. It is not a second feature system.
 
 The same idea works for crossover rules. An SMA crossover registers two
@@ -498,9 +498,10 @@ ledgr_snapshot_close(rsi_snapshot)
 ```
 
 Some TTR functions return several columns. For those functions, choose one
-column with `output` before asking ledgr for the feature ID. `BBands` exposes
-`dn`, `mavg`, `up`, and `pctB`. `MACD` exposes `macd` and `signal`; ledgr also
-supports a derived `histogram`.
+column with `output` when you need exactly one output, or use
+`ledgr_ind_ttr_outputs()` to declare several outputs from one shared TTR
+configuration. `BBands` exposes `dn`, `mavg`, `up`, and `pctB`. `MACD` exposes
+`macd` and `signal`; ledgr also supports a derived `histogram`.
 
 ```{r ttr-output-examples, eval=requireNamespace("TTR", quietly = TRUE)}
 ledgr_feature_contracts(ledgr_feature_map(
@@ -510,6 +511,41 @@ ledgr_feature_contracts(ledgr_feature_map(
   bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
 ))
 ```
+
+For multi-output authoring, prefer the bundle helper. By default, bundle feature
+IDs use a normalized prefix derived from the TTR function name. For `BBands`,
+that produces `bbands_dn`, `bbands_mavg`, `bbands_up`, and `bbands_pctb`.
+The helper returns a `ledgr_indicator_bundle`, but the experiment sees ordinary
+single-output indicators after feature declaration is materialized.
+
+```{r ttr-output-bundle, eval=requireNamespace("TTR", quietly = TRUE)}
+bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
+ledgr_feature_id(bbands_bundle)
+ledgr_feature_contracts(bbands_bundle)
+```
+
+When a bundle is placed inside `ledgr_feature_map()`, its entries expand using
+their feature IDs as aliases. A single alias on the bundle argument is ignored
+because one alias cannot name several outputs. Control the generated feature IDs
+with the bundle's `prefix` argument instead.
+
+Use `outputs` as a filter. The derived or explicit prefix still applies to
+selected outputs, so a subset remains collision-resistant:
+
+```{r ttr-output-bundle-filter, eval=requireNamespace("TTR", quietly = TRUE)}
+bbands_subset <- ledgr_ind_ttr_outputs(
+  "BBands",
+  input = "close",
+  outputs = c("dn", "up"),
+  prefix = "bb",
+  n = 20
+)
+ledgr_feature_id(bbands_subset)
+```
+
+Set `prefix = NULL` only when you explicitly want raw normalized output names
+such as `dn`, `up`, or `pctb`. Raw names are short and can collide when one
+experiment combines several bundles or parameterizations.
 
 The two MACD examples above use matching explicit arguments. Explicit arguments
 become part of the feature ID, so combine MACD outputs in one strategy only when

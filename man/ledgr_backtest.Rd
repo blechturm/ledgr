@@ -42,11 +42,12 @@ from the snapshot or data frame.}
 \item{strategy_params}{JSON-safe list passed to \verb{function(ctx, params)}
 strategies and stored as part of run provenance.}
 
-\item{features}{List of ledgr indicator definitions (optional).}
+\item{features}{List of ledgr indicator or indicator-bundle definitions
+(optional). Bundles flatten into ordinary indicators before runtime.}
 
 \item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
 model with zero spread and zero fixed commission. For
-\verb{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
+\code{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
 buys fill at \code{open * (1 + spread_bps / 10000)} and sells fill at
 \code{open * (1 - spread_bps / 10000)}. A buy/sell round trip therefore costs
 approximately \code{2 * spread_bps} basis points before commissions.}

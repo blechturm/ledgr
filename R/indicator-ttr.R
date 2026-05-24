@@ -51,7 +51,9 @@ ledgr_ttr_warmup_rules <- function() {
 #' `ledgr_ind_ttr()` requires the suggested `TTR` package at construction time.
 #' Install TTR before creating TTR-backed indicators. For interactive debugging
 #' with `ledgr_pulse_snapshot()`, pass an active snapshot handle and the same
-#' TTR-backed feature declarations used by the experiment.
+#' TTR-backed feature declarations used by the experiment. For multi-column TTR
+#' functions where you want several outputs, prefer
+#' `ledgr_ind_ttr_outputs()`.
 #'
 #' @param ttr_fn TTR function name, for example `"RSI"`, `"ATR"`, or `"MACD"`.
 #' @param input ledgr input shape. Supported values are `"close"`, `"hl"`,
@@ -210,6 +212,171 @@ ledgr_ind_ttr <- function(ttr_fn,
     stable_after = stable_after,
     params = params,
     source = "TTR"
+  )
+}
+
+#' Construct a bundle from all or selected outputs of a TTR indicator
+#'
+#' `ledgr_ind_ttr_outputs()` is an authoring convenience for multi-column TTR
+#' functions such as `BBands`, `MACD`, `ATR`, `aroon`, and
+#' `DonchianChannel`. It returns a `ledgr_indicator_bundle` containing ordinary
+#' single-output `ledgr_indicator` objects. The bundle is flattened before
+#' runtime feature computation, so strategies still read scalar feature IDs.
+#'
+#' @param ttr_fn TTR function name, for example `"BBands"` or `"MACD"`.
+#' @param input ledgr input shape. Supported values are `"close"`, `"hl"`,
+#'   `"hlc"`, `"ohlc"`, and `"hlcv"`.
+#' @param outputs Optional character vector of backend output columns to keep.
+#'   `NULL` keeps all discovered outputs. For `MACD`, ledgr also exposes a
+#'   derived `histogram` output.
+#' @param prefix Feature-ID prefix. The default derives a normalized prefix from
+#'   `ttr_fn`, for example `"BBands"` becomes `bbands_`. Use a character scalar
+#'   such as `"bb"` for concise IDs, or `NULL` to opt into raw output names.
+#' @param naming Optional advanced rename escape hatch. Supply a named character
+#'   vector whose names are backend outputs and whose values are feature IDs.
+#' @param requires_bars Explicit warmup length. Required for unknown TTR
+#'   functions. For known functions this is inferred from explicit arguments.
+#' @param stable_after First stable row. Defaults to `requires_bars`.
+#' @param ... Explicit arguments forwarded to the TTR function.
+#'
+#' @return A `ledgr_indicator_bundle` object.
+#' @examples
+#' if (requireNamespace("TTR", quietly = TRUE)) {
+#'   bb <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
+#'   ledgr_feature_id(bb)
+#'
+#'   bb_short <- ledgr_ind_ttr_outputs(
+#'     "BBands",
+#'     input = "close",
+#'     outputs = c("dn", "up"),
+#'     prefix = "bb",
+#'     n = 20
+#'   )
+#'   ledgr_feature_id(bb_short)
+#' }
+#'
+#' @section Articles:
+#' Indicators, feature IDs, and warmup:
+#' `vignette("indicators", package = "ledgr")`
+#' `system.file("doc", "indicators.html", package = "ledgr")`
+#' @export
+ledgr_ind_ttr_outputs <- function(ttr_fn,
+                                  input,
+                                  ...,
+                                  outputs = NULL,
+                                  prefix = ledgr_ttr_id_token(ttr_fn),
+                                  naming = NULL,
+                                  requires_bars = NULL,
+                                  stable_after = requires_bars) {
+  if (!requireNamespace("TTR", quietly = TRUE)) {
+    rlang::abort(
+      "Package 'TTR' is required for ledgr_ind_ttr_outputs(). Install TTR or use ledgr_indicator() directly.",
+      class = "ledgr_missing_optional_dependency"
+    )
+  }
+
+  ttr_fn <- ledgr_ttr_normalize_fn(ttr_fn)
+  input <- ledgr_ttr_normalize_input(input)
+  args <- ledgr_ttr_normalize_args(list(...))
+  rule <- ledgr_ttr_match_rule(ttr_fn, input)
+
+  if (!is.null(rule)) {
+    missing_args <- setdiff(rule$required_args[[1]], names(args))
+    if (length(missing_args) > 0) {
+      rlang::abort(
+        sprintf(
+          "TTR::%s requires explicit `%s` for ledgr warmup inference and stable indicator IDs.\nExample: %s",
+          ttr_fn,
+          paste(missing_args, collapse = "`, `"),
+          ledgr_ttr_example_call(ttr_fn, input, rule$required_args[[1]])
+        ),
+        class = "ledgr_invalid_args"
+      )
+    }
+    inferred_requires <- ledgr_ttr_infer_requires_bars(ttr_fn, args, output = NULL)
+  } else {
+    known_rule_inputs <- ledgr_ttr_inputs_for_known_function(ttr_fn)
+    if (length(known_rule_inputs) > 0L) {
+      rlang::abort(
+        sprintf(
+          "TTR::%s is a known ledgr TTR function but does not support input = \"%s\". Use input = %s.",
+          ttr_fn,
+          input,
+          paste(sprintf("\"%s\"", known_rule_inputs), collapse = " or ")
+        ),
+        class = "ledgr_invalid_args"
+      )
+    }
+    if (is.null(requires_bars)) {
+      rlang::abort(
+        sprintf(
+          paste0(
+            "No deterministic ledgr warmup rule is available for TTR::%s with input = \"%s\". ",
+            "Provide `requires_bars` explicitly."
+          ),
+          ttr_fn,
+          input
+        ),
+        class = "ledgr_invalid_args"
+      )
+    }
+    inferred_requires <- as.integer(requires_bars)
+  }
+
+  if (is.null(requires_bars)) {
+    requires_bars <- inferred_requires
+  }
+  requires_bars <- ledgr_ttr_validate_positive_integer(requires_bars, "`requires_bars`")
+  if (is.null(stable_after)) {
+    stable_after <- requires_bars
+  }
+  stable_after <- ledgr_ttr_validate_positive_integer(stable_after, "`stable_after`")
+  if (stable_after < requires_bars) {
+    rlang::abort("`stable_after` must be an integer >= `requires_bars`.", class = "ledgr_invalid_args")
+  }
+
+  params <- list(
+    ttr_fn = ttr_fn,
+    ttr_version = as.character(utils::packageVersion("TTR")),
+    input = input,
+    output = NULL,
+    args = args
+  )
+  available_outputs <- ledgr_ttr_discover_outputs(params, requires_bars)
+  selected_outputs <- ledgr_ttr_normalize_outputs(outputs, available_outputs, ttr_fn)
+  ids <- ledgr_ttr_bundle_ids(
+    ttr_fn = ttr_fn,
+    outputs = selected_outputs,
+    prefix = prefix,
+    naming = naming
+  )
+
+  indicators <- Map(function(output, id) {
+    do.call(
+      ledgr_ind_ttr,
+      c(
+        list(
+          ttr_fn = ttr_fn,
+          input = input,
+          output = output,
+          id = id,
+          requires_bars = requires_bars,
+          stable_after = stable_after
+        ),
+        args
+      )
+    )
+  }, selected_outputs, ids)
+
+  ledgr_new_indicator_bundle(
+    indicators,
+    metadata = list(
+      source = "TTR",
+      family = ttr_fn,
+      input = input,
+      outputs = selected_outputs,
+      prefix = if (is.null(prefix)) NULL else ledgr_ttr_id_token(prefix)
+    )
   )
 }
 
@@ -399,23 +566,32 @@ ledgr_ttr_build_input <- function(bars, input) {
 }
 
 ledgr_ttr_call <- function(bars, params) {
+  result <- ledgr_ttr_raw_call(bars, params)
+  ledgr_ttr_select_output(result, params$output, params$ttr_fn)
+}
+
+ledgr_ttr_raw_call <- function(bars, params) {
   if (!requireNamespace("TTR", quietly = TRUE)) {
     rlang::abort("Package 'TTR' is required to compute this TTR indicator.", class = "ledgr_missing_optional_dependency")
   }
   x <- ledgr_ttr_build_input(bars, params$input)
   ttr_fn <- getExportedValue("TTR", params$ttr_fn)
-  result <- if (identical(params$input, "hlcv") && params$ttr_fn %in% c("MFI", "CMF")) {
+  if (identical(params$input, "hlcv") && params$ttr_fn %in% c("MFI", "CMF")) {
     do.call(ttr_fn, c(list(x[, c("High", "Low", "Close"), drop = FALSE], x[, "Volume"]), params$args))
   } else {
     do.call(ttr_fn, c(list(x), params$args))
   }
-  ledgr_ttr_select_output(result, params$output, params$ttr_fn)
 }
 
 ledgr_ttr_validate_output_contract <- function(params, requires_bars) {
+  bars <- ledgr_ttr_synthetic_bars(requires_bars)
+  invisible(ledgr_ttr_call(bars, params))
+}
+
+ledgr_ttr_synthetic_bars <- function(requires_bars) {
   n <- max(50L, as.integer(requires_bars) + 5L)
   x <- seq_len(n)
-  bars <- data.frame(
+  data.frame(
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * (x - 1L),
     instrument_id = "TTR_CHECK",
     open = 100 + x,
@@ -425,7 +601,84 @@ ledgr_ttr_validate_output_contract <- function(params, requires_bars) {
     volume = 1000 + x,
     stringsAsFactors = FALSE
   )
-  invisible(ledgr_ttr_call(bars, params))
+}
+
+ledgr_ttr_discover_outputs <- function(params, requires_bars) {
+  bars <- ledgr_ttr_synthetic_bars(requires_bars)
+  result <- ledgr_ttr_raw_call(bars, params)
+  if (is.null(dim(result))) {
+    rlang::abort(
+      sprintf("TTR::%s returned a vector; use ledgr_ind_ttr() for single-output TTR indicators.", params$ttr_fn),
+      class = "ledgr_invalid_args"
+    )
+  }
+  cols <- colnames(result)
+  if (is.null(cols) || any(!nzchar(cols))) {
+    cols <- as.character(seq_len(ncol(result)))
+  }
+  cols <- as.character(cols)
+  if (identical(params$ttr_fn, "MACD") && all(c("macd", "signal") %in% cols)) {
+    cols <- c(cols, "histogram")
+  }
+  cols
+}
+
+ledgr_ttr_normalize_outputs <- function(outputs, available, ttr_fn) {
+  if (is.null(outputs)) {
+    return(available)
+  }
+  if (!is.character(outputs) || length(outputs) < 1L || anyNA(outputs) || any(!nzchar(outputs))) {
+    rlang::abort("`outputs` must be NULL or a non-empty character vector.", class = "ledgr_invalid_args")
+  }
+  if (anyDuplicated(outputs)) {
+    dup <- unique(outputs[duplicated(outputs)])
+    rlang::abort(sprintf("`outputs` must be unique; duplicate output: %s.", dup[[1L]]), class = "ledgr_invalid_args")
+  }
+  missing <- setdiff(outputs, available)
+  if (length(missing) > 0L) {
+    rlang::abort(
+      sprintf(
+        "Unknown `outputs` for TTR::%s: %s. Available outputs: %s.",
+        ttr_fn,
+        paste(missing, collapse = ", "),
+        paste(available, collapse = ", ")
+      ),
+      class = "ledgr_invalid_args"
+    )
+  }
+  outputs
+}
+
+ledgr_ttr_bundle_ids <- function(ttr_fn, outputs, prefix, naming = NULL) {
+  if (!is.null(naming)) {
+    if (!is.character(naming) || length(naming) < 1L || anyNA(naming) || any(!nzchar(naming))) {
+      rlang::abort("`naming` must be NULL or a named character vector of feature IDs.", class = "ledgr_invalid_args")
+    }
+    nms <- names(naming)
+    if (is.null(nms) || anyNA(nms) || any(!nzchar(nms))) {
+      rlang::abort("`naming` must be named by backend output.", class = "ledgr_invalid_args")
+    }
+    missing <- setdiff(outputs, nms)
+    if (length(missing) > 0L) {
+      rlang::abort(
+        sprintf("`naming` is missing feature ID(s) for output(s): %s.", paste(missing, collapse = ", ")),
+        class = "ledgr_invalid_args"
+      )
+    }
+    ids <- unname(as.character(naming[outputs]))
+    ledgr_abort_duplicate_feature_ids(ids)
+    return(ids)
+  }
+
+  output_tokens <- vapply(outputs, ledgr_ttr_id_token, character(1))
+  if (is.null(prefix)) {
+    ids <- output_tokens
+  } else {
+    prefix <- ledgr_ttr_id_token(prefix)
+    ids <- paste(prefix, output_tokens, sep = "_")
+  }
+  ledgr_abort_duplicate_feature_ids(ids)
+  ids
 }
 
 ledgr_ttr_select_output <- function(result, output, ttr_fn) {

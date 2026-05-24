@@ -42,7 +42,9 @@ A \code{ledgr_indicator} object.
 \code{ledgr_ind_ttr()} requires the suggested \code{TTR} package at construction time.
 Install TTR before creating TTR-backed indicators. For interactive debugging
 with \code{ledgr_pulse_snapshot()}, pass an active snapshot handle and the same
-TTR-backed feature declarations used by the experiment.
+TTR-backed feature declarations used by the experiment. For multi-column TTR
+functions where you want several outputs, prefer
+\code{ledgr_ind_ttr_outputs()}.
 }
 \section{Articles}{
 

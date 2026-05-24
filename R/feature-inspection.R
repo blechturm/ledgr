@@ -2,10 +2,12 @@
 #'
 #' `ledgr_feature_contracts()` shows what ledgr will compute before a run. It
 #' accepts the same feature declarations used by experiments: a feature map, a
-#' named or unnamed list of indicators, or one indicator.
+#' named or unnamed list of indicators and indicator bundles, one indicator, or
+#' one indicator bundle.
 #'
-#' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` objects,
-#'   or one `ledgr_indicator`.
+#' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` or
+#'   `ledgr_indicator_bundle` objects, one `ledgr_indicator`, or one
+#'   `ledgr_indicator_bundle`.
 #'
 #' @return A tibble with columns `alias`, `feature_id`, `source`,
 #'   `requires_bars`, and `stable_after`.
@@ -52,8 +54,9 @@ ledgr_feature_contracts <- function(features) {
 #' map. The error class is `ledgr_feature_factory_requires_params`.
 #'
 #' @param snapshot A sealed `ledgr_snapshot`.
-#' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` objects,
-#'   or one `ledgr_indicator`.
+#' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` or
+#'   `ledgr_indicator_bundle` objects, one `ledgr_indicator`, or one
+#'   `ledgr_indicator_bundle`.
 #'
 #' @return A tibble with one row per `(instrument_id, feature_id)` pair. It
 #'   includes `alias`, `instrument_id`, `feature_id`, `source`,
@@ -183,32 +186,26 @@ ledgr_feature_contract_input <- function(features) {
       aliases = NA_character_
     ))
   }
-
-  if (!is.list(features)) {
-    rlang::abort(
-      "`features` must be a ledgr_feature_map, ledgr_indicator, or list of ledgr_indicator objects.",
-      class = "ledgr_invalid_args"
-    )
+  if (inherits(features, "ledgr_indicator_bundle")) {
+    indicators <- ledgr_indicator_bundle_indicators(features)
+    return(list(
+      indicators = indicators,
+      aliases = rep(NA_character_, length(indicators))
+    ))
   }
 
-  bad <- which(!vapply(features, inherits, logical(1), what = "ledgr_indicator"))
-  if (length(bad) > 0L) {
-    rlang::abort(
-      "`features` must contain ledgr_indicator objects.",
-      class = "ledgr_invalid_args"
-    )
-  }
+  flattened <- ledgr_flatten_feature_list(features, context = "`features`")
 
-  aliases <- names(features)
+  aliases <- names(flattened)
   if (is.null(aliases)) {
-    aliases <- rep(NA_character_, length(features))
+    aliases <- rep(NA_character_, length(flattened))
   } else {
     aliases <- as.character(aliases)
     aliases[is.na(aliases) | !nzchar(aliases)] <- NA_character_
   }
 
   list(
-    indicators = unname(features),
+    indicators = unname(flattened),
     aliases = aliases
   )
 }

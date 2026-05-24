@@ -10,8 +10,10 @@ ledgr_feature_map(...)
 \method{print}{ledgr_feature_map}(x, ...)
 }
 \arguments{
-\item{...}{For \code{ledgr_feature_map()}, named \code{ledgr_indicator} objects.
-Names are strategy-facing aliases. For the print method, unused.}
+\item{...}{For \code{ledgr_feature_map()}, named \code{ledgr_indicator} objects or
+\code{ledgr_indicator_bundle} objects. Indicator names are strategy-facing
+aliases. Bundles expand to their ordinary indicators using feature IDs as
+aliases. For the print method, unused.}
 
 \item{x}{A \code{ledgr_feature_map} object.}
 }

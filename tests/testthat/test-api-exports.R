@@ -30,6 +30,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_ind_rsi",
     "ledgr_ind_sma",
     "ledgr_ind_ttr",
+    "ledgr_ind_ttr_outputs",
     "ledgr_indicator",
     "ledgr_indicator_dev",
     "ledgr_list_indicators",

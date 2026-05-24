@@ -377,12 +377,13 @@ ledgr_condition_class <- function(condition) {
 }
 
 ledgr_precompute_feature_defs_from_indicators <- function(indicators) {
-  if (!is.list(indicators) || length(indicators) < 1L) {
+  indicators <- ledgr_flatten_feature_list(
+    indicators,
+    context = "Resolved features",
+    class = "ledgr_invalid_experiment_features"
+  )
+  if (length(indicators) < 1L) {
     return(list())
-  }
-  bad <- which(!vapply(indicators, inherits, logical(1), what = "ledgr_indicator"))
-  if (length(bad) > 0L) {
-    rlang::abort("Resolved features must be a list of ledgr_indicator objects.", class = "ledgr_invalid_experiment_features")
   }
   ids <- vapply(indicators, function(ind) ind$id, character(1))
   ledgr_abort_duplicate_feature_ids(ids)

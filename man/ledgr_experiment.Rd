@@ -20,9 +20,9 @@ ledgr_experiment(
 
 \item{strategy}{A function with signature \verb{function(ctx, params)}.}
 
-\item{features}{List of \code{ledgr_indicator} objects, a \code{ledgr_feature_map}, or
-a function with signature \verb{function(params)} returning one of those forms
-at run time.}
+\item{features}{List of \code{ledgr_indicator}/\code{ledgr_indicator_bundle} objects, a
+single indicator or bundle, a \code{ledgr_feature_map}, or a function with
+signature \verb{function(params)} returning one of those forms at run time.}
 
 \item{opening}{A \code{ledgr_opening} object.}
 
@@ -31,7 +31,7 @@ instruments in the snapshot.}
 
 \item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
 model with zero spread and zero fixed commission. For
-\verb{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
+\code{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
 buys fill at \code{open * (1 + spread_bps / 10000)} and sells fill at
 \code{open * (1 - spread_bps / 10000)}. A buy/sell round trip therefore costs
 approximately \code{2 * spread_bps} basis points before commissions.}

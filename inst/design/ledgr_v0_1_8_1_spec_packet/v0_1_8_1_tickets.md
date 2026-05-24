@@ -790,7 +790,7 @@ scope: internal
 Priority: P1
 Effort: M
 Dependencies: LDG-2201, LDG-2212
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -843,6 +843,27 @@ type: feature
 surface: indicator_authoring
 scope: public_api
 ```
+
+### Completion Notes
+
+- Added `ledgr_indicator_bundle` as an authoring-only class whose entries are
+  ordinary `ledgr_indicator` objects.
+- Added `ledgr_ind_ttr_outputs()` for multi-output TTR authoring with lazy
+  synthetic output discovery, derived default prefixes, explicit prefixes,
+  `outputs` filtering, `prefix = NULL` raw-name opt-in, and named-vector
+  `naming` overrides.
+- Flattened classed bundles at feature declaration boundaries:
+  `ledgr_feature_id()`, `ledgr_feature_map()`, `ledgr_feature_contracts()`,
+  `ledgr_experiment()` static features, feature factories, precompute/sweep
+  resolution, and the legacy `ledgr_backtest()` feature path.
+- Preserved existing `ledgr_ind_ttr(output = ...)` IDs and fingerprint pins;
+  added tests for bundle IDs, selected-output prefixing, raw-name opt-in,
+  output-specific fingerprints, feature-map flattening, static experiment
+  flattening, and feature-factory sweep resolution.
+- Updated indicator docs and help pages to teach bundle authoring as flattening
+  into ordinary feature IDs, without adding grouped precompute, `multi_series_fn`,
+  a runtime multi-output feature object, public output discovery, or sweep
+  provenance changes.
 
 ---
 

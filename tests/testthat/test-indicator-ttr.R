@@ -444,6 +444,128 @@ testthat::test_that("TTR fingerprint includes TTR version metadata", {
   ))
 })
 
+testthat::test_that("TTR output bundles materialize ordinary indicators with stable names", {
+  testthat::skip_if_not_installed("TTR")
+
+  bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
+  indicators <- ledgr:::ledgr_indicator_bundle_indicators(bundle)
+
+  testthat::expect_s3_class(bundle, "ledgr_indicator_bundle")
+  testthat::expect_true(all(vapply(indicators, inherits, logical(1), "ledgr_indicator")))
+  testthat::expect_identical(
+    ledgr_feature_id(bundle),
+    c("bbands_dn", "bbands_mavg", "bbands_up", "bbands_pctb")
+  )
+  testthat::expect_identical(
+    ledgr_feature_id(indicators),
+    c("bbands_dn", "bbands_mavg", "bbands_up", "bbands_pctb")
+  )
+  testthat::expect_identical(
+    vapply(indicators, function(ind) ind$params$output, character(1)),
+    c("dn", "mavg", "up", "pctB")
+  )
+
+  fingerprints <- vapply(indicators, ledgr:::ledgr_indicator_fingerprint, character(1))
+  testthat::expect_length(unique(fingerprints), length(fingerprints))
+})
+
+testthat::test_that("TTR output bundle naming supports filters, prefixes, and raw-name opt-in", {
+  testthat::skip_if_not_installed("TTR")
+
+  filtered <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), n = 20)
+  explicit <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), prefix = "bb", n = 20)
+  raw <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "pctB"), prefix = NULL, n = 20)
+  named <- ledgr_ind_ttr_outputs(
+    "BBands",
+    input = "close",
+    outputs = c("dn", "up"),
+    naming = c(dn = "lower_band", up = "upper_band"),
+    n = 20
+  )
+
+  testthat::expect_identical(ledgr_feature_id(filtered), c("bbands_dn", "bbands_up"))
+  testthat::expect_identical(ledgr_feature_id(explicit), c("bb_dn", "bb_up"))
+  testthat::expect_identical(ledgr_feature_id(raw), c("dn", "pctb"))
+  testthat::expect_identical(ledgr_feature_id(named), c("lower_band", "upper_band"))
+  testthat::expect_error(
+    ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("missing"), n = 20),
+    "Available outputs: dn, mavg, up, pctB",
+    class = "ledgr_invalid_args"
+  )
+})
+
+testthat::test_that("TTR output bundles include MACD derived histogram output", {
+  testthat::skip_if_not_installed("TTR")
+
+  bundle <- ledgr_ind_ttr_outputs(
+    "MACD",
+    input = "close",
+    nFast = 12,
+    nSlow = 26,
+    nSig = 9,
+    percent = FALSE
+  )
+  indicators <- ledgr:::ledgr_indicator_bundle_indicators(bundle)
+
+  testthat::expect_identical(
+    ledgr_feature_id(bundle),
+    c("macd_macd", "macd_signal", "macd_histogram")
+  )
+  testthat::expect_identical(
+    vapply(indicators, function(ind) ind$params$output, character(1)),
+    c("macd", "signal", "histogram")
+  )
+
+  bars <- ledgr_test_ttr_bars()
+  values <- lapply(indicators, function(ind) ledgr:::ledgr_compute_feature_series(bars, ind))
+  testthat::expect_equal(
+    values[[3]],
+    values[[1]] - values[[2]],
+    tolerance = 1e-12
+  )
+})
+
+testthat::test_that("TTR output bundles flatten at feature boundaries", {
+  testthat::skip_if_not_installed("TTR")
+
+  bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), n = 20)
+  feature_map <- ledgr_feature_map(bands = bundle, trend = ledgr_ind_sma(20))
+
+  testthat::expect_identical(
+    unname(ledgr_feature_id(feature_map)),
+    c("bbands_dn", "bbands_up", "sma_20")
+  )
+  testthat::expect_identical(
+    names(ledgr_feature_id(feature_map)),
+    c("bbands_dn", "bbands_up", "trend")
+  )
+  testthat::expect_identical(
+    ledgr_feature_contracts(list(bundle))$feature_id,
+    c("bbands_dn", "bbands_up")
+  )
+
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_ttr_bars(45L))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) ctx$flat()
+  exp_static <- ledgr_experiment(snapshot, strategy, features = list(bundle))
+  exp_factory <- ledgr_experiment(
+    snapshot,
+    strategy,
+    features = function(params) {
+      ledgr_ind_ttr_outputs("BBands", input = "close", outputs = params$outputs, n = 20)
+    }
+  )
+  grid <- ledgr_param_grid(short = list(outputs = c("dn", "up")))
+
+  testthat::expect_identical(
+    ledgr_feature_id(ledgr:::ledgr_experiment_materialize_features(exp_static, list())),
+    c("bbands_dn", "bbands_up")
+  )
+  resolved <- ledgr:::ledgr_resolve_feature_candidates(exp_factory, grid)
+  testthat::expect_identical(resolved$candidate_features$feature_ids[[1]], c("bbands_dn", "bbands_up"))
+  testthat::expect_match(resolved$candidate_features$feature_set_hash[[1]], "^[0-9a-f]{64}$")
+})
+
 testthat::test_that("TTR indicators use series_fn during backtest feature precomputation", {
   testthat::skip_if_not_installed("TTR")
 

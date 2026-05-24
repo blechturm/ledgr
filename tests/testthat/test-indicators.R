@@ -90,6 +90,10 @@ testthat::test_that("ledgr_feature_id exposes existing indicator IDs", {
     class = "ledgr_invalid_args"
   )
   testthat::expect_error(
+    ledgr_feature_id(list(list(sma))),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
     ledgr_feature_id("sma_20"),
     class = "ledgr_invalid_args"
   )

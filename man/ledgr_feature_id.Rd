@@ -7,8 +7,9 @@
 ledgr_feature_id(x)
 }
 \arguments{
-\item{x}{A \code{ledgr_indicator} object, a list of \code{ledgr_indicator} objects,
-or a \code{ledgr_feature_map}.}
+\item{x}{A \code{ledgr_indicator} object, a \code{ledgr_indicator_bundle}, a list of
+\code{ledgr_indicator}/\code{ledgr_indicator_bundle} objects, or a
+\code{ledgr_feature_map}.}
 }
 \value{
 A character vector. List input returns a plain unnamed character

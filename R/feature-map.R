@@ -14,8 +14,10 @@
 #' on that vector before applying rules that require all mapped values to be
 #' finite.
 #'
-#' @param ... For `ledgr_feature_map()`, named `ledgr_indicator` objects.
-#'   Names are strategy-facing aliases. For the print method, unused.
+#' @param ... For `ledgr_feature_map()`, named `ledgr_indicator` objects or
+#'   `ledgr_indicator_bundle` objects. Indicator names are strategy-facing
+#'   aliases. Bundles expand to their ordinary indicators using feature IDs as
+#'   aliases. For the print method, unused.
 #' @return A `ledgr_feature_map` object.
 #' @section Articles:
 #' Feature maps are taught in the strategy-development article:
@@ -47,27 +49,50 @@
 #' }
 #' @export
 ledgr_feature_map <- function(...) {
-  indicators <- list(...)
-  aliases <- names(indicators)
+  entries <- list(...)
+  entry_names <- names(entries)
+  if (is.null(entry_names)) entry_names <- rep("", length(entries))
 
-  if (length(indicators) < 1L) {
+  if (length(entries) < 1L) {
     rlang::abort(
-      "`...` must contain at least one named ledgr_indicator object.",
+      "`...` must contain at least one ledgr_indicator or ledgr_indicator_bundle object.",
+      class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+    )
+  }
+
+  indicators <- list()
+  aliases <- character()
+  for (i in seq_along(entries)) {
+    entry <- entries[[i]]
+    alias <- entry_names[[i]]
+    if (is.na(alias)) alias <- ""
+
+    if (inherits(entry, "ledgr_indicator")) {
+      if (!nzchar(alias)) {
+        rlang::abort(
+          "Feature map indicator entries must be named.",
+          class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+        )
+      }
+      indicators[[length(indicators) + 1L]] <- entry
+      aliases <- c(aliases, alias)
+      next
+    }
+
+    if (inherits(entry, "ledgr_indicator_bundle")) {
+      bundle_indicators <- ledgr_indicator_bundle_indicators(entry)
+      indicators <- c(indicators, bundle_indicators)
+      aliases <- c(aliases, ledgr_feature_id(bundle_indicators))
+      next
+    }
+
+    rlang::abort(
+      sprintf("Feature map entry %s must be a ledgr_indicator or ledgr_indicator_bundle object.", i),
       class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
     )
   }
 
   ledgr_validate_feature_map_aliases(aliases, length(indicators))
-
-  bad <- which(!vapply(indicators, inherits, logical(1), what = "ledgr_indicator"))
-  if (length(bad) > 0L) {
-    bad_alias <- aliases[[bad[[1L]]]]
-    rlang::abort(
-      sprintf("Feature map entry `%s` must be a ledgr_indicator object.", bad_alias),
-      class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
-    )
-  }
-
   feature_ids <- ledgr_feature_id(indicators)
   ledgr_abort_duplicate_feature_ids(feature_ids)
 

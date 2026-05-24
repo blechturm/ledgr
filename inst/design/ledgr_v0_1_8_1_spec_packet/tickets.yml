@@ -160,7 +160,7 @@ tickets:
 
   - id: "LDG-2210"
     title: "Multi-Output Indicator Bundle Authoring UX"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:

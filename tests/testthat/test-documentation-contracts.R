@@ -88,7 +88,14 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "Fingerprints identify the\\s+feature definition")
   testthat::expect_match(indicators_doc, "output-specific fingerprint", fixed = TRUE)
   testthat::expect_match(indicators_doc, "A feature-map alias never changes\\s+the underlying engine feature ID")
-  testthat::expect_match(indicators_doc, "The upcoming multi-output bundle helper follows the same lifecycle", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "The multi-output bundle helper follows the same lifecycle", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "ledgr_ind_ttr_outputs", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "bbands_dn", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "bbands_pctb", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "prefix = NULL", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Raw names are short and can collide", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "A single alias on the bundle argument is ignored", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "Control the generated feature IDs\\s+with the bundle's `prefix` argument")
   testthat::expect_match(indicators_doc, "ctx\\$feature\\(id, feature_id\\)")
   testthat::expect_match(indicators_doc, "ctx\\$features\\(id, feature_map\\)")
   testthat::expect_match(indicators_doc, "ledgr computes feature contracts into pulse-known data", fixed = TRUE)
@@ -118,6 +125,11 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "Impossible warmup is different", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{BBands} exposes \\code{dn}, \\code{mavg}, \\code{up}, and", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{pctB}", fixed = TRUE)
+  testthat::expect_match(ttr_help, "ledgr_ind_ttr_outputs", fixed = TRUE)
+  ttr_outputs_help <- paste(readLines(testthat::test_path("..", "..", "man", "ledgr_ind_ttr_outputs.Rd"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(ttr_outputs_help, "ledgr_indicator_bundle", fixed = TRUE)
+  testthat::expect_match(ttr_outputs_help, "prefix", fixed = TRUE)
+  testthat::expect_match(ttr_outputs_help, "vignette(\"indicators\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(ttr_help, "requires the suggested \\code{TTR} package", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_id", fixed = TRUE)
 })
@@ -772,6 +784,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_ind_ema = "indicators",
     ledgr_ind_rsi = "indicators",
     ledgr_ind_ttr = "indicators",
+    ledgr_ind_ttr_outputs = "indicators",
     ledgr_adapter_r = c("indicators", "custom-indicators"),
     ledgr_adapter_csv = c("indicators", "custom-indicators"),
     ledgr_pulse_features = "indicators",

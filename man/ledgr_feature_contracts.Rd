@@ -7,8 +7,9 @@
 ledgr_feature_contracts(features)
 }
 \arguments{
-\item{features}{A \code{ledgr_feature_map}, a list of \code{ledgr_indicator} objects,
-or one \code{ledgr_indicator}.}
+\item{features}{A \code{ledgr_feature_map}, a list of \code{ledgr_indicator} or
+\code{ledgr_indicator_bundle} objects, one \code{ledgr_indicator}, or one
+\code{ledgr_indicator_bundle}.}
 }
 \value{
 A tibble with columns \code{alias}, \code{feature_id}, \code{source},
@@ -17,7 +18,8 @@ A tibble with columns \code{alias}, \code{feature_id}, \code{source},
 \description{
 \code{ledgr_feature_contracts()} shows what ledgr will compute before a run. It
 accepts the same feature declarations used by experiments: a feature map, a
-named or unnamed list of indicators, or one indicator.
+named or unnamed list of indicators and indicator bundles, one indicator, or
+one indicator bundle.
 }
 \section{Articles}{
 

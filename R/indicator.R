@@ -90,8 +90,9 @@ ledgr_indicator <- function(id,
 #' `ctx$feature(instrument_id, name)`. This helper reads the existing indicator
 #' IDs; it does not generate aliases or change the ID scheme.
 #'
-#' @param x A `ledgr_indicator` object, a list of `ledgr_indicator` objects,
-#'   or a `ledgr_feature_map`.
+#' @param x A `ledgr_indicator` object, a `ledgr_indicator_bundle`, a list of
+#'   `ledgr_indicator`/`ledgr_indicator_bundle` objects, or a
+#'   `ledgr_feature_map`.
 #'
 #' @return A character vector. List input returns a plain unnamed character
 #'   vector in list order. Feature-map input returns IDs named by alias.
@@ -117,24 +118,20 @@ ledgr_feature_id <- function(x) {
   if (inherits(x, "ledgr_indicator")) {
     return(unname(as.character(x$id)))
   }
+  if (inherits(x, "ledgr_indicator_bundle")) {
+    return(ledgr_feature_id(ledgr_indicator_bundle_indicators(x)))
+  }
   if (inherits(x, "ledgr_feature_map")) {
     ledgr_validate_feature_map_object(x)
     return(x$feature_ids)
   }
   if (is.list(x)) {
-    ids <- vapply(x, function(ind) {
-      if (!inherits(ind, "ledgr_indicator")) {
-        rlang::abort(
-          "`x` must be a ledgr_indicator object or a list of ledgr_indicator objects.",
-          class = "ledgr_invalid_args"
-        )
-      }
-      as.character(ind$id)
-    }, character(1))
+    flattened <- ledgr_flatten_feature_list(x, context = "`x`")
+    ids <- vapply(flattened, function(ind) as.character(ind$id), character(1))
     return(unname(ids))
   }
   rlang::abort(
-    "`x` must be a ledgr_indicator object or a list of ledgr_indicator objects.",
+    "`x` must be a ledgr_indicator, ledgr_indicator_bundle, ledgr_feature_map, or list of those feature declarations.",
     class = "ledgr_invalid_args"
   )
 }

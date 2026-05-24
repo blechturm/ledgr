@@ -13,7 +13,8 @@
 #' @param start Start timestamp (NULL = snapshot start).
 #' @param end End timestamp (NULL = snapshot end).
 #' @param initial_cash Starting capital. Must be a finite numeric scalar > 0.
-#' @param features List of ledgr indicator definitions (optional).
+#' @param features List of ledgr indicator or indicator-bundle definitions
+#'   (optional). Bundles flatten into ordinary indicators before runtime.
 #' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
 #'   model with zero spread and zero fixed commission. For
 #'   `fill_model$spread_bps`, ledgr applies the full value on each fill leg:
@@ -177,9 +178,7 @@ ledgr_backtest <- function(snapshot = NULL,
     }
   }
 
-  if (!is.list(features)) {
-    rlang::abort("`features` must be a list.", class = "ledgr_invalid_args")
-  }
+  features <- ledgr_flatten_feature_list(features, context = "`features`")
 
   if (is.null(start)) start <- snapshot$metadata$start_date
   if (is.null(end)) end <- snapshot$metadata$end_date
@@ -788,9 +787,7 @@ ledgr_config <- function(snapshot,
       class = "ledgr_invalid_args"
     )
   }
-  if (!is.list(features)) {
-    rlang::abort("`features` must be a list.", class = "ledgr_invalid_args")
-  }
+  features <- ledgr_flatten_feature_list(features, context = "`features`")
   if (!is.logical(persist_features) || length(persist_features) != 1 || is.na(persist_features)) {
     rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }

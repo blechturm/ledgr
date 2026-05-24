@@ -9,11 +9,12 @@ ledgr_feature_contract_check(snapshot, features)
 \arguments{
 \item{snapshot}{A sealed \code{ledgr_snapshot}.}
 
-\item{features}{A \code{ledgr_feature_map}, a list of \code{ledgr_indicator} objects,
-or one \code{ledgr_indicator}.}
+\item{features}{A \code{ledgr_feature_map}, a list of \code{ledgr_indicator} or
+\code{ledgr_indicator_bundle} objects, one \code{ledgr_indicator}, or one
+\code{ledgr_indicator_bundle}.}
 }
 \value{
-A tibble with one row per \code{(instrument_id, feature_id)} pair. It
+A tibble with one row per \verb{(instrument_id, feature_id)} pair. It
 includes \code{alias}, \code{instrument_id}, \code{feature_id}, \code{source},
 \code{requires_bars}, \code{stable_after}, \code{available_bars}, and
 \code{warmup_achievable}. \code{warmup_achievable} is \code{TRUE} when the instrument has
@@ -27,7 +28,7 @@ each instrument in this snapshot. It does not compute feature values and does
 not mutate the snapshot.
 }
 \details{
-Feature factories of the form \code{function(params)} are intentionally rejected
+Feature factories of the form \verb{function(params)} are intentionally rejected
 here because the helper cannot know which concrete parameter set to use.
 Materialize the factory first, then pass the resulting indicators or feature
 map. The error class is \code{ledgr_feature_factory_requires_params}.
