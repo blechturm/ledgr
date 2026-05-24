@@ -33,8 +33,9 @@ frequencies such as daily or weekly.
 returns.
 \item \code{sharpe_ratio}: annualized Sharpe ratio over adjacent public equity-row
 excess returns, using the scalar annual \code{risk_free_rate} converted to a
-per-period return with the detected bar frequency. Flat, constant-return,
-invalid, or short return series return \code{NA_real_}.
+per-period return with the inferred bar cadence. The default risk-free
+rate is \code{0}. Flat, constant-return, invalid, or short return series return
+\code{NA_real_}.
 \item \code{max_drawdown}: maximum peak-to-trough percentage decline,
 \code{min(equity / cummax(equity) - 1)}.
 \item \code{n_trades}: number of closed trade rows. Open-only fills do not count until

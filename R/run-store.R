@@ -579,14 +579,16 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   preserves this order, including duplicates, and may include archived
 #'   completed runs. If `NULL`, compares all non-archived completed runs.
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
-#' @param metrics Metrics set. Only `"standard"` is supported in v0.1.7.
+#' @param metrics Metrics set. Only `"standard"` is supported.
 #' @return A `ledgr_comparison` object, which is a classed tibble with one row
 #'   per completed run. Metric columns are raw numeric values for ranking and
 #'   filtering; formatted percentages are a print-only concern. `n_trades`
 #'   counts closed trade rows, not open-only fill rows; `win_rate` and
-#'   `avg_trade` are computed over those closed trade rows. `sharpe_ratio` uses
-#'   the default risk-free rate of `0`; use [ledgr_compute_metrics()] directly
-#'   when comparing a run with a non-zero risk-free rate.
+#'   `avg_trade` are computed over those closed trade rows. `final_equity` is
+#'   read from the last stored equity row. `sharpe_ratio` uses the default
+#'   risk-free rate of `0` and cadence-based annualization inferred from stored
+#'   equity timestamps; use [ledgr_compute_metrics()] directly when inspecting a
+#'   single run with a non-zero risk-free rate.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`

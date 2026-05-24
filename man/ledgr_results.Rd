@@ -37,11 +37,14 @@ It is the source for \code{n_trades}, \code{win_rate}, and \code{avg_trade}.
 
 \code{what = "equity"} returns the public equity curve used for return,
 drawdown, volatility, and exposure metrics. Open positions can affect equity
-through \code{positions_value} even when there are zero closed trade rows.
+through \code{positions_value} even when there are zero closed trade rows. The
+final equity used by prints and comparisons is the last row of this table.
 
 \code{ledgr_results()} does not support \code{what = "metrics"}. Metrics are derived
 from the public result tables; use \code{summary(bt)} for printed interpretation
 or \code{ledgr_compute_metrics(bt)} for a named list.
+\code{ledgr_results()} also does not support \code{what = "features"}; inspect feature
+values at pulse time with \code{ledgr_pulse_snapshot()}.
 }
 \section{Articles}{
 

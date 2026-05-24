@@ -23,15 +23,20 @@
 #' repeated per candidate.
 #'
 #' The result carries row-level `execution_seed` and `provenance`. Provenance
-#' records what ran; it does not prove that parameter selection was
-#' out-of-sample. The normal discipline is to sweep on a train snapshot, select
-#' a candidate with [ledgr_candidate()], and evaluate the locked params on a
-#' held-out test snapshot with [ledgr_promote()] or [ledgr_run()]. Same-snapshot
-#' promotion is useful for audit and replay, but remains in-sample.
+#' records what ran, including the candidate feature-set hash; it does not
+#' prove that parameter selection was out-of-sample. The normal discipline is to
+#' sweep on a train snapshot, select a candidate with [ledgr_candidate()], and
+#' evaluate the locked params on a held-out test snapshot with [ledgr_promote()]
+#' or [ledgr_run()]. Same-snapshot promotion is useful for audit and replay, but
+#' remains in-sample.
 #'
 #' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
 #' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
-#' strategy preflight failures still abort.
+#' strategy preflight failures still abort. Failed rows can be inspected with
+#' `ledgr_candidate(..., allow_failed = TRUE)`, but [ledgr_promote()] rejects
+#' failed candidates. When `stop_on_error = TRUE` rethrows a strategy failure,
+#' assert with `inherits(e, "ledgr_strategy_error")` rather than exact
+#' class-vector equality.
 #'
 #' v0.1.8 does not ship automatic ranking, `ledgr_tune()`, parallel sweep,
 #' walk-forward/PBO/CSCV helpers, risk-layer insertion, public cost-model
@@ -469,7 +474,11 @@ ledgr_candidate_validate_same_snapshot <- function(exp, candidate) {
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   if (!identical(provenance$snapshot_hash, meta$snapshot_hash)) {
     rlang::abort(
-      "Candidate snapshot hash does not match the target experiment snapshot.",
+      paste(
+        "Candidate snapshot hash does not match the target experiment snapshot.",
+        "For a deliberate train/test promotion, call `ledgr_promote(..., require_same_snapshot = FALSE)`.",
+        "Same-snapshot replay keeps the default `require_same_snapshot = TRUE`."
+      ),
       class = "ledgr_candidate_snapshot_mismatch"
     )
   }

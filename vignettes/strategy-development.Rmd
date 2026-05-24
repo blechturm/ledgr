@@ -633,6 +633,67 @@ ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2", "flat_b
 The flat baseline has no win rate because it has no closed trades. That is not
 missing data; there are no wins or losses to count.
 
+## Troubleshoot Helper Pipelines
+
+The helper pipeline is only an authoring layer:
+
+```text
+ledgr_signal -> ledgr_selection -> ledgr_weights -> ledgr_target -> target vector
+```
+
+Only the final target vector is executable. A strategy must return a full named
+numeric target vector, or a `ledgr_target` that unwraps to that shape. Returning
+a `ledgr_signal`, `ledgr_selection`, `ledgr_weights`, unnamed numeric vector,
+data frame, list, or partial target is an invalid strategy result.
+
+Common failures usually mean one of four things:
+
+| Symptom | Likely cause | First check |
+|---|---|---|
+| unknown feature ID | the indicator was not registered with the experiment | `ledgr_feature_id(features)` |
+| missing target names | the strategy did not return every `ctx$universe` instrument | compare `names(target)` to `ctx$universe` |
+| non-numeric or unsupported return shape | the strategy returned a helper intermediate or object-like result | make the last line a target vector |
+| zero fills or zero trades | warmup, empty selection, sizing to zero, no exit, or last-bar no-fill | inspect a late pulse and the fills table |
+
+For helper strategies, debug one pulse before rerunning the whole experiment:
+
+```{r helper-debug-checklist, eval=FALSE}
+pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = c("DEMO_01", "DEMO_02"),
+  ts_utc = ledgr_utc("2019-03-01"),
+  features = features
+)
+
+signal <- signal_return(pulse, lookback = 5)
+selection <- select_top_n(signal, n = 1)
+weights <- weight_equal(selection)
+target <- target_rebalance(weights, pulse, equity_fraction = 0.1)
+
+signal
+selection
+weights
+target
+names(target)
+pulse$universe
+```
+
+If `selection` inherits from `ledgr_empty_selection`, every signal value was
+missing or unusable at that pulse. Early in a run this is usually ordinary
+warmup. Late in a run it points to sample length, feature registration, or
+universe coverage. If `target` is full-universe but every quantity is zero,
+check integer flooring, `equity_fraction`, current close prices, and whether an
+empty selection flowed through intentionally.
+
+`ledgr_signal_strategy()` is a separate explicit compatibility wrapper for
+tutorial-style signal functions. It maps an inner signal function to full target
+quantities using configured long/flat/short quantities. Use it when that mapping
+is really the strategy contract; otherwise prefer returning the full target
+vector directly. Strategy preflight reports this wrapper as a special allowed
+case because it captures an inner function and quantity settings. Tier 3
+preflight failures remain hard failures: they are not downgraded to warnings or
+silently accepted.
+
 ## When ledgr Complains
 
 ledgr tries to fail loudly when an error would make a backtest misleading. If a

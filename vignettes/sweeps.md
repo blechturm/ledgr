@@ -158,7 +158,10 @@ grid <- ledgr_param_grid(
 
 Each row stores both `params` and `feature_fingerprints`: the requested
 parameters and the resolved feature identities actually used by that
-candidate.
+candidate. The row-level `provenance$feature_set_hash` is the compact
+identity for that candidate’s resolved feature set. Candidates with
+different indicator parameters should have different feature-set hashes
+even when the strategy code is the same.
 
 # Precompute Larger Grids
 
@@ -172,6 +175,18 @@ shared indicator definitions by fingerprint, and validates the payload
 against the snapshot, universe, scoring range, feature engine version,
 and grid labels.
 
+The precompute payload is intentionally tied to its inputs.
+`ledgr_sweep()` rejects a payload built for a different snapshot hash,
+universe, scoring range, grid labels, parameter hashes, feature engine
+version, or resolved feature fingerprints. Recompute the payload after
+changing any of those inputs.
+
+Feature-factory failures are candidate-level when they occur while
+resolving a specific candidate’s features and `stop_on_error = FALSE`.
+The failed row keeps the candidate label, params, error class, and error
+message so the bad combination can be inspected without losing the rest
+of the sweep.
+
 # Failure Rows
 
 By default `stop_on_error = FALSE`. Candidate-level failures become rows
@@ -183,7 +198,18 @@ with:
 - metric columns set to `NA`
 
 Use `stop_on_error = TRUE` when debugging a single failing candidate and
-you want ledgr to rethrow the first failure.
+you want ledgr to rethrow the first failure. When asserting on a
+rethrown strategy failure in tests, prefer
+`inherits(e, "ledgr_strategy_error")` rather than exact class-vector
+equality; the original strategy error class is preserved alongside
+ledgr’s generic class.
+
+`ledgr_candidate()` rejects failed rows by default. Use
+`ledgr_candidate(results, which, allow_failed = TRUE)` only for
+diagnostic extraction of the failed candidate’s params, error, warnings,
+and provenance. `ledgr_promote()` still rejects failed candidates;
+promotion is only for committing a runnable candidate through
+`ledgr_run()`.
 
 Contract errors still abort before or during the sweep. Invalid grids,
 invalid precomputed feature payloads, including snapshot-hash
@@ -196,12 +222,20 @@ When `seed` is supplied to `ledgr_sweep()`, each candidate receives a
 stable `execution_seed` derived from the master seed, the candidate
 label, and the candidate params. `ledgr_promote()` forwards that exact
 seed into `ledgr_run()` so a promoted same-snapshot candidate can
-reproduce the selected sweep result.
+reproduce the selected sweep result. If `seed = NULL`, row-level
+`execution_seed` is `NA` and promotion does not inject a replay seed.
 
 Each row also carries compact `provenance`, including snapshot hash,
 strategy hash, feature-set hash, master seed, seed contract, and
 evaluation scope. Provenance records what ran. It does not prove that
 your selection process was out-of-sample.
+
+The candidate table itself is not a full artifact store. Treat sweep
+columns as candidate summaries: `run_id`, `status`, `params`,
+`execution_seed`, metric columns, `feature_fingerprints`, `provenance`,
+and warning/error fields are the programmatic inspection surface. Full
+equity, fills, trades, and ledger rows are created only by committed
+runs.
 
 Promoted runs write durable promotion context. You can inspect it later:
 

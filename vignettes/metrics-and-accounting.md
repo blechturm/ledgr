@@ -16,6 +16,37 @@ That order matters. A strategy can open a position without closing it.
 That run has fills and equity exposure, but zero closed trades. In that
 case `n_trades = 0` and `win_rate = NA` are correct, not missing data.
 
+## Inspection Surfaces
+
+Use the narrowest inspection surface that answers the question:
+
+| Question | Public surface | Shape |
+|----|----|----|
+| What happened at a glance? | `print(bt)` | printed run header with final equity |
+| What are the standard metrics? | `summary(bt)` | printed interpretation; returns `bt` invisibly |
+| What metric values can code consume? | `ledgr_compute_metrics(bt)` | named list of raw numeric values |
+| What rows value the portfolio? | `ledgr_results(bt, what = "equity")` | classed tibble |
+| What executed? | `ledgr_results(bt, what = "fills")` | classed tibble |
+| What closed quantity? | `ledgr_results(bt, what = "trades")` | classed tibble |
+| What did the event ledger record? | `ledgr_results(bt, what = "ledger")` | classed tibble |
+| How do stored runs compare? | `ledgr_compare_runs(snapshot, run_ids = ...)` | classed comparison tibble |
+| What did a sweep candidate summarize? | `ledgr_sweep()` result rows | classed sweep tibble |
+| What context was stored by promotion? | `ledgr_promotion_context(bt)` or `ledgr_run_promotion_context()` | nested list |
+
+The result-table helpers return structured objects. Their print methods
+may format timestamps for readability, but `as_tibble()` gives raw
+columns for programmatic use. The stable programming contract is the
+column meaning, not the number of rows: a valid run can have zero fills,
+zero closed trades, or a final open position.
+
+`final_equity` is not a field in the `ledgr_compute_metrics()` list
+today. Read it from the last equity row, from `print(bt)`, from
+comparison rows, or from sweep rows. There is also no committed
+`ledgr_results(bt, what = "features")` table. Feature values are
+inspected at pulse time with `ledgr_pulse_snapshot()` or through
+sweep/precompute provenance, not through a persisted feature-result
+table accessor.
+
 ``` r
 library(ledgr)
 library(dplyr)
@@ -209,12 +240,23 @@ snaps common cadences, such as daily and weekly, to standard
 annualization constants. Use the detected value if you need an external
 calculation to match ledgr exactly on non-daily data.
 
+Current metric assumptions are deliberately simple. `summary(bt)` and
+`ledgr_compute_metrics(bt)` accept a scalar annual `risk_free_rate`; the
+default is `0`. `ledgr_compare_runs()` recomputes comparable stored-run
+metrics with the default risk-free rate of `0`. Annualization is
+inferred from the observed bar cadence and snapped to a small set of
+common frequencies. There is no stored metric context, public
+bars-per-year accessor, or second annualization source in this release,
+so non-daily and intraday users should treat Sharpe and annualized
+values as using ledgr’s current cadence inference rather than an
+explicit market calendar.
+
 ## Risk Metric Contract
 
-The v0.1.7.7 standard metric contract adds `sharpe_ratio` as the first
-risk-adjusted metric. It is a ledgr-owned metric computed from the same
-public equity rows as volatility, not from hidden runner state and not
-from an external metrics package.
+The standard metric contract includes `sharpe_ratio` as ledgr’s first
+risk-adjusted metric. It is computed from the same public equity rows as
+volatility, not from hidden runner state and not from an external
+metrics package.
 
 The return series is still the adjacent public equity-row return:
 
@@ -296,6 +338,12 @@ metrics[c("total_return", "sharpe_ratio", "n_trades", "win_rate")]
 #> $win_rate
 #> [1] 1
 ```
+
+`ledgr_compare_runs()` is also programmatic: it returns a tibble-like
+`ledgr_comparison` object with raw numeric metric columns for filtering
+and ranking. Its print method only curates the displayed columns.
+Comparison metrics are recomputed from stored equity and fill tables and
+use the same closed-trade semantics as `ledgr_compute_metrics()`.
 
 ## Zero Trades Can Be Correct
 

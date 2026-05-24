@@ -1679,8 +1679,9 @@ ledgr_backtest_bench <- function(bt) {
 #'   returns.
 #' - `sharpe_ratio`: annualized Sharpe ratio over adjacent public equity-row
 #'   excess returns, using the scalar annual `risk_free_rate` converted to a
-#'   per-period return with the detected bar frequency. Flat, constant-return,
-#'   invalid, or short return series return `NA_real_`.
+#'   per-period return with the inferred bar cadence. The default risk-free
+#'   rate is `0`. Flat, constant-return, invalid, or short return series return
+#'   `NA_real_`.
 #' - `max_drawdown`: maximum peak-to-trough percentage decline,
 #'   `min(equity / cummax(equity) - 1)`.
 #' - `n_trades`: number of closed trade rows. Open-only fills do not count until
@@ -1814,7 +1815,8 @@ print.ledgr_backtest <- function(x, ...) {
 #'   multiplied by `sqrt(bars_per_year)`;
 #' - Sharpe ratio: annualized ratio of average period excess return to
 #'   excess-return standard deviation, using the scalar annual `risk_free_rate`
-#'   converted to a per-period return;
+#'   converted to a per-period return with the inferred bar cadence. The
+#'   default risk-free rate is `0`;
 #' - total trades: number of closed trade rows, not number of fill rows;
 #' - win rate: share of closed trade rows with strict `realized_pnl > 0`;
 #' - average trade: mean `realized_pnl` across closed trade rows;
@@ -2095,11 +2097,14 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #'
 #' `what = "equity"` returns the public equity curve used for return,
 #' drawdown, volatility, and exposure metrics. Open positions can affect equity
-#' through `positions_value` even when there are zero closed trade rows.
+#' through `positions_value` even when there are zero closed trade rows. The
+#' final equity used by prints and comparisons is the last row of this table.
 #'
 #' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
+#' `ledgr_results()` also does not support `what = "features"`; inspect feature
+#' values at pulse time with `ledgr_pulse_snapshot()`.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -2179,11 +2184,14 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #'
 #' `what = "equity"` returns the public equity curve used for return,
 #' drawdown, volatility, and exposure metrics. Open positions can affect equity
-#' through `positions_value` even when there are zero closed trade rows.
+#' through `positions_value` even when there are zero closed trade rows. The
+#' final equity used by prints and comparisons is the last row of this table.
 #'
 #' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
+#' `ledgr_results()` also does not support `what = "features"`; inspect feature
+#' values at pulse time with `ledgr_pulse_snapshot()`.
 #'
 #' @section Articles:
 #' Metrics and accounting:

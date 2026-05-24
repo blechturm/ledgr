@@ -54,7 +54,7 @@ LDG-2211 Release gate depends on LDG-2202 through LDG-2210 and LDG-2212.
 Priority: P0  
 Effort: S  
 Dependencies: none  
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -266,7 +266,20 @@ scope: installed_docs
 Priority: P1  
 Effort: M  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
+
+### Completion Notes
+
+- Added an inspection-surface map to the metrics/accounting vignette covering
+  prints, summaries, metric lists, result tables, comparisons, sweep rows, and
+  promotion context.
+- Documented current risk-free-rate and cadence-inferred annualization behavior
+  without adding metric context or a second annualization source.
+- Recorded the missing-api decisions that `final_equity` is read from equity,
+  comparison, print, or sweep surfaces today and that there is no committed
+  `ledgr_results(bt, what = "features")` accessor.
+- Tightened `ledgr_results()`, `summary()`, `ledgr_compute_metrics()`, and
+  `ledgr_compare_runs()` help-page wording for programmatic result semantics.
 
 ### Description
 
@@ -322,7 +335,17 @@ scope: installed_docs
 Priority: P2  
 Effort: S  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
+
+### Completion Notes
+
+- Added a strategy-helper troubleshooting section to the strategy-development
+  vignette covering the signal -> selection -> weights -> target path.
+- Documented common invalid return shapes, missing/partial target-name issues,
+  zero-fill and zero-trade diagnosis, late-pulse inspection, and empty-selection
+  interpretation.
+- Clarified `ledgr_signal_strategy()` as an explicit compatibility wrapper and
+  stated that Tier 3 preflight failures remain hard failures.
 
 ### Description
 
@@ -372,7 +395,24 @@ scope: installed_docs
 Priority: P1  
 Effort: M  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
+
+### Completion Notes
+
+- Expanded the sweep vignette and help page with failed-row inspection,
+  failed-candidate promotion rejection, feature-factory failures, seed-null
+  behavior, candidate-level feature-set hashes, and precompute payload
+  validation boundaries.
+- Tightened the cross-snapshot promotion mismatch message so it names
+  `require_same_snapshot = FALSE` for deliberate train/test promotion.
+- Added regression coverage that `stop_on_error = TRUE` strategy failures keep a
+  unique class vector and documented `inherits(e, "ledgr_strategy_error")` as
+  the robust assertion pattern.
+- Clarified that sweep rows are candidate summaries, while full equity/fills/
+  trades/ledger artifacts are created only by committed promoted runs.
+- Confirmed there is no advertised stale or empty `sweeps.R` script in
+  `inst/examples/`; sweep documentation remains routed through the maintained
+  vignette and help pages.
 
 ### Description
 

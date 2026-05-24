@@ -37,7 +37,8 @@ public equity rows using the detected bar frequency;
 multiplied by \code{sqrt(bars_per_year)};
 \item Sharpe ratio: annualized ratio of average period excess return to
 excess-return standard deviation, using the scalar annual \code{risk_free_rate}
-converted to a per-period return;
+converted to a per-period return with the inferred bar cadence. The
+default risk-free rate is \code{0};
 \item total trades: number of closed trade rows, not number of fill rows;
 \item win rate: share of closed trade rows with strict \code{realized_pnl > 0};
 \item average trade: mean \code{realized_pnl} across closed trade rows;

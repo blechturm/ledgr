@@ -22,16 +22,18 @@ completed runs. If \code{NULL}, compares all non-archived completed runs.}
 
 \item{include_archived}{Logical scalar. Used only when \code{run_ids = NULL}.}
 
-\item{metrics}{Metrics set. Only \code{"standard"} is supported in v0.1.7.}
+\item{metrics}{Metrics set. Only \code{"standard"} is supported.}
 }
 \value{
 A \code{ledgr_comparison} object, which is a classed tibble with one row
 per completed run. Metric columns are raw numeric values for ranking and
 filtering; formatted percentages are a print-only concern. \code{n_trades}
 counts closed trade rows, not open-only fill rows; \code{win_rate} and
-\code{avg_trade} are computed over those closed trade rows. \code{sharpe_ratio} uses
-the default risk-free rate of \code{0}; use \code{\link[=ledgr_compute_metrics]{ledgr_compute_metrics()}} directly
-when comparing a run with a non-zero risk-free rate.
+\code{avg_trade} are computed over those closed trade rows. \code{final_equity} is
+read from the last stored equity row. \code{sharpe_ratio} uses the default
+risk-free rate of \code{0} and cadence-based annualization inferred from stored
+equity timestamps; use \code{\link[=ledgr_compute_metrics]{ledgr_compute_metrics()}} directly when inspecting a
+single run with a non-zero risk-free rate.
 }
 \description{
 Reads stored run metadata, provenance, telemetry, and result artifacts from a

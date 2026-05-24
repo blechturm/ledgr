@@ -30,7 +30,8 @@ ledgr_backtest_run <- function(config, run_id = NULL) {
 .ledgr_preflight_registry <- new.env(parent = emptyenv())
 
 ledgr_strategy_error_classes <- function(error) {
-  unique(c("ledgr_strategy_error", class(error)))
+  original <- setdiff(class(error), c("rlang_error", "error", "condition"))
+  unique(c("ledgr_strategy_error", original))
 }
 
 ledgr_strategy_context_list <- function(x, max_items = 8L) {

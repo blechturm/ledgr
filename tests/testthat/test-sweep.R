@@ -282,6 +282,7 @@ testthat::test_that("ledgr_promote validates same-snapshot provenance when reque
 
   testthat::expect_error(
     ledgr_promote(other_exp, candidate, run_id = "wrong-snapshot"),
+    regexp = "require_same_snapshot = FALSE",
     class = "ledgr_candidate_snapshot_mismatch"
   )
 
@@ -359,6 +360,22 @@ testthat::test_that("ledgr_sweep captures candidate failures and stop_on_error r
     ledgr_sweep(exp, grid, stop_on_error = TRUE),
     class = "ledgr_test_bad_feature"
   )
+})
+
+testthat::test_that("ledgr_sweep stop_on_error preserves unique strategy error classes", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    rlang::abort("bad strategy", class = "ledgr_test_bad_strategy")
+  }
+  exp <- ledgr_experiment(snapshot, strategy)
+  grid <- ledgr_param_grid(candidate = list())
+
+  err <- testthat::capture_error(ledgr_sweep(exp, grid, stop_on_error = TRUE))
+  testthat::expect_s3_class(err, "ledgr_strategy_error")
+  testthat::expect_s3_class(err, "ledgr_test_bad_strategy")
+  testthat::expect_identical(class(err), unique(class(err)))
 })
 
 testthat::test_that("feature-consuming sweep strategies see the same feature values as ledgr_run", {

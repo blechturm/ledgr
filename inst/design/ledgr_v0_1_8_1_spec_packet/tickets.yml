@@ -4,7 +4,7 @@ generated_from: "v0_1_8_1_spec.md"
 tickets:
   - id: "LDG-2201"
     title: "Scope Routing And Ticket Synchronization"
-    status: "in_review"
+    status: "done"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -48,7 +48,7 @@ tickets:
 
   - id: "LDG-2204"
     title: "Result Inspection And Metrics Schema Documentation"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -63,7 +63,7 @@ tickets:
 
   - id: "LDG-2205"
     title: "Strategy Helper Pipeline Documentation"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "S"
     dependencies:
@@ -78,7 +78,7 @@ tickets:
 
   - id: "LDG-2206"
     title: "Sweep Documentation Polish And Runnable Sweep Script"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
