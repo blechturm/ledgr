@@ -733,7 +733,7 @@ scope: provenance
 Priority: P2
 Effort: M
 Dependencies: LDG-2307, LDG-2308, LDG-2309
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -810,7 +810,7 @@ scope: installed_docs
 Priority: P2
 Effort: M
 Dependencies: LDG-2302
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -883,6 +883,10 @@ scope: installed_docs
 - Routed `ledgr_save_help()` scalar-only behavior and raw auditr environment
   friction out of ledgr runtime scope; no parameter-grid helper,
   helper-sharing API, benchmark API, or external adapter was introduced.
+- Recorded the remaining FB-003 (008) multi-run-script warning-context gap as
+  best-effort for this batch: sweep warning fields are documented, while adding
+  `run_id` to single-run fold-core warnings is deferred unless a future patch
+  chooses to thread run identity into that warning path.
 
 ---
 
