@@ -3,9 +3,8 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Current cycle:** v0.1.8.1 auditr stabilization and multi-output indicator
-bundle authoring.
-**Active packet:** `inst/design/ledgr_v0_1_8_1_spec_packet/`.
+**Current cycle:** v0.1.8.2 planning.
+**Active packet:** not cut yet.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -89,7 +88,7 @@ versioned packet.
 | v0.1.7.9 | Done | Strategy author ergonomics and execution-engine stabilization. | `inst/design/ledgr_v0_1_7_9_spec_packet/` |
 | v0.1.8.00 | Done | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
 | v0.1.8 | Done | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_0_spec_packet/` |
-| v0.1.8.1 | Planned | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
+| v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
 | v0.1.8.2 | Planned | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | Future packet |
 | v0.1.8.3 | Planned | Single-core sweep optimization after metric-kernel semantics settle. | Future packet |
 | v0.1.8.4 | Planned | Parameter-grid quality-of-life helpers after sweep performance stabilizes. | Future packet |

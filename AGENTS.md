@@ -29,17 +29,20 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Active cycle (v0.1.8.1 — update this block each cycle):
+Current planning context (post-v0.1.8.1 release; update this block when the
+next spec packet is cut):
 
-- Spec: `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_spec.md`
-- Tickets: `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_tickets.md`
-- Machine-readable tickets: `inst/design/ledgr_v0_1_8_1_spec_packet/tickets.yml`
+- The completed v0.1.8.1 packet is an archival release record, not active
+  implementation scope.
+- Next planned implementation scope is v0.1.8.2 metric context and indicator
+  codebase Phase 2 cleanup. No v0.1.8.2 spec packet has been cut yet.
+- Do not implement new v0.1.8.2 work until the spec packet and tickets exist.
 
 ## Active Design Entry Points
 
 Read these before working in the listed areas. They are accepted design decisions
-binding for their stated release scope unless marked otherwise. v0.1.8.1
-implementation is limited to the active spec packet.
+binding for their stated release scope unless marked otherwise. Completed spec
+packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
