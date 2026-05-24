@@ -475,10 +475,10 @@ testthat::test_that("contracts record strategy preflight boundary", {
 
   testthat::expect_match(text, "ledgr_v0_1_8_spec_packet", fixed = TRUE)
   testthat::expect_match(text, "Strategy preflight classifies functional strategies before execution", fixed = TRUE)
-  testthat::expect_match(text, "Tier 3\\s+is a classed error by default")
-  testthat::expect_match(text, "must not be\\s+accepted silently or downgraded to warning-only behavior")
-  testthat::expect_match(text, "v0.1.7.8 does not\\s+implement a single-run override")
-  testthat::expect_match(text, "forced Tier 3 runs must still record `tier_3` in provenance", fixed = TRUE)
+  testthat::expect_match(text, "Tier 3\\s+is a classed error")
+  testthat::expect_match(text, "must not be\\s+accepted silently or downgraded\\s+to warning-only behavior")
+  testthat::expect_match(text, "Current public APIs do not\\s+include a force override")
+  testthat::expect_match(text, "forced Tier 3\\s+runs must still record `tier_3` in provenance")
   testthat::expect_match(text, "Priority: base", fixed = TRUE)
   testthat::expect_match(text, "Priority: recommended", fixed = TRUE)
   testthat::expect_match(text, "not from\\s+a hand-maintained package-name allowlist")
@@ -495,8 +495,8 @@ testthat::test_that("contracts record strategy preflight boundary", {
   for (field in c("tier", "allowed", "reason", "unresolved_symbols", "package_dependencies", "notes")) {
     testthat::expect_match(text, field, fixed = TRUE)
   }
-  testthat::expect_match(text, "`allowed` is\\s+`TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`")
-  testthat::expect_match(text, "Sweep mode inherits the v0.1.7.8 preflight semantics", fixed = TRUE)
+  testthat::expect_match(text, "`allowed` is `TRUE` for\\s+`tier_1` and `tier_2`, and `FALSE` for `tier_3`")
+  testthat::expect_match(text, "Sweep mode inherits the public preflight semantics", fixed = TRUE)
 })
 
 testthat::test_that("contracts record v0.1.8 fold-core and output-handler boundary", {
@@ -524,7 +524,7 @@ testthat::test_that("contracts record v0.1.8 fold-core and output-handler bounda
   testthat::expect_match(text, "must not change\\s+strategy semantics")
   testthat::expect_match(text, "event-stream meaning", fixed = TRUE)
   testthat::expect_match(text, "Strategy preflight runs before entering the fold core", fixed = TRUE)
-  testthat::expect_match(text, "Tier 3 strategies must stop before any fold execution or output\\s+handler side effects")
+  testthat::expect_match(text, "Tier 3 strategies must stop before any fold execution or output handler\\s+side\\s+effects")
 })
 
 testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 milestone sequencing", {
@@ -966,6 +966,7 @@ testthat::test_that("reproducibility article teaches provenance tiers and safe e
   testthat::expect_match(doc, "Tier 2", fixed = TRUE)
   testthat::expect_match(doc, "Tier 3", fixed = TRUE)
   testthat::expect_match(doc, "There is no\\s+`force = TRUE`\\s+override")
+  testthat::expect_match(doc, "ledgr_run\\(\\)` or `ledgr_sweep\\(\\)")
   testthat::expect_match(doc, "renv", fixed = TRUE)
   testthat::expect_match(doc, "Docker", fixed = TRUE)
   testthat::expect_match(doc, "github.com/ropensci/rix", fixed = TRUE)

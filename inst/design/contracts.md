@@ -53,9 +53,9 @@ the active versioned spec packet, currently
   existing scalar `fill_model` config identity. A behavior-preserving internal
   refactor must not change `config_hash` for the same canonical config.
 - Strategy preflight runs before entering the fold core. Sweep mode inherits
-  the v0.1.7.8 preflight semantics: Tier 1 and Tier 2 strategies may
-  execute, and Tier 3 strategies must stop before any fold execution or output
-  handler side effects.
+  the public preflight semantics: Tier 1 and Tier 2 strategies may execute, and
+  Tier 3 strategies must stop before any fold execution or output handler side
+  effects.
 - v0.1.7 is an intentional hard public API reset. It explicitly overrides the
   earlier "deprecate where practical" posture for the research workflow because
   carrying both old and new public surfaces into sweep mode would create
@@ -267,11 +267,10 @@ the active versioned spec packet, currently
   - Tier 3: environment-dependent logic whose execution identity cannot be
     recovered from stored metadata.
 - Strategy preflight classifies functional strategies before execution. Tier 3
-  is a classed error by default in ordinary runs and sweep mode. A
-  single-run override may exist only as an explicit opt-in; Tier 3 must not be
-  accepted silently or downgraded to warning-only behavior. v0.1.7.8 does not
-  implement a single-run override; if a later explicit override is added,
-  forced Tier 3 runs must still record `tier_3` in provenance.
+  is a classed error in ordinary runs and sweep mode. Current public APIs do not
+  include a force override; Tier 3 must not be accepted silently or downgraded
+  to warning-only behavior. If a later explicit override is added, forced Tier 3
+  runs must still record `tier_3` in provenance.
 - Base R references are Tier 1-compatible when they are ordinary function calls
   or constants and do not introduce hidden mutable state. This classification is
   based on packages distributed with the active R installation, discovered from
@@ -295,9 +294,9 @@ the active versioned spec packet, currently
   mutate captured environments.
 - The minimum `ledgr_strategy_preflight` result contract contains `tier`,
   `allowed`, `reason`, `unresolved_symbols`, `package_dependencies`, and
-  `notes`, and has class `ledgr_strategy_preflight`. In v0.1.7.8, `allowed` is
-  `TRUE` for `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
-- Sweep mode inherits the v0.1.7.8 preflight semantics. Sweep may accept Tier 1
+  `notes`, and has class `ledgr_strategy_preflight`. `allowed` is `TRUE` for
+  `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
+- Sweep mode inherits the public preflight semantics. Sweep may accept Tier 1
   and Tier 2 strategies, but Tier 3 strategies must be rejected before
   execution.
 - v0.1.5 run provenance stores `strategy_source_hash`,

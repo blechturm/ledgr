@@ -222,7 +222,10 @@ ledgr_register_indicator <- function(indicator, name = NULL, overwrite = FALSE) 
       return(invisible(indicator))
     }
     rlang::abort(
-      sprintf("Indicator '%s' is already registered with different logic. Use overwrite = TRUE only for an intentional replacement.", name),
+      sprintf(
+        "Indicator '%s' is already registered with different logic. Existing registration is unchanged, so downstream lookups still use the previous definition. Use overwrite = TRUE only for an intentional same-ID replacement, or choose a distinct indicator id/name.",
+        name
+      ),
       class = "ledgr_invalid_args"
     )
   }

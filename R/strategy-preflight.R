@@ -367,9 +367,10 @@ ledgr_abort_strategy_preflight <- function(preflight) {
   }
   rlang::abort(
     paste0(
-      "Strategy preflight classified this strategy as tier_3, so ledgr will not execute it by default.",
+      "Strategy preflight classified this strategy as tier_3, so ledgr will not execute it.",
       detail,
-      " Move external values into `params`, qualify package calls with `pkg::fn()`, or use ledgr's exported helpers."
+      " Move external values into `params`, qualify package calls with `pkg::fn()`, or use ledgr's exported helpers.",
+      " There is no force override on `ledgr_run()` or `ledgr_sweep()`."
     ),
     class = c("ledgr_strategy_tier3", "ledgr_strategy_preflight_error")
   )

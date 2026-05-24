@@ -536,7 +536,7 @@ scope: installed_docs
 Priority: P1  
 Effort: M  
 Dependencies: LDG-2201  
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -570,6 +570,24 @@ surface.
 
 - Targeted tests for changed conditions and messages.
 - Existing preflight and sweep failure tests.
+
+### Completion Notes
+
+- Polished `LEDGR_LAST_BAR_NO_FILL` warnings with origin, consequence, and
+  next-action guidance while preserving the warning code.
+- Polished same-ID indicator replacement errors so the message states that the
+  existing registration is unchanged and names the two valid actions:
+  intentional `overwrite = TRUE` or a distinct indicator id/name.
+- Tightened Tier 3 preflight failure wording in runtime errors, the
+  reproducibility article, and contracts so it no longer implies an available
+  override; tests verify `ledgr_run()` and `ledgr_sweep()` reject Tier 3 before
+  execution.
+- Confirmed CSV/OHLC validation locality was resolved as documentation in
+  LDG-2207 and causal vectorized-feature guidance remains prose-only; no public
+  causal validator was introduced.
+- Verification run:
+  `test-strategy-preflight.R`, `test-sweep.R`, `test-backtest-wrapper.R`,
+  `test-indicators.R`, and `test-documentation-contracts.R`.
 
 ### Source Reference
 

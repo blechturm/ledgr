@@ -218,8 +218,9 @@ tier_3_strategy <- function(ctx, params) {
 ledgr_strategy_preflight(tier_3_strategy)
 ```
 
-Tier 3 strategies fail before execution by default. There is no `force = TRUE`
-override in v0.1.7.8.
+Tier 3 strategies fail before execution. There is no `force = TRUE` override on
+`ledgr_run()` or `ledgr_sweep()`; move external values into `params`, qualify
+package calls, or use ledgr's exported helpers instead.
 
 ## Why `params` Is The Boundary
 
@@ -273,5 +274,5 @@ sealed snapshot -> experiment inputs -> preflight tier -> run provenance
 ```
 
 Tier 1 is the cleanest path. Tier 2 is allowed but requires user-managed
-environment parity. Tier 3 fails by default because ledgr cannot recover what
-the strategy depended on.
+environment parity. Tier 3 fails because ledgr cannot recover what the strategy
+depended on.

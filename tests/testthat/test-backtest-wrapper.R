@@ -493,16 +493,22 @@ testthat::test_that("final-bar target changes emit LEDGR_LAST_BAR_NO_FILL", {
     targets
   }
 
-  bt <- NULL
-  testthat::expect_warning(
-    bt <- ledgr_backtest(
+  warning_msg <- NULL
+  bt <- withCallingHandlers(
+    ledgr_backtest(
       data = bars,
       strategy = strategy,
       initial_cash = 1000,
       run_id = "last-bar-warning"
     ),
-    "LEDGR_LAST_BAR_NO_FILL",
-    fixed = TRUE
+    warning = function(w) {
+      warning_msg <<- conditionMessage(w)
+      invokeRestart("muffleWarning")
+    }
   )
   on.exit(if (inherits(bt, "ledgr_backtest")) close(bt), add = TRUE)
+  testthat::expect_match(warning_msg, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_match(warning_msg, "final available bar", fixed = TRUE)
+  testthat::expect_match(warning_msg, "No fill was emitted", fixed = TRUE)
+  testthat::expect_match(warning_msg, "extend the snapshot", fixed = TRUE)
 })

@@ -378,6 +378,25 @@ testthat::test_that("ledgr_sweep stop_on_error preserves unique strategy error c
   testthat::expect_identical(class(err), unique(class(err)))
 })
 
+testthat::test_that("ledgr_sweep rejects Tier 3 strategies before candidate execution", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  helper <- function(ctx) ctx$flat()
+  strategy <- function(ctx, params) {
+    helper(ctx)
+  }
+  exp <- ledgr_experiment(snapshot, strategy)
+  grid <- ledgr_param_grid(candidate = list())
+
+  err <- testthat::capture_error(ledgr_sweep(exp, grid))
+  testthat::expect_s3_class(err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(err), "helper", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "There is no force override", fixed = TRUE)
+  testthat::expect_false(grepl("by default", conditionMessage(err), fixed = TRUE))
+})
+
 testthat::test_that("feature-consuming sweep strategies see the same feature values as ledgr_run", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

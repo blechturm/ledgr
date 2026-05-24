@@ -133,12 +133,15 @@ testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
   }
   exp <- ledgr_experiment(snapshot, strategy)
 
-  testthat::expect_error(
+  err <- testthat::capture_error(
     ledgr_run(exp, params = list(), run_id = "tier-3-run"),
-    "my_helper",
-    fixed = TRUE,
-    class = "ledgr_strategy_preflight_error"
   )
+  testthat::expect_s3_class(err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(err), "my_helper", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "will not execute it", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "There is no force override", fixed = TRUE)
+  testthat::expect_false(grepl("by default", conditionMessage(err), fixed = TRUE))
 
   opened <- ledgr_test_open_duckdb(db_path)
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
@@ -149,7 +152,7 @@ testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
   testthat::expect_equal(nrow(rows), 0L)
 })
 
-testthat::test_that("single-run force override is not implemented in LDG-1803", {
+testthat::test_that("force override is not implemented for run or preflight", {
   testthat::expect_false("force" %in% names(formals(ledgr_run)))
   testthat::expect_false("force" %in% names(formals(ledgr_strategy_preflight)))
 })

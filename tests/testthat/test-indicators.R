@@ -133,11 +133,14 @@ testthat::test_that("indicator registry rejects silent overwrite", {
 
   ledgr_register_indicator(ind_a, name, overwrite = TRUE)
   testthat::expect_silent(ledgr_register_indicator(ind_a, name))
-  testthat::expect_error(
+  err <- testthat::capture_error(
     ledgr_register_indicator(ind_b, name),
-    "already registered",
-    class = "ledgr_invalid_args"
   )
+  testthat::expect_s3_class(err, "ledgr_invalid_args")
+  testthat::expect_match(conditionMessage(err), "already registered", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "Existing registration is unchanged", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "overwrite = TRUE", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "distinct indicator id/name", fixed = TRUE)
   testthat::expect_silent(ledgr_register_indicator(ind_b, name, overwrite = TRUE))
 })
 

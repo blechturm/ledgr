@@ -232,7 +232,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
         if (inherits(fill, "ledgr_fill_none")) {
           if (is.character(fill$warn_code) &&
               identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
-            warning("LEDGR_LAST_BAR_NO_FILL", call. = FALSE)
+            warning(
+              paste(
+                "LEDGR_LAST_BAR_NO_FILL:",
+                "target changed on the final available bar, but the next-open fill model requires a following bar.",
+                "No fill was emitted for this target change.",
+                "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
+              ),
+              call. = FALSE
+            )
           }
           next
         }

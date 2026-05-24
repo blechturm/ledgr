@@ -108,7 +108,7 @@ tickets:
 
   - id: "LDG-2208"
     title: "Warning And Error Message Polish"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
