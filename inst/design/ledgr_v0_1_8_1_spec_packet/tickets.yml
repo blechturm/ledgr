@@ -179,7 +179,7 @@ tickets:
 
   - id: "LDG-2211"
     title: "v0.1.8.1 Release Gate And Closeout"
-    status: "todo"
+    status: "done"
     priority: "P0"
     effort: "S"
     dependencies:

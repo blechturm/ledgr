@@ -261,7 +261,7 @@ fills, equity, and metric views.
 
 # Explicit Non-Goals
 
-v0.1.8 sweep mode does not ship:
+Current sweep mode does not ship:
 
 - automatic ranking, objectives, or `ledgr_tune()`
 - parallel sweep execution
@@ -272,5 +272,5 @@ v0.1.8 sweep mode does not ship:
 - intraday-specific support
 - `ledgr_save_sweep()` or full sweep artifact persistence
 
-The full sweep-artifact idea is deferred. v0.1.8 stores selection
-context on promoted runs instead.
+The full sweep-artifact idea is deferred. Current sweep mode stores
+selection context on promoted runs instead.

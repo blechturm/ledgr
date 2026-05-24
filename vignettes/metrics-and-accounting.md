@@ -246,10 +246,10 @@ default is `0`. `ledgr_compare_runs()` recomputes comparable stored-run
 metrics with the default risk-free rate of `0`. Annualization is
 inferred from the observed bar cadence and snapped to a small set of
 common frequencies. There is no stored metric context, public
-bars-per-year accessor, or second annualization source in this release,
-so non-daily and intraday users should treat Sharpe and annualized
-values as using ledgr’s current cadence inference rather than an
-explicit market calendar.
+bars-per-year accessor, or second annualization source in the current
+metric surface, so non-daily and intraday users should treat Sharpe and
+annualized values as using ledgr’s current cadence inference rather than
+an explicit market calendar.
 
 ## Risk Metric Contract
 
@@ -292,9 +292,9 @@ volatility return `NA_real_` rather than an infinite or misleading
 Sharpe value. Near-zero means
 `sd(excess_return) <= .Machine$double.eps`.
 
-Other risk-adjusted or benchmark-relative metrics are deferred in this
-release: Sortino, Calmar, Omega, information ratio, alpha/beta,
-benchmark-relative metrics, VaR, and tail-risk metrics.
+Other risk-adjusted or benchmark-relative metrics are deferred from the
+current metric surface: Sortino, Calmar, Omega, information ratio,
+alpha/beta, benchmark-relative metrics, VaR, and tail-risk metrics.
 
 ``` r
 summary(bt)

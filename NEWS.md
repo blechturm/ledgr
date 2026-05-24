@@ -1,3 +1,33 @@
+# ledgr 0.1.8.1
+
+- Added `ledgr_ind_ttr_outputs()` for multi-output TTR authoring. The helper
+  returns a `ledgr_indicator_bundle` that flattens into ordinary single-output
+  indicators before runtime, preserving the existing feature and sweep
+  provenance contracts.
+- Added derived default bundle names such as `bbands_dn`, explicit `prefix`
+  support, `outputs` filtering, `prefix = NULL` raw-name opt-in, and a
+  named-vector `naming` escape hatch for custom bundle IDs.
+- Extracted package-level determinism and fingerprint helpers from
+  `R/indicator.R` into a dedicated determinism module without changing public
+  APIs, existing indicator IDs, or fingerprint pins.
+- Expanded installed documentation around the feature lifecycle, feature IDs,
+  feature-map aliases, warmup feasibility, result inspection surfaces, sweep
+  provenance, failed-candidate inspection, snapshot metadata, CSV validation
+  locality, and strategy-helper troubleshooting.
+- Completed runnable example and discoverability polish across the main
+  vignettes, including a complete custom-indicator run/inspect workflow and
+  clearer installed article links from package and function help.
+- Polished selected diagnostics: final-bar no-fill warnings now state origin,
+  consequence, and next action; duplicate indicator registration errors now
+  name both safe actions; Tier 3 preflight errors now state that no public force
+  override exists on `ledgr_run()` or `ledgr_sweep()`.
+- Documented current metric assumptions without introducing metric-context
+  storage: the current public metric path uses a default risk-free rate of zero
+  and cadence-inferred annualization.
+- Refreshed stale version wording in user-facing documentation so current
+  tutorials describe the current research workflow instead of old patch-release
+  labels.
+
 # ledgr 0.1.8.0
 
 - Added sequential `ledgr_sweep()` for lightweight parameter-grid exploration

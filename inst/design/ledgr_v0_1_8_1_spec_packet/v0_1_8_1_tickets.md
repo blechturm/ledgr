@@ -872,7 +872,7 @@ scope: public_api
 Priority: P0  
 Effort: S  
 Dependencies: LDG-2202, LDG-2203, LDG-2204, LDG-2205, LDG-2206, LDG-2207, LDG-2208, LDG-2209, LDG-2212, LDG-2210
-Status: Not Started
+Status: Done
 
 ### Description
 
@@ -932,3 +932,18 @@ type: release_gate
 surface: package
 scope: v0.1.8.1
 ```
+
+### Completion Notes
+
+- Confirmed all v0.1.8.1 implementation tickets are complete and synchronized
+  across the ticket packet and `tickets.yml`.
+- Bumped package version to `0.1.8.1` and updated `NEWS.md` for the new
+  multi-output bundle API, determinism extraction, documentation additions,
+  warning/error message polish, and release hygiene.
+- Rephrased stale user-facing version claims in `research-to-production`,
+  `sweeps`, and `metrics-and-accounting`; remaining stale-version scan matches
+  are generic release/current-language false positives, not old-current claims.
+- Verified documentation contract tests, full local tests, `R CMD build .`, and
+  `R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.1.tar.gz`.
+- Confirmed generated check/build artifacts are local-only and not committed;
+  v0.1.8.2+ roadmap features remain out of scope.

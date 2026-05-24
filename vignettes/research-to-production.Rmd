@@ -70,7 +70,7 @@ market data permanently. A **`run_id`** is an immutable experiment key. Strategy
 identity is captured from source text and parameters. Every run is auditable and
 discoverable after the R session ends.
 
-In v0.1.7 this is a concrete user-facing workflow:
+This is a concrete user-facing workflow:
 
 ```{r experiment-store-api, eval=FALSE}
 snapshot <- ledgr_snapshot_load(db_path, "snapshot_id")
@@ -96,15 +96,16 @@ fact.
 
 The research workflow before deployment has two phases:
 
-**Commit** (v0.1.7). Full provenance run. Validate named candidates with
+**Commit**. Full provenance run. Validate named candidates with
 durable artifacts: sealed snapshot hash, strategy source hash, parameter hash,
 config hash, ledgr and R version, dependency versions, compact telemetry, and
 result artifacts. Use `ledgr_compare_runs()` to compare named variants and
 `ledgr_extract_strategy()` to inspect stored strategy source.
 
-**Explore** (future). Fast parameter sweep mode is planned for a later release.
-It will build on the same experiment object and parity contracts, but it is not
-part of v0.1.7.
+**Explore**. Fast parameter sweep mode builds on the same experiment object and
+parity contracts. Use sweep mode to evaluate parameter-grid candidates without
+committing each candidate as a durable run, then promote a selected candidate
+when it should become an auditable stored run.
 
 ## The Edge Device
 
@@ -159,10 +160,9 @@ v0.1.x is the research layer:
 - reproducible backtests with next-open fill semantics and an append-only ledger;
 - a TTR indicator adapter with deterministic warmup, vectorized precomputation,
   and session-scoped feature caching;
-- an experiment store with run discovery, provenance, labeling, and archival
-  (v0.1.5+);
-- experiment-first execution, run comparison, strategy-source inspection, and a
-  deterministic demo dataset (v0.1.7).
+- an experiment store with run discovery, provenance, labeling, and archival;
+- experiment-first execution, run comparison, strategy-source inspection,
+  parameter sweeps, promotion context, and a deterministic demo dataset.
 
 Paper and live trading adapters, OMS state machine semantics, and observability
 tooling follow in the v0.2.x and v0.3.x range.
