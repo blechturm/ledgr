@@ -22,7 +22,12 @@ Reads a CSV file and delegates to \code{ledgr_snapshot_from_df()}.
 \details{
 CSV parse and OHLC validation errors are snapshot creation errors. They are
 raised before a snapshot can be loaded into \code{ledgr_experiment()} or executed
-with \code{ledgr_run()}.
+with \code{ledgr_run()}. High-level validation uses general ledgr argument and
+timestamp classes such as \code{ledgr_invalid_args} and
+\code{ledgr_invalid_timestamp}; the low-level CSV import helpers use
+\code{LEDGR_CSV_FORMAT_ERROR}. In both paths, snapshot creation fails before a
+usable snapshot artifact is left behind, so fix the CSV and rerun snapshot
+creation.
 }
 \section{Articles}{
 

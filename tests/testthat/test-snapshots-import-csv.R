@@ -89,6 +89,7 @@ testthat::test_that("bars CSV missing required column fails", {
 
   testthat::expect_error(
     ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE),
+    "fix the CSV and rerun snapshot creation",
     class = "LEDGR_CSV_FORMAT_ERROR"
   )
 })
@@ -107,6 +108,7 @@ testthat::test_that("bad timestamp (no Z) fails", {
 
   testthat::expect_error(
     ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE),
+    "trailing Z",
     class = "LEDGR_CSV_FORMAT_ERROR"
   )
 })
@@ -125,6 +127,7 @@ testthat::test_that("OHLC violation fails", {
 
   testthat::expect_error(
     ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE),
+    "usable snapshot artifact",
     class = "LEDGR_CSV_FORMAT_ERROR"
   )
 })
@@ -170,4 +173,3 @@ testthat::test_that("UTF-8 BOM in bars CSV header is tolerated", {
 
   testthat::expect_true(isTRUE(ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE)))
 })
-

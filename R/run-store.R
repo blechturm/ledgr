@@ -622,7 +622,8 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   `avg_trade` are computed over those closed trade rows. `final_equity` is
 #'   read from the last stored equity row. `sharpe_ratio` uses the comparison
 #'   metric context; the table has exactly one metric context, available through
-#'   `ledgr_metric_context(comparison)`.
+#'   `ledgr_metric_context(comparison)`. Use `as.data.frame(comparison)` or
+#'   tibble operations when exporting report-ready numeric columns.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`

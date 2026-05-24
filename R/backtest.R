@@ -2169,7 +2169,8 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
 #' `ledgr_results()` also does not support `what = "features"`; inspect feature
-#' values at pulse time with `ledgr_pulse_snapshot()`.
+#' values at pulse time with `ledgr_pulse_snapshot()` and
+#' `ledgr_pulse_features()` or `ledgr_pulse_wide()`.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -2256,7 +2257,8 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
 #' `ledgr_results()` also does not support `what = "features"`; inspect feature
-#' values at pulse time with `ledgr_pulse_snapshot()`.
+#' values at pulse time with `ledgr_pulse_snapshot()` and
+#' `ledgr_pulse_features()` or `ledgr_pulse_wide()`.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -2303,6 +2305,12 @@ ledgr_match_result_table <- function(what) {
   if (identical(what, "metrics")) {
     rlang::abort(
       "`ledgr_results()` does not support `what = \"metrics\"`. Use `summary(bt)` for printed interpretation or `ledgr_compute_metrics(bt)` for a named list.",
+      class = "ledgr_invalid_result_table"
+    )
+  }
+  if (identical(what, "features")) {
+    rlang::abort(
+      "`ledgr_results()` does not support `what = \"features\"`. Feature values are pulse-time data; inspect them with `ledgr_pulse_snapshot()` and `ledgr_pulse_features()` or `ledgr_pulse_wide()`.",
       class = "ledgr_invalid_result_table"
     )
   }

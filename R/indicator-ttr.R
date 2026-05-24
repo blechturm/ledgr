@@ -222,6 +222,9 @@ ledgr_ind_ttr <- function(ttr_fn,
 #' `DonchianChannel`. It returns a `ledgr_indicator_bundle` containing ordinary
 #' single-output `ledgr_indicator` objects. The bundle is flattened before
 #' runtime feature computation, so strategies still read scalar feature IDs.
+#' Default bundle IDs are shorter than equivalent hand-written
+#' `ledgr_ind_ttr(output = ...)` IDs; use `naming` or hand-written
+#' single-output calls when exact legacy IDs matter.
 #'
 #' @param ttr_fn TTR function name, for example `"BBands"` or `"MACD"`.
 #' @param input ledgr input shape. Supported values are `"close"`, `"hl"`,
@@ -234,6 +237,8 @@ ledgr_ind_ttr <- function(ttr_fn,
 #'   such as `"bb"` for concise IDs, or `NULL` to opt into raw output names.
 #' @param naming Optional advanced rename escape hatch. Supply a named character
 #'   vector whose names are backend outputs and whose values are feature IDs.
+#'   `naming` renames selected outputs; it does not filter outputs. Use
+#'   `outputs = names(naming)` when renaming a subset.
 #' @param requires_bars Explicit warmup length. Required for unknown TTR
 #'   functions. For known functions this is inferred from explicit arguments.
 #' @param stable_after First stable row. Defaults to `requires_bars`.
@@ -661,7 +666,10 @@ ledgr_ttr_bundle_ids <- function(ttr_fn, outputs, prefix, naming = NULL) {
     missing <- setdiff(outputs, nms)
     if (length(missing) > 0L) {
       rlang::abort(
-        sprintf("`naming` is missing feature ID(s) for output(s): %s.", paste(missing, collapse = ", ")),
+        sprintf(
+          "`naming` is missing feature ID(s) for output(s): %s. `naming` renames selected outputs; it does not filter outputs. Use `outputs = names(naming)` when renaming a subset.",
+          paste(missing, collapse = ", ")
+        ),
         class = "ledgr_invalid_args"
       )
     }

@@ -94,6 +94,14 @@ ranked <- results |>
 candidate <- ledgr_candidate(ranked, 1)
 ```
 
+The sweep table has one metric context for all candidate metrics.
+Inspect it before ranking if the annualization or risk-free-rate
+assumption matters:
+
+``` r
+ledgr_metric_context(results)
+```
+
 To evaluate out of sample, promote against the held-out experiment and
 make the cross-snapshot choice explicit:
 
@@ -130,6 +138,25 @@ train_run <- ledgr_promote(
 Same-snapshot promotion is protected by default. `ledgr_promote()`
 requires the candidate snapshot hash to match the target experiment
 unless you deliberately set `require_same_snapshot = FALSE`.
+
+Same-snapshot replay is the direct way to verify that a selected row is
+commit-ready. Compare the sweep summary with the committed run’s result
+tables and metrics:
+
+``` r
+selected_row <- candidate$row
+train_metrics <- ledgr_compute_metrics(train_run)
+train_equity <- ledgr_results(train_run, what = "equity")
+
+stopifnot(isTRUE(all.equal(
+  selected_row$final_equity[[1]],
+  tail(train_equity$equity, 1)
+)))
+stopifnot(isTRUE(all.equal(
+  selected_row$sharpe_ratio[[1]],
+  train_metrics$sharpe_ratio
+)))
+```
 
 # Parameter Grids And Feature Factories
 
@@ -237,12 +264,24 @@ and warning/error fields are the programmatic inspection surface. Full
 equity, fills, trades, and ledger rows are created only by committed
 runs.
 
+Warnings are part of candidate inspection. A candidate can finish with
+warnings, including `LEDGR_LAST_BAR_NO_FILL`, when a strategy changes
+target on the final available bar and there is no later bar for a
+next-open fill. Inspect the row’s warning fields before promotion; after
+promotion, inspect the committed run with `summary(test_run)`,
+`ledgr_results(test_run, what = "fills")`, and
+`ledgr_promotion_context(test_run)`. If the final-bar warning is
+expected, extend the snapshot by one executable bar to verify that the
+intended target would fill.
+
 Promoted runs write durable promotion context. You can inspect it later:
 
 ``` r
 context <- ledgr_promotion_context(test_run)
 context$selected_candidate
 context$source_sweep
+ledgr_metric_context(context)
+ledgr_metric_context(test_run)
 
 ledgr_run_promotion_context(test_exp, "momentum_locked_test")
 ledgr_run_info(test_exp$snapshot, "momentum_locked_test")$promotion_context
@@ -252,6 +291,12 @@ The context stores a compact selected-candidate record, source-sweep
 metadata, and the filtered/sorted candidate-summary view that was passed
 to `ledgr_candidate()`. It does not store full ledger rows, full equity
 curves, or a complete sweep artifact.
+
+The source sweep metric context and the committed run metric context
+remain separate. Use
+`ledgr_metric_context(ledgr_promotion_context(test_run))` for the
+context that ranked the candidate, and `ledgr_metric_context(test_run)`
+for the committed run’s default analysis context.
 
 For result inspection after promotion, use the normal run tools such as
 `summary(test_run)`, `ledgr_compute_metrics(test_run)`, and

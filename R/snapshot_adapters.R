@@ -445,7 +445,11 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' @details
 #' CSV parse and OHLC validation errors are snapshot creation errors. They are
 #' raised before a snapshot can be loaded into `ledgr_experiment()` or executed
-#' with `ledgr_run()`.
+#' with `ledgr_run()`. High-level validation uses general ledgr argument and
+#' timestamp classes such as `ledgr_invalid_args` and `ledgr_invalid_timestamp`;
+#' the low-level CSV import helpers use `LEDGR_CSV_FORMAT_ERROR`. In both paths,
+#' snapshot creation fails before a usable snapshot artifact is left behind, so
+#' fix the CSV and rerun snapshot creation.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
@@ -526,7 +530,7 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' @param from Start date (character, Date, or POSIXct).
 #' @param to End date (character, Date, or POSIXct).
 #' @param db_path Optional DuckDB file path (default: tempfile).
-#' @param snapshot_id Optional snapshot id (default: v0.1.1 canonical generation).
+#' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
 #' @param ... Additional arguments passed to `quantmod::getSymbols()`.
 #' @return A sealed `ledgr_snapshot` object.
 #' @section Articles:
@@ -541,6 +545,8 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #'     from = "2020-01-01",
 #'     to = "2020-02-01"
 #'   )
+#'   ledgr_snapshot_info(snapshot)
+#'   ledgr_snapshot_seal(snapshot) # idempotent verification on sealed handles
 #'   ledgr_snapshot_close(snapshot)
 #' }
 #' @export

@@ -34,6 +34,9 @@
 #' table has exactly one sweep-level metric context, available with
 #' `ledgr_metric_context(results)`, and promotion context records that source
 #' sweep context separately from the committed run's own metric context.
+#' Candidate warnings, including `LEDGR_LAST_BAR_NO_FILL`, are row-level
+#' diagnostics. Inspect them before promotion; committed runs expose their own
+#' result tables and promotion context.
 #'
 #' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
 #' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3

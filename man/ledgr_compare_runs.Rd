@@ -37,7 +37,8 @@ counts closed trade rows, not open-only fill rows; \code{win_rate} and
 \code{avg_trade} are computed over those closed trade rows. \code{final_equity} is
 read from the last stored equity row. \code{sharpe_ratio} uses the comparison
 metric context; the table has exactly one metric context, available through
-\code{ledgr_metric_context(comparison)}.
+\code{ledgr_metric_context(comparison)}. Use \code{as.data.frame(comparison)} or
+tibble operations when exporting report-ready numeric columns.
 }
 \description{
 Reads stored run metadata, provenance, telemetry, and result artifacts from a

@@ -149,7 +149,7 @@ tickets:
 
   - id: "LDG-2310"
     title: "Metric-Context Documentation And Inspection Updates"
-    status: "todo"
+    status: "in_review"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -168,7 +168,7 @@ tickets:
 
   - id: "LDG-2311"
     title: "Auditr Documentation And Message Polish"
-    status: "todo"
+    status: "in_review"
     priority: "P2"
     effort: "M"
     dependencies:

@@ -22,7 +22,7 @@ ledgr_snapshot_from_yahoo(
 
 \item{db_path}{Optional DuckDB file path (default: tempfile).}
 
-\item{snapshot_id}{Optional snapshot id (default: v0.1.1 canonical generation).}
+\item{snapshot_id}{Optional snapshot id. When \code{NULL}, ledgr generates one.}
 
 \item{...}{Additional arguments passed to \code{quantmod::getSymbols()}.}
 }
@@ -55,6 +55,8 @@ if (FALSE) {
     from = "2020-01-01",
     to = "2020-02-01"
   )
+  ledgr_snapshot_info(snapshot)
+  ledgr_snapshot_seal(snapshot) # idempotent verification on sealed handles
   ledgr_snapshot_close(snapshot)
 }
 }

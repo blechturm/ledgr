@@ -733,7 +733,7 @@ scope: provenance
 Priority: P2
 Effort: M
 Dependencies: LDG-2307, LDG-2308, LDG-2309
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -784,6 +784,25 @@ surface: metric_context_inspection
 scope: installed_docs
 ```
 
+### Completion Notes
+
+- Added metric-context inspection guidance to metrics/accounting docs for
+  summaries, `ledgr_metrics`, comparisons, sweep tables, and promotion context.
+- Documented market templates, scalar shorthand, explicit intraday calendars,
+  default US equity daily assumptions, call-time sensitivity overrides, and the
+  source-sweep versus committed-run context distinction.
+- Added experiment-store compare-runs setup guidance for passing
+  `metric_context = ledgr_metric_context(exp)` and report-ready numeric
+  comparison export with `as.data.frame()`.
+- Added sweep documentation for source sweep metric context, same-snapshot
+  replay verification, promotion context inspection, and final-bar warning
+  handling.
+- Updated the invalid `ledgr_results(bt, what = "features")` runtime message
+  and help text to point to `ledgr_pulse_snapshot()`,
+  `ledgr_pulse_features()`, and `ledgr_pulse_wide()`.
+- Added documentation-contract assertions for the new public metric-context,
+  comparison, sweep, promotion, and feature-inspection claims.
+
 ---
 
 ## LDG-2311: Auditr Documentation And Message Polish
@@ -791,7 +810,7 @@ scope: installed_docs
 Priority: P2
 Effort: M
 Dependencies: LDG-2302
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -841,6 +860,29 @@ type: documentation
 surface: auditr_polish
 scope: installed_docs
 ```
+
+### Completion Notes
+
+- Added Yahoo snapshot sealing/idempotence guidance and a task-intent map entry
+  for `ledgr_snapshot_from_yahoo()`.
+- Documented high-level CSV helper class boundaries while preserving existing
+  condition classes; low-level CSV runtime messages now state failed artifact
+  state and the fix-and-rerun action.
+- Improved timestamp and result-table messages without changing condition
+  classes.
+- Documented bundle ID asymmetry, partial `naming` plus explicit `outputs`, and
+  improved duplicate bundle alias wording to mention generated feature IDs and
+  prefix changes.
+- Expanded strategy-development troubleshooting with fills extraction,
+  zero-fill versus zero-closed-trade distinction, pulse-level target-name
+  `setdiff()` checks, helper-sharing Tier 3 guidance, and a compact Tier 3
+  hard-failure example.
+- Added explicit real-data baseline strategy patterns for flat, buy-and-hold,
+  equal-weight, and single-instrument comparisons without adding benchmark
+  helper APIs.
+- Routed `ledgr_save_help()` scalar-only behavior and raw auditr environment
+  friction out of ledgr runtime scope; no parameter-grid helper,
+  helper-sharing API, benchmark API, or external adapter was introduced.
 
 ---
 

@@ -15,12 +15,13 @@
 #' iso_utc(as.POSIXct("2020-01-01 09:30:00", tz = "UTC"))
 #' @export
 iso_utc <- function(x) {
+  unsupported_msg <- "`x` must be a UTC timestamp such as '2020-01-01T00:00:00Z' with trailing `Z`, a Date, or POSIXct."
   validate_hms <- function(ts_chr) {
     h <- as.integer(substr(ts_chr, 12, 13))
     m <- as.integer(substr(ts_chr, 15, 16))
     s <- as.integer(substr(ts_chr, 18, 19))
     if (anyNA(c(h, m, s)) || h < 0L || h > 23L || m < 0L || m > 59L || s < 0L || s > 59L) {
-      rlang::abort("Unsupported timestamp format in `x`.", class = "ledgr_invalid_timestamp")
+      rlang::abort(unsupported_msg, class = "ledgr_invalid_timestamp")
     }
     invisible(TRUE)
   }
@@ -50,7 +51,7 @@ iso_utc <- function(x) {
   if (grepl("^\\d{4}-\\d{2}-\\d{2}$", x)) {
     d <- as.Date(x, format = "%Y-%m-%d")
     if (is.na(d)) {
-      rlang::abort("Unsupported timestamp format in `x`.", class = "ledgr_invalid_timestamp")
+      rlang::abort(unsupported_msg, class = "ledgr_invalid_timestamp")
     }
     return(sprintf("%sT00:00:00Z", format(d, "%Y-%m-%d")))
   }
@@ -59,7 +60,7 @@ iso_utc <- function(x) {
     validate_hms(x)
     ts <- as.POSIXct(x, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
     if (is.na(ts)) {
-      rlang::abort("Unsupported timestamp format in `x`.", class = "ledgr_invalid_timestamp")
+      rlang::abort(unsupported_msg, class = "ledgr_invalid_timestamp")
     }
     return(format(ts, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
   }
@@ -68,12 +69,12 @@ iso_utc <- function(x) {
     validate_hms(paste0(x, "Z"))
     ts <- as.POSIXct(x, tz = "UTC", format = "%Y-%m-%dT%H:%M:%S")
     if (is.na(ts)) {
-      rlang::abort("Unsupported timestamp format in `x`.", class = "ledgr_invalid_timestamp")
+      rlang::abort(unsupported_msg, class = "ledgr_invalid_timestamp")
     }
     return(format(ts, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
   }
 
-  rlang::abort("Unsupported timestamp format in `x`.", class = "ledgr_invalid_timestamp")
+  rlang::abort(unsupported_msg, class = "ledgr_invalid_timestamp")
 }
 
 #' Parse timestamps as UTC POSIXct values
