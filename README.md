@@ -46,7 +46,7 @@ library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-## First Experimen
+## First Experiment
 
 Use the bundled demo bars for a first run. They are deterministic and
 require no network access.
