@@ -295,7 +295,7 @@ scope: runtime_contract
 Priority: P1
 Effort: M
 Dependencies: LDG-2302
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -345,6 +345,27 @@ surface: metric_context
 scope: public_api
 ```
 
+### Completion Notes
+
+- Added public `ledgr_metric_context()` constructor/accessor behavior with
+  `ledgr_metric_context_resolve()` for `NULL`, scalar annual-rate,
+  `ledgr_risk_free_rate`, and existing-context inputs.
+- Added `ledgr_metric_us_equity()` and `ledgr_metric_crypto()` as the thin
+  market-template UX path.
+- Added scalar subordinate `ledgr_risk_free_rate()` with finite annual-rate
+  validation, optional label/source/as_of provenance, and ISO date
+  normalization in the hash payload.
+- Reserved `benchmark`, `market_factor`, and `mar` as NULL-only future
+  provider slots; no external provider lookup or hidden download was added.
+- Added `metric_context_version = 1L` and `ledgr_metric_context_hash()` over
+  canonical JSON of normalized fields, omitting NULL reserved provider fields.
+- Kept human display labels out of metric-context hash identity while preserving
+  `source`, rate, date, calendar decomposition, and schema version as
+  identity-relevant fields.
+- Made `ledgr_metric_context(NULL)` and `ledgr_metric_context_resolve(NULL)`
+  consistently return the default metric context.
+- Added constructor/hash tests and export-lock coverage for the new public API.
+
 ---
 
 ## LDG-2305: Calendar Constructors And Annualization Policy
@@ -352,7 +373,7 @@ scope: public_api
 Priority: P1
 Effort: M
 Dependencies: LDG-2302
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -398,6 +419,24 @@ type: feature
 surface: annualization
 scope: public_api
 ```
+
+### Completion Notes
+
+- Added public `ledgr_calendar()` with explicit
+  `trading_days_per_year * bars_per_day` decomposition and a computed
+  `bars_per_year` field.
+- Added `ledgr_calendar_us_equity()` and `ledgr_calendar_crypto()` templates;
+  US equity defaults to 252 daily bars, and `bars_per_day = 390L` represents
+  US equity minute bars as `252 * 390`.
+- Added calendar print labels that expose source, days/year, bars/day, and
+  bars/year so later summary surfaces can disclose annualization context.
+- Added an internal mismatch-warning helper for supplied calendars whose
+  observed bar count exceeds calendar capacity, with guidance to use explicit
+  `bars_per_day` for intraday US equity data.
+- Kept existing `snap_to_frequency()` inference untouched as the legacy
+  no-context fallback for later integration tickets.
+- Added calendar constructor, annualization arithmetic, warning, and
+  documentation-contract tests.
 
 ---
 

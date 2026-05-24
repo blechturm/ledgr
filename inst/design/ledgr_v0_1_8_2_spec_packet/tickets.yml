@@ -48,7 +48,7 @@ tickets:
 
   - id: "LDG-2304"
     title: "Metric Context Constructors, Validation, And Hashing"
-    status: "todo"
+    status: "in_review"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -64,7 +64,7 @@ tickets:
 
   - id: "LDG-2305"
     title: "Calendar Constructors And Annualization Policy"
-    status: "todo"
+    status: "in_review"
     priority: "P1"
     effort: "M"
     dependencies:

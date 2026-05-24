@@ -806,6 +806,9 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     passed_warmup = c("strategy-development", "indicators"),
     ledgr_strategy_preflight = "reproducibility"
   )
+  expected$ledgr_calendar <- "metrics-and-accounting"
+  expected$ledgr_metric_context <- "metrics-and-accounting"
+  expected$ledgr_risk_free_rate <- "metrics-and-accounting"
 
   for (page in names(expected)) {
     path <- file.path(man_dir, paste0(page, ".Rd"))
@@ -815,6 +818,26 @@ testthat::test_that("core help pages point to installed articles with browser-fr
       testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE, info = page)
     }
   }
+})
+
+testthat::test_that("metric context help pages disclose calendar defaults and provider non-scope", {
+  root <- testthat::test_path("..", "..")
+  man_dir <- file.path(root, "man")
+  testthat::skip_if_not(dir.exists(man_dir), "man pages not available during installed-package tests")
+
+  calendar_help <- paste(readLines(file.path(man_dir, "ledgr_calendar.Rd"), warn = FALSE), collapse = "\n")
+  context_help <- paste(readLines(file.path(man_dir, "ledgr_metric_context.Rd"), warn = FALSE), collapse = "\n")
+  rf_help <- paste(readLines(file.path(man_dir, "ledgr_risk_free_rate.Rd"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(calendar_help, "trading_days_per_year \\* bars_per_day")
+  testthat::expect_match(calendar_help, "ledgr_calendar_us_equity\\(bars_per_day = 390L\\)")
+  testthat::expect_match(calendar_help, "ledgr_calendar_crypto()", fixed = TRUE)
+  testthat::expect_match(context_help, "metric-assumption object", fixed = TRUE)
+  testthat::expect_match(context_help, "A numeric\\s+scalar first argument is treated as \\\\code\\{risk_free_rate\\}")
+  testthat::expect_match(context_help, "ledgr_metric_us_equity", fixed = TRUE)
+  testthat::expect_match(context_help, "ledgr_metric_crypto", fixed = TRUE)
+  testthat::expect_match(rf_help, "not a provider adapter", fixed = TRUE)
+  testthat::expect_match(rf_help, "annual risk-free rate", fixed = TRUE)
 })
 
 testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
