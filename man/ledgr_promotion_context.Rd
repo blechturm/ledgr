@@ -20,7 +20,10 @@ Promotion context is compact selection-audit metadata written by
 \code{\link[=ledgr_promote]{ledgr_promote()}}. It stores the selected candidate, source sweep metadata,
 and the filtered/sorted candidate-summary view used at selection time. It is
 not a full sweep artifact and does not store full ledger rows or equity
-curves for all candidates.
+curves for all candidates. For sweep-promoted runs,
+\code{ledgr_metric_context(ledgr_promotion_context(bt))} returns the source sweep
+metric context used to rank the candidate. The committed run's own metric
+context remains available from \code{ledgr_metric_context(bt)}.
 }
 \section{Articles}{
 

@@ -209,10 +209,48 @@ ledgr_metric_context.ledgr_metrics <- function(x, ...) {
 }
 
 #' @export
+ledgr_metric_context.ledgr_comparison <- function(x, ...) {
+  ledgr_metric_context_from_table_attr(x, "`ledgr_comparison`", ...)
+}
+
+#' @export
+ledgr_metric_context.ledgr_sweep_results <- function(x, ...) {
+  ledgr_metric_context_from_table_attr(x, "`ledgr_sweep_results`", ...)
+}
+
+#' @export
+ledgr_metric_context.ledgr_promotion_context <- function(x, ...) {
+  ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
+  source_sweep <- x$source_sweep
+  if (is.list(source_sweep) && is.list(source_sweep$metric_context)) {
+    return(ledgr_metric_context_from_record(source_sweep$metric_context))
+  }
+  rlang::abort(
+    "`x` does not carry a source sweep metric context.",
+    class = c("ledgr_missing_metric_context", "ledgr_invalid_args")
+  )
+}
+
+#' @export
 ledgr_metric_context.default <- function(x, ...) {
   ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
   rlang::abort(
     "`x` does not carry a ledgr metric context.",
+    class = c("ledgr_missing_metric_context", "ledgr_invalid_args")
+  )
+}
+
+ledgr_metric_context_from_table_attr <- function(x, label, ...) {
+  ledgr_check_empty_dots(list(...), "ledgr_metric_context() accessor")
+  context <- attr(x, "metric_context", exact = TRUE)
+  if (inherits(context, "ledgr_metric_context")) {
+    return(context)
+  }
+  if (is.list(context)) {
+    return(ledgr_metric_context_from_record(context))
+  }
+  rlang::abort(
+    sprintf("%s does not carry a ledgr metric context.", label),
     class = c("ledgr_missing_metric_context", "ledgr_invalid_args")
   )
 }

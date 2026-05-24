@@ -48,7 +48,7 @@ tickets:
 
   - id: "LDG-2304"
     title: "Metric Context Constructors, Validation, And Hashing"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -64,7 +64,7 @@ tickets:
 
   - id: "LDG-2305"
     title: "Calendar Constructors And Annualization Policy"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -98,7 +98,7 @@ tickets:
 
   - id: "LDG-2307"
     title: "Metric Kernel, Summary, And Single-Run Metrics"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -117,7 +117,7 @@ tickets:
 
   - id: "LDG-2308"
     title: "Comparison And Sweep Metric-Context Threading"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -134,7 +134,7 @@ tickets:
 
   - id: "LDG-2309"
     title: "Promotion Context Metric Disclosure"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:

@@ -373,7 +373,7 @@ scope: public_api
 Priority: P1
 Effort: M
 Dependencies: LDG-2302
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -445,7 +445,7 @@ scope: public_api
 Priority: P1
 Effort: L
 Dependencies: LDG-2304, LDG-2305
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -524,7 +524,7 @@ scope: v0.1.8.2
 Priority: P1
 Effort: L
 Dependencies: LDG-2304, LDG-2305, LDG-2306
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -599,7 +599,7 @@ scope: public_api
 Priority: P1
 Effort: L
 Dependencies: LDG-2307
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -651,6 +651,22 @@ surface: comparison_sweep_metrics
 scope: public_api
 ```
 
+### Completion Notes
+
+- Added `metric_context = NULL` to snapshot-first `ledgr_compare_runs()` and
+  kept `ledgr_compare_runs(exp, ...)` deferred; experiment context can be
+  passed explicitly with `metric_context = ledgr_metric_context(exp)`.
+- Removed the comparison hardcoded zero-risk-free metric path by computing
+  comparison metrics from one table-level `metric_kernel`.
+- Added table-level metric context attributes and
+  `ledgr_metric_context(comparison)` / `ledgr_metric_context(sweep)` accessors.
+- Added mixed observed-cadence detection for comparisons with fail-loud
+  actionable wording.
+- Threaded one sweep-level metric context through `ledgr_sweep()` and replaced
+  the sweep candidate `bars_per_year` metric path with `metric_kernel`.
+- Added regression coverage for comparison context, mixed cadence, sweep
+  context, and metric-kernel candidate metrics.
+
 ---
 
 ## LDG-2309: Promotion Context Metric Disclosure
@@ -658,7 +674,7 @@ scope: public_api
 Priority: P1
 Effort: M
 Dependencies: LDG-2308
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -699,6 +715,16 @@ type: feature
 surface: promotion_context
 scope: provenance
 ```
+
+### Completion Notes
+
+- Recorded source sweep metric-context record, hash, and version in promotion
+  source-sweep metadata when candidates come from `ledgr_sweep()`.
+- Returned parsed promotion contexts as `ledgr_promotion_context` objects and
+  added `ledgr_metric_context(promotion_context)` for source sweep assumptions.
+- Preserved the distinction between source sweep context and committed run
+  context; promoted runs keep their own stored run metric context.
+- Updated promotion help text and tests to reflect the three-context vocabulary.
 
 ---
 

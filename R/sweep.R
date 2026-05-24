@@ -30,6 +30,11 @@
 #' or [ledgr_run()]. Same-snapshot promotion is useful for audit and replay, but
 #' remains in-sample.
 #'
+#' Sweep candidate metrics use the experiment's metric context. The returned
+#' table has exactly one sweep-level metric context, available with
+#' `ledgr_metric_context(results)`, and promotion context records that source
+#' sweep context separately from the committed run's own metric context.
+#'
 #' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
 #' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
 #' strategy preflight failures still abort. Failed rows can be inspected with
@@ -92,7 +97,8 @@ ledgr_sweep <- function(exp,
   bars_mat <- ledgr_sweep_bars_matrix(bars_by_id, exp$universe)
   pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
   pulses_iso <- vapply(pulses_posix, ledgr_normalize_ts_utc, character(1))
-  bars_per_year <- ledgr_bars_per_year_from_pulses(pulses_posix)
+  metric_context <- ledgr_metric_context_resolve(exp$metric_context)
+  metric_kernel <- ledgr_metric_kernel(context = metric_context, pulses = pulses_posix)
 
   if (is.null(precomputed_features)) {
     resolved <- ledgr_resolve_feature_candidates(exp, param_grid, stop_on_error = FALSE)
@@ -151,7 +157,7 @@ ledgr_sweep <- function(exp,
           bars_mat = bars_mat,
           pulses_posix = pulses_posix,
           pulses_iso = pulses_iso,
-          bars_per_year = bars_per_year,
+          metric_kernel = metric_kernel,
           candidate = candidate,
           candidate_feature_row = feature_row,
           precomputed_features = precomputed_features,
@@ -206,6 +212,9 @@ ledgr_sweep <- function(exp,
   attr(out, "feature_union") <- feature_union
   attr(out, "feature_union_hash") <- ledgr_feature_set_hash(feature_union)
   attr(out, "candidate_features") <- resolved$candidate_features
+  attr(out, "metric_context") <- metric_context
+  attr(out, "metric_context_hash") <- ledgr_metric_context_hash(metric_context)
+  attr(out, "metric_context_version") <- as.integer(metric_context$metric_context_version)
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
     fill_model = exp$fill_model,
@@ -453,7 +462,8 @@ ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
     "sweep_id", "snapshot_id", "snapshot_hash", "scoring_range", "universe",
     "master_seed", "seed_contract", "evaluation_scope", "strategy_hash",
     "strategy_name", "strategy_source_capture_method", "strategy_preflight",
-    "feature_union", "feature_union_hash", "execution_assumptions"
+    "feature_union", "feature_union_hash", "metric_context",
+    "metric_context_hash", "metric_context_version", "execution_assumptions"
   )
   stats::setNames(lapply(keys, function(key) attr(results, key, exact = TRUE)), keys)
 }
@@ -533,7 +543,7 @@ ledgr_sweep_run_candidate <- function(exp,
                                       bars_mat,
                                       pulses_posix,
                                       pulses_iso,
-                                      bars_per_year,
+                                      metric_kernel,
                                       candidate,
                                       candidate_feature_row,
                                       precomputed_features,
@@ -619,7 +629,7 @@ ledgr_sweep_run_candidate <- function(exp,
   metrics <- ledgr_metrics_from_equity_fills(
     equity = equity,
     fills = fills,
-    bars_per_year = bars_per_year
+    metric_kernel = metric_kernel
   )
   final_equity <- if (nrow(equity) > 0L) equity$equity[[nrow(equity)]] else NA_real_
 

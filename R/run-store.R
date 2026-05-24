@@ -413,7 +413,7 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
   tibble::as_tibble(do.call(rbind, stats))
 }
 
-ledgr_compare_runs_metric_stats <- function(con, run_ids) {
+ledgr_compare_runs_metric_stats <- function(con, run_ids, metric_kernel) {
   empty <- tibble::tibble(
     run_id = run_ids,
     annualized_return = rep(NA_real_, length(run_ids)),
@@ -444,6 +444,23 @@ ledgr_compare_runs_metric_stats <- function(con, run_ids) {
     return(empty)
   }
 
+  observed_bars_per_year <- vapply(run_ids, function(run_id) {
+    run_rows <- rows[as.character(rows$run_id) == run_id, , drop = FALSE]
+    if (nrow(run_rows) == 0L) return(NA_real_)
+    ledgr_compare_runs_bars_per_year(run_rows$ts_utc)
+  }, numeric(1))
+  observed_bars_per_year <- observed_bars_per_year[is.finite(observed_bars_per_year)]
+  if (length(unique(observed_bars_per_year)) > 1L) {
+    rlang::abort(
+      paste(
+        "Cannot compare runs with mixed observed bar cadences in one comparison table.",
+        "Pass run IDs with a single cadence or inspect the runs separately.",
+        "A comparison table has exactly one metric_context."
+      ),
+      class = "ledgr_mixed_metric_cadence"
+    )
+  }
+
   stats <- lapply(run_ids, function(run_id) {
     run_rows <- rows[as.character(rows$run_id) == run_id, , drop = FALSE]
     if (nrow(run_rows) == 0L) {
@@ -451,13 +468,16 @@ ledgr_compare_runs_metric_stats <- function(con, run_ids) {
     }
     equity <- data.frame(equity = as.numeric(run_rows$equity))
     returns <- compute_period_returns(equity$equity)
-    bars_per_year <- ledgr_compare_runs_bars_per_year(run_rows$ts_utc)
     positions_value <- if ("positions_value" %in% names(run_rows)) as.numeric(run_rows$positions_value) else numeric(0)
     tibble::tibble(
       run_id = run_id,
-      annualized_return = compute_annualized_return(equity, bars_per_year),
-      volatility = compute_annualized_volatility(returns, bars_per_year),
-      sharpe_ratio = compute_sharpe_ratio(returns, bars_per_year, risk_free_rate = 0),
+      annualized_return = compute_annualized_return(equity, metric_kernel$bars_per_year),
+      volatility = compute_annualized_volatility(returns, metric_kernel$bars_per_year),
+      sharpe_ratio = compute_sharpe_ratio(
+        returns,
+        metric_kernel$bars_per_year,
+        rf_period_return = metric_kernel$rf_period_return
+      ),
       time_in_market = if (length(positions_value) > 0L) mean(abs(positions_value) > 1e-6) else NA_real_
     )
   })
@@ -477,7 +497,10 @@ ledgr_compare_runs_bars_per_year <- function(ts_utc) {
   snap_to_frequency(stats::median(seconds))
 }
 
-ledgr_compare_runs_select <- function(rows, fill_stats, metric_stats = NULL) {
+ledgr_compare_runs_select <- function(rows,
+                                      fill_stats,
+                                      metric_stats = NULL,
+                                      metric_context = NULL) {
   out <- rows
   out$n_trades <- NULL
   fill_idx <- match(out$run_id, fill_stats$run_id)
@@ -518,11 +541,20 @@ ledgr_compare_runs_select <- function(rows, fill_stats, metric_stats = NULL) {
     "snapshot_hash"
   )
   out <- out[, intersect(cols, names(out)), drop = FALSE]
-  ledgr_classed_tibble(out, "ledgr_comparison")
+  attrs <- list()
+  if (!is.null(metric_context)) {
+    attrs$metric_context <- metric_context
+    attrs$metric_context_hash <- ledgr_metric_context_hash(metric_context)
+    attrs$metric_context_version <- as.integer(metric_context$metric_context_version)
+  }
+  ledgr_classed_tibble(out, "ledgr_comparison", attrs = attrs)
 }
 
-ledgr_classed_tibble <- function(x, class_name) {
+ledgr_classed_tibble <- function(x, class_name, attrs = list()) {
   out <- tibble::as_tibble(x)
+  for (name in names(attrs)) {
+    attr(out, name) <- attrs[[name]]
+  }
   class(out) <- c(class_name, setdiff(class(out), class_name))
   out
 }
@@ -580,15 +612,17 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   completed runs. If `NULL`, compares all non-archived completed runs.
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
 #' @param metrics Metrics set. Only `"standard"` is supported.
+#' @param metric_context Optional metric context for this comparison table.
+#'   `NULL` uses the default context. To compare with an experiment's context,
+#'   call `ledgr_compare_runs(snapshot, metric_context = ledgr_metric_context(exp))`.
 #' @return A `ledgr_comparison` object, which is a classed tibble with one row
 #'   per completed run. Metric columns are raw numeric values for ranking and
 #'   filtering; formatted percentages are a print-only concern. `n_trades`
 #'   counts closed trade rows, not open-only fill rows; `win_rate` and
 #'   `avg_trade` are computed over those closed trade rows. `final_equity` is
-#'   read from the last stored equity row. `sharpe_ratio` uses the default
-#'   risk-free rate of `0` and cadence-based annualization inferred from stored
-#'   equity timestamps; use [ledgr_compute_metrics()] directly when inspecting a
-#'   single run with a non-zero risk-free rate.
+#'   read from the last stored equity row. `sharpe_ratio` uses the comparison
+#'   metric context; the table has exactly one metric context, available through
+#'   `ledgr_metric_context(comparison)`.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
@@ -613,9 +647,13 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' ledgr_compare_runs(snapshot, run_ids = c("qty-1", "qty-2"))
 #' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALSE, metrics = c("standard")) {
+ledgr_compare_runs <- function(snapshot,
+                               run_ids = NULL,
+                               include_archived = FALSE,
+                               metrics = c("standard"),
+                               metric_context = NULL) {
   if (!is.character(metrics) || length(metrics) != 1L || !identical(metrics, "standard")) {
-    rlang::abort("Only metrics = 'standard' is supported in v0.1.7.", class = "ledgr_invalid_args")
+    rlang::abort("Only metrics = 'standard' is supported.", class = "ledgr_invalid_args")
   }
   if (!is.logical(include_archived) || length(include_archived) != 1L || is.na(include_archived)) {
     rlang::abort("`include_archived` must be TRUE or FALSE.", class = "ledgr_invalid_args")
@@ -625,6 +663,8 @@ ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALS
       rlang::abort("`run_ids` must be NULL or a character vector of non-empty run IDs.", class = "ledgr_invalid_args")
     }
   }
+  metric_context <- ledgr_metric_context_resolve(metric_context)
+  metric_kernel <- ledgr_metric_kernel(context = metric_context)
 
   db_path <- ledgr_run_store_snapshot_path(snapshot)
   snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
@@ -673,13 +713,14 @@ ledgr_compare_runs <- function(snapshot, run_ids = NULL, include_archived = FALS
         volatility = numeric(),
         sharpe_ratio = numeric(),
         time_in_market = numeric()
-      )
+      ),
+      metric_context = metric_context
     ))
   }
   unique_run_ids <- as.character(unique(rows$run_id))
   fill_stats <- ledgr_compare_runs_fill_stats(opened$con, unique_run_ids)
-  metric_stats <- ledgr_compare_runs_metric_stats(opened$con, unique_run_ids)
-  out <- ledgr_compare_runs_select(rows, fill_stats, metric_stats)
+  metric_stats <- ledgr_compare_runs_metric_stats(opened$con, unique_run_ids, metric_kernel = metric_kernel)
+  out <- ledgr_compare_runs_select(rows, fill_stats, metric_stats, metric_context = metric_context)
   out
 }
 
