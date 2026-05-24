@@ -120,7 +120,7 @@ scope: pre_spec
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -175,6 +175,22 @@ type: governance
 surface: design_packet
 scope: v0.1.8.2
 ```
+
+### Completion Notes
+
+- Closed the metric-context scope decisions: `ledgr_risk_free_rate()` ships as
+  a scalar subordinate object; `ledgr_risk_free_series()` remains design-only;
+  `ledgr_compare_runs(exp, ...)` is deferred behind the required snapshot-first
+  `metric_context = NULL` path.
+- Closed auditr policy decisions: resolved immutable external scalars remain
+  `tier_2` with stronger docs; bundle IDs remain as shipped in v0.1.8.1 with
+  documented asymmetry and `naming = ...` parity guidance; high-level CSV
+  helpers keep their current class boundary with clearer docs/messages rather
+  than adding a new class hierarchy.
+- Retained indicator codebase Phase 2 as a P2 v0.1.8.2 cleanup track.
+- Confirmed deferred roadmap surfaces remain out of scope: external adapters,
+  beta/benchmark APIs, grid helpers, helper-sharing API, parallel sweep,
+  target-risk, OMS, walk-forward, and random-slice validation.
 
 ---
 
@@ -259,8 +275,8 @@ for metric assumptions.
 - Implement `ledgr_metric_us_equity()` and `ledgr_metric_crypto()` templates.
 - Implement `ledgr_metric_context_resolve()`.
 - Implement `ledgr_metric_context_hash()` and schema version handling.
-- If accepted by LDG-2302, implement `ledgr_risk_free_rate()`; otherwise
-  explicitly defer it in docs/spec notes.
+- Implement `ledgr_risk_free_rate()` as a scalar subordinate object for
+  named/manual annual risk-free-rate assumptions.
 - Validate scalar risk-free rates as finite annual values greater than `-1`.
 - Reserve `benchmark`, `market_factor`, and `mar` fields as `NULL` provider
   slots without implementing providers.
@@ -487,8 +503,9 @@ standalone `bars_per_year` in the sweep candidate path with `metric_kernel`.
 
 - Add `metric_context = NULL` to `ledgr_compare_runs()` while preserving the
   required snapshot-first form.
-- Apply the LDG-2302 decision for optional `ledgr_compare_runs(exp, ...)`
-  support.
+- Defer `ledgr_compare_runs(exp, ...)`; implement the snapshot-first
+  `metric_context = NULL` path and document explicit
+  `metric_context = ledgr_metric_context(exp)` usage for experiment context.
 - Remove hardcoded `risk_free_rate = 0` from comparison metrics and consume
   the comparison metric context.
 - Fail loudly on incompatible mixed-cadence comparisons.
@@ -671,8 +688,8 @@ metric-context implementation.
   or explicitly deferred.
 - No parameter-grid helper, helper-sharing API, benchmark API, or external
   adapter is introduced.
-- Runtime message changes preserve existing condition classes unless LDG-2302
-  explicitly approved a small class-boundary change.
+- Runtime message changes preserve existing condition classes; high-level CSV
+  helper class boundaries are documented rather than redesigned in v0.1.8.2.
 
 ### Verification
 
@@ -703,8 +720,8 @@ Status: Todo
 
 ### Description
 
-If retained by LDG-2302, complete the accepted Phase 2 indicator file/role
-cleanup as a mechanical refactor only.
+Complete the accepted Phase 2 indicator file/role cleanup as a mechanical
+refactor only.
 
 ### Tasks
 

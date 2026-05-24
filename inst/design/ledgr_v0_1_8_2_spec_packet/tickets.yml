@@ -18,7 +18,7 @@ tickets:
 
   - id: "LDG-2302"
     title: "Scope Routing And Maintainer Decision Gate"
-    status: "todo"
+    status: "done"
     priority: "P0"
     effort: "S"
     dependencies: []

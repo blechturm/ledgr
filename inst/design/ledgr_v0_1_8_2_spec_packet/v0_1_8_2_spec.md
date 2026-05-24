@@ -1,9 +1,10 @@
 # ledgr v0.1.8.2 Spec
 
-**Status:** Draft planning baseline. Not yet ticket-cut final.
+**Status:** Ticket-cut baseline for v0.1.8.2 implementation.
 **Target Branch:** `v0.1.8.2`
-**Scope:** Metric context and risk-free-rate assumptions, plus indicator
-codebase Phase 2 cleanup if it remains low-risk after review.
+**Scope:** Metric context and risk-free-rate assumptions, auditr-routed
+preflight alignment and documentation/message polish, plus indicator codebase
+Phase 2 cleanup.
 **Auditr Input:** The v0.1.8.2 auditr run and triage report have been added
 to this packet. Confirmed bugs and high-value improvements from that triage are
 routed below; final ticket cut still requires maintainer decisions for the open
@@ -35,10 +36,9 @@ Supporting context:
 - `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_spec.md`
 - `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_tickets.md`
 
-Pending inputs before final ticket cut:
+Post-ticket-cut maintenance input:
 
-- maintainer routing decisions for the open policy items in Section 10;
-- final ticket assignment for accepted auditr fixes and documentation polish.
+- final review of implementation tickets after any scope amendment.
 
 This spec does not treat auditr rows as automatically true package defects.
 Rows are evidence. Ticket cut must still distinguish documentation gaps,
@@ -82,7 +82,7 @@ Roadmap placement:
 
 | Release | Scope |
 | --- | --- |
-| v0.1.8.2 | Metric context, risk-free-rate assumptions, and possible indicator codebase Phase 2 cleanup. |
+| v0.1.8.2 | Metric context, risk-free-rate assumptions, preflight alignment, and indicator codebase Phase 2 cleanup. |
 | v0.1.8.3 | Single-core sweep optimization after metric-kernel semantics settle. |
 | v0.1.8.4 | Parameter-grid quality-of-life helpers. |
 | v0.1.8.5 | Parallel sweep dispatch after serial semantics, metrics, and grid UX stabilize. |
@@ -136,7 +136,7 @@ Metric context:
 - `metric_kernel` replacing standalone sweep-candidate `bars_per_year`;
 - docs and print output disclosing risk-free-rate and calendar assumptions.
 
-Indicator cleanup, if accepted at ticket cut:
+Indicator cleanup:
 
 - rename `R/indicators_builtin.R` to `R/indicator-builtins.R`;
 - rename `R/indicator_adapters.R` to `R/indicator-adapters.R`;
@@ -173,20 +173,18 @@ Auditr intake:
 - walk-forward and random-slice validation;
 - paper-trading or live-trading adapters.
 
-### Pending Ticket-Cut Decisions
+### Ticket-Cut Decisions
 
-These items are deliberately unresolved in the draft planning baseline and
-must close before implementation tickets are cut:
+These decisions close the draft planning baseline for implementation ticket
+cut:
 
-- `ledgr_risk_free_rate()` scalar assumption object: ship in v0.1.8.2 if it is
-  small and helps named/manual risk-free-rate disclosure, or defer if it
-  creates object-surface churn beyond metric context.
-- `ledgr_risk_free_series()` shape: design-only discussion is allowed in this
-  packet, but implementation remains out of scope unless ticket cut proves the
-  alignment/fill/calendar semantics are bounded and safe.
-- `ledgr_compare_runs(exp, ...)`: experiment input may ship if implementation
-  review finds it low-risk, but the required v0.1.8.2 path is the existing
-  snapshot-first form with `metric_context = NULL`.
+- `ledgr_risk_free_rate()` ships in v0.1.8.2 as a scalar subordinate object
+  for named/manual annual risk-free-rate assumptions.
+- `ledgr_risk_free_series()` remains design-only; no time-varying
+  risk-free-rate series implementation ships in v0.1.8.2.
+- `ledgr_compare_runs(exp, ...)` is deferred. v0.1.8.2 implements the existing
+  snapshot-first comparison form with `metric_context = NULL`; users who want
+  experiment context can pass `metric_context = ledgr_metric_context(exp)`.
 
 ---
 
@@ -595,24 +593,15 @@ must prove these strategies fail early with `ledgr_strategy_tier3` /
 `ledgr_strategy_preflight_error`, not later through
 `ledgr_config_non_deterministic`.
 
-### Maintainer Decisions Before Ticket Cut
+### Auditr Decision Dispositions
 
-These findings cannot be routed safely without explicit maintainer decisions:
+These auditr findings are routed as follows:
 
 | Finding | Decision |
 | --- | --- |
-| Resolved external scalar strategy references | Keep as `tier_2` with docs, or classify as `tier_3` under a stricter params-boundary policy. |
-| Bundle default IDs vs hand-written TTR IDs | Document intentional asymmetry, or amend identity policy and accept fingerprint/feature-ID churn. |
-| High-level CSV error classes | Document current high-level classes, or wrap CSV-source failures in a shared CSV parent class. |
-
-Recommended defaults for ticket cut:
-
-- resolved immutable external scalars remain `tier_2`, with stronger warning
-  and reproducibility prose;
-- bundle IDs remain as shipped in v0.1.8.1, with prominent docs and
-  `naming = ...` examples for parity;
-- CSV messages are improved and, if small, CSV-source failures gain a shared
-  parent class; otherwise the actual high-level classes are documented.
+| Resolved external scalar strategy references | Keep resolved immutable external scalars as `tier_2`, with stronger warning and reproducibility prose. `tier_3` is reserved for unresolved helpers, mutable state, `<<-`, forbidden nondeterministic calls, and unrecoverable runtime dependencies. |
+| Bundle default IDs vs hand-written TTR IDs | Keep bundle IDs as shipped in v0.1.8.1. Document the asymmetry and show `naming = ...` for users who need parity with hand-written single-output TTR IDs. |
+| High-level CSV error classes | Do not add a new CSV error-class hierarchy in v0.1.8.2. Document the actual high-level classes and improve CSV/timestamp messages, artifact-state wording, and next-action guidance. |
 
 ### Batch With Metric-Context Documentation
 
@@ -706,7 +695,7 @@ The final ticket packet should likely contain these tracks after auditr routing:
 8. Promotion context disclosure.
 9. Summary/print/help/vignette documentation updates.
 10. Auditr documentation/message polish accepted into this release.
-11. Indicator codebase Phase 2 cleanup, if retained.
+11. Indicator codebase Phase 2 cleanup.
 12. Release gate.
 
 `LDG-2301` remains a research ticket and should not be treated as a dependency

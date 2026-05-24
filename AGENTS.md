@@ -42,11 +42,12 @@ when the release closes or scope changes materially):
   `inst/design/ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`,
   `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`, and
   `inst/design/ledgr_v0_1_8_2_spec_packet/tickets.yml`.
-- Next planned implementation scope is metric context and indicator codebase
-  Phase 2 cleanup, plus auditr-routed preflight classifier alignment, but final
-  runtime sequencing starts with the scope/decision gate.
-- Do not implement new v0.1.8.2 runtime work before LDG-2302 closes the
-  maintainer decisions.
+- Next implementation scope is metric context, auditr-routed preflight
+  classifier alignment, auditr documentation/message polish, and indicator
+  codebase Phase 2 cleanup.
+- LDG-2302 has closed the maintainer decisions. Runtime implementation should
+  start with LDG-2303 unless explicitly running the independent LDG-2301
+  tidyfinance research ticket.
 
 ## Active Design Entry Points
 

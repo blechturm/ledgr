@@ -44,10 +44,11 @@ explicitly asks you to inspect one.
 
 ## Active Cycle
 
-The `v0.1.8.2` branch is open for implementation planning. A draft
-implementation spec exists, auditr triage artifacts are in the packet, and
-implementation tickets have been cut. Runtime work should start with the
-scope/decision gate ticket.
+The `v0.1.8.2` branch is open for implementation planning. The implementation
+spec exists, auditr triage artifacts are in the packet, and implementation
+tickets have been cut. The scope/decision gate is closed; runtime work should
+start with LDG-2303 unless explicitly running the independent LDG-2301 research
+ticket.
 
 - Spec: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md` is draft.
 - Auditr triage:
@@ -61,9 +62,8 @@ scope/decision gate ticket.
 
 The planned implementation targets are metric context, risk-free-rate
 semantics, preflight classifier alignment, auditr documentation/message polish,
-and possible indicator codebase Phase 2 cleanup. The first implementation step
-is the scope/decision gate. The tidyfinance research ticket does not add
-runtime scope.
+and indicator codebase Phase 2 cleanup. The tidyfinance research ticket does
+not add runtime scope.
 
 ## Core Documents
 

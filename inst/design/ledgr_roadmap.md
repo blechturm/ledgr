@@ -4,9 +4,10 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Current cycle:** v0.1.8.2 planning.
-**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` contains a draft
-spec, auditr triage artifacts, and implementation tickets. Runtime work starts
-with the scope/decision gate.
+**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` contains the
+implementation spec, auditr triage artifacts, and implementation tickets. The
+scope/decision gate is closed; runtime work starts with LDG-2303 unless the
+independent LDG-2301 research ticket is selected.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
