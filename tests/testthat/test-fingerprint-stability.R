@@ -79,6 +79,11 @@ testthat::test_that("TTR indicator fingerprints remain stable by TTR version", {
 })
 
 testthat::test_that("feature-factory sweep identity remains stable", {
+  testthat::skip_if(
+    requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
+    "Feature-factory fingerprint pins are normal-runtime invariants; covr instruments closures."
+  )
+
   snapshot <- ledgr_snapshot_from_df(ledgr_fingerprint_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
