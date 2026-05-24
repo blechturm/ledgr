@@ -213,7 +213,7 @@ scope: v0.1.8.2
 Priority: P1
 Effort: M
 Dependencies: LDG-2302
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -268,6 +268,25 @@ type: bugfix
 surface: strategy_preflight
 scope: runtime_contract
 ```
+
+### Completion Notes
+
+- Shared the determinism forbidden-call list through
+  `ledgr_determinism_forbidden_calls()` and reused it in strategy preflight
+  with ambient RNG still allowed as Tier 2.
+- Classified `Sys.time()`, `Sys.Date()`, `Sys.getenv()`, and other
+  non-RNG determinism-forbidden calls as Tier 3 before execution.
+- Added explicit global-assignment (`<<-`) detection and Tier 3 classification.
+- Preserved resolved immutable external scalar references as Tier 2 per
+  LDG-2302 policy.
+- Updated Tier 3 abort wording so run/sweep errors include the specific
+  preflight reason, while preserving `ledgr_strategy_tier3` and
+  `ledgr_strategy_preflight_error`.
+- Added regression coverage proving `ledgr_run()` and `ledgr_sweep()` reject
+  forbidden calls and global assignment before completed run rows or candidate
+  execution artifacts are produced.
+- Updated reproducibility, strategy-development, and contract prose for the
+  final Tier 2/Tier 3 policy.
 
 ---
 

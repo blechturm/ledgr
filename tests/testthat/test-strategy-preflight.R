@@ -104,6 +104,43 @@ testthat::test_that("strategy preflight rejects RNG state mutation as Tier 3", {
   testthat::expect_match(preflight_kind$reason, "RNGkind", fixed = TRUE)
 })
 
+testthat::test_that("strategy preflight rejects determinism-forbidden calls as Tier 3", {
+  strategies <- list(
+    Sys.time = function(ctx, params) {
+      Sys.time()
+      ctx$flat()
+    },
+    Sys.Date = function(ctx, params) {
+      Sys.Date()
+      ctx$flat()
+    },
+    Sys.getenv = function(ctx, params) {
+      Sys.getenv("HOME")
+      ctx$flat()
+    }
+  )
+
+  for (name in names(strategies)) {
+    preflight <- ledgr_strategy_preflight(strategies[[name]])
+    testthat::expect_identical(preflight$tier, "tier_3", info = name)
+    testthat::expect_false(preflight$allowed, info = name)
+    testthat::expect_match(preflight$reason, name, fixed = TRUE, info = name)
+    testthat::expect_match(preflight$reason, "forbidden nondeterministic", fixed = TRUE, info = name)
+  }
+})
+
+testthat::test_that("strategy preflight rejects global assignment as Tier 3", {
+  strategy <- function(ctx, params) {
+    counter <<- counter + 1
+    ctx$flat()
+  }
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_3")
+  testthat::expect_false(preflight$allowed)
+  testthat::expect_match(preflight$reason, "<<-", fixed = TRUE)
+})
+
 testthat::test_that("strategy preflight flags ambient RNG as Tier 2, not certified Tier 1", {
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
@@ -118,6 +155,22 @@ testthat::test_that("strategy preflight flags ambient RNG as Tier 2, not certifi
   testthat::expect_true(preflight$allowed)
   testthat::expect_identical(preflight$unresolved_symbols, character())
   testthat::expect_true(any(grepl("Ambient RNG", preflight$notes, fixed = TRUE)))
+})
+
+testthat::test_that("strategy preflight keeps resolved external scalars as Tier 2", {
+  threshold <- 100
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (threshold > 0) {
+      targets["TEST_A"] <- params$qty
+    }
+    targets
+  }
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_2")
+  testthat::expect_true(preflight$allowed)
+  testthat::expect_true(any(grepl("threshold", preflight$notes, fixed = TRUE)))
 })
 
 testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
@@ -148,6 +201,67 @@ testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
   rows <- DBI::dbGetQuery(
     opened$con,
     "SELECT run_id FROM runs WHERE run_id = 'tier-3-run'"
+  )
+  testthat::expect_equal(nrow(rows), 0L)
+})
+
+testthat::test_that("ledgr_run rejects forbidden calls before fingerprinting or execution artifacts", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    Sys.time()
+    ctx$flat()
+  }
+  exp <- ledgr_experiment(snapshot, strategy)
+
+  err <- testthat::capture_error(
+    ledgr_run(exp, params = list(), run_id = "sys-time-tier-3-run")
+  )
+  testthat::expect_s3_class(err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(err), "Sys.time", fixed = TRUE)
+  testthat::expect_false(inherits(err, "ledgr_config_non_deterministic"))
+
+  opened <- ledgr_test_open_duckdb(db_path)
+  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+  rows <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT run_id FROM runs WHERE run_id = 'sys-time-tier-3-run'"
+  )
+  testthat::expect_equal(nrow(rows), 0L)
+})
+
+testthat::test_that("ledgr_run rejects global assignment before strategy execution", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  counter <- 0L
+  strategy <- function(ctx, params) {
+    counter <<- counter + 1L
+    ctx$flat()
+  }
+  exp <- ledgr_experiment(snapshot, strategy)
+
+  err <- testthat::capture_error(
+    ledgr_run(exp, params = list(), run_id = "global-assign-tier-3-run")
+  )
+  testthat::expect_s3_class(err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(err), "<<-", fixed = TRUE)
+  testthat::expect_identical(counter, 0L)
+
+  opened <- ledgr_test_open_duckdb(db_path)
+  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+  rows <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT run_id FROM runs WHERE run_id = 'global-assign-tier-3-run'"
   )
   testthat::expect_equal(nrow(rows), 0L)
 })

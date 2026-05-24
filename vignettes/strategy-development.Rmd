@@ -692,7 +692,10 @@ is really the strategy contract; otherwise prefer returning the full target
 vector directly. Strategy preflight reports this wrapper as a special allowed
 case because it captures an inner function and quantity settings. Tier 3
 preflight failures remain hard failures: they are not downgraded to warnings or
-silently accepted.
+silently accepted. Wall-clock calls such as `Sys.time()` and global assignment
+with `<<-` are Tier 3 because ledgr cannot make them reproducible execution
+inputs. Resolved scalar values from the strategy closure are allowed as Tier 2,
+but values that define the research question should usually live in `params`.
 
 ## When ledgr Complains
 

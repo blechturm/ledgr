@@ -261,7 +261,7 @@ the active versioned spec packet, currently
     parameters and no unresolved external objects.
   - Tier 2: logic that can be inspected but not fully replayed without external
     context, including package-qualified calls outside the active R
-    distribution and resolved non-function closure objects. Tier 2 is allowed,
+    distribution and resolved immutable non-function closure objects. Tier 2 is allowed,
     but users own package installation, package version parity, and non-ledgr
     environment management.
   - Tier 3: environment-dependent logic whose execution identity cannot be
@@ -277,10 +277,14 @@ the active versioned spec packet, currently
   package metadata such as `Priority: base` or `Priority: recommended`, not from
   a hand-maintained package-name allowlist.
 - Package-qualified calls to packages outside the active R distribution, such
-  as `pkg::fn()`, and resolved non-function closure objects are
+  as `pkg::fn()`, and resolved immutable non-function closure objects are
   Tier 2-compatible. Unqualified user helper calls such as `my_helper(ctx)` are
   Tier 3 unless a later dependency-declaration contract records them
   explicitly.
+- Forbidden nondeterministic calls that cannot be represented safely in
+  execution identity, including `Sys.time()`, `Sys.Date()`, `date()`, `get()`,
+  `eval()`, `assign()`, and `Sys.getenv()`, are Tier 3 in preflight and must
+  fail before `ledgr_run()` or `ledgr_sweep()` creates execution artifacts.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
   strategy helpers such as `signal_return()`, `select_top_n()`,
@@ -289,9 +293,9 @@ the active versioned spec packet, currently
   `ledgr::` qualifier.
 - Static analysis is not a proof of semantic reproducibility. The preflight may
   use `codetools::findGlobals()` or a similar mechanism, but it must document
-  limits around dynamic dispatch, `do.call()`, `get()`, `eval()`, dynamically
-  constructed strategies, S3/S4/R6 runtime state, `<<-`, and closures that
-  mutate captured environments.
+  limits around dynamic dispatch, `do.call()`, dynamically constructed
+  strategies, S3/S4/R6 runtime state, `<<-`, and closures that mutate captured
+  environments.
 - The minimum `ledgr_strategy_preflight` result contract contains `tier`,
   `allowed`, `reason`, `unresolved_symbols`, `package_dependencies`, and
   `notes`, and has class `ledgr_strategy_preflight`. `allowed` is `TRUE` for

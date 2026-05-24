@@ -397,6 +397,36 @@ testthat::test_that("ledgr_sweep rejects Tier 3 strategies before candidate exec
   testthat::expect_false(grepl("by default", conditionMessage(err), fixed = TRUE))
 })
 
+testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment before candidate execution", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  grid <- ledgr_param_grid(candidate = list())
+
+  sys_time_strategy <- function(ctx, params) {
+    Sys.time()
+    ctx$flat()
+  }
+  sys_time_exp <- ledgr_experiment(snapshot, sys_time_strategy)
+  sys_time_err <- testthat::capture_error(ledgr_sweep(sys_time_exp, grid))
+  testthat::expect_s3_class(sys_time_err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(sys_time_err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(sys_time_err), "Sys.time", fixed = TRUE)
+  testthat::expect_false(inherits(sys_time_err, "ledgr_config_non_deterministic"))
+
+  counter <- 0L
+  global_assign_strategy <- function(ctx, params) {
+    counter <<- counter + 1L
+    ctx$flat()
+  }
+  global_assign_exp <- ledgr_experiment(snapshot, global_assign_strategy)
+  global_assign_err <- testthat::capture_error(ledgr_sweep(global_assign_exp, grid))
+  testthat::expect_s3_class(global_assign_err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(global_assign_err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(global_assign_err), "<<-", fixed = TRUE)
+  testthat::expect_identical(counter, 0L)
+})
+
 testthat::test_that("feature-consuming sweep strategies see the same feature values as ledgr_run", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
