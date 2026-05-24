@@ -420,6 +420,15 @@ The factory is evaluated with each candidate's `params`. The resolved
 feature IDs, feature fingerprints, and candidate feature-set hash are
 then part of the sweep row provenance.
 
+If the factory returns a plain list, strategies read the resulting
+values by exact feature ID, for example with
+`ctx$feature(id, ledgr_feature_id(...))` or a built-in ID such as
+`sma_20`. A factory that returns `ledgr_feature_map()` can materialize
+aliases for the engine, but calling that external factory from inside
+the strategy is not Tier 1 or Tier 2 under current preflight rules. Use
+feature-map aliases for static maps; use exact IDs for parameterized
+sweep lookups until ledgr has a first-class active-alias API.
+
 ## TTR-Backed Indicators
 
 `ledgr_ind_ttr()` is the adapter for supported indicators from the

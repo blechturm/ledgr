@@ -42,6 +42,20 @@ explicitly asks you to inspect one.
 | Operational playbook | Process instructions for release and collaboration. |
 | Horizon note | Non-binding parking lot for future design observations. |
 
+## Pre-CRAN Compatibility Policy
+
+Until ledgr is released on CRAN, stored artifacts, database schemas, config
+hashes, provenance formats, and experimental APIs may change without backward
+compatibility or a deprecation cycle. Pre-CRAN artifacts are development
+artifacts; rerun experiments after upgrading when a cycle changes storage,
+hashing, or execution contracts.
+
+This policy permits intentional breaking changes before CRAN. It does not
+permit accidental drift. Fingerprint pins, release gates, contract tests,
+hash-verification checks, and reproducibility discipline remain load-bearing
+for current-version trust and agent containment. Once ledgr reaches CRAN, the
+project must define an explicit compatibility and deprecation policy.
+
 ## Active Cycle
 
 The `v0.1.8.2` branch is open for implementation planning. The implementation
@@ -100,6 +114,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Metric context and risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` | v0.1.8.2 metric design | Accepted |
 | Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
 | Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
+| Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4+ sweep authoring ergonomics | Accepted |
 
 ## RFCs
 
@@ -137,6 +152,11 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_indicator_codebase_simplification_v0_1_8_x.md`
 - `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_response.md`
 - `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`
+- `rfc/rfc_strategy_authoring_parameterized_indicators_v0_1_8_x.md`
+- `rfc/rfc_strategy_authoring_parameterized_indicators_v0_1_8_x_response.md`
+- `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x.md`
+- `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_response.md`
+- `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -165,6 +185,23 @@ The indicator codebase simplification synthesis accepted a Phase 1
 determinism-extraction refactor completed in v0.1.8.1; the v0.1.8.2 roadmap
 entry carries the Phase 2 file/role cleanup (indicator file renames plus the
 `R/indicator_dev.R` split into `R/indicator-dev.R` and `R/pulse-snapshot.R`).
+The strategy authoring RFC and response identify parameterized indicator
+sweeps as a real strategy-authoring UX gap. The response rejects the
+documentation-only convention as sufficient because calling an external feature
+factory from strategy code conflicts with current preflight tiers, and points
+toward a future active-alias API design before implementation ticket cut.
+The active parameterized feature aliases RFC seed carries that follow-up design
+space: parameter references in feature declarations, active alias lookup from
+the pulse context, alias-map identity, and bundle alias semantics.
+The active-alias response recommends a conservative first API pass:
+`ledgr_param("name")` scalar placeholders, separate authoring declarations that
+resolve to concrete indicators, active `ctx$features(id)` alias lookup, alias
+maps in execution config identity, and current flat bundle aliases preserved.
+The active-alias synthesis accepts a future-cycle design: constructor support
+for scalar parameter references, authoring declarations that are not concrete
+indicators, `ledgr_parameters()` introspection, an `alias_map_hash` provenance
+layer, flat bundle semantics, and placement in a v0.1.8.4+ sweep authoring
+ergonomics cycle.
 
 ## Audits And Spikes
 

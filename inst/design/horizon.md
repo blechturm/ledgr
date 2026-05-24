@@ -26,6 +26,20 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-05-25 [infrastructure] Pre-CRAN compatibility policy
+
+Until ledgr is released on CRAN, stored artifacts, database schemas, config
+hashes, provenance formats, and experimental APIs may change without backward
+compatibility or a deprecation cycle. Pre-CRAN artifacts are development
+artifacts; users should expect to rerun experiments after upgrading when a
+cycle changes storage, hashing, or execution contracts.
+
+This does not weaken current-version trust. Fingerprint pins, release gates,
+contract tests, hash verification, and reproducibility discipline remain
+load-bearing for agent containment and within-cycle correctness. Once ledgr
+reaches CRAN, revisit this policy and define explicit compatibility and
+deprecation rules.
+
 ### 2026-05-15 [adapters] Multi-output indicator authoring bundles
 
 Consider a v0.1.8.x adapter/indicator UX slice for multi-output indicator
@@ -104,6 +118,31 @@ optimize, tune, choose objectives, select winners, or imply strategy-cookbook
 semantics. Keep the distinction sharp: grid-construction ergonomics are useful;
 `ledgr_tune()` and ledgr-owned objective semantics remain separate deferred
 questions.
+
+### 2026-05-25 [ux] Sweep candidate ranking views
+
+Users will write small helpers to order sweep results before calling
+`ledgr_candidate()`. ledgr should not own automatic winner selection or a
+full objective DSL, but a transparent ranking view may be useful once sweep
+ergonomics are revisited.
+
+Possible future shape:
+
+```r
+ranked <- ledgr_rank_candidates(
+  results,
+  by = "sharpe_ratio",
+  direction = "desc",
+  na_rm = TRUE
+)
+
+candidate <- ledgr_candidate(ranked, 1)
+```
+
+Filtering should remain ordinary data-frame work, via base R, dplyr, or user
+code before ranking. The helper would own ordering mechanics, classed
+validation, printability, and selection provenance. It should not call the
+result "best" or promote a candidate automatically.
 
 ### 2026-05-13 [ux] Research workflow templates
 

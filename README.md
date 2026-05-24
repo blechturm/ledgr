@@ -329,3 +329,13 @@ Installed package help remains available from R:
 help(package = "ledgr")
 vignette(package = "ledgr")
 ```
+
+## Pre-CRAN Compatibility
+
+ledgr is not yet on CRAN. Until the first CRAN release, stored
+artifacts, database schemas, config hashes, provenance formats, and
+experimental APIs may change without backward compatibility or a
+deprecation cycle. Treat pre-CRAN ledgr as a research/development
+package and expect to rerun experiments after upgrading. Once ledgr is
+released on CRAN, the project will define an explicit compatibility and
+deprecation policy.

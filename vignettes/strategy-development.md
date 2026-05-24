@@ -603,6 +603,80 @@ construction remains part of your research code. Keep the feature-map
 construction code with the research record when you need to rerun the
 strategy later.
 
+## Sweeping Indicator Parameters
+
+When a sweep changes an indicator parameter, ledgr materializes a
+concrete feature set for each candidate before execution. Current
+strategy code has two safe bridge patterns.
+
+For built-in indicators, exact-ID lookup from `params` is the clearest
+Tier 1 pattern:
+
+``` r
+strategy <- function(ctx, params) {
+  fast_id <- ledgr_feature_id(ledgr_ind_sma(params$fast_n))
+  slow_id <- ledgr_feature_id(ledgr_ind_sma(params$slow_n))
+
+  fast <- ctx$feature("AAA", fast_id)
+  slow <- ctx$feature("AAA", slow_id)
+
+  targets <- ctx$flat()
+  if (!is.na(fast) && !is.na(slow) && fast > slow) {
+    targets["AAA"] <- params$qty
+  }
+  targets
+}
+```
+
+That keeps the strategy self-contained: it uses `ctx`, `params`, and
+exported ledgr helpers. Hand-built strings such as
+`paste0("sma_", params$fast_n)` also work for built-ins whose ID
+convention is public, but `ledgr_feature_id()` keeps the lookup tied to
+the constructor.
+
+Static feature maps remain the recommended shape when aliases do not
+vary by candidate:
+
+``` r
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(20),
+  slow = ledgr_ind_sma(50)
+)
+
+strategy <- function(ctx, params) {
+  x <- ctx$features("AAA", features)
+  ctx$flat()
+}
+```
+
+Do not call an external feature factory from inside a strategy:
+
+``` r
+features <- function(params) {
+  ledgr_feature_map(
+    fast = ledgr_ind_sma(params$fast_n),
+    slow = ledgr_ind_sma(params$slow_n)
+  )
+}
+
+strategy <- function(ctx, params) {
+  x <- ctx$features("AAA", features(params))
+  ctx$flat()
+}
+```
+
+That code reads well, but `features` is a user helper function
+referenced from the strategy body. Under the current preflight contract,
+external feature factory functions inside strategies are Tier 3 and
+`ledgr_run()` rejects them before execution. Duplicating the
+parameterized feature map inside the strategy is mechanically valid, but
+it creates a drift risk between the experiment’s feature declaration and
+the strategy lookup map.
+
+The long-term UX gap is tracked in the active parameterized feature
+aliases RFC. Until that API exists, use exact feature IDs for
+parameterized sweeps and use feature-map aliases for static maps.
+
 ## Run One Backtest
 
 ``` r

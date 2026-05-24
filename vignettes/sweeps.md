@@ -190,6 +190,14 @@ identity for that candidate’s resolved feature set. Candidates with
 different indicator parameters should have different feature-set hashes
 even when the strategy code is the same.
 
+Strategy lookup is still explicit. For parameterized built-in
+indicators, the current bridge pattern is exact-ID lookup from `params`
+inside the strategy. Do not call the feature factory from inside the
+strategy; user factory helpers are Tier 3 under preflight. Static
+feature maps remain useful when aliases do not vary by candidate. See
+`vignette("strategy-development", package = "ledgr")` for the bridge
+patterns and the active-alias API gap.
+
 # Precompute Larger Grids
 
 `precomputed_features` is optional. For small grids, `ledgr_sweep()` can
