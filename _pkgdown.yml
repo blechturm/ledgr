@@ -66,6 +66,13 @@ reference:
       - ledgr_compute_equity_curve
       - ledgr_compute_metrics
       - ledgr_state_reconstruct
+  - title: Metric Assumptions
+    contents:
+      - ledgr_metric_context
+      - ledgr_metric_context_resolve
+      - ledgr_metric_context_hash
+      - ledgr_risk_free_rate
+      - ledgr_calendar
   - title: Experiment Store
     contents:
       - ledgr_run_list

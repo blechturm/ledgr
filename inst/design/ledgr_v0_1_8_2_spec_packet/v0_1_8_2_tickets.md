@@ -1092,3 +1092,16 @@ WSL gate could not run in this environment because WSL returned
 
 Generated release artifacts were removed after verification:
 `ledgr_0.1.8.2.tar.gz`, `ledgr.Rcheck`, and `tests/testthat/Rplots.pdf`.
+
+Branch CI initially failed on Ubuntu during the pkgdown reference-index step
+because the new metric-context public topics were missing from `_pkgdown.yml`.
+Added a "Metric Assumptions" reference section for `ledgr_metric_context`,
+`ledgr_metric_context_resolve`, `ledgr_metric_context_hash`,
+`ledgr_risk_free_rate`, and `ledgr_calendar`.
+
+```powershell
+$env:RSTUDIO_PANDOC='C:\Program Files\RStudio\resources\app\bin\quarto\bin\tools'
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgdown::build_site(new_process = FALSE)"
+```
+
+Passed locally after the `_pkgdown.yml` update.
