@@ -100,6 +100,11 @@ ledgr_sweep <- function(exp,
   bars_mat <- ledgr_sweep_bars_matrix(bars_by_id, exp$universe)
   pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
   pulses_iso <- vapply(pulses_posix, ledgr_normalize_ts_utc, character(1))
+  static_bars_views <- ledgr_bars_pulse_views(
+    bars_mat = bars_mat,
+    instrument_ids = exp$universe,
+    pulses_posix = pulses_posix
+  )
   metric_context <- ledgr_metric_context_resolve(exp$metric_context)
   metric_kernel <- ledgr_metric_kernel(context = metric_context, pulses = pulses_posix)
 
@@ -178,6 +183,7 @@ ledgr_sweep <- function(exp,
           execution_seed = execution_seed,
           bars_by_id = bars_by_id,
           bars_mat = bars_mat,
+          static_bars_views = static_bars_views,
           pulses_posix = pulses_posix,
           pulses_iso = pulses_iso,
           metric_kernel = metric_kernel,
@@ -565,6 +571,7 @@ ledgr_sweep_run_candidate <- function(exp,
                                       execution_seed,
                                       bars_by_id,
                                       bars_mat,
+                                      static_bars_views,
                                       pulses_posix,
                                       pulses_iso,
                                       metric_kernel,
@@ -577,18 +584,8 @@ ledgr_sweep_run_candidate <- function(exp,
                                       master_seed) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
-  run_feature_matrix <- NULL
   if (is.null(runtime_projection)) {
-    run_feature_matrix <- if (is.null(precomputed_features)) {
-      ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, exp$universe)
-    } else {
-      ledgr_sweep_feature_matrix_from_precomputed(
-        precomputed_features,
-        feature_fingerprints,
-        bars_by_id,
-        exp$universe
-      )
-    }
+    rlang::abort("Sweep candidate execution requires `runtime_projection`.", class = "ledgr_invalid_fold_execution")
   }
 
   output_handler <- ledgr_memory_output_handler(run_id)
@@ -633,8 +630,8 @@ ledgr_sweep_run_candidate <- function(exp,
     state_prev = NULL,
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
+    static_bars_views = static_bars_views,
     feature_defs = feature_defs,
-    run_feature_matrix = run_feature_matrix,
     runtime_projection = runtime_projection,
     cost_resolver = cost_resolver,
     event_seq_start = as.integer(nrow(opening_rows)) + 1L,

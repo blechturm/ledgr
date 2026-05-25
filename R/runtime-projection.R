@@ -163,6 +163,15 @@ ledgr_projection_feature_at <- function(projection,
   mat[[as.integer(inst_idx), as.integer(pulse_idx)]]
 }
 
+ledgr_split_pulse_data_frame <- function(data, pulse_idx, n_pulses) {
+  pulse_factor <- factor(pulse_idx, levels = seq_len(n_pulses))
+  views <- unname(split(data, pulse_factor, drop = FALSE))
+  for (i in seq_along(views)) {
+    rownames(views[[i]]) <- NULL
+  }
+  views
+}
+
 ledgr_projection_feature_table <- function(projection, pulse_idx, feature_ids = NULL) {
   feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
   if (length(feature_ids) == 0L) {
@@ -217,6 +226,85 @@ ledgr_projection_features_wide <- function(projection, pulse_idx, feature_ids = 
   out <- cbind(out, as.data.frame(values, check.names = FALSE, stringsAsFactors = FALSE))
   rownames(out) <- NULL
   out
+}
+
+ledgr_projection_pulse_views <- function(projection, feature_ids = NULL) {
+  n_pulses <- length(projection$pulses_posix)
+  feature_table <- vector("list", n_pulses)
+  features_wide <- vector("list", n_pulses)
+  if (n_pulses == 0L) {
+    return(list(feature_table = feature_table, features_wide = features_wide))
+  }
+
+  feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
+  instruments <- names(projection$instrument_index)
+  n_inst <- length(instruments)
+  n_def <- length(feature_ids)
+  if (n_inst == 0L || n_def == 0L) {
+    for (pulse_idx in seq_len(n_pulses)) {
+      feature_table[[pulse_idx]] <- ledgr_projection_feature_table(
+        projection,
+        pulse_idx,
+        feature_ids = feature_ids
+      )
+      features_wide[[pulse_idx]] <- ledgr_projection_features_wide(
+        projection,
+        pulse_idx,
+        feature_ids = feature_ids
+      )
+    }
+    return(list(feature_table = feature_table, features_wide = features_wide))
+  }
+
+  feature_array <- array(NA_real_, dim = c(n_inst, n_def, n_pulses))
+  feature_wide_values <- matrix(
+    NA_real_,
+    nrow = n_inst * n_pulses,
+    ncol = n_def,
+    dimnames = list(NULL, feature_ids)
+  )
+  for (feature_idx in seq_along(feature_ids)) {
+    feature_id <- feature_ids[[feature_idx]]
+    mat <- projection$feature_values[[feature_id]]
+    if (is.null(mat)) {
+      next
+    }
+    feature_array[, feature_idx, ] <- mat
+    feature_wide_values[, feature_idx] <- as.numeric(as.vector(mat))
+  }
+
+  feature_table_all <- data.frame(
+    instrument_id = rep(rep(instruments, times = n_def), times = n_pulses),
+    ts_utc = as.POSIXct(rep(projection$pulses_posix, each = n_inst * n_def), tz = "UTC"),
+    feature_name = rep(rep(feature_ids, each = n_inst), times = n_pulses),
+    feature_value = as.numeric(as.vector(feature_array)),
+    stringsAsFactors = FALSE
+  )
+  feature_table <- ledgr_split_pulse_data_frame(
+    feature_table_all,
+    rep(seq_len(n_pulses), each = n_inst * n_def),
+    n_pulses
+  )
+
+  features_wide_all <- data.frame(
+    instrument_id = rep(instruments, times = n_pulses),
+    ts_utc = rep(projection$pulses_iso, each = n_inst),
+    stringsAsFactors = FALSE
+  )
+  features_wide_all <- cbind(
+    features_wide_all,
+    as.data.frame(feature_wide_values, check.names = FALSE, stringsAsFactors = FALSE)
+  )
+  features_wide <- ledgr_split_pulse_data_frame(
+    features_wide_all,
+    rep(seq_len(n_pulses), each = n_inst),
+    n_pulses
+  )
+
+  list(
+    feature_table = feature_table,
+    features_wide = features_wide
+  )
 }
 
 ledgr_projection_feature_accessor <- function(projection, pulse_idx, feature_ids = NULL) {

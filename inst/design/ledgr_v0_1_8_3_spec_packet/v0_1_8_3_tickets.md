@@ -669,7 +669,7 @@ scope: installed_docs
 Priority: P1
 Effort: L
 Dependencies: LDG-2402, LDG-2403
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -750,7 +750,7 @@ scope: feature_precompute
 Priority: P1
 Effort: L
 Dependencies: LDG-2403, LDG-2408
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -908,7 +908,7 @@ scope: sweep_memory_path
 Priority: P1
 Effort: L
 Dependencies: LDG-2403, LDG-2409
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -1057,7 +1057,7 @@ scope: memory_path
 Priority: P1
 Effort: L
 Dependencies: LDG-2403, LDG-2409, LDG-2411
-Status: Pending
+Status: Done
 
 ### Description
 
@@ -1128,6 +1128,62 @@ type: optimization
 surface: pulse_context
 scope: prebuilt_static_views
 ```
+
+### Completion Notes
+
+- Ran the required `ctx$feature_table` usage audit across `vignettes/`,
+  `tests/`, `inst/examples/`, and `R/`. The audit found internal
+  validation/inspection usage and test scaffolds, but no documented vignette or
+  example strategy pattern. v0.1.8.3 still preserves and prebuilds
+  `ctx$feature_table`; a future-deprecation review note was added to
+  `inst/design/horizon.md`.
+- Added prebuilt static pulse views:
+  - `ctx$bars` views are built from `bars_mat` at run setup for `ledgr_run()`
+    and sweep setup for `ledgr_sweep()`, then threaded into candidate folds.
+  - Candidate-specific `ctx$feature_table` and `ctx$features_wide` views are
+    built from the runtime projection at fold setup and restricted to the
+    candidate feature IDs.
+- Refined pulse-view construction after the LDG-2413 construction spike:
+  `ledgr_bars_pulse_views()` and `ledgr_projection_pulse_views()` now build
+  indexed whole-workload data.frames and split them by pulse index instead of
+  calling `data.frame()` once per pulse/view shape.
+- Preserved the public data-frame field contract for `ctx$bars`,
+  `ctx$feature_table`, and `ctx$features_wide`, including column order, types,
+  `ts_utc`, and missing-value behavior.
+- Preserved B1 helper closure reuse and projection-backed `ctx$feature()` /
+  `ctx$features()` scalar accessors.
+- Removed `run_feature_matrix` from the fold execution contract and removed the
+  legacy `is.null(runtime_projection)` feature branch from `ledgr_execute_fold`.
+  `run_feature_matrix` remains only as a local setup/persistence intermediate
+  in `ledgr_run_fold()`.
+- Added fold parity coverage for internally built versus explicitly prebuilt
+  static pulse views, plus fast-context parity on the prebuilt path.
+- Added state-leak coverage for captured views, in-strategy mutation, later
+  pulses, and shared-view mutation across candidate-like direct folds.
+- Object-size smoke measurement on the sweep fixture:
+  - static `ctx$bars` views: 15,216 bytes;
+  - static feature views: 18,176 bytes;
+  - total prebuilt pulse-view bundle: 33,392 bytes.
+- Post-split timing checkpoint, compared with the LDG-2402 baseline:
+  - reference `sweep_plain`: 45.585s -> 32.235s, 1.41x faster;
+  - reference `sweep_precomputed`: 45.490s -> 32.610s, 1.40x faster;
+  - persistent `sweep_plain`: 4.415s -> 2.675s, 1.65x faster;
+  - persistent `run_loop`: 9.420s -> 9.920s, still 5.3% slower than baseline
+    but recovered from the pre-split LDG-2413 scaffold regression.
+- Post-split profile shows `ledgr_projection_pulse_views()` no longer appears
+  in the top frames; remaining visible costs include `ledgr_execute_fold`,
+  `data.frame` / `as.data.frame`, and event/fill reconstruction
+  (`ledgr_fills_from_events`, `ledgr_fill_event_row`).
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-sweep.R')`
+  - `testthat::test_file('tests/testthat/test-backtest-wrapper.R')`
+  - `testthat::test_file('tests/testthat/test-sweep-parity.R')`
+  - `testthat::test_file('tests/testthat/test-pulse-context-accessors.R')`
+  - `testthat::test_file('tests/testthat/test-precompute-features.R')`
+  - `testthat::test_file('tests/testthat/test-experiment-run.R')`
+  - `testthat::test_file('tests/testthat/test-indicator-tools.R')`
+  - `testthat::test_local('.', reporter = 'summary')`
+  - `git diff --check`
 
 ---
 

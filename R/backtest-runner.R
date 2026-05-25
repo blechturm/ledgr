@@ -1089,8 +1089,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   bars_by_id <- NULL
   bars_cols_by_id <- NULL
   bars_mat <- NULL
-  bars_df <- NULL
-  features_df <- NULL
+  static_bars_views <- NULL
   bar_col_map <- list(
     instrument_id = 1L,
     ts_utc = 2L,
@@ -1179,31 +1178,10 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       bars_mat$gap_type[j, ] <- as.character(cols[[bar_col_map$gap_type]])
       bars_mat$is_synthetic[j, ] <- as.logical(cols[[bar_col_map$is_synthetic]])
     }
-    bars_df <- data.frame(
-      instrument_id = instrument_ids,
-      ts_utc = as.POSIXct(rep(NA_character_, length(instrument_ids)), tz = "UTC"),
-      open = numeric(length(instrument_ids)),
-      high = numeric(length(instrument_ids)),
-      low = numeric(length(instrument_ids)),
-      close = numeric(length(instrument_ids)),
-      volume = numeric(length(instrument_ids)),
-      gap_type = character(length(instrument_ids)),
-      is_synthetic = logical(length(instrument_ids)),
-      stringsAsFactors = FALSE
-    )
-  }
-  bars_proxy <- NULL
-  if (isTRUE(use_fast_context) && isTRUE(use_bars_cache)) {
-    bars_proxy <- list(
-      instrument_id = instrument_ids,
-      ts_utc = rep(pulses_posix[[1]], length(instrument_ids)),
-      open = numeric(length(instrument_ids)),
-      high = numeric(length(instrument_ids)),
-      low = numeric(length(instrument_ids)),
-      close = numeric(length(instrument_ids)),
-      volume = numeric(length(instrument_ids)),
-      gap_type = character(length(instrument_ids)),
-      is_synthetic = logical(length(instrument_ids))
+    static_bars_views <- ledgr_bars_pulse_views(
+      bars_mat = bars_mat,
+      instrument_ids = instrument_ids,
+      pulses_posix = pulses_posix
     )
   }
 
@@ -1248,13 +1226,6 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       run_feature_matrix[[d]] <- mat
     }
     names(run_feature_matrix) <- def_ids
-    features_df <- data.frame(
-      instrument_id = rep(instrument_ids, each = n_def),
-      ts_utc = as.POSIXct(rep(NA_character_, n_inst * n_def), tz = "UTC"),
-      feature_name = rep(def_ids, times = n_inst),
-      feature_value = numeric(n_inst * n_def),
-      stringsAsFactors = FALSE
-    )
   }
   runtime_projection <- ledgr_projection_from_feature_matrix(
     feature_matrix = run_feature_matrix %||% list(),
@@ -1294,8 +1265,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     state_prev = state_prev_mem,
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
+    static_bars_views = static_bars_views,
     feature_defs = feature_defs,
-    run_feature_matrix = run_feature_matrix,
     runtime_projection = runtime_projection,
     cost_resolver = cost_resolver,
     event_seq_start = next_event_seq,
@@ -1326,7 +1297,6 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   state_env$current <- fold_result$state
   state_prev_mem <- fold_result$state_prev
   next_event_seq <- fold_result$next_event_seq
-  run_feature_matrix <- fold_result$run_feature_matrix
 
   if (!isTRUE(full_run)) {
     ledgr_finalize_fold_telemetry(
@@ -1496,7 +1466,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
           id <- instrument_ids[[j]]
           feat_vals <- matrix(NA_real_, nrow = n_def, ncol = n_p)
           for (d in seq_len(n_def)) {
-            feat_vals[d, ] <- run_feature_matrix[[d]][j, ]
+            feat_vals[d, ] <- runtime_projection$feature_values[[def_ids[[d]]]][j, ]
           }
           out <- data.frame(
             run_id = rep(run_id, n_def * n_p),

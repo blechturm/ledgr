@@ -115,7 +115,7 @@ tickets:
 
   - id: "LDG-2408"
     title: "Runtime Projection Interface And R-Memory Backend"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -133,7 +133,7 @@ tickets:
 
   - id: "LDG-2409"
     title: "Shared Fold Projection Consumption And Parity Gate"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -171,7 +171,7 @@ tickets:
 
   - id: "LDG-2411"
     title: "Fast Context B1 Pulse Helper Reuse"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -211,7 +211,7 @@ tickets:
 
   - id: "LDG-2413"
     title: "Pulse Context Data Model Consolidation"
-    status: "pending"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:

@@ -53,8 +53,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
   bars_by_id <- execution$bars_by_id
   bars_mat <- execution$bars_mat
   feature_defs <- execution$feature_defs
-  run_feature_matrix <- execution$run_feature_matrix
   runtime_projection <- execution$runtime_projection
+  if (is.null(runtime_projection)) {
+    rlang::abort("Fold execution requires `runtime_projection`.", class = "ledgr_invalid_fold_execution")
+  }
   cost_resolver <- execution$cost_resolver
   event_seq <- execution$event_seq_start
   telemetry <- execution$telemetry
@@ -78,26 +80,31 @@ ledgr_execute_fold <- function(execution, output_handler) {
   }
   n_inst <- length(instrument_ids)
 
-  bars_df <- data.frame(
-    instrument_id = character(n_inst),
-    ts_utc = as.POSIXct(rep(NA_character_, n_inst), tz = "UTC"),
-    open = numeric(n_inst),
-    high = numeric(n_inst),
-    low = numeric(n_inst),
-    close = numeric(n_inst),
-    volume = numeric(n_inst),
-    gap_type = character(n_inst),
-    is_synthetic = logical(n_inst),
-    stringsAsFactors = FALSE
-  )
-  features_df <- if (n_def > 0L) {
-    data.frame(
-      instrument_id = rep(instrument_ids, times = n_def),
-      ts_utc = as.POSIXct(rep(NA_character_, n_inst * n_def), tz = "UTC"),
-      feature_name = rep(def_ids, each = n_inst),
-      feature_value = numeric(n_inst * n_def),
-      stringsAsFactors = FALSE
+  bars_views <- execution$static_bars_views
+  if (is.null(bars_views)) {
+    bars_views <- ledgr_bars_pulse_views(
+      bars_mat = bars_mat,
+      instrument_ids = instrument_ids,
+      pulses_posix = pulses_posix
     )
+  }
+  feature_views <- execution$static_feature_views
+  if (is.null(feature_views)) {
+    feature_views <- ledgr_projection_pulse_views(
+      runtime_projection,
+      feature_ids = def_ids
+    )
+  }
+  feature_table_views <- feature_views$feature_table %||% vector("list", length(pulses_posix))
+  features_wide_views <- feature_views$features_wide %||% vector("list", length(pulses_posix))
+  if (length(bars_views) != length(pulses_posix) ||
+      length(feature_table_views) != length(pulses_posix) ||
+      length(features_wide_views) != length(pulses_posix)) {
+    rlang::abort("Static pulse views must align with fold pulse timestamps.", class = "ledgr_invalid_fold_execution")
+  }
+
+  empty_feature_table <- if (n_def > 0L) {
+    ledgr_projection_feature_table(runtime_projection, 1L, feature_ids = character())
   } else {
     empty_df
   }
@@ -125,40 +132,14 @@ ledgr_execute_fold <- function(execution, output_handler) {
       ts_iso <- pulses_iso[[i]]
       pulse_start <- ledgr_time_now()
 
-      for (j in seq_along(instrument_ids)) {
-        inst <- instrument_ids[[j]]
-        bars_df$instrument_id[[j]] <- inst
-        bars_df$ts_utc[[j]] <- ts
-        bars_df$open[[j]] <- bars_mat$open[j, i]
-        bars_df$high[[j]] <- bars_mat$high[j, i]
-        bars_df$low[[j]] <- bars_mat$low[j, i]
-        bars_df$close[[j]] <- bars_mat$close[j, i]
-        bars_df$volume[[j]] <- bars_mat$volume[j, i]
-        bars_df$gap_type[[j]] <- bars_mat$gap_type[j, i]
-        bars_df$is_synthetic[[j]] <- bars_mat$is_synthetic[j, i]
+      bars_current <- bars_views[[i]]
+      features_current <- feature_table_views[[i]]
+      if (!is.data.frame(features_current)) {
+        features_current <- empty_feature_table
       }
-      bars_current <- bars_df
-
-      if (n_def > 0L) {
-        row_idx <- 1L
-        for (def_id in def_ids) {
-          m <- if (is.null(runtime_projection)) {
-            run_feature_matrix[[def_id]]
-          } else {
-            runtime_projection$feature_values[[def_id]]
-          }
-          for (j in seq_along(instrument_ids)) {
-            inst <- instrument_ids[[j]]
-            features_df$instrument_id[[row_idx]] <- inst
-            features_df$ts_utc[[row_idx]] <- ts
-            features_df$feature_name[[row_idx]] <- def_id
-            features_df$feature_value[[row_idx]] <- m[j, i]
-            row_idx <- row_idx + 1L
-          }
-        }
-        features_current <- features_df
-      } else {
-        features_current <- empty_df
+      features_wide_current <- features_wide_views[[i]]
+      if (!is.data.frame(features_wide_current)) {
+        features_wide_current <- empty_df
       }
 
       positions_value <- 0
@@ -189,6 +170,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           fast_context = fast_context,
           bars = bars_current,
           features = features_current,
+          features_wide = features_wide_current,
           positions = state$positions,
           universe = instrument_ids,
           pulse_idx = i
@@ -202,7 +184,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           universe = instrument_ids,
           projection = runtime_projection,
           pulse_idx = i,
-          feature_ids = def_ids
+          feature_ids = def_ids,
+          features_wide = features_wide_current
         )
       }
 
@@ -364,8 +347,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
     telemetry = telemetry,
     state = state,
     state_prev = state_prev_mem,
-    next_event_seq = event_seq,
-    run_feature_matrix = run_feature_matrix
+    next_event_seq = event_seq
   )
 }
 

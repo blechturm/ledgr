@@ -725,6 +725,73 @@ Promotion trigger:
 - state-leak tests can prove candidate column selection does not allow one
   candidate's mutation to corrupt another candidate's view.
 
+### 2026-05-25 [architecture] Primitive internals and collapse acceleration
+
+The LDG-2413 pulse-view construction spike found that the important design
+lesson is broader than any single package choice: ledgr should prefer primitive
+internal shapes (vectors, matrices, lists, and index maps) and treat
+data.frames as public boundary views rather than hot-path state.
+
+Spike artifact:
+
+- `dev/spikes/ledgr_v0_1_8_3_pulse_view_construction/`;
+- `inst/design/spikes/ledgr_v0_1_8_3_pulse_view_construction/pulse_view_construction_report.md`.
+
+Reference-shape median timings from the spike:
+
+| construction path | median |
+| --- | ---: |
+| current feature views, 50 candidates | 8.03s |
+| base `split()` feature views, 50 candidates | 1.96s |
+| `tidyr` feature views, 50 candidates | 3.64s |
+| `data.table` data-frame feature views, 50 candidates | 6.27s |
+| `data.table` native feature views, 50 candidates | 5.06s |
+| `collapse` feature views, 50 candidates | 0.68s |
+
+All tested alternatives preserved the current `ctx$feature_table` and
+`ctx$features_wide` schemas in the equality checks. `collapse::rsplit()` was
+the fastest tested implementation, but importing `collapse` only for LDG-2413
+would make a broad dependency decision from a narrow optimization surface.
+
+Near-term policy:
+
+- v0.1.8.3 should use base R split/nest-style construction where it is enough
+  to recover the measured pulse-view setup cost;
+- do not add `collapse` as an `Imports` dependency during v0.1.8.3 solely for
+  pulse-view construction;
+- preserve the spike results as evidence for a future RFC.
+
+Future RFC direction:
+
+- evaluate a primitive-object internal data model across pulse context
+  construction, sweep result assembly, feature payload storage, and
+  event/fill reconstruction;
+- decide whether `collapse` should become the package's R-side acceleration
+  layer once multiple surfaces can benefit from it;
+- require deterministic call discipline for any `collapse` use: explicit
+  grouping/order behavior, NA policy, and thread settings rather than relying
+  on user-global options;
+- keep FIFO redesign, arbitrary strategy callback compilation, and a compiled
+  fold core as separate decisions with their own parity gates.
+
+This direction also supports the longer-term DuckDB and compiled-core horizon
+items. Primitive matrices/lists map more cleanly to DuckDB columns, block
+buffers, and eventual FFI boundaries than repeatedly constructed data.frame
+objects.
+
+### 2026-05-25 [api] Future ctx$feature_table deprecation review
+
+The LDG-2413 usage audit found `ctx$feature_table` usage in internal
+validation/inspection helpers and test scaffolds, but no documented vignette or
+example strategy pattern that depends on the long-form feature table. v0.1.8.3
+therefore preserves and prebuilds the field to avoid a context-contract change,
+but the field is a plausible future simplification target.
+
+A later RFC can decide whether `ctx$feature_table` should remain a public
+strategy-facing field, move behind an inspection helper, or enter a formal
+pre-CRAN deprecation path. That decision should be based on strategy-author
+usage evidence and must not be folded into LDG-2413.
+
 ### 2026-05-25 [infrastructure] Compiled fold core after pipeline stabilization
 
 The v0.1.8.3 sweep baseline shows that R-side fold execution dominates the
