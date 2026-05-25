@@ -71,10 +71,11 @@ auditr findings that fit the release scope.
 
 The v0.1.8.3 implementation targets are performance protocol and baseline,
 persistent-versus-memory accounting parity, runtime projection with an R-memory
-backend, shared `ledgr_run()` / `ledgr_sweep()` projection consumption, typed
-memory events, fast context B1/B2 where parity permits, single-pass sweep
-summary reconstruction, post-change residual profiling, one preflight
-indirection hardening bugfix, and auditr-routed docs/message polish. Do not
+backend, shared `ledgr_run()` / `ledgr_sweep()` projection consumption, fast
+context B1, pulse-context data model consolidation with prebuilt static pulse
+views, post-LDG-2413 residual profiling and maintainer decision on typed memory
+events / single-pass sweep summary reconstruction, one preflight indirection
+hardening bugfix, and auditr-routed docs/message polish. Do not
 pull active aliases, alias-map identity, parameter-grid helpers, DuckDB-backed
 precompute storage, out-of-core projection, parallel dispatch, target risk,
 walk-forward, cost/liquidity, OMS, benchmark, or external-provider work into
@@ -161,6 +162,8 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x.md`
 - `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_response.md`
 - `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`
+- `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3.md`
+- `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -174,9 +177,8 @@ selection-audit metadata for runs promoted from sweep candidates; full sweep
 artifact persistence remains future work.
 The sweep optimization synthesis defines the v0.1.8.3+ single-core optimization
 arc, and the accepted grid-level feature artifacts synthesis amends v0.1.8.3
-to start with runtime projection, then typed memory events, fast context,
-single-pass summary reconstruction, and residual measurement before any
-parallel or compiled-core work.
+to start with runtime projection and shared fold projection consumption before
+any parallel or compiled-core work.
 The multi-output indicator synthesis defines `ledgr_indicator_bundle` and the
 `ledgr_ind_ttr_outputs()` authoring helper for v0.1.8.1.
 The metric context RFC and synthesis define the `ledgr_metric_context`,
@@ -218,12 +220,17 @@ research/export artifacts, and future ML training-frame support. It is a seed,
 not accepted implementation scope.
 The grid-level feature artifacts synthesis accepts a v0.1.8.3 scope amendment:
 extend `ledgr_precompute_features()` into a shared runtime projection consumed
-by both `ledgr_run()` and `ledgr_sweep()`, add fast-context B1/B2 to the same
-R-level optimization cycle, keep alias-map identity in v0.1.8.4, and defer
-durable research/export artifacts to a future ML/export RFC. The first
-projection backend is R-memory; DuckDB-backed precompute storage and
-pulse-block-buffered out-of-core projection are parked in `horizon.md` as a
+by both `ledgr_run()` and `ledgr_sweep()`, keep alias-map identity in
+v0.1.8.4, and defer durable research/export artifacts to a future ML/export
+RFC. The first projection backend is R-memory; DuckDB-backed precompute storage
+and pulse-block-buffered out-of-core projection are parked in `horizon.md` as a
 future scaling/storage direction, not v0.1.8.3 runtime scope.
+The pulse-context data model consolidation synthesis accepts the post-LDG-2411
+rescope of LDG-2413 from narrow B2 proxies to prebuilt static pulse views for
+`ctx$bars`, `ctx$feature_table`, and `ctx$features_wide`, while preserving
+public data-frame field semantics. LDG-2414 measures that result and informs
+the maintainer decision on whether typed memory events and single-pass summary
+remain in v0.1.8.3 or defer to v0.1.9.
 
 ## Audits And Spikes
 
@@ -271,7 +278,7 @@ contract index.
 | --- | --- |
 | Runtime/execution change | `contracts.md`, current packet if one exists, relevant architecture note |
 | Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
-| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `contracts.md`, current v0.1.8.3 packet |
+| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `contracts.md`, current v0.1.8.3 packet |
 | Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, relevant release packet or future packet when cut |
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |

@@ -32,6 +32,7 @@ Authoritative inputs:
 - `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`
 - `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`
 - `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`
+- `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`
 
 Supporting context:
 
@@ -89,15 +90,23 @@ therefore amended to cover the full R-level fold/runtime optimization arc:
 runtime projection interface and R-memory backend
   -> shared ledgr_run()/ledgr_sweep() projection consumption
   -> fast context B1
-  -> typed memory events
-  -> single-pass sweep summary reconstruction
-  -> fast context B2 if parity permits
+  -> pulse context data model consolidation / prebuilt static pulse views
+  -> post-LDG-2413 measurement and maintainer decision
+  -> typed memory events and single-pass summary reconstruction if retained
 ```
 
 LDG-2409 checkpoint measurement reordered the next optimization slice:
 projection removed the old `ledgr_features_wide()` hot frame, but helper churn
 still dominates the sampled reference workload. B1 therefore lands before typed
 memory events unless a later measurement contradicts this finding.
+
+The accepted pulse-context data model consolidation synthesis then rescopes the
+old "fast context B2" ticket. LDG-2413 now targets prebuilt static pulse views:
+`ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` remain data-frame
+fields, but are built outside the pulse hot loop where parity permits and then
+plucked by `pulse_idx`. After LDG-2413, LDG-2414 measures the result and gives
+the maintainer the evidence needed to decide whether LDG-2410 typed memory
+events and LDG-2412 single-pass summary remain in v0.1.8.3 or move to v0.1.9.
 
 The release still does not change public strategy-facing context semantics.
 The projection is an internal interface with an R-memory list-of-matrices
@@ -117,7 +126,7 @@ Roadmap placement:
 
 | Release | Scope |
 | --- | --- |
-| v0.1.8.3 | Empirically measured single-core sweep optimization: runtime projection, shared fold projection consumption, typed memory events, fast context B1/B2 where parity permits, single-pass summary reconstruction, plus routed auditr fixes. |
+| v0.1.8.3 | Empirically measured single-core sweep optimization: runtime projection, shared fold projection consumption, fast context B1, pulse-context data model consolidation, measurement-gated typed memory events and single-pass summary, plus routed auditr fixes. |
 | v0.1.8.4 | Active parameterized feature aliases for sweep authoring. |
 | v0.1.8.5 | Parameter-grid quality-of-life helpers after active aliases stabilize. |
 | v0.1.8.6 | DuckDB-backed precompute storage / out-of-core projection candidate if residual evidence shows memory scaling, repeated precompute, ML/export, or parallel-worker sharing is load-bearing. |
@@ -143,20 +152,24 @@ v0.1.8.3 has eight primary goals:
    consumption path in the shared fold.
 6. Implement fast context B1 where projection parity is green and helper churn
    remains the measured bottleneck.
-7. Implement typed memory events and single-pass sweep summary reconstruction
-   without changing strategy-facing semantics.
-8. Implement fast context B2 where parity permits, with B2 deferrable if
-   it cannot preserve context semantics in this cycle.
-9. Publish post-change measurements and a residual hot-path report.
+7. Implement pulse-context data model consolidation by prebuilding static
+   pulse views where parity permits, without changing strategy-facing
+   context semantics.
+8. Publish post-LDG-2413 measurements and give the maintainer evidence to
+   decide whether typed memory events and single-pass sweep summary
+   reconstruction remain in v0.1.8.3 or defer to v0.1.9.
+9. Implement typed memory events and single-pass sweep summary reconstruction
+   if retained after the measurement decision.
+10. Publish post-change measurements and a residual hot-path report.
 
 It has one required intake gate:
 
-10. Route v0.1.8.3 auditr findings into accepted fixes, documentation/message
+11. Route v0.1.8.3 auditr findings into accepted fixes, documentation/message
    polish, explicit deferrals, or rejections before release gate.
 
 The routed auditr findings add one required runtime fix:
 
-11. Harden strategy preflight against constant-string and direct-function
+12. Harden strategy preflight against constant-string and direct-function
    `do.call()` indirection to forbidden nondeterministic calls, and classify
    `attr(ctx, ...) <- ...` context mutation as unsupported strategy code.
 
@@ -233,10 +246,26 @@ Fast context:
 
 - activate B1 after projection parity is green: initialize lookup environments
   and helper closures once per candidate and mutate pulse-specific values;
-- implement B2 after B1 and single-pass work where parity permits:
-  index-backed/list-backed bars and feature proxy structures;
-- if B2 cannot reach parity, ship B1 and defer B2 with measurement evidence;
 - no public strategy-facing context API change.
+
+Pulse-context data model consolidation:
+
+- rescope the old B2 proxy ticket to prebuilt static pulse views;
+- run and record the `ctx$feature_table` usage audit before implementation;
+- prebuild `ctx$bars` at the appropriate setup point for each entry path:
+  run setup for `ledgr_run()`, sweep setup for `ledgr_sweep()`;
+- prebuild candidate-specific `ctx$features_wide` and `ctx$feature_table`
+  views from the runtime projection restricted to candidate `feature_ids`;
+- preserve `ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` as
+  data-frame fields with the current schemas, column ordering, types,
+  `ts_utc`, and missing-value semantics;
+- remove `run_feature_matrix` from the fold execution contract and remove
+  the legacy `is.null(runtime_projection)` branch from `ledgr_execute_fold`;
+- allow `run_feature_matrix` to remain as a setup-only intermediate in
+  `ledgr_run_fold()` if that is simpler than direct projection construction;
+- add state-leak tests for in-run captured views, in-strategy mutation, and
+  cross-candidate isolation;
+- record peak memory and wall-clock impact in LDG-2414.
 
 Auditr intake:
 
@@ -258,10 +287,13 @@ Planning cleanup:
 Public context API changes:
 
 - no lazy `ctx$features_wide` via active bindings. The v0.1.8.3 path is fresh
-  current-pulse view materialization from the projection; if that remains hot
-  after the release, the residual report should name it explicitly;
+  current-pulse data-frame fields built outside the hot loop where parity
+  permits; if context view construction or access remains hot after the
+  release, the residual report should name it explicitly;
 - no active bindings;
 - no change from field to function for public context fields;
+- no custom S3 view class for `ctx$bars`, `ctx$feature_table`, or
+  `ctx$features_wide` in v0.1.8.3;
 - no new strategy-facing feature lookup contract.
 
 Future sweep UX:
@@ -385,6 +417,7 @@ Capture, where practical:
 - post-candidate summary reconstruction time;
 - metric computation time;
 - allocations or garbage-collection pressure if the tooling is reliable;
+- peak memory or object-size accounting for prebuilt pulse-view bundles;
 - profile top functions before and after;
 - number of candidates, pulses, instruments, features, fills, and events;
 - correctness/parity results for each workload.
@@ -553,8 +586,8 @@ Accepted auditr categories for this packet:
 
 Default deferrals:
 
-- new public APIs unrelated to the projection, typed memory events, fast
-  context, or single-pass summary;
+- new public APIs unrelated to the projection, pulse-context data model
+  consolidation, typed memory events, fast context, or single-pass summary;
 - ranking helpers and winner selection, unless separately scheduled in a future
   packet or parked in `horizon.md`;
 - active aliases to v0.1.8.4 and parameter-grid helpers to v0.1.8.5;
@@ -627,25 +660,32 @@ The ticket cut uses this sequence:
      because the LDG-2409 checkpoint profile leaves helper churn as the
      dominant remaining measured bottleneck.
 
-9. **Typed memory events**
+9. **Pulse context data model consolidation**
+   - run `ctx$feature_table` usage audit;
+   - remove `run_feature_matrix` from the fold execution contract;
+   - prebuild `ctx$bars`, `ctx$features_wide`, and `ctx$feature_table`
+     static pulse views where parity permits;
+   - preserve public context field schemas and data-frame field semantics;
+   - add state-leak tests for captured views, strategy mutation, and
+     cross-candidate isolation.
+
+10. **Post-LDG-2413 measurement and maintainer decision**
+   - rerun baseline workloads;
+   - publish speedup and regression results;
+   - record peak memory/object-size evidence for prebuilt views;
+   - document remaining inefficiency pockets;
+   - decide whether typed memory events and single-pass summary remain in
+     v0.1.8.3 or defer to v0.1.9.
+
+11. **Typed memory events, if retained**
    - add typed memory event representation;
    - keep durable persistent `meta_json` serialization unchanged;
    - prove typed and durable representations are equivalent.
 
-10. **Single-pass summary reconstruction**
+12. **Single-pass summary reconstruction, if retained**
    - compute sweep summary artifacts without redundant event replay;
    - thread `metric_kernel`;
    - preserve sweep result shape and promotion metadata.
-
-11. **Fast context B2**
-   - replace expensive per-pulse bars/features proxy construction with
-     index-backed/list-backed structures where parity permits;
-   - defer with evidence if parity cannot be reached in this cycle.
-
-12. **Post-change measurement and residual report**
-   - rerun baseline workloads;
-   - publish speedup and regression results;
-   - document remaining inefficiency pockets and next optimization candidates.
 
 13. **Release gate**
    - full local tests;
@@ -656,11 +696,11 @@ The ticket cut uses this sequence:
 
 Projection work must precede fast context and typed memory events. The LDG-2409
 checkpoint measurement reorders B1 before typed events because fold helper churn
-remains the larger measured slice. Typed events and single-pass summary should
-remain separate tickets by default so the parity gate can run once after the
-representation change and once after the reconstruction change. Fast context B2
-is optional within the release: if it cannot preserve parity, v0.1.8.3 can ship
-B1 and defer B2 with measurement evidence.
+remains the larger measured slice. The accepted pulse-context data model
+consolidation synthesis then makes LDG-2413 the next R-level optimization and
+measurement gate. Typed events and single-pass summary remain ticketed, but
+their v0.1.8.3 disposition is a maintainer decision after the LDG-2413/LDG-2414
+measurement evidence.
 
 ---
 
@@ -673,6 +713,8 @@ Runtime verification must include:
   tests;
 - projection-vs-current-accessor parity tests;
 - `ctx$features_wide` state-leak and schema-preservation tests;
+- prebuilt static pulse-view parity, schema, state-leak, cross-candidate
+  isolation, and peak-memory/object-size checks;
 - shared `ledgr_run()` / `ledgr_sweep()` projection-consumption tests;
 - single-candidate `ledgr_run()` wall-clock regression check;
 - targeted strategy-preflight adversarial tests for `do.call()` indirection and
@@ -699,8 +741,10 @@ Expected test surfaces include:
   separately testable unit.
 - a projection-specific test file if the runtime projection is factored as a
   separately testable unit;
-- a fast-context-specific test file if B1/B2 activation is substantial enough
-  to warrant direct unit coverage.
+- a fast-context-specific test file if B1 activation is substantial enough to
+  warrant direct unit coverage;
+- a pulse-context prebuilt-view-specific test file if LDG-2413 is factored as a
+  separately testable unit.
 
 Performance verification must include:
 
@@ -737,9 +781,10 @@ v0.1.8.3 can close when:
    `ctx$features_wide` schema tests.
 6. The projection does not bump `feature_engine_version`, concrete
    fingerprints, `feature_set_hash`, or `config_hash`.
-7. Typed memory events, fast context B1, single-pass summary reconstruction,
-   and B2 where parity permits either ship with parity and measured
-   improvement, or are explicitly deferred with evidence.
+7. Fast context B1 and pulse-context data model consolidation ship with parity
+   and measured evidence. Typed memory events and single-pass summary
+   reconstruction either ship with parity and measured improvement, or are
+   explicitly deferred with maintainer-approved evidence after LDG-2414.
 8. Persistent and memory reconstruction parity is tested for realized and
    unrealized PnL.
 9. `metric_kernel` remains the sole metric-assumption input for sweep summary

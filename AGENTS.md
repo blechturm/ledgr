@@ -43,8 +43,9 @@ release closes or scope changes materially):
 - Next implementation scope is performance protocol and baseline,
   persistent-versus-memory accounting parity, runtime projection with an
   R-memory backend, shared `ledgr_run()` / `ledgr_sweep()` projection
-  consumption, typed memory events, fast context B1/B2 where parity permits,
-  single-pass sweep summary reconstruction, post-change residual profiling,
+  consumption, fast context B1, pulse-context data model consolidation with
+  prebuilt static pulse views, post-LDG-2413 residual profiling and maintainer
+  decision on typed memory events / single-pass sweep summary reconstruction,
   preflight indirection hardening, and routed auditr docs/message polish.
 - Do not pull active aliases, alias-map identity, parameter-grid helpers,
   DuckDB-backed precompute storage, out-of-core projection, parallel dispatch,
@@ -59,7 +60,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md` |
+| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
 | Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
 | Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |

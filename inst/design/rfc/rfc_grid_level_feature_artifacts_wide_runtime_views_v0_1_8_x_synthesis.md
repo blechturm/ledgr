@@ -202,19 +202,21 @@ The state-leak contract is explicit: if a strategy captures
 `ctx$features_wide` at pulse `t`, later fold work for pulse `t+1` must not
 mutate the captured object.
 
-### Fast Context
+### Fast Context And Pulse-Context Data Model
 
-Fast context B1 and B2 are now part of the expanded v0.1.8.3 R-level
-optimization arc:
+Fast context B1 is part of the expanded v0.1.8.3 R-level optimization arc:
 
 - B1: initialize lookup environments and helper closures once per candidate;
   mutate pulse-specific scalar values per pulse.
-- B2: replace expensive per-pulse bars/features proxy construction with
-  index-backed/list-backed structures where parity permits.
 
-Both must be gated by projection parity and state-leak tests before activation.
-If B2 cannot reach parity within the cycle, v0.1.8.3 should ship B1 only and
-defer B2 with measurement evidence rather than weakening the context contract.
+B1 must be gated by projection parity and state-leak tests before activation.
+
+The accepted pulse-context data model consolidation synthesis supersedes this
+document's original B2 proxy framing for v0.1.8.3 implementation. LDG-2413 now
+targets prebuilt static pulse views for `ctx$bars`, `ctx$feature_table`, and
+`ctx$features_wide`, while preserving public data-frame field semantics. That
+work must follow the pulse-context synthesis rather than the narrower
+index-backed/list-backed proxy language here.
 
 ---
 
@@ -353,11 +355,12 @@ Recommended v0.1.8.3 sequence:
 2. Extend ledgr_precompute_features() to emit the projection.
 3. Consume projection in the shared ledgr_run()/ledgr_sweep() fold.
 4. Add projection-vs-table, state-leak, and shared-run/sweep parity gates.
-5. Add typed memory events.
-6. Add fast context B1 after projection parity is green.
-7. Add single-pass summary reconstruction.
-8. Add fast context B2.
-9. Rerun LDG-2402 protocol and publish residual report.
+5. Add fast context B1 after projection parity is green.
+6. Add pulse-context data model consolidation / prebuilt static pulse views.
+7. Rerun LDG-2402 protocol and publish residual report for the LDG-2410 /
+   LDG-2412 maintainer decision.
+8. Add typed memory events if retained.
+9. Add single-pass summary reconstruction if retained.
 ```
 
 Ticket cut may merge or split these steps, but it must preserve these
@@ -368,14 +371,15 @@ dependency edges:
 - projection/state-leak parity before fast-context activation;
 - LDG-2403 accounting parity before typed events and after each accounting-path
   rewrite;
-- post-change measurement after all accepted R-level optimizations land.
+- post-LDG-2413 measurement before deciding whether typed memory events and
+  single-pass summary reconstruction remain in v0.1.8.3.
 
 B1 is sequenced before single-pass summary because LDG-2402 points to fold
 setup churn as the larger immediate lever, while single-pass summary touches
 accounting reconstruction and should land after the projection-backed fold path
 is stable. `ledgr_sweep_run_candidate()` is the expected convergence point for
-projection setup, typed memory events, and single-pass reconstruction; avoid
-three independent refactors of that boundary.
+projection setup, pulse-context view setup, typed memory events, and single-pass
+reconstruction; avoid independent refactors of that boundary.
 
 ---
 

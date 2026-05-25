@@ -696,6 +696,35 @@ Dependencies before promotion:
 - the post-v0.1.8.3 residual report shows memory scaling, repeated precompute,
   ML/export, or parallel-worker sharing as the next load-bearing bottleneck.
 
+### 2026-05-25 [optimization] Grid-union shared pulse views
+
+The v0.1.8.3 pulse-context data model consolidation synthesis accepts
+candidate-specific prebuilt feature views as the safest first pass for
+LDG-2413. This preserves exact candidate-facing `ctx$features_wide` and
+`ctx$feature_table` schemas, but duplicates view materialization when many
+sweep candidates share the same concrete features.
+
+Future optimization work can investigate grid-union pulse views with
+per-candidate column selection:
+
+```text
+grid-level concrete feature union
+  -> shared per-pulse feature view over all concrete feature IDs
+  -> candidate-specific column selection / alias naming at fold setup
+```
+
+This belongs after v0.1.8.3 measurement, and likely after v0.1.8.4 active
+aliases clarify alias-name versus concrete-feature-name schemas. It should not
+change the public context contract or introduce per-pulse DBI traffic.
+
+Promotion trigger:
+
+- LDG-2414 or a later residual report shows candidate-specific view
+  materialization is a material memory or setup-time cost;
+- active aliases have fixed the candidate alias-map semantics;
+- state-leak tests can prove candidate column selection does not allow one
+  candidate's mutation to corrupt another candidate's view.
+
 ### 2026-05-25 [infrastructure] Compiled fold core after pipeline stabilization
 
 The v0.1.8.3 sweep baseline shows that R-side fold execution dominates the

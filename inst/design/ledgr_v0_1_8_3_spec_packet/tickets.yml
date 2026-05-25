@@ -210,7 +210,7 @@ tickets:
       - "promotion_tests"
 
   - id: "LDG-2413"
-    title: "Fast Context B2 Index-Backed Context Proxies"
+    title: "Pulse Context Data Model Consolidation"
     status: "pending"
     priority: "P1"
     effort: "L"
@@ -218,18 +218,19 @@ tickets:
       - "LDG-2403"
       - "LDG-2409"
       - "LDG-2411"
-      - "LDG-2412"
     classification:
       type: "optimization"
-      surface: "fast_context"
-      scope: "b2_context_proxies"
+      surface: "pulse_context"
+      scope: "prebuilt_static_views"
     tests:
-      - "fast_context_b2_tests"
+      - "prebuilt_pulse_view_tests"
       - "projection_parity_tests"
       - "accounting_parity_tests"
-      - "pulse_context_helper_tests"
       - "sweep_tests"
       - "backtest_wrapper_tests"
+      - "fingerprint_stability_tests"
+      - "state_leak_tests"
+      - "peak_memory_measurement"
 
   - id: "LDG-2414"
     title: "Post-Change Measurement And Residual Report"
@@ -240,9 +241,7 @@ tickets:
       - "LDG-2402"
       - "LDG-2408"
       - "LDG-2409"
-      - "LDG-2410"
       - "LDG-2411"
-      - "LDG-2412"
       - "LDG-2413"
     classification:
       type: "measurement"
@@ -252,6 +251,7 @@ tickets:
       - "post_change_smoke_workload"
       - "post_change_reference_workload"
       - "post_change_single_run_workload"
+      - "peak_memory_measurement"
       - "residual_candidate_review"
       - "manual_report_review"
 

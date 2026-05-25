@@ -18,15 +18,18 @@ baseline protocol
   -> projection interface and R-memory backend
   -> shared fold projection consumption and parity gates
   -> fast context B1
-  -> typed memory events
-  -> single-pass summary reconstruction
-  -> fast context B2 if parity permits
-  -> post-change measurement and residual hot-path report
+  -> pulse context data model consolidation
+  -> post-LDG-2413 measurement and maintainer decision
+  -> typed memory events and single-pass summary if retained
+  -> residual hot-path report
 ```
 
 The original projection synthesis allowed typed events and B1 to be sequenced by
 measurement. The LDG-2409 checkpoint measured helper churn as the larger
-remaining fold slice, so LDG-2411 now lands before LDG-2410.
+remaining fold slice, so LDG-2411 now lands before LDG-2410. The accepted
+pulse-context data model consolidation synthesis rescopes LDG-2413 from a
+narrow B2 proxy ticket to prebuilt static pulse views, with LDG-2414 providing
+the measurement evidence for the LDG-2410 / LDG-2412 disposition decision.
 
 The auditr spine is deliberately separate:
 
@@ -52,9 +55,10 @@ LDG-2401 Scope Routing, Packet Setup, And Auditr Decisions
   |     |-- LDG-2408 Runtime Projection Interface And R-Memory Backend
   |     |     `-- LDG-2409 Shared Fold Projection Consumption And Parity Gate
   |     |           |-- LDG-2411 Fast Context B1 Pulse Helper Reuse
+  |     |           |     `-- LDG-2413 Pulse Context Data Model Consolidation
+  |     |           |           `-- LDG-2414 Post-Change Measurement And Residual Report
   |     |           |-- LDG-2410 Typed Memory Event Representation
   |     |           |     `-- LDG-2412 Single-Pass Sweep Summary Reconstruction
-  |     |           |           `-- LDG-2413 Fast Context B2 Index-Backed Context Proxies
   |     |           `-- LDG-2414 Post-Change Measurement And Residual Report
   |     `-- LDG-2414 Post-Change Measurement And Residual Report
   |-- LDG-2403 Persistent-Versus-Memory Accounting Parity Gate
@@ -63,7 +67,7 @@ LDG-2401 Scope Routing, Packet Setup, And Auditr Decisions
   |     |-- LDG-2410 Typed Memory Event Representation
   |     |-- LDG-2411 Fast Context B1 Pulse Helper Reuse
   |     |-- LDG-2412 Single-Pass Sweep Summary Reconstruction
-  |     `-- LDG-2413 Fast Context B2 Index-Backed Context Proxies
+  |     `-- LDG-2413 Pulse Context Data Model Consolidation
   |-- LDG-2404 Strategy Preflight Indirection Hardening
   |     `-- LDG-2405 Preflight Documentation And Strategy-Boundary Polish
   |-- LDG-2406 Metric-Context Documentation And Display Polish
@@ -818,8 +822,8 @@ scope: shared_fold_core
 - Preserved the public `ctx$feature_table` data-frame contract. This means the
   projection path removes scalar-accessor string matching and wide-view reshape
   work, but does not yet remove the per-pulse long-form feature-table
-  materialization cost; that residual cost is explicitly left for LDG-2411/B2
-  measurement or a later context-contract change.
+  materialization cost; that residual cost is explicitly left for LDG-2413 /
+  LDG-2414 measurement or a later context-contract change.
 - Kept the legacy table-backed fold branch as a tested parity fallback rather
   than deleting it during the projection foundation ticket.
 - Added projection-vs-current-wide-view, state-leak, shared-fold structure,
@@ -966,7 +970,7 @@ scope: b1_helper_reuse
   closure state; it does not reuse the public `ctx` object across pulses.
 - Preserved `ctx$feature_table` and fresh `ctx$features_wide` materialization
   semantics. Long-form feature-table and wide-view allocation remain visible
-  residual costs for B2 / LDG-2414.
+  residual costs for LDG-2413 / LDG-2414.
 - Removed the dead committed-run `features_proxy` allocation that was left over
   from the old fast-context scaffold and was not consumed by the fold.
 - Extended the direct fold parity test to compare legacy table mode,
@@ -1048,60 +1052,81 @@ scope: memory_path
 
 ---
 
-## LDG-2413: Fast Context B2 Index-Backed Context Proxies
+## LDG-2413: Pulse Context Data Model Consolidation
 
 Priority: P1
 Effort: L
-Dependencies: LDG-2403, LDG-2409, LDG-2411, LDG-2412
+Dependencies: LDG-2403, LDG-2409, LDG-2411
 Status: Pending
 
 ### Description
 
-Replace expensive per-pulse bars/features proxy construction with
-index-backed/list-backed structures where parity permits.
+Rescope the old fast-context B2 proxy ticket around prebuilt static pulse
+views. Preserve public `ctx$bars`, `ctx$feature_table`, and
+`ctx$features_wide` data-frame field semantics while moving their construction
+out of the pulse hot loop where parity permits.
 
 ### Tasks
 
-- Identify per-pulse proxy construction still visible after B1.
-- Replace stable bars/features proxy structures with index-backed or
-  list-backed representations where behavior is unchanged.
-- Inspect `ctx$flat()` and `ctx$hold()` allocation after projection and B1; if
-  they remain material in profiling, include them in B2 only where behavior and
-  state-leak parity remain unchanged.
-- Preserve public context field shape and helper semantics.
-- Preserve `ctx$features_wide` fresh-view and schema contracts.
-- Rerun projection, accounting, sweep, and run parity tests.
-- If B2 cannot reach parity within the cycle, defer it with measurement
-  evidence rather than weakening the context contract.
+- Run and record the `ctx$feature_table` usage audit. In v0.1.8.3,
+  prebuild `ctx$feature_table` either way; if no documented strategy usage is
+  found, record only a future-deprecation note in `inst/design/horizon.md`.
+- Remove `run_feature_matrix` from the fold execution contract and remove the
+  legacy `is.null(runtime_projection)` branch from `ledgr_execute_fold`.
+  A setup-only matrix intermediate may remain in `ledgr_run_fold()` if it is
+  simpler than direct projection construction.
+- Build `ctx$bars` static pulse views once at the appropriate setup point:
+  run setup for `ledgr_run()`, sweep setup for `ledgr_sweep()` with views
+  threaded through candidate folds.
+- Build candidate-specific `ctx$features_wide` and `ctx$feature_table` views
+  from the runtime projection restricted to candidate `feature_ids`.
+- Preserve `ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` schemas,
+  column ordering, types, `ts_utc`, missing-value behavior, and data-frame
+  field semantics.
+- Preserve B1 helper closure reuse and projection-backed `ctx$feature()` /
+  `ctx$features()` scalar accessors.
+- Add state-leak tests for in-run captured views, in-strategy mutation, and
+  cross-candidate isolation.
+- Measure peak memory or object sizes for the prebuilt view bundle for LDG-2414.
+- Rerun projection, accounting, sweep, run, and backtest-wrapper parity tests.
 
 ### Acceptance Criteria
 
-- B2 either ships with bit-exact parity or is explicitly deferred with
-  measurement evidence.
-- If shipped, B2 improves or preserves reference workload performance.
-- No public context API changes.
+- Prebuilt static pulse views ship with bit-exact parity against the LDG-2411
+  projection+B1 path.
+- `ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` remain data-frame
+  fields with current public schemas and semantics.
+- No active bindings, function-valued context fields, or custom S3 public view
+  classes are introduced.
+- `run_feature_matrix` no longer survives into the fold execution contract.
 - No second fold core or sweep-only execution semantics.
-- Any remaining `ctx$flat()` / `ctx$hold()` allocation cost is either addressed
-  with parity or named in the residual report.
+- State-leak tests prove captured views and strategy mutation do not corrupt
+  later pulses or other sweep candidates.
+- Reference workload performance and `ledgr_run()` single-candidate overhead
+  are measured in LDG-2414.
 
 ### Verification
 
-Fast-context B2 tests, projection parity tests, accounting parity tests, sweep
-tests, backtest-wrapper tests, and targeted LDG-2402 workloads.
+Pulse-context prebuilt-view tests, projection parity tests, accounting parity
+tests, sweep tests, backtest-wrapper tests, fingerprint-stability tests, and
+targeted LDG-2402 workloads plus peak-memory/object-size measurement in
+LDG-2414.
 
 ### Source Reference
 
 - `v0_1_8_3_spec.md` Sections 3, 8, and 9
 - `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`
+- `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`
 - `R/fold-core.R`
 - `R/pulse-context.R`
+- `R/runtime-projection.R`
 
 ### Classification
 
 ```yaml
 type: optimization
-surface: fast_context
-scope: b2_context_proxies
+surface: pulse_context
+scope: prebuilt_static_views
 ```
 
 ---
@@ -1110,26 +1135,33 @@ scope: b2_context_proxies
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2402, LDG-2408, LDG-2409, LDG-2410, LDG-2411, LDG-2412, LDG-2413
+Dependencies: LDG-2402, LDG-2408, LDG-2409, LDG-2411, LDG-2413
 Status: Pending
 
 ### Description
 
-Rerun the v0.1.8.3 performance protocol after the scoped R-level optimization
-lands, publish speedup/regression evidence, and name the remaining inefficiency
-pockets.
+Rerun the v0.1.8.3 performance protocol after runtime projection, B1, and
+pulse-context data model consolidation land. Publish speedup/regression,
+peak-memory/object-size evidence, and the residual hot-path report that informs
+the maintainer decision on LDG-2410 typed memory events and LDG-2412
+single-pass summary reconstruction.
 
 ### Tasks
 
-- Rerun all LDG-2402 workloads on the v0.1.8.3 branch after LDG-2408 through
-  LDG-2413 are done or explicitly deferred.
+- Rerun all LDG-2402 workloads on the v0.1.8.3 branch after LDG-2408,
+  LDG-2409, LDG-2411, and LDG-2413 are done.
 - Record exact SHA and environment metadata.
 - Compare median elapsed time, candidate fold time, summary reconstruction
   time, metric computation time, single-candidate `ledgr_run()` time, and top
   profile functions.
+- Record peak memory or object-size evidence for the prebuilt pulse-view
+  bundle.
 - Confirm no material `ledgr_run()` regression from shared-path changes.
 - Publish `post_change_report.md`, `residual_hot_path_report.md`, and
   `summary_report.md`.
+- Include post-fold reconstruction sampled-time share and wall-clock evidence
+  sufficient for the maintainer to decide whether LDG-2410 and LDG-2412 remain
+  in v0.1.8.3 or defer to v0.1.9.
 - Evaluate whether strategy bytecode compilation (`compiler::cmpfun()`) is a
   credible next micro-optimization, including fingerprint/provenance risk and
   measured benefit if practical.
@@ -1145,6 +1177,10 @@ pockets.
 
 - Post-change report uses the same protocol as the baseline.
 - Residual report names remaining dominant inefficiency pockets.
+- Residual report includes peak memory/object-size evidence for prebuilt
+  pulse views.
+- Residual report includes a maintainer-facing LDG-2410 / LDG-2412 disposition
+  recommendation with supporting measurement evidence.
 - Residual report names or dismisses the known deferred R-level candidates:
   lazy `ctx$features_wide`, persistent-path single-pass reconstruction,
   strategy bytecode compilation, and `ctx$flat()` / `ctx$hold()` allocation.
