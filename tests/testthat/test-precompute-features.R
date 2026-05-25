@@ -40,6 +40,22 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
     sort(names(precomputed$payload)),
     sort(precomputed$feature_union$fingerprint)
   )
+  testthat::expect_s3_class(precomputed$projection, "ledgr_runtime_projection")
+  testthat::expect_identical(precomputed$projection$feature_engine_version, ledgr:::ledgr_feature_engine_version())
+  testthat::expect_null(precomputed$projection$alias_index)
+  testthat::expect_identical(names(precomputed$projection$instrument_index), c("AAA", "BBB"))
+  testthat::expect_equal(unname(precomputed$projection$instrument_index), c(1L, 2L))
+  testthat::expect_equal(length(precomputed$projection$pulse_index), 8L)
+  testthat::expect_equal(
+    sort(names(precomputed$projection$feature_values)),
+    sort(precomputed$feature_union$feature_id)
+  )
+  first_payload <- precomputed$payload[[precomputed$candidate_features$feature_fingerprints[[1]][[1]]]]
+  first_matrix <- precomputed$projection$feature_values[[first_payload$feature_id]]
+  testthat::expect_equal(dim(first_matrix), c(2L, 8L))
+  testthat::expect_equal(unname(first_matrix["AAA", ]), as.numeric(first_payload$values$AAA))
+  sma_id <- ledgr_feature_id(ledgr_ind_sma(3))
+  testthat::expect_true(is.na(precomputed$projection$feature_values[[sma_id]]["AAA", 1]))
   testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(precomputed, exp, grid))
 })
 
@@ -119,6 +135,32 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
   testthat::expect_equal(nrow(precomputed$warmup), 1L)
   testthat::expect_equal(precomputed$warmup$available_bars_at_scoring_start[[1]], 5L)
   testthat::expect_false(precomputed$warmup$warmup_achievable[[1]])
+})
+
+testthat::test_that("runtime projection flattens bundle outputs to concrete feature IDs", {
+  testthat::skip_if_not_installed("TTR")
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:30)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), n = 5)
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    universe = "AAA",
+    features = list(bundle)
+  )
+  grid <- ledgr_param_grid(a = list(qty = 1))
+
+  precomputed <- ledgr_precompute_features(exp, grid)
+  expected_ids <- unname(ledgr_feature_id(bundle))
+
+  testthat::expect_equal(sort(names(precomputed$projection$feature_values)), sort(expected_ids))
+  testthat::expect_equal(sort(precomputed$feature_union$feature_id), sort(expected_ids))
 })
 
 testthat::test_that("precompute aborts on static scoring coverage gaps", {

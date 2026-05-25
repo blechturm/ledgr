@@ -115,7 +115,7 @@ tickets:
 
   - id: "LDG-2408"
     title: "Runtime Projection Interface And R-Memory Backend"
-    status: "pending"
+    status: "in_review"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -133,7 +133,7 @@ tickets:
 
   - id: "LDG-2409"
     title: "Shared Fold Projection Consumption And Parity Gate"
-    status: "pending"
+    status: "in_review"
     priority: "P1"
     effort: "L"
     dependencies:

@@ -54,6 +54,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
   bars_mat <- execution$bars_mat
   feature_defs <- execution$feature_defs
   run_feature_matrix <- execution$run_feature_matrix
+  runtime_projection <- execution$runtime_projection
   cost_resolver <- execution$cost_resolver
   event_seq <- execution$event_seq_start
   telemetry <- execution$telemetry
@@ -131,7 +132,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
       if (n_def > 0L) {
         row_idx <- 1L
         for (def_id in def_ids) {
-          m <- run_feature_matrix[[def_id]]
+          m <- if (is.null(runtime_projection)) {
+            run_feature_matrix[[def_id]]
+          } else {
+            runtime_projection$feature_values[[def_id]]
+          }
           for (j in seq_along(instrument_ids)) {
             inst <- instrument_ids[[j]]
             features_df$instrument_id[[row_idx]] <- inst
@@ -173,7 +178,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
         bars = bars_current,
         features = features_current,
         positions = state$positions,
-        universe = instrument_ids
+        universe = instrument_ids,
+        projection = runtime_projection,
+        pulse_idx = i,
+        feature_ids = def_ids
       )
 
       result <- tryCatch(

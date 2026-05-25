@@ -481,6 +481,83 @@ testthat::test_that("feature-consuming sweep strategies see the same feature val
   testthat::expect_equal(observed$sweep, observed$run)
 })
 
+testthat::test_that("shared fold projection path matches legacy table feature path", {
+  bars <- ledgr_sweep_test_bars()
+  bars_by_id <- split(bars, as.character(bars$instrument_id))
+  bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, "AAA")
+  bars_mat <- ledgr:::ledgr_sweep_bars_matrix(bars_by_id, "AAA")
+  pulses_posix <- as.POSIXct(bars_by_id$AAA$ts_utc, tz = "UTC")
+  pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
+  feature_defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(list(
+    ledgr_indicator("custom_close", function(window) tail(window$close, 1), requires_bars = 1)
+  ))
+  run_feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, "AAA")
+  runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(run_feature_matrix, "AAA", pulses_posix)
+
+  seen <- new.env(parent = emptyenv())
+  seen$legacy <- list()
+  seen$projection <- list()
+  mode <- "legacy"
+  strategy <- function(ctx, params) {
+    seen[[mode]][[length(seen[[mode]]) + 1L]] <<- list(
+      feature = ctx$feature("AAA", "custom_close"),
+      table = ctx$feature_table,
+      wide = ctx$features_wide
+    )
+    targets <- ctx$flat()
+    targets[["AAA"]] <- if (is.finite(ctx$feature("AAA", "custom_close")) &&
+      ctx$feature("AAA", "custom_close") > 101) 1 else 0
+    targets
+  }
+
+  run_fold <- function(projection) {
+    handler <- ledgr:::ledgr_memory_output_handler("projection-parity")
+    execution <- list(
+      run_id = "projection-parity",
+      instrument_ids = "AAA",
+      strategy_fn = strategy,
+      strategy_params = list(),
+      strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy),
+      strategy_is_functional = TRUE,
+      pulses_posix = pulses_posix,
+      pulses_iso = pulses_iso,
+      start_idx = 1L,
+      max_pulses = Inf,
+      checkpoint_every = 0L,
+      telemetry_stride = 0L,
+      state = list(cash = 100000, positions = stats::setNames(0, "AAA")),
+      state_prev = NULL,
+      bars_by_id = bars_by_id,
+      bars_mat = bars_mat,
+      feature_defs = feature_defs,
+      run_feature_matrix = run_feature_matrix,
+      runtime_projection = projection,
+      cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0),
+      event_seq_start = 1L,
+      telemetry = ledgr:::ledgr_sweep_telemetry_env(),
+      seed = 123L,
+      event_mode = "buffered",
+      use_fast_context = FALSE
+    )
+    result <- ledgr:::ledgr_execute_fold(execution, handler)
+    list(result = result, events = handler$events())
+  }
+
+  legacy <- run_fold(NULL)
+  mode <- "projection"
+  projected <- run_fold(runtime_projection)
+
+  testthat::expect_equal(projected$events, legacy$events)
+  testthat::expect_equal(
+    vapply(seen$projection, `[[`, numeric(1), "feature"),
+    vapply(seen$legacy, `[[`, numeric(1), "feature")
+  )
+  for (i in seq_along(seen$legacy)) {
+    testthat::expect_equal(seen$projection[[i]]$table, seen$legacy[[i]]$table)
+    testthat::expect_equal(seen$projection[[i]]$wide, seen$legacy[[i]]$wide)
+  }
+})
+
 testthat::test_that("precomputed features are consumed without calling the feature factory during sweep", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -516,4 +593,7 @@ testthat::test_that("the shared fold core is private and DB-free", {
   testthat::expect_false(grepl("DBI::|dbGetQuery|dbExecute|dbAppendTable|dbWithTransaction|duckdb", core_body))
   testthat::expect_true(grepl("ledgr_execute_fold", paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n")))
   testthat::expect_true(grepl("ledgr_execute_fold", paste(deparse(body(ledgr:::ledgr_sweep_run_candidate)), collapse = "\n")))
+  testthat::expect_true(grepl("runtime_projection", core_body, fixed = TRUE))
+  testthat::expect_true(grepl("runtime_projection", paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n"), fixed = TRUE))
+  testthat::expect_true(grepl("runtime_projection", paste(deparse(body(ledgr:::ledgr_sweep_run_candidate)), collapse = "\n"), fixed = TRUE))
 })

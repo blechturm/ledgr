@@ -1085,6 +1085,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }
   run_feature_series <- NULL
   run_feature_matrix <- NULL
+  runtime_projection <- NULL
   bars_by_id <- NULL
   bars_cols_by_id <- NULL
   bars_mat <- NULL
@@ -1255,6 +1256,13 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       stringsAsFactors = FALSE
     )
   }
+  runtime_projection <- ledgr_projection_from_feature_matrix(
+    feature_matrix = run_feature_matrix %||% list(),
+    universe = instrument_ids,
+    pulses_posix = pulses_posix,
+    feature_engine_version = ledgr_feature_engine_version(),
+    alias_index = NULL
+  )
   features_proxy <- NULL
   if (isTRUE(use_fast_context) && length(feature_defs) > 0) {
     features_proxy <- list(
@@ -1297,6 +1305,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     bars_mat = bars_mat,
     feature_defs = feature_defs,
     run_feature_matrix = run_feature_matrix,
+    runtime_projection = runtime_projection,
     cost_resolver = cost_resolver,
     event_seq_start = next_event_seq,
     telemetry = telemetry,

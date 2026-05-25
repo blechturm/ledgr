@@ -661,7 +661,7 @@ scope: installed_docs
 Priority: P1
 Effort: L
 Dependencies: LDG-2402, LDG-2403
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -714,6 +714,27 @@ surface: runtime_projection
 scope: feature_precompute
 ```
 
+### Completion Notes
+
+- Added an internal `ledgr_runtime_projection` interface with an R-memory
+  backend keyed by concrete feature ID and shaped as
+  `[instrument_idx, pulse_idx]` matrices.
+- Extended `ledgr_precompute_features()` to attach a projection while keeping
+  the existing payload and feature-precompute path authoritative.
+- The projection carries instrument and pulse indices, `feature_engine_version`,
+  and a reserved `alias_index = NULL` extension point without changing feature
+  fingerprints, `feature_set_hash`, or `config_hash`.
+- Added projection helper functions for feature scalar access, current-pulse
+  feature tables, current-pulse wide views, and feature-map bundle access.
+- Pinned projection shape, missing warmup slots, bundle flattening, and
+  fingerprint stability with targeted tests.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-precompute-features.R')`
+  - `testthat::test_file('tests/testthat/test-pulse-context-accessors.R')`
+  - `testthat::test_file('tests/testthat/test-indicator-ttr.R')`
+  - `testthat::test_file('tests/testthat/test-feature-map.R')`
+  - `testthat::test_file('tests/testthat/test-fingerprint-stability.R')`
+
 ---
 
 ## LDG-2409: Shared Fold Projection Consumption And Parity Gate
@@ -721,7 +742,7 @@ scope: feature_precompute
 Priority: P1
 Effort: L
 Dependencies: LDG-2403, LDG-2408
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -777,6 +798,41 @@ type: optimization
 surface: fold_feature_access
 scope: shared_fold_core
 ```
+
+### Completion Notes
+
+- Routed `ledgr_run()` through the same runtime projection shape as the sweep
+  path, with committed runs acting as the one-candidate projection case.
+- Routed `ledgr_sweep()` through a grid-union projection, using supplied
+  `precomputed_features$projection` when present and building the same internal
+  projection from the resolved grid otherwise.
+- Updated `ledgr_execute_fold()` and `ledgr_sweep_run_candidate()` to consume
+  projection-backed feature helpers through the shared fold setup.
+- Preserved public `ctx$feature()`, `ctx$features()`, and
+  `ctx$features_wide` semantics while materializing `ctx$features_wide` as a
+  fresh current-pulse view with stable schema and `ts_utc` behavior.
+- Preserved the public `ctx$feature_table` data-frame contract. This means the
+  projection path removes scalar-accessor string matching and wide-view reshape
+  work, but does not yet remove the per-pulse long-form feature-table
+  materialization cost; that residual cost is explicitly left for LDG-2411/B2
+  measurement or a later context-contract change.
+- Kept the legacy table-backed fold branch as a tested parity fallback rather
+  than deleting it during the projection foundation ticket.
+- Added projection-vs-current-wide-view, state-leak, shared-fold structure,
+  fold-level projection-vs-table parity, restricted-candidate-feature,
+  sweep, committed-run, and accounting-parity coverage.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-sweep.R')`
+  - `testthat::test_file('tests/testthat/test-sweep-parity.R')`
+  - `testthat::test_file('tests/testthat/test-experiment-run.R')`
+  - `testthat::test_file('tests/testthat/test-backtest-wrapper.R')`
+  - `testthat::test_file('tests/testthat/test-pulse-context-accessors.R')`
+  - LDG-2402 smoke workload, 2 reps, profile disabled:
+    `sweep_plain` median 1.43s, `sweep_precomputed` median 0.96s, `run_loop`
+    median 5.635s. The run-loop result is close to the baseline smoke
+    run-loop median of 5.245s and remains a residual-report watch item.
+  - Full local test suite:
+    `testthat::test_local('.', reporter = 'summary')`
 
 ---
 

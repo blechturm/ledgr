@@ -174,7 +174,35 @@ ledgr_features_wide <- function(features) {
   out
 }
 
-ledgr_attach_feature_helpers <- function(ctx, features = ctx$feature_table, universe = ctx$universe) {
+ledgr_attach_feature_helpers <- function(ctx,
+                                         features = ctx$feature_table,
+                                         universe = ctx$universe,
+                                         projection = NULL,
+                                         pulse_idx = NULL,
+                                         feature_ids = NULL) {
+  if (!is.null(projection)) {
+    if (!is.data.frame(features) ||
+        (nrow(features) == 0L && length(ledgr_projection_feature_ids(projection, feature_ids)) > 0L)) {
+      features <- ledgr_projection_feature_table(projection, pulse_idx, feature_ids = feature_ids)
+    }
+    features_wide <- ledgr_projection_features_wide(projection, pulse_idx, feature_ids = feature_ids)
+    feature <- ledgr_projection_feature_accessor(projection, pulse_idx, feature_ids = feature_ids)
+    feature_bundle <- ledgr_projection_feature_bundle_accessor(projection, pulse_idx, universe, feature_ids = feature_ids)
+    if (is.environment(ctx)) {
+      ctx$feature_table <- features
+      ctx$features_wide <- features_wide
+      ctx$feature <- feature
+      ctx$features <- feature_bundle
+      return(invisible(ctx))
+    }
+
+    ctx$feature_table <- features
+    ctx$features_wide <- features_wide
+    ctx$feature <- feature
+    ctx$features <- feature_bundle
+    return(ctx)
+  }
+
   if (is.environment(ctx)) {
     ctx$feature_table <- features
     ctx$features_wide <- ledgr_features_wide(features)
@@ -194,9 +222,19 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                bars = ctx$bars,
                                                features = if (is.data.frame(ctx$feature_table)) ctx$feature_table else data.frame(),
                                                positions = ctx$positions,
-                                               universe = ctx$universe) {
+                                               universe = ctx$universe,
+                                               projection = NULL,
+                                               pulse_idx = NULL,
+                                               feature_ids = NULL) {
   ctx <- ledgr_ensure_pulse_context_accessors(ctx)
-  ctx <- ledgr_attach_feature_helpers(ctx, features, universe = universe)
+  ctx <- ledgr_attach_feature_helpers(
+    ctx,
+    features,
+    universe = universe,
+    projection = projection,
+    pulse_idx = pulse_idx,
+    feature_ids = feature_ids
+  )
   ledgr_refresh_pulse_context_lookup(ctx, bars = bars, positions = positions, universe = universe)
   ctx
 }

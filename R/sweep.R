@@ -105,8 +105,28 @@ ledgr_sweep <- function(exp,
 
   if (is.null(precomputed_features)) {
     resolved <- ledgr_resolve_feature_candidates(exp, param_grid, stop_on_error = FALSE)
+    runtime_projection <- ledgr_projection_from_payload(
+      payload = ledgr_precompute_payload(
+        ledgr_precompute_unique_feature_defs(resolved$candidates),
+        bars_by_id
+      ),
+      universe = exp$universe,
+      pulses_posix = pulses_posix,
+      feature_engine_version = ledgr_feature_engine_version(),
+      alias_index = NULL
+    )
   } else {
     resolved <- ledgr_sweep_resolved_from_precomputed(precomputed_features, param_grid)
+    runtime_projection <- precomputed_features$projection
+    if (is.null(runtime_projection)) {
+      runtime_projection <- ledgr_projection_from_payload(
+        payload = precomputed_features$payload,
+        universe = exp$universe,
+        pulses_posix = pulses_posix,
+        feature_engine_version = precomputed_features$feature_engine_version,
+        alias_index = NULL
+      )
+    }
   }
 
   sweep_id <- ledgr_generate_sweep_id()
@@ -164,6 +184,7 @@ ledgr_sweep <- function(exp,
           candidate = candidate,
           candidate_feature_row = feature_row,
           precomputed_features = precomputed_features,
+          runtime_projection = runtime_projection,
           snapshot_hash = meta$snapshot_hash,
           strategy_hash = strategy_hash,
           master_seed = seed
@@ -550,20 +571,24 @@ ledgr_sweep_run_candidate <- function(exp,
                                       candidate,
                                       candidate_feature_row,
                                       precomputed_features,
+                                      runtime_projection,
                                       snapshot_hash,
                                       strategy_hash,
                                       master_seed) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
-  run_feature_matrix <- if (is.null(precomputed_features)) {
-    ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, exp$universe)
-  } else {
-    ledgr_sweep_feature_matrix_from_precomputed(
-      precomputed_features,
-      feature_fingerprints,
-      bars_by_id,
-      exp$universe
-    )
+  run_feature_matrix <- NULL
+  if (is.null(runtime_projection)) {
+    run_feature_matrix <- if (is.null(precomputed_features)) {
+      ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, exp$universe)
+    } else {
+      ledgr_sweep_feature_matrix_from_precomputed(
+        precomputed_features,
+        feature_fingerprints,
+        bars_by_id,
+        exp$universe
+      )
+    }
   }
 
   output_handler <- ledgr_memory_output_handler(run_id)
@@ -610,6 +635,7 @@ ledgr_sweep_run_candidate <- function(exp,
     bars_mat = bars_mat,
     feature_defs = feature_defs,
     run_feature_matrix = run_feature_matrix,
+    runtime_projection = runtime_projection,
     cost_resolver = cost_resolver,
     event_seq_start = as.integer(nrow(opening_rows)) + 1L,
     telemetry = telemetry,

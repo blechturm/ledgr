@@ -66,6 +66,78 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_identical(ctx$.pulse_lookup$bar_index, stats::setNames(1:2, universe))
 })
 
+testthat::test_that("runtime projection helpers preserve feature-table and wide-view semantics", {
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
+  values <- matrix(
+    c(NA_real_, 10, 2, 20),
+    nrow = 2L,
+    ncol = 2L,
+    dimnames = list(c("AAA", "BBB"), NULL)
+  )
+  projection <- ledgr:::ledgr_runtime_projection(
+    feature_values = list(signal = values),
+    universe = c("AAA", "BBB"),
+    pulses_posix = pulses
+  )
+
+  table <- ledgr:::ledgr_projection_feature_table(projection, 2L, "signal")
+  wide <- ledgr:::ledgr_projection_features_wide(projection, 2L, "signal")
+  reference <- ledgr:::ledgr_features_wide(table)
+
+  testthat::expect_equal(table$feature_value, c(2, 20))
+  testthat::expect_identical(names(wide), c("instrument_id", "ts_utc", "signal"))
+  testthat::expect_equal(wide, reference)
+  testthat::expect_equal(
+    ledgr:::ledgr_projection_feature_at(projection, "AAA", "signal", 1L, default = 0),
+    NA_real_
+  )
+  testthat::expect_equal(
+    ledgr:::ledgr_projection_feature_at(projection, "ZZZ", "signal", 1L, default = 0),
+    0
+  )
+})
+
+testthat::test_that("projection-backed wide views are fresh public objects", {
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
+  projection <- ledgr:::ledgr_runtime_projection(
+    feature_values = list(signal = matrix(c(1, 2, 3, 4), nrow = 2L)),
+    universe = c("AAA", "BBB"),
+    pulses_posix = pulses
+  )
+
+  first <- ledgr:::ledgr_projection_features_wide(projection, 1L, "signal")
+  second <- ledgr:::ledgr_projection_features_wide(projection, 2L, "signal")
+  second$signal[[1]] <- 999
+
+  testthat::expect_equal(first$signal, c(1, 2))
+  testthat::expect_equal(second$signal, c(999, 4))
+})
+
+testthat::test_that("projection accessors can restrict a candidate feature subset", {
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC")
+  projection <- ledgr:::ledgr_runtime_projection(
+    feature_values = list(
+      alpha = matrix(c(1, 2), nrow = 2L),
+      beta = matrix(c(3, 4), nrow = 2L),
+      gamma = matrix(c(5, 6), nrow = 2L)
+    ),
+    universe = c("AAA", "BBB"),
+    pulses_posix = pulses
+  )
+  feature <- ledgr:::ledgr_projection_feature_accessor(projection, 1L, feature_ids = "alpha")
+
+  restricted <- ledgr:::ledgr_projection_features_wide(projection, 1L, feature_ids = "alpha")
+  unrestricted <- ledgr:::ledgr_projection_features_wide(projection, 1L)
+
+  testthat::expect_identical(names(restricted), c("instrument_id", "ts_utc", "alpha"))
+  testthat::expect_identical(names(unrestricted), c("instrument_id", "ts_utc", "alpha", "beta", "gamma"))
+  testthat::expect_equal(feature("AAA", "alpha"), 1)
+  testthat::expect_error(
+    feature("AAA", "beta"),
+    class = "ledgr_unknown_feature_id"
+  )
+})
+
 testthat::test_that("pulse context accessors fail loudly on ambiguity", {
   ts <- "2020-01-02T00:00:00Z"
   bars <- data.frame(
