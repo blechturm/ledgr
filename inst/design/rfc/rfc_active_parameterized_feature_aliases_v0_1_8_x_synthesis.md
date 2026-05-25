@@ -1,7 +1,6 @@
 # RFC Synthesis: Active Parameterized Feature Aliases
 
-**Status:** Accepted synthesis - binding for future active-alias ticket cut;
-target cycle v0.1.8.4+ subject to roadmap and spec-packet placement.
+**Status:** Accepted synthesis - binding for v0.1.8.4 active-alias ticket cut.
 **Date:** 2026-05-25
 **Author:** Codex
 **Thread:**
@@ -454,12 +453,8 @@ The first active-alias API must not add:
 Do not add this work to v0.1.8.2. The v0.1.8.2 metric-context and auditr arc is
 already closed.
 
-Recommended placement:
-
-- v0.1.8.4 if that cycle becomes a coherent sweep-authoring ergonomics release
-  that includes parameter-grid quality-of-life helpers; otherwise
-- a dedicated v0.1.8.5/v0.1.8.6 active-alias release before walk-forward
-  strategy work becomes prominent.
+Accepted placement: v0.1.8.4 as a dedicated active parameterized feature
+aliases release.
 
 The API should land before a walk-forward cycle that teaches parameterized
 sweeps as a common workflow. Walk-forward does not strictly require active
@@ -468,9 +463,9 @@ Tier-3 helper-factory trap much more visible.
 
 Coordinate this with the accepted v0.1.9 target-risk chain synthesis. The risk
 chain also adds to fold/pulse-context behavior. If active aliases land in
-v0.1.8.4-v0.1.8.6 and target-risk lands in v0.1.9, the two context surfaces
-should be reviewed together so their helpers, identity records, and error
-messages do not overlap or contradict each other.
+v0.1.8.4 and target-risk lands in v0.1.9, the two context surfaces should be
+reviewed together so their helpers, identity records, and error messages do not
+overlap or contradict each other.
 
 When the API ships, update the LDG-2311 strategy-development bridge prose. The
 current helper-factory / inline-workaround guidance should become the fallback

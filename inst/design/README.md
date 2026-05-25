@@ -114,7 +114,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Metric context and risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` | v0.1.8.2 metric design | Accepted |
 | Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
 | Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
-| Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4+ sweep authoring ergonomics | Accepted |
+| Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4 sweep authoring ergonomics | Accepted |
 
 ## RFCs
 
@@ -200,7 +200,7 @@ maps in execution config identity, and current flat bundle aliases preserved.
 The active-alias synthesis accepts a future-cycle design: constructor support
 for scalar parameter references, authoring declarations that are not concrete
 indicators, `ledgr_parameters()` introspection, an `alias_map_hash` provenance
-layer, flat bundle semantics, and placement in a v0.1.8.4+ sweep authoring
+layer, flat bundle semantics, and placement in the v0.1.8.4 sweep authoring
 ergonomics cycle.
 
 ## Audits And Spikes

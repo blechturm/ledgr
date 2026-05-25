@@ -895,7 +895,7 @@ scope: installed_docs
 Priority: P2
 Effort: M
 Dependencies: LDG-2302
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -943,6 +943,28 @@ Also run `devtools::document()` and review generated diffs.
 type: refactor
 surface: indicator_codebase
 scope: internal
+```
+
+### Completion Notes
+
+- Renamed `R/indicators_builtin.R` to `R/indicator-builtins.R`.
+- Renamed `R/indicator_adapters.R` to `R/indicator-adapters.R`.
+- Split `R/indicator_dev.R` into `R/indicator-dev.R` for
+  `ledgr_indicator_dev()` and its S3 methods, and `R/pulse-snapshot.R` for
+  `ledgr_pulse_snapshot()`, pulse-context S3 methods, and dedicated snapshot
+  helper functions.
+- Regenerated roxygen documentation and kept only expected
+  `Please edit documentation in ...` file-reference changes.
+- Preserved public APIs, exports, feature IDs, fingerprints, error classes,
+  and existing `ledgr_pulse_features()` input behavior.
+- Updated one feature-inspection test fixture to avoid `<<-` inside strategy
+  code under the LDG-2303 preflight contract while preserving the test intent.
+
+### Verification Notes
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-fingerprint-stability.R', reporter='summary'); testthat::test_file('tests/testthat/test-indicators.R', reporter='summary'); testthat::test_file('tests/testthat/test-indicator-ttr.R', reporter='summary'); testthat::test_file('tests/testthat/test-indicator-adapters.R', reporter='summary'); testthat::test_file('tests/testthat/test-feature-cache.R', reporter='summary'); testthat::test_file('tests/testthat/test-precompute-features.R', reporter='summary'); testthat::test_file('tests/testthat/test-sweep.R', reporter='summary'); testthat::test_file('tests/testthat/test-api-exports.R', reporter='summary')"
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-indicator-tools.R', reporter='summary'); testthat::test_file('tests/testthat/test-feature-inspection.R', reporter='summary'); testthat::test_file('tests/testthat/test-pulse-context-accessors.R', reporter='summary')"
 ```
 
 ---

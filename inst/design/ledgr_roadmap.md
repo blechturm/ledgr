@@ -94,8 +94,9 @@ versioned packet.
 | v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
 | v0.1.8.2 | Planned | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | Future packet |
 | v0.1.8.3 | Planned | Single-core sweep optimization after metric-kernel semantics settle. | Future packet |
-| v0.1.8.4 | Planned | Parameter-grid quality-of-life helpers after sweep performance stabilizes. | Future packet |
-| v0.1.8.5 | Planned | Parallel sweep dispatch after serial semantics, metrics, and grid UX stabilize. | Future packet |
+| v0.1.8.4 | Planned | Active parameterized feature aliases for sweep authoring. | Future packet |
+| v0.1.8.5 | Planned | Parameter-grid quality-of-life helpers after active aliases stabilize. | Future packet |
+| v0.1.8.6 | Planned | Parallel sweep dispatch after serial semantics, metrics, and grid UX stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet |
 | v0.1.9.x / v0.2.0 | Planned | Public transaction-cost model API after internal boundary stabilizes. | Future packet |
@@ -485,7 +486,36 @@ Precondition:
 - persistent-path and memory-path realized/unrealized PnL semantics must be
   resolved before implementation begins.
 
-### v0.1.8.4 Parameter-Grid Quality-Of-Life Helpers
+### v0.1.8.4 Active Parameterized Feature Aliases
+
+Authoritative input:
+
+- `inst/design/rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`.
+
+Intent:
+
+- add first-class parameterized feature aliases for sweep authoring;
+- support `ledgr_param("name")` scalar references in the first-pass
+  package-owned indicator constructors;
+- let strategies read active feature aliases with `ctx$features(id)` without
+  calling external feature factories from strategy code;
+- preserve concrete feature IDs and fingerprints by resolving declarations to
+  ordinary indicators before precompute, sweep, or run execution;
+- store resolved alias maps in execution identity and provenance.
+
+Constraints:
+
+- direct scalar substitution only; no expression language, tidy-eval,
+  conditional feature-family declarations, or AST-derived feature inference;
+- no nested bundle namespaces in the first pass; preserve current flat bundle
+  aliases;
+- no automatic candidate ranking, winner selection, or tuning objective;
+- keep exact-ID lookup and explicit-map `ctx$features(id, map)` behavior
+  unchanged;
+- coordinate pulse-context additions with the accepted v0.1.9 target-risk
+  chain design.
+
+### v0.1.8.5 Parameter-Grid Quality-Of-Life Helpers
 
 Intent:
 
@@ -493,6 +523,8 @@ Intent:
 - provide small authoring helpers around the existing parameter-grid contract
   rather than replacing `ledgr_param_grid()`;
 - keep grid identity, labels, and candidate provenance stable;
+- use `ledgr_parameters(features)` from v0.1.8.4 to validate parameterized
+  feature declarations where useful;
 - use the v0.1.8.3 performance envelope to decide how strongly docs should
   encourage larger grids.
 
@@ -501,10 +533,11 @@ Constraints:
 - this is ergonomic sugar, not a new sweep execution mode;
 - do not add a broad tuning DSL or objective/ranking ownership to ledgr;
 - do not make grid helpers depend on metric context or optimization internals;
+- do not make grid helpers responsible for active-alias materialization;
 - if v0.1.8.1 teaching needs a shorter example, prefer vignette-local helper
   code rather than committing a public grid DSL early.
 
-### v0.1.8.5 Parallel Sweep Dispatch
+### v0.1.8.6 Parallel Sweep Dispatch
 
 Intent:
 

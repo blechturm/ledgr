@@ -185,7 +185,7 @@ tickets:
 
   - id: "LDG-2312"
     title: "Indicator Codebase Phase 2 Cleanup"
-    status: "todo"
+    status: "in_review"
     priority: "P2"
     effort: "M"
     dependencies:
