@@ -51,7 +51,7 @@ tickets:
 
   - id: "LDG-2404"
     title: "Strategy Preflight Indirection Hardening"
-    status: "pending"
+    status: "in_review"
     priority: "P1"
     effort: "M"
     dependencies:

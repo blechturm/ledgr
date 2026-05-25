@@ -313,7 +313,7 @@ scope: sweep_memory_path
 Priority: P1
 Effort: M
 Dependencies: LDG-2401
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -369,6 +369,29 @@ type: bugfix
 surface: strategy_preflight
 scope: runtime_contract
 ```
+
+### Completion Notes
+
+- Extended strategy preflight analysis with a bounded AST pass for visible
+  `do.call()` targets. Constant-string targets such as
+  `do.call("Sys.time", list())` and direct-function targets such as
+  `do.call(Sys.time, list())` now route through Tier 3 preflight when the
+  target is part of the existing forbidden-call policy.
+- Added unsupported context-mutation detection for statically visible
+  `attr(ctx, ...) <- ...` writes.
+- Kept resolved captured mutable environments Tier 2, but added an explicit
+  preflight note warning that such objects may be mutated externally outside
+  stored run metadata.
+- Added adversarial regression coverage for `do.call()` targets resolving to
+  `Sys.time`, `Sys.Date`, `Sys.getenv`, `get`, `eval`, and `assign`, plus
+  runtime artifact checks for `ledgr_run()` and `ledgr_sweep()`.
+- Preserved `ledgr_strategy_tier3` and `ledgr_strategy_preflight_error`
+  condition classes and avoided late `ledgr_config_non_deterministic` as the
+  first user-facing error for covered `do.call()` cases.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-strategy-preflight.R')`
+  - `testthat::test_file('tests/testthat/test-sweep.R')`
+  - `testthat::test_file('tests/testthat/test-backtest-wrapper.R')`
 
 ---
 

@@ -414,6 +414,28 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
   testthat::expect_match(conditionMessage(sys_time_err), "Sys.time", fixed = TRUE)
   testthat::expect_false(inherits(sys_time_err, "ledgr_config_non_deterministic"))
 
+  do_call_strategy <- function(ctx, params) {
+    do.call("Sys.time", list())
+    ctx$flat()
+  }
+  do_call_exp <- ledgr_experiment(snapshot, do_call_strategy)
+  do_call_err <- testthat::capture_error(ledgr_sweep(do_call_exp, grid))
+  testthat::expect_s3_class(do_call_err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(do_call_err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(do_call_err), "do.call", fixed = TRUE)
+  testthat::expect_match(conditionMessage(do_call_err), "Sys.time", fixed = TRUE)
+  testthat::expect_false(inherits(do_call_err, "ledgr_config_non_deterministic"))
+
+  attr_strategy <- function(ctx, params) {
+    attr(ctx, "secret") <- 1
+    ctx$flat()
+  }
+  attr_exp <- ledgr_experiment(snapshot, attr_strategy)
+  attr_err <- testthat::capture_error(ledgr_sweep(attr_exp, grid))
+  testthat::expect_s3_class(attr_err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(attr_err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(attr_err), "attr(ctx", fixed = TRUE)
+
   counter <- 0L
   global_assign_strategy <- function(ctx, params) {
     counter <<- counter + 1L

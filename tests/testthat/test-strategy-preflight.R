@@ -129,6 +129,46 @@ testthat::test_that("strategy preflight rejects determinism-forbidden calls as T
   }
 })
 
+testthat::test_that("strategy preflight rejects forbidden do.call indirection as Tier 3", {
+  strategies <- list(
+    `do.call("Sys.time")` = function(ctx, params) {
+      do.call("Sys.time", list())
+      ctx$flat()
+    },
+    `do.call(Sys.time)` = function(ctx, params) {
+      do.call(Sys.time, list())
+      ctx$flat()
+    },
+    `do.call("Sys.Date")` = function(ctx, params) {
+      do.call("Sys.Date", list())
+      ctx$flat()
+    },
+    `do.call("Sys.getenv")` = function(ctx, params) {
+      do.call("Sys.getenv", list("HOME"))
+      ctx$flat()
+    },
+    `do.call("get")` = function(ctx, params) {
+      do.call("get", list("HOME"))
+      ctx$flat()
+    },
+    `do.call("eval")` = function(ctx, params) {
+      do.call("eval", list(quote(1 + 1)))
+      ctx$flat()
+    },
+    `do.call("assign")` = function(ctx, params) {
+      do.call("assign", list("x", 1, envir = .GlobalEnv))
+      ctx$flat()
+    }
+  )
+
+  for (label in names(strategies)) {
+    preflight <- ledgr_strategy_preflight(strategies[[label]])
+    testthat::expect_identical(preflight$tier, "tier_3", info = label)
+    testthat::expect_false(preflight$allowed, info = label)
+    testthat::expect_match(preflight$reason, "do.call", fixed = TRUE, info = label)
+  }
+})
+
 testthat::test_that("strategy preflight rejects global assignment as Tier 3", {
   strategy <- function(ctx, params) {
     counter <<- counter + 1
@@ -139,6 +179,19 @@ testthat::test_that("strategy preflight rejects global assignment as Tier 3", {
   testthat::expect_identical(preflight$tier, "tier_3")
   testthat::expect_false(preflight$allowed)
   testthat::expect_match(preflight$reason, "<<-", fixed = TRUE)
+})
+
+testthat::test_that("strategy preflight rejects context attribute mutation as Tier 3", {
+  strategy <- function(ctx, params) {
+    attr(ctx, "secret") <- 1
+    ctx$flat()
+  }
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_3")
+  testthat::expect_false(preflight$allowed)
+  testthat::expect_match(preflight$reason, "attr(ctx", fixed = TRUE)
+  testthat::expect_match(preflight$reason, "context mutation", fixed = TRUE)
 })
 
 testthat::test_that("strategy preflight flags ambient RNG as Tier 2, not certified Tier 1", {
@@ -171,6 +224,22 @@ testthat::test_that("strategy preflight keeps resolved external scalars as Tier 
   testthat::expect_identical(preflight$tier, "tier_2")
   testthat::expect_true(preflight$allowed)
   testthat::expect_true(any(grepl("threshold", preflight$notes, fixed = TRUE)))
+})
+
+testthat::test_that("strategy preflight keeps captured mutable environments Tier 2 with an explicit note", {
+  external_env <- new.env(parent = emptyenv())
+  external_env$qty <- 1
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["TEST_A"] <- external_env$qty
+    targets
+  }
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_2")
+  testthat::expect_true(preflight$allowed)
+  testthat::expect_true(any(grepl("external_env", preflight$notes, fixed = TRUE)))
+  testthat::expect_true(any(grepl("mutated externally", preflight$notes, fixed = TRUE)))
 })
 
 testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
@@ -231,6 +300,48 @@ testthat::test_that("ledgr_run rejects forbidden calls before fingerprinting or 
   rows <- DBI::dbGetQuery(
     opened$con,
     "SELECT run_id FROM runs WHERE run_id = 'sys-time-tier-3-run'"
+  )
+  testthat::expect_equal(nrow(rows), 0L)
+})
+
+testthat::test_that("ledgr_run rejects do.call indirection and context mutation before artifacts", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  do_call_strategy <- function(ctx, params) {
+    do.call("Sys.time", list())
+    ctx$flat()
+  }
+  do_call_exp <- ledgr_experiment(snapshot, do_call_strategy)
+  do_call_err <- testthat::capture_error(
+    ledgr_run(do_call_exp, params = list(), run_id = "do-call-tier-3-run")
+  )
+  testthat::expect_s3_class(do_call_err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(do_call_err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(do_call_err), "do.call", fixed = TRUE)
+  testthat::expect_match(conditionMessage(do_call_err), "Sys.time", fixed = TRUE)
+  testthat::expect_false(inherits(do_call_err, "ledgr_config_non_deterministic"))
+
+  attr_strategy <- function(ctx, params) {
+    attr(ctx, "secret") <- 1
+    ctx$flat()
+  }
+  attr_exp <- ledgr_experiment(snapshot, attr_strategy)
+  attr_err <- testthat::capture_error(
+    ledgr_run(attr_exp, params = list(), run_id = "attr-ctx-tier-3-run")
+  )
+  testthat::expect_s3_class(attr_err, "ledgr_strategy_preflight_error")
+  testthat::expect_s3_class(attr_err, "ledgr_strategy_tier3")
+  testthat::expect_match(conditionMessage(attr_err), "attr(ctx", fixed = TRUE)
+
+  opened <- ledgr_test_open_duckdb(db_path)
+  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
+  rows <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT run_id FROM runs WHERE run_id IN ('do-call-tier-3-run', 'attr-ctx-tier-3-run')"
   )
   testthat::expect_equal(nrow(rows), 0L)
 })

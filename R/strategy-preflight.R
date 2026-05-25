@@ -60,12 +60,20 @@ ledgr_strategy_preflight <- function(strategy) {
   ambient_rng_symbols <- analysis$ambient_rng_symbols
   forbidden_call_symbols <- analysis$forbidden_call_symbols
   has_global_assignment <- analysis$has_global_assignment
+  unsupported_context_mutations <- analysis$unsupported_context_mutations
   notes <- analysis$notes
 
   if (isTRUE(has_global_assignment)) {
     tier <- "tier_3"
     allowed <- FALSE
     reason <- "Strategy uses global assignment (`<<-`), which ledgr cannot reproduce safely."
+  } else if (length(unsupported_context_mutations) > 0L) {
+    tier <- "tier_3"
+    allowed <- FALSE
+    reason <- sprintf(
+      "Strategy uses unsupported context mutation(s): %s.",
+      paste(unsupported_context_mutations, collapse = ", ")
+    )
   } else if (length(forbidden_call_symbols) > 0L) {
     tier <- "tier_3"
     allowed <- FALSE
@@ -161,6 +169,8 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   variables <- sort(unique(as.character(globals$variables)))
   qualified <- ledgr_strategy_qualified_calls(body(strategy))
   string_constants <- unique(ledgr_strategy_character_constants(body(strategy)))
+  forbidden_do_call_symbols <- ledgr_strategy_forbidden_do_call_targets(body(strategy))
+  unsupported_context_mutations <- ledgr_strategy_unsupported_context_mutations(body(strategy))
   raw_functions <- functions
   qualified_names <- if (nrow(qualified) > 0L) as.character(qualified$name) else character()
   rng_mutation_symbols <- sort(unique(c(
@@ -175,6 +185,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
     c(raw_functions, qualified_names),
     ledgr_determinism_forbidden_calls(allow_rng = TRUE)
   )))
+  forbidden_call_symbols <- sort(unique(c(forbidden_call_symbols, forbidden_do_call_symbols)))
   has_global_assignment <- ledgr_strategy_has_global_assignment(strategy)
 
   functions <- setdiff(functions, ledgr_strategy_syntax_functions())
@@ -220,6 +231,18 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
       )
     )
   }
+  mutable_external_objects <- resolved_external_objects[
+    vapply(resolved_external_objects, ledgr_strategy_symbol_resolves_to_mutable_external_object, logical(1), env = environment(strategy))
+  ]
+  if (length(mutable_external_objects) > 0L) {
+    notes <- c(
+      notes,
+      sprintf(
+        "Captured mutable external object(s) detected (%s); these remain Tier 2 when statically resolved, but may be mutated externally outside stored run metadata.",
+        paste(sort(mutable_external_objects), collapse = ", ")
+      )
+    )
+  }
   if (length(ambient_rng_symbols) > 0L) {
     notes <- c(
       notes,
@@ -238,6 +261,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
     ambient_rng_symbols = ambient_rng_symbols,
     forbidden_call_symbols = forbidden_call_symbols,
     has_global_assignment = has_global_assignment,
+    unsupported_context_mutations = unsupported_context_mutations,
     notes = notes
   )
 }
@@ -327,6 +351,112 @@ ledgr_strategy_symbol_resolves_to_external_object <- function(symbol, env) {
   }
   value <- tryCatch(get(symbol, envir = env, inherits = TRUE), error = function(e) NULL)
   !is.function(value)
+}
+
+ledgr_strategy_symbol_resolves_to_mutable_external_object <- function(symbol, env) {
+  if (!is.character(symbol) || length(symbol) != 1L || is.na(symbol) || !nzchar(symbol)) {
+    return(FALSE)
+  }
+  if (!is.environment(env) || !exists(symbol, envir = env, inherits = TRUE)) {
+    return(FALSE)
+  }
+  value <- tryCatch(get(symbol, envir = env, inherits = TRUE), error = function(e) NULL)
+  is.environment(value) || inherits(value, c("externalptr", "connection"))
+}
+
+ledgr_strategy_forbidden_do_call_targets <- function(expr) {
+  forbidden <- ledgr_determinism_forbidden_calls(allow_rng = TRUE)
+  out <- character()
+  visit <- function(node) {
+    if (is.call(node) && length(node) >= 2L && ledgr_strategy_call_head_name(node) %in% c("do.call", "base::do.call")) {
+      target <- ledgr_strategy_do_call_target_name(node[[2L]])
+      if (!is.null(target) && target$name %in% forbidden) {
+        out <<- c(out, sprintf("do.call(%s)", target$label))
+      }
+    }
+    if (is.recursive(node)) {
+      for (i in seq_along(node)) {
+        visit(node[[i]])
+      }
+    }
+  }
+  visit(expr)
+  sort(unique(out))
+}
+
+ledgr_strategy_do_call_target_name <- function(target) {
+  if (is.character(target) && length(target) == 1L && !is.na(target) && nzchar(target)) {
+    return(list(name = target, label = sprintf("\"%s\"", target)))
+  }
+  if (is.symbol(target)) {
+    name <- as.character(target)
+    if (length(name) == 1L && !is.na(name) && nzchar(name)) {
+      return(list(name = name, label = name))
+    }
+  }
+  if (is.call(target) && length(target) >= 3L) {
+    head <- as.character(target[[1L]])
+    if (length(head) == 1L && head %in% c("::", ":::")) {
+      package <- as.character(target[[2L]])
+      name <- as.character(target[[3L]])
+      if (length(package) == 1L && length(name) == 1L && nzchar(package) && nzchar(name)) {
+        return(list(name = name, label = sprintf("%s::%s", package, name)))
+      }
+    }
+  }
+  NULL
+}
+
+ledgr_strategy_unsupported_context_mutations <- function(expr) {
+  out <- character()
+  visit <- function(node) {
+    if (is.call(node) && length(node) >= 3L && ledgr_strategy_call_head_name(node) %in% c("<-", "=")) {
+      lhs <- node[[2L]]
+      if (ledgr_strategy_is_attr_ctx_call(lhs)) {
+        out <<- c(out, "attr(ctx, ...) <- ...")
+      }
+    }
+    if (is.call(node) && ledgr_strategy_call_head_name(node) %in% c("attr<-", "base::attr<-")) {
+      if (length(node) >= 2L && identical(as.character(node[[2L]]), "ctx")) {
+        out <<- c(out, "attr(ctx, ...) <- ...")
+      }
+    }
+    if (is.recursive(node)) {
+      for (i in seq_along(node)) {
+        visit(node[[i]])
+      }
+    }
+  }
+  visit(expr)
+  sort(unique(out))
+}
+
+ledgr_strategy_is_attr_ctx_call <- function(node) {
+  is.call(node) &&
+    length(node) >= 2L &&
+    ledgr_strategy_call_head_name(node) %in% c("attr", "base::attr") &&
+    identical(as.character(node[[2L]]), "ctx")
+}
+
+ledgr_strategy_call_head_name <- function(node) {
+  if (!is.call(node) || length(node) < 1L) {
+    return(NA_character_)
+  }
+  head <- node[[1L]]
+  if (is.symbol(head)) {
+    return(as.character(head))
+  }
+  if (is.call(head) && length(head) >= 3L) {
+    op <- as.character(head[[1L]])
+    if (length(op) == 1L && op %in% c("::", ":::")) {
+      package <- as.character(head[[2L]])
+      name <- as.character(head[[3L]])
+      if (length(package) == 1L && length(name) == 1L && nzchar(package) && nzchar(name)) {
+        return(sprintf("%s::%s", package, name))
+      }
+    }
+  }
+  NA_character_
 }
 
 ledgr_strategy_qualified_calls <- function(expr) {
