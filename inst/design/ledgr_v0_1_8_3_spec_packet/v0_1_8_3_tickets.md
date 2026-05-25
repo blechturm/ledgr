@@ -161,7 +161,7 @@ scope: v0.1.8.3
 Priority: P1
 Effort: M
 Dependencies: LDG-2401
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -249,7 +249,7 @@ scope: benchmark_protocol
 Priority: P1
 Effort: M
 Dependencies: LDG-2401
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -327,7 +327,7 @@ scope: sweep_memory_path
 Priority: P1
 Effort: M
 Dependencies: LDG-2401
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -414,7 +414,7 @@ scope: runtime_contract
 Priority: P2
 Effort: M
 Dependencies: LDG-2404
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -490,7 +490,7 @@ scope: installed_docs
 Priority: P2
 Effort: M
 Dependencies: LDG-2401
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -570,7 +570,7 @@ scope: installed_docs
 Priority: P2
 Effort: L
 Dependencies: LDG-2401
-Status: In Review
+Status: Done
 
 ### Description
 

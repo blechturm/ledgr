@@ -18,7 +18,7 @@ tickets:
 
   - id: "LDG-2402"
     title: "Performance Protocol And v0.1.8.2 Baseline"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -34,7 +34,7 @@ tickets:
 
   - id: "LDG-2403"
     title: "Persistent-Versus-Memory Accounting Parity Gate"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -51,7 +51,7 @@ tickets:
 
   - id: "LDG-2404"
     title: "Strategy Preflight Indirection Hardening"
-    status: "in_review"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -67,7 +67,7 @@ tickets:
 
   - id: "LDG-2405"
     title: "Preflight Documentation And Strategy-Boundary Polish"
-    status: "in_review"
+    status: "done"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -82,7 +82,7 @@ tickets:
 
   - id: "LDG-2406"
     title: "Metric-Context Documentation And Display Polish"
-    status: "in_review"
+    status: "done"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -98,7 +98,7 @@ tickets:
 
   - id: "LDG-2407"
     title: "Sweep Inspection, Export, And Real-Data Example Polish"
-    status: "in_review"
+    status: "done"
     priority: "P2"
     effort: "L"
     dependencies:
