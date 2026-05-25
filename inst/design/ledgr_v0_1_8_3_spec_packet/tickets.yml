@@ -191,7 +191,7 @@ tickets:
 
   - id: "LDG-2412"
     title: "Single-Pass Sweep Summary Reconstruction"
-    status: "pending"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:

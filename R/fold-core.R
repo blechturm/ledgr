@@ -684,6 +684,218 @@ ledgr_fills_from_events <- function(events) {
   tibble::as_tibble(do.call(rbind, rows))
 }
 
+ledgr_assert_events_in_fold_order <- function(events) {
+  if (is.null(events) || nrow(events) < 2L) {
+    return(invisible(TRUE))
+  }
+  event_seq <- suppressWarnings(as.integer(events$event_seq))
+  if (any(is.na(event_seq)) || any(diff(event_seq) <= 0L)) {
+    rlang::abort(
+      "Sweep memory events must be in strictly increasing fold-produced event sequence order.",
+      class = "ledgr_invalid_event_order"
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_sweep_summary_from_ordered_events <- function(events,
+                                                    pulses_posix,
+                                                    close_mat,
+                                                    initial_cash,
+                                                    instrument_ids,
+                                                    run_id,
+                                                    metric_kernel) {
+  n_pulses <- length(pulses_posix)
+  if (n_pulses == 0L) {
+    equity <- ledgr_empty_equity_curve()
+    fills <- ledgr_empty_fills_table()
+    return(list(
+      equity = equity,
+      fills = fills,
+      metrics = ledgr_metrics_from_equity_fills(
+        equity = equity,
+        fills = fills,
+        metric_kernel = metric_kernel
+      ),
+      final_equity = NA_real_
+    ))
+  }
+
+  events <- if (is.null(events) || nrow(events) == 0L) {
+    data.frame()
+  } else {
+    ledgr_assert_events_in_fold_order(events)
+    events
+  }
+  n_events <- nrow(events)
+  typed_meta <- ledgr_typed_event_metadata(events)
+
+  event_ts <- if (n_events > 0L) {
+    as.POSIXct(events$ts_utc, tz = "UTC")
+  } else {
+    as.POSIXct(character(0), tz = "UTC")
+  }
+  event_ts_num <- as.numeric(event_ts)
+  pulse_ts_num <- as.numeric(pulses_posix)
+  idx <- findInterval(pulse_ts_num, event_ts_num)
+  has_event <- idx > 0L
+
+  cash_delta <- numeric(n_events)
+  position_delta <- numeric(n_events)
+  event_realized <- numeric(n_events)
+  event_cost_basis <- numeric(n_events)
+  if (!is.null(typed_meta)) {
+    cash_delta <- typed_meta$cash_delta
+    position_delta <- typed_meta$position_delta
+  }
+
+  max_fill_rows <- max(1L, n_events * 2L)
+  fill_event_seq <- integer(max_fill_rows)
+  fill_ts_utc <- rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), max_fill_rows)
+  fill_instrument_id <- character(max_fill_rows)
+  fill_side <- character(max_fill_rows)
+  fill_qty <- numeric(max_fill_rows)
+  fill_price <- numeric(max_fill_rows)
+  fill_fee <- numeric(max_fill_rows)
+  fill_realized_pnl <- numeric(max_fill_rows)
+  fill_action <- character(max_fill_rows)
+  fill_idx <- 0L
+
+  add_fill_row <- function(i, inst, side, qty, price, fee, realized_pnl, action) {
+    fill_idx <<- fill_idx + 1L
+    fill_event_seq[[fill_idx]] <<- events$event_seq[[i]]
+    fill_ts_utc[[fill_idx]] <<- event_ts[[i]]
+    fill_instrument_id[[fill_idx]] <<- inst
+    fill_side[[fill_idx]] <<- side
+    fill_qty[[fill_idx]] <<- qty
+    fill_price[[fill_idx]] <<- price
+    fill_fee[[fill_idx]] <<- fee
+    fill_realized_pnl[[fill_idx]] <<- realized_pnl
+    fill_action[[fill_idx]] <<- action
+    invisible(TRUE)
+  }
+
+  reconstruction_lots <- ledgr_lot_state(instrument_ids)
+  if (n_events > 0L) {
+    for (i in seq_len(n_events)) {
+      event_type <- as.character(events$event_type[[i]])
+      inst <- as.character(events$instrument_id[[i]])
+      side <- as.character(events$side[[i]])
+      qty <- suppressWarnings(as.numeric(events$qty[[i]]))
+      price <- suppressWarnings(as.numeric(events$price[[i]]))
+      fee <- suppressWarnings(as.numeric(events$fee[[i]]))
+      meta <- ledgr_event_meta_at(events, typed_meta, i)
+      if (is.null(typed_meta)) {
+        cash_delta[[i]] <- as.numeric(meta$cash_delta %||% 0)
+        position_delta[[i]] <- as.numeric(meta$position_delta %||% 0)
+      }
+
+      lot_res <- ledgr_lot_apply_event(
+        reconstruction_lots,
+        event_type = event_type,
+        instrument_id = inst,
+        side = side,
+        qty = qty,
+        price = price,
+        fee = fee,
+        meta = meta
+      )
+      reconstruction_lots <- lot_res$state
+      event_realized[[i]] <- reconstruction_lots$realized_pnl
+      event_cost_basis[[i]] <- reconstruction_lots$total_cost_basis
+
+      if (identical(event_type, "CASHFLOW")) {
+        next
+      }
+      if (!identical(event_type, "FILL") && !identical(event_type, "FILL_PARTIAL")) {
+        next
+      }
+      if (is.na(qty) || qty <= 0 || is.na(price)) {
+        add_fill_row(i, inst, side, qty, price, fee, NA_real_, NA_character_)
+        next
+      }
+      side_norm <- toupper(side)
+      if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
+        add_fill_row(i, inst, side, qty, price, fee, NA_real_, NA_character_)
+        next
+      }
+      if (isTRUE(lot_res$close_qty > 0)) {
+        add_fill_row(i, inst, side, lot_res$close_qty, price, fee, lot_res$realized_close, "CLOSE")
+      }
+      if (isTRUE(lot_res$open_qty > 0)) {
+        add_fill_row(i, inst, side, lot_res$open_qty, price, fee, 0, "OPEN")
+      }
+    }
+  }
+
+  cash_cum <- if (n_events > 0L) cumsum(cash_delta) else numeric(0)
+  cash_at <- rep(as.numeric(initial_cash), length(idx))
+  if (any(has_event)) {
+    cash_at[has_event] <- as.numeric(initial_cash) + cash_cum[idx[has_event]]
+  }
+
+  n_inst <- length(instrument_ids)
+  positions_mat <- matrix(0, nrow = n_inst, ncol = n_pulses)
+  if (n_events > 0L) {
+    for (j in seq_along(instrument_ids)) {
+      id <- instrument_ids[[j]]
+      ev_idx <- which(events$instrument_id == id)
+      if (length(ev_idx) == 0L) next
+      pos_cum <- cumsum(position_delta[ev_idx])
+      idx_inst <- findInterval(pulse_ts_num, event_ts_num[ev_idx])
+      has_inst_event <- idx_inst > 0L
+      if (any(has_inst_event)) {
+        positions_mat[j, has_inst_event] <- pos_cum[idx_inst[has_inst_event]]
+      }
+    }
+  }
+  positions_value <- if (n_pulses > 0L) colSums(positions_mat * close_mat) else numeric(0)
+
+  realized_at <- numeric(length(idx))
+  cost_basis_at <- numeric(length(idx))
+  if (any(has_event)) {
+    realized_at[has_event] <- event_realized[idx[has_event]]
+    cost_basis_at[has_event] <- event_cost_basis[idx[has_event]]
+  }
+
+  equity <- data.frame(
+    run_id = rep(run_id, length(pulses_posix)),
+    ts_utc = pulses_posix,
+    cash = cash_at,
+    positions_value = positions_value,
+    equity = cash_at + positions_value,
+    realized_pnl = realized_at,
+    unrealized_pnl = positions_value - cost_basis_at,
+    stringsAsFactors = FALSE
+  )
+  fills <- if (fill_idx == 0L) {
+    ledgr_empty_fills_table()
+  } else {
+    tibble::tibble(
+      event_seq = fill_event_seq[seq_len(fill_idx)],
+      ts_utc = fill_ts_utc[seq_len(fill_idx)],
+      instrument_id = fill_instrument_id[seq_len(fill_idx)],
+      side = fill_side[seq_len(fill_idx)],
+      qty = fill_qty[seq_len(fill_idx)],
+      price = fill_price[seq_len(fill_idx)],
+      fee = fill_fee[seq_len(fill_idx)],
+      realized_pnl = fill_realized_pnl[seq_len(fill_idx)],
+      action = fill_action[seq_len(fill_idx)]
+    )
+  }
+  metrics <- ledgr_metrics_from_equity_fills(
+    equity = equity,
+    fills = fills,
+    metric_kernel = metric_kernel
+  )
+  list(
+    equity = equity,
+    fills = fills,
+    metrics = metrics,
+    final_equity = equity$equity[[nrow(equity)]]
+  )
+}
+
 ledgr_bars_per_year_from_pulses <- function(pulses_posix) {
   if (length(pulses_posix) < 2L) {
     return(252)

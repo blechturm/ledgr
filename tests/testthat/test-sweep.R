@@ -64,6 +64,79 @@ testthat::test_that("memory output handler stores typed events equivalent to led
   )
 })
 
+testthat::test_that("single-pass sweep summary matches separate reconstruction helpers", {
+  handler <- ledgr:::ledgr_memory_output_handler("single-pass-summary")
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
+  opening <- ledgr:::ledgr_opening_position_event_rows(
+    run_id = "single-pass-summary",
+    ts_utc = pulses[[1L]],
+    positions = c(AAA = 2),
+    cost_basis = c(AAA = 10),
+    event_seq_start = 1L
+  )
+  handler$append_event_rows(opening)
+  handler$init_buffers(1L)
+
+  fill <- structure(
+    list(
+      instrument_id = "AAA",
+      side = "SELL",
+      qty = 1,
+      fill_price = 12,
+      commission_fixed = 0.25,
+      ts_exec_utc = "2020-01-02T00:00:00Z"
+    ),
+    class = "ledgr_fill_intent"
+  )
+  handler$write_fill_events(fill, 2L)
+  events <- handler$typed_events()
+  close_mat <- matrix(c(10, 12), nrow = 1L, dimnames = list("AAA", NULL))
+  metric_kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = pulses)
+
+  summary <- ledgr:::ledgr_sweep_summary_from_ordered_events(
+    events = events,
+    pulses_posix = pulses,
+    close_mat = close_mat,
+    initial_cash = 1000,
+    instrument_ids = "AAA",
+    run_id = "single-pass-summary",
+    metric_kernel = metric_kernel
+  )
+  equity <- ledgr:::ledgr_equity_from_events(
+    events = events,
+    pulses_posix = pulses,
+    close_mat = close_mat,
+    initial_cash = 1000,
+    instrument_ids = "AAA",
+    run_id = "single-pass-summary"
+  )
+  fills <- ledgr:::ledgr_fills_from_events(events)
+  metrics <- ledgr:::ledgr_metrics_from_equity_fills(
+    equity = equity,
+    fills = fills,
+    metric_kernel = metric_kernel
+  )
+
+  testthat::expect_equal(summary$equity, equity)
+  testthat::expect_equal(summary$fills, fills)
+  testthat::expect_equal(summary$metrics, metrics)
+  testthat::expect_equal(summary$final_equity, equity$equity[[nrow(equity)]])
+
+  unsorted <- events[c(2L, 1L), , drop = FALSE]
+  testthat::expect_error(
+    ledgr:::ledgr_sweep_summary_from_ordered_events(
+      events = unsorted,
+      pulses_posix = pulses,
+      close_mat = close_mat,
+      initial_cash = 1000,
+      instrument_ids = "AAA",
+      run_id = "single-pass-summary",
+      metric_kernel = metric_kernel
+    ),
+    class = "ledgr_invalid_event_order"
+  )
+})
+
 testthat::test_that("ledgr_sweep returns ordered summary rows without store writes", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

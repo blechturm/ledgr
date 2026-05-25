@@ -1,0 +1,7 @@
+"package","version"
+"ledgr","0.1.8.2"
+"pkgload","1.4.1"
+"testthat","3.3.1"
+"duckdb","1.4.3"
+"DBI","1.2.3"
+"tibble","3.3.0"

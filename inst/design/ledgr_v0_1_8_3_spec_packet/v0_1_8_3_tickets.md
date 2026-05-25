@@ -1064,7 +1064,7 @@ scope: b1_helper_reuse
 Priority: P1
 Effort: L
 Dependencies: LDG-2403, LDG-2409, LDG-2410, LDG-2411
-Status: Pending
+Status: Done
 
 ### Description
 
@@ -1096,6 +1096,50 @@ path with a single-pass helper over already-ordered typed memory events.
 Single-pass summary tests, accounting parity tests, sweep tests,
 metric-kernel tests, promotion tests, and targeted performance comparison
 against the LDG-2402 baseline.
+
+### Completion Notes
+
+- Added `ledgr_sweep_summary_from_ordered_events()` for the sweep memory path.
+  It consumes fold-produced typed events in strictly increasing `event_seq`
+  order, reconstructs equity and fills in one event pass, and threads the
+  existing `metric_kernel` directly into metric computation.
+- Preserved the public/durable reconstruction helpers
+  `ledgr_equity_from_events()` and `ledgr_fills_from_events()` for persistent
+  and public event-table consumers.
+- Added an explicit ordered-event assertion for the single-pass sweep path
+  instead of silently sorting memory events.
+- Added a single-pass summary test that compares equity, fills, metrics, and
+  final equity against the pre-change separate reconstruction helpers, plus an
+  unsorted-event failure assertion.
+- LDG-2412 checkpoint, 2 reps plus profile, recorded under
+  `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/ldg2412_checkpoint/`:
+  - reference `sweep_plain`: 17.330s LDG-2410 final -> 13.220s checkpoint,
+    3.45x faster than the LDG-2402 baseline median of 45.585s;
+  - reference `sweep_precomputed`: 17.210s LDG-2410 final -> 12.945s
+    checkpoint, 3.51x faster than the LDG-2402 baseline median of 45.490s;
+  - wider `sweep_plain`: 18.125s LDG-2410 final -> 12.130s checkpoint,
+    5.39x faster than the LDG-2402 baseline median of 65.360s;
+  - wider `sweep_precomputed`: 18.630s LDG-2410 final -> 12.055s
+    checkpoint, 5.42x faster than the LDG-2402 baseline median of 65.345s;
+  - persistent `sweep_plain`: 1.835s LDG-2410 final -> 1.350s checkpoint;
+  - persistent `run_loop`: 7.920s LDG-2410 final -> 8.875s checkpoint,
+    still faster than the LDG-2402 baseline median of 9.420s.
+  - profile residual: `ledgr_equity_from_events()` and
+    `ledgr_fills_from_events()` no longer appear in the top sampled frames;
+    `ledgr_execute_fold()` is back to about 84.6% total sample share.
+- Persistent-run variance recheck, 5 reps, recorded under
+  `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/ldg2412_persistent_recheck/`:
+  - persistent `sweep_plain`: 1.40s median;
+  - persistent `run_loop`: 7.96s median, confirming the 8.875s two-rep
+    checkpoint was sample variance and preserving net improvement vs. the
+    LDG-2402 baseline median of 9.420s.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-sweep.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-sweep-parity.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-accounting-consistency.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-metric-kernel.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-promotion-context.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-run-compare.R', reporter='summary')`
 
 ### Source Reference
 

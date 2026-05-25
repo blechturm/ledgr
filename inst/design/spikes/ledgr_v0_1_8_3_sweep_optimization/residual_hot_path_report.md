@@ -1,51 +1,36 @@
 # v0.1.8.3 Residual Hot-Path Report
 
-**Status:** Final LDG-2414 measurement pass.
-**Measured commit:** `e1820d7`
-**Measured at:** 2026-05-25T20:42:05Z
+**Status:** Final post-LDG-2412 measurement pass.
+**Measured commit:** `ac09d75` plus the LDG-2412 working tree patch.
+**Measured at:** 2026-05-25T21:59:21Z
 
-This report is the post-LDG-2413 evidence handoff for the remaining
-v0.1.8.3 optimization decisions. It compares the LDG-2402 baseline against
-the final post-change protocol run, records prebuilt pulse-view memory evidence,
-and recommends the disposition of LDG-2410 typed memory events and LDG-2412
+This report is the v0.1.8.3 sweep-optimization closeout. It compares the
+LDG-2402 baseline against the post-LDG-2412 checkpoint, records the persistent
+`ledgr_run()` variance recheck, and identifies the remaining measured hot path
+after projection, fast context, prebuilt views, typed memory events, and
 single-pass sweep summary reconstruction.
 
 ## Wall-Clock Result
 
-| workload | path | baseline | post-change | result |
+| workload | path | baseline | post-LDG-2412 | result |
 | --- | --- | ---: | ---: | ---: |
-| smoke_3_candidates | sweep_plain | 1.320s | 1.190s | 1.11x faster |
-| smoke_3_candidates | sweep_precomputed | 1.000s | 0.680s | 1.47x faster |
-| smoke_3_candidates | run_loop | 5.245s | 5.440s | 3.7% slower |
-| reference_50_candidates | sweep_plain | 45.585s | 30.275s | 1.51x faster |
-| reference_50_candidates | sweep_precomputed | 45.490s | 30.525s | 1.49x faster |
-| wider_feature_payload | sweep_plain | 65.360s | 33.405s | 1.96x faster |
-| wider_feature_payload | sweep_precomputed | 65.345s | 33.100s | 1.97x faster |
-| persistent_comparison | sweep_plain | 4.415s | 3.025s | 1.46x faster |
-| persistent_comparison | run_loop | 9.420s | 8.650s | 1.09x faster |
-| metric_context_non_default | sweep_plain | 4.350s | 3.010s | 1.45x faster |
-| metric_context_non_default | sweep_precomputed | 4.315s | 3.300s | 1.31x faster |
+| reference_50_candidates | sweep_plain | 45.585s | 13.220s | 3.45x faster |
+| reference_50_candidates | sweep_precomputed | 45.490s | 12.945s | 3.51x faster |
+| wider_feature_payload | sweep_plain | 65.360s | 12.130s | 5.39x faster |
+| wider_feature_payload | sweep_precomputed | 65.345s | 12.055s | 5.42x faster |
+| persistent_comparison | sweep_plain | 4.415s | 1.350s | 3.27x faster |
+| persistent_comparison | run_loop | 9.420s | 7.960s | 1.18x faster |
 
-The cycle now delivers a material wall-clock improvement on the target sweep
-workloads. The reference workload improved from 45.585s to 30.275s
-(`sweep_plain`) and from 45.490s to 30.525s (`sweep_precomputed`). The wider
-feature-payload workload improved by almost 2x, which is the clearest evidence
-that runtime projection plus prebuilt static pulse views paid off where the
-feature/context surface is larger.
+The cycle now closes with a material product win. The reference sweep workload
+improved from 45.585s to 13.220s, and the wider feature-payload workload
+improved from 65.360s to 12.130s. The wider workload is the release-headline
+result because it better represents the larger feature/context surfaces this
+cycle was designed to unlock.
 
-The repeated `ledgr_run()` watch item is no longer a material regression on the
-persistent comparison workload: 9.420s baseline to 8.650s post-change. The small
-smoke run-loop regression is 0.195s across three small runs and is not the
-release-blocking shape that appeared at the LDG-2409 checkpoint. The smoke
-run-loop regression of 3.7% is accepted as a small-workload setup-cost artifact:
-prebuilt views have fixed setup cost, and ledgr's optimization target is sweep
-and wider fold workloads where that setup is amortized.
-
-Standalone precompute timings are slightly slower in the small absolute sense
-(for example 0.280s to 0.310s on the reference workload), but the sweep paths
-that consume the precompute are materially faster. This is acceptable for
-v0.1.8.3 because the optimization target is fold/runtime execution, not the
-sub-second preparation call in isolation.
+The repeated `ledgr_run()` watch item is also resolved. A 5-rep persistent
+variance recheck measured `run_loop` at 7.96s median versus the 9.420s
+LDG-2402 baseline. The earlier 8.875s two-rep checkpoint was sample variance,
+not a path regression.
 
 ## Residual Profile
 
@@ -53,37 +38,27 @@ The final reference Rprof profile records:
 
 | frame | total.pct | interpretation |
 | --- | ---: | --- |
-| `ledgr_execute_fold` | 70.1% | fold still dominates, but less than the 79.8% baseline sample |
-| `output_handler$run_transaction` / `fn` | 63.8% | event execution and strategy callback boundary dominate remaining time |
-| `data.frame` | 22.2% | mostly event-row / output-buffer data-frame boundaries now |
-| `ledgr_fills_from_events` | 20.6% | post-fold fill reconstruction is now material |
-| `ledgr_fill_event_row` | 18.2% | typed memory events target this path |
-| `output_handler$buffer_event` | 15.9% | typed memory events target this path |
-| `handler$append_event_rows` | 15.8% | typed memory events target this path |
-| `as.data.frame` | 15.6% | mostly output/event-row boundary work |
+| `ledgr_execute_fold` | 84.6% | fold execution is again the dominant remaining slice |
+| `output_handler$run_transaction` / `fn` | 71.7% | strategy callback boundary and event execution dominate |
+| `ledgr_update_fast_pulse_context_helpers` | 14.4% | residual context refresh work |
+| `output_handler$write_fill_events` | 13.6% | remaining typed event write overhead |
+| `[.data.frame` | 12.5% | residual data-frame boundary work |
+| `ledgr_projection_pulse_views` / `ledgr_split_pulse_data_frame` | 11.3% / 11.2% | setup-time pulse-view construction, not the per-pulse hot loop |
 
-The profile no longer shows `ledgr_features_wide()`,
-`ledgr_projection_features_wide()`, or `ledgr_projection_pulse_views()` as
-dominant top frames. Fast context B1 also moved helper churn out of the top
-frames; `ledgr_update_fast_pulse_context_helpers()` appears in the by-self
-profile at 2.6%, not as the 20-30% wall seen before B1.
+`ledgr_equity_from_events()` and `ledgr_fills_from_events()` no longer appear
+in the top sampled frames after LDG-2412. That confirms the typed-events plus
+single-pass reconstruction sequence removed the measured post-fold summary
+bottleneck.
 
-The fold share moved from 79.8% in the LDG-2402 baseline sample to 70.1% in
-the final post-change sample. That 10 percentage point reduction confirms the
-structural intent of LDG-2408, LDG-2409, LDG-2411, and LDG-2413: move
-pulse-context feature/view work out of the hot fold loop and expose the next
-dominant bottleneck.
+The fold share increased from 63.9% after LDG-2410 to 84.6% after LDG-2412 not
+because fold execution regressed, but because the post-candidate reconstruction
+slice collapsed. The next optimization slice is no longer summary
+reconstruction; it is residual fold/runtime work.
 
-The dominant remaining inefficiency pocket is therefore not pulse-context view
-construction. It is memory event output and downstream fill reconstruction:
-small data-frame rows are still built, appended, rebound, and replayed after
-the fold.
+## Memory Evidence
 
-## Prebuilt Pulse-View Memory Evidence
-
-Measured with `dev/spikes/ledgr_v0_1_8_3_sweep_optimization/measure_memory.R`.
-Values are `utils::object.size()` bytes, so they are object-size evidence rather
-than a process RSS peak.
+The LDG-2414 object-size measurements remain the relevant memory evidence for
+prebuilt pulse views:
 
 | workload | bars views | projection | median candidate feature views | retained peak proxy |
 | --- | ---: | ---: | ---: | ---: |
@@ -91,74 +66,45 @@ than a process RSS peak.
 | wider_feature_payload | 2,137,008 | 569,304 | 3,984,080 | 7,471,256 |
 | persistent_comparison | 737,904 | 205,768 | 887,504 | 1,967,800 |
 
-The current workloads have no material memory pressure from prebuilt pulse
-views. The retained peak proxy is about 1.9 MB for the reference workload and
-about 7.5 MB for the wider feature-payload workload. Candidate feature views
-are built per candidate and are not retained across all candidates in the
-current fold path; the summed construction churn is higher, but retained memory
-is small at v0.1.8.3 scale. Actual retained memory is much lower than the
-earlier worst-case synthesis estimate because the implementation constructs
-candidate feature views one candidate at a time instead of retaining all
-candidate views across the sweep. That is useful prior evidence for wider
-parallelism-scale workloads: the relevant near-term planning number is closer
-to per-worker retained view memory than to a whole-grid retained-view sum.
+The current workloads have no material retained-memory pressure from prebuilt
+pulse views. Candidate feature views are built per candidate and are not
+retained across the whole grid. DuckDB-backed precompute storage and out-of-core
+projection remain future scaling/storage work, not a v0.1.8.3 release blocker.
 
-Out-of-core projection and DuckDB-backed precompute storage remain future
-scaling/storage work, not the next measured optimization slice.
+## Disposition
 
-## Deferred Candidate Review
+LDG-2410 typed memory events shipped and paid off. It removed the memory path's
+`meta_json` serialization/parsing loop and exposed fill reconstruction as the
+next measured slice.
 
-Lazy `ctx$features_wide`: defer. The wide-view construction path is no longer
-dominant after LDG-2413, and public fresh data-frame semantics are preserved by
-prebuilt per-pulse views. Lazy context fields would add contract complexity
-without attacking the current top frames.
+LDG-2412 single-pass summary reconstruction shipped and paid off. It removed
+the redundant equity/fill FIFO replay passes from the sweep memory path and
+made post-fold reconstruction sub-dominant.
 
-Persistent-path single-pass reconstruction: defer as a separate persistent-path
-unification item. The persistent sweep path is faster than baseline and the
-remaining sampled reconstruction hotspot is the memory sweep
-`ledgr_fills_from_events()` path, not persistent DB replay.
+Lazy `ctx$features_wide`: defer. The wide-view path is no longer a top frame
+after prebuilt pulse views and single-pass reconstruction.
 
-Strategy bytecode compilation: dismiss for v0.1.8.3. The reference one-rep
-check measured plain strategy execution at 34.09s and `compiler::cmpfun()` at
-35.68s. The strategy hash remained identical in the check, but there is no
-measured benefit.
+Persistent-path single-pass reconstruction: defer. The persistent sweep and
+run-loop paths are faster than baseline, and the measured hot path is no longer
+persistent DB reconstruction.
 
-`ctx$flat()` / `ctx$hold()` allocation: dismiss for this cycle. These helpers
-do not appear as material sampled frames after LDG-2413. Revisit only if a
-future strategy-usage profile makes them visible.
+Strategy bytecode compilation: dismiss for v0.1.8.3. The measured check showed
+no benefit.
 
-DuckDB-backed precompute storage / out-of-core projection: defer. The current
-bottleneck is R event buffering and fill reconstruction, not feature storage or
-memory scaling. Keep the accepted v0.1.8.6 horizon direction.
+DuckDB-backed precompute storage / out-of-core projection: defer to the accepted
+horizon direction. Current v0.1.8.3 bottlenecks are not storage pressure.
 
-Parallel dispatch: defer. Serial fold/runtime now has a cleaner measured
-baseline, but the next single-core bottleneck is still large enough to address
-before worker scheduling is the dominant question.
-
-## LDG-2410 / LDG-2412 Disposition Recommendation
-
-Retain LDG-2410 in v0.1.8.3. The profile now strongly supports typed memory
-events: `ledgr_fill_event_row()`, `output_handler$buffer_event()`,
-`handler$append_event_rows()`, `data.frame`, `as.data.frame`, and
-`ledgr_fills_from_events()` are all visible top frames. A typed in-memory event
-representation is the measured next R-level slice.
-
-Keep LDG-2412 conditionally behind LDG-2410. The single-pass summary work should
-not be implemented blindly as a broad reconstruction rewrite. After typed
-memory events land, rerun a targeted profile:
-
-- if `ledgr_fills_from_events()` / equity-fills metric derivation remains a
-  material top frame, keep LDG-2412 as the next implementation ticket;
-- if typed memory events collapse the reconstruction share enough that other
-  frames dominate, defer LDG-2412 to v0.1.9 and document the deferral in the
-  release closeout.
-
-This keeps the cycle measurement-driven while still allowing the original
-typed-events -> single-pass path to proceed if the evidence continues to hold.
+Parallel dispatch: defer. The single-core baseline is now much cleaner; worker
+scheduling should start from the post-LDG-2412 profile, not the LDG-2402
+baseline.
 
 ## Next Slice
 
-The next optimization slice is LDG-2410 typed memory events, scoped tightly to
-the memory output handler and event-row boundary. Do not start DuckDB-backed
-projection, parallel dispatch, lazy context fields, or strategy bytecode
-compilation before typed memory events are measured.
+The v0.1.8.3 optimization implementation is complete. The next step is the
+LDG-2415 release gate:
+
+- run full test suite and release checks;
+- update release notes with the 3.45x reference and 5.39x wider-workload
+  numbers;
+- preserve the post-LDG-2412 profile as the baseline for future parallel,
+  DuckDB-backed storage, primitive-internals, or Rust-port planning.

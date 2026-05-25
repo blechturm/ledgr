@@ -647,28 +647,22 @@ ledgr_sweep_run_candidate <- function(exp,
   } else {
     output_handler$events()
   }
-  equity <- ledgr_equity_from_events(
+  summary <- ledgr_sweep_summary_from_ordered_events(
     events = events,
     pulses_posix = pulses_posix,
     close_mat = bars_mat$close,
     initial_cash = exp$opening$cash,
     instrument_ids = exp$universe,
-    run_id = run_id
-  )
-  fills <- ledgr_fills_from_events(events)
-  metrics <- ledgr_metrics_from_equity_fills(
-    equity = equity,
-    fills = fills,
+    run_id = run_id,
     metric_kernel = metric_kernel
   )
-  final_equity <- if (nrow(equity) > 0L) equity$equity[[nrow(equity)]] else NA_real_
 
   ledgr_sweep_success_row(
     run_id = run_id,
     params = params,
     execution_seed = execution_seed,
-    final_equity = final_equity,
-    metrics = metrics,
+    final_equity = summary$final_equity,
+    metrics = summary$metrics,
     feature_fingerprints = feature_fingerprints,
     provenance = ledgr_sweep_provenance(
       snapshot_hash = snapshot_hash,
