@@ -1,0 +1,4 @@
+"scenario","n_candidates","n_instruments","n_pulses","n_projection_features","bars_by_id_bytes","bars_mat_bytes","bars_views_bytes","runtime_projection_bytes","median_candidate_feature_views_bytes","max_candidate_feature_views_bytes","sum_candidate_feature_views_bytes","median_candidate_feature_table_bytes","median_candidate_features_wide_bytes","retained_peak_proxy_bytes"
+"reference_50_candidates",50,4,252,5,81896,54728,737904,205768,887504,887504,44375200,524208,362928,1967800
+"wider_feature_payload",10,12,504,5,464056,316808,2137008,569304,3984080,3984080,39840800,2338608,1645104,7471256
+"persistent_comparison",5,4,252,5,81896,54728,737904,205768,887504,887504,4437520,524208,362928,1967800

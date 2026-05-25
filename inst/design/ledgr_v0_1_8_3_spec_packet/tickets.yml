@@ -234,7 +234,7 @@ tickets:
 
   - id: "LDG-2414"
     title: "Post-Change Measurement And Residual Report"
-    status: "pending"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:

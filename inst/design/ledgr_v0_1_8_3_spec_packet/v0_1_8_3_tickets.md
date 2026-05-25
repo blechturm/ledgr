@@ -1192,7 +1192,7 @@ scope: prebuilt_static_views
 Priority: P1
 Effort: M
 Dependencies: LDG-2402, LDG-2408, LDG-2409, LDG-2411, LDG-2413
-Status: Pending
+Status: Done
 
 ### Description
 
@@ -1247,6 +1247,55 @@ single-pass summary reconstruction.
 
 Manual review of reports, rerun smoke/reference/single-run workloads, and
 targeted tests for any code paths touched during measurement cleanup.
+
+### Completion Notes
+
+- Reran the full LDG-2402 post-change protocol at commit `e1820d7` with
+  profiling enabled:
+  - `dev/spikes/ledgr_v0_1_8_3_sweep_optimization/run_post_change.R --profile=true`
+  - `dev/spikes/ledgr_v0_1_8_3_sweep_optimization/summarize_results.R`
+- Published updated artifacts:
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/post_change_report.md`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/residual_hot_path_report.md`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/summary_report.md`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data/post_change_results.csv`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data/post_change_profile.csv`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data/post_change_environment.csv`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data/post_change_package_versions.csv`
+- Added reproducible LDG-2414 helper scripts and outputs:
+  - `dev/spikes/ledgr_v0_1_8_3_sweep_optimization/measure_memory.R`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data/post_change_memory.csv`
+  - `dev/spikes/ledgr_v0_1_8_3_sweep_optimization/measure_strategy_bytecode.R`
+  - `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data/strategy_bytecode_check.csv`
+- Final wall-clock result:
+  - reference `sweep_plain`: 45.585s -> 30.275s, 1.51x faster;
+  - reference `sweep_precomputed`: 45.490s -> 30.525s, 1.49x faster;
+  - wider `sweep_plain`: 65.360s -> 33.405s, 1.96x faster;
+  - wider `sweep_precomputed`: 65.345s -> 33.100s, 1.97x faster;
+  - persistent `run_loop`: 9.420s -> 8.650s, 1.09x faster.
+- Prebuilt pulse-view retained object-size proxy is small for current
+  workloads: about 1.9 MB on the reference workload and about 7.5 MB on the
+  wider feature-payload workload.
+- Residual profile recommendation:
+  - retain LDG-2410 typed memory events in v0.1.8.3 because memory event rows,
+    output buffering, data-frame row boundaries, and `ledgr_fills_from_events()`
+    now dominate the remaining sampled profile;
+  - keep LDG-2412 conditional behind LDG-2410 and remeasure before committing
+    to a broad single-pass summary rewrite.
+- Deferred candidate disposition:
+  - lazy `ctx$features_wide`: defer; wide-view construction is no longer a top
+    frame after LDG-2413;
+  - persistent-path single-pass reconstruction: defer; persistent sweep and
+    run-loop workloads improved and persistent reconstruction is not the
+    measured bottleneck;
+  - strategy bytecode compilation: dismiss for v0.1.8.3; the one-rep reference
+    check measured plain strategy at 34.09s and `compiler::cmpfun()` at 35.68s,
+    with identical strategy hash in the check;
+  - `ctx$flat()` / `ctx$hold()` allocation: dismiss for this cycle; not
+    material in the post-LDG-2413 profile;
+  - DuckDB-backed precompute storage, out-of-core projection, and parallel
+    dispatch: defer; current measured bottleneck is R memory event buffering
+    and fill reconstruction.
 
 ### Source Reference
 

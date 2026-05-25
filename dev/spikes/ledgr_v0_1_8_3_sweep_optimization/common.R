@@ -489,7 +489,8 @@ write_measurement_report <- function(label,
         paste0(
           "LDG-2108B estimated fold-core work at about 64% of measured sweep wall time ",
           "and post-candidate reconstruction at about 31%-33%. In this v0.1.8.3 ",
-          "baseline Rprof sample, `ledgr_execute_fold()` accounts for about ",
+          label,
+          " Rprof sample, `ledgr_execute_fold()` accounts for about ",
           round(fold_pct, 1),
           "% of total sampled time on the reference workload."
         ),
