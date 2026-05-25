@@ -690,8 +690,14 @@ Near-term work that helps without committing to a port:
 - keep expanding parity tests so a future port has a clear acceptance suite;
 - formalize event, fill, lot-state, and fill-proposal shapes as typed value
   objects when touched by ordinary tickets;
-- optionally run a small FFI feasibility spike, such as porting one isolated
-  lot-state helper, to measure call-boundary overhead.
+- optionally run a small FFI feasibility spike in the v0.1.8.7 window, after
+  typed memory events, single-pass reconstruction, and fast-context R-side
+  optimization have produced an optimized baseline but before the v0.1.9 target
+  risk chain starts changing fold contracts. The spike should port only an
+  isolated helper such as `ledgr_lot_apply_event()` via `extendr`, measure
+  per-call FFI overhead against the LDG-2402 harness, reuse the LDG-2403 parity
+  fixtures, and document Windows/Linux build friction. It must not introduce a
+  production Rust path.
 
 The port should not be treated as a v0.1.8.x optimization. The v0.1.8.x path
 remains R-side optimization first: typed memory events, single-pass summaries,
