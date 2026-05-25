@@ -3,11 +3,9 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Current cycle:** v0.1.8.2 release gate closeout.
-**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` contains the
-implementation spec, auditr triage artifacts, completed implementation
-tickets, and the release gate. Do not add new v0.1.8.2 runtime scope during
-closeout.
+**Current cycle:** v0.1.8.3 implementation.
+**Active packet:** `inst/design/ledgr_v0_1_8_3_spec_packet/` contains the
+implementation spec, routed v0.1.8.2 auditr intake, and v0.1.8.3 ticket cut.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -48,6 +46,11 @@ fold-core architecture are stable.
   feature shapes, hash mismatches, and unsafe strategy tiers should fail loudly.
 - **R-native research workflow.** ledgr should feel natural in R and tidyverse-
   adjacent workflows while keeping core execution semantics deterministic.
+- **Layer boundaries stay explicit.** Target construction, target risk,
+  execution/liquidity policy, cost application, OMS semantics, and broker
+  reconciliation are distinct concerns. The target-risk layer must not become a
+  catch-all for portfolio construction, cost estimation, liquidity feasibility,
+  or order policy.
 - **Public API only after internal boundaries are stable.** Risk, sweep, and
   cost-model APIs must not expose internals that will immediately need to be
   rewritten.
@@ -92,15 +95,24 @@ versioned packet.
 | v0.1.8.00 | Done | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
 | v0.1.8 | Done | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_0_spec_packet/` |
 | v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
-| v0.1.8.2 | In release gate | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
-| v0.1.8.3 | Planned | Single-core sweep optimization after metric-kernel semantics settle. | Future packet |
+| v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
+| v0.1.8.3 | Active | Single-core sweep optimization after metric-kernel semantics settle. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Planned | Active parameterized feature aliases for sweep authoring. | Future packet |
 | v0.1.8.5 | Planned | Parameter-grid quality-of-life helpers after active aliases stabilize. | Future packet |
-| v0.1.8.6 | Planned | Parallel sweep dispatch after serial semantics, metrics, and grid UX stabilize. | Future packet |
+| v0.1.8.6 | Planned | Fast context B1/B2 before parallel dispatch, if v0.1.8.3 residual profiling confirms context churn remains dominant. | Future packet |
+| v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and fast-context decision stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet |
+| v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
+| v0.1.9.x | Planned | Sweep artifact persistence for compact search-space audit. | Future packet |
+| v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
 | v0.1.9.x / v0.2.0 | Planned | Public transaction-cost model API after internal boundary stabilizes. | Future packet |
+| v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
+| v0.2.x | Planned | Point-in-time data tables for external observations and reference data. | Future packet |
+| v0.2.x | Planned | Corporate actions and instrument master for serious equity data. | Future packet |
+| v0.2.x | Planned | Benchmark context and active metrics after benchmark/reference substrate. | Future packet |
 | v0.2.x | Planned | OMS semantics, snapshot lineage, and roll-forward data sources. | Future packets |
+| v0.2.x | Planned | Reference strategy templates as executable contract demonstrations. | Future packet |
 | v0.3.0 | Planned | Paper trading adapter and reconciliation. | Future packet |
 | v0.4.0 | Planned | Observability and operations. | Future packet |
 | v1.0.0 | Planned | Small-scale live trading. | Future packet |
@@ -471,6 +483,8 @@ Constraints:
 Authoritative input:
 
 - `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`.
+- `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`.
+- `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`.
 
 Intent:
 
@@ -480,6 +494,8 @@ Intent:
 - reduce fold-core context churn without changing strategy-facing context
   semantics;
 - keep `ledgr_run()` and `ledgr_sweep()` on one execution core.
+- route the v0.1.8.2 auditr findings that fit this performance release,
+  especially preflight indirection hardening and docs/message polish.
 
 Precondition:
 
@@ -537,12 +553,47 @@ Constraints:
 - if v0.1.8.1 teaching needs a shorter example, prefer vignette-local helper
   code rather than committing a public grid DSL early.
 
-### v0.1.8.6 Parallel Sweep Dispatch
+### v0.1.8.6 Fast Context B1/B2
+
+Intent:
+
+- reduce fold-core pulse-context churn before adding worker-level parallelism;
+- use the existing `use_fast_context` scaffold as the activation mechanism if
+  v0.1.8.3 residual profiling confirms context churn remains the dominant
+  bottleneck;
+- initialize lookup environments, helper closures, and stable instrument/bar
+  indexes once per candidate fold where possible;
+- update only pulse-specific values during the fold while preserving public
+  strategy-facing context behavior;
+- improve both `ledgr_run()` and `ledgr_sweep()` before multiplying candidate
+  execution across workers.
+
+Readiness gates:
+
+- v0.1.8.3 residual hot-path report identifies fold-context churn as the next
+  optimization target, or explicitly explains why fast context should be
+  skipped;
+- typed memory events and single-pass summary reconstruction are stable;
+- existing sweep/run parity tests cover the fast-context path before activation;
+- `use_fast_context` is no longer dead scaffold: its behavior, activation
+  boundary, and fallback behavior are specified before implementation.
+
+Constraints:
+
+- no lazy `features_wide` API change in this milestone;
+- no public strategy-context API change;
+- no second fold core or sweep-only execution semantics;
+- no parallel worker API;
+- preserve strategy preflight, target validation, fill timing, cost semantics,
+  event order, metric context handling, and promotion provenance.
+
+### v0.1.8.7 Parallel Sweep Dispatch
 
 Intent:
 
 - add optional parallel candidate dispatch only after the single-core sweep path
-  remains the reference implementation;
+  remains the reference implementation and the fast-context decision has been
+  resolved;
 - preserve deterministic result row order, warning/error association, and seed
   derivation regardless of worker completion order;
 - keep worker execution isolated from persistent stores and shared mutable
@@ -555,6 +606,8 @@ Readiness gates:
 - `metric_kernel` and candidate payloads are plain serializable value objects;
 - single-core performance measurements show remaining candidate work is
   CPU-bound enough to justify parallel overhead;
+- fast context B1/B2 has shipped, or residual evidence shows parallel dispatch
+  is the better next optimization despite remaining context churn;
 - grid UX has stabilized enough that larger sweeps are an intentional public
   workflow rather than accidental friction;
 - interrupt, progress, warning ordering, failure ordering, package state, and
@@ -636,6 +689,69 @@ Known constraints:
 - randomized/blocked slice protocols, PBO, and CSCV diagnostics are deferred
   until the walk-forward window model is stable.
 
+### v0.1.9.x Selection Integrity Diagnostics
+
+Intent:
+
+- extend the walk-forward window model into explicit selection-bias diagnostics;
+- support blocked, anchored, or randomized slice protocols without violating
+  no-lookahead constraints;
+- make PBO/CSCV-style diagnostics visible as research-validity tools, not as
+  ordinary sweep ranking;
+- provide reports that distinguish reproducibility, validation protocol, and
+  selection integrity.
+
+Constraints:
+
+- do not treat arbitrary row-level random splits as valid time-series
+  validation;
+- do not make provenance claims stand in for statistical selection discipline;
+- build on stable sweep results, metric context, grid ergonomics, and
+  slice-aware feature validation;
+- keep the first `ledgr_walk_forward()` release narrower than this diagnostic
+  layer.
+
+### v0.1.9.x Sweep Artifact Persistence
+
+Intent:
+
+- persist compact sweep result bundles for audit and expensive exploratory
+  work;
+- store grid definitions, candidate summaries, warnings/errors, metric context,
+  feature-set hashes, execution seeds, selection/ranking views, manifest data,
+  and snapshot locator hints;
+- let promoted runs reference or copy enough sweep artifact metadata to answer
+  "why this candidate?" without committing every candidate as a durable run.
+
+Constraints:
+
+- do not store full ledger, fill, trade, or equity artifacts for every
+  candidate by default;
+- do not weaken `ledgr_promote()` or `run_promotion_context`;
+- keep artifact persistence separate from automatic winner selection.
+
+### v0.1.9.x Target Construction Helper Extensions
+
+Intent:
+
+- extend the existing `signal_*()` -> `select_*()` -> `weight_*()` ->
+  `target_*()` helper pipeline;
+- add small, deterministic helpers for common EOD target construction patterns
+  such as rank weighting, inverse-vol weighting, explicit normalization,
+  rebalance bands, or similar narrow primitives after their contracts are
+  specified;
+- keep helpers composable with full named numeric target vectors and strategy
+  preflight.
+
+Constraints:
+
+- this is not full portfolio optimization, quadratic solving, risk parity, or
+  black-box allocation;
+- helpers must not collapse target construction into target risk, cost,
+  liquidity, or order policy;
+- helpers must preserve the public strategy contract: strategies return full
+  named numeric target quantities or an explicit wrapper maps to those targets.
+
 ### v0.1.9.x / v0.2.0 Public Transaction-Cost Model API
 
 Intent:
@@ -648,6 +764,85 @@ Intent:
   execution/liquidity policy;
 - require fingerprinting/source/identity treatment for function-valued cost
   models before public exposure.
+
+### v0.2.x Liquidity And Capacity Policy
+
+Intent:
+
+- model execution feasibility separately from cost;
+- add policy concepts such as participation limits, minimum ADV/volume, minimum
+  price, turnover/capacity diagnostics, or liquidity refusal only after the
+  execution context exposes the required execution-bar data;
+- keep capacity estimates explicitly labelled as research approximations unless
+  a later OMS/execution model makes stronger claims possible.
+
+Constraints:
+
+- liquidity policy may change quantities or refuse fills, so it must not be
+  hidden inside transaction-cost calculation;
+- participation and capacity rules require execution-bar volume and point-in-
+  time data assumptions;
+- this layer must coordinate with OMS semantics before paper/live execution.
+
+### v0.2.x Point-In-Time Data Tables
+
+Intent:
+
+- introduce explicit point-in-time semantics for external observations and
+  reference data beyond OHLCV bars;
+- model fields such as `known_at`, `available_at`, `effective_at`,
+  `event_time`, `revision_time`, source, source version, and alignment policy;
+- support later value, quality, earnings, macro, index-membership, and factor
+  research without hidden lookahead.
+
+Constraints:
+
+- no hidden provider lookups inside metric, strategy, indicator, or fold-core
+  paths;
+- external observations must be sealed, versioned, and provenance-bearing
+  before they affect execution or metrics;
+- feature beta, universe-derived benchmarks, and fundamental/factor features
+  depend on this layer.
+
+### v0.2.x Corporate Actions And Instrument Master
+
+Intent:
+
+- make real equity data semantics explicit before ledgr claims serious
+  cross-sectional equity research support;
+- define raw versus adjusted price policy, split and dividend handling,
+  delisting treatment, symbol-to-instrument identity, and point-in-time
+  universe membership;
+- keep sealed snapshots honest about survivorship and adjustment assumptions.
+
+Constraints:
+
+- reproducible snapshots are not enough if the sealed data is survivorship-
+  biased or uses ambiguous adjustment policy;
+- corporate-action semantics should coordinate with point-in-time data tables
+  and benchmark/reference-data design;
+- adapters may provide data, but ledgr must define the interpretation contract
+  before using it in committed experiments.
+
+### v0.2.x Benchmark Context And Active Metrics
+
+Intent:
+
+- implement the reserved `metric_context$benchmark` substrate with aligned
+  benchmark/reference returns;
+- add benchmark-relative diagnostics such as active return, tracking error,
+  information ratio, beta, alpha, benchmark correlation, and capture metrics
+  after the benchmark provider contract is stable;
+- start with explicit external benchmark series before universe-derived
+  benchmarks.
+
+Constraints:
+
+- no hidden ticker lookup or provider download during metric computation;
+- universe-derived benchmarks require point-in-time membership and survivorship
+  semantics, so they come after the external-benchmark substrate;
+- diagnostic beta should not be gated on the target-risk chain, but feature beta
+  and beta constraints require additional alignment/risk designs.
 
 ### v0.2.x OMS Semantics And Snapshot Lineage
 
@@ -662,6 +857,24 @@ Intent:
 - add snapshot lineage and roll-forward data-source workflows;
 - preserve event-sourced reconstruction and auditability;
 - keep broker reconciliation requirements explicit before live execution.
+
+### v0.2.x Reference Strategy Templates
+
+Intent:
+
+- provide small executable examples that stress-test ledgr's strategy,
+  target-construction, risk, metric, sweep, and validation APIs;
+- use canonical EOD examples such as flat baseline, SMA crossover, top-N
+  momentum, mean reversion, or rotation only as contract demonstrations;
+- support documentation, auditr tasks, and agent evaluation without becoming a
+  black-box strategy zoo.
+
+Constraints:
+
+- no profitability claims;
+- no hidden data downloads or provider assumptions;
+- examples must use sealed snapshots, explicit features, explicit params, and
+  ordinary promotion/validation workflows.
 
 ### v0.3.0 Paper Trading Adapter And Reconciliation
 
@@ -696,7 +909,7 @@ Intent:
 
 The following remain deferred until the research-to-paper arc is stable:
 
-- portfolio optimization support;
+- full portfolio optimization support;
 - calendar and event-driven strategies;
 - pairs and spread trading;
 - PerformanceAnalytics reporting adapters;
@@ -707,6 +920,11 @@ The following remain deferred until the research-to-paper arc is stable:
 
 These are intentionally not expanded here. If one becomes relevant to an active
 milestone, promote it from `inst/design/horizon.md` or cut a focused RFC/spec.
+
+ML strategy artifact management depends on stable walk-forward windows,
+point-in-time feature tables, model artifact identity, prediction-table
+provenance, and selection diagnostics. Do not reduce it to "call `predict()`
+inside a strategy."
 
 ## Permanently Unsupported Patterns
 

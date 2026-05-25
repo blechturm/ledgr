@@ -1,0 +1,197 @@
+version: "0.1.8.3"
+source: "v0_1_8_3_tickets.md"
+generated_from: "v0_1_8_3_spec.md"
+tickets:
+  - id: "LDG-2401"
+    title: "Scope Routing, Packet Setup, And Auditr Decisions"
+    status: "in_review"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.3"
+    tests:
+      - "manual_packet_review"
+      - "git_diff_check"
+
+  - id: "LDG-2402"
+    title: "Performance Protocol And v0.1.8.2 Baseline"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2401"
+    classification:
+      type: "measurement"
+      surface: "sweep_performance"
+      scope: "benchmark_protocol"
+    tests:
+      - "baseline_smoke_workload"
+      - "baseline_reference_workload"
+      - "manual_report_review"
+
+  - id: "LDG-2403"
+    title: "Persistent-Versus-Memory Accounting Parity Gate"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2401"
+    classification:
+      type: "test"
+      surface: "accounting_parity"
+      scope: "sweep_memory_path"
+    tests:
+      - "accounting_parity_tests"
+      - "sweep_tests"
+      - "metric_kernel_tests"
+      - "promotion_tests"
+
+  - id: "LDG-2404"
+    title: "Strategy Preflight Indirection Hardening"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2401"
+    classification:
+      type: "bugfix"
+      surface: "strategy_preflight"
+      scope: "runtime_contract"
+    tests:
+      - "strategy_preflight_tests"
+      - "sweep_tier3_tests"
+      - "backtest_wrapper_tests"
+
+  - id: "LDG-2405"
+    title: "Preflight Documentation And Strategy-Boundary Polish"
+    status: "pending"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2404"
+    classification:
+      type: "documentation"
+      surface: "strategy_preflight"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "strategy_preflight_tests"
+
+  - id: "LDG-2406"
+    title: "Metric-Context Documentation And Display Polish"
+    status: "pending"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2401"
+    classification:
+      type: "documentation"
+      surface: "metric_context"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "metric_context_tests"
+      - "pkgdown_reference_check"
+
+  - id: "LDG-2407"
+    title: "Sweep Inspection, Export, And Real-Data Example Polish"
+    status: "pending"
+    priority: "P2"
+    effort: "L"
+    dependencies:
+      - "LDG-2401"
+    classification:
+      type: "documentation"
+      surface: "sweep_docs_examples"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "example_smoke_tests"
+      - "stale_version_scan"
+      - "encoding_scan"
+
+  - id: "LDG-2408"
+    title: "Typed Memory Event Representation"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2402"
+      - "LDG-2403"
+    classification:
+      type: "optimization"
+      surface: "memory_events"
+      scope: "sweep_memory_path"
+    tests:
+      - "typed_event_tests"
+      - "accounting_parity_tests"
+      - "sweep_tests"
+      - "fingerprint_stability_tests"
+
+  - id: "LDG-2409"
+    title: "Single-Pass Sweep Summary Reconstruction"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2403"
+      - "LDG-2408"
+    classification:
+      type: "optimization"
+      surface: "sweep_summary"
+      scope: "memory_path"
+    tests:
+      - "single_pass_summary_tests"
+      - "accounting_parity_tests"
+      - "sweep_tests"
+      - "metric_kernel_tests"
+      - "promotion_tests"
+
+  - id: "LDG-2410"
+    title: "Post-Change Measurement And Residual Report"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2402"
+      - "LDG-2408"
+      - "LDG-2409"
+    classification:
+      type: "measurement"
+      surface: "sweep_performance"
+      scope: "post_change_report"
+    tests:
+      - "post_change_smoke_workload"
+      - "post_change_reference_workload"
+      - "manual_report_review"
+
+  - id: "LDG-2411"
+    title: "v0.1.8.3 Release Gate And Closeout"
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2401"
+      - "LDG-2402"
+      - "LDG-2403"
+      - "LDG-2404"
+      - "LDG-2405"
+      - "LDG-2406"
+      - "LDG-2407"
+      - "LDG-2408"
+      - "LDG-2409"
+      - "LDG-2410"
+    classification:
+      type: "release_gate"
+      surface: "package"
+      scope: "v0.1.8.3"
+    tests:
+      - "full_test_suite"
+      - "r_cmd_build"
+      - "r_cmd_check_no_manual_no_build_vignettes"
+      - "documentation_contract_tests"
+      - "stale_version_scan"
+      - "encoding_scan"

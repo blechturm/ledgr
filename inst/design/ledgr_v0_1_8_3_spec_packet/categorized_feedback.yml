@@ -1,0 +1,587 @@
+﻿summary:
+  episodes_reviewed: 16
+  feedback_items_reviewed: 57
+  high_priority_count: 1
+  unresolved_uncertainty:
+    - "Whether `do.call(\"Sys.time\", list())` acceptance is a ledgr bug or a documented static-analysis boundary remains unresolved."
+    - "Whether mutating attributes on `ctx` and reading captured environments are forbidden behavior or user-owned risk needs maintainer decision."
+    - "Several task/example mismatches require deciding whether documentation, task text, or package behavior should change."
+    - "Some rows describe harmless environment or shell friction rather than ledgr defects."
+themes:
+  - theme_id: THEME-001
+    title: "Sweep inspection and report export need concrete accessors"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-25_001_multi_output_indicator_bundles", "2026-05-25_002_yahoo_universe_sweep_per_strategy", "2026-05-25_006_inspection_surfaces_map", "2026-05-25_014_metric_context_sensitivity_overrides", "2026-05-25_015_yahoo_metric_context_end_to_end"]
+    feedback_ids: ["2026-05-25_001_multi_output_indicator_bundles/FB-002", "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-002", "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-003", "2026-05-25_006_inspection_surfaces_map/FB-001", "2026-05-25_006_inspection_surfaces_map/FB-004", "2026-05-25_014_metric_context_sensitivity_overrides/FB-002", "2026-05-25_015_yahoo_metric_context_end_to_end/FB-002"]
+    evidence: "Multiple episodes needed exact list-column accessors, failed-candidate row fields, and flat export patterns because sweep results include nested columns."
+    recommended_action: "Add focused sweep inspection and reporting examples, including failed-candidate accessors and an export-safe flat summary pattern."
+    uncertainty: "Some rows could be solved by documentation alone, while repeated CSV-export failures may justify a helper."
+  - theme_id: THEME-002
+    title: "Preflight boundaries need clearer enforcement and diagnostics"
+    bucket: ledgr_bug
+    severity: high
+    episode_ids: ["2026-05-25_003_adversarial_preflight_and_force_override", "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions", "2026-05-25_016_adversarial_preflight_indirection_bypass"]
+    feedback_ids: ["2026-05-25_003_adversarial_preflight_and_force_override/FB-001", "2026-05-25_003_adversarial_preflight_and_force_override/FB-002", "2026-05-25_003_adversarial_preflight_and_force_override/FB-003", "2026-05-25_003_adversarial_preflight_and_force_override/FB-004", "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions/FB-001", "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions/FB-002", "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions/FB-003", "2026-05-25_016_adversarial_preflight_indirection_bypass/FB-001", "2026-05-25_016_adversarial_preflight_indirection_bypass/FB-002", "2026-05-25_016_adversarial_preflight_indirection_bypass/FB-003"]
+    evidence: "Preflight task examples conflicted with installed tiering, forbidden-call contracts were underdocumented, and `do.call(\"Sys.time\", list())` completed successfully despite Tier 1 classification."
+    recommended_action: "Review static-analysis contract tests for dynamic dispatch and context mutation, then align task examples and reproducibility docs with the intended tier boundaries."
+    uncertainty: "The do.call string case appears high priority; mutable context attributes and captured environments need an explicit maintainer policy."
+  - theme_id: THEME-003
+    title: "Metric context lifecycle docs and print surfaces are incomplete"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-25_009_metric_context_constructors_and_templates", "2026-05-25_010_metric_context_end_to_end_lifecycle", "2026-05-25_011_intraday_calendar_annualization_fix", "2026-05-25_013_adversarial_metric_context_invariants", "2026-05-25_014_metric_context_sensitivity_overrides", "2026-05-25_015_yahoo_metric_context_end_to_end"]
+    feedback_ids: ["2026-05-25_009_metric_context_constructors_and_templates/FB-001", "2026-05-25_009_metric_context_constructors_and_templates/FB-002", "2026-05-25_009_metric_context_constructors_and_templates/FB-003", "2026-05-25_010_metric_context_end_to_end_lifecycle/FB-001", "2026-05-25_010_metric_context_end_to_end_lifecycle/FB-002", "2026-05-25_010_metric_context_end_to_end_lifecycle/FB-003", "2026-05-25_011_intraday_calendar_annualization_fix/FB-001", "2026-05-25_013_adversarial_metric_context_invariants/FB-001", "2026-05-25_013_adversarial_metric_context_invariants/FB-002", "2026-05-25_014_metric_context_sensitivity_overrides/FB-001", "2026-05-25_015_yahoo_metric_context_end_to_end/FB-004"]
+    evidence: "Metric context rows repeatedly asked for explicit constructor fields, clearer labels, provenance/hash semantics, non-mutating override examples, and compact promotion context output."
+    recommended_action: "Add end-to-end metric context examples and improve print/reference surfaces for risk-free rate, provenance, promotions, and override lifecycle."
+    uncertainty: "Most rows are docs gaps, but compact print output for promotion context may require a small API/print-method change."
+  - theme_id: THEME-004
+    title: "Examples and task wording conflict with installed API behavior"
+    bucket: bad_example
+    severity: medium
+    episode_ids: ["2026-05-25_001_multi_output_indicator_bundles", "2026-05-25_002_yahoo_universe_sweep_per_strategy", "2026-05-25_003_adversarial_preflight_and_force_override", "2026-05-25_005_final_bar_no_fill_warning", "2026-05-25_007_helper_pipeline_troubleshooting", "2026-05-25_008_unguided_yahoo_research_question", "2026-05-25_015_yahoo_metric_context_end_to_end"]
+    feedback_ids: ["2026-05-25_001_multi_output_indicator_bundles/FB-001", "2026-05-25_001_multi_output_indicator_bundles/FB-003", "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-004", "2026-05-25_003_adversarial_preflight_and_force_override/FB-001", "2026-05-25_003_adversarial_preflight_and_force_override/FB-002", "2026-05-25_005_final_bar_no_fill_warning/FB-002", "2026-05-25_007_helper_pipeline_troubleshooting/FB-001", "2026-05-25_008_unguided_yahoo_research_question/FB-004", "2026-05-25_015_yahoo_metric_context_end_to_end/FB-001"]
+    evidence: "Episodes found mismatches in bundle ID expectations, target version metadata, ctx equity accessor syntax, Tier 2/Tier 3 examples, parameter-grid syntax, and multi-strategy workflow wording."
+    recommended_action: "Audit task briefs and installed examples against ledgr 0.1.8.2 behavior, then update examples or package behavior where the intended contract differs."
+    uncertainty: "Several findings are not ledgr bugs unless the task/example text is confirmed as the intended contract."
+  - theme_id: THEME-005
+    title: "Input and registration errors need more actionable context"
+    bucket: unclear
+    severity: low
+    episode_ids: ["2026-05-25_004_adversarial_inputs_csv_bundle_registration"]
+    feedback_ids: ["2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-001", "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-002", "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-003", "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-004", "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-005", "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-006"]
+    evidence: "CSV and indicator-registration probes produced errors that were correct enough to fail, but often lacked precise column, row, instrument, or duplicate-feature context."
+    recommended_action: "Tighten error messages and add reference notes for CSV validation classes, timestamp requirements, OHLC row context, bundle collisions, and duplicate registration."
+    uncertainty: "The raw evidence supports UX friction, but some wording changes may be lower priority than docs additions."
+  - theme_id: THEME-006
+    title: "Real Yahoo workflows need a more complete happy path"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-25_002_yahoo_universe_sweep_per_strategy", "2026-05-25_008_unguided_yahoo_research_question", "2026-05-25_015_yahoo_metric_context_end_to_end"]
+    feedback_ids: ["2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-001", "2026-05-25_008_unguided_yahoo_research_question/FB-001", "2026-05-25_008_unguided_yahoo_research_question/FB-003", "2026-05-25_008_unguided_yahoo_research_question/FB-006", "2026-05-25_015_yahoo_metric_context_end_to_end/FB-003"]
+    evidence: "Real-data episodes hit unclear snapshot seal return shape, missing end-to-end Yahoo recipe, rerun lifecycle confusion, and quantmod stderr noise."
+    recommended_action: "Add a full Yahoo research workflow that covers snapshot sealing, reruns after failure, expected dependency stderr chatter, and report-ready artifacts."
+    uncertainty: "The quantmod stderr items are probably expected environment behavior, but they still affect first-pass episode triage."
+  - theme_id: THEME-007
+    title: "Strategy inspection and troubleshooting surfaces need scriptable recipes"
+    bucket: docs_gap
+    severity: low
+    episode_ids: ["2026-05-25_005_final_bar_no_fill_warning", "2026-05-25_006_inspection_surfaces_map", "2026-05-25_007_helper_pipeline_troubleshooting", "2026-05-25_008_unguided_yahoo_research_question", "2026-05-25_011_intraday_calendar_annualization_fix", "2026-05-25_014_metric_context_sensitivity_overrides"]
+    feedback_ids: ["2026-05-25_005_final_bar_no_fill_warning/FB-001", "2026-05-25_005_final_bar_no_fill_warning/FB-003", "2026-05-25_006_inspection_surfaces_map/FB-002", "2026-05-25_006_inspection_surfaces_map/FB-003", "2026-05-25_007_helper_pipeline_troubleshooting/FB-002", "2026-05-25_007_helper_pipeline_troubleshooting/FB-003", "2026-05-25_008_unguided_yahoo_research_question/FB-002", "2026-05-25_008_unguided_yahoo_research_question/FB-005", "2026-05-25_011_intraday_calendar_annualization_fix/FB-002", "2026-05-25_011_intraday_calendar_annualization_fix/FB-003", "2026-05-25_014_metric_context_sensitivity_overrides/FB-003"]
+    evidence: "Episodes needed scriptable paths for timestamp comparisons, no-fill warnings, print invisibility, raw metric types, zero-trade and zero-sizing diagnosis, fill-model fields, and intraday time extraction."
+    recommended_action: "Add compact troubleshooting recipes and inspection snippets that are friendly to scripted episode evidence collection."
+    uncertainty: "PowerShell-specific rows are expected-user errors, but documenting the saved-script pattern would reduce repeated episode friction."
+items:
+  - feedback_id: "2026-05-25_001_multi_output_indicator_bundles/FB-001"
+    episode_id: "2026-05-25_001_multi_output_indicator_bundles"
+    title: "Task expects bundle and single-output TTR IDs to match, but docs and behavior say they intentionally differ"
+    bucket: bad_example
+    severity: medium
+    duplicate_of: null
+    evidence: "The task says the BBands bundle should be a pure authoring convenience that produces the same feature identity as `ledgr_ind_ttr(\"BBands\", input = \"close\", output = \"up\", n = 20)`. In ledgr 0.1.8.2, the bundle entry ID was `bbands_up`, while the hand-written single-output ID was `ttr_bbands_20_up`. Evidence: raw_logs/multi_output_indicator_results.txt shows `Single-output BBands up ID: ttr_bbands_20_up`, `Bundle BBands up ID: bbands_up`, and `IDs match: FALSE`."
+    recommended_action: "Update the task/spec wording to distinguish runtime flattening from exact ID preservation, or change ledgr defaults if exact single-output ID preservation is the intended contract."
+    uncertainty: "Evidence shows a mismatch; maintainer must decide whether docs, task text, or package behavior should change."
+  - feedback_id: "2026-05-25_001_multi_output_indicator_bundles/FB-002"
+    episode_id: "2026-05-25_001_multi_output_indicator_bundles"
+    title: "Sweep docs do not show a focused extraction example for feature fingerprints and feature-set hashes"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asks users to inspect `feature_fingerprints` and `provenance$feature_set_hash`. The sweep print notes those are hidden columns, but I had to infer the exact list-column extraction shape with `$feature_fingerprints` and `vapply(sweep_results$provenance, function(x) x$feature_set_hash, character(1))`. Evidence: raw_logs/multi_output_indicator_results.txt contains the manual extraction and comparison output for both list columns."
+    recommended_action: "Add a focused example to the sweeps vignette and `?ledgr_sweep` showing how to inspect and compare `feature_fingerprints` and `provenance$feature_set_hash`."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_001_multi_output_indicator_bundles/FB-003"
+    episode_id: "2026-05-25_001_multi_output_indicator_bundles"
+    title: "Episode task metadata target differs from preflight required ledgr version"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "`TASK.md` metadata lists `ledgr_target: v0.1.8.1`, while the episode instructions and auditr preflight require `>= 0.1.8.2` and observed `0.1.8.2`. Evidence: TASK.md lists `ledgr_target: \"v0.1.8.1\"`; raw_logs/preflight_stdout.txt contains `[1] '0.1.8.2'`."
+    recommended_action: "Keep task metadata and episode preflight requirements synchronized."
+    uncertainty: "Likely episode, shell, or environment friction rather than a ledgr defect."
+  - feedback_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-001"
+    episode_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy"
+    title: "ledgr_snapshot_seal return shape differs from documentation"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "`ledgr_snapshot_seal(snapshot)` returned a list with `$hash` and `$snapshot`, but the rendered vignette and task workflow imply it returns the hash directly. Evidence: raw_logs/debug_snapshot_seal.txt"
+    recommended_action: "Update `?ledgr_snapshot_seal` and `LEDGR_DOCS/experiment-store.md` to show `$hash`, or restore the documented bare-character return."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-002"
+    episode_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy"
+    title: "Failed-candidate diagnostics are not shown as concrete accessors"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The docs say `ledgr_candidate(..., allow_failed = TRUE)` is for diagnostic extraction of failed params and error details, but they do not show where the error lives on the returned object. I first tried top-level fields and got `NULL`; the error was available through `candidate$row$error_class` and `candidate$row$error_msg`. Evidence: raw_logs/inspect_attempt_2_results.txt"
+    recommended_action: "Add a short failed-candidate inspection snippet to the sweeps vignette and `?ledgr_candidate`."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-003"
+    episode_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy"
+    title: "Sweep tables need a documented flat export pattern"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Writing `as.data.frame(sweep_results)` to CSV failed because sweep results contain list columns including `params`, `warnings`, `feature_fingerprints`, and `provenance`. Evidence: raw_logs/reproducible_script_attempt_2_stderr.txt"
+    recommended_action: "Document a `select(where(is.atomic))` or equivalent base-R pattern, or provide a `ledgr_sweep_summary()` helper for flat export."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-004"
+    episode_id: "2026-05-25_002_yahoo_universe_sweep_per_strategy"
+    title: "Strategy docs are inconsistent about ctx equity accessor shape"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "`?ledgr_strategy_context` documents `ctx$equity` as current simulated portfolio state, but one strategy-development example uses `ctx$equity()` as if it were a function. Evidence: LEDGR_DOCS/strategy-development.md contains `ctx$equity() * params$equity_fraction`; `raw_logs/ledgr_strategy_context.txt` documents `ctx$cash` and `ctx$equity`."
+    recommended_action: "Normalize the strategy-development examples to `ctx$equity` or document callable accessors explicitly."
+    uncertainty: "Evidence shows a mismatch; maintainer must decide whether docs, task text, or package behavior should change."
+  - feedback_id: "2026-05-25_003_adversarial_preflight_and_force_override/FB-001"
+    episode_id: "2026-05-25_003_adversarial_preflight_and_force_override"
+    title: "Task Tier 2 example conflicts with installed preflight rules"
+    bucket: bad_example
+    severity: medium
+    duplicate_of: null
+    evidence: "The task brief suggested a Tier 2 strategy could call a qualified package function such as stats::median(), but installed ledgr 0.1.8.2 classified a strategy using stats::median() as tier_1 because base/recommended R references are allowed. Evidence: raw_logs/reproducible_results.txt shows stats_median_probe tier: tier_1."
+    recommended_action: "Update the adversarial task text and any docs/examples that use stats::median() as a Tier 2 example; use a non-base, non-recommended package-qualified function instead."
+    uncertainty: "Evidence shows a mismatch; maintainer must decide whether docs, task text, or package behavior should change."
+  - feedback_id: "2026-05-25_003_adversarial_preflight_and_force_override/FB-002"
+    episode_id: "2026-05-25_003_adversarial_preflight_and_force_override"
+    title: "Task global-variable Tier 3 requirement conflicts with reproducibility docs"
+    bucket: bad_example
+    severity: medium
+    duplicate_of: null
+    evidence: "The task required a defined global variable not in params to be classified as tier_3, but ledgr classified external scalar, vector, list, and environment objects as tier_2 resolved external objects. Evidence: raw_logs/reproducible_results.txt shows external_global_value_probe tier: tier_2; raw_logs/probe_external_symbol_variants_stdout.txt shows scalar, vector, list, and environment variants all tier_2."
+    recommended_action: "Clarify the task and docs with separate examples for resolved external values (Tier 2) and unresolved/user helper functions (Tier 3)."
+    uncertainty: "Evidence shows a mismatch; maintainer must decide whether docs, task text, or package behavior should change."
+  - feedback_id: "2026-05-25_003_adversarial_preflight_and_force_override/FB-003"
+    episode_id: "2026-05-25_003_adversarial_preflight_and_force_override"
+    title: "Mutable external environment classified as Tier 2"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "A strategy that referenced external_env$qty, where external_env was a mutable environment in the calling session, was classified as tier_2 and allowed. This is surprising because the value can change outside params and outside stored strategy source. Evidence: raw_logs/probe_external_symbol_variants_stdout.txt shows external_env tier: tier_2, allowed: TRUE."
+    recommended_action: "Add a static-analysis rule or documentation note specifically for captured environments and other mutable external objects."
+    uncertainty: "Evidence shows friction or surprising behavior, but the intended contract is not established."
+  - feedback_id: "2026-05-25_003_adversarial_preflight_and_force_override/FB-004"
+    episode_id: "2026-05-25_003_adversarial_preflight_and_force_override"
+    title: "Run-info absence check is not documented as a no-row verification pattern"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked to confirm no run rows were written by querying ledgr_run_info(), but the help page documents successful run metadata and does not state that a missing run raises ledgr_run_not_found. Evidence: raw_logs/reproducible_results.txt shows ledgr_run_info: tier3_attempt returned class ledgr_run_not_found and message Run not found: tier3_attempt."
+    recommended_action: "Add an example or details section to ?ledgr_run_info showing how to verify missing run IDs after failed preflight attempts."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-001"
+    episode_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration"
+    title: "High-level CSV error classes are easy to confuse with low-level CSV import classes"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked for the documented snapshot error class and gave LEDGR_CSV_FORMAT_ERROR as an example, but ledgr_snapshot_from_csv() raised ledgr_invalid_args or ledgr_invalid_timestamp. The help page does explain this split, but the rendered vignette mostly says CSV/snapshot error without restating the class distinction.  Evidence: raw_logs/adversarial_workflow_results.txt"
+    recommended_action: "Add a compact class table to the rendered CSV section showing ledgr_snapshot_from_csv() classes and low-level import classes side by side. "
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-002"
+    episode_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration"
+    title: "Missing-column CSV error uses data-frame wording"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Calling ledgr_snapshot_from_csv() on a CSV missing close failed with \"bars_df missing required column(s): close\", even though the user action was importing a CSV file.  Evidence: raw_logs/adversarial_workflow_results.txt"
+    recommended_action: "Wrap high-level CSV validation errors with CSV-specific context, for example \"CSV is missing required column(s): close\". "
+    uncertainty: "Evidence shows friction or surprising behavior, but the intended contract is not established."
+  - feedback_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-003"
+    episode_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration"
+    title: "Non-UTC CSV timestamp error does not name ts_utc"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "The non-UTC timestamp case failed with \"`x` must be a UTC timestamp...\", which did not name the CSV column or offending value.  Evidence: raw_logs/adversarial_workflow_results.txt"
+    recommended_action: "Include \"ts_utc\" and the invalid value in high-level CSV timestamp errors. "
+    uncertainty: "Evidence shows friction or surprising behavior, but the intended contract is not established."
+  - feedback_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-004"
+    episode_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration"
+    title: "OHLC violation error lacks row or instrument context"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "The OHLC adversarial CSV failed with \"bars_df contains an OHLC violation (high/low bounds).\" The message did not identify which instrument, timestamp, or row was invalid.  Evidence: raw_logs/adversarial_workflow_results.txt"
+    recommended_action: "Include a sample offending instrument_id, ts_utc, and violated condition in OHLC validation errors. "
+    uncertainty: "Evidence shows friction or surprising behavior, but the intended contract is not established."
+  - feedback_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-005"
+    episode_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration"
+    title: "Bundle collision error reports duplicate alias before feature ID"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Colliding flattened BBands bundles inside ledgr_feature_map() failed with \"Feature map aliases must be unique; duplicate alias: bb_dn.\" The message later explains bundle aliases are generated feature IDs, but the primary failure name is alias-focused while the task and docs discuss engine feature ID collisions.  Evidence: raw_logs/adversarial_workflow_results.txt"
+    recommended_action: "Phrase bundle flattening errors as duplicate generated feature ID/alias and show both colliding bundle entries when available. "
+    uncertainty: "Evidence shows friction or surprising behavior, but the intended contract is not established."
+  - feedback_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration/FB-006"
+    episode_id: "2026-05-25_004_adversarial_inputs_csv_bundle_registration"
+    title: "Register-indicator help omits duplicate-registration error contract"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The observed duplicate-registration error was clear and actionable, but ?ledgr_register_indicator only documents the arguments and a success example. It does not describe the ledgr_invalid_args class, unchanged-registration guarantee, or the two valid recovery actions.  Evidence: raw_logs/adversarial_workflow_results.txt"
+    recommended_action: "Add an Errors section to ?ledgr_register_indicator covering duplicate names, overwrite behavior, unchanged existing registration, and ledgr_invalid_args. "
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_005_final_bar_no_fill_warning/FB-001"
+    episode_id: "2026-05-25_005_final_bar_no_fill_warning"
+    title: "Timestamp comparison pattern is hard to find from strategy docs"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The strategy context docs identify ctx$ts_utc as the current timestamp, but the most useful comparison pattern for a timestamp parameter was only found later in the metrics/accounting vignette. Earlier attempts with as.POSIXct() and raw unclass() timestamp values failed before switching to ledgr::ledgr_utc(). Evidence: raw_logs/debug_notes.md"
+    recommended_action: "Add a timestamp-parameter comparison example to ?ledgr_strategy_context and the strategy-development vignette."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_005_final_bar_no_fill_warning/FB-002"
+    episode_id: "2026-05-25_005_final_bar_no_fill_warning"
+    title: "Strategy-development mixes ctx$equity and ctx$equity()"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-004"
+    evidence: "The context table and sizing formulas describe ctx$equity as a value, but later examples call ctx$equity(). That makes the accessor contract ambiguous for a first-time strategy author. Evidence: LEDGR_DOCS/strategy-development.md references ctx$equity in the context table/formulas and ctx$equity() in later examples."
+    recommended_action: "Normalize the examples to ctx$equity or document why ctx$equity() is also acceptable."
+    uncertainty: "Likely duplicate of 2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-004; duplicate decision is advisory."
+  - feedback_id: "2026-05-25_005_final_bar_no_fill_warning/FB-003"
+    episode_id: "2026-05-25_005_final_bar_no_fill_warning"
+    title: "PowerShell expands $ inside double-quoted rg patterns"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "A documentation search for ctx$equity failed because PowerShell expanded $equity inside a double-quoted regex before rg received it. Evidence: raw_logs/debug_notes.md"
+    recommended_action: "Add rg/search examples with single-quoted patterns to the Windows quoting notes when searching for ctx$ accessors."
+    uncertainty: "Likely episode, shell, or environment friction rather than a ledgr defect."
+  - feedback_id: "2026-05-25_006_inspection_surfaces_map/FB-001"
+    episode_id: "2026-05-25_006_inspection_surfaces_map"
+    title: "Inspection table names sweep rows but does not show minimal construction path"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The Inspection Surfaces table said to inspect `ledgr_sweep()` result rows, but the metrics vignette did not include a minimal sweep setup near the table. As a first-time user I had to leave the single-screen map and consult the sweeps vignette and sweep help topics to build the required two-candidate example.  Evidence: raw_logs/inspection_surfaces_details.txt, section \"table cognitive map\""
+    recommended_action: "Add a compact \"to exercise the sweep rows, create `grid <- ledgr_param_grid(...)`; `results <- ledgr_sweep(exp, grid)`; `candidate <- ledgr_candidate(results, 1)`; `ledgr_promote(...)`\" bridge or direct section link in the metrics vignette. "
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_006_inspection_surfaces_map/FB-002"
+    episode_id: "2026-05-25_006_inspection_surfaces_map"
+    title: "print.ledgr_backtest invisibility is not documented in the inspection map"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task explicitly asked whether printed views differed from raw programmatic shape. `summary(bt)` documents invisible return behavior, but the table row for `print(bt)` only says \"printed run header with final equity\". In the run, `withVisible(print(bt))` showed `visible: FALSE` and returned the `ledgr_backtest` object invisibly.  Evidence: raw_logs/inspection_surfaces_details.txt, section \"print(bt)\""
+    recommended_action: "Add a `?print.ledgr_backtest` help topic or mention in `metrics-and-accounting` that `print(bt)` is print-oriented and returns the backtest invisibly. "
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_006_inspection_surfaces_map/FB-003"
+    episode_id: "2026-05-25_006_inspection_surfaces_map"
+    title: "Full ledgr_metrics print exposes noisy attributes"
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: "Calling `print(metrics)` on the full `ledgr_compute_metrics(bt)` result printed the metric values followed by verbose `metric_context` and `metric_kernel` attributes. The docs describe a list-like object with raw numeric values, but the full default print is noisier than the concise subset example.  Evidence: raw_logs/inspection_surfaces_details.txt, section \"ledgr_compute_metrics(bt)\""
+    recommended_action: "Implement a compact `print.ledgr_metrics()` method or add a short note in the metrics vignette explaining the verbose attribute display. "
+    uncertainty: "Evidence shows friction or surprising behavior, but the intended contract is not established."
+  - feedback_id: "2026-05-25_006_inspection_surfaces_map/FB-004"
+    episode_id: "2026-05-25_006_inspection_surfaces_map"
+    title: "Comparison print formatting can obscure raw numeric column types"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The comparison surface returned a `1 x 23` classed tibble with raw numeric metric columns, but its printed view displayed a curated `1 x 9` view where percentage-like fields appeared formatted as strings. The detailed docs mention this, but the Inspection Surfaces table itself only says \"classed comparison tibble\".  Evidence: raw_logs/inspection_surfaces_details.txt, section \"final equity alternatives\""
+    recommended_action: "Add a short note near the comparison row in the Inspection Surfaces table: printed comparison views are formatted/curated; use `as_tibble()` or `as.data.frame()` for raw numeric metrics. "
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_007_helper_pipeline_troubleshooting/FB-001"
+    episode_id: "2026-05-25_007_helper_pipeline_troubleshooting"
+    title: "Tier 3 example runs the wrong experiment object"
+    bucket: bad_example
+    severity: medium
+    duplicate_of: null
+    evidence: "The troubleshooting section defines `tier3_strategy`, but the final example call is `ledgr_run(exp, params = list(), run_id = \"tier3_demo\")`. In the vignette, `exp` was previously created for `top_return_strategy`, so copying the block literally does not demonstrate `ledgr_run()` rejecting `tier3_strategy`. Evidence: raw_logs/reproducible_script_details.txt shows the intended hard failure only after constructing a new experiment around `tier3_strategy`."
+    recommended_action: "Replace the final snippet with a complete `tier3_exp <- ledgr_experiment(snapshot = snapshot, strategy = tier3_strategy, opening = ledgr_opening(cash = 10000))` followed by `ledgr_run(tier3_exp, params = list(), run_id = \"tier3_demo\")`."
+    uncertainty: "Evidence shows a mismatch; maintainer must decide whether docs, task text, or package behavior should change."
+  - feedback_id: "2026-05-25_007_helper_pipeline_troubleshooting/FB-002"
+    episode_id: "2026-05-25_007_helper_pipeline_troubleshooting"
+    title: "Zero-trade diagnosis needs a scriptable n_trades path"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task describes `summary(bt)` reporting `n_trades == 0`, but `summary(bt)` is print-oriented and returns the backtest invisibly. For a reproducible script, I had to switch to `ledgr_compute_metrics(bt)$n_trades` and use `ledgr_results(bt, what = \"fills\")` for evidence. Evidence: raw_logs/reproducible_script_details.txt records `n_trades = 0` from `ledgr_compute_metrics()` and `fills_rows = 0` from `ledgr_results()`."
+    recommended_action: "Add a short line to the zero fills/trades troubleshooting text: \"For scripted checks, use `ledgr_compute_metrics(bt)$n_trades`; `summary(bt)` is print-oriented.\""
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_007_helper_pipeline_troubleshooting/FB-003"
+    episode_id: "2026-05-25_007_helper_pipeline_troubleshooting"
+    title: "Zero-sizing troubleshooting lacks a compact runnable example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The troubleshooting table lists \"sizing to zero\" as a possible zero fills/trades cause, but the section does not show a minimal way to identify it. I had to infer a tiny `equity_fraction`, inspect a late pulse, and check that `target_rebalance()` floored all target quantities to zero. Evidence: raw_logs/reproducible_script_details.txt under `zero_sizing$first_check`."
+    recommended_action: "Add a short zero-sizing example to the troubleshooting section that prints signal, selection, weights, target, and fills for a tiny `equity_fraction`."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_008_unguided_yahoo_research_question/FB-001"
+    episode_id: "2026-05-25_008_unguided_yahoo_research_question"
+    title: "Missing end-to-end real Yahoo research recipe"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The task asked for an unguided real-data research answer, but no single installed document showed how to go from Yahoo download to multi-strategy comparison to a defensible short report. I had to stitch together Yahoo snapshot creation, strategy authoring, feature registration, run comparison, metric extraction, handle cleanup, and report artifacts across several vignettes and help pages. Evidence: research_report.md documentation consulted list; raw_logs/research_summary.md"
+    recommended_action: "Add a vignette section such as 'Answer a small Yahoo research question' that downloads real data, runs at least three strategies, compares stored runs, explains metrics, and closes all handles."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_008_unguided_yahoo_research_question/FB-002"
+    episode_id: "2026-05-25_008_unguided_yahoo_research_question"
+    title: "Fill model documentation does not reveal required field names"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "I tried to add simple transaction costs with fill_model = list(spread_bps = 1, fixed_commission = 0) after reading the ledgr_experiment help text about spread_bps and fixed commission. The run failed because the validator required fields named type and commission_fixed. Evidence: raw_logs/probe_yahoo_workflow_stderr.txt: `fill_model` missing required field(s): type, commission_fixed."
+    recommended_action: "Document a runnable fill_model example with the exact keys, or export a helper such as ledgr_fill_next_open(spread_bps = ..., commission_fixed = ...)."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_008_unguided_yahoo_research_question/FB-003"
+    episode_id: "2026-05-25_008_unguided_yahoo_research_question"
+    title: "Snapshot rerun lifecycle is easy to trip after a failed run"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "After the first probe failed later in the workflow, the Yahoo snapshot had already been created in the DuckDB file. Re-running with the same db_path and snapshot_id then failed with 'snapshot_id already exists'. Evidence: raw_logs/probe_yahoo_workflow_2_stderr.txt: snapshot_id already exists: spy_qqq_iwm_2021_2023_probe"
+    recommended_action: "Add a rerunnable-script note beside the Yahoo example showing `if exists load else create`, or recommend unique episode-local store names for exploratory runs."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_008_unguided_yahoo_research_question/FB-004"
+    episode_id: "2026-05-25_008_unguided_yahoo_research_question"
+    title: "indicators vignette shows ledgr_param_grid vector syntax that fails"
+    bucket: bad_example
+    severity: medium
+    duplicate_of: null
+    evidence: "LEDGR_DOCS/indicators.md shows `ledgr_param_grid(lookback = c(5, 10, 20), min_return = 0, qty = 10)`, but the installed help says each entry must be a JSON-safe list. Running the vignette-style call failed with 'Parameter grid entry 1 must be a list.' Evidence: raw_logs/probe_param_grid_doc_example_stdout.txt"
+    recommended_action: "Replace the vector-style indicators vignette example with list entries, or implement/document an expand-grid API if vector arguments are intended."
+    uncertainty: "Evidence shows a mismatch; maintainer must decide whether docs, task text, or package behavior should change."
+  - feedback_id: "2026-05-25_008_unguided_yahoo_research_question/FB-005"
+    episode_id: "2026-05-25_008_unguided_yahoo_research_question"
+    title: "Final-bar no-fill warning lacks a documented strategy pattern"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-25_005_final_bar_no_fill_warning/FB-001"
+    evidence: "The successful Yahoo run emitted LEDGR_LAST_BAR_NO_FILL because a target changed on the final available bar under the next-open fill model. The warning is understandable, but I did not find a clear first-time-user pattern for intentionally avoiding final-bar target changes or forcing liquidation before the sample ends. Evidence: raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Add a section explaining final-bar warnings, whether a strategy can detect the last fillable pulse, and recommended reporting language for open final positions."
+    uncertainty: "Likely duplicate of 2026-05-25_005_final_bar_no_fill_warning/FB-001; duplicate decision is advisory."
+  - feedback_id: "2026-05-25_008_unguided_yahoo_research_question/FB-006"
+    episode_id: "2026-05-25_008_unguided_yahoo_research_question"
+    title: "Yahoo/quantmod stderr message is documented in help but not the main Yahoo vignette path"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Successful Yahoo runs wrote `Registered S3 method overwritten by 'quantmod'` to stderr. The `?ledgr_snapshot_from_yahoo` help page says this may be harmless, but the rendered experiment-store Yahoo section did not include that reassurance. Evidence: raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Copy the quantmod stderr note from `?ledgr_snapshot_from_yahoo` into the rendered experiment-store Yahoo section."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_009_metric_context_constructors_and_templates/FB-001"
+    episode_id: "2026-05-25_009_metric_context_constructors_and_templates"
+    title: "Metric context help hides explicit constructor fields behind ellipsis"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The help page documents `ledgr_metric_context(x, ...)` and says `...` contains constructor fields or S3 method arguments, but it does not list the explicit fields needed for construction, especially `risk_free_rate` and `calendar`. Evidence: raw_logs/ledgr_metric_context.txt"
+    recommended_action: "Expand the help page with an explicit constructor section documenting accepted fields such as `risk_free_rate`, `calendar`, `benchmark`, `market_factor`, and `mar`, plus a complete explicit-context example."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_009_metric_context_constructors_and_templates/FB-002"
+    episode_id: "2026-05-25_009_metric_context_constructors_and_templates"
+    title: "Metric context print omits risk-free-rate label and source"
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: "An explicit context built with `ledgr_risk_free_rate(0.04, label = \"policy rate\")` retained the label in `ctx$risk_free_rate$label`, but `print(ctx)` displayed only `Risk-free rate: 4.0000%`. The calendar line includes an informative label and annualization details, while risk-free provenance is hidden unless the nested object is inspected. Evidence: raw_logs/reproducible_script_summary.txt"
+    recommended_action: "Include optional risk-free-rate label/source in `print.ledgr_metric_context()` when they are non-null, or add an inspection example to the metric-context help page."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_009_metric_context_constructors_and_templates/FB-003"
+    episode_id: "2026-05-25_009_metric_context_constructors_and_templates"
+    title: "Documentation snapshot task map under-prioritizes metric-context topics"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "`ledgr_write_doc_snapshot()` found the metric-context, calendar, risk-free-rate, resolve, and hash help topics, but the task-intent map's metrics-oriented group listed backtest/result metric topics and the metrics vignette without surfacing the metric-context constructor and calendar topics as likely starting points. Evidence: raw_logs/ledgr_doc_snapshot.md"
+    recommended_action: "Add metric-context and calendar keywords to the documentation discovery task-intent classifier for metrics tasks."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_010_metric_context_end_to_end_lifecycle/FB-001"
+    episode_id: "2026-05-25_010_metric_context_end_to_end_lifecycle"
+    title: "Metric-context label shorthand is unclear"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task brief suggested a committed context like `ledgr_metric_context(risk_free_rate = 0.01, label = \"committed run\")`, but that call failed because `label` is not accepted by `ledgr_metric_context()`. The help page for `ledgr_metric_context()` routes constructor details through `...`, so it was not obvious from the help topic alone that labels must be nested inside `ledgr_risk_free_rate()`. Evidence: raw_logs/attempt1_metric_context_lifecycle_stderr.txt"
+    recommended_action: "Add explicit constructor examples to `?ledgr_metric_context` showing labeled risk-free-rate usage, and update task-facing docs to avoid the unsupported shorthand."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_010_metric_context_end_to_end_lifecycle/FB-002"
+    episode_id: "2026-05-25_010_metric_context_end_to_end_lifecycle"
+    title: "Metric context print omits risk-free-rate label"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-25_009_metric_context_constructors_and_templates/FB-002"
+    evidence: "A metric context built with `ledgr_risk_free_rate(0.04, label = \"policy rate\")` showed the label in `summary(bt)`, but printing the context via `ledgr_metric_context()` showed only the rate, calendar, and hash. During a recoverability task, this made the named risk-free-rate object less inspectable at context surfaces. Evidence: raw_logs/attempt2_metric_context_lifecycle_stdout.txt"
+    recommended_action: "Include risk-free-rate label/source/as_of in metric-context printing when present, or document the deliberate omission."
+    uncertainty: "Likely duplicate of 2026-05-25_009_metric_context_constructors_and_templates/FB-002; duplicate decision is advisory."
+  - feedback_id: "2026-05-25_010_metric_context_end_to_end_lifecycle/FB-003"
+    episode_id: "2026-05-25_010_metric_context_end_to_end_lifecycle"
+    title: "Documentation discovery map omits sweep and promotion intent"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The generated task-intent map was the prescribed starting point after `DOC_DISCOVERY.R`, but it did not include a sweep, candidate, promotion, or metric-context lifecycle intent even though those help topics existed and were central to the task. Evidence: raw_logs/ledgr_doc_snapshot.md"
+    recommended_action: "Add sweep and promotion keywords to the documentation discovery intent map."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_011_intraday_calendar_annualization_fix/FB-001"
+    episode_id: "2026-05-25_011_intraday_calendar_annualization_fix"
+    title: "Default minute-bar annualization mismatch is not demonstrated"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The metrics documentation exposes explicit calendars and shows `ledgr_calendar_us_equity(bars_per_day = 390L)`, but it does not show a minute-bar backtest where the default no-explicit-calendar path remains `252 periods/year` and therefore produces different annualized volatility and Sharpe values. Evidence: raw_logs/reproducible_script_results.txt; raw_logs/doc_search_annualization.txt"
+    recommended_action: "Add a short intraday subsection to the metrics vignette that runs a minute-bar example, prints both annualization rows, and explicitly recommends storing or passing an explicit calendar for intraday bars."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_011_intraday_calendar_annualization_fix/FB-002"
+    episode_id: "2026-05-25_011_intraday_calendar_annualization_fix"
+    title: "Timestamp accessor examples do not show safe intraday time extraction"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "I first tried to build a time-window strategy with `format(ctx$ts_utc, \"%H\", tz = \"UTC\")`. The strategy failed at runtime with `invalid 'trim' argument`, wrapped by ledgr as a strategy error. The docs say `ctx$ts_utc` is the current decision timestamp, but do not show safe base-R extraction of hour/minute values for intraday strategies. Evidence: raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Add an intraday `ctx$ts_utc` example to `?ledgr_strategy_context` or the strategy-development vignette, including a safe hour/minute extraction pattern."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_011_intraday_calendar_annualization_fix/FB-003"
+    episode_id: "2026-05-25_011_intraday_calendar_annualization_fix"
+    title: "Broad raw_logs searches can hit Windows path and locked-file issues"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "One `rg` command using `raw_logs\\\\ledgr_*.txt` failed with `The filename, directory name, or volume label syntax is incorrect`; another broad search over `raw_logs/` hit live Codex stdout/stderr logs locked by another process. Evidence: Observed messages: `The filename, directory name, or volume label syntax is incorrect`; `The process cannot access the file because it is being used by another process. (os error 32)`."
+    recommended_action: "Add a Windows note to the episode discovery instructions recommending `rg` over `LEDGR_DOCS` plus explicit `raw_logs/ledgr_*.txt` files generated by `ledgr_save_help()`, avoiding live runner logs."
+    uncertainty: "Likely episode, shell, or environment friction rather than a ledgr defect."
+  - feedback_id: "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions/FB-001"
+    episode_id: "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions"
+    title: "Strategy preflight docs do not enumerate the forbidden-call contract"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task required proving that Sys.time, Sys.Date, Sys.getenv, get, eval, assign, and <<- each fail as Tier 3 with specific reasons. The strategy preflight help only says \"forbidden nondeterministic calls\" generically, and the strategy/reproducibility vignettes mention only some examples. Evidence: raw_logs/ledgr_strategy_preflight.txt and raw_logs/preflight_candidate_results.csv"
+    recommended_action: "Add a \"Forbidden strategy calls and constructs\" table to ?ledgr_strategy_preflight and the reproducibility vignette, including Sys.time, Sys.Date, Sys.getenv, get, eval, assign, and <<- with example reason text."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions/FB-002"
+    episode_id: "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions"
+    title: "Runtime Tier 3 rejection class and message contract is underdocumented"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task required asserting that ledgr_run() and ledgr_sweep() raise ledgr_strategy_preflight_error and ledgr_strategy_tier3, include the exact preflight reason, include the no-force wording, omit \"by default\", and avoid ledgr_config_non_deterministic. The docs say Tier 3 fails before execution but do not document the class chain or exact message contract. Evidence: raw_logs/runtime_rejection_results.csv"
+    recommended_action: "Add a \"Tier 3 execution failure contract\" section to ?ledgr_run and ?ledgr_sweep documenting the class chain, exact no-force wording, and the guarantee that preflight aborts occur before run artifacts are written."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions/FB-003"
+    episode_id: "2026-05-25_012_adversarial_preflight_v0_1_8_2_additions"
+    title: "Ambient RNG strategy distinction is hard to discover"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "TASK.md required confirming that a strategy using runif(1) is Tier 2 and allowed. The strategy-tier docs do not clearly explain this ambient-RNG distinction, while the custom-indicators vignette lists randomness such as runif(), rnorm(), and sample() among unsafe indicator-function patterns. Evidence: raw_logs/rng_control_result.csv"
+    recommended_action: "Add a strategy-level example using runif(1) to the reproducibility vignette and explain the difference between strategy ambient RNG Tier 2 handling and custom indicator unsafe-call checks."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_013_adversarial_metric_context_invariants/FB-001"
+    episode_id: "2026-05-25_013_adversarial_metric_context_invariants"
+    title: "Metric context help omits concrete constructor fields"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-25_009_metric_context_constructors_and_templates/FB-001"
+    evidence: "`?ledgr_metric_context` documents constructor behavior through `x` and `...`, but does not list the concrete fields accepted by the constructor, including `calendar`, `benchmark`, `market_factor`, and `mar`. The reserved-provider probes were therefore guided by `TASK.md` and observed errors rather than by the help page. Evidence: raw_logs/ledgr_metric_context.txt and raw_logs/validation_probe_results.csv"
+    recommended_action: "Expand `?ledgr_metric_context` with explicit constructor arguments or a Fields section covering `risk_free_rate`, `calendar`, `benchmark`, `market_factor`, and `mar`, including the v0.1.8.2 reserved-field rule."
+    uncertainty: "Likely duplicate of 2026-05-25_009_metric_context_constructors_and_templates/FB-001; duplicate decision is advisory."
+  - feedback_id: "2026-05-25_013_adversarial_metric_context_invariants/FB-002"
+    episode_id: "2026-05-25_013_adversarial_metric_context_invariants"
+    title: "Metric context hash docs do not state provenance-field semantics"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "`?ledgr_metric_context_hash` says hashes use canonical JSON and omit reserved provider fields when NULL, but it does not say whether manual provenance fields such as `risk_free_rate$label`, `source`, or `as_of` are hash-significant. The task required probing labels, and the observed result was that changing only `label` from `policy_a` to `policy_b` kept the hash equal. Evidence: raw_logs/hash_results.csv"
+    recommended_action: "Add a short hash-semantics section or examples showing annual-rate and calendar changes alter hashes while label-only provenance changes do not, if that is the intended contract."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_014_metric_context_sensitivity_overrides/FB-001"
+    episode_id: "2026-05-25_014_metric_context_sensitivity_overrides"
+    title: "Metric override example does not visibly prove non-mutating behavior"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The metrics vignette says call-time overrides are sensitivity checks and do not mutate the run, but its concrete example computes stored metrics from a run with the default zero risk-free rate and then overrides to zero again. A first-time user cannot see the context change or prove that the stored run context remains unchanged from that example alone. Evidence: The rendered example prints zero risk-free rate for both stored and override metrics because the run context is also zero."
+    recommended_action: "Add a short \"run once, evaluate under N assumptions\" example using `metric_context = ledgr_metric_us_equity(risk_free_rate = 0.04)` on the experiment and `ledgr_compute_metrics(bt, risk_free_rate = c...)` style iteration."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_014_metric_context_sensitivity_overrides/FB-002"
+    episode_id: "2026-05-25_014_metric_context_sensitivity_overrides"
+    title: "Sweep result export needs guidance because list columns break base CSV writing"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-003"
+    evidence: "After `ledgr_sweep()` succeeded, writing `as.data.frame(sweep_results)` with base `write.csv()` failed because the sweep table includes list columns such as params/provenance. This is a common first reporting step when saving evidence. Evidence: raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Add a short reporting/export note to `LEDGR_DOCS/sweeps.md` and `?ledgr_sweep`."
+    uncertainty: "Likely duplicate of 2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-003; duplicate decision is advisory."
+  - feedback_id: "2026-05-25_014_metric_context_sensitivity_overrides/FB-003"
+    episode_id: "2026-05-25_014_metric_context_sensitivity_overrides"
+    title: "Inline PowerShell expression expanded `$` inside R code"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "An exploratory `RUN_R.cmd -Expr` command containing `ledgr_demo_bars$ts_utc` was interpreted by PowerShell before R received it, causing R to evaluate `range(ledgr_demo_bars)` and fail with a data-frame summary error. Evidence: raw_logs/inspect_demo_bars_stderr.txt"
+    recommended_action: "No ledgr change needed; keep the existing episode runner guidance prominent."
+    uncertainty: "Likely episode, shell, or environment friction rather than a ledgr defect."
+  - feedback_id: "2026-05-25_015_yahoo_metric_context_end_to_end/FB-001"
+    episode_id: "2026-05-25_015_yahoo_metric_context_end_to_end"
+    title: "Multi-strategy workflow wording does not match experiment API shape"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked to build a single experiment and run at least two strategies, but the public `ledgr_experiment()` constructor accepts exactly one `strategy` function. I had to infer that the intended workflow was multiple experiments over the same sealed snapshot and metric context. Evidence: raw_logs/ledgr_experiment.txt"
+    recommended_action: "Add a short \"multiple strategies\" note to the experiment-store or strategy-development docs showing that users should create one experiment per strategy when comparing distinct strategy functions."
+    uncertainty: "Evidence shows a mismatch; maintainer must decide whether docs, task text, or package behavior should change."
+  - feedback_id: "2026-05-25_015_yahoo_metric_context_end_to_end/FB-002"
+    episode_id: "2026-05-25_015_yahoo_metric_context_end_to_end"
+    title: "Sweep results are not directly CSV-exportable after as.data.frame"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-003"
+    evidence: "After a successful sweep, `write.csv(as.data.frame(sweep_results), ...)` failed because the sweep table contains list columns such as `params`, `warnings`, `feature_fingerprints`, and `provenance`. Evidence: raw_logs/reproducible_script_stderr.txt: Error in utils::write.table(as.data.frame(sweep_results), file.path(raw_logs,  : unimplemented type 'list' in 'EncodeElement'"
+    recommended_action: "Add a sweep report snippet showing `select(run_id, status, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades, execution_seed)` or provide a `ledgr_sweep_report()` helper with flat columns."
+    uncertainty: "Likely duplicate of 2026-05-25_002_yahoo_universe_sweep_per_strategy/FB-003; duplicate decision is advisory."
+  - feedback_id: "2026-05-25_015_yahoo_metric_context_end_to_end/FB-003"
+    episode_id: "2026-05-25_015_yahoo_metric_context_end_to_end"
+    title: "Yahoo snapshot creation writes harmless quantmod startup noise to stderr"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-25_008_unguided_yahoo_research_question/FB-006"
+    evidence: "The Yahoo snapshot succeeded, but stderr contained `Registered S3 method overwritten by 'quantmod'`, which looked like a possible failure until I checked the runner status and snapshot evidence. Evidence: raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Consider wrapping known quantmod startup chatter during `ledgr_snapshot_from_yahoo()` or include the exact common message in the help page so successful stderr logs are easier to triage."
+    uncertainty: "Likely duplicate of 2026-05-25_008_unguided_yahoo_research_question/FB-006; duplicate decision is advisory."
+  - feedback_id: "2026-05-25_015_yahoo_metric_context_end_to_end/FB-004"
+    episode_id: "2026-05-25_015_yahoo_metric_context_end_to_end"
+    title: "Promotion context prints as a large nested list"
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: "`ledgr_promotion_context(promoted)` returned useful data, but its direct printed form was a very large nested list. The source sweep metric context was present but buried inside the output. Evidence: raw_logs/promotion_context.txt"
+    recommended_action: "Add a concise `print.ledgr_promotion_context()` method or document that users should not inspect metric context by reading the raw nested list."
+    uncertainty: "None noted."
+  - feedback_id: "2026-05-25_016_adversarial_preflight_indirection_bypass/FB-001"
+    episode_id: "2026-05-25_016_adversarial_preflight_indirection_bypass"
+    title: "do.call string Sys.time is silently accepted"
+    bucket: ledgr_bug
+    severity: high
+    duplicate_of: null
+    evidence: "`do.call(\"Sys.time\", list())` was classified as `tier_1`, `allowed = TRUE`, and `ledgr_run()` completed successfully. Evidence: raw_logs/probe_results.csv"
+    recommended_action: "Detect constant-string `do.call()` targets that resolve to forbidden nondeterministic functions, or downgrade the classification and add a contract-test/documentation note for this known blind spot."
+    uncertainty: "Raw evidence supports the observation, but the intended ledgr contract needs maintainer decision."
+  - feedback_id: "2026-05-25_016_adversarial_preflight_indirection_bypass/FB-002"
+    episode_id: "2026-05-25_016_adversarial_preflight_indirection_bypass"
+    title: "Attribute write on strategy context is silently accepted"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "`attr(ctx, \"secret\") <- 1` was classified as `tier_1`, `allowed = TRUE`, and `ledgr_run()` completed successfully with no preflight note or runtime warning. Evidence: raw_logs/probe_results.csv"
+    recommended_action: "Add preflight detection for `attr<-` calls targeting `ctx`, lock or validate context attributes during strategy execution, or document that attributes on `ctx` are intentionally outside the reproducibility contract."
+    uncertainty: "Raw evidence supports the observation, but the intended ledgr contract needs maintainer decision."
+  - feedback_id: "2026-05-25_016_adversarial_preflight_indirection_bypass/FB-003"
+    episode_id: "2026-05-25_016_adversarial_preflight_indirection_bypass"
+    title: "Determinism rejection does not identify do.call(Sys.time) source"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "`do.call(Sys.time, list())` was classified as `tier_1`, then `ledgr_run()` failed later with `ledgr_config_non_deterministic` and the message \"`strategy` uses non-deterministic calls and cannot be fingerprinted safely.\" Evidence: raw_logs/probe_results.csv"
+    recommended_action: "Include the detected nondeterministic symbol or call path in the `ledgr_config_non_deterministic` message, and consider aligning preflight classification for function-by-value `do.call()`."
+    uncertainty: "Evidence shows friction or surprising behavior, but the intended contract is not established."

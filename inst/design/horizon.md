@@ -181,10 +181,65 @@ artifacts, and promotion decisions. Tiny example strategies such as flat
 baseline, SMA crossover, or top-N momentum can appear only as contract
 demonstrations, not as profitable-strategy templates.
 
+The roadmap now names `v0.2.x Reference Strategy Templates` for the executable
+contract-demonstration side of this idea. This horizon entry remains broader:
+it is about full reproducible study scaffolds, not a strategy library.
+
 This fits the agentic-research thesis because agents can work more safely in a
 known structure with explicit files such as `hypothesis.md`, `strategy.R`,
 `params.R`, `sweep_results.rds`, `validation_report.qmd`, and
 `promotion_decision.md`.
+
+### 2026-05-25 [education] Strategy family field guides
+
+Future documentation should include literature-informed field guides for major
+EOD trading strategy families. These are broader than reference strategy
+templates: the goal is to teach the economic rationale, data requirements,
+implementation shape, leakage risks, validation protocol, metrics, and
+cost/capacity caveats for each family.
+
+Possible families:
+
+- time-series momentum;
+- cross-sectional momentum;
+- mean reversion;
+- trend following and moving-average systems;
+- carry or yield;
+- value;
+- quality;
+- low volatility or defensive equity;
+- sector or asset rotation;
+- pairs or spread trading;
+- event or earnings drift;
+- volatility targeting;
+- benchmark-aware active equity.
+
+Each field guide should be literature-informed, with recognizable sources for
+the economic rationale and known critiques. User-facing articles should stay
+readable and practical, but they should not be winged. They should include a
+short further-reading section and make clear that ledgr examples are
+educational implementations, not trading advice or profitability claims.
+
+Suggested article shape:
+
+```text
+1. Economic idea
+2. Literature anchor
+3. Data requirements
+4. Causality/leakage traps
+5. Minimal ledgr implementation
+6. Variants
+7. Metrics that matter
+8. Validation protocol
+9. Costs, capacity, and failure modes
+10. Further reading
+```
+
+This depends on several future roadmap layers: target construction helper
+extensions, benchmark context and active metrics, walk-forward and selection
+integrity diagnostics, liquidity/capacity policy, point-in-time data tables,
+corporate actions/instrument master, and reference strategy templates. It is
+therefore a v0.2.x+ documentation/education arc, not near-term v0.1.8 work.
 
 ### 2026-05-13 [research] Deferred strategy and integration families
 
@@ -193,6 +248,16 @@ optimization support, calendar/event-driven strategies, pairs and spread
 trading, reporting adapters, additional indicator backends, ML strategy
 artifact management, or expanded asset-class support. Keep these families
 parked until the research-to-paper arc is stable enough for focused RFCs.
+
+Do not confuse full portfolio optimization with the existing helper pipeline
+(`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()`). The roadmap now
+names `v0.1.9.x Target Construction Helper Extensions` for small additions to
+that helper surface. Full solver-style portfolio optimization remains deferred.
+
+ML strategy artifact management depends on stable walk-forward windows,
+point-in-time feature tables, model artifact identity, prediction-table
+provenance, and selection diagnostics. Do not bolt it on as "call `predict()`
+inside a strategy."
 
 ### 2026-05-16 [research] Randomized and blocked slice diagnostics
 
@@ -213,6 +278,8 @@ These should remain separate from the first `ledgr_walk_forward()` release.
 They require stable sweep result shapes, metric context, grid ergonomics,
 parallel dispatch, slice-aware feature validation, and a clear explanation that
 provenance records what happened but does not prove selection integrity.
+
+Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
 
 ### 2026-05-13 [infrastructure] Public parallel sweep backend
 
@@ -343,12 +410,38 @@ templates are considered. Real fee schedules are account-specific,
 jurisdiction-specific, and change over time. If templates are added later, they
 should likely live in adapter packages or be clearly labelled approximations.
 
+### 2026-05-25 [execution] Liquidity and capacity are not transaction cost
+
+Future liquidity and capacity policy should be named separately from
+transaction-cost modeling. Cost models answer "what price and fee did this
+proposed fill receive?" Liquidity/capacity policy answers "is this proposed
+quantity feasible, should it be clipped, or should it be refused?"
+
+Possible future concepts:
+
+- participation limits;
+- ADV/volume filters;
+- minimum price and minimum volume constraints;
+- turnover and capacity diagnostics;
+- liquidity refusal or quantity clipping.
+
+These policies require execution-bar data such as next-bar volume and may
+change quantities. They therefore belong in execution/liquidity policy, not in
+cost application. Promoted roadmap hook: `v0.2.x Liquidity And Capacity Policy`.
+
 ### 2026-05-14 [sweep] Promotion-grade sweep artifacts
 
 Future design: save/load complete sweep result bundles with manifest, snapshot
 locator hints, strategy/feature recovery metadata, and verification helpers.
 Useful for expensive sweeps and offline audit. Deferred because v0.1.8 stores
 selection context on promoted runs instead.
+
+Bounded first shape: persist grid definition, candidate summaries,
+warnings/errors, metric context, feature-set hashes, execution seeds, ranking or
+selection view, manifest data, and snapshot locator hints. Do not persist full
+ledger, fill, trade, or equity artifacts for every candidate by default.
+
+Promoted roadmap hook: `v0.1.9.x Sweep Artifact Persistence`.
 
 ### 2026-05-14 [execution] Structured RNG preflight metadata
 
@@ -389,6 +482,26 @@ Evidence:
 - `inst/design/audits/sweep_hot_path_profile.md`
 - `dev/spikes/ledgr_sweep_performance/run_benchmark.R`
 - `dev/spikes/ledgr_sweep_performance/profile_hot_path.R`
+
+### 2026-05-25 [strategy] Target construction helper extensions
+
+The public helper pipeline already includes `signal_return()`,
+`select_top_n()`, `weight_equal()`, and `target_rebalance()`. Future work should
+extend that pipeline conservatively instead of introducing a separate portfolio
+construction engine.
+
+Potential additions:
+
+- rank-weight helpers;
+- inverse-volatility weighting;
+- explicit normalization helpers;
+- rebalance bands or no-trade zones where semantics are target-construction
+  rather than execution policy;
+- small diagnostics that explain how weights became full target quantities.
+
+Keep this separate from target risk, liquidity/capacity, transaction cost, and
+full portfolio optimization. Promoted roadmap hook:
+`v0.1.9.x Target Construction Helper Extensions`.
 
 ### 2026-05-24 [research] Beta as three distinct uses
 
@@ -450,6 +563,45 @@ contract and prohibits ticker-symbol hidden lookup.
 A future `ledgr_benchmark_from_universe()` may still be useful but should be
 designed after external benchmarks ship and after point-in-time universe
 semantics are explicit.
+
+Promoted roadmap hook: `v0.2.x Benchmark Context And Active Metrics`.
+
+### 2026-05-25 [data] Point-in-time data tables
+
+Future external observations and reference data need point-in-time semantics
+before ledgr can honestly support fundamentals, earnings, macro, index
+membership, factor features, or universe-derived benchmarks.
+
+Concepts to define:
+
+- `known_at`;
+- `available_at`;
+- `effective_at`;
+- `event_time`;
+- `revision_time`;
+- provider/source/version metadata;
+- alignment policy to strategy decision timestamps.
+
+This is distinct from adapter provenance. Provenance says where data came from;
+point-in-time tables say when a strategy was allowed to know it. Promoted
+roadmap hook: `v0.2.x Point-In-Time Data Tables`.
+
+### 2026-05-25 [data] Corporate actions and instrument master
+
+Sealed snapshots are reproducible, but reproducible survivorship-biased data
+can still be wrong for many research claims. Serious equity research eventually
+needs explicit handling for:
+
+- raw versus adjusted price policy;
+- splits and dividends;
+- delistings and delisting returns;
+- symbol changes;
+- stable instrument identifiers;
+- point-in-time universe membership.
+
+This should coordinate with point-in-time data tables and benchmark/reference
+data design. Promoted roadmap hook:
+`v0.2.x Corporate Actions And Instrument Master`.
 
 ### 2026-05-24 [adapters] External reference-data adapter provenance pattern
 

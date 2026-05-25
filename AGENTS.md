@@ -29,22 +29,24 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.8.2 release gate closeout; update this block
-when the release closes or the next packet is cut):
+Current planning context (v0.1.8.3 implementation; update this block when the
+release closes or scope changes materially):
 
-- The completed v0.1.8.1 packet is an archival release record.
-- The v0.1.8.2 packet is the active release-closeout packet:
-  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/ledgr_triage_report.md`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/categorized_feedback.yml`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`, and
-  `inst/design/ledgr_v0_1_8_2_spec_packet/tickets.yml`.
-- Runtime implementation tickets LDG-2303 through LDG-2312 are complete.
-  LDG-2313 is release verification and metadata closeout only.
-- Do not add new v0.1.8.2 runtime scope. Future implementation follows the
-  roadmap and a future packet, starting with v0.1.8.3 single-core sweep
-  optimization unless the maintainer cuts a different packet.
+- The completed v0.1.8.2 packet is an archival release record.
+- The v0.1.8.3 packet is the active implementation packet:
+  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/ledgr_triage_report.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/categorized_feedback.yml`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`, and
+  `inst/design/ledgr_v0_1_8_3_spec_packet/tickets.yml`.
+- Next implementation scope is performance protocol and baseline,
+  persistent-versus-memory accounting parity, typed memory events, single-pass
+  sweep summary reconstruction, post-change residual profiling, preflight
+  indirection hardening, and routed auditr docs/message polish.
+- Do not pull active aliases, parameter-grid helpers, fast context, parallel
+  dispatch, target risk, walk-forward, cost/liquidity, OMS, benchmark, or
+  external-provider work into v0.1.8.3 without maintainer amendment.
 
 ## Active Design Entry Points
 
