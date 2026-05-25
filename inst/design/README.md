@@ -117,6 +117,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
 | Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
 | Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4 sweep authoring ergonomics | Accepted |
+| Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
 
 ## RFCs
 
@@ -164,6 +165,9 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`
 - `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3.md`
 - `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`
+- `rfc/rfc_collapse_primitive_internals_v0_1_9.md`
+- `rfc/rfc_collapse_primitive_internals_v0_1_9_response.md`
+- `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -231,6 +235,13 @@ rescope of LDG-2413 from narrow B2 proxies to prebuilt static pulse views for
 public data-frame field semantics. LDG-2414 measures that result and informs
 the maintainer decision on whether typed memory events and single-pass summary
 remain in v0.1.8.3 or defer to v0.1.9.
+The collapse primitive-internals synthesis promotes the LDG-2413 construction
+spike lesson into v0.1.9 planning: ledgr should prefer primitive internal
+shapes and treat data.frames as public boundary views. It does not add
+`collapse` to v0.1.8.3 or reopen LDG-2413. The accepted v0.1.9 scope is a
+developer guide, deterministic-wrapper spike, event-boundary micro-profile,
+and safe cumulative-reconstruction parity spike; production use of `collapse`
+waits for measured non-Phase-A value and deterministic hostile-setting parity.
 
 ## Audits And Spikes
 

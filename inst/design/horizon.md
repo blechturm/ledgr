@@ -753,24 +753,30 @@ All tested alternatives preserved the current `ctx$feature_table` and
 the fastest tested implementation, but importing `collapse` only for LDG-2413
 would make a broad dependency decision from a narrow optimization surface.
 
+Accepted planning authority:
+
+- `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`.
+
 Near-term policy:
 
 - v0.1.8.3 should use base R split/nest-style construction where it is enough
   to recover the measured pulse-view setup cost;
 - do not add `collapse` as an `Imports` dependency during v0.1.8.3 solely for
   pulse-view construction;
-- preserve the spike results as evidence for a future RFC.
+- preserve the spike results as evidence for v0.1.9 planning gates.
 
-Future RFC direction:
+Promoted v0.1.9 planning direction:
 
-- evaluate a primitive-object internal data model across pulse context
-  construction, sweep result assembly, feature payload storage, and
-  event/fill reconstruction;
-- decide whether `collapse` should become the package's R-side acceleration
-  layer once multiple surfaces can benefit from it;
-- require deterministic call discipline for any `collapse` use: explicit
-  grouping/order behavior, NA policy, and thread settings rather than relying
-  on user-global options;
+- write a primitive-internals developer guide before broad implementation
+  work;
+- spike deterministic `collapse` wrapping with scoped `collapse::set_collapse()`
+  state restoration rather than mutating caller sessions at package load;
+- micro-profile the event-boundary output buffer path and spike safe
+  cumulative-reconstruction parity before any production `collapse` dependency
+  decision;
+- decide whether `collapse` becomes the package's R-side acceleration layer
+  only after a non-Phase-A production surface shows measured value under
+  hostile caller-side settings;
 - keep FIFO redesign, arbitrary strategy callback compilation, and a compiled
   fold core as separate decisions with their own parity gates.
 

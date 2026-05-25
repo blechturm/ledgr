@@ -101,8 +101,9 @@ versioned packet.
 | v0.1.8.5 | Planned | Parameter-grid quality-of-life helpers after active aliases stabilize. | Future packet |
 | v0.1.8.6 | Planned | DuckDB-backed feature storage / out-of-core projection candidate if residual evidence justifies it. | Future packet |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
-| v0.1.9 | Planned | Target risk layer. | Future packet |
+| v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet |
+| v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
 | v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
 | v0.1.9.x | Planned | Sweep artifact persistence for compact search-space audit. | Future packet |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
@@ -673,6 +674,45 @@ Cost-estimation bridge:
   function or a cost-policy object that mirrors the execution cost resolver.
 - Research order-policy chains, public cost/liquidity chains, and OMS lifecycle
   semantics are deferred to the execution-policy north-star thread.
+
+### v0.1.9 Primitive Internals Planning Gates
+
+Authoritative input:
+
+- `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`.
+
+Intent:
+
+- adopt primitive internal shapes as a planning discipline: vectors, matrices,
+  lists, and index maps inside hot paths, with data.frames treated as public
+  boundary views;
+- evaluate `collapse` as a conditional acceleration layer, not as an upfront
+  dependency;
+- make deterministic call discipline explicit before any production
+  `collapse` path lands;
+- preserve the LDG-2413 v0.1.8.3 base-R split/nest implementation rather than
+  reopening the completed optimization ticket.
+
+v0.1.9 planning scope:
+
+- write the primitive-internals developer guide before broad implementation
+  tickets;
+- spike `ledgr_with_collapse_deterministic()` with scoped
+  `collapse::set_collapse()` state restoration, including error-path restore
+  tests;
+- micro-profile the event-boundary output buffer path before claiming Phase B
+  wall-clock value;
+- run a safe cumulative-reconstruction parity spike for cash, positions, and
+  equity curves while keeping FIFO lot replay out of scope.
+
+Implementation gates:
+
+- no `collapse` `Imports` dependency is added until the deterministic wrapper
+  spike clears and at least one non-Phase-A production surface shows clear
+  measured value on the LDG-2402 reference workload;
+- hostile caller-side `collapse` settings must not change ledgr outputs;
+- Phase B and Phase C.1 implementation work belongs in v0.1.9.x after the
+  planning gates, not in the active v0.1.8.3 packet.
 
 ### v0.1.9.x Walk-Forward Evaluation
 
