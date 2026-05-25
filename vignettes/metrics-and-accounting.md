@@ -305,11 +305,23 @@ intraday_context <- ledgr_metric_context(
 )
 ```
 
+The full constructor fields are `risk_free_rate`, `calendar`,
+`benchmark`, `market_factor`, and `mar`. In v0.1.8 the provider fields
+`benchmark`, `market_factor`, and `mar` are reserved and must be `NULL`;
+they exist so future benchmark and provider designs have an explicit
+home instead of changing metric semantics later.
+
+Intraday work should set `calendar` explicitly. For example, US equity
+minute bars use `ledgr_calendar_us_equity(bars_per_day = 390L)`. ledgr
+does not infer that policy from ticker symbols, file names, or provider
+names.
+
 `summary(bt)` and `ledgr_compute_metrics(bt)` use the metric context
 stored with the committed run. Call-time overrides are sensitivity
 checks; they do not mutate the run:
 
 ``` r
+stored_run_context <- ledgr_metric_context(bt)
 stored_metrics <- ledgr_compute_metrics(bt)
 zero_rf_metrics <- ledgr_compute_metrics(bt, risk_free_rate = 0)
 
@@ -327,6 +339,25 @@ ledgr_metric_context(zero_rf_metrics)
 #> Risk-free rate: 0.0000%
 #> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
 #> Hash:           1487b5dc681c0d58b0a4cf3ecd59421e51cd830d628be466949d55b02b788c00
+identical( # confirm the override did not mutate the stored context on `bt`
+  ledgr_metric_context_hash(stored_run_context),
+  ledgr_metric_context_hash(ledgr_metric_context(bt))
+)
+#> [1] TRUE
+```
+
+Metric-context hashes include the metric-context version, annual
+risk-free rate, risk-free source, risk-free `as_of`, and calendar
+annualization and source fields. Human display labels are stored for
+inspection but do not change the hash. If the print output is too
+compact for a report, inspect the nested object directly:
+
+``` r
+context <- ledgr_metric_context(bt)
+context$risk_free_rate$label
+context$risk_free_rate$source
+context$risk_free_rate$as_of
+ledgr_metric_context_hash(context)
 ```
 
 `ledgr_compare_runs()` has exactly one comparison context per table. The
@@ -457,6 +488,11 @@ ledgr_metric_context(metrics)
 #> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
 #> Hash:           1487b5dc681c0d58b0a4cf3ecd59421e51cd830d628be466949d55b02b788c00
 ```
+
+The raw metrics object keeps metric-kernel attributes for provenance.
+Those attributes are part of the programmatic object, not the printed
+metric table. Use named fields such as `metrics$sharpe_ratio` or the
+subset above when you need a compact report.
 
 `ledgr_compare_runs()` is also programmatic: it returns a tibble-like
 `ledgr_comparison` object with raw numeric metric columns for filtering
@@ -622,6 +658,32 @@ Use this checklist before changing the strategy:
     diagnostic pulse, inspect the signal values directly. Ordinary early
     warmup should have passed by then; a late all-missing signal usually
     points to sample length, universe, or feature-registration issues.
+
+Timestamp checks should compare normalized UTC values, not local string
+representations:
+
+``` r
+target_ts <- ledgr_utc("2020-01-05T00:00:00Z")
+ledgr_utc(ctx$ts_utc) == target_ts
+
+intraday_time <- format(ledgr_utc(ctx$ts_utc), "%H:%M:%S", tz = "UTC")
+intraday_time >= "14:30:00" && intraday_time <= "21:00:00"
+```
+
+If fills are empty, distinguish zero signals from zero sizing. Inspect
+the diagnostic target vector before running the whole experiment:
+
+``` r
+pulse <- ledgr_pulse_snapshot(snapshot, universe, ts_utc, features = features)
+target <- strategy(pulse, params)
+target
+all(target == 0)
+```
+
+Custom fill-model outputs must include the required fill fields
+documented by the fill model contract: instrument ID, timestamp, action
+or side, quantity, price, and cost fields. Missing required fields are
+contract errors, not zero trade outcomes.
 
 ### Three Warmup-Adjacent Cases
 

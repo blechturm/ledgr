@@ -1,0 +1,2 @@
+"label","timestamp_utc","git_head","git_head_short","git_status_short","git_v0_1_8_2_tag","r_version","platform","os","os_release","machine","logical_cores","physical_cores"
+"post_change","2026-05-25T20:42:05Z","e1820d7656e76e66ff0d8cf9c73222b32649fa37","e1820d7","?? inst/design/maintainer_review/ | ?? inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data/manual_profile_profile.csv","9d8dfc841a789a16d605c9a97cf0d36aa1c14bbc","4.5.2","x86_64-w64-mingw32","Windows","10 x64","x86-64",24,16

@@ -34,6 +34,19 @@ recover from stored run metadata.
 The preflight is static analysis, not proof of semantic reproducibility.
 Dynamic dispatch, mutable captured environments, and dynamically constructed
 code remain user responsibilities.
+
+Tier 3 strategies fail before execution with condition classes
+\code{ledgr_strategy_tier3} and \code{ledgr_strategy_preflight_error}; there is no
+\code{force = TRUE} override on \code{ledgr_run()} or \code{ledgr_sweep()}. Covered
+forbidden calls include direct wall-clock/process-environment calls such as
+\code{Sys.time()}, \code{Sys.Date()}, and \code{Sys.getenv()}, visible indirection such as
+\code{do.call("Sys.time", list())}, dynamic lookup/evaluation helpers such as
+\code{get()}, \code{eval()}, and \code{assign()}, global assignment with \code{<<-}, and visible
+context mutation such as \code{attr(ctx, "secret") <- 1}.
+
+Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
+seed contract. Custom indicator generation has a stricter deterministic
+feature contract; do not infer indicator RNG policy from strategy preflight.
 }
 \section{Articles}{
 

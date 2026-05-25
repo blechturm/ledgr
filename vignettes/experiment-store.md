@@ -98,16 +98,19 @@ snapshot <- ledgr_snapshot_from_yahoo(
 
 The returned handle is already sealed. Calling
 `ledgr_snapshot_seal(snapshot)` again is an idempotent verification
-step: it returns the existing sealed hash instead of creating a new
-artifact. Use `ledgr_snapshot_info(snapshot)` to inspect `status`,
-`snapshot_hash`, `bar_count`, `instrument_count`, `start_date`,
-`end_date`, and raw `meta_json`. The dates are ISO UTC values.
-`meta_json` is envelope metadata; snapshot identity comes from
-normalized bars and instruments, not from human descriptions.
+step: on a snapshot handle it returns an invisible structured list with
+`$hash` and `$snapshot`; on a low-level DBI connection plus
+`snapshot_id` it returns the hash string. Use
+`ledgr_snapshot_info(snapshot)` to inspect `status`, `snapshot_hash`,
+`bar_count`, `instrument_count`, `start_date`, `end_date`, and raw
+`meta_json`. The dates are ISO UTC values. `meta_json` is envelope
+metadata; snapshot identity comes from normalized bars and instruments,
+not from human descriptions.
 
 ``` r
 yahoo_info <- ledgr_snapshot_info(snapshot)
-yahoo_hash <- ledgr_snapshot_seal(snapshot)
+yahoo_seal <- ledgr_snapshot_seal(snapshot)
+yahoo_hash <- yahoo_seal$hash
 stopifnot(identical(yahoo_info$snapshot_hash[[1]], yahoo_hash))
 ```
 

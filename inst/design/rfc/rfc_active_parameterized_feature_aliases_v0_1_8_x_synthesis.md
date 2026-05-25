@@ -166,8 +166,11 @@ The active-alias flow should be explicit:
 4. `ledgr_experiment(features = ...)` stores the authored declaration without
    resolving it.
 5. `ledgr_run()` resolves once using the run's concrete `params`.
-6. `ledgr_sweep()` resolves once per candidate using that candidate's concrete
-   `params`.
+6. `ledgr_sweep()` resolves alias maps once per candidate using that
+   candidate's concrete `params`, but concrete feature computation is unioned
+   across the grid. Shared concrete features are computed once through the
+   v0.1.8.3 runtime projection / `ledgr_precompute_features()` path, not once
+   per candidate.
 7. Resolution validates values late: required parameters, scalar shape, type,
    and constructor-specific constraints.
 8. Precompute and fold execution receive ordinary concrete feature
@@ -199,6 +202,11 @@ feature ID. The error should direct users to exact-ID lookup or to declaring
 This strategy form stays preflight-compatible because the strategy body reads
 `ctx`, `params`, local variables, string literals, and exported ledgr helpers.
 It does not call a user-defined feature factory.
+
+The active alias map is still per candidate and belongs to alias identity and
+provenance. The runtime projection may carry a derived alias-to-index map for
+cheap pulse access, but it is not the storage layer for alias maps and it has no
+hash.
 
 ---
 

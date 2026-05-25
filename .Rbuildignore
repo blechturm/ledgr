@@ -9,6 +9,9 @@
 ^docs$
 ^pkgdown$
 ^_pkgdown\.yml$
+^inst/design/maintainer_review$
+^inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data$
+^inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/ldg241[0-9_].*$
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
 ^coverage\.html$

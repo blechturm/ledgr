@@ -31,13 +31,44 @@ ledgr_parity_metric_cols <- function() {
   )
 }
 
+ledgr_parity_accounting_tolerance <- function() {
+  # The current R memory and persistent paths are byte-identical. LDG-2403 uses
+  # 1e-10 as forward protection so later typed-event or single-pass changes may
+  # introduce harmless floating-point order noise, but not cent-level accounting
+  # drift.
+  1e-10
+}
+
+ledgr_parity_metric_tolerance <- function() {
+  # Metrics are downstream of equity/fill tables. Use the same tight tolerance
+  # so Sharpe/volatility changes caused by arithmetic order are allowed only at
+  # numerical-noise scale.
+  1e-10
+}
+
 ledgr_parity_normalize_table <- function(x, drop = character()) {
   out <- tibble::as_tibble(x)
   for (col in intersect(c("run_id", "event_id", drop), names(out))) {
     out[[col]] <- NULL
   }
   if ("ts_utc" %in% names(out)) {
-    out$ts_utc <- vapply(out$ts_utc, ledgr_normalize_ts_utc, character(1))
+    out$ts_utc <- vapply(out$ts_utc, ledgr:::ledgr_normalize_ts_utc, character(1))
+  }
+  out
+}
+
+ledgr_parity_close_matrix <- function(bars, universe) {
+  pulses <- sort(unique(as.POSIXct(bars$ts_utc, tz = "UTC")))
+  out <- matrix(
+    NA_real_,
+    nrow = length(universe),
+    ncol = length(pulses),
+    dimnames = list(universe, vapply(pulses, ledgr:::ledgr_normalize_ts_utc, character(1)))
+  )
+  for (j in seq_along(universe)) {
+    rows <- bars[as.character(bars$instrument_id) == universe[[j]], , drop = FALSE]
+    rows <- rows[order(rows$ts_utc), , drop = FALSE]
+    out[j, ] <- as.numeric(rows$close)
   }
   out
 }
@@ -53,12 +84,31 @@ ledgr_parity_final_positions <- function(fills) {
   }, numeric(1)), instruments)
 }
 
+ledgr_parity_persistent_equity_detail <- function(bt) {
+  opened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  DBI::dbGetQuery(
+    opened$con,
+    "
+    SELECT ts_utc, cash, positions_value, equity, realized_pnl, unrealized_pnl
+    FROM equity_curve
+    WHERE run_id = ?
+    ORDER BY ts_utc
+    ",
+    params = list(bt$run_id)
+  )
+}
+
 ledgr_expect_sweep_row_matches_run <- function(row, bt) {
   metrics <- ledgr_compute_metrics(bt)
   equity <- ledgr_results(bt, "equity")
   final_equity <- equity$equity[[nrow(equity)]]
 
-  testthat::expect_equal(row$final_equity[[1]], final_equity, tolerance = 0)
+  testthat::expect_equal(
+    row$final_equity[[1]],
+    final_equity,
+    tolerance = ledgr_parity_accounting_tolerance()
+  )
   for (col in ledgr_parity_metric_cols()) {
     if (identical(col, "n_trades")) {
       testthat::expect_identical(row[[col]][[1]], as.integer(metrics[[col]]))
@@ -66,7 +116,7 @@ ledgr_expect_sweep_row_matches_run <- function(row, bt) {
       testthat::expect_equal(
         row[[col]][[1]],
         metrics[[col]],
-        tolerance = 0,
+        tolerance = ledgr_parity_metric_tolerance(),
         info = sprintf("%s actual=%s expected=%s", col, deparse(row[[col]][[1]]), deparse(metrics[[col]]))
       )
     }
@@ -77,34 +127,83 @@ ledgr_expect_run_artifacts_identical <- function(left, right) {
   testthat::expect_equal(
     ledgr_parity_normalize_table(ledgr_results(left, "ledger")),
     ledgr_parity_normalize_table(ledgr_results(right, "ledger")),
-    tolerance = 0
+    tolerance = ledgr_parity_accounting_tolerance()
   )
   testthat::expect_equal(
     ledgr_parity_normalize_table(ledgr_results(left, "fills")),
     ledgr_parity_normalize_table(ledgr_results(right, "fills")),
-    tolerance = 0
+    tolerance = ledgr_parity_accounting_tolerance()
   )
   testthat::expect_equal(
     ledgr_parity_normalize_table(ledgr_results(left, "trades")),
     ledgr_parity_normalize_table(ledgr_results(right, "trades")),
-    tolerance = 0
+    tolerance = ledgr_parity_accounting_tolerance()
   )
   testthat::expect_equal(
-    ledgr_parity_normalize_table(ledgr_results(left, "equity"), drop = "drawdown"),
-    ledgr_parity_normalize_table(ledgr_results(right, "equity"), drop = "drawdown"),
-    tolerance = 0
+    ledgr_parity_normalize_table(ledgr_parity_persistent_equity_detail(left)),
+    ledgr_parity_normalize_table(ledgr_parity_persistent_equity_detail(right)),
+    tolerance = ledgr_parity_accounting_tolerance()
   )
   testthat::expect_equal(
     ledgr_parity_final_positions(ledgr_results(left, "fills")),
     ledgr_parity_final_positions(ledgr_results(right, "fills")),
-    tolerance = 0
+    tolerance = ledgr_parity_accounting_tolerance()
   )
+}
+
+ledgr_expect_memory_reconstruction_matches_run <- function(bt, bars, initial_cash, universe) {
+  pulses <- sort(unique(as.POSIXct(bars$ts_utc, tz = "UTC")))
+  close_mat <- ledgr_parity_close_matrix(bars, universe)
+  events <- ledgr_results(bt, "ledger")
+
+  memory_equity <- ledgr:::ledgr_equity_from_events(
+    events = events,
+    pulses_posix = pulses,
+    close_mat = close_mat,
+    initial_cash = initial_cash,
+    instrument_ids = universe,
+    run_id = bt$run_id
+  )
+  testthat::expect_equal(
+    ledgr_parity_normalize_table(memory_equity),
+    ledgr_parity_normalize_table(ledgr_parity_persistent_equity_detail(bt)),
+    tolerance = ledgr_parity_accounting_tolerance()
+  )
+
+  memory_fills <- ledgr:::ledgr_fills_from_events(events)
+  persistent_fills <- ledgr_results(bt, "fills")
+  testthat::expect_equal(
+    ledgr_parity_normalize_table(memory_fills),
+    ledgr_parity_normalize_table(persistent_fills),
+    tolerance = ledgr_parity_accounting_tolerance()
+  )
+
+  kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(bt), pulses = pulses)
+  memory_metrics <- ledgr:::ledgr_metrics_from_equity_fills(
+    equity = memory_equity,
+    fills = memory_fills,
+    metric_kernel = kernel
+  )
+  persistent_metrics <- ledgr_compute_metrics(bt)
+  for (col in ledgr_parity_metric_cols()) {
+    if (identical(col, "n_trades")) {
+      testthat::expect_identical(memory_metrics[[col]], as.integer(persistent_metrics[[col]]))
+    } else {
+      testthat::expect_equal(
+        memory_metrics[[col]],
+        persistent_metrics[[col]],
+        tolerance = ledgr_parity_metric_tolerance(),
+        info = sprintf("memory metric %s", col)
+      )
+    }
+  }
 }
 
 testthat::test_that("sweep candidates match persistent run and promoted run artifacts", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  snapshot <- ledgr_snapshot_from_df(ledgr_parity_bars(), db_path = db_path)
+  bars <- ledgr_parity_bars()
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -114,9 +213,10 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
       targets["AAA"] <- params$aaa_qty
       targets["BBB"] <- params$bbb_qty
     } else if (identical(day, "2020-01-02")) {
-      targets["AAA"] <- 0
+      targets["AAA"] <- params$aaa_partial_qty
       targets["BBB"] <- params$bbb_qty
-    } else if (identical(day, "2020-01-03")) {
+    } else if (identical(day, "2020-01-03") && isTRUE(params$close_day3)) {
+      targets["AAA"] <- 0
       targets["BBB"] <- 0
     } else if (identical(day, "2020-01-08")) {
       targets["AAA"] <- params$last_bar_qty
@@ -131,34 +231,125 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
     universe = c("AAA", "BBB")
   )
   grid <- ledgr_param_grid(
-    conservative = list(aaa_qty = 2, bbb_qty = 1, last_bar_qty = 1),
-    aggressive = list(aaa_qty = 4, bbb_qty = 2, last_bar_qty = 3)
+    zero = list(aaa_qty = 0, aaa_partial_qty = 0, bbb_qty = 0, close_day3 = TRUE, last_bar_qty = 0),
+    partial = list(aaa_qty = 4, aaa_partial_qty = 2, bbb_qty = 2, close_day3 = TRUE, last_bar_qty = 3),
+    open_end = list(aaa_qty = 1, aaa_partial_qty = 1, bbb_qty = 0, close_day3 = FALSE, last_bar_qty = 1)
   )
 
   results <- ledgr_sweep(exp, grid, seed = 2026L)
-  candidate <- ledgr_candidate(results, "aggressive")
-  promoted <- suppressWarnings(ledgr_promote(exp, candidate, run_id = "parity-promoted"))
+  testthat::expect_identical(
+    names(results),
+    c(
+      "run_id", "status", "final_equity", "total_return", "annualized_return",
+      "volatility", "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
+      "avg_trade", "time_in_market", "execution_seed", "error_class",
+      "error_msg", "params", "warnings", "feature_fingerprints", "provenance"
+    )
+  )
+  testthat::expect_true(all(results$status == "DONE"))
+
+  partial_row <- results[results$run_id == "partial", , drop = FALSE]
+  testthat::expect_true(any(vapply(
+    partial_row$warnings[[1]],
+    function(w) grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE),
+    logical(1)
+  )))
+  testthat::expect_length(results$warnings[[which(results$run_id == "zero")]], 0L)
+
+  for (label in results$run_id) {
+    candidate <- ledgr_candidate(results, label)
+    promoted <- suppressWarnings(ledgr_promote(exp, candidate, run_id = paste0("parity-", label, "-promoted")))
+    direct <- suppressWarnings(ledgr_run(
+      exp,
+      params = candidate$params,
+      run_id = paste0("parity-", label, "-direct"),
+      seed = candidate$execution_seed
+    ))
+
+    row <- results[results$run_id == label, , drop = FALSE]
+    ledgr_expect_sweep_row_matches_run(row, promoted)
+    ledgr_expect_run_artifacts_identical(promoted, direct)
+    ledgr_expect_memory_reconstruction_matches_run(direct, bars, initial_cash = 10000, universe = c("AAA", "BBB"))
+
+    testthat::expect_identical(ledgr_run_info(snapshot, paste0("parity-", label, "-promoted"))$status, "DONE")
+    testthat::expect_identical(ledgr_run_info(snapshot, paste0("parity-", label, "-direct"))$status, "DONE")
+    close(promoted)
+    close(direct)
+  }
+
+  zero_direct <- ledgr_run(exp, params = grid$params[[1]], run_id = "parity-zero-check", seed = 1L)
+  on.exit(close(zero_direct), add = TRUE)
+  testthat::expect_identical(nrow(ledgr_results(zero_direct, "fills")), 0L)
+  testthat::expect_identical(ledgr_compute_metrics(zero_direct)$n_trades, 0L)
+
+  open_end_direct <- ledgr_run(exp, params = grid$params[[3]], run_id = "parity-open-end-check", seed = 1L)
+  on.exit(close(open_end_direct), add = TRUE)
+  open_end_equity <- ledgr_parity_persistent_equity_detail(open_end_direct)
+  testthat::expect_gt(abs(open_end_equity$unrealized_pnl[[nrow(open_end_equity)]]), 0)
+  testthat::expect_identical(ledgr_compute_metrics(open_end_direct)$n_trades, 0L)
+})
+
+testthat::test_that("sweep parity covers opening-position lots and non-default metric context", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_parity_bars()
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$hold()
+    day <- substr(ctx$ts_utc, 1L, 10L)
+    if (identical(day, "2020-01-01")) {
+      targets["AAA"] <- 3
+    } else if (identical(day, "2020-01-02")) {
+      targets["AAA"] <- 0
+    }
+    targets
+  }
+  context <- ledgr_metric_context(
+    risk_free_rate = ledgr_risk_free_rate(0.04, label = "parity policy")
+  )
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    opening = ledgr_opening(cash = 10000, positions = c(AAA = 5), cost_basis = c(AAA = 99)),
+    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+    universe = c("AAA", "BBB"),
+    metric_context = context
+  )
+  grid <- ledgr_param_grid(opening_partial = list())
+
+  results <- ledgr_sweep(exp, grid, seed = 90210L)
+  testthat::expect_s3_class(results, "ledgr_sweep_results")
+  testthat::expect_identical(attr(results, "metric_context_hash"), ledgr_metric_context_hash(context))
+  testthat::expect_equal(ledgr_metric_context(results)$risk_free_rate$annual_rate, 0.04)
+  testthat::expect_identical(results$status[[1]], "DONE")
+
+  candidate <- ledgr_candidate(results, "opening_partial")
+  promoted <- suppressWarnings(ledgr_promote(exp, candidate, run_id = "opening-parity-promoted"))
   direct <- suppressWarnings(ledgr_run(
     exp,
     params = candidate$params,
-    run_id = "parity-direct",
+    run_id = "opening-parity-direct",
     seed = candidate$execution_seed
   ))
   on.exit(close(promoted), add = TRUE)
   on.exit(close(direct), add = TRUE)
 
-  row <- results[results$run_id == "aggressive", , drop = FALSE]
-  testthat::expect_identical(row$status[[1]], "DONE")
-  testthat::expect_true(any(vapply(
-    row$warnings[[1]],
-    function(w) grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE),
-    logical(1)
-  )))
-  ledgr_expect_sweep_row_matches_run(row, promoted)
+  ledgr_expect_sweep_row_matches_run(results[1, , drop = FALSE], promoted)
   ledgr_expect_run_artifacts_identical(promoted, direct)
+  ledgr_expect_memory_reconstruction_matches_run(direct, bars, initial_cash = 10000, universe = c("AAA", "BBB"))
 
-  testthat::expect_identical(ledgr_run_info(snapshot, "parity-promoted")$status, "DONE")
-  testthat::expect_identical(ledgr_run_info(snapshot, "parity-direct")$status, "DONE")
+  direct_equity <- ledgr_parity_persistent_equity_detail(direct)
+  # Opening lot: 5 shares at cost 99. Day 1 closes 2 at 101; day 2 closes
+  # 3 at 103, so realized = (101 - 99) * 2 + (103 - 99) * 3 = 16.
+  testthat::expect_equal(direct_equity$realized_pnl[[nrow(direct_equity)]], 16, tolerance = ledgr_parity_accounting_tolerance())
+  testthat::expect_equal(direct_equity$unrealized_pnl[[nrow(direct_equity)]], 0, tolerance = ledgr_parity_accounting_tolerance())
+  testthat::expect_false(isTRUE(all.equal(
+    results$sharpe_ratio[[1]],
+    ledgr_compute_metrics(direct, risk_free_rate = 0)$sharpe_ratio,
+    tolerance = 1e-12
+  )))
 })
 
 testthat::test_that("seeded stochastic sweep promotion reproduces the selected candidate", {

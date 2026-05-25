@@ -384,9 +384,9 @@ parameterized_strategy <- function(ctx, params) {
 }
 
 grid <- ledgr_param_grid(
-  lookback = c(5, 10, 20),
-  min_return = 0,
-  qty = 10
+  ret_5 = list(lookback = 5, min_return = 0, qty = 10),
+  ret_10 = list(lookback = 10, min_return = 0, qty = 10),
+  ret_20 = list(lookback = 20, min_return = 0, qty = 10)
 )
 ```
 

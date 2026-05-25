@@ -15,7 +15,9 @@
 #' @param con A DBI connection to DuckDB or a `ledgr_snapshot`.
 #' @param snapshot_id Snapshot id (must exist and be status `CREATED` or
 #'   `SEALED`) when `con` is a connection.
-#' @return The computed snapshot hash (character(1)) or a list when called with a snapshot object.
+#' @return The computed snapshot hash (`character(1)`) when called with a DBI
+#'   connection and `snapshot_id`. When called with a `ledgr_snapshot` handle,
+#'   returns an invisible list with `$hash` and `$snapshot`.
 #' @details
 #' Errors:
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.

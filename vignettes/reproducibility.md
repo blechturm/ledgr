@@ -189,6 +189,12 @@ ledgr does not turn them into replayable run parameters. Prefer putting
 values that define the research question into `params`, especially for
 sweeps.
 
+Captured mutable environments are also resolved, so they remain Tier 2
+under the current policy. That does not make mutation reproducible. If an
+external environment can change between runs or across workers, treat the
+value as an explicit parameter or make the environment immutable before
+running the experiment.
+
 Tier 2 is allowed for ordinary runs and future sweep mode. It is not
 fully reproducible by ledgr alone. Users own package installation,
 package version parity, system libraries, and any other runtime
@@ -220,6 +226,35 @@ Tier 3 strategies fail before execution. There is no `force = TRUE`
 override on `ledgr_run()` or `ledgr_sweep()`; move external values into
 `params`, qualify package calls, or use ledgr’s exported helpers
 instead.
+
+Preflight rejection is the first boundary. A covered Tier 3 strategy
+stops before fold execution, before output-handler side effects, and
+before later determinism hashing can become the first user-facing error.
+The condition class chain includes `ledgr_strategy_tier3` and
+`ledgr_strategy_preflight_error`.
+
+The most common hard rejections are:
+
+| Pattern | Example | Why it fails |
+|---|---|---|
+| wall-clock access | `Sys.time()` or `do.call("Sys.time", list())` | runtime date/time is not stored run input |
+| process environment | `Sys.getenv("TOKEN")` | external process state is not stored run input |
+| dynamic evaluation | `get("x")`, `eval(expr)`, `assign("x", 1)` | preflight cannot recover the value path as stored metadata |
+| global assignment | `x <<- 1` | strategy mutates state outside the run artifact |
+| context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgr's execution context |
+| unresolved helper | `my_helper(ctx)` | helper source is not stored as part of the strategy |
+
+Recommended-R functions such as `stats::median()` remain Tier
+1-compatible when called explicitly or resolved through R's
+base/recommended namespace. They are not package dependencies outside the
+active R distribution.
+
+Ambient strategy RNG calls such as `runif(1)` are a separate case. They
+are allowed as Tier 2 because ledgr's execution seed contract can make
+the strategy run repeatable, but they still deserve scrutiny because the
+random draw is a decision input. This is different from custom-indicator
+RNG restrictions: feature generation must be deterministic for a given
+snapshot and feature definition.
 
 ## Why `params` Is The Boundary
 

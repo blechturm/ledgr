@@ -181,10 +181,65 @@ artifacts, and promotion decisions. Tiny example strategies such as flat
 baseline, SMA crossover, or top-N momentum can appear only as contract
 demonstrations, not as profitable-strategy templates.
 
+The roadmap now names `v0.2.x Reference Strategy Templates` for the executable
+contract-demonstration side of this idea. This horizon entry remains broader:
+it is about full reproducible study scaffolds, not a strategy library.
+
 This fits the agentic-research thesis because agents can work more safely in a
 known structure with explicit files such as `hypothesis.md`, `strategy.R`,
 `params.R`, `sweep_results.rds`, `validation_report.qmd`, and
 `promotion_decision.md`.
+
+### 2026-05-25 [education] Strategy family field guides
+
+Future documentation should include literature-informed field guides for major
+EOD trading strategy families. These are broader than reference strategy
+templates: the goal is to teach the economic rationale, data requirements,
+implementation shape, leakage risks, validation protocol, metrics, and
+cost/capacity caveats for each family.
+
+Possible families:
+
+- time-series momentum;
+- cross-sectional momentum;
+- mean reversion;
+- trend following and moving-average systems;
+- carry or yield;
+- value;
+- quality;
+- low volatility or defensive equity;
+- sector or asset rotation;
+- pairs or spread trading;
+- event or earnings drift;
+- volatility targeting;
+- benchmark-aware active equity.
+
+Each field guide should be literature-informed, with recognizable sources for
+the economic rationale and known critiques. User-facing articles should stay
+readable and practical, but they should not be winged. They should include a
+short further-reading section and make clear that ledgr examples are
+educational implementations, not trading advice or profitability claims.
+
+Suggested article shape:
+
+```text
+1. Economic idea
+2. Literature anchor
+3. Data requirements
+4. Causality/leakage traps
+5. Minimal ledgr implementation
+6. Variants
+7. Metrics that matter
+8. Validation protocol
+9. Costs, capacity, and failure modes
+10. Further reading
+```
+
+This depends on several future roadmap layers: target construction helper
+extensions, benchmark context and active metrics, walk-forward and selection
+integrity diagnostics, liquidity/capacity policy, point-in-time data tables,
+corporate actions/instrument master, and reference strategy templates. It is
+therefore a v0.2.x+ documentation/education arc, not near-term v0.1.8 work.
 
 ### 2026-05-13 [research] Deferred strategy and integration families
 
@@ -193,6 +248,16 @@ optimization support, calendar/event-driven strategies, pairs and spread
 trading, reporting adapters, additional indicator backends, ML strategy
 artifact management, or expanded asset-class support. Keep these families
 parked until the research-to-paper arc is stable enough for focused RFCs.
+
+Do not confuse full portfolio optimization with the existing helper pipeline
+(`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()`). The roadmap now
+names `v0.1.9.x Target Construction Helper Extensions` for small additions to
+that helper surface. Full solver-style portfolio optimization remains deferred.
+
+ML strategy artifact management depends on stable walk-forward windows,
+point-in-time feature tables, model artifact identity, prediction-table
+provenance, and selection diagnostics. Do not bolt it on as "call `predict()`
+inside a strategy."
 
 ### 2026-05-16 [research] Randomized and blocked slice diagnostics
 
@@ -213,6 +278,8 @@ These should remain separate from the first `ledgr_walk_forward()` release.
 They require stable sweep result shapes, metric context, grid ergonomics,
 parallel dispatch, slice-aware feature validation, and a clear explanation that
 provenance records what happened but does not prove selection integrity.
+
+Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
 
 ### 2026-05-13 [infrastructure] Public parallel sweep backend
 
@@ -343,12 +410,38 @@ templates are considered. Real fee schedules are account-specific,
 jurisdiction-specific, and change over time. If templates are added later, they
 should likely live in adapter packages or be clearly labelled approximations.
 
+### 2026-05-25 [execution] Liquidity and capacity are not transaction cost
+
+Future liquidity and capacity policy should be named separately from
+transaction-cost modeling. Cost models answer "what price and fee did this
+proposed fill receive?" Liquidity/capacity policy answers "is this proposed
+quantity feasible, should it be clipped, or should it be refused?"
+
+Possible future concepts:
+
+- participation limits;
+- ADV/volume filters;
+- minimum price and minimum volume constraints;
+- turnover and capacity diagnostics;
+- liquidity refusal or quantity clipping.
+
+These policies require execution-bar data such as next-bar volume and may
+change quantities. They therefore belong in execution/liquidity policy, not in
+cost application. Promoted roadmap hook: `v0.2.x Liquidity And Capacity Policy`.
+
 ### 2026-05-14 [sweep] Promotion-grade sweep artifacts
 
 Future design: save/load complete sweep result bundles with manifest, snapshot
 locator hints, strategy/feature recovery metadata, and verification helpers.
 Useful for expensive sweeps and offline audit. Deferred because v0.1.8 stores
 selection context on promoted runs instead.
+
+Bounded first shape: persist grid definition, candidate summaries,
+warnings/errors, metric context, feature-set hashes, execution seeds, ranking or
+selection view, manifest data, and snapshot locator hints. Do not persist full
+ledger, fill, trade, or equity artifacts for every candidate by default.
+
+Promoted roadmap hook: `v0.1.9.x Sweep Artifact Persistence`.
 
 ### 2026-05-14 [execution] Structured RNG preflight metadata
 
@@ -389,6 +482,26 @@ Evidence:
 - `inst/design/audits/sweep_hot_path_profile.md`
 - `dev/spikes/ledgr_sweep_performance/run_benchmark.R`
 - `dev/spikes/ledgr_sweep_performance/profile_hot_path.R`
+
+### 2026-05-25 [strategy] Target construction helper extensions
+
+The public helper pipeline already includes `signal_return()`,
+`select_top_n()`, `weight_equal()`, and `target_rebalance()`. Future work should
+extend that pipeline conservatively instead of introducing a separate portfolio
+construction engine.
+
+Potential additions:
+
+- rank-weight helpers;
+- inverse-volatility weighting;
+- explicit normalization helpers;
+- rebalance bands or no-trade zones where semantics are target-construction
+  rather than execution policy;
+- small diagnostics that explain how weights became full target quantities.
+
+Keep this separate from target risk, liquidity/capacity, transaction cost, and
+full portfolio optimization. Promoted roadmap hook:
+`v0.1.9.x Target Construction Helper Extensions`.
 
 ### 2026-05-24 [research] Beta as three distinct uses
 
@@ -451,6 +564,45 @@ A future `ledgr_benchmark_from_universe()` may still be useful but should be
 designed after external benchmarks ship and after point-in-time universe
 semantics are explicit.
 
+Promoted roadmap hook: `v0.2.x Benchmark Context And Active Metrics`.
+
+### 2026-05-25 [data] Point-in-time data tables
+
+Future external observations and reference data need point-in-time semantics
+before ledgr can honestly support fundamentals, earnings, macro, index
+membership, factor features, or universe-derived benchmarks.
+
+Concepts to define:
+
+- `known_at`;
+- `available_at`;
+- `effective_at`;
+- `event_time`;
+- `revision_time`;
+- provider/source/version metadata;
+- alignment policy to strategy decision timestamps.
+
+This is distinct from adapter provenance. Provenance says where data came from;
+point-in-time tables say when a strategy was allowed to know it. Promoted
+roadmap hook: `v0.2.x Point-In-Time Data Tables`.
+
+### 2026-05-25 [data] Corporate actions and instrument master
+
+Sealed snapshots are reproducible, but reproducible survivorship-biased data
+can still be wrong for many research claims. Serious equity research eventually
+needs explicit handling for:
+
+- raw versus adjusted price policy;
+- splits and dividends;
+- delistings and delisting returns;
+- symbol changes;
+- stable instrument identifiers;
+- point-in-time universe membership.
+
+This should coordinate with point-in-time data tables and benchmark/reference
+data design. Promoted roadmap hook:
+`v0.2.x Corporate Actions And Instrument Master`.
+
 ### 2026-05-24 [adapters] External reference-data adapter provenance pattern
 
 Any future external reference-data adapter (tidyfinance, FRED, central-bank
@@ -506,6 +658,189 @@ source selection and provenance fields for endpoint, dataset, provider
 version, and frequency. Metric-context construction must reject ambiguous
 "risk-free from provider" requests when more than one provider endpoint could
 produce the series.
+
+### 2026-05-25 [infrastructure] DuckDB-backed feature storage and out-of-core projection
+
+The v0.1.8.3 grid-level feature artifacts synthesis intentionally starts with
+an R-memory runtime projection because the measured hot path is per-pulse R
+object churn, not persistent feature storage. DuckDB is still the natural future
+backing for precomputed feature libraries once parameterized indicator grids,
+parallel sweep workers, and ML/export workflows need persistence and shared
+feature storage.
+
+Future direction:
+
+- `ledgr_precompute_features()` computes feature values through the existing R
+  indicator engine (`series_fn()`, TTR adapters, custom indicators) and writes
+  concrete feature values to DuckDB-backed feature tables;
+- the fold consumes the same projection interface introduced in v0.1.8.3, with
+  a DuckDB-backed implementation that loads pulse blocks into memory;
+- DBI access happens at block boundaries, not per pulse;
+- layer 4 research/export artifacts and out-of-core runtime projection share
+  the same DuckDB storage rather than introducing separate schemas;
+- parallel workers can read shared DuckDB-backed feature storage instead of
+  each materializing the same feature library.
+
+Do not turn this into a DuckDB indicator-computation engine by default. The
+authoritative indicator extension surface remains the R `series_fn()` contract
+and the planned TTR/custom-indicator path. SQL-native built-in indicators may
+be explored later as an opt-in fast path, but only with a separate RFC covering
+feature identity, determinism, DuckDB-version sensitivity, mixed R/SQL feature
+maps, and parity against the R implementation.
+
+Dependencies before promotion:
+
+- v0.1.8.3 runtime projection interface and R-memory backend have landed;
+- v0.1.8.4 active aliases have fixed the alias-map identity and grid-level
+  concrete-feature-union contract;
+- the post-v0.1.8.3 residual report shows memory scaling, repeated precompute,
+  ML/export, or parallel-worker sharing as the next load-bearing bottleneck.
+
+### 2026-05-25 [optimization] Grid-union shared pulse views
+
+The v0.1.8.3 pulse-context data model consolidation synthesis accepts
+candidate-specific prebuilt feature views as the safest first pass for
+LDG-2413. This preserves exact candidate-facing `ctx$features_wide` and
+`ctx$feature_table` schemas, but duplicates view materialization when many
+sweep candidates share the same concrete features.
+
+Future optimization work can investigate grid-union pulse views with
+per-candidate column selection:
+
+```text
+grid-level concrete feature union
+  -> shared per-pulse feature view over all concrete feature IDs
+  -> candidate-specific column selection / alias naming at fold setup
+```
+
+This belongs after v0.1.8.3 measurement, and likely after v0.1.8.4 active
+aliases clarify alias-name versus concrete-feature-name schemas. It should not
+change the public context contract or introduce per-pulse DBI traffic.
+
+Promotion trigger:
+
+- LDG-2414 or a later residual report shows candidate-specific view
+  materialization is a material memory or setup-time cost;
+- active aliases have fixed the candidate alias-map semantics;
+- state-leak tests can prove candidate column selection does not allow one
+  candidate's mutation to corrupt another candidate's view.
+
+### 2026-05-25 [architecture] Primitive internals and collapse acceleration
+
+The LDG-2413 pulse-view construction spike found that the important design
+lesson is broader than any single package choice: ledgr should prefer primitive
+internal shapes (vectors, matrices, lists, and index maps) and treat
+data.frames as public boundary views rather than hot-path state.
+
+Spike artifact:
+
+- `dev/spikes/ledgr_v0_1_8_3_pulse_view_construction/`;
+- `inst/design/spikes/ledgr_v0_1_8_3_pulse_view_construction/pulse_view_construction_report.md`.
+
+Reference-shape median timings from the spike:
+
+| construction path | median |
+| --- | ---: |
+| current feature views, 50 candidates | 8.03s |
+| base `split()` feature views, 50 candidates | 1.96s |
+| `tidyr` feature views, 50 candidates | 3.64s |
+| `data.table` data-frame feature views, 50 candidates | 6.27s |
+| `data.table` native feature views, 50 candidates | 5.06s |
+| `collapse` feature views, 50 candidates | 0.68s |
+
+All tested alternatives preserved the current `ctx$feature_table` and
+`ctx$features_wide` schemas in the equality checks. `collapse::rsplit()` was
+the fastest tested implementation, but importing `collapse` only for LDG-2413
+would make a broad dependency decision from a narrow optimization surface.
+
+Accepted planning authority:
+
+- `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`.
+
+Near-term policy:
+
+- v0.1.8.3 should use base R split/nest-style construction where it is enough
+  to recover the measured pulse-view setup cost;
+- do not add `collapse` as an `Imports` dependency during v0.1.8.3 solely for
+  pulse-view construction;
+- preserve the spike results as evidence for v0.1.9 planning gates.
+
+Promoted v0.1.9 planning direction:
+
+- write a primitive-internals developer guide before broad implementation
+  work;
+- spike deterministic `collapse` wrapping with scoped `collapse::set_collapse()`
+  state restoration rather than mutating caller sessions at package load;
+- micro-profile the event-boundary output buffer path and spike safe
+  cumulative-reconstruction parity before any production `collapse` dependency
+  decision;
+- decide whether `collapse` becomes the package's R-side acceleration layer
+  only after a non-Phase-A production surface shows measured value under
+  hostile caller-side settings;
+- keep FIFO redesign, arbitrary strategy callback compilation, and a compiled
+  fold core as separate decisions with their own parity gates.
+
+This direction also supports the longer-term DuckDB and compiled-core horizon
+items. Primitive matrices/lists map more cleanly to DuckDB columns, block
+buffers, and eventual FFI boundaries than repeatedly constructed data.frame
+objects.
+
+### 2026-05-25 [api] Future ctx$feature_table deprecation review
+
+The LDG-2413 usage audit found `ctx$feature_table` usage in internal
+validation/inspection helpers and test scaffolds, but no documented vignette or
+example strategy pattern that depends on the long-form feature table. v0.1.8.3
+therefore preserves and prebuilds the field to avoid a context-contract change,
+but the field is a plausible future simplification target.
+
+A later RFC can decide whether `ctx$feature_table` should remain a public
+strategy-facing field, move behind an inspection helper, or enter a formal
+pre-CRAN deprecation path. That decision should be based on strategy-author
+usage evidence and must not be folded into LDG-2413.
+
+### 2026-05-25 [infrastructure] Compiled fold core after pipeline stabilization
+
+The v0.1.8.3 sweep baseline shows that R-side fold execution dominates the
+reference workload after v0.1.8.2. A future C, Fortran, C++, or Rust fold core
+may become worthwhile if R-only optimizations leave walk-forward and large
+sweep workloads too slow.
+
+Do not start this rewrite while the fold pipeline is still moving. A compiled
+core should wait until the surrounding execution contracts are stable enough
+that the port can be contract-following rather than contract-setting.
+
+Minimum gates before a serious port RFC:
+
+- v0.1.8.4 active parameterized feature aliases have landed or been abandoned;
+- the v0.1.9 target-risk chain has stabilized, including second-pass target
+  validation and risk identity;
+- walk-forward has produced real large-sweep workloads that justify native
+  fold speed;
+- public cost/liquidity/order-policy boundaries are stable enough that the
+  compiled core will not immediately need structural rewrites;
+- parity tests cover persistent versus memory accounting, typed events,
+  metric-kernel behavior, target validation, promotion context, risk policy,
+  and cost/liquidity semantics;
+- fold-core values are represented by typed, serializable value objects where
+  possible rather than loose ad hoc lists.
+
+Near-term work that helps without committing to a port:
+
+- keep expanding parity tests so a future port has a clear acceptance suite;
+- formalize event, fill, lot-state, and fill-proposal shapes as typed value
+  objects when touched by ordinary tickets;
+- optionally run a small FFI feasibility spike in the v0.1.8.7 window, after
+  typed memory events, single-pass reconstruction, and fast-context R-side
+  optimization have produced an optimized baseline but before the v0.1.9 target
+  risk chain starts changing fold contracts. The spike should port only an
+  isolated helper such as `ledgr_lot_apply_event()` via `extendr`, measure
+  per-call FFI overhead against the LDG-2402 harness, reuse the LDG-2403 parity
+  fixtures, and document Windows/Linux build friction. It must not introduce a
+  production Rust path.
+
+The port should not be treated as a v0.1.8.x optimization. The v0.1.8.x path
+remains R-side optimization first: typed memory events, single-pass summaries,
+fast context, and lazy context payloads.
 
 ## Resolved
 

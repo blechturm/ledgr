@@ -134,7 +134,10 @@ ledgr_take_preflight_start <- function() {
   val
 }
 
-ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
+ledgr_fill_event_payload <- function(run_id,
+                                     fill_intent,
+                                     event_seq,
+                                     serialize_meta_json = TRUE) {
   if (inherits(fill_intent, "ledgr_fill_none")) {
     return(structure(
       list(
@@ -173,14 +176,13 @@ ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
     rlang::abort("`fill_intent$ts_exec_utc` must be a valid UTC timestamp.", class = "ledgr_invalid_fill_intent")
   }
 
-  meta_json <- canonical_json(
-    list(
-      commission_fixed = as.numeric(commission_fixed),
-      cash_delta = as.numeric(cash_delta),
-      position_delta = as.numeric(signed_qty),
-      realized_pnl = NULL
-    )
+  meta <- list(
+    commission_fixed = as.numeric(commission_fixed),
+    cash_delta = as.numeric(cash_delta),
+    position_delta = as.numeric(signed_qty),
+    realized_pnl = NULL
   )
+  meta_json <- if (isTRUE(serialize_meta_json)) canonical_json(meta) else NA_character_
 
   event_id <- paste0(run_id, "_", sprintf("%08d", as.integer(event_seq)))
   row <- list(
@@ -205,9 +207,19 @@ ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
       next_event_seq = as.integer(event_seq) + 1L,
       cash_delta = as.numeric(cash_delta),
       position_delta = as.numeric(signed_qty),
+      meta = meta,
       row = row
     ),
     class = "ledgr_ledger_write_result"
+  )
+}
+
+ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
+  ledgr_fill_event_payload(
+    run_id = run_id,
+    fill_intent = fill_intent,
+    event_seq = event_seq,
+    serialize_meta_json = TRUE
   )
 }
 
@@ -412,13 +424,20 @@ ledgr_persistent_output_handler <- function(con,
   }
 
   handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
-    ledgr_write_fill_events(
-      con = con,
-      run_id = run_id,
-      fill_intent = fill_intent,
-      event_seq_start = event_seq,
-      use_transaction = use_transaction
-    )
+    if (isTRUE(use_transaction)) {
+      # The fold is already inside handler$run_transaction(); live mode writes
+      # immediately without opening a nested DuckDB transaction.
+      return(ledgr_write_fill_events(
+        con = con,
+        run_id = run_id,
+        fill_intent = fill_intent,
+        event_seq_start = event_seq,
+        use_transaction = FALSE
+      ))
+    }
+    write_res <- ledgr_fill_event_row(run_id, fill_intent, event_seq)
+    handler$buffer_event(write_res)
+    write_res
   }
 
   handler$append_event_rows <- function(rows) {
@@ -1085,11 +1104,11 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }
   run_feature_series <- NULL
   run_feature_matrix <- NULL
+  runtime_projection <- NULL
   bars_by_id <- NULL
   bars_cols_by_id <- NULL
   bars_mat <- NULL
-  bars_df <- NULL
-  features_df <- NULL
+  static_bars_views <- NULL
   bar_col_map <- list(
     instrument_id = 1L,
     ts_utc = 2L,
@@ -1102,7 +1121,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     is_synthetic = 9L
   )
   use_bars_cache <- TRUE
-  use_fast_context <- FALSE
+  use_fast_context <- TRUE
   if (isTRUE(use_bars_cache)) {
     start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
     end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
@@ -1178,31 +1197,10 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       bars_mat$gap_type[j, ] <- as.character(cols[[bar_col_map$gap_type]])
       bars_mat$is_synthetic[j, ] <- as.logical(cols[[bar_col_map$is_synthetic]])
     }
-    bars_df <- data.frame(
-      instrument_id = instrument_ids,
-      ts_utc = as.POSIXct(rep(NA_character_, length(instrument_ids)), tz = "UTC"),
-      open = numeric(length(instrument_ids)),
-      high = numeric(length(instrument_ids)),
-      low = numeric(length(instrument_ids)),
-      close = numeric(length(instrument_ids)),
-      volume = numeric(length(instrument_ids)),
-      gap_type = character(length(instrument_ids)),
-      is_synthetic = logical(length(instrument_ids)),
-      stringsAsFactors = FALSE
-    )
-  }
-  bars_proxy <- NULL
-  if (isTRUE(use_fast_context) && isTRUE(use_bars_cache)) {
-    bars_proxy <- list(
-      instrument_id = instrument_ids,
-      ts_utc = rep(pulses_posix[[1]], length(instrument_ids)),
-      open = numeric(length(instrument_ids)),
-      high = numeric(length(instrument_ids)),
-      low = numeric(length(instrument_ids)),
-      close = numeric(length(instrument_ids)),
-      volume = numeric(length(instrument_ids)),
-      gap_type = character(length(instrument_ids)),
-      is_synthetic = logical(length(instrument_ids))
+    static_bars_views <- ledgr_bars_pulse_views(
+      bars_mat = bars_mat,
+      instrument_ids = instrument_ids,
+      pulses_posix = pulses_posix
     )
   }
 
@@ -1247,23 +1245,14 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       run_feature_matrix[[d]] <- mat
     }
     names(run_feature_matrix) <- def_ids
-    features_df <- data.frame(
-      instrument_id = rep(instrument_ids, each = n_def),
-      ts_utc = as.POSIXct(rep(NA_character_, n_inst * n_def), tz = "UTC"),
-      feature_name = rep(def_ids, times = n_inst),
-      feature_value = numeric(n_inst * n_def),
-      stringsAsFactors = FALSE
-    )
   }
-  features_proxy <- NULL
-  if (isTRUE(use_fast_context) && length(feature_defs) > 0) {
-    features_proxy <- list(
-      instrument_id = rep(instrument_ids, each = n_def),
-      ts_utc = rep(pulses_posix[[1]], n_inst * n_def),
-      feature_name = rep(def_ids, times = n_inst),
-      feature_value = numeric(n_inst * n_def)
-    )
-  }
+  runtime_projection <- ledgr_projection_from_feature_matrix(
+    feature_matrix = run_feature_matrix %||% list(),
+    universe = instrument_ids,
+    pulses_posix = pulses_posix,
+    feature_engine_version = ledgr_feature_engine_version(),
+    alias_index = NULL
+  )
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
 
   state_prev_mem <- NULL
@@ -1295,8 +1284,9 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     state_prev = state_prev_mem,
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
+    static_bars_views = static_bars_views,
     feature_defs = feature_defs,
-    run_feature_matrix = run_feature_matrix,
+    runtime_projection = runtime_projection,
     cost_resolver = cost_resolver,
     event_seq_start = next_event_seq,
     telemetry = telemetry,
@@ -1326,7 +1316,6 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   state_env$current <- fold_result$state
   state_prev_mem <- fold_result$state_prev
   next_event_seq <- fold_result$next_event_seq
-  run_feature_matrix <- fold_result$run_feature_matrix
 
   if (!isTRUE(full_run)) {
     ledgr_finalize_fold_telemetry(
@@ -1496,7 +1485,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
           id <- instrument_ids[[j]]
           feat_vals <- matrix(NA_real_, nrow = n_def, ncol = n_p)
           for (d in seq_len(n_def)) {
-            feat_vals[d, ] <- run_feature_matrix[[d]][j, ]
+            feat_vals[d, ] <- runtime_projection$feature_values[[def_ids[[d]]]][j, ]
           }
           out <- data.frame(
             run_id = rep(run_id, n_def * n_p),

@@ -2,11 +2,10 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Current release candidate:** `v0.1.8.2`.
-**Current implementation branch:** `v0.1.8.2`.
-**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` is in release
-gate closeout. The latest completed release packet remains
-`inst/design/ledgr_v0_1_8_1_spec_packet/` until v0.1.8.2 is tagged.
+**Latest completed release packet:** `v0.1.8.3`.
+**Next planned packet:** `v0.1.8.4` active parameterized feature aliases.
+**Active packet:** none until the v0.1.8.4 packet is cut. The completed
+`inst/design/ledgr_v0_1_8_3_spec_packet/` is now an archival release record.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -56,27 +55,25 @@ hash-verification checks, and reproducibility discipline remain load-bearing
 for current-version trust and agent containment. Once ledgr reaches CRAN, the
 project must define an explicit compatibility and deprecation policy.
 
-## Active Cycle
+## Current Planning State
 
-The `v0.1.8.2` branch is in release gate closeout. Runtime implementation
-tickets LDG-2303 through LDG-2312 are complete; LDG-2313 is the package
-verification and metadata closeout ticket. Do not add new runtime scope to this
-packet.
+The v0.1.8.3 packet is complete. It delivered empirically grounded single-core
+sweep optimization plus routed v0.1.8.2 auditr findings that fit the release
+scope.
 
-- Spec: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md`.
+- Spec: `ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`.
 - Auditr triage:
-  `ledgr_v0_1_8_2_spec_packet/ledgr_triage_report.md`,
-  `ledgr_v0_1_8_2_spec_packet/categorized_feedback.yml`, and
-  `ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`.
-- Tickets: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`
-  contains completed implementation tickets, the release gate, and the
-  independent tidyfinance research ticket.
-- Machine-readable tickets: `ledgr_v0_1_8_2_spec_packet/tickets.yml`.
+  `ledgr_v0_1_8_3_spec_packet/ledgr_triage_report.md`,
+  `ledgr_v0_1_8_3_spec_packet/categorized_feedback.yml`, and
+  `ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`.
+- Tickets: `ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_3_spec_packet/tickets.yml`.
 
-The v0.1.8.2 implementation targets were metric context, risk-free-rate
-semantics, preflight classifier alignment, auditr documentation/message polish,
-and indicator codebase Phase 2 cleanup. The tidyfinance research ticket remains
-independent and adds no runtime scope.
+The next planned packet is v0.1.8.4 active parameterized feature aliases,
+grounded in
+`rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`. Do not
+implement runtime work from that design until the v0.1.8.4 packet and tickets
+are cut.
 
 ## Core Documents
 
@@ -114,6 +111,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
 | Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
 | Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4 sweep authoring ergonomics | Accepted |
+| Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
 
 ## RFCs
 
@@ -156,6 +154,14 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x.md`
 - `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_response.md`
 - `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`
+- `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x.md`
+- `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_response.md`
+- `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`
+- `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3.md`
+- `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`
+- `rfc/rfc_collapse_primitive_internals_v0_1_9.md`
+- `rfc/rfc_collapse_primitive_internals_v0_1_9_response.md`
+- `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -168,7 +174,9 @@ The promotion-context decision adds durable `run_promotion_context`
 selection-audit metadata for runs promoted from sweep candidates; full sweep
 artifact persistence remains future work.
 The sweep optimization synthesis defines the v0.1.8.3+ single-core optimization
-arc: typed memory events first, fast context second, Rcpp and parallelism later.
+arc, and the accepted grid-level feature artifacts synthesis amends v0.1.8.3
+to start with runtime projection and shared fold projection consumption before
+any parallel or compiled-core work.
 The multi-output indicator synthesis defines `ledgr_indicator_bundle` and the
 `ledgr_ind_ttr_outputs()` authoring helper for v0.1.8.1.
 The metric context RFC and synthesis define the `ledgr_metric_context`,
@@ -200,7 +208,34 @@ The active-alias synthesis accepts a future-cycle design: constructor support
 for scalar parameter references, authoring declarations that are not concrete
 indicators, `ledgr_parameters()` introspection, an `alias_map_hash` provenance
 layer, flat bundle semantics, and placement in the v0.1.8.4 sweep authoring
-ergonomics cycle.
+ergonomics cycle. It has been amended to inherit the v0.1.8.3 grid-level
+concrete-feature-union decision, so parameterized sweep candidates share
+concrete feature computation while retaining per-candidate alias identity.
+The grid-level feature artifacts RFC seed explores a shared substrate for
+parameterized indicator sweeps, precomputed wide feature backing,
+candidate-level alias views, runtime pulse-context feature views, DuckDB-backed
+research/export artifacts, and future ML training-frame support. It is a seed,
+not accepted implementation scope.
+The grid-level feature artifacts synthesis accepts a v0.1.8.3 scope amendment:
+extend `ledgr_precompute_features()` into a shared runtime projection consumed
+by both `ledgr_run()` and `ledgr_sweep()`, keep alias-map identity in
+v0.1.8.4, and defer durable research/export artifacts to a future ML/export
+RFC. The first projection backend is R-memory; DuckDB-backed precompute storage
+and pulse-block-buffered out-of-core projection are parked in `horizon.md` as a
+future scaling/storage direction, not v0.1.8.3 runtime scope.
+The pulse-context data model consolidation synthesis accepts the post-LDG-2411
+rescope of LDG-2413 from narrow B2 proxies to prebuilt static pulse views for
+`ctx$bars`, `ctx$feature_table`, and `ctx$features_wide`, while preserving
+public data-frame field semantics. LDG-2414 measures that result and informs
+the maintainer decision on whether typed memory events and single-pass summary
+remain in v0.1.8.3 or defer to v0.1.9.
+The collapse primitive-internals synthesis promotes the LDG-2413 construction
+spike lesson into v0.1.9 planning: ledgr should prefer primitive internal
+shapes and treat data.frames as public boundary views. It does not add
+`collapse` to v0.1.8.3 or reopen LDG-2413. The accepted v0.1.9 scope is a
+developer guide, deterministic-wrapper spike, event-boundary micro-profile,
+and safe cumulative-reconstruction parity spike; production use of `collapse`
+waits for measured non-Phase-A value and deterministic hostile-setting parity.
 
 ## Audits And Spikes
 
@@ -228,8 +263,10 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
-- `ledgr_v0_1_8_2_spec_packet/` - v0.1.8.2 draft spec, auditr triage, and
-  implementation ticket packet.
+- `ledgr_v0_1_8_3_spec_packet/` - active v0.1.8.3 implementation packet for
+  single-core sweep optimization and routed v0.1.8.2 auditr findings.
+- `ledgr_v0_1_8_2_spec_packet/` - v0.1.8.2 release record for metric context,
+  preflight classifier alignment, auditr polish, and indicator Phase 2 cleanup.
 - `ledgr_v0_1_8_1_spec_packet/` - v0.1.8.1 release record.
 - `ledgr_v0_1_8_0_spec_packet/` - v0.1.8 sweep/fold-core release record.
 - `ledgr_v0_1_8_00_spec_packet/` - completed design-governance prep packet.
@@ -246,7 +283,7 @@ contract index.
 | --- | --- |
 | Runtime/execution change | `contracts.md`, current packet if one exists, relevant architecture note |
 | Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
-| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `contracts.md`, future packet when cut |
+| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `contracts.md`, current v0.1.8.3 packet |
 | Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, relevant release packet or future packet when cut |
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |

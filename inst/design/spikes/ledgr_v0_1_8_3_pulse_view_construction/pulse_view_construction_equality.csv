@@ -1,0 +1,9 @@
+"comparison","equal","error"
+"base_feature_table",TRUE,NA
+"base_features_wide",TRUE,NA
+"data_table_df_feature_table",TRUE,NA
+"data_table_df_features_wide",TRUE,NA
+"collapse_feature_table",TRUE,NA
+"collapse_features_wide",TRUE,NA
+"tidyr_feature_table",TRUE,NA
+"tidyr_features_wide",TRUE,NA

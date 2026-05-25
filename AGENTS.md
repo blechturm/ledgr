@@ -29,22 +29,23 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.8.2 release gate closeout; update this block
-when the release closes or the next packet is cut):
+Current planning context (post-v0.1.8.3 release closeout; update this block
+when the v0.1.8.4 packet is cut):
 
-- The completed v0.1.8.1 packet is an archival release record.
-- The v0.1.8.2 packet is the active release-closeout packet:
-  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/ledgr_triage_report.md`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/categorized_feedback.yml`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`,
-  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`, and
-  `inst/design/ledgr_v0_1_8_2_spec_packet/tickets.yml`.
-- Runtime implementation tickets LDG-2303 through LDG-2312 are complete.
-  LDG-2313 is release verification and metadata closeout only.
-- Do not add new v0.1.8.2 runtime scope. Future implementation follows the
-  roadmap and a future packet, starting with v0.1.8.3 single-core sweep
-  optimization unless the maintainer cuts a different packet.
+- The completed v0.1.8.2 packet is an archival release record.
+- The completed v0.1.8.3 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/ledgr_triage_report.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/categorized_feedback.yml`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`, and
+  `inst/design/ledgr_v0_1_8_3_spec_packet/tickets.yml`.
+- The next planned packet is v0.1.8.4 active parameterized feature aliases.
+  Do not implement runtime work from that design until the packet and tickets
+  are cut.
+- Keep DuckDB-backed precompute storage, out-of-core projection, parallel
+  dispatch, target risk, walk-forward, cost/liquidity, OMS, benchmark, and
+  external-provider work deferred unless a new packet explicitly scopes it.
 
 ## Active Design Entry Points
 
@@ -54,12 +55,13 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md` |
+| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
 | Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
 | Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |
 | Active parameterized feature aliases | `inst/design/rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` (accepted for v0.1.8.4) |
 | v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
+| Primitive internals / collapse acceleration | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` (accepted for v0.1.9 planning) |
 
 ## Local Verification
 

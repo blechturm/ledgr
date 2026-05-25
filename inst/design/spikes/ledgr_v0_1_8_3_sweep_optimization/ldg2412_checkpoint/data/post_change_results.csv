@@ -1,0 +1,9 @@
+"label","scenario","path","n_candidates","n_instruments","n_days","n_bars","feature_mode","metric_context","reps","median_sec","mean_sec","min_sec","max_sec"
+"post_change","reference_50_candidates","sweep_plain",50,4,252,1008,"single","default",2,13.22,13.22,13.13,13.31
+"post_change","reference_50_candidates","precompute",50,4,252,1008,"single","default",2,0.315000000000001,0.315000000000001,0.299999999999997,0.330000000000005
+"post_change","reference_50_candidates","sweep_precomputed",50,4,252,1008,"single","default",2,12.945,12.945,12.56,13.33
+"post_change","wider_feature_payload","sweep_plain",10,12,504,6048,"wide","default",2,12.13,12.13,11.59,12.67
+"post_change","wider_feature_payload","precompute",10,12,504,6048,"wide","default",2,0.829999999999998,0.829999999999998,0.769999999999996,0.890000000000001
+"post_change","wider_feature_payload","sweep_precomputed",10,12,504,6048,"wide","default",2,12.055,12.055,11.59,12.52
+"post_change","persistent_comparison","sweep_plain",5,4,252,1008,"single","default",2,1.34999999999999,1.34999999999999,1.31999999999999,1.38
+"post_change","persistent_comparison","run_loop",5,4,252,1008,"single","default",2,8.875,8.875,7.70000000000002,10.05

@@ -53,12 +53,16 @@ ledgr_execute_fold <- function(execution, output_handler) {
   bars_by_id <- execution$bars_by_id
   bars_mat <- execution$bars_mat
   feature_defs <- execution$feature_defs
-  run_feature_matrix <- execution$run_feature_matrix
+  runtime_projection <- execution$runtime_projection
+  if (is.null(runtime_projection)) {
+    rlang::abort("Fold execution requires `runtime_projection`.", class = "ledgr_invalid_fold_execution")
+  }
   cost_resolver <- execution$cost_resolver
   event_seq <- execution$event_seq_start
   telemetry <- execution$telemetry
   execution_seed <- execution$seed
   event_mode <- execution$event_mode
+  use_fast_context <- isTRUE(execution$use_fast_context)
 
   if (!is.null(execution_seed)) {
     set.seed(as.integer(execution_seed))
@@ -76,26 +80,31 @@ ledgr_execute_fold <- function(execution, output_handler) {
   }
   n_inst <- length(instrument_ids)
 
-  bars_df <- data.frame(
-    instrument_id = character(n_inst),
-    ts_utc = as.POSIXct(rep(NA_character_, n_inst), tz = "UTC"),
-    open = numeric(n_inst),
-    high = numeric(n_inst),
-    low = numeric(n_inst),
-    close = numeric(n_inst),
-    volume = numeric(n_inst),
-    gap_type = character(n_inst),
-    is_synthetic = logical(n_inst),
-    stringsAsFactors = FALSE
-  )
-  features_df <- if (n_def > 0L) {
-    data.frame(
-      instrument_id = rep(instrument_ids, times = n_def),
-      ts_utc = as.POSIXct(rep(NA_character_, n_inst * n_def), tz = "UTC"),
-      feature_name = rep(def_ids, each = n_inst),
-      feature_value = numeric(n_inst * n_def),
-      stringsAsFactors = FALSE
+  bars_views <- execution$static_bars_views
+  if (is.null(bars_views)) {
+    bars_views <- ledgr_bars_pulse_views(
+      bars_mat = bars_mat,
+      instrument_ids = instrument_ids,
+      pulses_posix = pulses_posix
     )
+  }
+  feature_views <- execution$static_feature_views
+  if (is.null(feature_views)) {
+    feature_views <- ledgr_projection_pulse_views(
+      runtime_projection,
+      feature_ids = def_ids
+    )
+  }
+  feature_table_views <- feature_views$feature_table %||% vector("list", length(pulses_posix))
+  features_wide_views <- feature_views$features_wide %||% vector("list", length(pulses_posix))
+  if (length(bars_views) != length(pulses_posix) ||
+      length(feature_table_views) != length(pulses_posix) ||
+      length(features_wide_views) != length(pulses_posix)) {
+    rlang::abort("Static pulse views must align with fold pulse timestamps.", class = "ledgr_invalid_fold_execution")
+  }
+
+  empty_feature_table <- if (n_def > 0L) {
+    ledgr_projection_feature_table(runtime_projection, 1L, feature_ids = character())
   } else {
     empty_df
   }
@@ -103,6 +112,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
   full_run <- TRUE
   processed <- 0L
   telemetry_idx <- as.integer(telemetry$telemetry_samples %||% 0L)
+  fast_context <- if (isTRUE(use_fast_context)) {
+    ledgr_fast_context_state(
+      universe = instrument_ids,
+      projection = runtime_projection,
+      feature_ids = def_ids
+    )
+  } else {
+    NULL
+  }
 
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
@@ -114,36 +132,14 @@ ledgr_execute_fold <- function(execution, output_handler) {
       ts_iso <- pulses_iso[[i]]
       pulse_start <- ledgr_time_now()
 
-      for (j in seq_along(instrument_ids)) {
-        inst <- instrument_ids[[j]]
-        bars_df$instrument_id[[j]] <- inst
-        bars_df$ts_utc[[j]] <- ts
-        bars_df$open[[j]] <- bars_mat$open[j, i]
-        bars_df$high[[j]] <- bars_mat$high[j, i]
-        bars_df$low[[j]] <- bars_mat$low[j, i]
-        bars_df$close[[j]] <- bars_mat$close[j, i]
-        bars_df$volume[[j]] <- bars_mat$volume[j, i]
-        bars_df$gap_type[[j]] <- bars_mat$gap_type[j, i]
-        bars_df$is_synthetic[[j]] <- bars_mat$is_synthetic[j, i]
+      bars_current <- bars_views[[i]]
+      features_current <- feature_table_views[[i]]
+      if (!is.data.frame(features_current)) {
+        features_current <- empty_feature_table
       }
-      bars_current <- bars_df
-
-      if (n_def > 0L) {
-        row_idx <- 1L
-        for (def_id in def_ids) {
-          m <- run_feature_matrix[[def_id]]
-          for (j in seq_along(instrument_ids)) {
-            inst <- instrument_ids[[j]]
-            features_df$instrument_id[[row_idx]] <- inst
-            features_df$ts_utc[[row_idx]] <- ts
-            features_df$feature_name[[row_idx]] <- def_id
-            features_df$feature_value[[row_idx]] <- m[j, i]
-            row_idx <- row_idx + 1L
-          }
-        }
-        features_current <- features_df
-      } else {
-        features_current <- empty_df
+      features_wide_current <- features_wide_views[[i]]
+      if (!is.data.frame(features_wide_current)) {
+        features_wide_current <- empty_df
       }
 
       positions_value <- 0
@@ -168,13 +164,30 @@ ledgr_execute_fold <- function(execution, output_handler) {
         safety_state = "GREEN"
       )
       class(ctx) <- "ledgr_pulse_context"
-      ctx <- ledgr_update_pulse_context_helpers(
-        ctx,
-        bars = bars_current,
-        features = features_current,
-        positions = state$positions,
-        universe = instrument_ids
-      )
+      ctx <- if (!is.null(fast_context)) {
+        ledgr_update_fast_pulse_context_helpers(
+          ctx,
+          fast_context = fast_context,
+          bars = bars_current,
+          features = features_current,
+          features_wide = features_wide_current,
+          positions = state$positions,
+          universe = instrument_ids,
+          pulse_idx = i
+        )
+      } else {
+        ledgr_update_pulse_context_helpers(
+          ctx,
+          bars = bars_current,
+          features = features_current,
+          positions = state$positions,
+          universe = instrument_ids,
+          projection = runtime_projection,
+          pulse_idx = i,
+          feature_ids = def_ids,
+          features_wide = features_wide_current
+        )
+      }
 
       result <- tryCatch(
         {
@@ -252,15 +265,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
         fill$instrument_id <- instrument_id
         fill$ts_signal_utc <- ts_iso
 
-        if (identical(event_mode, "live")) {
-          write_res <- output_handler$write_fill_events(
-            fill_intent = fill,
-            event_seq = event_seq
-          )
-        } else {
-          write_res <- ledgr_fill_event_row(run_id, fill, event_seq)
-          output_handler$buffer_event(write_res)
-        }
+        write_res <- output_handler$write_fill_events(
+          fill_intent = fill,
+          event_seq = event_seq,
+          use_transaction = identical(event_mode, "live")
+        )
         event_seq <- write_res$next_event_seq
 
         qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
@@ -334,8 +343,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
     telemetry = telemetry,
     state = state,
     state_prev = state_prev_mem,
-    next_event_seq = event_seq,
-    run_feature_matrix = run_feature_matrix
+    next_event_seq = event_seq
   )
 }
 
@@ -395,6 +403,41 @@ ledgr_opening_position_event_rows <- function(run_id,
   do.call(rbind, rows[seq_len(idx)])
 }
 
+ledgr_typed_event_metadata <- function(events, order_idx = NULL) {
+  n_events <- if (is.null(events)) 0L else nrow(events)
+  if (n_events == 0L) {
+    return(NULL)
+  }
+  cash_delta <- attr(events, "ledgr_event_cash_delta", exact = TRUE)
+  position_delta <- attr(events, "ledgr_event_position_delta", exact = TRUE)
+  meta <- attr(events, "ledgr_event_meta", exact = TRUE)
+  if (length(cash_delta) != n_events ||
+      length(position_delta) != n_events ||
+      length(meta) != n_events) {
+    return(NULL)
+  }
+  if (!is.null(order_idx)) {
+    cash_delta <- cash_delta[order_idx]
+    position_delta <- position_delta[order_idx]
+    meta <- meta[order_idx]
+  }
+  list(
+    cash_delta = as.numeric(cash_delta),
+    position_delta = as.numeric(position_delta),
+    meta = meta
+  )
+}
+
+ledgr_event_meta_at <- function(events, typed_meta, i) {
+  if (!is.null(typed_meta)) {
+    meta <- typed_meta$meta[[i]]
+    if (!is.null(meta)) {
+      return(meta)
+    }
+  }
+  jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+}
+
 ledgr_equity_from_events <- function(events,
                                      pulses_posix,
                                      close_mat,
@@ -402,10 +445,13 @@ ledgr_equity_from_events <- function(events,
                                      instrument_ids,
                                      run_id) {
   n_pulses <- length(pulses_posix)
+  typed_meta <- NULL
   events <- if (is.null(events) || nrow(events) == 0L) {
     data.frame()
   } else {
-    events[order(events$event_seq), , drop = FALSE]
+    order_idx <- order(events$event_seq)
+    typed_meta <- ledgr_typed_event_metadata(events, order_idx = order_idx)
+    events[order_idx, , drop = FALSE]
   }
   n_events <- nrow(events)
 
@@ -425,11 +471,17 @@ ledgr_equity_from_events <- function(events,
   position_delta <- numeric(n_events)
   event_meta <- vector("list", n_events)
   if (n_events > 0L) {
+    if (!is.null(typed_meta)) {
+      cash_delta <- typed_meta$cash_delta
+      position_delta <- typed_meta$position_delta
+    }
     for (i in seq_len(n_events)) {
-      meta <- jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_event_meta_at(events, typed_meta, i)
       event_meta[[i]] <- meta
-      cash_delta[[i]] <- as.numeric(meta$cash_delta %||% 0)
-      position_delta[[i]] <- as.numeric(meta$position_delta %||% 0)
+      if (is.null(typed_meta)) {
+        cash_delta[[i]] <- as.numeric(meta$cash_delta %||% 0)
+        position_delta[[i]] <- as.numeric(meta$position_delta %||% 0)
+      }
     }
   }
 
@@ -507,7 +559,9 @@ ledgr_fills_from_events <- function(events) {
     return(ledgr_empty_fills_table())
   }
 
-  events <- events[order(events$event_seq), , drop = FALSE]
+  order_idx <- order(events$event_seq)
+  typed_meta <- ledgr_typed_event_metadata(events, order_idx = order_idx)
+  events <- events[order_idx, , drop = FALSE]
   instrument_ids <- unique(stats::na.omit(events$instrument_id))
   lot_state <- ledgr_lot_state(instrument_ids)
   rows <- list()
@@ -522,7 +576,7 @@ ledgr_fills_from_events <- function(events) {
     price <- suppressWarnings(as.numeric(ev$price[[1]]))
     fee <- suppressWarnings(as.numeric(ev$fee[[1]]))
     if (identical(ev$event_type[[1]], "CASHFLOW")) {
-      meta <- jsonlite::fromJSON(ev$meta_json[[1]], simplifyVector = FALSE)
+      meta <- ledgr_event_meta_at(events, typed_meta, i)
       lot_res <- ledgr_lot_apply_event(
         lot_state,
         event_type = event_type,
@@ -541,7 +595,7 @@ ledgr_fills_from_events <- function(events) {
       next
     }
 
-    meta <- jsonlite::fromJSON(ev$meta_json[[1]], simplifyVector = FALSE)
+    meta <- ledgr_event_meta_at(events, typed_meta, i)
     if (is.na(qty) || qty <= 0 || is.na(price)) {
       out_idx <- out_idx + 1L
       rows[[out_idx]] <- data.frame(
@@ -628,6 +682,218 @@ ledgr_fills_from_events <- function(events) {
     return(ledgr_empty_fills_table())
   }
   tibble::as_tibble(do.call(rbind, rows))
+}
+
+ledgr_assert_events_in_fold_order <- function(events) {
+  if (is.null(events) || nrow(events) < 2L) {
+    return(invisible(TRUE))
+  }
+  event_seq <- suppressWarnings(as.integer(events$event_seq))
+  if (any(is.na(event_seq)) || any(diff(event_seq) <= 0L)) {
+    rlang::abort(
+      "Sweep memory events must be in strictly increasing fold-produced event sequence order.",
+      class = "ledgr_invalid_event_order"
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_sweep_summary_from_ordered_events <- function(events,
+                                                    pulses_posix,
+                                                    close_mat,
+                                                    initial_cash,
+                                                    instrument_ids,
+                                                    run_id,
+                                                    metric_kernel) {
+  n_pulses <- length(pulses_posix)
+  if (n_pulses == 0L) {
+    equity <- ledgr_empty_equity_curve()
+    fills <- ledgr_empty_fills_table()
+    return(list(
+      equity = equity,
+      fills = fills,
+      metrics = ledgr_metrics_from_equity_fills(
+        equity = equity,
+        fills = fills,
+        metric_kernel = metric_kernel
+      ),
+      final_equity = NA_real_
+    ))
+  }
+
+  events <- if (is.null(events) || nrow(events) == 0L) {
+    data.frame()
+  } else {
+    ledgr_assert_events_in_fold_order(events)
+    events
+  }
+  n_events <- nrow(events)
+  typed_meta <- ledgr_typed_event_metadata(events)
+
+  event_ts <- if (n_events > 0L) {
+    as.POSIXct(events$ts_utc, tz = "UTC")
+  } else {
+    as.POSIXct(character(0), tz = "UTC")
+  }
+  event_ts_num <- as.numeric(event_ts)
+  pulse_ts_num <- as.numeric(pulses_posix)
+  idx <- findInterval(pulse_ts_num, event_ts_num)
+  has_event <- idx > 0L
+
+  cash_delta <- numeric(n_events)
+  position_delta <- numeric(n_events)
+  event_realized <- numeric(n_events)
+  event_cost_basis <- numeric(n_events)
+  if (!is.null(typed_meta)) {
+    cash_delta <- typed_meta$cash_delta
+    position_delta <- typed_meta$position_delta
+  }
+
+  max_fill_rows <- max(1L, n_events * 2L)
+  fill_event_seq <- integer(max_fill_rows)
+  fill_ts_utc <- rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), max_fill_rows)
+  fill_instrument_id <- character(max_fill_rows)
+  fill_side <- character(max_fill_rows)
+  fill_qty <- numeric(max_fill_rows)
+  fill_price <- numeric(max_fill_rows)
+  fill_fee <- numeric(max_fill_rows)
+  fill_realized_pnl <- numeric(max_fill_rows)
+  fill_action <- character(max_fill_rows)
+  fill_idx <- 0L
+
+  add_fill_row <- function(i, inst, side, qty, price, fee, realized_pnl, action) {
+    fill_idx <<- fill_idx + 1L
+    fill_event_seq[[fill_idx]] <<- events$event_seq[[i]]
+    fill_ts_utc[[fill_idx]] <<- event_ts[[i]]
+    fill_instrument_id[[fill_idx]] <<- inst
+    fill_side[[fill_idx]] <<- side
+    fill_qty[[fill_idx]] <<- qty
+    fill_price[[fill_idx]] <<- price
+    fill_fee[[fill_idx]] <<- fee
+    fill_realized_pnl[[fill_idx]] <<- realized_pnl
+    fill_action[[fill_idx]] <<- action
+    invisible(TRUE)
+  }
+
+  reconstruction_lots <- ledgr_lot_state(instrument_ids)
+  if (n_events > 0L) {
+    for (i in seq_len(n_events)) {
+      event_type <- as.character(events$event_type[[i]])
+      inst <- as.character(events$instrument_id[[i]])
+      side <- as.character(events$side[[i]])
+      qty <- suppressWarnings(as.numeric(events$qty[[i]]))
+      price <- suppressWarnings(as.numeric(events$price[[i]]))
+      fee <- suppressWarnings(as.numeric(events$fee[[i]]))
+      meta <- ledgr_event_meta_at(events, typed_meta, i)
+      if (is.null(typed_meta)) {
+        cash_delta[[i]] <- as.numeric(meta$cash_delta %||% 0)
+        position_delta[[i]] <- as.numeric(meta$position_delta %||% 0)
+      }
+
+      lot_res <- ledgr_lot_apply_event(
+        reconstruction_lots,
+        event_type = event_type,
+        instrument_id = inst,
+        side = side,
+        qty = qty,
+        price = price,
+        fee = fee,
+        meta = meta
+      )
+      reconstruction_lots <- lot_res$state
+      event_realized[[i]] <- reconstruction_lots$realized_pnl
+      event_cost_basis[[i]] <- reconstruction_lots$total_cost_basis
+
+      if (identical(event_type, "CASHFLOW")) {
+        next
+      }
+      if (!identical(event_type, "FILL") && !identical(event_type, "FILL_PARTIAL")) {
+        next
+      }
+      if (is.na(qty) || qty <= 0 || is.na(price)) {
+        add_fill_row(i, inst, side, qty, price, fee, NA_real_, NA_character_)
+        next
+      }
+      side_norm <- toupper(side)
+      if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
+        add_fill_row(i, inst, side, qty, price, fee, NA_real_, NA_character_)
+        next
+      }
+      if (isTRUE(lot_res$close_qty > 0)) {
+        add_fill_row(i, inst, side, lot_res$close_qty, price, fee, lot_res$realized_close, "CLOSE")
+      }
+      if (isTRUE(lot_res$open_qty > 0)) {
+        add_fill_row(i, inst, side, lot_res$open_qty, price, fee, 0, "OPEN")
+      }
+    }
+  }
+
+  cash_cum <- if (n_events > 0L) cumsum(cash_delta) else numeric(0)
+  cash_at <- rep(as.numeric(initial_cash), length(idx))
+  if (any(has_event)) {
+    cash_at[has_event] <- as.numeric(initial_cash) + cash_cum[idx[has_event]]
+  }
+
+  n_inst <- length(instrument_ids)
+  positions_mat <- matrix(0, nrow = n_inst, ncol = n_pulses)
+  if (n_events > 0L) {
+    for (j in seq_along(instrument_ids)) {
+      id <- instrument_ids[[j]]
+      ev_idx <- which(events$instrument_id == id)
+      if (length(ev_idx) == 0L) next
+      pos_cum <- cumsum(position_delta[ev_idx])
+      idx_inst <- findInterval(pulse_ts_num, event_ts_num[ev_idx])
+      has_inst_event <- idx_inst > 0L
+      if (any(has_inst_event)) {
+        positions_mat[j, has_inst_event] <- pos_cum[idx_inst[has_inst_event]]
+      }
+    }
+  }
+  positions_value <- if (n_pulses > 0L) colSums(positions_mat * close_mat) else numeric(0)
+
+  realized_at <- numeric(length(idx))
+  cost_basis_at <- numeric(length(idx))
+  if (any(has_event)) {
+    realized_at[has_event] <- event_realized[idx[has_event]]
+    cost_basis_at[has_event] <- event_cost_basis[idx[has_event]]
+  }
+
+  equity <- data.frame(
+    run_id = rep(run_id, length(pulses_posix)),
+    ts_utc = pulses_posix,
+    cash = cash_at,
+    positions_value = positions_value,
+    equity = cash_at + positions_value,
+    realized_pnl = realized_at,
+    unrealized_pnl = positions_value - cost_basis_at,
+    stringsAsFactors = FALSE
+  )
+  fills <- if (fill_idx == 0L) {
+    ledgr_empty_fills_table()
+  } else {
+    tibble::tibble(
+      event_seq = fill_event_seq[seq_len(fill_idx)],
+      ts_utc = fill_ts_utc[seq_len(fill_idx)],
+      instrument_id = fill_instrument_id[seq_len(fill_idx)],
+      side = fill_side[seq_len(fill_idx)],
+      qty = fill_qty[seq_len(fill_idx)],
+      price = fill_price[seq_len(fill_idx)],
+      fee = fill_fee[seq_len(fill_idx)],
+      realized_pnl = fill_realized_pnl[seq_len(fill_idx)],
+      action = fill_action[seq_len(fill_idx)]
+    )
+  }
+  metrics <- ledgr_metrics_from_equity_fills(
+    equity = equity,
+    fills = fills,
+    metric_kernel = metric_kernel
+  )
+  list(
+    equity = equity,
+    fills = fills,
+    metrics = metrics,
+    final_equity = equity$equity[[nrow(equity)]]
+  )
 }
 
 ledgr_bars_per_year_from_pulses <- function(pulses_posix) {
