@@ -1,3 +1,27 @@
+# ledgr 0.1.8.3
+
+- Made `ledgr_sweep()` substantially faster on single-core workloads by adding
+  a shared runtime feature projection, fast pulse-context helper reuse,
+  prebuilt static pulse views, typed memory events, and single-pass sweep
+  summary reconstruction while preserving the shared `ledgr_run()` /
+  `ledgr_sweep()` fold-core contract.
+- Final v0.1.8.3 measurements show the reference sweep workload improving from
+  45.585s to 13.220s (3.45x faster) and the wider feature-payload workload
+  improving from 65.360s to 12.130s (5.39x faster). The repeated committed-run
+  comparison is also faster than baseline after the persistent buffered-write
+  path was preserved under the unified output-handler contract.
+- Preserved public context field semantics for `ctx$bars`,
+  `ctx$feature_table`, and `ctx$features_wide` while moving their expensive
+  per-pulse construction out of the fold hot loop.
+- Hardened strategy preflight against indirection bypasses and clarified Tier 3
+  forbidden-call diagnostics without adding a public force-override path.
+- Polished metric-context, sweep failure inspection, snapshot sealing,
+  indicator, strategy-development, and troubleshooting documentation based on
+  routed maintainer-review findings.
+- Recorded the accepted primitive-internals and collapse-acceleration synthesis
+  for future v0.1.9 planning, while keeping collapse out of v0.1.8.3 runtime
+  dependencies.
+
 # ledgr 0.1.8.2
 
 - Added `ledgr_metric_context()`, `ledgr_risk_free_rate()`,

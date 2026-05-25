@@ -29,28 +29,23 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.8.3 implementation; update this block when the
-release closes or scope changes materially):
+Current planning context (post-v0.1.8.3 release closeout; update this block
+when the v0.1.8.4 packet is cut):
 
 - The completed v0.1.8.2 packet is an archival release record.
-- The v0.1.8.3 packet is the active implementation packet:
+- The completed v0.1.8.3 packet is an archival release record:
   `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`,
   `inst/design/ledgr_v0_1_8_3_spec_packet/ledgr_triage_report.md`,
   `inst/design/ledgr_v0_1_8_3_spec_packet/categorized_feedback.yml`,
   `inst/design/ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`,
   `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`, and
   `inst/design/ledgr_v0_1_8_3_spec_packet/tickets.yml`.
-- Next implementation scope is performance protocol and baseline,
-  persistent-versus-memory accounting parity, runtime projection with an
-  R-memory backend, shared `ledgr_run()` / `ledgr_sweep()` projection
-  consumption, fast context B1, pulse-context data model consolidation with
-  prebuilt static pulse views, post-LDG-2413 residual profiling and maintainer
-  decision on typed memory events / single-pass sweep summary reconstruction,
-  preflight indirection hardening, and routed auditr docs/message polish.
-- Do not pull active aliases, alias-map identity, parameter-grid helpers,
-  DuckDB-backed precompute storage, out-of-core projection, parallel dispatch,
-  target risk, walk-forward, cost/liquidity, OMS, benchmark, or
-  external-provider work into v0.1.8.3 without maintainer amendment.
+- The next planned packet is v0.1.8.4 active parameterized feature aliases.
+  Do not implement runtime work from that design until the packet and tickets
+  are cut.
+- Keep DuckDB-backed precompute storage, out-of-core projection, parallel
+  dispatch, target risk, walk-forward, cost/liquidity, OMS, benchmark, and
+  external-provider work deferred unless a new packet explicitly scopes it.
 
 ## Active Design Entry Points
 

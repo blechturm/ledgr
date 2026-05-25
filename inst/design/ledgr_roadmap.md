@@ -3,9 +3,9 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Current cycle:** v0.1.8.3 implementation.
-**Active packet:** `inst/design/ledgr_v0_1_8_3_spec_packet/` contains the
-implementation spec, routed v0.1.8.2 auditr intake, and v0.1.8.3 ticket cut.
+**Latest completed packet:** `inst/design/ledgr_v0_1_8_3_spec_packet/`.
+**Next planned packet:** v0.1.8.4 active parameterized feature aliases.
+**Active packet:** none until the v0.1.8.4 packet is cut.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -96,7 +96,7 @@ versioned packet.
 | v0.1.8 | Done | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_0_spec_packet/` |
 | v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
 | v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
-| v0.1.8.3 | Active | Single-core R-level fold/runtime optimization after metric-kernel semantics settle. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
+| v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Planned | Active parameterized feature aliases for sweep authoring. | Future packet |
 | v0.1.8.5 | Planned | Parameter-grid quality-of-life helpers after active aliases stabilize. | Future packet |
 | v0.1.8.6 | Planned | DuckDB-backed feature storage / out-of-core projection candidate if residual evidence justifies it. | Future packet |

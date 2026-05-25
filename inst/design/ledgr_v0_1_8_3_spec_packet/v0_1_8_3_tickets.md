@@ -1423,7 +1423,7 @@ scope: post_change_report
 Priority: P0
 Effort: S
 Dependencies: LDG-2401, LDG-2402, LDG-2403, LDG-2404, LDG-2405, LDG-2406, LDG-2407, LDG-2408, LDG-2409, LDG-2410, LDG-2411, LDG-2412, LDG-2413, LDG-2414
-Status: Pending
+Status: Done
 
 ### Description
 
@@ -1461,6 +1461,34 @@ polish, measurement reports, and package metadata land.
 & "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build .
 & "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_<version>.tar.gz
 ```
+
+### Completion Notes
+
+- Bumped package version to `0.1.8.3`.
+- Added `NEWS.md` release notes highlighting the measured sweep speedups:
+  reference sweep `45.585s -> 13.220s` (3.45x faster) and wider feature-payload
+  sweep `65.360s -> 12.130s` (5.39x faster), plus the preflight hardening and
+  documentation polish included in this cycle.
+- Updated package-build ignores so local maintainer-review scratch files and
+  release-spike checkpoint data are not included in source tarballs.
+- Updated `AGENTS.md`, `inst/design/README.md`, and
+  `inst/design/ledgr_roadmap.md` so v0.1.8.3 is treated as a completed packet
+  after release and v0.1.8.4 active aliases remain the next packet to cut.
+- Verified no v0.1.8.3 tickets remain pending after this release gate.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-documentation-contracts.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-release-coverage-branches.R', reporter='summary')`
+  - `testthat::test_local('.', reporter='summary')` (one expected
+    missing-package-path skip in `test-snapshot-adapters.R`)
+  - `R CMD build .` with `RSTUDIO_PANDOC` set to the local RStudio Pandoc path
+  - `R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.3.tar.gz`
+    (`Status: OK`; repository-index warnings were emitted after completion due
+    restricted network access)
+  - `tools/check-coverage.R` (`ledgr coverage: 84.50%`)
+- Local WSL gate was attempted but unavailable because WSL has no installed
+  Linux distributions on this workstation; branch CI remains the Linux gate.
+- Generated local release artifacts (`ledgr_0.1.8.3.tar.gz`, `ledgr.Rcheck`,
+  `coverage.html`, and `tests/testthat/Rplots.pdf`) were removed before staging.
 
 ### Source Reference
 

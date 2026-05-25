@@ -2,10 +2,10 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Current release candidate:** `v0.1.8.3`.
-**Current implementation branch:** `v0.1.8.3`.
-**Active packet:** `inst/design/ledgr_v0_1_8_3_spec_packet/` contains the
-implementation spec, routed v0.1.8.2 auditr intake, and v0.1.8.3 ticket cut.
+**Latest completed release packet:** `v0.1.8.3`.
+**Next planned packet:** `v0.1.8.4` active parameterized feature aliases.
+**Active packet:** none until the v0.1.8.4 packet is cut. The completed
+`inst/design/ledgr_v0_1_8_3_spec_packet/` is now an archival release record.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -55,11 +55,11 @@ hash-verification checks, and reproducibility discipline remain load-bearing
 for current-version trust and agent containment. Once ledgr reaches CRAN, the
 project must define an explicit compatibility and deprecation policy.
 
-## Active Cycle
+## Current Planning State
 
-The `v0.1.8.3` branch is the active implementation branch. The packet targets
-empirically grounded single-core sweep optimization plus routed v0.1.8.2
-auditr findings that fit the release scope.
+The v0.1.8.3 packet is complete. It delivered empirically grounded single-core
+sweep optimization plus routed v0.1.8.2 auditr findings that fit the release
+scope.
 
 - Spec: `ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`.
 - Auditr triage:
@@ -69,17 +69,11 @@ auditr findings that fit the release scope.
 - Tickets: `ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_3_spec_packet/tickets.yml`.
 
-The v0.1.8.3 implementation targets are performance protocol and baseline,
-persistent-versus-memory accounting parity, runtime projection with an R-memory
-backend, shared `ledgr_run()` / `ledgr_sweep()` projection consumption, fast
-context B1, pulse-context data model consolidation with prebuilt static pulse
-views, post-LDG-2413 residual profiling and maintainer decision on typed memory
-events / single-pass sweep summary reconstruction, one preflight indirection
-hardening bugfix, and auditr-routed docs/message polish. Do not
-pull active aliases, alias-map identity, parameter-grid helpers, DuckDB-backed
-precompute storage, out-of-core projection, parallel dispatch, target risk,
-walk-forward, cost/liquidity, OMS, benchmark, or external-provider work into
-this packet without maintainer amendment.
+The next planned packet is v0.1.8.4 active parameterized feature aliases,
+grounded in
+`rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`. Do not
+implement runtime work from that design until the v0.1.8.4 packet and tickets
+are cut.
 
 ## Core Documents
 
