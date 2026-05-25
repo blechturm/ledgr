@@ -3,11 +3,11 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Current cycle:** v0.1.8.2 planning.
+**Current cycle:** v0.1.8.2 release gate closeout.
 **Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` contains the
-implementation spec, auditr triage artifacts, and implementation tickets. The
-scope/decision gate is closed; runtime work starts with LDG-2303 unless the
-independent LDG-2301 research ticket is selected.
+implementation spec, auditr triage artifacts, completed implementation
+tickets, and the release gate. Do not add new v0.1.8.2 runtime scope during
+closeout.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -92,7 +92,7 @@ versioned packet.
 | v0.1.8.00 | Done | Design-document governance and v0.1.8 readiness. | `inst/design/ledgr_v0_1_8_00_spec_packet/` |
 | v0.1.8 | Done | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_0_spec_packet/` |
 | v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
-| v0.1.8.2 | Planned | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | Future packet |
+| v0.1.8.2 | In release gate | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
 | v0.1.8.3 | Planned | Single-core sweep optimization after metric-kernel semantics settle. | Future packet |
 | v0.1.8.4 | Planned | Active parameterized feature aliases for sweep authoring. | Future packet |
 | v0.1.8.5 | Planned | Parameter-grid quality-of-life helpers after active aliases stabilize. | Future packet |

@@ -895,7 +895,7 @@ scope: installed_docs
 Priority: P2
 Effort: M
 Dependencies: LDG-2302
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -974,7 +974,7 @@ scope: internal
 Priority: P0
 Effort: S
 Dependencies: LDG-2303, LDG-2304, LDG-2305, LDG-2306, LDG-2307, LDG-2308, LDG-2309, LDG-2310, LDG-2311, LDG-2312
-Status: Todo
+Status: In Review
 
 ### Description
 
@@ -1027,3 +1027,68 @@ type: release_gate
 surface: package
 scope: v0.1.8.2
 ```
+
+### Completion Notes
+
+- Bumped package version to `0.1.8.2` and added the v0.1.8.2 `NEWS.md`
+  section covering metric context, risk-free-rate/annualization disclosure,
+  preflight contract fixes, auditr-routed docs/message polish, and indicator
+  codebase Phase 2 cleanup.
+- Synchronized ticket metadata by marking LDG-2312 done and LDG-2313 in
+  review in both the human-readable and machine-readable ticket records.
+- Updated the design index, roadmap, and agent notes so v0.1.8.2 is treated as
+  a release-closeout packet rather than an open implementation-planning packet.
+- Verified deferred v0.1.8.3+ scope remains design-only: active parameterized
+  feature aliases are scheduled for v0.1.8.4, parameter-grid helpers for
+  v0.1.8.5, parallel sweep dispatch for v0.1.8.6, and target-risk work for
+  v0.1.9+.
+- Left LDG-2301 as independent tidyfinance provider-unit research; it adds no
+  runtime scope and does not affect v0.1.8.2 release readiness.
+
+### Verification Notes
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
+```
+
+Passed with one expected skip for the Yahoo adapter missing-package path.
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-documentation-contracts.R', reporter='summary')"
+```
+
+Passed.
+
+```powershell
+$env:RSTUDIO_PANDOC='C:\Program Files\RStudio\resources\app\bin\quarto\bin\tools'
+& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build .
+& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_0.1.8.2.tar.gz
+```
+
+Final build passed after setting the local RStudio Pandoc path. Final
+`R CMD check` completed with `Status: OK`. The check emitted offline repository
+index warnings and a Windows `du` status message after completion, but no check
+warning, error, or note.
+
+```powershell
+rg -n "0\.1\.8\.1|v0\.1\.8\.1" README.md README.Rmd NEWS.md DESCRIPTION R man vignettes tests inst/design/README.md inst/design/ledgr_roadmap.md AGENTS.md --glob '!inst/design/ledgr_v0_1_8_1_spec_packet/**'
+rg -n "0\.1\.8\.3|v0\.1\.8\.3|0\.1\.8\.4|v0\.1\.8\.4|0\.1\.9|v0\.1\.9" R tests man vignettes README.md README.Rmd NEWS.md DESCRIPTION
+git diff --check
+```
+
+Stale-version scan only found expected historical references to v0.1.8.1
+records, the `NEWS.md` v0.1.8.1 section, and the legacy-context storage test
+fixture. Future-version scan only found the intentional v0.1.8.4 NEWS planning
+note for active aliases. Encoding scan for common mojibake/BOM markers returned
+no matches. `git diff --check` reported no whitespace errors; CRLF
+normalization warnings are local Git working-tree warnings.
+
+```powershell
+wsl -e bash -lc 'cd /mnt/c/Users/maxth/Documents/GitHub/ledgr && Rscript -e "pkgload::load_all(\".\", quiet=TRUE); testthat::test_local(\".\", reporter=\"summary\")"'
+```
+
+WSL gate could not run in this environment because WSL returned
+`Wsl/Service/CreateInstance/E_ACCESSDENIED`.
+
+Generated release artifacts were removed after verification:
+`ledgr_0.1.8.2.tar.gz`, `ledgr.Rcheck`, and `tests/testthat/Rplots.pdf`.

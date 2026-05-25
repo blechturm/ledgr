@@ -41,6 +41,12 @@ approximately \code{2 * spread_bps} basis points before commissions.}
 \item{persist_features}{Logical scalar.}
 
 \item{execution_mode}{Execution mode (\code{"audit_log"} or \code{"db_live"}).}
+
+\item{metric_context}{Optional \code{ledgr_metric_context} object or scalar
+annual risk-free rate shorthand. \code{NULL} uses the default metric context.}
+
+\item{risk_free_rate}{Optional shorthand for the annual risk-free rate.
+Supply either \code{metric_context} or \code{risk_free_rate}, not both.}
 }
 \value{
 A \code{ledgr_experiment} object.

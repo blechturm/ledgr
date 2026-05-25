@@ -160,6 +160,10 @@ print.ledgr_opening <- function(x, ...) {
 #'   approximately `2 * spread_bps` basis points before commissions.
 #' @param persist_features Logical scalar.
 #' @param execution_mode Execution mode (`"audit_log"` or `"db_live"`).
+#' @param metric_context Optional `ledgr_metric_context` object or scalar
+#'   annual risk-free rate shorthand. `NULL` uses the default metric context.
+#' @param risk_free_rate Optional shorthand for the annual risk-free rate.
+#'   Supply either `metric_context` or `risk_free_rate`, not both.
 #' @return A `ledgr_experiment` object.
 #' @section Articles:
 #' Strategy authoring:

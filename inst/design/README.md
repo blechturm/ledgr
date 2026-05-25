@@ -2,11 +2,11 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Current release candidate:** none.
+**Current release candidate:** `v0.1.8.2`.
 **Current implementation branch:** `v0.1.8.2`.
-**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` contains a draft
-spec, auditr triage artifacts, and implementation tickets. The latest completed
-release packet is `inst/design/ledgr_v0_1_8_1_spec_packet/`.
+**Active packet:** `inst/design/ledgr_v0_1_8_2_spec_packet/` is in release
+gate closeout. The latest completed release packet remains
+`inst/design/ledgr_v0_1_8_1_spec_packet/` until v0.1.8.2 is tagged.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -58,26 +58,25 @@ project must define an explicit compatibility and deprecation policy.
 
 ## Active Cycle
 
-The `v0.1.8.2` branch is open for implementation planning. The implementation
-spec exists, auditr triage artifacts are in the packet, and implementation
-tickets have been cut. The scope/decision gate is closed; runtime work should
-start with LDG-2303 unless explicitly running the independent LDG-2301 research
-ticket.
+The `v0.1.8.2` branch is in release gate closeout. Runtime implementation
+tickets LDG-2303 through LDG-2312 are complete; LDG-2313 is the package
+verification and metadata closeout ticket. Do not add new runtime scope to this
+packet.
 
-- Spec: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md` is draft.
+- Spec: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md`.
 - Auditr triage:
   `ledgr_v0_1_8_2_spec_packet/ledgr_triage_report.md`,
   `ledgr_v0_1_8_2_spec_packet/categorized_feedback.yml`, and
   `ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`.
 - Tickets: `ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`
-  contains implementation tickets plus the independent tidyfinance research
-  ticket.
+  contains completed implementation tickets, the release gate, and the
+  independent tidyfinance research ticket.
 - Machine-readable tickets: `ledgr_v0_1_8_2_spec_packet/tickets.yml`.
 
-The planned implementation targets are metric context, risk-free-rate
+The v0.1.8.2 implementation targets were metric context, risk-free-rate
 semantics, preflight classifier alignment, auditr documentation/message polish,
-and indicator codebase Phase 2 cleanup. The tidyfinance research ticket does
-not add runtime scope.
+and indicator codebase Phase 2 cleanup. The tidyfinance research ticket remains
+independent and adds no runtime scope.
 
 ## Core Documents
 

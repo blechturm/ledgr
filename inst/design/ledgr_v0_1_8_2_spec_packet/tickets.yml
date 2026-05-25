@@ -185,7 +185,7 @@ tickets:
 
   - id: "LDG-2312"
     title: "Indicator Codebase Phase 2 Cleanup"
-    status: "in_review"
+    status: "done"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -207,7 +207,7 @@ tickets:
 
   - id: "LDG-2313"
     title: "v0.1.8.2 Release Gate And Closeout"
-    status: "todo"
+    status: "in_review"
     priority: "P0"
     effort: "S"
     dependencies:

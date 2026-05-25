@@ -1,3 +1,35 @@
+# ledgr 0.1.8.2
+
+- Added `ledgr_metric_context()`, `ledgr_risk_free_rate()`,
+  `ledgr_calendar()`, US-equity and crypto calendar templates, metric-context
+  hashing, and inspection accessors so risk-free-rate and annualization
+  assumptions are explicit, stored, and auditable.
+- Threaded metric context through experiments, committed runs, summaries,
+  single-run metrics, comparisons, sweeps, candidates, and promotion context
+  without adding metric context to execution config identity.
+- Added a plain serializable metric kernel that precomputes annualization and
+  period risk-free-rate inputs before metric computation, including comparison
+  and sweep paths.
+- Fixed strategy preflight so forbidden nondeterministic calls such as
+  `Sys.time()` and global assignment with `<<-` fail early as Tier 3 before run
+  or sweep artifacts are written, while resolved immutable external scalars
+  remain Tier 2.
+- Improved metric, sweep, promotion, indicator, CSV, timestamp, TTR bundle,
+  feature-inspection, and strategy-development documentation based on auditr
+  intake, including clearer current-workflow guidance for parameterized
+  indicator sweeps before the future active-alias API.
+- Polished selected diagnostics without changing error classes, including
+  timestamp format guidance, CSV snapshot failure next actions, duplicate
+  bundle alias remediation, unsupported feature-result table routing, and TTR
+  output-naming guidance.
+- Completed the indicator codebase Phase 2 file-shape cleanup by renaming the
+  built-in and adapter indicator files and splitting indicator development
+  helpers from pulse snapshot helpers while preserving public APIs, exports,
+  feature IDs, fingerprints, and behavior.
+- Recorded pre-CRAN compatibility policy and accepted the active parameterized
+  feature aliases synthesis for the future v0.1.8.4 sweep-authoring ergonomics
+  cycle.
+
 # ledgr 0.1.8.1
 
 - Added `ledgr_ind_ttr_outputs()` for multi-output TTR authoring. The helper
