@@ -34,7 +34,7 @@ tickets:
 
   - id: "LDG-2403"
     title: "Persistent-Versus-Memory Accounting Parity Gate"
-    status: "pending"
+    status: "in_review"
     priority: "P1"
     effort: "M"
     dependencies:

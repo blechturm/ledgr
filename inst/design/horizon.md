@@ -659,6 +659,44 @@ version, and frequency. Metric-context construction must reject ambiguous
 "risk-free from provider" requests when more than one provider endpoint could
 produce the series.
 
+### 2026-05-25 [infrastructure] Compiled fold core after pipeline stabilization
+
+The v0.1.8.3 sweep baseline shows that R-side fold execution dominates the
+reference workload after v0.1.8.2. A future C, Fortran, C++, or Rust fold core
+may become worthwhile if R-only optimizations leave walk-forward and large
+sweep workloads too slow.
+
+Do not start this rewrite while the fold pipeline is still moving. A compiled
+core should wait until the surrounding execution contracts are stable enough
+that the port can be contract-following rather than contract-setting.
+
+Minimum gates before a serious port RFC:
+
+- v0.1.8.4 active parameterized feature aliases have landed or been abandoned;
+- the v0.1.9 target-risk chain has stabilized, including second-pass target
+  validation and risk identity;
+- walk-forward has produced real large-sweep workloads that justify native
+  fold speed;
+- public cost/liquidity/order-policy boundaries are stable enough that the
+  compiled core will not immediately need structural rewrites;
+- parity tests cover persistent versus memory accounting, typed events,
+  metric-kernel behavior, target validation, promotion context, risk policy,
+  and cost/liquidity semantics;
+- fold-core values are represented by typed, serializable value objects where
+  possible rather than loose ad hoc lists.
+
+Near-term work that helps without committing to a port:
+
+- keep expanding parity tests so a future port has a clear acceptance suite;
+- formalize event, fill, lot-state, and fill-proposal shapes as typed value
+  objects when touched by ordinary tickets;
+- optionally run a small FFI feasibility spike, such as porting one isolated
+  lot-state helper, to measure call-boundary overhead.
+
+The port should not be treated as a v0.1.8.x optimization. The v0.1.8.x path
+remains R-side optimization first: typed memory events, single-pass summaries,
+fast context, and lazy context payloads.
+
 ## Resolved
 
 No resolved horizon entries yet.

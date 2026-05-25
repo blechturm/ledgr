@@ -235,7 +235,7 @@ scope: benchmark_protocol
 Priority: P1
 Effort: M
 Dependencies: LDG-2401
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -281,6 +281,30 @@ type: test
 surface: accounting_parity
 scope: sweep_memory_path
 ```
+
+### Completion Notes
+
+- Expanded `tests/testthat/test-sweep-parity.R` into the LDG-2403 accounting
+  gate for future typed-event and single-pass summary work.
+- Added explicit accounting and metric tolerances (`1e-10`) with test-file
+  comments explaining that they allow only floating-point order noise, not
+  cent-level accounting drift.
+- Added memory reconstruction checks that rebuild equity, realized PnL,
+  unrealized PnL, fills, and metrics from ledger events with the same
+  `ledgr_equity_from_events()`, `ledgr_fills_from_events()`, and
+  `ledgr_metrics_from_equity_fills()` helpers used by the sweep memory path,
+  then compare those outputs to persistent `ledgr_run()` artifacts.
+- Extended candidate coverage to zero-trade, partial close, full close,
+  multi-instrument, final-bar no-fill warning, and open-position-at-end cases.
+- Added opening-position lot coverage with a non-default metric context and
+  asserted that sweep metric-context hash/provenance still drive candidate
+  metric assumptions.
+- Preserved public sweep result shape and promotion/direct-run parity checks.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-sweep-parity.R')`
+  - `testthat::test_file('tests/testthat/test-sweep.R')`
+  - `testthat::test_file('tests/testthat/test-metric-kernel.R')`
+  - `testthat::test_file('tests/testthat/test-promotion-context.R')`
 
 ---
 
