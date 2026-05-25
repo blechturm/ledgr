@@ -17,12 +17,16 @@ baseline protocol
   -> accounting parity gate
   -> projection interface and R-memory backend
   -> shared fold projection consumption and parity gates
-  -> typed memory events
   -> fast context B1
+  -> typed memory events
   -> single-pass summary reconstruction
   -> fast context B2 if parity permits
   -> post-change measurement and residual hot-path report
 ```
+
+The original projection synthesis allowed typed events and B1 to be sequenced by
+measurement. The LDG-2409 checkpoint measured helper churn as the larger
+remaining fold slice, so LDG-2411 now lands before LDG-2410.
 
 The auditr spine is deliberately separate:
 
@@ -47,8 +51,8 @@ LDG-2401 Scope Routing, Packet Setup, And Auditr Decisions
   |-- LDG-2402 Performance Protocol And v0.1.8.2 Baseline
   |     |-- LDG-2408 Runtime Projection Interface And R-Memory Backend
   |     |     `-- LDG-2409 Shared Fold Projection Consumption And Parity Gate
-  |     |           |-- LDG-2410 Typed Memory Event Representation
   |     |           |-- LDG-2411 Fast Context B1 Pulse Helper Reuse
+  |     |           |-- LDG-2410 Typed Memory Event Representation
   |     |           |     `-- LDG-2412 Single-Pass Sweep Summary Reconstruction
   |     |           |           `-- LDG-2413 Fast Context B2 Index-Backed Context Proxies
   |     |           `-- LDG-2414 Post-Change Measurement And Residual Report

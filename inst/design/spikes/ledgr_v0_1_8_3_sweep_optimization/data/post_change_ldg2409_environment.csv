@@ -1,0 +1,2 @@
+"label","timestamp_utc","git_head","git_head_short","git_status_short","git_v0_1_8_2_tag","r_version","platform","os","os_release","machine","logical_cores","physical_cores"
+"post_change","2026-05-25T15:49:08Z","806ef00acef3afb0559ca5dc6e2aceb62a56aa2b","806ef00","?? inst/design/maintainer_review/","9d8dfc841a789a16d605c9a97cf0d36aa1c14bbc","4.5.2","x86_64-w64-mingw32","Windows","10 x64","x86-64",24,16

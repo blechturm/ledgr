@@ -55,6 +55,8 @@ Rebuild the summary report from existing CSV artifacts:
 ## Files
 
 - `baseline_report.md`: pre-optimization baseline evidence.
+- `post_change_report_checkpoint_LDG-2409.md`: interim post-projection
+  checkpoint that reorders the next optimization slice to Fast Context B1.
 - `post_change_report.md`: post-optimization evidence, created later.
 - `residual_hot_path_report.md`: remaining bottlenecks and next-slice
   recommendation, created later.

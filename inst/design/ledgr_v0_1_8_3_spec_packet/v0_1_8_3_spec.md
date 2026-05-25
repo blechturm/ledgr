@@ -88,11 +88,16 @@ therefore amended to cover the full R-level fold/runtime optimization arc:
 ```text
 runtime projection interface and R-memory backend
   -> shared ledgr_run()/ledgr_sweep() projection consumption
-  -> typed memory events
   -> fast context B1
+  -> typed memory events
   -> single-pass sweep summary reconstruction
   -> fast context B2 if parity permits
 ```
+
+LDG-2409 checkpoint measurement reordered the next optimization slice:
+projection removed the old `ledgr_features_wide()` hot frame, but helper churn
+still dominates the sampled reference workload. B1 therefore lands before typed
+memory events unless a later measurement contradicts this finding.
 
 The release still does not change public strategy-facing context semantics.
 The projection is an internal interface with an R-memory list-of-matrices
@@ -136,20 +141,22 @@ v0.1.8.3 has eight primary goals:
    list-of-matrices backend.
 5. Route both `ledgr_run()` and `ledgr_sweep()` through the same projection
    consumption path in the shared fold.
-6. Implement typed memory events and single-pass sweep summary reconstruction
+6. Implement fast context B1 where projection parity is green and helper churn
+   remains the measured bottleneck.
+7. Implement typed memory events and single-pass sweep summary reconstruction
    without changing strategy-facing semantics.
-7. Implement fast context B1 and B2 where parity permits, with B2 deferrable if
+8. Implement fast context B2 where parity permits, with B2 deferrable if
    it cannot preserve context semantics in this cycle.
-8. Publish post-change measurements and a residual hot-path report.
+9. Publish post-change measurements and a residual hot-path report.
 
 It has one required intake gate:
 
-9. Route v0.1.8.3 auditr findings into accepted fixes, documentation/message
+10. Route v0.1.8.3 auditr findings into accepted fixes, documentation/message
    polish, explicit deferrals, or rejections before release gate.
 
 The routed auditr findings add one required runtime fix:
 
-10. Harden strategy preflight against constant-string and direct-function
+11. Harden strategy preflight against constant-string and direct-function
    `do.call()` indirection to forbidden nondeterministic calls, and classify
    `attr(ctx, ...) <- ...` context mutation as unsupported strategy code.
 
@@ -613,15 +620,17 @@ The ticket cut uses this sequence:
    - use `ledgr_sweep_run_candidate()` as the convergence point for
      per-candidate fold setup where applicable.
 
-8. **Typed memory events**
+8. **Fast context B1**
+   - initialize lookup environments and helper closures once per candidate;
+   - mutate pulse-specific values per pulse;
+   - activate after projection parity is green, before typed memory events,
+     because the LDG-2409 checkpoint profile leaves helper churn as the
+     dominant remaining measured bottleneck.
+
+9. **Typed memory events**
    - add typed memory event representation;
    - keep durable persistent `meta_json` serialization unchanged;
    - prove typed and durable representations are equivalent.
-
-9. **Fast context B1**
-   - initialize lookup environments and helper closures once per candidate;
-   - mutate pulse-specific values per pulse;
-   - activate only after projection parity is green.
 
 10. **Single-pass summary reconstruction**
    - compute sweep summary artifacts without redundant event replay;
@@ -645,12 +654,13 @@ The ticket cut uses this sequence:
    - README/design index/roadmap/NEWS verification;
    - CI merge/tag playbook.
 
-Projection work must precede typed memory events and fast context. Typed events
-and single-pass summary should remain separate tickets by default so the parity
-gate can run once after the representation change and once after the
-reconstruction change. Fast context B2 is optional within the release: if it
-cannot preserve parity, v0.1.8.3 can ship B1 and defer B2 with measurement
-evidence.
+Projection work must precede fast context and typed memory events. The LDG-2409
+checkpoint measurement reorders B1 before typed events because fold helper churn
+remains the larger measured slice. Typed events and single-pass summary should
+remain separate tickets by default so the parity gate can run once after the
+representation change and once after the reconstruction change. Fast context B2
+is optional within the release: if it cannot preserve parity, v0.1.8.3 can ship
+B1 and defer B2 with measurement evidence.
 
 ---
 
