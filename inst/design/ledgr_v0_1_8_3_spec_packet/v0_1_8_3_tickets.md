@@ -147,7 +147,7 @@ scope: v0.1.8.3
 Priority: P1
 Effort: M
 Dependencies: LDG-2401
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -200,6 +200,33 @@ type: measurement
 surface: sweep_performance
 scope: benchmark_protocol
 ```
+
+### Completion Notes
+
+- Added the v0.1.8.3 sweep-optimization measurement harness under
+  `dev/spikes/ledgr_v0_1_8_3_sweep_optimization/`, with shared workload
+  definitions plus baseline, post-change, profiling, and summary entrypoints.
+- Added reviewed report artifacts under
+  `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/`, including
+  `README.md`, `baseline_report.md`, `summary_report.md`, and pending
+  post-change/residual report placeholders.
+- Ran the baseline protocol on the v0.1.8.3 planning branch before runtime
+  optimization. The package version is `0.1.8.2`; the report records current
+  HEAD `f5b49d4` and tag `v0.1.8.2` at `9d8dfc8`.
+- Captured all required workload classes: smoke, reference 50-candidate EOD,
+  wider feature-payload, persistent committed-run comparison, and non-default
+  metric-context sweep.
+- Captured Rprof top frames for the reference workload and recorded the
+  LDG-2108B split check: `ledgr_execute_fold()` now accounts for about 79.8%
+  of sampled reference-workload time, so the older 64% fold / 31%-33%
+  reconstruction split must be treated as stale until post-change measurement.
+- Baseline median timings include:
+  - `reference_50_candidates` plain sweep: 45.585s;
+  - `reference_50_candidates` precomputed sweep: 45.490s;
+  - `wider_feature_payload` plain sweep: 65.360s;
+  - `persistent_comparison` plain sweep: 4.415s versus run loop: 9.420s;
+  - `metric_context_non_default` plain sweep: 4.350s.
+- No optimization implementation landed in this ticket.
 
 ---
 

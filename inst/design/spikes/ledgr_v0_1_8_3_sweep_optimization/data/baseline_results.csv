@@ -1,0 +1,16 @@
+"label","scenario","path","n_candidates","n_instruments","n_days","n_bars","feature_mode","metric_context","reps","median_sec","mean_sec","min_sec","max_sec"
+"baseline","smoke_3_candidates","sweep_plain",3,2,126,252,"single","default",2,1.32,1.32,0.97,1.67
+"baseline","smoke_3_candidates","precompute",3,2,126,252,"single","default",2,0.0850000000000009,0.0850000000000009,0.0600000000000005,0.110000000000001
+"baseline","smoke_3_candidates","sweep_precomputed",3,2,126,252,"single","default",2,1,1,0.98,1.02
+"baseline","smoke_3_candidates","run_loop",3,2,126,252,"single","default",2,5.245,5.245,4.45,6.04
+"baseline","reference_50_candidates","sweep_plain",50,4,252,1008,"single","default",2,45.585,45.585,45.44,45.73
+"baseline","reference_50_candidates","precompute",50,4,252,1008,"single","default",2,0.279999999999987,0.279999999999987,0.279999999999987,0.279999999999987
+"baseline","reference_50_candidates","sweep_precomputed",50,4,252,1008,"single","default",2,45.49,45.49,45.25,45.73
+"baseline","wider_feature_payload","sweep_plain",10,12,504,6048,"wide","default",2,65.36,65.36,65.33,65.39
+"baseline","wider_feature_payload","precompute",10,12,504,6048,"wide","default",2,0.784999999999997,0.784999999999997,0.78000000000003,0.789999999999964
+"baseline","wider_feature_payload","sweep_precomputed",10,12,504,6048,"wide","default",2,65.345,65.345,65.13,65.56
+"baseline","persistent_comparison","sweep_plain",5,4,252,1008,"single","default",2,4.41499999999999,4.41499999999999,4.31999999999999,4.50999999999999
+"baseline","persistent_comparison","run_loop",5,4,252,1008,"single","default",2,9.41999999999999,9.41999999999999,9.41999999999996,9.42000000000002
+"baseline","metric_context_non_default","sweep_plain",5,4,252,1008,"single","non_default_us_equity_rf_0.03",2,4.35000000000002,4.35000000000002,4.27999999999997,4.42000000000007
+"baseline","metric_context_non_default","precompute",5,4,252,1008,"single","non_default_us_equity_rf_0.03",2,0.089999999999975,0.089999999999975,0.0899999999999181,0.0900000000000318
+"baseline","metric_context_non_default","sweep_precomputed",5,4,252,1008,"single","non_default_us_equity_rf_0.03",2,4.315,4.315,4.29999999999995,4.33000000000004
