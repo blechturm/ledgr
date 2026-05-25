@@ -18,6 +18,19 @@
 #' Dynamic dispatch, mutable captured environments, and dynamically constructed
 #' code remain user responsibilities.
 #'
+#' Tier 3 strategies fail before execution with condition classes
+#' `ledgr_strategy_tier3` and `ledgr_strategy_preflight_error`; there is no
+#' `force = TRUE` override on `ledgr_run()` or `ledgr_sweep()`. Covered
+#' forbidden calls include direct wall-clock/process-environment calls such as
+#' `Sys.time()`, `Sys.Date()`, and `Sys.getenv()`, visible indirection such as
+#' `do.call("Sys.time", list())`, dynamic lookup/evaluation helpers such as
+#' `get()`, `eval()`, and `assign()`, global assignment with `<<-`, and visible
+#' context mutation such as `attr(ctx, "secret") <- 1`.
+#'
+#' Ambient strategy RNG calls such as `runif(1)` are Tier 2 under the execution
+#' seed contract. Custom indicator generation has a stricter deterministic
+#' feature contract; do not infer indicator RNG policy from strategy preflight.
+#'
 #' @param strategy A function with signature `function(ctx, params)`.
 #' @return A `ledgr_strategy_preflight` object with fields `tier`, `allowed`,
 #'   `reason`, `unresolved_symbols`, `package_dependencies`, and `notes`.

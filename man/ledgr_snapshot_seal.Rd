@@ -13,7 +13,9 @@ ledgr_snapshot_seal(con, snapshot_id)
 \code{SEALED}) when \code{con} is a connection.}
 }
 \value{
-The computed snapshot hash (character(1)) or a list when called with a snapshot object.
+The computed snapshot hash (\code{character(1)}) when called with a DBI
+connection and \code{snapshot_id}. When called with a \code{ledgr_snapshot} handle,
+returns an invisible list with \code{$hash} and \code{$snapshot}.
 }
 \description{
 Transitions a snapshot from \code{CREATED} to \code{SEALED} and stores a deterministic

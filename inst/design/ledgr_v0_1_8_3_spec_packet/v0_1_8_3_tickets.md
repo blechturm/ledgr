@@ -414,7 +414,7 @@ scope: runtime_contract
 Priority: P2
 Effort: M
 Dependencies: LDG-2404
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -466,6 +466,23 @@ surface: strategy_preflight
 scope: installed_docs
 ```
 
+### Completion Notes
+
+- Added forbidden-call and visible-indirection documentation to the
+  reproducibility article and `?ledgr_strategy_preflight`, including
+  `do.call("Sys.time", list())`, dynamic lookup/evaluation helpers, global
+  assignment, and `attr(ctx, ...) <- ...` context mutation.
+- Documented Tier 3 hard-failure classes, no-force behavior, and the
+  preflight-before-determinism boundary.
+- Documented the current captured-mutable-environment policy: resolved captures
+  remain Tier 2, but mutation remains the user's reproducibility risk.
+- Documented ambient strategy RNG as Tier 2 under the execution-seed contract
+  and distinguished it from stricter custom-indicator determinism.
+- Added documentation contract assertions for the new preflight claims.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-documentation-contracts.R')`
+  - `testthat::test_file('tests/testthat/test-strategy-preflight.R')`
+
 ---
 
 ## LDG-2406: Metric-Context Documentation And Display Polish
@@ -473,7 +490,7 @@ scope: installed_docs
 Priority: P2
 Effort: M
 Dependencies: LDG-2401
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -526,6 +543,26 @@ surface: metric_context
 scope: installed_docs
 ```
 
+### Completion Notes
+
+- Enumerated `ledgr_metric_context()` constructor fields in installed help:
+  `risk_free_rate`, `calendar`, `benchmark`, `market_factor`, and `mar`.
+- Documented reserved provider-field semantics and the explicit-calendar
+  requirement for intraday annualization.
+- Clarified metric-context hash payload semantics and the label/provenance split:
+  display labels are inspectable but do not enter the hash.
+- Added a non-mutating call-time override example that checks the stored run
+  context hash remains unchanged.
+- Documented nested `risk_free_rate` inspection for label/source/as-of
+  provenance and left print behavior unchanged.
+- Documented raw metric-kernel attributes as programmatic provenance rather than
+  printed report columns.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-documentation-contracts.R')`
+  - `testthat::test_file('tests/testthat/test-metric-context.R')`
+  - `testthat::test_file('tests/testthat/test-metric-context-storage.R')`
+  - `testthat::test_file('tests/testthat/test-metric-context-tables.R')`
+
 ---
 
 ## LDG-2407: Sweep Inspection, Export, And Real-Data Example Polish
@@ -533,7 +570,7 @@ scope: installed_docs
 Priority: P2
 Effort: L
 Dependencies: LDG-2401
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -595,6 +632,27 @@ type: documentation
 surface: sweep_docs_examples
 scope: installed_docs
 ```
+
+### Completion Notes
+
+- Documented failed sweep candidate inspection for `error_class`, `error_msg`,
+  `params`, `warnings`, `feature_fingerprints`, and provenance hashes.
+- Added a base-R flat-export recipe for sweep result list columns without adding
+  `ledgr_sweep_summary()` or any other public helper.
+- Fixed installed `ctx$equity()` examples to use the current `ctx$equity` field.
+- Fixed the invalid `ledgr_param_grid()` vector example in the indicators
+  article.
+- Documented the structured `$hash`/`$snapshot` return when
+  `ledgr_snapshot_seal()` is called with a snapshot handle.
+- Added one-experiment-per-strategy wording and troubleshooting snippets for
+  timestamp comparison, intraday time extraction, zero sizing, and fill-model
+  required fields.
+- Kept ranking helpers, sweep summary helpers, active aliases, and full sweep
+  artifact persistence out of scope.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-documentation-contracts.R')`
+  - `testthat::test_file('tests/testthat/test-sweep.R')`
+  - `git diff --check`
 
 ---
 

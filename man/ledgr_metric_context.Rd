@@ -16,7 +16,8 @@ ledgr_metric_crypto(risk_free_rate = 0, bars_per_day = 1L)
 \item{x}{Optional object to inspect. Omit for constructor behavior. A numeric
 scalar first argument is treated as \code{risk_free_rate} for convenience.}
 
-\item{...}{Constructor fields or S3 method arguments.}
+\item{...}{Constructor fields or S3 method arguments. Constructor fields are
+\code{risk_free_rate}, \code{calendar}, \code{benchmark}, \code{market_factor}, and \code{mar}.}
 
 \item{risk_free_rate}{Scalar annual rate or \code{ledgr_risk_free_rate} used by
 the market-template helpers.}
@@ -32,9 +33,27 @@ With no object as the first argument, \code{ledgr_metric_context()} constructs t
 metric-assumption object used for risk-free-rate and annualization policy.
 With a ledgr object as the first argument, it dispatches as an accessor.
 }
+\details{
+Constructor fields:
+\itemize{
+\item \code{risk_free_rate}: scalar annual rate or \code{ledgr_risk_free_rate()} object.
+\item \code{calendar}: \code{ledgr_calendar()} object; defaults to US equity daily.
+\item \code{benchmark}: reserved for future benchmark-return providers and must be
+\code{NULL} in v0.1.8.
+\item \code{market_factor}: reserved for future market-factor providers and must be
+\code{NULL} in v0.1.8.
+\item \code{mar}: reserved for future minimum-acceptable-return providers and must be
+\code{NULL} in v0.1.8.
+}
+
+\code{ledgr_metric_context_hash()} hashes metric-context version, annual
+risk-free rate, risk-free source, risk-free \code{as_of}, and calendar
+annualization and source fields. Human display labels are stored for
+inspection but do not enter the hash. Inspect nested risk-free provenance with
+\code{ledgr_metric_context(x)$risk_free_rate}.
+}
 \section{Articles}{
 
 \code{vignette("metrics-and-accounting", package = "ledgr")}
 \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
 }
-

@@ -869,7 +869,7 @@ buy_and_hold_strategy <- function(ctx, params) {
 
 equal_weight_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  capital <- ctx$equity() * params$equity_fraction / length(ctx$universe)
+  capital <- ctx$equity * params$equity_fraction / length(ctx$universe)
   for (id in ctx$universe) {
     targets[id] <- floor(capital / ctx$close(id))
   }
@@ -955,7 +955,7 @@ logic or wrap it in an approved helper surface:
 ``` r
 allocate_equal <- function(ctx, fraction) {
   targets <- ctx$flat()
-  capital <- ctx$equity() * fraction / length(ctx$universe)
+  capital <- ctx$equity * fraction / length(ctx$universe)
   for (id in ctx$universe) targets[id] <- floor(capital / ctx$close(id))
   targets
 }
@@ -968,7 +968,7 @@ ledgr_strategy_preflight(bad_strategy)
 
 self_contained_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  capital <- ctx$equity() * params$equity_fraction / length(ctx$universe)
+  capital <- ctx$equity * params$equity_fraction / length(ctx$universe)
   for (id in ctx$universe) targets[id] <- floor(capital / ctx$close(id))
   targets
 }

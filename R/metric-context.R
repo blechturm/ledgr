@@ -147,13 +147,31 @@ print.ledgr_risk_free_rate <- function(x, ...) {
 #'
 #' @param x Optional object to inspect. Omit for constructor behavior. A numeric
 #'   scalar first argument is treated as `risk_free_rate` for convenience.
-#' @param ... Constructor fields or S3 method arguments.
+#' @param ... Constructor fields or S3 method arguments. Constructor fields are
+#'   `risk_free_rate`, `calendar`, `benchmark`, `market_factor`, and `mar`.
 #' @param risk_free_rate Scalar annual rate or `ledgr_risk_free_rate` used by
 #'   the market-template helpers.
 #' @param bars_per_day Finite positive scalar number of bars per day used by
 #'   the market-template helpers.
 #'
 #' @return A `ledgr_metric_context` object.
+#'
+#' @details
+#' Constructor fields:
+#' - `risk_free_rate`: scalar annual rate or `ledgr_risk_free_rate()` object.
+#' - `calendar`: `ledgr_calendar()` object; defaults to US equity daily.
+#' - `benchmark`: reserved for future benchmark-return providers and must be
+#'   `NULL` in v0.1.8.
+#' - `market_factor`: reserved for future market-factor providers and must be
+#'   `NULL` in v0.1.8.
+#' - `mar`: reserved for future minimum-acceptable-return providers and must be
+#'   `NULL` in v0.1.8.
+#'
+#' `ledgr_metric_context_hash()` hashes metric-context version, annual
+#' risk-free rate, risk-free source, risk-free `as_of`, and calendar
+#' annualization and source fields. Human display labels are stored for
+#' inspection but do not enter the hash. Inspect nested risk-free provenance with
+#' `ledgr_metric_context(x)$risk_free_rate`.
 #'
 #' @section Articles:
 #' `vignette("metrics-and-accounting", package = "ledgr")`
@@ -482,7 +500,7 @@ ledgr_normalize_risk_free_rate <- function(x) {
 ledgr_validate_reserved_metric_provider <- function(x, arg) {
   if (!is.null(x)) {
     rlang::abort(
-      sprintf("`%s` is reserved for a future metric provider and must be NULL in v0.1.8.2.", arg),
+      sprintf("`%s` is reserved for a future metric provider and must be NULL in v0.1.8.", arg),
       class = "ledgr_invalid_args"
     )
   }

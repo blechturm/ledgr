@@ -67,7 +67,7 @@ tickets:
 
   - id: "LDG-2405"
     title: "Preflight Documentation And Strategy-Boundary Polish"
-    status: "pending"
+    status: "in_review"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -82,7 +82,7 @@ tickets:
 
   - id: "LDG-2406"
     title: "Metric-Context Documentation And Display Polish"
-    status: "pending"
+    status: "in_review"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -98,7 +98,7 @@ tickets:
 
   - id: "LDG-2407"
     title: "Sweep Inspection, Export, And Real-Data Example Polish"
-    status: "pending"
+    status: "in_review"
     priority: "P2"
     effort: "L"
     dependencies:
