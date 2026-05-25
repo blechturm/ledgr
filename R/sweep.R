@@ -641,7 +641,7 @@ ledgr_sweep_run_candidate <- function(exp,
     telemetry = telemetry,
     seed = if (is.na(execution_seed)) NULL else execution_seed,
     event_mode = "buffered",
-    use_fast_context = FALSE
+    use_fast_context = TRUE
   )
   ledgr_execute_fold(execution, output_handler)
 

@@ -60,6 +60,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
   telemetry <- execution$telemetry
   execution_seed <- execution$seed
   event_mode <- execution$event_mode
+  use_fast_context <- isTRUE(execution$use_fast_context)
 
   if (!is.null(execution_seed)) {
     set.seed(as.integer(execution_seed))
@@ -104,6 +105,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
   full_run <- TRUE
   processed <- 0L
   telemetry_idx <- as.integer(telemetry$telemetry_samples %||% 0L)
+  fast_context <- if (isTRUE(use_fast_context)) {
+    ledgr_fast_context_state(
+      universe = instrument_ids,
+      projection = runtime_projection,
+      feature_ids = def_ids
+    )
+  } else {
+    NULL
+  }
 
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
@@ -173,16 +183,28 @@ ledgr_execute_fold <- function(execution, output_handler) {
         safety_state = "GREEN"
       )
       class(ctx) <- "ledgr_pulse_context"
-      ctx <- ledgr_update_pulse_context_helpers(
-        ctx,
-        bars = bars_current,
-        features = features_current,
-        positions = state$positions,
-        universe = instrument_ids,
-        projection = runtime_projection,
-        pulse_idx = i,
-        feature_ids = def_ids
-      )
+      ctx <- if (!is.null(fast_context)) {
+        ledgr_update_fast_pulse_context_helpers(
+          ctx,
+          fast_context = fast_context,
+          bars = bars_current,
+          features = features_current,
+          positions = state$positions,
+          universe = instrument_ids,
+          pulse_idx = i
+        )
+      } else {
+        ledgr_update_pulse_context_helpers(
+          ctx,
+          bars = bars_current,
+          features = features_current,
+          positions = state$positions,
+          universe = instrument_ids,
+          projection = runtime_projection,
+          pulse_idx = i,
+          feature_ids = def_ids
+        )
+      }
 
       result <- tryCatch(
         {

@@ -1103,7 +1103,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     is_synthetic = 9L
   )
   use_bars_cache <- TRUE
-  use_fast_context <- FALSE
+  use_fast_context <- TRUE
   if (isTRUE(use_bars_cache)) {
     start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
     end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
@@ -1263,15 +1263,6 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     feature_engine_version = ledgr_feature_engine_version(),
     alias_index = NULL
   )
-  features_proxy <- NULL
-  if (isTRUE(use_fast_context) && length(feature_defs) > 0) {
-    features_proxy <- list(
-      instrument_id = rep(instrument_ids, each = n_def),
-      ts_utc = rep(pulses_posix[[1]], n_inst * n_def),
-      feature_name = rep(def_ids, times = n_inst),
-      feature_value = numeric(n_inst * n_def)
-    )
-  }
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
 
   state_prev_mem <- NULL

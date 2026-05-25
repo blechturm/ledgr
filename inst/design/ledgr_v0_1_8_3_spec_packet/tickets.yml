@@ -171,7 +171,7 @@ tickets:
 
   - id: "LDG-2411"
     title: "Fast Context B1 Pulse Helper Reuse"
-    status: "pending"
+    status: "in_review"
     priority: "P1"
     effort: "L"
     dependencies:

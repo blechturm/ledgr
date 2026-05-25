@@ -497,6 +497,9 @@ testthat::test_that("shared fold projection path matches legacy table feature pa
   seen <- new.env(parent = emptyenv())
   seen$legacy <- list()
   seen$projection <- list()
+  seen$fast <- list()
+  seen$fast_feature_fns <- list()
+  seen$fast_bar_fns <- list()
   mode <- "legacy"
   strategy <- function(ctx, params) {
     seen[[mode]][[length(seen[[mode]]) + 1L]] <<- list(
@@ -504,13 +507,17 @@ testthat::test_that("shared fold projection path matches legacy table feature pa
       table = ctx$feature_table,
       wide = ctx$features_wide
     )
+    if (identical(mode, "fast")) {
+      seen$fast_feature_fns[[length(seen$fast_feature_fns) + 1L]] <<- ctx$feature
+      seen$fast_bar_fns[[length(seen$fast_bar_fns) + 1L]] <<- ctx$bar
+    }
     targets <- ctx$flat()
     targets[["AAA"]] <- if (is.finite(ctx$feature("AAA", "custom_close")) &&
       ctx$feature("AAA", "custom_close") > 101) 1 else 0
     targets
   }
 
-  run_fold <- function(projection) {
+  run_fold <- function(projection, use_fast_context = FALSE) {
     handler <- ledgr:::ledgr_memory_output_handler("projection-parity")
     execution <- list(
       run_id = "projection-parity",
@@ -537,7 +544,7 @@ testthat::test_that("shared fold projection path matches legacy table feature pa
       telemetry = ledgr:::ledgr_sweep_telemetry_env(),
       seed = 123L,
       event_mode = "buffered",
-      use_fast_context = FALSE
+      use_fast_context = use_fast_context
     )
     result <- ledgr:::ledgr_execute_fold(execution, handler)
     list(result = result, events = handler$events())
@@ -546,16 +553,27 @@ testthat::test_that("shared fold projection path matches legacy table feature pa
   legacy <- run_fold(NULL)
   mode <- "projection"
   projected <- run_fold(runtime_projection)
+  mode <- "fast"
+  fast <- run_fold(runtime_projection, use_fast_context = TRUE)
 
   testthat::expect_equal(projected$events, legacy$events)
+  testthat::expect_equal(fast$events, legacy$events)
   testthat::expect_equal(
     vapply(seen$projection, `[[`, numeric(1), "feature"),
+    vapply(seen$legacy, `[[`, numeric(1), "feature")
+  )
+  testthat::expect_equal(
+    vapply(seen$fast, `[[`, numeric(1), "feature"),
     vapply(seen$legacy, `[[`, numeric(1), "feature")
   )
   for (i in seq_along(seen$legacy)) {
     testthat::expect_equal(seen$projection[[i]]$table, seen$legacy[[i]]$table)
     testthat::expect_equal(seen$projection[[i]]$wide, seen$legacy[[i]]$wide)
+    testthat::expect_equal(seen$fast[[i]]$table, seen$legacy[[i]]$table)
+    testthat::expect_equal(seen$fast[[i]]$wide, seen$legacy[[i]]$wide)
   }
+  testthat::expect_true(all(vapply(seen$fast_feature_fns[-1], identical, logical(1), seen$fast_feature_fns[[1]])))
+  testthat::expect_true(all(vapply(seen$fast_bar_fns[-1], identical, logical(1), seen$fast_bar_fns[[1]])))
 })
 
 testthat::test_that("precomputed features are consumed without calling the feature factory during sweep", {

@@ -904,7 +904,7 @@ scope: sweep_memory_path
 Priority: P1
 Effort: L
 Dependencies: LDG-2403, LDG-2409
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -952,6 +952,44 @@ type: optimization
 surface: fast_context
 scope: b1_helper_reuse
 ```
+
+### Completion Notes
+
+- Made `use_fast_context` active in the shared fold path and enabled it for
+  both committed `ledgr_run()` execution and in-memory `ledgr_sweep()`
+  candidates.
+- Added a private fast-context state that is initialized once per candidate
+  fold. It reuses the pulse lookup environment, scalar/bar/position helper
+  closures, projection-backed `ctx$feature()` closure, and
+  `ctx$features()` feature-map closure.
+- Preserved a fresh public context list per pulse. B1 reuses private helper
+  closure state; it does not reuse the public `ctx` object across pulses.
+- Preserved `ctx$feature_table` and fresh `ctx$features_wide` materialization
+  semantics. Long-form feature-table and wide-view allocation remain visible
+  residual costs for B2 / LDG-2414.
+- Removed the dead committed-run `features_proxy` allocation that was left over
+  from the old fast-context scaffold and was not consumed by the fold.
+- Extended the direct fold parity test to compare legacy table mode,
+  projection mode, and fast-context projection mode, including event streams,
+  scalar feature values, `ctx$feature_table`, `ctx$features_wide`, and helper
+  closure reuse across pulses.
+- Checkpoint measurement against the LDG-2409 checkpoint:
+  - reference `sweep_plain`: 47.835s -> 43.245s median;
+  - reference `sweep_precomputed`: 43.235s -> 43.140s median;
+  - persistent `sweep_plain`: 4.255s -> 3.980s median;
+  - persistent `run_loop`: 10.420s -> 10.255s median.
+- Checkpoint profile: `ledgr_update_pulse_context_helpers` and
+  `ledgr_attach_feature_helpers` are replaced by
+  `ledgr_update_fast_pulse_context_helpers` at 22.2% total sample share;
+  `data.frame`, `as.data.frame`, and `ledgr_projection_features_wide` remain
+  the primary residual feature-context allocation frames.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-sweep.R')`
+  - `testthat::test_file('tests/testthat/test-pulse-context-accessors.R')`
+  - `testthat::test_file('tests/testthat/test-backtest-wrapper.R')`
+  - `testthat::test_file('tests/testthat/test-sweep-parity.R')`
+  - `testthat::test_file('tests/testthat/test-experiment-run.R')`
+  - `testthat::test_file('tests/testthat/test-precompute-features.R')`
 
 ---
 

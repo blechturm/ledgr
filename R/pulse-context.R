@@ -239,12 +239,61 @@ ledgr_update_pulse_context_helpers <- function(ctx,
   ctx
 }
 
-ledgr_ensure_pulse_context_accessors <- function(ctx) {
-  lookup <- ctx$.pulse_lookup
-  if (!is.environment(lookup)) {
-    lookup <- new.env(parent = emptyenv())
+ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = NULL) {
+  lookup <- new.env(parent = emptyenv())
+  feature_state <- new.env(parent = emptyenv())
+  feature_state$pulse_idx <- 1L
+  helpers <- ledgr_pulse_context_helper_bundle(lookup)
+  out <- list(
+    lookup = lookup,
+    feature_state = feature_state,
+    helpers = helpers,
+    projection = projection,
+    feature_ids = feature_ids
+  )
+  if (!is.null(projection)) {
+    out$feature <- ledgr_projection_feature_accessor_state(projection, feature_state, feature_ids = feature_ids)
+    out$features <- ledgr_projection_feature_bundle_accessor_state(
+      projection,
+      feature_state,
+      universe = universe,
+      feature_ids = feature_ids
+    )
+  }
+  out
+}
+
+ledgr_update_fast_pulse_context_helpers <- function(ctx,
+                                                    fast_context,
+                                                    bars = ctx$bars,
+                                                    features = if (is.data.frame(ctx$feature_table)) ctx$feature_table else data.frame(),
+                                                    positions = ctx$positions,
+                                                    universe = ctx$universe,
+                                                    pulse_idx = NULL) {
+  for (name in names(fast_context$helpers)) {
+    ctx[[name]] <- fast_context$helpers[[name]]
   }
 
+  projection <- fast_context$projection
+  if (!is.null(projection)) {
+    fast_context$feature_state$pulse_idx <- as.integer(pulse_idx)
+    ctx$feature_table <- features
+    ctx$features_wide <- ledgr_projection_features_wide(
+      projection,
+      pulse_idx,
+      feature_ids = fast_context$feature_ids
+    )
+    ctx$feature <- fast_context$feature
+    ctx$features <- fast_context$features
+  } else {
+    ctx <- ledgr_attach_feature_helpers(ctx, features, universe = universe)
+  }
+
+  ledgr_refresh_pulse_context_lookup(ctx, bars = bars, positions = positions, universe = universe)
+  ctx
+}
+
+ledgr_pulse_context_helper_bundle <- function(lookup) {
   bar <- function(id) ledgr_pulse_context_bar(lookup, id)
   open <- function(id) ledgr_pulse_context_scalar(lookup, id, "open")
   high <- function(id) ledgr_pulse_context_scalar(lookup, id, "high")
@@ -267,34 +316,39 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
     )
   }
 
+  list(
+    .pulse_lookup = lookup,
+    bar = bar,
+    open = open,
+    high = high,
+    low = low,
+    close = close,
+    volume = volume,
+    position = position,
+    flat = flat,
+    hold = hold,
+    targets = targets,
+    current_targets = current_targets
+  )
+}
+
+ledgr_ensure_pulse_context_accessors <- function(ctx) {
+  lookup <- ctx$.pulse_lookup
+  if (!is.environment(lookup)) {
+    lookup <- new.env(parent = emptyenv())
+  }
+  helpers <- ledgr_pulse_context_helper_bundle(lookup)
+
   if (is.environment(ctx)) {
-    ctx$.pulse_lookup <- lookup
-    ctx$bar <- bar
-    ctx$open <- open
-    ctx$high <- high
-    ctx$low <- low
-    ctx$close <- close
-    ctx$volume <- volume
-    ctx$position <- position
-    ctx$flat <- flat
-    ctx$hold <- hold
-    ctx$targets <- targets
-    ctx$current_targets <- current_targets
+    for (name in names(helpers)) {
+      ctx[[name]] <- helpers[[name]]
+    }
     return(ctx)
   }
 
-  ctx$.pulse_lookup <- lookup
-  ctx$bar <- bar
-  ctx$open <- open
-  ctx$high <- high
-  ctx$low <- low
-  ctx$close <- close
-  ctx$volume <- volume
-  ctx$position <- position
-  ctx$flat <- flat
-  ctx$hold <- hold
-  ctx$targets <- targets
-  ctx$current_targets <- current_targets
+  for (name in names(helpers)) {
+    ctx[[name]] <- helpers[[name]]
+  }
   ctx
 }
 
