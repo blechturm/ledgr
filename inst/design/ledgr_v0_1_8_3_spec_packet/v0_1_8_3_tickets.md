@@ -68,7 +68,7 @@ LDG-2411 Release Gate depends on LDG-2401 through LDG-2410.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: In Review
+Status: Done
 
 ### Description
 
@@ -120,6 +120,25 @@ type: governance
 surface: design_packet
 scope: v0.1.8.3
 ```
+
+### Completion Notes
+
+- Updated `v0_1_8_3_spec.md` so the v0.1.8.2 auditr input is routed rather
+  than pending, with explicit decisions for `do.call()` indirection,
+  `attr(ctx, ...) <- ...` mutation, captured mutable environments,
+  `ledgr_snapshot_seal()` return shape, and `ledgr_sweep_summary()` deferral.
+- Cut the v0.1.8.3 ticket packet with `LDG-2401` through `LDG-2411` in
+  `v0_1_8_3_tickets.md` and synchronized machine-readable metadata in
+  `tickets.yml`.
+- Updated `inst/design/README.md`, `inst/design/ledgr_roadmap.md`, and
+  `AGENTS.md` so v0.1.8.3 is the active implementation packet and v0.1.8.2 is
+  treated as archival release record.
+- Confirmed accepted auditr findings route into preflight hardening, docs and
+  message polish, explicit deferrals, or auditr-repo task drift rather than new
+  v0.1.8.3 API scope.
+- Verified ticket IDs match between `v0_1_8_3_tickets.md` and `tickets.yml`;
+  `git diff --check` reported no whitespace errors beyond local Git ignore
+  permission warnings.
 
 ---
 

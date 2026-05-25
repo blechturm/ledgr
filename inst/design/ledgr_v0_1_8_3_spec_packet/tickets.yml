@@ -4,7 +4,7 @@ generated_from: "v0_1_8_3_spec.md"
 tickets:
   - id: "LDG-2401"
     title: "Scope Routing, Packet Setup, And Auditr Decisions"
-    status: "in_review"
+    status: "done"
     priority: "P0"
     effort: "S"
     dependencies: []
