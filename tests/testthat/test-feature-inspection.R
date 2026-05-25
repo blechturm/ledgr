@@ -244,7 +244,7 @@ testthat::test_that("feature inspection views match across execution modes", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   features <- ledgr_feature_map(ret = ledgr_ind_returns(2), sma = ledgr_ind_sma(3))
-  observed <- list()
+  observed <- new.env(parent = emptyenv())
   strategy <- function(ctx, params) {
     # Overwrite on each pulse and retain the terminal pulse for parity checks.
     long <- ledgr_pulse_features(ctx, features)
@@ -255,7 +255,7 @@ testthat::test_that("feature inspection views match across execution modes", {
     wide$ts_utc <- format(wide$ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
     long_all$ts_utc <- format(long_all$ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
     wide_all$ts_utc <- format(wide_all$ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    observed[[ctx$run_id]] <<- list(
+    observed[[ctx$run_id]] <- list(
       long = long,
       wide = wide,
       long_all = long_all,

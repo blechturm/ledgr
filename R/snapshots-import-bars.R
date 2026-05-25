@@ -110,13 +110,25 @@ ledgr_snapshot_import_bars_csv <- function(con,
     bad_high <- which(high < max_ohlc)
     bad_low <- which(low > min_ohlc)
     if (length(bad_high) > 0 || length(bad_low) > 0) {
-      rlang::abort("bars CSV contains an OHLC violation (high/low bounds).", class = "LEDGR_CSV_FORMAT_ERROR")
+      rlang::abort(
+        paste(
+          "bars CSV contains an OHLC violation (high/low bounds).",
+          ledgr_csv_snapshot_failure_hint()
+        ),
+        class = "LEDGR_CSV_FORMAT_ERROR"
+      )
     }
 
     # Duplicate (instrument_id, ts_utc) within CSV.
     key <- paste0(instrument_id, "\n", format(ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
     if (anyDuplicated(key)) {
-      rlang::abort("bars CSV contains duplicate (instrument_id, ts_utc) rows.", class = "LEDGR_CSV_FORMAT_ERROR")
+      rlang::abort(
+        paste(
+          "bars CSV contains duplicate (instrument_id, ts_utc) rows.",
+          ledgr_csv_snapshot_failure_hint()
+        ),
+        class = "LEDGR_CSV_FORMAT_ERROR"
+      )
     }
   }
 

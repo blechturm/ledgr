@@ -48,6 +48,14 @@ evaluate the locked params on a held-out test snapshot with \code{\link[=ledgr_p
 or \code{\link[=ledgr_run]{ledgr_run()}}. Same-snapshot promotion is useful for audit and replay, but
 remains in-sample.
 
+Sweep candidate metrics use the experiment's metric context. The returned
+table has exactly one sweep-level metric context, available with
+\code{ledgr_metric_context(results)}, and promotion context records that source
+sweep context separately from the committed run's own metric context.
+Candidate warnings, including \code{LEDGR_LAST_BAR_NO_FILL}, are row-level
+diagnostics. Inspect them before promotion; committed runs expose their own
+result tables and promotion context.
+
 Failed candidates are retained as rows when \code{stop_on_error = FALSE}. Contract
 errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
 strategy preflight failures still abort. Failed rows can be inspected with

@@ -4,15 +4,24 @@
 \alias{summary.ledgr_backtest}
 \title{Summarize a backtest result}
 \usage{
-\method{summary}{ledgr_backtest}(object, metrics = "standard", risk_free_rate = 0, ...)
+\method{summary}{ledgr_backtest}(
+  object,
+  metrics = "standard",
+  metric_context = NULL,
+  risk_free_rate = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{ledgr_backtest} object.}
 
-\item{metrics}{Only \code{"standard"} is supported in v0.1.7.}
+\item{metrics}{Only \code{"standard"} is supported.}
 
-\item{risk_free_rate}{Scalar annual risk-free rate as a decimal. The default
-is \code{0}.}
+\item{metric_context}{Optional metric context override for this summary.
+When omitted, ledgr uses the metric context stored with the run.}
+
+\item{risk_free_rate}{Optional scalar annual risk-free-rate override as a
+decimal. Supply either \code{metric_context} or \code{risk_free_rate}, not both.}
 
 \item{...}{Unused.}
 }
@@ -30,15 +39,14 @@ The standard summary displays:
 \item total return: last public equity row divided by the first public equity
 row minus 1;
 \item annualized return: geometric annualized return from the first and last
-public equity rows using the detected bar frequency;
+public equity rows using the metric context's annualization calendar;
 \item max drawdown: maximum peak-to-trough decline,
 \code{min(equity / cummax(equity) - 1)};
 \item annualized volatility: standard deviation of adjacent equity-row returns
 multiplied by \code{sqrt(bars_per_year)};
 \item Sharpe ratio: annualized ratio of average period excess return to
-excess-return standard deviation, using the scalar annual \code{risk_free_rate}
-converted to a per-period return with the inferred bar cadence. The
-default risk-free rate is \code{0};
+excess-return standard deviation, using the metric context's scalar annual
+risk-free rate converted to a per-period return;
 \item total trades: number of closed trade rows, not number of fill rows;
 \item win rate: share of closed trade rows with strict \code{realized_pnl > 0};
 \item average trade: mean \code{realized_pnl} across closed trade rows;

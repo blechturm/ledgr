@@ -5,6 +5,8 @@
 #'
 #' @param config A config list (or JSON string) matching the v0.1.0 config contract.
 #' @param run_id Optional run identifier to resume or reuse.
+#' @param metric_context Optional metric-context metadata. Public users should
+#'   normally supply this through `ledgr_experiment()`.
 #' @return A list with `run_id` and `db_path`.
 #' @details
 #' This is a low-level internal runner. Most users should call
@@ -18,12 +20,12 @@
 #'   result <- ledgr_backtest_run(config, run_id = "manual-run")
 #' }
 #' @export
-ledgr_backtest_run <- function(config, run_id = NULL) {
+ledgr_backtest_run <- function(config, run_id = NULL, metric_context = NULL) {
   control <- list()
   if (is.list(config) && is.list(config$engine) && is.list(config$engine$control)) {
     control <- config$engine$control
   }
-  ledgr_backtest_run_internal(config = config, run_id = run_id, control = control)
+  ledgr_backtest_run_internal(config = config, run_id = run_id, control = control, metric_context = metric_context)
 }
 
 .ledgr_telemetry_registry <- new.env(parent = emptyenv())
@@ -505,11 +507,11 @@ ledgr_write_opening_position_events <- function(con,
   as.integer(event_seq_start) + as.integer(nrow(rows))
 }
 
-ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list()) {
-  ledgr_run_fold(config = config, run_id = run_id, control = control)
+ledgr_backtest_run_internal <- function(config, run_id = NULL, control = list(), metric_context = NULL) {
+  ledgr_run_fold(config = config, run_id = run_id, control = control, metric_context = metric_context)
 }
 
-ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
+ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_context = NULL) {
   validate_ledgr_config(config)
 
   cfg <- if (is.character(config)) {
@@ -599,10 +601,12 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
   }
 
   engine_version <- as.character(utils::packageVersion("ledgr"))
+  metric_context <- ledgr_metric_context_resolve(metric_context)
+  metric_context_storage <- ledgr_metric_context_storage(metric_context)
 
   run_row <- DBI::dbGetQuery(
     con,
-    "SELECT run_id, status, config_hash, data_hash, snapshot_id FROM runs WHERE run_id = ?",
+    "SELECT run_id, status, config_hash, data_hash, snapshot_id, metric_context_hash FROM runs WHERE run_id = ?",
     params = list(run_id)
   )
   if (nrow(run_row) > 0) {
@@ -635,9 +639,12 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
         config_hash,
         data_hash,
         snapshot_id,
+        metric_context_json,
+        metric_context_hash,
+        metric_context_version,
         status,
         error_msg
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ",
       params = list(
         run_id,
@@ -647,6 +654,9 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
         cfg_hash,
         NA_character_,
         run_snapshot_id,
+        metric_context_storage$json,
+        metric_context_storage$hash,
+        metric_context_storage$version,
         "CREATED",
         NA_character_
       )
@@ -668,6 +678,14 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list()) {
       rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
     }
     stored_snapshot_id <- run_row$snapshot_id[[1]]
+    stored_metric_context_hash <- run_row$metric_context_hash[[1]]
+    # Metric context is not execution identity, but a resume call that supplies a
+    # conflicting context is ambiguous. Fail loudly rather than silently ignoring it.
+    if (is.character(stored_metric_context_hash) && length(stored_metric_context_hash) == 1L &&
+      !is.na(stored_metric_context_hash) && nzchar(stored_metric_context_hash) &&
+      !identical(stored_metric_context_hash, metric_context_storage$hash)) {
+      rlang::abort("Refusing to resume: metric_context_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
+    }
     if (!is.null(snapshot_id)) {
       if (!is.character(stored_snapshot_id) || length(stored_snapshot_id) != 1 || is.na(stored_snapshot_id) || !nzchar(stored_snapshot_id)) {
         rlang::abort("Refusing to resume: stored run has no snapshot_id.", class = "ledgr_run_hash_mismatch")

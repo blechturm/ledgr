@@ -3,6 +3,14 @@
 # ledgr_assert_indicator_fn_pure() and ledgr_assert_indicator_safe() keep their
 # indicator-prefixed names for compatibility; rename only via a later determinism-API ticket.
 
+ledgr_determinism_forbidden_calls <- function(allow_rng = FALSE) {
+  forbidden <- c("Sys.time", "Sys.Date", "date", "runif", "rnorm", "sample", "get", "eval", "assign", "Sys.getenv")
+  if (isTRUE(allow_rng)) {
+    forbidden <- setdiff(forbidden, ledgr_strategy_ambient_rng_functions())
+  }
+  forbidden
+}
+
 ledgr_assert_indicator_fn_pure <- function(fn) {
   fn_body <- paste(deparse(fn), collapse = "\n")
   if (grepl("<<-", fn_body, fixed = TRUE)) {
@@ -15,7 +23,7 @@ ledgr_assert_indicator_fn_pure <- function(fn) {
 }
 
 ledgr_assert_indicator_safe <- function(fn) {
-  forbidden <- c("Sys.time", "Sys.Date", "date", "runif", "rnorm", "sample", "get", "eval", "assign", "Sys.getenv")
+  forbidden <- ledgr_determinism_forbidden_calls()
   symbols <- all.names(body(fn), functions = TRUE, unique = TRUE)
   if (any(symbols %in% forbidden)) {
     rlang::abort("Indicator function uses non-deterministic calls.", class = "ledgr_purity_violation")
@@ -70,7 +78,7 @@ ledgr_stable_payload <- function(x, path = "`value`") {
     return(ledgr_static_function_signature(x))
   }
   if (is.symbol(x) || is.language(x) || is.expression(x)) {
-    forbidden <- c("Sys.time", "Sys.Date", "date", "runif", "rnorm", "sample", "get", "eval", "assign", "Sys.getenv")
+    forbidden <- ledgr_determinism_forbidden_calls()
     symbols <- all.names(x, functions = TRUE, unique = TRUE)
     if (any(symbols %in% forbidden)) {
       rlang::abort(
@@ -114,10 +122,7 @@ ledgr_function_fingerprint <- function(fn, include_captures = FALSE, label = "`f
   }
 
   body_symbols <- all.names(body(fn), functions = TRUE, unique = TRUE)
-  forbidden <- c("Sys.time", "Sys.Date", "date", "runif", "rnorm", "sample", "get", "eval", "assign", "Sys.getenv")
-  if (isTRUE(allow_rng)) {
-    forbidden <- setdiff(forbidden, ledgr_strategy_ambient_rng_functions())
-  }
+  forbidden <- ledgr_determinism_forbidden_calls(allow_rng = allow_rng)
   if (any(body_symbols %in% forbidden)) {
     rlang::abort(
       sprintf("%s uses non-deterministic calls and cannot be fingerprinted safely.", label),

@@ -116,7 +116,7 @@ crossover_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(crossover_features)
-#> # A tibble: 2 × 5
+#> # A tibble: 2 x 5
 #>   alias    feature_id source requires_bars stable_after
 #>   <chr>    <chr>      <chr>          <int>        <int>
 #> 1 sma_fast sma_10     ledgr             10           10
@@ -171,7 +171,7 @@ filled.
 
 ``` r
 ledgr_pulse_features(pulse, features)
-#> # A tibble: 4 × 5
+#> # A tibble: 4 x 5
 #>   ts_utc              instrument_id feature_id feature_value alias
 #>   <dttm>              <chr>         <chr>              <dbl> <chr>
 #> 1 2019-03-01 00:00:00 DEMO_01       return_5         0.0853  ret_5
@@ -189,11 +189,11 @@ aliases.
 
 ``` r
 ledgr_pulse_wide(pulse, features)
-#> # A tibble: 1 × 17
+#> # A tibble: 1 x 17
 #>   ts_utc                cash equity DEMO_01__ohlcv_open DEMO_01__ohlcv_high
 #>   <dttm>               <dbl>  <dbl>               <dbl>               <dbl>
 #> 1 2019-03-01 00:00:00 100000 100000                103.                107.
-#> # ℹ 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
+#> # i 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
 #> #   DEMO_01__ohlcv_volume <dbl>, DEMO_01__feature_return_5 <dbl>,
 #> #   DEMO_01__feature_sma_10 <dbl>, DEMO_02__ohlcv_open <dbl>, DEMO_02__ohlcv_high <dbl>,
 #> #   DEMO_02__ohlcv_low <dbl>, DEMO_02__ohlcv_close <dbl>, DEMO_02__ohlcv_volume <dbl>,
@@ -303,7 +303,7 @@ bt <- exp |>
 #> should be fillable.
 
 ledgr_results(bt, what = "fills")
-#> # A tibble: 39 × 9
+#> # A tibble: 39 x 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
 #>  1         1 2019-01-23 DEMO_01       BUY      10  88.0     0         0    OPEN
@@ -316,7 +316,7 @@ ledgr_results(bt, what = "fills")
 #>  8         8 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
 #>  9         9 2019-03-11 DEMO_01       SELL     10 106.      0       123.   CLOSE
 #> 10        10 2019-03-11 DEMO_02       SELL     10  68.0     0        -9.18 CLOSE
-#> # ℹ 29 more rows
+#> # i 29 more rows
 
 close(pulse)
 close(bt)
@@ -333,7 +333,7 @@ known feature may still be `NA`.
 
 ``` r
 ledgr_feature_contracts(features)
-#> # A tibble: 2 × 5
+#> # A tibble: 2 x 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 ret_5  return_5   ledgr              6            6
@@ -346,7 +346,7 @@ the contract table. For an unnamed list, `alias` is `NA`.
 ``` r
 plain_features <- list(ledgr_ind_returns(5), ledgr_ind_sma(10))
 ledgr_feature_contracts(plain_features)
-#> # A tibble: 2 × 5
+#> # A tibble: 2 x 5
 #>   alias feature_id source requires_bars stable_after
 #>   <chr> <chr>      <chr>          <int>        <int>
 #> 1 <NA>  return_5   ledgr              6            6
@@ -420,6 +420,15 @@ The factory is evaluated with each candidate's `params`. The resolved
 feature IDs, feature fingerprints, and candidate feature-set hash are
 then part of the sweep row provenance.
 
+If the factory returns a plain list, strategies read the resulting
+values by exact feature ID, for example with
+`ctx$feature(id, ledgr_feature_id(...))` or a built-in ID such as
+`sma_20`. A factory that returns `ledgr_feature_map()` can materialize
+aliases for the engine, but calling that external factory from inside
+the strategy is not Tier 1 or Tier 2 under current preflight rules. Use
+feature-map aliases for static maps; use exact IDs for parameterized
+sweep lookups until ledgr has a first-class active-alias API.
+
 ## TTR-Backed Indicators
 
 `ledgr_ind_ttr()` is the adapter for supported indicators from the
@@ -465,7 +474,7 @@ ttr_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(ttr_features)
-#> # A tibble: 5 × 5
+#> # A tibble: 5 x 5
 #>   alias       feature_id                    source requires_bars stable_after
 #>   <chr>       <chr>                         <chr>          <int>        <int>
 #> 1 ret_5       return_5                      ledgr              6            6
@@ -498,7 +507,7 @@ native_rsi_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(native_rsi_features)
-#> # A tibble: 1 × 5
+#> # A tibble: 1 x 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 rsi_14 rsi_14     ledgr             15           15
@@ -552,7 +561,7 @@ rsi_bt <- ledgr_run(
 )
 
 ledgr_results(rsi_bt, what = "fills")
-#> # A tibble: 10 × 9
+#> # A tibble: 10 x 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
 #>  1         1 2019-01-22 DEMO_01       BUY      10  87.2     0        0     OPEN
@@ -582,7 +591,7 @@ ledgr_feature_contracts(ledgr_feature_map(
   bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
   bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
 ))
-#> # A tibble: 4 × 5
+#> # A tibble: 4 x 5
 #>   alias   feature_id         source requires_bars stable_after
 #>   <chr>   <chr>              <chr>          <int>        <int>
 #> 1 bb_dn   ttr_bbands_20_dn   TTR               20           20
@@ -598,12 +607,18 @@ For `BBands`, that produces `bbands_dn`, `bbands_mavg`, `bbands_up`, and
 experiment sees ordinary single-output indicators after feature
 declaration is materialized.
 
+Those bundle IDs are shorter than the hand-written single-output TTR IDs
+such as `ttr_bbands_20_up`. That asymmetry is intentional: bundle
+defaults optimize for readable output names. Use
+`naming = c(up = "ttr_bbands_20_up")` or hand-written
+`ledgr_ind_ttr(output = ...)` calls when you need exact legacy IDs.
+
 ``` r
 bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
 ledgr_feature_id(bbands_bundle)
 #> [1] "bbands_dn"   "bbands_mavg" "bbands_up"   "bbands_pctb"
 ledgr_feature_contracts(bbands_bundle)
-#> # A tibble: 4 × 5
+#> # A tibble: 4 x 5
 #>   alias feature_id  source requires_bars stable_after
 #>   <chr> <chr>       <chr>          <int>        <int>
 #> 1 <NA>  bbands_dn   TTR               20           20
@@ -633,6 +648,21 @@ ledgr_feature_id(bbands_subset)
 #> [1] "bb_dn" "bb_up"
 ```
 
+`naming` renames selected outputs; it is not itself an output filter.
+When renaming only part of a bundle, make the filter explicit:
+
+``` r
+bbands_named_subset <- ledgr_ind_ttr_outputs(
+  "BBands",
+  input = "close",
+  outputs = c("dn", "up"),
+  naming = c(dn = "lower_band", up = "upper_band"),
+  n = 20
+)
+ledgr_feature_id(bbands_named_subset)
+#> [1] "lower_band" "upper_band"
+```
+
 Set `prefix = NULL` only when you explicitly want raw normalized output
 names such as `dn`, `up`, or `pctb`. Raw names are short and can collide
 when one experiment combines several bundles or parameterizations.
@@ -648,7 +678,7 @@ TTR warmup inference is inspectable:
 ``` r
 ledgr_ttr_warmup_rules() |>
   select(ttr_fn, input, formula)
-#> # A tibble: 18 × 3
+#> # A tibble: 18 x 3
 #>    ttr_fn          input formula
 #>    <chr>           <chr> <chr>
 #>  1 RSI             close n + 1
@@ -718,14 +748,14 @@ warmup_check_snapshot <- ledgr_snapshot_from_df(
 )
 
 ledgr_feature_contract_check(warmup_check_snapshot, features)
-#> # A tibble: 4 × 8
+#> # A tibble: 4 x 8
 #>   alias  instrument_id feature_id source requires_bars stable_after available_bars
 #>   <chr>  <chr>         <chr>      <chr>          <int>        <int>          <int>
 #> 1 ret_5  DEMO_01       return_5   ledgr              6            6            129
 #> 2 sma_10 DEMO_01       sma_10     ledgr             10           10            129
 #> 3 ret_5  DEMO_02       return_5   ledgr              6            6             19
 #> 4 sma_10 DEMO_02       sma_10     ledgr             10           10             19
-#> # ℹ 1 more variable: warmup_achievable <lgl>
+#> # i 1 more variable: warmup_achievable <lgl>
 
 ledgr_snapshot_close(warmup_check_snapshot)
 ```

@@ -66,6 +66,10 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
     class = "ledgr_invalid_args"
   )
   testthat::expect_error(as_tibble(bt, "unknown"))
+  feature_err <- rlang::catch_cnd(ledgr_results(bt, what = "features"))
+  testthat::expect_s3_class(feature_err, "ledgr_invalid_result_table")
+  testthat::expect_match(conditionMessage(feature_err), "ledgr_pulse_snapshot", fixed = TRUE)
+  testthat::expect_match(conditionMessage(feature_err), "ledgr_pulse_features", fixed = TRUE)
   testthat::expect_error(ledgr:::summary.ledgr_backtest(list()), class = "ledgr_invalid_backtest")
 
   testthat::expect_error(close(bt), NA)

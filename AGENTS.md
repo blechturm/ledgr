@@ -29,14 +29,22 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.1 release; update this block when the
-next spec packet is cut):
+Current planning context (v0.1.8.2 release gate closeout; update this block
+when the release closes or the next packet is cut):
 
-- The completed v0.1.8.1 packet is an archival release record, not active
-  implementation scope.
-- Next planned implementation scope is v0.1.8.2 metric context and indicator
-  codebase Phase 2 cleanup. No v0.1.8.2 spec packet has been cut yet.
-- Do not implement new v0.1.8.2 work until the spec packet and tickets exist.
+- The completed v0.1.8.1 packet is an archival release record.
+- The v0.1.8.2 packet is the active release-closeout packet:
+  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_spec.md`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/ledgr_triage_report.md`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/categorized_feedback.yml`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/cycle_retrospective.md`,
+  `inst/design/ledgr_v0_1_8_2_spec_packet/v0_1_8_2_tickets.md`, and
+  `inst/design/ledgr_v0_1_8_2_spec_packet/tickets.yml`.
+- Runtime implementation tickets LDG-2303 through LDG-2312 are complete.
+  LDG-2313 is release verification and metadata closeout only.
+- Do not add new v0.1.8.2 runtime scope. Future implementation follows the
+  roadmap and a future packet, starting with v0.1.8.3 single-core sweep
+  optimization unless the maintainer cuts a different packet.
 
 ## Active Design Entry Points
 
@@ -50,7 +58,8 @@ packets are records, not authorization for new work.
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
 | Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
 | Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |
-| v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_response.md` (RFC under review) |
+| Active parameterized feature aliases | `inst/design/rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` (accepted for v0.1.8.4) |
+| v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
 
 ## Local Verification
 

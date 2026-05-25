@@ -41,6 +41,10 @@ ledgr_read_csv_strict <- function(path, encoding = "UTF-8", strict = TRUE) {
   df
 }
 
+ledgr_csv_snapshot_failure_hint <- function() {
+  "Snapshot creation/import failed before a usable snapshot artifact was created; fix the CSV and rerun snapshot creation."
+}
+
 ledgr_csv_require_columns <- function(df, required, label = "CSV") {
   if (!is.data.frame(df)) {
     rlang::abort("Internal error: expected a data.frame.", class = "ledgr_internal_error")
@@ -49,7 +53,10 @@ ledgr_csv_require_columns <- function(df, required, label = "CSV") {
   missing <- setdiff(required, names(df))
   if (length(missing) > 0) {
     rlang::abort(
-      sprintf("%s is missing required columns: %s", label, paste(missing, collapse = ", ")),
+      paste(
+        sprintf("%s is missing required columns: %s.", label, paste(missing, collapse = ", ")),
+        ledgr_csv_snapshot_failure_hint()
+      ),
       class = "LEDGR_CSV_FORMAT_ERROR"
     )
   }
@@ -59,16 +66,28 @@ ledgr_csv_require_columns <- function(df, required, label = "CSV") {
 ledgr_csv_parse_ts_utc <- function(x, label) {
   if (!is.character(x)) x <- as.character(x)
   if (anyNA(x) || any(!nzchar(x))) {
-    rlang::abort(sprintf("%s must be non-empty ISO8601 UTC strings.", label), class = "LEDGR_CSV_FORMAT_ERROR")
+    rlang::abort(
+      paste(sprintf("%s must be non-empty ISO8601 UTC strings.", label), ledgr_csv_snapshot_failure_hint()),
+      class = "LEDGR_CSV_FORMAT_ERROR"
+    )
   }
   iso <- "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
   bad <- which(!grepl(iso, x))
   if (length(bad) > 0) {
-    rlang::abort(sprintf("%s must be ISO8601 UTC with trailing Z (e.g. 2020-01-01T00:00:00Z).", label), class = "LEDGR_CSV_FORMAT_ERROR")
+    rlang::abort(
+      paste(
+        sprintf("%s must be ISO8601 UTC with trailing Z (e.g. 2020-01-01T00:00:00Z).", label),
+        ledgr_csv_snapshot_failure_hint()
+      ),
+      class = "LEDGR_CSV_FORMAT_ERROR"
+    )
   }
   parsed <- as.POSIXct(x, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
   if (anyNA(parsed)) {
-    rlang::abort(sprintf("%s contains unparseable timestamps.", label), class = "LEDGR_CSV_FORMAT_ERROR")
+    rlang::abort(
+      paste(sprintf("%s contains unparseable timestamps.", label), ledgr_csv_snapshot_failure_hint()),
+      class = "LEDGR_CSV_FORMAT_ERROR"
+    )
   }
   parsed
 }
@@ -122,4 +141,3 @@ ledgr_snapshot_require_created <- function(con, snapshot_id) {
 
   invisible(TRUE)
 }
-

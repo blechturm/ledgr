@@ -19,7 +19,8 @@ Read promotion context from an experiment store
 }
 \details{
 Reads the same compact promotion context as \code{\link[=ledgr_promotion_context]{ledgr_promotion_context()}} from
-the experiment store without executing strategy code.
+the experiment store without executing strategy code. Source sweep metric
+context and committed run metric context remain separate.
 }
 \section{Articles}{
 

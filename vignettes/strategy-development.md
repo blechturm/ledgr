@@ -559,7 +559,10 @@ bt_mapped <- mapped_exp |>
     params = list(min_return = 0, qty = 5),
     run_id = "mapped_return"
   )
-#> Warning: LEDGR_LAST_BAR_NO_FILL
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
 summary(bt_mapped)
 #> ledgr Backtest Summary
@@ -571,6 +574,8 @@ summary(bt_mapped)
 #>   Max Drawdown:        -0.36%
 #>
 #> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
 #>   Volatility (annual): 0.82%
 #>   Sharpe Ratio:        1.523
 #>
@@ -598,6 +603,80 @@ construction remains part of your research code. Keep the feature-map
 construction code with the research record when you need to rerun the
 strategy later.
 
+## Sweeping Indicator Parameters
+
+When a sweep changes an indicator parameter, ledgr materializes a
+concrete feature set for each candidate before execution. Current
+strategy code has two safe bridge patterns.
+
+For built-in indicators, exact-ID lookup from `params` is the clearest
+Tier 1 pattern:
+
+``` r
+strategy <- function(ctx, params) {
+  fast_id <- ledgr_feature_id(ledgr_ind_sma(params$fast_n))
+  slow_id <- ledgr_feature_id(ledgr_ind_sma(params$slow_n))
+
+  fast <- ctx$feature("AAA", fast_id)
+  slow <- ctx$feature("AAA", slow_id)
+
+  targets <- ctx$flat()
+  if (!is.na(fast) && !is.na(slow) && fast > slow) {
+    targets["AAA"] <- params$qty
+  }
+  targets
+}
+```
+
+That keeps the strategy self-contained: it uses `ctx`, `params`, and
+exported ledgr helpers. Hand-built strings such as
+`paste0("sma_", params$fast_n)` also work for built-ins whose ID
+convention is public, but `ledgr_feature_id()` keeps the lookup tied to
+the constructor.
+
+Static feature maps remain the recommended shape when aliases do not
+vary by candidate:
+
+``` r
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(20),
+  slow = ledgr_ind_sma(50)
+)
+
+strategy <- function(ctx, params) {
+  x <- ctx$features("AAA", features)
+  ctx$flat()
+}
+```
+
+Do not call an external feature factory from inside a strategy:
+
+``` r
+features <- function(params) {
+  ledgr_feature_map(
+    fast = ledgr_ind_sma(params$fast_n),
+    slow = ledgr_ind_sma(params$slow_n)
+  )
+}
+
+strategy <- function(ctx, params) {
+  x <- ctx$features("AAA", features(params))
+  ctx$flat()
+}
+```
+
+That code reads well, but `features` is a user helper function
+referenced from the strategy body. Under the current preflight contract,
+external feature factory functions inside strategies are Tier 3 and
+`ledgr_run()` rejects them before execution. Duplicating the
+parameterized feature map inside the strategy is mechanically valid, but
+it creates a drift risk between the experiment’s feature declaration and
+the strategy lookup map.
+
+The long-term UX gap is tracked in the active parameterized feature
+aliases RFC. Until that API exists, use exact feature IDs for
+parameterized sweeps and use feature-map aliases for static maps.
+
 ## Run One Backtest
 
 ``` r
@@ -617,6 +696,8 @@ summary(bt_top_1)
 #>   Max Drawdown:        -1.12%
 #>
 #> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
 #>   Volatility (annual): 2.02%
 #>   Sharpe Ratio:        0.450
 #>
@@ -669,6 +750,32 @@ The trade table only includes closed round trips. Small one-share rows
 appear when integer sizing and price movement leave a tiny adjustment
 after a previous target. Larger rows are the ordinary position exits.
 `realized_pnl` is the profit or loss booked when that position closes.
+
+If a run has zero trades, inspect fills before assuming nothing
+happened:
+
+``` r
+ledgr_results(bt_top_1, what = "fills")
+#> # A tibble: 50 x 9
+#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
+#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
+#>  1         1 2019-01-09 DEMO_02       BUY      13  74.6     0         0    OPEN
+#>  2         2 2019-01-14 DEMO_01       BUY      11  87.9     0         0    OPEN
+#>  3         3 2019-01-14 DEMO_02       SELL     13  72.8     0       -22.5  CLOSE
+#>  4         4 2019-01-18 DEMO_01       SELL     11  86.2     0       -19.0  CLOSE
+#>  5         5 2019-01-18 DEMO_02       BUY      13  72.6     0         0    OPEN
+#>  6         6 2019-01-21 DEMO_01       BUY      11  87.4     0         0    OPEN
+#>  7         7 2019-01-21 DEMO_02       SELL     13  70.2     0       -31.5  CLOSE
+#>  8         8 2019-01-25 DEMO_01       SELL      1  90.7     0         3.37 CLOSE
+#>  9         9 2019-02-08 DEMO_01       SELL     10  92.6     0        52.8  CLOSE
+#> 10        10 2019-02-08 DEMO_02       BUY      14  67.2     0         0    OPEN
+#> # i 40 more rows
+```
+
+Zero fills means no execution occurred. Non-empty fills with zero trades
+means positions opened but did not close. `n_trades` counts closed round
+trips, while the fills table shows both opening and closing execution
+rows.
 
 ## Compare Parameter Variants
 
@@ -745,6 +852,40 @@ ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2", "flat_b
 The flat baseline has no win rate because it has no closed trades. That
 is not missing data; there are no wins or losses to count.
 
+For real Yahoo snapshots, keep benchmark strategies explicit rather than
+adding a hidden benchmark helper. These simple patterns are ordinary
+ledgr strategies:
+
+``` r
+flat_strategy <- function(ctx, params) {
+  ctx$flat()
+}
+
+buy_and_hold_strategy <- function(ctx, params) {
+  targets <- ctx$hold()
+  targets[params$instrument_id] <- params$qty
+  targets
+}
+
+equal_weight_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  capital <- ctx$equity() * params$equity_fraction / length(ctx$universe)
+  for (id in ctx$universe) {
+    targets[id] <- floor(capital / ctx$close(id))
+  }
+  targets
+}
+
+single_instrument_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  targets[params$instrument_id] <- params$qty
+  targets
+}
+```
+
+Use these as comparison baselines for a sealed real-data snapshot; they
+are not benchmark APIs and they do not download benchmark returns.
+
 ## Troubleshoot Helper Pipelines
 
 The helper pipeline is only an authoring layer:
@@ -790,6 +931,8 @@ weights
 target
 names(target)
 pulse$universe
+setdiff(pulse$universe, names(target))
+setdiff(names(target), pulse$universe)
 ```
 
 If `selection` inherits from `ledgr_empty_selection`, every signal value
@@ -800,6 +943,37 @@ every quantity is zero, check integer flooring, `equity_fraction`,
 current close prices, and whether an empty selection flowed through
 intentionally.
 
+If `setdiff(pulse$universe, names(target))` is non-empty, the strategy
+would fail target validation because it did not name every instrument.
+If `setdiff(names(target), pulse$universe)` is non-empty, it emitted
+targets for unknown instruments.
+
+Reusable file-level helper functions are Tier 3 unless the function can
+be represented as part of the strategy artifact. Inline small allocation
+logic or wrap it in an approved helper surface:
+
+``` r
+allocate_equal <- function(ctx, fraction) {
+  targets <- ctx$flat()
+  capital <- ctx$equity() * fraction / length(ctx$universe)
+  for (id in ctx$universe) targets[id] <- floor(capital / ctx$close(id))
+  targets
+}
+
+bad_strategy <- function(ctx, params) {
+  allocate_equal(ctx, params$equity_fraction)
+}
+
+ledgr_strategy_preflight(bad_strategy)
+
+self_contained_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  capital <- ctx$equity() * params$equity_fraction / length(ctx$universe)
+  for (id in ctx$universe) targets[id] <- floor(capital / ctx$close(id))
+  targets
+}
+```
+
 `ledgr_signal_strategy()` is a separate explicit compatibility wrapper
 for tutorial-style signal functions. It maps an inner signal function to
 full target quantities using configured long/flat/short quantities. Use
@@ -808,6 +982,30 @@ returning the full target vector directly. Strategy preflight reports
 this wrapper as a special allowed case because it captures an inner
 function and quantity settings. Tier 3 preflight failures remain hard
 failures: they are not downgraded to warnings or silently accepted.
+Wall-clock calls such as `Sys.time()` and global assignment with `<<-`
+are Tier 3 because ledgr cannot make them reproducible execution inputs.
+Resolved scalar values from the strategy closure are allowed as Tier 2,
+but values that define the research question should usually live in
+`params`.
+
+A compact Tier 3 hard-failure example is an unresolved helper reference:
+
+``` r
+outside_helper <- function(ctx) ctx$flat()
+
+tier3_strategy <- function(ctx, params) {
+  outside_helper(ctx)
+}
+
+preflight <- ledgr_strategy_preflight(tier3_strategy)
+preflight$tier
+preflight$reason
+
+ledgr_run(exp, params = list(), run_id = "tier3_demo")
+```
+
+`ledgr_run()` and `ledgr_sweep()` reject Tier 3 strategies before
+execution. There is no force override on those public execution paths.
 
 ## When ledgr Complains
 

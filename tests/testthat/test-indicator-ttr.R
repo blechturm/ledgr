@@ -492,6 +492,12 @@ testthat::test_that("TTR output bundle naming supports filters, prefixes, and ra
     "Available outputs: dn, mavg, up, pctB",
     class = "ledgr_invalid_args"
   )
+  testthat::expect_error(
+    ledgr_ind_ttr_outputs("BBands", input = "close", naming = c(dn = "lower_band", up = "upper_band"), n = 20),
+    "`naming` renames selected outputs; it does not filter outputs",
+    fixed = TRUE,
+    class = "ledgr_invalid_args"
+  )
 })
 
 testthat::test_that("TTR output bundles include MACD derived histogram output", {

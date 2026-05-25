@@ -125,7 +125,10 @@ ledgr_validate_feature_map_aliases <- function(aliases, n) {
   if (anyDuplicated(aliases)) {
     dup <- unique(aliases[duplicated(aliases)])
     rlang::abort(
-      sprintf("Feature map aliases must be unique; duplicate alias: %s.", dup[[1L]]),
+      sprintf(
+        "Feature map aliases must be unique; duplicate alias: %s. If this alias came from a multi-output bundle, it is also the generated feature ID; change the bundle prefix or select distinct outputs.",
+        dup[[1L]]
+      ),
       class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
     )
   }

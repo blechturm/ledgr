@@ -125,11 +125,19 @@ snapshot <- ledgr_snapshot_from_yahoo(
 )
 ```
 
-The returned handle is already sealed. Use `ledgr_snapshot_info(snapshot)` to
+The returned handle is already sealed. Calling `ledgr_snapshot_seal(snapshot)`
+again is an idempotent verification step: it returns the existing sealed hash
+instead of creating a new artifact. Use `ledgr_snapshot_info(snapshot)` to
 inspect `status`, `snapshot_hash`, `bar_count`, `instrument_count`,
 `start_date`, `end_date`, and raw `meta_json`. The dates are ISO UTC values.
 `meta_json` is envelope metadata; snapshot identity comes from normalized bars
 and instruments, not from human descriptions.
+
+```{r yahoo-seal-check, eval=FALSE}
+yahoo_info <- ledgr_snapshot_info(snapshot)
+yahoo_hash <- ledgr_snapshot_seal(snapshot)
+stopifnot(identical(yahoo_info$snapshot_hash[[1]], yahoo_hash))
+```
 
 Snapshot metadata uses these public field names:
 
@@ -238,12 +246,35 @@ Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have fills but no
 closed trades yet, in which case win rate is not defined.
 
+`ledgr_compare_runs()` starts from the durable snapshot handle because it reads
+stored run artifacts. When you want the comparison to use an experiment's metric
+assumptions, pass that context explicitly:
+
+```{r compare-exp-context, eval=FALSE}
+comparison <- ledgr_compare_runs(
+  snapshot,
+  run_ids = c("trend_qty_5", "trend_qty_15"),
+  metric_context = ledgr_metric_context(exp)
+)
+```
+
 The printed comparison formats some columns for reading. Programmatic code gets
 raw numeric columns from the tibble:
 
 ```{r compare-raw}
 comparison |>
   select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)
+```
+
+For report writing, coerce the comparison to a data frame or tibble before
+formatting percentages yourself:
+
+```{r compare-report-ready}
+comparison_report <- comparison |>
+  as.data.frame() |>
+  subset(select = c(run_id, final_equity, total_return, sharpe_ratio, max_drawdown))
+
+comparison_report
 ```
 
 After selecting a run, reopen it and inspect the underlying result tables rather
@@ -470,6 +501,22 @@ result inspection opens and closes read connections per operation. Use
 `close(bt)` as explicit resource cleanup in long sessions, tests, explicit-open
 workflows, and lazy result cursors. Close snapshot handles when the workflow is
 finished.
+
+## Task Intent Map
+
+Use this map when you know the task but not the function name:
+
+| Intent | Start here |
+|---|---|
+| Seal in-memory bars | `ledgr_snapshot_from_df()` |
+| Seal a local CSV | `ledgr_snapshot_from_csv()` |
+| Fetch and seal Yahoo bars | `ledgr_snapshot_from_yahoo()` |
+| Reopen an existing store | `ledgr_snapshot_load()` |
+| List stored runs | `ledgr_run_list()` |
+| Compare durable runs | `ledgr_compare_runs()` |
+
+Yahoo data is a convenience source. The sealed snapshot is the ledgr artifact;
+the remote Yahoo endpoint remains outside ledgr's reproducibility boundary.
 
 ```{r cleanup}
 close(bt_small)

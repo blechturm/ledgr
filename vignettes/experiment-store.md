@@ -96,12 +96,20 @@ snapshot <- ledgr_snapshot_from_yahoo(
 )
 ```
 
-The returned handle is already sealed. Use
-`ledgr_snapshot_info(snapshot)` to inspect `status`, `snapshot_hash`,
-`bar_count`, `instrument_count`, `start_date`, `end_date`, and raw
-`meta_json`. The dates are ISO UTC values. `meta_json` is envelope
-metadata; snapshot identity comes from normalized bars and instruments,
-not from human descriptions.
+The returned handle is already sealed. Calling
+`ledgr_snapshot_seal(snapshot)` again is an idempotent verification
+step: it returns the existing sealed hash instead of creating a new
+artifact. Use `ledgr_snapshot_info(snapshot)` to inspect `status`,
+`snapshot_hash`, `bar_count`, `instrument_count`, `start_date`,
+`end_date`, and raw `meta_json`. The dates are ISO UTC values.
+`meta_json` is envelope metadata; snapshot identity comes from
+normalized bars and instruments, not from human descriptions.
+
+``` r
+yahoo_info <- ledgr_snapshot_info(snapshot)
+yahoo_hash <- ledgr_snapshot_seal(snapshot)
+stopifnot(identical(yahoo_info$snapshot_hash[[1]], yahoo_hash))
+```
 
 Snapshot metadata uses these public field names:
 
@@ -218,12 +226,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     81c23d6c017696c0a650c7aaf3cda08f1c6342b584fbb530e163b4fdd2ac2112
+#> Config Hash:     17634f5d5abc98359b6a20938b5a35381cb96a15b24029ca608ac2196a180ccf
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     2.99
+#> Elapsed Sec:     1.36
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    2
@@ -264,6 +272,18 @@ Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have
 fills but no closed trades yet, in which case win rate is not defined.
 
+`ledgr_compare_runs()` starts from the durable snapshot handle because
+it reads stored run artifacts. When you want the comparison to use an
+experiment’s metric assumptions, pass that context explicitly:
+
+``` r
+comparison <- ledgr_compare_runs(
+  snapshot,
+  run_ids = c("trend_qty_5", "trend_qty_15"),
+  metric_context = ledgr_metric_context(exp)
+)
+```
+
 The printed comparison formats some columns for reading. Programmatic
 code gets raw numeric columns from the tibble:
 
@@ -279,6 +299,20 @@ comparison |>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
+```
+
+For report writing, coerce the comparison to a data frame or tibble
+before formatting percentages yourself:
+
+``` r
+comparison_report <- comparison |>
+  as.data.frame() |>
+  subset(select = c(run_id, final_equity, total_return, sharpe_ratio, max_drawdown))
+
+comparison_report
+#>         run_id final_equity total_return sharpe_ratio max_drawdown
+#> 1  trend_qty_5     10041.77  0.004176804    0.8383686 -0.004990601
+#> 2 trend_qty_15     10125.30  0.012530413    0.8514529 -0.014775056
 ```
 
 After selecting a run, reopen it and inspect the underlying result
@@ -398,6 +432,8 @@ summary(reopened)
 #>   Max Drawdown:        -0.50%
 #>
 #> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
 #>   Volatility (annual): 0.98%
 #>   Sharpe Ratio:        0.838
 #>
@@ -582,6 +618,23 @@ ordinary result inspection opens and closes read connections per
 operation. Use `close(bt)` as explicit resource cleanup in long
 sessions, tests, explicit-open workflows, and lazy result cursors. Close
 snapshot handles when the workflow is finished.
+
+## Task Intent Map
+
+Use this map when you know the task but not the function name:
+
+| Intent                    | Start here                    |
+|---------------------------|-------------------------------|
+| Seal in-memory bars       | `ledgr_snapshot_from_df()`    |
+| Seal a local CSV          | `ledgr_snapshot_from_csv()`   |
+| Fetch and seal Yahoo bars | `ledgr_snapshot_from_yahoo()` |
+| Reopen an existing store  | `ledgr_snapshot_load()`       |
+| List stored runs          | `ledgr_run_list()`            |
+| Compare durable runs      | `ledgr_compare_runs()`        |
+
+Yahoo data is a convenience source. The sealed snapshot is the ledgr
+artifact; the remote Yahoo endpoint remains outside ledgr’s
+reproducibility boundary.
 
 ``` r
 close(bt_small)

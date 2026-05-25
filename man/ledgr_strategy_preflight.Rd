@@ -7,15 +7,14 @@
 ledgr_strategy_preflight(strategy)
 }
 \arguments{
-\item{strategy}{A function with signature \code{function(ctx, params)}.}
+\item{strategy}{A function with signature \verb{function(ctx, params)}.}
 }
 \value{
 A \code{ledgr_strategy_preflight} object with fields \code{tier}, \code{allowed},
-\code{reason}, \code{unresolved_symbols}, \code{package_dependencies}, and
-\code{notes}.
+\code{reason}, \code{unresolved_symbols}, \code{package_dependencies}, and \code{notes}.
 }
 \description{
-\code{ledgr_strategy_preflight()} statically inspects a \code{function(ctx, params)}
+\code{ledgr_strategy_preflight()} statically inspects a \verb{function(ctx, params)}
 strategy before execution. It classifies the strategy into ledgr's
 reproducibility tiers:
 }
@@ -25,10 +24,11 @@ reproducibility tiers:
 base/recommended R references, and ledgr's exported public namespace.
 \item \code{tier_2}: inspectable strategy logic that also uses package-qualified
 calls outside the active R distribution, such as \code{pkg::fn()}, or resolved
-non-function closure objects that ledgr does not store as standalone
-replayable artifacts.
-\item \code{tier_3}: strategy logic with unresolved free symbols or user helpers that
-ledgr cannot recover from stored run metadata.
+immutable non-function closure objects that ledgr does not store as
+standalone replayable artifacts.
+\item \code{tier_3}: strategy logic with unresolved free symbols, user helpers,
+forbidden nondeterministic calls, or global assignment that ledgr cannot
+recover from stored run metadata.
 }
 
 The preflight is static analysis, not proof of semantic reproducibility.

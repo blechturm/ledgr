@@ -8,10 +8,11 @@
 #'   base/recommended R references, and ledgr's exported public namespace.
 #' - `tier_2`: inspectable strategy logic that also uses package-qualified
 #'   calls outside the active R distribution, such as `pkg::fn()`, or resolved
-#'   non-function closure objects that ledgr does not store as standalone
-#'   replayable artifacts.
-#' - `tier_3`: strategy logic with unresolved free symbols or user helpers that
-#'   ledgr cannot recover from stored run metadata.
+#'   immutable non-function closure objects that ledgr does not store as
+#'   standalone replayable artifacts.
+#' - `tier_3`: strategy logic with unresolved free symbols, user helpers,
+#'   forbidden nondeterministic calls, or global assignment that ledgr cannot
+#'   recover from stored run metadata.
 #'
 #' The preflight is static analysis, not proof of semantic reproducibility.
 #' Dynamic dispatch, mutable captured environments, and dynamically constructed
@@ -57,9 +58,22 @@ ledgr_strategy_preflight <- function(strategy) {
   external_objects <- analysis$external_objects
   rng_mutation_symbols <- analysis$rng_mutation_symbols
   ambient_rng_symbols <- analysis$ambient_rng_symbols
+  forbidden_call_symbols <- analysis$forbidden_call_symbols
+  has_global_assignment <- analysis$has_global_assignment
   notes <- analysis$notes
 
-  if (length(rng_mutation_symbols) > 0L) {
+  if (isTRUE(has_global_assignment)) {
+    tier <- "tier_3"
+    allowed <- FALSE
+    reason <- "Strategy uses global assignment (`<<-`), which ledgr cannot reproduce safely."
+  } else if (length(forbidden_call_symbols) > 0L) {
+    tier <- "tier_3"
+    allowed <- FALSE
+    reason <- sprintf(
+      "Strategy uses forbidden nondeterministic call(s): %s.",
+      paste(forbidden_call_symbols, collapse = ", ")
+    )
+  } else if (length(rng_mutation_symbols) > 0L) {
     tier <- "tier_3"
     allowed <- FALSE
     reason <- sprintf(
@@ -157,9 +171,15 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
     intersect(raw_functions, ledgr_strategy_ambient_rng_functions()),
     intersect(qualified_names, ledgr_strategy_ambient_rng_functions())
   )))
+  forbidden_call_symbols <- sort(unique(intersect(
+    c(raw_functions, qualified_names),
+    ledgr_determinism_forbidden_calls(allow_rng = TRUE)
+  )))
+  has_global_assignment <- ledgr_strategy_has_global_assignment(strategy)
 
   functions <- setdiff(functions, ledgr_strategy_syntax_functions())
   functions <- setdiff(functions, ledgr_strategy_dynamic_qualified_operator(qualified))
+  functions <- setdiff(functions, forbidden_call_symbols)
 
   functions <- functions[!vapply(functions, ledgr_strategy_symbol_is_tier1, logical(1))]
 
@@ -216,8 +236,15 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
     external_objects = sort(unique(resolved_external_objects)),
     rng_mutation_symbols = rng_mutation_symbols,
     ambient_rng_symbols = ambient_rng_symbols,
+    forbidden_call_symbols = forbidden_call_symbols,
+    has_global_assignment = has_global_assignment,
     notes = notes
   )
+}
+
+ledgr_strategy_has_global_assignment <- function(strategy) {
+  fn_body <- paste(deparse(strategy), collapse = "\n")
+  grepl("<<-", fn_body, fixed = TRUE)
 }
 
 ledgr_strategy_rng_mutation_functions <- function() {
@@ -365,10 +392,16 @@ ledgr_abort_strategy_preflight <- function(preflight) {
   } else {
     ""
   }
+  reason <- if (is.character(preflight$reason) && length(preflight$reason) == 1L && !is.na(preflight$reason) && nzchar(preflight$reason)) {
+    sprintf(" Reason: %s", preflight$reason)
+  } else {
+    ""
+  }
   rlang::abort(
     paste0(
       "Strategy preflight classified this strategy as tier_3, so ledgr will not execute it.",
       detail,
+      reason,
       " Move external values into `params`, qualify package calls with `pkg::fn()`, or use ledgr's exported helpers.",
       " There is no force override on `ledgr_run()` or `ledgr_sweep()`."
     ),

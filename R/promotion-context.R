@@ -68,6 +68,14 @@ ledgr_source_sweep_json <- function(candidate) {
   if (!is.list(meta)) {
     meta <- list()
   }
+  metric_context <- meta$metric_context
+  metric_context_record <- if (inherits(metric_context, "ledgr_metric_context")) {
+    ledgr_metric_context_record(metric_context)
+  } else if (is.list(metric_context)) {
+    metric_context
+  } else {
+    NULL
+  }
   canonical_json(list(
     sweep_id = meta$sweep_id,
     snapshot_id = meta$snapshot_id,
@@ -80,7 +88,10 @@ ledgr_source_sweep_json <- function(candidate) {
     strategy_hash = meta$strategy_hash %||% candidate$provenance$strategy_hash,
     strategy_name = meta$strategy_name,
     strategy_source_capture_method = meta$strategy_source_capture_method,
-    feature_union_hash = meta$feature_union_hash
+    feature_union_hash = meta$feature_union_hash,
+    metric_context = metric_context_record,
+    metric_context_hash = meta$metric_context_hash,
+    metric_context_version = meta$metric_context_version
   ))
 }
 
@@ -187,7 +198,10 @@ ledgr_warning_classes <- function(warnings) {
 #' [ledgr_promote()]. It stores the selected candidate, source sweep metadata,
 #' and the filtered/sorted candidate-summary view used at selection time. It is
 #' not a full sweep artifact and does not store full ledger rows or equity
-#' curves for all candidates.
+#' curves for all candidates. For sweep-promoted runs,
+#' `ledgr_metric_context(ledgr_promotion_context(bt))` returns the source sweep
+#' metric context used to rank the candidate. The committed run's own metric
+#' context remains available from `ledgr_metric_context(bt)`.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -210,7 +224,8 @@ ledgr_promotion_context <- function(bt) {
 #' @return Parsed promotion context, or `NULL` for direct runs.
 #' @details
 #' Reads the same compact promotion context as [ledgr_promotion_context()] from
-#' the experiment store without executing strategy code.
+#' the experiment store without executing strategy code. Source sweep metric
+#' context and committed run metric context remain separate.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -250,7 +265,7 @@ ledgr_fetch_promotion_context <- function(con, run_id) {
 }
 
 ledgr_parse_promotion_context <- function(row) {
-  list(
+  structure(list(
     run_id = as.character(row$run_id[[1]]),
     promotion_context_version = as.character(row$promotion_context_version[[1]]),
     source = as.character(row$source[[1]]),
@@ -259,7 +274,7 @@ ledgr_parse_promotion_context <- function(row) {
     selected_candidate = ledgr_parse_candidate_summary_record(row$selected_candidate_json[[1]]),
     source_sweep = ledgr_parse_json_field(row$source_sweep_json[[1]]),
     candidate_summary = ledgr_parse_candidate_summary(row$candidate_summary_json[[1]])
-  )
+  ), class = c("ledgr_promotion_context", "list"))
 }
 
 ledgr_parse_json_field <- function(json) {

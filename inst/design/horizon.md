@@ -26,6 +26,20 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-05-25 [infrastructure] Pre-CRAN compatibility policy
+
+Until ledgr is released on CRAN, stored artifacts, database schemas, config
+hashes, provenance formats, and experimental APIs may change without backward
+compatibility or a deprecation cycle. Pre-CRAN artifacts are development
+artifacts; users should expect to rerun experiments after upgrading when a
+cycle changes storage, hashing, or execution contracts.
+
+This does not weaken current-version trust. Fingerprint pins, release gates,
+contract tests, hash verification, and reproducibility discipline remain
+load-bearing for agent containment and within-cycle correctness. Once ledgr
+reaches CRAN, revisit this policy and define explicit compatibility and
+deprecation rules.
+
 ### 2026-05-15 [adapters] Multi-output indicator authoring bundles
 
 Consider a v0.1.8.x adapter/indicator UX slice for multi-output indicator
@@ -104,6 +118,31 @@ optimize, tune, choose objectives, select winners, or imply strategy-cookbook
 semantics. Keep the distinction sharp: grid-construction ergonomics are useful;
 `ledgr_tune()` and ledgr-owned objective semantics remain separate deferred
 questions.
+
+### 2026-05-25 [ux] Sweep candidate ranking views
+
+Users will write small helpers to order sweep results before calling
+`ledgr_candidate()`. ledgr should not own automatic winner selection or a
+full objective DSL, but a transparent ranking view may be useful once sweep
+ergonomics are revisited.
+
+Possible future shape:
+
+```r
+ranked <- ledgr_rank_candidates(
+  results,
+  by = "sharpe_ratio",
+  direction = "desc",
+  na_rm = TRUE
+)
+
+candidate <- ledgr_candidate(ranked, 1)
+```
+
+Filtering should remain ordinary data-frame work, via base R, dplyr, or user
+code before ranking. The helper would own ordering mechanics, classed
+validation, printability, and selection provenance. It should not call the
+result "best" or promote a candidate automatically.
 
 ### 2026-05-13 [ux] Research workflow templates
 
@@ -350,6 +389,123 @@ Evidence:
 - `inst/design/audits/sweep_hot_path_profile.md`
 - `dev/spikes/ledgr_sweep_performance/run_benchmark.R`
 - `dev/spikes/ledgr_sweep_performance/profile_hot_path.R`
+
+### 2026-05-24 [research] Beta as three distinct uses
+
+Beta is semantically important and architecturally complex partly because the
+"same" beta means three different things at different layers:
+
+```text
+1. beta as post-run diagnostic
+   Did the strategy just load on the market?
+2. beta as strategy feature
+   Did this instrument have high/low rolling beta at the decision time?
+3. beta as target-risk constraint
+   Should the target portfolio be scaled/hedged to a beta exposure?
+```
+
+Each use has a different complexity profile and different upstream
+dependencies. Diagnostic beta needs benchmark returns only. Feature beta also
+needs point-in-time alignment with the strategy's decision time and would
+interact with feature fingerprinting (the determinism module extracted in
+LDG-2212). Constraint beta needs both of the above plus the v0.1.9
+target-risk chain.
+
+When beta work eventually opens, keep these three uses as separately scoped
+sub-questions rather than collapsing them into one design pass. Each use
+unblocks on different upstream work:
+
+```text
+diagnostic beta : after benchmark/reference-return substrate
+                  (`ledgr_metric_context$benchmark` per the accepted
+                  v0.1.8.2 synthesis).
+feature beta    : after benchmark substrate plus a point-in-time
+                  feature/reference alignment design that defines whether
+                  rolling beta at pulse t may use returns ending at t or
+                  must use returns strictly before t.
+constraint beta : after benchmark substrate, feature-alignment design, and
+                  the v0.1.9 target-risk chain.
+```
+
+Do not gate diagnostic beta on the risk chain; the dependency is
+benchmark-only.
+
+### 2026-05-24 [data] External benchmark first, universe-derived later
+
+Future benchmark reference-return support should start with explicit external
+series (for example SPY total returns, Fama-French market return, or a CRSP
+value-weighted market series) rather than benchmarks derived from the ledgr
+trading universe.
+
+Universe-derived benchmarks require point-in-time membership semantics,
+introduce survivorship-bias risk depending on snapshot construction, and
+depend on market-cap or other reference data that ledgr does not own.
+External benchmarks are cleaner and let benchmark work proceed without
+resolving universe-membership semantics first.
+
+This aligns with the accepted v0.1.8.2 metric-context synthesis, which
+reserves `benchmark` as a NULL field with an "aligned return provider"
+contract and prohibits ticker-symbol hidden lookup.
+
+A future `ledgr_benchmark_from_universe()` may still be useful but should be
+designed after external benchmarks ship and after point-in-time universe
+semantics are explicit.
+
+### 2026-05-24 [adapters] External reference-data adapter provenance pattern
+
+Any future external reference-data adapter (tidyfinance, FRED, central-bank
+providers, broker APIs) should record provenance fields beyond the
+data-identity hash:
+
+```text
+source            = "<provider name>"
+function          = "<provider function called>"
+provider_version  = packageVersion(...)
+download_args     = <serialized args>
+retrieved_at      = <ISO8601 UTC>
+upstream_domain   = <provider-specific>
+upstream_dataset  = <provider-specific>
+date_range        = <ISO8601 UTC>
+symbols           = <if applicable>
+```
+
+These fields let a future audit reproduce or at least verify what was
+downloaded when. They should not enter the reference object's identity hash
+unless they change the data interpretation; they are reproducibility
+metadata, not execution identity.
+
+Adapter shape conventions to preserve when adapter work eventually opens:
+
+- `Suggests:` not `Imports:` for the upstream package;
+- `rlang::check_installed(...)` at adapter entry;
+- empirical verification of upstream unit/format semantics before the
+  adapter ships (see `spikes/ledgr_tidyfinance_unit_probe/`);
+- no hidden downloads inside metric, strategy, indicator, or fold-core paths.
+
+Per the accepted v0.1.8.2 metric-context synthesis, external adapters are
+deferred until the substrate they produce (`ledgr_metric_context` fields
+with aligned-provider contracts) is stable.
+
+### 2026-05-24 [data] Provider risk-free source divergence
+
+The `ledgr_tidyfinance_unit_probe` spike found that tidyfinance's standalone
+`download_data_risk_free()` endpoint and its Fama-French factor endpoint do
+not return interchangeable `risk_free` values for the same calendar period.
+For example, tidyfinance 0.5.0 returned January 2010 standalone monthly
+`risk_free = 0.000016898`, while the Fama-French 3-factor monthly endpoint
+returned `risk_free = 0` for the same month.
+
+This is not necessarily a provider bug. The standalone endpoint is
+FRED-derived and converted by tidyfinance; the Fama-French endpoint reflects
+the factor dataset's own rounded file. A future factor or reference-data
+adapter must preserve this distinction instead of silently treating every
+column named `risk_free` as the same source.
+
+Future RFCs that expose multiple risk-free sources should require explicit
+source selection and provenance fields for endpoint, dataset, provider
+version, and frequency. Metric-context construction must reject ambiguous
+"risk-free from provider" requests when more than one provider endpoint could
+produce the series.
 
 ## Resolved
 

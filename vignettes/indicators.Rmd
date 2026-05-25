@@ -381,6 +381,14 @@ The factory is evaluated with each candidate's `params`. The resolved feature
 IDs, feature fingerprints, and candidate feature-set hash are then part of the
 sweep row provenance.
 
+If the factory returns a plain list, strategies read the resulting values by
+exact feature ID, for example with `ctx$feature(id, ledgr_feature_id(...))` or a
+built-in ID such as `sma_20`. A factory that returns `ledgr_feature_map()` can
+materialize aliases for the engine, but calling that external factory from
+inside the strategy is not Tier 1 or Tier 2 under current preflight rules. Use
+feature-map aliases for static maps; use exact IDs for parameterized sweep
+lookups until ledgr has a first-class active-alias API.
+
 ## TTR-Backed Indicators
 
 `ledgr_ind_ttr()` is the adapter for supported indicators from the suggested
@@ -518,6 +526,11 @@ that produces `bbands_dn`, `bbands_mavg`, `bbands_up`, and `bbands_pctb`.
 The helper returns a `ledgr_indicator_bundle`, but the experiment sees ordinary
 single-output indicators after feature declaration is materialized.
 
+Those bundle IDs are shorter than the hand-written single-output TTR IDs such
+as `ttr_bbands_20_up`. That asymmetry is intentional: bundle defaults optimize
+for readable output names. Use `naming = c(up = "ttr_bbands_20_up")` or
+hand-written `ledgr_ind_ttr(output = ...)` calls when you need exact legacy IDs.
+
 ```{r ttr-output-bundle, eval=requireNamespace("TTR", quietly = TRUE)}
 bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
 ledgr_feature_id(bbands_bundle)
@@ -541,6 +554,20 @@ bbands_subset <- ledgr_ind_ttr_outputs(
   n = 20
 )
 ledgr_feature_id(bbands_subset)
+```
+
+`naming` renames selected outputs; it is not itself an output filter. When
+renaming only part of a bundle, make the filter explicit:
+
+```{r ttr-output-bundle-naming, eval=requireNamespace("TTR", quietly = TRUE)}
+bbands_named_subset <- ledgr_ind_ttr_outputs(
+  "BBands",
+  input = "close",
+  outputs = c("dn", "up"),
+  naming = c(dn = "lower_band", up = "upper_band"),
+  n = 20
+)
+ledgr_feature_id(bbands_named_subset)
 ```
 
 Set `prefix = NULL` only when you explicitly want raw normalized output names

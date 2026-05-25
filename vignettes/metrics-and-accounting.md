@@ -24,7 +24,7 @@ Use the narrowest inspection surface that answers the question:
 |----|----|----|
 | What happened at a glance? | `print(bt)` | printed run header with final equity |
 | What are the standard metrics? | `summary(bt)` | printed interpretation; returns `bt` invisibly |
-| What metric values can code consume? | `ledgr_compute_metrics(bt)` | named list of raw numeric values |
+| What metric values can code consume? | `ledgr_compute_metrics(bt)` | list-like `ledgr_metrics` object with raw numeric values |
 | What rows value the portfolio? | `ledgr_results(bt, what = "equity")` | classed tibble |
 | What executed? | `ledgr_results(bt, what = "fills")` | classed tibble |
 | What closed quantity? | `ledgr_results(bt, what = "trades")` | classed tibble |
@@ -46,6 +46,11 @@ comparison rows, or from sweep rows. There is also no committed
 inspected at pulse time with `ledgr_pulse_snapshot()` or through
 sweep/precompute provenance, not through a persisted feature-result
 table accessor.
+
+Metric assumptions are inspectable through `ledgr_metric_context()`. Use
+it on a backtest, `ledgr_metrics` object, comparison table, sweep result
+table, or promotion context to see the risk-free-rate and annualization
+context that produced that surface.
 
 ``` r
 library(ledgr)
@@ -240,16 +245,121 @@ snaps common cadences, such as daily and weekly, to standard
 annualization constants. Use the detected value if you need an external
 calculation to match ledgr exactly on non-daily data.
 
-Current metric assumptions are deliberately simple. `summary(bt)` and
-`ledgr_compute_metrics(bt)` accept a scalar annual `risk_free_rate`; the
-default is `0`. `ledgr_compare_runs()` recomputes comparable stored-run
-metrics with the default risk-free rate of `0`. Annualization is
-inferred from the observed bar cadence and snapped to a small set of
-common frequencies. There is no stored metric context, public
-bars-per-year accessor, or second annualization source in the current
-metric surface, so non-daily and intraday users should treat Sharpe and
-annualized values as using ledgr’s current cadence inference rather than
-an explicit market calendar.
+Metric assumptions now live in a `metric_context`. The default context
+is US equity daily: zero annual risk-free rate and `252 * 1` periods per
+year. Use market templates for common assumptions:
+
+``` r
+ledgr_metric_us_equity()
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           1487b5dc681c0d58b0a4cf3ecd59421e51cd830d628be466949d55b02b788c00
+ledgr_metric_us_equity(risk_free_rate = 0.04)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 4.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           d711f43b0bf4c715224a505d9311df44fef2657f6d2817cd11344e63db70ccd7
+ledgr_metric_us_equity(
+  bars_per_day = 390L,
+  risk_free_rate = ledgr_risk_free_rate(0.04, label = "policy rate")
+)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 4.0000%
+#> Calendar:       US equity custom bars (252 days/year * 390 bars/day = 98,280 bars/year)
+#> Hash:           df3891aee6212ecb6925fb9facdee28b929cc04c448758931767199ef613e1cd
+ledgr_metric_crypto()
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       crypto daily (365 days/year * 1 bars/day = 365 bars/year)
+#> Hash:           291e10efec438bd4d550d936adc7441853d4be5d56d48e1d561e72835fc1bfed
+```
+
+A scalar shorthand is accepted when only the annual risk-free rate
+changes:
+
+``` r
+ledgr_metric_context(0.04)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 4.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           d711f43b0bf4c715224a505d9311df44fef2657f6d2817cd11344e63db70ccd7
+```
+
+Use an explicit context when the calendar matters:
+
+``` r
+intraday_context <- ledgr_metric_context(
+  calendar = ledgr_calendar_us_equity(bars_per_day = 390L),
+  risk_free_rate = ledgr_risk_free_rate(0.04, label = "manual assumption")
+)
+```
+
+`summary(bt)` and `ledgr_compute_metrics(bt)` use the metric context
+stored with the committed run. Call-time overrides are sensitivity
+checks; they do not mutate the run:
+
+``` r
+stored_metrics <- ledgr_compute_metrics(bt)
+zero_rf_metrics <- ledgr_compute_metrics(bt, risk_free_rate = 0)
+
+ledgr_metric_context(stored_metrics)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           1487b5dc681c0d58b0a4cf3ecd59421e51cd830d628be466949d55b02b788c00
+ledgr_metric_context(zero_rf_metrics)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           1487b5dc681c0d58b0a4cf3ecd59421e51cd830d628be466949d55b02b788c00
+```
+
+`ledgr_compare_runs()` has exactly one comparison context per table. The
+snapshot-first form uses the default context unless you pass one
+explicitly:
+
+``` r
+comparison <- ledgr_compare_runs(
+  snapshot,
+  run_ids = c("trend_qty_5", "trend_qty_15"),
+  metric_context = ledgr_metric_context(exp)
+)
+
+ledgr_metric_context(comparison)
+```
+
+Sweep result tables also have exactly one metric context. Promotion
+context keeps that source sweep context separate from the committed
+run’s own context:
+
+``` r
+results <- ledgr_sweep(train_exp, grid)
+candidate <- ledgr_candidate(results, 1)
+test_run <- ledgr_promote(test_exp, candidate, require_same_snapshot = FALSE)
+
+ledgr_metric_context(results)
+ledgr_metric_context(ledgr_promotion_context(test_run))
+ledgr_metric_context(test_run)
+```
+
+This distinction matters for train/test work: the source sweep context
+explains how a candidate was ranked, while the committed run context
+explains the default analysis assumptions stored with the promoted run.
 
 ## Risk Metric Contract
 
@@ -307,6 +417,8 @@ summary(bt)
 #>   Max Drawdown:        0.00%
 #>
 #> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
 #>   Volatility (annual): 3.17%
 #>   Sharpe Ratio:        7.937
 #>
@@ -337,6 +449,13 @@ metrics[c("total_return", "sharpe_ratio", "n_trades", "win_rate")]
 #>
 #> $win_rate
 #> [1] 1
+ledgr_metric_context(metrics)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           1487b5dc681c0d58b0a4cf3ecd59421e51cd830d628be466949d55b02b788c00
 ```
 
 `ledgr_compare_runs()` is also programmatic: it returns a tibble-like
@@ -344,6 +463,15 @@ metrics[c("total_return", "sharpe_ratio", "n_trades", "win_rate")]
 and ranking. Its print method only curates the displayed columns.
 Comparison metrics are recomputed from stored equity and fill tables and
 use the same closed-trade semantics as `ledgr_compute_metrics()`.
+
+For reports, convert the comparison object and keep the raw numeric
+columns:
+
+``` r
+comparison |>
+  as.data.frame() |>
+  subset(select = c(run_id, final_equity, total_return, sharpe_ratio, max_drawdown))
+```
 
 ## Zero Trades Can Be Correct
 

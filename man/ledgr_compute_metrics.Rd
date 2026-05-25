@@ -4,19 +4,28 @@
 \alias{ledgr_compute_metrics}
 \title{Compute standard metrics from backtest results}
 \usage{
-ledgr_compute_metrics(bt, metrics = "standard", risk_free_rate = 0)
+ledgr_compute_metrics(
+  bt,
+  metrics = "standard",
+  metric_context = NULL,
+  risk_free_rate = NULL
+)
 }
 \arguments{
 \item{bt}{A \code{ledgr_backtest} object. This function does not accept an equity
 tibble directly.}
 
-\item{metrics}{Only \code{"standard"} is supported in v0.1.7.}
+\item{metrics}{Only \code{"standard"} is supported.}
 
-\item{risk_free_rate}{Scalar annual risk-free rate as a decimal. The default
-is \code{0}. For example, \code{0.02} means two percent per year.}
+\item{metric_context}{Optional metric context override for this computation.
+When omitted, ledgr uses the metric context stored with the run.}
+
+\item{risk_free_rate}{Optional scalar annual risk-free-rate override as a
+decimal. For example, \code{0.02} means two percent per year. Supply either
+\code{metric_context} or \code{risk_free_rate}, not both.}
 }
 \value{
-Named list of metric values.
+A list-like \code{ledgr_metrics} object.
 }
 \description{
 Compute standard metrics from backtest results
@@ -27,15 +36,13 @@ Standard metrics are derived from the ledger and equity curve:
 \item \code{total_return}: last public equity row divided by the first public equity
 row minus 1.
 \item \code{annualized_return}: geometric annualized return from the first and last
-public equity rows using the detected bar frequency, snapped to common
-frequencies such as daily or weekly.
+public equity rows using the metric context's annualization calendar.
 \item \code{volatility}: annualized standard deviation of adjacent public equity-row
 returns.
 \item \code{sharpe_ratio}: annualized Sharpe ratio over adjacent public equity-row
-excess returns, using the scalar annual \code{risk_free_rate} converted to a
-per-period return with the inferred bar cadence. The default risk-free
-rate is \code{0}. Flat, constant-return, invalid, or short return series return
-\code{NA_real_}.
+excess returns, using the metric context's scalar annual risk-free rate
+converted to a per-period return. Flat, constant-return, invalid, or short
+return series return \code{NA_real_}.
 \item \code{max_drawdown}: maximum peak-to-trough percentage decline,
 \code{min(equity / cummax(equity) - 1)}.
 \item \code{n_trades}: number of closed trade rows. Open-only fills do not count until

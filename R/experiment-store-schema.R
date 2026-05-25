@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 107L
+ledgr_experiment_store_schema_version <- 108L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -184,6 +184,9 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
       ledgr_experiment_store_add_column(con, "runs", "archive_reason", "TEXT")
       ledgr_experiment_store_add_execution_mode_column(con, "runs")
       ledgr_experiment_store_add_column(con, "runs", "schema_version", "INTEGER")
+      ledgr_experiment_store_add_column(con, "runs", "metric_context_json", "TEXT")
+      ledgr_experiment_store_add_column(con, "runs", "metric_context_hash", "TEXT")
+      ledgr_experiment_store_add_column(con, "runs", "metric_context_version", "INTEGER")
       DBI::dbExecute(con, "UPDATE runs SET archived = FALSE WHERE archived IS NULL")
       DBI::dbExecute(
         con,

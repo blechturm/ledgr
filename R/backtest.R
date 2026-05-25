@@ -270,8 +270,8 @@ ledgr_infer_universe_from_snapshot <- function(snapshot) {
   universe
 }
 
-ledgr_run_config <- function(config, run_id = NULL) {
-  ledgr_backtest_run(config = config, run_id = run_id)
+ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
+  ledgr_backtest_run(config = config, run_id = run_id, metric_context = metric_context)
 }
 
 #' Run a ledgr experiment
@@ -357,7 +357,7 @@ ledgr_run_experiment <- function(exp, params = list(), run_id = NULL, seed = NUL
     seed = seed
   )
 
-  result <- ledgr_run_config(config)
+  result <- ledgr_run_config(config, metric_context = exp$metric_context)
   new_ledgr_backtest(
     run_id = result$run_id,
     db_path = result$db_path,
@@ -1406,14 +1406,22 @@ compute_annualized_volatility <- function(returns, bars_per_year) {
   sd_returns * sqrt(bars_per_year)
 }
 
-compute_sharpe_ratio <- function(returns, bars_per_year, risk_free_rate = 0) {
+compute_sharpe_ratio <- function(returns,
+                                 bars_per_year,
+                                 risk_free_rate = 0,
+                                 rf_period_return = NULL) {
   returns <- as.numeric(returns)
   if (length(returns) < 2L || any(!is.finite(returns))) return(NA_real_)
   if (!is.numeric(bars_per_year) || length(bars_per_year) != 1L ||
     !is.finite(bars_per_year) || bars_per_year <= 0) {
     return(NA_real_)
   }
-  rf_period_return <- compute_rf_period_return(risk_free_rate, bars_per_year)
+  if (is.null(rf_period_return)) {
+    rf_period_return <- compute_rf_period_return(risk_free_rate, bars_per_year)
+  }
+  if (!is.numeric(rf_period_return) || length(rf_period_return) != 1L) {
+    return(NA_real_)
+  }
   if (!is.finite(rf_period_return)) return(NA_real_)
   excess_returns <- returns - rf_period_return
   sd_excess <- stats::sd(excess_returns)
@@ -1489,20 +1497,54 @@ snap_to_frequency <- function(median_seconds) {
   252
 }
 
-ledgr_compute_metrics_internal <- function(bt, metrics = "standard", risk_free_rate = 0) {
+ledgr_metric_context_for_metrics <- function(bt,
+                                             metric_context = NULL,
+                                             risk_free_rate = NULL) {
+  if (!is.null(metric_context) && !is.null(risk_free_rate)) {
+    rlang::abort(
+      "Supply either `metric_context` or `risk_free_rate`, not both.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  if (!is.null(risk_free_rate)) {
+    risk_free_rate <- ledgr_validate_annual_rate(risk_free_rate, "risk_free_rate")
+    return(ledgr_metric_context(risk_free_rate = risk_free_rate))
+  }
+  if (!is.null(metric_context)) {
+    return(ledgr_metric_context_resolve(metric_context))
+  }
+  ledgr_metric_context(bt)
+}
+
+ledgr_new_metrics <- function(values, metric_kernel) {
+  context <- ledgr_metric_context_from_kernel(metric_kernel)
+  structure(
+    values,
+    metric_context = context,
+    metric_kernel = metric_kernel,
+    class = c("ledgr_metrics", "list")
+  )
+}
+
+ledgr_compute_metrics_internal <- function(bt,
+                                           metrics = "standard",
+                                           metric_context = NULL,
+                                           risk_free_rate = NULL) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
   if (!identical(metrics, "standard")) {
     rlang::abort(
       "Only metrics = 'standard' is supported.",
       class = "ledgr_invalid_args"
     )
   }
-  if (!is.numeric(risk_free_rate) || length(risk_free_rate) != 1L ||
-    !is.finite(risk_free_rate) || risk_free_rate <= -1) {
-    rlang::abort(
-      "`risk_free_rate` must be a finite scalar annual rate greater than -1.",
-      class = "ledgr_invalid_args"
-    )
-  }
+  metric_context <- ledgr_metric_context_for_metrics(
+    bt,
+    metric_context = metric_context,
+    risk_free_rate = risk_free_rate
+  )
+  metric_kernel <- ledgr_metric_kernel(context = metric_context)
 
   opened <- ledgr_backtest_read_connection(bt)
   con <- opened$con
@@ -1515,7 +1557,7 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard", risk_free_r
   trades <- ledgr_closed_trade_rows(fills)
 
   returns <- compute_period_returns(equity$equity)
-  bars_per_year <- ledgr_estimate_bars_per_year(bt, equity, con = con)
+  bars_per_year <- metric_kernel$bars_per_year
   initial_equity <- if (nrow(equity) > 0) as.numeric(equity$equity[[1]]) else NA_real_
   final_equity <- if (nrow(equity) > 0) as.numeric(equity$equity[[nrow(equity)]]) else NA_real_
   total_return <- if (nrow(equity) > 0 && is.finite(initial_equity) && initial_equity != 0 && is.finite(final_equity)) {
@@ -1524,17 +1566,21 @@ ledgr_compute_metrics_internal <- function(bt, metrics = "standard", risk_free_r
     NA_real_
   }
 
-  list(
+  ledgr_new_metrics(list(
     total_return = total_return,
     annualized_return = compute_annualized_return(equity, bars_per_year),
     volatility = compute_annualized_volatility(returns, bars_per_year),
-    sharpe_ratio = compute_sharpe_ratio(returns, bars_per_year, risk_free_rate = risk_free_rate),
+    sharpe_ratio = compute_sharpe_ratio(
+      returns,
+      bars_per_year,
+      rf_period_return = metric_kernel$rf_period_return
+    ),
     max_drawdown = compute_max_drawdown(equity$equity),
     n_trades = nrow(trades),
     win_rate = if (nrow(trades) > 0) sum(trades$realized_pnl > 0, na.rm = TRUE) / nrow(trades) else NA_real_,
     avg_trade = if (nrow(trades) > 0) mean(trades$realized_pnl, na.rm = TRUE) else NA_real_,
     time_in_market = compute_time_in_market(equity)
-  )
+  ), metric_kernel = metric_kernel)
 }
 
 #' Compute an equity curve from a backtest
@@ -1660,25 +1706,26 @@ ledgr_backtest_bench <- function(bt) {
 #'
 #' @param bt A `ledgr_backtest` object. This function does not accept an equity
 #'   tibble directly.
-#' @param metrics Only `"standard"` is supported in v0.1.7.
-#' @param risk_free_rate Scalar annual risk-free rate as a decimal. The default
-#'   is `0`. For example, `0.02` means two percent per year.
-#' @return Named list of metric values.
+#' @param metrics Only `"standard"` is supported.
+#' @param metric_context Optional metric context override for this computation.
+#'   When omitted, ledgr uses the metric context stored with the run.
+#' @param risk_free_rate Optional scalar annual risk-free-rate override as a
+#'   decimal. For example, `0.02` means two percent per year. Supply either
+#'   `metric_context` or `risk_free_rate`, not both.
+#' @return A list-like `ledgr_metrics` object.
 #'
 #' @details
 #' Standard metrics are derived from the ledger and equity curve:
 #' - `total_return`: last public equity row divided by the first public equity
 #'   row minus 1.
 #' - `annualized_return`: geometric annualized return from the first and last
-#'   public equity rows using the detected bar frequency, snapped to common
-#'   frequencies such as daily or weekly.
+#'   public equity rows using the metric context's annualization calendar.
 #' - `volatility`: annualized standard deviation of adjacent public equity-row
 #'   returns.
 #' - `sharpe_ratio`: annualized Sharpe ratio over adjacent public equity-row
-#'   excess returns, using the scalar annual `risk_free_rate` converted to a
-#'   per-period return with the inferred bar cadence. The default risk-free
-#'   rate is `0`. Flat, constant-return, invalid, or short return series return
-#'   `NA_real_`.
+#'   excess returns, using the metric context's scalar annual risk-free rate
+#'   converted to a per-period return. Flat, constant-return, invalid, or short
+#'   return series return `NA_real_`.
 #' - `max_drawdown`: maximum peak-to-trough percentage decline,
 #'   `min(equity / cummax(equity) - 1)`.
 #' - `n_trades`: number of closed trade rows. Open-only fills do not count until
@@ -1709,8 +1756,16 @@ ledgr_backtest_bench <- function(bt) {
 #' ledgr_compute_metrics(bt)
 #' close(bt)
 #' @export
-ledgr_compute_metrics <- function(bt, metrics = "standard", risk_free_rate = 0) {
-  ledgr_compute_metrics_internal(bt, metrics = metrics, risk_free_rate = risk_free_rate)
+ledgr_compute_metrics <- function(bt,
+                                  metrics = "standard",
+                                  metric_context = NULL,
+                                  risk_free_rate = NULL) {
+  ledgr_compute_metrics_internal(
+    bt,
+    metrics = metrics,
+    metric_context = metric_context,
+    risk_free_rate = risk_free_rate
+  )
 }
 
 #' Print a backtest result
@@ -1792,9 +1847,11 @@ print.ledgr_backtest <- function(x, ...) {
 #' Prints standard performance, risk, trade, and exposure metrics.
 #'
 #' @param object A `ledgr_backtest` object.
-#' @param metrics Only `"standard"` is supported in v0.1.7.
-#' @param risk_free_rate Scalar annual risk-free rate as a decimal. The default
-#'   is `0`.
+#' @param metrics Only `"standard"` is supported.
+#' @param metric_context Optional metric context override for this summary.
+#'   When omitted, ledgr uses the metric context stored with the run.
+#' @param risk_free_rate Optional scalar annual risk-free-rate override as a
+#'   decimal. Supply either `metric_context` or `risk_free_rate`, not both.
 #' @param ... Unused.
 #' @return The input `ledgr_backtest` object, invisibly. The printed values are
 #'   descriptive output; use `ledgr_compute_metrics()` for a named list of the
@@ -1805,15 +1862,14 @@ print.ledgr_backtest <- function(x, ...) {
 #' - total return: last public equity row divided by the first public equity
 #'   row minus 1;
 #' - annualized return: geometric annualized return from the first and last
-#'   public equity rows using the detected bar frequency;
+#'   public equity rows using the metric context's annualization calendar;
 #' - max drawdown: maximum peak-to-trough decline,
 #'   `min(equity / cummax(equity) - 1)`;
 #' - annualized volatility: standard deviation of adjacent equity-row returns
 #'   multiplied by `sqrt(bars_per_year)`;
 #' - Sharpe ratio: annualized ratio of average period excess return to
-#'   excess-return standard deviation, using the scalar annual `risk_free_rate`
-#'   converted to a per-period return with the inferred bar cadence. The
-#'   default risk-free rate is `0`;
+#'   excess-return standard deviation, using the metric context's scalar annual
+#'   risk-free rate converted to a per-period return;
 #' - total trades: number of closed trade rows, not number of fill rows;
 #' - win rate: share of closed trade rows with strict `realized_pnl > 0`;
 #' - average trade: mean `realized_pnl` across closed trade rows;
@@ -1849,12 +1905,22 @@ print.ledgr_backtest <- function(x, ...) {
 #' summary(bt)
 #' close(bt)
 #' @export
-summary.ledgr_backtest <- function(object, metrics = "standard", risk_free_rate = 0, ...) {
+summary.ledgr_backtest <- function(object,
+                                   metrics = "standard",
+                                   metric_context = NULL,
+                                   risk_free_rate = NULL,
+                                   ...) {
   if (!inherits(object, "ledgr_backtest")) {
     rlang::abort("`object` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
 
-  computed <- ledgr_compute_metrics(object, metrics = metrics, risk_free_rate = risk_free_rate)
+  computed <- ledgr_compute_metrics(
+    object,
+    metrics = metrics,
+    metric_context = metric_context,
+    risk_free_rate = risk_free_rate
+  )
+  computed_context <- ledgr_metric_context(computed)
 
   cat("ledgr Backtest Summary\n")
   cat("======================\n\n")
@@ -1865,6 +1931,8 @@ summary.ledgr_backtest <- function(object, metrics = "standard", risk_free_rate 
   cat(sprintf("  Max Drawdown:        %.2f%%\n", computed$max_drawdown * 100))
 
   cat("\nRisk Metrics:\n")
+  cat(sprintf("  Risk-Free Rate:      %s\n", ledgr_metric_summary_risk_free_display(computed_context)))
+  cat(sprintf("  Annualization:       %s\n", ledgr_metric_summary_annualization_display(computed_context)))
   cat(sprintf("  Volatility (annual): %.2f%%\n", computed$volatility * 100))
   sharpe_label <- if (is.finite(computed$sharpe_ratio)) sprintf("%.3f", computed$sharpe_ratio) else "N/A"
   cat(sprintf("  Sharpe Ratio:        %s\n", sharpe_label))
@@ -2101,7 +2169,8 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
 #' `ledgr_results()` also does not support `what = "features"`; inspect feature
-#' values at pulse time with `ledgr_pulse_snapshot()`.
+#' values at pulse time with `ledgr_pulse_snapshot()` and
+#' `ledgr_pulse_features()` or `ledgr_pulse_wide()`.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -2188,7 +2257,8 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
 #' `ledgr_results()` also does not support `what = "features"`; inspect feature
-#' values at pulse time with `ledgr_pulse_snapshot()`.
+#' values at pulse time with `ledgr_pulse_snapshot()` and
+#' `ledgr_pulse_features()` or `ledgr_pulse_wide()`.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -2235,6 +2305,12 @@ ledgr_match_result_table <- function(what) {
   if (identical(what, "metrics")) {
     rlang::abort(
       "`ledgr_results()` does not support `what = \"metrics\"`. Use `summary(bt)` for printed interpretation or `ledgr_compute_metrics(bt)` for a named list.",
+      class = "ledgr_invalid_result_table"
+    )
+  }
+  if (identical(what, "features")) {
+    rlang::abort(
+      "`ledgr_results()` does not support `what = \"features\"`. Feature values are pulse-time data; inspect them with `ledgr_pulse_snapshot()` and `ledgr_pulse_features()` or `ledgr_pulse_wide()`.",
       class = "ledgr_invalid_result_table"
     )
   }

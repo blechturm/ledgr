@@ -39,6 +39,7 @@ testthat::test_that("ledgr_feature_map validates aliases and mapped values", {
   )
   testthat::expect_error(
     do.call(ledgr_feature_map, stats::setNames(list(sma, ledgr_ind_returns(2)), c("x", "x"))),
+    "change the bundle prefix",
     class = "ledgr_invalid_feature_map"
   )
   testthat::expect_error(
@@ -58,6 +59,16 @@ testthat::test_that("ledgr_feature_map rejects duplicate resolved feature IDs", 
     fixed = TRUE,
     class = "ledgr_duplicate_feature_id"
   )
+})
+
+testthat::test_that("ledgr_feature_map duplicate bundle aliases suggest prefix changes", {
+  testthat::skip_if_not_installed("TTR")
+
+  bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), prefix = "same", n = 20)
+  err <- rlang::catch_cnd(ledgr_feature_map(left = bundle, right = bundle))
+  testthat::expect_s3_class(err, "ledgr_invalid_feature_map")
+  testthat::expect_match(conditionMessage(err), "generated feature ID", fixed = TRUE)
+  testthat::expect_match(conditionMessage(err), "change the bundle prefix", fixed = TRUE)
 })
 
 testthat::test_that("ledgr_experiment accepts feature maps and preserves list behavior", {

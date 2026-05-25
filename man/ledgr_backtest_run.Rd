@@ -4,12 +4,15 @@
 \alias{ledgr_backtest_run}
 \title{Run a deterministic EOD backtest (v0.1.0)}
 \usage{
-ledgr_backtest_run(config, run_id = NULL)
+ledgr_backtest_run(config, run_id = NULL, metric_context = NULL)
 }
 \arguments{
 \item{config}{A config list (or JSON string) matching the v0.1.0 config contract.}
 
 \item{run_id}{Optional run identifier to resume or reuse.}
+
+\item{metric_context}{Optional metric-context metadata. Public users should
+normally supply this through \code{ledgr_experiment()}.}
 }
 \value{
 A list with \code{run_id} and \code{db_path}.

@@ -41,7 +41,8 @@ final equity used by prints and comparisons is the last row of this table.
 from the public result tables; use \code{summary(bt)} for printed interpretation
 or \code{ledgr_compute_metrics(bt)} for a named list.
 \code{ledgr_results()} also does not support \code{what = "features"}; inspect feature
-values at pulse time with \code{ledgr_pulse_snapshot()}.
+values at pulse time with \code{ledgr_pulse_snapshot()} and
+\code{ledgr_pulse_features()} or \code{ledgr_pulse_wide()}.
 }
 \section{Articles}{
 

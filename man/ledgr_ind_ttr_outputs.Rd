@@ -32,7 +32,9 @@ derived \code{histogram} output.}
 such as \code{"bb"} for concise IDs, or \code{NULL} to opt into raw output names.}
 
 \item{naming}{Optional advanced rename escape hatch. Supply a named character
-vector whose names are backend outputs and whose values are feature IDs.}
+vector whose names are backend outputs and whose values are feature IDs.
+\code{naming} renames selected outputs; it does not filter outputs. Use
+\code{outputs = names(naming)} when renaming a subset.}
 
 \item{requires_bars}{Explicit warmup length. Required for unknown TTR
 functions. For known functions this is inferred from explicit arguments.}
@@ -48,6 +50,9 @@ functions such as \code{BBands}, \code{MACD}, \code{ATR}, \code{aroon}, and
 \code{DonchianChannel}. It returns a \code{ledgr_indicator_bundle} containing ordinary
 single-output \code{ledgr_indicator} objects. The bundle is flattened before
 runtime feature computation, so strategies still read scalar feature IDs.
+Default bundle IDs are shorter than equivalent hand-written
+\code{ledgr_ind_ttr(output = ...)} IDs; use \code{naming} or hand-written
+single-output calls when exact legacy IDs matter.
 }
 \section{Articles}{
 

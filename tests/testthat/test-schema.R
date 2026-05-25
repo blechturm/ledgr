@@ -324,7 +324,10 @@ testthat::test_that("validator fails if runs.status does not accept DONE", {
       archived_at_utc TIMESTAMP,
       archive_reason TEXT,
       execution_mode TEXT,
-      schema_version INTEGER
+      schema_version INTEGER,
+      metric_context_json TEXT,
+      metric_context_hash TEXT,
+      metric_context_version INTEGER
     )
     "
   )
@@ -358,7 +361,10 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
       archived_at_utc TIMESTAMP,
       archive_reason TEXT,
       execution_mode TEXT,
-      schema_version INTEGER NOT NULL DEFAULT 107
+      schema_version INTEGER NOT NULL DEFAULT 108,
+      metric_context_json TEXT,
+      metric_context_hash TEXT,
+      metric_context_version INTEGER
     )
     "
   )
@@ -368,12 +374,13 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
     INSERT INTO runs (
       run_id, created_at_utc, engine_version, config_json, config_hash,
       data_hash, snapshot_id, status, error_msg, label, archived,
-      archived_at_utc, archive_reason, execution_mode, schema_version
+      archived_at_utc, archive_reason, execution_mode, schema_version,
+      metric_context_json, metric_context_hash, metric_context_version
     )
     VALUES (
       'bad-check', TIMESTAMP '2020-01-01 00:00:00', '0.1.0', '{}',
       'config', 'data', NULL, 'DONE', NULL, NULL, FALSE, NULL, NULL,
-      NULL, 107
+      NULL, 108, NULL, NULL, NULL
     )
     "
   )

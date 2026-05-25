@@ -165,8 +165,8 @@ ledgr_strategy_preflight(tier_1_strategy)
 
 Tier 2 is inspectable but needs environment management outside ledgr.
 Examples include package-qualified calls outside the active R
-distribution and resolved non-function objects captured from the
-strategy environment.
+distribution and resolved immutable non-function objects captured from
+the strategy environment.
 
 ``` r
 tier_2_strategy <- function(ctx, params) {
@@ -183,6 +183,12 @@ makes the dependency visible in the preflight result and keeps the
 strategy inspectable. The run can proceed, but ledgr cannot preserve the
 installed `jsonlite` version or its system requirements by itself.
 
+Resolved external scalar values are also Tier 2, not Tier 3. They are
+visible to the preflight because they exist in the strategy closure, but
+ledgr does not turn them into replayable run parameters. Prefer putting
+values that define the research question into `params`, especially for
+sweeps.
+
 Tier 2 is allowed for ordinary runs and future sweep mode. It is not
 fully reproducible by ledgr alone. Users own package installation,
 package version parity, system libraries, and any other runtime
@@ -195,8 +201,10 @@ and this article does not teach them. The point is simpler: if a
 strategy is Tier 2, ledgr can preserve the run evidence, but the user
 must preserve the surrounding environment.
 
-Tier 3 is external state ledgr cannot recover. The most common example
-is an unqualified helper function from the interactive session.
+Tier 3 is external state ledgr cannot recover or execute safely. Common
+examples are unqualified helper functions from the interactive session,
+wall-clock or process-environment calls such as `Sys.time()`,
+`Sys.Date()`, and `Sys.getenv()`, and global assignment with `<<-`.
 
 ``` r
 my_helper <- function(ctx) ctx$flat()
