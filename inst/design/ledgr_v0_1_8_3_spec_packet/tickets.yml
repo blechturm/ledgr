@@ -152,7 +152,7 @@ tickets:
 
   - id: "LDG-2410"
     title: "Typed Memory Event Representation"
-    status: "pending"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -166,6 +166,7 @@ tickets:
     tests:
       - "typed_event_tests"
       - "accounting_parity_tests"
+      - "ledger_writer_tests"
       - "sweep_tests"
       - "fingerprint_stability_tests"
 

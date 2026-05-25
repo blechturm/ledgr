@@ -642,7 +642,11 @@ ledgr_sweep_run_candidate <- function(exp,
   )
   ledgr_execute_fold(execution, output_handler)
 
-  events <- output_handler$events()
+  events <- if (is.function(output_handler$typed_events)) {
+    output_handler$typed_events()
+  } else {
+    output_handler$events()
+  }
   equity <- ledgr_equity_from_events(
     events = events,
     pulses_posix = pulses_posix,
@@ -678,9 +682,122 @@ ledgr_sweep_run_candidate <- function(exp,
 
 ledgr_memory_output_handler <- function(run_id) {
   state <- new.env(parent = emptyenv())
-  state$events <- list()
+  state$event_count <- 0L
+  state$event_capacity <- 0L
+  state$event_cols <- NULL
   state$status <- "RUNNING"
   handler <- list()
+
+  init_event_cols <- function(capacity) {
+    state$event_capacity <- as.integer(max(0L, capacity))
+    state$event_cols <- list(
+      event_id = character(state$event_capacity),
+      run_id = character(state$event_capacity),
+      ts_utc = as.POSIXct(rep(NA_character_, state$event_capacity), tz = "UTC"),
+      event_type = character(state$event_capacity),
+      instrument_id = character(state$event_capacity),
+      side = character(state$event_capacity),
+      qty = numeric(state$event_capacity),
+      price = numeric(state$event_capacity),
+      fee = numeric(state$event_capacity),
+      meta_json = character(state$event_capacity),
+      event_seq = integer(state$event_capacity),
+      cash_delta = numeric(state$event_capacity),
+      position_delta = numeric(state$event_capacity),
+      meta = vector("list", state$event_capacity)
+    )
+    invisible(TRUE)
+  }
+
+  ensure_event_capacity <- function(required) {
+    required <- as.integer(required)
+    if (is.null(state$event_cols)) {
+      init_event_cols(max(16L, required))
+      return(invisible(TRUE))
+    }
+    if (required <= state$event_capacity) {
+      return(invisible(TRUE))
+    }
+    old_cols <- state$event_cols
+    old_count <- state$event_count
+    init_event_cols(max(required, state$event_capacity * 2L, 16L))
+    if (old_count > 0L) {
+      idx <- seq_len(old_count)
+      for (name in names(old_cols)) {
+        state$event_cols[[name]][idx] <- old_cols[[name]][idx]
+      }
+    }
+    invisible(TRUE)
+  }
+
+  append_event_row_list <- function(row,
+                                    cash_delta = NA_real_,
+                                    position_delta = NA_real_,
+                                    meta = NULL) {
+    ensure_event_capacity(state$event_count + 1L)
+    state$event_count <- state$event_count + 1L
+    i <- state$event_count
+    state$event_cols$event_id[[i]] <- row$event_id
+    state$event_cols$run_id[[i]] <- row$run_id
+    state$event_cols$ts_utc[[i]] <- row$ts_utc
+    state$event_cols$event_type[[i]] <- row$event_type
+    state$event_cols$instrument_id[[i]] <- row$instrument_id
+    state$event_cols$side[[i]] <- row$side
+    state$event_cols$qty[[i]] <- as.numeric(row$qty)
+    state$event_cols$price[[i]] <- as.numeric(row$price)
+    state$event_cols$fee[[i]] <- as.numeric(row$fee)
+    state$event_cols$meta_json[[i]] <- row$meta_json
+    state$event_cols$event_seq[[i]] <- as.integer(row$event_seq)
+    state$event_cols$cash_delta[[i]] <- as.numeric(cash_delta)
+    state$event_cols$position_delta[[i]] <- as.numeric(position_delta)
+    state$event_cols$meta[i] <- list(meta)
+    invisible(TRUE)
+  }
+
+  event_meta_json <- function(i, include_meta_json) {
+    value <- state$event_cols$meta_json[[i]]
+    # Typed consumers intentionally keep fill metadata as parsed lists. Legacy
+    # materialization serializes those lists only when a caller asks for rows.
+    if (!isTRUE(include_meta_json) || (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(value))) {
+      return(value)
+    }
+    meta <- state$event_cols$meta[[i]]
+    if (is.null(meta)) {
+      meta <- list(
+        cash_delta = as.numeric(state$event_cols$cash_delta[[i]]),
+        position_delta = as.numeric(state$event_cols$position_delta[[i]]),
+        realized_pnl = NULL
+      )
+    }
+    canonical_json(meta)
+  }
+
+  materialize_events <- function(include_meta_json = TRUE) {
+    if (is.null(state$event_cols) || state$event_count == 0L) {
+      return(ledgr_empty_event_table())
+    }
+    idx <- seq_len(state$event_count)
+    meta_json <- vapply(idx, event_meta_json, character(1), include_meta_json = include_meta_json)
+    out <- tibble::as_tibble(data.frame(
+      event_id = state$event_cols$event_id[idx],
+      run_id = state$event_cols$run_id[idx],
+      ts_utc = state$event_cols$ts_utc[idx],
+      event_type = state$event_cols$event_type[idx],
+      instrument_id = state$event_cols$instrument_id[idx],
+      side = state$event_cols$side[idx],
+      qty = state$event_cols$qty[idx],
+      price = state$event_cols$price[idx],
+      fee = state$event_cols$fee[idx],
+      meta_json = meta_json,
+      event_seq = state$event_cols$event_seq[idx],
+      stringsAsFactors = FALSE
+    ))
+    attr(out, "ledgr_event_cash_delta") <- state$event_cols$cash_delta[idx]
+    attr(out, "ledgr_event_position_delta") <- state$event_cols$position_delta[idx]
+    attr(out, "ledgr_event_meta") <- state$event_cols$meta[idx]
+    class(out) <- unique(c("ledgr_memory_events", class(out)))
+    out
+  }
 
   handler$run_transaction <- function(fn) fn()
   handler$record_run_status <- function(status, error_msg = NA_character_) {
@@ -699,37 +816,69 @@ ledgr_memory_output_handler <- function(run_id) {
     rlang::abort(msg, class = class)
   }
   handler$init_buffers <- function(max_events) {
+    ensure_event_capacity(state$event_count + as.integer(max_events))
     invisible(TRUE)
   }
   handler$append_event_rows <- function(rows) {
     if (!is.null(rows) && nrow(rows) > 0L) {
-      for (i in seq_len(nrow(rows))) {
-        state$events[[length(state$events) + 1L]] <- rows[i, , drop = FALSE]
+      n <- nrow(rows)
+      start <- state$event_count + 1L
+      end <- state$event_count + n
+      ensure_event_capacity(end)
+      idx <- start:end
+      state$event_cols$event_id[idx] <- as.character(rows$event_id)
+      state$event_cols$run_id[idx] <- as.character(rows$run_id)
+      state$event_cols$ts_utc[idx] <- as.POSIXct(rows$ts_utc, tz = "UTC")
+      state$event_cols$event_type[idx] <- as.character(rows$event_type)
+      state$event_cols$instrument_id[idx] <- as.character(rows$instrument_id)
+      state$event_cols$side[idx] <- as.character(rows$side)
+      state$event_cols$qty[idx] <- as.numeric(rows$qty)
+      state$event_cols$price[idx] <- as.numeric(rows$price)
+      state$event_cols$fee[idx] <- as.numeric(rows$fee)
+      state$event_cols$meta_json[idx] <- as.character(rows$meta_json)
+      state$event_cols$event_seq[idx] <- as.integer(rows$event_seq)
+      for (j in seq_len(n)) {
+        meta <- ledgr_lot_parse_meta(rows$meta_json[[j]])
+        pos <- start + j - 1L
+        state$event_cols$meta[pos] <- list(meta)
+        state$event_cols$cash_delta[[pos]] <- as.numeric(meta$cash_delta %||% NA_real_)
+        state$event_cols$position_delta[[pos]] <- as.numeric(meta$position_delta %||% NA_real_)
       }
+      state$event_count <- end
     }
     invisible(TRUE)
   }
   handler$buffer_event <- function(write_res) {
     if (inherits(write_res, "ledgr_ledger_write_result") &&
         identical(write_res$status, "WROTE")) {
-      handler$append_event_rows(ledgr_event_row_df(write_res$row))
+      append_event_row_list(
+        write_res$row,
+        cash_delta = write_res$cash_delta,
+        position_delta = write_res$position_delta,
+        meta = write_res$meta
+      )
     }
     invisible(TRUE)
   }
   handler$pending_event_count <- function() 0L
   handler$flush_pending <- function() invisible(TRUE)
   handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
-    write_res <- ledgr_fill_event_row(run_id, fill_intent, event_seq)
+    write_res <- ledgr_fill_event_payload(
+      run_id = run_id,
+      fill_intent = fill_intent,
+      event_seq = event_seq,
+      serialize_meta_json = FALSE
+    )
     handler$buffer_event(write_res)
     write_res
   }
   handler$buffer_strategy_state <- function(...) invisible(TRUE)
   handler$write_strategy_state <- function(...) invisible(TRUE)
+  handler$typed_events <- function() {
+    materialize_events(include_meta_json = FALSE)
+  }
   handler$events <- function() {
-    if (length(state$events) == 0L) {
-      return(ledgr_empty_event_table())
-    }
-    tibble::as_tibble(do.call(rbind, state$events))
+    materialize_events(include_meta_json = TRUE)
   }
   structure(handler, class = "ledgr_memory_output_handler")
 }

@@ -849,7 +849,7 @@ scope: shared_fold_core
 Priority: P1
 Effort: L
 Dependencies: LDG-2402, LDG-2403, LDG-2409
-Status: Pending
+Status: Done
 
 ### Description
 
@@ -884,6 +884,68 @@ handler while preserving durable persistent ledger-event serialization.
 
 Typed-event unit tests, accounting parity tests, sweep tests,
 backtest-wrapper/run-store tests if touched, and fingerprint-stability tests.
+
+### Completion Notes
+
+- Replaced the sweep memory output handler's list of one-row event
+  data.frames with typed column-vector storage carrying the public ledger-event
+  fields plus private typed metadata attributes for `cash_delta`,
+  `position_delta`, and parsed/known event metadata.
+- Kept durable persistent output serialization unchanged:
+  `ledgr_fill_event_row()` still emits the stable `meta_json` row payload used
+  by run-store persistence.
+- Added a memory-only fill payload path so sweep memory execution avoids
+  serializing fill `meta_json` in the hot path. `handler$events()` still
+  materializes legacy-compatible event rows with `meta_json`; the sweep summary
+  path uses `handler$typed_events()` and typed metadata directly.
+- Updated `ledgr_equity_from_events()` and `ledgr_fills_from_events()` to use
+  typed memory-event metadata when present and fall back to parsing `meta_json`
+  for durable/public event tables.
+- Added a typed-memory handler equivalence test covering opening rows, fill
+  events, legacy row materialization, and fill reconstruction from typed events.
+- Preserved the persistent buffered-run write path under the unified
+  `output_handler$write_fill_events()` contract: `use_transaction = FALSE`
+  now generates the stable event row and buffers it for bulk flush, while
+  `use_transaction = TRUE` retains the immediate durable live write path
+  inside the fold-level transaction. Added a regression test proving buffered
+  persistent fills do not hit `ledger_events` before `flush_pending()`.
+- Targeted LDG-2410 checkpoint, 1 rep, reference/persistent only:
+  - reference `sweep_plain`: 30.275s LDG-2414 final -> 20.94s checkpoint;
+  - reference `sweep_precomputed`: 30.525s LDG-2414 final -> 19.97s checkpoint;
+  - `ledgr_fill_event_row()` and `canonical_json()` dropped out of the top
+    sampled frames;
+  - residual sampled hotspot is now `ledgr_fills_from_events()` at about 28.3%,
+    which supports the existing LDG-2412 conditional remeasurement gate.
+- Persistent-run recheck after the buffered-write fix, 3 reps:
+  - persistent `sweep_plain`: 1.86s median;
+  - persistent `run_loop`: 7.81s median, faster than the LDG-2414 final
+    median of 8.650s and the LDG-2402 baseline median of 9.420s.
+- Full LDG-2410 benchmark pass, 2 reps plus profile, recorded under
+  `inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/ldg2410_full_benchmark/`:
+  - reference `sweep_plain`: 17.330s median, 2.63x faster than the
+    LDG-2402 baseline median of 45.585s;
+  - reference `sweep_precomputed`: 17.210s median, 2.64x faster than the
+    LDG-2402 baseline median of 45.490s;
+  - wider `sweep_plain`: 18.125s median, 3.61x faster than the LDG-2402
+    baseline median of 65.360s;
+  - wider `sweep_precomputed`: 18.630s median, 3.51x faster than the
+    LDG-2402 baseline median of 65.345s;
+  - persistent `run_loop`: 7.920s median, preserving the repeated
+    `ledgr_run()` watch item as net positive vs. baseline.
+  - profile residual: `ledgr_execute_fold()` about 63.9% total sample share;
+    `ledgr_fills_from_events()` about 27.0%, keeping LDG-2412 as the next
+    measurement-gated candidate.
+- Verification passed:
+  - `testthat::test_file('tests/testthat/test-ledger-writer.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-sweep.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-sweep-parity.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-release-coverage-branches.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-backtest-wrapper.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-backtest-audit-log-equivalence.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-accounting-consistency.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-runner.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-experiment-run.R', reporter='summary')`
+  - `testthat::test_file('tests/testthat/test-fingerprint-stability.R', reporter='summary')`
 
 ### Source Reference
 

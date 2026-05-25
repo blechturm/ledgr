@@ -134,7 +134,10 @@ ledgr_take_preflight_start <- function() {
   val
 }
 
-ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
+ledgr_fill_event_payload <- function(run_id,
+                                     fill_intent,
+                                     event_seq,
+                                     serialize_meta_json = TRUE) {
   if (inherits(fill_intent, "ledgr_fill_none")) {
     return(structure(
       list(
@@ -173,14 +176,13 @@ ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
     rlang::abort("`fill_intent$ts_exec_utc` must be a valid UTC timestamp.", class = "ledgr_invalid_fill_intent")
   }
 
-  meta_json <- canonical_json(
-    list(
-      commission_fixed = as.numeric(commission_fixed),
-      cash_delta = as.numeric(cash_delta),
-      position_delta = as.numeric(signed_qty),
-      realized_pnl = NULL
-    )
+  meta <- list(
+    commission_fixed = as.numeric(commission_fixed),
+    cash_delta = as.numeric(cash_delta),
+    position_delta = as.numeric(signed_qty),
+    realized_pnl = NULL
   )
+  meta_json <- if (isTRUE(serialize_meta_json)) canonical_json(meta) else NA_character_
 
   event_id <- paste0(run_id, "_", sprintf("%08d", as.integer(event_seq)))
   row <- list(
@@ -205,9 +207,19 @@ ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
       next_event_seq = as.integer(event_seq) + 1L,
       cash_delta = as.numeric(cash_delta),
       position_delta = as.numeric(signed_qty),
+      meta = meta,
       row = row
     ),
     class = "ledgr_ledger_write_result"
+  )
+}
+
+ledgr_fill_event_row <- function(run_id, fill_intent, event_seq) {
+  ledgr_fill_event_payload(
+    run_id = run_id,
+    fill_intent = fill_intent,
+    event_seq = event_seq,
+    serialize_meta_json = TRUE
   )
 }
 
@@ -412,13 +424,20 @@ ledgr_persistent_output_handler <- function(con,
   }
 
   handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
-    ledgr_write_fill_events(
-      con = con,
-      run_id = run_id,
-      fill_intent = fill_intent,
-      event_seq_start = event_seq,
-      use_transaction = use_transaction
-    )
+    if (isTRUE(use_transaction)) {
+      # The fold is already inside handler$run_transaction(); live mode writes
+      # immediately without opening a nested DuckDB transaction.
+      return(ledgr_write_fill_events(
+        con = con,
+        run_id = run_id,
+        fill_intent = fill_intent,
+        event_seq_start = event_seq,
+        use_transaction = FALSE
+      ))
+    }
+    write_res <- ledgr_fill_event_row(run_id, fill_intent, event_seq)
+    handler$buffer_event(write_res)
+    write_res
   }
 
   handler$append_event_rows <- function(rows) {

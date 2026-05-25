@@ -265,15 +265,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
         fill$instrument_id <- instrument_id
         fill$ts_signal_utc <- ts_iso
 
-        if (identical(event_mode, "live")) {
-          write_res <- output_handler$write_fill_events(
-            fill_intent = fill,
-            event_seq = event_seq
-          )
-        } else {
-          write_res <- ledgr_fill_event_row(run_id, fill, event_seq)
-          output_handler$buffer_event(write_res)
-        }
+        write_res <- output_handler$write_fill_events(
+          fill_intent = fill,
+          event_seq = event_seq,
+          use_transaction = identical(event_mode, "live")
+        )
         event_seq <- write_res$next_event_seq
 
         qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
@@ -407,6 +403,41 @@ ledgr_opening_position_event_rows <- function(run_id,
   do.call(rbind, rows[seq_len(idx)])
 }
 
+ledgr_typed_event_metadata <- function(events, order_idx = NULL) {
+  n_events <- if (is.null(events)) 0L else nrow(events)
+  if (n_events == 0L) {
+    return(NULL)
+  }
+  cash_delta <- attr(events, "ledgr_event_cash_delta", exact = TRUE)
+  position_delta <- attr(events, "ledgr_event_position_delta", exact = TRUE)
+  meta <- attr(events, "ledgr_event_meta", exact = TRUE)
+  if (length(cash_delta) != n_events ||
+      length(position_delta) != n_events ||
+      length(meta) != n_events) {
+    return(NULL)
+  }
+  if (!is.null(order_idx)) {
+    cash_delta <- cash_delta[order_idx]
+    position_delta <- position_delta[order_idx]
+    meta <- meta[order_idx]
+  }
+  list(
+    cash_delta = as.numeric(cash_delta),
+    position_delta = as.numeric(position_delta),
+    meta = meta
+  )
+}
+
+ledgr_event_meta_at <- function(events, typed_meta, i) {
+  if (!is.null(typed_meta)) {
+    meta <- typed_meta$meta[[i]]
+    if (!is.null(meta)) {
+      return(meta)
+    }
+  }
+  jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+}
+
 ledgr_equity_from_events <- function(events,
                                      pulses_posix,
                                      close_mat,
@@ -414,10 +445,13 @@ ledgr_equity_from_events <- function(events,
                                      instrument_ids,
                                      run_id) {
   n_pulses <- length(pulses_posix)
+  typed_meta <- NULL
   events <- if (is.null(events) || nrow(events) == 0L) {
     data.frame()
   } else {
-    events[order(events$event_seq), , drop = FALSE]
+    order_idx <- order(events$event_seq)
+    typed_meta <- ledgr_typed_event_metadata(events, order_idx = order_idx)
+    events[order_idx, , drop = FALSE]
   }
   n_events <- nrow(events)
 
@@ -437,11 +471,17 @@ ledgr_equity_from_events <- function(events,
   position_delta <- numeric(n_events)
   event_meta <- vector("list", n_events)
   if (n_events > 0L) {
+    if (!is.null(typed_meta)) {
+      cash_delta <- typed_meta$cash_delta
+      position_delta <- typed_meta$position_delta
+    }
     for (i in seq_len(n_events)) {
-      meta <- jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_event_meta_at(events, typed_meta, i)
       event_meta[[i]] <- meta
-      cash_delta[[i]] <- as.numeric(meta$cash_delta %||% 0)
-      position_delta[[i]] <- as.numeric(meta$position_delta %||% 0)
+      if (is.null(typed_meta)) {
+        cash_delta[[i]] <- as.numeric(meta$cash_delta %||% 0)
+        position_delta[[i]] <- as.numeric(meta$position_delta %||% 0)
+      }
     }
   }
 
@@ -519,7 +559,9 @@ ledgr_fills_from_events <- function(events) {
     return(ledgr_empty_fills_table())
   }
 
-  events <- events[order(events$event_seq), , drop = FALSE]
+  order_idx <- order(events$event_seq)
+  typed_meta <- ledgr_typed_event_metadata(events, order_idx = order_idx)
+  events <- events[order_idx, , drop = FALSE]
   instrument_ids <- unique(stats::na.omit(events$instrument_id))
   lot_state <- ledgr_lot_state(instrument_ids)
   rows <- list()
@@ -534,7 +576,7 @@ ledgr_fills_from_events <- function(events) {
     price <- suppressWarnings(as.numeric(ev$price[[1]]))
     fee <- suppressWarnings(as.numeric(ev$fee[[1]]))
     if (identical(ev$event_type[[1]], "CASHFLOW")) {
-      meta <- jsonlite::fromJSON(ev$meta_json[[1]], simplifyVector = FALSE)
+      meta <- ledgr_event_meta_at(events, typed_meta, i)
       lot_res <- ledgr_lot_apply_event(
         lot_state,
         event_type = event_type,
@@ -553,7 +595,7 @@ ledgr_fills_from_events <- function(events) {
       next
     }
 
-    meta <- jsonlite::fromJSON(ev$meta_json[[1]], simplifyVector = FALSE)
+    meta <- ledgr_event_meta_at(events, typed_meta, i)
     if (is.na(qty) || qty <= 0 || is.na(price)) {
       out_idx <- out_idx + 1L
       rows[[out_idx]] <- data.frame(

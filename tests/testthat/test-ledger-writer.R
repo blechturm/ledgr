@@ -75,6 +75,46 @@ testthat::test_that("BUY fill writes a correct FILL ledger event", {
   testthat::expect_equal(meta$cash_delta, -(2 * row$price[[1]] + 1.25))
 })
 
+testthat::test_that("persistent output handler preserves buffered fill writes", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+
+  run_id <- "run-ledger-buffered-handler"
+  insert_test_run(con, run_id)
+
+  handler <- ledgr:::ledgr_persistent_output_handler(
+    con = con,
+    run_id = run_id,
+    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE
+  )
+  handler$init_buffers(1L)
+
+  fill <- ledgr:::ledgr_fill_next_open(
+    desired_qty_delta = 2,
+    next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 100),
+    spread_bps = 10,
+    commission_fixed = 1.25
+  )
+
+  res <- handler$write_fill_events(fill, 1L, use_transaction = FALSE)
+  testthat::expect_identical(res$status, "WROTE")
+  testthat::expect_identical(handler$pending_event_count(), 1L)
+  testthat::expect_equal(
+    DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]],
+    0
+  )
+
+  handler$flush_pending()
+  testthat::expect_identical(handler$pending_event_count(), 0L)
+  testthat::expect_equal(
+    DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]],
+    1
+  )
+})
+
 testthat::test_that("SELL fill writes correct deltas", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

@@ -22,6 +22,48 @@ ledgr_sweep_artifact_counts <- function(snapshot) {
   }, integer(1)), tables)
 }
 
+testthat::test_that("memory output handler stores typed events equivalent to ledger rows", {
+  handler <- ledgr:::ledgr_memory_output_handler("typed-memory")
+  opening <- ledgr:::ledgr_opening_position_event_rows(
+    run_id = "typed-memory",
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+    positions = c(AAA = 2),
+    cost_basis = c(AAA = 10),
+    event_seq_start = 1L
+  )
+  handler$append_event_rows(opening)
+  handler$init_buffers(1L)
+
+  fill <- structure(
+    list(
+      instrument_id = "AAA",
+      side = "SELL",
+      qty = 1,
+      fill_price = 12,
+      commission_fixed = 0.25,
+      ts_exec_utc = "2020-01-02T00:00:00Z"
+    ),
+    class = "ledgr_fill_intent"
+  )
+  full_write_res <- ledgr:::ledgr_fill_event_row("typed-memory", fill, 2L)
+  write_res <- handler$write_fill_events(fill, 2L)
+
+  expected <- tibble::as_tibble(rbind(opening, ledgr:::ledgr_event_row_df(full_write_res$row)))
+  events <- handler$events()
+  typed_events <- handler$typed_events()
+
+  testthat::expect_s3_class(events, "tbl_df")
+  testthat::expect_equal(as.data.frame(events), as.data.frame(expected), ignore_attr = TRUE)
+  testthat::expect_identical(events$event_seq, c(1L, 2L))
+  testthat::expect_identical(events$event_type, c("CASHFLOW", "FILL"))
+  testthat::expect_s3_class(typed_events, "ledgr_memory_events")
+  testthat::expect_true(is.na(typed_events$meta_json[[2L]]))
+  testthat::expect_equal(
+    ledgr:::ledgr_fills_from_events(typed_events),
+    ledgr:::ledgr_fills_from_events(events)
+  )
+})
+
 testthat::test_that("ledgr_sweep returns ordered summary rows without store writes", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
