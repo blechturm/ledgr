@@ -96,11 +96,11 @@ versioned packet.
 | v0.1.8 | Done | Lightweight parameter sweep mode and fold-core split. | `inst/design/ledgr_v0_1_8_0_spec_packet/` |
 | v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
 | v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
-| v0.1.8.3 | Active | Single-core sweep optimization after metric-kernel semantics settle. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
+| v0.1.8.3 | Active | Single-core R-level fold/runtime optimization after metric-kernel semantics settle. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Planned | Active parameterized feature aliases for sweep authoring. | Future packet |
 | v0.1.8.5 | Planned | Parameter-grid quality-of-life helpers after active aliases stabilize. | Future packet |
-| v0.1.8.6 | Planned | Fast context B1/B2 before parallel dispatch, if v0.1.8.3 residual profiling confirms context churn remains dominant. | Future packet |
-| v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and fast-context decision stabilize. | Future packet |
+| v0.1.8.6 | Planned | DuckDB-backed feature storage / out-of-core projection candidate if residual evidence justifies it. | Future packet |
+| v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet |
 | v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
@@ -483,16 +483,20 @@ Constraints:
 Authoritative input:
 
 - `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`.
+- `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`.
 - `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`.
 - `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`.
 
 Intent:
 
 - optimize no-DB sweep execution after metric-kernel semantics are stable;
-- introduce typed memory events and single-pass summary reconstruction if parity
-  design closes cleanly;
-- reduce fold-core context churn without changing strategy-facing context
-  semantics;
+- introduce a runtime projection interface with an R-memory backend;
+- make `ledgr_run()` and `ledgr_sweep()` consume the same projection through
+  the shared fold core;
+- introduce typed memory events and single-pass summary reconstruction if
+  parity design closes cleanly;
+- reduce fold-core context churn with fast context B1/B2 where parity permits,
+  without changing strategy-facing context semantics;
 - keep `ledgr_run()` and `ledgr_sweep()` on one execution core.
 - route the v0.1.8.2 auditr findings that fit this performance release,
   especially preflight indirection hardening and docs/message polish.
@@ -501,6 +505,14 @@ Precondition:
 
 - persistent-path and memory-path realized/unrealized PnL semantics must be
   resolved before implementation begins.
+
+Constraints:
+
+- no active alias lookup, alias-map identity, or parameter-grid helper surface;
+- no DuckDB-backed precompute storage or out-of-core projection in this cycle;
+- no DuckDB-implemented indicator computation;
+- if fast context B2 cannot preserve parity, ship B1 only and defer B2 with
+  measurement evidence.
 
 ### v0.1.8.4 Active Parameterized Feature Aliases
 
@@ -517,6 +529,9 @@ Intent:
   calling external feature factories from strategy code;
 - preserve concrete feature IDs and fingerprints by resolving declarations to
   ordinary indicators before precompute, sweep, or run execution;
+- inherit the v0.1.8.3 grid-level concrete-feature-union decision so shared
+  concrete features are computed once across a sweep grid, not once per
+  candidate;
 - store resolved alias maps in execution identity and provenance.
 
 Constraints:
@@ -553,46 +568,40 @@ Constraints:
 - if v0.1.8.1 teaching needs a shorter example, prefer vignette-local helper
   code rather than committing a public grid DSL early.
 
-### v0.1.8.6 Fast Context B1/B2
+### v0.1.8.6 DuckDB-Backed Feature Storage / Out-Of-Core Projection Candidate
 
 Intent:
 
-- reduce fold-core pulse-context churn before adding worker-level parallelism;
-- use the existing `use_fast_context` scaffold as the activation mechanism if
-  v0.1.8.3 residual profiling confirms context churn remains the dominant
-  bottleneck;
-- initialize lookup environments, helper closures, and stable instrument/bar
-  indexes once per candidate fold where possible;
-- update only pulse-specific values during the fold while preserving public
-  strategy-facing context behavior;
-- improve both `ledgr_run()` and `ledgr_sweep()` before multiplying candidate
-  execution across workers.
+- persist precomputed concrete feature libraries in DuckDB if residual evidence
+  shows memory scaling, repeated precompute, ML/export, or worker sharing as a
+  load-bearing bottleneck;
+- add a DuckDB-backed implementation of the v0.1.8.3 projection interface using
+  pulse-block buffering;
+- share storage direction with the deferred layer 4 research/export artifact;
+- keep DBI access at block boundaries, not per pulse;
+- preserve the R `series_fn()` / TTR / custom-indicator extension surface.
 
 Readiness gates:
 
-- v0.1.8.3 residual hot-path report identifies fold-context churn as the next
-  optimization target, or explicitly explains why fast context should be
-  skipped;
-- typed memory events and single-pass summary reconstruction are stable;
-- existing sweep/run parity tests cover the fast-context path before activation;
-- `use_fast_context` is no longer dead scaffold: its behavior, activation
-  boundary, and fallback behavior are specified before implementation.
+- v0.1.8.3 runtime projection interface and R-memory backend have landed;
+- v0.1.8.4 active aliases have fixed alias-map identity and grid-level
+  concrete-feature-union semantics;
+- post-v0.1.8.3 residual evidence shows memory scaling, repeated precompute,
+  ML/export, or parallel-worker sharing is the next bottleneck.
 
 Constraints:
 
-- no lazy `features_wide` API change in this milestone;
-- no public strategy-context API change;
-- no second fold core or sweep-only execution semantics;
-- no parallel worker API;
-- preserve strategy preflight, target validation, fill timing, cost semantics,
-  event order, metric context handling, and promotion provenance.
+- no per-pulse DBI traffic;
+- no DuckDB-implemented indicator computation without a separate RFC;
+- no second feature engine;
+- no public ML/export API unless explicitly promoted through a spec packet.
 
 ### v0.1.8.7 Parallel Sweep Dispatch
 
 Intent:
 
 - add optional parallel candidate dispatch only after the single-core sweep path
-  remains the reference implementation and the fast-context decision has been
+  remains the reference implementation and R-level optimization has been
   resolved;
 - preserve deterministic result row order, warning/error association, and seed
   derivation regardless of worker completion order;
@@ -606,8 +615,8 @@ Readiness gates:
 - `metric_kernel` and candidate payloads are plain serializable value objects;
 - single-core performance measurements show remaining candidate work is
   CPU-bound enough to justify parallel overhead;
-- fast context B1/B2 has shipped, or residual evidence shows parallel dispatch
-  is the better next optimization despite remaining context churn;
+- v0.1.8.3 R-level optimization and any v0.1.8.6 storage/projection decision
+  are resolved;
 - grid UX has stabilized enough that larger sweeps are an intentional public
   workflow rather than accidental friction;
 - interrupt, progress, warning ordering, failure ordering, package state, and

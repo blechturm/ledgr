@@ -2,21 +2,23 @@
 
 **Status:** Ticket-cut baseline for v0.1.8.3 implementation.
 **Target Branch:** `v0.1.8.3`
-**Scope:** Empirically grounded single-core sweep optimization, plus routed
-auditr feedback that identifies confirmed bugs, documentation gaps, or low-risk
-message polish.
+**Scope:** Empirically grounded single-core sweep optimization, now expanded by
+the accepted grid-level feature artifacts synthesis to cover the full R-level
+fold/runtime optimization arc, plus routed auditr feedback that identifies
+confirmed bugs, documentation gaps, or low-risk message polish.
 **Auditr Input:** Routed v0.1.8.2 auditr report in this packet:
 `ledgr_triage_report.md`, `categorized_feedback.yml`, and
 `cycle_retrospective.md`. Planning and performance-baseline work may proceed in
 parallel with auditr fixes, but the release cannot close until accepted auditr
 findings are fixed, deferred, or explicitly rejected.
-**Non-scope for this pass:** Active parameterized feature aliases,
-parameter-grid quality-of-life helpers, automatic candidate ranking or winner
-selection, public parallel sweep dispatch, Rcpp/compiled kernels, lazy
-`features_wide` API changes, target-risk layers, walk-forward validation,
-public cost/liquidity chains, OMS work, paper/live adapters, external
-reference-data adapters, and full sweep artifact persistence unless explicitly
-promoted by maintainer amendment.
+**Non-scope for this pass:** Active parameterized feature aliases, alias-map
+storage/hash/provenance, parameter-grid quality-of-life helpers, automatic
+candidate ranking or winner selection, public parallel sweep dispatch,
+Rcpp/compiled kernels, DuckDB-backed precompute storage or indicator
+computation, lazy `features_wide` API changes, target-risk layers,
+walk-forward validation, public cost/liquidity chains, OMS work, paper/live
+adapters, external reference-data adapters, and full sweep artifact persistence
+unless explicitly promoted by maintainer amendment.
 
 ---
 
@@ -29,6 +31,7 @@ Authoritative inputs:
 - `inst/design/README.md`
 - `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`
 - `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`
+- `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`
 
 Supporting context:
 
@@ -77,15 +80,24 @@ v0.1.8.2 changes landed. The v0.1.8.2 baseline may show different proportions.
 That is expected, not a measurement error. The Section 4 protocol is the
 current evidence gate for v0.1.8.3 claims.
 
-The first v0.1.8.3 optimization target is the second bucket:
+LDG-2402 showed that the old LDG-2108B split is stale for v0.1.8.2. The
+reference workload now samples `ledgr_execute_fold()` as the dominant share of
+time. Per the accepted grid-level feature artifacts synthesis, v0.1.8.3 is
+therefore amended to cover the full R-level fold/runtime optimization arc:
 
 ```text
-typed memory events + single-pass sweep summary reconstruction
+runtime projection interface and R-memory backend
+  -> shared ledgr_run()/ledgr_sweep() projection consumption
+  -> typed memory events
+  -> fast context B1
+  -> single-pass sweep summary reconstruction
+  -> fast context B2 if parity permits
 ```
 
-This target is first because it does not require a strategy-facing context API
-change, has a clear parity surface, and directly follows from the existing
-memory output-handler boundary.
+The release still does not change public strategy-facing context semantics.
+The projection is an internal interface with an R-memory list-of-matrices
+backend in v0.1.8.3. A future DuckDB-backed projection backend and durable
+feature artifact substrate are deferred to horizon.
 
 The release must be empirically grounded. Every optimization claim needs a
 before/after measurement, a reproducible script or fixture, and a residual
@@ -100,11 +112,11 @@ Roadmap placement:
 
 | Release | Scope |
 | --- | --- |
-| v0.1.8.3 | Empirically measured single-core sweep optimization: typed memory events and single-pass summary reconstruction, plus routed auditr fixes. |
+| v0.1.8.3 | Empirically measured single-core sweep optimization: runtime projection, shared fold projection consumption, typed memory events, fast context B1/B2 where parity permits, single-pass summary reconstruction, plus routed auditr fixes. |
 | v0.1.8.4 | Active parameterized feature aliases for sweep authoring. |
 | v0.1.8.5 | Parameter-grid quality-of-life helpers after active aliases stabilize. |
-| v0.1.8.6 | Fast context B1/B2 before parallel dispatch, if v0.1.8.3 residual profiling confirms context churn remains dominant. |
-| v0.1.8.7 | Parallel sweep dispatch after serial semantics, metrics, grid UX, and fast-context decision stabilize. |
+| v0.1.8.6 | DuckDB-backed precompute storage / out-of-core projection candidate if residual evidence shows memory scaling, repeated precompute, ML/export, or parallel-worker sharing is load-bearing. |
+| v0.1.8.7 | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. |
 | v0.1.9 | Target-risk chain. |
 | v0.1.9.x | Walk-forward, selection integrity, compact sweep artifacts, and target-construction helper extensions. |
 | v0.1.9.x / v0.2.0 | Public transaction-cost model API. |
@@ -114,24 +126,30 @@ Roadmap placement:
 
 ## 2. Release Goals
 
-v0.1.8.3 has five primary goals:
+v0.1.8.3 has eight primary goals:
 
 1. Establish a reproducible performance protocol for sweep optimization.
 2. Capture a v0.1.8.2 baseline measurement before changing the hot path.
 3. Resolve and test persistent-path versus memory-path accounting parity for
    realized and unrealized PnL.
-4. Implement typed memory events and single-pass sweep summary reconstruction
+4. Implement an internal runtime projection interface with an R-memory
+   list-of-matrices backend.
+5. Route both `ledgr_run()` and `ledgr_sweep()` through the same projection
+   consumption path in the shared fold.
+6. Implement typed memory events and single-pass sweep summary reconstruction
    without changing strategy-facing semantics.
-5. Publish post-change measurements and a residual hot-path report.
+7. Implement fast context B1 and B2 where parity permits, with B2 deferrable if
+   it cannot preserve context semantics in this cycle.
+8. Publish post-change measurements and a residual hot-path report.
 
 It has one required intake gate:
 
-6. Route v0.1.8.3 auditr findings into accepted fixes, documentation/message
+9. Route v0.1.8.3 auditr findings into accepted fixes, documentation/message
    polish, explicit deferrals, or rejections before release gate.
 
 The routed auditr findings add one required runtime fix:
 
-7. Harden strategy preflight against constant-string and direct-function
+10. Harden strategy preflight against constant-string and direct-function
    `do.call()` indirection to forbidden nondeterministic calls, and classify
    `attr(ctx, ...) <- ...` context mutation as unsupported strategy code.
 
@@ -160,6 +178,33 @@ Accounting parity:
 - confirmation that FIFO lot-tracking remains the authoritative source for
   realized and unrealized PnL semantics.
 
+Runtime projection:
+
+- extend `ledgr_precompute_features()` as the single feature precompute path to
+  emit an internal projection shape;
+- first backend is R-memory list-of-matrices, keyed by concrete feature ID and
+  shaped `[instrument_idx, pulse_idx]`;
+- missing projection slots use `NA_real_` wherever the current accessor path
+  returns `NA` or no value;
+- bundle outputs flatten to ordinary concrete single-output feature IDs;
+- preserve `feature_engine_version`, concrete fingerprints, `feature_set_hash`,
+  and `config_hash`;
+- make `ledgr_run()` the one-candidate projection case and `ledgr_sweep()` the
+  grid-union case;
+- design projection access as an internal interface so a later DuckDB-backed
+  backend can be added without refactoring the fold.
+
+Shared fold projection consumption:
+
+- consume projection values through pre-resolved integer indices rather than
+  per-pulse string matching, reshape, or data-frame construction;
+- preserve public `ctx$feature()` and related helper semantics;
+- preserve `ctx$features_wide` schema, column ordering, types, and `ts_utc`
+  behavior;
+- materialize `ctx$features_wide` as a fresh current-pulse view, not a reusable
+  mutable row shell;
+- prove projection-vs-current-accessor parity before fast-context activation.
+
 Typed memory events:
 
 - typed in-memory event representation for the memory output handler;
@@ -176,6 +221,15 @@ Single-pass summary reconstruction:
   summary path where practical;
 - accept `metric_kernel` as the metric assumption input;
 - preserve the public `ledgr_sweep_results` shape and promotion context.
+
+Fast context:
+
+- activate B1 after projection parity is green: initialize lookup environments
+  and helper closures once per candidate and mutate pulse-specific values;
+- implement B2 after B1 and single-pass work where parity permits:
+  index-backed/list-backed bars and feature proxy structures;
+- if B2 cannot reach parity, ship B1 and defer B2 with measurement evidence;
+- no public strategy-facing context API change.
 
 Auditr intake:
 
@@ -194,16 +248,11 @@ Planning cleanup:
 
 ### Out Of Scope
 
-Fast context:
-
-- no activation of `use_fast_context` in v0.1.8.3 unless the maintainer
-  explicitly amends the packet after typed memory events and single-pass
-  summary reconstruction land;
-- no B1/B2 context reuse or list-backed proxy work in the baseline scope.
-
 Public context API changes:
 
-- no lazy `ctx$features_wide`;
+- no lazy `ctx$features_wide` via active bindings. The v0.1.8.3 path is fresh
+  current-pulse view materialization from the projection; if that remains hot
+  after the release, the residual report should name it explicitly;
 - no active bindings;
 - no change from field to function for public context fields;
 - no new strategy-facing feature lookup contract.
@@ -221,6 +270,9 @@ Parallel and compiled execution:
 - no worker API;
 - no mori transport adoption;
 - no Rcpp or Fortran kernel work.
+- no required strategy bytecode-compilation work. `compiler::cmpfun()` may be
+  evaluated as a residual-report candidate only after projection and fast
+  context changes land.
 
 Risk, evaluation, and execution policy:
 
@@ -233,9 +285,19 @@ Storage and artifacts:
 
 - no full sweep artifact save/load feature;
 - no broad schema redesign beyond fields required by the scoped optimization;
+- no DuckDB-backed precompute storage, out-of-core projection, or long/wide
+  research artifact tables;
+- no DuckDB-implemented indicator computation;
 - no backward-compatibility shims for pre-CRAN development artifacts unless the
   maintainer explicitly requests them, per the pre-CRAN compatibility policy in
   `inst/design/README.md`.
+
+Persistent reconstruction:
+
+- no persistent-path single-pass reconstruction or reconstruction-path
+  unification in v0.1.8.3. The single-pass work targets the sweep memory path;
+  persistent reconstruction can be revisited later if the residual report shows
+  it is a material cost or correctness-maintenance burden.
 
 ---
 
@@ -302,12 +364,16 @@ The protocol should include at least:
 5. **Metric-context workload**: non-default risk-free rate or calendar context
    proving the new summary path consumes `metric_kernel` rather than reverting
    to scalar or zero-risk-free assumptions.
+6. **Single-candidate `ledgr_run()` workload**: a committed-run baseline that
+   can detect material wall-clock regression from the new one-candidate
+   projection builder path.
 
 ### Measurements
 
 Capture, where practical:
 
 - total elapsed sweep time;
+- total elapsed `ledgr_run()` time for the single-candidate baseline;
 - candidate fold time;
 - post-candidate summary reconstruction time;
 - metric computation time;
@@ -480,13 +546,15 @@ Accepted auditr categories for this packet:
 
 Default deferrals:
 
-- new public APIs unrelated to typed memory events or single-pass summary;
+- new public APIs unrelated to the projection, typed memory events, fast
+  context, or single-pass summary;
 - ranking helpers and winner selection, unless separately scheduled in a future
   packet or parked in `horizon.md`;
 - active aliases to v0.1.8.4 and parameter-grid helpers to v0.1.8.5;
-- fast context to v0.1.8.6 if residual profiling confirms context churn
-  remains dominant;
 - parallel sweep to v0.1.8.7 or a later explicitly scoped packet;
+- DuckDB-backed precompute storage, out-of-core projection, and durable
+  feature artifacts to horizon until residual evidence and active-alias
+  contracts justify promotion;
 - risk-layer, OMS, walk-forward, or benchmark-provider work to their named
   roadmap cycles or `horizon.md` if no cycle owns the finding yet;
 - large documentation rewrites not needed to explain the scoped release.
@@ -532,37 +600,57 @@ The ticket cut uses this sequence:
      docs, installed example corrections, and real-data troubleshooting;
    - preserve deferred API boundaries.
 
-6. **Typed memory events**
+6. **Runtime projection interface and R-memory backend**
+   - extend `ledgr_precompute_features()` to emit the projection;
+   - pin projection shape, missingness, bundle flattening, and version policy;
+   - keep DuckDB-backed storage deferred.
+
+7. **Shared fold projection consumption**
+   - make `ledgr_run()` and `ledgr_sweep()` consume the same projection
+     interface;
+   - add projection-vs-table, state-leak, schema, and shared-run/sweep parity
+     gates;
+   - use `ledgr_sweep_run_candidate()` as the convergence point for
+     per-candidate fold setup where applicable.
+
+8. **Typed memory events**
    - add typed memory event representation;
    - keep durable persistent `meta_json` serialization unchanged;
    - prove typed and durable representations are equivalent.
 
-7. **Single-pass summary reconstruction**
+9. **Fast context B1**
+   - initialize lookup environments and helper closures once per candidate;
+   - mutate pulse-specific values per pulse;
+   - activate only after projection parity is green.
+
+10. **Single-pass summary reconstruction**
    - compute sweep summary artifacts without redundant event replay;
    - thread `metric_kernel`;
    - preserve sweep result shape and promotion metadata.
 
-8. **Post-change measurement and residual report**
+11. **Fast context B2**
+   - replace expensive per-pulse bars/features proxy construction with
+     index-backed/list-backed structures where parity permits;
+   - defer with evidence if parity cannot be reached in this cycle.
+
+12. **Post-change measurement and residual report**
    - rerun baseline workloads;
    - publish speedup and regression results;
    - document remaining inefficiency pockets and next optimization candidates.
 
-9. **Release gate**
+13. **Release gate**
    - full local tests;
    - package build/check;
    - coverage gate if applicable;
    - README/design index/roadmap/NEWS verification;
    - CI merge/tag playbook.
 
-Fast-context work should be listed as a stretch or future ticket only after the
-post-change residual report proves it remains the right next bottleneck.
-
-Tracks 5 and 6 should be separate tickets by default. This lets the parity gate
-run twice: once after typed memory events land, proving the representation
-change preserves accounting, and once after the single-pass summary helper
-lands, proving the reconstruction change preserves accounting. If ticket cut
-combines them for review efficiency, the combined ticket must still preserve
-both internal verification checkpoints.
+Projection work must precede typed memory events and fast context. Typed events
+and single-pass summary should remain separate tickets by default so the parity
+gate can run once after the representation change and once after the
+reconstruction change. Fast context B2 is optional within the release: if it
+cannot preserve parity, v0.1.8.3 can ship B1 and defer B2 with measurement
+evidence.
 
 ---
 
@@ -571,6 +659,12 @@ both internal verification checkpoints.
 Runtime verification must include:
 
 - targeted accounting parity tests;
+- projection shape, missingness, bundle flattening, and fingerprint-stability
+  tests;
+- projection-vs-current-accessor parity tests;
+- `ctx$features_wide` state-leak and schema-preservation tests;
+- shared `ledgr_run()` / `ledgr_sweep()` projection-consumption tests;
+- single-candidate `ledgr_run()` wall-clock regression check;
 - targeted strategy-preflight adversarial tests for `do.call()` indirection and
   `attr(ctx, ...) <- ...` rejection;
 - sweep tests;
@@ -593,6 +687,10 @@ Expected test surfaces include:
   to warrant direct unit coverage;
 - a single-pass-summary-specific test file if the helper is factored as a
   separately testable unit.
+- a projection-specific test file if the runtime projection is factored as a
+  separately testable unit;
+- a fast-context-specific test file if B1/B2 activation is substantial enough
+  to warrant direct unit coverage.
 
 Performance verification must include:
 
@@ -624,17 +722,23 @@ v0.1.8.3 can close when:
 3. `attr(ctx, ...) <- ...` has either a preflight rejection test or an explicit
    maintainer amendment explaining why it remains documented-only.
 4. The v0.1.8.2 performance baseline is recorded.
-5. Typed memory events and single-pass summary reconstruction either ship with
-   parity and measured improvement, or are explicitly deferred with evidence.
-6. Persistent and memory reconstruction parity is tested for realized and
+5. Runtime projection ships through the shared `ledgr_run()` / `ledgr_sweep()`
+   fold path with projection parity, missingness, bundle, state-leak, and
+   `ctx$features_wide` schema tests.
+6. The projection does not bump `feature_engine_version`, concrete
+   fingerprints, `feature_set_hash`, or `config_hash`.
+7. Typed memory events, fast context B1, single-pass summary reconstruction,
+   and B2 where parity permits either ship with parity and measured
+   improvement, or are explicitly deferred with evidence.
+8. Persistent and memory reconstruction parity is tested for realized and
    unrealized PnL.
-7. `metric_kernel` remains the sole metric-assumption input for sweep summary
+9. `metric_kernel` remains the sole metric-assumption input for sweep summary
    computation.
-8. Public sweep result shape, promotion context, warning behavior, and execution
+10. Public sweep result shape, promotion context, warning behavior, and execution
    identity remain compatible with v0.1.8.2 contracts unless a ticket records an
    intentional pre-CRAN breaking change.
-9. Accepted auditr docs/message findings are fixed, deferred, or assigned to a
+11. Accepted auditr docs/message findings are fixed, deferred, or assigned to a
    named future home.
-10. The residual hot-path report names the remaining dominant inefficiency
+12. The residual hot-path report names the remaining dominant inefficiency
    pockets and recommends the next optimization slice.
-11. Full release gates pass locally and in CI.
+13. Full release gates pass locally and in CI.

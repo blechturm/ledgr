@@ -70,12 +70,15 @@ auditr findings that fit the release scope.
 - Machine-readable tickets: `ledgr_v0_1_8_3_spec_packet/tickets.yml`.
 
 The v0.1.8.3 implementation targets are performance protocol and baseline,
-persistent-versus-memory accounting parity, typed memory events, single-pass
-sweep summary reconstruction, post-change residual profiling, one preflight
+persistent-versus-memory accounting parity, runtime projection with an R-memory
+backend, shared `ledgr_run()` / `ledgr_sweep()` projection consumption, typed
+memory events, fast context B1/B2 where parity permits, single-pass sweep
+summary reconstruction, post-change residual profiling, one preflight
 indirection hardening bugfix, and auditr-routed docs/message polish. Do not
-pull active aliases, parameter-grid helpers, fast context, parallel dispatch,
-target risk, walk-forward, cost/liquidity, OMS, benchmark, or external-provider
-work into this packet without maintainer amendment.
+pull active aliases, alias-map identity, parameter-grid helpers, DuckDB-backed
+precompute storage, out-of-core projection, parallel dispatch, target risk,
+walk-forward, cost/liquidity, OMS, benchmark, or external-provider work into
+this packet without maintainer amendment.
 
 ## Core Documents
 
@@ -155,6 +158,9 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x.md`
 - `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_response.md`
 - `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`
+- `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x.md`
+- `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_response.md`
+- `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -167,7 +173,10 @@ The promotion-context decision adds durable `run_promotion_context`
 selection-audit metadata for runs promoted from sweep candidates; full sweep
 artifact persistence remains future work.
 The sweep optimization synthesis defines the v0.1.8.3+ single-core optimization
-arc: typed memory events first, fast context second, Rcpp and parallelism later.
+arc, and the accepted grid-level feature artifacts synthesis amends v0.1.8.3
+to start with runtime projection, then typed memory events, fast context,
+single-pass summary reconstruction, and residual measurement before any
+parallel or compiled-core work.
 The multi-output indicator synthesis defines `ledgr_indicator_bundle` and the
 `ledgr_ind_ttr_outputs()` authoring helper for v0.1.8.1.
 The metric context RFC and synthesis define the `ledgr_metric_context`,
@@ -199,7 +208,22 @@ The active-alias synthesis accepts a future-cycle design: constructor support
 for scalar parameter references, authoring declarations that are not concrete
 indicators, `ledgr_parameters()` introspection, an `alias_map_hash` provenance
 layer, flat bundle semantics, and placement in the v0.1.8.4 sweep authoring
-ergonomics cycle.
+ergonomics cycle. It has been amended to inherit the v0.1.8.3 grid-level
+concrete-feature-union decision, so parameterized sweep candidates share
+concrete feature computation while retaining per-candidate alias identity.
+The grid-level feature artifacts RFC seed explores a shared substrate for
+parameterized indicator sweeps, precomputed wide feature backing,
+candidate-level alias views, runtime pulse-context feature views, DuckDB-backed
+research/export artifacts, and future ML training-frame support. It is a seed,
+not accepted implementation scope.
+The grid-level feature artifacts synthesis accepts a v0.1.8.3 scope amendment:
+extend `ledgr_precompute_features()` into a shared runtime projection consumed
+by both `ledgr_run()` and `ledgr_sweep()`, add fast-context B1/B2 to the same
+R-level optimization cycle, keep alias-map identity in v0.1.8.4, and defer
+durable research/export artifacts to a future ML/export RFC. The first
+projection backend is R-memory; DuckDB-backed precompute storage and
+pulse-block-buffered out-of-core projection are parked in `horizon.md` as a
+future scaling/storage direction, not v0.1.8.3 runtime scope.
 
 ## Audits And Spikes
 

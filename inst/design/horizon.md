@@ -659,6 +659,43 @@ version, and frequency. Metric-context construction must reject ambiguous
 "risk-free from provider" requests when more than one provider endpoint could
 produce the series.
 
+### 2026-05-25 [infrastructure] DuckDB-backed feature storage and out-of-core projection
+
+The v0.1.8.3 grid-level feature artifacts synthesis intentionally starts with
+an R-memory runtime projection because the measured hot path is per-pulse R
+object churn, not persistent feature storage. DuckDB is still the natural future
+backing for precomputed feature libraries once parameterized indicator grids,
+parallel sweep workers, and ML/export workflows need persistence and shared
+feature storage.
+
+Future direction:
+
+- `ledgr_precompute_features()` computes feature values through the existing R
+  indicator engine (`series_fn()`, TTR adapters, custom indicators) and writes
+  concrete feature values to DuckDB-backed feature tables;
+- the fold consumes the same projection interface introduced in v0.1.8.3, with
+  a DuckDB-backed implementation that loads pulse blocks into memory;
+- DBI access happens at block boundaries, not per pulse;
+- layer 4 research/export artifacts and out-of-core runtime projection share
+  the same DuckDB storage rather than introducing separate schemas;
+- parallel workers can read shared DuckDB-backed feature storage instead of
+  each materializing the same feature library.
+
+Do not turn this into a DuckDB indicator-computation engine by default. The
+authoritative indicator extension surface remains the R `series_fn()` contract
+and the planned TTR/custom-indicator path. SQL-native built-in indicators may
+be explored later as an opt-in fast path, but only with a separate RFC covering
+feature identity, determinism, DuckDB-version sensitivity, mixed R/SQL feature
+maps, and parity against the R implementation.
+
+Dependencies before promotion:
+
+- v0.1.8.3 runtime projection interface and R-memory backend have landed;
+- v0.1.8.4 active aliases have fixed the alias-map identity and grid-level
+  concrete-feature-union contract;
+- the post-v0.1.8.3 residual report shows memory scaling, repeated precompute,
+  ML/export, or parallel-worker sharing as the next load-bearing bottleneck.
+
 ### 2026-05-25 [infrastructure] Compiled fold core after pipeline stabilization
 
 The v0.1.8.3 sweep baseline shows that R-side fold execution dominates the

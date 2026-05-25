@@ -114,6 +114,43 @@ tickets:
       - "encoding_scan"
 
   - id: "LDG-2408"
+    title: "Runtime Projection Interface And R-Memory Backend"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2402"
+      - "LDG-2403"
+    classification:
+      type: "optimization"
+      surface: "runtime_projection"
+      scope: "feature_precompute"
+    tests:
+      - "projection_shape_tests"
+      - "feature_precompute_tests"
+      - "bundle_projection_tests"
+      - "fingerprint_stability_tests"
+
+  - id: "LDG-2409"
+    title: "Shared Fold Projection Consumption And Parity Gate"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2403"
+      - "LDG-2408"
+    classification:
+      type: "optimization"
+      surface: "fold_feature_access"
+      scope: "shared_fold_core"
+    tests:
+      - "projection_parity_tests"
+      - "state_leak_tests"
+      - "sweep_tests"
+      - "backtest_wrapper_tests"
+      - "accounting_parity_tests"
+
+  - id: "LDG-2410"
     title: "Typed Memory Event Representation"
     status: "pending"
     priority: "P1"
@@ -121,6 +158,7 @@ tickets:
     dependencies:
       - "LDG-2402"
       - "LDG-2403"
+      - "LDG-2409"
     classification:
       type: "optimization"
       surface: "memory_events"
@@ -131,14 +169,35 @@ tickets:
       - "sweep_tests"
       - "fingerprint_stability_tests"
 
-  - id: "LDG-2409"
+  - id: "LDG-2411"
+    title: "Fast Context B1 Pulse Helper Reuse"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2403"
+      - "LDG-2409"
+    classification:
+      type: "optimization"
+      surface: "fast_context"
+      scope: "b1_helper_reuse"
+    tests:
+      - "fast_context_tests"
+      - "projection_parity_tests"
+      - "accounting_parity_tests"
+      - "sweep_tests"
+      - "backtest_wrapper_tests"
+
+  - id: "LDG-2412"
     title: "Single-Pass Sweep Summary Reconstruction"
     status: "pending"
     priority: "P1"
     effort: "L"
     dependencies:
       - "LDG-2403"
-      - "LDG-2408"
+      - "LDG-2409"
+      - "LDG-2410"
+      - "LDG-2411"
     classification:
       type: "optimization"
       surface: "sweep_summary"
@@ -150,7 +209,29 @@ tickets:
       - "metric_kernel_tests"
       - "promotion_tests"
 
-  - id: "LDG-2410"
+  - id: "LDG-2413"
+    title: "Fast Context B2 Index-Backed Context Proxies"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2403"
+      - "LDG-2409"
+      - "LDG-2411"
+      - "LDG-2412"
+    classification:
+      type: "optimization"
+      surface: "fast_context"
+      scope: "b2_context_proxies"
+    tests:
+      - "fast_context_b2_tests"
+      - "projection_parity_tests"
+      - "accounting_parity_tests"
+      - "pulse_context_helper_tests"
+      - "sweep_tests"
+      - "backtest_wrapper_tests"
+
+  - id: "LDG-2414"
     title: "Post-Change Measurement And Residual Report"
     status: "pending"
     priority: "P1"
@@ -159,6 +240,10 @@ tickets:
       - "LDG-2402"
       - "LDG-2408"
       - "LDG-2409"
+      - "LDG-2410"
+      - "LDG-2411"
+      - "LDG-2412"
+      - "LDG-2413"
     classification:
       type: "measurement"
       surface: "sweep_performance"
@@ -166,9 +251,11 @@ tickets:
     tests:
       - "post_change_smoke_workload"
       - "post_change_reference_workload"
+      - "post_change_single_run_workload"
+      - "residual_candidate_review"
       - "manual_report_review"
 
-  - id: "LDG-2411"
+  - id: "LDG-2415"
     title: "v0.1.8.3 Release Gate And Closeout"
     status: "pending"
     priority: "P0"
@@ -184,6 +271,10 @@ tickets:
       - "LDG-2408"
       - "LDG-2409"
       - "LDG-2410"
+      - "LDG-2411"
+      - "LDG-2412"
+      - "LDG-2413"
+      - "LDG-2414"
     classification:
       type: "release_gate"
       surface: "package"
