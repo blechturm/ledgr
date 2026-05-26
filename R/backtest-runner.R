@@ -909,7 +909,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   DBI::dbExecute(con, "UPDATE runs SET data_hash = ? WHERE run_id = ?", params = list(data_hash, run_id))
 
   feature_defs <- ledgr_feature_defs_from_config(cfg)
-  active_alias_map <- ledgr_alias_map_from_json(cfg$alias_map_json)
+  active_alias_map <- ledgr_alias_map_from_config(cfg)
   run_feature_matrix <- list()
   if (length(feature_defs) > 0) {
     feature_defs <- feature_defs[order(vapply(feature_defs, function(d) d$id, character(1)))]

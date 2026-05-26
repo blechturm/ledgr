@@ -184,8 +184,8 @@ The wide pulse view is useful for debugging and future model-style
 workflows. It contains one OHLCV block and one feature block for each
 instrument. OHLCV columns use `{instrument_id}__ohlcv_{field}`. Feature
 columns use `{instrument_id}__feature_{feature_id}`. A feature map can
-filter and order feature columns, but it does not rename wide columns to
-aliases.
+filter and order feature columns and, when a feature map is supplied, uses
+aliases as the wide feature keys.
 
 ``` r
 ledgr_pulse_wide(pulse, features)

@@ -110,7 +110,7 @@ tickets:
 
   - id: "LDG-2427"
     title: "Pulse Debug And Feature Inspection Alias Views"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "M"
     dependencies:

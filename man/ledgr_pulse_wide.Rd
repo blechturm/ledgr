@@ -9,8 +9,8 @@ ledgr_pulse_wide(pulse, feature_map = NULL)
 \arguments{
 \item{pulse}{A \code{ledgr_pulse_context}.}
 
-\item{feature_map}{Optional \code{ledgr_feature_map}. Filters and orders feature
-columns; does not rename them to aliases.}
+\item{feature_map}{Optional \code{ledgr_feature_map} or named alias map. Filters
+and orders feature columns.}
 }
 \value{
 A one-row tibble with \code{ts_utc}, \code{cash}, \code{equity}, one OHLCV
@@ -22,8 +22,8 @@ portfolio state, per-instrument OHLCV columns, and per-instrument feature
 columns. OHLCV columns use \verb{\{instrument_id\}__ohlcv_\{field\}}. Feature columns
 use \verb{\{instrument_id\}__feature_\{feature_id\}}. The delimiter \verb{__} is reserved
 for this naming contract and must not appear in instrument IDs or feature IDs
-used in the wide output. A feature map filters and orders feature columns but
-does not rename them to aliases.
+used in the wide output. A feature map or active alias map filters and orders
+feature columns and uses aliases as feature keys.
 }
 \section{Articles}{
 

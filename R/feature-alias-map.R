@@ -20,8 +20,7 @@ ledgr_normalize_alias_map <- function(alias_map) {
       class = c("ledgr_invalid_alias_map", "ledgr_invalid_args")
     )
   }
-  alias_map <- stats::setNames(unname(alias_map), names(alias_map))
-  alias_map[order(names(alias_map))]
+  stats::setNames(unname(alias_map), names(alias_map))
 }
 
 ledgr_alias_map_storage <- function(alias_map) {
@@ -31,12 +30,14 @@ ledgr_alias_map_storage <- function(alias_map) {
       alias_map = NULL,
       alias_map_json = NA_character_,
       alias_map_hash = NA_character_,
-      alias_map_version = NA_integer_
+      alias_map_version = NA_integer_,
+      alias_map_order = character()
     ))
   }
 
-  mappings <- lapply(names(alias_map), function(alias) {
-    list(alias = alias, feature_id = unname(alias_map[[alias]]))
+  canonical_alias_map <- alias_map[order(names(alias_map))]
+  mappings <- lapply(names(canonical_alias_map), function(alias) {
+    list(alias = alias, feature_id = unname(canonical_alias_map[[alias]]))
   })
   payload <- list(
     alias_map_version = ledgr_alias_map_version(),
@@ -47,11 +48,12 @@ ledgr_alias_map_storage <- function(alias_map) {
     alias_map = alias_map,
     alias_map_json = json,
     alias_map_hash = digest::digest(json, algo = "sha256"),
-    alias_map_version = ledgr_alias_map_version()
+    alias_map_version = ledgr_alias_map_version(),
+    alias_map_order = names(alias_map)
   )
 }
 
-ledgr_alias_map_from_json <- function(alias_map_json) {
+ledgr_alias_map_from_json <- function(alias_map_json, alias_map_order = NULL) {
   if (is.null(alias_map_json) || length(alias_map_json) != 1L || is.na(alias_map_json) || !nzchar(alias_map_json)) {
     return(NULL)
   }
@@ -67,7 +69,22 @@ ledgr_alias_map_from_json <- function(alias_map_json) {
   }
   aliases <- vapply(mappings, function(x) x$alias %||% NA_character_, character(1))
   feature_ids <- vapply(mappings, function(x) x$feature_id %||% NA_character_, character(1))
-  ledgr_normalize_alias_map(stats::setNames(feature_ids, aliases))
+  alias_map <- ledgr_normalize_alias_map(stats::setNames(feature_ids, aliases))
+  if (!is.null(alias_map_order)) {
+    alias_map_order <- as.character(alias_map_order)
+    alias_map_order <- alias_map_order[!is.na(alias_map_order) & nzchar(alias_map_order)]
+    if (length(alias_map_order) > 0L && setequal(alias_map_order, names(alias_map))) {
+      alias_map <- alias_map[alias_map_order]
+    }
+  }
+  alias_map
+}
+
+ledgr_alias_map_from_config <- function(config) {
+  ledgr_alias_map_from_json(
+    config$alias_map_json,
+    alias_map_order = config$alias_map_order
+  )
 }
 
 ledgr_feature_lookup_map <- function(feature_map = NULL, active_alias_map = NULL) {
@@ -80,6 +97,10 @@ ledgr_feature_lookup_map <- function(feature_map = NULL, active_alias_map = NULL
       )
     }
     return(storage$alias_map)
+  }
+
+  if (is.character(feature_map)) {
+    return(ledgr_normalize_alias_map(feature_map))
   }
 
   ledgr_validate_feature_map_object(feature_map)

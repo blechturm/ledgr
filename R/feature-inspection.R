@@ -221,12 +221,13 @@ ledgr_indicator_source <- function(indicator) {
 #' Inspect pulse feature rows
 #'
 #' `ledgr_pulse_features()` returns the long feature rows available at one
-#' pulse. With a feature map, the result is filtered and ordered to the map and
-#' includes aliases. Without a map, all rows are returned with `alias = NA`.
+#' pulse. With a feature map or active alias map, the result is filtered and
+#' ordered to the map and includes aliases. Without a map, all rows are returned
+#' with `alias = NA`.
 #'
 #' @param pulse A `ledgr_pulse_context`.
-#' @param feature_map Optional `ledgr_feature_map`. Filters and orders feature
-#'   columns; does not rename them to aliases.
+#' @param feature_map Optional `ledgr_feature_map` or named alias map. Filters
+#'   and orders feature columns.
 #'
 #' @return A tibble with columns `ts_utc`, `instrument_id`, `feature_id`,
 #'   `feature_value`, and `alias`.
@@ -267,6 +268,10 @@ ledgr_pulse_features <- function(pulse, feature_map = NULL) {
   table <- ledgr_pulse_feature_table(pulse)
 
   if (is.null(feature_map)) {
+    active_alias_map <- ledgr_pulse_active_alias_map(pulse)
+    if (!is.null(active_alias_map)) {
+      return(ledgr_pulse_feature_rows_for_alias_map(table, pulse$universe, active_alias_map))
+    }
     out <- ledgr_pulse_feature_rows(table)
     out <- out[order(out$instrument_id, out$feature_id), , drop = FALSE]
     rownames(out) <- NULL
@@ -274,8 +279,11 @@ ledgr_pulse_features <- function(pulse, feature_map = NULL) {
     return(out)
   }
 
-  ledgr_validate_feature_map_object(feature_map)
-  ledgr_pulse_feature_rows_for_map(table, pulse$universe, feature_map)
+  ledgr_pulse_feature_rows_for_alias_map(
+    table,
+    pulse$universe,
+    ledgr_feature_lookup_map(feature_map)
+  )
 }
 
 ledgr_validate_feature_inspection_pulse <- function(pulse) {
@@ -323,7 +331,15 @@ ledgr_pulse_feature_rows <- function(table) {
   )
 }
 
-ledgr_pulse_feature_rows_for_map <- function(table, universe, feature_map) {
+ledgr_pulse_active_alias_map <- function(pulse) {
+  alias_map <- pulse$active_alias_map
+  if (is.null(alias_map)) {
+    return(NULL)
+  }
+  ledgr_normalize_alias_map(alias_map)
+}
+
+ledgr_pulse_feature_rows_for_alias_map <- function(table, universe, alias_map) {
   rows <- ledgr_pulse_feature_rows(table)
   if (nrow(rows) == 0L) {
     rlang::abort(
@@ -334,9 +350,9 @@ ledgr_pulse_feature_rows_for_map <- function(table, universe, feature_map) {
 
   rows <- rows[order(rows$instrument_id, rows$feature_id), , drop = FALSE]
   rownames(rows) <- NULL
-  mapped_feature_ids <- ledgr_feature_id(feature_map)
-  aliases <- names(mapped_feature_ids)
-  feature_ids <- unname(mapped_feature_ids)
+  alias_map <- ledgr_normalize_alias_map(alias_map)
+  aliases <- names(alias_map)
+  feature_ids <- unname(alias_map)
   missing <- setdiff(feature_ids, unique(rows$feature_id))
   if (length(missing) > 0L) {
     rlang::abort(
@@ -389,12 +405,12 @@ ledgr_pulse_feature_rows_for_map <- function(table, universe, feature_map) {
 #' columns. OHLCV columns use `{instrument_id}__ohlcv_{field}`. Feature columns
 #' use `{instrument_id}__feature_{feature_id}`. The delimiter `__` is reserved
 #' for this naming contract and must not appear in instrument IDs or feature IDs
-#' used in the wide output. A feature map filters and orders feature columns but
-#' does not rename them to aliases.
+#' used in the wide output. A feature map or active alias map filters and orders
+#' feature columns and uses aliases as feature keys.
 #'
 #' @param pulse A `ledgr_pulse_context`.
-#' @param feature_map Optional `ledgr_feature_map`. Filters and orders feature
-#'   columns; does not rename them to aliases.
+#' @param feature_map Optional `ledgr_feature_map` or named alias map. Filters
+#'   and orders feature columns.
 #'
 #' @return A one-row tibble with `ts_utc`, `cash`, `equity`, one OHLCV
 #'   block per instrument, and feature columns for the requested pulse.
@@ -441,7 +457,8 @@ ledgr_pulse_wide <- function(pulse, feature_map = NULL) {
     equity = as.numeric(pulse$equity)
   )
 
-  ledgr_validate_pulse_wide_names(instruments = instruments, feature_ids = rows$feature_id)
+  feature_keys <- ifelse(is.na(rows$alias), rows$feature_id, rows$alias)
+  ledgr_validate_pulse_wide_names(instruments = instruments, feature_ids = feature_keys)
   for (instrument_id in instruments) {
     out <- ledgr_pulse_wide_add_ohlcv(out, pulse, instrument_id)
 
@@ -449,7 +466,12 @@ ledgr_pulse_wide <- function(pulse, feature_map = NULL) {
       instrument_rows <- rows[rows$instrument_id == instrument_id, , drop = FALSE]
       if (nrow(instrument_rows) > 0L) {
         for (i in seq_len(nrow(instrument_rows))) {
-          col <- paste0(instrument_id, "__feature_", instrument_rows$feature_id[[i]])
+          feature_key <- if (is.na(instrument_rows$alias[[i]])) {
+            instrument_rows$feature_id[[i]]
+          } else {
+            instrument_rows$alias[[i]]
+          }
+          col <- paste0(instrument_id, "__feature_", feature_key)
           out[[col]] <- instrument_rows$feature_value[[i]]
         }
       }
@@ -490,7 +512,7 @@ ledgr_validate_pulse_wide_names <- function(instruments, feature_ids = character
   bad_feature <- unique(feature_ids[grepl("__", feature_ids, fixed = TRUE)])
   if (length(bad_feature) > 0L) {
     rlang::abort(
-      sprintf("Feature ID `%s` contains reserved wide-column delimiter `__`.", bad_feature[[1L]]),
+      sprintf("Feature ID or alias `%s` contains reserved wide-column delimiter `__`.", bad_feature[[1L]]),
       class = c("ledgr_invalid_pulse_wide_names", "ledgr_invalid_args")
     )
   }

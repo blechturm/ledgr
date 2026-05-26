@@ -34,9 +34,10 @@ Plain lists remain valid; use a feature map when readable aliases make
 strategy code clearer. The map is validated at construction time, and
 \code{ledgr_feature_id()} returns a named character vector keyed by alias.
 Inside a strategy body, \code{ctx$features(instrument_id, feature_map)} returns a
-named numeric vector keyed by the feature-map aliases. Use \code{passed_warmup()}
-on that vector before applying rules that require all mapped values to be
-finite.
+named numeric vector keyed by the feature-map aliases. The same helper also
+accepts a named character vector such as \code{c(alias = "feature_id")} for
+explicit ad hoc aliasing. Use \code{passed_warmup()} on the returned vector before
+applying rules that require all mapped values to be finite.
 }
 \section{Articles}{
 

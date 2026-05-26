@@ -900,6 +900,7 @@ ledgr_config <- function(snapshot,
     alias_map_json = alias_map_info$alias_map_json,
     alias_map_hash = alias_map_info$alias_map_hash,
     alias_map_version = alias_map_info$alias_map_version,
+    alias_map_order = alias_map_info$alias_map_order,
     opening = opening,
     data = list(
       source = "snapshot",

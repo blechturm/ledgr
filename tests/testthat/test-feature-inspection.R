@@ -159,7 +159,7 @@ testthat::test_that("pulse feature views expose long and wide pulse-known data",
   testthat::expect_s3_class(long_all$ts_utc, "POSIXct")
   testthat::expect_equal(long_all$instrument_id, rep(c("AAA", "BBB"), each = 2))
   testthat::expect_equal(long_all$feature_id, rep(c("return_2", "sma_3"), times = 2))
-  testthat::expect_true(all(is.na(long_all$alias)))
+  testthat::expect_equal(long_all$alias, rep(c("ret", "sma"), times = 2))
   testthat::expect_true(all(c("return_2", "sma_3") %in% long_all$feature_id))
 
   long_mapped <- ledgr_pulse_features(pulse, features)
@@ -178,17 +178,16 @@ testthat::test_that("pulse feature views expose long and wide pulse-known data",
     c(
       "ts_utc", "cash", "equity",
       "AAA__ohlcv_open", "AAA__ohlcv_high", "AAA__ohlcv_low", "AAA__ohlcv_close", "AAA__ohlcv_volume",
-      "AAA__feature_return_2", "AAA__feature_sma_3",
+      "AAA__feature_ret", "AAA__feature_sma",
       "BBB__ohlcv_open", "BBB__ohlcv_high", "BBB__ohlcv_low", "BBB__ohlcv_close", "BBB__ohlcv_volume",
-      "BBB__feature_return_2", "BBB__feature_sma_3"
+      "BBB__feature_ret", "BBB__feature_sma"
     )
   )
-  testthat::expect_false(any(grepl("__ret$|__sma$", names(wide))))
 
   testthat::expect_equal(wide[["AAA__ohlcv_close"]], pulse$close("AAA"))
   testthat::expect_equal(wide[["BBB__ohlcv_volume"]], pulse$volume("BBB"))
-  testthat::expect_equal(wide[["AAA__feature_return_2"]], pulse$feature("AAA", "return_2"))
-  testthat::expect_equal(wide[["BBB__feature_sma_3"]], pulse$feature("BBB", "sma_3"))
+  testthat::expect_equal(wide[["AAA__feature_ret"]], pulse$feature("AAA", "return_2"))
+  testthat::expect_equal(wide[["BBB__feature_sma"]], pulse$feature("BBB", "sma_3"))
 
   wide_all <- ledgr_pulse_wide(pulse)
   testthat::expect_s3_class(wide_all, "tbl_df")
@@ -197,9 +196,9 @@ testthat::test_that("pulse feature views expose long and wide pulse-known data",
     c(
       "ts_utc", "cash", "equity",
       "AAA__ohlcv_open", "AAA__ohlcv_high", "AAA__ohlcv_low", "AAA__ohlcv_close", "AAA__ohlcv_volume",
-      "AAA__feature_return_2", "AAA__feature_sma_3",
+      "AAA__feature_ret", "AAA__feature_sma",
       "BBB__ohlcv_open", "BBB__ohlcv_high", "BBB__ohlcv_low", "BBB__ohlcv_close", "BBB__ohlcv_volume",
-      "BBB__feature_return_2", "BBB__feature_sma_3"
+      "BBB__feature_ret", "BBB__feature_sma"
     )
   )
 
@@ -209,7 +208,65 @@ testthat::test_that("pulse feature views expose long and wide pulse-known data",
   )
   testthat::expect_error(
     ledgr_validate_pulse_wide_names(instruments = "AAA", feature_ids = "bad__feature"),
+    regexp = "Feature ID or alias",
     class = "ledgr_invalid_pulse_wide_names"
+  )
+})
+
+testthat::test_that("pulse snapshots resolve active aliases with feature params", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  features <- ledgr_feature_map(
+    z_short = ledgr_ind_sma(ledgr_param("fast_n")),
+    a_long = ledgr_ind_sma(ledgr_param("slow_n"))
+  )
+  pulse <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = "AAA",
+    ts_utc = ledgr_utc("2020-01-06"),
+    features = features,
+    feature_params = list(fast_n = 2L, slow_n = 3L)
+  )
+  on.exit(close(pulse), add = TRUE)
+
+  x <- pulse$features("AAA")
+  testthat::expect_identical(names(x), c("z_short", "a_long"))
+  testthat::expect_identical(pulse$active_alias_map, c(z_short = "sma_2", a_long = "sma_3"))
+  testthat::expect_match(pulse$alias_map_hash, "^[0-9a-f]{64}$")
+
+  long <- ledgr_pulse_features(pulse)
+  testthat::expect_identical(long$alias, c("z_short", "a_long"))
+  testthat::expect_identical(long$feature_id, c("sma_2", "sma_3"))
+
+  wide <- ledgr_pulse_wide(pulse)
+  testthat::expect_true("AAA__feature_z_short" %in% names(wide))
+  testthat::expect_false("AAA__feature_sma_2" %in% names(wide))
+
+  exact <- ledgr_pulse_features(pulse, c(raw_fast = "sma_2"))
+  testthat::expect_identical(exact$alias, "raw_fast")
+  testthat::expect_identical(exact$feature_id, "sma_2")
+})
+
+testthat::test_that("pulse snapshots name missing feature params by alias and argument", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  features <- ledgr_feature_map(fast = ledgr_ind_sma(ledgr_param("fast_n")))
+
+  testthat::expect_error(
+    ledgr_pulse_snapshot(
+      snapshot,
+      universe = "AAA",
+      ts_utc = ledgr_utc("2020-01-06"),
+      features = features
+    ),
+    regexp = "alias `fast` argument `n`",
+    class = "ledgr_param_missing"
   )
 })
 

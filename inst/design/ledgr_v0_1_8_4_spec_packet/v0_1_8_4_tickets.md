@@ -522,7 +522,7 @@ scope: alias_map
 Priority: P2
 Effort: M
 Dependencies: LDG-2425
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -558,6 +558,23 @@ params.
 
 Pulse-snapshot tests, pulse-feature tests, pulse-wide tests, error-class tests,
 and documentation example checks where available.
+
+### Completion Notes
+
+- Added `feature_params` support to `ledgr_pulse_snapshot()` for
+  parameterized feature maps.
+- Stored the resolved active alias map and alias-map hash metadata on pulse
+  snapshots.
+- Updated `ledgr_pulse_features()` to use active aliases by default when a
+  pulse carries an alias map, while still showing concrete feature IDs.
+- Updated `ledgr_pulse_wide()` so alias-aware views use strategy-facing
+  aliases as wide feature keys.
+- Preserved exact concrete inspection by allowing explicit named alias maps and
+  ordinary non-feature-map snapshots to continue using concrete feature IDs.
+- Improved feature-parameter errors so missing or non-scalar values name the
+  alias and constructor argument requiring them.
+- Preserved declaration-order runtime alias lookup while keeping canonical
+  sorted alias-map JSON for hashing.
 
 ### Source Reference
 

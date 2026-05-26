@@ -9,8 +9,8 @@ ledgr_pulse_features(pulse, feature_map = NULL)
 \arguments{
 \item{pulse}{A \code{ledgr_pulse_context}.}
 
-\item{feature_map}{Optional \code{ledgr_feature_map}. Filters and orders feature
-columns; does not rename them to aliases.}
+\item{feature_map}{Optional \code{ledgr_feature_map} or named alias map. Filters
+and orders feature columns.}
 }
 \value{
 A tibble with columns \code{ts_utc}, \code{instrument_id}, \code{feature_id},
@@ -18,8 +18,9 @@ A tibble with columns \code{ts_utc}, \code{instrument_id}, \code{feature_id},
 }
 \description{
 \code{ledgr_pulse_features()} returns the long feature rows available at one
-pulse. With a feature map, the result is filtered and ordered to the map and
-includes aliases. Without a map, all rows are returned with \code{alias = NA}.
+pulse. With a feature map or active alias map, the result is filtered and
+ordered to the map and includes aliases. Without a map, all rows are returned
+with \code{alias = NA}.
 }
 \section{Articles}{
 

@@ -308,6 +308,11 @@ testthat::test_that("pulse context feature maps return aliased pulse values", {
   testthat::expect_true(passed_warmup(x_bbb))
   testthat::expect_equal(x_bbb[["ret"]], 0.05)
   testthat::expect_equal(ctx$feature("BBB", "return_2"), x_bbb[["ret"]])
+
+  inline <- ctx$features("AAA", c(short_ret = "return_2", short_sma = "sma_2"))
+  testthat::expect_identical(names(inline), c("short_ret", "short_sma"))
+  testthat::expect_equal(inline[["short_sma"]], 10.25)
+  testthat::expect_true(is.na(inline[["short_ret"]]))
 })
 
 testthat::test_that("pulse context feature maps fail loudly for invalid lookup", {

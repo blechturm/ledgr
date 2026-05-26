@@ -135,6 +135,49 @@ ledgr_feature_param_value <- function(params, name) {
   value
 }
 
+ledgr_validate_feature_params_for_declarations <- function(features, feature_params = list()) {
+  rows <- ledgr_parameters(features)
+  if (nrow(rows) == 0L) {
+    return(invisible(TRUE))
+  }
+  if (!is.list(feature_params) || is.data.frame(feature_params)) {
+    rlang::abort("`feature_params` must be a list.", class = c("ledgr_invalid_feature_params", "ledgr_invalid_args"))
+  }
+  param_names <- names(feature_params)
+  if (is.null(param_names)) {
+    param_names <- character(length(feature_params))
+  }
+  for (i in seq_len(nrow(rows))) {
+    name <- rows$param_name[[i]]
+    alias <- rows$alias[[i]]
+    argument <- rows$argument[[i]]
+    if (!name %in% param_names) {
+      rlang::abort(
+        sprintf(
+          "Missing feature parameter `%s` required by alias `%s` argument `%s`; add it to `feature_params`.",
+          name,
+          alias,
+          argument
+        ),
+        class = c("ledgr_param_missing", "ledgr_invalid_feature_params", "ledgr_invalid_args")
+      )
+    }
+    value <- feature_params[[name]]
+    if (is.null(value) || is.list(value) || length(value) != 1L) {
+      rlang::abort(
+        sprintf(
+          "Feature parameter `%s` for alias `%s` argument `%s` must be a scalar value.",
+          name,
+          alias,
+          argument
+        ),
+        class = c("ledgr_param_non_scalar", "ledgr_invalid_feature_params", "ledgr_invalid_args")
+      )
+    }
+  }
+  invisible(TRUE)
+}
+
 ledgr_resolve_param_args <- function(args, feature_params) {
   lapply(args, function(value) {
     if (ledgr_is_param_ref(value)) {

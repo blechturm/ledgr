@@ -4,6 +4,8 @@
 #' @param universe Character vector of instruments.
 #' @param ts_utc Timestamp to freeze at.
 #' @param features List of `ledgr_indicator` objects to compute.
+#' @param feature_params JSON-safe list used to resolve parameterized feature
+#'   declarations when `features` is a feature map.
 #' @param initial_cash Mock cash balance.
 #' @param positions Named numeric vector of positions (NULL = flat).
 #'
@@ -34,6 +36,7 @@ ledgr_pulse_snapshot <- function(snapshot,
                                  universe,
                                  ts_utc,
                                  features = list(),
+                                 feature_params = list(),
                                  initial_cash = 100000,
                                  positions = NULL) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
@@ -45,7 +48,14 @@ ledgr_pulse_snapshot <- function(snapshot,
   if (anyDuplicated(universe)) {
     rlang::abort("`universe` must not contain duplicate instrument_ids.", class = "ledgr_invalid_args")
   }
+  if (!is.list(feature_params) || is.data.frame(feature_params)) {
+    rlang::abort("`feature_params` must be a list. Use `feature_params = list()` when features have no parameters.", class = "ledgr_invalid_args")
+  }
+  alias_map_info <- ledgr_alias_map_storage(NULL)
   if (inherits(features, "ledgr_feature_map")) {
+    ledgr_validate_feature_params_for_declarations(features, feature_params)
+    features <- ledgr_resolve_feature_map(features, feature_params = feature_params)
+    alias_map_info <- ledgr_alias_map_storage(ledgr_alias_map_from_feature_map(features))
     features <- ledgr_feature_map_indicators(features)
   }
   if (!is.list(features)) {
@@ -81,6 +91,11 @@ ledgr_pulse_snapshot <- function(snapshot,
   e$positions <- positions
   e$cash <- as.numeric(initial_cash)
   e$equity <- as.numeric(initial_cash)
+  e$feature_params <- feature_params
+  e$active_alias_map <- alias_map_info$alias_map
+  e$alias_map_json <- alias_map_info$alias_map_json
+  e$alias_map_hash <- alias_map_info$alias_map_hash
+  e$alias_map_version <- alias_map_info$alias_map_version
   e$.snapshot <- opened$snapshot
   e$.con <- con
 
@@ -123,7 +138,8 @@ ledgr_pulse_snapshot <- function(snapshot,
     bars = bars,
     features = features_df,
     positions = e$positions,
-    universe = e$universe
+    universe = e$universe,
+    active_alias_map = e$active_alias_map
   )
 
   structure(e, class = "ledgr_pulse_context")

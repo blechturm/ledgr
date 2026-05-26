@@ -9,6 +9,7 @@ ledgr_pulse_snapshot(
   universe,
   ts_utc,
   features = list(),
+  feature_params = list(),
   initial_cash = 1e+05,
   positions = NULL
 )
@@ -21,6 +22,9 @@ ledgr_pulse_snapshot(
 \item{ts_utc}{Timestamp to freeze at.}
 
 \item{features}{List of \code{ledgr_indicator} objects to compute.}
+
+\item{feature_params}{JSON-safe list used to resolve parameterized feature
+declarations when \code{features} is a feature map.}
 
 \item{initial_cash}{Mock cash balance.}
 

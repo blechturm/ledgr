@@ -211,6 +211,9 @@ validate_ledgr_config <- function(config) {
       rlang::abort("Config field alias_map_version must be an integer scalar.", class = "ledgr_invalid_config")
     }
   }
+  if (!is.null(config$alias_map_order) && (!is.character(config$alias_map_order) || anyNA(config$alias_map_order))) {
+    rlang::abort("Config field alias_map_order must be a character vector.", class = "ledgr_invalid_config")
+  }
 
   # v0.1.1 snapshot integration: config$data$source == "snapshot" requires
   # config$data$snapshot_id.
