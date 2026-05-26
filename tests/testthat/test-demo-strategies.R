@@ -1,4 +1,9 @@
 testthat::test_that("demo SMA crossover strategy is Tier 1", {
+  testthat::skip_if(
+    requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
+    "Demo strategy preflight tier is a normal-runtime invariant; covr instruments closures."
+  )
+
   strategy <- ledgr_demo_sma_crossover_strategy()
 
   preflight <- ledgr_strategy_preflight(strategy)

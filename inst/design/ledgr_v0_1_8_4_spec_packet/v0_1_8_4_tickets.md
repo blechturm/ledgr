@@ -1005,5 +1005,10 @@ scope: v0.1.8.4
 - Local WSL/Ubuntu DuckDB-sensitive gate passed for schema-validator
   side-effects, schema snapshots, schema, and fresh-connection persistence
   tests.
+- Branch Ubuntu coverage initially failed because covr instrumentation changed
+  the demo strategy preflight tier from Tier 1 to Tier 2. The Tier-1 assertion
+  now follows the existing fingerprint-test pattern and skips only under covr;
+  normal Windows and WSL tests still assert Tier 1, and local WSL coverage
+  passed at 84.62%.
 - Confirmed broad workflow, split-store, live-log, PIT-regressor, scaffold
   helper, parallel dispatch, target risk, and OMS items remain deferred.
