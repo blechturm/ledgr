@@ -29,8 +29,8 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.8.4 implementation packet; update this block
-when the release closes or scope changes materially):
+Current planning context (post-v0.1.8.4 release close; update this block when
+the v0.1.8.5 packet is cut or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -40,17 +40,17 @@ when the release closes or scope changes materially):
   `inst/design/ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`,
   `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`, and
   `inst/design/ledgr_v0_1_8_3_spec_packet/tickets.yml`.
-- The v0.1.8.4 packet is active implementation context:
+- The completed v0.1.8.4 packet is an archival release record:
   `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`,
   `inst/design/ledgr_v0_1_8_4_spec_packet/auditr_intake_synthesis.md`,
   `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_tickets.md`, and
   `inst/design/ledgr_v0_1_8_4_spec_packet/tickets.yml`.
-- v0.1.8.4 combines active parameterized feature aliases with pulled-forward
-  feature-grid and strategy-grid construction helpers. The v0.1.8.3 auditr
-  report is still pending; confirmed bugs and release-appropriate docs/message
-  issues from that report must be routed into this cycle before release close.
-- Use the v0.1.8.4 tickets as the implementation boundary. Keep statuses in
-  `v0_1_8_4_tickets.md` and `tickets.yml` synchronized.
+- v0.1.8.4 combined active parameterized feature aliases with pulled-forward
+  feature-grid and strategy-grid construction helpers plus routed v0.1.8.3
+  auditr findings.
+- The next planned implementation scope is v0.1.8.5 canonical research
+  workflow and artifact-topology documentation. Do not implement it until a
+  v0.1.8.5 packet and tickets are cut.
 - Keep DuckDB-backed precompute storage, out-of-core projection, parallel
   dispatch, target risk, walk-forward, cost/liquidity, OMS, benchmark, split
   stores, live data logs, point-in-time regressors, and external-provider work

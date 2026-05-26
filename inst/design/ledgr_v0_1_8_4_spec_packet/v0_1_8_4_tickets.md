@@ -939,7 +939,7 @@ scope: installed_docs
 Priority: P0
 Effort: M
 Dependencies: LDG-2421, LDG-2422, LDG-2423, LDG-2424, LDG-2425, LDG-2426, LDG-2427, LDG-2428, LDG-2429, LDG-2430, LDG-2431, LDG-2432
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -987,3 +987,23 @@ type: release_gate
 surface: package
 scope: v0.1.8.4
 ```
+
+### Completion Notes
+
+- Bumped package metadata to `0.1.8.4` and added the v0.1.8.4 NEWS entry.
+- Targeted active-alias, grid-helper, pulse-debug, demo-strategy, sweep,
+  preflight, run-store, and documentation-contract checks passed locally.
+- Full `testthat::test_local('.', reporter = 'summary')` passed locally with
+  one expected skip for the missing-package Yahoo adapter path.
+- `R CMD build .` passed after setting `RSTUDIO_PANDOC` to the local
+  RStudio-bundled Pandoc path.
+- `R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.4.tar.gz` passed
+  with `Status: OK`; post-check repository-index warnings were network
+  availability warnings, not package-check failures.
+- Local pkgdown build passed after adding the new active-alias and demo-strategy
+  topics to `_pkgdown.yml`.
+- Local WSL/Ubuntu DuckDB-sensitive gate passed for schema-validator
+  side-effects, schema snapshots, schema, and fresh-connection persistence
+  tests.
+- Confirmed broad workflow, split-store, live-log, PIT-regressor, scaffold
+  helper, parallel dispatch, target risk, and OMS items remain deferred.

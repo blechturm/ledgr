@@ -1,3 +1,26 @@
+# ledgr 0.1.8.4
+
+- Added active parameterized feature aliases so feature declarations can use
+  `ledgr_param()` placeholders and resolve them per run or sweep candidate
+  while strategies read stable alias names such as `fast` and `slow`.
+- Added separate feature-grid and strategy-grid helpers plus executable grid
+  composition so feature-resolution parameters and strategy-runtime parameters
+  stay conceptually distinct.
+- Stored alias-map provenance with run and sweep artifacts, including
+  deterministic alias-map hashes, while keeping concrete feature identity
+  separate from user-facing alias names.
+- Updated pulse-debug and feature-inspection surfaces so parameterized feature
+  maps, active aliases, and resolved concrete feature IDs can be inspected
+  before and after execution.
+- Added `ledgr_demo_sma_crossover_strategy()` as a small Tier-1 teaching
+  fixture for README, getting-started, sweep, and strategy-development examples.
+- Routed the v0.1.8.3 auditr report into bounded fixes for sweep print copy,
+  preflight global-assignment diagnostics, warmup-guard examples, real-data
+  troubleshooting notes, and active-alias documentation.
+- Kept automatic ranking, objective selection, walk-forward, target risk,
+  cost/liquidity policy, OMS, parallel dispatch, split stores, live data logs,
+  point-in-time regressors, and scaffold helpers out of this release.
+
 # ledgr 0.1.8.3
 
 - Made `ledgr_sweep()` substantially faster on single-core workloads by adding

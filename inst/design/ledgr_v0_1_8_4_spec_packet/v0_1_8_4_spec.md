@@ -1,6 +1,6 @@
 # ledgr v0.1.8.4 Spec
 
-**Status:** Draft planning baseline for v0.1.8.4 ticket cut.
+**Status:** Completed release record for v0.1.8.4.
 **Target Branch:** `v0.1.8.4`
 **Scope:** Active parameterized feature aliases plus parameter-grid
 construction helpers for sweep authoring, with routed v0.1.8.3 auditr

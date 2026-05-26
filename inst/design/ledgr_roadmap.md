@@ -3,10 +3,10 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_8_3_spec_packet/`.
-**Active packet draft:** v0.1.8.4 active parameterized feature aliases and
-grid helpers.
-**Active packet path:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
+**Latest completed packet:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
+**Next planned packet:** v0.1.8.5 canonical research workflow and
+artifact-topology documentation.
+**Active packet path:** none cut.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -98,7 +98,7 @@ versioned packet.
 | v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
 | v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
 | v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
-| v0.1.8.4 | Draft | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md` |
+| v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Planned | Canonical research workflow and artifact-topology documentation after active aliases and grid UX stabilize. | Future packet |
 | v0.1.8.6 | Planned | DuckDB-backed feature storage / out-of-core projection candidate if residual evidence justifies it. | Future packet |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |

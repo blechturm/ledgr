@@ -2,11 +2,11 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.3`.
-**Active packet draft:** `v0.1.8.4` active parameterized feature aliases and
-grid helpers.
-**Active packet path:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_3_spec_packet/` is now an archival
+**Latest completed release packet:** `v0.1.8.4`.
+**Next planned packet:** `v0.1.8.5` canonical research workflow and
+artifact-topology documentation.
+**Current active packet:** none cut.
+The completed `inst/design/ledgr_v0_1_8_4_spec_packet/` is now an archival
 release record.
 
 This directory is the design memory for ledgr. Files here do not all have the
@@ -59,29 +59,24 @@ project must define an explicit compatibility and deprecation policy.
 
 ## Current Planning State
 
-The v0.1.8.3 packet is complete. It delivered empirically grounded single-core
-sweep optimization plus routed v0.1.8.2 auditr findings that fit the release
-scope.
+The v0.1.8.4 packet is complete. It delivered active parameterized feature
+aliases, separate feature-grid and strategy-grid helpers, alias-map provenance,
+alias-aware pulse debugging, the demo SMA-crossover teaching fixture, and
+routed v0.1.8.3 auditr fixes that fit the release scope.
 
-- Spec: `ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`.
+- Spec: `ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`.
 - Auditr triage:
-  `ledgr_v0_1_8_3_spec_packet/ledgr_triage_report.md`,
-  `ledgr_v0_1_8_3_spec_packet/categorized_feedback.yml`, and
-  `ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`.
-- Tickets: `ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`.
-- Machine-readable tickets: `ledgr_v0_1_8_3_spec_packet/tickets.yml`.
+  `ledgr_v0_1_8_4_spec_packet/ledgr_triage_report.md`,
+  `ledgr_v0_1_8_4_spec_packet/categorized_feedback.yml`,
+  `ledgr_v0_1_8_4_spec_packet/cycle_retrospective.md`, and
+  `ledgr_v0_1_8_4_spec_packet/auditr_intake_synthesis.md`.
+- Tickets: `ledgr_v0_1_8_4_spec_packet/v0_1_8_4_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_4_spec_packet/tickets.yml`.
 
-The active packet draft is v0.1.8.4 active parameterized feature aliases plus
-the pulled-forward feature-grid and strategy-grid construction helpers. The
-release is grounded in
-`rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` and
-`ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`.
-
-The v0.1.8.3 auditr report is still pending. Confirmed bugs and
-release-appropriate documentation/message issues from that report must be
-routed into this packet before release close. Do not implement runtime work
-until tickets are cut from the draft spec and auditr triage constraints are
-known.
+The next planned packet is v0.1.8.5 canonical research workflow and
+artifact-topology documentation. It is grounded in
+`rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`. Do not
+implement v0.1.8.5 work until its spec packet and tickets are cut.
 
 ## Core Documents
 
@@ -280,8 +275,11 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
-- `ledgr_v0_1_8_3_spec_packet/` - active v0.1.8.3 implementation packet for
-  single-core sweep optimization and routed v0.1.8.2 auditr findings.
+- `ledgr_v0_1_8_4_spec_packet/` - v0.1.8.4 release record for active
+  parameterized feature aliases, grid helpers, and routed v0.1.8.3 auditr
+  findings.
+- `ledgr_v0_1_8_3_spec_packet/` - v0.1.8.3 release record for single-core
+  sweep optimization and routed v0.1.8.2 auditr findings.
 - `ledgr_v0_1_8_2_spec_packet/` - v0.1.8.2 release record for metric context,
   preflight classifier alignment, auditr polish, and indicator Phase 2 cleanup.
 - `ledgr_v0_1_8_1_spec_packet/` - v0.1.8.1 release record.
@@ -300,7 +298,7 @@ contract index.
 | --- | --- |
 | Runtime/execution change | `contracts.md`, current packet if one exists, relevant architecture note |
 | Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
-| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `contracts.md`, current v0.1.8.3 packet |
+| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `contracts.md`, current packet if one exists |
 | Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, relevant release packet or future packet when cut |
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |

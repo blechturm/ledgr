@@ -7,9 +7,9 @@ preserve the execution contracts in `inst/design/contracts.md`.
 ## Core Rules
 
 - Do not add a second execution engine.
-  [`ledgr_run()`](https://blechturm.github.io/ledgr/reference/ledgr_run.html)
+  [`ledgr_run()`](https://blechturm.github.io/ledgr/reference/ledgr_run.md)
   is the committed-run execution entry point.
-  [`ledgr_sweep()`](https://blechturm.github.io/ledgr/reference/ledgr_sweep.html)
+  [`ledgr_sweep()`](https://blechturm.github.io/ledgr/reference/ledgr_sweep.md)
   must share the same internal fold core and must not introduce a second
   execution path.
 - Do not bypass snapshot creation, sealing, hash verification, or
@@ -18,7 +18,7 @@ preserve the execution contracts in `inst/design/contracts.md`.
   tables.
 - Functional strategies must return full named numeric target vectors,
   or use an explicit wrapper such as
-  [`ledgr_signal_strategy()`](https://blechturm.github.io/ledgr/reference/ledgr_signal_strategy.html)
+  [`ledgr_signal_strategy()`](https://blechturm.github.io/ledgr/reference/ledgr_signal_strategy.md)
   that maps to those targets.
 - Do not silently treat missing strategy targets as zero.
 - Do not commit generated local artifacts: `*.tar.gz`, `*.Rcheck/`,
@@ -35,25 +35,51 @@ Read before implementing any non-trivial change:
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - ADRs: `inst/design/adr/`
 
-Active cycle (v0.1.8.1 — update this block each cycle):
+Current planning context (post-v0.1.8.4 release close; update this block
+when the v0.1.8.5 packet is cut or scope changes materially):
 
-- Spec: `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_spec.md`
-- Tickets: `inst/design/ledgr_v0_1_8_1_spec_packet/v0_1_8_1_tickets.md`
-- Machine-readable tickets:
-  `inst/design/ledgr_v0_1_8_1_spec_packet/tickets.yml`
+- The completed v0.1.8.2 packet is an archival release record.
+- The completed v0.1.8.3 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/ledgr_triage_report.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/categorized_feedback.yml`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`,
+  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`, and
+  `inst/design/ledgr_v0_1_8_3_spec_packet/tickets.yml`.
+- The completed v0.1.8.4 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`,
+  `inst/design/ledgr_v0_1_8_4_spec_packet/auditr_intake_synthesis.md`,
+  `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_tickets.md`, and
+  `inst/design/ledgr_v0_1_8_4_spec_packet/tickets.yml`.
+- v0.1.8.4 combined active parameterized feature aliases with
+  pulled-forward feature-grid and strategy-grid construction helpers
+  plus routed v0.1.8.3 auditr findings.
+- The next planned implementation scope is v0.1.8.5 canonical research
+  workflow and artifact-topology documentation. Do not implement it
+  until a v0.1.8.5 packet and tickets are cut.
+- Keep DuckDB-backed precompute storage, out-of-core projection,
+  parallel dispatch, target risk, walk-forward, cost/liquidity, OMS,
+  benchmark, split stores, live data logs, point-in-time regressors, and
+  external-provider work deferred unless a new packet explicitly scopes
+  it.
 
 ## Active Design Entry Points
 
 Read these before working in the listed areas. They are accepted design
-decisions binding for their stated release scope unless marked otherwise.
-v0.1.8.1 implementation is limited to the active spec packet.
+decisions binding for their stated release scope unless marked
+otherwise. Completed spec packets are records, not authorization for new
+work.
 
 | Area | Read |
-| --- | --- |
-| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md` |
+|----|----|
+| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
+| Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
 | Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |
-| v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_response.md` (RFC under review) |
+| Active parameterized feature aliases | `inst/design/rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` (accepted for v0.1.8.4) |
+| Research workflow / artifact topology | `inst/design/rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` (accepted for v0.1.8.5 planning) |
+| v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
+| Primitive internals / collapse acceleration | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` (accepted for v0.1.9 planning) |
 
 ## Local Verification
 
