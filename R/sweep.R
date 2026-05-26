@@ -455,7 +455,7 @@ print.ledgr_sweep_results <- function(x, ...) {
     cols = visible,
     footer = c(
       sprintf("%d combinations: %d done, %d failed.", nrow(x), n_done, n_failed),
-      "Rows are in parameter-grid order; rank explicitly with dplyr when needed.",
+      "Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.",
       sprintf("Hidden columns (%d): %s", length(hidden), paste(hidden, collapse = ", "))
     ),
     ...

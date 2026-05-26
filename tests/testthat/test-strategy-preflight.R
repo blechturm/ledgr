@@ -179,6 +179,16 @@ testthat::test_that("strategy preflight rejects global assignment as Tier 3", {
   testthat::expect_identical(preflight$tier, "tier_3")
   testthat::expect_false(preflight$allowed)
   testthat::expect_match(preflight$reason, "<<-", fixed = TRUE)
+
+  lhs_only <- function(ctx, params) {
+    global_probe_value <<- 1
+    ctx$flat()
+  }
+  lhs_preflight <- ledgr_strategy_preflight(lhs_only)
+  testthat::expect_identical(lhs_preflight$tier, "tier_3")
+  testthat::expect_false(lhs_preflight$allowed)
+  testthat::expect_match(lhs_preflight$reason, "<<-", fixed = TRUE)
+  testthat::expect_false("global_probe_value" %in% lhs_preflight$unresolved_symbols)
 })
 
 testthat::test_that("strategy preflight rejects context attribute mutation as Tier 3", {

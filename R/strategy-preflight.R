@@ -185,6 +185,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   forbidden_do_call_symbols <- ledgr_strategy_forbidden_do_call_targets(body(strategy))
   unsupported_context_mutations <- ledgr_strategy_unsupported_context_mutations(body(strategy))
   raw_functions <- functions
+  global_assignment_lhs <- ledgr_strategy_global_assignment_lhs(body(strategy))
   qualified_names <- if (nrow(qualified) > 0L) as.character(qualified$name) else character()
   rng_mutation_symbols <- sort(unique(c(
     intersect(raw_functions, ledgr_strategy_rng_mutation_functions()),
@@ -208,6 +209,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   functions <- functions[!vapply(functions, ledgr_strategy_symbol_is_tier1, logical(1))]
 
   variables <- setdiff(variables, c("ctx", "params", ledgr_strategy_literal_constants(), string_constants))
+  variables <- setdiff(variables, global_assignment_lhs)
   variables <- variables[!vapply(variables, ledgr_strategy_symbol_is_tier1, logical(1))]
   resolved_external_objects <- variables[
     vapply(variables, ledgr_strategy_symbol_resolves_to_external_object, logical(1), env = environment(strategy))
@@ -282,6 +284,30 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
 ledgr_strategy_has_global_assignment <- function(strategy) {
   fn_body <- paste(deparse(strategy), collapse = "\n")
   grepl("<<-", fn_body, fixed = TRUE)
+}
+
+ledgr_strategy_global_assignment_lhs <- function(expr) {
+  out <- character()
+  visit <- function(node) {
+    if (is.call(node) && length(node) >= 3L) {
+      op <- as.character(node[[1L]])
+      if (length(op) == 1L && identical(op, "<<-")) {
+        # `assign()`/`eval()` indirection is handled by the forbidden-call path.
+        lhs <- node[[2L]]
+        if (is.symbol(lhs)) {
+          out <<- c(out, as.character(lhs))
+        }
+      }
+    }
+    if (is.recursive(node)) {
+      for (i in seq_along(node)) {
+        visit(node[[i]])
+      }
+    }
+    invisible(NULL)
+  }
+  visit(expr)
+  sort(unique(out))
 }
 
 ledgr_strategy_rng_mutation_functions <- function() {

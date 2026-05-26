@@ -126,8 +126,8 @@ JSON-safe parameters and no hidden mutable state:
 sma_strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
-    sma <- ctx$feature(id, paste0("ttr_sma_", params$window))
-    if (!is.na(sma) && ctx$close(id) > sma) {
+    values <- c(sma = ctx$feature(id, paste0("ttr_sma_", params$window)))
+    if (passed_warmup(values) && ctx$close(id) > values[["sma"]]) {
       targets[id] <- params$quantity
     }
   }

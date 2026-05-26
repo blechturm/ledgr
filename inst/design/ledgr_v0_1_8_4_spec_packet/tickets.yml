@@ -146,7 +146,7 @@ tickets:
 
   - id: "LDG-2429"
     title: "Auditr-Routed Sweep Print And Preflight Message Fixes"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "S"
     dependencies:
@@ -202,7 +202,7 @@ tickets:
 
   - id: "LDG-2432"
     title: "Warmup Guard Documentation Cleanup"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "S"
     dependencies:

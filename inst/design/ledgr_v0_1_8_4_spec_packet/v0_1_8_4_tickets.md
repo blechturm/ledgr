@@ -557,7 +557,7 @@ scope: documentation_fixture
 Priority: P2
 Effort: S
 Dependencies: LDG-2421
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -586,6 +586,18 @@ independent of the active-alias runtime spine.
 ### Verification
 
 Sweep print tests and strategy preflight tests.
+
+### Completion Notes
+
+- Replaced the sweep-result footer with neutral current-table-order guidance
+  so reordered/subsetted results no longer claim parameter-grid order.
+- Added explicit reordered-sweep print regression coverage.
+- Suppressed unresolved-symbol noise for `<<-` left-hand-side names while
+  preserving Tier 3 global-assignment rejection semantics.
+- Added regression coverage for `global_probe_value <<- 1`.
+- Verified with:
+  `testthat::test_file('tests/testthat/test-sweep.R')` and
+  `testthat::test_file('tests/testthat/test-strategy-preflight.R')`.
 
 ### Source Reference
 
@@ -726,7 +738,7 @@ scope: bounded_auditr_polish
 Priority: P2
 Effort: S
 Dependencies: LDG-2421
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -761,6 +773,14 @@ feature warmup guards. Avoid teaching ad hoc checks such as `!is.na(sma)` or
 
 Documentation grep for `is.na(`, `!is.na(`, and `passed_warmup`; documentation
 contract tests where available; manual docs review.
+
+### Completion Notes
+
+- Replaced vignette feature warmup examples in `strategy-development` and
+  `research-to-production` with `passed_warmup()` guards.
+- Updated both source `.Rmd` files and checked-in rendered `.md` companions.
+- Verified that installed vignette/man/README grep only leaves the
+  `passed_warmup()` reference explanation of its underlying predicate.
 
 ### Source Reference
 

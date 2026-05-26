@@ -557,11 +557,13 @@ strategy <- function(ctx, params) {
   fast_id <- ledgr_feature_id(ledgr_ind_sma(params$fast_n))
   slow_id <- ledgr_feature_id(ledgr_ind_sma(params$slow_n))
 
-  fast <- ctx$feature("AAA", fast_id)
-  slow <- ctx$feature("AAA", slow_id)
+  values <- c(
+    fast = ctx$feature("AAA", fast_id),
+    slow = ctx$feature("AAA", slow_id)
+  )
 
   targets <- ctx$flat()
-  if (!is.na(fast) && !is.na(slow) && fast > slow) {
+  if (passed_warmup(values) && values[["fast"]] > values[["slow"]]) {
     targets["AAA"] <- params$qty
   }
   targets

@@ -264,12 +264,29 @@ testthat::test_that("ledgr_sweep_results prints a curated view", {
   printed <- utils::capture.output(print(out))
   testthat::expect_true(any(grepl("ledgr sweep", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("execution_seed", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("current table order", printed, fixed = TRUE)))
+  testthat::expect_false(any(grepl("parameter-grid order", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("Hidden columns", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("win_rate", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("params", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("warnings", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("feature_fingerprints", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("provenance", printed, fixed = TRUE)))
+})
+
+testthat::test_that("ledgr_sweep_results print footer stays neutral after reordering", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(snapshot, strategy)
+  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  out <- ledgr_sweep(exp, grid, seed = 123L)
+  reordered <- out[c(2L, 1L), ]
+
+  printed <- utils::capture.output(print(reordered))
+  testthat::expect_true(any(grepl("current table order", printed, fixed = TRUE)))
+  testthat::expect_false(any(grepl("parameter-grid order", printed, fixed = TRUE)))
 })
 
 testthat::test_that("ledgr_candidate selects by label or position and handles failures", {
