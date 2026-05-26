@@ -64,14 +64,8 @@ jobs:
       - name: Run coverage threshold
         if: matrix.config.coverage
         run: |
-          for attempt in 1 2 3; do
-            echo "Coverage attempt ${attempt}/3"
-            if Rscript tools/check-coverage.R; then
-              exit 0
-            fi
-            rm -f coverage.html
-          done
-          exit 1
+          rm -f coverage.html
+          Rscript tools/check-coverage.R
 
       - uses: actions/upload-artifact@v4
         if: matrix.config.coverage
