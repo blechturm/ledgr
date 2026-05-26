@@ -1,0 +1,604 @@
+summary:
+  episodes_reviewed: 22
+  feedback_items_reviewed: 56
+  high_priority_count: 0
+  unresolved_uncertainty:
+    - 'feedback_parse_diagnostics.csv reports empty feedback lists for 2026-05-26_003_strategy_preflight_and_tier_classification and 2026-05-26_007_sweep_failure_rows; no items were created because feedback_summary.csv has no rows for those episodes.'
+    - 'episode_index.csv marks 2026-05-26_004_leakage_diagnosis_and_series_fn_boundary, 2026-05-26_009_sweep_precomputed_features, 2026-05-26_010_sweep_seed_and_promotion_context, and 2026-05-26_020_adversarial_preflight_v0_1_8_2_additions invalid; their feedback rows were still summarized as parsed source rows.'
+    - 'Several rows used relaxed_yaml parsing, so wording should be treated as reviewer synthesis from parsed feedback unless a maintainer checks the raw framework_feedback.md.'
+themes:
+  - theme_id: THEME-001
+    title: 'Runnable examples and doc routing gaps'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-26_005_sweep_basic_candidate_promotion', '2026-05-26_006_sweep_train_test_discipline', '2026-05-26_012_yahoo_universe_sweep_per_strategy', '2026-05-26_013_adversarial_preflight_and_force_override', '2026-05-26_016_inspection_surfaces_map', '2026-05-26_017_unguided_yahoo_research_question', '2026-05-26_018_metric_context_constructors_and_templates', '2026-05-26_021_metric_context_sensitivity_overrides']
+    feedback_ids: ['2026-05-26_005_sweep_basic_candidate_promotion/FB-004', '2026-05-26_006_sweep_train_test_discipline/FB-001', '2026-05-26_012_yahoo_universe_sweep_per_strategy/FB-001', '2026-05-26_013_adversarial_preflight_and_force_override/FB-003', '2026-05-26_016_inspection_surfaces_map/FB-001', '2026-05-26_016_inspection_surfaces_map/FB-003', '2026-05-26_017_unguided_yahoo_research_question/FB-001', '2026-05-26_017_unguided_yahoo_research_question/FB-002', '2026-05-26_018_metric_context_constructors_and_templates/FB-002', '2026-05-26_021_metric_context_sensitivity_overrides/FB-001']
+    evidence: 'Multiple episodes had to assemble workflows from scattered help pages or were routed to empty/near-empty runnable scripts and incomplete task-intent maps.'
+    recommended_action: 'Tighten the generated doc snapshot intent map and only list runnable vignette scripts when they contain useful executable workflow code.'
+    uncertainty: 'Duplicates are advisory because some rows concern auditr doc-discovery output while others concern ledgr documentation content.'
+  - theme_id: THEME-002
+    title: 'Sweep ranking, promotion, and provenance inspection'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-26_005_sweep_basic_candidate_promotion', '2026-05-26_010_sweep_seed_and_promotion_context', '2026-05-26_011_multi_output_indicator_bundles', '2026-05-26_012_yahoo_universe_sweep_per_strategy']
+    feedback_ids: ['2026-05-26_005_sweep_basic_candidate_promotion/FB-001', '2026-05-26_005_sweep_basic_candidate_promotion/FB-002', '2026-05-26_005_sweep_basic_candidate_promotion/FB-003', '2026-05-26_010_sweep_seed_and_promotion_context/FB-001', '2026-05-26_010_sweep_seed_and_promotion_context/FB-002', '2026-05-26_011_multi_output_indicator_bundles/FB-003', '2026-05-26_012_yahoo_universe_sweep_per_strategy/FB-002', '2026-05-26_012_yahoo_universe_sweep_per_strategy/FB-003']
+    evidence: 'Users repeatedly needed base R ranking patterns that preserve sweep metadata, flat provenance extraction, and cross-surface promotion replay checks.'
+    recommended_action: 'Add a single sweep inspection and promotion verification recipe covering ranking, ledgr_candidate metadata, provenance list columns, final_equity lookup, and replay metrics.'
+    uncertainty: 'One print-footer issue may be implementation behavior rather than documentation only.'
+  - theme_id: THEME-003
+    title: 'Feature factory and precompute boundaries'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-26_008_sweep_feature_factory', '2026-05-26_009_sweep_precomputed_features', '2026-05-26_011_multi_output_indicator_bundles']
+    feedback_ids: ['2026-05-26_008_sweep_feature_factory/FB-001', '2026-05-26_008_sweep_feature_factory/FB-002', '2026-05-26_009_sweep_precomputed_features/FB-001', '2026-05-26_009_sweep_precomputed_features/FB-002', '2026-05-26_009_sweep_precomputed_features/FB-003', '2026-05-26_011_multi_output_indicator_bundles/FB-001', '2026-05-26_011_multi_output_indicator_bundles/FB-002']
+    evidence: 'Feedback points to missing examples for parameterized features, feature hashes, precompute printing, grid mismatch diagnostics, SMA warmup interpretation, and bundle ID collisions.'
+    recommended_action: 'Document a complete feature-factory precompute workflow and make bundle identity constraints explicit, including safe feature IDs when parameters vary.'
+    uncertainty: 'The bundle duplicate-ID row is marked bug in feedback but may resolve as either a documented restriction or an API change.'
+  - theme_id: THEME-004
+    title: 'Strategy preflight boundaries and messages'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-26_013_adversarial_preflight_and_force_override', '2026-05-26_020_adversarial_preflight_v0_1_8_2_additions', '2026-05-26_022_adversarial_preflight_indirection_bypass']
+    feedback_ids: ['2026-05-26_013_adversarial_preflight_and_force_override/FB-001', '2026-05-26_013_adversarial_preflight_and_force_override/FB-002', '2026-05-26_020_adversarial_preflight_v0_1_8_2_additions/FB-001', '2026-05-26_022_adversarial_preflight_indirection_bypass/FB-001', '2026-05-26_022_adversarial_preflight_indirection_bypass/FB-002']
+    evidence: 'Episodes found mismatches or ambiguity around Tier 1/Tier 2/Tier 3 examples, run-row absence after abort, and which indirection bodies preflight inspects.'
+    recommended_action: 'Add a compact preflight boundary table and verification snippets, then align task examples with current tier behavior.'
+    uncertainty: 'Some rows are task-brief mismatches rather than package defects.'
+  - theme_id: THEME-005
+    title: 'Metric context lifecycle and overrides'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-26_018_metric_context_constructors_and_templates', '2026-05-26_019_metric_context_end_to_end_lifecycle', '2026-05-26_021_metric_context_sensitivity_overrides']
+    feedback_ids: ['2026-05-26_018_metric_context_constructors_and_templates/FB-001', '2026-05-26_019_metric_context_end_to_end_lifecycle/FB-001', '2026-05-26_019_metric_context_end_to_end_lifecycle/FB-002', '2026-05-26_021_metric_context_sensitivity_overrides/FB-002', '2026-05-26_021_metric_context_sensitivity_overrides/FB-003']
+    evidence: 'Users needed clearer examples for context creation, print/provenance inspection, scalar risk-free access, sweep experiment-level context, and comparison default context.'
+    recommended_action: 'Create one runnable metric-context lifecycle example and document public fields or accessors for risk-free-rate provenance and annual_rate.'
+    uncertainty: 'The comparison default-context row is classified unclear because behavior may be intentional but surprising.'
+  - theme_id: THEME-006
+    title: 'Yahoo and real-data workflow clarity'
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ['2026-05-26_002_yahoo_five_strategies', '2026-05-26_017_unguided_yahoo_research_question']
+    feedback_ids: ['2026-05-26_002_yahoo_five_strategies/FB-001', '2026-05-26_002_yahoo_five_strategies/FB-002', '2026-05-26_002_yahoo_five_strategies/FB-003', '2026-05-26_017_unguided_yahoo_research_question/FB-004', '2026-05-26_017_unguided_yahoo_research_question/FB-005', '2026-05-26_017_unguided_yahoo_research_question/FB-006', '2026-05-26_017_unguided_yahoo_research_question/FB-007']
+    evidence: 'Live-data episodes surfaced ambiguity about Yahoo sealing, TTR availability, harmless quantmod stderr, price adjustment policy, same-capital baselines, final-bar warnings, and trade metrics for open positions.'
+    recommended_action: 'Add a Yahoo/live-data troubleshooting and baseline-comparison section with explicit adapter semantics, dependencies, and research-sample cleanup choices.'
+    uncertainty: 'Some items are documentation gaps while TTR-native Bollinger support would be a missing API if maintainers want no optional dependency.'
+  - theme_id: THEME-007
+    title: 'Indicator authoring and causal validation'
+    bucket: missing_api
+    severity: medium
+    episode_ids: ['2026-05-26_004_leakage_diagnosis_and_series_fn_boundary', '2026-05-26_014_adversarial_inputs_csv_bundle_registration', '2026-05-26_015_final_bar_no_fill_warning', '2026-05-26_016_inspection_surfaces_map']
+    feedback_ids: ['2026-05-26_004_leakage_diagnosis_and_series_fn_boundary/FB-001', '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary/FB-002', '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary/FB-003', '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-003', '2026-05-26_015_final_bar_no_fill_warning/FB-001', '2026-05-26_016_inspection_surfaces_map/FB-002']
+    evidence: 'Feedback asks for clearer causal-validator limits, same-ID deregistration guidance, series_fn-only or diagnostic guidance, duplicate registration behavior, timestamp comparison type, and runnable pulse helper examples.'
+    recommended_action: 'Document indicator registry lifecycle, strategy context runtime types, causal-validation limits, and pulse feature setup in one authoring-focused guide.'
+    uncertainty: 'The no-causal-validator row is a confirmed absence from public docs, not proof that no internal tooling exists.'
+  - theme_id: THEME-008
+    title: 'Error message actionability'
+    bucket: unclear
+    severity: low
+    episode_ids: ['2026-05-26_009_sweep_precomputed_features', '2026-05-26_014_adversarial_inputs_csv_bundle_registration', '2026-05-26_022_adversarial_preflight_indirection_bypass']
+    feedback_ids: ['2026-05-26_009_sweep_precomputed_features/FB-003', '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-001', '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-002', '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-004', '2026-05-26_022_adversarial_preflight_indirection_bypass/FB-001']
+    evidence: 'Rows describe correct failures whose messages omit missing labels, artifact state, high-level CSV class mapping, duplicate feature-ID framing, or prioritization of mutation over unresolved-symbol wording.'
+    recommended_action: 'Revise user-facing errors to include expected classes, unchanged artifact state, next action, and the most relevant violation first.'
+    uncertainty: 'CSV and bundle rows may be solved by docs if message changes are not desired.'
+  - theme_id: THEME-009
+    title: 'Episode environment and PowerShell guidance'
+    bucket: expected_user_error
+    severity: low
+    episode_ids: ['2026-05-26_016_inspection_surfaces_map', '2026-05-26_019_metric_context_end_to_end_lifecycle', '2026-05-26_021_metric_context_sensitivity_overrides']
+    feedback_ids: ['2026-05-26_016_inspection_surfaces_map/FB-004', '2026-05-26_019_metric_context_end_to_end_lifecycle/FB-003', '2026-05-26_021_metric_context_sensitivity_overrides/FB-004']
+    evidence: 'Episodes hit PowerShell range syntax, dollar-sign quoting, and saved-help filename guessability problems.'
+    recommended_action: 'Add Windows-safe examples for fixed-string rg searches, line ranges, and ledgr_save_help output filenames to episode instructions.'
+    uncertainty: 'These are episode UX issues rather than ledgr runtime defects.'
+  - theme_id: THEME-010
+    title: 'Accounting and metric surface semantics'
+    bucket: docs_gap
+    severity: low
+    episode_ids: ['2026-05-26_001_ledger_events_and_metrics_error', '2026-05-26_005_sweep_basic_candidate_promotion', '2026-05-26_012_yahoo_universe_sweep_per_strategy', '2026-05-26_017_unguided_yahoo_research_question']
+    feedback_ids: ['2026-05-26_001_ledger_events_and_metrics_error/FB-001', '2026-05-26_005_sweep_basic_candidate_promotion/FB-003', '2026-05-26_012_yahoo_universe_sweep_per_strategy/FB-003', '2026-05-26_017_unguided_yahoo_research_question/FB-007']
+    evidence: 'Users needed clearer separation between ledger rows, equity rows, standard metric objects, final_equity, and closed-trade metrics.'
+    recommended_action: 'Add cross-surface examples that explain where execution events, equity state, final equity, Sharpe, and trade metrics live.'
+    uncertainty: 'Promotion final_equity rows are duplicates across tasks but remain separate feedback rows.'
+items:
+  - feedback_id: '2026-05-26_001_ledger_events_and_metrics_error/FB-001'
+    episode_id: '2026-05-26_001_ledger_events_and_metrics_error'
+    title: 'Ledger docs do not explicitly say portfolio state updates are not separate ledger rows'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The run showed ledgr_results(..., what = ledger) with FILL rows while portfolio state was inspected through equity rows.'
+    recommended_action: 'State whether cash and position state changes appear only through FILL metadata and derived equity rows or through separate ledger event types.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_002_yahoo_five_strategies/FB-001'
+    episode_id: '2026-05-26_002_yahoo_five_strategies'
+    title: 'Yahoo helper auto-sealing makes seal-once task wording ambiguous'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'ledgr_snapshot_from_yahoo returned an already sealed snapshot; ledgr_snapshot_seal acted as idempotent verification.'
+    recommended_action: 'Add a Yahoo-specific note that creation and sealing happen together and later sealing verifies the existing hash.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_002_yahoo_five_strategies/FB-002'
+    episode_id: '2026-05-26_002_yahoo_five_strategies'
+    title: 'Bollinger strategy path depends on optional TTR availability'
+    bucket: missing_api
+    severity: medium
+    duplicate_of: null
+    evidence: 'The Bollinger path used ledgr_ind_ttr("BBands", ...), which requires TTR while the episode disallowed package installation.'
+    recommended_action: 'Call out the TTR dependency in examples or provide a ledgr-only Bollinger alternative.'
+    uncertainty: 'Could be resolved as documentation if optional TTR remains expected.'
+  - feedback_id: '2026-05-26_002_yahoo_five_strategies/FB-003'
+    episode_id: '2026-05-26_002_yahoo_five_strategies'
+    title: 'Harmless quantmod startup message appears in stderr'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'A successful Yahoo run wrote a quantmod S3 overwrite message to stderr while the runner exit status was 0.'
+    recommended_action: 'Suppress known quantmod startup noise where feasible or document the exact harmless message in Yahoo troubleshooting.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary/FB-001'
+    episode_id: '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary'
+    title: 'No public causal validator for vectorized series_fn output'
+    bucket: missing_api
+    severity: medium
+    duplicate_of: null
+    evidence: 'Feature contract checks accepted both leaky and corrected indicators; only shape, warmup, and value validation were found.'
+    recommended_action: 'Document that causal correctness is not certified by public validators and recommend manual review or scalar-reference comparisons.'
+    uncertainty: 'Episode status is invalid, but the parsed feedback cites raw contract and metric comparison logs.'
+  - feedback_id: '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary/FB-002'
+    episode_id: '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary'
+    title: 'Comparing same-ID indicator definitions requires session deregistration'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Registering a second indicator with the same ID but different logic failed until ledgr_deregister_indicator was called.'
+    recommended_action: 'Add a same-feature-ID different-logic comparison example that explains session registry behavior.'
+    uncertainty: 'Episode status is invalid.'
+  - feedback_id: '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary/FB-003'
+    episode_id: '2026-05-26_004_leakage_diagnosis_and_series_fn_boundary'
+    title: 'series_fn-focused indicators still require a scalar fn that may not be equivalent'
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: 'ledgr_indicator required fn even for a diagnostic vectorized series_fn whose intentionally leaky behavior had no honest scalar equivalent.'
+    recommended_action: 'Document diagnostic scalar-fn expectations or consider supporting series_fn-only indicators.'
+    uncertainty: 'Episode status is invalid.'
+  - feedback_id: '2026-05-26_005_sweep_basic_candidate_promotion/FB-001'
+    episode_id: '2026-05-26_005_sweep_basic_candidate_promotion'
+    title: 'Base R ranking via as.data.frame drops sweep metadata'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'ledgr_candidate accepted a plain data.frame but warned that sweep-level metadata would not be available.'
+    recommended_action: 'Show base R ranking that preserves ledgr_sweep_results and warn against as.data.frame before ledgr_candidate.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_005_sweep_basic_candidate_promotion/FB-002'
+    episode_id: '2026-05-26_005_sweep_basic_candidate_promotion'
+    title: 'Sorted sweep tables still print parameter-grid-order footer'
+    bucket: ledgr_bug
+    severity: low
+    duplicate_of: null
+    evidence: 'After base R ordering by Sharpe, the printed table still claimed rows were in parameter-grid order.'
+    recommended_action: 'Track reorder state or replace the footer with neutral candidate-ranking guidance.'
+    uncertainty: 'Could be treated as UX copy rather than logic bug.'
+  - feedback_id: '2026-05-26_005_sweep_basic_candidate_promotion/FB-003'
+    episode_id: '2026-05-26_005_sweep_basic_candidate_promotion'
+    title: 'final_equity comparison requires a different API than ledgr_compute_metrics'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'ledgr_compute_metrics returned Sharpe but not final_equity; final_equity required ledgr_results(..., what = equity).'
+    recommended_action: 'Add promoted-candidate verification docs explaining which values come from metrics and which come from equity results.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_005_sweep_basic_candidate_promotion/FB-004'
+    episode_id: '2026-05-26_005_sweep_basic_candidate_promotion'
+    title: 'Listed sweeps runnable vignette script has no runnable workflow'
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: 'LEDGR_DOCS/scripts/sweeps.R was listed as runnable but contained only wrapper/header material.'
+    recommended_action: 'Do not list empty prepared scripts as runnable, or include executable sweep chunks.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_006_sweep_train_test_discipline/FB-001'
+    episode_id: '2026-05-26_006_sweep_train_test_discipline'
+    title: 'Listed runnable sweeps script contains no runnable code'
+    bucket: duplicate
+    severity: low
+    duplicate_of: '2026-05-26_005_sweep_basic_candidate_promotion/FB-004'
+    evidence: 'The same LEDGR_DOCS/scripts/sweeps.R runnable listing was empty in another sweep episode.'
+    recommended_action: 'Handle with the same runnable-script listing fix.'
+    uncertainty: 'Advisory duplicate.'
+  - feedback_id: '2026-05-26_008_sweep_feature_factory/FB-001'
+    episode_id: '2026-05-26_008_sweep_feature_factory'
+    title: 'precompute help does not show feature factory hashes'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The sweeps vignette explained feature hashes, but ?ledgr_precompute_features used only a static feature-list example.'
+    recommended_action: 'Add a feature-factory example showing per-candidate feature_set_hash values.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_008_sweep_feature_factory/FB-002'
+    episode_id: '2026-05-26_008_sweep_feature_factory'
+    title: 'SMA warmup leading NA count is implicit'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'requires_bars and stable_after were documented, but the user had to verify n - 1 leading NA values and first finite bar n.'
+    recommended_action: 'Add a direct SMA warmup interpretation table or sentence.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_009_sweep_precomputed_features/FB-001'
+    episode_id: '2026-05-26_009_sweep_precomputed_features'
+    title: 'print.ledgr_precomputed_features help does not document printed fields'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The help page only described printing generically, while output included snapshot reference, candidate count, feature count, universe, and scoring range.'
+    recommended_action: 'Expand print.ledgr_precomputed_features help with a Details section and example output.'
+    uncertainty: 'Episode status is invalid.'
+  - feedback_id: '2026-05-26_009_sweep_precomputed_features/FB-002'
+    episode_id: '2026-05-26_009_sweep_precomputed_features'
+    title: 'No single runnable example covers the full large feature-factory precompute workflow'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The user had to combine sweeps docs with strategy-development exact-ID patterns to complete a larger feature-factory precompute task.'
+    recommended_action: 'Add a compact large-grid feature-factory precompute example.'
+    uncertainty: 'Episode status is invalid.'
+  - feedback_id: '2026-05-26_009_sweep_precomputed_features/FB-003'
+    episode_id: '2026-05-26_009_sweep_precomputed_features'
+    title: 'Mismatched precomputed grid error does not list missing or extra labels'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'A 25-candidate precomputed payload passed to a 26-candidate grid failed with a generic candidate-label mismatch message.'
+    recommended_action: 'Include extra_labels, missing_labels, and recomputation advice in the error.'
+    uncertainty: 'Episode status is invalid.'
+  - feedback_id: '2026-05-26_010_sweep_seed_and_promotion_context/FB-001'
+    episode_id: '2026-05-26_010_sweep_seed_and_promotion_context'
+    title: 'Ranking examples do not warn against dropping sweep-result metadata'
+    bucket: duplicate
+    severity: low
+    duplicate_of: '2026-05-26_005_sweep_basic_candidate_promotion/FB-001'
+    evidence: 'A natural as.data.frame ranking attempt produced the same metadata-loss warning before ledgr_candidate.'
+    recommended_action: 'Handle with the same base R ranking and metadata-preservation documentation fix.'
+    uncertainty: 'Episode status is invalid; advisory duplicate.'
+  - feedback_id: '2026-05-26_010_sweep_seed_and_promotion_context/FB-002'
+    episode_id: '2026-05-26_010_sweep_seed_and_promotion_context'
+    title: 'Promotion context candidate_summary schema is not documented'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'context$candidate_summary appeared as an unnamed list of row-like lists with no obvious nrow or names behavior.'
+    recommended_action: 'Document the promotion context schema and include extraction examples for run_id, execution_seed, and metrics.'
+    uncertainty: 'Episode status is invalid.'
+  - feedback_id: '2026-05-26_011_multi_output_indicator_bundles/FB-001'
+    episode_id: '2026-05-26_011_multi_output_indicator_bundles'
+    title: 'Parameterized bundle factory can fail on duplicate default feature IDs'
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: 'Candidates with bbands_up from different n values failed because runtime projection could not represent duplicate concrete feature ID bbands_up.'
+    recommended_action: 'Document the constraint and show safe parameterized bundle IDs, or provide candidate-local feature identity.'
+    uncertainty: 'Could be a missing API or expected restriction rather than bug.'
+  - feedback_id: '2026-05-26_011_multi_output_indicator_bundles/FB-002'
+    episode_id: '2026-05-26_011_multi_output_indicator_bundles'
+    title: 'Default bundle IDs do not match equivalent single-output TTR IDs'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Bundle BBands up used bbands_up while hand-written ledgr_ind_ttr used ttr_bbands_20_up.'
+    recommended_action: 'Clarify whether bundles flatten to ordinary indicators without preserving legacy single-output IDs.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_011_multi_output_indicator_bundles/FB-003'
+    episode_id: '2026-05-26_011_multi_output_indicator_bundles'
+    title: 'Sweep result inspection needs clearer guidance for labels and hidden list columns'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The result table had no label column; grid labels appeared in run_id and list columns were hidden by tibble printing.'
+    recommended_action: 'Show exact extraction for names, run_id, feature_fingerprints, and provenance feature_set_hash.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_012_yahoo_universe_sweep_per_strategy/FB-001'
+    episode_id: '2026-05-26_012_yahoo_universe_sweep_per_strategy'
+    title: 'Programmatic hyperparameter grid construction is not shown'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The task required multi-dimensional grids, but documented ledgr_param_grid examples used hand-written candidate lists.'
+    recommended_action: 'Add a do.call(ledgr_param_grid, ...) example from expand.grid or loops, or add a grid expansion helper.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_012_yahoo_universe_sweep_per_strategy/FB-002'
+    episode_id: '2026-05-26_012_yahoo_universe_sweep_per_strategy'
+    title: 'Feature-set hash verification requires manual list-column extraction'
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: 'feature_set_hash was available only inside each row provenance list column.'
+    recommended_action: 'Add a vignette snippet or exported ledgr_sweep_provenance helper returning flat provenance columns.'
+    uncertainty: 'Could be documentation-only if maintainers prefer list-column extraction.'
+  - feedback_id: '2026-05-26_012_yahoo_universe_sweep_per_strategy/FB-003'
+    episode_id: '2026-05-26_012_yahoo_universe_sweep_per_strategy'
+    title: 'Promotion replay metric check needs cross-surface instructions'
+    bucket: duplicate
+    severity: low
+    duplicate_of: '2026-05-26_005_sweep_basic_candidate_promotion/FB-003'
+    evidence: 'Comparing total_return, sharpe_ratio, and final_equity again required ledgr_compute_metrics plus equity results.'
+    recommended_action: 'Handle with the same promoted-candidate replay documentation fix.'
+    uncertainty: 'Advisory duplicate.'
+  - feedback_id: '2026-05-26_013_adversarial_preflight_and_force_override/FB-001'
+    episode_id: '2026-05-26_013_adversarial_preflight_and_force_override'
+    title: 'Task asks for global scalar to be Tier 3 but docs and ledgr return Tier 2'
+    bucket: bad_example
+    severity: medium
+    duplicate_of: null
+    evidence: 'A strategy referencing a resolved external global scalar classified as tier_2 allowed, contrary to the task expectation.'
+    recommended_action: 'Update the task brief or docs so resolved external scalar tier behavior is explicit and examples match current behavior.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_013_adversarial_preflight_and_force_override/FB-002'
+    episode_id: '2026-05-26_013_adversarial_preflight_and_force_override'
+    title: 'Task suggests stats::median for Tier 2 but recommended-R calls remain Tier 1'
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: 'Probing classified stats::median as Tier 1 because stats is part of the active R distribution.'
+    recommended_action: 'Use a non-recommended package-qualified dependency for Tier 2 examples, or state that recommended packages can remain Tier 1.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_013_adversarial_preflight_and_force_override/FB-003'
+    episode_id: '2026-05-26_013_adversarial_preflight_and_force_override'
+    title: 'Documentation snapshot intent map omits strategy preflight for preflight tasks'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The generated task-intent map did not surface ?ledgr_strategy_preflight for a preflight-centered episode.'
+    recommended_action: 'Add ledgr_strategy_preflight to strategy authoring or reproducibility intent routing.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-001'
+    episode_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration'
+    title: 'High-level CSV error classes are easy to mis-expect'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'ledgr_snapshot_from_csv raised ledgr_invalid_args or ledgr_invalid_timestamp while LEDGR_CSV_FORMAT_ERROR applied to lower-level helpers.'
+    recommended_action: 'Add a table mapping common high-level CSV failures to classes and separate lower-level import classes.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-002'
+    episode_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration'
+    title: 'High-level CSV errors omit artifact state and next action'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'CSV errors identified invalid input but did not state no snapshot was created or the next action.'
+    recommended_action: 'Append clear artifact-state and rerun guidance to high-level CSV errors.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-003'
+    episode_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration'
+    title: 'Registration overwrite safety is not documented on help page'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'Duplicate registration behavior was clear in the error but not documented on ?ledgr_register_indicator.'
+    recommended_action: 'Add a duplicate-registration example with unchanged lookup and overwrite or distinct-name options.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration/FB-004'
+    episode_id: '2026-05-26_014_adversarial_inputs_csv_bundle_registration'
+    title: 'Feature-map duplicate bundle error is alias-framed'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'Duplicate bundle expansion failed with alias wording before explaining alias equals generated feature ID.'
+    recommended_action: 'Lead with duplicate generated feature ID and alias in bundle-expanded feature-map errors.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_015_final_bar_no_fill_warning/FB-001'
+    episode_id: '2026-05-26_015_final_bar_no_fill_warning'
+    title: 'ctx$ts_utc comparison type is not explicit'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The pulse context showed ctx$ts_utc as an ISO timestamp string, while the first strategy compared it directly to POSIXct.'
+    recommended_action: 'Document ctx$ts_utc runtime type and recommended timestamp comparison patterns.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_016_inspection_surfaces_map/FB-001'
+    episode_id: '2026-05-26_016_inspection_surfaces_map'
+    title: 'Inspection Surfaces map needs a sweep setup pointer'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The map named sweep and promotion surfaces but did not provide enough setup context to exercise them.'
+    recommended_action: 'Add a minimal snapshot to experiment to grid to sweep to candidate to promote pointer near the inspection table.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_016_inspection_surfaces_map/FB-002'
+    episode_id: '2026-05-26_016_inspection_surfaces_map'
+    title: 'Pulse feature helper examples are not runnable alone'
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: 'ledgr_pulse_features and ledgr_pulse_wide examples referenced pulse and features objects that were not constructed on the page.'
+    recommended_action: 'Expand examples into runnable blocks or explicitly cross-reference ledgr_pulse_snapshot setup.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_016_inspection_surfaces_map/FB-003'
+    episode_id: '2026-05-26_016_inspection_surfaces_map'
+    title: 'Listed sweeps vignette script had no useful runnable workflow'
+    bucket: duplicate
+    severity: low
+    duplicate_of: '2026-05-26_005_sweep_basic_candidate_promotion/FB-004'
+    evidence: 'The same listed sweeps script contained only setup/comment material and did not help exercise sweep and promotion tasks.'
+    recommended_action: 'Handle with the same runnable-script listing fix.'
+    uncertainty: 'Advisory duplicate.'
+  - feedback_id: '2026-05-26_016_inspection_surfaces_map/FB-004'
+    episode_id: '2026-05-26_016_inspection_surfaces_map'
+    title: 'PowerShell doc excerpt range syntax caused a failed path'
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: 'Select-Object -Index 280..340 failed because the range was parsed incorrectly for the Index parameter.'
+    recommended_action: 'Add a known-good PowerShell line-range example such as Select-Object -Index (280..340).'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_017_unguided_yahoo_research_question/FB-001'
+    episode_id: '2026-05-26_017_unguided_yahoo_research_question'
+    title: 'Yahoo snapshot helper is not in the task-intent map'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The discovery snapshot did not include ledgr_snapshot_from_yahoo in the relevant snapshot or real-data task-intent group.'
+    recommended_action: 'Add a Yahoo/live market data intent entry pointing to ledgr_snapshot_from_yahoo and experiment-store docs.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_017_unguided_yahoo_research_question/FB-002'
+    episode_id: '2026-05-26_017_unguided_yahoo_research_question'
+    title: 'No runnable open-ended Yahoo comparison example'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'The workflow had to be assembled from separate Yahoo, strategy, experiment, and comparison sections.'
+    recommended_action: 'Add a runnable Yahoo mini research example with multiple strategies and ledgr_compare_runs.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_017_unguided_yahoo_research_question/FB-003'
+    episode_id: '2026-05-26_017_unguided_yahoo_research_question'
+    title: 'One-experiment-per-strategy rule is easy to miss'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The rule appeared in the sweeps vignette but not near real-data baseline strategy comparison guidance.'
+    recommended_action: 'Repeat or cross-link the one-experiment-per-strategy rule near real-data comparison examples and ?ledgr_experiment.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_017_unguided_yahoo_research_question/FB-004'
+    episode_id: '2026-05-26_017_unguided_yahoo_research_question'
+    title: 'Baseline sizing examples can produce unfair comparisons'
+    bucket: bad_example
+    severity: medium
+    duplicate_of: null
+    evidence: 'A fixed-quantity buy-and-hold baseline deployed less capital than 95 percent allocation strategies.'
+    recommended_action: 'Show same-capital buy-and-hold sizing or warn that fixed-quantity examples are mechanical templates.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_017_unguided_yahoo_research_question/FB-005'
+    episode_id: '2026-05-26_017_unguided_yahoo_research_question'
+    title: 'Final-bar no-fill warning lacks a clear research workflow'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'Daily rebalancing emitted LEDGR_LAST_BAR_NO_FILL when the next-open fill model could not fill a final-bar target change.'
+    recommended_action: 'Document standard choices: ignore expected terminal warnings, add a non-scored fill buffer, or stop target changes before final scored date.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_017_unguided_yahoo_research_question/FB-006'
+    episode_id: '2026-05-26_017_unguided_yahoo_research_question'
+    title: 'Yahoo price adjustment semantics are not obvious'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Public docs did not state which Yahoo columns are used or whether OHLC values are adjusted before sealing.'
+    recommended_action: 'Document Yahoo adapter column mapping and adjustment policy, and consider including it in snapshot metadata.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_017_unguided_yahoo_research_question/FB-007'
+    episode_id: '2026-05-26_017_unguided_yahoo_research_question'
+    title: 'Open buy-and-hold positions make trade metrics look empty'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'A buy-and-hold run had n_trades = 0 and win_rate = NA because it opened and never closed a position.'
+    recommended_action: 'Warn beside buy-and-hold examples that equity metrics can be meaningful while closed-trade metrics are zero or NA.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_018_metric_context_constructors_and_templates/FB-001'
+    episode_id: '2026-05-26_018_metric_context_constructors_and_templates'
+    title: 'Metric context print omits risk-free provenance label'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'A context created with a risk-free label printed annual rate, calendar, and hash but not label, source, or as_of.'
+    recommended_action: 'Print risk-free provenance or document print as compact with accessor examples for provenance fields.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_018_metric_context_constructors_and_templates/FB-002'
+    episode_id: '2026-05-26_018_metric_context_constructors_and_templates'
+    title: 'Task-intent doc map omits metric-context help topics from metrics group'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The generated metrics task-intent map omitted metric-context, context-hash, context-resolve, risk-free-rate, and calendar help pages.'
+    recommended_action: 'Add metric context and calendar help topics to the metrics task-intent map.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_019_metric_context_end_to_end_lifecycle/FB-001'
+    episode_id: '2026-05-26_019_metric_context_end_to_end_lifecycle'
+    title: 'No runnable end-to-end metric-context lifecycle example'
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: 'Comparison and promotion chunks were eval=FALSE, requiring a custom workflow across several docs.'
+    recommended_action: 'Add a runnable metric-context lifecycle example covering runs, comparisons, sweeps, promotion, and context verification.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_019_metric_context_end_to_end_lifecycle/FB-002'
+    episode_id: '2026-05-26_019_metric_context_end_to_end_lifecycle'
+    title: 'Annual risk-free rate lacks a documented scalar accessor'
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: 'Docs showed provenance fields and constructor arguments, but not a documented way to read the stored annual_rate scalar.'
+    recommended_action: 'Document context$risk_free_rate$annual_rate as public or add a ledgr_risk_free_rate_value accessor.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_019_metric_context_end_to_end_lifecycle/FB-003'
+    episode_id: '2026-05-26_019_metric_context_end_to_end_lifecycle'
+    title: 'PowerShell searches containing dollar signs are easy to misquote'
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: 'Searches containing $ failed through regex escaping or shell variable expansion.'
+    recommended_action: 'Add PowerShell-safe fixed-string search examples such as rg -n -F with single-quoted patterns.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_020_adversarial_preflight_v0_1_8_2_additions/FB-001'
+    episode_id: '2026-05-26_020_adversarial_preflight_v0_1_8_2_additions'
+    title: 'Missing example for verifying no run row after preflight abort'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'The user combined tryCatch(ledgr_run_info(...)) with ledgr_run_list to prove a rejected run ID was absent.'
+    recommended_action: 'Add a Tier 3 rejection verification example that catches ledgr_run_not_found and checks ledgr_run_list.'
+    uncertainty: 'Episode status is invalid.'
+  - feedback_id: '2026-05-26_021_metric_context_sensitivity_overrides/FB-001'
+    episode_id: '2026-05-26_021_metric_context_sensitivity_overrides'
+    title: 'Doc snapshot intent map omits metric-context topics'
+    bucket: duplicate
+    severity: low
+    duplicate_of: '2026-05-26_018_metric_context_constructors_and_templates/FB-002'
+    evidence: 'The metrics task-intent map again omitted metric-context constructor, market-template, and risk-free-rate helpers.'
+    recommended_action: 'Handle with the same metrics task-intent map update.'
+    uncertainty: 'Advisory duplicate.'
+  - feedback_id: '2026-05-26_021_metric_context_sensitivity_overrides/FB-002'
+    episode_id: '2026-05-26_021_metric_context_sensitivity_overrides'
+    title: 'Sweep context override path is experiment-level, not call-time'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'ledgr_sweep has no metric_context argument; the working pattern is setting metric_context on ledgr_experiment.'
+    recommended_action: 'Add a sweep docs example showing metric context override via experiment construction.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_021_metric_context_sensitivity_overrides/FB-003'
+    episode_id: '2026-05-26_021_metric_context_sensitivity_overrides'
+    title: 'Comparison default context can surprise after nonzero-context runs'
+    bucket: unclear
+    severity: low
+    duplicate_of: null
+    evidence: 'Runs with stored 0.04 context compared under the default zero-risk-free comparison context unless metric_context was supplied.'
+    recommended_action: 'Add an example showing default comparison context versus explicit experiment-context comparison.'
+    uncertainty: 'Behavior may be intentional; the feedback is about surprise and documentation prominence.'
+  - feedback_id: '2026-05-26_021_metric_context_sensitivity_overrides/FB-004'
+    episode_id: '2026-05-26_021_metric_context_sensitivity_overrides'
+    title: 'Saved help file naming was easy to guess incorrectly'
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: 'The user guessed raw_logs/help_ledgr_compute_metrics.txt, but ledgr_save_help wrote raw_logs/ledgr_compute_metrics.txt.'
+    recommended_action: 'Document the raw_logs/<topic>.txt filename pattern or print a concise filename summary.'
+    uncertainty: ''
+  - feedback_id: '2026-05-26_022_adversarial_preflight_indirection_bypass/FB-001'
+    episode_id: '2026-05-26_022_adversarial_preflight_indirection_bypass'
+    title: 'Global assignment target is also reported as unresolved'
+    bucket: ledgr_bug
+    severity: low
+    duplicate_of: null
+    evidence: 'A strategy with global_probe_value <<- 1 was rejected for global assignment but also reported the assignment target as unresolved before the mutation reason.'
+    recommended_action: 'Suppress unresolved-symbol reporting for <<- left-hand-side names or demote it below the mutation violation.'
+    uncertainty: 'Could be treated as error-message UX rather than core bug.'
+  - feedback_id: '2026-05-26_022_adversarial_preflight_indirection_bypass/FB-002'
+    episode_id: '2026-05-26_022_adversarial_preflight_indirection_bypass'
+    title: 'Preflight docs do not show which indirection bodies are inspected'
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: 'Probe results were needed to learn how do.call, eval, anonymous functions, nested local helpers, captured scalars, and unresolved external helpers are classified.'
+    recommended_action: 'Add a compact boundary table for common indirection forms and current tier results.'
+    uncertainty: ''

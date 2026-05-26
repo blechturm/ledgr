@@ -1,0 +1,247 @@
+version: "0.1.8.4"
+source: "v0_1_8_4_tickets.md"
+generated_from: "v0_1_8_4_spec.md"
+tickets:
+  - id: "LDG-2421"
+    title: "Scope Routing, Packet Setup, And Auditr Intake"
+    status: "done"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.4"
+    tests:
+      - "manual_packet_review"
+      - "git_diff_check"
+
+  - id: "LDG-2422"
+    title: "Parameter Reference Declarations And Constructor Integration"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2421"
+    classification:
+      type: "feature"
+      surface: "feature_authoring"
+      scope: "parameter_references"
+    tests:
+      - "parameter_reference_tests"
+      - "constructor_integration_tests"
+      - "feature_id_failure_tests"
+      - "fingerprint_stability_tests"
+
+  - id: "LDG-2423"
+    title: "Feature Resolution, Introspection, And Bundle Identity"
+    status: "todo"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2422"
+    classification:
+      type: "feature"
+      surface: "feature_resolution"
+      scope: "active_alias_materialization"
+    tests:
+      - "feature_resolution_tests"
+      - "parameter_introspection_tests"
+      - "bundle_projection_tests"
+      - "fingerprint_stability_tests"
+      - "parameterized_bundle_identity_regression"
+
+  - id: "LDG-2424"
+    title: "Feature, Strategy, And Executable Grid Helpers"
+    status: "todo"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2421"
+    classification:
+      type: "feature"
+      surface: "sweep_grid_helpers"
+      scope: "authoring_ux"
+    tests:
+      - "feature_grid_tests"
+      - "strategy_grid_tests"
+      - "grid_cross_tests"
+      - "grid_named_tests"
+      - "grid_baseline_tests"
+
+  - id: "LDG-2425"
+    title: "Active Alias Runtime Lookup In Run And Sweep"
+    status: "todo"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2423"
+      - "LDG-2424"
+    classification:
+      type: "feature"
+      surface: "pulse_context"
+      scope: "active_alias_lookup"
+    tests:
+      - "run_active_alias_tests"
+      - "sweep_active_alias_tests"
+      - "exact_id_regression_tests"
+      - "passed_warmup_tests"
+      - "sweep_tests"
+      - "backtest_wrapper_tests"
+
+  - id: "LDG-2426"
+    title: "Alias Map Identity, Provenance, And Hashes"
+    status: "todo"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2425"
+    classification:
+      type: "provenance"
+      surface: "execution_identity"
+      scope: "alias_map"
+    tests:
+      - "alias_map_hash_tests"
+      - "config_hash_tests"
+      - "feature_set_hash_regression_tests"
+      - "sweep_provenance_tests"
+      - "promotion_context_tests"
+      - "failure_row_tests"
+
+  - id: "LDG-2427"
+    title: "Pulse Debug And Feature Inspection Alias Views"
+    status: "todo"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2425"
+    classification:
+      type: "feature"
+      surface: "pulse_debug"
+      scope: "active_alias_inspection"
+    tests:
+      - "pulse_snapshot_tests"
+      - "pulse_features_tests"
+      - "pulse_wide_tests"
+      - "pulse_debug_error_tests"
+      - "documentation_example_checks"
+
+  - id: "LDG-2428"
+    title: "Demo SMA Crossover Strategy Helper"
+    status: "todo"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2425"
+    classification:
+      type: "feature"
+      surface: "demo_strategy"
+      scope: "documentation_fixture"
+    tests:
+      - "demo_strategy_preflight_tests"
+      - "demo_strategy_run_tests"
+      - "demo_strategy_sweep_tests"
+      - "warmup_tests"
+      - "missing_alias_tests"
+
+  - id: "LDG-2429"
+    title: "Auditr-Routed Sweep Print And Preflight Message Fixes"
+    status: "todo"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2421"
+    classification:
+      type: "bugfix"
+      surface: "sweep_print_and_preflight"
+      scope: "auditr_routed"
+    tests:
+      - "sweep_print_tests"
+      - "strategy_preflight_tests"
+
+  - id: "LDG-2430"
+    title: "Primary Active-Alias Documentation Path"
+    status: "todo"
+    priority: "P2"
+    effort: "L"
+    dependencies:
+      - "LDG-2423"
+      - "LDG-2424"
+      - "LDG-2425"
+      - "LDG-2427"
+      - "LDG-2428"
+      - "LDG-2429"
+      - "LDG-2431"
+      - "LDG-2432"
+    classification:
+      type: "documentation"
+      surface: "active_alias_docs"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "example_smoke_tests"
+      - "stale_version_scan"
+      - "encoding_scan"
+
+  - id: "LDG-2431"
+    title: "Bounded Real-Data And Error-Message Documentation Polish"
+    status: "todo"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2421"
+    classification:
+      type: "documentation"
+      surface: "real_data_and_messages"
+      scope: "bounded_auditr_polish"
+    tests:
+      - "documentation_review"
+      - "targeted_error_message_tests"
+      - "stale_version_scan"
+      - "git_diff_check"
+
+  - id: "LDG-2432"
+    title: "Warmup Guard Documentation Cleanup"
+    status: "todo"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2421"
+    classification:
+      type: "documentation"
+      surface: "warmup_docs"
+      scope: "installed_docs"
+    tests:
+      - "warmup_doc_grep"
+      - "documentation_contract_tests"
+      - "manual_docs_review"
+
+  - id: "LDG-2433"
+    title: "v0.1.8.4 Release Gate And Closeout"
+    status: "todo"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2421"
+      - "LDG-2422"
+      - "LDG-2423"
+      - "LDG-2424"
+      - "LDG-2425"
+      - "LDG-2426"
+      - "LDG-2427"
+      - "LDG-2428"
+      - "LDG-2429"
+      - "LDG-2430"
+      - "LDG-2431"
+      - "LDG-2432"
+    classification:
+      type: "release_gate"
+      surface: "package"
+      scope: "v0.1.8.4"
+    tests:
+      - "targeted_active_alias_tests"
+      - "full_test_suite"
+      - "package_build"
+      - "r_cmd_check"
+      - "documentation_checks"
+      - "ticket_status_sync"

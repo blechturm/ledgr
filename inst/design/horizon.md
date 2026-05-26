@@ -86,6 +86,29 @@ convenience wrapper such as `ledgr_tune()` is useful. This should remain parked
 until sweep result shape, objective/ranking ownership, and candidate promotion
 are stable.
 
+### 2026-05-26 [ux] Tidy/vectorized strategy authoring layer
+
+Active parameterized feature aliases give strategies stable column names such
+as `fast` and `slow`. That may eventually support a tidy or vectorized
+strategy-authoring layer for stateless, cross-sectional pulse logic.
+
+Possible future shape:
+
+```r
+strategy <- ledgr_vector_strategy(function(features, ctx, params) {
+  transform(features, target = ifelse(fast > slow, params$qty, 0))
+})
+```
+
+or a more ledgr-native signal wrapper that maps row-wise feature predicates to
+a full named target vector.
+
+This should not replace the core `function(ctx, params)` strategy contract.
+It is only appropriate for strategies that read current pulse data, compute
+row-wise instrument targets, and do not require arbitrary per-instrument
+control flow, order-dependent allocation, or custom state mutation. Keep it
+out of v0.1.8.4; active aliases and grid helpers should stabilize first.
+
 ### 2026-05-15 [ux] Parameter-grid construction helpers
 
 `ledgr_param_grid()` is the right explicit base contract, but larger studies
@@ -144,15 +167,25 @@ code before ranking. The helper would own ordering mechanics, classed
 validation, printability, and selection provenance. It should not call the
 result "best" or promote a candidate automatically.
 
-### 2026-05-13 [ux] Research workflow templates
+### 2026-05-13 [ux] Research workflow scaffolds and companion templates
 
-ledgr may eventually benefit from templates, but the first templates should be
-research workflow templates rather than alpha/strategy cookbooks. The useful
-template is a complete reproducible study scaffold: snapshot creation, feature
-registration, strategy file, parameter grid, sweep script, held-out validation,
-report skeleton, assumptions log, and candidate-promotion checklist.
+ledgr may eventually benefit from templates, but the first core-owned template
+surface should be research workflow scaffolding rather than alpha/strategy
+cookbooks. The useful core template is a complete reproducible study scaffold:
+snapshot creation, feature registration, strategy file, feature and strategy
+parameter grids, sweep script, held-out validation, report skeleton,
+assumptions log, and candidate-promotion checklist.
 
-Possible first scaffold:
+Possible future core helper:
+
+```r
+ledgr_new_research_project(
+  path = "research/sma-crossover",
+  template = "active-alias-sweep"
+)
+```
+
+Possible first core scaffold:
 
 ```text
 my-ledgr-study/
@@ -176,19 +209,127 @@ my-ledgr-study/
 ```
 
 The point would be to encode the boring correct workflow: sealed data,
-registered features, explicit params, train/sweep/evaluate discipline, review
-artifacts, and promotion decisions. Tiny example strategies such as flat
-baseline, SMA crossover, or top-N momentum can appear only as contract
+registered features, explicit feature and strategy params, train/sweep/evaluate
+discipline, review artifacts, and promotion decisions. Tiny example strategies
+such as flat baseline or SMA crossover can appear in core only as contract
 demonstrations, not as profitable-strategy templates.
 
-The roadmap now names `v0.2.x Reference Strategy Templates` for the executable
-contract-demonstration side of this idea. This horizon entry remains broader:
-it is about full reproducible study scaffolds, not a strategy library.
+A companion repository can own richer strategy templates after the v0.1.8.4
+active-alias and grid-helper UX stabilizes. That repository should be framed as
+educational templates or recipes, not official strategies. It can contain
+copyable examples such as SMA crossover, RSI threshold, breakout,
+mean-reversion, and volatility-filter studies, each with its feature map,
+feature grid, strategy grid, sweep script, and explanation. Keeping these
+outside the core package lets examples be richer without turning ledgr into a
+strategy library.
+
+Suggested split:
+
+- core `ledgr`: `ledgr_new_research_project()` or equivalent scaffold command,
+  plus one or two minimal built-in workflow templates;
+- companion repo: opinionated educational strategy templates and longer
+  walkthroughs;
+- core docs: link to the companion repo once it exists, but continue to teach
+  the canonical workflow through package-owned examples.
 
 This fits the agentic-research thesis because agents can work more safely in a
 known structure with explicit files such as `hypothesis.md`, `strategy.R`,
 `params.R`, `sweep_results.rds`, `validation_report.qmd`, and
 `promotion_decision.md`.
+
+Do not pull this into v0.1.8.4. Active aliases, grid helpers, pulse-debug
+inspection, and the single demo strategy should land first; scaffolding should
+encode that stabilized workflow rather than shape it.
+
+The accepted research workflow synthesis places canonical workflow
+documentation in v0.1.8.5. Treat that as the prerequisite for any scaffold
+helper: first teach the workflow, then generate it only if review evidence
+shows project setup remains too costly.
+
+When the v0.1.8.5 spec packet is cut, carry these synthesis-review notes into
+acceptance criteria:
+
+- the workflow article should be runnable end to end and should produce or
+  walk through a review/report shape matching the synthesis outline:
+  hypothesis and data window, snapshot hash and source assumptions, feature and
+  strategy declarations, candidate-grid summary, top-N candidate table,
+  warning/failure review, equity/drawdown plots, promotion note, and rejection
+  rationale for alternatives;
+- any small helper admitted by the spec must be documentation-supporting
+  inspection or summary ergonomics only. It must not add storage layers,
+  dispatch paths, identity surfaces, scaffold generation, or execution
+  semantics;
+- the spec should name the auditr tasks that exercise the canonical workflow
+  and route findings against those surfaces;
+- the spec should make visible that point-in-time regressor design is a
+  prerequisite for broad ML/factor strategy workflows.
+
+### 2026-05-26 [storage] Snapshot lineage and live data logs
+
+Long-running research and production use different data lifecycle contracts.
+Research snapshots are immutable replay inputs. New historical data, vendor
+corrections, universe changes, and multi-vendor comparisons should create new
+sealed snapshots rather than mutating old snapshots in place.
+
+Future research-facing snapshot lineage should likely be lightweight metadata,
+not a full versioning subsystem:
+
+- `family`: logical group for related snapshots;
+- `family_version`: monotonic or date-stamped version inside the family;
+- `extends`: previous snapshot when the new snapshot adds later data;
+- `supersedes`: previous snapshot when the new snapshot replaces corrected
+  history;
+- `lineage_note`: human-readable reason for the reseal.
+
+A helper such as `ledgr_snapshot_family()` could make quarterly reseals,
+vendor-correction reseals, universe expansion, and walk-forward snapshot
+families inspectable without introducing split stores yet.
+
+Production live data is a separate future surface. A promoted algorithm runs
+against append-only ticks or bars that arrive after the backtest snapshot. That
+surface needs feed identity, session/calendar policy, gap detection, repair or
+backfill policy, correction policy, and linkage back to the promotion evidence.
+Live ticks or bars should not be appended to the sealed snapshot that justified
+the promotion. If live history becomes research evidence, the future workflow
+should seal a historical range from the live log into a new immutable snapshot.
+
+Do not implement this in v0.1.8.4. Keep it as production/paper-trading and
+long-horizon storage design input. The important near-term rule is the
+boundary: immutable snapshots for replay, append-only logs for live observation.
+
+### 2026-05-26 [data] External point-in-time regressor snapshots
+
+Serious quant research eventually needs point-in-time external data beyond
+OHLCV bars: fundamentals, macro releases, analyst estimates, vendor factors,
+and alternative data. These inputs have vintage semantics. A replay must use
+what was known at the historical decision time, not later-revised values.
+
+DuckDB is the right default backbone for this in ledgr's foreseeable roadmap.
+It is local-first, R-friendly, columnar, and supports ASOF-style lookup patterns
+that fit point-in-time joins. That should cover daily, moderate intraday,
+fundamental, macro, and many research-scale alternative-data workflows. The
+breakpoints are large single-file stores, tick-scale data, and multi-writer
+team platforms; those remain split-store or external-backend questions.
+
+Future design should likely introduce sealed regressor snapshots with their
+own lineage and hashes, then expose PIT-correct lookup/projection into the
+existing pulse context:
+
+```text
+regressor source data
+  -> sealed regressor snapshot with vintage metadata
+  -> PIT-correct projection at pulse timestamps
+  -> ctx feature/regressor values
+```
+
+Do not implement this opportunistically inside active aliases, ML, or adapter
+work. It deserves a dedicated "External Data And Point-In-Time Regressors" RFC
+covering schema, vintage fields, ASOF lookup semantics, leakage prevention,
+lineage, feature-map integration, and storage scale breakpoints.
+
+This should precede broad ML/factor strategy workflows. Those workflows depend
+on vintage-correct external inputs, so model artifact provenance alone is not
+enough.
 
 ### 2026-05-25 [education] Strategy family field guides
 
@@ -258,6 +399,61 @@ ML strategy artifact management depends on stable walk-forward windows,
 point-in-time feature tables, model artifact identity, prediction-table
 provenance, and selection diagnostics. Do not bolt it on as "call `predict()`
 inside a strategy."
+
+The likely long-term abstraction is still pulse-based. An ML strategy should
+make decisions at the same no-lookahead pulse boundary as every other ledgr
+strategy:
+
+```text
+current pulse context -> model prediction or prediction lookup -> target vector
+```
+
+Naively calling `predict()` inside every pulse will be expensive, especially
+for cross-sectional models, wide universes, and large sweeps. That cost should
+be handled with implementation choices rather than by changing the abstraction:
+load models once per run/candidate, precompute prediction matrices when the
+model and feature set are fixed, cache prediction artifacts by snapshot hash,
+feature-set hash, alias-map hash, and model artifact hash, and let strategies
+read prediction values from the pulse context when that is the chosen mode.
+
+Future ML design should distinguish:
+
+- live pulse prediction: clearest semantics, highest cost;
+- precomputed prediction artifacts: faster for sweeps and replay, still causal
+  if generated from point-in-time features and immutable model artifacts.
+
+Do not lock this API now. The insight to preserve is that ML decisions remain
+pulse decisions; optimization should move model loading and prediction
+materialization out of the hot path when possible.
+
+When ledgr reaches ML strategy workflows, `pins` and `vetiver` are likely the
+right boundary tools for model artifacts. `pins` can version and share R
+objects or files on local, Posit Connect, S3, and related boards with metadata,
+versions, and hashes. `vetiver` builds on that model-artifact layer for trained
+models, input prototypes, deployment, model cards, environment checks, and
+monitoring.
+
+Future policy should likely be:
+
+- ledgr DuckDB store remains the source of truth for sealed snapshots, runs,
+  sweeps, fills, metrics, promotion notes, and references to external model
+  artifacts;
+- `pins` / `vetiver` own trained model objects, model metadata, input
+  prototypes, renv lockfiles, model cards, and monitoring artifacts;
+- ledgr provenance records exact model artifact references such as board,
+  name, version, pin hash, training snapshot hash, feature-set hash, alias-map
+  hash, and strategy hash;
+- ledgr must not depend on "latest model" lookup for deterministic replay. A
+  backtest or promotion record should identify an immutable model version or
+  hash;
+- live vetiver endpoints are production-serving surfaces, not replay evidence,
+  unless they resolve back to a specific pinned model artifact.
+
+Do not turn this into a near-term dependency decision. The relevant ledgr API
+surfaces are not stable yet, and pins/vetiver integration deserves its own RFC
+when ML workflows become active scope. For now, workflow/artifact-topology RFCs
+may mention pins/vetiver as future-compatible tools, but should not lock a
+production API around them.
 
 ### 2026-05-16 [research] Randomized and blocked slice diagnostics
 
@@ -841,6 +1037,80 @@ Near-term work that helps without committing to a port:
 The port should not be treated as a v0.1.8.x optimization. The v0.1.8.x path
 remains R-side optimization first: typed memory events, single-pass summaries,
 fast context, and lazy context payloads.
+
+### 2026-05-26 [ui] Shiny research-store exploration UI (opt-in companion package)
+
+ledgr's store is a DuckDB file containing snapshots, sweeps, runs, promotion
+context, and metrics. A read-only Shiny UI over that store is the obvious
+shape for visual exploration when the API surface alone is not enough.
+
+Likely shape:
+
+- A companion package such as `ledgr.ui` rather than a core dependency. Shiny
+  pulls in a meaningful dep tree that core should not require for headless
+  research, scripted execution, or auditr probes.
+- Local-first: `ledgr_ui()` reads a project's `artifacts/ledgr_store.duckdb`
+  with no hosted server, no auth surface, no tracking infrastructure.
+- Read-only: the UI never writes to the store. Concurrency and locking stay
+  the responsibility of the writing scripts.
+- Pure inspection scope. No strategy authoring, no run launch, no promotion
+  decision recording from the UI in the first pass; those remain script-driven
+  and audit-traceable.
+
+Plausible first-version views:
+
+- project view: list snapshots, sweep results, promoted runs;
+- snapshot inspector: bars summary, instruments, time range, hash, sealed_at;
+- sweep results browser: candidate ranking by metric, sort/filter;
+- candidate detail: feature params, strategy params, alias map, metrics;
+- run inspector: equity curve, fills table, events stream, warnings,
+  telemetry;
+- run comparison: side-by-side equity, key metrics, ranking deltas;
+- promotion timeline with decision notes (depends on the future promotion
+  notes API);
+- cross-snapshot view of the same strategy or feature map across data
+  windows.
+
+This is correctly deferred. Reasons not to start now:
+
+- v0.1.x speed and workflow work has higher leverage per engineering hour;
+- the API surface is still moving (active aliases, alias-map storage, future
+  promotion notes, future walk-forward); a UI built against a moving target
+  requires constant rework;
+- the most valuable screen (promotion decision timeline with rationale)
+  cannot exist before the promotion notes API does;
+- the gap versus MLflow's web UI is not a real disadvantage for ledgr's
+  current target user, who is comfortable with R REPL inspection.
+
+Realistic timing: not before v0.2.x. A short personal-tool prototype during
+v0.1.x is fine and may be useful for the author; a release-quality companion
+package belongs after the workflow has stabilized and after promotion notes
+have an API home.
+
+### 2026-05-26 [ui] Shiny operations dashboard for production deployments
+
+Much further out than the research-store UI. Once ledgr has live trading or
+paper trading via OMS adapters, a separate Shiny operations dashboard becomes
+useful for monitoring deployed strategies:
+
+- promotion record browser linking each deployed algorithm to its training and
+  validation snapshots, strategy hash, alias map, and approval record;
+- live position and equity monitoring against the broker or paper account;
+- drift indicators comparing live execution to the promoted backtest;
+- alert surface for cost, slippage, or risk breaches;
+- retraining trigger view linking each new promotion record to the prior one.
+
+This is a v0.2.x or later product. It depends on:
+
+- production promotion record schema landing in its own RFC;
+- OMS/paper-trading adapters existing as a public API;
+- a live execution layer with deterministic linkage back to the backtest
+  identity surfaces;
+- a stable view of what "deployed" and "approved" mean in ledgr terms.
+
+Until those pieces exist, the operations dashboard is a sketch, not a design.
+Record it here so the eventual UI work has a target shape rather than being
+invented under deployment pressure.
 
 ## Resolved
 

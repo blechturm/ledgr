@@ -4,8 +4,9 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_8_3_spec_packet/`.
-**Next planned packet:** v0.1.8.4 active parameterized feature aliases.
-**Active packet:** none until the v0.1.8.4 packet is cut.
+**Active packet draft:** v0.1.8.4 active parameterized feature aliases and
+grid helpers.
+**Active packet path:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -97,8 +98,8 @@ versioned packet.
 | v0.1.8.1 | Done | Auditr stabilization and multi-output indicator bundle authoring. | `inst/design/ledgr_v0_1_8_1_spec_packet/` |
 | v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
 | v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
-| v0.1.8.4 | Planned | Active parameterized feature aliases for sweep authoring. | Future packet |
-| v0.1.8.5 | Planned | Parameter-grid quality-of-life helpers after active aliases stabilize. | Future packet |
+| v0.1.8.4 | Draft | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md` |
+| v0.1.8.5 | Planned | Canonical research workflow and artifact-topology documentation after active aliases and grid UX stabilize. | Future packet |
 | v0.1.8.6 | Planned | DuckDB-backed feature storage / out-of-core projection candidate if residual evidence justifies it. | Future packet |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
@@ -515,10 +516,11 @@ Constraints:
 - if fast context B2 cannot preserve parity, ship B1 only and defer B2 with
   measurement evidence.
 
-### v0.1.8.4 Active Parameterized Feature Aliases
+### v0.1.8.4 Active Parameterized Feature Aliases And Grid Helpers
 
 Authoritative input:
 
+- `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`.
 - `inst/design/rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`.
 
 Intent:
@@ -533,7 +535,11 @@ Intent:
 - inherit the v0.1.8.3 grid-level concrete-feature-union decision so shared
   concrete features are computed once across a sweep grid, not once per
   candidate;
-- store resolved alias maps in execution identity and provenance.
+- store resolved alias maps in execution identity and provenance;
+- pull parameter-grid construction helpers into this release so users can build
+  larger parameterized sweeps without hand-writing named `ledgr_param_grid()`
+  entries, while keeping feature parameters and strategy parameters in separate
+  public namespaces.
 
 Constraints:
 
@@ -542,32 +548,54 @@ Constraints:
 - no nested bundle namespaces in the first pass; preserve current flat bundle
   aliases;
 - no automatic candidate ranking, winner selection, or tuning objective;
+- grid helpers create candidate parameter sets only, even when they support
+  `.filter` for structural grid constraints;
 - keep exact-ID lookup and explicit-map `ctx$features(id, map)` behavior
   unchanged;
 - coordinate pulse-context additions with the accepted v0.1.9 target-risk
   chain design.
 
-### v0.1.8.5 Parameter-Grid Quality-Of-Life Helpers
+### v0.1.8.5 Canonical Research Workflow And Artifact Topology
+
+Authoritative input:
+
+- `inst/design/rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`.
 
 Intent:
 
-- reduce verbosity when users create ordinary sweep grids;
-- provide small authoring helpers around the existing parameter-grid contract
-  rather than replacing `ledgr_param_grid()`;
-- keep grid identity, labels, and candidate provenance stable;
-- use `ledgr_parameters(features)` from v0.1.8.4 to validate parameterized
-  feature declarations where useful;
-- use the v0.1.8.3 performance envelope to decide how strongly docs should
-  encourage larger grids.
+- teach the reproducible research workflow as ledgr's default user path:
+  seal data, declare features and strategy, sweep deliberately, inspect
+  evidence, promote explicitly, and reopen from durable artifacts;
+- standardize v0.1.x documentation around one project-local experiment store,
+  normally `artifacts/ledgr_store.duckdb`;
+- distinguish sealed snapshots from derived execution artifacts while keeping
+  physical split stores out of the public workflow until first-class APIs
+  exist;
+- align Getting Started, Experiment Store, Sweeps, Reproducibility, and any
+  workflow article with the active-alias and grid-helper UX from v0.1.8.4;
+- document backup guidance, schema-version caveats, and the rule that ignored
+  artifacts are not disposable;
+- route auditr findings against the canonical workflow path.
+
+Scope:
+
+- documentation and workflow alignment first;
+- a dedicated research-workflow article or vignette;
+- no project scaffold helper unless a future spec packet explicitly scopes it;
+- no split-store runtime, snapshot lineage API, live data log, production
+  promotion record, point-in-time regressor API, pins/vetiver integration, or
+  companion example repository implementation.
 
 Constraints:
 
-- this is ergonomic sugar, not a new sweep execution mode;
-- do not add a broad tuning DSL or objective/ranking ownership to ledgr;
-- do not make grid helpers depend on metric context or optimization internals;
-- do not make grid helpers responsible for active-alias materialization;
-- if v0.1.8.1 teaching needs a shorter example, prefer vignette-local helper
-  code rather than committing a public grid DSL early.
+- `ledgr_promote(..., note = ...)` remains research promotion evidence, not a
+  production deployment approval record;
+- new historical data creates new sealed snapshots rather than mutating old
+  snapshots;
+- live production ticks and bars belong to future append-only data logs, not
+  sealed backtest snapshots;
+- parallel dispatch must later coordinate durable writes rather than imply
+  unsynchronized worker writes to one DuckDB store.
 
 ### v0.1.8.6 DuckDB-Backed Feature Storage / Out-Of-Core Projection Candidate
 
@@ -587,6 +615,8 @@ Readiness gates:
 - v0.1.8.3 runtime projection interface and R-memory backend have landed;
 - v0.1.8.4 active aliases have fixed alias-map identity and grid-level
   concrete-feature-union semantics;
+- v0.1.8.5 workflow synthesis has clarified which artifact topology remains
+  documentation-only and which storage surfaces require first-class APIs;
 - post-v0.1.8.3 residual evidence shows memory scaling, repeated precompute,
   ML/export, or parallel-worker sharing is the next bottleneck.
 
@@ -620,6 +650,8 @@ Readiness gates:
   are resolved;
 - grid UX has stabilized enough that larger sweeps are an intentional public
   workflow rather than accidental friction;
+- the v0.1.8.5 canonical workflow constraints are reflected in the write
+  strategy: no unsynchronized concurrent writes to one DuckDB store;
 - interrupt, progress, warning ordering, failure ordering, package state, and
   worker setup semantics are explicitly specified before implementation.
 

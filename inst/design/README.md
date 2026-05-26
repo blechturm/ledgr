@@ -3,9 +3,11 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.3`.
-**Next planned packet:** `v0.1.8.4` active parameterized feature aliases.
-**Active packet:** none until the v0.1.8.4 packet is cut. The completed
-`inst/design/ledgr_v0_1_8_3_spec_packet/` is now an archival release record.
+**Active packet draft:** `v0.1.8.4` active parameterized feature aliases and
+grid helpers.
+**Active packet path:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
+The completed `inst/design/ledgr_v0_1_8_3_spec_packet/` is now an archival
+release record.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -69,11 +71,17 @@ scope.
 - Tickets: `ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_3_spec_packet/tickets.yml`.
 
-The next planned packet is v0.1.8.4 active parameterized feature aliases,
-grounded in
-`rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md`. Do not
-implement runtime work from that design until the v0.1.8.4 packet and tickets
-are cut.
+The active packet draft is v0.1.8.4 active parameterized feature aliases plus
+the pulled-forward feature-grid and strategy-grid construction helpers. The
+release is grounded in
+`rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` and
+`ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`.
+
+The v0.1.8.3 auditr report is still pending. Confirmed bugs and
+release-appropriate documentation/message issues from that report must be
+routed into this packet before release close. Do not implement runtime work
+until tickets are cut from the draft spec and auditr triage constraints are
+known.
 
 ## Core Documents
 
@@ -162,6 +170,8 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_collapse_primitive_internals_v0_1_9.md`
 - `rfc/rfc_collapse_primitive_internals_v0_1_9_response.md`
 - `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`
+- `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x.md`
+- `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -236,6 +246,13 @@ shapes and treat data.frames as public boundary views. It does not add
 developer guide, deterministic-wrapper spike, event-boundary micro-profile,
 and safe cumulative-reconstruction parity spike; production use of `collapse`
 waits for measured non-Phase-A value and deterministic hostile-setting parity.
+The research workflow and artifact-topology synthesis accepts a v0.1.8.5
+planning direction: ledgr should teach one project-local experiment store,
+logical separation of sealed snapshots from derived execution artifacts,
+docs-first workflow convention before scaffold API, explicit promotion notes,
+future split-store triggers, future companion examples, future live data logs,
+and future point-in-time regressor snapshots. It does not add runtime scope to
+v0.1.8.4.
 
 ## Audits And Spikes
 

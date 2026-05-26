@@ -59,6 +59,9 @@ release ready because a similar run passed elsewhere.
 8. Move the release tag only after `main` is green.
 9. Wait for the tag-triggered CI. The tag is not release-valid until its own CI
    is green.
+10. Create or update the GitHub Release for the existing tag and mark it
+    latest. Do this only after tag CI is green. Do not recreate or force-push the
+    tag just to update release notes.
 
 ## Design Index Maintenance
 
@@ -100,6 +103,39 @@ gh run view <run-id> --repo blechturm/ledgr
 Avoid open-ended polling. Prefer periodic status checks, or use
 `gh run watch <run-id> --exit-status` only when you are prepared to wait through
 the whole run.
+
+## GitHub Release Entry
+
+The GitHub Releases page is separate from git tags. Creating or editing a
+GitHub Release for an existing tag does not push code and does not trigger the
+current ledgr CI workflows, because the workflows listen to `push` and
+`workflow_dispatch`, not `release`.
+
+After tag CI is green, create or update the release entry from the existing
+tag:
+
+```sh
+gh release create vX.Y.Z \
+  --repo blechturm/ledgr \
+  --title "vX.Y.Z Short Release Title" \
+  --notes "Short release summary." \
+  --latest
+```
+
+If the release entry already exists, update it instead:
+
+```sh
+gh release edit vX.Y.Z \
+  --repo blechturm/ledgr \
+  --title "vX.Y.Z Short Release Title" \
+  --notes "Short release summary." \
+  --latest
+```
+
+Prefer curated release notes over dumping the whole `NEWS.md` file. The release
+notes should name the user-facing theme, the most important compatibility note,
+and any headline measurement or migration point. Leave full detail in `NEWS.md`
+and the release-ticket completion notes.
 
 ## Ubuntu and DuckDB Triage
 
