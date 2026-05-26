@@ -114,6 +114,17 @@ ledgr_ind_ttr <- function(ttr_fn,
                           requires_bars = NULL,
                           stable_after = requires_bars,
                           ...) {
+  ledgr_assert_no_param_refs(
+    list(
+      ttr_fn = ttr_fn,
+      input = input,
+      output = output,
+      id = id,
+      requires_bars = requires_bars,
+      stable_after = stable_after
+    ),
+    "ledgr_ind_ttr()"
+  )
   if (!requireNamespace("TTR", quietly = TRUE)) {
     rlang::abort(
       "Package 'TTR' is required for ledgr_ind_ttr(). Install TTR or use ledgr_indicator() directly.",
@@ -125,6 +136,19 @@ ledgr_ind_ttr <- function(ttr_fn,
   input <- ledgr_ttr_normalize_input(input)
   output <- ledgr_ttr_normalize_output(output)
   args <- ledgr_ttr_normalize_args(list(...))
+  if (ledgr_contains_param_ref(args)) {
+    if (!is.null(requires_bars) || !is.null(stable_after)) {
+      rlang::abort(
+        "`requires_bars` and `stable_after` must be concrete when `ledgr_ind_ttr()` uses `ledgr_param()`.",
+        class = c("ledgr_unsupported_param_placement", "ledgr_invalid_args")
+      )
+    }
+    return(ledgr_new_parameterized_indicator(
+      "ledgr_ind_ttr",
+      c(list(ttr_fn = ttr_fn, input = input, output = output), args),
+      names(args)
+    ))
+  }
   rule <- ledgr_ttr_match_rule(ttr_fn, input)
 
   if (!is.null(rule)) {
@@ -273,6 +297,18 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
                                   naming = NULL,
                                   requires_bars = NULL,
                                   stable_after = requires_bars) {
+  ledgr_assert_no_param_refs(
+    list(
+      ttr_fn = ttr_fn,
+      input = input,
+      outputs = outputs,
+      prefix = prefix,
+      naming = naming,
+      requires_bars = requires_bars,
+      stable_after = stable_after
+    ),
+    "ledgr_ind_ttr_outputs()"
+  )
   if (!requireNamespace("TTR", quietly = TRUE)) {
     rlang::abort(
       "Package 'TTR' is required for ledgr_ind_ttr_outputs(). Install TTR or use ledgr_indicator() directly.",
@@ -283,6 +319,37 @@ ledgr_ind_ttr_outputs <- function(ttr_fn,
   ttr_fn <- ledgr_ttr_normalize_fn(ttr_fn)
   input <- ledgr_ttr_normalize_input(input)
   args <- ledgr_ttr_normalize_args(list(...))
+  if (ledgr_contains_param_ref(args)) {
+    if (!is.null(requires_bars) || !is.null(stable_after)) {
+      rlang::abort(
+        "`requires_bars` and `stable_after` must be concrete when `ledgr_ind_ttr_outputs()` uses `ledgr_param()`.",
+        class = c("ledgr_unsupported_param_placement", "ledgr_invalid_args")
+      )
+    }
+    available_outputs <- ledgr_ttr_known_outputs(ttr_fn)
+    selected_outputs <- ledgr_ttr_normalize_outputs(outputs, available_outputs, ttr_fn)
+    ids <- ledgr_ttr_bundle_ids(
+      ttr_fn = ttr_fn,
+      outputs = selected_outputs,
+      prefix = prefix,
+      naming = naming
+    )
+    return(ledgr_new_parameterized_bundle(
+      "ledgr_ind_ttr_outputs",
+      c(
+        list(
+          ttr_fn = ttr_fn,
+          input = input,
+          outputs = selected_outputs,
+          prefix = prefix,
+          naming = naming
+        ),
+        args
+      ),
+      names(args),
+      output_aliases = ids
+    ))
+  }
   rule <- ledgr_ttr_match_rule(ttr_fn, input)
 
   if (!is.null(rule)) {
@@ -439,6 +506,28 @@ ledgr_ttr_match_rule <- function(ttr_fn, input) {
 ledgr_ttr_inputs_for_known_function <- function(ttr_fn) {
   rules <- ledgr_ttr_warmup_rules()
   unique(rules$input[rules$ttr_fn == ttr_fn])
+}
+
+ledgr_ttr_known_outputs <- function(ttr_fn) {
+  out <- switch(
+    ttr_fn,
+    ATR = c("tr", "atr", "trueHigh", "trueLow"),
+    BBands = c("dn", "mavg", "up", "pctB"),
+    MACD = c("macd", "signal", "histogram"),
+    aroon = c("aroonUp", "aroonDn", "oscillator"),
+    DonchianChannel = c("high", "low", "mid"),
+    NULL
+  )
+  if (is.null(out)) {
+    rlang::abort(
+      sprintf(
+        "Parameterized `ledgr_ind_ttr_outputs()` currently supports ATR, BBands, MACD, aroon, and DonchianChannel; `%s` is not supported in this path. Use concrete bundles or pre-resolve parameter values before calling.",
+        ttr_fn
+      ),
+      class = c("ledgr_unsupported_param_placement", "ledgr_invalid_args")
+    )
+  }
+  out
 }
 
 ledgr_ttr_infer_requires_bars <- function(ttr_fn, args, output = NULL) {

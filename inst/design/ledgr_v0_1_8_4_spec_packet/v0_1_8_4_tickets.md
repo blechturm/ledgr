@@ -144,7 +144,7 @@ scope: v0.1.8.4
 Priority: P1
 Effort: M
 Dependencies: LDG-2421
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -183,6 +183,21 @@ references in supported scalar tuning arguments.
 Targeted tests for parameter construction, constructor integration, unresolved
 feature ID failures, and existing fingerprint pins.
 
+### Completion Notes
+
+- Added `ledgr_param()` and exported `ledgr_parameters()`.
+- Added unresolved parameterized indicator and bundle declaration objects.
+- Integrated `ledgr_param()` with first-pass ledgr-owned constructors:
+  `ledgr_ind_sma()`, `ledgr_ind_ema()`, `ledgr_ind_rsi()`,
+  `ledgr_ind_returns()`, `ledgr_ind_ttr()`, and
+  `ledgr_ind_ttr_outputs()`.
+- Kept `ledgr_indicator()` custom construction concrete-only by rejecting
+  parameter references in direct custom indicator metadata.
+- Made `ledgr_feature_id()` fail with `ledgr_unresolved_feature_id` for
+  unresolved declarations.
+- Verified with feature-map, indicator, TTR, fingerprint-stability, API export,
+  precompute, sweep, and documentation-contract targeted tests.
+
 ### Source Reference
 
 - `v0_1_8_4_spec.md` Sections 3 and 9
@@ -203,7 +218,7 @@ scope: parameter_references
 Priority: P1
 Effort: L
 Dependencies: LDG-2422
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -245,6 +260,21 @@ feature identity for parameterized bundles.
 Targeted feature-map resolution tests, parameter introspection tests, bundle
 projection tests, fingerprint stability tests, and a multi-candidate
 parameterized bundle collision regression.
+
+### Completion Notes
+
+- Updated `ledgr_feature_map()` to accept mixed concrete and parameterized
+  declarations while preserving existing concrete-map behavior.
+- Added feature-map resolution from concrete `feature_params` to ordinary
+  concrete indicators before materialization.
+- Added `ledgr_parameters()` introspection with duplicated references reported
+  as separate rows.
+- Added missing and non-scalar feature-parameter errors with classed failures.
+- Added parameterized TTR bundle output resolution that keeps flat
+  strategy-facing aliases but makes candidate-specific concrete projection IDs
+  parameter-distinct.
+- Verified mixed concrete/parameterized map resolution and TTR bundle identity
+  regression coverage.
 
 ### Source Reference
 

@@ -27,6 +27,10 @@ ledgr_indicator <- function(id,
                             stable_after = requires_bars,
                             series_fn = NULL,
                             source = "custom") {
+  ledgr_assert_no_param_refs(
+    list(id = id, requires_bars = requires_bars, params = params, stable_after = stable_after),
+    "ledgr_indicator()"
+  )
   if (!is.character(id) || length(id) != 1 || !nzchar(id)) {
     rlang::abort("`id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -115,6 +119,9 @@ ledgr_indicator <- function(id,
 #' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_feature_id <- function(x) {
+  if (ledgr_feature_declaration_is_unresolved(x)) {
+    ledgr_abort_unresolved_feature_id()
+  }
   if (inherits(x, "ledgr_indicator")) {
     return(unname(as.character(x$id)))
   }
@@ -123,9 +130,15 @@ ledgr_feature_id <- function(x) {
   }
   if (inherits(x, "ledgr_feature_map")) {
     ledgr_validate_feature_map_object(x)
+    if (any(vapply(x$indicators, ledgr_feature_declaration_is_unresolved, logical(1)))) {
+      ledgr_abort_unresolved_feature_id()
+    }
     return(x$feature_ids)
   }
   if (is.list(x)) {
+    if (any(vapply(x, ledgr_feature_declaration_is_unresolved, logical(1)))) {
+      ledgr_abort_unresolved_feature_id()
+    }
     flattened <- ledgr_flatten_feature_list(x, context = "`x`")
     ids <- vapply(flattened, function(ind) as.character(ind$id), character(1))
     return(unname(ids))

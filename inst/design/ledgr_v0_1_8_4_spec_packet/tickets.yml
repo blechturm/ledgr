@@ -18,7 +18,7 @@ tickets:
 
   - id: "LDG-2422"
     title: "Parameter Reference Declarations And Constructor Integration"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -35,7 +35,7 @@ tickets:
 
   - id: "LDG-2423"
     title: "Feature Resolution, Introspection, And Bundle Identity"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:

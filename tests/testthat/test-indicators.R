@@ -99,6 +99,39 @@ testthat::test_that("ledgr_feature_id exposes existing indicator IDs", {
   )
 })
 
+testthat::test_that("ledgr_param creates stable parameter references", {
+  ref <- ledgr_param("fast_n")
+
+  testthat::expect_s3_class(ref, "ledgr_param_ref")
+  testthat::expect_identical(ref$name, "fast_n")
+  testthat::expect_true(any(grepl("fast_n", utils::capture.output(print(ref)), fixed = TRUE)))
+  testthat::expect_error(ledgr_param(character()), class = "ledgr_invalid_param_reference")
+  testthat::expect_error(ledgr_param(""), class = "ledgr_invalid_param_reference")
+})
+
+testthat::test_that("built-in constructors accept parameter references only in scalar tuning arguments", {
+  sma <- ledgr_ind_sma(ledgr_param("fast_n"))
+  ema <- ledgr_ind_ema(ledgr_param("ema_n"))
+  rsi <- ledgr_ind_rsi(ledgr_param("rsi_n"))
+  ret <- ledgr_ind_returns(ledgr_param("ret_n"))
+
+  testthat::expect_s3_class(sma, "ledgr_parameterized_indicator")
+  testthat::expect_s3_class(ema, "ledgr_parameterized_indicator")
+  testthat::expect_s3_class(rsi, "ledgr_parameterized_indicator")
+  testthat::expect_s3_class(ret, "ledgr_parameterized_indicator")
+  testthat::expect_error(ledgr_feature_id(sma), class = "ledgr_unresolved_feature_id")
+  testthat::expect_error(ledgr_feature_id(list(sma)), class = "ledgr_unresolved_feature_id")
+  testthat::expect_error(
+    ledgr_indicator(
+      id = "custom_param",
+      fn = function(window) tail(window$close, 1),
+      requires_bars = 1L,
+      params = list(n = ledgr_param("n"))
+    ),
+    class = "ledgr_unsupported_param_placement"
+  )
+})
+
 testthat::test_that("print.ledgr_indicator surfaces the feature ID", {
   out <- utils::capture.output(print(ledgr_ind_sma(20)))
   testthat::expect_true(any(grepl("ID:\\s*sma_20", out)))

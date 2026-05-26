@@ -572,6 +572,58 @@ testthat::test_that("TTR output bundles flatten at feature boundaries", {
   testthat::expect_match(resolved$candidate_features$feature_set_hash[[1]], "^[0-9a-f]{64}$")
 })
 
+testthat::test_that("parameterized TTR declarations resolve to concrete indicators and bundle identities", {
+  testthat::skip_if_not_installed("TTR")
+
+  rsi <- ledgr_ind_ttr("RSI", input = "close", n = ledgr_param("rsi_n"))
+  testthat::expect_s3_class(rsi, "ledgr_parameterized_indicator")
+  testthat::expect_error(ledgr_feature_id(rsi), class = "ledgr_unresolved_feature_id")
+
+  features <- ledgr_feature_map(
+    signal = rsi,
+    bands = ledgr_ind_ttr_outputs(
+      "BBands",
+      input = "close",
+      outputs = c("dn", "up"),
+      n = ledgr_param("bb_n")
+    )
+  )
+
+  params <- ledgr_parameters(features)
+  testthat::expect_identical(params$param_name, c("rsi_n", "bb_n", "bb_n"))
+  testthat::expect_identical(params$alias, c("signal", "bbands_dn", "bbands_up"))
+
+  resolved_20 <- ledgr:::ledgr_resolve_feature_map(
+    features,
+    feature_params = list(rsi_n = 14L, bb_n = 20L)
+  )
+  resolved_50 <- ledgr:::ledgr_resolve_feature_map(
+    features,
+    feature_params = list(rsi_n = 14L, bb_n = 50L)
+  )
+  resolved_20_again <- ledgr:::ledgr_resolve_feature_map(
+    features,
+    feature_params = list(rsi_n = 14L, bb_n = 20L)
+  )
+
+  ids_20 <- ledgr_feature_id(resolved_20)
+  ids_50 <- ledgr_feature_id(resolved_50)
+  ids_20_again <- ledgr_feature_id(resolved_20_again)
+  testthat::expect_identical(names(ids_20), c("signal", "bbands_dn", "bbands_up"))
+  testthat::expect_identical(ids_20[["signal"]], "ttr_rsi_14")
+  testthat::expect_identical(ids_20, ids_20_again)
+  testthat::expect_false(identical(unname(ids_20[c("bbands_dn", "bbands_up")]), unname(ids_50[c("bbands_dn", "bbands_up")])))
+  testthat::expect_identical(
+    anyDuplicated(c(unname(ids_20[c("bbands_dn", "bbands_up")]), unname(ids_50[c("bbands_dn", "bbands_up")]))),
+    0L
+  )
+  testthat::expect_error(
+    ledgr_ind_ttr_outputs("stoch", input = "hlc", nFastK = ledgr_param("n")),
+    "currently supports ATR, BBands, MACD, aroon, and DonchianChannel",
+    class = "ledgr_unsupported_param_placement"
+  )
+})
+
 testthat::test_that("TTR indicators use series_fn during backtest feature precomputation", {
   testthat::skip_if_not_installed("TTR")
 

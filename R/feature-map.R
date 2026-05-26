@@ -62,12 +62,13 @@ ledgr_feature_map <- function(...) {
 
   indicators <- list()
   aliases <- character()
+  feature_ids <- character()
   for (i in seq_along(entries)) {
     entry <- entries[[i]]
     alias <- entry_names[[i]]
     if (is.na(alias)) alias <- ""
 
-    if (inherits(entry, "ledgr_indicator")) {
+    if (inherits(entry, "ledgr_indicator") || inherits(entry, "ledgr_parameterized_indicator")) {
       if (!nzchar(alias)) {
         rlang::abort(
           "Feature map indicator entries must be named.",
@@ -76,25 +77,40 @@ ledgr_feature_map <- function(...) {
       }
       indicators[[length(indicators) + 1L]] <- entry
       aliases <- c(aliases, alias)
+      feature_ids <- c(feature_ids, if (inherits(entry, "ledgr_indicator")) ledgr_feature_id(entry) else NA_character_)
       next
     }
 
     if (inherits(entry, "ledgr_indicator_bundle")) {
       bundle_indicators <- ledgr_indicator_bundle_indicators(entry)
       indicators <- c(indicators, bundle_indicators)
-      aliases <- c(aliases, ledgr_feature_id(bundle_indicators))
+      bundle_ids <- ledgr_feature_id(bundle_indicators)
+      aliases <- c(aliases, bundle_ids)
+      feature_ids <- c(feature_ids, bundle_ids)
+      next
+    }
+
+    if (inherits(entry, "ledgr_parameterized_indicator_bundle")) {
+      bundle_aliases <- entry$output_aliases
+      indicators <- c(indicators, lapply(bundle_aliases, function(output_alias) {
+        ledgr_new_parameterized_bundle_output(entry, output_alias)
+      }))
+      aliases <- c(aliases, bundle_aliases)
+      feature_ids <- c(feature_ids, rep(NA_character_, length(bundle_aliases)))
       next
     }
 
     rlang::abort(
-      sprintf("Feature map entry %s must be a ledgr_indicator or ledgr_indicator_bundle object.", i),
+      sprintf("Feature map entry %s must be a ledgr_indicator, ledgr_indicator_bundle, or parameterized feature declaration.", i),
       class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
     )
   }
 
   ledgr_validate_feature_map_aliases(aliases, length(indicators))
-  feature_ids <- ledgr_feature_id(indicators)
-  ledgr_abort_duplicate_feature_ids(feature_ids)
+  concrete_ids <- feature_ids[!is.na(feature_ids)]
+  if (length(concrete_ids) > 0L) {
+    ledgr_abort_duplicate_feature_ids(concrete_ids)
+  }
 
   indicators <- stats::setNames(unname(indicators), aliases)
   feature_ids <- stats::setNames(unname(feature_ids), aliases)
@@ -151,6 +167,12 @@ ledgr_feature_map_indicators <- function(x, named = FALSE) {
   indicators
 }
 
+ledgr_resolve_feature_map <- function(x, feature_params = list()) {
+  ledgr_validate_feature_map_object(x)
+  resolved <- lapply(x$indicators, ledgr_resolve_feature_declaration, feature_params = feature_params)
+  do.call(ledgr_feature_map, stats::setNames(resolved, x$aliases))
+}
+
 ledgr_validate_feature_map_object <- function(x) {
   if (!inherits(x, "ledgr_feature_map")) {
     rlang::abort(
@@ -177,9 +199,10 @@ ledgr_validate_feature_map_object <- function(x) {
     )
   }
   bad <- which(!vapply(indicators, inherits, logical(1), what = "ledgr_indicator"))
+  bad <- bad[!vapply(indicators[bad], ledgr_feature_declaration_is_unresolved, logical(1))]
   if (length(bad) > 0L) {
     rlang::abort(
-      sprintf("Feature map entry `%s` must be a ledgr_indicator object.", aliases[[bad[[1L]]]]),
+      sprintf("Feature map entry `%s` must be a ledgr_indicator object or unresolved parameterized feature declaration.", aliases[[bad[[1L]]]]),
       class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
     )
   }
@@ -189,18 +212,28 @@ ledgr_validate_feature_map_object <- function(x) {
       !identical(names(feature_ids), aliases) ||
       anyNA(feature_ids) ||
       any(!nzchar(feature_ids))) {
-    rlang::abort(
-      "`x$feature_ids` must be a named character vector matching `x$aliases`.",
-      class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
-    )
+    unresolved <- vapply(indicators, ledgr_feature_declaration_is_unresolved, logical(1))
+    if (!isTRUE(all(is.na(feature_ids[unresolved]))) ||
+        !isTRUE(all(!is.na(feature_ids[!unresolved]))) ||
+        any(!nzchar(feature_ids[!unresolved]))) {
+      rlang::abort(
+        "`x$feature_ids` must contain concrete IDs for concrete entries and NA for unresolved parameterized entries.",
+        class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+      )
+    }
   }
-  if (!identical(unname(feature_ids), unname(ledgr_feature_id(indicators)))) {
+  unresolved <- vapply(indicators, ledgr_feature_declaration_is_unresolved, logical(1))
+  if (!any(unresolved) &&
+      !identical(unname(feature_ids), unname(ledgr_feature_id(indicators)))) {
     rlang::abort(
       "`x$feature_ids` does not match the mapped indicator IDs.",
       class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
     )
   }
-  ledgr_abort_duplicate_feature_ids(feature_ids)
+  concrete_ids <- feature_ids[!unresolved]
+  if (length(concrete_ids) > 0L) {
+    ledgr_abort_duplicate_feature_ids(concrete_ids)
+  }
   invisible(TRUE)
 }
 
@@ -217,7 +250,9 @@ print.ledgr_feature_map <- function(x, ...) {
   cat("Features: ", length(x$aliases), "\n", sep = "")
   shown <- utils::head(x$aliases, 6L)
   for (alias in shown) {
-    cat("  ", alias, " -> ", x$feature_ids[[alias]], "\n", sep = "")
+    feature_id <- x$feature_ids[[alias]]
+    if (is.na(feature_id)) feature_id <- "<unresolved>"
+    cat("  ", alias, " -> ", feature_id, "\n", sep = "")
   }
   if (length(x$aliases) > length(shown)) {
     cat("  ...\n")

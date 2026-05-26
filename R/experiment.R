@@ -382,16 +382,19 @@ ledgr_experiment_copy_features <- function(features, features_mode) {
   rlang::abort("Unknown experiment feature mode.", class = "ledgr_invalid_experiment_features")
 }
 
-ledgr_experiment_materialize_features <- function(exp, params) {
+ledgr_experiment_materialize_features <- function(exp, params, feature_params = params) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_experiment")
   }
+  # TODO LDG-2425: active-alias runtime should pass explicit feature_params and
+  # stop relying on strategy params as the feature-resolution fallback.
   features <- exp$features
   if (identical(exp$features_mode, "function")) {
     features <- features(params)
   }
   mode <- ledgr_experiment_validate_features(features)
   if (identical(mode, "feature_map")) {
+    features <- ledgr_resolve_feature_map(features, feature_params = feature_params)
     return(ledgr_feature_map_indicators(features))
   }
   if (!identical(mode, "list")) {

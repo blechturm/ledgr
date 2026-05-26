@@ -118,6 +118,65 @@ testthat::test_that("feature maps returned by feature functions materialize to i
   testthat::expect_identical(ledgr_feature_id(features), "return_3")
 })
 
+testthat::test_that("parameterized feature maps resolve with concrete feature params", {
+  features <- ledgr_feature_map(
+    fast = ledgr_ind_sma(ledgr_param("fast_n")),
+    baseline = ledgr_ind_sma(20)
+  )
+
+  testthat::expect_s3_class(features, "ledgr_feature_map")
+  testthat::expect_error(ledgr_feature_id(features), class = "ledgr_unresolved_feature_id")
+
+  params <- ledgr_parameters(features)
+  testthat::expect_identical(params$param_name, "fast_n")
+  testthat::expect_identical(params$alias, "fast")
+  testthat::expect_identical(params$argument, "n")
+
+  resolved <- ledgr:::ledgr_resolve_feature_map(features, feature_params = list(fast_n = 10L))
+  testthat::expect_identical(
+    ledgr_feature_id(resolved),
+    c(fast = "sma_10", baseline = "sma_20")
+  )
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  materialized <- ledgr:::ledgr_experiment_materialize_features(exp, list(fast_n = 10L))
+  testthat::expect_identical(ledgr_feature_id(materialized), c("sma_10", "sma_20"))
+  testthat::expect_error(
+    ledgr:::ledgr_resolve_feature_map(features, feature_params = list()),
+    class = "ledgr_param_missing"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_resolve_feature_map(features, feature_params = list(fast_n = c(10L, 20L))),
+    class = "ledgr_param_non_scalar"
+  )
+})
+
+testthat::test_that("feature map print shows unresolved parameterized entries", {
+  features <- ledgr_feature_map(
+    fast = ledgr_ind_sma(ledgr_param("fast_n")),
+    baseline = ledgr_ind_sma(20)
+  )
+
+  printed <- utils::capture.output(print(features))
+  testthat::expect_true(any(grepl("fast -> <unresolved>", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("baseline -> sma_20", printed, fixed = TRUE)))
+})
+
+testthat::test_that("parameter introspection reports duplicated references as separate rows", {
+  features <- ledgr_feature_map(
+    fast = ledgr_ind_sma(ledgr_param("n")),
+    slow = ledgr_ind_ema(ledgr_param("n"))
+  )
+
+  params <- ledgr_parameters(features)
+  testthat::expect_identical(params$param_name, c("n", "n"))
+  testthat::expect_identical(params$alias, c("fast", "slow"))
+  testthat::expect_identical(params$argument, c("n", "n"))
+})
+
 testthat::test_that("feature maps are copied into experiments at construction", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
