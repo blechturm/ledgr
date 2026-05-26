@@ -606,35 +606,48 @@ strategy later.
 ## Sweeping Indicator Parameters
 
 When a sweep changes an indicator parameter, ledgr materializes a
-concrete feature set for each candidate before execution. Current
-strategy code has two safe bridge patterns.
-
-For built-in indicators, exact-ID lookup from `params` is the clearest
-Tier 1 pattern:
+concrete feature set for each candidate before execution. The
+active-alias pattern keeps indicator-tuning inputs out of `params`, so
+the strategy reads stable names even when the concrete indicator windows
+vary by candidate.
 
 ``` r
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
+
 strategy <- function(ctx, params) {
-  fast_id <- ledgr_feature_id(ledgr_ind_sma(params$fast_n))
-  slow_id <- ledgr_feature_id(ledgr_ind_sma(params$slow_n))
-
-  values <- c(
-    fast = ctx$feature("AAA", fast_id),
-    slow = ctx$feature("AAA", slow_id)
-  )
-
   targets <- ctx$flat()
-  if (passed_warmup(values) && values[["fast"]] > values[["slow"]]) {
-    targets["AAA"] <- params$qty
+
+  for (id in ctx$universe) {
+    values <- ctx$features(id)
+    if (passed_warmup(values) && values[["fast"]] > values[["slow"]]) {
+      targets[id] <- params$qty
+    }
   }
+
   targets
 }
 ```
 
-That keeps the strategy self-contained: it uses `ctx`, `params`, and
-exported ledgr helpers. Hand-built strings such as
-`paste0("sma_", params$fast_n)` also work for built-ins whose ID
-convention is public, but `ledgr_feature_id()` keeps the lookup tied to
-the constructor.
+The feature grid supplies `fast_n` and `slow_n`; the strategy grid
+supplies `qty` and any other decision parameter:
+
+``` r
+grid <- ledgr_grid_cross(
+  features = ledgr_feature_grid(
+    fast_n = c(10L, 20L),
+    slow_n = c(40L, 80L),
+    .filter = fast_n < slow_n
+  ),
+  strategy = ledgr_strategy_grid(qty = c(5, 10))
+)
+```
+
+Read this as two different contracts. Feature parameters materialize
+concrete features before execution. Strategy parameters are passed to
+`strategy(ctx, params)` at runtime.
 
 Static feature maps remain the recommended shape when aliases do not
 vary by candidate:
@@ -675,9 +688,9 @@ parameterized feature map inside the strategy is mechanically valid, but
 it creates a drift risk between the experiment’s feature declaration and
 the strategy lookup map.
 
-The long-term UX gap is tracked in the active parameterized feature
-aliases RFC. Until that API exists, use exact feature IDs for
-parameterized sweeps and use feature-map aliases for static maps.
+Use `ledgr_param()` and active aliases for ledgr-owned parameterized
+indicators. Exact feature-ID lookup remains useful for concrete feature
+sets, custom indicators, and low-level debugging.
 
 ## Run One Backtest
 
@@ -886,7 +899,11 @@ single_instrument_strategy <- function(ctx, params) {
 ```
 
 Use these as comparison baselines for a sealed real-data snapshot; they
-are not benchmark APIs and they do not download benchmark returns.
+are not benchmark APIs and they do not download benchmark returns. Keep
+starting cash, cost assumptions, and sizing comparable across runs. A
+fixed quantity such as `qty = 100` can make one strategy use far more
+capital than another; for real Yahoo comparisons, an equity-fraction
+baseline is usually the fairer teaching shape.
 
 ## Troubleshoot Helper Pipelines
 

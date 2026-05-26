@@ -596,7 +596,7 @@ scope: active_alias_inspection
 Priority: P2
 Effort: S
 Dependencies: LDG-2425
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -632,6 +632,17 @@ not an investment recommendation and not a strategy library surface.
 
 Strategy preflight tests, run/sweep demo tests, warmup tests, missing-alias
 tests, and documentation contract checks.
+
+### Completion Notes
+
+- Added exported `ledgr_demo_sma_crossover_strategy()` as a deterministic
+  teaching fixture with explicit `fast` / `slow` active-alias requirements and
+  `qty` / `threshold` strategy-parameter contract.
+- Verified Tier 1 preflight, warmup hold behavior, `qty = 0` flat baseline
+  behavior, sweep-grid execution, and no-alias / missing-alias classed errors.
+- Added reference help and API-surface lock coverage.
+- Verified with:
+  `testthat::test_file('tests/testthat/test-demo-strategies.R')`.
 
 ### Source Reference
 
@@ -713,7 +724,7 @@ scope: auditr_routed
 Priority: P2
 Effort: L
 Dependencies: LDG-2423, LDG-2424, LDG-2425, LDG-2427, LDG-2428, LDG-2429, LDG-2431
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -756,6 +767,21 @@ documentation that belongs to v0.1.8.5.
 Documentation contract tests where available, example smoke tests, stale
 version scan, encoding scan, and manual docs review.
 
+### Completion Notes
+
+- Updated README and getting-started first-contact examples to use explicit
+  active-alias feature maps, separated `feature_params` / `params`, the demo
+  SMA strategy, and feature/strategy/executable grids.
+- Updated sweeps docs with feature-grid versus strategy-grid usage, `.filter`,
+  baseline candidate construction, metadata-preserving ranking guidance, and
+  active-alias provenance language.
+- Updated strategy-development and indicators docs to move parameterized
+  built-in indicator sweeps toward `ledgr_param()` and active aliases while
+  keeping exact-ID and feature-factory guidance as lower-level/advanced paths.
+- Re-rendered touched markdown companions for README and vignettes.
+- Verified with:
+  `testthat::test_file('tests/testthat/test-documentation-contracts.R')`.
+
 ### Source Reference
 
 - `v0_1_8_4_spec.md` Section 8
@@ -777,7 +803,7 @@ scope: installed_docs
 Priority: P2
 Effort: M
 Dependencies: LDG-2421
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -812,6 +838,22 @@ opening the v0.1.8.5 canonical workflow cycle.
 
 Documentation review, targeted error-message tests where behavior is touched,
 stale version scan, and `git diff --check`.
+
+### Completion Notes
+
+- Added bounded Yahoo adapter notes covering already-sealed helper semantics,
+  `quantmod` / network dependency, harmless package startup noise, and the
+  unadjusted OHLC column policy.
+- Added real-data baseline sizing guidance warning against unfair fixed-quantity
+  comparisons.
+- Recorded broad workflow / real-data article expansion as deferred to the
+  v0.1.8.5 canonical workflow cycle through the existing auditr intake scope.
+- Kept package-wide error-message rewriting out of this batch; no core error
+  behavior was changed beyond the narrow `ledgr_run_open()` empty
+  `alias_map_order` compatibility normalization needed by rendered docs.
+- Verified with:
+  `testthat::test_file('tests/testthat/test-run-store.R')` and
+  `testthat::test_file('tests/testthat/test-documentation-contracts.R')`.
 
 ### Source Reference
 

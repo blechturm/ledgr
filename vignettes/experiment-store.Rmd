@@ -135,6 +135,16 @@ connection plus `snapshot_id` it returns the hash string. Use
 `meta_json` is envelope metadata; snapshot identity comes from normalized bars
 and instruments, not from human descriptions.
 
+Yahoo support is a convenience adapter, not a data-vendor guarantee. It uses
+`quantmod::getSymbols()` and therefore requires the suggested `quantmod`
+package and network access. Package startup or S3 method-overwrite messages
+printed while quantmod loads are not ledgr snapshot warnings. The adapter seals
+the Yahoo `.Open`, `.High`, `.Low`, `.Close`, and `.Volume` columns as returned
+by quantmod; it does not rewrite OHLC values from Yahoo's adjusted-close
+column. If your research requires split/dividend-adjusted OHLC bars, prepare
+those bars explicitly and seal them with `ledgr_snapshot_from_df()` or
+`ledgr_snapshot_from_csv()`.
+
 ```{r yahoo-seal-check, eval=FALSE}
 yahoo_info <- ledgr_snapshot_info(snapshot)
 yahoo_seal <- ledgr_snapshot_seal(snapshot)

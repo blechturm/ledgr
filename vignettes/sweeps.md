@@ -10,8 +10,8 @@ library(dplyr)
 
 # Sweep Is Exploration
 
-`ledgr_sweep()` is the lightweight exploration surface. It evaluates a
-`ledgr_param_grid()` against a `ledgr_experiment()` and returns a
+`ledgr_sweep()` is the lightweight exploration surface. It evaluates an
+executable grid against a `ledgr_experiment()` and returns a
 `ledgr_sweep_results` table. It does not write candidate runs to the
 experiment store and it does not choose a winner.
 
@@ -73,10 +73,27 @@ test_exp <- ledgr_experiment(
   opening = ledgr_opening(cash = 100000)
 )
 
-grid <- ledgr_param_grid(
-  conservative = list(qty = 10, threshold = 0.010, sma_n = 20),
-  moderate     = list(qty = 10, threshold = 0.005, sma_n = 20),
-  fast         = list(qty = 20, threshold = 0.005, sma_n = 10)
+feature_grid <- ledgr_feature_grid(
+  fast_n = c(10L, 20L),
+  slow_n = c(40L, 80L),
+  .filter = fast_n < slow_n
+)
+
+strategy_grid <- ledgr_strategy_grid(
+  threshold = c(0.000, 0.005),
+  qty = c(10, 20)
+)
+
+grid <- ledgr_grid_cross(
+  features = feature_grid,
+  strategy = strategy_grid
+)
+grid <- ledgr_grid_add_baseline(
+  grid,
+  flat = list(
+    feature = list(fast_n = 10L, slow_n = 40L),
+    strategy = list(threshold = 0, qty = 0)
+  )
 )
 
 precomputed <- ledgr_precompute_features(train_exp, grid)
@@ -93,6 +110,11 @@ ranked <- results |>
 
 candidate <- ledgr_candidate(ranked, 1)
 ```
+
+Keep the `ledgr_sweep_results` object and its list columns intact until
+after selection. Converting to `as.data.frame()` is fine for display,
+but it drops the class and can remove the metadata `ledgr_candidate()`
+uses to preserve filtered or sorted selection context.
 
 The sweep table has one metric context for all candidate metrics.
 Inspect it before ranking if the annualization or risk-free-rate
@@ -158,45 +180,57 @@ stopifnot(isTRUE(all.equal(
 )))
 ```
 
-# Parameter Grids And Feature Factories
+# Feature Grids And Strategy Grids
 
-`ledgr_param_grid()` stores candidate labels and parameter lists. Named
-entries become sweep row labels. Unnamed entries receive stable
-`grid_<hash>` labels derived from canonical params JSON. These labels
-identify sweep candidates; they are not committed run IDs.
+Active-alias sweeps use two public namespaces:
 
-Indicator parameters are ordinary sweep parameters when the experiment
-uses a feature factory:
-
-``` r
-features <- function(params) {
-  list(
-    ledgr_ind_sma(params$sma_n),
-    ledgr_ind_rsi(params$rsi_n)
-  )
-}
-
-grid <- ledgr_param_grid(
-  sma20_rsi14 = list(sma_n = 20, rsi_n = 14, threshold = 0.010, qty = 10),
-  sma50_rsi14 = list(sma_n = 50, rsi_n = 14, threshold = 0.010, qty = 10),
-  sma50_rsi21 = list(sma_n = 50, rsi_n = 21, threshold = 0.005, qty = 10)
-)
+``` text
+feature params  -> materialize parameterized features
+strategy params -> passed to strategy(ctx, params)
 ```
 
-Each row stores both `params` and `feature_fingerprints`: the requested
-parameters and the resolved feature identities actually used by that
-candidate. The row-level `provenance$feature_set_hash` is the compact
-identity for that candidate’s resolved feature set. Candidates with
-different indicator parameters should have different feature-set hashes
-even when the strategy code is the same.
+Declare parameterized indicators with `ledgr_param()` inside a feature
+map:
 
-Strategy lookup is still explicit. For parameterized built-in
-indicators, the current bridge pattern is exact-ID lookup from `params`
-inside the strategy. Do not call the feature factory from inside the
-strategy; user factory helpers are Tier 3 under preflight. Static
-feature maps remain useful when aliases do not vary by candidate. See
-`vignette("strategy-development", package = "ledgr")` for the bridge
-patterns and the active-alias API gap.
+``` r
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
+
+strategy <- ledgr_demo_sma_crossover_strategy()
+exp <- ledgr_experiment(snapshot, strategy, features = features)
+
+feature_grid <- ledgr_feature_grid(
+  fast_n = c(10L, 20L, 50L),
+  slow_n = c(40L, 80L, 200L),
+  .filter = fast_n < slow_n
+)
+
+strategy_grid <- ledgr_strategy_grid(
+  threshold = c(0, 0.01),
+  qty = c(50, 100)
+)
+
+grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
+```
+
+Use `.filter` for simple grid-shape constraints such as
+`fast_n < slow_n`. Filter expressions are evaluated against the grid
+columns with ordinary R operators and base helpers; they do not read run
+state, feature data, or caller globals.
+
+Each sweep row stores `feature_params`, `params`, resolved feature
+fingerprints, and provenance. The concrete `feature_set_hash` describes
+resolved concrete features; `alias_map_hash` describes the active alias
+map. Strategies should read the alias-keyed vector with
+`ctx$features(id)` and guard it with `passed_warmup()`.
+
+`ledgr_param_grid()` remains available for legacy flat
+strategy-parameter grids and exact-ID strategies. For active aliases,
+prefer `ledgr_feature_grid()`, `ledgr_strategy_grid()`, and
+`ledgr_grid_cross()` so feature materialization inputs are not confused
+with strategy runtime parameters.
 
 # Precompute Larger Grids
 

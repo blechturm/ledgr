@@ -107,6 +107,17 @@ step: on a snapshot handle it returns an invisible structured list with
 metadata; snapshot identity comes from normalized bars and instruments,
 not from human descriptions.
 
+Yahoo support is a convenience adapter, not a data-vendor guarantee. It
+uses `quantmod::getSymbols()` and therefore requires the suggested
+`quantmod` package and network access. Package startup or S3
+method-overwrite messages printed while quantmod loads are not ledgr
+snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
+`.Close`, and `.Volume` columns as returned by quantmod; it does not
+rewrite OHLC values from Yahoo’s adjusted-close column. If your research
+requires split/dividend-adjusted OHLC bars, prepare those bars
+explicitly and seal them with `ledgr_snapshot_from_df()` or
+`ledgr_snapshot_from_csv()`.
+
 ``` r
 yahoo_info <- ledgr_snapshot_info(snapshot)
 yahoo_seal <- ledgr_snapshot_seal(snapshot)
@@ -229,12 +240,12 @@ info
 #> Tags:            baseline, trend
 #> Snapshot:        store_demo_snapshot
 #> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     17634f5d5abc98359b6a20938b5a35381cb96a15b24029ca608ac2196a180ccf
+#> Config Hash:     63f254a1904f104f83773d8d0d2f66a757fcc611f15cdbfbee65e79b229b9dc4
 #> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
 #> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
 #> Reproducibility: tier_1
 #> Execution Mode:  audit_log
-#> Elapsed Sec:     1.36
+#> Elapsed Sec:     1.76
 #> Persist Features:TRUE
 #> Cache Hits:      0
 #> Cache Misses:    2

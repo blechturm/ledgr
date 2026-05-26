@@ -15,7 +15,7 @@ Most backtesting tools compute results directly from price arrays. ledgr
 records each decision and state change as an immutable event, then
 derives trades, equity, and metrics from that ledger.
 
-``` tex
+``` text
 sealed snapshot -> experiment -> run -> event ledger -> results
 ```
 
@@ -69,30 +69,26 @@ bars |>
 #> 4 2019-01-04 00:00:00 DEMO_01        90.7  91.1  89.5  89.8 458921
 ```
 
-Create a sealed snapshot. A snapshot is the immutable data artifac
+Create a sealed snapshot. A snapshot is the immutable data artifact
 every run uses. The setup is not overhead. The setup is the audit trail.
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(bars)
 ```
 
-Strategies receive a pulse context `ctx` and a parameter list `params`.
-They return target holdings: a named numeric vector with one desired
-quantity per instrument.
+First-contact examples use the demo SMA-crossover strategy fixture. It
+is a small teaching strategy, not an investment recommendation. The
+feature map stays explicit so the two namespaces are visible:
+`feature_params` materialize indicators, while `params` are the values
+the strategy reads at each pulse.
 
 ``` r
-strategy <- function(ctx, params) {
-  targets <- ctx$flat()
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
 
-  for (id in ctx$universe) {
-    sma <- ctx$feature(id, "sma_20")
-    if (is.finite(sma) && ctx$close(id) > sma) {
-      targets[id] <- params$qty
-    }
-  }
-
-  targets
-}
+strategy <- ledgr_demo_sma_crossover_strategy()
 ```
 
 Bundle the snapshot, strategy, indicators, starting state, and execution
@@ -100,8 +96,6 @@ options into an experiment. Construction validates the object; it does
 not run the strategy or write run artifacts.
 
 ``` r
-features <- list(ledgr_ind_sma(20))
-
 exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
@@ -110,33 +104,38 @@ exp <- ledgr_experiment(
 )
 
 exp
-#> ledgr_experimen
+#> ledgr_experiment
 #> ================
-#> Snapshot ID: snapshot_20260522_140000_6ecc
+#> Snapshot ID: snapshot_20260526_141220_0614
 #> Database:    <temporary DuckDB path>
 #> Universe:    2 instruments
-#> Features:    1 fixed
+#> Features:    2 mapped
 #> Opening:     cash=10000, positions=0
 #> Mode:        audit_log
+#> Metrics:     US equity daily (252 days/year * 1 bars/day = 252 bars/year)
 ```
 
 Run the experiment with explicit parameters.
 
 ``` r
 bt <- exp |>
-  ledgr_run(params = list(qty = 10), run_id = "readme_sma_20")
+  ledgr_run(
+    feature_params = list(fast_n = 10L, slow_n = 40L),
+    params = list(qty = 10, threshold = 0),
+    run_id = "readme_sma_crossover"
+  )
 
-b
+bt
 #> ledgr Backtest Results
 #> ======================
 #>
-#> Run ID:         readme_sma_20
+#> Run ID:         readme_sma_crossover
 #> Universe:       DEMO_01, DEMO_02
 #> Date Range:     2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
 #> Execution Mode: audit_log
 #> Initial Cash:   $10000.00
-#> Final Equity:   $10083.54
-#> P&L:            $83.54 (0.84%)
+#> Final Equity:   $10106.83
+#> P&L:            $106.83 (1.07%)
 #>
 #> Use summary(bt) for detailed metrics
 #> Use plot(bt) for equity curve visualization
@@ -150,37 +149,29 @@ summary(bt)
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        0.84%
-#>   Annualized Return:   1.65%
-#>   Max Drawdown:        -0.99%
+#>   Total Return:        1.07%
+#>   Annualized Return:   2.11%
+#>   Max Drawdown:        -0.76%
 #>
 #> Risk Metrics:
-#>   Volatility (annual): 1.96%
-#>   Sharpe Ratio:        0.845
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
+#>   Volatility (annual): 1.56%
+#>   Sharpe Ratio:        1.349
 #>
 #> Trade Statistics:
-#>   Total Trades:        12
-#>   Win Rate:            25.00%
-#>   Avg Trade:           $6.96
+#>   Total Trades:        2
+#>   Win Rate:            100.00%
+#>   Avg Trade:           $53.41
 #>
 #> Exposure:
-#>   Time in Market:      66.67%
+#>   Time in Market:      59.69%
 ledgr_results(bt, what = "trades")
-#> # A tibble: 12 x 9
-#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         3 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
-#>  2         5 2019-03-05 DEMO_02       SELL     10  65.3     0       -26.8  CLOSE
-#>  3         7 2019-03-12 DEMO_02       SELL     10  67.1     0       -18.4  CLOSE
-#>  4         9 2019-03-19 DEMO_02       SELL     10  67.5     0         1.26 CLOSE
-#>  5        10 2019-03-20 DEMO_01       SELL     10 101.      0        96.1  CLOSE
-#>  6        13 2019-03-27 DEMO_01       SELL     10 105.      0        -2.88 CLOSE
-#>  7        15 2019-04-05 DEMO_01       SELL     10 103.      0       -21.2  CLOSE
-#>  8        17 2019-04-15 DEMO_01       SELL     10 104.      0       -18.6  CLOSE
-#>  9        19 2019-04-18 DEMO_01       SELL     10 103.      0       -17.4  CLOSE
-#> 10        21 2019-05-16 DEMO_01       SELL     10 101.      0        -9.67 CLOSE
-#> 11        22 2019-06-03 DEMO_02       SELL     10  79.8     0       128.   CLOSE
-#> 12        24 2019-06-05 DEMO_02       SELL     10  79.3     0       -14.6  CLOSE
+#> # A tibble: 2 x 9
+#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
+#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
+#> 1         3 2019-04-23 DEMO_01       SELL     10 102.      0         27.4 CLOSE
+#> 2         4 2019-06-13 DEMO_02       SELL     10  76.5     0         79.4 CLOSE
 ```
 
 ## Compare Runs
@@ -191,15 +182,19 @@ strategies.
 
 ``` r
 bt_qty_20 <- exp |>
-  ledgr_run(params = list(qty = 20), run_id = "readme_sma_20_qty_20")
+  ledgr_run(
+    feature_params = list(fast_n = 10L, slow_n = 40L),
+    params = list(qty = 20, threshold = 0),
+    run_id = "readme_sma_crossover_qty_20"
+  )
 
-ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))
+ledgr_compare_runs(snapshot, run_ids = c("readme_sma_crossover", "readme_sma_crossover_qty_20"))
 #> # ledgr comparison
 #> # A tibble: 2 x 9
 #>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
 #>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
-#> 1 readme_sma_~ <NA>        10084. +0.8%               0.845 -1.0%              12 25.0%
-#> 2 readme_sma_~ <NA>        10167. +1.7%               0.858 -2.0%              12 25.0%
+#> 1 readme_sma_~ <NA>        10107. +1.1%                1.35 -0.8%               2 100.0%
+#> 2 readme_sma_~ <NA>        10214. +2.1%                1.36 -1.5%               2 100.0%
 #> # i 1 more variable: reproducibility_level <chr>
 #>
 #> # i Full identity and telemetry columns remain available on this tibble.
@@ -208,19 +203,27 @@ ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"
 
 ## Explore A Sweep
 
-Use `ledgr_sweep()` for lightweight exploration across a parameter grid.
-Sweep results are candidate summaries, not committed run artifacts, and
-ledgr does not rank candidates automatically. Filter and rank explicitly
-with ordinary R tools, then promote one candidate deliberately.
+Use `ledgr_sweep()` for lightweight exploration. Active-alias sweeps
+keep feature parameters and strategy parameters separate, then compose
+them into an executable grid. Sweep results are candidate summaries, not
+committed run artifacts, and ledgr does not rank candidates
+automatically.
 
 ``` r
-grid <- ledgr_param_grid(
-  qty_10 = list(qty = 10),
-  qty_20 = list(qty = 20)
+feature_grid <- ledgr_feature_grid(
+  fast_n = c(10L, 20L),
+  slow_n = c(40L, 80L),
+  .filter = fast_n < slow_n
 )
 
-features <- ledgr_precompute_features(exp, grid)
-results <- ledgr_sweep(exp, grid, precomputed_features = features, seed = 2026)
+strategy_grid <- ledgr_strategy_grid(
+  threshold = c(0, 0.01),
+  qty = c(10, 20)
+)
+
+grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
+precomputed <- ledgr_precompute_features(exp, grid)
+results <- ledgr_sweep(exp, grid, precomputed_features = precomputed, seed = 2026)
 
 candidate <- results |>
   filter(status == "DONE") |>
@@ -249,9 +252,18 @@ evaluating the strategy source. Use the default `trust = FALSE` path for
 safe source and metadata inspection:
 
 ``` r
-stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_20", trust = FALSE)
-stored_strategy$strategy_source_tex
-#> [1] "function (ctx, params) \n{\n    targets <- ctx$flat()\n    for (id in ctx$universe) {\n        sma <- ctx$feature(id, \"sma_20\")\n        if (is.finite(sma) && ctx$close(id) > sma) {\n            targets[id] <- params$qty\n        }\n    }\n    targets\n}"
+stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_crossover", trust = FALSE)
+source_lines <- strsplit(stored_strategy$strategy_source_text, "\n", fixed = TRUE)[[1]]
+cat(paste(c(head(source_lines, 8), "..."), collapse = "\n"))
+#> function (ctx, params)
+#> {
+#>     qty <- params$qty
+#>     threshold <- params$threshold
+#>     if (is.null(qty) || length(qty) != 1L || !is.numeric(qty) || is.na(qty) || !is.finite(qty)) {
+#>         stop(structure(list(message = "`params$qty` must be a finite numeric scalar."), class = c("ledgr_invalid_demo_strategy_params", "ledgr_invalid_strategy_params", "simpleError", "error", "condition")))
+#>     }
+#>     if (is.null(threshold) || length(threshold) != 1L || !is.numeric(threshold) || is.na(threshold) || !is.finite(threshold)) {
+#> ...
 ```
 
 Hash verification proves stored-text identity, not code safety. Use
@@ -272,7 +284,7 @@ snapshot handle:
 ``` r
 snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "my_snapshot")
 ledgr_run_list(snapshot)
-ledgr_run_info(snapshot, "readme_sma_20")
+ledgr_run_info(snapshot, "readme_sma_crossover")
 ```
 
 After snapshot creation or loading, normal experiment-store operations

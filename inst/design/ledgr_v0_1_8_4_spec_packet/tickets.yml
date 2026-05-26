@@ -128,7 +128,7 @@ tickets:
 
   - id: "LDG-2428"
     title: "Demo SMA Crossover Strategy Helper"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "S"
     dependencies:
@@ -161,7 +161,7 @@ tickets:
 
   - id: "LDG-2430"
     title: "Primary Active-Alias Documentation Path"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "L"
     dependencies:
@@ -185,7 +185,7 @@ tickets:
 
   - id: "LDG-2431"
     title: "Bounded Real-Data And Error-Message Documentation Polish"
-    status: "todo"
+    status: "done"
     priority: "P2"
     effort: "M"
     dependencies:

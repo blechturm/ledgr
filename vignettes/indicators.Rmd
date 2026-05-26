@@ -360,35 +360,44 @@ by the strategy, here `paste0("ret_", params$lookback)`.
 In short, all feature parameter values must be registered before `ledgr_run()`;
 do not create `ledgr_ind_returns(params$lookback)` lazily inside the strategy.
 
-For exploratory sweeps, prefer a feature factory when each candidate needs a
-different concrete feature set:
+For exploratory sweeps over ledgr-owned indicator parameters, prefer active
+aliases. Declare the varying constructor arguments with `ledgr_param()` and
+compose feature and strategy grids explicitly:
 
 ```{r feature-factory-example, eval=FALSE}
-factory <- function(params) {
-  list(ledgr_ind_returns(params$lookback))
-}
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
 
-exp <- ledgr_experiment(snapshot, strategy, features = factory)
-grid <- ledgr_param_grid(
-  short = list(lookback = 5, qty = 10),
-  long = list(lookback = 20, qty = 10)
+strategy <- ledgr_demo_sma_crossover_strategy()
+exp <- ledgr_experiment(snapshot, strategy, features = features)
+
+grid <- ledgr_grid_cross(
+  features = ledgr_feature_grid(
+    fast_n = c(10L, 20L),
+    slow_n = c(40L, 80L),
+    .filter = fast_n < slow_n
+  ),
+  strategy = ledgr_strategy_grid(threshold = c(0, 0.01), qty = 10)
 )
 
 precomputed <- ledgr_precompute_features(exp, grid)
 results <- ledgr_sweep(exp, grid, precomputed_features = precomputed)
 ```
 
-The factory is evaluated with each candidate's `params`. The resolved feature
-IDs, feature fingerprints, and candidate feature-set hash are then part of the
-sweep row provenance.
+For single-output indicators, the feature-map alias is the strategy-facing
+name returned by `ctx$features(id)`. Bundle entries are intentionally flat:
+`bands = ledgr_ind_ttr_outputs("BBands", n = ledgr_param("bb_n"))` exposes
+bundle output aliases such as `bbands_dn` and `bbands_up`, not `bands` or a
+nested object. Parameterized bundle concrete feature IDs may include a stable
+hash suffix so multiple candidate values can coexist in one sweep projection;
+use `ctx$features(id)` and the alias map for strategy-facing names.
 
-If the factory returns a plain list, strategies read the resulting values by
-exact feature ID, for example with `ctx$feature(id, ledgr_feature_id(...))` or a
-built-in ID such as `sma_20`. A factory that returns `ledgr_feature_map()` can
-materialize aliases for the engine, but calling that external factory from
-inside the strategy is not Tier 1 or Tier 2 under current preflight rules. Use
-feature-map aliases for static maps; use exact IDs for parameterized sweep
-lookups until ledgr has a first-class active-alias API.
+Feature factories remain available for advanced exact-ID workflows and custom
+materialization patterns, but do not call user feature factories from inside a
+strategy. Under strategy preflight, those helper references are external
+strategy logic and are not the canonical active-alias path.
 
 ## TTR-Backed Indicators
 

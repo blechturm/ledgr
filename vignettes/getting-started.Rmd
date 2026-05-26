@@ -94,21 +94,22 @@ normal run and store operations use the snapshot handle.
 
 A ledgr strategy is `function(ctx, params)`. `ctx` is the pulse context; it
 contains only state observable at the current decision point. `params` is the
-JSON-safe parameter list passed to `ledgr_run()`.
+JSON-safe strategy-parameter list passed to `ledgr_run()`.
+
+The first example uses the demo SMA-crossover strategy fixture. It is a
+teaching fixture, not an investment recommendation. The feature declarations
+stay explicit so the active-alias model is visible: feature parameters
+materialize indicators, while strategy parameters are the only values the
+strategy reads from `params`.
 
 ```{r strategy}
-strategy <- function(ctx, params) {
-  targets <- ctx$flat()
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
 
-  for (id in ctx$universe) {
-    sma <- ctx$feature(id, "sma_20")
-    if (is.finite(sma) && ctx$close(id) > sma) {
-      targets[id] <- params$qty
-    }
-  }
-
-  targets
-}
+strategy <- ledgr_demo_sma_crossover_strategy()
+ledgr_strategy_preflight(strategy)
 ```
 
 Targets are desired holdings, not signals. A return value like
@@ -121,12 +122,13 @@ new target.
 
 ## Experiment And Run
 
-Indicators are feature definitions. Ask ledgr for the feature IDs before using
-them in `ctx$feature()`.
+Indicators are feature definitions. In an active-alias feature map, aliases
+such as `fast` and `slow` are the strategy-facing names returned by
+`ctx$features(id)`. The concrete feature IDs are resolved from
+`feature_params` before the run starts.
 
 ```{r features}
-features <- list(ledgr_ind_sma(20))
-ledgr_feature_id(features)
+ledgr_parameters(features)
 ```
 
 Bundle the reusable parts into an experiment. Construction validates the
@@ -148,7 +150,11 @@ Run one parameter set.
 
 ```{r run}
 bt <- exp |>
-  ledgr_run(params = list(qty = 10), run_id = "getting_started_qty_10")
+  ledgr_run(
+    feature_params = list(fast_n = 10L, slow_n = 40L),
+    params = list(qty = 10, threshold = 0),
+    run_id = "getting_started_sma_crossover"
+  )
 
 bt
 ```
@@ -193,12 +199,13 @@ pulse <- ledgr_pulse_snapshot(
   snapshot = snapshot,
   universe = c("DEMO_01", "DEMO_02"),
   ts_utc = "2019-03-01T00:00:00Z",
-  features = features
+  features = features,
+  feature_params = list(fast_n = 10L, slow_n = 40L)
 )
 
 pulse$close("DEMO_01")
-pulse$feature("DEMO_01", "sma_20")
-strategy(pulse, list(qty = 10))
+pulse$features("DEMO_01")
+strategy(pulse, list(qty = 10, threshold = 0))
 close(pulse)
 ```
 
@@ -208,9 +215,16 @@ Run a second parameter set into the same snapshot-backed store.
 
 ```{r second-run}
 bt_qty_20 <- exp |>
-  ledgr_run(params = list(qty = 20), run_id = "getting_started_qty_20")
+  ledgr_run(
+    feature_params = list(fast_n = 10L, slow_n = 40L),
+    params = list(qty = 20, threshold = 0),
+    run_id = "getting_started_sma_crossover_qty_20"
+  )
 
-ledgr_compare_runs(snapshot, run_ids = c("getting_started_qty_10", "getting_started_qty_20"))
+ledgr_compare_runs(
+  snapshot,
+  run_ids = c("getting_started_sma_crossover", "getting_started_sma_crossover_qty_20")
+)
 ```
 
 ## Durable Store Workflow
@@ -235,14 +249,18 @@ durable_exp <- ledgr_experiment(
 )
 
 durable_bt <- durable_exp |>
-  ledgr_run(params = list(qty = 10), run_id = "durable_qty_10")
+  ledgr_run(
+    feature_params = list(fast_n = 10L, slow_n = 40L),
+    params = list(qty = 10, threshold = 0),
+    run_id = "durable_sma_crossover"
+  )
 
 close(durable_bt)
 ledgr_snapshot_close(durable_snapshot)
 
 reloaded <- ledgr_snapshot_load(artifact_db, "getting_started_snapshot", verify = TRUE)
 ledgr_run_list(reloaded)
-ledgr_run_info(reloaded, "durable_qty_10")
+ledgr_run_info(reloaded, "durable_sma_crossover")
 ledgr_snapshot_close(reloaded)
 ```
 

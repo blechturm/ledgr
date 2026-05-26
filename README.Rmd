@@ -104,23 +104,18 @@ The setup is not overhead. The setup is the audit trail.
 snapshot <- ledgr_snapshot_from_df(bars)
 ```
 
-Strategies receive a pulse context `ctx` and a parameter list `params`. They
-return target holdings: a named numeric vector with one desired quantity per
-instrument.
+First-contact examples use the demo SMA-crossover strategy fixture. It is a
+small teaching strategy, not an investment recommendation. The feature map stays
+explicit so the two namespaces are visible: `feature_params` materialize
+indicators, while `params` are the values the strategy reads at each pulse.
 
 ```{r strategy}
-strategy <- function(ctx, params) {
-  targets <- ctx$flat()
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
 
-  for (id in ctx$universe) {
-    sma <- ctx$feature(id, "sma_20")
-    if (is.finite(sma) && ctx$close(id) > sma) {
-      targets[id] <- params$qty
-    }
-  }
-
-  targets
-}
+strategy <- ledgr_demo_sma_crossover_strategy()
 ```
 
 Bundle the snapshot, strategy, indicators, starting state, and execution options
@@ -128,8 +123,6 @@ into an experiment. Construction validates the object; it does not run the
 strategy or write run artifacts.
 
 ```{r experiment}
-features <- list(ledgr_ind_sma(20))
-
 exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
@@ -144,7 +137,11 @@ Run the experiment with explicit parameters.
 
 ```{r run}
 bt <- exp |>
-  ledgr_run(params = list(qty = 10), run_id = "readme_sma_20")
+  ledgr_run(
+    feature_params = list(fast_n = 10L, slow_n = 40L),
+    params = list(qty = 10, threshold = 0),
+    run_id = "readme_sma_crossover"
+  )
 
 bt
 ```
@@ -163,26 +160,37 @@ results. Comparison reads existing artifacts; it does not recompute strategies.
 
 ```{r compare}
 bt_qty_20 <- exp |>
-  ledgr_run(params = list(qty = 20), run_id = "readme_sma_20_qty_20")
+  ledgr_run(
+    feature_params = list(fast_n = 10L, slow_n = 40L),
+    params = list(qty = 20, threshold = 0),
+    run_id = "readme_sma_crossover_qty_20"
+  )
 
-ledgr_compare_runs(snapshot, run_ids = c("readme_sma_20", "readme_sma_20_qty_20"))
+ledgr_compare_runs(snapshot, run_ids = c("readme_sma_crossover", "readme_sma_crossover_qty_20"))
 ```
 
 ## Explore A Sweep
 
-Use `ledgr_sweep()` for lightweight exploration across a parameter grid. Sweep
-results are candidate summaries, not committed run artifacts, and ledgr does not
-rank candidates automatically. Filter and rank explicitly with ordinary R tools,
-then promote one candidate deliberately.
+Use `ledgr_sweep()` for lightweight exploration. Active-alias sweeps keep
+feature parameters and strategy parameters separate, then compose them into an
+executable grid. Sweep results are candidate summaries, not committed run
+artifacts, and ledgr does not rank candidates automatically.
 
 ```{r sweep, eval=FALSE}
-grid <- ledgr_param_grid(
-  qty_10 = list(qty = 10),
-  qty_20 = list(qty = 20)
+feature_grid <- ledgr_feature_grid(
+  fast_n = c(10L, 20L),
+  slow_n = c(40L, 80L),
+  .filter = fast_n < slow_n
 )
 
-features <- ledgr_precompute_features(exp, grid)
-results <- ledgr_sweep(exp, grid, precomputed_features = features, seed = 2026)
+strategy_grid <- ledgr_strategy_grid(
+  threshold = c(0, 0.01),
+  qty = c(10, 20)
+)
+
+grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
+precomputed <- ledgr_precompute_features(exp, grid)
+results <- ledgr_sweep(exp, grid, precomputed_features = precomputed, seed = 2026)
 
 candidate <- results |>
   filter(status == "DONE") |>
@@ -211,8 +219,9 @@ strategy source. Use the default `trust = FALSE` path for safe source and
 metadata inspection:
 
 ```{r extract-strategy}
-stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_20", trust = FALSE)
-stored_strategy$strategy_source_text
+stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_crossover", trust = FALSE)
+source_lines <- strsplit(stored_strategy$strategy_source_text, "\n", fixed = TRUE)[[1]]
+cat(paste(c(head(source_lines, 8), "..."), collapse = "\n"))
 ```
 
 Hash verification proves stored-text identity, not code safety. Use
@@ -233,7 +242,7 @@ handle:
 ```r
 snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "my_snapshot")
 ledgr_run_list(snapshot)
-ledgr_run_info(snapshot, "readme_sma_20")
+ledgr_run_info(snapshot, "readme_sma_crossover")
 ```
 
 After snapshot creation or loading, normal experiment-store operations take the

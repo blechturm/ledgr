@@ -961,6 +961,9 @@ ledgr_run_open <- function(snapshot, run_id) {
     }
   )
   cfg$db_path <- db_path
+  if (is.list(cfg$alias_map_order) && length(cfg$alias_map_order) == 0L) {
+    cfg$alias_map_order <- character()
+  }
   required_config_fields <- c("db_path", "engine", "universe", "backtest", "fill_model", "strategy")
   missing_config_fields <- setdiff(required_config_fields, names(cfg))
   if (length(missing_config_fields) > 0L) {
