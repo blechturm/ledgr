@@ -125,6 +125,7 @@ ledgr_candidate_summary_record <- function(row) {
     time_in_market = ledgr_summary_scalar(row, "time_in_market", NULL),
     execution_seed = ledgr_summary_scalar(row, "execution_seed", NULL),
     params_json = canonical_json(row$params[[1]]),
+    feature_params_json = if ("feature_params" %in% names(row)) canonical_json(row$feature_params[[1]]) else canonical_json(list()),
     provenance_json = canonical_json(row$provenance[[1]]),
     n_warnings = length(ledgr_summary_warnings(row)),
     warning_classes = ledgr_warning_classes(ledgr_summary_warnings(row)),

@@ -71,7 +71,7 @@ tickets:
 
   - id: "LDG-2425"
     title: "Active Alias Runtime Lookup In Run And Sweep"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -91,7 +91,7 @@ tickets:
 
   - id: "LDG-2426"
     title: "Alias Map Identity, Provenance, And Hashes"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "M"
     dependencies:

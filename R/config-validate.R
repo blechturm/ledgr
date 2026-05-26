@@ -189,6 +189,28 @@ validate_ledgr_config <- function(config) {
   if (!is.null(config$strategy_params_hash)) {
     assert_scalar_chr(config$strategy_params_hash, "strategy_params_hash")
   }
+  if (!is.null(config$feature_params) && (!is.list(config$feature_params) || is.data.frame(config$feature_params))) {
+    rlang::abort("Config field feature_params must be a list.", class = "ledgr_invalid_config")
+  }
+  if (!is.null(config$feature_params_json)) {
+    assert_scalar_chr(config$feature_params_json, "feature_params_json")
+  }
+  if (!is.null(config$feature_params_hash)) {
+    assert_scalar_chr(config$feature_params_hash, "feature_params_hash")
+  }
+  if (!is.null(config$alias_map_json) && !is.na(config$alias_map_json)) {
+    assert_scalar_chr(config$alias_map_json, "alias_map_json")
+  }
+  if (!is.null(config$alias_map_hash) && !is.na(config$alias_map_hash)) {
+    assert_scalar_chr(config$alias_map_hash, "alias_map_hash")
+  }
+  if (!is.null(config$alias_map_version) && !is.na(config$alias_map_version)) {
+    if (!is.numeric(config$alias_map_version) || length(config$alias_map_version) != 1L ||
+        is.na(config$alias_map_version) || !is.finite(config$alias_map_version) ||
+        config$alias_map_version %% 1 != 0) {
+      rlang::abort("Config field alias_map_version must be an integer scalar.", class = "ledgr_invalid_config")
+    }
+  }
 
   # v0.1.1 snapshot integration: config$data$source == "snapshot" requires
   # config$data$snapshot_id.

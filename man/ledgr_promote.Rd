@@ -34,7 +34,8 @@ a durable experiment-store run artifact.
 }
 \details{
 \code{ledgr_promote()} commits a selected sweep candidate by calling
-\code{\link[=ledgr_run]{ledgr_run()}} with the candidate params and exact \code{execution_seed}. Runs
+\code{\link[=ledgr_run]{ledgr_run()}} with the candidate strategy params, feature params, and exact
+\code{execution_seed}. Runs
 created this way store durable promotion context that can be read with
 \code{\link[=ledgr_promotion_context]{ledgr_promotion_context()}} or \code{\link[=ledgr_run_promotion_context]{ledgr_run_promotion_context()}}.
 

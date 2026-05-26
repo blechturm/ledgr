@@ -382,13 +382,13 @@ ledgr_projection_feature_accessor_state <- function(projection, state, feature_i
   }
 }
 
-ledgr_projection_feature_bundle_accessor <- function(projection, pulse_idx, universe, feature_ids = NULL) {
+ledgr_projection_feature_bundle_accessor <- function(projection, pulse_idx, universe, feature_ids = NULL, active_alias_map = NULL) {
   force(projection)
   force(pulse_idx)
   feature <- ledgr_projection_feature_accessor(projection, pulse_idx, feature_ids)
   universe <- as.character(universe)
 
-  function(instrument_id, feature_map) {
+  function(instrument_id, feature_map = NULL) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
       rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
     }
@@ -403,8 +403,8 @@ ledgr_projection_feature_bundle_accessor <- function(projection, pulse_idx, univ
       )
     }
 
-    ledgr_validate_feature_map_object(feature_map)
-    values <- vapply(feature_map$feature_ids, function(feature_id) {
+    lookup_map <- ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
+    values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
       if (!is.numeric(value) || length(value) != 1L) {
         rlang::abort(
@@ -419,17 +419,17 @@ ledgr_projection_feature_bundle_accessor <- function(projection, pulse_idx, univ
       as.numeric(value)
     }, numeric(1))
 
-    stats::setNames(unname(values), names(feature_map$feature_ids))
+    stats::setNames(unname(values), names(lookup_map))
   }
 }
 
-ledgr_projection_feature_bundle_accessor_state <- function(projection, state, universe, feature_ids = NULL) {
+ledgr_projection_feature_bundle_accessor_state <- function(projection, state, universe, feature_ids = NULL, active_alias_map = NULL) {
   force(projection)
   force(state)
   feature <- ledgr_projection_feature_accessor_state(projection, state, feature_ids)
   universe <- as.character(universe)
 
-  function(instrument_id, feature_map) {
+  function(instrument_id, feature_map = NULL) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
       rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
     }
@@ -444,8 +444,8 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection, state, un
       )
     }
 
-    ledgr_validate_feature_map_object(feature_map)
-    values <- vapply(feature_map$feature_ids, function(feature_id) {
+    lookup_map <- ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
+    values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
       if (!is.numeric(value) || length(value) != 1L) {
         rlang::abort(
@@ -460,6 +460,6 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection, state, un
       as.numeric(value)
     }, numeric(1))
 
-    stats::setNames(unname(values), names(feature_map$feature_ids))
+    stats::setNames(unname(values), names(lookup_map))
   }
 }

@@ -4,13 +4,15 @@
 \alias{ledgr_run}
 \title{Run a ledgr experiment}
 \usage{
-ledgr_run(exp, params = list(), run_id = NULL, seed = NULL)
+ledgr_run(exp, params = list(), feature_params = list(), run_id = NULL, seed = NULL)
 }
 \arguments{
 \item{exp}{A \code{ledgr_experiment} object.}
 
-\item{params}{JSON-safe list passed to \verb{function(ctx, params)} strategy and
-\verb{function(params)} feature definitions.}
+\item{params}{JSON-safe list passed to \verb{function(ctx, params)} strategy.}
+
+\item{feature_params}{JSON-safe list used to resolve parameterized feature
+declarations before execution.}
 
 \item{run_id}{Optional run identifier.}
 

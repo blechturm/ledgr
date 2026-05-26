@@ -377,7 +377,7 @@ scope: authoring_ux
 Priority: P1
 Effort: L
 Dependencies: LDG-2423, LDG-2424
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -418,6 +418,21 @@ still consumes ordinary concrete features through the shared projection path.
 Run/sweep active-alias tests, exact-ID regression tests, passed-warmup tests,
 state-leak checks where relevant, and existing sweep/backtest-wrapper tests.
 
+### Completion Notes
+
+- Added `feature_params` support to `ledgr_run()` while keeping `params` as
+  the strategy-runtime parameter namespace.
+- Materialized feature maps into concrete indicators plus a resolved active
+  alias map before fold execution.
+- Threaded active alias maps through both committed runs and in-memory sweep
+  candidate execution without introducing a second fold path.
+- Added `ctx$features(id)` active-alias lookup while preserving
+  `ctx$feature(id, feature_id)` and explicit `ctx$features(id, feature_map)`
+  behavior.
+- Added classed `ledgr_no_active_alias_map` failures when the active lookup is
+  used without a resolved alias map.
+- Verified `passed_warmup(ctx$features(id))` against active alias vectors.
+
 ### Source Reference
 
 - `v0_1_8_4_spec.md` Sections 3 and 6
@@ -438,7 +453,7 @@ scope: active_alias_lookup
 Priority: P1
 Effort: M
 Dependencies: LDG-2425
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -472,6 +487,20 @@ concrete feature fingerprints or the concrete-feature-only `feature_set_hash`.
 
 Hash tests, sweep provenance tests, promotion context tests, failure-row tests,
 and serialization round-trip checks for alias maps.
+
+### Completion Notes
+
+- Added alias-map storage helpers with `alias_map_json`, `alias_map_hash`, and
+  `alias_map_version`.
+- Included resolved alias-map identity in committed-run configs so alias-only
+  name changes affect `config_hash`.
+- Preserved concrete-only `feature_set_hash` behavior by leaving feature
+  fingerprints unchanged by alias names.
+- Added sweep result `feature_params` and candidate-feature provenance columns
+  for resolved alias maps.
+- Included alias-map provenance in sweep success and failure rows.
+- Verified alias-map JSON round-trip, alias-hash sensitivity, config-hash
+  sensitivity, and feature-set-hash stability.
 
 ### Source Reference
 

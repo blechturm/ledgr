@@ -188,7 +188,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
-      "warnings", "feature_fingerprints", "provenance"
+      "feature_params", "warnings", "feature_fingerprints", "provenance"
     )
   )
   testthat::expect_type(unseeded$execution_seed, "integer")

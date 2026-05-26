@@ -382,12 +382,10 @@ ledgr_experiment_copy_features <- function(features, features_mode) {
   rlang::abort("Unknown experiment feature mode.", class = "ledgr_invalid_experiment_features")
 }
 
-ledgr_experiment_materialize_features <- function(exp, params, feature_params = params) {
+ledgr_experiment_materialize_feature_result <- function(exp, params, feature_params = params) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_experiment")
   }
-  # TODO LDG-2425: active-alias runtime should pass explicit feature_params and
-  # stop relying on strategy params as the feature-resolution fallback.
   features <- exp$features
   if (identical(exp$features_mode, "function")) {
     features <- features(params)
@@ -395,7 +393,11 @@ ledgr_experiment_materialize_features <- function(exp, params, feature_params = 
   mode <- ledgr_experiment_validate_features(features)
   if (identical(mode, "feature_map")) {
     features <- ledgr_resolve_feature_map(features, feature_params = feature_params)
-    return(ledgr_feature_map_indicators(features))
+    alias_storage <- ledgr_alias_map_storage(ledgr_alias_map_from_feature_map(features))
+    return(c(
+      list(features = ledgr_feature_map_indicators(features)),
+      alias_storage
+    ))
   }
   if (!identical(mode, "list")) {
     rlang::abort(
@@ -403,11 +405,19 @@ ledgr_experiment_materialize_features <- function(exp, params, feature_params = 
       class = "ledgr_invalid_experiment_features"
     )
   }
-  ledgr_flatten_feature_list(
+  features <- ledgr_flatten_feature_list(
     features,
     context = "`features`",
     class = "ledgr_invalid_experiment_features"
   )
+  c(
+    list(features = features),
+    ledgr_alias_map_storage(NULL)
+  )
+}
+
+ledgr_experiment_materialize_features <- function(exp, params, feature_params = params) {
+  ledgr_experiment_materialize_feature_result(exp, params, feature_params = feature_params)$features
 }
 
 ledgr_experiment_validate_opening <- function(opening, universe) {

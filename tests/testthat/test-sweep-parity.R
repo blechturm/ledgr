@@ -243,7 +243,7 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
       "run_id", "status", "final_equity", "total_return", "annualized_return",
       "volatility", "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
       "avg_trade", "time_in_market", "execution_seed", "error_class",
-      "error_msg", "params", "warnings", "feature_fingerprints", "provenance"
+      "error_msg", "params", "feature_params", "warnings", "feature_fingerprints", "provenance"
     )
   )
   testthat::expect_true(all(results$status == "DONE"))

@@ -143,6 +143,8 @@ ledgr_sweep <- function(exp,
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]
     params <- param_grid$params[[i]]
+    strategy_params <- ledgr_grid_candidate_strategy_params(params)
+    feature_params <- ledgr_grid_candidate_feature_params(params)
     execution_seed <- if (is.null(seed)) {
       NA_integer_
     } else {
@@ -157,7 +159,8 @@ ledgr_sweep <- function(exp,
       }
       rows[[i]] <- ledgr_sweep_failure_row(
         run_id = label,
-        params = params,
+        params = strategy_params,
+        feature_params = feature_params,
         execution_seed = execution_seed,
         error_class = feature_row$error_class[[1]],
         error_msg = feature_row$error_msg[[1]],
@@ -166,6 +169,9 @@ ledgr_sweep <- function(exp,
           snapshot_hash = meta$snapshot_hash,
           strategy_hash = strategy_hash,
           feature_set_hash = feature_row$feature_set_hash[[1]],
+          alias_map_json = feature_row$alias_map_json[[1]],
+          alias_map_hash = feature_row$alias_map_hash[[1]],
+          alias_map_version = feature_row$alias_map_version[[1]],
           master_seed = seed
         ),
         warnings = list()
@@ -179,7 +185,8 @@ ledgr_sweep <- function(exp,
         ledgr_sweep_run_candidate(
           exp = exp,
           run_id = label,
-          params = params,
+          params = strategy_params,
+          feature_params = feature_params,
           execution_seed = execution_seed,
           bars_by_id = bars_by_id,
           bars_mat = bars_mat,
@@ -215,6 +222,9 @@ ledgr_sweep <- function(exp,
             snapshot_hash = meta$snapshot_hash,
             strategy_hash = strategy_hash,
             feature_set_hash = feature_row$feature_set_hash[[1]],
+            alias_map_json = feature_row$alias_map_json[[1]],
+            alias_map_hash = feature_row$alias_map_hash[[1]],
+            alias_map_version = feature_row$alias_map_version[[1]],
             master_seed = seed
           ),
           warnings = warnings
@@ -316,6 +326,7 @@ ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
     run_id = as.character(row$run_id[[1]]),
     status = status,
     params = row$params[[1]],
+    feature_params = if ("feature_params" %in% names(row)) row$feature_params[[1]] else list(),
     execution_seed = as.integer(row$execution_seed[[1]]),
     provenance = row$provenance[[1]],
     row = row,
@@ -342,7 +353,8 @@ ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
 #' @return A committed `ledgr_backtest`.
 #' @details
 #' `ledgr_promote()` commits a selected sweep candidate by calling
-#' [ledgr_run()] with the candidate params and exact `execution_seed`. Runs
+#' [ledgr_run()] with the candidate strategy params, feature params, and exact
+#' `execution_seed`. Runs
 #' created this way store durable promotion context that can be read with
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
 #'
@@ -396,6 +408,7 @@ ledgr_promote <- function(exp,
   bt <- ledgr_run(
     exp = exp,
     params = candidate$params,
+    feature_params = candidate$feature_params %||% list(),
     run_id = run_id,
     seed = seed
   )
@@ -568,6 +581,7 @@ ledgr_generate_sweep_id <- function() {
 ledgr_sweep_run_candidate <- function(exp,
                                       run_id,
                                       params,
+                                      feature_params,
                                       execution_seed,
                                       bars_by_id,
                                       bars_mat,
@@ -633,6 +647,7 @@ ledgr_sweep_run_candidate <- function(exp,
     static_bars_views = static_bars_views,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
+    active_alias_map = candidate$alias_map,
     cost_resolver = cost_resolver,
     event_seq_start = as.integer(nrow(opening_rows)) + 1L,
     telemetry = telemetry,
@@ -660,6 +675,7 @@ ledgr_sweep_run_candidate <- function(exp,
   ledgr_sweep_success_row(
     run_id = run_id,
     params = params,
+    feature_params = feature_params,
     execution_seed = execution_seed,
     final_equity = summary$final_equity,
     metrics = summary$metrics,
@@ -668,6 +684,9 @@ ledgr_sweep_run_candidate <- function(exp,
       snapshot_hash = snapshot_hash,
       strategy_hash = strategy_hash,
       feature_set_hash = candidate_feature_row$feature_set_hash[[1]],
+      alias_map_json = candidate_feature_row$alias_map_json[[1]],
+      alias_map_hash = candidate_feature_row$alias_map_hash[[1]],
+      alias_map_version = candidate_feature_row$alias_map_version[[1]],
       master_seed = master_seed
     ),
     warnings = list()
@@ -912,6 +931,7 @@ ledgr_empty_event_table <- function() {
 
 ledgr_sweep_success_row <- function(run_id,
                                     params,
+                                    feature_params = list(),
                                     execution_seed,
                                     final_equity,
                                     metrics,
@@ -935,6 +955,7 @@ ledgr_sweep_success_row <- function(run_id,
     error_class = NA_character_,
     error_msg = NA_character_,
     params = params,
+    feature_params = feature_params,
     warnings = warnings,
     feature_fingerprints = feature_fingerprints,
     provenance = provenance
@@ -943,6 +964,7 @@ ledgr_sweep_success_row <- function(run_id,
 
 ledgr_sweep_failure_row <- function(run_id,
                                     params,
+                                    feature_params = list(),
                                     execution_seed,
                                     error_class,
                                     error_msg,
@@ -966,6 +988,7 @@ ledgr_sweep_failure_row <- function(run_id,
     error_class = error_class,
     error_msg = error_msg,
     params = params,
+    feature_params = feature_params,
     warnings = warnings,
     feature_fingerprints = feature_fingerprints,
     provenance = provenance
@@ -988,6 +1011,7 @@ ledgr_sweep_row <- function(run_id,
                             error_class,
                             error_msg,
                             params,
+                            feature_params,
                             warnings,
                             feature_fingerprints,
                             provenance) {
@@ -1008,6 +1032,7 @@ ledgr_sweep_row <- function(run_id,
     error_class = error_class,
     error_msg = error_msg,
     params = list(params),
+    feature_params = list(feature_params),
     warnings = list(warnings),
     feature_fingerprints = list(feature_fingerprints),
     provenance = list(provenance)
@@ -1017,12 +1042,18 @@ ledgr_sweep_row <- function(run_id,
 ledgr_sweep_provenance <- function(snapshot_hash,
                                    strategy_hash,
                                    feature_set_hash,
+                                   alias_map_json = NA_character_,
+                                   alias_map_hash = NA_character_,
+                                   alias_map_version = NA_integer_,
                                    master_seed) {
   list(
     provenance_version = "ledgr_provenance_v1",
     snapshot_hash = snapshot_hash,
     strategy_hash = strategy_hash,
     feature_set_hash = feature_set_hash,
+    alias_map_json = alias_map_json,
+    alias_map_hash = alias_map_hash,
+    alias_map_version = alias_map_version,
     master_seed = master_seed,
     seed_contract = "ledgr_seed_v1",
     evaluation_scope = "exploratory"
@@ -1161,7 +1192,11 @@ ledgr_sweep_resolved_from_precomputed <- function(precomputed, param_grid) {
       feature_defs = feature_defs,
       feature_ids = feature_ids,
       fingerprints = fingerprints,
-      feature_set_hash = row$feature_set_hash[[1]]
+      feature_set_hash = row$feature_set_hash[[1]],
+      alias_map = if ("alias_map" %in% names(row)) row$alias_map[[1]] else NULL,
+      alias_map_json = if ("alias_map_json" %in% names(row)) row$alias_map_json[[1]] else NA_character_,
+      alias_map_hash = if ("alias_map_hash" %in% names(row)) row$alias_map_hash[[1]] else NA_character_,
+      alias_map_version = if ("alias_map_version" %in% names(row)) row$alias_map_version[[1]] else NA_integer_
     )
   }
   list(candidates = candidates, candidate_features = precomputed$candidate_features)

@@ -57,6 +57,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
   if (is.null(runtime_projection)) {
     rlang::abort("Fold execution requires `runtime_projection`.", class = "ledgr_invalid_fold_execution")
   }
+  active_alias_map <- ledgr_normalize_alias_map(execution$active_alias_map)
   cost_resolver <- execution$cost_resolver
   event_seq <- execution$event_seq_start
   telemetry <- execution$telemetry
@@ -116,7 +117,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
     ledgr_fast_context_state(
       universe = instrument_ids,
       projection = runtime_projection,
-      feature_ids = def_ids
+      feature_ids = def_ids,
+      active_alias_map = active_alias_map
     )
   } else {
     NULL
@@ -173,7 +175,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           features_wide = features_wide_current,
           positions = state$positions,
           universe = instrument_ids,
-          pulse_idx = i
+          pulse_idx = i,
+          active_alias_map = active_alias_map
         )
       } else {
         ledgr_update_pulse_context_helpers(
@@ -185,7 +188,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           projection = runtime_projection,
           pulse_idx = i,
           feature_ids = def_ids,
-          features_wide = features_wide_current
+          features_wide = features_wide_current,
+          active_alias_map = active_alias_map
         )
       }
 

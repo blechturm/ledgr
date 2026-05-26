@@ -91,12 +91,12 @@ ledgr_feature_accessor <- function(features) {
   }
 }
 
-ledgr_feature_bundle_accessor <- function(features, universe) {
+ledgr_feature_bundle_accessor <- function(features, universe, active_alias_map = NULL) {
   force(features)
   feature <- ledgr_feature_accessor(features)
   universe <- as.character(universe)
 
-  function(instrument_id, feature_map) {
+  function(instrument_id, feature_map = NULL) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
       rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
     }
@@ -111,9 +111,9 @@ ledgr_feature_bundle_accessor <- function(features, universe) {
       )
     }
 
-    ledgr_validate_feature_map_object(feature_map)
+    lookup_map <- ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
 
-    values <- vapply(feature_map$feature_ids, function(feature_id) {
+    values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
       if (!is.numeric(value) || length(value) != 1L) {
         rlang::abort(
@@ -128,7 +128,7 @@ ledgr_feature_bundle_accessor <- function(features, universe) {
       as.numeric(value)
     }, numeric(1))
 
-    stats::setNames(unname(values), names(feature_map$feature_ids))
+    stats::setNames(unname(values), names(lookup_map))
   }
 }
 
@@ -227,7 +227,8 @@ ledgr_attach_feature_helpers <- function(ctx,
                                          projection = NULL,
                                          pulse_idx = NULL,
                                          feature_ids = NULL,
-                                         features_wide = NULL) {
+                                         features_wide = NULL,
+                                         active_alias_map = NULL) {
   if (!is.null(projection)) {
     if (!is.data.frame(features) ||
         (nrow(features) == 0L && length(ledgr_projection_feature_ids(projection, feature_ids)) > 0L)) {
@@ -237,7 +238,13 @@ ledgr_attach_feature_helpers <- function(ctx,
       features_wide <- ledgr_projection_features_wide(projection, pulse_idx, feature_ids = feature_ids)
     }
     feature <- ledgr_projection_feature_accessor(projection, pulse_idx, feature_ids = feature_ids)
-    feature_bundle <- ledgr_projection_feature_bundle_accessor(projection, pulse_idx, universe, feature_ids = feature_ids)
+    feature_bundle <- ledgr_projection_feature_bundle_accessor(
+      projection,
+      pulse_idx,
+      universe,
+      feature_ids = feature_ids,
+      active_alias_map = active_alias_map
+    )
     if (is.environment(ctx)) {
       ctx$feature_table <- features
       ctx$features_wide <- features_wide
@@ -257,14 +264,14 @@ ledgr_attach_feature_helpers <- function(ctx,
     ctx$feature_table <- features
     ctx$features_wide <- ledgr_features_wide(features)
     ctx$feature <- ledgr_feature_accessor(features)
-    ctx$features <- ledgr_feature_bundle_accessor(features, universe)
+    ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
     return(invisible(ctx))
   }
 
   ctx$feature_table <- features
   ctx$features_wide <- ledgr_features_wide(features)
   ctx$feature <- ledgr_feature_accessor(features)
-  ctx$features <- ledgr_feature_bundle_accessor(features, universe)
+  ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
   ctx
 }
 
@@ -276,7 +283,8 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                projection = NULL,
                                                pulse_idx = NULL,
                                                feature_ids = NULL,
-                                               features_wide = NULL) {
+                                               features_wide = NULL,
+                                               active_alias_map = NULL) {
   ctx <- ledgr_ensure_pulse_context_accessors(ctx)
   ctx <- ledgr_attach_feature_helpers(
     ctx,
@@ -285,13 +293,14 @@ ledgr_update_pulse_context_helpers <- function(ctx,
     projection = projection,
     pulse_idx = pulse_idx,
     feature_ids = feature_ids,
-    features_wide = features_wide
+    features_wide = features_wide,
+    active_alias_map = active_alias_map
   )
   ledgr_refresh_pulse_context_lookup(ctx, bars = bars, positions = positions, universe = universe)
   ctx
 }
 
-ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = NULL) {
+ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = NULL, active_alias_map = NULL) {
   lookup <- new.env(parent = emptyenv())
   feature_state <- new.env(parent = emptyenv())
   feature_state$pulse_idx <- 1L
@@ -309,7 +318,8 @@ ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = 
       projection,
       feature_state,
       universe = universe,
-      feature_ids = feature_ids
+      feature_ids = feature_ids,
+      active_alias_map = active_alias_map
     )
   }
   out
@@ -322,7 +332,8 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
                                                     features_wide = if (is.data.frame(ctx$features_wide)) ctx$features_wide else NULL,
                                                     positions = ctx$positions,
                                                     universe = ctx$universe,
-                                                    pulse_idx = NULL) {
+                                                    pulse_idx = NULL,
+                                                    active_alias_map = NULL) {
   for (name in names(fast_context$helpers)) {
     ctx[[name]] <- fast_context$helpers[[name]]
   }
@@ -342,7 +353,7 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
     ctx$feature <- fast_context$feature
     ctx$features <- fast_context$features
   } else {
-    ctx <- ledgr_attach_feature_helpers(ctx, features, universe = universe)
+    ctx <- ledgr_attach_feature_helpers(ctx, features, universe = universe, active_alias_map = active_alias_map)
   }
 
   ledgr_refresh_pulse_context_lookup(ctx, bars = bars, positions = positions, universe = universe)

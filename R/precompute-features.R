@@ -303,11 +303,19 @@ ledgr_resolve_feature_candidates <- function(exp, param_grid, stop_on_error = FA
   feature_ids <- vector("list", length(param_grid$params))
   feature_fingerprints <- vector("list", length(param_grid$params))
   feature_set_hashes <- character(length(param_grid$params))
+  feature_params <- vector("list", length(param_grid$params))
+  strategy_params <- vector("list", length(param_grid$params))
+  alias_maps <- vector("list", length(param_grid$params))
+  alias_map_json <- character(length(param_grid$params))
+  alias_map_hash <- character(length(param_grid$params))
+  alias_map_version <- integer(length(param_grid$params))
   for (i in seq_along(param_grid$params)) {
     params <- param_grid$params[[i]]
     label <- param_grid$labels[[i]]
     candidate_labels[[i]] <- label
     params_hashes[[i]] <- ledgr_strategy_params_info(params)$hash
+    feature_params[[i]] <- ledgr_grid_candidate_feature_params(params)
+    strategy_params[[i]] <- ledgr_grid_candidate_strategy_params(params)
     resolved <- tryCatch(
       ledgr_resolve_candidate_features(exp, params, label),
       error = function(e) {
@@ -325,6 +333,10 @@ ledgr_resolve_feature_candidates <- function(exp, param_grid, stop_on_error = FA
       feature_ids[[i]] <- character()
       feature_fingerprints[[i]] <- character()
       feature_set_hashes[[i]] <- NA_character_
+      alias_maps[i] <- list(NULL)
+      alias_map_json[[i]] <- NA_character_
+      alias_map_hash[[i]] <- NA_character_
+      alias_map_version[[i]] <- NA_integer_
     } else {
       candidates[[i]] <- resolved
       statuses[[i]] <- "ok"
@@ -333,6 +345,10 @@ ledgr_resolve_feature_candidates <- function(exp, param_grid, stop_on_error = FA
       feature_ids[[i]] <- resolved$feature_ids
       feature_fingerprints[[i]] <- resolved$fingerprints
       feature_set_hashes[[i]] <- resolved$feature_set_hash
+      alias_maps[i] <- list(resolved$alias_map)
+      alias_map_json[[i]] <- resolved$alias_map_json
+      alias_map_hash[[i]] <- resolved$alias_map_hash
+      alias_map_version[[i]] <- resolved$alias_map_version
     }
   }
   list(
@@ -343,20 +359,26 @@ ledgr_resolve_feature_candidates <- function(exp, param_grid, stop_on_error = FA
       status = statuses,
       error_class = error_classes,
       error_msg = error_msgs,
+      feature_params = feature_params,
+      params = strategy_params,
       feature_ids = feature_ids,
       feature_fingerprints = feature_fingerprints,
-      feature_set_hash = feature_set_hashes
+      feature_set_hash = feature_set_hashes,
+      alias_map = alias_maps,
+      alias_map_json = alias_map_json,
+      alias_map_hash = alias_map_hash,
+      alias_map_version = alias_map_version
     )
   )
 }
 
 ledgr_resolve_candidate_features <- function(exp, params, candidate_label = NULL) {
-  features <- ledgr_experiment_materialize_features(
+  feature_result <- ledgr_experiment_materialize_feature_result(
     exp,
     params = ledgr_grid_candidate_strategy_params(params),
     feature_params = ledgr_grid_candidate_feature_params(params)
   )
-  feature_defs <- ledgr_precompute_feature_defs_from_indicators(features)
+  feature_defs <- ledgr_precompute_feature_defs_from_indicators(feature_result$features)
   fingerprints <- unname(vapply(feature_defs, ledgr_feature_def_fingerprint, character(1)))
   feature_ids <- unname(vapply(feature_defs, function(def) def$id, character(1)))
   list(
@@ -365,7 +387,11 @@ ledgr_resolve_candidate_features <- function(exp, params, candidate_label = NULL
     feature_defs = feature_defs,
     feature_ids = feature_ids,
     fingerprints = fingerprints,
-    feature_set_hash = ledgr_feature_set_hash(fingerprints)
+    feature_set_hash = ledgr_feature_set_hash(fingerprints),
+    alias_map = feature_result$alias_map,
+    alias_map_json = feature_result$alias_map_json,
+    alias_map_hash = feature_result$alias_map_hash,
+    alias_map_version = feature_result$alias_map_version
   )
 }
 

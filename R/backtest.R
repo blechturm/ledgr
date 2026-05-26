@@ -281,8 +281,9 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #' builds the canonical backtest config, and delegates to the shared runner.
 #'
 #' @param exp A `ledgr_experiment` object.
-#' @param params JSON-safe list passed to `function(ctx, params)` strategy and
-#'   `function(params)` feature definitions.
+#' @param params JSON-safe list passed to `function(ctx, params)` strategy.
+#' @param feature_params JSON-safe list used to resolve parameterized feature
+#'   declarations before execution.
 #' @param run_id Optional run identifier.
 #' @param seed Optional integer-like execution seed. When non-`NULL`, ledgr
 #'   applies it at fold entry and stores it in run identity.
@@ -316,25 +317,33 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #' close(bt)
 #' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_run <- function(exp, params = list(), run_id = NULL, seed = NULL) {
+ledgr_run <- function(exp, params = list(), feature_params = list(), run_id = NULL, seed = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
   if (!is.list(params) || is.data.frame(params)) {
     rlang::abort("`params` must be a list. Use `params = list()` when the strategy has no parameters.", class = "ledgr_invalid_args")
   }
-  ledgr_run_experiment(exp = exp, params = params, run_id = run_id, seed = seed)
+  if (!is.list(feature_params) || is.data.frame(feature_params)) {
+    rlang::abort("`feature_params` must be a list. Use `feature_params = list()` when features have no parameters.", class = "ledgr_invalid_args")
+  }
+  ledgr_run_experiment(exp = exp, params = params, feature_params = feature_params, run_id = run_id, seed = seed)
 }
 
-ledgr_run_experiment <- function(exp, params = list(), run_id = NULL, seed = NULL) {
+ledgr_run_experiment <- function(exp, params = list(), feature_params = list(), run_id = NULL, seed = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
   params_info <- ledgr_strategy_params_info(params)
+  feature_params_info <- ledgr_strategy_params_info(feature_params)
   if (!is.null(run_id) && (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id))) {
     rlang::abort("`run_id` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
   }
-  features <- ledgr_experiment_materialize_features(exp, params_info$value)
+  feature_result <- ledgr_experiment_materialize_feature_result(
+    exp,
+    params = params_info$value,
+    feature_params = feature_params_info$value
+  )
   start <- if (!is.null(exp$opening$date)) exp$opening$date else exp$snapshot$metadata$start_date
   end <- exp$snapshot$metadata$end_date
   if (is.null(start) || is.null(end) || anyNA(c(start, end))) {
@@ -346,8 +355,10 @@ ledgr_run_experiment <- function(exp, params = list(), run_id = NULL, seed = NUL
     universe = exp$universe,
     strategy = exp$strategy,
     strategy_params = params_info$value,
+    feature_params = feature_params_info$value,
     backtest = ledgr_backtest_config(start = start, end = end, initial_cash = exp$opening$cash),
-    features = features,
+    features = feature_result$features,
+    alias_map = feature_result$alias_map,
     persist_features = exp$persist_features,
     execution_mode = exp$execution_mode,
     fill_model = exp$fill_model,
@@ -759,6 +770,8 @@ ledgr_config <- function(snapshot,
                          strategy_params = list(),
                          backtest,
                          features = list(),
+                         feature_params = list(),
+                         alias_map = NULL,
                          persist_features = TRUE,
                          execution_mode = "audit_log",
                          checkpoint_every = 10000L,
@@ -829,6 +842,8 @@ ledgr_config <- function(snapshot,
   }
 
   strategy_params_info <- ledgr_strategy_params_info(strategy_params)
+  feature_params_info <- ledgr_strategy_params_info(feature_params)
+  alias_map_info <- ledgr_alias_map_storage(alias_map)
   strat <- ledgr_strategy_spec(strategy)
   opening <- ledgr_config_normalize_opening(opening, backtest$initial_cash)
 
@@ -879,6 +894,12 @@ ledgr_config <- function(snapshot,
     strategy_params = strategy_params_info$value,
     strategy_params_json = strategy_params_info$json,
     strategy_params_hash = strategy_params_info$hash,
+    feature_params = feature_params_info$value,
+    feature_params_json = feature_params_info$json,
+    feature_params_hash = feature_params_info$hash,
+    alias_map_json = alias_map_info$alias_map_json,
+    alias_map_hash = alias_map_info$alias_map_hash,
+    alias_map_version = alias_map_info$alias_map_version,
     opening = opening,
     data = list(
       source = "snapshot",

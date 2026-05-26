@@ -195,7 +195,7 @@ testthat::test_that("feature maps are copied into experiments at construction", 
   testthat::expect_identical(exp$features$feature_ids, c(signal = "sma_2"))
 })
 
-testthat::test_that("feature maps preserve feature-related config hash identity", {
+testthat::test_that("feature maps preserve concrete feature-set identity while aliases affect config hash", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -227,6 +227,7 @@ testthat::test_that("feature maps preserve feature-related config hash identity"
     opening = exp_list$opening,
     seed = NULL
   )
+  feature_map_result <- ledgr_experiment_materialize_feature_result(exp_map, list(), feature_params = list())
   cfg_map <- ledgr_config(
     snapshot = snapshot,
     universe = exp_map$universe,
@@ -236,7 +237,8 @@ testthat::test_that("feature maps preserve feature-related config hash identity"
       end = snapshot$metadata$end_date,
       initial_cash = exp_map$opening$cash
     ),
-    features = ledgr_experiment_materialize_features(exp_map, list()),
+    features = feature_map_result$features,
+    alias_map = feature_map_result$alias_map,
     persist_features = exp_map$persist_features,
     execution_mode = exp_map$execution_mode,
     fill_model = exp_map$fill_model,
@@ -245,5 +247,12 @@ testthat::test_that("feature maps preserve feature-related config hash identity"
     seed = NULL
   )
 
-  testthat::expect_identical(config_hash(cfg_map), config_hash(cfg_list))
+  list_fingerprints <- vapply(cfg_list$features$defs, `[[`, character(1), "fingerprint")
+  map_fingerprints <- vapply(cfg_map$features$defs, `[[`, character(1), "fingerprint")
+  testthat::expect_identical(
+    ledgr_feature_set_hash(list_fingerprints),
+    ledgr_feature_set_hash(map_fingerprints)
+  )
+  testthat::expect_false(identical(config_hash(cfg_map), config_hash(cfg_list)))
+  testthat::expect_match(cfg_map$alias_map_hash, "^[0-9a-f]{64}$")
 })

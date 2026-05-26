@@ -28,7 +28,9 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
     names(precomputed$candidate_features),
     c(
       "candidate_label", "params_hash", "status", "error_class", "error_msg",
-      "feature_ids", "feature_fingerprints", "feature_set_hash"
+      "feature_params", "params", "feature_ids", "feature_fingerprints",
+      "feature_set_hash", "alias_map", "alias_map_json", "alias_map_hash",
+      "alias_map_version"
     )
   )
   testthat::expect_identical(precomputed$candidate_features$status, c("ok", "ok"))
