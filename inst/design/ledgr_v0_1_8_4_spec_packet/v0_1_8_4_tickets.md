@@ -297,7 +297,7 @@ scope: active_alias_materialization
 Priority: P1
 Effort: L
 Dependencies: LDG-2421
-Status: Todo
+Status: Done
 
 ### Description
 
@@ -338,6 +338,25 @@ parameters in separate namespaces while producing executable sweep candidates.
 Targeted grid-helper tests for construction, labels, filters, omitted-grid
 behavior, class inheritance, duplicate failures, and executable candidate
 shape.
+
+### Completion Notes
+
+- Added `ledgr_feature_grid()`, `ledgr_strategy_grid()`,
+  `ledgr_grid_cross()`, `ledgr_grid_named()`, and
+  `ledgr_grid_add_baseline()`.
+- Kept `ledgr_feature_grid()` distinct from `ledgr_param_grid` so feature rows
+  cannot be accidentally passed as strategy params.
+- Made `ledgr_strategy_grid()` inherit from `ledgr_param_grid` for existing
+  strategy-grid compatibility.
+- Made executable grids inherit from `ledgr_param_grid` while storing nested
+  `feature_params` and `strategy_params` namespaces per candidate.
+- Added narrow `.filter` validation with classed failures for unsupported
+  symbols, global-state reads, invalid lengths, and `NA` outputs.
+- Added omitted-grid handling, named executable candidates, baseline appends,
+  duplicate-label checks, and feature-resolution integration for executable
+  grid feature params.
+- Verified with grid-helper, param-grid, API export, feature-map, precompute,
+  sweep, and documentation-contract targeted tests.
 
 ### Source Reference
 

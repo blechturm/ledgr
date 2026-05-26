@@ -351,7 +351,11 @@ ledgr_resolve_feature_candidates <- function(exp, param_grid, stop_on_error = FA
 }
 
 ledgr_resolve_candidate_features <- function(exp, params, candidate_label = NULL) {
-  features <- ledgr_experiment_materialize_features(exp, params)
+  features <- ledgr_experiment_materialize_features(
+    exp,
+    params = ledgr_grid_candidate_strategy_params(params),
+    feature_params = ledgr_grid_candidate_feature_params(params)
+  )
   feature_defs <- ledgr_precompute_feature_defs_from_indicators(features)
   fingerprints <- unname(vapply(feature_defs, ledgr_feature_def_fingerprint, character(1)))
   feature_ids <- unname(vapply(feature_defs, function(def) def$id, character(1)))

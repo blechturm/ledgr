@@ -53,7 +53,7 @@ tickets:
 
   - id: "LDG-2424"
     title: "Feature, Strategy, And Executable Grid Helpers"
-    status: "todo"
+    status: "done"
     priority: "P1"
     effort: "L"
     dependencies:
