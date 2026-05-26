@@ -26,6 +26,22 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-05-26 [execution] Accepted OMS direction and intraday-safe target-decision storage
+
+The accepted OMS synthesis is
+`inst/design/rfc/rfc_ledgr_oms_seed_synthesis.md`. It binds a future v0.2.x
+two-stream design: `order_events` records engine-owned order lifecycle, while
+`ledger_events` remains accounting truth. The strategy contract stays
+`function(ctx, params) -> full named numeric target vector`; paper/live adapters
+remain deferred to v0.3.0+; and no sweep-to-live path is allowed.
+
+The important long-horizon storage lesson is that target-decision persistence
+must bind identity and reconstructability, not a universal full-JSON payload per
+decision row. First EOD implementations may store full vectors directly, but
+intraday-compatible designs need retention-dependent, batchable, and
+potentially deduplicated/sparse/columnar/payload-reference storage without
+destructive migration from the EOD shape.
+
 ### 2026-05-25 [infrastructure] Pre-CRAN compatibility policy
 
 Until ledgr is released on CRAN, stored artifacts, database schemas, config

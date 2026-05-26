@@ -115,6 +115,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
 | Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4 sweep authoring ergonomics | Accepted |
 | Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
+| OMS semantics and order lifecycle | `rfc/rfc_ledgr_oms_seed_synthesis.md` | v0.2.x OMS data-model and lifecycle planning; paper/live deferred | Accepted |
 
 ## RFCs
 
@@ -149,6 +150,9 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_chainable_risk_oms_policy_boundary_response.md`
 - `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`
 - `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`
+- `rfc/rfc_ledgr_oms_seed.md`
+- `rfc/rfc_ledgr_oms_seed_response.md`
+- `rfc/rfc_ledgr_oms_seed_synthesis.md`
 - `rfc/rfc_indicator_codebase_simplification_v0_1_8_x.md`
 - `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_response.md`
 - `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`
@@ -193,6 +197,12 @@ OMS semantics. The execution-policy north-star RFC carries the broader
 pipeline and audit-signal discussion for v0.1.9.x/v0.2.x planning; it is not
 binding implementation scope until promoted through synthesis or a future spec
 packet.
+The OMS seed synthesis accepts a future v0.2.x two-stream design: `order_events`
+for engine-owned order lifecycle beside the existing accounting `ledger_events`
+stream. Strategies remain target-vector functions, paper/live adapters remain
+deferred to v0.3.0+, and intraday compatibility is preserved by binding
+target-decision identity/reconstructability rather than a universal
+full-JSON-per-decision storage shape.
 The indicator codebase simplification synthesis accepted a Phase 1
 determinism-extraction refactor completed in v0.1.8.1; the v0.1.8.2 roadmap
 entry carries the Phase 2 file/role cleanup (indicator file renames plus the
