@@ -1,0 +1,856 @@
+﻿summary:
+  episodes_reviewed: 30
+  feedback_items_reviewed: 87
+  high_priority_count: 3
+  unresolved_uncertainty:
+    - "Two episodes had incomplete diagnostics with empty feedback lists; no items were created from diagnostics alone."
+    - "Identity-hash rows in episode 2026-05-26_029 conflict with the task expectation, but intended hash semantics require maintainer judgment."
+    - "Parameterized bundle sweep failures in episode 2026-05-26_030 need a maintainer decision on whether the observed shape is supported API or a documentation overreach."
+themes:
+  - theme_id: THEME-001
+    title: "Beginner docs and runnable examples"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-26_001_cold_start_readme", "2026-05-26_002_cold_start_getting_started", "2026-05-26_003_single_asset_sma_crossover", "2026-05-26_004_multi_asset_momentum", "2026-05-26_005_edge_case_ten_bars", "2026-05-26_006_close_lifecycle", "2026-05-26_007_help_page_discoverability", "2026-05-26_010_mixed_builtin_ttr_feature_map", "2026-05-26_014_sweep_basic_candidate_promotion", "2026-05-26_017_sweep_precomputed_features", "2026-05-26_018_sweep_seed_and_promotion_context", "2026-05-26_022_inspection_surfaces_map", "2026-05-26_023_adversarial_preflight_v0_1_8_2_additions", "2026-05-26_025_active_alias_end_to_end"]
+    feedback_ids: ["2026-05-26_001_cold_start_readme/FB-001", "2026-05-26_001_cold_start_readme/FB-002", "2026-05-26_001_cold_start_readme/FB-003", "2026-05-26_002_cold_start_getting_started/FB-001", "2026-05-26_003_single_asset_sma_crossover/FB-002", "2026-05-26_004_multi_asset_momentum/FB-001", "2026-05-26_005_edge_case_ten_bars/FB-002", "2026-05-26_006_close_lifecycle/FB-001", "2026-05-26_006_close_lifecycle/FB-002", "2026-05-26_007_help_page_discoverability/FB-001", "2026-05-26_007_help_page_discoverability/FB-002", "2026-05-26_007_help_page_discoverability/FB-003", "2026-05-26_010_mixed_builtin_ttr_feature_map/FB-002", "2026-05-26_014_sweep_basic_candidate_promotion/FB-001", "2026-05-26_017_sweep_precomputed_features/FB-001", "2026-05-26_018_sweep_seed_and_promotion_context/FB-001", "2026-05-26_022_inspection_surfaces_map/FB-001", "2026-05-26_023_adversarial_preflight_v0_1_8_2_additions/FB-001", "2026-05-26_025_active_alias_end_to_end/FB-004", "2026-05-26_025_active_alias_end_to_end/FB-005"]
+    evidence: "Multiple cold-start, help-navigation, lifecycle, warning, and runnable-script rows report that users can complete tasks only after inferring the maintained path, interpreting expected warnings, or locating unstated runnable scripts."
+    recommended_action: "Consolidate the first-run path, mark expected warning output, keep vignette scripts runnable, and add direct help-page links from core execution topics to the relevant articles and scripts."
+    uncertainty: "Some rows are low severity and resolved by the first-pass agent; group as documentation polish unless maintainers decide a specific example is a release gate."
+  - theme_id: THEME-002
+    title: "Feature map and alias inspection"
+    bucket: missing_api
+    severity: medium
+    episode_ids: ["2026-05-26_003_single_asset_sma_crossover", "2026-05-26_005_edge_case_ten_bars", "2026-05-26_008_feature_map_strategy_authoring", "2026-05-26_009_pulse_inspection_views", "2026-05-26_011_multi_lookback_pre_registration", "2026-05-26_012_ctx_features_discoverability", "2026-05-26_016_sweep_feature_factory", "2026-05-26_019_multi_output_indicator_bundles", "2026-05-26_025_active_alias_end_to_end", "2026-05-26_028_alias_aware_pulse_inspection", "2026-05-26_029_alias_identity_and_declaration_order", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"]
+    feedback_ids: ["2026-05-26_003_single_asset_sma_crossover/FB-001", "2026-05-26_005_edge_case_ten_bars/FB-001", "2026-05-26_008_feature_map_strategy_authoring/FB-001", "2026-05-26_008_feature_map_strategy_authoring/FB-002", "2026-05-26_009_pulse_inspection_views/FB-001", "2026-05-26_009_pulse_inspection_views/FB-002", "2026-05-26_011_multi_lookback_pre_registration/FB-001", "2026-05-26_011_multi_lookback_pre_registration/FB-002", "2026-05-26_011_multi_lookback_pre_registration/FB-003", "2026-05-26_012_ctx_features_discoverability/FB-001", "2026-05-26_012_ctx_features_discoverability/FB-002", "2026-05-26_016_sweep_feature_factory/FB-002", "2026-05-26_019_multi_output_indicator_bundles/FB-001", "2026-05-26_019_multi_output_indicator_bundles/FB-002", "2026-05-26_025_active_alias_end_to_end/FB-001", "2026-05-26_028_alias_aware_pulse_inspection/FB-001", "2026-05-26_028_alias_aware_pulse_inspection/FB-002", "2026-05-26_028_alias_aware_pulse_inspection/FB-003", "2026-05-26_028_alias_aware_pulse_inspection/FB-004", "2026-05-26_029_alias_identity_and_declaration_order/FB-005", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-002", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-003", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-006", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-007"]
+    evidence: "Rows repeatedly show friction around ctx$features forms, active alias maps, unresolved parameterized feature maps, pulse views, bundle outputs, and alias/casing conventions."
+    recommended_action: "Document one canonical active-alias workflow from parameter declaration through contract inspection, pulse views, strategy access, run identity, and bundle output naming; add classed errors for unresolved maps."
+    uncertainty: "Some rows request API support while others request clearer documentation; maintainers should decide which gaps are public-contract changes."
+  - theme_id: THEME-003
+    title: "Sweep grids and result schema"
+    bucket: docs_gap
+    severity: medium
+    episode_ids: ["2026-05-26_014_sweep_basic_candidate_promotion", "2026-05-26_016_sweep_feature_factory", "2026-05-26_017_sweep_precomputed_features", "2026-05-26_018_sweep_seed_and_promotion_context", "2026-05-26_021_final_bar_no_fill_warning", "2026-05-26_022_inspection_surfaces_map", "2026-05-26_027_executable_grid_composition", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"]
+    feedback_ids: ["2026-05-26_014_sweep_basic_candidate_promotion/FB-002", "2026-05-26_014_sweep_basic_candidate_promotion/FB-003", "2026-05-26_014_sweep_basic_candidate_promotion/FB-004", "2026-05-26_016_sweep_feature_factory/FB-001", "2026-05-26_016_sweep_feature_factory/FB-003", "2026-05-26_017_sweep_precomputed_features/FB-003", "2026-05-26_017_sweep_precomputed_features/FB-004", "2026-05-26_018_sweep_seed_and_promotion_context/FB-002", "2026-05-26_021_final_bar_no_fill_warning/FB-001", "2026-05-26_022_inspection_surfaces_map/FB-002", "2026-05-26_022_inspection_surfaces_map/FB-003", "2026-05-26_027_executable_grid_composition/FB-001", "2026-05-26_027_executable_grid_composition/FB-002", "2026-05-26_027_executable_grid_composition/FB-003", "2026-05-26_027_executable_grid_composition/FB-004", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-004"]
+    evidence: "Sweep episodes report missing candidate schema examples, unclear legacy versus executable grid row shapes, ambiguous grid composition, and sparse promotion/result-column documentation."
+    recommended_action: "Add a sweep schema reference with executable-grid and legacy-grid examples, candidate summary structure, result columns, precompute labels, and promotion comparison guidance."
+    uncertainty: "Legacy flat-grid behavior may be intentionally retained; documentation should make that compatibility boundary explicit."
+  - theme_id: THEME-004
+    title: "Preflight and error clarity"
+    bucket: ledgr_bug
+    severity: medium
+    episode_ids: ["2026-05-26_008_feature_map_strategy_authoring", "2026-05-26_011_multi_lookback_pre_registration", "2026-05-26_017_sweep_precomputed_features", "2026-05-26_020_adversarial_preflight_and_force_override", "2026-05-26_021_final_bar_no_fill_warning", "2026-05-26_024_adversarial_preflight_indirection_bypass", "2026-05-26_026_two_namespace_contract_errors", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"]
+    feedback_ids: ["2026-05-26_008_feature_map_strategy_authoring/FB-003", "2026-05-26_011_multi_lookback_pre_registration/FB-001", "2026-05-26_017_sweep_precomputed_features/FB-003", "2026-05-26_020_adversarial_preflight_and_force_override/FB-001", "2026-05-26_020_adversarial_preflight_and_force_override/FB-002", "2026-05-26_020_adversarial_preflight_and_force_override/FB-003", "2026-05-26_021_final_bar_no_fill_warning/FB-001", "2026-05-26_024_adversarial_preflight_indirection_bypass/FB-001", "2026-05-26_026_two_namespace_contract_errors/FB-001", "2026-05-26_026_two_namespace_contract_errors/FB-002", "2026-05-26_026_two_namespace_contract_errors/FB-003", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-001", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-002", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-005"]
+    evidence: "Rows include low-level replacement/subscript/vapply errors, unknown-feature messages that omit the fix, and preflight examples that conflict with observed tier classification."
+    recommended_action: "Tighten classed errors and teaching examples for namespace mistakes, missing active aliases, unresolved features, preflight tiers, and parameterized bundle support boundaries."
+    uncertainty: "Some failures are expected user errors, but the evidence supports improving messages before labeling them user mistakes."
+  - theme_id: THEME-005
+    title: "Identity hash contract"
+    bucket: unclear
+    severity: high
+    episode_ids: ["2026-05-26_025_active_alias_end_to_end", "2026-05-26_029_alias_identity_and_declaration_order"]
+    feedback_ids: ["2026-05-26_025_active_alias_end_to_end/FB-002", "2026-05-26_025_active_alias_end_to_end/FB-003", "2026-05-26_029_alias_identity_and_declaration_order/FB-001", "2026-05-26_029_alias_identity_and_declaration_order/FB-002", "2026-05-26_029_alias_identity_and_declaration_order/FB-003", "2026-05-26_029_alias_identity_and_declaration_order/FB-004"]
+    evidence: "Identity episodes found missing single-run feature/alias hash surfaces and observed config_hash or alias_map_hash changes where the task expected invariance."
+    recommended_action: "Decide whether config_hash and alias_map_hash represent artifact identity or configuration equivalence, then expose/document the corresponding hashes consistently on run and sweep surfaces."
+    uncertainty: "Raw evidence supports the observations, but the intended hash semantics require maintainer decision before marking implementation incorrect."
+  - theme_id: THEME-006
+    title: "Episode environment friction"
+    bucket: expected_user_error
+    severity: low
+    episode_ids: ["2026-05-26_001_cold_start_readme", "2026-05-26_007_help_page_discoverability", "2026-05-26_010_mixed_builtin_ttr_feature_map", "2026-05-26_011_multi_lookback_pre_registration", "2026-05-26_017_sweep_precomputed_features", "2026-05-26_019_multi_output_indicator_bundles", "2026-05-26_020_adversarial_preflight_and_force_override", "2026-05-26_025_active_alias_end_to_end", "2026-05-26_026_two_namespace_contract_errors"]
+    feedback_ids: ["2026-05-26_001_cold_start_readme/FB-004", "2026-05-26_007_help_page_discoverability/FB-004", "2026-05-26_010_mixed_builtin_ttr_feature_map/FB-001", "2026-05-26_011_multi_lookback_pre_registration/FB-004", "2026-05-26_017_sweep_precomputed_features/FB-005", "2026-05-26_019_multi_output_indicator_bundles/FB-003", "2026-05-26_020_adversarial_preflight_and_force_override/FB-004", "2026-05-26_025_active_alias_end_to_end/FB-006", "2026-05-26_026_two_namespace_contract_errors/FB-004", "2026-05-26_026_two_namespace_contract_errors/FB-005"]
+    evidence: "Several rows are about safe.directory ownership, PowerShell quoting/globbing, locked logs, or task metadata rather than ledgr behavior."
+    recommended_action: "Keep these first-class for episode harness hardening, but route separately from ledgr documentation or implementation work."
+    uncertainty: "These should not become ledgr issues unless a maintainer intentionally broadens the documentation scope to shell-runner guidance."
+  - theme_id: THEME-007
+    title: "Parameterized bundle sweep blockers"
+    bucket: ledgr_bug
+    severity: high
+    episode_ids: ["2026-05-26_030_parameterized_bundle_outputs_in_sweeps"]
+    feedback_ids: ["2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-001", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-002", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-003", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-004", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-005", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-006", "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-007"]
+    evidence: "The final bundle episode was blocked by ledgr_experiment rejecting parameterized bundle outputs and by factory-sweep ID collisions, with adjacent documentation gaps on suffixes, factory routing, required input, and pctb casing."
+    recommended_action: "Treat the rejected active-alias bundle map and factory collision as high-priority contract decisions; update examples and error messages around the chosen support boundary."
+    uncertainty: "Evidence shows failures, but maintainers must decide whether direct parameterized bundle sweeps are supported API or documentation overreach."
+items:
+  - feedback_id: "2026-05-26_001_cold_start_readme/FB-001"
+    episode_id: "2026-05-26_001_cold_start_readme"
+    title: "Installed package has no obvious top-level README first-run example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "For a task framed as running the README example, the installed documentation snapshot did not list a top-level README. It listed `examples/README.md`, but that file says it is not a user-facing first-run path and redirects to vignettes. The correct first-run path had to be inferred from `?ledgr-package` and the getting-started vignette. Evidence: raw_logs/ledgr_doc_snapshot.md; installed ledgr/examples/README.md says `This directory is not a user-facing first-run path.`"
+    recommended_action: "Ship or expose an installed README/package overview that directly says `Start here: vignette('getting-started', package = 'ledgr')` and identifies it as the maintained first complete example."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_001_cold_start_readme/FB-002"
+    episode_id: "2026-05-26_001_cold_start_readme"
+    title: "Getting-started first-run example depends on suggested tidyverse helpers"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The maintained first-run example attaches `dplyr` and `tibble` before any ledgr workflow code. The vignette says those packages are suggested helpers rather than part of the strategy contract, but it does not provide a ledgr-only or base R cold-start version. Evidence: LEDGR_DOCS/scripts/getting-started.R attaches `library(dplyr)` and `library(tibble)`; raw_logs/getting_started_full_status.json shows the script worked in this episode because those packages were available."
+    recommended_action: "Add a minimal cold-start code block to the getting-started vignette that uses only ledgr and base R, or add an explicit prerequisites line for the suggested packages used by the runnable vignette script."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_001_cold_start_readme/FB-003"
+    episode_id: "2026-05-26_001_cold_start_readme"
+    title: "Cleanup pattern in getting-started is unclear for copied scripts"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The getting-started workflow introduces `on.exit(close(bt), add = TRUE)` after the first run, then later performs explicit final cleanup with `close(bt)`, `close(bt_qty_20)`, and `ledgr_snapshot_close(snapshot)`. As a first-time user copying pieces into a script, it was unclear whether closing the same object twice is expected, harmless, or only safe in this particular flow. Evidence: raw_logs/getting_started_full_status.json exit_status 0; cleanup calls appear in LEDGR_DOCS/scripts/getting-started.R."
+    recommended_action: "Clarify the recommended cleanup pattern for short scripts versus long sessions, and document whether `close()`/`ledgr_snapshot_close()` are intentionally idempotent."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_001_cold_start_readme/FB-004"
+    episode_id: "2026-05-26_001_cold_start_readme"
+    title: "Git status is blocked by safe-directory ownership check"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "A final `git status --short` check failed because Git considered `C:/Users/maxth/Documents/GitHub/auditr` unsafe due to ownership. Evidence: fatal: unsafe repository ('C:/Users/maxth/Documents/GitHub/auditr' is owned by someone else)"
+    recommended_action: "Configure the repository with `git config --global --add safe.directory C:/Users/maxth/Documents/GitHub/auditr` in the episode environment when Git status checks are expected."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_002_cold_start_getting_started/FB-001"
+    episode_id: "2026-05-26_002_cold_start_getting_started"
+    title: "Rendered getting-started output has stale config hash"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "The durable store section in the rendered getting-started vignette prints a specific Config Hash value for `ledgr_run_info()`, but running the prepared getting-started script against installed ledgr 0.1.8.4 produced a different Config Hash for the same documented workflow. Evidence: `LEDGR_DOCS/getting-started.md` shows Config Hash `b139f3a801fe93150b00e888a47631adb4e290ea6ec68712d01e97855bc50464`; the observed run in `raw_logs/vignette_getting_started_stdout.txt` printed `5611eb42e280acd26e911d0677f705f256222c809fad3ca9c23a8050133d2b01`."
+    recommended_action: "Re-render the vignette with ledgr 0.1.8.4 if the hash should be stable, or redact exact hash values in rendered examples and add a short note that identity hashes may differ across package versions or configuration changes."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_003_single_asset_sma_crossover/FB-001"
+    episode_id: "2026-05-26_003_single_asset_sma_crossover"
+    title: "No direct documented contract inspection path for active-alias feature parameters"
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: "The active-alias workflow uses feature_params in ledgr_run() and ledgr_pulse_snapshot(), so I expected ledgr_feature_contracts() to accept the same feature_params argument for inspecting the concrete fast and slow SMA contracts before running. It failed with an unused-argument error. Evidence: raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Document the recommended way to materialize or inspect active-alias feature contracts for one feature_params set, or add a feature_params argument to ledgr_feature_contracts() if that fits the API."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_003_single_asset_sma_crossover/FB-002"
+    episode_id: "2026-05-26_003_single_asset_sma_crossover"
+    title: "summary(bt) is easy to double-print in scripts"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "In a scripted run I wrapped summary(bt) in print(), which printed the ledgr summary and then printed the returned backtest object as a second block. The help page explains that the input backtest is returned invisibly, but the examples do not warn script authors not to wrap summary(bt) in print(). Evidence: raw_logs/reproducible_script_iter2_stdout.txt"
+    recommended_action: "Add a short note near summary examples that summary(bt) prints output directly and ledgr_compute_metrics() should be used when a structured metric object is needed."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_004_multi_asset_momentum/FB-001"
+    episode_id: "2026-05-26_004_multi_asset_momentum"
+    title: "Last-bar no-fill warning can look like a failed run in first examples"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The completed two-asset momentum run exited with status 0 and produced valid results, but stderr contained `LEDGR_LAST_BAR_NO_FILL`. As a first-time user reviewing captured episode logs, seeing a warning in stderr made it less obvious whether the task should be considered successful. Evidence: raw_logs/final_reproducible_script_stderr.txt"
+    recommended_action: "Add a short note near the helper-pipeline backtest examples explaining when `LEDGR_LAST_BAR_NO_FILL` is expected noise for examples and when users should extend the snapshot or change final-pulse behavior."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_005_edge_case_ten_bars/FB-001"
+    episode_id: "2026-05-26_005_edge_case_ten_bars"
+    title: "ledgr_feature_contracts fails opaquely on parameterized feature maps"
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: "The documented getting-started feature map uses ledgr_param() for SMA windows. Calling ledgr_feature_contracts() on that feature map failed with a low-level vapply() length error before I could inspect required bars. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add validation for unresolved ledgr_param() values in ledgr_feature_contracts(), return a ledgr classed error, and document the recommended contract-inspection path for parameterized feature maps."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_005_edge_case_ten_bars/FB-002"
+    episode_id: "2026-05-26_005_edge_case_ten_bars"
+    title: "Impossible warmup is only visible after calling summary"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Running the documented SMA crossover on 10 bars with slow_n = 40 emitted zero warnings and printed as a completed backtest with unchanged equity. The useful message appeared only in summary() as Warmup Diagnostics. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add a short zero-fill troubleshooting note to ?ledgr_run and the getting-started SMA example, or expose impossible-warmup diagnostics as a structured accessor or run-info field in addition to summary() printing."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_006_close_lifecycle/FB-001"
+    episode_id: "2026-05-26_006_close_lifecycle"
+    title: "Closed backtest handle result access is not stated explicitly"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The close documentation says completed artifacts are already durable and ordinary result inspection opens and closes read connections per operation, but the experiment-store vignette also says result-table helpers need a live or reopened backtest handle. As a first-time user, I could not tell whether the original handle should still support result access after close(bt). In practice, summary(bt), print(bt), ledgr_results(bt, \"equity\"), ledgr_results(bt, \"trades\"), and a second close(bt) all succeeded after the first close(bt). Evidence: raw_logs/close_lifecycle_observations.txt"
+    recommended_action: "Add a short close lifecycle example to ?close.ledgr_backtest showing ledgr_results(bt, \"equity\") before close(bt), after close(bt), and after ledgr_run_open(). Reword \"live or reopened backtest handle\" to clarify that a closed handle can still read completed run artifacts if that behavior is intentional."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_006_close_lifecycle/FB-002"
+    episode_id: "2026-05-26_006_close_lifecycle"
+    title: "Close guidance mentions lazy result cursors without a discoverable example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The docs say close(bt) is useful for explicit-open workflows and lazy result cursors, but the documentation I consulted did not show a lazy result cursor example or name the user-facing API that creates one. That made the \"when is close required\" part of the task harder to interpret. Evidence: Exact recurring phrase: \"explicit-open workflows, and lazy result cursors\"; no lazy cursor example appeared in the consulted lifecycle docs."
+    recommended_action: "Either add a lazy result cursor example and API reference, or remove that phrase from beginner lifecycle docs until the public cursor workflow is documented."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_007_help_page_discoverability/FB-001"
+    episode_id: "2026-05-26_007_help_page_discoverability"
+    title: "Core execution help pages do not link to Getting Started"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Starting from function-level help for `ledgr_run()` and `ledgr_experiment()` exposed specialized articles such as strategy development, metrics, experiment stores, and reproducibility, but not the broad `getting-started` vignette. Evidence: raw_logs/help_article_navigation.txt; raw_logs/ledgr_run.txt; raw_logs/ledgr_experiment.txt"
+    recommended_action: "Add a `Getting started: vignette(\"getting-started\", package = \"ledgr\")` article link to the `ledgr_run()` and `ledgr_experiment()` help pages."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_007_help_page_discoverability/FB-002"
+    episode_id: "2026-05-26_007_help_page_discoverability"
+    title: "Help article links do not show the runnable vignette script path"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The help pages gave `vignette(...)` and `system.file(...html...)` links, which are enough to find articles, but they did not show the installed `.R` script path that a headless user can run to execute article examples. Evidence: raw_logs/ledgr_run.txt; raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "In article links or examples, mention `system.file('doc', '<article>.R', package = 'ledgr')` as the headless runnable script path when installed."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_007_help_page_discoverability/FB-003"
+    episode_id: "2026-05-26_007_help_page_discoverability"
+    title: "Runnable strategy-development examples emit expected warning to stderr"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_004_multi_asset_momentum/FB-001"
+    evidence: "Running the `strategy-development` vignette script completed successfully, but stderr contained `LEDGR_LAST_BAR_NO_FILL`. The rendered vignette includes this warning as expected output, but a headless runner reports non-empty stderr. Evidence: raw_logs/strategy_development_vignette_stderr.txt; raw_logs/reproducible_script_stderr.txt"
+    recommended_action: "Review together with 2026-05-26_004_multi_asset_momentum/FB-001; only keep separate if the maintainer sees distinct evidence. Add a short note before the example that intentionally emits `LEDGR_LAST_BAR_NO_FILL`, or wrap the example in a handler that prints the expected warning in stdout for runnable script users."
+    uncertainty: "Advisory duplicate of 2026-05-26_004_multi_asset_momentum/FB-001; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_007_help_page_discoverability/FB-004"
+    episode_id: "2026-05-26_007_help_page_discoverability"
+    title: "Wrapped help text is easy to parse incorrectly"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "My first automated article-link extraction failed because `Rd2txt` wrapped `vignette(\"name\", package = \"ledgr\")` calls across lines, so a line-oriented regex found no links. Evidence: raw_logs/debug_iteration_1_regex_failure.txt"
+    recommended_action: "Consider adding a small documentation helper that returns article links from installed help topics as structured data, or document the need to normalize whitespace when parsing Rd text."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_008_feature_map_strategy_authoring/FB-001"
+    episode_id: "2026-05-26_008_feature_map_strategy_authoring"
+    title: "ctx$features is not directly discoverable as a help topic"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asks a first-time user to use ctx$features(), but help-topic discovery does not expose ctx$features as a standalone topic. I had to infer that the relevant help page was ?ledgr_strategy_context after reading rendered vignettes and the doc snapshot. Evidence: raw_logs/ledgr_doc_snapshot.md lists ?ledgr_feature_map and ?passed_warmup under strategy authoring, but ctx$features appears only inside ?ledgr_strategy_context text."
+    recommended_action: "Add ctx$features and ctx$feature aliases or keyword entries that route to ?ledgr_strategy_context, and include ctx$features in the task-intent map when feature-map authoring is detected."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_008_feature_map_strategy_authoring/FB-002"
+    episode_id: "2026-05-26_008_feature_map_strategy_authoring"
+    title: "ctx$features examples disagree on whether feature_map is required"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The main feature-map examples use ctx$features(id, mapped_features), and ?ledgr_strategy_context says ctx$features(id, feature_map) requires a ledgr_feature_map. A later strategy-development sweep example uses ctx$features(id) without the feature_map argument. Evidence: LEDGR_DOCS/strategy-development.md contains both ctx$features(id, mapped_features) and ctx$features(id) examples; raw_logs/ledgr_strategy_context.txt documents ctx$features(id, feature_map)."
+    recommended_action: "Either update the sweep example to pass the feature map explicitly or add documentation explaining the active-alias case where the second argument is optional."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_008_feature_map_strategy_authoring/FB-003"
+    episode_id: "2026-05-26_008_feature_map_strategy_authoring"
+    title: "passed_warmup empty-input example does not show how to inspect error classes"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asks for the error class from passed_warmup(numeric(0)). The help page documents the expected classes, but its example only uses try(passed_warmup(numeric(0))), which prints the message and does not show users how to inspect the condition classes. Evidence: raw_logs/passed_warmup.txt documents classes; raw_logs/reproducible_script_stdout.txt records the observed classes."
+    recommended_action: "Extend the ?passed_warmup example to show condition class inspection for numeric(0)."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_009_pulse_inspection_views/FB-001"
+    episode_id: "2026-05-26_009_pulse_inspection_views"
+    title: "ledgr_pulse_snapshot help does not explain active alias maps"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "I first created the pulse with a feature map, then called ledgr_pulse_wide(pulse) without a feature_map argument while trying to verify the documented {instrument_id}__feature_{feature_id} shape. The wide feature columns used aliases such as DEMO_01__feature_sma_alias and DEMO_01__feature_ret_alias because the pulse had an active alias map. Evidence: raw_logs/active_alias_probe_stdout.txt"
+    recommended_action: "Update ?ledgr_pulse_snapshot to document feature map input and the resulting active alias map. Add a small example showing the difference between ledgr_pulse_wide(pulse) after list-based features and after feature-map-based features."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_009_pulse_inspection_views/FB-002"
+    episode_id: "2026-05-26_009_pulse_inspection_views"
+    title: "Pulse view help examples are not standalone"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The ledgr_pulse_features and ledgr_pulse_wide help pages show examples that call ledgr_pulse_features(pulse, features) and ledgr_pulse_wide(pulse, features), but those objects are not created on those pages. A first-time user has to jump to the vignette or combine multiple help pages to build a runnable inspection workflow. Evidence: raw_logs/ledgr_pulse_features.txt and raw_logs/ledgr_pulse_wide.txt"
+    recommended_action: "Add a compact setup block to both help pages, or add a shared \"Run ledgr_pulse_snapshot first\" example that creates bars, snapshot, features, and pulse before calling the inspection function."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_010_mixed_builtin_ttr_feature_map/FB-001"
+    episode_id: "2026-05-26_010_mixed_builtin_ttr_feature_map"
+    title: "Task metadata target version conflicts with episode preflight"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "TASK.md declares ledgr_target: v0.1.7.5, but the episode instructions require ledgr >= 0.1.8.4 and auditr preflight reports installed 0.1.8.4. Evidence: TASK.md: ledgr_target: v0.1.7.5; raw_logs/preflight_stdout.txt: [1] '0.1.8.4'"
+    recommended_action: "Generate task briefs with a single canonical required ledgr version, or label old metadata clearly as historical provenance rather than the active requirement."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_010_mixed_builtin_ttr_feature_map/FB-002"
+    episode_id: "2026-05-26_010_mixed_builtin_ttr_feature_map"
+    title: "Warmup docs do not show how to verify first fills against stable_after"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The docs explain `stable_after`, `passed_warmup()`, and next-open fills, but the task asks to prove the first trades occur no earlier than the slowest feature warmup boundary. I had to infer the verification recipe and manually join `ledgr_results(bt, what = \"fills\")` back to per-instrument bar indexes. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add an indicators-vignette snippet that computes the slowest `stable_after`, inspects one pre-warmup and first-stable pulse, and verifies first fills after joining result fills to bar numbers."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_011_multi_lookback_pre_registration/FB-001"
+    episode_id: "2026-05-26_011_multi_lookback_pre_registration"
+    title: "Unknown feature error does not mention pre-registration fix"
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: "Requesting lookback 20 while only registering return_5 produced a clear unknown-feature error, but the message stopped at listing available feature IDs. It did not say that params-driven lookbacks must be registered in features before ledgr_run(). Evidence: raw_logs/reproducible_summary.txt"
+    recommended_action: "Extend ledgr_unknown_feature_id messages with a short pre-registration hint when the missing ID looks like a built-in indicator ID and similar IDs are available."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_011_multi_lookback_pre_registration/FB-002"
+    episode_id: "2026-05-26_011_multi_lookback_pre_registration"
+    title: "Exact multi-lookback parameter-grid example is not runnable end to end"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "The rendered indicators vignette contains the exact feature-registration snippet for lookbacks 5, 10, and 20, but the saved runnable script marks that section eval=FALSE and comments it out. It also stops before a complete ledgr_experiment plus ledgr_run loop for the lookback sweep. Evidence: LEDGR_DOCS/scripts/indicators.R"
+    recommended_action: "Add a small runnable section or companion script that executes the multi-lookback registration pattern through ledgr_run()."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_011_multi_lookback_pre_registration/FB-003"
+    episode_id: "2026-05-26_011_multi_lookback_pre_registration"
+    title: "Alias names and concrete feature IDs are easy to confuse"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The strategy-facing aliases were ret_5, ret_10, and ret_20, while the concrete IDs passed to ctx$feature() were return_5, return_10, and return_20. Guessing from memory is error-prone because both naming schemes appear in the same workflow. Evidence: raw_logs/reproducible_summary.txt"
+    recommended_action: "Add a short warning box near the multi-lookback example: aliases such as ret_20 are lookup keys, while concrete feature IDs such as return_20 are what ctx$feature() reads."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_011_multi_lookback_pre_registration/FB-004"
+    episode_id: "2026-05-26_011_multi_lookback_pre_registration"
+    title: "Git status sanity check blocked by safe.directory ownership"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_001_cold_start_readme/FB-004"
+    evidence: "A final `git status --short -- .` sanity check failed because Git marked the parent repository as unsafe due to ownership. Evidence: fatal: unsafe repository ('C:/Users/maxth/Documents/GitHub/auditr' is owned by someone else)"
+    recommended_action: "Review together with 2026-05-26_001_cold_start_readme/FB-004; only keep separate if the maintainer sees distinct evidence. If Git checks are expected in future episodes, preconfigure safe.directory outside the episode or document that agents should skip Git status when this error appears."
+    uncertainty: "Advisory duplicate of 2026-05-26_001_cold_start_readme/FB-004; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_012_ctx_features_discoverability/FB-001"
+    episode_id: "2026-05-26_012_ctx_features_discoverability"
+    title: "Feature-map help does not link directly to formal strategy context reference"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "Starting at ?ledgr_feature_map, the names ctx$features() and passed_warmup() are visible immediately, but the page has no See Also entry pointing directly to ?ledgr_strategy_context or ?passed_warmup for the formal accessor and warmup contracts. Evidence: raw_logs/ledgr_feature_map.txt"
+    recommended_action: "Add See Also links from ?ledgr_feature_map to ?ledgr_strategy_context and ?passed_warmup."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_012_ctx_features_discoverability/FB-002"
+    episode_id: "2026-05-26_012_ctx_features_discoverability"
+    title: "Strategy-development example omits feature_map argument to ctx$features()"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_008_feature_map_strategy_authoring/FB-002"
+    evidence: "One strategy-development example uses values <- ctx$features(id), while ?ledgr_strategy_context documents ctx$features(id, feature_map) and the task specifically required passing the feature map. Evidence: LEDGR_DOCS/strategy-development.md lines around the ctx$features(id) example; raw_logs/ledgr_strategy_context.txt"
+    recommended_action: "Review together with 2026-05-26_008_feature_map_strategy_authoring/FB-002; only keep separate if the maintainer sees distinct evidence. Update the example to pass the feature map explicitly, or add text explaining the implicit active-map behavior if that omission is intentional."
+    uncertainty: "Advisory duplicate of 2026-05-26_008_feature_map_strategy_authoring/FB-002; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_014_sweep_basic_candidate_promotion/FB-001"
+    episode_id: "2026-05-26_014_sweep_basic_candidate_promotion"
+    title: "Listed sweeps script is not runnable"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "The documentation index listed LEDGR_DOCS/scripts/sweeps.R under runnable vignette scripts and instructed agents to prefer runnable scripts when available, but the sweeps script only contained the generated setup header and no sweep example code. Evidence: LEDGR_DOCS/scripts/sweeps.R contains only the auditr generated header and a setup chunk marker."
+    recommended_action: "Regenerate LEDGR_DOCS/scripts/sweeps.R with runnable sweep code, or omit empty script links from LEDGR_DOCS/index.md."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_014_sweep_basic_candidate_promotion/FB-002"
+    episode_id: "2026-05-26_014_sweep_basic_candidate_promotion"
+    title: "Direct ledgr_param_grid promotion path is hard to find"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task required ledgr_param_grid(), but the sweeps vignette primarily demonstrates ledgr_feature_grid(), ledgr_strategy_grid(), and ledgr_grid_cross(). The legacy ledgr_param_grid() example appears in the indicators vignette and does not continue through candidate selection and promotion. Evidence: LEDGR_DOCS/sweeps.md says ledgr_param_grid() remains available for legacy flat strategy-parameter grids, while the runnable promotion examples use the newer feature/strategy grid flow."
+    recommended_action: "Add a short legacy flat-parameter example to the sweeps vignette showing three named ledgr_param_grid() candidates, explicit ranking, ledgr_candidate(), and ledgr_promote()."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_014_sweep_basic_candidate_promotion/FB-003"
+    episode_id: "2026-05-26_014_sweep_basic_candidate_promotion"
+    title: "final_equity comparison needs ledgr_results despite compute_metrics step"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked to call ledgr_compute_metrics() on the promoted run and compare final_equity and sharpe_ratio against the sweep row. ledgr_compute_metrics() returns sharpe_ratio but not final_equity, so final_equity had to be read from ledgr_results(promoted_run, what = 'equity'). Evidence: raw_logs/reproducible_script_stdout.txt shows metric_names: total_return, annualized_return, volatility, sharpe_ratio, max_drawdown, n_trades, win_rate, avg_trade, time_in_market."
+    recommended_action: "In the sweeps vignette and any task template that asks for this comparison, explicitly show final_equity from ledgr_results(..., what = 'equity') and sharpe_ratio from ledgr_compute_metrics()."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_014_sweep_basic_candidate_promotion/FB-004"
+    episode_id: "2026-05-26_014_sweep_basic_candidate_promotion"
+    title: "ledgr_sweep help does not enumerate result schema"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The printed sweep table showed only seven visible columns and hid required fields such as final_equity, params, feature_params, warnings, feature_fingerprints, and provenance. The help page says the value is a ledgr_sweep_results tibble but does not list the expected schema in the Value section. Evidence: raw_logs/reproducible_script_stdout.txt shows the print method hiding 13 columns, while actual_sweep_columns lists the full schema."
+    recommended_action: "Expand ?ledgr_sweep Value or Details with the full result-column contract and note that tibble printing may hide list and metric columns."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_016_sweep_feature_factory/FB-001"
+    episode_id: "2026-05-26_016_sweep_feature_factory"
+    title: "Exact-ID feature factory sweep lacks a complete runnable example"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The task-required workflow used `features = function(params) list(ledgr_ind_sma(params$n))`, `ledgr_param_grid()`, `ledgr_feature_id(ledgr_ind_sma(params$n))`, `ledgr_precompute_features()`, `ledgr_sweep()`, and provenance hash inspection. The pieces were documented, but not shown together as a runnable legacy exact-ID feature-factory sweep. Evidence: `raw_logs/workflow_summary.txt`"
+    recommended_action: "Add a short exact-ID feature-factory subsection to the sweeps vignette showing `features <- function(params) list(ledgr_ind_sma(params$n))`, a grid over `n`, `ctx$feature()` lookup with `ledgr_feature_id()`, and provenance hash extraction."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_016_sweep_feature_factory/FB-002"
+    episode_id: "2026-05-26_016_sweep_feature_factory"
+    title: "Pulse feature inspection accepts list for snapshot but not for feature filtering"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "I created a pulse with `features = list(ledgr_ind_sma(n))` and then tried to inspect it with `ledgr_pulse_features(pulse, list(ledgr_ind_sma(n)))`. The call failed with `` `x` must be a ledgr_feature_map object. `` Evidence: `raw_logs/reproducible_script_attempt_1_stderr.txt`"
+    recommended_action: "Expand `?ledgr_pulse_features` examples to show both `ledgr_pulse_features(pulse)` and `ledgr_pulse_features(pulse, ledgr_feature_map(...))`, and improve the error for plain indicator lists with \"omit feature_map or wrap indicators in ledgr_feature_map()\"."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_016_sweep_feature_factory/FB-003"
+    episode_id: "2026-05-26_016_sweep_feature_factory"
+    title: "Sweep docs do not explain duplicated params and feature_params for legacy factories"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "In the legacy `ledgr_param_grid()` plus `features = function(params)` workflow, the sweep result printed both `params` and `feature_params` as the same list values. That was initially confusing because the active-alias docs describe separate feature and strategy parameter namespaces. Evidence: `raw_logs/workflow_summary.txt`"
+    recommended_action: "Add a note in the sweeps vignette near the legacy `ledgr_param_grid()` discussion explaining how `params` and `feature_params` are populated for feature factories."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_017_sweep_precomputed_features/FB-001"
+    episode_id: "2026-05-26_017_sweep_precomputed_features"
+    title: "Missing runnable feature-factory precompute example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task required `features = function(params) list(ledgr_ind_sma(params$n))` with `ledgr_precompute_features()`. `?ledgr_param_grid` mentions that indicator parameters can live in strategy params for a feature factory, while `?ledgr_precompute_features` demonstrates only a static feature list. The runnable workflow had to be assembled across multiple docs. Evidence: raw_logs/ledgr_precompute_features.txt and raw_logs/ledgr_param_grid.txt"
+    recommended_action: "Add a feature-factory precompute example to `?ledgr_precompute_features`, ideally using a grid with `n` and `qty` parameters and exact feature-ID lookup."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_017_sweep_precomputed_features/FB-002"
+    episode_id: "2026-05-26_017_sweep_precomputed_features"
+    title: "Precomputed print help omits displayed fields"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The print method was useful in practice, but its help page only says \"Print a precomputed feature payload\" and does not document that the print output includes snapshot, candidate count, feature count, universe, and scoring range. Evidence: raw_logs/print.ledgr_precomputed_features.txt"
+    recommended_action: "Expand `?print.ledgr_precomputed_features` with the displayed fields and a short example printout."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_017_sweep_precomputed_features/FB-003"
+    episode_id: "2026-05-26_017_sweep_precomputed_features"
+    title: "Grid mismatch error lacks label details"
+    bucket: ledgr_bug
+    severity: low
+    duplicate_of: null
+    evidence: "Passing a precomputed payload to a sweep with one additional candidate failed correctly, but the error message only said candidate labels do not match. It did not identify missing labels, extra labels, or the expected and actual candidate counts. Evidence: raw_logs/reproducible_script_stdout.txt: \"`precomputed_features` candidate labels do not match `param_grid`.\""
+    recommended_action: "Include extra and missing grid labels, or expected/actual label counts, in `ledgr_precomputed_grid_mismatch` messages."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_017_sweep_precomputed_features/FB-004"
+    episode_id: "2026-05-26_017_sweep_precomputed_features"
+    title: "Documentation snapshot lacks sweep intent group"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "After running `ledgr_write_doc_snapshot()`, the task-intent map listed many ledgr areas but did not include a sweep, parameter-grid, or precompute group, even though this episode was explicitly a sweep task. Evidence: raw_logs/ledgr_doc_snapshot.md"
+    recommended_action: "Add a sweep/precompute task-intent group to the episode documentation discovery helper."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_017_sweep_precomputed_features/FB-005"
+    episode_id: "2026-05-26_017_sweep_precomputed_features"
+    title: "PowerShell inline R expression expanded dollar sign"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "A YAML validation check used `item$id` inside `RUN_R.cmd -Expr` from PowerShell. The shell expanded `$id`, so R received `item` and the check failed with a `vapply()` length error. Evidence: raw_logs/feedback_yaml_check_stderr.txt"
+    recommended_action: "Keep the existing Windows quoting warning prominent; optionally add an example using `[[...]]` indexing for quick inline validation snippets."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_018_sweep_seed_and_promotion_context/FB-001"
+    episode_id: "2026-05-26_018_sweep_seed_and_promotion_context"
+    title: "No minimal stochastic sweep replay example"
+    bucket: missing_api
+    severity: low
+    duplicate_of: null
+    evidence: "The docs state that a sweep master seed creates per-candidate execution seeds and that promotion forwards the selected seed, but I had to infer the full verification pattern for a stochastic strategy and direct `ledgr_run(seed = candidate$execution_seed)` replay. Evidence: raw_logs/task_verification.txt"
+    recommended_action: "Add a short sweeps-vignette subsection or help-page example that demonstrates stochastic strategy replay with `ledgr_sweep(seed = ...)`, `ledgr_promote()`, and direct `ledgr_run(seed = candidate$execution_seed)` equity comparison."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_018_sweep_seed_and_promotion_context/FB-002"
+    episode_id: "2026-05-26_018_sweep_seed_and_promotion_context"
+    title: "Promotion candidate_summary structure is not explicit"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The docs say promotion context stores a compact candidate-summary view and not full artifacts, but they do not show the actual `context$candidate_summary` structure or field names. I had to inspect it with `str()` to verify it was a list of per-candidate metric/audit records. Evidence: raw_logs/task_verification.txt lines 44-100"
+    recommended_action: "Document the `candidate_summary` schema in ?ledgr_promotion_context, including that it is a compact list of candidate records and listing the expected scalar metric/audit fields."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_019_multi_output_indicator_bundles/FB-001"
+    episode_id: "2026-05-26_019_multi_output_indicator_bundles"
+    title: "Task identity expectation conflicts with installed bundle ID docs"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The task brief says a BBands bundle should be a pure authoring convenience that produces the same feature identities as hand-written single-output indicators. In ledgr 0.1.8.4, the default bundle ID for BBands up is `bbands_up`, while `ledgr_ind_ttr(\"BBands\", output = \"up\", n = 20)` produces `ttr_bbands_20_up`. The indicators vignette says this asymmetry is intentional. Evidence: raw_logs/reproducible_script_stdout.txt shows `Single-output BBands up ID: ttr_bbands_20_up`, `Bundle BBands up ID: bbands_up`, and `IDs match: FALSE`."
+    recommended_action: "Update the task packet or ledgr documentation to make the expected identity contract version-specific, especially for default bundle naming versus explicit `naming` compatibility."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_019_multi_output_indicator_bundles/FB-002"
+    episode_id: "2026-05-26_019_multi_output_indicator_bundles"
+    title: "Bundle factory examples do not show how strategies should read features"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "A sweep experiment using `features = function(params) ledgr_ind_ttr_outputs(...)` successfully materialized candidate feature fingerprints, but a first attempt to read those values with `ctx$features(id)` failed for every candidate because the bare bundle factory did not create an active alias map. Evidence: raw_logs/explore_sweep_errors_stdout.txt records failed candidate rows with the message: `ctx$features(instrument_id)` requires an active alias map."
+    recommended_action: "Add a bundle-factory sweep example to the indicators or sweeps vignette, including one successful strategy-reading pattern and a note that bare bundle factories do not supply an active alias map for `ctx$features(id)`."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_019_multi_output_indicator_bundles/FB-003"
+    episode_id: "2026-05-26_019_multi_output_indicator_bundles"
+    title: "Small external helper in sweep strategy triggers tier 3 preflight"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "After switching the factory sweep strategy to exact feature IDs, I put the output-to-feature-ID normalization in a small external helper. `ledgr_sweep()` rejected the strategy as tier 3 because the helper symbol was unresolved. Evidence: raw_logs/explore_sweep_exact_ids_stderr.txt records `Strategy preflight classified this strategy as tier_3` and identifies unresolved symbol `sweep_feature_id`."
+    recommended_action: "In the sweep vignette's feature-factory section, add a short example of a self-contained exact-ID strategy and call out that helper references in strategy bodies are checked by preflight."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_020_adversarial_preflight_and_force_override/FB-001"
+    episode_id: "2026-05-26_020_adversarial_preflight_and_force_override"
+    title: "Tier 2 example conflicts with stats::median behavior"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "The task suggested a qualified package call such as stats::median() for a Tier 2 strategy, but ledgr 0.1.8.4 classified stats::median() as tier_1. The reproducibility vignette says recommended-R functions such as stats::median() remain Tier 1-compatible. Evidence: raw_logs/explore_preflight_stdout.txt and raw_logs/final_reproducible_results.txt show stats::median classified as tier_1."
+    recommended_action: "Update adversarial task briefs and Tier 2 examples to avoid stats::median(); use a clearly non-base, package-qualified function for Tier 2."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_020_adversarial_preflight_and_force_override/FB-002"
+    episode_id: "2026-05-26_020_adversarial_preflight_and_force_override"
+    title: "Defined external variables are Tier 2, not Tier 3"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The task required a Tier 3 strategy that references an unqualified external global variable defined in the calling environment. ledgr classified a defined external scalar, vector, and mutable environment as tier_2, not tier_3. This matches the rendered reproducibility documentation for resolved external objects. Evidence: raw_logs/explore_external_symbols_stdout.txt and raw_logs/final_reproducible_results.txt show the defined external variable classified as tier_2."
+    recommended_action: "If resolved external variables should remain Tier 2, update adversarial task wording to ask for an unresolved helper or missing external symbol. If they should be Tier 3, update ledgr_strategy_preflight() and the reproducibility vignette together."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_020_adversarial_preflight_and_force_override/FB-003"
+    episode_id: "2026-05-26_020_adversarial_preflight_and_force_override"
+    title: "Doc snapshot task-intent map omits strategy preflight topic"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The episode instructions said to use the doc snapshot's task-intent map to choose help topics, but the strategy-authoring map did not list ?ledgr_strategy_preflight even though this task centered on preflight classification. Evidence: raw_logs/ledgr_doc_snapshot.md lists strategy authoring topics but not ?ledgr_strategy_preflight in that map."
+    recommended_action: "Add ledgr_strategy_preflight to the strategy authoring or reproducibility section of DOC_DISCOVERY.R's task-intent map."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_020_adversarial_preflight_and_force_override/FB-004"
+    episode_id: "2026-05-26_020_adversarial_preflight_and_force_override"
+    title: "Git status blocked by unsafe repository ownership"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_001_cold_start_readme/FB-004"
+    evidence: "A final git status check failed because Git considered the parent auditr repository unsafe for this user. Evidence: raw_logs/git_status_unsafe.txt"
+    recommended_action: "Review together with 2026-05-26_001_cold_start_readme/FB-004; only keep separate if the maintainer sees distinct evidence. Configure the repository as a safe.directory for the runner account during episode setup, or document that Git status may be unavailable."
+    uncertainty: "Advisory duplicate of 2026-05-26_001_cold_start_readme/FB-004; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_021_final_bar_no_fill_warning/FB-001"
+    episode_id: "2026-05-26_021_final_bar_no_fill_warning"
+    title: "Last-bar warning boundary is ambiguous for next-open runs"
+    bucket: duplicate
+    severity: medium
+    duplicate_of: "2026-05-26_004_multi_asset_momentum/FB-001"
+    evidence: "A literal target change on the final source-data row of a 20-row snapshot produced no `LEDGR_LAST_BAR_NO_FILL` warning and no fill. The warning fired when the target changed on the penultimate source row, which appears to be the runner's last decision pulse under the next-open fill model. Evidence: raw_logs/debug_trigger_positions_stdout.txt"
+    recommended_action: "Review together with 2026-05-26_004_multi_asset_momentum/FB-001; only keep separate if the maintainer sees distinct evidence. Document the pulse schedule for next-open execution in `?ledgr_run` and the strategy-development vignette, including a small example that names both the last source-data row and the last target-changing decision pulse."
+    uncertainty: "Advisory duplicate of 2026-05-26_004_multi_asset_momentum/FB-001; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_022_inspection_surfaces_map/FB-001"
+    episode_id: "2026-05-26_022_inspection_surfaces_map"
+    title: "Sweeps script is listed as runnable but contains no runnable sweep"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_014_sweep_basic_candidate_promotion/FB-001"
+    evidence: "LEDGR_DOCS/index.md listed LEDGR_DOCS/scripts/sweeps.R as a runnable vignette script, but the file only contained setup comments/options and no executable sweep, candidate, or promotion example. Evidence: LEDGR_DOCS/scripts/sweeps.R"
+    recommended_action: "Review together with 2026-05-26_014_sweep_basic_candidate_promotion/FB-001; only keep separate if the maintainer sees distinct evidence. Omit empty extracted scripts from the runnable-script index, or include a compact executable sweep/promotion script extracted from the vignette."
+    uncertainty: "Advisory duplicate of 2026-05-26_014_sweep_basic_candidate_promotion/FB-001; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_022_inspection_surfaces_map/FB-002"
+    episode_id: "2026-05-26_022_inspection_surfaces_map"
+    title: "Inspection map does not fully route sweep and promotion setup"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The Inspection Surfaces table identified ledgr_sweep() result rows and ledgr_promotion_context(), but completing those rows required leaving the single-screen map to learn the required ledgr_param_grid(), ledgr_candidate(), and ledgr_promote() sequence. Evidence: raw_logs/inspection_surface_observations.md"
+    recommended_action: "Add one compact note below the Inspection Surfaces table such as \"For sweep rows, build a ledgr_param_grid(), call ledgr_sweep(), select with ledgr_candidate(), then use ledgr_promote() to create a run with full result tables.\""
+    uncertainty: ""
+  - feedback_id: "2026-05-26_022_inspection_surfaces_map/FB-003"
+    episode_id: "2026-05-26_022_inspection_surfaces_map"
+    title: "Printed final equity is rounded while table/comparison values are exact"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The documentation says final_equity can be read from print(bt), the last equity row, comparison rows, or sweep rows. In practice print(bt) exposed a rounded human label, while the equity and comparison surfaces exposed the raw numeric value. Evidence: raw_logs/inspection_surface_observations.md"
+    recommended_action: "Change the final_equity note to say that print(bt) displays a rounded human-readable final equity label, while exact programmatic values should come from result/comparison/sweep tables."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_023_adversarial_preflight_v0_1_8_2_additions/FB-001"
+    episode_id: "2026-05-26_023_adversarial_preflight_v0_1_8_2_additions"
+    title: "Sweep grid APIs are easy to mix up for a first sweep"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "My first sweep probe used `ledgr_param_grid(qty = c(0, 1))`, mirroring the column-vector style shown for `ledgr_strategy_grid()`. The run failed before the intended Tier 3 preflight assertion with `Parameter grid entry 1 must be a list.` Evidence: raw_logs/grid_shape_first_attempt_error.txt"
+    recommended_action: "Add a short note in the sweeps vignette and/or `?ledgr_sweep` that `ledgr_param_grid()` takes complete parameter-list entries, while `ledgr_strategy_grid()` takes column vectors for cross-product grid construction."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_024_adversarial_preflight_indirection_bypass/FB-001"
+    episode_id: "2026-05-26_024_adversarial_preflight_indirection_bypass"
+    title: "Tier 2 external scalar runs without a runtime reminder"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The resolved external scalar probe was classified as tier_2 with allowed TRUE, and ledgr_run completed successfully without an additional runtime warning that the run depended on an external object not stored as a replayable artifact. Evidence: raw_logs/probe_results.csv"
+    recommended_action: "Consider adding an opt-in warning, run-info field emphasis, or a Tier 2 example in `?ledgr_run` that shows external scalar strategies are allowed but require user-managed environment/provenance review."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_025_active_alias_end_to_end/FB-001"
+    episode_id: "2026-05-26_025_active_alias_end_to_end"
+    title: "Help pages omit one-argument ctx features active-alias lookup"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The rendered strategy-development vignette shows the active-alias strategy using ctx$features(id), but the installed help for feature maps and strategy context documents ctx$features(id, feature_map) and says ctx$features requires a ledgr_feature_map. Evidence: raw_logs/ledgr_feature_map.txt and raw_logs/ledgr_strategy_context.txt"
+    recommended_action: "Add ctx$features(id) active-alias examples and contract text to ?ledgr_feature_map and ?ledgr_strategy_context."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_025_active_alias_end_to_end/FB-002"
+    episode_id: "2026-05-26_025_active_alias_end_to_end"
+    title: "bt config stores strategy params under strategy_params not params"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The task asked to inspect bt$config for a separate params field, and ?ledgr_run names the argument params. The observed bt$config did not contain params; it contained strategy_params, strategy_params_json, and strategy_params_hash. Evidence: raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Document the stored config field names in ?ledgr_run or a run config reference, and align examples with strategy_params if that is the public stored name."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_025_active_alias_end_to_end/FB-003"
+    episode_id: "2026-05-26_025_active_alias_end_to_end"
+    title: "ledgr_run config does not expose feature_set_hash"
+    bucket: missing_api
+    severity: medium
+    duplicate_of: null
+    evidence: "The task asked to confirm that a renamed-alias run has identical feature_set_hash to the original run. LEDGR_DOCS/sweeps.md explains feature_set_hash for sweep rows, but bt$config from ledgr_run did not contain feature_set_hash, and recursive search of bt$config names and attributes found no feature_set_hash field. Evidence: raw_logs/reproducible_script_final_stdout.txt"
+    recommended_action: "Add feature_set_hash to ledgr_run bt$config or ledgr_run_info(), or document that feature_set_hash is currently sweep-only and provide a committed-run equivalent."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_025_active_alias_end_to_end/FB-004"
+    episode_id: "2026-05-26_025_active_alias_end_to_end"
+    title: "ledgr_parameters help lacks an example for reading required feature params"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The rendered getting-started vignette shows an informative ledgr_parameters(features) table, but ?ledgr_parameters only says the return has at least param_name, alias, and argument and gives no example. Evidence: raw_logs/ledgr_parameters.txt"
+    recommended_action: "Add a parameterized feature-map example to ?ledgr_parameters with expected tibble output."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_025_active_alias_end_to_end/FB-005"
+    episode_id: "2026-05-26_025_active_alias_end_to_end"
+    title: "ledgr_param help does not point to the full active-alias workflow"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "?ledgr_param explains the placeholder and supported indicators, but its only example is ledgr_param('fast_n'). It does not cross-link the full workflow: ledgr_feature_map, ledgr_parameters, ledgr_run(feature_params = ...), and ctx$features(id). Evidence: raw_logs/ledgr_param.txt"
+    recommended_action: "Expand ?ledgr_param examples and See Also links to include ledgr_parameters, ledgr_run(feature_params), ledgr_feature_grid, and the active-alias vignette section."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_025_active_alias_end_to_end/FB-006"
+    episode_id: "2026-05-26_025_active_alias_end_to_end"
+    title: "PowerShell glob passed to rg produced an invalid path error"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "A documentation search command passed .\\raw_logs\\ledgr*.txt directly as an rg path in PowerShell and rg reported an invalid path syntax error. Evidence: raw_logs/rg_glob_failure.txt"
+    recommended_action: "No ledgr fix needed; this is episode environment friction."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_026_two_namespace_contract_errors/FB-001"
+    episode_id: "2026-05-26_026_two_namespace_contract_errors"
+    title: "Wrong-namespace strategy parameter fails as generic replacement error"
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: "Putting `qty` in `feature_params` instead of `params` let the run reach the strategy. The strategy did not see `params$qty`, and the eventual failure was a wrapped base R replacement error: `replacement has length zero`. Evidence: raw_logs/probe_results.txt"
+    recommended_action: "Consider warning or erroring on unused `feature_params` keys when resolving active-alias feature maps, or add a documented strategy-param validation pattern to the active-alias examples."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_026_two_namespace_contract_errors/FB-002"
+    episode_id: "2026-05-26_026_two_namespace_contract_errors"
+    title: "Missing active-alias lookup reports base subscript error"
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: "A strategy that read `values[[\"slow\"]]` from `ctx$features(id)` while the active alias map only declared `quick` and `momentum` failed with `ledgr_strategy_error -> subscriptOutOfBoundsError`. The message showed `values[[\"slow\"]]` but did not list the active aliases or say that `slow` was absent from the alias map. Evidence: raw_logs/probe_results.txt"
+    recommended_action: "Consider returning a small classed alias vector from `ctx$features()` with a custom `[[` method, or document a recommended alias-presence check for feature-map strategies."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_026_two_namespace_contract_errors/FB-003"
+    episode_id: "2026-05-26_026_two_namespace_contract_errors"
+    title: "Sparse docs for intentionally incomplete executable sweep rows"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The task asked for one valid sweep candidate and one candidate missing a required `feature_params` key while also saying to use `ledgr_grid_cross()`. `ledgr_grid_cross()` naturally creates complete rectangular grids, so I had to infer from the `ledgr_grid_add_baseline()` example that an intentionally incomplete candidate can be added with `feature = list(...)` and `strategy = list(...)`. Evidence: raw_logs/probe_results.txt"
+    recommended_action: "Add an example to `?ledgr_grid_cross` or the sweeps vignette showing `ledgr_grid_named()` / `ledgr_grid_add_baseline()` candidate specs with `feature` and `strategy` lists, including how failures appear with `stop_on_error = FALSE`."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_026_two_namespace_contract_errors/FB-004"
+    episode_id: "2026-05-26_026_two_namespace_contract_errors"
+    title: "Recursive raw log search hit locked session logs"
+    bucket: expected_user_error
+    severity: low
+    duplicate_of: null
+    evidence: "Running `rg` across both `LEDGR_DOCS` and `raw_logs` produced access errors for active Codex session logs in `raw_logs`. Evidence: `raw_logs\\codex_2026_05_26T22_53_48_0200_stderr.log: The process cannot access the file because it is being used by another process. (os error 32)`"
+    recommended_action: "Mention excluding active `raw_logs/codex_*` files in episode search guidance."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_026_two_namespace_contract_errors/FB-005"
+    episode_id: "2026-05-26_026_two_namespace_contract_errors"
+    title: "PowerShell expanded `$` inside inline R expression"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_017_sweep_precomputed_features/FB-005"
+    evidence: "A quick inspection command used `$sweep_rows` inside a double-quoted PowerShell `-Expr` string. PowerShell expanded `$sweep_rows` away before R saw it, so the expression inspected the whole probe object instead of the nested sweep rows. Evidence: raw_logs/inspect_sweep_rows_stdout.txt"
+    recommended_action: "Review together with 2026-05-26_017_sweep_precomputed_features/FB-005; only keep separate if the maintainer sees distinct evidence. Keep the existing Windows quoting warning prominent in episode prompts and examples."
+    uncertainty: "Advisory duplicate of 2026-05-26_017_sweep_precomputed_features/FB-005; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_027_executable_grid_composition/FB-001"
+    episode_id: "2026-05-26_027_executable_grid_composition"
+    title: "Grid helper help lacks executable candidate schema examples"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The shared help page for feature, strategy, cross, named, and baseline grids gives only one cross-grid example. It does not show the accepted `feature` and `strategy` fields for `ledgr_grid_named()` or `ledgr_grid_add_baseline()`, nor does it explain that executable grid internals use `feature_params` and `strategy_params` while sweep output uses `feature_params` and `params`. Evidence: raw_logs/explore_grid_api_stdout.txt"
+    recommended_action: "Expand the help page with separate examples for cross grids, named executable grids, baseline rows, and the resulting nested parameter names."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_027_executable_grid_composition/FB-002"
+    episode_id: "2026-05-26_027_executable_grid_composition"
+    title: "Mixing cross-product grids with explicit named candidates is unclear"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The vignette shows adding a baseline to a cross-product grid and the help lists `ledgr_grid_named()`, but I did not find a clear example for mixing a cross-product grid with arbitrary explicit named candidates in addition to baselines. The only append-like helper is named `ledgr_grid_add_baseline()`, which makes it unclear whether it should be used for non-baseline named candidates. Evidence: raw_logs/ledgr_grid_named.txt; raw_logs/ledgr_grid_add_baseline.txt"
+    recommended_action: "Add a vignette section showing cross-product candidates plus one baseline plus one non-baseline explicit named candidate, or add a clearly named append/combine helper."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_027_executable_grid_composition/FB-003"
+    episode_id: "2026-05-26_027_executable_grid_composition"
+    title: "Legacy parameter-grid help contains stale separate-API wording"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "`?ledgr_param_grid` says, 'There is no separate indicator-sweep API in v0.1.8.' In the installed v0.1.8.4 package, the rendered docs and public help topics include `ledgr_feature_grid()`, `ledgr_strategy_grid()`, and `ledgr_grid_cross()` for the active-alias sweep path. Evidence: raw_logs/ledgr_param_grid.txt"
+    recommended_action: "Update the `ledgr_param_grid()` help Details section to reference the new namespaced grid builders and explain the legacy use case."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_027_executable_grid_composition/FB-004"
+    episode_id: "2026-05-26_027_executable_grid_composition"
+    title: "Legacy flat-grid sweep row shape is not explained"
+    bucket: duplicate
+    severity: medium
+    duplicate_of: "2026-05-26_016_sweep_feature_factory/FB-003"
+    evidence: "When running the same candidate set through legacy `ledgr_param_grid()` with a flat parameter bag and a feature factory, the sweep result still had both `params` and `feature_params` columns. Both list columns contained the full flat bag: `fast_n`, `slow_n`, `threshold`, and `qty`. In the executable-grid path, `feature_params` contained only `fast_n`/`slow_n` and `params` contained only `threshold`/`qty`. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Review together with 2026-05-26_016_sweep_feature_factory/FB-003; only keep separate if the maintainer sees distinct evidence. Add a comparison table to `vignette('sweeps')` showing executable-grid columns versus legacy flat-grid columns."
+    uncertainty: "Advisory duplicate of 2026-05-26_016_sweep_feature_factory/FB-003; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_028_alias_aware_pulse_inspection/FB-001"
+    episode_id: "2026-05-26_028_alias_aware_pulse_inspection"
+    title: "Explicit original parameterized feature map fails after pulse materialization"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "A pulse built successfully from a parameterized ledgr_feature_map and concrete feature_params, and the default active-alias long view worked. Reusing the original parameterized feature map in ledgr_pulse_features(pulse, features) failed with ledgr_unresolved_feature_id instead of filtering and matching the default output. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Teach ledgr_pulse_features() and ledgr_pulse_wide() to resolve an explicit parameterized feature map against pulse$feature_params, or document that explicit maps must already be concrete and show how to derive the concrete alias map."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_028_alias_aware_pulse_inspection/FB-002"
+    episode_id: "2026-05-26_028_alias_aware_pulse_inspection"
+    title: "Indicators vignette does not demonstrate alias-aware default pulse views"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "The help pages state that ledgr_pulse_features() and ledgr_pulse_wide() use an active alias map by default, but the indicators vignette examples show ledgr_pulse_features(pulse, features) and ledgr_pulse_wide(pulse, features). As a first-time user, the default alias-aware behavior was discoverable from help pages but not obvious from the main vignette flow. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add default-call examples to the indicators vignette, ideally next to the explicit feature_map examples, and call out when explicit maps are required versus optional."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_028_alias_aware_pulse_inspection/FB-003"
+    episode_id: "2026-05-26_028_alias_aware_pulse_inspection"
+    title: "Inline named character alias maps lack a concrete pulse-view example"
+    bucket: docs_gap
+    severity: low
+    duplicate_of: null
+    evidence: "A bare named character vector such as c(raw_fast = \"sma_5\") worked as feature_map for ledgr_pulse_features(), but the examples do not show this shape. The help says \"named alias map\", which is accurate but easy to miss without a runnable example. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add examples like ledgr_pulse_features(pulse, c(raw_fast = \"sma_5\")) and ledgr_pulse_wide(pulse, c(raw_fast = \"sma_5\")) to the help page or indicators vignette."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_028_alias_aware_pulse_inspection/FB-004"
+    episode_id: "2026-05-26_028_alias_aware_pulse_inspection"
+    title: "ledgr_feature_contracts gives a low-level error for unresolved parameterized maps"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_005_edge_case_ten_bars/FB-001"
+    evidence: "Calling ledgr_feature_contracts(features) on a feature map containing ledgr_param() failed with a low-level vapply() message about values needing length 1. The indicators vignette says factories must be materialized first, but the help page for ledgr_feature_contracts does not warn about this unresolved-parameter case and the error was not explanatory. Evidence: raw_logs/explore_pulse_stderr.txt"
+    recommended_action: "Review together with 2026-05-26_005_edge_case_ten_bars/FB-001; only keep separate if the maintainer sees distinct evidence. Add validation for ledgr_param_ref inputs inside ledgr_feature_contracts() and update ?ledgr_feature_contracts to mention parameterized maps explicitly."
+    uncertainty: "Advisory duplicate of 2026-05-26_005_edge_case_ten_bars/FB-001; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_029_alias_identity_and_declaration_order/FB-001"
+    episode_id: "2026-05-26_029_alias_identity_and_declaration_order"
+    title: "Single-run feature_set_hash is not exposed on the documented run surfaces"
+    bucket: missing_api
+    severity: medium
+    duplicate_of: null
+    evidence: "The task pointed to `bt$config$features$feature_set_hash`, but that field was `NULL`. `ledgr_run_info()` exposed `config_hash`, but not `feature_set_hash` or `alias_map_hash`. I had to run a one-row `ledgr_sweep()` and read sweep provenance to get `feature_set_hash`. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add `feature_set_hash` and `alias_map_hash` to `ledgr_run_info()`, or document the supported public extraction path for committed-run feature identity."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_029_alias_identity_and_declaration_order/FB-002"
+    episode_id: "2026-05-26_029_alias_identity_and_declaration_order"
+    title: "config_hash changes for otherwise identical runs with different run IDs"
+    bucket: unclear
+    severity: high
+    duplicate_of: null
+    evidence: "Two runs using the same snapshot, same strategy, same feature map, same concrete feature parameters, and same strategy params produced identical `feature_set_hash` and `alias_map_hash`, but different `config_hash` values when the run IDs differed. Evidence: `same aliases/features keep config_hash FALSE` in raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Exclude `run_id` and other run-record identifiers from `config_hash`, or document that `config_hash` is run-artifact identity rather than configuration equivalence identity."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_029_alias_identity_and_declaration_order/FB-003"
+    episode_id: "2026-05-26_029_alias_identity_and_declaration_order"
+    title: "alias_map_hash changes when the same alias points to a different concrete feature"
+    bucket: unclear
+    severity: high
+    duplicate_of: null
+    evidence: "The task says `alias_map_hash` describes alias identity and should remain identical when aliases are unchanged but concrete feature parameters vary. In practice, `alias_map_json` maps each alias to a concrete feature ID, so `fast -> sma_5` and `fast -> sma_6` produced different `alias_map_hash` values. Evidence: `different concrete features keep alias_map_hash FALSE` in raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Either split alias-name identity from alias-to-feature binding identity, or update the documentation and task contract to say `alias_map_hash` includes concrete feature IDs."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_029_alias_identity_and_declaration_order/FB-004"
+    episode_id: "2026-05-26_029_alias_identity_and_declaration_order"
+    title: "config_hash differs for declaration-order permutations with identical canonical alias maps"
+    bucket: unclear
+    severity: medium
+    duplicate_of: null
+    evidence: "The two declaration-order experiments had identical `feature_set_hash`, identical `alias_map_hash`, and identical canonical sorted `alias_map_json`, but different `config_hash` values. Evidence: `declaration permutation keeps config_hash FALSE` in raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "If `config_hash` is meant to be invariant to declaration order, exclude declaration-order metadata and run identifiers from the hashed payload; otherwise document the distinction clearly."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_029_alias_identity_and_declaration_order/FB-005"
+    episode_id: "2026-05-26_029_alias_identity_and_declaration_order"
+    title: "No-argument ctx$features(id) active-alias lookup is underdocumented"
+    bucket: duplicate
+    severity: low
+    duplicate_of: "2026-05-26_025_active_alias_end_to_end/FB-001"
+    evidence: "Help pages emphasize `ctx$features(id, feature_map)`, while the active-alias pattern needed for parameterized feature maps uses `ctx$features(id)` and is only visible in vignette examples. As a first-time user, I had to test that no-argument form before relying on it in a Tier 1 strategy. Evidence: raw_logs/attempt_01_probe_stdout.txt"
+    recommended_action: "Review together with 2026-05-26_025_active_alias_end_to_end/FB-001; only keep separate if the maintainer sees distinct evidence. Add no-argument active-alias lookup to the accessor table and examples in `?ledgr_strategy_context`."
+    uncertainty: "Advisory duplicate of 2026-05-26_025_active_alias_end_to_end/FB-001; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-001"
+    episode_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"
+    title: "Parameterized TTR bundle feature map is rejected by ledgr_experiment"
+    bucket: ledgr_bug
+    severity: high
+    duplicate_of: null
+    evidence: "`ledgr_feature_map()` accepted `bands = ledgr_ind_ttr_outputs(\"BBands\", input = \"close\", n = ledgr_param(\"bb_n\"))`, and `ledgr_parameters()` reported sensible bundle output rows, but `ledgr_experiment()` rejected the same map with `Feature map entry 2 must be a ledgr_indicator, ledgr_indicator_bundle, or parameterized feature declaration.` Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Make `ledgr_experiment()` accept the `ledgr_parameterized_bundle_output` entries produced by `ledgr_feature_map()`, or change the documentation to state that this feature shape is not supported."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-002"
+    episode_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"
+    title: "ledgr_feature_contracts gives a low-level error for unresolved parameterized bundles"
+    bucket: duplicate
+    severity: medium
+    duplicate_of: "2026-05-26_005_edge_case_ten_bars/FB-001"
+    evidence: "Calling `ledgr_feature_contracts()` on the unresolved parameterized bundle map failed with `values must be length 1, but FUN(X[[1]]) result is length 0`, unlike `ledgr_feature_id()`, which gave a clear classed unresolved-ID error. Evidence: raw_logs/debug_iteration_2_stdout.txt"
+    recommended_action: "Review together with 2026-05-26_005_edge_case_ten_bars/FB-001; only keep separate if the maintainer sees distinct evidence. Add the same unresolved-declaration guard used by `ledgr_feature_id()` and document the recommended concrete inspection path."
+    uncertainty: "Advisory duplicate of 2026-05-26_005_edge_case_ten_bars/FB-001; maintainer should confirm whether the episode adds distinct evidence."
+  - feedback_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-003"
+    episode_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"
+    title: "Hash-suffix scheme is not shown at the user-facing level"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "The indicators vignette says parameterized bundle concrete feature IDs `may include a stable hash suffix`, but I did not find a public example showing the actual suffix format, when it appears, how it is derived, or how to inspect it without relying on internal-looking `bt$config` fields. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Add a runnable vignette section that prints the resolved concrete IDs and `feature_set_hash` values for a parameterized multi-output bundle sweep."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-004"
+    episode_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"
+    title: "Feature factory parameter routing is ambiguous with feature_params and feature grids"
+    bucket: docs_gap
+    severity: medium
+    duplicate_of: null
+    evidence: "As a workaround, I tried `features = function(params) ...`. During `ledgr_run(feature_params = list(fast_n = 5L, bb_n = 20L), params = list(qty = 10))`, the factory received only the strategy params (`qty`), so `params$fast_n` was missing. The same happened with `ledgr_feature_grid()` plus `ledgr_grid_cross()`. Evidence: raw_logs/debug_iteration_5_stdout.txt"
+    recommended_action: "Clarify factory routing in `?ledgr_experiment`, `?ledgr_run`, and the sweeps vignette, or add a factory signature that receives feature params separately."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-005"
+    episode_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"
+    title: "Feature-factory bundle sweep collides on unsuffixed bundle output IDs"
+    bucket: ledgr_bug
+    severity: medium
+    duplicate_of: null
+    evidence: "A legacy flat-param feature factory could materialize BBands bundles for different `bb_n` values, but sweeping three values failed with `Runtime projection cannot represent duplicate concrete feature ID bbands_dn`. Evidence: raw_logs/debug_iteration_5_stdout.txt"
+    recommended_action: "Document the collision rule for factories and bundle outputs, or make the runtime projection disambiguate factory materializations consistently with active parameterized bundles."
+    uncertainty: "Parser row marks triage unclear; raw evidence supports user-visible friction, but maintainer must decide whether this is implementation behavior, documentation contract, or expected use."
+  - feedback_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-006"
+    episode_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"
+    title: "Task snippet omits required input argument for ledgr_ind_ttr_outputs"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "The task brief's required feature-map snippet called `ledgr_ind_ttr_outputs(\"BBands\", n = ledgr_param(\"bb_n\"))`, but the help page usage requires `input`, and running the snippet without it produced `argument \"input\" is missing, with no default`. Evidence: raw_logs/debug_iteration_3_stdout.txt"
+    recommended_action: "Update the episode task brief snippet to include `input = \"close\"` or add a documented default in ledgr."
+    uncertainty: ""
+  - feedback_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps/FB-007"
+    episode_id: "2026-05-26_030_parameterized_bundle_outputs_in_sweeps"
+    title: "BBands pctB alias casing is easy to misread"
+    bucket: bad_example
+    severity: low
+    duplicate_of: null
+    evidence: "The task example mentioned `bbands_pctB`, while ledgr's rendered vignette and observed output use normalized lowercase `bbands_pctb`. Evidence: raw_logs/reproducible_script_stdout.txt"
+    recommended_action: "Prefer `bbands_pctb` in all user-facing examples, or explicitly call out that backend `pctB` normalizes to alias suffix `pctb`."
+    uncertainty: ""

@@ -1,0 +1,161 @@
+version: "0.1.8.5"
+source: "v0_1_8_5_tickets.md"
+generated_from: "v0_1_8_5_spec.md"
+tickets:
+  - id: "LDG-2434"
+    title: "Packet Setup, Documentation Inventory, And Reading Flow"
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.5"
+    tests:
+      - "manual_packet_review"
+      - "git_diff_check"
+
+  - id: "LDG-2435"
+    title: "Canonical Research Workflow Article"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2434"
+    classification:
+      type: "documentation"
+      surface: "research_workflow"
+      scope: "canonical_workflow"
+    tests:
+      - "documentation_contract_tests"
+      - "vignette_render"
+      - "manual_article_review"
+
+  - id: "LDG-2436"
+    title: "README, Getting Started, And Pkgdown Reading Flow"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2435"
+    classification:
+      type: "documentation"
+      surface: "first_contact_docs"
+      scope: "readme_getting_started_pkgdown"
+    tests:
+      - "documentation_contract_tests"
+      - "readme_render_check"
+      - "pkgdown_navigation_review"
+      - "manual_first_contact_review"
+
+  - id: "LDG-2437"
+    title: "Store, Data Input, And Reproducibility Docs"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2435"
+    classification:
+      type: "documentation"
+      surface: "store_data_reproducibility"
+      scope: "artifact_topology"
+    tests:
+      - "documentation_contract_tests"
+      - "snapshot_lifecycle_grep"
+      - "vignette_render"
+      - "manual_docs_review"
+
+  - id: "LDG-2438"
+    title: "Sweeps And Execution Semantics Docs"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2435"
+      - "LDG-2442"
+    classification:
+      type: "documentation"
+      surface: "sweeps_execution_semantics"
+      scope: "installed_docs"
+    tests:
+      - "documentation_contract_tests"
+      - "warmup_doc_grep"
+      - "vignette_render"
+      - "manual_docs_review"
+
+  - id: "LDG-2439"
+    title: "Research-To-Production Disposition And Redundancy Cleanup"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2435"
+      - "LDG-2436"
+      - "LDG-2437"
+      - "LDG-2438"
+    classification:
+      type: "documentation"
+      surface: "vignette_flow"
+      scope: "redundancy_cleanup"
+    tests:
+      - "manual_vignette_flow_review"
+      - "documentation_contract_tests"
+      - "pkgdown_navigation_review"
+
+  - id: "LDG-2440"
+    title: "Pending Auditr Intake And Bounded Routing"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2434"
+    classification:
+      type: "audit_routing"
+      surface: "auditr_intake"
+      scope: "bounded_release_intake"
+    tests:
+      - "manual_auditr_routing_review"
+      - "git_diff_check"
+
+  - id: "LDG-2442"
+    title: "Legacy Sweep Authoring Boundary"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2434"
+    classification:
+      type: "compatibility_cleanup"
+      surface: "sweep_authoring"
+      scope: "legacy_boundary"
+    tests:
+      - "feature_map_tests"
+      - "experiment_tests"
+      - "sweep_tests"
+      - "documentation_contract_tests"
+      - "manual_error_wording_review"
+
+  - id: "LDG-2441"
+    title: "v0.1.8.5 Release Gate And Closeout"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2435"
+      - "LDG-2436"
+      - "LDG-2437"
+      - "LDG-2438"
+      - "LDG-2439"
+      - "LDG-2440"
+      - "LDG-2442"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.5"
+    tests:
+      - "documentation_contract_tests"
+      - "vignette_render"
+      - "readme_render_check"
+      - "package_release_checks"
+      - "manual_closeout_review"
