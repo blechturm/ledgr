@@ -18,7 +18,7 @@ tickets:
 
   - id: "LDG-2435"
     title: "Canonical Research Workflow Article"
-    status: "pending"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -38,7 +38,7 @@ tickets:
     priority: "P1"
     effort: "M"
     dependencies:
-      - "LDG-2435"
+      - "LDG-2443"
     classification:
       type: "documentation"
       surface: "first_contact_docs"
@@ -55,7 +55,7 @@ tickets:
     priority: "P1"
     effort: "M"
     dependencies:
-      - "LDG-2435"
+      - "LDG-2443"
     classification:
       type: "documentation"
       surface: "store_data_reproducibility"
@@ -72,7 +72,7 @@ tickets:
     priority: "P1"
     effort: "M"
     dependencies:
-      - "LDG-2435"
+      - "LDG-2443"
       - "LDG-2442"
     classification:
       type: "documentation"
@@ -90,10 +90,11 @@ tickets:
     priority: "P2"
     effort: "S"
     dependencies:
-      - "LDG-2435"
+      - "LDG-2443"
       - "LDG-2436"
       - "LDG-2437"
       - "LDG-2438"
+      - "LDG-2444"
     classification:
       type: "documentation"
       surface: "vignette_flow"
@@ -136,6 +137,39 @@ tickets:
       - "documentation_contract_tests"
       - "manual_error_wording_review"
 
+  - id: "LDG-2443"
+    title: "Quarto Vignette Infrastructure And Styleguide"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2435"
+    classification:
+      type: "documentation_platform"
+      surface: "vignette_rendering"
+      scope: "quarto_migration"
+    tests:
+      - "quarto_render_smoke_test"
+      - "pkgdown_article_smoke_test"
+      - "documentation_contract_tests"
+      - "manual_styleguide_review"
+
+  - id: "LDG-2444"
+    title: "Remaining Core Vignette Quarto Migration"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2443"
+    classification:
+      type: "documentation_platform"
+      surface: "core_vignettes"
+      scope: "quarto_migration"
+    tests:
+      - "documentation_contract_tests"
+      - "quarto_render_checks"
+      - "manual_styleguide_review"
+
   - id: "LDG-2441"
     title: "v0.1.8.5 Release Gate And Closeout"
     status: "pending"
@@ -149,6 +183,8 @@ tickets:
       - "LDG-2439"
       - "LDG-2440"
       - "LDG-2442"
+      - "LDG-2443"
+      - "LDG-2444"
     classification:
       type: "release_gate"
       surface: "release_process"

@@ -1,6 +1,15 @@
 ledgr_test_source_vignette <- function(file) {
-  path <- testthat::test_path("..", "..", "vignettes", file)
-  testthat::skip_if_not(file.exists(path), sprintf("source vignette not available during installed-package tests: %s", file))
+  root <- testthat::test_path("..", "..", "vignettes")
+  candidates <- file.path(root, file)
+  if (grepl("[.]Rmd$", file)) {
+    candidates <- c(candidates, file.path(root, sub("[.]Rmd$", ".qmd", file)))
+  }
+  if (grepl("[.]qmd$", file)) {
+    candidates <- c(candidates, file.path(root, sub("[.]qmd$", ".Rmd", file)))
+  }
+  existing <- candidates[file.exists(candidates)]
+  testthat::skip_if_not(length(existing) > 0, sprintf("source vignette not available during installed-package tests: %s", file))
+  path <- existing[[1]]
   path
 }
 
@@ -266,8 +275,8 @@ testthat::test_that("background articles stay pkgdown-only", {
   articles <- file.path(root, "vignettes", "articles")
   testthat::skip_if_not(dir.exists(articles), "source articles not available during installed-package tests")
 
-  testthat::expect_true(file.exists(file.path(articles, "who-ledgr-is-for.Rmd")))
-  testthat::expect_true(file.exists(file.path(articles, "why-r.Rmd")))
+  testthat::expect_true(any(file.exists(file.path(articles, c("who-ledgr-is-for.Rmd", "who-ledgr-is-for.qmd")))))
+  testthat::expect_true(any(file.exists(file.path(articles, c("why-r.Rmd", "why-r.qmd")))))
   testthat::expect_false(file.exists(file.path(root, "vignettes", "who-ledgr-is-for.Rmd")))
   testthat::expect_false(file.exists(file.path(root, "vignettes", "why-r.Rmd")))
   testthat::expect_false(file.exists(file.path(root, "inst", "doc", "who-ledgr-is-for.Rmd")))
@@ -999,6 +1008,91 @@ testthat::test_that("feature contract check docs state factory materialization b
   testthat::expect_match(help, "ledgr_feature_factory_requires_params", fixed = TRUE)
 })
 
+testthat::test_that("research workflow article pins canonical workflow and validation caveats", {
+  doc <- paste(readLines(ledgr_test_source_vignette("research-workflow.qmd"), warn = FALSE), collapse = "\n")
+
+  required_sections <- c(
+    "## Project Topology",
+    "## Fix The Evidence: Seal A Snapshot",
+    "## Declare The Experiment Boundary",
+    "## Choose The Strategy",
+    "## Sanity-Check One Run",
+    "## Compare Declared Candidates",
+    "## Inspect Before You Promote",
+    "## Commit The Selection With A Note",
+    "## Reopen The Artifact",
+    "## What Promotion Does Not Prove",
+    "## Write The Human Research Note",
+    "## Next Layer: Walk-Forward Evaluation",
+    "## Where Next"
+  )
+
+  for (section in required_sections) {
+    testthat::expect_match(doc, section, fixed = TRUE)
+  }
+
+  report_items <- c(
+    "hypothesis and data window",
+    "snapshot hash and data-source assumptions",
+    "feature and strategy declarations",
+    "candidate grid summary",
+    "candidate ranking rule",
+    "top-N candidate table",
+    "issue and failure review",
+    "equity and drawdown plots",
+    "promotion note",
+    "reason for rejecting alternatives",
+    "selection caveat: promoted candidate is not statistically validated by promotion itself"
+  )
+
+  for (item in report_items) {
+    testthat::expect_match(doc, item, fixed = TRUE)
+  }
+
+  testthat::expect_match(doc, "The loop is deliberately short:", fixed = TRUE)
+  testthat::expect_match(doc, "Reopen and recover", fixed = TRUE)
+  testthat::expect_match(doc, "artifacts/ledgr_store.duckdb", fixed = TRUE)
+  testthat::expect_match(doc, "artifacts/*.duckdb", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_demo_bars", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_feature_map", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_feature_grid", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_strategy_grid", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_grid_cross", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_promote", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_run_open", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_extract_strategy", fixed = TRUE)
+  testthat::expect_match(doc, "passed_warmup()", fixed = TRUE)
+  testthat::expect_match(doc, "Reopen and recover", fixed = TRUE)
+  testthat::expect_match(doc, "selected candidate", fixed = TRUE)
+  testthat::expect_match(doc, "strategy parameters", fixed = TRUE)
+  testthat::expect_match(doc, "feature parameters", fixed = TRUE)
+  testthat::expect_match(doc, "Tier 2\\s+strategies")
+  testthat::expect_match(doc, "Promotion records selection; it does not prove generalization.", fixed = TRUE)
+  testthat::expect_match(doc, "Naive\\s+sweep-and-pick selection is a selection-bias risk")
+  testthat::expect_match(doc, "walk-forward and\\s+out-of-sample evaluation as the next conceptual layer")
+  testthat::expect_match(doc, "the public roadmap places walk-forward evaluation at v0.1.9.x", fixed = TRUE)
+  testthat::expect_match(doc, "When you ask \"does this strategy generalize?\"", fixed = TRUE)
+  testthat::expect_match(doc, "Try it", fixed = TRUE)
+  testthat::expect_match(doc, "```{mermaid}", fixed = TRUE)
+  testthat::expect_match(doc, "API gap", fixed = TRUE)
+  testthat::expect_match(doc, "v0.1.8.6 cycle", fixed = TRUE)
+  testthat::expect_match(doc, "Design note", fixed = TRUE)
+  testthat::expect_match(doc, "This article is evaluated when it is rendered", fixed = TRUE)
+  testthat::expect_match(doc, "file.path(tempdir(), \"ledgr_research_workflow.duckdb\")", fixed = TRUE)
+  testthat::expect_match(doc, "head(ledgr_results(single_run, what = \"equity\"), 3)", fixed = TRUE)
+  testthat::expect_match(doc, "info$promotion_context", fixed = TRUE)
+  testthat::expect_match(doc, "About the demo data", fixed = TRUE)
+  testthat::expect_match(doc, "::: {.callout-note}", fixed = TRUE)
+  testthat::expect_match(doc, "::: {.callout-tip}", fixed = TRUE)
+  testthat::expect_no_match(doc, "#| eval: false", fixed = TRUE)
+  testthat::expect_match(doc, "custom_sma_strategy <- function(ctx, params)", fixed = TRUE)
+  testthat::expect_match(doc, "glimpse(top_n)", fixed = TRUE)
+  testthat::expect_match(doc, "as_tibble()", fixed = TRUE)
+  testthat::expect_no_match(doc, "dplyr::filter", fixed = TRUE)
+  testthat::expect_match(doc, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_no_match(doc, "not evaluated during\\s+package vignette builds")
+})
+
 testthat::test_that("experiment-store docs show the low-level CSV bridge", {
   doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.Rmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
@@ -1237,7 +1331,7 @@ testthat::test_that("help-page article links target installed vignettes only", {
   )))
   linked_articles <- sub('^system[.]file\\("doc", "([^"]+)[.]html", package = "ledgr"\\)$', "\\1", linked)
 
-  installed_articles <- tools::file_path_sans_ext(basename(list.files(vignettes_dir, pattern = "[.]Rmd$", full.names = TRUE)))
+  installed_articles <- tools::file_path_sans_ext(basename(list.files(vignettes_dir, pattern = "[.](Rmd|qmd)$", full.names = TRUE)))
   testthat::expect_true(all(linked_articles %in% installed_articles))
   testthat::expect_true("indicators" %in% installed_articles)
   testthat::expect_false("ttr-indicators" %in% installed_articles)

@@ -73,13 +73,15 @@ routed v0.1.8.3 auditr fixes that fit the release scope.
 - Tickets: `ledgr_v0_1_8_4_spec_packet/v0_1_8_4_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_4_spec_packet/tickets.yml`.
 
-The active packet is v0.1.8.5 canonical research workflow and teachability. It
-is grounded in
+The active packet is v0.1.8.5 canonical research workflow and teachability,
+including installed-vignette migration to Quarto and article styleguide review.
+It is grounded in
 `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`.
 
 - Spec: `ledgr_v0_1_8_5_spec_packet/v0_1_8_5_spec.md`.
 - Tickets: `ledgr_v0_1_8_5_spec_packet/v0_1_8_5_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_5_spec_packet/tickets.yml`.
+- Vignette styleguide: `vignette_styleguide.md`.
 
 Do not implement v0.1.8.5 work beyond the spec scope. v0.1.8.5 is
 documentation/workflow alignment first; DuckDB-backed feature storage,
@@ -97,6 +99,8 @@ logs, point-in-time regressors, and OMS work remain later milestones.
 - `model_routing.md` - model/task routing guidance.
 - `ledgr_ux_decisions.md` - cross-cutting UX decisions.
 - `release_ci_playbook.md` - release gate and CI playbook.
+- `vignette_styleguide.md` - Quarto-forward article styleguide for installed
+  vignettes and teachability reviews.
 - `horizon.md` - non-binding future-idea parking lot.
 
 ## Current Architecture Inputs
@@ -342,6 +346,7 @@ contract index.
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |
 | Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, `rfc/rfc_design_doc_governance.md`, `rfc/rfc_design_doc_governance_response.md` |
 | Release operation | `release_ci_playbook.md`, active release/closeout ticket if one exists |
+| Vignette or article writing | `vignette_styleguide.md`, active packet, relevant existing article |
 | Audit intake | relevant audit, current packet if one exists, tickets |
 | RFC response | source RFC, related contract section, related roadmap section |
 | Spike execution | spike document, current packet if one exists, architecture note that consumes results |

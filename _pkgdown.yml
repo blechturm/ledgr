@@ -12,6 +12,7 @@ articles:
     contents:
       - articles/who-ledgr-is-for
       - getting-started
+      - research-workflow
       - leakage
       - reproducibility
   - title: Core Workflow

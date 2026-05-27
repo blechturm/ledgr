@@ -31,6 +31,8 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
+      - uses: quarto-dev/quarto-actions/setup@v2
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
@@ -39,6 +41,7 @@ jobs:
             any::pkgload
             any::pkgdown
             any::knitr
+            any::quarto
             any::rmarkdown
             any::DT
             any::htmltools

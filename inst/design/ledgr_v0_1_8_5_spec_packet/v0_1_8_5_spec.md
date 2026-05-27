@@ -3,7 +3,8 @@
 **Status:** Draft implementation spec for v0.1.8.5.
 **Target Branch:** `v0.1.8.5`
 **Scope:** Canonical research workflow and teachability release after active
-aliases and grid helpers.
+aliases and grid helpers, including migration of installed vignettes to
+Quarto.
 **Auditr Input:** Routed from the completed v0.1.8.4 packet. Broader workflow
 documentation, sweep-inspection, cross-surface semantics, and "where do I look
 for X?" findings are accepted as v0.1.8.5 inputs. A pending auditr report may
@@ -18,6 +19,8 @@ template libraries.
 **In-scope pre-CRAN cleanup:** Narrow legacy sweep-authoring surfaces so active
 aliases plus feature/strategy grids are the canonical feature-parameter sweep
 path.
+**In-scope documentation-platform cleanup:** Migrate installed vignettes from
+R Markdown to Quarto and review them against a documented article styleguide.
 
 ---
 
@@ -104,7 +107,7 @@ research artifacts are the easiest path, not an afterthought.
 
 ## 2. Release Goals
 
-v0.1.8.5 has ten primary goals:
+v0.1.8.5 has eleven primary goals:
 
 1. Add a canonical research workflow article or vignette that walks through the
    full package-owned path from sealed data to promoted evidence.
@@ -130,6 +133,9 @@ v0.1.8.5 has ten primary goals:
     active aliases plus feature/strategy grids become the supported feature
     parameter sweep path, while legacy feature factories are narrowed to
     compatibility and advanced fixed-feature use.
+11. Migrate installed vignettes to Quarto and apply a documented styleguide so
+    callouts, diagrams, exercises, code examples, cross-links, and article
+    endings have one visual and editorial convention.
 
 The release succeeds when a new serious user can answer:
 
@@ -303,7 +309,7 @@ should be sealed into a new immutable snapshot.
 Create a dedicated article or vignette, tentatively:
 
 ```text
-vignettes/research-workflow.Rmd
+vignettes/research-workflow.qmd
 ```
 
 This is the canonical end-to-end research workflow article. The existing
@@ -333,10 +339,8 @@ Required article shape:
 9. Promotion with note.
 10. Reopen from store.
 11. Walk-forward and out-of-sample evaluation as the next roadmap layer, using
-    a short "Future: Walk-Forward Evaluation" callout that links to
-    `inst/design/ledgr_roadmap.md` and
-    `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` until
-    a user-facing walk-forward article exists.
+    a short user-facing "Future: Walk-Forward Evaluation" callout that names
+    the roadmap placement until a user-facing walk-forward article exists.
 12. Report/review outline.
 
 The report/review outline must include:
@@ -464,7 +468,7 @@ snapshot material into a focused data-input article. The article may cover:
 Add a short standalone article, tentatively:
 
 ```text
-vignettes/execution-semantics.Rmd
+vignettes/execution-semantics.qmd
 ```
 
 The article should be compact and linked from the workflow, strategy
@@ -484,6 +488,13 @@ execution explanation across many partial sections. It should explain:
 
 v0.1.8.5 must include a reading-flow and redundancy review for installed
 articles.
+
+Installed vignettes should use Quarto (`.qmd`) after the Quarto infrastructure
+batch lands. The article styleguide lives at
+`inst/design/vignette_styleguide.md` and is a review input for every vignette
+batch in this cycle. Quarto callouts, diagrams when they add teaching value,
+exercises, and related article links are the target conventions. Older R
+Markdown source is migration input, not the long-term style target.
 
 Each major vignette should have one primary job:
 
@@ -529,7 +540,9 @@ short reminder and link there.
 Every vignette should state its job early, either in prose or through its first
 section heading. Examples should be runnable unless explicitly marked as
 conceptual. Fragmentary code should be avoided in first-contact documents and
-used sparingly elsewhere.
+used sparingly elsewhere. Callouts should carry scanning-critical guidance
+such as runnability caveats, data caveats, validation caveats, and version
+boundaries; they should not become decorative.
 
 Redundancy is acceptable only when it prevents context loss. It is not
 acceptable when it creates competing explanations of the same contract.
@@ -658,7 +671,7 @@ small enough that each batch can receive code review before the next one.
 
 - Inventory current README and vignette flow before rewriting.
 - Identify canonical homes for repeated concepts.
-- Create the dedicated research workflow article.
+- Create the dedicated research workflow article as a review draft.
 - Build the runnable path with package-owned demo data where possible.
 - Include the explicit selection-is-not-validation section.
 - Link walk-forward and out-of-sample evaluation as future conceptual
@@ -678,9 +691,40 @@ Minimum documentation contract checks for this batch:
 - warmup examples use `passed_warmup()`;
 - backup guidance contains at least one concrete backup pattern.
 
+### Batch A2: Quarto Infrastructure And Styleguide
+
+- Verify Quarto CLI availability for local development and release checks.
+- Add the package/project infrastructure needed to render `.qmd` vignettes.
+- Add `_quarto.yml` or equivalent project configuration with rendering scoped
+  so Quarto does not accidentally render non-vignette files.
+- Draft `inst/design/vignette_styleguide.md` and make it the review standard
+  for v0.1.8.5 article work.
+- Migrate the research workflow article from `.Rmd` draft to `.qmd`.
+- Apply the editorial punch-list from the workflow article review: coherent
+  warmup example, task-oriented strategy heading, report-before-future section
+  order, and related-article links.
+- Update documentation contract tests so source checks work for `.qmd`
+  vignettes during and after migration.
+- Smoke-test Quarto vignette rendering and pkgdown integration before other
+  article batches migrate.
+
+Minimum checks for this batch:
+
+- `vignettes/research-workflow.qmd` exists and is the canonical source;
+- the `.Rmd` draft is removed or explicitly treated as a temporary migration
+  source, not an installed article;
+- Quarto callouts render in the checked output path, and diagrams are rendered
+  and kept only when they add teaching value;
+- documentation contract tests read the canonical `.qmd` or rendered article
+  output rather than assuming `.Rmd`;
+- the styleguide documents voice, opening pattern, callouts, diagrams,
+  exercises, code chunks, cross-links, reference-content boundaries, and
+  related-article endings.
+
 ### Batch B: First-Contact Alignment
 
 - Update README and Getting Started to point at the same workflow.
+- Migrate Getting Started to Quarto and apply the styleguide.
 - Reduce README to a quick-backtest path plus capability links, not a full
   feature catalog.
 - Fix the README strategy-source inspection regression from the v0.1.8.4 docs
@@ -697,10 +741,14 @@ Minimum documentation contract checks for this batch:
   feature;
 - `_pkgdown.yml` exposes the workflow article and preserves a coherent reading
   order.
+- the Quarto-sourced Getting Started article renders and follows the
+  styleguide's opening, callout, and related-article conventions.
 
 ### Batch C: Store, Data, And Reproducibility Docs
 
 - Align Experiment Store and Reproducibility docs with the one-store topology.
+- Migrate Experiment Store and Reproducibility articles to Quarto and apply
+  the styleguide.
 - Add backup and pre-CRAN schema guidance.
 - Split or add Data Input And Snapshot Creation material if needed.
 - Name the Yahoo/real-data caveats only as far as needed for the workflow.
@@ -712,6 +760,8 @@ Minimum documentation contract checks for this batch:
 - data-input and snapshot-creation material is reachable from the reading
   flow;
 - no public doc implies that sealed snapshots can be mutated in place.
+- Quarto callouts are used for backup, pre-CRAN, and data-source caveats where
+  they materially improve scannability.
 
 ### Batch D: Sweep Boundary And Execution Semantics Docs
 
@@ -724,16 +774,17 @@ Minimum documentation contract checks for this batch:
   namespace.
 - Align Sweeps docs with feature grids, strategy grids, candidate inspection,
   and promotion notes.
+- Migrate Sweeps to Quarto and apply the styleguide.
 - Document the legacy sweep-authoring boundary: active aliases are the feature
   parameter sweep path; `ledgr_param_grid()` is strategy-only/legacy; feature
   factories are compatibility/advanced and unsupported for parameterized
   feature sweeps.
-- Add the compact execution semantics article.
+- Add the compact execution semantics article as native Quarto source.
 - Ensure warmup examples use `passed_warmup()`.
 
 Minimum documentation contract checks for this batch:
 
-- `vignettes/execution-semantics.Rmd` exists;
+- `vignettes/execution-semantics.qmd` exists;
 - execution semantics are linked from at least the workflow, strategy
   development, sweeps, and metrics/accounting articles;
 - targeted feature-map, experiment, or sweep tests cover the supported
@@ -744,6 +795,26 @@ Minimum documentation contract checks for this batch:
   boundary;
 - new warmup examples avoid ad hoc `!is.na(sma)`-style guards and use
   `passed_warmup()`.
+- execution semantics and sweep articles render from `.qmd` sources.
+
+### Batch D2: Remaining Core Vignette Migration
+
+- Migrate Strategy Development, Indicators / Feature Maps, and
+  Metrics/Accounting articles to Quarto.
+- Apply the styleguide without reopening runtime or API scope.
+- Preserve the v0.1.8.4 active-alias teaching improvements while improving
+  visual hierarchy, callouts, diagrams, exercises, and related-article links.
+- Keep reference-style function contracts in roxygen/help pages and use
+  vignettes for workflow, explanation, and worked examples.
+
+Minimum documentation checks for this batch:
+
+- all three articles have `.qmd` canonical sources;
+- each article states or demonstrates its primary job in the first section or
+  paragraph;
+- examples use styleguide-compliant callouts and exercises where useful;
+- no article reintroduces exact-ID feature lookup as the primary
+  parameterized sweep path.
 
 ### Batch E: Release Gate And Auditr Mapping
 
@@ -753,6 +824,7 @@ Minimum documentation contract checks for this batch:
   packet is active.
 - Run documentation contract tests.
 - Render changed vignettes/articles.
+- Render Quarto-sourced vignettes and pkgdown article pages.
 - Run package checks required by the release playbook.
 - Update tickets, NEWS, and design index as needed.
 
@@ -763,6 +835,8 @@ Minimum release-gate checks for this batch:
 - pending auditr report has a recorded disposition if it lands before release;
 - `README.Rmd` and `README.md` are synchronized;
 - changed vignettes render or have a documented maintainer exception.
+- all installed vignette sources are `.qmd`, except files with an explicit
+  maintainer-approved exception.
 
 ### Batch F: Optional Pending Auditr Intake
 
@@ -818,7 +892,13 @@ The release is acceptable when:
     of the same contract.
 21. Any auditr report that lands during the release has a disposition
     classified per Section 8.1.
-22. Release-gate checks pass or failures are documented with maintainer
+22. Installed vignette sources are migrated to Quarto unless a maintainer
+    exception is recorded.
+23. `inst/design/vignette_styleguide.md` exists and is used in editorial
+    review.
+24. Quarto rendering and pkgdown integration pass or have maintainer-accepted
+    exceptions.
+25. Release-gate checks pass or failures are documented with maintainer
     disposition.
 
 ---
@@ -857,6 +937,8 @@ v0.1.8.5 should be described as a documentation and workflow release:
 
 - it teaches ledgr's canonical reproducible research path;
 - it aligns first-contact docs with active aliases and grid helpers;
+- it migrates installed vignettes to Quarto and establishes a reusable article
+  styleguide;
 - it clarifies project artifact topology and backup expectations;
 - it documents how to inspect and promote sweep evidence deliberately;
 - it prepares the ground for the v0.1.8.6 storage spike and v0.1.8.7

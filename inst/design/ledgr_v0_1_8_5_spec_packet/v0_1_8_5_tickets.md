@@ -2,24 +2,27 @@
 
 Version: v0.1.8.5
 Date: 2026-05-26
-Total Tickets: 9
+Total Tickets: 11
 
 ## Ticket Organization
 
 This packet implements the scoped v0.1.8.5 plan from `v0_1_8_5_spec.md`:
-canonical research workflow, artifact topology, README and vignette narrative
-flow, sweep inspection teaching, legacy sweep-authoring boundary cleanup,
-concrete backup guidance, and bounded auditr intake.
+canonical research workflow, Quarto vignette migration, artifact topology,
+README and vignette narrative flow, sweep inspection teaching, legacy
+sweep-authoring boundary cleanup, concrete backup guidance, and bounded
+auditr intake.
 
 The release spine is:
 
 ```text
 documentation inventory
   -> canonical research workflow article
+  -> Quarto vignette infrastructure and styleguide
   -> README / Getting Started / pkgdown reading flow
   -> store, data input, and reproducibility docs
   -> legacy sweep-authoring boundary cleanup
   -> sweeps and execution semantics docs
+  -> remaining core vignette Quarto migration
   -> research-to-production disposition and redundancy cleanup
   -> bounded auditr intake
   -> release gate
@@ -45,17 +48,20 @@ machinery and must not silently accept parameterized feature sweeps.
 ```text
 LDG-2434 Packet Setup, Documentation Inventory, And Reading Flow
   |-- LDG-2435 Canonical Research Workflow Article
-  |     |-- LDG-2436 README, Getting Started, And Pkgdown Reading Flow
-  |     |-- LDG-2437 Store, Data Input, And Reproducibility Docs
-  |     |-- LDG-2438 Sweeps And Execution Semantics Docs
-  |     `-- LDG-2439 Research-To-Production Disposition And Redundancy Cleanup
+  |     `-- LDG-2443 Quarto Vignette Infrastructure And Styleguide
+  |           |-- LDG-2436 README, Getting Started, And Pkgdown Reading Flow
+  |           |-- LDG-2437 Store, Data Input, And Reproducibility Docs
+  |           |-- LDG-2438 Sweeps And Execution Semantics Docs
+  |           |-- LDG-2444 Remaining Core Vignette Quarto Migration
+  |           `-- LDG-2439 Research-To-Production Disposition And Redundancy Cleanup
   |-- LDG-2440 Pending Auditr Intake And Bounded Routing
   |-- LDG-2442 Legacy Sweep Authoring Boundary
   `-- LDG-2441 v0.1.8.5 Release Gate And Closeout
 
 LDG-2438 also depends on LDG-2442 for the legacy boundary language. LDG-2441
-depends on LDG-2435 through LDG-2440 plus LDG-2442. LDG-2440 may close as a
-no-op if no pending auditr report lands before the release gate.
+depends on LDG-2435 through LDG-2440 plus LDG-2442, LDG-2443, and LDG-2444.
+LDG-2440 closed by classifying the v0.1.8.4 auditr themes against the
+bounded-intake rule; a fresh report would trigger a separate intake.
 ```
 
 ## Priority Levels
@@ -137,7 +143,7 @@ scope: v0.1.8.5
 Priority: P1
 Effort: L
 Dependencies: LDG-2434
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -147,7 +153,8 @@ without implying that sweep promotion is statistical validation.
 
 ### Tasks
 
-- Add `vignettes/research-workflow.Rmd`.
+- Add `vignettes/research-workflow.Rmd` as the review draft for the workflow
+  article; LDG-2443 migrates the accepted draft to canonical `.qmd` source.
 - Build a runnable core using package-owned demo data or a small local data
   path.
 - Teach project topology and one project-local store:
@@ -179,6 +186,18 @@ without implying that sweep promotion is statistical validation.
 Targeted documentation contract tests, vignette render, and manual article
 review.
 
+### Completion Notes
+
+Added `vignettes/research-workflow.Rmd` as the workflow article review draft.
+The article teaches the sealed snapshot -> experiment -> single run -> sweep
+-> candidate inspection -> promotion -> reopen path, uses active aliases and
+executable grids, includes the required validation caveat and walk-forward
+forward-link, and documents the report/review outline. Added documentation
+contract tests for the required section spine, report outline, validation
+caveats, warmup guard, project-local store path, and documented vignette-build
+exception. LDG-2443 owns the Quarto migration and final canonical `.qmd`
+source.
+
 ### Source Reference
 
 - `v0_1_8_5_spec.md` Sections 3, 4, 5, 6.1, and 11
@@ -194,11 +213,123 @@ scope: canonical_workflow
 
 ---
 
-## LDG-2436: README, Getting Started, And Pkgdown Reading Flow
+## LDG-2443: Quarto Vignette Infrastructure And Styleguide
 
 Priority: P1
 Effort: M
 Dependencies: LDG-2435
+Status: Completed
+
+### Description
+
+Make Quarto the canonical installed-vignette format for v0.1.8.5, add the
+article styleguide, and migrate the research workflow article as the
+proof-of-concept before the remaining documentation batches scale the pattern.
+
+### Tasks
+
+- Verify Quarto CLI availability for local development and release checks.
+- Add package/project configuration needed to render `.qmd` vignettes.
+- Add `_quarto.yml` or equivalent configuration that renders only intended
+  vignette files and does not accidentally process design notebooks.
+- Add `inst/design/vignette_styleguide.md` as the review standard for article
+  work in this cycle.
+- Migrate `vignettes/research-workflow.Rmd` to
+  `vignettes/research-workflow.qmd`.
+- Apply the editorial punch-list from Batch 1 review: coherent warmup example,
+  task-oriented strategy heading, report-before-future section order, and
+  related-article links.
+- Apply styleguide Section 5 Code Clarity: strip non-semantic `pkg::fn()`
+  qualifications and repeated optional-argument boilerplate, and route
+  visual-clutter API gaps to notes instead of hiding them in examples.
+- Update documentation contract tests so migrated articles are read from `.qmd`
+  or rendered output instead of assuming `.Rmd`.
+- Smoke-test Quarto vignette rendering and pkgdown integration.
+
+### Acceptance Criteria
+
+- `vignettes/research-workflow.qmd` exists and is the canonical source.
+- Temporary `research-workflow.Rmd` source is removed or explicitly excluded
+  from installed articles.
+- Quarto callouts render in the checked output path; diagrams are rendered and
+  kept only when they add teaching value.
+- Documentation contract tests cover the workflow article through the canonical
+  `.qmd` or rendered output.
+- `inst/design/vignette_styleguide.md` exists and covers voice, opening
+  pattern, callouts, diagrams, exercises, code chunks, cross-links,
+  reference-content boundaries, and related-article endings.
+- The migrated workflow article passes the styleguide Section 14 review
+  checklist or records explicit exceptions in the ticket notes.
+- Package, vignette, and pkgdown configuration changes are scoped to
+  documentation rendering and do not alter runtime semantics.
+
+### Verification
+
+Quarto render smoke test, pkgdown article smoke test, documentation contract
+tests, and manual styleguide review.
+
+### Completion Notes
+
+Completed Batch 1B Quarto proof-of-concept. Added package/project Quarto
+configuration, CI dependency setup, pkgdown navigation for the new workflow
+article, and the working draft vignette styleguide. Migrated the research
+workflow article from `.Rmd` to canonical `.qmd`, rendered the companion
+GitHub markdown, and removed the temporary `.Rmd` source.
+
+Verification completed:
+
+- Quarto CLI available through the RStudio-bundled Quarto executable
+  (`1.6.42`).
+- `vignettes/research-workflow.qmd` renders to HTML with Quarto callout assets
+  present. The workflow article uses evaluated chunks with real rendered output
+  and keeps the Mermaid diagrams only where they teach the workflow loop and
+  selection-vs-validation boundary.
+- `vignettes/research-workflow.qmd` renders to
+  `vignettes/research-workflow.md` for GitHub review.
+- pkgdown detects `research-workflow` in article navigation and the
+  Quarto-only pkgdown article builder writes
+  `articles/research-workflow.html` in a temporary smoke site.
+- Documentation contract tests read the canonical `.qmd` source and pass.
+
+Known integration note: a full `pkgdown::build_articles()` run still fails on
+pre-existing `getting-started.Rmd` executable-code drift. That is outside this
+ticket and remains owned by LDG-2436.
+
+Editorial review note: the workflow article intentionally names the promoted-run
+recovery surface as an API gap. The underlying provenance exists through
+`ledgr_run_info()`, promotion context metadata, and `ledgr_extract_strategy()`,
+but future work should consider a small helper that summarizes "what caused this
+promoted result?" without requiring users to inspect nested promotion-context
+fields directly.
+
+Editorial review note: the workflow article also names candidate review as a
+design note. The current public surface supports explicit ranking with table
+tools and deliberate extraction through `ledgr_candidate()`, but future work
+should consider a compact helper for "rank completed candidates, show the
+review columns, separate issue rows, and select one candidate" without hiding
+the selection rule.
+
+### Source Reference
+
+- `v0_1_8_5_spec.md` Sections 2, 6.1, 6.7, 10, and 11
+- `inst/design/vignette_styleguide.md`
+- `vignettes/research-workflow.qmd`
+
+### Classification
+
+```yaml
+type: documentation_platform
+surface: vignette_rendering
+scope: quarto_migration
+```
+
+---
+
+## LDG-2436: README, Getting Started, And Pkgdown Reading Flow
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2443
 Status: Pending
 
 ### Description
@@ -215,6 +346,7 @@ README must not become a feature catalog.
 - Fix the README strategy-source inspection regression from the v0.1.8.4 docs
   rewrite so stored source is inspectable without overwhelming the quick path.
 - Update Getting Started to align with the same first-contact story.
+- Migrate Getting Started to Quarto and apply the styleguide.
 - Link to the workflow article and focused vignettes for sweeps, stores,
   reproducibility, metrics, feature maps, and strategy development.
 - Update `_pkgdown.yml` article ordering and grouping to match the documented
@@ -228,6 +360,8 @@ README must not become a feature catalog.
   major feature.
 - README strategy-source inspection proves the audit-trail story concisely.
 - Getting Started remains an onboarding path, not a reference manual.
+- Getting Started has a `.qmd` canonical source and renders under the Quarto
+  pipeline.
 - `_pkgdown.yml` exposes the workflow article and preserves a coherent reading
   order.
 - No obsolete exact-ID sweep example is presented as the primary path.
@@ -259,7 +393,7 @@ scope: readme_getting_started_pkgdown
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2435
+Dependencies: LDG-2443
 Status: Pending
 
 ### Description
@@ -272,6 +406,8 @@ pre-CRAN compatibility policy.
 
 - Align Experiment Store docs around `artifacts/ledgr_store.duckdb` as the
   default project-local store.
+- Migrate Experiment Store and Reproducibility articles to Quarto and apply
+  the styleguide.
 - Add a "Backup Conventions" subsection with at least one concrete backup
   pattern for a closed DuckDB store file.
 - Add or link user-visible pre-CRAN compatibility guidance.
@@ -293,6 +429,8 @@ pre-CRAN compatibility policy.
 - Public docs do not imply sealed snapshots can be mutated in place.
 - Reproducibility docs distinguish evidence capture from proof of selection
   validity.
+- Experiment Store and Reproducibility have `.qmd` canonical sources and
+  render under the Quarto pipeline.
 
 ### Verification
 
@@ -319,7 +457,7 @@ scope: artifact_topology
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2435, LDG-2442
+Dependencies: LDG-2443, LDG-2442
 Status: Pending
 
 ### Description
@@ -334,9 +472,10 @@ guards have one canonical explanation.
 - Align Sweeps docs with `ledgr_feature_grid()`, `ledgr_strategy_grid()`,
   `ledgr_grid_cross()`, candidate inspection, warning/failure review, and
   promotion notes.
+- Migrate Sweeps to Quarto and apply the styleguide.
 - Ensure Sweeps docs do not introduce objective-function, automatic ranking,
   automatic winner-selection, or `ledgr_tune()` semantics.
-- Add `vignettes/execution-semantics.Rmd`.
+- Add `vignettes/execution-semantics.qmd`.
 - Link execution semantics from workflow, Strategy Development, Sweeps, and
   Metrics/Accounting articles.
 - Ensure new warmup examples use `passed_warmup()`.
@@ -349,8 +488,10 @@ guards have one canonical explanation.
 
 ### Acceptance Criteria
 
-- `vignettes/execution-semantics.Rmd` exists.
+- `vignettes/execution-semantics.qmd` exists.
 - Execution semantics are linked from the required articles.
+- Sweeps and Execution Semantics have `.qmd` canonical sources and render under
+  the Quarto pipeline.
 - Sweeps docs teach feature grids, strategy grids, candidate inspection, and
   promotion notes.
 - Sweeps docs explicitly avoid automatic winner-selection semantics.
@@ -382,11 +523,71 @@ scope: installed_docs
 
 ---
 
+## LDG-2444: Remaining Core Vignette Quarto Migration
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2443
+Status: Pending
+
+### Description
+
+Migrate the v0.1.8.4-aligned core articles that are not otherwise touched by
+the earlier v0.1.8.5 content batches, and apply the styleguide without
+reopening runtime or API scope.
+
+### Tasks
+
+- Migrate Strategy Development to Quarto.
+- Migrate Indicators / Feature Maps to Quarto.
+- Migrate Metrics And Accounting to Quarto.
+- Apply the styleguide to headings, opening paragraphs, callouts, diagrams,
+  exercises, code chunks, cross-links, and related-article endings.
+- Preserve the v0.1.8.4 active-alias teaching improvements.
+- Keep reference-style function contracts in roxygen/help pages.
+- Ensure exact-ID lookup is not reintroduced as the primary parameterized
+  feature-sweep path.
+
+### Acceptance Criteria
+
+- Strategy Development, Indicators / Feature Maps, and Metrics And Accounting
+  have `.qmd` canonical sources.
+- Each article states or demonstrates its primary job in the first section or
+  first paragraph.
+- Quarto callouts, diagrams, exercises, and related links improve teaching
+  rather than adding decoration.
+- Documentation contract tests pass after source extension updates.
+- No migrated article reintroduces exact-ID feature lookup as the primary
+  parameterized feature-sweep path.
+
+### Verification
+
+Documentation contract tests, Quarto render checks, and manual styleguide
+review.
+
+### Source Reference
+
+- `v0_1_8_5_spec.md` Sections 6.7, 10, and 11
+- `inst/design/vignette_styleguide.md`
+- `vignettes/strategy-development.Rmd`
+- `vignettes/indicators.Rmd`
+- `vignettes/metrics-and-accounting.Rmd`
+
+### Classification
+
+```yaml
+type: documentation_platform
+surface: core_vignettes
+scope: quarto_migration
+```
+
+---
+
 ## LDG-2439: Research-To-Production Disposition And Redundancy Cleanup
 
 Priority: P2
 Effort: S
-Dependencies: LDG-2435, LDG-2436, LDG-2437, LDG-2438
+Dependencies: LDG-2443, LDG-2436, LDG-2437, LDG-2438, LDG-2444
 Status: Pending
 
 ### Description
@@ -401,7 +602,9 @@ explanations.
 - Narrow `research-to-production.Rmd` to promotion boundaries,
   production caveats, and future paper/live context, or remove it from the
   main reading flow if it remains redundant.
-- Ensure the article points to `research-workflow.Rmd` for the research path.
+- Ensure the article points to `research-workflow.qmd` for the research path.
+- Migrate the narrowed article to Quarto if it remains in the installed
+  article set.
 - Review major vignettes against the one-primary-job standard.
 - Replace repeated full explanations with short reminders and links to the
   canonical article.
@@ -410,7 +613,9 @@ explanations.
 ### Acceptance Criteria
 
 - `research-to-production.Rmd` no longer competes with
-  `research-workflow.Rmd`.
+  `research-workflow.qmd`.
+- If retained, Research-To-Production has a `.qmd` canonical source and renders
+  under the Quarto pipeline.
 - Each major vignette states or clearly demonstrates its primary job early.
 - Repeated explanations of sealing, target holdings, active aliases, and
   experiment stores are reduced to reminders outside their canonical homes.
@@ -576,7 +781,7 @@ scope: legacy_boundary
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2435, LDG-2436, LDG-2437, LDG-2438, LDG-2439, LDG-2440, LDG-2442
+Dependencies: LDG-2435, LDG-2436, LDG-2437, LDG-2438, LDG-2439, LDG-2440, LDG-2442, LDG-2443, LDG-2444
 Status: Pending
 
 ### Description
@@ -589,6 +794,7 @@ flow are coherent, and any auditr intake has been routed.
 
 - Run documentation contract tests.
 - Render changed vignettes and README artifacts.
+- Render Quarto-sourced vignettes and pkgdown article pages.
 - Verify `README.Rmd` and `README.md` are synchronized.
 - Verify `_pkgdown.yml` navigation matches the documented reading flow.
 - Run package checks required by the release playbook.
@@ -602,6 +808,10 @@ flow are coherent, and any auditr intake has been routed.
   tested/documented surfaces.
 - Documentation contract tests pass or have maintainer-accepted exceptions.
 - Changed vignettes render or have maintainer-accepted exceptions.
+- All installed vignette sources are `.qmd`, except files with an explicit
+  maintainer-approved exception.
+- `inst/design/vignette_styleguide.md` is canonized or has a recorded
+  carry-forward disposition.
 - Package checks required by the release playbook pass or have recorded
   disposition.
 - `tickets.yml` and this ticket file agree on final statuses.

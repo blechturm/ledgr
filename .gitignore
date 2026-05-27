@@ -61,7 +61,6 @@ po/*~
 rsconnect/
 .Rproj.user
 .DS_Store
-.quarto
 .env
 data-raw/*
 !data-raw/
@@ -69,3 +68,7 @@ data-raw/*
 inst/extdata/.DS_Store
 .claude
 .understand-anything/
+
+# Quarto generated state
+/.quarto/
+/vignettes/.quarto/

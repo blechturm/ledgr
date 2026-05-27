@@ -1360,6 +1360,432 @@ This horizon entry does not authorize any of the above. It records the
 direction so that when each follow-up cycle opens, the seed author starts
 from a known shape rather than re-deriving the boundary.
 
+### 2026-05-27 [evaluation] Baseline strategies and opinionated comparison
+
+The roadmap (`inst/design/ledgr_roadmap.md`) lists "Reference strategy
+templates as executable contract demonstrations" at v0.2.x. This horizon entry
+refines that line into a concrete design direction so the eventual RFC author
+starts from a known shape.
+
+Two things already exist in v0.1.8.4: `ledgr_demo_sma_crossover_strategy()` as
+a single teaching fixture, and `ledgr_compare_runs(snapshot, run_ids = ...)`
+as a multi-run comparison surface that returns side-by-side metrics. What is
+missing is the opinionated layer that connects them: a small library of
+baseline strategies the user can run against the same sealed snapshot, plus a
+comparison wrapper that produces a structured "does this beat the baseline"
+report instead of two unannotated equity curves.
+
+Three categories that must stay distinct in the design
+
+The v0.2.x RFC must keep these three surfaces separately named. Conflating
+them is the most likely failure mode:
+
+- **Baseline strategy.** Runs *inside the engine on the same snapshot* as the
+  user's strategy. Same data path, same fill semantics, same accounting.
+  Produces an in-sample comparison. This horizon entry is about this
+  category.
+- **Benchmark return series.** An *external* time series (e.g., SPY total
+  return, 60/40 model portfolio NAV) compared post-hoc to the strategy's
+  equity curve. Different data path. This is what `PerformanceAnalytics`
+  users expect and is a separate future RFC.
+- **Reference / teaching strategy.** Same mechanical shape as a baseline,
+  but the intent is education, not measurement.
+  `ledgr_demo_sma_crossover_strategy()` is one of these. Useful for
+  vignettes; not a measurement surface.
+
+Sketch of the v2.x API (not bound)
+
+```r
+# Baseline constructors -- same engine, same snapshot, in-sample
+ledgr_baseline_flat()                          # always flat (zero positions)
+ledgr_baseline_buy_and_hold()                  # equal-weight long at t=0, hold
+ledgr_baseline_equal_weight_monthly()          # rebalance to equal weights monthly
+ledgr_baseline_random_walk(seed)               # random target per pulse -- sanity check
+
+# Comparison wrapper -- opinionated about which stats matter
+ledgr_compare_against_baseline(
+  bt,                                          # your committed run
+  baseline = ledgr_baseline_buy_and_hold()     # the baseline strategy to run
+)
+```
+
+The wrapper runs the baseline on the same snapshot with the same opening
+state and reports a fixed structured comparison.
+
+The opinionated metric set
+
+The wrapper reports a small fixed set of statistics, chosen because they
+answer "does this add value over the baseline" rather than "what are this
+strategy's performance attributes":
+
+- difference in total return;
+- Sharpe difference;
+- max drawdown difference;
+- tracking error (stdev of return difference);
+- information ratio (return difference / tracking error);
+- percent of pulses where the strategy outperformed.
+
+The bounded metric set is itself a design decision. ledgr should refuse to be
+a generic stats library here; the comparison surface should teach the
+specific question "does my strategy add value relative to a known baseline,"
+not enumerate every possible benchmark-adjusted metric.
+
+Scope risks
+
+- **Template library creep.** Ship "buy and hold," users will ask for
+  "rebalanced 60/40," "equal-weight momentum," "minimum-variance," etc. Cap
+  the core library at ~4-6 templates that genuinely teach the comparison
+  discipline. Anything fancier belongs in a companion package or user code.
+- **Baseline vs benchmark conflation.** Users will read "baseline" as
+  "benchmark" and expect SPY-relative attribution. The API name and the
+  documentation must make the distinction obvious — `ledgr_baseline_*`
+  constructors run a real strategy inside the engine; a future
+  `ledgr_benchmark_*` family (if added) would consume external return
+  series.
+- **Opinionated metrics still bind a research-method choice.** Picking five
+  comparison stats teaches the user to optimize against those five stats.
+  The metric selection should be informed by the same Bailey / Lopez de
+  Prado / Harvey-Liu-Zhu literature that informed the walk-forward and
+  selection-integrity work.
+- **In-sample comparison is still in-sample.** If the user's strategy was
+  selected from a sweep on the same snapshot the baseline runs against,
+  "beats baseline by 3 bps" is in-sample evidence. The walk-forward
+  synthesis already warns that single-snapshot evidence is exploratory; the
+  baseline comparison surface inherits that caveat and must say so in
+  user-facing docs.
+
+Dependencies on prior cycles
+
+This RFC lands well after the prerequisite work:
+
+- walk-forward (v0.1.9.x) so comparisons can be made over OOS fold windows,
+  not just full snapshots;
+- target risk (v0.1.9) so baselines can be risk-adjusted comparable to
+  risk-aware strategies;
+- public cost API (v0.1.9.x/v0.2.0) so cost-aware comparisons are honest
+  (baselines have different turnover; comparing without cost can mislead);
+- selection-integrity diagnostics (v0.1.9.x) so the comparison can be paired
+  with multiplicity-aware significance reporting if the user wants it.
+
+The v0.2.x slot is the right window — after the prerequisites stabilize and
+before paper/live shifts the question from "does this beat the baseline" to
+"is this still working in production."
+
+Promoted roadmap hooks
+
+- baseline strategy library RFC (v0.2.x, after walk-forward and cost API
+  stabilize);
+- baseline-comparison API RFC (v0.2.x, coordinated with baseline library);
+- benchmark-return-series adapter RFC (later, if external-time-series
+  comparison surfaces user demand — distinct from baseline strategies);
+- companion-package reference strategy library (out of core, when the
+  in-core library hits maintenance-burden limit);
+- statistical-significance layer for baseline comparisons (coordinated with
+  selection-integrity diagnostics RFC).
+
+Cross-cycle note
+
+The v0.1.8.5 canonical workflow article (Batch 1, just shipped) intentionally
+does not teach baseline comparison. A reader of that article is likely to
+ask "but how do I know if my strategy is any good?" — and the honest answer
+today is "you run a baseline yourself and compare manually." The v0.2.x
+baseline-comparison API is what that answer should point to once it lands.
+
+Until then, the strategy-development vignette's existing note that the demo
+SMA crossover and the `single_instrument_strategy()` helper can be used as
+ad-hoc comparison baselines is the user-facing guidance.
+
+This horizon entry does not authorize any of the above. It records the
+direction so that when each follow-up cycle opens, the seed author starts
+from a known shape rather than re-deriving the boundary.
+
+### 2026-05-27 [infrastructure] Snapshot administration surface and ETL provenance metadata
+
+ledgr today stores a small set of snapshot fields plus a free-form
+`meta_json` envelope on the `snapshots` DuckDB table
+(`R/db-schema-create.R:233-242`). The engine writes `n_bars`,
+`n_instruments`, `start_date`, and `end_date` into `meta_json` at seal time
+(`R/snapshots-seal.R:199-253`), but the user-facing constructor
+`ledgr_snapshot_from_df()` does not even expose the `meta = list(...)`
+argument that `ledgr_snapshot_create()` accepts. There is no documented
+place for ETL provenance, no notes field, no labels or tags, and no
+listing or filtering surface beyond `ledgr_snapshot_info()` on a known ID.
+
+This gap surfaced in v0.1.8.5: the canonical research-workflow article
+teaches users to seal data into a project store but cannot teach the
+companion discipline of recording *how* the data was prepared. A user can
+reopen the exact sealed bytes, but cannot reopen the human reasoning that
+produced them.
+
+Three categories that must stay distinct in the design
+
+The eventual RFC must keep these three surfaces separately named so the
+schema and API do not collapse into a single freeform blob:
+
+- **Engine-computed metadata.** Derived deterministically at seal time
+  from the sealed contents: `n_bars`, `n_instruments`, `start_date`,
+  `end_date`, `snapshot_hash`, instrument list, calendar. Reproducible
+  from the snapshot and not user-editable.
+- **User-supplied descriptive metadata.** Free-text notes, ETL provenance
+  (source URL or vendor, retrieval timestamp, ETL script path and
+  version, transformations applied), tags or labels, author. Human-
+  authored documentation that ledgr stores faithfully but does not
+  interpret.
+- **Lifecycle and administrative state.** Existing `status`
+  (`CREATED`/`SEALED`/`FAILED`) plus potential additions like
+  `deprecated_at`, `superseded_by`, `archived_at`. State transitions
+  managed through dedicated API rather than freeform edits.
+
+Conflating any two is the most likely failure mode. ETL provenance is
+not lifecycle state; engine-computed fields are not user metadata.
+
+Sketch of the API (not bound)
+
+```r
+# Constructor surface -- both expose the same metadata fields
+ledgr_snapshot_from_df(
+  bars,
+  db_path     = ...,
+  snapshot_id = ...,
+  notes       = NULL,    # free-text human notes
+  source      = NULL,    # list: vendor, url, retrieved_at, etl_script, etl_version
+  tags        = NULL,    # character vector of labels
+  author      = NULL     # character scalar
+)
+
+ledgr_snapshot_create(con, snapshot_id, notes = NULL, source = NULL, ...)
+
+# Inspection and listing
+ledgr_snapshot_info(con, snapshot_id)          # returns all three categories
+ledgr_snapshot_list(                           # navigates the store
+  con,
+  tags          = NULL,                        # filter by label
+  author        = NULL,                        # filter by author
+  status        = NULL,                        # filter by lifecycle state
+  created_after = NULL
+)
+
+# Lifecycle administration
+ledgr_snapshot_deprecate(con, snapshot_id, reason)
+ledgr_snapshot_supersede(con, snapshot_id, by = new_snapshot_id, reason)
+
+# Note administration (audit-logged, not silent overwrite)
+ledgr_snapshot_note(con, snapshot_id, append = "...")
+```
+
+Schema direction
+
+The cleanest shape is a dedicated set of `snapshot_meta` columns on the
+`snapshots` table (or a sibling `snapshot_provenance` table for the
+structured ETL fields), with engine-computed values remaining in
+`meta_json` until the spike confirms which fields are stable enough to
+promote to typed columns. A `snapshot_audit` append-only table can record
+administrative edits to notes, tags, or lifecycle state.
+
+Scope risks
+
+- **Metadata creep.** Once the API exposes notes, users will ask for
+  arbitrary key/value extension. Cap structured fields at a small
+  defensible set and route everything else into one explicit
+  `extra = list(...)` slot stored as JSON, not into ad-hoc top-level
+  columns.
+- **Lifecycle confusion.** "Deprecated" and "superseded" sound similar
+  but mean different things; the RFC must define semantics precisely
+  before exposing them. Avoid soft-delete unless audit and recovery
+  semantics are clear.
+- **Mutable metadata vs immutable provenance.** Notes are mutable by
+  design (users learn things later). The `snapshot_hash` must not depend
+  on mutable metadata, or the audit trail breaks. ETL provenance
+  recorded at create-time should be append-only after seal, with later
+  edits routed through a dedicated audit-logged path.
+- **Listing API as a sweep substitute.** `ledgr_snapshot_list()` is a
+  research-management tool, not a query engine. Resist filters that pull
+  bar data ("snapshots containing instrument X") into the list surface;
+  those belong in `ledgr_snapshot_info()` or a separate query API.
+- **Migration burden.** A schema change to the `snapshots` table is a
+  breaking change to existing project stores. The pre-CRAN window
+  authorizes it, but the cycle must ship a migration script or an
+  explicit "rerun your experiments" gate.
+
+Dependencies on prior cycles
+
+- v0.1.8.5 canonical workflow article (Batch 3 / LDG-2437) surfaces the
+  user-facing need and may already start teaching the convention on the
+  existing `meta` argument as a documentation-only patch;
+- pre-CRAN compatibility policy (2026-05-25 horizon) authorizes the
+  breaking schema change without a deprecation cycle;
+- the v0.1.8.6 DuckDB feature-storage spike runs in the same cycle but
+  is independently scoped; its outcome does not gate the snapshot
+  administration schema.
+
+Promoted roadmap hooks
+
+- snapshot administration and ETL provenance metadata RFC: seed-shape
+  input for the v0.1.8.6 cycle; the RFC must conclude before the
+  v0.1.8.6 spec is cut;
+- `ledgr_snapshot_list()` filtering and listing API (coordinated with
+  the metadata schema RFC);
+- `ledgr_snapshot_deprecate()` and `ledgr_snapshot_supersede()`
+  lifecycle API (coordinated with the metadata schema RFC; final scope
+  decided in RFC synthesis);
+- audit-log table for administrative edits (coordinated with the
+  metadata schema RFC; final scope decided in RFC synthesis).
+
+Cross-cycle note
+
+The v0.1.8.5 workflow article should not teach a not-yet-existing notes
+API. Until the RFC lands and v0.1.8.6 implementation ships, the
+article's teaching path is "your store path is explicit, but the
+discipline of recording ETL provenance belongs in your project README
+or workflow_review.md report next to the store." That documentation-
+only patch sits inside Batch 3 (LDG-2437) scope without expanding it.
+
+This horizon entry is the seed-shape input for the snapshot
+administration RFC. It does not replace the RFC cycle, and the RFC
+synthesis (not this entry) is what authorizes the v0.1.8.6 spec scope.
+
+This horizon entry does not authorize any of the above. It records the
+direction so that when the snapshot administration RFC cycle opens, the
+seed author starts from a known shape rather than re-deriving the
+boundary.
+
+### 2026-05-27 [ux] Research-loop ergonomics helpers surfaced by the v0.1.8.5 workflow vignette
+
+The v0.1.8.5 canonical research workflow article
+(`vignettes/research-workflow.qmd`) explicitly flags two API gaps in
+user-visible callouts. They surfaced during teaching, not speculation:
+the article had to fall back to lower-level patterns to keep the
+research-loop story honest, and the callouts mark exactly where the
+helpers should land.
+
+Both gaps share a shape: ledgr already records the underlying data.
+The gap is in the summary surface that exposes the data compactly
+without flattening the visible selection rule or provenance reasoning.
+
+#### Gap 1: Sweep review helper
+
+Vignette location: the "Inspect Before You Promote" section and its
+"Design note" callout.
+
+The article currently teaches:
+
+```r
+ranked <- sweep |>
+  filter(status == "DONE") |>
+  arrange(desc(sharpe_ratio))
+
+candidate_columns <- c(
+  "run_id", "status", "final_equity", "total_return",
+  "sharpe_ratio", "params", "feature_params"
+)
+top_n <- ranked |> slice_head(n = 5) |> select(all_of(candidate_columns))
+
+issue_columns <- c("run_id", "status", "error_class", "error_msg", "warnings")
+issues <- sweep |> filter(status != "DONE") |> select(any_of(issue_columns))
+
+candidate <- ledgr_candidate(ranked, 1)
+```
+
+What is missing: a helper that ranks completed candidates by an
+explicit rule, returns a compact review table, separates issue rows
+into their own table, and preserves the visible selection rule.
+
+Critical design constraint: the helper must not hide the ranking
+rule. The vignette's whole teaching arc is that the metric must be a
+deliberate user choice, not a default the helper picks silently. A
+shape such as
+`ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)` keeps
+the rule in the call site.
+
+#### Gap 2: Promotion recovery summary
+
+Vignette location: the "Reopen The Artifact" section and its
+"API gap" callout-warning.
+
+The article currently teaches users to inspect:
+
+- `info$promotion_context$source`
+- `info$promotion_context$selected_candidate$run_id`
+- `info$promotion_context$selected_candidate$params_json`
+- `info$promotion_context$selected_candidate$feature_params_json`
+
+plus a separate `ledgr_extract_strategy()` call returning
+`strategy_params`, `reproducibility_level`, and `hash_verified`.
+
+What is missing: a single helper that summarizes a promoted run's
+"what caused this result?" record in one compact object: promotion
+source, selected candidate identity, strategy and feature parameters,
+strategy source provenance, and hash-verification status, without
+requiring nested-field navigation across multiple objects. A shape
+such as `ledgr_promotion_summary(snapshot, run_id, trust = FALSE)`
+returning a named list or compact tibble would fit.
+
+#### Shared design constraints
+
+- Helpers preserve the styleguide rule that selection or ranking rules
+  stay visible to the reader. A "show me the best candidate" helper
+  that picks Sharpe silently is exactly what the workflow article
+  warns against.
+- Helpers do not replace `ledgr_results()`, `ledgr_run_info()`,
+  `ledgr_extract_strategy()`, or `ledgr_candidate()`. They are
+  summary surfaces over those lower-level APIs, not parallel ones.
+- Output is inspectable as a plain data frame or named list, never an
+  opaque print-only object.
+- The recovery summary distinguishes stored facts (parameters, hashes,
+  note) from interpretation (reproducibility tier, hash-verification
+  status, recovery limitations). Tier 1 and Tier 2 strategies must
+  not collapse into a single "verified" status.
+
+#### Scope risks
+
+- **Selection-rule erasure.** Easiest failure mode for the sweep-review
+  helper is shipping a sensible default ranking metric. The helper
+  should require an explicit rank-by argument or return the chosen
+  rule alongside the rows.
+- **Provenance summary as truth.** Easiest failure mode for the
+  recovery helper is collapsing tier-1 and tier-2 strategies into one
+  "verified" status. Tier 2 strategies have real recovery limitations
+  and the summary must surface them honestly.
+- **Over-abstraction.** The current low-level paths are verbose but
+  not user-hostile. The helpers should compress the common case
+  without removing the lower-level paths from the public API.
+
+#### Dependencies on prior cycles
+
+- v0.1.8.4 active aliases and grid helpers shipped (precondition:
+  `sweep` carries `feature_params` and `params` columns and `status`
+  is canonical);
+- v0.1.8.5 canonical workflow article (Batch 1 / LDG-2435) is the
+  surface that demonstrates the gap and constrains the helper shape;
+- v0.1.8.5 sweeps documentation (Batch 4 / LDG-2438) should teach
+  the helpers if they ship in the same cycle, otherwise it should not
+  pre-document them.
+
+#### Promoted roadmap hooks
+
+- sweep-review helper: scoped into v0.1.8.6 Workstream C; design folds
+  into the snapshot administration RFC (Workstream A) since both touch
+  "what does it mean to reopen this run?";
+- promotion-recovery-summary helper: same;
+- when the helpers ship, revise the vignette's "Design note" and
+  "API gap" callouts to reference the new functions, or remove them
+  if the helper makes the lower-level path unnecessary in the
+  teaching arc.
+
+#### Cross-cycle note
+
+The vignette's "Design note" and "API gap" callouts are the user-
+visible markers for these gaps. When the helpers land, the callouts
+should be revised to reference the new functions, or removed if the
+helper makes the lower-level path unnecessary in the teaching arc.
+Leaving stale callouts in the article is a worse failure than the
+gap itself.
+
+This horizon entry does not authorize any of the above. It records
+the direction so that when a research-loop ergonomics cycle opens,
+the author starts from a known shape rather than re-deriving the
+boundary.
+
 ## Resolved
 
 No resolved horizon entries yet.

@@ -99,7 +99,7 @@ versioned packet.
 | v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Active | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
-| v0.1.8.6 | Planned | Measurement spike for DuckDB-backed feature storage / out-of-core projection; implementation only if evidence justifies it. | Future packet |
+| v0.1.8.6 | Planned | DuckDB feature-storage measurement spike, snapshot administration and ETL provenance implementation, and research-loop ergonomics helpers (sweep review and promotion recovery summary); RFC-driven. | Future packet; horizon entries |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
@@ -596,7 +596,68 @@ Constraints:
 - parallel dispatch must later coordinate durable writes rather than imply
   unsynchronized worker writes to one DuckDB store.
 
-### v0.1.8.6 DuckDB-Backed Feature Storage / Out-Of-Core Projection Spike
+### v0.1.8.6 DuckDB Feature Storage Spike, Snapshot Administration, And Research-Loop Helpers
+
+v0.1.8.6 hosts three coordinated workstreams. They share a release but are
+scoped and decided independently.
+
+Sequencing:
+
+- A full RFC cycle on snapshot administration and ETL provenance metadata
+  must conclude before the v0.1.8.6 spec is cut. The horizon entry is the
+  seed-shape input. The research-loop ergonomics helpers (Workstream C)
+  fold into the same RFC because the promotion-recovery summary couples
+  directly to the snapshot/run metadata model; the RFC synthesis decides
+  helper shape alongside metadata shape.
+- The DuckDB feature-storage spike remains a measurement-and-decision
+  packet; its outcome is decided after the spike runs, independently of
+  the snapshot administration and helpers RFC.
+
+#### Workstream A: Snapshot Administration And ETL Provenance
+
+Intent:
+
+- close the v0.1.8.5 USP-defensibility gap by giving users a first-class
+  surface to record ETL provenance, free-text notes, labels, and authorship
+  at snapshot creation;
+- expose listing and filtering APIs so a research project store with many
+  snapshots is navigable without ID memorization;
+- separate engine-computed metadata, user-supplied descriptive metadata,
+  and administrative lifecycle state in both schema and public API;
+- define ledgr's data-provenance model as the substrate that future v0.2.x
+  point-in-time, corporate-actions, and snapshot-lineage work will extend.
+
+Authoritative input (planned):
+
+- RFC cycle on snapshot administration and provenance metadata, to be cut
+  after v0.1.8.5 closes and before the v0.1.8.6 spec is cut;
+- `inst/design/horizon.md` snapshot-administration entry as the seed-shape
+  input.
+
+Constraints:
+
+- `snapshot_hash` must not depend on mutable user metadata;
+- ETL provenance recorded at create/seal time is append-only thereafter;
+  administrative edits go through an audit-logged path if the RFC promotes
+  one;
+- listing surface filters by snapshot-level fields only; it does not
+  become a bar-data query engine;
+- migration path or explicit pre-CRAN "rerun your experiments" gate must
+  ship with any schema change;
+- ledgr stores user metadata faithfully but does not interpret it as
+  execution identity, feature identity, or selection input;
+- the three-category separation (engine-computed / user-supplied /
+  lifecycle) is the load-bearing design constraint and must be preserved
+  in both schema and API.
+
+Non-scope:
+
+- no production deployment registry;
+- no external data-catalog integration;
+- no schema migration tooling for non-ledgr stores;
+- no automatic ETL inference from data sources.
+
+#### Workstream B: DuckDB Feature Storage Spike
 
 Intent:
 
@@ -611,10 +672,11 @@ Intent:
   every prototype;
 - keep DBI access at block boundaries, never per pulse.
 
-This is a measurement and decision packet first. It must not automatically
-become a storage implementation release. A DuckDB-backed projection or feature
-library should ship only if the spike shows a clear bottleneck that the current
-R-memory projection path cannot handle with smaller changes.
+This workstream is a measurement and decision packet first. It must not
+automatically become a storage implementation release. A DuckDB-backed
+projection or feature library should ship only if the spike shows a clear
+bottleneck that the current R-memory projection path cannot handle with
+smaller changes.
 
 Required spike comparisons:
 
@@ -665,6 +727,55 @@ Exit decisions:
 - **Defer:** if DuckDB-backed storage is plausible but not yet load-bearing.
 - **Reject for now:** if the bottleneck remains fold execution,
   pulse-context churn, or summary reconstruction rather than feature storage.
+
+#### Workstream C: Research-Loop Ergonomics Helpers
+
+Intent:
+
+- ship the two API gaps that the v0.1.8.5 canonical workflow article had to
+  flag with user-visible "Design note" and "API gap" callouts because the
+  underlying surfaces existed only at the lower level;
+- add a sweep-review helper that ranks completed candidates by an explicit
+  rule, returns a compact review table, separates issue rows, and keeps the
+  ranking rule visible at the call site;
+- add a promotion-recovery-summary helper that returns one compact object
+  describing a promoted run's "what caused this result?" record without
+  asking users to navigate nested `promotion_context` fields or to call
+  `ledgr_extract_strategy()` separately;
+- revise the workflow article's "Design note" and "API gap" callouts to
+  reference the new helpers, or remove them if the helpers make the
+  lower-level paths unnecessary in the teaching arc.
+
+Authoritative input (planned):
+
+- the same snapshot administration RFC that drives Workstream A, since the
+  promotion-recovery summary couples directly to the snapshot/run metadata
+  model;
+- `inst/design/horizon.md` research-loop ergonomics entry as the seed-shape
+  input.
+
+Constraints:
+
+- helpers do not replace `ledgr_results()`, `ledgr_run_info()`,
+  `ledgr_extract_strategy()`, `ledgr_candidate()`, or the underlying
+  promotion-context fields; they are summary surfaces over those APIs,
+  not parallel ones;
+- the sweep-review helper must require an explicit rank-by argument or
+  return the chosen rule alongside the rows; no silent default metric;
+- the recovery summary must distinguish stored facts (parameters, hashes,
+  note) from interpretation (reproducibility tier, hash-verification
+  status, recovery limitations); Tier 1 and Tier 2 strategies must not
+  collapse into a single "verified" status;
+- output is inspectable as a plain data frame or named list, never an
+  opaque print-only object;
+- the lower-level paths remain in the public API.
+
+Non-scope:
+
+- no automatic candidate selection or winner-picking helper;
+- no statistical-validation surface;
+- no walk-forward or out-of-sample evaluation helper;
+- no benchmark-relative or attribution helper.
 
 ### v0.1.8.7 Parallel Sweep Dispatch
 
