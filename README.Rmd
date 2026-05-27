@@ -139,7 +139,7 @@ recover a function object.
 | I want to write strategies correctly. | [Strategy Development](https://blechturm.github.io/ledgr/articles/strategy-development.html) |
 | I want feature maps, indicators, and active aliases. | [Indicators](https://blechturm.github.io/ledgr/articles/indicators.html) |
 | I want exploratory sweeps and candidate promotion. | [Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) |
-| I want durable stores, labels, reopen, and comparison. | [Experiment Store](https://blechturm.github.io/ledgr/articles/experiment-store.html) |
+| I want sealed snapshots, durable stores, backup, and reopen. | [Experiment Store](https://blechturm.github.io/ledgr/articles/experiment-store.html) |
 | I want hashes, provenance tiers, and limits of recovery. | [Reproducibility](https://blechturm.github.io/ledgr/articles/reproducibility.html) |
 | I want fills, trades, equity, metrics, and metric context. | [Metrics And Accounting](https://blechturm.github.io/ledgr/articles/metrics-and-accounting.html) |
 

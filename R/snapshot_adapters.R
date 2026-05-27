@@ -4,7 +4,8 @@
 #' seals the snapshot, and returns a lazy snapshot object.
 #'
 #' @param bars_df data.frame with required columns: ts_utc, instrument_id,
-#'   open, high, low, close. Optional: volume.
+#'   open, high, low, close. Optional: volume. Extra columns are ignored; only
+#'   canonical bar columns are persisted and hashed.
 #' @param instruments_df Optional data.frame with instrument metadata.
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
@@ -450,6 +451,11 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' the low-level CSV import helpers use `LEDGR_CSV_FORMAT_ERROR`. In both paths,
 #' snapshot creation fails before a usable snapshot artifact is left behind, so
 #' fix the CSV and rerun snapshot creation.
+#'
+#' The CSV must contain `instrument_id`, `ts_utc`, `open`, `high`, `low`, and
+#' `close`; `volume` is optional. ledgr imports only those canonical bar columns.
+#' Other CSV columns are ignored and do not become part of the sealed snapshot or
+#' its hash.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`

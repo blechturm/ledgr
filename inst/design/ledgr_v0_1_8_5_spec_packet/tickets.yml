@@ -34,7 +34,7 @@ tickets:
 
   - id: "LDG-2436"
     title: "README And Pkgdown Reading Flow"
-    status: "in_progress"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -51,7 +51,7 @@ tickets:
 
   - id: "LDG-2437"
     title: "Store, Data Input, And Reproducibility Docs"
-    status: "pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:

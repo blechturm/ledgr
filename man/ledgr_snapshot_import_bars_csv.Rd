@@ -46,6 +46,7 @@ CSV contract:
 \item Timestamp format: ISO8601 UTC with trailing \code{Z}, e.g. \verb{2020-01-01T00:00:00Z}
 \item Encoding: UTF-8 (BOM tolerated and stripped)
 \item Rounding: OHLCV are rounded to 8 decimals on import
+\item Extra columns: ignored; only canonical bar columns are persisted and hashed
 }
 
 Errors:
@@ -58,6 +59,29 @@ Errors:
 CSV and OHLC errors are import/seal errors. They occur before a snapshot can
 be loaded into an experiment or executed by a strategy.
 }
+\section{Low-level CSV lifecycle}{
+
+Most users should prefer \code{ledgr_snapshot_from_csv()}. Use
+\code{ledgr_snapshot_import_bars_csv()} directly only when you need to control the
+create/import/seal lifecycle yourself:
+\enumerate{
+\item create the snapshot envelope with \code{ledgr_snapshot_create()};
+\item import bars into that \code{CREATED} snapshot;
+\item seal it with \code{ledgr_snapshot_seal()} to validate bars and write the
+snapshot hash;
+\item inspect metadata with \code{ledgr_snapshot_info()} if needed;
+\item disconnect the write connection and reopen with
+\code{ledgr_snapshot_load(..., verify = TRUE)};
+\item pass the loaded snapshot to \code{ledgr_experiment()} and \code{ledgr_run()}.
+}
+
+\code{bar_count} and \code{instrument_count} are live counts from the sealed snapshot
+tables. The raw \code{meta_json} is envelope metadata on the snapshot row;
+seal-time metadata inside it uses \code{n_bars} and \code{n_instruments}. Snapshot
+identity does not come from that metadata. \code{snapshot_hash} identifies the
+normalized bars and instruments only.
+}
+
 \section{Articles}{
 
 Durable experiment stores:
@@ -83,5 +107,19 @@ utils::write.csv(data.frame(
   volume = 1000
 ), bars_csv, row.names = FALSE)
 ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv)
+snapshot_hash <- ledgr_snapshot_seal(con, snapshot_id)
+snapshot_info <- ledgr_snapshot_info(con, snapshot_id)
 DBI::dbDisconnect(con, shutdown = TRUE)
+
+snapshot <- ledgr_snapshot_load(
+  db_path,
+  snapshot_id = snapshot_id,
+  verify = TRUE
+)
+snapshot_hash
+snapshot_info[
+  ,
+  c("snapshot_id", "status", "snapshot_hash", "bar_count", "instrument_count")
+]
+ledgr_snapshot_close(snapshot)
 }

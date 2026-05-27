@@ -13,7 +13,8 @@ ledgr_snapshot_from_df(
 }
 \arguments{
 \item{bars_df}{data.frame with required columns: ts_utc, instrument_id,
-open, high, low, close. Optional: volume.}
+open, high, low, close. Optional: volume. Extra columns are ignored; only
+canonical bar columns are persisted and hashed.}
 
 \item{instruments_df}{Optional data.frame with instrument metadata.}
 

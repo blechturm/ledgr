@@ -1,5 +1,28 @@
-On Reproducibility: Provenance and Strategy Tiers
-================
+# On Reproducibility: Provenance and Strategy Tiers
+
+
+ledgr treats a backtest result as an experiment artifact. The question
+is not only “what was the return?” The question is:
+
+``` text
+which sealed data, which strategy, which parameters, which features,
+which opening state, and which execution assumptions produced this run?
+```
+
+This article explains the reproducibility model behind that question. It
+is about provenance and replay boundaries, not whether a strategy has
+predictive edge.
+
+> [!WARNING]
+>
+> ### Evidence is not validation
+>
+> Provenance records what ran. It does not prove that a selected
+> strategy will generalize. A promoted candidate, a verified strategy
+> hash, and a sealed snapshot are evidence-capture tools, not
+> statistical validation of the selection rule.
+
+## Setup
 
 ``` r
 library(ledgr)
@@ -16,16 +39,6 @@ bars <- ledgr_demo_bars |>
     )
   )
 ```
-
-ledgr treats a backtest result as an experiment artifact. The question
-is not only “what was the return?” The question is:
-
-``` text
-which sealed data, which strategy, which parameters, which features,
-which opening state, and which execution assumptions produced this run?
-```
-
-This article explains the reproducibility model behind that question.
 
 ## The Experiment Model
 
@@ -48,6 +61,29 @@ That shape matters because each part has a different reproducibility
 role. Market data are sealed. Parameters are stored and hashed. Strategy
 source is captured when possible. Results are derived from ledger events
 rather than remembered from an in-memory session.
+
+## Why `params` Is The Boundary
+
+Use `params` for strategy variation. Parameters are canonicalized,
+hashed, and stored with the run. Hidden globals are not.
+
+``` r
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    if (ctx$close(id) > params$threshold) {
+      targets[id] <- params$qty
+    }
+  }
+
+  targets
+}
+```
+
+The same rule matters for future sweep workers. Sweep mode can send
+explicit parameter combinations to workers. It cannot reliably send an
+arbitrary interactive session.
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "research_snapshot")
@@ -99,6 +135,26 @@ execution.
 ledgr_run_info(snapshot, "qty_10")
 ```
 
+    ledgr Run Info
+    ==============
+
+    Run ID:          qty_10
+    Label:           NA
+    Status:          DONE
+    Archived:        FALSE
+    Tags:            NA
+    Snapshot:        research_snapshot
+    Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
+    Config Hash:     19ecd364c2cdc78392bb7396ed91bed4a726d5857aac0a9abe2ceb844d66ec3b
+    Strategy Hash:   f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
+    Params Hash:     6786f8cb997d23583467dc5ccd46a877431e9b4cacc7b9dda3f1ba50c5657060
+    Reproducibility: tier_1
+    Execution Mode:  audit_log
+    Elapsed Sec:     2.09
+    Persist Features:TRUE
+    Cache Hits:      0
+    Cache Misses:    2
+
 ## Extract Stored Strategy Source
 
 `ledgr_extract_strategy()` inspects stored strategy provenance for a
@@ -107,8 +163,34 @@ run. The default is intentionally read-only:
 ``` r
 stored <- ledgr_extract_strategy(snapshot, "qty_10", trust = FALSE)
 stored
+```
+
+    ledgr Extracted Strategy
+    ========================
+
+    Run ID:          qty_10
+    Reproducibility: tier_1
+    Source Hash:     f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
+    Params Hash:     6786f8cb997d23583467dc5ccd46a877431e9b4cacc7b9dda3f1ba50c5657060
+    Hash Verified:   TRUE
+    Trust:           FALSE
+    Source Available:TRUE
+
+``` r
 writeLines(stored$strategy_source_text)
 ```
+
+    function (ctx, params)
+    {
+        targets <- ctx$flat()
+        for (id in ctx$universe) {
+            ret_5 <- ctx$feature(id, "return_5")
+            if (is.finite(ret_5) && ret_5 > params$min_return) {
+                targets[id] <- params$qty
+            }
+        }
+        targets
+    }
 
 `trust = FALSE` returns source text and metadata without parsing,
 evaluating, or executing the stored source. In this mode, the source
@@ -133,16 +215,23 @@ may report `strategy_source_text = NA`. Those runs can still be
 inspected through `ledgr_run_info()` and result tables, but the strategy
 function cannot be recovered from provenance alone.
 
-## Stored Source Is Not Full Reproducibility
-
 Stored source is a strong audit artifact, but it is only one part of
 reproducibility. A strategy may call external packages. It may close
 over data objects. It may rely on package versions, system libraries, or
-runtime state outside ledgr’s database.
-
-That is why ledgr classifies strategies before execution.
+runtime state outside ledgr’s database. That is why ledgr classifies
+strategies before execution.
 
 ## Reproducibility Tiers
+
+### Tier 1: Self-Contained
+
+> [!NOTE]
+>
+> ### Definition
+>
+> Tier 1 means ledgr can inspect the strategy from stored source and
+> explicit parameters under its static preflight rules. The strategy
+> depends only on ledgr, base/recommended R, and declared run inputs.
 
 Tier 1 is self-contained under ledgr’s static preflight rules. The
 strategy can be understood from stored source and explicit parameters,
@@ -163,10 +252,30 @@ tier_1_strategy <- function(ctx, params) {
 ledgr_strategy_preflight(tier_1_strategy)
 ```
 
+    ledgr Strategy Preflight
+    =========================
+
+    Tier:    tier_1
+    Allowed: TRUE
+    Reason:  Strategy is self-contained under ledgr's static preflight rules.
+
+### Tier 2: Inspectable With User-Managed Environment
+
+> [!WARNING]
+>
+> ### Definition
+>
+> Tier 2 means ledgr can inspect and run the strategy, but full replay
+> also depends on environment details outside ledgr’s store, such as
+> package installation, package versions, system libraries, or immutable
+> captured values.
+
 Tier 2 is inspectable but needs environment management outside ledgr.
 Examples include package-qualified calls outside the active R
 distribution and resolved immutable non-function objects captured from
 the strategy environment.
+
+#### Package Dependencies
 
 ``` r
 tier_2_strategy <- function(ctx, params) {
@@ -177,11 +286,21 @@ tier_2_strategy <- function(ctx, params) {
 ledgr_strategy_preflight(tier_2_strategy)
 ```
 
+    ledgr Strategy Preflight
+    =========================
+
+    Tier:    tier_2
+    Allowed: TRUE
+    Reason:  Strategy uses package-qualified dependency outside the active R distribution: jsonlite.
+    Package Dependencies: jsonlite
+
 The `jsonlite::toJSON()` call is written this way on purpose. Namespace
 qualification tells ledgr which package supplies the function. That
 makes the dependency visible in the preflight result and keeps the
 strategy inspectable. The run can proceed, but ledgr cannot preserve the
 installed `jsonlite` version or its system requirements by itself.
+
+#### Captured Values
 
 Resolved external scalar values are also Tier 2, not Tier 3. They are
 visible to the preflight because they exist in the strategy closure, but
@@ -189,11 +308,12 @@ ledgr does not turn them into replayable run parameters. Prefer putting
 values that define the research question into `params`, especially for
 sweeps.
 
-Captured mutable environments are also resolved, so they remain Tier 2
-under the current policy. That does not make mutation reproducible. If an
-external environment can change between runs or across workers, treat the
-value as an explicit parameter or make the environment immutable before
-running the experiment.
+Captured mutable environments may be classified as Tier 2 because ledgr
+can resolve that the object exists. Do not treat that classification as
+approval. If the object can change between runs or workers, move the
+value into `params` or freeze it before running.
+
+#### What ledgr Preserves And What You Own
 
 Tier 2 is allowed for ordinary runs and future sweep mode. It is not
 fully reproducible by ledgr alone. Users own package installation,
@@ -206,6 +326,16 @@ Docker, `{rix}` (<https://github.com/ropensci/rix>), and `{uvr}`
 and this article does not teach them. The point is simpler: if a
 strategy is Tier 2, ledgr can preserve the run evidence, but the user
 must preserve the surrounding environment.
+
+### Tier 3: Rejected External State
+
+> [!IMPORTANT]
+>
+> ### Definition
+>
+> Tier 3 means the strategy depends on external state ledgr cannot
+> recover or execute safely. The run is rejected before execution; there
+> is no `force = TRUE` override.
 
 Tier 3 is external state ledgr cannot recover or execute safely. Common
 examples are unqualified helper functions from the interactive session,
@@ -222,6 +352,14 @@ tier_3_strategy <- function(ctx, params) {
 ledgr_strategy_preflight(tier_3_strategy)
 ```
 
+    ledgr Strategy Preflight
+    =========================
+
+    Tier:    tier_3
+    Allowed: FALSE
+    Reason:  Strategy references unresolved symbol(s): my_helper.
+    Unresolved Symbols: my_helper
+
 Tier 3 strategies fail before execution. There is no `force = TRUE`
 override on `ledgr_run()` or `ledgr_sweep()`; move external values into
 `params`, qualify package calls, or use ledgr’s exported helpers
@@ -236,48 +374,27 @@ The condition class chain includes `ledgr_strategy_tier3` and
 The most common hard rejections are:
 
 | Pattern | Example | Why it fails |
-|---|---|---|
+|----|----|----|
 | wall-clock access | `Sys.time()` or `do.call("Sys.time", list())` | runtime date/time is not stored run input |
 | process environment | `Sys.getenv("TOKEN")` | external process state is not stored run input |
 | dynamic evaluation | `get("x")`, `eval(expr)`, `assign("x", 1)` | preflight cannot recover the value path as stored metadata |
 | global assignment | `x <<- 1` | strategy mutates state outside the run artifact |
-| context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgr's execution context |
+| context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgr’s execution context |
 | unresolved helper | `my_helper(ctx)` | helper source is not stored as part of the strategy |
 
 Recommended-R functions such as `stats::median()` remain Tier
-1-compatible when called explicitly or resolved through R's
-base/recommended namespace. They are not package dependencies outside the
-active R distribution.
+1-compatible when called explicitly or resolved through R’s
+base/recommended namespace. They are not package dependencies outside
+the active R distribution.
 
 Ambient strategy RNG calls such as `runif(1)` are a separate case. They
-are allowed as Tier 2 because ledgr's execution seed contract can make
+are allowed as Tier 2 because ledgr’s execution seed contract can make
 the strategy run repeatable, but they still deserve scrutiny because the
 random draw is a decision input. This is different from custom-indicator
 RNG restrictions: feature generation must be deterministic for a given
-snapshot and feature definition.
-
-## Why `params` Is The Boundary
-
-Use `params` for strategy variation. Parameters are canonicalized,
-hashed, and stored with the run. Hidden globals are not.
-
-``` r
-strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    if (ctx$close(id) > params$threshold) {
-      targets[id] <- params$qty
-    }
-  }
-
-  targets
-}
-```
-
-The same rule matters for future sweep workers. Sweep mode can send
-explicit parameter combinations to workers. It cannot reliably send an
-arbitrary interactive session.
+snapshot and feature definition. Prefer making random decisions explicit
+in the research design. A seeded RNG call may be repeatable, but it is
+still part of the decision process.
 
 ## Hidden Mutable State
 
@@ -303,11 +420,33 @@ artifacts.
 
 Reproducibility in ledgr is a chain:
 
-``` text
-sealed snapshot -> experiment inputs -> preflight tier -> run provenance
--> ledger events -> derived results -> stored source inspection
+``` mermaid
+flowchart LR
+  A[Sealed snapshot] --> B[Experiment inputs]
+  B --> C[Preflight tier]
+  C --> D[Run provenance]
+  D --> E[Ledger events]
+  E --> F[Derived results]
+  D --> G[Stored source inspection]
 ```
 
 Tier 1 is the cleanest path. Tier 2 is allowed but requires user-managed
 environment parity. Tier 3 fails because ledgr cannot recover what the
 strategy depended on.
+
+> [!TIP]
+>
+> ### Try it
+>
+> Write a strategy that calls `Sys.time()` and run
+> `ledgr_strategy_preflight()`. What tier does ledgr assign, and what
+> dependency did the preflight reject?
+
+## Where Next
+
+For the end-to-end research loop and the selection-validation
+distinction, read `vignette("research-workflow", package = "ledgr")`.
+For strategy-authoring patterns that avoid Tier 3 failures, read
+`vignette("strategy-development", package = "ledgr")`. For store-level
+source inspection and reopen workflows, read
+`vignette("experiment-store", package = "ledgr")`.

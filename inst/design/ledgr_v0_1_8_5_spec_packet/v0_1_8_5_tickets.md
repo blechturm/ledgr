@@ -331,7 +331,7 @@ scope: quarto_migration
 Priority: P1
 Effort: M
 Dependencies: LDG-2443
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -400,7 +400,7 @@ scope: readme_pkgdown
 Priority: P1
 Effort: M
 Dependencies: LDG-2443
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -446,8 +446,8 @@ vignette render, and manual docs review.
 ### Source Reference
 
 - `v0_1_8_5_spec.md` Sections 4, 5, 6.3, 6.5, and 11
-- `vignettes/experiment-store.Rmd`
-- `vignettes/reproducibility.Rmd`
+- `vignettes/experiment-store.qmd`
+- `vignettes/reproducibility.qmd`
 
 ### Classification
 
