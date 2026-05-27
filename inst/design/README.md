@@ -3,9 +3,9 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.4`.
-**Next planned packet:** `v0.1.8.5` canonical research workflow and
-artifact-topology documentation.
-**Current active packet:** none cut.
+**Current active packet:** `v0.1.8.5` canonical research workflow and
+teachability.
+**Current active packet path:** `inst/design/ledgr_v0_1_8_5_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_8_4_spec_packet/` is now an archival
 release record.
 
@@ -73,15 +73,25 @@ routed v0.1.8.3 auditr fixes that fit the release scope.
 - Tickets: `ledgr_v0_1_8_4_spec_packet/v0_1_8_4_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_4_spec_packet/tickets.yml`.
 
-The next planned packet is v0.1.8.5 canonical research workflow and
-artifact-topology documentation. It is grounded in
-`rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`. Do not
-implement v0.1.8.5 work until its spec packet and tickets are cut.
+The active packet is v0.1.8.5 canonical research workflow and teachability. It
+is grounded in
+`rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`.
+
+- Spec: `ledgr_v0_1_8_5_spec_packet/v0_1_8_5_spec.md`.
+- Tickets: `ledgr_v0_1_8_5_spec_packet/v0_1_8_5_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_5_spec_packet/tickets.yml`.
+
+Do not implement v0.1.8.5 work beyond the spec scope. v0.1.8.5 is
+documentation/workflow alignment first; DuckDB-backed feature storage,
+parallel dispatch, target risk, cost/liquidity, snapshot lineage, live data
+logs, point-in-time regressors, and OMS work remain later milestones.
 
 ## Core Documents
 
 - `contracts.md` - authoritative contract index.
 - `ledgr_roadmap.md` - milestone arc and active horizon.
+- `rfc_cycle.md` - RFC-stage process reference for seed, response,
+  synthesis, final review, and horizon-entry workflows.
 - `ledgr_design_document.md` - foundational design document.
 - `ledgr_design_philosophy.md` - product and design philosophy.
 - `model_routing.md` - model/task routing guidance.
@@ -114,7 +124,9 @@ extracted into a standalone architecture note in `architecture/`.
 | Target-risk chain boundary | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` | v0.1.9 target-risk planning | Accepted |
 | Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
 | Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4 sweep authoring ergonomics | Accepted |
+| Research workflow and artifact topology | `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` | v0.1.8.5 canonical workflow and teachability planning | Accepted |
 | Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
+| Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` | v0.1.9.x walk-forward ticket-cut planning after target risk | Accepted |
 | OMS semantics and order lifecycle | `rfc/rfc_ledgr_oms_seed_synthesis.md` | v0.2.x OMS data-model and lifecycle planning; paper/live deferred | Accepted |
 
 ## RFCs
@@ -171,6 +183,10 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`
 - `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x.md`
 - `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`
+- `rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed.md`
+- `rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed_v2.md`
+- `rfc/rfc_walk_forward_evaluation_v0_1_9_x_response.md`
+- `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -258,6 +274,12 @@ docs-first workflow convention before scaffold API, explicit promotion notes,
 future split-store triggers, future companion examples, future live data logs,
 and future point-in-time regressor snapshots. It does not add runtime scope to
 v0.1.8.4.
+The walk-forward evaluation synthesis accepts the v0.1.9.x planning direction:
+walk-forward is a wrapper over the existing `ledgr_sweep()` and `ledgr_run()`
+paths, uses one sealed snapshot with calendar-time folds, records durable fold
+and scalar score artifacts, preserves the strategy contract, and defers
+selection-integrity diagnostics, purging/embargo, richer retention, and
+paper/live interaction to later RFCs.
 
 ## Audits And Spikes
 
@@ -285,6 +307,8 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
+- `ledgr_v0_1_8_5_spec_packet/` - active v0.1.8.5 packet for canonical
+  research workflow and teachability.
 - `ledgr_v0_1_8_4_spec_packet/` - v0.1.8.4 release record for active
   parameterized feature aliases, grid helpers, and routed v0.1.8.3 auditr
   findings.
@@ -314,6 +338,7 @@ contract index.
 | Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
 | Target risk planning | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md`, future packet when cut |
+| Walk-forward planning | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`, `contracts.md`, future v0.1.9.x packet when cut |
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |
 | Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, `rfc/rfc_design_doc_governance.md`, `rfc/rfc_design_doc_governance_response.md` |
 | Release operation | `release_ci_playbook.md`, active release/closeout ticket if one exists |
