@@ -4,9 +4,8 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
-**Next planned packet:** v0.1.8.5 canonical research workflow and
-artifact-topology documentation.
-**Active packet path:** none cut.
+**Active packet:** v0.1.8.5 canonical research workflow and teachability.
+**Active packet path:** `inst/design/ledgr_v0_1_8_5_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -99,11 +98,11 @@ versioned packet.
 | v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
 | v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
-| v0.1.8.5 | Planned | Canonical research workflow and artifact-topology documentation after active aliases and grid UX stabilize. | Future packet |
-| v0.1.8.6 | Planned | DuckDB-backed feature storage / out-of-core projection candidate if residual evidence justifies it. | Future packet |
+| v0.1.8.5 | Active | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
+| v0.1.8.6 | Planned | Measurement spike for DuckDB-backed feature storage / out-of-core projection; implementation only if evidence justifies it. | Future packet |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
-| v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet |
+| v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
 | v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
 | v0.1.9.x | Planned | Sweep artifact persistence for compact search-space audit. | Future packet |
@@ -555,7 +554,7 @@ Constraints:
 - coordinate pulse-context additions with the accepted v0.1.9 target-risk
   chain design.
 
-### v0.1.8.5 Canonical Research Workflow And Artifact Topology
+### v0.1.8.5 Canonical Research Workflow And Teachability
 
 Authoritative input:
 
@@ -597,25 +596,54 @@ Constraints:
 - parallel dispatch must later coordinate durable writes rather than imply
   unsynchronized worker writes to one DuckDB store.
 
-### v0.1.8.6 DuckDB-Backed Feature Storage / Out-Of-Core Projection Candidate
+### v0.1.8.6 DuckDB-Backed Feature Storage / Out-Of-Core Projection Spike
 
 Intent:
 
-- persist precomputed concrete feature libraries in DuckDB if residual evidence
-  shows memory scaling, repeated precompute, ML/export, or worker sharing as a
-  load-bearing bottleneck;
-- add a DuckDB-backed implementation of the v0.1.8.3 projection interface using
-  pulse-block buffering;
-- share storage direction with the deferred layer 4 research/export artifact;
-- keep DBI access at block boundaries, not per pulse;
-- preserve the R `series_fn()` / TTR / custom-indicator extension surface.
+- measure whether DuckDB-backed feature storage or out-of-core projection is
+  actually needed after the v0.1.8.3 R-memory runtime projection and v0.1.8.4
+  active-alias/grid UX have stabilized;
+- compare the current R-memory projection path against a prototype
+  DuckDB-backed, block-hydrated projection path on representative workloads;
+- decide whether to implement, defer, or reject a durable feature-library
+  storage surface before v0.1.8.7 parallel dispatch;
+- preserve the R `series_fn()` / TTR / custom-indicator extension surface in
+  every prototype;
+- keep DBI access at block boundaries, never per pulse.
+
+This is a measurement and decision packet first. It must not automatically
+become a storage implementation release. A DuckDB-backed projection or feature
+library should ship only if the spike shows a clear bottleneck that the current
+R-memory projection path cannot handle with smaller changes.
+
+Required spike comparisons:
+
+- small EOD workflows where the current in-memory path should remain the
+  reference baseline;
+- wider EOD feature grids with active aliases and shared concrete-feature
+  unions;
+- repeated candidate families where feature precompute reuse could matter;
+- larger-universe or intraday-like synthetic stress cases to expose memory,
+  hydration, and file-size ceilings without claiming intraday support;
+- optional worker-read or worker-transport probes if they directly inform the
+  v0.1.8.7 parallel-dispatch decision.
+
+Measurement outputs:
+
+- wall-clock runtime by phase: feature materialization, projection hydration,
+  fold execution, and summary reconstruction;
+- peak R memory and serialized payload size;
+- DuckDB file size, query/hydration time, and block size sensitivity;
+- per-candidate setup cost and any shared-library reuse benefit;
+- evidence about whether the bottleneck is storage, transport, fold execution,
+  or post-candidate reconstruction.
 
 Readiness gates:
 
 - v0.1.8.3 runtime projection interface and R-memory backend have landed;
 - v0.1.8.4 active aliases have fixed alias-map identity and grid-level
   concrete-feature-union semantics;
-- v0.1.8.5 workflow synthesis has clarified which artifact topology remains
+- v0.1.8.5 workflow spec has clarified which artifact topology remains
   documentation-only and which storage surfaces require first-class APIs;
 - post-v0.1.8.3 residual evidence shows memory scaling, repeated precompute,
   ML/export, or parallel-worker sharing is the next bottleneck.
@@ -625,7 +653,18 @@ Constraints:
 - no per-pulse DBI traffic;
 - no DuckDB-implemented indicator computation without a separate RFC;
 - no second feature engine;
+- no public storage API, schema, or migration promise unless the spike is
+  promoted by the spec and release decision;
 - no public ML/export API unless explicitly promoted through a spec packet.
+
+Exit decisions:
+
+- **Implement:** only if evidence shows a material bottleneck and a
+  block-hydrated DuckDB path beats or complements the R-memory path without
+  weakening determinism, portability, or feature identity.
+- **Defer:** if DuckDB-backed storage is plausible but not yet load-bearing.
+- **Reject for now:** if the bottleneck remains fold execution,
+  pulse-context churn, or summary reconstruction rather than feature storage.
 
 ### v0.1.8.7 Parallel Sweep Dispatch
 
@@ -748,27 +787,40 @@ Implementation gates:
 
 ### v0.1.9.x Walk-Forward Evaluation
 
+Accepted design input:
+
+- `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`.
+
 Intent:
 
 - build `ledgr_walk_forward()` only after `ledgr_sweep()` is stable enough to
   act as the training-window candidate evaluator;
-- represent training/scoring windows explicitly, including separate scoring
-  ranges and warmup lookback ranges;
-- reuse the same ranking/objective contract that sweep exposes instead of
-  duplicating selection logic;
-- promote or rerun selected training-window candidates on scoring windows with
-  explicit provenance.
+- keep walk-forward as a wrapper over `ledgr_sweep()` and `ledgr_run()`, not a
+  second fold-core execution path;
+- represent training/test scoring windows explicitly, including warmup
+  hydration and final-bar fill semantics;
+- use ledgr-owned classed selection rules over train-window scalar score rows;
+- run exactly the selected candidate on the next test window and record
+  explicit fold, candidate, score, and session provenance;
+- allow ordinary `ledgr_promote()` only through an extracted explicit candidate
+  rather than through an implicit parameter path or selection rule.
 
 Known constraints:
 
+- implementation waits until the v0.1.9 target-risk chain is stable enough to
+  contribute risk-chain identity to walk-forward sessions and candidates;
 - fold-core input sources must support sliced evaluation without requiring a
   sealed snapshot per fold;
 - precomputed feature validation must cover candidate-varying feature factories
   and slice-aware warmup;
+- identity excludes transient `sweep_id` and includes snapshot, experiment,
+  fold-list, selection-rule, metric-context, feature, parameter, seed, and
+  risk-chain components as bound in the synthesis;
 - reproducibility and selection integrity remain orthogonal: provenance records
   what happened, not whether the selection protocol was statistically sound.
-- randomized/blocked slice protocols, PBO, and CSCV diagnostics are deferred
-  until the walk-forward window model is stable.
+- richer diagnostic retention, randomized/blocked slice protocols, PBO, DSR,
+  CPCV, purging/embargo, cross-snapshot folds, and paper/live walk-forward are
+  deferred until the first walk-forward window model is stable.
 
 ### v0.1.9.x Selection Integrity Diagnostics
 

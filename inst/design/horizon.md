@@ -491,6 +491,11 @@ They require stable sweep result shapes, metric context, grid ergonomics,
 parallel dispatch, slice-aware feature validation, and a clear explanation that
 provenance records what happened but does not prove selection integrity.
 
+The accepted first walk-forward design is
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`; future
+diagnostic work should consume its fold/session/score artifacts rather than
+reopening the v1 wrapper-over-run/sweep architecture.
+
 Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
 
 ### 2026-05-13 [infrastructure] Public parallel sweep backend
@@ -1127,6 +1132,233 @@ This is a v0.2.x or later product. It depends on:
 Until those pieces exist, the operations dashboard is a sketch, not a design.
 Record it here so the eventual UI work has a target shape rather than being
 invented under deployment pressure.
+
+### 2026-05-27 [evaluation] Walk-forward post-v0.1.9.x direction
+
+The accepted v0.1.9.x walk-forward synthesis
+(`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`) binds the
+first walk-forward implementation: rolling and anchored folds, calendar-time
+boundaries, single sealed snapshot, classed selection rules, scalar score
+matrix, and extraction-for-promotion. The synthesis uses "v1" as shorthand for
+that first implementation; ledgr's roadmap does not have a "walk-forward v2"
+milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at their
+own roadmap windows. This entry records the shape of that direction so the
+follow-up work has a target rather than being invented under pressure.
+
+Diagnostic retention and selection-integrity diagnostics:
+
+- the v1 scalar score matrix is sufficient for inspection, scalar-metric PBO
+  approximation, and a CRAN `pbo`-compatible pivot; it is explicitly
+  insufficient for DSR, CPCV, nonlinear-metric recomputation, or per-candidate
+  equity reconstruction;
+- richer diagnostic retention tiers (per-candidate per-fold return series,
+  equity payload references, sufficient statistics, partition/path identity,
+  family/effective-trial metadata) belong in a future diagnostic-retention RFC;
+- selection-integrity diagnostic implementation (PBO/CSCV/CPCV/DSR/Holm-BH,
+  Harvey-Liu-Zhu thresholds, MinTRL) belongs in a separate diagnostics RFC and
+  must consume the score matrix and future retention tiers, not redefine them;
+- both RFCs land after the first walk-forward release ships and produces
+  operational evidence.
+
+Fold-definition extensions:
+
+- purged and embargoed folds activate the v1 schema's reserved `gap` field;
+  the embargo RFC must include explicit label-interval overlap test fixtures
+  (mlfinlab's public purge-logic bugs are the right regression set);
+- combinatorial purged CV adds path identity (`path_id`) to the score schema,
+  multiple chronology-respecting train/test partitions, and pathwise return
+  artifacts;
+- trading-time, market-state, and regime-aware folds require a market-calendar
+  abstraction ledgr does not currently have; regime-aware folds also need
+  explicit treatment of the regime-classifier-as-look-ahead hazard;
+- cross-snapshot walk-forward (one fold = one snapshot) coordinates with
+  snapshot-lineage work and changes the snapshot identity story; v1's
+  single-snapshot binding is deliberately the simpler shape.
+
+Composition and policy:
+
+- a selection-rule DSL would admit composite multi-metric selection,
+  stability-region selection ("plateau wins, not spike"), and top-N robust
+  selection; the v1 `ledgr_select_argmax` / `ledgr_select_argmin` interface
+  is the smallest useful surface and the DSL is its natural extension once
+  user demand for composite selection surfaces;
+- walk-forward nested inside `ledgr_sweep()` as candidate inputs is a v1
+  non-goal; future composition must address how walk-forward identity
+  participates in sweep candidate identity without exploding artifact counts;
+- per-fold universe restriction coordinates with PIT data and survivorship-
+  aware universe construction; the v1 "experiment universe applies uniformly"
+  default is correct until the PIT data RFC binds the universe-at-time-T
+  contract;
+- promoting a parameter path (a schedule of candidates per future period) or
+  promoting a selection rule (commit a process, not a candidate) are
+  promotion-semantics extensions beyond the v1 extract-then-`ledgr_promote()`
+  baseline; both need their own design rounds.
+
+Paper/live walk-forward and OMS interaction:
+
+- v1 research walk-forward writes no OMS lifecycle artifacts; paper/live
+  walk-forward must revisit OMS streams and target-decision persistence per
+  the accepted OMS synthesis;
+- each fold's test run as its own `order_events` stream is the natural shape
+  but creates artifact multiplication that the paper/live walk-forward RFC
+  must address;
+- fold definitions translate to a retraining schedule in paper/live (LEAN's
+  `train()` pattern); the schedule artifact is a future-RFC concern, not a
+  v1 walk-forward shape.
+
+Promoted roadmap hooks (named follow-up RFCs):
+
+- diagnostic retention tiers RFC (v0.1.9.x or later);
+- selection-integrity diagnostics RFC (v0.1.9.x, after retention tiers
+  stabilize enough to consume);
+- purged and embargoed folds RFC (v0.1.9.x or v0.2.x);
+- combinatorial purged CV RFC (after purging);
+- trading-time / state-fold RFC (v0.2.x, coordinated with market-calendar
+  work);
+- cross-snapshot walk-forward RFC (v0.2.x, coordinated with snapshot lineage);
+- selection-rule DSL RFC (when user demand for composite selection surfaces);
+- survivorship-aware universe RFC (v0.2.x, coordinated with PIT data and
+  instrument master work);
+- paper/live walk-forward RFC (v0.3.0+, coordinated with OMS implementation);
+- OMS interaction RFC for walk-forward (between OMS data-model implementation
+  and paper/live walk-forward).
+
+This horizon entry does not authorize any of the above. It records the
+direction so that when each follow-up cycle opens, the seed author can start
+from a known shape rather than re-deriving the boundary.
+
+### 2026-05-27 [execution] Cost-model post-v0.1.9.x direction
+
+The accepted v0.1.9.x/v0.2.0 public transaction-cost API synthesis
+(`inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`)
+binds the first public cost API: classed `ledgr_cost_*` objects, ordered
+`ledgr_cost_chain()` composition with two-stage discipline (price transforms
+then fee adders), four v1 primitives (`spread_bps`, `fixed_fee`,
+`notional_bps_fee`, `zero`), `timing_model` argument replacing `fill_model`,
+quoted-spread semantics for `spread_bps`, single account currency, one total
+fee per fill, cost identity via `cost_model_hash` + `cost_plan_json`, and
+experiment-level (non-per-candidate) cost in v1. The synthesis explicitly
+defers ~18 cost-adjacent capabilities and records 10 future-RFC obligations.
+This entry groups the post-v0.1.9.x direction so each follow-up cycle starts
+from a known shape.
+
+Cost-model expressiveness extensions:
+
+- asymmetric price-adjustment constructor (`ledgr_cost_price_adjust_bps(bps,
+  side = ...)`) is reserved as a future constructor for users who need per-leg
+  markup/markdown semantics distinct from quoted-spread; both can coexist
+  under clearly different names;
+- side-filtered fee steps (apply only to BUY, only to SELL, or only to
+  specific instrument groups);
+- min/max fee caps (per-step semantics; the chain-level interaction was the
+  reason v1 deferred them);
+- per-share and per-contract fee primitives (currently aliasable from
+  `notional_bps_fee` via user calculation but lack the asset-class vocabulary
+  users expect).
+
+Stateful fee modeling:
+
+- rolling-volume fee tiers (IBKR-style monthly-share-volume tiers, Binance-
+  style rolling-30-day tiers, CME participant-status tiers) — require a
+  cost-state envelope that v1's stateless per-fill contract deliberately
+  excludes;
+- maker/taker fee inference from order aggressiveness — requires either an
+  explicit user convention (which v1 cost API rejects) or a liquidity layer
+  that can classify fills as passive vs aggressive;
+- rebates (negative fees) — admitted only via explicit rebate or maker/taker
+  classes, not as arbitrary negative outputs from any fee step.
+
+Multi-asset and multi-venue cost assignment:
+
+- per-instrument cost-model assignment (LEAN-style per-security models);
+- per-asset-class cost templates (equity / futures / crypto / FX / options
+  defaults with fallback rules);
+- per-venue cost objects (NautilusTrader-style venue-level fee models for
+  multi-venue portfolios);
+- assignment-rule ordering (fallback from per-instrument → per-asset-class →
+  experiment-default).
+
+Cost sweep and parameterization:
+
+- `ledgr_cost_grid()` or `ledgr_grid_cross(..., cost = ...)` for sweeping cost
+  assumptions across candidates;
+- `ledgr_cost_param("spread_bps")` parameter references inside cost objects
+  for cost-varying sweep candidates;
+- both require explicit namespace and identity rules to keep cost-varying
+  candidates distinguishable from strategy-param-varying candidates in
+  provenance, reporting, and promotion context.
+
+Cost-adjacent families that are not cost:
+
+- borrow cost, margin interest, carry, and perpetual funding — stateful
+  position or calendar cashflows; belong in a separate financing/margin RFC
+  family, not in the cost API;
+- multi-currency fee accounting and conversion — once fees can be denominated
+  in something other than the account currency, conversion, missing FX data,
+  and multi-currency ledger semantics enter scope; a separate RFC;
+- tax-lot and capital-gains policy — stateful accounting-policy problem, not
+  a fill-time cost transform; transaction taxes (stamp duty, FTT) can be
+  modeled as fee adders in v1, but realized-tax accounting waits;
+- broker-certified fee schedules in core — adapter packages own these;
+  core ships primitives and educational approximations only.
+
+Cost in OMS and paper/live:
+
+- broker-reported fee ingestion for paper/live reconciliation — requires the
+  OMS event-stream layer to exist first;
+- live cost calibration against actual broker-reported fees — v0.3.0+ work;
+- broker-fee schedules versioned per account/date — coordinates with
+  snapshot lineage and live-data-log work.
+
+TCA and reporting:
+
+- implementation-shortfall computation;
+- delay cost and opportunity cost;
+- benchmark-relative shortfall (VWAP/TWAP comparison);
+- venue analysis and pre/intra/post-trade workflow reporting;
+- all belong to a future TCA/reporting layer that consumes cost-resolved fill
+  rows plus future order-lifecycle artifacts; the cost API need not become a
+  full benchmark engine.
+
+Cost component diagnostic retention:
+
+- v1 sums chain-fee components into one total `fee` per fill in
+  `ledger_events`; component breakdowns may live in `meta_json` when retained;
+- a future diagnostic retention tier may add a `cost_details` table with
+  per-step attribution rows for inspection and TCA-style analysis;
+- the same pattern as the walk-forward "diagnostic retention tier" deferral.
+
+Promoted roadmap hooks (named follow-up RFCs):
+
+- asymmetric price-adjustment constructor RFC (when concrete demand
+  surfaces);
+- stateful fee tiers RFC (after operational experience with v1);
+- maker/taker and rebates RFC (coordinated with liquidity layer);
+- per-instrument / per-asset / per-venue assignment RFC (v0.2.x, when
+  multi-asset portfolios become common);
+- cost sweep / parameterization RFC (after sweep + walk-forward
+  artifact-multiplication patterns stabilize);
+- financing and margin-interest RFC (v0.2.x, separate from cost);
+- multi-currency fee accounting RFC (coordinated with multi-currency ledger
+  work);
+- TCA / reporting layer RFC (v0.2.x or later, consumes cost + future OMS
+  data);
+- broker-reported fee reconciliation RFC (v0.3.0+, with OMS implementation);
+- cost component diagnostic retention RFC (coordinated with walk-forward
+  diagnostic tiers).
+
+Immediate cross-cycle obligations recorded by the synthesis (not horizon
+material, just noted for follow-on cycles):
+
+- v0.1.9.x walk-forward spec packet must extend `candidate_key` and
+  `session_id` to include `cost_model_hash`;
+- v0.1.9.x cost-API spec packet must update
+  `vignettes/metrics-and-accounting.Rmd` which currently teaches the legacy
+  full-per-leg spread convention.
+
+This horizon entry does not authorize any of the above. It records the
+direction so that when each follow-up cycle opens, the seed author starts
+from a known shape rather than re-deriving the boundary.
 
 ## Resolved
 
