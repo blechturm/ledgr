@@ -71,7 +71,7 @@ no-op if no pending auditr report lands before the release gate.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -106,6 +106,13 @@ v0.1.8.4 active-alias documentation rewrite rather than assume a blank slate.
 ### Verification
 
 Manual packet review and `git diff --check`.
+
+### Completion Notes
+
+Completed in `batch0_inventory_and_intake.md`. The note inventories README,
+vignettes, pkgdown navigation, repeated concepts, canonical homes, and the
+`research-to-production.Rmd` disposition. Runtime/storage scope remains
+deferred.
 
 ### Source Reference
 
@@ -436,7 +443,7 @@ scope: redundancy_cleanup
 Priority: P0
 Effort: M
 Dependencies: LDG-2434
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -475,6 +482,14 @@ sweep path.
 ### Verification
 
 Manual auditr routing review and `git diff --check`.
+
+### Completion Notes
+
+Completed in `batch0_inventory_and_intake.md`. The v0.1.8.4 auditr themes were
+classified against the v0.1.8.5 bounded-intake rule. Direct teachability fits
+were attached to existing tickets, architecture-shaped findings were deferred,
+episode-environment findings were routed outside ledgr release scope, and no
+new tickets were added.
 
 ### Source Reference
 

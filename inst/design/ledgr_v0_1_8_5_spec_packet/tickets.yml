@@ -4,7 +4,7 @@ generated_from: "v0_1_8_5_spec.md"
 tickets:
   - id: "LDG-2434"
     title: "Packet Setup, Documentation Inventory, And Reading Flow"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -105,7 +105,7 @@ tickets:
 
   - id: "LDG-2440"
     title: "Pending Auditr Intake And Bounded Routing"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
