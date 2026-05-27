@@ -122,13 +122,15 @@ Review focus:
 
 Tickets:
 
-- `LDG-2436` README, Getting Started, And Pkgdown Reading Flow
+- `LDG-2436` README And Pkgdown Reading Flow
 
 Purpose:
 
-Make the first-contact path quick, credible, and routed. README and Getting
-Started should teach how to run a small backtest and inspect the evidence, then
-link to focused articles for depth.
+Make the first-contact path quick, credible, and routed. README should teach
+how to run a small backtest and inspect the evidence, then link to Research
+Workflow and focused articles for depth. Getting Started was retired during
+Batch 2 review because it duplicated README and Research Workflow without a
+distinct article job.
 
 Review focus:
 
@@ -137,8 +139,8 @@ Review focus:
 - README links deeper capabilities instead of demonstrating every major
   feature inline.
 - README strategy-source inspection proves the audit-trail story concisely.
-- Getting Started remains onboarding, not a reference manual.
-- Getting Started is migrated to Quarto and follows the styleguide.
+- No installed Getting Started source or pkgdown entry remains.
+- Former Getting Started links route to Research Workflow.
 - `_pkgdown.yml` exposes the workflow article and preserves the reading flow.
 - No obsolete exact-ID sweep example is presented as the primary path.
 

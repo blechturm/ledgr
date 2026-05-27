@@ -160,5 +160,5 @@ That is what R is for. That is why ledgr is built in it.
 ## Reading on
 
 - [Who ledgr is for](who-ledgr-is-for.html): the audience filter
-- [Getting started](../articles/getting-started.html): the 10-minute first backtest
+- [Research Workflow](../articles/research-workflow.html): the reproducible research loop
 - [Strategy development](../articles/strategy-development.html): the readable strategy authoring model

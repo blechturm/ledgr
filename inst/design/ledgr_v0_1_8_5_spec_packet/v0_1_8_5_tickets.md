@@ -18,7 +18,7 @@ The release spine is:
 documentation inventory
   -> canonical research workflow article
   -> Quarto vignette infrastructure and styleguide
-  -> README / Getting Started / pkgdown reading flow
+  -> README / pkgdown reading flow
   -> store, data input, and reproducibility docs
   -> legacy sweep-authoring boundary cleanup
   -> sweeps and execution semantics docs
@@ -49,7 +49,7 @@ machinery and must not silently accept parameterized feature sweeps.
 LDG-2434 Packet Setup, Documentation Inventory, And Reading Flow
   |-- LDG-2435 Canonical Research Workflow Article
   |     `-- LDG-2443 Quarto Vignette Infrastructure And Styleguide
-  |           |-- LDG-2436 README, Getting Started, And Pkgdown Reading Flow
+  |           |-- LDG-2436 README And Pkgdown Reading Flow
   |           |-- LDG-2437 Store, Data Input, And Reproducibility Docs
   |           |-- LDG-2438 Sweeps And Execution Semantics Docs
   |           |-- LDG-2444 Remaining Core Vignette Quarto Migration
@@ -89,7 +89,7 @@ v0.1.8.4 active-alias documentation rewrite rather than assume a blank slate.
 
 - Keep `v0_1_8_5_spec.md`, `v0_1_8_5_tickets.md`, and `tickets.yml`
   synchronized.
-- Inventory README, Getting Started, Sweeps, Indicators, Strategy
+- Inventory README, Sweeps, Indicators, Strategy
   Development, Experiment Store, Reproducibility, Metrics/Accounting, and
   Research-To-Production docs.
 - Map each major vignette to its primary job from the spec's reading-flow
@@ -292,8 +292,9 @@ Verification completed:
 - Documentation contract tests read the canonical `.qmd` source and pass.
 
 Known integration note: a full `pkgdown::build_articles()` run still fails on
-pre-existing `getting-started.Rmd` executable-code drift. That is outside this
-ticket and remains owned by LDG-2436.
+pre-existing `getting-started.Rmd` executable-code drift. Batch 2 review later
+resolved this by retiring the redundant Getting Started article rather than
+migrating the drift forward.
 
 Editorial review note: the workflow article intentionally names the promoted-run
 recovery surface as an API gap. The underlying provenance exists through
@@ -325,18 +326,23 @@ scope: quarto_migration
 
 ---
 
-## LDG-2436: README, Getting Started, And Pkgdown Reading Flow
+## LDG-2436: README And Pkgdown Reading Flow
 
 Priority: P1
 Effort: M
 Dependencies: LDG-2443
-Status: Pending
+Status: In Progress
 
 ### Description
 
 Refine first-contact documentation so users see how to run a small credible
 backtest quickly, then route deeper capabilities to focused articles. The
 README must not become a feature catalog.
+
+Batch 2 editorial review found that Getting Started duplicated the new
+executable README and the Research Workflow article without owning a distinct
+job. LDG-2436 therefore drops the installed Getting Started article instead of
+migrating it to Quarto.
 
 ### Tasks
 
@@ -345,8 +351,8 @@ README must not become a feature catalog.
 - Keep `README.Rmd` and `README.md` synchronized.
 - Fix the README strategy-source inspection regression from the v0.1.8.4 docs
   rewrite so stored source is inspectable without overwhelming the quick path.
-- Update Getting Started to align with the same first-contact story.
-- Migrate Getting Started to Quarto and apply the styleguide.
+- Remove the redundant Getting Started article from installed docs.
+- Route former Getting Started links to Research Workflow.
 - Link to the workflow article and focused vignettes for sweeps, stores,
   reproducibility, metrics, feature maps, and strategy development.
 - Update `_pkgdown.yml` article ordering and grouping to match the documented
@@ -359,9 +365,8 @@ README must not become a feature catalog.
 - README links capability depth to vignettes instead of demonstrating every
   major feature.
 - README strategy-source inspection proves the audit-trail story concisely.
-- Getting Started remains an onboarding path, not a reference manual.
-- Getting Started has a `.qmd` canonical source and renders under the Quarto
-  pipeline.
+- No installed Getting Started source or pkgdown navigation entry remains.
+- Background articles route first-run readers to Research Workflow.
 - `_pkgdown.yml` exposes the workflow article and preserves a coherent reading
   order.
 - No obsolete exact-ID sweep example is presented as the primary path.
@@ -377,14 +382,15 @@ review, and manual first-contact review.
 - `README.Rmd`
 - `README.md`
 - `_pkgdown.yml`
-- `vignettes/getting-started.Rmd`
+- `vignettes/articles/who-ledgr-is-for.Rmd`
+- `vignettes/articles/why-r.Rmd`
 
 ### Classification
 
 ```yaml
 type: documentation
 surface: first_contact_docs
-scope: readme_getting_started_pkgdown
+scope: readme_pkgdown
 ```
 
 ---

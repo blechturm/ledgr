@@ -403,7 +403,6 @@ The current v0.1.8.5 reading flow is:
 
 ```text
 README
-  -> Getting Started
   -> Research Workflow
   -> focused articles as needed:
        Data Input / Snapshot Creation

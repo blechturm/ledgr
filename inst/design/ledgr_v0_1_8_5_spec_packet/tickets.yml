@@ -33,8 +33,8 @@ tickets:
       - "manual_article_review"
 
   - id: "LDG-2436"
-    title: "README, Getting Started, And Pkgdown Reading Flow"
-    status: "pending"
+    title: "README And Pkgdown Reading Flow"
+    status: "in_progress"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -42,7 +42,7 @@ tickets:
     classification:
       type: "documentation"
       surface: "first_contact_docs"
-      scope: "readme_getting_started_pkgdown"
+      scope: "readme_pkgdown"
     tests:
       - "documentation_contract_tests"
       - "readme_render_check"

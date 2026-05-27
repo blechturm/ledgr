@@ -23,8 +23,8 @@ files with:
 
 Core installed articles:
 \itemize{
-\item \code{vignette("getting-started", package = "ledgr")}
-\item \code{system.file("doc", "getting-started.html", package = "ledgr")}
+\item \code{vignette("research-workflow", package = "ledgr")}
+\item \code{system.file("doc", "research-workflow.html", package = "ledgr")}
 \item \code{vignette("strategy-development", package = "ledgr")}
 \item \code{system.file("doc", "strategy-development.html", package = "ledgr")}
 \item \code{vignette("metrics-and-accounting", package = "ledgr")}

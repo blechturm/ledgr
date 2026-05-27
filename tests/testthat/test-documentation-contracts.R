@@ -311,7 +311,7 @@ testthat::test_that("visible docs avoid hidden article helpers", {
   root <- testthat::test_path("..", "..")
   paths <- c(
     file.path(root, "README.Rmd"),
-    list.files(file.path(root, "vignettes"), pattern = "[.](Rmd|md)$", full.names = TRUE)
+    list.files(file.path(root, "vignettes"), pattern = "[.](Rmd|qmd|md)$", full.names = TRUE)
   )
   paths <- paths[file.exists(paths)]
   text <- paste(unlist(lapply(paths, readLines, warn = FALSE)), collapse = "\n")
@@ -767,8 +767,8 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   public_paths <- c(
     file.path(root, "README.Rmd"),
     file.path(root, "README.md"),
-    list.files(file.path(root, "vignettes"), pattern = "[.](Rmd|md)$", full.names = TRUE),
-    list.files(file.path(root, "vignettes", "articles"), pattern = "[.]Rmd$", full.names = TRUE)
+    list.files(file.path(root, "vignettes"), pattern = "[.](Rmd|qmd|md)$", full.names = TRUE),
+    list.files(file.path(root, "vignettes", "articles"), pattern = "[.](Rmd|qmd)$", full.names = TRUE)
   )
   public_paths <- public_paths[file.exists(public_paths)]
   text <- paste(unlist(lapply(public_paths, readLines, warn = FALSE)), collapse = "\n")
@@ -784,7 +784,7 @@ testthat::test_that("public site polish avoids stale public artifacts", {
 
   start_block <- substr(pkgdown_text, start_here[[1]], core_workflow[[1]] - 1L)
   testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
-  testthat::expect_match(start_block, "- getting-started", fixed = TRUE)
+  testthat::expect_match(start_block, "- research-workflow", fixed = TRUE)
   testthat::expect_match(start_block, "- leakage", fixed = TRUE)
   testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
 
@@ -816,7 +816,7 @@ testthat::test_that("package help exposes an installed-documentation spine", {
 
   testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
-  for (article in c("getting-started", "strategy-development", "metrics-and-accounting", "experiment-store", "sweeps", "indicators", "custom-indicators")) {
+  for (article in c("research-workflow", "strategy-development", "metrics-and-accounting", "experiment-store", "sweeps", "indicators", "custom-indicators")) {
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
@@ -974,11 +974,11 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_no_match(doc, "ledgr_snapshot_split\\(")
   testthat::expect_match(doc, "ledgr_save_sweep()", fixed = TRUE)
 
-  testthat::expect_match(readme, "Explore A Sweep", fixed = TRUE)
-  testthat::expect_match(readme, "filter(status == \"DONE\")", fixed = TRUE)
-  testthat::expect_match(readme, "arrange(desc(sharpe_ratio))", fixed = TRUE)
-  testthat::expect_match(readme, "does not\\s+rank candidates automatically")
-  testthat::expect_match(readme, "require_same_snapshot = FALSE", fixed = TRUE)
+  testthat::expect_match(readme, "I want the full research loop: snapshot, sweep, promotion, reopen.", fixed = TRUE)
+  testthat::expect_match(readme, "Research Workflow", fixed = TRUE)
+  testthat::expect_match(readme, "exploratory sweeps and candidate promotion", fixed = TRUE)
+  testthat::expect_match(readme, "Sweeps", fixed = TRUE)
+  testthat::expect_match(readme, "does not ship automatic ranking", fixed = TRUE)
   testthat::expect_match(readme, "The current ledgr research API is experiment-first", fixed = TRUE)
   testthat::expect_match(readme, "includes sequential\\s+exploratory sweep support")
 

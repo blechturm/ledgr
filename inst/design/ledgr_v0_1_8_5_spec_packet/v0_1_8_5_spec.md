@@ -111,8 +111,8 @@ v0.1.8.5 has eleven primary goals:
 
 1. Add a canonical research workflow article or vignette that walks through the
    full package-owned path from sealed data to promoted evidence.
-2. Align README and Getting Started with the same first-contact story, while
-   keeping them shorter than the dedicated workflow article.
+2. Align README as the short first-contact story and route the former Getting
+   Started role into README plus the dedicated Research Workflow article.
 3. Align Experiment Store documentation around one project-local store,
    normally `artifacts/ledgr_store.duckdb`.
 4. Align Sweeps documentation with active aliases, feature grids, strategy
@@ -357,10 +357,10 @@ The report/review outline must include:
 - selection caveat: the promoted candidate is not statistically validated by
   promotion itself.
 
-### 6.2 README And Getting Started
+### 6.2 README And First Contact
 
-README and Getting Started should continue to be first-contact documents, not
-long workflow manuals. They should:
+README should be the first-contact document, not a long workflow manual. It
+should:
 
 - show the fastest credible path to running a backtest;
 - show the active-alias/grid model only as much as needed for that path;
@@ -373,10 +373,14 @@ long workflow manuals. They should:
 v0.1.8.4 already rewrote large parts of README, Getting Started, Sweeps,
 Indicators, and Strategy Development around active aliases and the demo
 strategy. v0.1.8.5 should inventory and refine that work rather than assume a
-blank slate. The known `README` strategy-source inspection regression from the
-v0.1.8.4 documentation rewrite should be treated as a first-contact polish item
-in Batch B: the README should prove that stored strategy source is inspectable
-without overwhelming the quick-start path.
+blank slate. During Batch B review, Getting Started was found to duplicate the
+new executable README and the Research Workflow article without owning a
+distinct editorial job. Drop the installed Getting Started article in this
+cycle; README becomes the short executable first touch, and Research Workflow
+becomes the canonical guided workflow. The known `README` strategy-source
+inspection regression from the v0.1.8.4 documentation rewrite should be treated
+as a first-contact polish item in Batch B: the README should prove that stored
+strategy source is inspectable without overwhelming the quick-start path.
 
 The README is not a feature catalog. It should answer:
 
@@ -395,10 +399,9 @@ whole research workflow.
 `README.Rmd` is the source document and `README.md` must be regenerated or
 updated with it. They should not drift.
 
-Getting Started may be slightly longer than the README, but it should still
-remain an onboarding path rather than a reference manual. If the user needs to
-understand the full artifact lifecycle, send them to the research workflow
-article.
+Getting Started is removed from the installed article set unless a future
+cycle gives it a distinct editorial job. If the user needs to understand the
+full artifact lifecycle, send them to the Research Workflow article.
 
 ### 6.3 Experiment Store And Reproducibility
 
@@ -499,7 +502,6 @@ Markdown source is migration input, not the long-term style target.
 Each major vignette should have one primary job:
 
 - README: identity, quick backtest, and links.
-- Getting Started: first guided run with minimal conceptual overhead.
 - Research Workflow: full reproducible study path from snapshot to promotion
   and reopen.
 - Data Input And Snapshot Creation: how input data becomes sealed evidence.
@@ -520,7 +522,6 @@ The expected reading flow is:
 
 ```text
 README
-  -> Getting Started
   -> Research Workflow
   -> focused articles as needed:
        Data Input / Snapshot Creation
@@ -723,8 +724,9 @@ Minimum checks for this batch:
 
 ### Batch B: First-Contact Alignment
 
-- Update README and Getting Started to point at the same workflow.
-- Migrate Getting Started to Quarto and apply the styleguide.
+- Update README to point at the same workflow as the site navigation.
+- Remove the redundant Getting Started article from the installed article set;
+  its former first-run role is absorbed by README and Research Workflow.
 - Reduce README to a quick-backtest path plus capability links, not a full
   feature catalog.
 - Fix the README strategy-source inspection regression from the v0.1.8.4 docs
@@ -741,8 +743,8 @@ Minimum documentation contract checks for this batch:
   feature;
 - `_pkgdown.yml` exposes the workflow article and preserves a coherent reading
   order.
-- the Quarto-sourced Getting Started article renders and follows the
-  styleguide's opening, callout, and related-article conventions.
+- no installed Getting Started source remains unless a future cycle restores it
+  with a distinct editorial job.
 
 ### Batch C: Store, Data, And Reproducibility Docs
 

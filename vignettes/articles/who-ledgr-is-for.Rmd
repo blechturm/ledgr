@@ -144,5 +144,5 @@ That is a fine reason to bookmark the project and come back to it.
 ## Reading on
 
 - [Why ledgr is built in R](why-r.html): the design culture argument
-- [Getting started](../articles/getting-started.html): the 10-minute first backtest
+- [Research Workflow](../articles/research-workflow.html): the reproducible research loop
 - [Research to production](../articles/research-to-production.html): the long-term vision
