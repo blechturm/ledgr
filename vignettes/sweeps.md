@@ -1,404 +1,552 @@
-Exploratory Sweeps And Candidate Promotion
-================
+# Exploratory Sweeps And Candidate Promotion
 
-The examples assume the usual vignette setup:
+
+<style>
+.ledgr-diagram {
+  margin: 1.25rem auto 1.5rem auto;
+  text-align: center;
+}
+&#10;.ledgr-diagram .mermaid {
+  display: inline-block;
+  max-width: 100%;
+}
+&#10;.ledgr-diagram .mermaid svg {
+  display: block;
+  height: auto !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+&#10;.ledgr-grid-diagram .mermaid svg {
+  max-width: 760px !important;
+}
+&#10;.ledgr-alias-diagram .mermaid svg {
+  max-width: 820px !important;
+}
+</style>
+
+This article explains how declared parameter variation becomes candidate
+rows. The central idea is active aliases: one strategy can read stable
+feature names such as `fast` and `slow` while the sweep varies the
+concrete indicators behind those names.
+
+Sweeps are for exploration. Promotion records one selected candidate as
+a committed run. Neither step proves that the selected candidate will
+generalize.
+
+## Prerequisites
 
 ``` r
 library(ledgr)
 library(dplyr)
+data("ledgr_demo_bars", package = "ledgr")
 ```
 
-# Sweep Is Exploration
+This article uses `dplyr` for tabular inspection. The sweep itself is
+ledgr’s job.
 
-`ledgr_sweep()` is the lightweight exploration surface. It evaluates an
-executable grid against a `ledgr_experiment()` and returns a
-`ledgr_sweep_results` table. It does not write candidate runs to the
-experiment store and it does not choose a winner.
+## Sweep Is Exploration
 
-`ledgr_run()` is the committed artifact surface. A promoted candidate
-becomes a durable run only when you explicitly select it with
-`ledgr_candidate()` and call `ledgr_promote()`, which in turn calls
-`ledgr_run()`.
+> [!NOTE]
+>
+> ### Definition
+>
+> A sweep is an evaluated candidate table over a declared grid. It is
+> exploratory: it returns candidate summaries, does not choose a winner,
+> and does not write candidate runs to the experiment store.
+
+`ledgr_sweep()` evaluates a grid against a `ledgr_experiment()`. It
+tells you what each declared candidate did. It does not decide which
+candidate matters.
+
+> [!NOTE]
+>
+> ### Definition
+>
+> A sweep usually contains many candidates. Each candidate is one row of
+> the sweep: resolved feature parameters, strategy parameters, execution
+> seed, status, metrics, warnings or errors, and provenance.
+
+That separation is the workflow boundary:
 
 ``` text
-ledgr_sweep()                 explore
+ledgr_sweep()                 explore declared candidates
 ledgr_candidate()             select one row deliberately
 ledgr_promote() / ledgr_run() commit an auditable run
 ```
 
-Sweep results carry an `evaluation_scope` attribute that defaults to
-`"exploratory"`. That label is intentional. A sweep table records what
-was run; it does not prove that the selected parameters were evaluated
-on held-out data.
+> [!WARNING]
+>
+> ### Selection is not validation
+>
+> A sweep table records what was run. It does not prove that the
+> selected parameters were evaluated on held-out data. Promotion records
+> a choice; it does not make that choice out-of-sample.
 
-# Normal Train/Test Discipline
+## Declare Parameterized Features
 
-The recommended workflow is:
-
-``` text
-source bars
-  -> train snapshot
-  -> test snapshot
-  -> sweep on train snapshot
-  -> select candidate and lock params
-  -> evaluate the locked params on the test snapshot
-```
-
-You can create the train and test snapshots manually by filtering source
-bars before calling `ledgr_snapshot_from_df()`.
+Start with one sealed snapshot and one strategy. This article stays on
+sweep mechanics rather than train/test or walk-forward evaluation.
 
 ``` r
-split_at <- ledgr_utc("2022-01-01")
-
-train_bars <- bars |>
-  filter(ts_utc < split_at)
-
-test_bars <- bars |>
-  filter(ts_utc >= split_at)
-
-train_snapshot <- ledgr_snapshot_from_df(train_bars)
-test_snapshot  <- ledgr_snapshot_from_df(test_bars)
-
-train_exp <- ledgr_experiment(
-  snapshot = train_snapshot,
-  strategy = strategy,
-  features = features,
-  opening = ledgr_opening(cash = 100000)
-)
-
-test_exp <- ledgr_experiment(
-  snapshot = test_snapshot,
-  strategy = strategy,
-  features = features,
-  opening = ledgr_opening(cash = 100000)
-)
-
-feature_grid <- ledgr_feature_grid(
-  fast_n = c(10L, 20L),
-  slow_n = c(40L, 80L),
-  .filter = fast_n < slow_n
-)
-
-strategy_grid <- ledgr_strategy_grid(
-  threshold = c(0.000, 0.005),
-  qty = c(10, 20)
-)
-
-grid <- ledgr_grid_cross(
-  features = feature_grid,
-  strategy = strategy_grid
-)
-grid <- ledgr_grid_add_baseline(
-  grid,
-  flat = list(
-    feature = list(fast_n = 10L, slow_n = 40L),
-    strategy = list(threshold = 0, qty = 0)
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
   )
+
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  snapshot_id = "sweep_alias_demo",
+  db_path = tempfile(fileext = ".duckdb")
 )
 
-precomputed <- ledgr_precompute_features(train_exp, grid)
-results <- ledgr_sweep(train_exp, grid, precomputed_features = precomputed, seed = 2026)
-```
-
-Rank explicitly with ordinary R tools. ledgr does not own objective
-functions or automatic candidate ranking.
-
-``` r
-ranked <- results |>
-  filter(status == "DONE") |>
-  arrange(desc(sharpe_ratio))
-
-candidate <- ledgr_candidate(ranked, 1)
-```
-
-Keep the `ledgr_sweep_results` object and its list columns intact until
-after selection. Converting to `as.data.frame()` is fine for display,
-but it drops the class and can remove the metadata `ledgr_candidate()`
-uses to preserve filtered or sorted selection context.
-
-The sweep table has one metric context for all candidate metrics.
-Inspect it before ranking if the annualization or risk-free-rate
-assumption matters:
-
-``` r
-ledgr_metric_context(results)
-```
-
-To evaluate out of sample, promote against the held-out experiment and
-make the cross-snapshot choice explicit:
-
-``` r
-test_run <- ledgr_promote(
-  test_exp,
-  candidate,
-  run_id = "momentum_locked_test",
-  note = "Locked params selected from train sweep.",
-  require_same_snapshot = FALSE
-)
-```
-
-`require_same_snapshot = FALSE` is required because the candidate came
-from the train snapshot and the committed run is intentionally executed
-on the test snapshot.
-
-# Same-Snapshot Replay Is Secondary
-
-Sometimes you want to commit the selected candidate on the same snapshot
-that produced the sweep result. That is useful for audit, diagnostics,
-or comparing a single candidate against the sweep summary. It remains
-in-sample.
-
-``` r
-train_run <- ledgr_promote(
-  train_exp,
-  candidate,
-  run_id = "momentum_locked_train",
-  note = "Same-snapshot replay of selected exploratory candidate."
-)
-```
-
-Same-snapshot promotion is protected by default. `ledgr_promote()`
-requires the candidate snapshot hash to match the target experiment
-unless you deliberately set `require_same_snapshot = FALSE`.
-
-Same-snapshot replay is the direct way to verify that a selected row is
-commit-ready. Compare the sweep summary with the committed run’s result
-tables and metrics:
-
-``` r
-selected_row <- candidate$row
-train_metrics <- ledgr_compute_metrics(train_run)
-train_equity <- ledgr_results(train_run, what = "equity")
-
-stopifnot(isTRUE(all.equal(
-  selected_row$final_equity[[1]],
-  tail(train_equity$equity, 1)
-)))
-stopifnot(isTRUE(all.equal(
-  selected_row$sharpe_ratio[[1]],
-  train_metrics$sharpe_ratio
-)))
-```
-
-# Feature Grids And Strategy Grids
-
-Active-alias sweeps use two public namespaces:
-
-``` text
-feature params  -> materialize parameterized features
-strategy params -> passed to strategy(ctx, params)
-```
-
-Declare parameterized indicators with `ledgr_param()` inside a feature
-map:
-
-``` r
 features <- ledgr_feature_map(
   fast = ledgr_ind_sma(ledgr_param("fast_n")),
   slow = ledgr_ind_sma(ledgr_param("slow_n"))
 )
 
 strategy <- ledgr_demo_sma_crossover_strategy()
-exp <- ledgr_experiment(snapshot, strategy, features = features)
 
+exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = strategy,
+  features = features,
+  opening = ledgr_opening(cash = 100000)
+)
+
+exp
+```
+
+    ledgr_experiment
+    ================
+    Snapshot ID: sweep_alias_demo
+    Database:    <temporary DuckDB path>
+    Universe:    2 instruments
+    Features:    2 mapped
+    Opening:     cash=100000, positions=0
+    Mode:        audit_log
+    Metrics:     US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+
+The strategy function itself does not change across candidates. At each
+pulse, ledgr calls the same `function(ctx, params)`: `ctx` contains the
+current pulse-known market data, positions, cash, equity, and resolved
+alias values; `params` contains the strategy-parameter values for this
+candidate.
+
+The demo strategy you assigned above follows this shape internally:
+
+``` r
+sma_crossover_body <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    values <- ctx$features(id)
+    if (
+      passed_warmup(values) &&
+        ((values[["fast"]] / values[["slow"]]) - 1) > params$threshold
+    ) {
+      targets[id] <- params$qty
+    }
+  }
+
+  targets
+}
+```
+
+During a sweep, `ctx$features(id)` returns values for the concrete
+indicators resolved for that candidate. `params$threshold` and
+`params$qty` come from the strategy grid. For the full strategy
+contract, read `vignette("strategy-development", package = "ledgr")`.
+
+> [!NOTE]
+>
+> ### Definition
+>
+> An active alias is a stable strategy-facing feature name whose
+> concrete indicator can vary by candidate. The strategy reads aliases
+> such as `fast` and `slow`; ledgr resolves the concrete SMA windows for
+> each candidate before execution.
+
+The strategy can keep reading `values[["fast"]]` and `values[["slow"]]`
+even when one candidate uses SMA(5) and SMA(20) and another candidate
+uses SMA(10) and SMA(40). The alias is the strategy-facing contract. The
+concrete feature IDs and fingerprints are provenance.
+
+Feature parameters vary the knobs exposed by a feature constructor. For
+`ledgr_ind_sma()`, the knob is `n`, the moving-average window. For
+TTR-backed features, the knobs are the supported arguments of the
+wrapped TTR indicator. You still need to understand the feature you are
+tuning; ledgr separates the parameter namespaces, but it does not decide
+which indicator arguments are economically meaningful.
+
+Only knobs declared with `ledgr_param("name")` need values in the
+feature grid. Concrete arguments stay fixed. For example,
+`ledgr_ind_sma(20)` needs no `feature_grid` entry, while
+`ledgr_ind_sma(ledgr_param("fast_n"))` requires a scalar `fast_n` value
+for each candidate.
+
+<div class="ledgr-diagram ledgr-alias-diagram">
+
+``` mermaid
+
+flowchart TB
+  params["feature params<br/>fast_n = 5<br/>slow_n = 20"]
+  indicators["concrete indicators<br/>SMA 5 and SMA 20"]
+  aliases["stable aliases<br/>fast and slow"]
+  strategy["strategy reads<br/>fast and slow"]
+
+  params --> indicators --> aliases --> strategy
+```
+
+</div>
+
+For a second candidate with `fast_n = 10` and `slow_n = 40`, the same
+arrows resolve to SMA(10) and SMA(40), but the strategy still reads
+`values[["fast"]]` and `values[["slow"]]`. The aliases stay stable
+across candidates.
+
+## Build The Candidate Grid
+
+> [!NOTE]
+>
+> ### Definition
+>
+> Feature parameters materialize indicators before execution. Strategy
+> parameters are passed to `strategy(ctx, params)` during execution.
+> Keeping those namespaces separate is what lets a strategy read stable
+> aliases while the sweep varies indicator windows.
+
+Use `ledgr_feature_grid()` for the feature knobs you decided to vary and
+`ledgr_strategy_grid()` for the knobs in your own strategy code. Then
+cross them with `ledgr_grid_cross()`.
+
+``` r
 feature_grid <- ledgr_feature_grid(
-  fast_n = c(10L, 20L, 50L),
-  slow_n = c(40L, 80L, 200L),
+  fast_n = c(5L, 10L),
+  slow_n = c(20L, 40L),
   .filter = fast_n < slow_n
 )
 
 strategy_grid <- ledgr_strategy_grid(
   threshold = c(0, 0.01),
-  qty = c(50, 100)
+  qty = c(5, 10)
 )
 
 grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
+grid
 ```
 
-Use `.filter` for simple grid-shape constraints such as
-`fast_n < slow_n`. Filter expressions are evaluated against the grid
-columns with ordinary R operators and base helpers; they do not read run
-state, feature data, or caller globals.
+    ledgr_param_grid
+    ================
+    Combinations: 16
+    Labels:       feature_403538546350/strategy_26bee9909056, feature_403538546350/strategy_0aa75c3004e3, feature_403538546350/strategy_b2317c0ea414, feature_403538546350/strategy_50fe1adcd9c5, feature_363d9fed8e92/strategy_26bee9909056, feature_363d9fed8e92/strategy_0aa75c3004e3
+                  ... 10 more
 
-Each sweep row stores `feature_params`, `params`, resolved feature
-fingerprints, and provenance. The concrete `feature_set_hash` describes
-resolved concrete features; `alias_map_hash` describes the active alias
-map. Strategies should read the alias-keyed vector with
-`ctx$features(id)` and guard it with `passed_warmup()`.
+    Grid labels identify sweep candidates; they are not committed run IDs.
 
-`ledgr_param_grid()` remains available for legacy flat
-strategy-parameter grids and exact-ID strategies. For active aliases,
-prefer `ledgr_feature_grid()`, `ledgr_strategy_grid()`, and
-`ledgr_grid_cross()` so feature materialization inputs are not confused
-with strategy runtime parameters.
+The `.filter` expression is a structural grid constraint. Here it says
+the fast moving average must be shorter than the slow moving average.
+Filter expressions are evaluated against grid columns; they do not read
+run state, feature data, or caller globals.
 
-# Precompute Larger Grids
+> [!WARNING]
+>
+> ### Mind the combinatorial explosion
+>
+> `ledgr_grid_cross()` multiplies grid dimensions. Four parameters with
+> five values each produce 625 candidates before you add another axis.
+> Keep early sweeps deliberately small, then expand only after the
+> candidate table is readable and the feature payload cost is
+> understood.
 
-`precomputed_features` is optional. For small grids, `ledgr_sweep()` can
-compute features internally. When the grid has more than 20 combinations
-and no precomputed feature payload is supplied, ledgr warns and suggests
-`ledgr_precompute_features()`.
+The cross product is explicit:
 
-Precompute resolves candidate-specific feature factories, deduplicates
-shared indicator definitions by fingerprint, and validates the payload
-against the snapshot, universe, scoring range, feature engine version,
-and grid labels.
+<div class="ledgr-diagram ledgr-grid-diagram">
 
-The precompute payload is intentionally tied to its inputs.
-`ledgr_sweep()` rejects a payload built for a different snapshot hash,
-universe, scoring range, grid labels, parameter hashes, feature engine
-version, or resolved feature fingerprints. Recompute the payload after
-changing any of those inputs.
+``` mermaid
 
-Feature-factory failures are candidate-level when they occur while
-resolving a specific candidate’s features and `stop_on_error = FALSE`.
-The failed row keeps the candidate label, params, error class, and error
-message so the bad combination can be inspected without losing the rest
-of the sweep.
+flowchart TB
+  fg["feature_grid<br/>fast_n, slow_n"]
+  sg["strategy_grid<br/>threshold, qty"]
+  cross["grid_cross"]
+  rows["candidate rows<br/>feature params + strategy params"]
 
-# Failure Rows
+  fg --> cross
+  sg --> cross
+  cross --> rows
+```
 
-By default `stop_on_error = FALSE`. Candidate-level failures become rows
-with:
+</div>
 
-- `status = "FAILED"`
-- `error_class`
-- `error_msg`
-- `params`
-- `warnings`
-- `feature_fingerprints`
-- `provenance`
-- metric columns set to `NA`
+> [!TIP]
+>
+> ### Try it
+>
+> Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The
+> strategy code does not change. How many candidates appear after
+> `.filter`, and which candidate rows still use the same `fast` and
+> `slow` aliases?
 
-Use `stop_on_error = TRUE` when debugging a single failing candidate and
-you want ledgr to rethrow the first failure. When asserting on a
-rethrown strategy failure in tests, prefer
-`inherits(e, "ledgr_strategy_error")` rather than exact class-vector
-equality; the original strategy error class is preserved alongside
-ledgr’s generic class.
+## Precompute Shared Features
 
-`ledgr_candidate()` rejects failed rows by default. Use
-`ledgr_candidate(results, which, allow_failed = TRUE)` only for
-diagnostic extraction of the failed candidate’s params, error, warnings,
-and provenance. `ledgr_promote()` still rejects failed candidates;
-promotion is only for committing a runnable candidate through
-`ledgr_run()`.
-
-For failed-row inspection, keep list columns intact and extract only the
-field you need:
+Precomputing is an execution optimization, not a separate research
+decision. The same declared feature grid is resolved once, deduplicated
+by fingerprint, and reused across sweep candidates.
 
 ``` r
-failed <- subset(as.data.frame(results), status == "FAILED")
-failed$error_class
-failed$error_msg
-failed$params[[1]]
-failed$warnings[[1]]
-failed$feature_fingerprints[[1]]
-failed$provenance[[1]]$feature_set_hash
+precomputed <- ledgr_precompute_features(exp, grid)
+precomputed
 ```
 
-Contract errors still abort before or during the sweep. Invalid grids,
-invalid precomputed feature payloads, including snapshot-hash
-mismatches, and Tier 3 strategy preflight failures are not candidate
-results.
+    ledgr_precomputed_features
+    ===========================
+    Snapshot:   sweep_alias_demo
+    Candidates: 16
+    Features:   4
+    Universe:   DEMO_01, DEMO_02
+    Scoring:    2019-01-01T00:00:00Z to 2019-06-28T00:00:00Z
 
-# Seeds, Provenance, And Promotion Context
+`ledgr_sweep()` can compute features internally for small grids. For
+larger grids, precompute first so feature resolution and payload
+validation are explicit. When a grid has more than 20 combinations and
+no precomputed payload, ledgr warns because feature computation may be
+repeated per candidate.
 
-When `seed` is supplied to `ledgr_sweep()`, each candidate receives a
-stable `execution_seed` derived from the master seed, the candidate
-label, and the candidate params. `ledgr_promote()` forwards that exact
-seed into `ledgr_run()` so a promoted same-snapshot candidate can
-reproduce the selected sweep result. If `seed = NULL`, row-level
-`execution_seed` is `NA` and promotion does not inject a replay seed.
+## Run The Sweep
 
-Each row also carries compact `provenance`, including snapshot hash,
-strategy hash, feature-set hash, master seed, seed contract, and
-evaluation scope. Provenance records what ran. It does not prove that
-your selection process was out-of-sample.
+Give the sweep a master seed when reproducible stochastic strategy
+behavior matters. Each row receives its own derived `execution_seed`.
 
-The candidate table itself is not a full artifact store. Treat sweep
-columns as candidate summaries: `run_id`, `status`, `params`,
-`execution_seed`, metric columns, `feature_fingerprints`, `provenance`,
-and warning/error fields are the programmatic inspection surface. Full
-equity, fills, trades, and ledger rows are created only by committed
+``` r
+sweep <- ledgr_sweep(
+  exp,
+  grid,
+  precomputed_features = precomputed,
+  seed = 2026L
+)
+
+sweep
+```
+
+    # ledgr sweep -- sweep_63168c6bb7e3842e
+    # A tibble: 16 x 7
+       run_id            status sharpe_ratio total_return max_drawdown n_trades execution_seed
+       <chr>             <chr>         <dbl> <chr>        <chr>           <int>          <int>
+     1 feature_40353854~ DONE          0.541 +0.0%        -0.1%               6     1052907656
+     2 feature_40353854~ DONE          3.07  +0.1%        -0.0%               3      947421329
+     3 feature_40353854~ DONE          0.541 +0.0%        -0.1%               6     2134127254
+     4 feature_40353854~ DONE          3.08  +0.2%        -0.1%               3     2051697679
+     5 feature_363d9fed~ DONE          1.80  +0.1%        -0.0%               5     1310819559
+     6 feature_363d9fed~ DONE          2.05  +0.1%        -0.0%               3      646378071
+     7 feature_363d9fed~ DONE          1.80  +0.2%        -0.1%               5      659701663
+     8 feature_363d9fed~ DONE          2.05  +0.1%        -0.1%               3       87492416
+     9 feature_056fef29~ DONE          1.38  +0.1%        -0.0%               3      745595795
+    10 feature_056fef29~ DONE          2.12  +0.1%        -0.0%               2      399616899
+    11 feature_056fef29~ DONE          1.38  +0.1%        -0.1%               3     2131100969
+    12 feature_056fef29~ DONE          2.12  +0.2%        -0.1%               2     2098648481
+    13 feature_616262e3~ DONE          1.34  +0.1%        -0.0%               2     1050313246
+    14 feature_616262e3~ DONE          1.30  +0.0%        -0.0%               2     1598413647
+    15 feature_616262e3~ DONE          1.34  +0.1%        -0.1%               2     1060032084
+    16 feature_616262e3~ DONE          1.30  +0.1%        -0.1%               2       36882923
+
+    # i 16 combinations: 16 done, 0 failed.
+    # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
+    # i Hidden columns (13): final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, provenance
+
+The table contains candidate summaries. It is not a full artifact store.
+Full equity, fills, trades, and ledger rows are created by committed
 runs.
 
-Direct CSV export of the full sweep table can fail because `params`,
-`warnings`, `feature_fingerprints`, and `provenance` are list columns.
-Export a flat summary instead of inventing a new helper:
+## Inspect Before Promotion
+
+Name the ranking rule before selecting. Here the rule is deliberately
+simple: among completed candidates, sort by Sharpe ratio descending.
+ledgr does not own objective functions or automatic candidate ranking;
+ordinary R code should make the selection rule visible.
 
 ``` r
-results_df <- as.data.frame(results)
-is_flat <- vapply(
-  results_df,
-  function(x) is.atomic(x) && !is.list(x),
-  logical(1)
+ranked <- sweep |>
+  filter(status == "DONE") |>
+  arrange(desc(sharpe_ratio))
+
+top_n <- ranked |>
+  slice_head(n = 5) |>
+  select(
+    run_id, status, final_equity, total_return, sharpe_ratio,
+    params, feature_params, execution_seed
+  )
+
+glimpse(top_n)
+```
+
+    Rows: 5
+    Columns: 8
+    $ run_id         <chr> "feature_403538546350/strategy_50fe1adcd9c5", "feature_4035385463~
+    $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
+    $ final_equity   <dbl> 100225.1, 100112.6, 100164.7, 100082.3, 100141.2
+    $ total_return   <dbl> 0.0022514428, 0.0011257214, 0.0016467258, 0.0008233629, 0.0014119~
+    $ sharpe_ratio   <dbl> 3.075261, 3.074747, 2.123134, 2.122646, 2.053065
+    $ params         <list> [0.01, 10], [0.01, 5], [0.01, 10], [0.01, 5], [0.01, 10]
+    $ feature_params <list> [5, 20], [5, 20], [5, 40], [5, 40], [10, 20]
+    $ execution_seed <int> 2051697679, 947421329, 2098648481, 399616899, 87492416
+
+``` r
+issues <- sweep |>
+  filter(status != "DONE") |>
+  select(any_of(c("run_id", "status", "error_class", "error_msg", "warnings"))) |>
+  as_tibble()
+
+issues
+```
+
+    # A tibble: 0 x 5
+    # i 5 variables: run_id <chr>, status <chr>, error_class <chr>, error_msg <chr>,
+    #   warnings <list>
+
+Some columns are list columns. `glimpse()` keeps the table readable
+while still showing that params, feature params, warnings, and
+provenance remain attached to the rows.
+
+> [!NOTE]
+>
+> ### Design note
+>
+> This explicit table code keeps the selection rule visible. The
+> v0.1.8.6 cycle plans a sweep-review helper that ranks completed
+> candidates, returns a compact review table, separates issue rows, and
+> preserves the same explicit selection rule.
+
+## Promote One Candidate
+
+Promotion replays one selected candidate as a committed run. For the
+full research loop around promotion notes, reopen, and human review,
+read `vignette("research-workflow", package = "ledgr")`.
+
+``` r
+candidate <- ledgr_candidate(ranked, 1)
+
+promoted_run <- ledgr_promote(
+  exp,
+  candidate,
+  run_id = "sweep_selected_candidate",
+  note = "Selected highest-Sharpe completed candidate from the exploratory sweep."
 )
-utils::write.csv(results_df[is_flat], "sweep_summary.csv", row.names = FALSE)
+
+summary(promoted_run)
 ```
 
-Keep the full in-memory object for detailed inspection, or extract
-list-column fields into explicit scalar columns before writing a richer
-report.
+    ledgr Backtest Summary
+    ======================
 
-Warnings are part of candidate inspection. A candidate can finish with
-warnings, including `LEDGR_LAST_BAR_NO_FILL`, when a strategy changes
-target on the final available bar and there is no later bar for a
-next-open fill. Inspect the row’s warning fields before promotion; after
-promotion, inspect the committed run with `summary(test_run)`,
-`ledgr_results(test_run, what = "fills")`, and
-`ledgr_promotion_context(test_run)`. If the final-bar warning is
-expected, extend the snapshot by one executable bar to verify that the
-intended target would fill.
+    Performance Metrics:
+      Total Return:        0.23%
+      Annualized Return:   0.44%
+      Max Drawdown:        -0.07%
 
-Promoted runs write durable promotion context. You can inspect it later:
+    Risk Metrics:
+      Risk-Free Rate:      0.00% annual
+      Annualization:       252 periods/year (US equity daily)
+      Volatility (annual): 0.14%
+      Sharpe Ratio:        3.075
+
+    Trade Statistics:
+      Total Trades:        3
+      Win Rate:            100.00%
+      Avg Trade:           $75.05
+
+    Exposure:
+      Time in Market:      63.57%
+
+## What A Sweep Does Not Prove
+
+A sweep is exploratory evidence with an audit trail. It does not answer
+whether the selected rule will generalize.
+
+The more candidates you try, the more opportunity you create for
+sample-specific luck to look like skill. If the question is
+generalization rather than artifact reproducibility, use walk-forward
+evaluation when that layer lands in v0.1.9.x.
+
+## Failure Rows And Contract Errors
+
+By default, candidate-level failures become rows with
+`status = "FAILED"`. Inspect those rows before selecting anything.
+
+This debug example uses no features so the failure is only about
+strategy parameters. In ordinary research, the experiment usually
+declares features just like the main sweep above.
 
 ``` r
-context <- ledgr_promotion_context(test_run)
-context$selected_candidate
-context$source_sweep
-ledgr_metric_context(context)
-ledgr_metric_context(test_run)
+debug_strategy <- function(ctx, params) {
+  if (params$qty < 0) {
+    stop("qty must be non-negative")
+  }
+  ctx$flat()
+}
 
-ledgr_run_promotion_context(test_exp, "momentum_locked_test")
-ledgr_run_info(test_exp$snapshot, "momentum_locked_test")$promotion_context
+debug_exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = debug_strategy,
+  features = list(),
+  opening = ledgr_opening(cash = 100000)
+)
+
+debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
+
+failed_sweep <- ledgr_sweep(debug_exp, debug_grid)
+
+failed_sweep |>
+  select(run_id, status, error_class, error_msg, params)
 ```
 
-The context stores a compact selected-candidate record, source-sweep
-metadata, and the filtered/sorted candidate-summary view that was passed
-to `ledgr_candidate()`. It does not store full ledger rows, full equity
-curves, or a complete sweep artifact.
+    # ledgr sweep -- sweep_48f0f71c00fbbfcf
+    # A tibble: 2 x 2
+      run_id                status
+      <chr>                 <chr>
+    1 strategy_f1bc254d9d19 DONE
+    2 strategy_88823aa43318 FAILED
 
-The current research API is one experiment per strategy. When you
-compare different strategy functions, create one `ledgr_experiment()`
-for each function and compare committed runs or sweep outputs after
-execution. A parameter grid varies parameters for a strategy; it does
-not switch the strategy function itself.
+    # i 2 combinations: 1 done, 1 failed.
+    # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
+    # i Hidden columns (3): error_class, error_msg, params
 
-The source sweep metric context and the committed run metric context
-remain separate. Use
-`ledgr_metric_context(ledgr_promotion_context(test_run))` for the
-context that ranked the candidate, and `ledgr_metric_context(test_run)`
-for the committed run’s default analysis context.
+Use the failed row as an interactive debugging handle: inspect
+`error_class`, `error_msg`, and `params`, then reproduce the single
+candidate in a smaller session before rerunning the sweep. For
+pulse-level strategy debugging patterns, read
+`vignette("strategy-development", package = "ledgr")`.
 
-For result inspection after promotion, use the normal run tools such as
-`summary(test_run)`, `ledgr_compute_metrics(test_run)`, and
-`ledgr_compare_runs()`. See
-`vignette("metrics-and-accounting", package = "ledgr")` for the event,
-fills, equity, and metric views.
+Contract errors still abort before a candidate table exists. Invalid
+experiment or grid shape is not a failed strategy idea; it is a setup
+problem that ledgr stops immediately so the sweep does not mix
+incomparable rows.
 
-# Explicit Non-Goals
+`ledgr_candidate()` rejects failed rows by default. Use
+`ledgr_candidate(results, which, allow_failed = TRUE)` only when you are
+extracting a failed row for diagnostics; `ledgr_promote()` still rejects
+failed candidates.
 
-Current sweep mode does not ship:
+## Explicit Non-Goals
 
-- automatic ranking, objectives, or `ledgr_tune()`
-- parallel sweep execution
-- walk-forward, PBO, or CSCV helpers
-- risk-layer insertion
-- public cost-model factories
-- paper/live trading adapters
-- intraday-specific support
-- `ledgr_save_sweep()` or full sweep artifact persistence
+Current sweep mode intentionally stays small. It does not currently
+ship:
 
-The full sweep-artifact idea is deferred. Current sweep mode stores
-selection context on promoted runs instead.
+- automatic ranking, objective functions, or `ledgr_tune()`;
+- parallel sweep execution;
+- walk-forward, PBO, or CSCV helpers;
+- risk-layer insertion;
+- public cost-model factories;
+- paper/live trading adapters;
+- intraday-specific support;
+- `ledgr_save_sweep()` or full sweep artifact persistence.
+
+## Where Next
+
+- For the full research loop around sweeps, read
+  `vignette("research-workflow", package = "ledgr")`.
+- For feature maps, indicator identity, and active aliases, read
+  `vignette("indicators", package = "ledgr")`.
+- For no-lookahead pulse timing, next-open fills, and final-bar
+  warnings, read `vignette("execution-semantics", package = "ledgr")`.
+- For durable run comparison after promotion, read
+  `vignette("experiment-store", package = "ledgr")`.

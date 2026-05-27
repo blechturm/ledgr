@@ -649,5 +649,7 @@ strategy.
   `vignette("indicators", package = "ledgr")`.
 - For sweep mechanics, failure rows, seeds, and promotion context, use
   `vignette("sweeps", package = "ledgr")`.
+- For no-lookahead pulse timing, next-open fills, and final-bar warnings, use
+  `vignette("execution-semantics", package = "ledgr")`.
 - For durable stores, run discovery, archive state, and reopening, use
   `vignette("experiment-store", package = "ledgr")`.

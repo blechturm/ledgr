@@ -464,7 +464,7 @@ scope: artifact_topology
 Priority: P1
 Effort: M
 Dependencies: LDG-2443, LDG-2442
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -512,10 +512,22 @@ guards have one canonical explanation.
 Documentation contract tests, warmup grep, vignette render, and manual docs
 review.
 
+### Completion Notes
+
+- Added `vignettes/execution-semantics.qmd` as the canonical home for target
+  holdings, pulse causality, next-open fills, cost timing, final-bar behavior,
+  warmup gates, and zero-fill versus zero-trade debugging.
+- Reframed `vignettes/sweeps.qmd` around active aliases, feature/strategy grid
+  separation, explicit candidate inspection, and promotion as recorded
+  selection rather than validation.
+- Rendered the changed Quarto articles and updated documentation contract tests
+  to pin the Batch 4 teaching boundaries.
+
 ### Source Reference
 
 - `v0_1_8_5_spec.md` Sections 6.4, 6.6, 10, and 11
-- `vignettes/sweeps.Rmd`
+- `vignettes/sweeps.qmd`
+- `vignettes/execution-semantics.qmd`
 - `vignettes/strategy-development.Rmd`
 - `vignettes/metrics-and-accounting.Rmd`
 
@@ -722,7 +734,7 @@ scope: bounded_release_intake
 Priority: P1
 Effort: M
 Dependencies: LDG-2434
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -766,12 +778,22 @@ inputs.
 Targeted feature-map, experiment, sweep, and documentation contract tests;
 manual review of error wording.
 
+### Completion Notes
+
+- Preserved `ledgr_param_grid()` as strategy-only / legacy flat-grid
+  compatibility while removing legacy feature factories from the user-facing
+  sweep teaching path.
+- Added classed, action-oriented checks for unsupported legacy
+  feature-factory parameterization boundaries.
+- Added focused active-alias runtime coverage and documentation contracts for
+  the supported feature-grid path.
+
 ### Source Reference
 
 - `v0_1_8_5_spec.md` Sections 3.1, 6.4, 8.1, 10, and 11
 - `inst/design/ledgr_v0_1_8_5_spec_packet/ledgr_triage_report.md`
 - `inst/design/ledgr_v0_1_8_5_spec_packet/categorized_feedback.yml`
-- `vignettes/sweeps.Rmd`
+- `vignettes/sweeps.qmd`
 
 ### Classification
 

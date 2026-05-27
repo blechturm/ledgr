@@ -730,4 +730,6 @@ For strategy authoring, read
 `vignette("strategy-development", package = "ledgr")`. For indicators,
 feature IDs, and warmup, read
 `vignette("indicators", package = "ledgr")`. For durable run inspection,
-read `vignette("experiment-store", package = "ledgr")`.
+read `vignette("experiment-store", package = "ledgr")`. For the
+target-holding and next-open fill timing contract, read
+`vignette("execution-semantics", package = "ledgr")`.

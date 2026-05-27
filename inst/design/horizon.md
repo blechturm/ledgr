@@ -1606,6 +1606,14 @@ Scope risks
   breaking change to existing project stores. The pre-CRAN window
   authorizes it, but the cycle must ship a migration script or an
   explicit "rerun your experiments" gate.
+- **Intraday-readiness regression.** Schema additions must stay
+  cadence-neutral. The snapshots table is timestamp-resolution-agnostic
+  today: a user can seal 1-minute or 1-hour bars. Do not introduce
+  columns, types, or `meta_json` conventions that imply one row per
+  instrument per day, one snapshot per market session, or EOD-only
+  frequency. The intraday support arc (2026-05-27 horizon entry) names
+  this as a pre-v0.2.x footgun; the RFC author should confirm the
+  proposed schema preserves the existing cadence-neutral posture.
 
 Dependencies on prior cycles
 
@@ -1785,6 +1793,316 @@ This horizon entry does not authorize any of the above. It records
 the direction so that when a research-loop ergonomics cycle opens,
 the author starts from a known shape rather than re-deriving the
 boundary.
+
+### 2026-05-27 [execution] Intraday support arc and pre-v0.2.x architectural footguns
+
+ledgr's roadmap permanently excludes high-frequency, sub-millisecond, and
+tick-by-tick execution. It does not exclude minute-to-hour bar resolution.
+User feedback during the v0.1.8.5 cycle indicates intraday is real future
+demand: many users who would use ledgr for EOD research also want to use it
+for intraday research, and "the same backtester for both" is a defensible
+USP. This entry captures the multi-cycle arc to support intraday as a
+first-class workflow, plus the architectural footguns the in-progress
+v0.1.x cycles must avoid so the eventual flip is not a rewrite.
+
+The user will initiate a design audit before committing to the intraday
+arc. This entry is the audit's input shape.
+
+#### Today's posture: EOD-first, intraday-tolerant
+
+The snapshot schema is timestamp-resolution-agnostic. A user can seal
+1-minute or 1-hour bars today, declare a feature map, and run a strategy
+against them. The fold core, pulse model, ledger events, and accounting
+mechanics are calendar-agnostic at the storage layer.
+
+Every layer above storage assumes EOD shape, however:
+
+- **Session calendars do not exist.** Warmup, annualization, and metric
+  context all assume one bar equals one day. A 50-period SMA on 1-minute
+  bars is 50 minutes, but annualization treats it as 50 days.
+- **Fill timing is EOD-shaped.** The v0.1.8 internal cost boundary
+  (`validated_targets -> next_open_timing -> fill_proposal -> cost ->
+  fill_intent`) is swappable by design but ships with only `next_open`
+  semantics. Intraday wants next-pulse-touch, mid-point, VWAP, or
+  session-close policies that do not exist.
+- **No OMS.** Strategies return target vectors. Intraday usually wants
+  order lifecycle (place / modify / cancel, partial fills). That work is
+  v0.2.x with an accepted synthesis at
+  `inst/design/rfc/rfc_ledgr_oms_seed_synthesis.md`.
+- **Cost / liquidity policy is not intraday-aware.** The v0.1.9.x/v0.2.0
+  cost API works for intraday in principle, but participation, capacity,
+  and minimum-ADV policy (also v0.2.x) is what intraday actually needs.
+- **Storage scale changes.** The v0.1.8.6 feature-storage spike measures
+  EOD workloads. Intraday changes the answer.
+
+Users who run intraday today get coherent reproducibility on the data and
+strategy axes and broken semantics on the metric and fill-timing axes. The
+honest framing for v0.1.8.5 docs is "intraday bars seal fine but metric
+annualization assumes EOD; treat results as exploratory until v0.2.x."
+
+#### The required arc
+
+First-class intraday is a multi-cycle endeavor:
+
+1. **OMS semantics** (v0.2.x, accepted synthesis) — load-bearing for
+   order lifecycle, partial fills, and the two-stream `order_events` /
+   `ledger_events` separation.
+2. **Session calendar infrastructure** (new RFC, post-OMS) — exchange
+   sessions, holidays, half-days, lunch breaks, pre/post-market handling.
+3. **Intraday fill-timing policy** (extends v0.1.9.x cost API arc) —
+   next-pulse-touch, mid-point, VWAP, session-open / session-close, with
+   the same swappable boundary the EOD `next_open_timing` already uses.
+4. **Intraday-aware metric context** (extends v0.1.8.2 metric context
+   work) — annualization factor parameterized by cadence and sessions,
+   not hardcoded.
+5. **Liquidity / capacity policy** (already v0.2.x roadmap) — execution
+   feasibility separate from cost, with participation limits that mean
+   something different intraday vs EOD.
+6. **Storage scale evidence** (extends v0.1.8.6 spike) — the spike's
+   exit-decision changes once intraday workloads enter the comparison.
+
+The arc spans v0.2.x through v0.3.0 in the existing roadmap. The OMS
+synthesis is the entry point. Calendar infrastructure is the missing RFC.
+
+#### Architectural footguns the v0.1.x cycles must avoid
+
+This is the operative section. The current cycles (v0.1.8.5 through
+v0.1.9.x) must not paint the framework into corners that the intraday
+flip will have to rip out. The list below is the audit checklist.
+
+- **Pulse cadence is a snapshot-derived property, not a global constant.**
+  Any code path that hardcodes "trading day" semantics in the fold core,
+  metric annualization, or warmup teaching is a footgun. Cadence must be
+  read from the snapshot.
+- **Warmup is bar-count, never time-implied.** `passed_warmup()` and the
+  active-alias warmup pipeline are bar-count today. Correct for both EOD
+  and intraday. Preserve. The trap lives in metrics, not warmup itself.
+- **Metric context must expose a cadence/annualization slot.** The v0.1.8.2
+  metric-context templates (US equity, crypto) reserved this surface.
+  Audit them to confirm `annualization_factor` is a parameter, not a
+  constant. Intraday metric context shares the calendar; the cadence
+  changes.
+- **Fill timing stays a swappable internal boundary.** The v0.1.8 cost
+  boundary already reserved this. Preserve. No v0.1.x ergonomics work
+  should bake `next_open` into a code path that should be policy-pluggable.
+- **Strategy contract preserves intraday signatures.** Strategies return
+  full named numeric target vectors. That signature works for both EOD
+  and intraday. Do not add EOD-flavored methods to the canonical strategy
+  context (`ctx$today()`, `ctx$is_market_open()`) in v0.1.x — those
+  belong on a future intraday-aware context, not on the existing one.
+- **Storage schema stays timestamp-resolution-agnostic.** Today it is.
+  The snapshot-administration RFC (v0.1.8.6) must explicitly preserve
+  this and must not introduce fields that imply one row per instrument
+  per day.
+- **Sweep result and run identity stay frequency-agnostic.** `run_id`,
+  `snapshot_hash`, `config_hash`, and sweep candidate identity must not
+  encode "EOD" anywhere. They do not today — preserve.
+- **OMS-shaped target-decision storage from the start.** The accepted
+  OMS synthesis explicitly warns that intraday-compatible target storage
+  needs retention-dependent, batchable, potentially sparse / columnar /
+  payload-reference shapes. v0.1.x EOD work can implement the simple
+  per-decision shape but must not commit to a schema the OMS work will
+  have to rip out destructively.
+- **Cost API spread / participation assumptions stay EOD-neutral.** The
+  accepted v0.1.9.x cost API synthesis keeps `cost_spread_bps()` as a
+  quoted-spread function over a fill context. Intraday extends the
+  context, not the cost API. Preserve that boundary.
+- **Demo data and demo strategies stay EOD-shaped.** That is fine. The
+  footgun is letting demo-data assumptions leak into runtime invariants.
+  Already correct today — preserve.
+- **Walk-forward window semantics generalize from EOD-day folds to
+  intraday-session folds.** The accepted walk-forward synthesis represents
+  scoring windows explicitly. Audit to confirm the window model does not
+  hardcode day semantics.
+
+#### Migration efficiency requirements
+
+A clean migration to first-class intraday means:
+
+- existing EOD users' runs remain reopenable after the intraday flip
+  lands;
+- the public strategy contract `function(ctx, params) -> target vector`
+  survives intact; the context object gains intraday-aware methods but
+  loses none;
+- cost API stays additive — new timing/cost policies are opt-in
+  constructors, not breaking changes;
+- run identity hashes stay stable for unchanged EOD inputs after the
+  intraday code lands;
+- the snapshot administration schema accommodates intraday bars without
+  schema migration on EOD stores.
+
+The pre-CRAN compatibility policy authorizes breaking changes within
+v0.1.x to clean up footguns before they become permanent. Use that
+window deliberately. After CRAN, the migration becomes much more
+expensive.
+
+#### Design audit scope
+
+The user will initiate a design audit. The audit's input is this entry
+plus the affected code paths. Suggested audit scope:
+
+- every code path that assumes "day" semantics: metric annualization,
+  calendar inference, warmup teaching prose, demo data shape;
+- every API boundary that could plausibly be cadence-aware but isn't:
+  `metric_context`, fill timing, `ledgr_run_info()` cadence reporting,
+  sweep candidate metadata;
+- every place where session boundaries (open/close, lunch breaks,
+  holidays, half-days) would matter once intraday lands: pulse calendar
+  construction, opening/closing fill behavior, warmup hydration across
+  sessions;
+- the OMS synthesis target-decision-storage section, to confirm v0.1.x
+  EOD storage decisions do not preclude the intraday-compatible shape;
+- the cost API synthesis fill-context section, to confirm the context
+  shape supports intraday extensions without API rewrite;
+- the walk-forward synthesis window model, to confirm window semantics
+  generalize from EOD folds to intraday session folds;
+- the snapshot-administration RFC seed-shape (this horizon), to confirm
+  the metadata model is cadence-neutral;
+- demo data, vignette code, and contract tests for any place that
+  conflates "one bar = one day" with "one pulse = one decision".
+
+Audit output: a list of footguns that exist today, a list of footguns
+the in-progress cycles must not introduce, and a list of decisions that
+are already correct and worth pinning with contract tests so they do
+not regress.
+
+#### RFCs to revisit after the audit
+
+The audit will read existing synthesis documents to check whether their
+accepted designs survive an intraday flip. The list below is grouped by
+how directly each RFC touches cadence, fill timing, target lifecycle,
+or storage shape. A "revisit" outcome can be one of three: confirm the
+design is already cadence-neutral and pin it; identify a specific clause
+that needs to be amended before the corresponding implementation cycle
+opens; or open a follow-up RFC to extend the existing synthesis.
+
+**Tier A — load-bearing for intraday, must revisit:**
+
+- `rfc/rfc_ledgr_oms_seed_synthesis.md` — the target-decision-storage
+  section already mentions intraday-compatible storage shape (retention-
+  dependent, batchable, potentially sparse/columnar/payload-reference).
+  Confirm that any v0.1.x EOD per-decision storage work does not preclude
+  the future shape destructively.
+- `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` —
+  confirm the `fill_context` shape supports intraday extension (next-
+  pulse-touch, mid-point, VWAP, session-close timing) without breaking
+  the public cost-model factory API.
+- `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` —
+  confirm `metric_context` exposes `annualization_factor` (or
+  equivalent) as a parameter, not a hardcoded 252 anywhere downstream.
+  Audit the US-equity and crypto templates for hidden EOD constants.
+- `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` — confirm the
+  training/test-window model represents windows in calendar terms that
+  generalize to intraday session folds, not just EOD-day folds. The
+  synthesis says windows are explicit; verify "explicit" includes the
+  cadence axis.
+- `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` — confirm
+  the risk-step interface is cadence-neutral. Risk decisions intraday
+  fire much more often; the boundary must not embed EOD-pulse-rate
+  assumptions in the step semantics.
+
+**Tier B — architectural foundations intraday inherits, recommend revisit:**
+
+- `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` —
+  confirm sealed-snapshot lineage and one-store topology decisions stay
+  cadence-neutral. Intraday lineage (e.g., yesterday's session bars
+  rolled forward into today's snapshot) is a v0.2.x roll-forward concern;
+  the v0.1.8.5 topology should not preclude it.
+- `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md` —
+  confirm the runtime projection interface and R-memory backend make no
+  "one row per instrument per day" assumption. Intraday volume changes
+  the memory profile; the projection contract should already handle this
+  but worth pinning.
+- `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` —
+  confirm the consolidated pulse-context model does not embed EOD-flavored
+  methods or shape assumptions. The strategy contract is the long-term
+  intraday boundary.
+- `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md` and
+  `rfc/rfc_sweep_promotion_context_v0_1_8_synthesis.md` — confirm
+  candidate and promotion-context identity (seeds, hashes, params) is
+  frequency-agnostic. Already believed to be true; pin with contract
+  tests if so.
+
+**Tier C — feature and storage shape, scan for footguns:**
+
+- `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` —
+  confirm feature-parameter semantics do not imply EOD frequency.
+  `ledgr_param("fast_n")` is a count, not a calendar duration; preserve.
+- `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md` —
+  scan for memory and volume assumptions tied to EOD bar counts. Wide
+  runtime views at intraday scale are a v0.1.8.6 spike concern.
+- `rfc/rfc_multi_output_indicator_ux_synthesis.md` — confirm bundle
+  output shape is frequency-neutral.
+- `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` —
+  confirm indicator surface (series_fn contract, adapters) treats bar
+  cadence as snapshot-derived, not global.
+
+**Tier D — performance and measurement:**
+
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md` —
+  worker assumptions and serialization costs change at intraday volume;
+  re-evaluate if intraday lands.
+- `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` — the
+  primitive-internals decisions assume EOD-scale workloads. Intraday
+  changes the cost/benefit math; the synthesis already conditions
+  implementation on measurement, so this is mostly "rerun the
+  measurement at intraday scale before promoting Phase B/C.1."
+
+**Horizon entries (seed-shape inputs) that should also be re-read:**
+
+- the snapshot administration entry (2026-05-27, this file) — already
+  amended with an intraday-readiness scope risk;
+- the research-loop ergonomics helpers entry (2026-05-27, this file) —
+  helper output shape must be cadence-neutral;
+- the walk-forward post-v0.1.9.x direction entry (2026-05-27, this file)
+  — confirm follow-up directions extend cleanly to intraday folds;
+- the cost-model post-v0.1.9.x direction entry (2026-05-27, this file)
+  — confirm timing/cost extensions accommodate intraday fill policies.
+
+The audit should record, for each RFC above, whether it is **pinned**
+(design is cadence-neutral, add contract tests), **amend** (one or more
+specific clauses need updating in the existing synthesis), or **extend**
+(open a new RFC that extends the existing synthesis for intraday). The
+audit output is itself an input for the v0.2.x intraday-arc cycle
+planning.
+
+#### Promoted roadmap hooks
+
+- intraday support arc (v0.2.x through v0.3.0, multi-cycle) — depends
+  on OMS, session calendars, intraday fill timing, liquidity/capacity,
+  intraday-aware metric context, and intraday storage scale evidence;
+- session calendar infrastructure RFC — new work, no current roadmap
+  line; cut after OMS lands;
+- intraday metric context extension — extends v0.1.8.2 metric context
+  work; same calendar surface, parameterized cadence;
+- intraday fill timing policy — extends v0.1.9.x/v0.2.0 cost API arc;
+- intraday storage scale evidence — extends v0.1.8.6 feature-storage
+  spike with intraday workload comparisons if the spike is rerun;
+- design audit for intraday-readiness footguns — user-initiated, no
+  committed cycle, but this entry provides the input shape.
+
+#### Cross-cycle note
+
+This entry does not authorize new cycles. Its operative effect is on
+the in-progress v0.1.8.5 cycle and the planned v0.1.8.6, v0.1.8.7,
+v0.1.9, and v0.1.9.x cycles: each must avoid the footguns named above.
+The user-initiated design audit will produce a sharper list of "preserve
+this" and "fix this before it becomes permanent" findings. Until the
+audit lands, treat this entry as a soft constraint on architectural
+decisions in cycles that touch metric context, fill timing, target
+storage, pulse cadence, or sweep candidate identity.
+
+The "EOD-first, intraday-tolerant" posture remains the right user-facing
+framing for v0.1.8.5 documentation. Do not pre-document intraday
+support; do not pre-commit to it in user-facing prose; do not let
+intraday assumptions sneak into v0.1.x code that should be cadence-
+neutral.
+
+This horizon entry does not authorize the intraday arc itself. It
+records direction so that when the arc opens, the seed authors start
+from a known shape rather than re-deriving the boundary, and it
+constrains the in-progress v0.1.x cycles to avoid footguns that would
+make the eventual flip a rewrite.
 
 ## Resolved
 

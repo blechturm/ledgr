@@ -502,10 +502,9 @@ Read that as one pulse-time decision:
 Plain `features = list(...)` remains valid. Use it when exact IDs are clearest.
 Use a feature map when aliases make a feature-heavy strategy easier to read.
 The modern `ledgr_experiment(features = ...)` path accepts indicators, lists,
-named lists, feature maps, and feature factories. The strategy context then
-uses either the exact-ID scalar accessor `ctx$feature()` or the mapped accessor
-`ctx$features()`. Lower-level and legacy helpers may be narrower; when in
-doubt, prefer the experiment-first workflow.
+named lists, and feature maps. The strategy context then uses either the
+exact-ID scalar accessor `ctx$feature()` or the mapped accessor
+`ctx$features()`. When in doubt, prefer the experiment-first workflow.
 
 ```{r feature-map-experiment}
 mapped_exp <- ledgr_experiment(
@@ -603,28 +602,24 @@ strategy <- function(ctx, params) {
 }
 ```
 
-Do not call an external feature factory from inside a strategy:
+Do not declare or rebuild features inside a strategy:
 
-```{r external-feature-factory-tier3, eval=FALSE}
-features <- function(params) {
-  ledgr_feature_map(
+```{r dynamic-feature-declaration, eval=FALSE}
+strategy <- function(ctx, params) {
+  features <- ledgr_feature_map(
     fast = ledgr_ind_sma(params$fast_n),
     slow = ledgr_ind_sma(params$slow_n)
   )
-}
-
-strategy <- function(ctx, params) {
-  x <- ctx$features("AAA", features(params))
+  x <- ctx$features("AAA", features)
   ctx$flat()
 }
 ```
 
-That code reads well, but `features` is a user helper function referenced from
-the strategy body. Under the current preflight contract, external feature
-factory functions inside strategies are Tier 3 and `ledgr_run()` rejects them
-before execution. Duplicating the parameterized feature map inside the strategy
-is mechanically valid, but it creates a drift risk between the experiment's
-feature declaration and the strategy lookup map.
+That code puts feature declaration inside the execution loop. Strategy code
+should read pulse-known values from the context; experiment code owns feature
+declaration. Duplicating a parameterized feature map inside the strategy creates
+a drift risk between the experiment's feature declaration and the strategy
+lookup map.
 
 Use `ledgr_param()` and active aliases for ledgr-owned parameterized
 indicators. Exact feature-ID lookup remains useful for concrete feature sets,
@@ -943,4 +938,6 @@ If you want the formal contract, read the strategy and context sections in
 `?ledgr_strategy_context`, `?ledgr_feature_map`, and `?passed_warmup`. If you
 want the deployment story, continue with `vignette("research-to-production",
 package = "ledgr")`. If you want to inspect or compare durable runs, read
-`vignette("experiment-store", package = "ledgr")`.
+`vignette("experiment-store", package = "ledgr")`. If you want the no-lookahead
+target and fill timing contract, read `vignette("execution-semantics", package =
+"ledgr")`.

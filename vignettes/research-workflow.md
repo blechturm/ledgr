@@ -541,12 +541,12 @@ info
     Tags:            NA
     Snapshot:        demo_2019_h1
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Config Hash:     fb6661ae72fdf430c49bcede949daf4f13ec62c06e45ceace708cbd19f470538
+    Config Hash:     5f81feaf3c9d239bfd7f421b3d918c48b0d8bd5f7f73ebdbdcff9eb2e350b4db
     Strategy Hash:   ca593cc1c3490b0ee6e80ef46b1daa2ebffc75eb73a4cc27c37dd05f9f6c5832
     Params Hash:     50fe1adcd9c5bc4ac19ed187e5c91bd9ae929ee26ddbb816038e09287d255d56
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.49
+    Elapsed Sec:     1.94
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    4
@@ -769,5 +769,7 @@ strategy.
   `vignette("indicators", package = "ledgr")`.
 - For sweep mechanics, failure rows, seeds, and promotion context, use
   `vignette("sweeps", package = "ledgr")`.
+- For no-lookahead pulse timing, next-open fills, and final-bar
+  warnings, use `vignette("execution-semantics", package = "ledgr")`.
 - For durable stores, run discovery, archive state, and reopening, use
   `vignette("experiment-store", package = "ledgr")`.

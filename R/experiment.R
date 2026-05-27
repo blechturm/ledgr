@@ -147,8 +147,11 @@ print.ledgr_opening <- function(x, ...) {
 #' @param snapshot A sealed `ledgr_snapshot`.
 #' @param strategy A function with signature `function(ctx, params)`.
 #' @param features List of `ledgr_indicator`/`ledgr_indicator_bundle` objects, a
-#'   single indicator or bundle, a `ledgr_feature_map`, or a function with
-#'   signature `function(params)` returning one of those forms at run time.
+#'   single indicator or bundle, or a `ledgr_feature_map`. Compatibility note:
+#'   `function(params)` feature factories remain supported for old flat-grid and
+#'   advanced exact-ID workflows, but new parameterized feature sweeps should use
+#'   `ledgr_feature_map()` with `ledgr_param()`, `ledgr_feature_grid()`,
+#'   `ledgr_strategy_grid()`, and `ledgr_grid_cross()`.
 #' @param opening A `ledgr_opening` object.
 #' @param universe Character vector of instrument IDs, or `NULL` for all
 #'   instruments in the snapshot.
@@ -370,7 +373,7 @@ ledgr_experiment_copy_features <- function(features, features_mode) {
     return(features)
   }
   if (identical(features_mode, "feature_map")) {
-    return(do.call(ledgr_feature_map, ledgr_feature_map_indicators(features, named = TRUE)))
+    return(features)
   }
   if (identical(features_mode, "list")) {
     return(ledgr_flatten_feature_list(
@@ -388,6 +391,7 @@ ledgr_experiment_materialize_feature_result <- function(exp, params, feature_par
   }
   features <- exp$features
   if (identical(exp$features_mode, "function")) {
+    ledgr_validate_feature_factory_params(params, feature_params)
     features <- features(params)
   }
   mode <- ledgr_experiment_validate_features(features)
@@ -419,6 +423,44 @@ ledgr_experiment_materialize_feature_result <- function(exp, params, feature_par
 
 ledgr_experiment_materialize_features <- function(exp, params, feature_params = params) {
   ledgr_experiment_materialize_feature_result(exp, params, feature_params = feature_params)$features
+}
+
+ledgr_validate_feature_factory_params <- function(params, feature_params) {
+  if (length(feature_params) < 1L || identical(feature_params, params)) {
+    return(invisible(TRUE))
+  }
+  ledgr_abort_feature_factory_feature_params()
+}
+
+ledgr_validate_feature_factory_grid <- function(exp, param_grid) {
+  if (!inherits(exp, "ledgr_experiment") || !identical(exp$features_mode, "function")) {
+    return(invisible(TRUE))
+  }
+  if (!inherits(param_grid, "ledgr_param_grid")) {
+    return(invisible(TRUE))
+  }
+  has_feature_params <- vapply(param_grid$params, function(params) {
+    is.list(params) && !is.data.frame(params) && is.list(params$feature_params) && length(params$feature_params) > 0L
+  }, logical(1))
+  if (any(has_feature_params)) {
+    ledgr_abort_feature_factory_feature_params()
+  }
+  invisible(TRUE)
+}
+
+ledgr_abort_feature_factory_feature_params <- function() {
+  rlang::abort(
+    paste(
+      "Feature factories use the legacy flat parameter-grid contract and cannot receive separate `feature_params`.",
+      "Use `ledgr_feature_map()` with active aliases plus `ledgr_feature_grid()`, `ledgr_strategy_grid()`, and `ledgr_grid_cross()` for parameterized feature sweeps,",
+      "or keep feature-factory inputs in the flat `ledgr_param_grid()` candidate."
+    ),
+    class = c(
+      "ledgr_legacy_feature_factory_feature_params_unsupported",
+      "ledgr_invalid_executable_grid",
+      "ledgr_invalid_args"
+    )
+  )
 }
 
 ledgr_experiment_validate_opening <- function(opening, universe) {

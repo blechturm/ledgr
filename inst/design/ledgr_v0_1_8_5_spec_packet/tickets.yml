@@ -68,7 +68,7 @@ tickets:
 
   - id: "LDG-2438"
     title: "Sweeps And Execution Semantics Docs"
-    status: "pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -121,7 +121,7 @@ tickets:
 
   - id: "LDG-2442"
     title: "Legacy Sweep Authoring Boundary"
-    status: "pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:

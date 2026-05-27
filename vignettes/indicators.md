@@ -53,8 +53,8 @@ Feature objects appear in three related places:
 
 | Surface | Accepted feature shape | How names are used |
 |----|----|----|
-| `ledgr_experiment(features = ...)` | indicator, list, named list, feature map, or `function(params)` factory | registers feature definitions for the run |
-| `ledgr_feature_contracts()` / `ledgr_feature_contract_check()` | static indicator, list, named list, or feature map | reports aliases and engine IDs; factories must be materialized first |
+| `ledgr_experiment(features = ...)` | indicator, list, named list, or feature map | registers feature definitions for the run |
+| `ledgr_feature_contracts()` / `ledgr_feature_contract_check()` | static indicator, list, named list, or feature map | reports aliases and engine IDs |
 | `ledgr_pulse_snapshot(features = ...)` | static list or feature map | computes pulse-known values for inspection |
 | `ctx$feature(id, feature_id)` | engine feature ID string | reads one scalar value by exact ID |
 | `ctx$features(id, feature_map)` | feature map | returns a named vector keyed by alias |
@@ -69,11 +69,12 @@ The feature path has five steps:
 
 1.  You declare feature definitions with `ledgr_indicator()` helpers,
     built-in helpers such as `ledgr_ind_sma()`, TTR adapters, CSV/R
-    adapters, a `ledgr_feature_map()`, or a
-    `features = function(params)` factory.
+    adapters, a `ledgr_feature_map()`, or active aliases with
+    `ledgr_param()`.
 2.  `ledgr_experiment()` stores the declaration. Static lists and
-    feature maps are ready immediately. Factories are materialized later
-    for each concrete parameter list.
+    feature maps are ready immediately. Active-alias features are
+    materialized for concrete feature-grid values before candidate
+    execution.
 3.  Optional `ledgr_precompute_features()` resolves a parameter grid,
     computes each candidate's concrete feature set, deduplicates shared
     indicator fingerprints, and records candidate feature-set hashes.
@@ -116,7 +117,7 @@ crossover_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(crossover_features)
-#> # A tibble: 2 x 5
+#> # A tibble: 2 Ã— 5
 #>   alias    feature_id source requires_bars stable_after
 #>   <chr>    <chr>      <chr>          <int>        <int>
 #> 1 sma_fast sma_10     ledgr             10           10
@@ -171,7 +172,7 @@ filled.
 
 ``` r
 ledgr_pulse_features(pulse, features)
-#> # A tibble: 4 x 5
+#> # A tibble: 4 Ã— 5
 #>   ts_utc              instrument_id feature_id feature_value alias
 #>   <dttm>              <chr>         <chr>              <dbl> <chr>
 #> 1 2019-03-01 00:00:00 DEMO_01       return_5         0.0853  ret_5
@@ -189,11 +190,11 @@ uses aliases as the wide feature keys.
 
 ``` r
 ledgr_pulse_wide(pulse, features)
-#> # A tibble: 1 x 17
+#> # A tibble: 1 Ã— 17
 #>   ts_utc                cash equity DEMO_01__ohlcv_open DEMO_01__ohlcv_high
 #>   <dttm>               <dbl>  <dbl>               <dbl>               <dbl>
 #> 1 2019-03-01 00:00:00 100000 100000                103.                107.
-#> # i 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
+#> # â„¹ 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
 #> #   DEMO_01__ohlcv_volume <dbl>, DEMO_01__feature_ret_5 <dbl>,
 #> #   DEMO_01__feature_sma_10 <dbl>, DEMO_02__ohlcv_open <dbl>, DEMO_02__ohlcv_high <dbl>,
 #> #   DEMO_02__ohlcv_low <dbl>, DEMO_02__ohlcv_close <dbl>, DEMO_02__ohlcv_volume <dbl>,
@@ -303,7 +304,7 @@ bt <- exp |>
 #> should be fillable.
 
 ledgr_results(bt, what = "fills")
-#> # A tibble: 39 x 9
+#> # A tibble: 39 Ã— 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
 #>  1         1 2019-01-23 DEMO_01       BUY      10  88.0     0         0    OPEN
@@ -316,7 +317,7 @@ ledgr_results(bt, what = "fills")
 #>  8         8 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
 #>  9         9 2019-03-11 DEMO_01       SELL     10 106.      0       123.   CLOSE
 #> 10        10 2019-03-11 DEMO_02       SELL     10  68.0     0        -9.18 CLOSE
-#> # i 29 more rows
+#> # â„¹ 29 more rows
 
 close(pulse)
 close(bt)
@@ -333,7 +334,7 @@ known feature may still be `NA`.
 
 ``` r
 ledgr_feature_contracts(features)
-#> # A tibble: 2 x 5
+#> # A tibble: 2 Ã— 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 ret_5  return_5   ledgr              6            6
@@ -346,7 +347,7 @@ the contract table. For an unnamed list, `alias` is `NA`.
 ``` r
 plain_features <- list(ledgr_ind_returns(5), ledgr_ind_sma(10))
 ledgr_feature_contracts(plain_features)
-#> # A tibble: 2 x 5
+#> # A tibble: 2 Ã— 5
 #>   alias feature_id source requires_bars stable_after
 #>   <chr> <chr>      <chr>          <int>        <int>
 #> 1 <NA>  return_5   ledgr              6            6
@@ -434,12 +435,6 @@ may include a stable hash suffix so multiple candidate values can
 coexist in one sweep projection; use `ctx$features(id)` and the alias
 map for strategy-facing names.
 
-Feature factories remain available for advanced exact-ID workflows and
-custom materialization patterns, but do not call user feature factories
-from inside a strategy. Under strategy preflight, those helper
-references are external strategy logic and are not the canonical
-active-alias path.
-
 ## TTR-Backed Indicators
 
 `ledgr_ind_ttr()` is the adapter for supported indicators from the
@@ -485,7 +480,7 @@ ttr_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(ttr_features)
-#> # A tibble: 5 x 5
+#> # A tibble: 5 Ã— 5
 #>   alias       feature_id                    source requires_bars stable_after
 #>   <chr>       <chr>                         <chr>          <int>        <int>
 #> 1 ret_5       return_5                      ledgr              6            6
@@ -518,7 +513,7 @@ native_rsi_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(native_rsi_features)
-#> # A tibble: 1 x 5
+#> # A tibble: 1 Ã— 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 rsi_14 rsi_14     ledgr             15           15
@@ -572,7 +567,7 @@ rsi_bt <- ledgr_run(
 )
 
 ledgr_results(rsi_bt, what = "fills")
-#> # A tibble: 10 x 9
+#> # A tibble: 10 Ã— 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
 #>  1         1 2019-01-22 DEMO_01       BUY      10  87.2     0        0     OPEN
@@ -602,7 +597,7 @@ ledgr_feature_contracts(ledgr_feature_map(
   bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
   bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
 ))
-#> # A tibble: 4 x 5
+#> # A tibble: 4 Ã— 5
 #>   alias   feature_id         source requires_bars stable_after
 #>   <chr>   <chr>              <chr>          <int>        <int>
 #> 1 bb_dn   ttr_bbands_20_dn   TTR               20           20
@@ -629,7 +624,7 @@ bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
 ledgr_feature_id(bbands_bundle)
 #> [1] "bbands_dn"   "bbands_mavg" "bbands_up"   "bbands_pctb"
 ledgr_feature_contracts(bbands_bundle)
-#> # A tibble: 4 x 5
+#> # A tibble: 4 Ã— 5
 #>   alias feature_id  source requires_bars stable_after
 #>   <chr> <chr>       <chr>          <int>        <int>
 #> 1 <NA>  bbands_dn   TTR               20           20
@@ -689,7 +684,7 @@ TTR warmup inference is inspectable:
 ``` r
 ledgr_ttr_warmup_rules() |>
   select(ttr_fn, input, formula)
-#> # A tibble: 18 x 3
+#> # A tibble: 18 Ã— 3
 #>    ttr_fn          input formula
 #>    <chr>           <chr> <chr>
 #>  1 RSI             close n + 1
@@ -759,14 +754,14 @@ warmup_check_snapshot <- ledgr_snapshot_from_df(
 )
 
 ledgr_feature_contract_check(warmup_check_snapshot, features)
-#> # A tibble: 4 x 8
+#> # A tibble: 4 Ã— 8
 #>   alias  instrument_id feature_id source requires_bars stable_after available_bars
 #>   <chr>  <chr>         <chr>      <chr>          <int>        <int>          <int>
 #> 1 ret_5  DEMO_01       return_5   ledgr              6            6            129
 #> 2 sma_10 DEMO_01       sma_10     ledgr             10           10            129
 #> 3 ret_5  DEMO_02       return_5   ledgr              6            6             19
 #> 4 sma_10 DEMO_02       sma_10     ledgr             10           10             19
-#> # i 1 more variable: warmup_achievable <lgl>
+#> # â„¹ 1 more variable: warmup_achievable <lgl>
 
 ledgr_snapshot_close(warmup_check_snapshot)
 ```

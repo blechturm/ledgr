@@ -40,16 +40,19 @@
 #'
 #' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
 #' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
-#' strategy preflight failures still abort. Failed rows can be inspected with
+#' strategy preflight failures still abort. Compatibility note: old
+#' feature-factory experiments use a flat parameter-grid contract. Executable
+#' grids with separate `feature_params` require active aliases through
+#' `ledgr_feature_map()`. Failed rows can be inspected with
 #' `ledgr_candidate(..., allow_failed = TRUE)`, but [ledgr_promote()] rejects
 #' failed candidates. When `stop_on_error = TRUE` rethrows a strategy failure,
 #' assert with `inherits(e, "ledgr_strategy_error")` rather than exact
 #' class-vector equality.
 #'
-#' v0.1.8 does not ship automatic ranking, `ledgr_tune()`, parallel sweep,
-#' walk-forward/PBO/CSCV helpers, risk-layer insertion, public cost-model
-#' factories, paper/live adapters, intraday-specific support, or full sweep
-#' artifact persistence.
+#' Current sweep mode intentionally does not ship automatic ranking,
+#' `ledgr_tune()`, parallel sweep, walk-forward/PBO/CSCV helpers, risk-layer
+#' insertion, public cost-model factories, paper/live adapters,
+#' intraday-specific support, or full sweep artifact persistence.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -76,6 +79,7 @@ ledgr_sweep <- function(exp,
   if (!isTRUE(preflight$allowed)) {
     ledgr_abort_strategy_preflight(preflight)
   }
+  ledgr_validate_feature_factory_grid(exp, param_grid)
 
   ledgr_warn_large_grid_without_precomputed_features(param_grid, precomputed_features)
   if (!is.null(precomputed_features)) {

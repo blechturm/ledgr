@@ -92,6 +92,19 @@ Avoid:
 - long passive chains;
 - internal project shorthand that a user cannot act on.
 
+Avoid current-version framing in user-facing vignette prose. Do not write
+"in v0.1.8.5, ledgr does..." or "currently, this feature works..." when the
+article is simply showing the package behavior readers should rely on today.
+Assume demonstrated behavior is current unless the article explicitly says it
+is historical or unstable.
+
+Roadmap anchoring is different. It is acceptable to say that a future capability
+is planned for a named release when that boundary helps the reader understand
+scope. Prefer wording such as "the stable public API is planned for v0.1.9.x"
+over "in v0.1.8.5, the public API is still internal." The first describes a
+future boundary; the second makes the vignette stale the moment the current
+release changes.
+
 ---
 
 ## 4. Quarto Callouts
@@ -225,6 +238,51 @@ qualification is the lesson; preserve it. The same applies to any explanation
 where the qualification itself carries the point.
 
 If a worked example needs visual clutter to make it work, treat that as a signal that the UX or API is missing something. The clutter is the API asking for a default change, a constructor, or a helper. Record the gap as a horizon item or as a note for the next spec packet; do not solve it by piling boilerplate into the vignette.
+
+### Shape-Only Illustrative Snippets
+
+When an article needs to show what a contract looks like without re-teaching
+it — typically because the canonical home is another vignette and the
+article only needs the shape to anchor a local teaching point — use a fenced
+` ```r ` block (not a `{r}` Quarto chunk). The block is visible but does not
+evaluate at render time.
+
+The pattern has three parts: a framing sentence that names what the block
+illustrates, the fenced block itself, and a cross-link to the canonical
+vignette for the full contract.
+
+Template:
+
+````markdown
+The demo strategy you assigned above has this shape internally:
+
+```r
+crossover_shape <- function(ctx, params) {
+  targets <- ctx$flat()
+  # ...
+  targets
+}
+```
+
+For the full strategy contract, read
+`vignette("strategy-development", package = "ledgr")`.
+````
+
+Naming-collision footgun: if the shape-only block uses the same identifier
+as a real variable assignment in an evaluated chunk above, careful readers
+will wonder which definition the rest of the article uses. The block does
+not actually shadow the variable at render time because it does not
+evaluate, but the visual ambiguity costs comprehension. Either rename the
+identifier in the illustrative block (`crossover_shape`, `strategy_body`,
+`sma_strategy_skeleton`) or use disambiguating language in the framing
+sentence ("has this shape internally" rather than just "follows this
+shape").
+
+Shape-only blocks are distinct from fragment snippets (a few lines out of
+context to illustrate one call) and from `eval: false` chunks (real R code
+that intentionally does not run for a stated reason). Use them only at
+cross-vignette teaching boundaries — never as a substitute for evaluation
+when the article's own teaching depends on the code actually working.
 
 ---
 

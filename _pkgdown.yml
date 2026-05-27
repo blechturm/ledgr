@@ -20,6 +20,7 @@ articles:
       - strategy-development
       - indicators
       - custom-indicators
+      - execution-semantics
       - metrics-and-accounting
       - experiment-store
       - sweeps

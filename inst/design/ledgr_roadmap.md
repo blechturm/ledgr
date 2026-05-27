@@ -101,6 +101,7 @@ versioned packet.
 | v0.1.8.5 | Active | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
 | v0.1.8.6 | Planned | DuckDB feature-storage measurement spike, snapshot administration and ETL provenance implementation, and research-loop ergonomics helpers (sweep review and promotion recovery summary); RFC-driven. | Future packet; horizon entries |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
+| v0.1.8.8 | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
@@ -811,6 +812,108 @@ Non-scope:
 - no weakening of seed, warning, failure-row, or promotion provenance
   guarantees to fit worker scheduling;
 - no public distributed execution API.
+
+### v0.1.8.8 Crypto-Readiness Spike And Doc Disposition
+
+v0.1.8.8 is a focused measurement spike on whether spot crypto is already
+supported by ledgr's existing equity-shaped surfaces, with explicit
+disposition for documentation and any specific follow-up work. It is not
+a derivatives release; perpetuals, dated futures, funding rates, and
+margin accounting all remain part of the deferred derivatives arc that
+lands after the v0.1.x product arc completes.
+
+Intent:
+
+- verify spot-crypto support as a focused measurement spike before users
+  discover edge cases in production research;
+- confirm fractional-position correctness end-to-end (target -> fill ->
+  lot -> trade -> equity -> metrics) at sub-integer quantities;
+- confirm sub-second / sub-minute timestamp preservation through
+  snapshot, fold core, and output handlers;
+- confirm the v0.1.8.2 crypto metric-context template produces correct
+  24/7 annualization in practice;
+- probe the v0.1.9.x cost API for "% of notional" maker/taker cost
+  expressibility;
+- document the spot-crypto support level with explicit caveats, or route
+  specific gaps to follow-up cycles.
+
+This workstream is a measurement and decision packet. Implementation is
+out of scope; any code change needed to make spot crypto work cleanly is
+scoped into its own follow-up ticket or release after the spike
+concludes.
+
+Required spike axes:
+
+- **Fractional position correctness.** End-to-end test: declare a
+  strategy that targets `0.0123 BTC`, run through the fold core, inspect
+  lots, trades, equity. Verify accounting precision is not silently
+  coerced to integer at any layer.
+- **Timestamp resolution.** Seal a synthetic snapshot with sub-second
+  `ts_utc`, run a small strategy, confirm timestamps survive snapshot
+  -> fold -> output handlers without truncation.
+- **24/7 metric context.** Use the crypto metric-context template against
+  a synthetic 7-day crypto-style snapshot, confirm annualization factor
+  and Sharpe / drawdown calculations are correct for 24/7 cadence.
+- **Maker/taker cost shape.** Probe whether "% of notional" commission
+  is expressible through the existing `spread_bps` + `commission_fixed`
+  surface (with workarounds documented) or through the function-valued
+  cost-model API. Identify the API extension needed if neither path is
+  clean.
+- **Demo data.** Decide whether to ship a small synthetic crypto demo
+  dataset alongside `ledgr_demo_bars`, or leave users to bring their
+  own. Influences vignette teachability.
+
+Measurement outputs:
+
+- pass/fail evidence per axis;
+- a footgun list (similar to the intraday audit pattern) naming any code
+  path that silently constrains crypto support;
+- a support-level recommendation: **supported** (works as-is, document
+  and add small vignette section), **supported with caveats** (works
+  with named workarounds, ship a doc note), or **blocked** (specific
+  v0.1.x work required, scope into follow-up ticket).
+
+Readiness gates:
+
+- v0.1.8.5 closes (teachability documentation discipline established);
+- v0.1.8.2 metric-context crypto template is in place (already true);
+- intraday-readiness audit findings inform which footguns to probe
+  specifically; crypto and intraday share the cadence-neutrality and
+  timestamp-resolution concerns.
+
+Constraints:
+
+- spot crypto only; no perpetuals, no dated futures, no funding rates,
+  no margin model;
+- no derivatives architecture work; that arc is deferred until after
+  the v0.1.x product arc completes;
+- no new instrument-class architecture; the spike inherits ledgr's
+  existing instrument-as-string-ID model;
+- no exchange-specific adapter (Binance / Coinbase / Kraken integration
+  is out of scope);
+- the spike output is a doc disposition and a footgun list, not an
+  implementation release.
+
+Non-scope:
+
+- crypto data adapter (separate future work);
+- exchange-specific cost-model factories;
+- perpetuals or dated-futures contract specs;
+- margin or funding-rate accounting;
+- crypto demo strategy beyond what is needed to drive the spike's
+  tests.
+
+Exit decisions:
+
+- **Pass:** ship a vignette section or short doc note explaining spot
+  crypto support; close the spike with the footgun list pinned as
+  contract tests.
+- **Supported with caveats:** ship a doc note naming the workarounds,
+  route specific gaps (e.g., maker/taker cost shape) to a v0.1.9.x
+  follow-up.
+- **Blocked:** identify the minimum v0.1.x work required, scope it into
+  v0.1.9 or a v0.1.8.x patch, defer the user-facing crypto support
+  claim until the work lands.
 
 ### Later v0.1.8.x Sweep Stabilization
 
