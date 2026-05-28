@@ -59,8 +59,8 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 Indicators are how ledgr turns sealed market data into pulse-time features.
 This article teaches the runtime shape first, then the accessor APIs.
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 An indicator is a declared feature computation. ledgr computes indicators into
 pulse-known values; scalar accessors, mapped accessors, long tables, and wide
@@ -102,8 +102,8 @@ features <- ledgr_feature_map(
 )
 ```
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A feature ID is ledgr's engine-facing name for a computed value. An alias is
 the strategy-facing name you choose in a feature map. The alias makes strategy
@@ -170,8 +170,8 @@ flowchart LR
 5. Strategy code reads the current pulse-known values with `ctx$feature()` by
    engine feature ID, or with `ctx$features()` by feature-map alias.
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A fingerprint identifies the feature definition, not just the name. If the
 calculation, parameters, warmup rule, adapter, or selected output changes, the
@@ -189,8 +189,8 @@ you need to compare two different definitions. A feature-map alias never changes
 the underlying engine feature ID or fingerprint; it only gives your strategy a
 readable name for mapped access.
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A bundle is an authoring convenience for declaring several indicator outputs at
 once. The engine receives ordinary single-output feature definitions after the
@@ -322,16 +322,16 @@ x
 passed_warmup(x)
 ```
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 Warmup is the period before a known feature has enough prior bars to produce a
 usable value. A warmup `NA` is not an unknown feature; it is a known feature
 that is not ready yet.
 :::
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Change the scalar accessor to `pulse$feature("DEMO_01", "returns_5")`. Why does
 that fail while `ids[["ret_5"]]` works?

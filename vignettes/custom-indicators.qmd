@@ -53,8 +53,8 @@ They are also the highest-risk feature boundary. A custom indicator can keep a
 strategy pulse-safe, or it can hide future information in an ordinary-looking
 feature value. This article explains the authoring contract.
 
-::: {.callout-warning}
-## Custom features are a leakage boundary
+::: {.ledgr-callout .ledgr-callout-warning}
+**Custom features are a leakage boundary**
 
 ledgr can validate shape, warmup, fingerprints, and registration. It cannot
 prove that externally authored feature logic avoided future information.
@@ -62,8 +62,8 @@ prove that externally authored feature logic avoided future information.
 
 ## The Indicator Object
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A custom indicator is a declared feature computation with a stable feature ID,
 deterministic params, warmup rules, and one or two functions that produce
@@ -335,8 +335,8 @@ The custom feature only changes how pulse-known values are computed. It does
 not change the strategy return contract, fill model, ledger, result tables, or
 metric workflow.
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Change `max_range` from `5` to `2` in the run params. Which fills disappear,
 and why does the custom indicator ID stay the same?

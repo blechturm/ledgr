@@ -155,8 +155,8 @@ With that boundary in mind, start with the simplest possible strategy.
 
 ## What Is `ctx`?
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 `ctx` is the pulse context: the information packet ledgr gives your strategy at
 one decision time. It contains pulse-known bars, features, positions, cash, and
@@ -260,8 +260,8 @@ The return value is a named numeric vector. Names are instrument IDs from
 `ctx$universe`, values are desired quantities. `ctx$flat()` produces the
 full-universe shape with every entry at zero.
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A target vector is the strategy's requested holdings for the full universe at
 one pulse. It is named by instrument ID, numeric, and complete. It is not an
@@ -275,8 +275,8 @@ and fills the gap.
 
 That distinction keeps strategies free from execution-state bookkeeping.
 
-::: {.callout-warning}
-## Affordability is not automatic
+::: {.ledgr-callout .ledgr-callout-warning}
+**Affordability is not automatic**
 
 Raw target vectors are desired holdings. ledgr does not check affordability
 before filling them; if a target requires more cash than the simulated portfolio
@@ -325,8 +325,8 @@ economic idea is clear, ledgr strategies are usually easier to read when they
 use helper functions that operate on the whole universe at once. The later
 sections make that transition.
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Change `buy_if_up()` so it starts from `ctx$hold()` instead of `ctx$flat()`.
 Which positions would persist after a down bar, and why does that change the
@@ -335,8 +335,8 @@ economic meaning of the strategy?
 
 ## Why `params` Exists
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 `params` is the run's strategy configuration. Put research choices you want to
 compare, store, or sweep into `params`; do not hide them in globals or inside
@@ -845,8 +845,8 @@ signal functions. It explicitly maps an inner signal function to target
 quantities. For the full tier model, read `vignette("reproducibility", package
 = "ledgr")`.
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A preflight tier is ledgr's static reproducibility classification for a strategy
 function. Tier 1 is self-contained, Tier 2 is inspectable with user-managed

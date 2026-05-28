@@ -85,8 +85,8 @@ job.
 
 ## Sweep Is Exploration
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A sweep is an evaluated candidate table over a declared grid. It is
 exploratory: it returns candidate summaries, does not choose a winner, and does
@@ -96,8 +96,8 @@ not write candidate runs to the experiment store.
 `ledgr_sweep()` evaluates a grid against a `ledgr_experiment()`. It tells you
 what each declared candidate did. It does not decide which candidate matters.
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A sweep usually contains many candidates. Each candidate is one row of the
 sweep: resolved feature parameters, strategy parameters, execution seed,
@@ -112,8 +112,8 @@ ledgr_candidate()             select one row deliberately
 ledgr_promote() / ledgr_run() commit an auditable run
 ```
 
-::: {.callout-warning}
-## Selection is not validation
+::: {.ledgr-callout .ledgr-callout-warning}
+**Selection is not validation**
 
 A sweep table records what was run. It does not prove that the selected
 parameters were evaluated on held-out data. Promotion records a choice; it does
@@ -187,8 +187,8 @@ resolved for that candidate. `params$threshold` and `params$qty` come from the
 strategy grid. For the full strategy contract, read
 `vignette("strategy-development", package = "ledgr")`.
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 An active alias is a stable strategy-facing feature name whose concrete
 indicator can vary by candidate. The strategy reads aliases such as `fast` and
@@ -235,8 +235,8 @@ and `values[["slow"]]`. The aliases stay stable across candidates.
 
 ## Build The Candidate Grid
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 Feature parameters materialize indicators before execution. Strategy parameters
 are passed to `strategy(ctx, params)` during execution. Keeping those namespaces
@@ -271,8 +271,8 @@ fast moving average must be shorter than the slow moving average. Filter
 expressions are evaluated against grid columns; they do not read run state,
 feature data, or caller globals.
 
-::: {.callout-warning}
-## Mind the combinatorial explosion
+::: {.ledgr-callout .ledgr-callout-warning}
+**Mind the combinatorial explosion**
 
 `ledgr_grid_cross()` multiplies grid dimensions. Four parameters with five
 values each produce 625 candidates before you add another axis. Keep early
@@ -300,8 +300,8 @@ flowchart TB
 
 :::
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The strategy code
 does not change. How many candidates appear after `.filter`, and which
@@ -382,8 +382,8 @@ Some columns are list columns. `glimpse()` keeps the table readable while still
 showing that params, feature params, warnings, and provenance remain attached to
 the rows.
 
-::: {.callout-note}
-## Design note
+::: {.ledgr-callout .ledgr-callout-note}
+**Design note**
 
 This explicit table code keeps the selection rule visible. The v0.1.8.6 cycle
 plans a sweep-review helper that ranks completed candidates, returns a compact

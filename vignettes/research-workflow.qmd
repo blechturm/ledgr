@@ -47,7 +47,7 @@ if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
 }
 
 .ledgr-workflow-diagram .mermaid svg {
-  max-width: 980px !important;
+  max-width: 560px !important;
 }
 
 .ledgr-validation-diagram .mermaid svg {
@@ -71,9 +71,9 @@ The loop is deliberately short:
 
 ```{mermaid}
 %%| echo: false
-%%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 24, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "22px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b", "clusterBkg": "#ffffff", "clusterBorder": "#cbd5e1"}}}%%
+%%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b", "clusterBkg": "#ffffff", "clusterBorder": "#cbd5e1"}}}%%
 
-flowchart LR
+flowchart TB
   data["Seal data"]
   experiment["Declare experiment"]
   single["Run once"]
@@ -119,6 +119,7 @@ from the ledgr pulse context.
 
 ```{r}
 #| label: prerequisites
+#| message: false
 
 library(ledgr)
 library(dplyr)
@@ -126,8 +127,8 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-::: {.callout-note}
-## Running this yourself
+::: {.ledgr-callout .ledgr-callout-note}
+**Running this yourself**
 
 This article is evaluated when it is rendered. To keep package builds and local
 previews disposable, the code writes to a temporary DuckDB store. In a real
@@ -135,8 +136,8 @@ project, replace `store_path` with a durable path such as
 `artifacts/ledgr_store.duckdb`.
 :::
 
-::: {.callout-note}
-## About the demo data
+::: {.ledgr-callout .ledgr-callout-note}
+**About the demo data**
 
 `DEMO_01` and `DEMO_02` are package-owned demo instruments. Real research
 should use a sealed snapshot of the market data you intend to study. The point
@@ -361,8 +362,8 @@ candidates.
 you. That choice belongs in the next step, where you inspect the table and make
 the ranking rule visible.
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Add a third value to `fast_n` and `slow_n`. How many candidates does the
 `.filter` keep? How many would exist without the filter?
@@ -412,8 +413,8 @@ The `top_n` table shows which candidates would be selected by this ranking
 choice. The `issues` table tells you whether any candidates failed, warned,
 or produced diagnostics that should change how you read the sweep.
 
-::: {.callout-note}
-## Design note
+::: {.ledgr-callout .ledgr-callout-note}
+**Design note**
 
 This explicit table code keeps the selection rule visible. The v0.1.8.6 cycle
 plans a sweep-review helper that ranks completed candidates, returns a compact
@@ -421,8 +422,8 @@ review table, separates issue rows, and preserves the same explicit selection
 rule.
 :::
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Sort by `total_return` instead of `sharpe_ratio`. Does the first candidate
 change? If it does, your "best" candidate depends on the metric, not only on
@@ -492,8 +493,8 @@ promoted run. Today that recovery uses two public surfaces:
 - `ledgr_run_info()` and `ledgr_run_open()` for the stored run;
 - `ledgr_extract_strategy()` for strategy source and parameter provenance.
 
-::: {.callout-warning}
-## API gap
+::: {.ledgr-callout .ledgr-callout-warning}
+**API gap**
 
 The next few lines are intentionally lower-level. They show what ledgr already
 records today. The v0.1.8.6 cycle plans a helper that summarizes a promoted
@@ -527,8 +528,8 @@ The result is compact but load-bearing: ledgr stores which sweep candidate was
 selected, which strategy parameters and feature parameters produced it, what
 note justified the promotion, and which strategy source metadata was captured.
 
-::: {.callout-note}
-## What recovery means
+::: {.ledgr-callout .ledgr-callout-note}
+**What recovery means**
 
 Recovery is provenance, not magic. Tier 1 strategy source can usually be
 inspected, hash-checked, and optionally evaluated with `trust = TRUE`. Tier 2
@@ -582,8 +583,8 @@ Use the promotion note to record the human choice. Treat walk-forward and
 out-of-sample evaluation as the next conceptual layer when the question becomes
 selection quality rather than artifact reproducibility.
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Write one sentence explaining why you promoted the candidate and one sentence
 explaining why that promotion is not validation. If the second sentence feels

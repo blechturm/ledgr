@@ -47,8 +47,8 @@ This article explains the reproducibility model behind that question.
 It is about provenance and replay boundaries, not whether a strategy has
 predictive edge.
 
-::: {.callout-warning}
-## Evidence is not validation
+::: {.ledgr-callout .ledgr-callout-warning}
+**Evidence is not validation**
 
 Provenance records what ran. It does not prove that a selected strategy will
 generalize. A promoted candidate, a verified strategy hash, and a sealed
@@ -224,8 +224,8 @@ execution.
 
 ### Tier 1: Self-Contained
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 Tier 1 means ledgr can inspect the strategy from stored source and explicit
 parameters under its static preflight rules. The strategy depends only on ledgr,
@@ -254,8 +254,8 @@ ledgr_strategy_preflight(tier_1_strategy)
 
 ### Tier 2: Inspectable With User-Managed Environment
 
-::: {.callout-warning}
-## Definition
+::: {.ledgr-callout .ledgr-callout-warning}
+**Definition**
 
 Tier 2 means ledgr can inspect and run the strategy, but full replay also
 depends on environment details outside ledgr's store, such as package
@@ -313,8 +313,8 @@ environment.
 
 ### Tier 3: Rejected External State
 
-::: {.callout-important}
-## Definition
+::: {.ledgr-callout .ledgr-callout-important}
+**Definition**
 
 Tier 3 means the strategy depends on external state ledgr cannot recover or
 execute safely. The run is rejected before execution; there is no `force = TRUE`
@@ -413,8 +413,8 @@ Tier 1 is the cleanest path. Tier 2 is allowed but requires user-managed
 environment parity. Tier 3 fails because ledgr cannot recover what the strategy
 depended on.
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Write a strategy that calls `Sys.time()` and run `ledgr_strategy_preflight()`.
 What tier does ledgr assign, and what dependency did the preflight reject?

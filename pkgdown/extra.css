@@ -1,3 +1,40 @@
 .template-home .ledgr-readme-logo {
   display: none;
 }
+
+.ledgr-callout {
+  margin: 1.25rem 0;
+  padding: 0.9rem 1rem;
+  border-left: 4px solid #6c757d;
+  border-radius: 4px;
+  background: #f8f9fa;
+}
+
+.ledgr-callout > p:first-child {
+  margin-top: 0;
+  font-weight: 700;
+}
+
+.ledgr-callout > p:last-child {
+  margin-bottom: 0;
+}
+
+.ledgr-callout-note {
+  border-left-color: #2f80ed;
+  background: #f3f8ff;
+}
+
+.ledgr-callout-warning {
+  border-left-color: #f97316;
+  background: #fff7ed;
+}
+
+.ledgr-callout-tip {
+  border-left-color: #2ca44f;
+  background: #f1fbf4;
+}
+
+.ledgr-callout-important {
+  border-left-color: #b42318;
+  background: #fff4f2;
+}

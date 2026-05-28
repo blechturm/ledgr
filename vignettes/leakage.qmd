@@ -59,16 +59,16 @@ to make common leakage patterns structurally difficult -- not just documented as
 bad practice. This article explains where that protection applies and where your
 responsibility begins.
 
-::: {.callout-warning}
-## Leakage breaks the question
+::: {.ledgr-callout .ledgr-callout-warning}
+**Leakage breaks the question**
 
 A leaky backtest can have correct arithmetic and still answer the wrong
 research question. ledgr narrows common leakage paths, but it cannot certify
 your data availability or research process.
 :::
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 Leakage is any path by which a decision uses information that was not knowable
 at the simulated decision time.
@@ -260,8 +260,8 @@ clean.
 - Did parameter choices survive out-of-sample or regime checks?
 - Can the run be reopened and explained from stored provenance?
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Write down one dataset in your workflow that does not come from price bars.
 What timestamp says when a strategy was allowed to know it?

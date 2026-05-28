@@ -188,8 +188,8 @@ sides of a quoted bid/ask spread: a buy/sell round trip costs approximately
 
 ## Ledger Events
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A ledger event is the append-only accounting record written when execution
 changes cash, positions, or run state. Fills, trades, equity, and metrics are
@@ -208,8 +208,8 @@ ledger
 
 ## Fills And Trades
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A fill is an execution row: direction, quantity, price, fee, and action. A
 trade is the subset of fill evidence that closes quantity and realizes P&L.
@@ -251,8 +251,8 @@ would double-count the round trip.
 
 ## Equity Rows
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 An equity row values the portfolio at one timestamp. It combines cash, current
 position value, and total equity, including open-position exposure.
@@ -328,8 +328,8 @@ such as daily and weekly, to standard annualization constants. Use the detected
 value if you need an external calculation to match ledgr exactly on non-daily
 data.
 
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Change `bars_per_year` in the recompute chunk from `252` to `365`. Which
 metrics change? Why does `total_return` stay the same?
@@ -341,8 +341,8 @@ Metric assumptions now live in a `metric_context`. The default context is US
 equity daily: zero annual risk-free rate and `252 * 1` periods per year. Use
 market templates for common assumptions:
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 A metric context is the assumption object behind metrics: risk-free rate,
 calendar, annualization, and reserved provider slots. It makes metric

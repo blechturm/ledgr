@@ -107,23 +107,27 @@ release changes.
 
 ---
 
-## 4. Quarto Callouts
+## 4. pkgdown-Safe Callouts
 
-Use Quarto callouts for guidance the reader should scan before continuing.
+Use ledgr callout divs for guidance the reader should scan before continuing.
+Do not use native Quarto callouts in public pkgdown vignettes: pkgdown does not
+currently support Quarto callout rendering and falls back to plain blockquotes.
+The custom classes below are styled by `pkgdown/extra.css` and render reliably
+on the package site.
 
 Preferred forms:
 
 ```markdown
-::: {.callout-note}
-## Running this yourself
+::: {.ledgr-callout .ledgr-callout-note}
+**Running this yourself**
 
 The code blocks below write to `artifacts/ledgr_store.duckdb`.
 :::
 ```
 
 ```markdown
-::: {.callout-warning}
-## Promotion is not validation
+::: {.ledgr-callout .ledgr-callout-warning}
+**Promotion is not validation**
 
 Promotion records the selected candidate. It does not prove generalization.
 :::
@@ -143,21 +147,21 @@ Callout-type mapping:
 
 | Use case | Callout type |
 | --- | --- |
-| Runnability caveat ("Running this yourself") | `callout-note` |
-| Demo-data caveat | `callout-note` |
-| Selection-bias or validation warning | `callout-warning` |
-| Backup or persistence requirement | `callout-warning` |
-| Pre-CRAN compatibility note | `callout-warning` |
-| Future-roadmap boundary | `callout-important` |
-| Exercise ("Try it") | `callout-tip` |
-| Best-practice nudge | `callout-tip` |
+| Runnability caveat ("Running this yourself") | `ledgr-callout-note` |
+| Demo-data caveat | `ledgr-callout-note` |
+| Selection-bias or validation warning | `ledgr-callout-warning` |
+| Backup or persistence requirement | `ledgr-callout-warning` |
+| Pre-CRAN compatibility note | `ledgr-callout-warning` |
+| Future-roadmap boundary | `ledgr-callout-important` |
+| Exercise ("Try it") | `ledgr-callout-tip` |
+| Best-practice nudge | `ledgr-callout-tip` |
 
 Do not use callouts for ordinary paragraphs. Too many callouts flatten visual
 hierarchy.
 
 During migration, old `.Rmd` articles may use blockquote callouts as a
-temporary substitute. Do not add new blockquote callouts once the article is
-`.qmd`.
+temporary substitute. Do not add native Quarto callouts or blockquote callouts
+once the article is `.qmd`.
 
 ---
 
@@ -363,8 +367,8 @@ Good exercises are:
 Good:
 
 ```markdown
-::: {.callout-tip}
-## Try it
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
 
 Sort by `total_return` instead of `sharpe_ratio`. Does the first candidate
 change? What does that tell you about the selection rule?

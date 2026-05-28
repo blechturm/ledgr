@@ -52,16 +52,16 @@ write a review from the same evidence file.
 This article is about durable storage and later inspection, not strategy design
 or statistical validation.
 
-::: {.callout-note}
-## Running this yourself
+::: {.ledgr-callout .ledgr-callout-note}
+**Running this yourself**
 
 This article is evaluated when rendered. It writes to temporary DuckDB stores
 so package builds and local previews do not leave project artifacts behind. In
 real work, use a project-local path such as `artifacts/ledgr_store.duckdb`.
 :::
 
-::: {.callout-warning}
-## Pre-CRAN compatibility
+::: {.ledgr-callout .ledgr-callout-warning}
+**Pre-CRAN compatibility**
 
 ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
 experimental APIs may change before the first CRAN release. Treat stores
@@ -194,8 +194,8 @@ connection plus `snapshot_id` it returns the hash string. Use
 `meta_json` is envelope metadata; snapshot identity comes from normalized bars
 and instruments, not from human descriptions.
 
-::: {.callout-warning}
-## Yahoo data boundary
+::: {.ledgr-callout .ledgr-callout-warning}
+**Yahoo data boundary**
 
 Yahoo support is a convenience adapter, not a data-vendor guarantee. It uses
 `quantmod::getSymbols()` and therefore requires the suggested `quantmod`
@@ -238,8 +238,8 @@ Seal metadata inside `meta_json` may use internal names such as `n_bars` and
 The store is an ordinary DuckDB file. Back it up when no ledgr process has it
 open.
 
-::: {.callout-warning}
-## Back up closed stores
+::: {.ledgr-callout .ledgr-callout-warning}
+**Back up closed stores**
 
 Close run and snapshot handles, then copy or sync the closed store file. A
 simple project pattern is:

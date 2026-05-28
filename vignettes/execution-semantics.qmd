@@ -154,8 +154,8 @@ as pulse-known information, not as executable prices.
 
 ## Costs Are Part Of The Fill
 
-::: {.callout-important}
-## Public cost API
+::: {.ledgr-callout .ledgr-callout-important}
+**Public cost API**
 
 The stable public transaction-cost model API is planned for v0.1.9.x / v0.2.0.
 The example below documents fill behavior for readers inspecting execution
@@ -223,8 +223,8 @@ trade.
 
 ## Warmup Gates Belong In The Strategy
 
-::: {.callout-note}
-## Definition
+::: {.ledgr-callout .ledgr-callout-note}
+**Definition**
 
 Warmup is the early part of a feature series where an indicator has not yet seen
 enough history to produce a usable value. For example, a 20-bar moving average
