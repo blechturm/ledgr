@@ -1,5 +1,12 @@
 ---
 title: "Why ledgr is built in R"
+format:
+  html:
+    toc: false
+    theme: cosmo
+    code-copy: true
+execute:
+  echo: true
 ---
 
 The default expectation in 2026 is that quantitative trading frameworks are

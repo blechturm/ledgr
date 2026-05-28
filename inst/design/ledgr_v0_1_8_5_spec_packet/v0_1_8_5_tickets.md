@@ -382,8 +382,8 @@ review, and manual first-contact review.
 - `README.Rmd`
 - `README.md`
 - `_pkgdown.yml`
-- `vignettes/articles/who-ledgr-is-for.Rmd`
-- `vignettes/articles/why-r.Rmd`
+- `vignettes/articles/who-ledgr-is-for.qmd`
+- `vignettes/articles/why-r.qmd`
 
 ### Classification
 
@@ -546,7 +546,7 @@ scope: installed_docs
 Priority: P1
 Effort: M
 Dependencies: LDG-2443
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -590,6 +590,18 @@ review.
 - `vignettes/strategy-development.qmd`
 - `vignettes/indicators.qmd`
 - `vignettes/metrics-and-accounting.qmd`
+
+### Completion Notes
+
+- Migrated Strategy Development, Indicators, and Metrics/Accounting to
+  canonical `.qmd` sources and rendered their companion markdown.
+- Applied the v0.1.8.5 styleguide with callouts, diagrams, exercises, focused
+  openings, and tighter reference boundaries.
+- Migrated the remaining installed/background `.Rmd` articles to `.qmd`
+  (`custom-indicators`, `leakage`, `who-ledgr-is-for`, and `why-r`) so the
+  release gate has no installed vignette-source exceptions.
+- Updated documentation contracts and render-ignore rules for local Quarto HTML
+  inspection artifacts.
 
 ### Classification
 
@@ -653,12 +665,10 @@ and pkgdown navigation review.
 
 ### Completion Notes
 
-- Retained the article as `research-to-production.qmd`, renamed it to
-  "Research To Production Boundaries", and narrowed it to promotion caveats,
-  production review, broker reconciliation, and future paper/live scope.
-- Kept `research-workflow.qmd` as the canonical research path and changed the
-  background link wording so this article is not presented as a workflow
-  substitute.
+- Retained the original design-philosophy article and migrated it to
+  `research-to-production.qmd` as the canonical source.
+- Kept `research-workflow.qmd` as the canonical research path while preserving
+  this article as the long-term research-to-production vision.
 - Verified the article renders through Quarto and updated the broker
   reconciliation documentation contract to read the `.qmd` source.
 
@@ -836,6 +846,8 @@ flow are coherent, and any auditr intake has been routed.
 - Render Quarto-sourced vignettes and pkgdown article pages.
 - Verify `README.Rmd` and `README.md` are synchronized.
 - Verify `_pkgdown.yml` navigation matches the documented reading flow.
+- Review `research-to-production.qmd` "What v0.1.x Delivers Today" against the
+  release being gated and the current roadmap.
 - Run package checks required by the release playbook.
 - Update NEWS with a documentation/workflow release note.
 - Update ticket statuses and completion notes.
@@ -854,6 +866,8 @@ flow are coherent, and any auditr intake has been routed.
 - Package checks required by the release playbook pass or have recorded
   disposition.
 - `tickets.yml` and this ticket file agree on final statuses.
+- `research-to-production.qmd` accurately separates shipped capabilities from
+  planned roadmap work at release gate.
 - v0.1.8.5 closes as a documentation/workflow release, not a runtime feature
   release.
 

@@ -1,5 +1,5 @@
-Custom Indicators And External Features
-================
+# Custom Indicators And External Features
+
 
 ``` r
 library(ledgr)
@@ -16,7 +16,23 @@ keep a strategy pulse-safe, or it can hide future information in an
 ordinary-looking feature value. This article explains the authoring
 contract.
 
-## The Indicator Objec
+> [!WARNING]
+>
+> ### Custom features are a leakage boundary
+>
+> ledgr can validate shape, warmup, fingerprints, and registration. It
+> cannot prove that externally authored feature logic avoided future
+> information.
+
+## The Indicator Object
+
+> [!NOTE]
+>
+> ### Definition
+>
+> A custom indicator is a declared feature computation with a stable
+> feature ID, deterministic params, warmup rules, and one or two
+> functions that produce pulse-known values.
 
 `ledgr_indicator()` creates a feature definition. The important fields
 are:
@@ -33,6 +49,22 @@ are:
 
 Use `params` for intentional configuration. Do not close over mutable
 session objects when the value should be part of the feature definition.
+
+<div class="ledgr-diagram ledgr-custom-indicator-path">
+
+``` mermaid
+
+flowchart LR
+  declare["declare<br/>indicator"]
+  register["register<br/>experiment"]
+  compute["compute<br/>pulse values"]
+  read["read<br/>ctx feature"]
+  target["return<br/>target holdings"]
+
+  declare --> register --> compute --> read --> target
+```
+
+</div>
 
 ## Scalar Indicators
 
@@ -56,7 +88,7 @@ ending at the current bar. Before `stable_after`, ledgr returns
 finite numeric value.
 
 This path is easy to reason about because the function receives only
-historical rows up to the current decision point. It is the right firs
+historical rows up to the current decision point. It is the right first
 implementation for most custom features.
 
 ## Vectorized Indicators
@@ -114,7 +146,7 @@ obvious.
 `requires_bars` and `stable_after` are related but not identical.
 
 `requires_bars` says how much history the indicator definition needs.
-`stable_after` says when the output is usable in the feature series. I
+`stable_after` says when the output is usable in the feature series. It
 must be greater than or equal to `requires_bars`.
 
 For a three-bar moving average, both are usually `3`. For indicators
@@ -127,7 +159,7 @@ mean the feature did not satisfy its contract.
 
 ## Fingerprints
 
-Indicator definitions are fingerprinted so runs can later verify tha
+Indicator definitions are fingerprinted so runs can later verify that
 the registered feature definition still matches the one recorded with
 the run.
 
@@ -190,7 +222,7 @@ csv_indicator <- ledgr_adapter_csv(
 The CSV must identify timestamp, instrument, and value columns. This is
 useful for external feature pipelines, but it moves availability
 discipline outside ledgr. The CSV values must already respect the
-simulated decision times. ledgr can hash and look up the values; i
+simulated decision times. ledgr can hash and look up the values; it
 cannot know whether the upstream pipeline used future information.
 
 ## Register And Read
@@ -240,7 +272,7 @@ ledgr_feature_id(features)
 #> [1] "range_3"
 ```
 
-Inside the strategy, `ctx$feature(id, "range_3")` reads the exac
+Inside the strategy, `ctx$feature(id, "range_3")` reads the exact
 feature ID from the pulse context for one instrument. Unknown feature
 IDs fail loudly. Warmup for a known feature is represented by
 `NA_real_`.
@@ -265,6 +297,8 @@ summary(custom_bt)
 #>   Max Drawdown:        -0.89%
 #>
 #> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
 #>   Volatility (annual): 2.25%
 #>   Sharpe Ratio:        1.305
 #>
@@ -276,20 +310,27 @@ summary(custom_bt)
 #> Exposure:
 #>   Time in Market:      93.02%
 ledgr_results(custom_bt, what = "fills")
-#> # A tibble: 2 x 9
+#> # A tibble: 2 × 9
 #>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
 #> 1         1 2019-01-04 DEMO_01       BUY      10  90.7     0            0 OPEN
 #> 2         2 2019-01-04 DEMO_02       BUY      10  74.7     0            0 OPEN
 ledgr_results(custom_bt, what = "trades")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
+#> # A tibble: 0 × 9
+#> # ℹ 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
 #> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
 ```
 
-The custom feature only changes how pulse-known values are computed. I
-does not change the strategy return contract, fill model, ledger, resul
+The custom feature only changes how pulse-known values are computed. It
+does not change the strategy return contract, fill model, ledger, result
 tables, or metric workflow.
+
+> [!TIP]
+>
+> ### Try it
+>
+> Change `max_range` from `5` to `2` in the run params. Which fills
+> disappear, and why does the custom indicator ID stay the same?
 
 ## What To Remember
 

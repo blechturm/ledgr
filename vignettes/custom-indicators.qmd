@@ -1,20 +1,31 @@
 ---
 title: "Custom Indicators And External Features"
-output:
-  rmarkdown::html_vignette:
+format:
+  html:
     toc: false
-  github_document:
-    toc: false
-    html_preview: false
+    theme: cosmo
+    code-copy: true
+execute:
+  echo: true
 vignette: >
   %\VignetteIndexEntry{Custom Indicators And External Features}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
+```{r}
+#| label: setup
+#| include: false
+
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 options(width = 90)
+# Local renders load the package from source via pkgload (working dir is
+# either project root or vignettes/); installed builds fall through and
+# rely on the library(ledgr) call in the prerequisites chunk.
+pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
+if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(pkg_root, quiet = TRUE)
+}
 demo_data_path <- if (file.exists("data/ledgr_demo_bars.rda")) {
   "data/ledgr_demo_bars.rda"
 } else {
@@ -25,7 +36,10 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 }
 ```
 
-```{r, message=FALSE}
+```{r}
+#| label: packages
+#| message: false
+
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
@@ -39,7 +53,22 @@ They are also the highest-risk feature boundary. A custom indicator can keep a
 strategy pulse-safe, or it can hide future information in an ordinary-looking
 feature value. This article explains the authoring contract.
 
+::: {.callout-warning}
+## Custom features are a leakage boundary
+
+ledgr can validate shape, warmup, fingerprints, and registration. It cannot
+prove that externally authored feature logic avoided future information.
+:::
+
 ## The Indicator Object
+
+::: {.callout-note}
+## Definition
+
+A custom indicator is a declared feature computation with a stable feature ID,
+deterministic params, warmup rules, and one or two functions that produce
+pulse-known values.
+:::
 
 `ledgr_indicator()` creates a feature definition. The important fields are:
 
@@ -56,11 +85,30 @@ feature value. This article explains the authoring contract.
 Use `params` for intentional configuration. Do not close over mutable session
 objects when the value should be part of the feature definition.
 
+::: {.ledgr-diagram .ledgr-custom-indicator-path}
+
+```{mermaid}
+%%| echo: false
+
+flowchart LR
+  declare["declare<br/>indicator"]
+  register["register<br/>experiment"]
+  compute["compute<br/>pulse values"]
+  read["read<br/>ctx feature"]
+  target["return<br/>target holdings"]
+
+  declare --> register --> compute --> read --> target
+```
+
+:::
+
 ## Scalar Indicators
 
 The scalar path is the simplest contract:
 
-```{r scalar-indicator}
+```{r}
+#| label: scalar-indicator
+
 range_3 <- ledgr_indicator(
   id = "range_3",
   fn = function(window, params) {
@@ -87,7 +135,10 @@ whole series. When both `fn` and `series_fn` are supplied, the engine uses
 `series_fn` for full-series feature computation and keeps `fn` as the scalar
 definition for the same feature. They should be equivalent after warmup.
 
-```{r vectorized-indicator, eval=FALSE}
+```{r}
+#| label: vectorized-indicator
+#| eval: false
+
 sma_3_custom <- ledgr_indicator(
   id = "sma_3_custom",
   fn = function(window, params) {
@@ -178,7 +229,10 @@ logic.
 `ledgr_adapter_r()` wraps a function that operates on the close series of the
 bounded window. It is useful for simple package or base R functions:
 
-```{r adapter-r, eval=FALSE}
+```{r}
+#| label: adapter-r
+#| eval: false
+
 median_close <- ledgr_adapter_r(
   stats::median,
   id = "median_close_5",
@@ -191,7 +245,10 @@ parameters. It still creates an ordinary `ledgr_indicator`.
 
 `ledgr_adapter_csv()` adapts a CSV of precomputed values:
 
-```{r adapter-csv, eval=FALSE}
+```{r}
+#| label: adapter-csv
+#| eval: false
+
 csv_indicator <- ledgr_adapter_csv(
   "features/my_values.csv",
   value_col = "my_value",
@@ -210,7 +267,9 @@ used future information.
 Custom indicators are registered with the experiment just like built-in
 indicators:
 
-```{r register-read}
+```{r}
+#| label: register-read
+
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
@@ -258,7 +317,9 @@ Warmup for a known feature is represented by `NA_real_`.
 Run the experiment and inspect the event-derived result tables just as you
 would for built-in indicators:
 
-```{r custom-run}
+```{r}
+#| label: custom-run
+
 custom_bt <- ledgr_run(
   exp,
   params = list(max_range = 5, qty = 10),
@@ -274,7 +335,17 @@ The custom feature only changes how pulse-known values are computed. It does
 not change the strategy return contract, fill model, ledger, result tables, or
 metric workflow.
 
-```{r custom-cleanup, include=FALSE}
+::: {.callout-tip}
+## Try it
+
+Change `max_range` from `5` to `2` in the run params. Which fills disappear,
+and why does the custom indicator ID stay the same?
+:::
+
+```{r}
+#| label: custom-cleanup
+#| include: false
+
 close(custom_bt)
 ledgr_snapshot_close(snapshot)
 ```

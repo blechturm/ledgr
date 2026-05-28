@@ -285,8 +285,10 @@ testthat::test_that("background articles stay pkgdown-only", {
   articles <- file.path(root, "vignettes", "articles")
   testthat::skip_if_not(dir.exists(articles), "source articles not available during installed-package tests")
 
-  testthat::expect_true(any(file.exists(file.path(articles, c("who-ledgr-is-for.Rmd", "who-ledgr-is-for.qmd")))))
-  testthat::expect_true(any(file.exists(file.path(articles, c("why-r.Rmd", "why-r.qmd")))))
+  testthat::expect_true(file.exists(file.path(articles, "who-ledgr-is-for.qmd")))
+  testthat::expect_true(file.exists(file.path(articles, "why-r.qmd")))
+  testthat::expect_false(file.exists(file.path(articles, "who-ledgr-is-for.Rmd")))
+  testthat::expect_false(file.exists(file.path(articles, "why-r.Rmd")))
   testthat::expect_false(file.exists(file.path(root, "vignettes", "who-ledgr-is-for.Rmd")))
   testthat::expect_false(file.exists(file.path(root, "vignettes", "why-r.Rmd")))
   testthat::expect_false(file.exists(file.path(root, "inst", "doc", "who-ledgr-is-for.Rmd")))
@@ -1304,7 +1306,7 @@ testthat::test_that("reproducibility article teaches provenance tiers and safe e
 })
 
 testthat::test_that("leakage article teaches boundaries without overclaiming", {
-  doc <- paste(readLines(ledgr_test_source_vignette("leakage.Rmd"), warn = FALSE), collapse = "\n")
+  doc <- paste(readLines(ledgr_test_source_vignette("leakage.qmd"), warn = FALSE), collapse = "\n")
   strategy_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
   pkgdown <- paste(readLines(file.path(root, "_pkgdown.yml"), warn = FALSE), collapse = "\n")
@@ -1335,31 +1337,31 @@ testthat::test_that("research-to-production docs do not overclaim broker reconci
 
   testthat::expect_no_match(doc, "No reconciliation step is needed", fixed = TRUE)
   testthat::expect_no_match(doc, "The ledger is the state", fixed = TRUE)
-  testthat::expect_match(doc, "Promotion is not deployment", fixed = TRUE)
-  testthat::expect_match(doc, "research-to-production boundary", fixed = TRUE)
   testthat::expect_match(doc, "The ledger reconstructs ledgr's expected state", fixed = TRUE)
   testthat::expect_match(doc, "reconciled against broker-reported", fixed = TRUE)
-  testthat::expect_match(doc, "Paper/live adapters are v0.3.0+ roadmap scope", fixed = TRUE)
+  testthat::expect_match(doc, "Design Philosophy: From Research to Production", fixed = TRUE)
+  testthat::expect_match(doc, "What v0.1.x Delivers Today", fixed = TRUE)
 })
 
 testthat::test_that("custom indicator article replaces stale placeholders", {
   root <- testthat::test_path("..", "..")
-  custom_rmd <- file.path(root, "vignettes", "custom-indicators.qmd")
+  custom_qmd <- file.path(root, "vignettes", "custom-indicators.qmd")
   custom_md <- file.path(root, "vignettes", "custom-indicators.md")
   interactive_md <- file.path(root, "vignettes", "interactive-strategy-development.md")
   pkgdown_path <- file.path(root, "_pkgdown.yml")
   testthat::skip_if_not(
-    file.exists(custom_rmd) && file.exists(custom_md) && file.exists(pkgdown_path),
+    file.exists(custom_qmd) && file.exists(custom_md) && file.exists(pkgdown_path),
     "source custom-indicator docs unavailable during installed-package tests"
   )
   pkgdown <- paste(readLines(pkgdown_path, warn = FALSE), collapse = "\n")
 
-  testthat::expect_true(file.exists(custom_rmd))
+  testthat::expect_true(file.exists(custom_qmd))
   testthat::expect_true(file.exists(custom_md))
+  testthat::expect_false(file.exists(file.path(root, "vignettes", "custom-indicators.Rmd")))
   testthat::expect_false(file.exists(interactive_md))
   testthat::expect_match(pkgdown, "- custom-indicators", fixed = TRUE)
 
-  doc <- paste(readLines(custom_rmd, warn = FALSE), collapse = "\n")
+  doc <- paste(readLines(custom_qmd, warn = FALSE), collapse = "\n")
   rendered <- paste(readLines(custom_md, warn = FALSE), collapse = "\n")
 
   for (text in list(doc, rendered)) {

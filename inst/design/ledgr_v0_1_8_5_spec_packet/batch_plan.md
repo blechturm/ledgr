@@ -241,12 +241,12 @@ Tickets:
 Purpose:
 
 Clean up the reading flow after the canonical homes exist. This batch decides
-what `research-to-production.Rmd` is for and removes competing explanations
+what `research-to-production` is for and removes competing explanations
 from other vignettes.
 
 Review focus:
 
-- `research-to-production.Rmd` no longer competes with
+- `research-to-production` no longer competes with
   `research-workflow.qmd`.
 - `research-to-production` is either migrated as a narrowed Quarto article or
   removed from the main reading flow with maintainer disposition.
@@ -279,6 +279,8 @@ Review focus:
   maintainer-accepted exceptions.
 - README generated output is synchronized.
 - `_pkgdown.yml` navigation matches the documented reading flow.
+- `research-to-production.qmd` "What v0.1.x Delivers Today" is reviewed
+  against the shipped release and current roadmap before closeout.
 - Package checks required by the release playbook pass or have recorded
   disposition.
 - `tickets.yml` and `v0_1_8_5_tickets.md` agree on final statuses.

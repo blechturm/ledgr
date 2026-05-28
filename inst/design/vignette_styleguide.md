@@ -479,6 +479,21 @@ This flow is provisional until the v0.1.8.5 release gate. Batch-level
 migration work may split, narrow, or retire articles; update this section when
 the shipped article set changes.
 
+### Release-Gate Roadmap Sections
+
+Articles that summarize the product arc, especially
+`research-to-production.qmd`, must be checked at every release gate. If an
+article has a "delivered so far" / "planned next" section, update it against
+`inst/design/ledgr_roadmap.md`, the active packet, and the release closeout
+before tagging the release.
+
+Keep these sections factual:
+
+- list shipped capabilities only after they are in the release being gated;
+- name future work with roadmap anchors such as `v0.1.9.x` or `v0.2.x`;
+- avoid vague "future" phrasing when a cycle is already planned;
+- do not imply that deferred runtime work has shipped.
+
 ---
 
 ## 13. Anti-Patterns
@@ -518,6 +533,8 @@ For each article batch, reviewers should ask:
 9. Are related articles linked intentionally?
 10. Does the article avoid competing with another article's canonical home?
 11. Does the article preserve the release boundary and roadmap sequence?
+12. If the article summarizes delivered/planned capabilities, was that section
+    updated during the release gate?
 
 Use the checklist at two points:
 

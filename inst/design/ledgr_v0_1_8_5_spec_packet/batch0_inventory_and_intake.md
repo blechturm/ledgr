@@ -26,12 +26,12 @@ Current first-contact and vignette surfaces:
 | `vignettes/sweeps.Rmd` | Sweep exploration, train/test discipline, grids, precompute, failures, seeds, promotion | Align with active aliases and executable grids. Keep "sweep is exploration" as first principle; no automatic winner-selection semantics. |
 | `vignettes/strategy-development.Rmd` | Strategy authoring, ctx, targets, feature maps, preflight, helper pipelines | Keep as strategy-authoring reference. Link execution semantics and avoid owning sweep workflow. |
 | `vignettes/indicators.Rmd` | Built-in features, lifecycle, pulse inspection, feature maps, contracts, parameterized indicators | Keep as feature/indicator reference. Avoid teaching feature factories as the parameterized sweep path. |
-| `vignettes/custom-indicators.Rmd` | Custom indicator object construction, fingerprints, adapters, registration | Keep focused on authoring custom indicators. |
+| `vignettes/custom-indicators.qmd` | Custom indicator object construction, fingerprints, adapters, registration | Keep focused on authoring custom indicators. |
 | `vignettes/metrics-and-accounting.Rmd` | Ledger/fills/trades/equity/metrics, zero-trade diagnostics, open positions | Keep accounting reference. Link execution semantics for target/fill timing. |
-| `vignettes/leakage.Rmd` | Leakage boundaries and user responsibilities | Keep as conceptual guardrail; link from workflow where validation limits are discussed. |
+| `vignettes/leakage.qmd` | Leakage boundaries and user responsibilities | Keep as conceptual guardrail; link from workflow where validation limits are discussed. |
 | `vignettes/research-to-production.Rmd` | Current broad research-to-production narrative | Narrow in `LDG-2439` to promotion boundaries, production caveats, and future paper/live context, or remove from main reading flow if redundant. |
-| `vignettes/articles/who-ledgr-is-for.Rmd` | Audience positioning | Keep in Start Here, but do not make it the operational first-run path. |
-| `vignettes/articles/why-r.Rmd` | R/platform rationale | Keep as background. |
+| `vignettes/articles/who-ledgr-is-for.qmd` | Audience positioning | Keep in Start Here, but do not make it the operational first-run path. |
+| `vignettes/articles/why-r.qmd` | R/platform rationale | Keep as background. |
 
 ---
 
