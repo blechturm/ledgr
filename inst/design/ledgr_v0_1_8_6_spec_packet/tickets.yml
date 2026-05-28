@@ -72,7 +72,7 @@ tickets:
 
   - id: "LDG-2449"
     title: "Two-Mode Width Sweep And Storage Decision"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -89,7 +89,7 @@ tickets:
 
   - id: "LDG-2450"
     title: "Conditional Storage And Typed Event Column Gate"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "M"
     dependencies:

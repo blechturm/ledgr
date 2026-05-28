@@ -244,7 +244,7 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
     features = features,
     opening = ledgr_opening(cash = 1e7)
   )
-  run_id <- sprintf("bench_%s_%02d_%s", name, iter, paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
+  run_id <- sprintf("bench_%s_%03d_%s", name, iter, paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
   warnings <- character()
   elapsed <- system.time({
     captured <- bench_capture_warnings(

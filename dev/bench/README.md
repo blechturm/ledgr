@@ -40,3 +40,24 @@ Named scenarios:
 Use `--preset smoke` for a quick verification run and `--preset record` for the
 release-record benchmark shape. The record preset is still local and
 machine-dependent; release notes should cite it with environment metadata.
+
+## Width Sweep
+
+Batch 4 uses a separate two-mode width sweep:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/run_width_sweep.R --preset smoke --repeats 1 --warmup 1
+```
+
+The width sweep writes raw results, summaries, isolated schema-vs-full-long
+view timings, and a storage decision record under `dev/bench/results/`.
+
+Modes:
+
+- `read_score`: reads and scores features without fills.
+- `turnover`: reads and scores features, generates representative fills, and
+  measures persistent replay/read-back.
+
+The isolated view timing is the one to use for schema-only versus full-long
+materialization cost. The benchmark `t_residual_sec` column is deliberately a
+broad wall-minus-pre-minus-loop residual and includes wrapper/read-back work.

@@ -377,7 +377,7 @@ scope: structured_suite
 Priority: P1
 Effort: M
 Dependencies: LDG-2448
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -414,11 +414,52 @@ need claim.
 Run the two-mode width sweep at the agreed small and stress dimensions, inspect
 machine-readable results, and manually review the storage decision note.
 
+Completion note:
+
+- Added `dev/bench/run_width_sweep.R`, a two-mode width-sweep runner that
+  reuses the structured benchmark source guard and output conventions.
+- Modes are explicit:
+  - `read_score`: feature access and scoring with no fills;
+  - `turnover`: feature access/scoring plus representative fills and persistent
+    replay/read-back timing.
+- Smoke verification passed:
+  `Rscript dev/bench/run_width_sweep.R --preset smoke --repeats 1 --warmup 1`.
+- Record-dimension verification passed:
+  `Rscript dev/bench/run_width_sweep.R --preset record --repeats 1 --warmup 1`.
+  Outputs were written to:
+  `dev/bench/results/ledgr_width_sweep_record_20260528T215404Z_*`.
+- Largest recorded grid was 500 instruments x 252 pulses x 50 features:
+  - read/score: `t_wall = 75.13s`, `t_pre = 38.79s`,
+    `t_residual = 33.83s`, `t_loop = 2.51s`,
+    `security_bars_sec = 1677`, `feature_cells_sec = 83855`;
+  - turnover: `t_wall = 65.86s`, `t_pre = 29.79s`,
+    `t_residual = 32.80s`, `t_loop = 3.27s`,
+    `replay = 0.98s`, `security_bars_sec = 1913`,
+    `feature_cells_sec = 95657`.
+- Isolated schema-vs-full-long view timing at the same largest grid:
+  schema-only `ledgr_projection_pulse_views()` = `0.33s`; full-long opt-in =
+  `2.44s`; full-long rows = `6,300,000`.
+- The output separates feature-access scaling from fill/event/replay scaling.
+  No width-invariance claim is made; the recorded loop cost grows with width
+  but remains much smaller than setup/residual wall time at these dimensions.
+- The generated storage decision file records DuckDB-backed feature storage as
+  deferred for v0.1.8.6.
+- Post-review runner tightenings normalize decision values to `deferred`, add
+  the full-long row count and schema-vs-full timing ratio to the generated
+  rationale, use median isolated view timings for record runs, and keep
+  generated run IDs readable beyond two-digit iteration numbers.
+- A same-snapshot cold/hot probe at 100 instruments x 252 pulses x 50 features
+  confirmed that fresh width-sweep grid cells pay cold setup: cache misses
+  dropped from `5000` to `0` on the warm run, but `t_pre` only moved from
+  `5.28s` to `4.36s`, so feature-cache hits reduce but do not explain the
+  remaining setup cost.
+
 ### Source Reference
 
 - `v0_1_8_6_spec.md` Sections 5 and 6
 - `rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`
 - benchmark outputs from LDG-2448
+- `dev/bench/run_width_sweep.R`
 
 ### Classification
 
@@ -435,7 +476,7 @@ scope: width_sweep_storage_decision
 Priority: P2
 Effort: M
 Dependencies: LDG-2449
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -469,6 +510,19 @@ follow-up.
 Manual decision-record review and, if implementation is accepted, targeted
 persistent replay/migration tests named by the follow-up tickets.
 
+Completion note:
+
+- Storage/schema implementation is deferred for v0.1.8.6 based on the
+  LDG-2449 width-sweep decision record.
+- No DuckDB-backed feature projection, persistent event schema migration,
+  typed persistent event columns, or DuckDB SQL `json_extract` replay patch
+  ships in this batch.
+- Direction 5.6 remains accepted design follow-up, distinct from the completed
+  LDG-2410 typed in-memory event representation.
+- The record sweep reported no warnings or failures and persistent replay at
+  the largest turnover grid was `0.98s`; this does not justify pulling a
+  storage/schema migration into the current release.
+
 ### Source Reference
 
 - `v0_1_8_6_spec.md` Section 5
@@ -477,6 +531,7 @@ persistent replay/migration tests named by the follow-up tickets.
 - `R/ledger-writer.R`
 - `R/derived-state.R`
 - `R/backtest-runner.R`
+- `dev/bench/results/ledgr_width_sweep_record_20260528T215404Z_storage_decision.csv`
 
 ### Classification
 
