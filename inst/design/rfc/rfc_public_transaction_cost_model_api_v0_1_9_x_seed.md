@@ -5,7 +5,7 @@
 **Date:** 2026-05-27
 **Target window:** v0.1.9.x / v0.2.0, after target risk and walk-forward
 evaluation have stabilized enough to share execution identity.
-**Primary research input:** `inst/design/research/Transaction-Cost Models.md`
+**Primary research input:** `inst/design/research/Transaction-Cost-Models.md`
 **Predecessor RFC thread:** `inst/design/rfc/rfc_cost_model_architecture.md`,
 `inst/design/rfc/rfc_cost_model_architecture_response.md`
 **Constrained by:** `inst/design/contracts.md`,

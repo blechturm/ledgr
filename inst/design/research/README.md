@@ -30,7 +30,7 @@ For any claim that becomes load-bearing in a synthesis, look up the primary sour
 | File | Fed which RFC seed | Durable artifact |
 |---|---|---|
 | `Walk-Forward.md` | `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` |
-| `Transaction-Cost Models.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
+| `Transaction-Cost-Models.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
 
 When the next deep-research-informed RFC cycle opens, add a new file here and a new row to the table.
 

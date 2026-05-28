@@ -299,6 +299,36 @@ These are deterministic suggestions only. auditr does not merge findings.
 
 ## Maintainer Notes
 
-- TODO: Record final duplicate decisions.
-- TODO: Record which ledgr fixes, docs, or tests should be prioritized.
-- TODO: Choose the next cycle theme.
+- Final duplicate decisions: documentation discovery and active-alias teaching
+  findings were absorbed into the Quarto vignette migration and styleguide
+  pass. Parameterized TTR bundle sweep support, richer promotion summaries,
+  sweep-review helpers, target-risk affordability, walk-forward evaluation,
+  and provider-backed point-in-time data remain future-cycle work.
+- Prioritized ledgr fixes for this cycle were documentation/workflow fixes:
+  canonical research workflow, experiment store, reproducibility tiers,
+  execution semantics, sweeps, strategy development, indicators, custom
+  indicators, metrics/accounting, leakage, and research-to-production
+  boundaries. Runtime semantics were intentionally held stable.
+- Next-cycle candidates are v0.1.8.6 research-loop ergonomics and documentation
+  helper polish, followed by v0.1.9 walk-forward, target-risk, and cost-model
+  planning as scoped in the roadmap.
+
+## v0.1.8.5 Release Closeout
+
+- Shipped tickets: LDG-2434 through LDG-2444 and LDG-2441 are complete.
+- v0.1.8.5 closed as a documentation/workflow release. The package version and
+  NEWS were updated to `0.1.8.5`; no new runtime execution semantics were
+  introduced.
+- All installed vignette sources were migrated to Quarto. Retired
+  R Markdown installed artifacts in `inst/doc` were removed so `R CMD build`
+  uses the canonical `.qmd` sources.
+- The article styleguide was canonized as the accepted v0.1.8.5 article bar.
+- The release gate passed documentation contracts, full local tests, Quarto
+  renders, README render, package build/check, and pkgdown build. Coverage was
+  not rerun because the release did not change coverage behavior or runtime
+  execution paths.
+- Process lesson: release-gate commands need release-gate timeout budgets.
+  Short exploratory timeouts caused avoidable reruns for Quarto render, full
+  local tests, and `R CMD check`. `inst/design/release_ci_playbook.md` now
+  records the timeout rule and requires closeout notes to record timeout/rerun
+  pairs.

@@ -172,7 +172,7 @@ tickets:
 
   - id: "LDG-2441"
     title: "v0.1.8.5 Release Gate And Closeout"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

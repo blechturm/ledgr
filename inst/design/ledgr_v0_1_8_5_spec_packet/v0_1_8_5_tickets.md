@@ -831,7 +831,7 @@ scope: legacy_boundary
 Priority: P0
 Effort: M
 Dependencies: LDG-2435, LDG-2436, LDG-2437, LDG-2438, LDG-2439, LDG-2440, LDG-2442, LDG-2443, LDG-2444
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -875,6 +875,58 @@ flow are coherent, and any auditr intake has been routed.
 
 Documentation contract tests, vignette render, README render/update check,
 package release checks, and manual closeout review.
+
+### Completion Notes
+
+- Bumped package version to `0.1.8.5`.
+- Added `NEWS.md` release notes framing v0.1.8.5 as a
+  documentation/workflow release, not a runtime feature release.
+- Verified no installed vignette sources remain as `.Rmd`; the installed
+  vignette sources are `.qmd` with regenerated `.md` companions where the
+  package installs markdown artifacts.
+- Removed stale tracked `inst/doc` `.Rmd`, `.R`, and `.html` installed-vignette
+  artifacts. `R CMD build` now builds installed docs from the canonical Quarto
+  sources instead of colliding with retired R Markdown names.
+- Renamed `inst/design/research/Transaction-Cost Models.md` to
+  `inst/design/research/Transaction-Cost-Models.md` and updated design
+  references so package checks have portable file names.
+- Updated `.Rbuildignore` and `.gitignore` so local Quarto state,
+  `.localappdata`, source tarballs, check directories, and generated vignette
+  HTML do not enter package builds or commits.
+- Added `pkgload` to `Suggests` because local-render setup chunks use it when
+  rendering vignettes from source.
+- Canonized `inst/design/vignette_styleguide.md` as the accepted v0.1.8.5
+  article bar.
+- Updated `inst/design/release_ci_playbook.md` with release-gate timeout
+  guidance. The first full Quarto render timed out at 120 seconds before
+  passing with a 420-second budget; the first full local test run timed out at
+  420 seconds before passing with a 900-second budget; the first package check
+  timed out at 900 seconds before passing with an 1800-second budget.
+- Reviewed `research-to-production.qmd` "What v0.1.x Delivers Today"; the
+  article separates delivered v0.1.x capabilities from planned walk-forward,
+  target-risk, cost-model, provider, and paper/live roadmap work.
+- Verification passed:
+  - `quarto render` for 13 Quarto articles with `LOCALAPPDATA` redirected to
+    the workspace for Quarto cache stability.
+  - top-level installed-vignette GFM render loop for all `vignettes/*.qmd`.
+  - `rmarkdown::render('README.Rmd', output_format = 'github_document')` with
+    `RSTUDIO_PANDOC` set to the local RStudio Pandoc path.
+  - `testthat::test_file('tests/testthat/test-documentation-contracts.R', reporter='summary')`.
+  - `testthat::test_local('.', reporter='summary')` with one expected
+    missing-package-path skip in `test-snapshot-adapters.R`.
+  - `R CMD build .` with explicit `R_LIBS`, Quarto on `PATH`,
+    `RSTUDIO_PANDOC`, and redirected `LOCALAPPDATA`.
+  - `R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.5.tar.gz`
+    (`Status: OK`; repository-index warnings were emitted after completion due
+    restricted network access).
+  - `pkgdown::build_site(new_process = FALSE, install = FALSE)` after
+    installing local pkgdown dependencies, setting child-process `R_LIBS`, and
+    allowing network access for pkgdown CDN/CRAN metadata.
+- Coverage was not run for this documentation/workflow release gate because no
+  coverage behavior or runtime execution path changed.
+- Generated local release artifacts (`ledgr_0.1.8.5.tar.gz`, `ledgr.Rcheck`,
+  `.localappdata`, and `tests/testthat/Rplots.pdf`) were removed before
+  staging.
 
 ### Source Reference
 

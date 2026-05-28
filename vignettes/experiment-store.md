@@ -1,4 +1,4 @@
-# Experiment Store
+﻿# Experiment Store
 
 
 The experiment store is the DuckDB file that keeps sealed market data,
@@ -160,7 +160,7 @@ not from human descriptions.
 > method-overwrite messages printed while quantmod loads are not ledgr
 > snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`,
 > `.Low`, `.Close`, and `.Volume` columns as returned by quantmod; it
-> does not rewrite OHLC values from Yahoo’s adjusted-close column. If
+> does not rewrite OHLC values from Yahooâ€™s adjusted-close column. If
 > your research requires split/dividend-adjusted OHLC bars, prepare
 > those bars explicitly and seal them with `ledgr_snapshot_from_df()` or
 > `ledgr_snapshot_from_csv()`.
@@ -210,8 +210,8 @@ has it open.
 > ```
 >
 > For larger projects, use the same closed-file rule with your normal
-> backup or sync tool. Do not rely on the phrase “ordinary backup
-> discipline” without a specific copy/sync pattern for the store file.
+> backup or sync tool. Do not rely on the phrase â€œordinary backup
+> disciplineâ€ without a specific copy/sync pattern for the store file.
 
 ## Record Two Variants For Comparison
 
@@ -317,12 +317,12 @@ info
     Tags:            baseline, trend
     Snapshot:        store_demo_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Config Hash:     335b49165b9b293decda91131b0fa787fe448bdbde9c289a45d8dfee0911a125
+    Config Hash:     843e364a4ba307690fc41d99ea87eba1edb81e5e5732bcf62180aa18aba83669
     Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
     Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.75
+    Elapsed Sec:     1.86
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -365,7 +365,7 @@ fills but no closed trades yet, in which case win rate is not defined.
 
 `ledgr_compare_runs()` starts from the durable snapshot handle because
 it reads stored run artifacts. When you want the comparison to use an
-experiment’s metric assumptions, pass that context explicitly:
+experimentâ€™s metric assumptions, pass that context explicitly:
 
 ``` r
 comparison <- ledgr_compare_runs(
@@ -639,10 +639,10 @@ Use this map when you know the task but not the function name:
 | Compare durable runs | `ledgr_compare_runs()` |
 
 Yahoo data is a convenience source. The sealed snapshot is the ledgr
-artifact; the remote Yahoo endpoint remains outside ledgr’s
+artifact; the remote Yahoo endpoint remains outside ledgrâ€™s
 reproducibility boundary.
 
-## What’s Next?
+## Whatâ€™s Next?
 
 For fills, trades, equity rows, and metric definitions, read
 `vignette("metrics-and-accounting", package = "ledgr")`. For strategy

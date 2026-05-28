@@ -15,6 +15,11 @@
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
 ^coverage\.html$
+^\.quarto$
+^\.quarto-cache$
+^\.quarto-cache-exec$
+^\.localappdata$
+^vignettes/\.quarto$
 ^lib$
 ^lib-wsl$
 ^Rprof\.out$

@@ -73,4 +73,7 @@ inst/extdata/.DS_Store
 
 # Quarto generated state
 /.quarto/
+/.quarto-cache/
+/.quarto-cache-exec/
+/.localappdata/
 /vignettes/.quarto/

@@ -1,8 +1,8 @@
-# On Reproducibility: Provenance and Strategy Tiers
+﻿# On Reproducibility: Provenance and Strategy Tiers
 
 
 ledgr treats a backtest result as an experiment artifact. The question
-is not only “what was the return?” The question is:
+is not only â€œwhat was the return?â€ The question is:
 
 ``` text
 which sealed data, which strategy, which parameters, which features,
@@ -145,12 +145,12 @@ ledgr_run_info(snapshot, "qty_10")
     Tags:            NA
     Snapshot:        research_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Config Hash:     19ecd364c2cdc78392bb7396ed91bed4a726d5857aac0a9abe2ceb844d66ec3b
+    Config Hash:     c86009a2837956d5dd0e54a3d4ae91b95912ab751376c6c33910de9238557dcf
     Strategy Hash:   f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
     Params Hash:     6786f8cb997d23583467dc5ccd46a877431e9b4cacc7b9dda3f1ba50c5657060
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     2.09
+    Elapsed Sec:     1.92
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -218,7 +218,7 @@ function cannot be recovered from provenance alone.
 Stored source is a strong audit artifact, but it is only one part of
 reproducibility. A strategy may call external packages. It may close
 over data objects. It may rely on package versions, system libraries, or
-runtime state outside ledgr’s database. That is why ledgr classifies
+runtime state outside ledgrâ€™s database. That is why ledgr classifies
 strategies before execution.
 
 ## Reproducibility Tiers
@@ -233,9 +233,9 @@ strategies before execution.
 > explicit parameters under its static preflight rules. The strategy
 > depends only on ledgr, base/recommended R, and declared run inputs.
 
-Tier 1 is self-contained under ledgr’s static preflight rules. The
+Tier 1 is self-contained under ledgrâ€™s static preflight rules. The
 strategy can be understood from stored source and explicit parameters,
-using base/recommended R references and ledgr’s exported public
+using base/recommended R references and ledgrâ€™s exported public
 namespace.
 
 ``` r
@@ -266,7 +266,7 @@ ledgr_strategy_preflight(tier_1_strategy)
 > ### Definition
 >
 > Tier 2 means ledgr can inspect and run the strategy, but full replay
-> also depends on environment details outside ledgr’s store, such as
+> also depends on environment details outside ledgrâ€™s store, such as
 > package installation, package versions, system libraries, or immutable
 > captured values.
 
@@ -362,7 +362,7 @@ ledgr_strategy_preflight(tier_3_strategy)
 
 Tier 3 strategies fail before execution. There is no `force = TRUE`
 override on `ledgr_run()` or `ledgr_sweep()`; move external values into
-`params`, qualify package calls, or use ledgr’s exported helpers
+`params`, qualify package calls, or use ledgrâ€™s exported helpers
 instead.
 
 Preflight rejection is the first boundary. A covered Tier 3 strategy
@@ -379,16 +379,16 @@ The most common hard rejections are:
 | process environment | `Sys.getenv("TOKEN")` | external process state is not stored run input |
 | dynamic evaluation | `get("x")`, `eval(expr)`, `assign("x", 1)` | preflight cannot recover the value path as stored metadata |
 | global assignment | `x <<- 1` | strategy mutates state outside the run artifact |
-| context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgr’s execution context |
+| context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgrâ€™s execution context |
 | unresolved helper | `my_helper(ctx)` | helper source is not stored as part of the strategy |
 
 Recommended-R functions such as `stats::median()` remain Tier
-1-compatible when called explicitly or resolved through R’s
+1-compatible when called explicitly or resolved through Râ€™s
 base/recommended namespace. They are not package dependencies outside
 the active R distribution.
 
 Ambient strategy RNG calls such as `runif(1)` are a separate case. They
-are allowed as Tier 2 because ledgr’s execution seed contract can make
+are allowed as Tier 2 because ledgrâ€™s execution seed contract can make
 the strategy run repeatable, but they still deserve scrutiny because the
 random draw is a decision input. This is different from custom-indicator
 RNG restrictions: feature generation must be deterministic for a given

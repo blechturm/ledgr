@@ -39,6 +39,15 @@ release ready because a similar run passed elsewhere.
    - `R CMD check --no-manual --no-build-vignettes`;
    - `tools/check-coverage.R` when coverage behavior changed;
    - pkgdown build when documentation, vignettes, or pkgdown changed.
+   Use release-gate timeouts, not short exploratory command timeouts. Full
+   package tests can legitimately run for more than seven minutes on Windows,
+   and full Quarto/pkgdown documentation renders can exceed two minutes. Start
+   release-gate commands with a timeout budget large enough for the expected
+   gate, for example 15 minutes for full `testthat::test_local()` and at least
+   7 minutes for a full Quarto render. If a command times out while printing
+   normal passing progress, rerun it once with the release-gate timeout before
+   treating the result as a failure. Record both the timeout and the successful
+   rerun in the release-ticket closeout notes.
 3. Verify agent-facing release context:
    - `AGENTS.md` names the current active spec packet and tickets;
    - `AGENTS.md` does not point agents at a completed packet as the active

@@ -8,7 +8,7 @@ evaluation have stabilized enough to share execution identity.
 **Revises:** `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_seed.md`
 **Reviewer response:** `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_response.md`
 **Maintainer decisions:** `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_maintainer_decisions.md`
-**Primary research input:** `inst/design/research/Transaction-Cost Models.md`
+**Primary research input:** `inst/design/research/Transaction-Cost-Models.md`
 **Predecessor RFC thread:** `inst/design/rfc/rfc_cost_model_architecture.md`,
 `inst/design/rfc/rfc_cost_model_architecture_response.md`
 **Constrained by:** `inst/design/contracts.md`,

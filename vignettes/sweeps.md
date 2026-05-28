@@ -1,4 +1,4 @@
-# Exploratory Sweeps And Candidate Promotion
+﻿# Exploratory Sweeps And Candidate Promotion
 
 
 <style>
@@ -42,7 +42,7 @@ data("ledgr_demo_bars", package = "ledgr")
 ```
 
 This article uses `dplyr` for tabular inspection. The sweep itself is
-ledgr’s job.
+ledgrâ€™s job.
 
 ## Sweep Is Exploration
 
@@ -328,7 +328,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_63168c6bb7e3842e
+    # ledgr sweep -- sweep_58d9aaa2ed2b3e3f
     # A tibble: 16 x 7
        run_id            status sharpe_ratio total_return max_drawdown n_trades execution_seed
        <chr>             <chr>         <dbl> <chr>        <chr>           <int>          <int>
@@ -499,7 +499,7 @@ failed_sweep |>
   select(run_id, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_48f0f71c00fbbfcf
+    # ledgr sweep -- sweep_7f1bb6893a628703
     # A tibble: 2 x 2
       run_id                status
       <chr>                 <chr>

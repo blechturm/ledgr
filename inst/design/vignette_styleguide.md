@@ -1,10 +1,10 @@
 # ledgr Vignette Styleguide
 
-**Status:** Draft styleguide for the v0.1.8.5 teachability cycle.
+**Status:** Accepted styleguide from the v0.1.8.5 teachability cycle.
 **Owner:** Maintainer.
-**Canonicalization Point:** After the v0.1.8.5 release gate, revise this file
-against the shipped articles and mark it accepted or carry forward the open
-items.
+**Canonicalization Point:** Canonized at the v0.1.8.5 release gate. Future
+documentation cycles may revise this file, but the rules below describe the
+accepted article bar that shipped with v0.1.8.5.
 **Scope:** Installed user-facing articles and vignettes. README guidance is
 adjacent but README may keep its existing render workflow unless the active
 packet explicitly migrates it.

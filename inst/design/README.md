@@ -2,11 +2,11 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.4`.
-**Current active packet:** `v0.1.8.5` canonical research workflow and
-teachability.
-**Current active packet path:** `inst/design/ledgr_v0_1_8_5_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_4_spec_packet/` is now an archival
+**Latest completed release packet:** `v0.1.8.5`.
+**Current active packet:** None. Use the roadmap and accepted design decisions
+to prepare the next packet; do not implement deferred work without a new packet.
+**Current active packet path:** None.
+The completed `inst/design/ledgr_v0_1_8_5_spec_packet/` is now an archival
 release record.
 
 This directory is the design memory for ledgr. Files here do not all have the
@@ -59,34 +59,25 @@ project must define an explicit compatibility and deprecation policy.
 
 ## Current Planning State
 
-The v0.1.8.4 packet is complete. It delivered active parameterized feature
-aliases, separate feature-grid and strategy-grid helpers, alias-map provenance,
-alias-aware pulse debugging, the demo SMA-crossover teaching fixture, and
-routed v0.1.8.3 auditr fixes that fit the release scope.
-
-- Spec: `ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`.
-- Auditr triage:
-  `ledgr_v0_1_8_4_spec_packet/ledgr_triage_report.md`,
-  `ledgr_v0_1_8_4_spec_packet/categorized_feedback.yml`,
-  `ledgr_v0_1_8_4_spec_packet/cycle_retrospective.md`, and
-  `ledgr_v0_1_8_4_spec_packet/auditr_intake_synthesis.md`.
-- Tickets: `ledgr_v0_1_8_4_spec_packet/v0_1_8_4_tickets.md`.
-- Machine-readable tickets: `ledgr_v0_1_8_4_spec_packet/tickets.yml`.
-
-The active packet is v0.1.8.5 canonical research workflow and teachability,
-including installed-vignette migration to Quarto and article styleguide review.
-It is grounded in
-`rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`.
+The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
+artifact-topology guidance, Quarto installed-vignette migration, README and
+pkgdown reading-flow alignment, experiment-store and reproducibility guidance,
+sweep and execution-semantics articles, and a canonized vignette styleguide. It
+was grounded in `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`.
 
 - Spec: `ledgr_v0_1_8_5_spec_packet/v0_1_8_5_spec.md`.
 - Tickets: `ledgr_v0_1_8_5_spec_packet/v0_1_8_5_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_5_spec_packet/tickets.yml`.
 - Vignette styleguide: `vignette_styleguide.md`.
+- Auditr triage:
+  `ledgr_v0_1_8_5_spec_packet/ledgr_triage_report.md`,
+  `ledgr_v0_1_8_5_spec_packet/categorized_feedback.yml`, and
+  `ledgr_v0_1_8_5_spec_packet/cycle_retrospective.md`.
 
-Do not implement v0.1.8.5 work beyond the spec scope. v0.1.8.5 is
-documentation/workflow alignment first; DuckDB-backed feature storage,
-parallel dispatch, target risk, cost/liquidity, snapshot lineage, live data
-logs, point-in-time regressors, and OMS work remain later milestones.
+There is no active implementation packet after v0.1.8.5 closeout. DuckDB-backed
+feature storage, parallel dispatch, target risk, cost/liquidity, snapshot
+lineage, live data logs, point-in-time regressors, walk-forward, and OMS work
+remain later milestones unless a new packet explicitly scopes them.
 
 ## Core Documents
 
