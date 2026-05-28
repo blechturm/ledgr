@@ -145,4 +145,4 @@ That is a fine reason to bookmark the project and come back to it.
 
 - [Why ledgr is built in R](why-r.html): the design culture argument
 - [Research Workflow](../articles/research-workflow.html): the reproducible research loop
-- [Research to production](../articles/research-to-production.html): the long-term vision
+- [Research to production](../articles/research-to-production.html): the production boundary

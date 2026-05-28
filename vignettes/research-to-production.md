@@ -1,170 +1,128 @@
-Design Philosophy: From Research to Production
-================
+# Research To Production Boundaries
 
-ledgr is built around one design premise: strategies should use the same
-contract across backtest, paper, and live modes. Not a translation of
-research code into production code. Not a reimplementation. The same
-strategy function, the same logic, the same event-sourced ledger model.
 
-This article explains the arc ledgr is designed to cover, how the
-event-sourced model enables it, and where v0.1.x sits on that path.
+ledgr is designed so research evidence can survive later production
+review. A promoted backtest is not production approval, broker
+readiness, or proof of generalization. It is a durable research artifact
+that tells you exactly what was selected and what evidence was attached
+to that selection.
 
-## The Arc
+This article sets that boundary. For the actual research loop, start
+with `vignette("research-workflow", package = "ledgr")`.
 
-``` text
-research  ->  paper trading  ->  live trading
+> [!WARNING]
+>
+> ### Promotion is not deployment
+>
+> Promotion records a selected research candidate as a committed run. It
+> does not authorize capital, create broker orders, prove out-of-sample
+> performance, or replace operational review.
+
+## The Boundary
+
+> [!NOTE]
+>
+> ### Definition
+>
+> The research-to-production boundary is the handoff from a durable
+> research artifact to a separate production-review process. ledgr
+> preserves the research evidence; it does not turn that evidence into a
+> live trading system.
+
+The useful mental model is:
+
+<div class="ledgr-diagram ledgr-research-production-boundary">
+
+``` mermaid
+
+flowchart LR
+  research["research workflow"]
+  artifact["promoted artifact"]
+  review["production review"]
+  future["future paper live adapters"]
+
+  research --> artifact --> review --> future
 ```
 
-Most backtesting libraries stop at the first arrow. The strategy exits
-the research environment as a CSV of returns and is re-implemented in a
-production system that has nothing to do with the backtest. The results
-differ. The bugs differ. The audit trail is gone.
+</div>
 
-ledgr is designed so that the strategy that produced the backtested
-results uses the same contract in production. The event-sourced ledger
-is what makes that continuity possible.
+The arrow into the promoted artifact is ledgr’s current strength: sealed
+data, declared experiments, reproducible execution, provenance,
+promotion notes, and stored result artifacts. The arrows after that are
+explicit boundaries. They require statistical validation, risk review,
+operational controls, and future adapter work.
 
-## The Ledger Is The Bridge
+## What Carries Forward
 
-In ledgr, results are never computed directly from price arrays. Every
-decision -- a target position, a fill, a cash change -- is recorded as
-an immutable event. Equity, trades, and metrics are derived from that
-ledger after the fact.
+The production review starts with evidence that can be reopened:
 
-``` text
-data -> sealed snapshot -> pulses -> event ledger -> results
-```
+| Carry-forward evidence | Canonical home |
+|----|----|
+| selected run, promotion note, and source sweep context | `vignette("research-workflow", package = "ledgr")` |
+| sealed snapshot identity and durable store layout | `vignette("experiment-store", package = "ledgr")` |
+| strategy source, params, feature params, and reproducibility tier | `vignette("reproducibility", package = "ledgr")` |
+| target holdings and next-open fill semantics | `vignette("execution-semantics", package = "ledgr")` |
+| ledger events, fills, trades, equity, and metrics | `vignette("metrics-and-accounting", package = "ledgr")` |
 
-This is not just a correctness choice. It is an architectural choice
-that makes the research-to-production arc coherent. Backtest and paper
-fills share the same ledger event schema, so the reconstruction logic,
-result views, and audit trail work identically across both modes. Live
-trading extends the event stream with broker lifecycle events --
-submissions, acknowledgments, partial fills, rejections -- without
-changing the strategy contract. Safety gates, reconciliation, and
-operational controls are adapter concerns; the strategy itself does not
-change.
+That evidence is useful because it narrows the production-review
+question. You are not asking “what did this notebook happen to do?” You
+are asking whether a named, reopenable artifact deserves further
+validation and operational work.
 
-## The Experiment Store
+## What Does Not Carry Forward Automatically
 
-Before a strategy is deployed it needs to be validated -- not just
-against one parameter set on one data slice, but across many
-combinations and market regimes, with full provenance.
+Do not treat research provenance as an operational system. ledgr’s
+public research layer does not provide:
 
-The ledgr experiment store makes this durable. A **sealed snapshot**
-pins the market data permanently. A **`run_id`** is an immutable
-experiment key. Strategy identity is captured from source text and
-parameters. Every run is auditable and discoverable after the R session
-ends.
+- paper or live broker adapters;
+- an OMS lifecycle with submissions, acknowledgments, partial fills,
+  cancels, rejections, and reconciliation;
+- live data logs or point-in-time external regressors;
+- automatic target-risk constraints such as long-only, max-weight, or
+  capital floor enforcement;
+- public liquidity, borrow, margin, or financing models;
+- walk-forward proof of generalization unless you add that evaluation
+  layer.
 
-This is a concrete user-facing workflow:
+The ledger reconstructs ledgr’s expected state from recorded events. In
+paper and live modes, that expected state must still be reconciled
+against broker-reported orders, positions, cash, and fills before
+trading resumes.
 
-``` r
-snapshot <- ledgr_snapshot_load(db_path, "snapshot_id")
+> [!IMPORTANT]
+>
+> ### Roadmap boundary
+>
+> Paper/live adapters are v0.3.0+ roadmap scope. Research-mode artifacts
+> should be shaped so they can support that later work, but this article
+> does not pull broker, OMS, or live-data behavior into the current
+> research workflow.
 
-runs <- ledgr_run_list(snapshot)
+## Production Review Checklist
 
-info <- ledgr_run_info(snapshot, "sma_20_production_candidate")
+Before a promoted run becomes a production candidate, write down:
 
-bt <- ledgr_run_open(snapshot, "sma_20_production_candidate")
-ledgr_results(bt, what = "equity")
+- the promoted `run_id` and promotion note;
+- whether the result has walk-forward or held-out evidence;
+- the ranking rule that selected the candidate;
+- the risk, cost, capital, and liquidity assumptions that are not
+  enforced by the research run;
+- the data-source limitations, timestamp assumptions, and survivorship
+  assumptions;
+- the operational dependencies that live outside ledgr’s research
+  artifacts.
 
-snapshot <- snapshot |>
-  ledgr_run_label("sma_20_production_candidate", "approved-baseline") |>
-  ledgr_run_archive("discarded-parameter-test", reason = "bad regime fit")
-```
+The checklist is intentionally human-readable. ledgr keeps the
+machine-readable artifact trail; production review still needs a person
+to state the assumptions.
 
-`run_id` is the immutable experiment key. `label`, tags, and archive
-state are mutable metadata only; they do not change the snapshot hash,
-strategy source hash, strategy parameter hash, config hash, or ledger
-artifacts. Older runs created before provenance capture remain
-inspectable as legacy/pre-provenance runs, but they cannot be upgraded
-into fully reproducible experiments after the fact.
+## Related Articles
 
-The research workflow before deployment has two phases:
-
-**Commit**. Full provenance run. Validate named candidates with durable
-artifacts: sealed snapshot hash, strategy source hash, parameter hash,
-config hash, ledgr and R version, dependency versions, compact
-telemetry, and result artifacts. Use `ledgr_compare_runs()` to compare
-named variants and `ledgr_extract_strategy()` to inspect stored strategy
-source.
-
-**Explore**. Fast parameter sweep mode builds on the same experiment
-object and parity contracts. Use sweep mode to evaluate parameter-grid
-candidates without committing each candidate as a durable run, then
-promote a selected candidate when it should become an auditable stored
-run.
-
-## The Edge Device
-
-DuckDB runs anywhere R runs, including ARM edge hardware such as a
-Raspberry Pi or a small cloud VPS. A validated strategy can be deployed
-to an edge device with an R instance, a DuckDB experiment store, and a
-broker adapter.
-
-The device maintains its own ledger, appending live fills to the same
-schema the backtest used. If the device restarts,
-`ledgr_state_reconstruct()` rebuilds current positions and cash from the
-ledger events. No in-memory state is trusted across restarts. The ledger
-reconstructs ledgr's expected state. In paper and live modes, that
-expected state must still be reconciled against broker-reported orders,
-positions, cash, and fills before trading resumes.
-
-This makes the deployment target simpler than traditional production
-systems. There is no separate database, no separate execution engine, no
-translation layer. R, DuckDB, and a broker adapter are sufficient for
-systematic EOD and low-frequency intraday strategies.
-
-## The Strategy Contract
-
-The sweep-to-production path works cleanly for strategies written as
-self-contained `function(ctx, params)` functions with explicit,
-JSON-safe parameters and no hidden mutable state:
-
-``` r
-sma_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  for (id in ctx$universe) {
-    values <- c(sma = ctx$feature(id, paste0("ttr_sma_", params$window)))
-    if (passed_warmup(values) && ctx$close(id) > values[["sma"]]) {
-      targets[id] <- params$quantity
-    }
-  }
-  targets
-}
-```
-
-This is Tier 1 reproducibility: the strategy is fully self-contained,
-its parameters are hashable, and its source is capturable. Tier 1
-strategies earn full experiment-store identity -- source hash, parameter
-hash, provenance metadata -- and are the natural fit for sweep mode and
-edge deployment.
-
-ledgr supports less constrained strategies too, but the reproducibility
-tier is always visible in run provenance. The trust boundary is
-explicit, not hidden.
-
-## What v0.1.x Delivers Today
-
-v0.1.x is the research layer:
-
-- sealed snapshots and deterministic replay across machines and R
-  sessions;
-- reproducible backtests with next-open fill semantics and an
-  append-only ledger;
-- a TTR indicator adapter with deterministic warmup, vectorized
-  precomputation, and session-scoped feature caching;
-- an experiment store with run discovery, provenance, labeling, and
-  archival;
-- experiment-first execution, run comparison, strategy-source
-  inspection, parameter sweeps, promotion context, and a deterministic
-  demo dataset.
-
-Paper and live trading adapters, OMS state machine semantics, and
-observability tooling follow in the v0.2.x and v0.3.x range.
-
-The path from a validated experiment-store entry to a running edge
-device is shorter than it looks. The research work done in v0.1.x is not
-throwaway scaffolding -- it is the foundation the production system
-builds on.
+- `vignette("research-workflow", package = "ledgr")` for the canonical
+  research loop.
+- `vignette("experiment-store", package = "ledgr")` for durable
+  artifacts and reopening stored runs.
+- `vignette("reproducibility", package = "ledgr")` for provenance and
+  replay boundaries.
+- `vignette("execution-semantics", package = "ledgr")` for target
+  holdings and fill timing.

@@ -606,18 +606,18 @@ scope: quarto_migration
 Priority: P2
 Effort: S
 Dependencies: LDG-2443, LDG-2436, LDG-2437, LDG-2438, LDG-2444
-Status: Pending
+Status: Completed
 
 ### Description
 
 Resolve the relationship between the new canonical workflow article and the
-existing `research-to-production.Rmd` article, then perform a redundancy pass
+existing `research-to-production` article, then perform a redundancy pass
 so vignettes have one primary job and do not compete on core contract
 explanations.
 
 ### Tasks
 
-- Narrow `research-to-production.Rmd` to promotion boundaries,
+- Narrow `research-to-production` to promotion boundaries,
   production caveats, and future paper/live context, or remove it from the
   main reading flow if it remains redundant.
 - Ensure the article points to `research-workflow.qmd` for the research path.
@@ -630,7 +630,7 @@ explanations.
 
 ### Acceptance Criteria
 
-- `research-to-production.Rmd` no longer competes with
+- `research-to-production` no longer competes with
   `research-workflow.qmd`.
 - If retained, Research-To-Production has a `.qmd` canonical source and renders
   under the Quarto pipeline.
@@ -648,8 +648,19 @@ and pkgdown navigation review.
 ### Source Reference
 
 - `v0_1_8_5_spec.md` Sections 6.1, 6.7, and 10
-- `vignettes/research-to-production.Rmd`
+- `vignettes/research-to-production.qmd`
 - `_pkgdown.yml`
+
+### Completion Notes
+
+- Retained the article as `research-to-production.qmd`, renamed it to
+  "Research To Production Boundaries", and narrowed it to promotion caveats,
+  production review, broker reconciliation, and future paper/live scope.
+- Kept `research-workflow.qmd` as the canonical research path and changed the
+  background link wording so this article is not presented as a workflow
+  substitute.
+- Verified the article renders through Quarto and updated the broker
+  reconciliation documentation contract to read the `.qmd` source.
 
 ### Classification
 

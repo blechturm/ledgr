@@ -1331,12 +1331,15 @@ testthat::test_that("leakage article teaches boundaries without overclaiming", {
 })
 
 testthat::test_that("research-to-production docs do not overclaim broker reconciliation", {
-  doc <- paste(readLines(ledgr_test_source_vignette("research-to-production.Rmd"), warn = FALSE), collapse = "\n")
+  doc <- paste(readLines(ledgr_test_source_vignette("research-to-production.qmd"), warn = FALSE), collapse = "\n")
 
   testthat::expect_no_match(doc, "No reconciliation step is needed", fixed = TRUE)
   testthat::expect_no_match(doc, "The ledger is the state", fixed = TRUE)
+  testthat::expect_match(doc, "Promotion is not deployment", fixed = TRUE)
+  testthat::expect_match(doc, "research-to-production boundary", fixed = TRUE)
   testthat::expect_match(doc, "The ledger reconstructs ledgr's expected state", fixed = TRUE)
   testthat::expect_match(doc, "reconciled against broker-reported", fixed = TRUE)
+  testthat::expect_match(doc, "Paper/live adapters are v0.3.0+ roadmap scope", fixed = TRUE)
 })
 
 testthat::test_that("custom indicator article replaces stale placeholders", {

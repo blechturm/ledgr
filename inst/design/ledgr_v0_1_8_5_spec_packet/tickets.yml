@@ -86,7 +86,7 @@ tickets:
 
   - id: "LDG-2439"
     title: "Research-To-Production Disposition And Redundancy Cleanup"
-    status: "pending"
+    status: "completed"
     priority: "P2"
     effort: "S"
     dependencies:
