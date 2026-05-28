@@ -19,7 +19,7 @@ tickets:
 
   - id: "LDG-2446"
     title: "Feature Cache-Key Deduplication"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

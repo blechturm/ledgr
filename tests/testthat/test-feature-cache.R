@@ -146,3 +146,75 @@ testthat::test_that("feature cache key changes with indicator identity and date 
   testthat::expect_true(nzchar(ledgr:::ledgr_feature_engine_version()))
   testthat::expect_false(identical(ledgr:::ledgr_feature_engine_version(), "v0.1.4-series-fn-1"))
 })
+
+testthat::test_that("hoisted feature cache key parts match canonical key", {
+  expect_key_parity <- function(def) {
+    fingerprint <- ledgr:::ledgr_feature_def_fingerprint(def)
+    engine_version <- ledgr:::ledgr_feature_engine_version()
+
+    canonical <- ledgr:::ledgr_feature_cache_key(
+      snapshot_hash = "same-snapshot-hash",
+      instrument_id = "TEST_A",
+      feature_def = def,
+      start_ts_utc = "2020-01-01T00:00:00Z",
+      end_ts_utc = "2020-01-10T00:00:00Z"
+    )
+    hoisted <- ledgr:::ledgr_feature_cache_key_from_parts(
+      snapshot_hash = "same-snapshot-hash",
+      instrument_id = "TEST_A",
+      feature_fingerprint = fingerprint,
+      feature_engine_version = engine_version,
+      start_ts_utc = "2020-01-01T00:00:00Z",
+      end_ts_utc = "2020-01-10T00:00:00Z"
+    )
+
+    testthat::expect_identical(hoisted, canonical)
+  }
+
+  scalar_def <- list(
+    id = "scalar_probe",
+    requires_bars = 1L,
+    stable_after = 1L,
+    fn = function(window) tail(window$close, 1),
+    series_fn = function(bars, params = list()) bars$close,
+    params = list()
+  )
+  parameterized_def <- scalar_def
+  parameterized_def$id <- "parameterized_probe"
+  parameterized_def$params <- list(n = 5L, method = "sma")
+  explicit_def <- scalar_def
+  explicit_def$id <- "explicit_probe"
+  explicit_def$fingerprint <- "explicit-feature-fingerprint"
+
+  expect_key_parity(scalar_def)
+  expect_key_parity(parameterized_def)
+  expect_key_parity(explicit_def)
+})
+
+testthat::test_that("hoisted feature cache key parts match bundle output keys", {
+  testthat::skip_if_not_installed("TTR")
+
+  bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), n = 5)
+  defs <- ledgr:::ledgr_precompute_feature_defs_from_indicators(
+    ledgr:::ledgr_indicator_bundle_indicators(bundle)
+  )
+
+  for (def in defs) {
+    canonical <- ledgr:::ledgr_feature_cache_key(
+      snapshot_hash = "same-snapshot-hash",
+      instrument_id = "TEST_A",
+      feature_def = def,
+      start_ts_utc = "2020-01-01T00:00:00Z",
+      end_ts_utc = "2020-01-10T00:00:00Z"
+    )
+    hoisted <- ledgr:::ledgr_feature_cache_key_from_parts(
+      snapshot_hash = "same-snapshot-hash",
+      instrument_id = "TEST_A",
+      feature_fingerprint = ledgr:::ledgr_feature_def_fingerprint(def),
+      feature_engine_version = ledgr:::ledgr_feature_engine_version(),
+      start_ts_utc = "2020-01-01T00:00:00Z",
+      end_ts_utc = "2020-01-10T00:00:00Z"
+    )
+    testthat::expect_identical(hoisted, canonical)
+  }
+})

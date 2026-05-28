@@ -55,13 +55,14 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
 
   resolved <- ledgr_precompute_resolve_grid(exp, param_grid)
   unique_defs <- ledgr_precompute_unique_feature_defs(resolved$candidates)
+  feature_engine_version <- ledgr_feature_engine_version()
   payload <- ledgr_precompute_payload(unique_defs, bars_by_id)
   pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
   projection <- ledgr_projection_from_payload(
     payload = payload,
     universe = exp$universe,
     pulses_posix = pulses_posix,
-    feature_engine_version = ledgr_feature_engine_version(),
+    feature_engine_version = feature_engine_version,
     alias_index = NULL
   )
   warmup <- ledgr_precompute_warmup_table(resolved$candidates, bars_by_id, range$scoring_start)
@@ -72,7 +73,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     universe = exp$universe,
     scoring_range = list(start = range$scoring_start, end = range$scoring_end),
     warmup_range = list(start = range$warmup_start, end = range$scoring_start),
-    feature_engine_version = ledgr_feature_engine_version(),
+    feature_engine_version = feature_engine_version,
     grid_labels = param_grid$labels,
     feature_union = ledgr_precompute_feature_union(unique_defs),
     candidate_features = resolved$candidate_features,

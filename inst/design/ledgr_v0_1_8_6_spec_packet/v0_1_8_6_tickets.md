@@ -120,7 +120,7 @@ scope: v0.1.8.6
 Priority: P0
 Effort: M
 Dependencies: LDG-2445
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -156,6 +156,20 @@ accepted feature-projection synthesis.
 Targeted feature-cache/fingerprint tests, relevant feature precompute tests,
 and current-source spike remeasurement via `pkgload::load_all(".")` or an
 equivalent source guard.
+
+Completion note:
+
+- Targeted tests passed:
+  `test-feature-cache.R`, `test-precompute-features.R`, and
+  `test-fingerprint-stability.R`.
+- The run path hoists the per-feature fingerprint and feature-engine version
+  used by session-cache keys; the sweep-precompute path also hoists the
+  feature-engine version reused by the projection and precomputed payload
+  metadata.
+- Current-source spike remeasurement, 100 instruments x 126 pulses x 20
+  features, `iters = 1`: `t_pre = 2.02s`, `warm_t_pre = 2.64s`,
+  `t_loop = 0.49s`, `t_wall = 7.87s`. The accepted RFC baseline for the same
+  shape recorded `t_pre ~ 6.27s`.
 
 ### Source Reference
 
