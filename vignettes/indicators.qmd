@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Indicators And Feature IDs"
 format:
   html:
