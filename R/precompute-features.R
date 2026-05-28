@@ -45,6 +45,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
   if (!inherits(param_grid, "ledgr_param_grid")) {
     rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
   }
+  ledgr_validate_feature_factory_grid(exp, param_grid)
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- ledgr_precompute_scoring_range(meta, start = start, end = end)

@@ -10,6 +10,7 @@
 #' - Timestamp format: ISO8601 UTC with trailing `Z`, e.g. `2020-01-01T00:00:00Z`
 #' - Encoding: UTF-8 (BOM tolerated and stripped)
 #' - Rounding: OHLCV are rounded to 8 decimals on import
+#' - Extra columns: ignored; only canonical bar columns are persisted and hashed
 #'
 #' @param con A DBI connection to DuckDB.
 #' @param snapshot_id Snapshot id (must exist and be status `CREATED`).
@@ -28,6 +29,26 @@
 #'
 #' CSV and OHLC errors are import/seal errors. They occur before a snapshot can
 #' be loaded into an experiment or executed by a strategy.
+#'
+#' @section Low-level CSV lifecycle:
+#' Most users should prefer `ledgr_snapshot_from_csv()`. Use
+#' `ledgr_snapshot_import_bars_csv()` directly only when you need to control the
+#' create/import/seal lifecycle yourself:
+#'
+#' 1. create the snapshot envelope with `ledgr_snapshot_create()`;
+#' 2. import bars into that `CREATED` snapshot;
+#' 3. seal it with `ledgr_snapshot_seal()` to validate bars and write the
+#'    snapshot hash;
+#' 4. inspect metadata with `ledgr_snapshot_info()` if needed;
+#' 5. disconnect the write connection and reopen with
+#'    `ledgr_snapshot_load(..., verify = TRUE)`;
+#' 6. pass the loaded snapshot to `ledgr_experiment()` and `ledgr_run()`.
+#'
+#' `bar_count` and `instrument_count` are live counts from the sealed snapshot
+#' tables. The raw `meta_json` is envelope metadata on the snapshot row;
+#' seal-time metadata inside it uses `n_bars` and `n_instruments`. Snapshot
+#' identity does not come from that metadata. `snapshot_hash` identifies the
+#' normalized bars and instruments only.
 #'
 #' @section Articles:
 #' Durable experiment stores:
@@ -52,7 +73,21 @@
 #'   volume = 1000
 #' ), bars_csv, row.names = FALSE)
 #' ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv)
+#' snapshot_hash <- ledgr_snapshot_seal(con, snapshot_id)
+#' snapshot_info <- ledgr_snapshot_info(con, snapshot_id)
 #' DBI::dbDisconnect(con, shutdown = TRUE)
+#'
+#' snapshot <- ledgr_snapshot_load(
+#'   db_path,
+#'   snapshot_id = snapshot_id,
+#'   verify = TRUE
+#' )
+#' snapshot_hash
+#' snapshot_info[
+#'   ,
+#'   c("snapshot_id", "status", "snapshot_hash", "bar_count", "instrument_count")
+#' ]
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_snapshot_import_bars_csv <- function(con,
                                           snapshot_id,

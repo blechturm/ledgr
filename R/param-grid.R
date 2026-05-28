@@ -9,9 +9,13 @@
 #' stable `grid_<hash>` label derived from ledgr's canonical JSON encoding of
 #' the parameter list. Grid labels are labels only; they are not run IDs.
 #'
-#' Indicator parameters can live in the same list as strategy parameters when an
-#' experiment uses `features = function(params) ...`. There is no separate
-#' indicator-sweep API in v0.1.8.
+#' `ledgr_param_grid()` is the compatibility helper for manually named
+#' strategy-parameter lists and old flat-grid workflows. It can still support
+#' legacy feature-factory experiments where indicator parameters live in the same
+#' list as strategy parameters. Do not use that shape for new parameterized
+#' feature sweeps. Use `ledgr_feature_grid()`, `ledgr_strategy_grid()`, and
+#' `ledgr_grid_cross()` so feature-materialization parameters and
+#' strategy-runtime parameters stay in separate namespaces.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -82,7 +86,8 @@ ledgr_param_grid_auto_label <- function(params) {
 #'
 #' These helpers keep feature-materialization parameters and strategy-runtime
 #' parameters in separate namespaces before composing executable sweep
-#' candidates.
+#' candidates. They are the canonical v0.1.8.5 authoring path for sweeps that
+#' vary ledgr-owned indicator parameters behind active aliases.
 #'
 #' @param ... Named grid columns for `ledgr_feature_grid()` and
 #'   `ledgr_strategy_grid()`, or named executable candidate specs for

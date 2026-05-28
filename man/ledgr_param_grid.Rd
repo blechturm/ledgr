@@ -23,9 +23,13 @@ arguments preserve their names as grid labels. Unnamed arguments receive a
 stable \verb{grid_<hash>} label derived from ledgr's canonical JSON encoding of
 the parameter list. Grid labels are labels only; they are not run IDs.
 
-Indicator parameters can live in the same list as strategy parameters when an
-experiment uses \code{features = function(params) ...}. There is no separate
-indicator-sweep API in v0.1.8.
+\code{ledgr_param_grid()} is the compatibility helper for manually named
+strategy-parameter lists and old flat-grid workflows. It can still support
+legacy feature-factory experiments where indicator parameters live in the same
+list as strategy parameters. Do not use that shape for new parameterized
+feature sweeps. Use \code{ledgr_feature_grid()}, \code{ledgr_strategy_grid()}, and
+\code{ledgr_grid_cross()} so feature-materialization parameters and
+strategy-runtime parameters stay in separate namespaces.
 }
 \section{Articles}{
 

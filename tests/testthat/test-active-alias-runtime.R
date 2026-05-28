@@ -84,6 +84,73 @@ testthat::test_that("sweeps keep feature params separate from strategy params", 
   testthat::expect_match(out$provenance[[1]]$alias_map_json, "signal", fixed = TRUE)
 })
 
+testthat::test_that("parameterized active-alias bundle sweeps resolve concrete outputs", {
+  testthat::skip_if_not_installed("TTR")
+
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:30)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  features <- ledgr_feature_map(
+    bands = ledgr_ind_ttr_outputs(
+      "BBands",
+      input = "close",
+      outputs = c("dn", "up"),
+      n = ledgr_param("bb_n")
+    )
+  )
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    x <- ctx$features("AAA")
+    if (passed_warmup(x) && x[["bbands_up"]] > x[["bbands_dn"]]) {
+      targets["AAA"] <- params$qty
+    }
+    targets
+  }
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  grid <- ledgr_grid_cross(
+    features = ledgr_feature_grid(bb_n = c(5L, 8L)),
+    strategy = ledgr_strategy_grid(qty = 1)
+  )
+
+  out <- ledgr_sweep(exp, grid)
+  candidate_features <- attr(out, "candidate_features")
+
+  testthat::expect_true(all(out$status == "DONE"))
+  testthat::expect_identical(out$feature_params[[1]], list(bb_n = 5L))
+  testthat::expect_true(all(c("bbands_dn", "bbands_up") %in% names(candidate_features$alias_map[[1]])))
+  testthat::expect_false(identical(
+    candidate_features$feature_ids[[1]],
+    candidate_features$feature_ids[[2]]
+  ))
+  testthat::expect_match(out$provenance[[1]]$alias_map_json, "bbands_dn", fixed = TRUE)
+})
+
+testthat::test_that("legacy feature factories reject executable feature grids", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  features <- function(params) list(ledgr_ind_sma(params$n))
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  executable_grid <- ledgr_grid_cross(
+    features = ledgr_feature_grid(n = c(2L, 3L)),
+    strategy = ledgr_strategy_grid(qty = 1)
+  )
+  flat_grid <- ledgr_param_grid(short = list(n = 2L, qty = 1))
+
+  testthat::expect_error(
+    ledgr_sweep(exp, executable_grid),
+    class = "ledgr_legacy_feature_factory_feature_params_unsupported"
+  )
+  testthat::expect_error(
+    ledgr_precompute_features(exp, executable_grid),
+    class = "ledgr_legacy_feature_factory_feature_params_unsupported"
+  )
+  testthat::expect_s3_class(ledgr_sweep(exp, flat_grid), "ledgr_sweep_results")
+})
+
 testthat::test_that("promotion replays active alias feature params", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))

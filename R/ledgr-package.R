@@ -15,12 +15,14 @@
 #' `system.file("doc", package = "ledgr")`
 #'
 #' Core installed articles:
-#' - `vignette("getting-started", package = "ledgr")`
-#' - `system.file("doc", "getting-started.html", package = "ledgr")`
+#' - `vignette("research-workflow", package = "ledgr")`
+#' - `system.file("doc", "research-workflow.html", package = "ledgr")`
 #' - `vignette("strategy-development", package = "ledgr")`
 #' - `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' - `vignette("metrics-and-accounting", package = "ledgr")`
 #' - `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#' - `vignette("execution-semantics", package = "ledgr")`
+#' - `system.file("doc", "execution-semantics.html", package = "ledgr")`
 #' - `vignette("experiment-store", package = "ledgr")`
 #' - `system.file("doc", "experiment-store.html", package = "ledgr")`
 #' - `vignette("sweeps", package = "ledgr")`

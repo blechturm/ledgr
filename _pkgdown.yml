@@ -11,7 +11,7 @@ articles:
     navbar: Start Here
     contents:
       - articles/who-ledgr-is-for
-      - getting-started
+      - research-workflow
       - leakage
       - reproducibility
   - title: Core Workflow
@@ -20,6 +20,7 @@ articles:
       - strategy-development
       - indicators
       - custom-indicators
+      - execution-semantics
       - metrics-and-accounting
       - experiment-store
       - sweeps

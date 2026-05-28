@@ -27,10 +27,11 @@ Read before implementing any non-trivial change:
 - Design index: `inst/design/README.md`
 - Execution contracts (authoritative): `inst/design/contracts.md`
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
+- RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.4 release close; update this block when
-the v0.1.8.5 packet is cut or scope changes materially):
+Current planning context (post-v0.1.8.5 release close; update this block when
+the next packet is cut or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -48,13 +49,19 @@ the v0.1.8.5 packet is cut or scope changes materially):
 - v0.1.8.4 combined active parameterized feature aliases with pulled-forward
   feature-grid and strategy-grid construction helpers plus routed v0.1.8.3
   auditr findings.
-- The next planned implementation scope is v0.1.8.5 canonical research
-  workflow and artifact-topology documentation. Do not implement it until a
-  v0.1.8.5 packet and tickets are cut.
+- The completed v0.1.8.5 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_5_spec_packet/v0_1_8_5_spec.md`,
+  `inst/design/ledgr_v0_1_8_5_spec_packet/v0_1_8_5_tickets.md`,
+  `inst/design/ledgr_v0_1_8_5_spec_packet/tickets.yml`, and
+  `inst/design/ledgr_v0_1_8_5_spec_packet/cycle_retrospective.md`.
+- No next packet is active yet. Use `inst/design/ledgr_roadmap.md`, accepted
+  RFC syntheses, and `inst/design/horizon.md` to prepare the next packet; do
+  not implement deferred work without a new packet.
 - Keep DuckDB-backed precompute storage, out-of-core projection, parallel
   dispatch, target risk, walk-forward, cost/liquidity, OMS, benchmark, split
-  stores, live data logs, point-in-time regressors, and external-provider work
-  deferred unless a new packet explicitly scopes it.
+  stores, live data logs, point-in-time regressors, scaffold generation,
+  companion-repository implementation, and external-provider work deferred
+  unless a new packet explicitly scopes it.
 
 ## Active Design Entry Points
 

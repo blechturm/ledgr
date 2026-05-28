@@ -4,9 +4,8 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
-**Next planned packet:** v0.1.8.5 canonical research workflow and
-artifact-topology documentation.
-**Active packet path:** none cut.
+**Active packet:** v0.1.8.5 canonical research workflow and teachability.
+**Active packet path:** `inst/design/ledgr_v0_1_8_5_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -99,11 +98,12 @@ versioned packet.
 | v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
 | v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
-| v0.1.8.5 | Planned | Canonical research workflow and artifact-topology documentation after active aliases and grid UX stabilize. | Future packet |
-| v0.1.8.6 | Planned | DuckDB-backed feature storage / out-of-core projection candidate if residual evidence justifies it. | Future packet |
+| v0.1.8.5 | Active | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
+| v0.1.8.6 | Planned | DuckDB feature-storage measurement spike, snapshot administration and ETL provenance implementation, and research-loop ergonomics helpers (sweep review and promotion recovery summary); RFC-driven. | Future packet; horizon entries |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
+| v0.1.8.8 | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
-| v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet |
+| v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
 | v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
 | v0.1.9.x | Planned | Sweep artifact persistence for compact search-space audit. | Future packet |
@@ -555,7 +555,7 @@ Constraints:
 - coordinate pulse-context additions with the accepted v0.1.9 target-risk
   chain design.
 
-### v0.1.8.5 Canonical Research Workflow And Artifact Topology
+### v0.1.8.5 Canonical Research Workflow And Teachability
 
 Authoritative input:
 
@@ -597,25 +597,116 @@ Constraints:
 - parallel dispatch must later coordinate durable writes rather than imply
   unsynchronized worker writes to one DuckDB store.
 
-### v0.1.8.6 DuckDB-Backed Feature Storage / Out-Of-Core Projection Candidate
+### v0.1.8.6 DuckDB Feature Storage Spike, Snapshot Administration, And Research-Loop Helpers
+
+v0.1.8.6 hosts three coordinated workstreams. They share a release but are
+scoped and decided independently.
+
+Sequencing:
+
+- A full RFC cycle on snapshot administration and ETL provenance metadata
+  must conclude before the v0.1.8.6 spec is cut. The horizon entry is the
+  seed-shape input. The research-loop ergonomics helpers (Workstream C)
+  fold into the same RFC because the promotion-recovery summary couples
+  directly to the snapshot/run metadata model; the RFC synthesis decides
+  helper shape alongside metadata shape.
+- The DuckDB feature-storage spike remains a measurement-and-decision
+  packet; its outcome is decided after the spike runs, independently of
+  the snapshot administration and helpers RFC.
+
+#### Workstream A: Snapshot Administration And ETL Provenance
 
 Intent:
 
-- persist precomputed concrete feature libraries in DuckDB if residual evidence
-  shows memory scaling, repeated precompute, ML/export, or worker sharing as a
-  load-bearing bottleneck;
-- add a DuckDB-backed implementation of the v0.1.8.3 projection interface using
-  pulse-block buffering;
-- share storage direction with the deferred layer 4 research/export artifact;
-- keep DBI access at block boundaries, not per pulse;
-- preserve the R `series_fn()` / TTR / custom-indicator extension surface.
+- close the v0.1.8.5 USP-defensibility gap by giving users a first-class
+  surface to record ETL provenance, free-text notes, labels, and authorship
+  at snapshot creation;
+- expose listing and filtering APIs so a research project store with many
+  snapshots is navigable without ID memorization;
+- separate engine-computed metadata, user-supplied descriptive metadata,
+  and administrative lifecycle state in both schema and public API;
+- define ledgr's data-provenance model as the substrate that future v0.2.x
+  point-in-time, corporate-actions, and snapshot-lineage work will extend.
+
+Authoritative input (planned):
+
+- RFC cycle on snapshot administration and provenance metadata, to be cut
+  after v0.1.8.5 closes and before the v0.1.8.6 spec is cut;
+- `inst/design/horizon.md` snapshot-administration entry as the seed-shape
+  input.
+
+Constraints:
+
+- `snapshot_hash` must not depend on mutable user metadata;
+- ETL provenance recorded at create/seal time is append-only thereafter;
+  administrative edits go through an audit-logged path if the RFC promotes
+  one;
+- listing surface filters by snapshot-level fields only; it does not
+  become a bar-data query engine;
+- migration path or explicit pre-CRAN "rerun your experiments" gate must
+  ship with any schema change;
+- ledgr stores user metadata faithfully but does not interpret it as
+  execution identity, feature identity, or selection input;
+- the three-category separation (engine-computed / user-supplied /
+  lifecycle) is the load-bearing design constraint and must be preserved
+  in both schema and API.
+
+Non-scope:
+
+- no production deployment registry;
+- no external data-catalog integration;
+- no schema migration tooling for non-ledgr stores;
+- no automatic ETL inference from data sources.
+
+#### Workstream B: DuckDB Feature Storage Spike
+
+Intent:
+
+- measure whether DuckDB-backed feature storage or out-of-core projection is
+  actually needed after the v0.1.8.3 R-memory runtime projection and v0.1.8.4
+  active-alias/grid UX have stabilized;
+- compare the current R-memory projection path against a prototype
+  DuckDB-backed, block-hydrated projection path on representative workloads;
+- decide whether to implement, defer, or reject a durable feature-library
+  storage surface before v0.1.8.7 parallel dispatch;
+- preserve the R `series_fn()` / TTR / custom-indicator extension surface in
+  every prototype;
+- keep DBI access at block boundaries, never per pulse.
+
+This workstream is a measurement and decision packet first. It must not
+automatically become a storage implementation release. A DuckDB-backed
+projection or feature library should ship only if the spike shows a clear
+bottleneck that the current R-memory projection path cannot handle with
+smaller changes.
+
+Required spike comparisons:
+
+- small EOD workflows where the current in-memory path should remain the
+  reference baseline;
+- wider EOD feature grids with active aliases and shared concrete-feature
+  unions;
+- repeated candidate families where feature precompute reuse could matter;
+- larger-universe or intraday-like synthetic stress cases to expose memory,
+  hydration, and file-size ceilings without claiming intraday support;
+- optional worker-read or worker-transport probes if they directly inform the
+  v0.1.8.7 parallel-dispatch decision.
+
+Measurement outputs:
+
+- wall-clock runtime by phase: feature materialization, projection hydration,
+  fold execution, and summary reconstruction;
+- peak R memory and serialized payload size;
+- DuckDB file size, query/hydration time, and block size sensitivity;
+- per-candidate setup cost and any shared-library reuse benefit;
+- evidence about whether the bottleneck is storage, transport, fold execution,
+  or post-candidate reconstruction.
 
 Readiness gates:
 
 - v0.1.8.3 runtime projection interface and R-memory backend have landed;
 - v0.1.8.4 active aliases have fixed alias-map identity and grid-level
   concrete-feature-union semantics;
-- v0.1.8.5 workflow synthesis has clarified which artifact topology remains
+- v0.1.8.5 workflow spec has clarified which artifact topology remains
   documentation-only and which storage surfaces require first-class APIs;
 - post-v0.1.8.3 residual evidence shows memory scaling, repeated precompute,
   ML/export, or parallel-worker sharing is the next bottleneck.
@@ -625,7 +716,67 @@ Constraints:
 - no per-pulse DBI traffic;
 - no DuckDB-implemented indicator computation without a separate RFC;
 - no second feature engine;
+- no public storage API, schema, or migration promise unless the spike is
+  promoted by the spec and release decision;
 - no public ML/export API unless explicitly promoted through a spec packet.
+
+Exit decisions:
+
+- **Implement:** only if evidence shows a material bottleneck and a
+  block-hydrated DuckDB path beats or complements the R-memory path without
+  weakening determinism, portability, or feature identity.
+- **Defer:** if DuckDB-backed storage is plausible but not yet load-bearing.
+- **Reject for now:** if the bottleneck remains fold execution,
+  pulse-context churn, or summary reconstruction rather than feature storage.
+
+#### Workstream C: Research-Loop Ergonomics Helpers
+
+Intent:
+
+- ship the two API gaps that the v0.1.8.5 canonical workflow article had to
+  flag with user-visible "Design note" and "API gap" callouts because the
+  underlying surfaces existed only at the lower level;
+- add a sweep-review helper that ranks completed candidates by an explicit
+  rule, returns a compact review table, separates issue rows, and keeps the
+  ranking rule visible at the call site;
+- add a promotion-recovery-summary helper that returns one compact object
+  describing a promoted run's "what caused this result?" record without
+  asking users to navigate nested `promotion_context` fields or to call
+  `ledgr_extract_strategy()` separately;
+- revise the workflow article's "Design note" and "API gap" callouts to
+  reference the new helpers, or remove them if the helpers make the
+  lower-level paths unnecessary in the teaching arc.
+
+Authoritative input (planned):
+
+- the same snapshot administration RFC that drives Workstream A, since the
+  promotion-recovery summary couples directly to the snapshot/run metadata
+  model;
+- `inst/design/horizon.md` research-loop ergonomics entry as the seed-shape
+  input.
+
+Constraints:
+
+- helpers do not replace `ledgr_results()`, `ledgr_run_info()`,
+  `ledgr_extract_strategy()`, `ledgr_candidate()`, or the underlying
+  promotion-context fields; they are summary surfaces over those APIs,
+  not parallel ones;
+- the sweep-review helper must require an explicit rank-by argument or
+  return the chosen rule alongside the rows; no silent default metric;
+- the recovery summary must distinguish stored facts (parameters, hashes,
+  note) from interpretation (reproducibility tier, hash-verification
+  status, recovery limitations); Tier 1 and Tier 2 strategies must not
+  collapse into a single "verified" status;
+- output is inspectable as a plain data frame or named list, never an
+  opaque print-only object;
+- the lower-level paths remain in the public API.
+
+Non-scope:
+
+- no automatic candidate selection or winner-picking helper;
+- no statistical-validation surface;
+- no walk-forward or out-of-sample evaluation helper;
+- no benchmark-relative or attribution helper.
 
 ### v0.1.8.7 Parallel Sweep Dispatch
 
@@ -661,6 +812,108 @@ Non-scope:
 - no weakening of seed, warning, failure-row, or promotion provenance
   guarantees to fit worker scheduling;
 - no public distributed execution API.
+
+### v0.1.8.8 Crypto-Readiness Spike And Doc Disposition
+
+v0.1.8.8 is a focused measurement spike on whether spot crypto is already
+supported by ledgr's existing equity-shaped surfaces, with explicit
+disposition for documentation and any specific follow-up work. It is not
+a derivatives release; perpetuals, dated futures, funding rates, and
+margin accounting all remain part of the deferred derivatives arc that
+lands after the v0.1.x product arc completes.
+
+Intent:
+
+- verify spot-crypto support as a focused measurement spike before users
+  discover edge cases in production research;
+- confirm fractional-position correctness end-to-end (target -> fill ->
+  lot -> trade -> equity -> metrics) at sub-integer quantities;
+- confirm sub-second / sub-minute timestamp preservation through
+  snapshot, fold core, and output handlers;
+- confirm the v0.1.8.2 crypto metric-context template produces correct
+  24/7 annualization in practice;
+- probe the v0.1.9.x cost API for "% of notional" maker/taker cost
+  expressibility;
+- document the spot-crypto support level with explicit caveats, or route
+  specific gaps to follow-up cycles.
+
+This workstream is a measurement and decision packet. Implementation is
+out of scope; any code change needed to make spot crypto work cleanly is
+scoped into its own follow-up ticket or release after the spike
+concludes.
+
+Required spike axes:
+
+- **Fractional position correctness.** End-to-end test: declare a
+  strategy that targets `0.0123 BTC`, run through the fold core, inspect
+  lots, trades, equity. Verify accounting precision is not silently
+  coerced to integer at any layer.
+- **Timestamp resolution.** Seal a synthetic snapshot with sub-second
+  `ts_utc`, run a small strategy, confirm timestamps survive snapshot
+  -> fold -> output handlers without truncation.
+- **24/7 metric context.** Use the crypto metric-context template against
+  a synthetic 7-day crypto-style snapshot, confirm annualization factor
+  and Sharpe / drawdown calculations are correct for 24/7 cadence.
+- **Maker/taker cost shape.** Probe whether "% of notional" commission
+  is expressible through the existing `spread_bps` + `commission_fixed`
+  surface (with workarounds documented) or through the function-valued
+  cost-model API. Identify the API extension needed if neither path is
+  clean.
+- **Demo data.** Decide whether to ship a small synthetic crypto demo
+  dataset alongside `ledgr_demo_bars`, or leave users to bring their
+  own. Influences vignette teachability.
+
+Measurement outputs:
+
+- pass/fail evidence per axis;
+- a footgun list (similar to the intraday audit pattern) naming any code
+  path that silently constrains crypto support;
+- a support-level recommendation: **supported** (works as-is, document
+  and add small vignette section), **supported with caveats** (works
+  with named workarounds, ship a doc note), or **blocked** (specific
+  v0.1.x work required, scope into follow-up ticket).
+
+Readiness gates:
+
+- v0.1.8.5 closes (teachability documentation discipline established);
+- v0.1.8.2 metric-context crypto template is in place (already true);
+- intraday-readiness audit findings inform which footguns to probe
+  specifically; crypto and intraday share the cadence-neutrality and
+  timestamp-resolution concerns.
+
+Constraints:
+
+- spot crypto only; no perpetuals, no dated futures, no funding rates,
+  no margin model;
+- no derivatives architecture work; that arc is deferred until after
+  the v0.1.x product arc completes;
+- no new instrument-class architecture; the spike inherits ledgr's
+  existing instrument-as-string-ID model;
+- no exchange-specific adapter (Binance / Coinbase / Kraken integration
+  is out of scope);
+- the spike output is a doc disposition and a footgun list, not an
+  implementation release.
+
+Non-scope:
+
+- crypto data adapter (separate future work);
+- exchange-specific cost-model factories;
+- perpetuals or dated-futures contract specs;
+- margin or funding-rate accounting;
+- crypto demo strategy beyond what is needed to drive the spike's
+  tests.
+
+Exit decisions:
+
+- **Pass:** ship a vignette section or short doc note explaining spot
+  crypto support; close the spike with the footgun list pinned as
+  contract tests.
+- **Supported with caveats:** ship a doc note naming the workarounds,
+  route specific gaps (e.g., maker/taker cost shape) to a v0.1.9.x
+  follow-up.
+- **Blocked:** identify the minimum v0.1.x work required, scope it into
+  v0.1.9 or a v0.1.8.x patch, defer the user-facing crypto support
+  claim until the work lands.
 
 ### Later v0.1.8.x Sweep Stabilization
 
@@ -748,27 +1001,40 @@ Implementation gates:
 
 ### v0.1.9.x Walk-Forward Evaluation
 
+Accepted design input:
+
+- `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`.
+
 Intent:
 
 - build `ledgr_walk_forward()` only after `ledgr_sweep()` is stable enough to
   act as the training-window candidate evaluator;
-- represent training/scoring windows explicitly, including separate scoring
-  ranges and warmup lookback ranges;
-- reuse the same ranking/objective contract that sweep exposes instead of
-  duplicating selection logic;
-- promote or rerun selected training-window candidates on scoring windows with
-  explicit provenance.
+- keep walk-forward as a wrapper over `ledgr_sweep()` and `ledgr_run()`, not a
+  second fold-core execution path;
+- represent training/test scoring windows explicitly, including warmup
+  hydration and final-bar fill semantics;
+- use ledgr-owned classed selection rules over train-window scalar score rows;
+- run exactly the selected candidate on the next test window and record
+  explicit fold, candidate, score, and session provenance;
+- allow ordinary `ledgr_promote()` only through an extracted explicit candidate
+  rather than through an implicit parameter path or selection rule.
 
 Known constraints:
 
+- implementation waits until the v0.1.9 target-risk chain is stable enough to
+  contribute risk-chain identity to walk-forward sessions and candidates;
 - fold-core input sources must support sliced evaluation without requiring a
   sealed snapshot per fold;
 - precomputed feature validation must cover candidate-varying feature factories
   and slice-aware warmup;
+- identity excludes transient `sweep_id` and includes snapshot, experiment,
+  fold-list, selection-rule, metric-context, feature, parameter, seed, and
+  risk-chain components as bound in the synthesis;
 - reproducibility and selection integrity remain orthogonal: provenance records
   what happened, not whether the selection protocol was statistically sound.
-- randomized/blocked slice protocols, PBO, and CSCV diagnostics are deferred
-  until the walk-forward window model is stable.
+- richer diagnostic retention, randomized/blocked slice protocols, PBO, DSR,
+  CPCV, purging/embargo, cross-snapshot folds, and paper/live walk-forward are
+  deferred until the first walk-forward window model is stable.
 
 ### v0.1.9.x Selection Integrity Diagnostics
 

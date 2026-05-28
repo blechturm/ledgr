@@ -1,5 +1,5 @@
-Design Philosophy: From Research to Production
-================
+# Design Philosophy: From Research to Production
+
 
 ledgr is built around one design premise: strategies should use the same
 contract across backtest, paper, and live modes. Not a translation of
@@ -11,9 +11,19 @@ event-sourced model enables it, and where v0.1.x sits on that path.
 
 ## The Arc
 
-``` text
-research  ->  paper trading  ->  live trading
+<div class="ledgr-diagram ledgr-research-production-arc">
+
+``` mermaid
+
+flowchart LR
+  research["research"]
+  paper["paper trading"]
+  live["live trading"]
+
+  research --> paper --> live
 ```
+
+</div>
 
 Most backtesting libraries stop at the first arrow. The strategy exits
 the research environment as a CSV of returns and is re-implemented in a
@@ -27,27 +37,39 @@ is what makes that continuity possible.
 ## The Ledger Is The Bridge
 
 In ledgr, results are never computed directly from price arrays. Every
-decision -- a target position, a fill, a cash change -- is recorded as
-an immutable event. Equity, trades, and metrics are derived from that
+decision – a target position, a fill, a cash change – is recorded as an
+immutable event. Equity, trades, and metrics are derived from that
 ledger after the fact.
 
-``` text
-data -> sealed snapshot -> pulses -> event ledger -> results
+<div class="ledgr-diagram ledgr-ledger-bridge">
+
+``` mermaid
+
+flowchart LR
+  data["data"]
+  snapshot["sealed snapshot"]
+  pulses["pulses"]
+  ledger["event ledger"]
+  results["results"]
+
+  data --> snapshot --> pulses --> ledger --> results
 ```
+
+</div>
 
 This is not just a correctness choice. It is an architectural choice
 that makes the research-to-production arc coherent. Backtest and paper
 fills share the same ledger event schema, so the reconstruction logic,
 result views, and audit trail work identically across both modes. Live
-trading extends the event stream with broker lifecycle events --
-submissions, acknowledgments, partial fills, rejections -- without
+trading extends the event stream with broker lifecycle events –
+submissions, acknowledgments, partial fills, rejections – without
 changing the strategy contract. Safety gates, reconciliation, and
 operational controls are adapter concerns; the strategy itself does not
 change.
 
 ## The Experiment Store
 
-Before a strategy is deployed it needs to be validated -- not just
+Before a strategy is deployed it needs to be validated – not just
 against one parameter set on one data slice, but across many
 combinations and market regimes, with full provenance.
 
@@ -107,7 +129,7 @@ The device maintains its own ledger, appending live fills to the same
 schema the backtest used. If the device restarts,
 `ledgr_state_reconstruct()` rebuilds current positions and cash from the
 ledger events. No in-memory state is trusted across restarts. The ledger
-reconstructs ledgr's expected state. In paper and live modes, that
+reconstructs ledgr’s expected state. In paper and live modes, that
 expected state must still be reconciled against broker-reported orders,
 positions, cash, and fills before trading resumes.
 
@@ -137,8 +159,8 @@ sma_strategy <- function(ctx, params) {
 
 This is Tier 1 reproducibility: the strategy is fully self-contained,
 its parameters are hashable, and its source is capturable. Tier 1
-strategies earn full experiment-store identity -- source hash, parameter
-hash, provenance metadata -- and are the natural fit for sweep mode and
+strategies earn full experiment-store identity – source hash, parameter
+hash, provenance metadata – and are the natural fit for sweep mode and
 edge deployment.
 
 ledgr supports less constrained strategies too, but the reproducibility
@@ -147,24 +169,46 @@ explicit, not hidden.
 
 ## What v0.1.x Delivers Today
 
-v0.1.x is the research layer:
+v0.1.x is the correctness-first research layer. It already covers:
 
-- sealed snapshots and deterministic replay across machines and R
-  sessions;
-- reproducible backtests with next-open fill semantics and an
+- sealed snapshots, hash verification, and deterministic replay across
+  machines and R sessions;
+- project-local DuckDB stores with run discovery, labels, tags,
+  archival, comparison, reopening, and strategy-source inspection;
+- deterministic pulse execution with no-lookahead `ctx`, full target
+  holdings, next-open fills, final-bar no-fill warnings, and an
   append-only ledger;
-- a TTR indicator adapter with deterministic warmup, vectorized
-  precomputation, and session-scoped feature caching;
-- an experiment store with run discovery, provenance, labeling, and
-  archival;
-- experiment-first execution, run comparison, strategy-source
-  inspection, parameter sweeps, promotion context, and a deterministic
-  demo dataset.
+- accounting surfaces for ledger events, fills, trades, equity rows,
+  summary metrics, and explicit metric contexts;
+- built-in indicators, TTR-backed indicators, multi-output bundles,
+  feature maps, warmup diagnostics, pulse inspection, and active
+  aliases;
+- feature and strategy grids, sweep execution, candidate rows, promotion
+  context, and explicit selection-is-not-validation framing;
+- reproducibility tiers, strategy preflight, stored strategy source, and
+  a deterministic demo dataset for documentation and examples.
+
+The rest of the v0.1.x arc is still research-layer work:
+
+- v0.1.8.6 is a measurement and decision cycle for DuckDB-backed feature
+  storage and out-of-core projection;
+- v0.1.8.7 is the planned parallel sweep-dispatch cycle, after the
+  storage decision is clearer;
+- v0.1.8.8 is a crypto-readiness spike for fractional positions, 24/7
+  calendar assumptions, and maker/taker cost shape;
+- v0.1.9 introduces the target-risk layer and primitive-internals
+  planning gates;
+- v0.1.9.x adds walk-forward evaluation, selection-integrity
+  diagnostics, sweep artifact persistence, and target-construction
+  helper extensions;
+- the stable public transaction-cost model API is planned for the
+  v0.1.9.x / v0.2.0 boundary, after target risk and execution-cost
+  identity are stable.
 
 Paper and live trading adapters, OMS state machine semantics, and
 observability tooling follow in the v0.2.x and v0.3.x range.
 
 The path from a validated experiment-store entry to a running edge
 device is shorter than it looks. The research work done in v0.1.x is not
-throwaway scaffolding -- it is the foundation the production system
+throwaway scaffolding – it is the foundation the production system
 builds on.

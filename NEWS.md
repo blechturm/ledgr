@@ -1,3 +1,25 @@
+# ledgr 0.1.8.5
+
+- Rebuilt the documentation set around the research workflow: sealed snapshots,
+  declared experiments, executable runs, exploratory sweeps, candidate
+  promotion, reopenable artifacts, and provenance review.
+- Migrated installed and pkgdown article sources to Quarto, removed the retired
+  Getting Started middle layer, and aligned README and pkgdown navigation with
+  the new reading flow.
+- Added or refreshed canonical articles for experiment storage,
+  reproducibility tiers, execution semantics, sweeps, strategy development,
+  indicators, custom indicators, metrics and accounting, leakage, and
+  research-to-production boundaries.
+- Tightened documentation contracts around active aliases, feature-vs-strategy
+  parameter namespaces, sweep inspection, promotion caveats, metric context,
+  snapshot lifecycle, source provenance, warmup behavior, and target-holding
+  execution semantics.
+- Kept runtime semantics stable. Walk-forward evaluation, target-risk and
+  capital-affordability constraints, public cost-model factories, parallel
+  dispatch, out-of-core feature storage, benchmark context, external
+  point-in-time regressors, and paper/live adapters remain planned roadmap
+  layers rather than v0.1.8.5 features.
+
 # ledgr 0.1.8.4
 
 - Added active parameterized feature aliases so feature declarations can use

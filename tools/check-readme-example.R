@@ -54,16 +54,14 @@ output <- tempfile("README-", fileext = ".md")
 message("Executing README.Rmd chunks under installed-package semantics.")
 knitr::knit(input = readme, output = output, quiet = TRUE, envir = env)
 
-if (!exists("bt", envir = env, inherits = FALSE) ||
-    !exists("bt_qty_20", envir = env, inherits = FALSE)) {
-  stop("README did not create the expected `bt` and `bt_qty_20` run handles.", call. = FALSE)
+if (!exists("bt", envir = env, inherits = FALSE)) {
+  stop("README did not create the expected `bt` run handle.", call. = FALSE)
 }
 
 bt <- get("bt", envir = env, inherits = FALSE)
-bt_qty_20 <- get("bt_qty_20", envir = env, inherits = FALSE)
 
-if (!inherits(bt, "ledgr_backtest") || !inherits(bt_qty_20, "ledgr_backtest")) {
-  stop("README run objects are not ledgr_backtest handles.", call. = FALSE)
+if (!inherits(bt, "ledgr_backtest")) {
+  stop("README `bt` object is not a ledgr_backtest handle.", call. = FALSE)
 }
 
 for (what in c("ledger", "equity", "trades")) {
@@ -79,6 +77,14 @@ if (!exists("snapshot", envir = env, inherits = FALSE)) {
 snapshot <- get("snapshot", envir = env, inherits = FALSE)
 if (!inherits(snapshot, "ledgr_snapshot")) {
   stop("README `snapshot` object is not a ledgr_snapshot handle.", call. = FALSE)
+}
+
+if (!exists("stored_strategy", envir = env, inherits = FALSE)) {
+  stop("README did not create the expected stored strategy inspection object.", call. = FALSE)
+}
+stored_strategy <- get("stored_strategy", envir = env, inherits = FALSE)
+if (!inherits(stored_strategy, "ledgr_extracted_strategy")) {
+  stop("README `stored_strategy` object is not a ledgr_extracted_strategy handle.", call. = FALSE)
 }
 
 if ("package:pkgload" %in% search()) {

@@ -1,5 +1,5 @@
-On Leakage: ledgr Design Choices
-================
+# On Leakage: ledgr Design Choices
+
 
 ``` r
 library(ledgr)
@@ -28,6 +28,21 @@ interface, sealed snapshots, and registered feature definitions each
 reflect a deliberate choice to make common leakage patterns structurally
 difficult – not just documented as bad practice. This article explains
 where that protection applies and where your responsibility begins.
+
+> [!WARNING]
+>
+> ### Leakage breaks the question
+>
+> A leaky backtest can have correct arithmetic and still answer the
+> wrong research question. ledgr narrows common leakage paths, but it
+> cannot certify your data availability or research process.
+
+> [!NOTE]
+>
+> ### Definition
+>
+> Leakage is any path by which a decision uses information that was not
+> knowable at the simulated decision time.
 
 ## The Obvious Leak
 
@@ -108,6 +123,22 @@ honest threshold do clear the full-sample one. The strategy records more
 `strong_return = TRUE` signals in the first quarter than it could have
 generated in real time – and that inflated count flows directly into the
 backtest’s apparent edge.
+
+<div class="ledgr-diagram ledgr-leakage-boundary">
+
+``` mermaid
+
+flowchart LR
+  data["sealed data"]
+  features["registered features"]
+  pulse["pulse context"]
+  target["target holdings"]
+  ledger["ledger events"]
+
+  data --> features --> pulse --> target --> ledger
+```
+
+</div>
 
 ## The Strategy Boundary
 
@@ -198,6 +229,13 @@ causally clean.
 - Does the strategy fill after the information it used?
 - Did parameter choices survive out-of-sample or regime checks?
 - Can the run be reopened and explained from stored provenance?
+
+> [!TIP]
+>
+> ### Try it
+>
+> Write down one dataset in your workflow that does not come from price
+> bars. What timestamp says when a strategy was allowed to know it?
 
 ## What To Remember
 

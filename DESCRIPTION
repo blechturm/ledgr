@@ -1,6 +1,6 @@
 Package: ledgr
 Title: Deterministic Event-Sourced Backtesting
-Version: 0.1.8.4
+Version: 0.1.8.5
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",
@@ -18,7 +18,7 @@ Depends:
     R (>= 4.2.0)
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-VignetteBuilder: knitr
+VignetteBuilder: knitr, quarto
 Imports:
     cli,
     codetools,
@@ -38,6 +38,8 @@ Suggests:
     microbenchmark,
     nanotime,
     PerformanceAnalytics,
+    pkgload,
+    quarto,
     rmarkdown,
     testthat (>= 3.0.0),
     TTR,

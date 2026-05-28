@@ -39,7 +39,8 @@ A grid object.
 \description{
 These helpers keep feature-materialization parameters and strategy-runtime
 parameters in separate namespaces before composing executable sweep
-candidates.
+candidates. They are the canonical v0.1.8.5 authoring path for sweeps that
+vary ledgr-owned indicator parameters behind active aliases.
 }
 \examples{
 fg <- ledgr_feature_grid(fast_n = c(10L, 20L), slow_n = 40L, .filter = fast_n < slow_n)

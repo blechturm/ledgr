@@ -1,29 +1,53 @@
-Experiment Store
-================
+﻿# Experiment Store
 
-The experiment store is the DuckDB file behind a sealed snapshot. It
-keeps market data, run artifacts, provenance, labels, tags, archive
-state, and compact telemetry together.
+
+The experiment store is the DuckDB file that keeps sealed market data,
+run artifacts, provenance, labels, tags, archive state, and compact
+telemetry together. In real projects, put that file somewhere boring and
+durable, such as `artifacts/ledgr_store.duckdb`.
 
 ``` text
-snapshot handle -> run experiments -> list / inspect / compare / reopen
+sealed snapshot -> committed runs -> list / inspect / compare / reopen
 ```
 
 `run_id` is immutable. Labels, tags, and archive state are mutable
-metadata.
+metadata. The store is useful because the explanation survives the R
+session: you can reopen a completed run, inspect the source provenance,
+compare stored runs, and write a review from the same evidence file.
 
-The examples use `dplyr` and `tibble` for data preparation and compact
-display. They are suggested packages used by the vignettes, not part of
-the experiment store contract.
+This article is about durable storage and later inspection, not strategy
+design or statistical validation.
+
+> [!NOTE]
+>
+> ### Running this yourself
+>
+> This article is evaluated when rendered. It writes to temporary DuckDB
+> stores so package builds and local previews do not leave project
+> artifacts behind. In real work, use a project-local path such as
+> `artifacts/ledgr_store.duckdb`.
+
+> [!WARNING]
+>
+> ### Pre-CRAN compatibility
+>
+> ledgr is pre-CRAN. Store schemas, config hashes, provenance formats,
+> and experimental APIs may change before the first CRAN release. Treat
+> stores created with pre-CRAN ledgr as research artifacts for the
+> version that produced them, and expect to rerun experiments after
+> upgrading.
+
+The examples use `dplyr` for data preparation and compact display. It is
+a suggested package used by the vignettes, not part of the
+experiment-store contract.
 
 ``` r
 library(ledgr)
 library(dplyr)
-library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-## Create A Durable Snapshot
+## Snapshot Lifecycle And Data Input
 
 Market data and derived data have different lifecycle rules in ledgr. A
 sealed snapshot freezes the real market-data input and its hash. If you
@@ -32,20 +56,34 @@ create a new snapshot. Indicators, runs, labels, tags, comparisons, and
 telemetry are derived from sealed market data and can be added later
 without mutating the snapshot.
 
+Snapshot lifecycle anti-patterns:
+
+- appending bars to a sealed snapshot in place;
+- resealing different data under the same snapshot ID;
+- deleting snapshots that stored runs still reference;
+- mixing live ticks into a backtest snapshot;
+- filling data gaps with undocumented synthetic corrections.
+
+If the evidence changes, create a new snapshot. That is what makes later
+comparison meaningful.
+
 This vignette uses `tempfile()` so it can run without writing into your
-project directory. For real research, use a stable path such as
-`"research.duckdb"` and a snapshot ID you will recognize later.
+project directory. For real research, use `artifacts/ledgr_store.duckdb`
+and a snapshot ID you will recognize later.
 
 ``` r
-db_path <- tempfile("ledgr_store_", fileext = ".duckdb")
+db_path <- file.path(tempdir(), "ledgr_store_demo.duckdb")
+if (file.exists(db_path)) {
+  unlink(db_path)
+}
 
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      ledgr::ledgr_utc("2019-01-01"),
-      ledgr::ledgr_utc("2019-06-30")
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
     )
   )
 
@@ -61,13 +99,15 @@ After snapshot creation, store operations take `snapshot`, not
 `ledgr_snapshot_load(db_path, snapshot_id)`.
 
 If your market data starts in CSV, seal the CSV into the same kind of
-durable store. The CSV must contain at least `instrument_id`, `ts_utc`,
-`open`, `high`, `low`, and `close`.
+durable store. The CSV must contain `instrument_id`, `ts_utc`, `open`,
+`high`, `low`, and `close`; `volume` is optional. ledgr imports only
+those canonical bar columns. Other CSV columns are ignored and do not
+become part of the sealed snapshot or its hash.
 
 ``` r
 snapshot <- ledgr_snapshot_from_csv(
   "data/daily_bars.csv",
-  db_path = "research.duckdb",
+  db_path = "artifacts/ledgr_store.duckdb",
   snapshot_id = "eod_2019_h1"
 )
 ```
@@ -75,7 +115,10 @@ snapshot <- ledgr_snapshot_from_csv(
 In any later session, recover the handle without re-sealing the data:
 
 ``` r
-snapshot <- ledgr_snapshot_load("research.duckdb", snapshot_id = "eod_2019_h1")
+snapshot <- ledgr_snapshot_load(
+  "artifacts/ledgr_store.duckdb",
+  snapshot_id = "eod_2019_h1"
+)
 ```
 
 CSV and local data validation happens while the snapshot is created and
@@ -91,7 +134,7 @@ snapshot <- ledgr_snapshot_from_yahoo(
   symbols = c("SPY", "QQQ"),
   from = "2019-01-01",
   to = "2019-06-30",
-  db_path = "research.duckdb",
+  db_path = "artifacts/ledgr_store.duckdb",
   snapshot_id = "yahoo_2019_h1"
 )
 ```
@@ -107,16 +150,20 @@ step: on a snapshot handle it returns an invisible structured list with
 metadata; snapshot identity comes from normalized bars and instruments,
 not from human descriptions.
 
-Yahoo support is a convenience adapter, not a data-vendor guarantee. It
-uses `quantmod::getSymbols()` and therefore requires the suggested
-`quantmod` package and network access. Package startup or S3
-method-overwrite messages printed while quantmod loads are not ledgr
-snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
-`.Close`, and `.Volume` columns as returned by quantmod; it does not
-rewrite OHLC values from Yahoo’s adjusted-close column. If your research
-requires split/dividend-adjusted OHLC bars, prepare those bars
-explicitly and seal them with `ledgr_snapshot_from_df()` or
-`ledgr_snapshot_from_csv()`.
+> [!WARNING]
+>
+> ### Yahoo data boundary
+>
+> Yahoo support is a convenience adapter, not a data-vendor guarantee.
+> It uses `quantmod::getSymbols()` and therefore requires the suggested
+> `quantmod` package and network access. Package startup or S3
+> method-overwrite messages printed while quantmod loads are not ledgr
+> snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`,
+> `.Low`, `.Close`, and `.Volume` columns as returned by quantmod; it
+> does not rewrite OHLC values from Yahooâ€™s adjusted-close column. If
+> your research requires split/dividend-adjusted OHLC bars, prepare
+> those bars explicitly and seal them with `ledgr_snapshot_from_df()` or
+> `ledgr_snapshot_from_csv()`.
 
 ``` r
 yahoo_info <- ledgr_snapshot_info(snapshot)
@@ -141,7 +188,32 @@ and `n_instruments`. The structured columns from `ledgr_snapshot_info()`
 are `bar_count` and `instrument_count`; use those names in programmatic
 code.
 
-## Run Variants
+## Backup Conventions
+
+The store is an ordinary DuckDB file. Back it up when no ledgr process
+has it open.
+
+> [!WARNING]
+>
+> ### Back up closed stores
+>
+> Close run and snapshot handles, then copy or sync the closed store
+> file. A simple project pattern is:
+>
+> ``` r
+> dir.create("backups", showWarnings = FALSE)
+> file.copy(
+>   "artifacts/ledgr_store.duckdb",
+>   file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
+>   overwrite = TRUE
+> )
+> ```
+>
+> For larger projects, use the same closed-file rule with your normal
+> backup or sync tool. Do not rely on the phrase â€œordinary backup
+> disciplineâ€ without a specific copy/sync pattern for the store file.
+
+## Record Two Variants For Comparison
 
 ``` r
 features <- list(ledgr_ind_sma(20))
@@ -177,16 +249,17 @@ bt_large <- exp |>
 
 ``` r
 ledgr_run_list(snapshot)
-#> # ledgr run list
-#> # A tibble: 2 x 8
-#>   run_id label tags  status final_equity total_return execution_mode reproducibility_level
-#>   <chr>  <chr> <lgl> <chr>         <dbl> <chr>        <chr>          <chr>
-#> 1 trend~ <NA>  NA    DONE         10042. +0.4%        audit_log      tier_1
-#> 2 trend~ <NA>  NA    DONE         10125. +1.3%        audit_log      tier_1
-#>
-#> # i Full identity and telemetry columns remain available on this tibble.
-#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
+
+    # ledgr run list
+    # A tibble: 2 x 8
+      run_id label tags  status final_equity total_return execution_mode reproducibility_level
+      <chr>  <chr> <lgl> <chr>         <dbl> <chr>        <chr>          <chr>
+    1 trend~ <NA>  NA    DONE         10042. +0.4%        audit_log      tier_1
+    2 trend~ <NA>  NA    DONE         10125. +1.3%        audit_log      tier_1
+
+    # i Full identity and telemetry columns remain available on this tibble.
+    # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
 Use labels and tags for mutable human-facing organization.
 
@@ -197,16 +270,17 @@ snapshot <- snapshot |>
   ledgr_run_tag("trend_qty_15", c("trend", "larger-size"))
 
 ledgr_run_list(snapshot)
-#> # ledgr run list
-#> # A tibble: 2 x 8
-#>   run_id label tags  status final_equity total_return execution_mode reproducibility_level
-#>   <chr>  <chr> <chr> <chr>         <dbl> <chr>        <chr>          <chr>
-#> 1 trend~ Base~ base~ DONE         10042. +0.4%        audit_log      tier_1
-#> 2 trend~ <NA>  larg~ DONE         10125. +1.3%        audit_log      tier_1
-#>
-#> # i Full identity and telemetry columns remain available on this tibble.
-#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
+
+    # ledgr run list
+    # A tibble: 2 x 8
+      run_id label tags  status final_equity total_return execution_mode reproducibility_level
+      <chr>  <chr> <chr> <chr>         <dbl> <chr>        <chr>          <chr>
+    1 trend~ Base~ base~ DONE         10042. +0.4%        audit_log      tier_1
+    2 trend~ <NA>  larg~ DONE         10125. +1.3%        audit_log      tier_1
+
+    # i Full identity and telemetry columns remain available on this tibble.
+    # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
 Tags and labels do not alter snapshot hashes, strategy hashes, parameter
 hashes, config hashes, or result artifacts.
@@ -218,38 +292,40 @@ convert to a tibble and select the columns you want.
 ledgr_run_list(snapshot) |>
   as_tibble() |>
   select(run_id, label, tags, status, final_equity, execution_mode)
-#> # A tibble: 2 x 6
-#>   run_id       label             tags               status final_equity execution_mode
-#>   <chr>        <chr>             <chr>              <chr>         <dbl> <chr>
-#> 1 trend_qty_5  Baseline quantity baseline, trend    DONE         10042. audit_log
-#> 2 trend_qty_15 <NA>              larger-size, trend DONE         10125. audit_log
 ```
+
+    # A tibble: 2 x 6
+      run_id       label             tags               status final_equity execution_mode
+      <chr>        <chr>             <chr>              <chr>         <dbl> <chr>
+    1 trend_qty_5  Baseline quantity baseline, trend    DONE         10042. audit_log
+    2 trend_qty_15 <NA>              larger-size, trend DONE         10125. audit_log
 
 ## Inspect And Compare
 
 ``` r
 info <- ledgr_run_info(snapshot, "trend_qty_5")
 info
-#> ledgr Run Info
-#> ==============
-#>
-#> Run ID:          trend_qty_5
-#> Label:           Baseline quantity
-#> Status:          DONE
-#> Archived:        FALSE
-#> Tags:            baseline, trend
-#> Snapshot:        store_demo_snapshot
-#> Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-#> Config Hash:     63f254a1904f104f83773d8d0d2f66a757fcc611f15cdbfbee65e79b229b9dc4
-#> Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
-#> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
-#> Reproducibility: tier_1
-#> Execution Mode:  audit_log
-#> Elapsed Sec:     1.76
-#> Persist Features:TRUE
-#> Cache Hits:      0
-#> Cache Misses:    2
 ```
+
+    ledgr Run Info
+    ==============
+
+    Run ID:          trend_qty_5
+    Label:           Baseline quantity
+    Status:          DONE
+    Archived:        FALSE
+    Tags:            baseline, trend
+    Snapshot:        store_demo_snapshot
+    Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
+    Config Hash:     843e364a4ba307690fc41d99ea87eba1edb81e5e5732bcf62180aa18aba83669
+    Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+    Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
+    Reproducibility: tier_1
+    Execution Mode:  audit_log
+    Elapsed Sec:     1.86
+    Persist Features:TRUE
+    Cache Hits:      0
+    Cache Misses:    2
 
 `ledgr_run_info()` is the detailed metadata view. It includes execution
 mode, compact telemetry, status, identity hashes, and reproducibility
@@ -270,17 +346,18 @@ Useful fields include:
 ``` r
 comparison <- ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
 comparison
-#> # ledgr comparison
-#> # A tibble: 2 x 9
-#>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
-#>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
-#> 1 trend_qty_5  Base~       10042. +0.4%               0.838 -0.5%              12 25.0%
-#> 2 trend_qty_15 <NA>        10125. +1.3%               0.851 -1.5%              12 25.0%
-#> # i 1 more variable: reproducibility_level <chr>
-#>
-#> # i Full identity and telemetry columns remain available on this tibble.
-#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
+
+    # ledgr comparison
+    # A tibble: 2 x 9
+      run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
+      <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
+    1 trend_qty_5  Base~       10042. +0.4%               0.838 -0.5%              12 25.0%
+    2 trend_qty_15 <NA>        10125. +1.3%               0.851 -1.5%              12 25.0%
+    # i 1 more variable: reproducibility_level <chr>
+
+    # i Full identity and telemetry columns remain available on this tibble.
+    # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
 Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have
@@ -288,7 +365,7 @@ fills but no closed trades yet, in which case win rate is not defined.
 
 `ledgr_compare_runs()` starts from the durable snapshot handle because
 it reads stored run artifacts. When you want the comparison to use an
-experiment’s metric assumptions, pass that context explicitly:
+experimentâ€™s metric assumptions, pass that context explicitly:
 
 ``` r
 comparison <- ledgr_compare_runs(
@@ -304,30 +381,34 @@ code gets raw numeric columns from the tibble:
 ``` r
 comparison |>
   select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)
-#> # ledgr comparison
-#> # A tibble: 2 x 6
-#>   run_id       final_equity total_return sharpe_ratio max_drawdown n_trades
-#>   <chr>               <dbl> <chr>               <dbl> <chr>           <int>
-#> 1 trend_qty_5        10042. +0.4%               0.838 -0.5%              12
-#> 2 trend_qty_15       10125. +1.3%               0.851 -1.5%              12
-#>
-#> # i Full identity and telemetry columns remain available on this tibble.
-#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
+
+    # ledgr comparison
+    # A tibble: 2 x 6
+      run_id       final_equity total_return sharpe_ratio max_drawdown n_trades
+      <chr>               <dbl> <chr>               <dbl> <chr>           <int>
+    1 trend_qty_5        10042. +0.4%               0.838 -0.5%              12
+    2 trend_qty_15       10125. +1.3%               0.851 -1.5%              12
+
+    # i Full identity and telemetry columns remain available on this tibble.
+    # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
 For report writing, coerce the comparison to a data frame or tibble
 before formatting percentages yourself:
 
 ``` r
 comparison_report <- comparison |>
-  as.data.frame() |>
-  subset(select = c(run_id, final_equity, total_return, sharpe_ratio, max_drawdown))
+  as_tibble() |>
+  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown)
 
 comparison_report
-#>         run_id final_equity total_return sharpe_ratio max_drawdown
-#> 1  trend_qty_5     10041.77  0.004176804    0.8383686 -0.004990601
-#> 2 trend_qty_15     10125.30  0.012530413    0.8514529 -0.014775056
 ```
+
+    # A tibble: 2 x 5
+      run_id       final_equity total_return sharpe_ratio max_drawdown
+      <chr>               <dbl>        <dbl>        <dbl>        <dbl>
+    1 trend_qty_5        10042.      0.00418        0.838     -0.00499
+    2 trend_qty_15       10125.      0.0125         0.851     -0.0148
 
 After selecting a run, reopen it and inspect the underlying result
 tables rather than parsing the printed comparison:
@@ -340,12 +421,16 @@ best_run_id <- comparison |>
 
 best_bt <- ledgr_run_open(snapshot, best_run_id)
 tail(ledgr_results(best_bt, what = "equity"), 3)
-#> # A tibble: 3 x 6
-#>   ts_utc     equity   cash positions_value running_max drawdown
-#>   <date>      <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2019-06-26 10125. 10125.               0      10201. -0.00743
-#> 2 2019-06-27 10125. 10125.               0      10201. -0.00743
-#> 3 2019-06-28 10125. 10125.               0      10201. -0.00743
+```
+
+    # A tibble: 3 x 6
+      ts_utc     equity   cash positions_value running_max drawdown
+      <date>      <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
+    1 2019-06-26 10125. 10125.               0      10201. -0.00743
+    2 2019-06-27 10125. 10125.               0      10201. -0.00743
+    3 2019-06-28 10125. 10125.               0      10201. -0.00743
+
+``` r
 close(best_bt)
 ```
 
@@ -365,34 +450,36 @@ evaluating, or executing the source.
 ``` r
 stored_strategy <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = FALSE)
 stored_strategy
-#> ledgr Extracted Strategy
-#> ========================
-#>
-#> Run ID:          trend_qty_5
-#> Reproducibility: tier_1
-#> Source Hash:     c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
-#> Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
-#> Hash Verified:   TRUE
-#> Trust:           FALSE
-#> Source Available:TRUE
 ```
+
+    ledgr Extracted Strategy
+    ========================
+
+    Run ID:          trend_qty_5
+    Reproducibility: tier_1
+    Source Hash:     c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+    Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
+    Hash Verified:   TRUE
+    Trust:           FALSE
+    Source Available:TRUE
 
 The source text is just data in this mode.
 
 ``` r
 writeLines(stored_strategy$strategy_source_text)
-#> function (ctx, params)
-#> {
-#>     targets <- ctx$flat()
-#>     for (id in ctx$universe) {
-#>         sma <- ctx$feature(id, "sma_20")
-#>         if (is.finite(sma) && ctx$close(id) > sma) {
-#>             targets[id] <- params$qty
-#>         }
-#>     }
-#>     targets
-#> }
 ```
+
+    function (ctx, params)
+    {
+        targets <- ctx$flat()
+        for (id in ctx$universe) {
+            sma <- ctx$feature(id, "sma_20")
+            if (is.finite(sma) && ctx$close(id) > sma) {
+                targets[id] <- params$qty
+            }
+        }
+        targets
+    }
 
 Hash verification proves stored-text identity, not code safety. Use
 `trust = TRUE` only when you already trust the experiment store and
@@ -437,34 +524,42 @@ want full result tables or plots after restarting R.
 ``` r
 reopened <- ledgr_run_open(snapshot, "trend_qty_5")
 summary(reopened)
-#> ledgr Backtest Summary
-#> ======================
-#>
-#> Performance Metrics:
-#>   Total Return:        0.42%
-#>   Annualized Return:   0.82%
-#>   Max Drawdown:        -0.50%
-#>
-#> Risk Metrics:
-#>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 0.98%
-#>   Sharpe Ratio:        0.838
-#>
-#> Trade Statistics:
-#>   Total Trades:        12
-#>   Win Rate:            25.00%
-#>   Avg Trade:           $3.48
-#>
-#> Exposure:
-#>   Time in Market:      66.67%
+```
+
+    ledgr Backtest Summary
+    ======================
+
+    Performance Metrics:
+      Total Return:        0.42%
+      Annualized Return:   0.82%
+      Max Drawdown:        -0.50%
+
+    Risk Metrics:
+      Risk-Free Rate:      0.00% annual
+      Annualization:       252 periods/year (US equity daily)
+      Volatility (annual): 0.98%
+      Sharpe Ratio:        0.838
+
+    Trade Statistics:
+      Total Trades:        12
+      Win Rate:            25.00%
+      Avg Trade:           $3.48
+
+    Exposure:
+      Time in Market:      66.67%
+
+``` r
 tail(ledgr_results(reopened, what = "equity"), 3)
-#> # A tibble: 3 x 6
-#>   ts_utc     equity   cash positions_value running_max drawdown
-#>   <date>      <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2019-06-26 10042. 10042.               0      10067. -0.00251
-#> 2 2019-06-27 10042. 10042.               0      10067. -0.00251
-#> 3 2019-06-28 10042. 10042.               0      10067. -0.00251
+```
+
+    # A tibble: 3 x 6
+      ts_utc     equity   cash positions_value running_max drawdown
+      <date>      <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
+    1 2019-06-26 10042. 10042.               0      10067. -0.00251
+    2 2019-06-27 10042. 10042.               0      10067. -0.00251
+    3 2019-06-28 10042. 10042.               0      10067. -0.00251
+
+``` r
 close(reopened)
 ```
 
@@ -483,130 +578,18 @@ snapshot <- snapshot |>
   ledgr_run_archive("trend_qty_15", reason = "larger position kept for reference")
 
 ledgr_run_list(snapshot)
-#> # ledgr run list
-#> # A tibble: 1 x 8
-#>   run_id label tags  status final_equity total_return execution_mode reproducibility_level
-#>   <chr>  <chr> <chr> <chr>         <dbl> <chr>        <chr>          <chr>
-#> 1 trend~ Base~ base~ DONE         10042. +0.4%        audit_log      tier_1
-#>
-#> # i Full identity and telemetry columns remain available on this tibble.
-#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
+
+    # ledgr run list
+    # A tibble: 1 x 8
+      run_id label tags  status final_equity total_return execution_mode reproducibility_level
+      <chr>  <chr> <chr> <chr>         <dbl> <chr>        <chr>          <chr>
+    1 trend~ Base~ base~ DONE         10042. +0.4%        audit_log      tier_1
+
+    # i Full identity and telemetry columns remain available on this tibble.
+    # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
 Archiving hides a run from default listings without deleting artifacts.
-
-## Bridge A Low-Level CSV Import
-
-This is advanced import material. The high-level CSV helper above is the
-normal path. The lower-level path is useful when you want to create the
-snapshot row, import one or more CSV files, inspect the sealed metadata,
-and then load the sealed artifact in a separate step. A future article,
-“Data Input And Snapshot Creation”, may move this bridge out of the
-store workflow.
-
-The order is important:
-
-1.  create the snapshot envelope;
-2.  import bars into that CREATED snapshot;
-3.  seal it to validate bars and write the snapshot hash;
-4.  load it with `verify = TRUE`;
-5.  pass the loaded snapshot to `ledgr_experiment()` and `ledgr_run()`.
-
-``` r
-csv_db_path <- tempfile("ledgr_csv_bridge_", fileext = ".duckdb")
-csv_bars_path <- tempfile("ledgr_csv_bars_", fileext = ".csv")
-
-csv_bars <- bars |>
-  filter(ts_utc <= ledgr::ledgr_utc("2019-01-15")) |>
-  mutate(ts_utc = format(ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
-
-utils::write.csv(csv_bars, csv_bars_path, row.names = FALSE)
-
-csv_con <- ledgr_db_init(csv_db_path)
-csv_snapshot_id <- ledgr_snapshot_create(
-  csv_con,
-  snapshot_id = "csv_bridge_snapshot",
-  meta = list(description = "low-level CSV bridge demo")
-)
-
-ledgr_snapshot_import_bars_csv(
-  csv_con,
-  csv_snapshot_id,
-  bars_csv_path = csv_bars_path,
-  instruments_csv_path = NULL,
-  auto_generate_instruments = TRUE
-)
-
-csv_hash <- ledgr_snapshot_seal(csv_con, csv_snapshot_id)
-csv_info <- ledgr_snapshot_info(csv_con, csv_snapshot_id)
-DBI::dbDisconnect(csv_con, shutdown = TRUE)
-
-csv_hash
-#> [1] "e80b4f4f7df20364e904804ebddd0626da16fc7fc0b5bde8f452e93fa3e733ff"
-csv_info |>
-  select(
-    snapshot_id,
-    status,
-    snapshot_hash,
-    bar_count,
-    instrument_count,
-    start_date,
-    end_date,
-    meta_json
-  )
-#> # A tibble: 1 x 8
-#>   snapshot_id         status snapshot_hash  bar_count instrument_count start_date end_date
-#>   <chr>               <chr>  <chr>              <int>            <int> <chr>      <chr>
-#> 1 csv_bridge_snapshot SEALED e80b4f4f7df20~        22                2 2019-01-0~ 2019-01~
-#> # i 1 more variable: meta_json <chr>
-```
-
-`bar_count` and `instrument_count` are live counts from the sealed
-snapshot tables. The raw `meta_json` is envelope metadata on the
-snapshot row; seal-time metadata inside it uses `n_bars` and
-`n_instruments`. Snapshot identity does not come from that metadata.
-`snapshot_hash` identifies the normalized bars and instruments only, so
-adding a human description to `meta_json` does not change the artifact
-hash.
-
-CSV/OHLC failures are local to the import and seal steps above. If a CSV
-omits a required column, uses a non-UTC timestamp, repeats an
-instrument/timestamp pair, or contains `high`/`low` values outside the
-open/close bounds, ledgr raises the CSV/snapshot error before
-`ledgr_snapshot_load()`, `ledgr_experiment()`, or `ledgr_run()` enters
-the picture.
-
-Load the sealed snapshot before constructing the experiment. This is the
-same handle you would use in a later R session.
-
-``` r
-csv_snapshot <- ledgr_snapshot_load(
-  csv_db_path,
-  snapshot_id = csv_snapshot_id,
-  verify = TRUE
-)
-
-csv_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  targets["DEMO_01"] <- params$qty
-  targets
-}
-
-csv_exp <- ledgr_experiment(
-  snapshot = csv_snapshot,
-  strategy = csv_strategy,
-  opening = ledgr_opening(cash = 10000)
-)
-
-csv_bt <- ledgr_run(csv_exp, params = list(qty = 1), run_id = "csv_bridge_run")
-tail(ledgr_results(csv_bt, what = "equity"), 3)
-#> # A tibble: 3 x 6
-#>   ts_utc     equity  cash positions_value running_max  drawdown
-#>   <date>      <dbl> <dbl>           <dbl>       <dbl>     <dbl>
-#> 1 2019-01-11  9997. 9909.            88.4       10000 -0.000311
-#> 2 2019-01-14  9996. 9909.            87.6       10000 -0.000388
-#> 3 2019-01-15  9996. 9909.            87.0       10000 -0.000445
-```
 
 ## Current Feature Persistence Boundary
 
@@ -626,6 +609,14 @@ A full persisted feature-series retrieval API remains outside the
 current experiment-store surface; use precompute and sweep provenance
 when you need feature-set identity at sweep scale.
 
+External point-in-time regressors are a separate future data surface.
+The public roadmap keeps that work out of v0.1.8.5 and tracks it for a
+later cycle so vintage semantics, lineage, ASOF lookup, and leakage
+prevention can be designed explicitly rather than smuggled into CSV bars
+or active aliases.
+
+## Resource Cleanup
+
 `ledgr_run()` and `ledgr_run_open()` return live handles for durable run
 artifacts. The artifacts are already durable when a run completes, and
 ordinary result inspection opens and closes read connections per
@@ -637,29 +628,21 @@ snapshot handles when the workflow is finished.
 
 Use this map when you know the task but not the function name:
 
-| Intent                    | Start here                    |
-|---------------------------|-------------------------------|
-| Seal in-memory bars       | `ledgr_snapshot_from_df()`    |
-| Seal a local CSV          | `ledgr_snapshot_from_csv()`   |
+| Intent | Start here |
+|----|----|
+| Seal in-memory bars | `ledgr_snapshot_from_df()` |
+| Seal a local CSV | `ledgr_snapshot_from_csv()` |
 | Fetch and seal Yahoo bars | `ledgr_snapshot_from_yahoo()` |
-| Reopen an existing store  | `ledgr_snapshot_load()`       |
-| List stored runs          | `ledgr_run_list()`            |
-| Compare durable runs      | `ledgr_compare_runs()`        |
+| Control low-level CSV create/import/seal lifecycle | `?ledgr_snapshot_import_bars_csv` |
+| Reopen an existing store | `ledgr_snapshot_load()` |
+| List stored runs | `ledgr_run_list()` |
+| Compare durable runs | `ledgr_compare_runs()` |
 
 Yahoo data is a convenience source. The sealed snapshot is the ledgr
-artifact; the remote Yahoo endpoint remains outside ledgr’s
+artifact; the remote Yahoo endpoint remains outside ledgrâ€™s
 reproducibility boundary.
 
-``` r
-close(bt_small)
-close(bt_large)
-close(csv_bt)
-ledgr_snapshot_close(csv_snapshot)
-ledgr_snapshot_close(snapshot)
-unlink(csv_bars_path)
-```
-
-## What’s Next?
+## Whatâ€™s Next?
 
 For fills, trades, equity rows, and metric definitions, read
 `vignette("metrics-and-accounting", package = "ledgr")`. For strategy

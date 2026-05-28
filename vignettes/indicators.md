@@ -1,5 +1,39 @@
-﻿Indicators And Feature IDs
-================
+﻿# Indicators And Feature IDs
+
+
+<style>
+.ledgr-diagram {
+  margin: 1.25rem auto 1.5rem auto;
+  text-align: center;
+}
+.ledgr-diagram .mermaid {
+  display: inline-block;
+  max-width: 760px;
+  width: 100%;
+}
+.ledgr-diagram .node text,
+.ledgr-diagram .edgeLabel {
+  font-size: 18px !important;
+}
+</style>
+
+Indicators are how ledgr turns sealed market data into pulse-time
+features. This article teaches the runtime shape first, then the
+accessor APIs.
+
+> [!NOTE]
+>
+> ### Definition
+>
+> An indicator is a declared feature computation. ledgr computes
+> indicators into pulse-known values; scalar accessors, mapped
+> accessors, long tables, and wide tables are different views of that
+> same pulse-known data.
+
+That model is the same for built-in ledgr indicators, TTR-backed
+indicators, and custom indicators.
+
+## Prerequisites
 
 ``` r
 library(ledgr)
@@ -7,29 +41,17 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-Indicators are how ledgr turns sealed market data into pulse-time
-features. This article teaches the runtime shape first, then the
-accessor APIs.
-
-The central model is:
-
-> ledgr computes feature contracts into pulse-known data; the accessors
-> are different views into that same pulse.
-
-That model is the same for built-in ledgr indicators, TTR-backed
-indicators, and custom indicators.
-
 ## Start With Built-In Features
 
 Use two demo instruments and two built-in features. The economic idea
 will be small on purpose:
 
 > Own an instrument only when its recent return is positive enough and
-> today's close is above its moving average.
+> todayâ€™s close is above its moving average.
 
 That rule needs one momentum feature and one trend feature. A feature
-map gives readable aliases to your R code while preserving ledgr's exact
-engine feature IDs.
+map gives your strategy code readable aliases while preserving ledgrâ€™s
+exact engine feature IDs.
 
 ``` r
 features <- ledgr_feature_map(
@@ -38,44 +60,69 @@ features <- ledgr_feature_map(
 )
 ```
 
-There are two names in play:
+> [!NOTE]
+>
+> ### Definition
+>
+> A feature ID is ledgrâ€™s engine-facing name for a computed value. An
+> alias is the strategy-facing name you choose in a feature map. The
+> alias makes strategy code readable; the feature ID remains the durable
+> engine identity.
 
-- the **alias** is the readable name you choose, such as `ret_5` or
-  `sma_10`;
-- the **feature ID** is ledgr's stable engine name, such as `return_5`
-  or `sma_10`.
-
-Use aliases when you write strategy logic with `ctx$features()`. Use
-feature IDs when you need the explicit engine contract, for example with
+Use aliases such as `ret_5` or `sma_10` when you write strategy logic
+with `ctx$features()`. Use feature IDs such as `return_5` or `sma_10`
+when you need the explicit engine contract, for example with
 `ctx$feature()` or when inspecting stored feature metadata.
 
-Feature objects appear in three related places:
+Feature objects appear in three registration and inspection places:
 
 | Surface | Accepted feature shape | How names are used |
 |----|----|----|
-| `ledgr_experiment(features = ...)` | indicator, list, named list, feature map, or `function(params)` factory | registers feature definitions for the run |
-| `ledgr_feature_contracts()` / `ledgr_feature_contract_check()` | static indicator, list, named list, or feature map | reports aliases and engine IDs; factories must be materialized first |
+| `ledgr_experiment(features = ...)` | indicator, list, named list, or feature map | registers feature definitions for the run |
+| `ledgr_feature_contracts()` / `ledgr_feature_contract_check()` | static indicator, list, named list, or feature map | reports aliases and engine IDs |
 | `ledgr_pulse_snapshot(features = ...)` | static list or feature map | computes pulse-known values for inspection |
+
+The strategy context then exposes the computed values through accessors:
+
+| Accessor | Name type | Use |
+|----|----|----|
 | `ctx$feature(id, feature_id)` | engine feature ID string | reads one scalar value by exact ID |
 | `ctx$features(id, feature_map)` | feature map | returns a named vector keyed by alias |
 
-Lower-level and legacy helpers may be narrower. The canonical workflow
-is: register features on `ledgr_experiment()`, then read pulse-known
-values through `ctx$feature()` or `ctx$features()` inside the strategy.
+The canonical workflow is: register features on `ledgr_experiment()`,
+then read pulse-known values through `ctx$feature()` or `ctx$features()`
+inside the strategy.
 
 ## Feature Lifecycle: From Declaration To Lookup
 
 The feature path has five steps:
 
-1.  You declare feature definitions with `ledgr_indicator()` helpers,
-    built-in helpers such as `ledgr_ind_sma()`, TTR adapters, CSV/R
-    adapters, a `ledgr_feature_map()`, or a
-    `features = function(params)` factory.
+<div class="ledgr-diagram ledgr-feature-lifecycle">
+
+``` mermaid
+
+flowchart LR
+  declare["declare<br/>indicator or map"]
+  register["register<br/>experiment"]
+  compute["compute<br/>pulse-known values"]
+  access["access<br/>ctx feature methods"]
+  decide["decide<br/>target holdings"]
+
+  declare --> register --> compute --> access --> decide
+```
+
+</div>
+
+1.  You declare features in any of several shapes: individual
+    indicators, built-in helpers, TTR adapters, CSV/R adapters, feature
+    maps, or active-alias parameterizations. All resolve to the same
+    lifecycle below.
 2.  `ledgr_experiment()` stores the declaration. Static lists and
-    feature maps are ready immediately. Factories are materialized later
-    for each concrete parameter list.
+    feature maps are ready immediately. Active-alias features are
+    materialized for concrete feature-grid values before candidate
+    execution.
 3.  Optional `ledgr_precompute_features()` resolves a parameter grid,
-    computes each candidate's concrete feature set, deduplicates shared
+    computes each candidateâ€™s concrete feature set, deduplicates shared
     indicator fingerprints, and records candidate feature-set hashes.
 4.  During `ledgr_run()` or `ledgr_sweep()`, the fold core computes the
     registered feature values at each pulse without looking past the
@@ -84,13 +131,20 @@ The feature path has five steps:
     `ctx$feature()` by engine feature ID, or with `ctx$features()` by
     feature-map alias.
 
+> [!NOTE]
+>
+> ### Definition
+>
+> A fingerprint identifies the feature definition, not just the name. If
+> the calculation, parameters, warmup rule, adapter, or selected output
+> changes, the fingerprint changes even when the feature ID stays
+> readable.
+
 Feature IDs identify values inside the pulse context. Fingerprints
-identify the feature definition used to compute those values. Changing a
-function body, `series_fn`, `params`, warmup requirement, source
-adapter, or selected output changes the fingerprint even when the
-feature ID is intentionally kept stable. For multi-output sources such
-as TTR `BBands` or `MACD`, each selected output is an ordinary indicator
-with its own feature ID and output-specific fingerprint.
+identify the feature definition used to compute those values. For
+multi-output sources such as TTR `BBands` or `MACD`, each selected
+output is an ordinary indicator with its own feature ID and
+output-specific fingerprint.
 
 If two feature declarations produce the same engine feature ID, ledgr
 treats that as one feature name in the pulse context. Use distinct IDs
@@ -99,14 +153,21 @@ feature-map alias never changes the underlying engine feature ID or
 fingerprint; it only gives your strategy a readable name for mapped
 access.
 
-The multi-output bundle helper follows the same lifecycle. A bundle is
-an authoring convenience that flattens to ordinary indicator definitions
-before runtime. It is not a second feature system.
+> [!NOTE]
+>
+> ### Definition
+>
+> A bundle is an authoring convenience for declaring several indicator
+> outputs at once. The engine receives ordinary single-output feature
+> definitions after the bundle is flattened.
+
+The multi-output bundle helper follows the same lifecycle. It is not a
+second feature system.
 
 The same idea works for crossover rules. An SMA crossover registers two
 separate indicators: one short moving average and one long moving
-average. The economic meaning is "fast trend above slow trend" rather
-than "close above one trend line." Each moving average has its own
+average. The economic meaning is â€œfast trend above slow trendâ€ rather
+than â€œclose above one trend line.â€ Each moving average has its own
 feature ID, warmup, and stored values.
 
 ``` r
@@ -116,7 +177,7 @@ crossover_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(crossover_features)
-#> # A tibble: 2 x 5
+#> # A tibble: 2 Ã— 5
 #>   alias    feature_id source requires_bars stable_after
 #>   <chr>    <chr>      <chr>          <int>        <int>
 #> 1 sma_fast sma_10     ledgr             10           10
@@ -145,8 +206,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      ledgr::ledgr_utc("2019-01-01"),
-      ledgr::ledgr_utc("2019-06-30")
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
     )
   )
 
@@ -158,7 +219,7 @@ snapshot <- ledgr_snapshot_from_df(
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr::ledgr_utc("2019-03-01"),
+  ts_utc = ledgr_utc("2019-03-01"),
   features = features
 )
 ```
@@ -171,7 +232,7 @@ filled.
 
 ``` r
 ledgr_pulse_features(pulse, features)
-#> # A tibble: 4 x 5
+#> # A tibble: 4 Ã— 5
 #>   ts_utc              instrument_id feature_id feature_value alias
 #>   <dttm>              <chr>         <chr>              <dbl> <chr>
 #> 1 2019-03-01 00:00:00 DEMO_01       return_5         0.0853  ret_5
@@ -180,20 +241,20 @@ ledgr_pulse_features(pulse, features)
 #> 4 2019-03-01 00:00:00 DEMO_02       sma_10          68.2     sma_10
 ```
 
-The wide pulse view is useful for debugging and future model-style
-workflows. It contains one OHLCV block and one feature block for each
-instrument. OHLCV columns use `{instrument_id}__ohlcv_{field}`. Feature
-columns use `{instrument_id}__feature_{feature_id}`. A feature map can
-filter and order feature columns and, when a feature map is supplied,
-uses aliases as the wide feature keys.
+The wide pulse view is useful for debugging and ML-style
+row-per-observation workflows. It contains one OHLCV block and one
+feature block for each instrument. OHLCV columns use
+`{instrument_id}__ohlcv_{field}`. Feature columns use
+`{instrument_id}__feature_{feature_id}`. A feature map filters and
+orders feature columns, using aliases as the wide feature keys.
 
 ``` r
 ledgr_pulse_wide(pulse, features)
-#> # A tibble: 1 x 17
+#> # A tibble: 1 Ã— 17
 #>   ts_utc                cash equity DEMO_01__ohlcv_open DEMO_01__ohlcv_high
 #>   <dttm>               <dbl>  <dbl>               <dbl>               <dbl>
 #> 1 2019-03-01 00:00:00 100000 100000                103.                107.
-#> # i 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
+#> # â„¹ 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
 #> #   DEMO_01__ohlcv_volume <dbl>, DEMO_01__feature_ret_5 <dbl>,
 #> #   DEMO_01__feature_sma_10 <dbl>, DEMO_02__ohlcv_open <dbl>, DEMO_02__ohlcv_high <dbl>,
 #> #   DEMO_02__ohlcv_low <dbl>, DEMO_02__ohlcv_close <dbl>, DEMO_02__ohlcv_volume <dbl>,
@@ -210,8 +271,8 @@ by `ctx$feature()` and `ctx$features()`.
 The long and wide pulse views are useful when you want to inspect the
 computed data, compare instruments, or think in model-like rows. They
 are not always the clearest shape for strategy code. A strategy often
-wants to ask a smaller question: "what are the current values for this
-instrument?"
+wants to ask a smaller question: â€œwhat are the current values for this
+instrument?â€
 
 That is why ledgr also exposes the same pulse data through scalar and
 mapped accessors. The table views and the accessors are not competing
@@ -238,18 +299,23 @@ passed_warmup(x)
 #> [1] TRUE
 ```
 
+> [!NOTE]
+>
+> ### Definition
+>
+> Warmup is the period before a known feature has enough prior bars to
+> produce a usable value. A warmup `NA` is not an unknown feature; it is
+> a known feature that is not ready yet.
+
+> [!TIP]
+>
+> ### Try it
+>
+> Change the scalar accessor to `pulse$feature("DEMO_01", "returns_5")`.
+> Why does that fail while `ids[["ret_5"]]` works?
+
 Inside a strategy, loop over `ctx$universe` so the rule works for every
 instrument in the run.
-
-Read the body economically:
-
-- start from `ctx$flat()`, so the default desired state is no positions;
-- inspect each instrument's current mapped features;
-- skip the instrument while either feature is still in warmup;
-- buy `params$qty` only when recent return is above the threshold and
-  price is above the moving average;
-- because the strategy starts flat on every pulse, an instrument is sold
-  when the condition stops being true.
 
 ``` r
 strategy <- function(ctx, params) {
@@ -297,13 +363,9 @@ run_id <- paste0("indicators-demo-", Sys.getpid())
 
 bt <- exp |>
   ledgr_run(params = list(min_return = 0, qty = 10), run_id = run_id)
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 ledgr_results(bt, what = "fills")
-#> # A tibble: 39 x 9
+#> # A tibble: 39 Ã— 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
 #>  1         1 2019-01-23 DEMO_01       BUY      10  88.0     0         0    OPEN
@@ -316,7 +378,7 @@ ledgr_results(bt, what = "fills")
 #>  8         8 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
 #>  9         9 2019-03-11 DEMO_01       SELL     10 106.      0       123.   CLOSE
 #> 10        10 2019-03-11 DEMO_02       SELL     10  68.0     0        -9.18 CLOSE
-#> # i 29 more rows
+#> # â„¹ 29 more rows
 
 close(pulse)
 close(bt)
@@ -333,7 +395,7 @@ known feature may still be `NA`.
 
 ``` r
 ledgr_feature_contracts(features)
-#> # A tibble: 2 x 5
+#> # A tibble: 2 Ã— 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 ret_5  return_5   ledgr              6            6
@@ -346,7 +408,7 @@ the contract table. For an unnamed list, `alias` is `NA`.
 ``` r
 plain_features <- list(ledgr_ind_returns(5), ledgr_ind_sma(10))
 ledgr_feature_contracts(plain_features)
-#> # A tibble: 2 x 5
+#> # A tibble: 2 Ã— 5
 #>   alias feature_id source requires_bars stable_after
 #>   <chr> <chr>      <chr>          <int>        <int>
 #> 1 <NA>  return_5   ledgr              6            6
@@ -390,12 +452,12 @@ grid <- ledgr_param_grid(
 )
 ```
 
-The important rule is that the feature set covers the whole grid:
-`lookback = 20` means `return_20` must already be registered. A missing
-feature ID is an unknown-feature error, not warmup. The alias names in
-`swept_features` must also match the lookup key pattern used by the
-strategy, here `paste0("ret_", params$lookback)`. In short, all feature
-parameter values must be registered before `ledgr_run()`; do not create
+The feature set must cover the whole grid: `lookback = 20` means
+`return_20` must already be registered. A missing feature ID is an
+unknown-feature error, not warmup. The alias names in `swept_features`
+must also match the lookup key pattern used by the strategy, here
+`paste0("ret_", params$lookback)`. In short, all feature parameter
+values must be registered before `ledgr_run()`; do not create
 `ledgr_ind_returns(params$lookback)` lazily inside the strategy.
 
 For exploratory sweeps over ledgr-owned indicator parameters, prefer
@@ -426,38 +488,36 @@ results <- ledgr_sweep(exp, grid, precomputed_features = precomputed)
 
 For single-output indicators, the feature-map alias is the
 strategy-facing name returned by `ctx$features(id)`. Bundle entries are
-intentionally flat:
-`bands = ledgr_ind_ttr_outputs("BBands", n = ledgr_param("bb_n"))`
-exposes bundle output aliases such as `bbands_dn` and `bbands_up`, not
-`bands` or a nested object. Parameterized bundle concrete feature IDs
-may include a stable hash suffix so multiple candidate values can
-coexist in one sweep projection; use `ctx$features(id)` and the alias
-map for strategy-facing names.
-
-Feature factories remain available for advanced exact-ID workflows and
-custom materialization patterns, but do not call user feature factories
-from inside a strategy. Under strategy preflight, those helper
-references are external strategy logic and are not the canonical
-active-alias path.
+intentionally flat; see the TTR bundle section below for how bundle
+aliases differ from single-output aliases in mapped access.
 
 ## TTR-Backed Indicators
 
 `ledgr_ind_ttr()` is the adapter for supported indicators from the
 suggested `TTR` package. TTR stays outside the core engine:
 
-``` text
-TTR -> ledgr_ind_ttr() -> ledgr_indicator -> deterministic pulse engine
+<div class="ledgr-diagram ledgr-ttr-adapter">
+
+``` mermaid
+
+flowchart LR
+  ttr["TTR"]
+  adapter["ledgr_ind_ttr()"]
+  indicator["ledgr_indicator"]
+  engine["deterministic<br/>pulse engine"]
+
+  ttr --> adapter --> indicator --> engine
 ```
+
+</div>
 
 The engine sees a normal `ledgr_indicator`. That means TTR-backed
 indicators follow the same feature-ID, warmup, and pulse-view rules as
-built-in indicators. The examples below are skipped when `TTR` is not
-installed. In your own project, install TTR before creating TTR-backed
-indicators:
+built-in indicators. The TTR-backed examples below are skipped when
+`TTR` is not installed. In your own project, install TTR with
+`install.packages("TTR")` before creating TTR-backed indicators.
 
-``` r
-install.packages("TTR")
-```
+### Single-Output TTR Indicators
 
 ``` r
 ttr_features <- ledgr_feature_map(
@@ -485,29 +545,14 @@ ttr_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(ttr_features)
-#> # A tibble: 5 x 5
-#>   alias       feature_id                    source requires_bars stable_after
-#>   <chr>       <chr>                         <chr>          <int>        <int>
-#> 1 ret_5       return_5                      ledgr              6            6
-#> 2 ttr_rsi     ttr_rsi_14                    TTR               15           15
-#> 3 bb_up       ttr_bbands_20_up              TTR               20           20
-#> 4 macd        ttr_macd_12_26_9_false_macd   TTR               34           34
-#> 5 macd_signal ttr_macd_12_26_9_false_signal TTR               34           34
 ledgr_feature_id(ttr_features)
-#>                           ret_5                         ttr_rsi
-#>                      "return_5"                    "ttr_rsi_14"
-#>                           bb_up                            macd
-#>              "ttr_bbands_20_up"   "ttr_macd_12_26_9_false_macd"
-#>                     macd_signal
-#> "ttr_macd_12_26_9_false_signal"
 ```
 
 This mixed feature map combines a built-in return feature with
-TTR-backed RSI, BBands, and MACD features. The examples produce IDs such
-as `return_5`, `ttr_rsi_14`, `ttr_bbands_20_up`,
-`ttr_macd_12_26_9_false_macd`, and `ttr_macd_12_26_9_false_signal`.
+TTR-backed RSI, BBands, and MACD features. The MACD ID embeds the
+explicit arguments because they are part of the calculation identity.
 
-## Native RSI
+### Native RSI vs TTR RSI
 
 ledgr also includes a native RSI helper. It does not require TTR and
 follows the same ID and warmup contract as other built-in indicators:
@@ -518,7 +563,7 @@ native_rsi_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(native_rsi_features)
-#> # A tibble: 1 x 5
+#> # A tibble: 1 Ã— 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 rsi_14 rsi_14     ledgr             15           15
@@ -535,12 +580,12 @@ calculation and warmup behavior match your research intent.
 RSI is a common mean-reversion input. One compact rule is: buy when RSI
 is below 30, then return to flat when the condition is no longer true.
 The experiment registers the RSI indicator before the run; the strategy
-only reads the pulse-time value.
+only reads the pulse-time value. The example below uses native RSI so it
+works without TTR. Use TTR-backed RSI when you deliberately want adapter
+behavior.
 
 ``` r
-rsi_features <- ledgr_feature_map(
-  rsi_14 = ledgr_ind_ttr("RSI", input = "close", n = 14)
-)
+rsi_features <- native_rsi_features
 
 rsi_strategy <- function(ctx, params) {
   targets <- ctx$flat()
@@ -572,19 +617,25 @@ rsi_bt <- ledgr_run(
 )
 
 ledgr_results(rsi_bt, what = "fills")
-#> # A tibble: 10 x 9
+#> # A tibble: 16 Ã— 9
 #>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-22 DEMO_01       BUY      10  87.2     0        0     OPEN
-#>  2         2 2019-01-24 DEMO_01       SELL     10  89.0     0       17.9   CLOSE
-#>  3         3 2019-02-12 DEMO_02       BUY      10  66.1     0        0     OPEN
-#>  4         4 2019-02-14 DEMO_02       SELL     10  66.5     0        3.85  CLOSE
-#>  5         5 2019-06-10 DEMO_01       BUY      10  91.2     0        0     OPEN
-#>  6         6 2019-06-18 DEMO_01       SELL     10  87.7     0      -35.1   CLOSE
-#>  7         7 2019-06-19 DEMO_01       BUY      10  87.3     0        0     OPEN
-#>  8         8 2019-06-21 DEMO_01       SELL     10  87.3     0        0.267 CLOSE
-#>  9         9 2019-06-24 DEMO_01       BUY      10  86.5     0        0     OPEN
-#> 10        10 2019-06-26 DEMO_01       SELL     10  86.8     0        2.87  CLOSE
+#>  1         1 2019-01-22 DEMO_01       BUY      10  87.2     0         0    OPEN
+#>  2         2 2019-01-23 DEMO_02       BUY      10  69.1     0         0    OPEN
+#>  3         3 2019-01-24 DEMO_01       SELL     10  89.0     0        17.9  CLOSE
+#>  4         4 2019-01-25 DEMO_02       SELL     10  69.9     0         7.59 CLOSE
+#>  5         5 2019-02-07 DEMO_02       BUY      10  67.9     0         0    OPEN
+#>  6         6 2019-02-08 DEMO_02       SELL     10  67.2     0        -6.26 CLOSE
+#>  7         7 2019-02-14 DEMO_02       BUY      10  66.5     0         0    OPEN
+#>  8         8 2019-02-18 DEMO_02       SELL     10  67.2     0         7.00 CLOSE
+#>  9         9 2019-05-01 DEMO_01       BUY      10  98.7     0         0    OPEN
+#> 10        10 2019-05-03 DEMO_01       SELL     10  99.9     0        12.6  CLOSE
+#> 11        11 2019-05-30 DEMO_01       BUY      10  94.2     0         0    OPEN
+#> 12        12 2019-06-12 DEMO_02       BUY      10  75.3     0         0    OPEN
+#> 13        13 2019-06-13 DEMO_02       SELL     10  76.5     0        12.1  CLOSE
+#> 14        14 2019-06-18 DEMO_01       SELL     10  87.7     0       -65.1  CLOSE
+#> 15        15 2019-06-19 DEMO_01       BUY      10  87.3     0         0    OPEN
+#> 16        16 2019-06-28 DEMO_01       SELL     10  87.7     0         4.23 CLOSE
 close(rsi_bt)
 ledgr_snapshot_close(rsi_snapshot)
 ```
@@ -595,6 +646,8 @@ one column with `output` when you need exactly one output, or use
 configuration. `BBands` exposes `dn`, `mavg`, `up`, and `pctB`. `MACD`
 exposes `macd` and `signal`; ledgr also supports a derived `histogram`.
 
+### Multi-Output TTR Indicators
+
 ``` r
 ledgr_feature_contracts(ledgr_feature_map(
   bb_dn = ledgr_ind_ttr("BBands", input = "close", output = "dn", n = 20),
@@ -602,14 +655,9 @@ ledgr_feature_contracts(ledgr_feature_map(
   bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
   bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
 ))
-#> # A tibble: 4 x 5
-#>   alias   feature_id         source requires_bars stable_after
-#>   <chr>   <chr>              <chr>          <int>        <int>
-#> 1 bb_dn   ttr_bbands_20_dn   TTR               20           20
-#> 2 bb_mavg ttr_bbands_20_mavg TTR               20           20
-#> 3 bb_up   ttr_bbands_20_up   TTR               20           20
-#> 4 bb_pctB ttr_bbands_20_pctb TTR               20           20
 ```
+
+### Bundle Naming Rules
 
 For multi-output authoring, prefer the bundle helper. By default, bundle
 feature IDs use a normalized prefix derived from the TTR function name.
@@ -627,21 +675,13 @@ defaults optimize for readable output names. Use
 ``` r
 bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
 ledgr_feature_id(bbands_bundle)
-#> [1] "bbands_dn"   "bbands_mavg" "bbands_up"   "bbands_pctb"
 ledgr_feature_contracts(bbands_bundle)
-#> # A tibble: 4 x 5
-#>   alias feature_id  source requires_bars stable_after
-#>   <chr> <chr>       <chr>          <int>        <int>
-#> 1 <NA>  bbands_dn   TTR               20           20
-#> 2 <NA>  bbands_mavg TTR               20           20
-#> 3 <NA>  bbands_up   TTR               20           20
-#> 4 <NA>  bbands_pctb TTR               20           20
 ```
 
 When a bundle is placed inside `ledgr_feature_map()`, its entries expand
 using their feature IDs as aliases. A single alias on the bundle
 argument is ignored because one alias cannot name several outputs.
-Control the generated feature IDs with the bundle's `prefix` argument
+Control the generated feature IDs with the bundleâ€™s `prefix` argument
 instead.
 
 Use `outputs` as a filter. The derived or explicit prefix still applies
@@ -656,7 +696,6 @@ bbands_subset <- ledgr_ind_ttr_outputs(
   n = 20
 )
 ledgr_feature_id(bbands_subset)
-#> [1] "bb_dn" "bb_up"
 ```
 
 `naming` renames selected outputs; it is not itself an output filter.
@@ -671,45 +710,27 @@ bbands_named_subset <- ledgr_ind_ttr_outputs(
   n = 20
 )
 ledgr_feature_id(bbands_named_subset)
-#> [1] "lower_band" "upper_band"
 ```
 
 Set `prefix = NULL` only when you explicitly want raw normalized output
 names such as `dn`, `up`, or `pctb`. Raw names are short and can collide
 when one experiment combines several bundles or parameterizations.
 
-The two MACD examples above use matching explicit arguments. Explicit
-arguments become part of the feature ID, so combine MACD outputs in one
-strategy only when their argument sets match the computation you intend.
-If one MACD output uses `percent = FALSE`, the paired `signal` output
-should usually set `percent = FALSE` too.
+### MACD Argument Consistency
+
+The two MACD entries in `ttr_features` both set `percent = FALSE`.
+Explicit arguments become part of the feature ID, so combine MACD
+outputs in one strategy only when their argument sets match the
+computation you intend. If one MACD output uses `percent = FALSE`, the
+paired `signal` output should usually set `percent = FALSE` too.
+
+### TTR Warmup Rules
 
 TTR warmup inference is inspectable:
 
 ``` r
 ledgr_ttr_warmup_rules() |>
   select(ttr_fn, input, formula)
-#> # A tibble: 18 x 3
-#>    ttr_fn          input formula
-#>    <chr>           <chr> <chr>
-#>  1 RSI             close n + 1
-#>  2 SMA             close n
-#>  3 EMA             close n
-#>  4 ATR             hlc   n + 1
-#>  5 MACD            close nSlow + nSig - 1
-#>  6 WMA             close n
-#>  7 ROC             close n + 1
-#>  8 momentum        close n + 1
-#>  9 CCI             hlc   n
-#> 10 BBands          close n
-#> 11 aroon           hl    n
-#> 12 DonchianChannel hl    n
-#> 13 MFI             hlcv  n + 1
-#> 14 CMF             hlcv  n
-#> 15 runMean         close n
-#> 16 runSD           close n
-#> 17 runVar          close n
-#> 18 runMAD          close n
 ```
 
 For MACD, ledgr verifies the supported warmup rules against direct TTR
@@ -729,7 +750,7 @@ snapshot handle needed for interactive pulse inspection.
 ttr_pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr::ledgr_utc("2019-06-03"),
+  ts_utc = ledgr_utc("2019-06-03"),
   features = ttr_features
 )
 
@@ -739,7 +760,7 @@ close(ttr_pulse)
 
 ## Troubleshoot Warmup And Zero Trades
 
-Warmup problems are easiest to diagnose by connecting three facts:
+Warmup problems are easiest to diagnose by connecting four facts:
 
 1.  `ledgr_feature_contracts(features)` tells you how many bars each
     feature needs before it can produce a usable value.
@@ -759,24 +780,24 @@ warmup_check_snapshot <- ledgr_snapshot_from_df(
 )
 
 ledgr_feature_contract_check(warmup_check_snapshot, features)
-#> # A tibble: 4 x 8
+#> # A tibble: 4 Ã— 8
 #>   alias  instrument_id feature_id source requires_bars stable_after available_bars
 #>   <chr>  <chr>         <chr>      <chr>          <int>        <int>          <int>
 #> 1 ret_5  DEMO_01       return_5   ledgr              6            6            129
 #> 2 sma_10 DEMO_01       sma_10     ledgr             10           10            129
 #> 3 ret_5  DEMO_02       return_5   ledgr              6            6             19
 #> 4 sma_10 DEMO_02       sma_10     ledgr             10           10             19
-#> # i 1 more variable: warmup_achievable <lgl>
+#> # â„¹ 1 more variable: warmup_achievable <lgl>
 
 ledgr_snapshot_close(warmup_check_snapshot)
 ```
 
 The `warmup_achievable` column is `FALSE` when an instrument does not
-have enough available bars to satisfy a feature's `stable_after`
+have enough available bars to satisfy a featureâ€™s `stable_after`
 contract.
 
 Normal early warmup is temporary: a feature is `NA` near the beginning
-of an instrument's sample and later becomes finite. Impossible warmup is
+of an instrumentâ€™s sample and later becomes finite. Impossible warmup is
 different: the instrument never has enough available bars for that
 feature. In that case, zero trades can be a valid completed run plus a
 useful diagnostic, not a failed run.
@@ -796,7 +817,6 @@ ledgr_ind_ttr(
   n = 10,
   requires_bars = 20
 )$id
-#> [1] "ttr_dema_10"
 ```
 
 For non-TTR sources or more specialized logic, use `ledgr_indicator()`
@@ -804,13 +824,14 @@ directly with a `series_fn`. That is the adapter escape hatch: external
 logic remains at the boundary, while the engine keeps the same
 deterministic indicator contract.
 
-## What's Next?
+## Where Next
 
-For strategy authoring, read
-`vignette("strategy-development", package = "ledgr")`. For accounting
-and summary metrics, read
-`vignette("metrics-and-accounting", package = "ledgr")`. For formal help
-on the inspection views, see `?ledgr_feature_contracts`,
-`?ledgr_feature_contract_check`, `?ledgr_pulse_features`, and
-`?ledgr_pulse_wide`. For TTR-specific output names and supported warmup
-inference, see `?ledgr_ind_ttr` and `?ledgr_ttr_warmup_rules`.
+- For strategy authoring, read
+  `vignette("strategy-development", package = "ledgr")`.
+- For exploratory feature grids and active aliases, read
+  `vignette("sweeps", package = "ledgr")`.
+- For accounting and summary metrics, read
+  `vignette("metrics-and-accounting", package = "ledgr")`.
+- For function-level details, see `?ledgr_feature_contracts`,
+  `?ledgr_feature_contract_check`, `?ledgr_pulse_features`,
+  `?ledgr_pulse_wide`, `?ledgr_ind_ttr`, and `?ledgr_ttr_warmup_rules`.

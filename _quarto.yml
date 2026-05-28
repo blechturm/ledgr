@@ -1,0 +1,15 @@
+project:
+  render:
+    - "vignettes/*.qmd"
+    - "vignettes/articles/*.qmd"
+
+format:
+  html:
+    theme: cosmo
+    code-copy: true
+
+execute:
+  echo: true
+  warning: false
+  message: false
+  freeze: false

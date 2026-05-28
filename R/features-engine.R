@@ -9,7 +9,10 @@ ledgr_abort_duplicate_feature_ids <- function(ids) {
     return(invisible(TRUE))
   }
   rlang::abort(
-    sprintf("Duplicate feature IDs are not allowed: %s", paste(duplicates, collapse = ", ")),
+    sprintf(
+      "Duplicate feature IDs are not allowed: %s. Use unique feature IDs or bundle prefixes; for parameterized feature sweeps, prefer active aliases with `ledgr_feature_grid()` and `ledgr_grid_cross()`.",
+      paste(duplicates, collapse = ", ")
+    ),
     class = c("ledgr_duplicate_feature_id", "ledgr_invalid_feature_def")
   )
 }

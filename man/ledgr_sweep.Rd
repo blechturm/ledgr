@@ -58,16 +58,19 @@ result tables and promotion context.
 
 Failed candidates are retained as rows when \code{stop_on_error = FALSE}. Contract
 errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
-strategy preflight failures still abort. Failed rows can be inspected with
+strategy preflight failures still abort. Compatibility note: old
+feature-factory experiments use a flat parameter-grid contract. Executable
+grids with separate \code{feature_params} require active aliases through
+\code{ledgr_feature_map()}. Failed rows can be inspected with
 \code{ledgr_candidate(..., allow_failed = TRUE)}, but \code{\link[=ledgr_promote]{ledgr_promote()}} rejects
 failed candidates. When \code{stop_on_error = TRUE} rethrows a strategy failure,
 assert with \code{inherits(e, "ledgr_strategy_error")} rather than exact
 class-vector equality.
 
-v0.1.8 does not ship automatic ranking, \code{ledgr_tune()}, parallel sweep,
-walk-forward/PBO/CSCV helpers, risk-layer insertion, public cost-model
-factories, paper/live adapters, intraday-specific support, or full sweep
-artifact persistence.
+Current sweep mode intentionally does not ship automatic ranking,
+\code{ledgr_tune()}, parallel sweep, walk-forward/PBO/CSCV helpers, risk-layer
+insertion, public cost-model factories, paper/live adapters,
+intraday-specific support, or full sweep artifact persistence.
 }
 \section{Articles}{
 

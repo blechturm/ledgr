@@ -42,12 +42,15 @@ they already have one entry for every instrument in \code{ctx$universe}.
 }
 \section{Feature Object Compatibility}{
 \code{ledgr_experiment(features = ...)} accepts static indicators, lists of
-indicators, named lists, feature maps, and feature factories of the form
-\code{function(params)}. Pulse inspection helpers accept static feature shapes.
-Inside the strategy context, \code{ctx$feature()} reads one engine feature ID and
-\code{ctx$features()} requires a \code{ledgr_feature_map}. Lower-level or legacy
-helpers may be narrower; the experiment-first workflow is the canonical public
-path for feature maps.
+indicators, named lists, and feature maps as the canonical public feature
+shapes. Compatibility feature factories of the form \code{function(params)}
+remain available for old flat-grid and advanced exact-ID workflows, but new
+parameterized feature sweeps should use active aliases with
+\code{ledgr_feature_map()}. Pulse inspection helpers accept static feature
+shapes. Inside the strategy context, \code{ctx$feature()} reads one engine
+feature ID and \code{ctx$features()} requires a \code{ledgr_feature_map}.
+Lower-level or legacy helpers may be narrower; the experiment-first workflow is
+the canonical public path for feature maps.
 }
 \section{Articles}{
 

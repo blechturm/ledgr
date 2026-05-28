@@ -1,10 +1,46 @@
-Metrics And Accounting
-================
+# Metrics And Accounting
+
+
+<style>
+.ledgr-diagram {
+  margin: 1.25rem auto 1.5rem auto;
+  text-align: center;
+}
+.ledgr-diagram .mermaid {
+  display: inline-block;
+  max-width: 760px;
+  width: 100%;
+}
+.ledgr-diagram .node text,
+.ledgr-diagram .edgeLabel {
+  font-size: 18px !important;
+}
+</style>
 
 ledgr records a backtest as accounting evidence first and summary
 metrics second.
 
 The useful reading order is:
+
+<div class="ledgr-diagram ledgr-accounting-hierarchy">
+
+``` mermaid
+
+flowchart TB
+  ledger["ledger events<br/>source of truth"]
+  fills["fills<br/>execution rows"]
+  trades["trades<br/>closed round trips"]
+  equity["equity rows<br/>portfolio value"]
+  metrics["summary metrics<br/>formulas over results"]
+
+  ledger --> fills
+  fills --> trades
+  ledger --> equity
+  trades --> metrics
+  equity --> metrics
+```
+
+</div>
 
 1.  ledger events say what actually filled;
 2.  fills are execution rows derived from those events;
@@ -15,6 +51,14 @@ The useful reading order is:
 That order matters. A strategy can open a position without closing it.
 That run has fills and equity exposure, but zero closed trades. In that
 case `n_trades = 0` and `win_rate = NA` are correct, not missing data.
+
+## Prerequisites
+
+``` r
+library(ledgr)
+library(dplyr)
+library(tibble)
+```
 
 ## Inspection Surfaces
 
@@ -39,30 +83,29 @@ columns for programmatic use. The stable programming contract is the
 column meaning, not the number of rows: a valid run can have zero fills,
 zero closed trades, or a final open position.
 
-`final_equity` is not a field in the `ledgr_compute_metrics()` list
-today. Read it from the last equity row, from `print(bt)`, from
-comparison rows, or from sweep rows. There is also no committed
-`ledgr_results(bt, what = "features")` table. Feature values are
-inspected at pulse time with `ledgr_pulse_snapshot()` or through
-sweep/precompute provenance, not through a persisted feature-result
-table accessor.
+Two things are not in the standard result tables.
+
+`final_equity` is not a field in the `ledgr_compute_metrics()` list.
+Read it from the last equity row, from `print(bt)`, from comparison
+rows, or from sweep rows.
+
+There is no committed `ledgr_results(bt, what = "features")` table.
+Feature values are inspected at pulse time with `ledgr_pulse_snapshot()`
+or through sweep/precompute provenance, not through a persisted
+feature-result table accessor.
 
 Metric assumptions are inspectable through `ledgr_metric_context()`. Use
 it on a backtest, `ledgr_metrics` object, comparison table, sweep result
 table, or promotion context to see the risk-free-rate and annualization
 context that produced that surface.
 
-``` r
-library(ledgr)
-library(dplyr)
-library(tibble)
-```
-
 ## A Tiny Run
 
 Use a five-bar in-memory fixture so the accounting can be checked by
-hand. This article uses `ledgr_backtest()` as a compact fixture helper
-for accounting examples. The canonical research workflow remains:
+hand. OHLC values are equal per bar so the example focuses on accounting
+arithmetic; real bars use the same code with ordinary intra-bar
+movement. This article uses `ledgr_backtest()` as a compact fixture
+helper for accounting examples. The canonical research workflow remains:
 snapshot -\> `ledgr_experiment()` -\> `ledgr_run()`.
 
 ``` r
@@ -78,7 +121,7 @@ bars <- data.frame(
 
 one_day_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ledgr::ledgr_utc(ctx$ts_utc) == ledgr::ledgr_utc("2020-01-01")) {
+  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) {
     targets["AAA"] <- 1
   }
   targets
@@ -105,10 +148,16 @@ approximately `2 * spread_bps` basis points before fixed commissions.
 
 ## Ledger Events
 
-The ledger is the append-only accounting record for the run. It is the
-most literal view: rows record what ledgr wrote when an execution
-changed cash, positions, or run state. The friendlier result tables
-below are derived from these events.
+> [!NOTE]
+>
+> ### Definition
+>
+> A ledger event is the append-only accounting record written when
+> execution changes cash, positions, or run state. Fills, trades,
+> equity, and metrics are derived views over ledger-backed evidence.
+
+The ledger is the most literal view. The friendlier result tables below
+are derived from these events.
 
 ``` r
 ledger <- ledgr_results(bt, what = "ledger")
@@ -122,6 +171,14 @@ ledger
 ```
 
 ## Fills And Trades
+
+> [!NOTE]
+>
+> ### Definition
+>
+> A fill is an execution row: direction, quantity, price, fee, and
+> action. A trade is the subset of fill evidence that closes quantity
+> and realizes P&L.
 
 `what = "fills"` returns execution fill rows. Opening and closing fills
 both appear here.
@@ -164,8 +221,15 @@ trades would double-count the round trip.
 
 ## Equity Rows
 
-The equity curve records portfolio state through time. It combines cash,
-current position value, and equity.
+> [!NOTE]
+>
+> ### Definition
+>
+> An equity row values the portfolio at one timestamp. It combines cash,
+> current position value, and total equity, including open-position
+> exposure.
+
+The equity curve records portfolio state through time.
 
 ``` r
 equity <- ledgr_results(bt, what = "equity")
@@ -245,9 +309,28 @@ snaps common cadences, such as daily and weekly, to standard
 annualization constants. Use the detected value if you need an external
 calculation to match ledgr exactly on non-daily data.
 
+> [!TIP]
+>
+> ### Try it
+>
+> Change `bars_per_year` in the recompute chunk from `252` to `365`.
+> Which metrics change? Why does `total_return` stay the same?
+
+## Metric Context
+
 Metric assumptions now live in a `metric_context`. The default context
 is US equity daily: zero annual risk-free rate and `252 * 1` periods per
 year. Use market templates for common assumptions:
+
+> [!NOTE]
+>
+> ### Definition
+>
+> A metric context is the assumption object behind metrics: risk-free
+> rate, calendar, annualization, and reserved provider slots. It makes
+> metric assumptions inspectable instead of hidden in summary output.
+
+### Common Contexts
 
 ``` r
 ledgr_metric_us_equity()
@@ -306,7 +389,7 @@ intraday_context <- ledgr_metric_context(
 ```
 
 The full constructor fields are `risk_free_rate`, `calendar`,
-`benchmark`, `market_factor`, and `mar`. In v0.1.8 the provider fields
+`benchmark`, `market_factor`, and `mar`. The provider fields
 `benchmark`, `market_factor`, and `mar` are reserved and must be `NULL`;
 they exist so future benchmark and provider designs have an explicit
 home instead of changing metric semantics later.
@@ -315,6 +398,8 @@ Intraday work should set `calendar` explicitly. For example, US equity
 minute bars use `ledgr_calendar_us_equity(bars_per_day = 390L)`. ledgr
 does not infer that policy from ticker symbols, file names, or provider
 names.
+
+### Stored Context vs Sensitivity Overrides
 
 `summary(bt)` and `ledgr_compute_metrics(bt)` use the metric context
 stored with the committed run. Call-time overrides are sensitivity
@@ -359,6 +444,12 @@ context$risk_free_rate$source
 context$risk_free_rate$as_of
 ledgr_metric_context_hash(context)
 ```
+
+### Comparison, Sweep, And Promotion Contexts
+
+The following snippets use objects from the experiment-store and sweeps
+workflows. They show where metric context is carried, not a complete
+runnable example.
 
 `ledgr_compare_runs()` has exactly one comparison context per table. The
 snapshot-first form uses the default context unless you pass one
@@ -422,19 +513,16 @@ rf_period_return = (1 + rf_annual)^(1 / bars_per_year) - 1
 ```
 
 Time-varying risk-free-rate series and real data providers such as FRED,
-Treasury, ECB, or central-bank adapters are deferred. Future providers
-must feed the same pulse-aligned `rf_period_return` vector into the
-formula above; they must not create a separate Sharpe formula branch.
+Treasury, ECB, or central-bank adapters are deferred to later
+metric-context provider work. Future providers must feed the same
+pulse-aligned `rf_period_return` vector into the formula above; they
+must not create a separate Sharpe formula branch.
 
-The metric is intentionally conservative around edge cases. Short
-samples, invalid adjacent equity returns, flat equity, constant-return
-series, all-missing return inputs, and near-zero excess-return
-volatility return `NA_real_` rather than an infinite or misleading
-Sharpe value. Near-zero means
-`sd(excess_return) <= .Machine$double.eps`.
+Sharpe returns `NA_real_` for short samples, flat equity, or near-zero
+volatility; see `?ledgr_compute_metrics` for the exact edge-case rules.
 
-Other risk-adjusted or benchmark-relative metrics are deferred from the
-current metric surface: Sortino, Calmar, Omega, information ratio,
+Other risk-adjusted or benchmark-relative metrics are deferred to v0.2.x
+benchmark context work: Sortino, Calmar, Omega, information ratio,
 alpha/beta, benchmark-relative metrics, VaR, and tail-risk metrics.
 
 ``` r
@@ -506,7 +594,7 @@ columns:
 ``` r
 comparison |>
   as.data.frame() |>
-  subset(select = c(run_id, final_equity, total_return, sharpe_ratio, max_drawdown))
+  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown)
 ```
 
 ## Zero Trades Can Be Correct
@@ -596,30 +684,19 @@ last target change.
 ``` r
 final_bar_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ledgr::ledgr_utc(ctx$ts_utc) == ledgr::ledgr_utc("2020-01-05")) {
+  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-05")) {
     targets["AAA"] <- 1
   }
   targets
 }
 
-warned <- FALSE
-final_bar_bt <- withCallingHandlers(
-  ledgr_backtest(
-    data = bars,
-    strategy = final_bar_strategy,
-    initial_cash = 1000,
-    run_id = "final_bar_accounting_example"
-  ),
-  warning = function(w) {
-    if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
-      warned <<- TRUE
-      invokeRestart("muffleWarning")
-    }
-  }
+final_bar_bt <- ledgr_backtest(
+  data = bars,
+  strategy = final_bar_strategy,
+  initial_cash = 1000,
+  run_id = "final_bar_accounting_example"
 )
 
-warned
-#> [1] TRUE
 ledgr_results(final_bar_bt, what = "fills")
 #> # A tibble: 0 x 9
 #> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
@@ -670,22 +747,27 @@ intraday_time <- format(ledgr_utc(ctx$ts_utc), "%H:%M:%S", tz = "UTC")
 intraday_time >= "14:30:00" && intraday_time <= "21:00:00"
 ```
 
-If fills are empty, distinguish zero signals from zero sizing. Inspect
-the diagnostic target vector before running the whole experiment:
+If fills are empty, distinguish zero signals from zero sizing. In your
+own run, use the same snapshot, universe, timestamp, features, strategy,
+and params you are debugging:
 
 ``` r
-pulse <- ledgr_pulse_snapshot(snapshot, universe, ts_utc, features = features)
+pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = ...,
+  ts_utc = ...,
+  features = features
+)
 target <- strategy(pulse, params)
 target
 all(target == 0)
 ```
 
-Custom fill-model outputs must include the required fill fields
-documented by the fill model contract: instrument ID, timestamp, action
-or side, quantity, price, and cost fields. Missing required fields are
-contract errors, not zero trade outcomes.
+Custom fill-model contract errors are different from zero-trade
+outcomes; see the fill-model reference documentation for the required
+fill fields.
 
-### Three Warmup-Adjacent Cases
+### Four Warmup-Adjacent Cases
 
 Warmup is per instrument. One instrument can have a usable value while
 another is still `NA` because it has fewer bars or a different data
@@ -724,10 +806,13 @@ close(open_bt)
 close(final_bar_bt)
 ```
 
-## What’s Next?
+## Where Next
 
-For strategy authoring, read
-`vignette("strategy-development", package = "ledgr")`. For indicators,
-feature IDs, and warmup, read
-`vignette("indicators", package = "ledgr")`. For durable run inspection,
-read `vignette("experiment-store", package = "ledgr")`.
+- For strategy authoring, read
+  `vignette("strategy-development", package = "ledgr")`.
+- For indicators, feature IDs, and warmup, read
+  `vignette("indicators", package = "ledgr")`.
+- For durable run inspection, read
+  `vignette("experiment-store", package = "ledgr")`.
+- For the target-holding and next-open fill timing contract, read
+  `vignette("execution-semantics", package = "ledgr")`.
