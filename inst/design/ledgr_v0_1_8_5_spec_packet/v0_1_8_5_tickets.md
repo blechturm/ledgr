@@ -546,7 +546,7 @@ scope: installed_docs
 Priority: P1
 Effort: M
 Dependencies: LDG-2443
-Status: Pending
+Status: In Progress
 
 ### Description
 
@@ -587,9 +587,9 @@ review.
 
 - `v0_1_8_5_spec.md` Sections 6.7, 10, and 11
 - `inst/design/vignette_styleguide.md`
-- `vignettes/strategy-development.Rmd`
-- `vignettes/indicators.Rmd`
-- `vignettes/metrics-and-accounting.Rmd`
+- `vignettes/strategy-development.qmd`
+- `vignettes/indicators.qmd`
+- `vignettes/metrics-and-accounting.qmd`
 
 ### Classification
 

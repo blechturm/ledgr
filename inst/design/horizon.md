@@ -720,6 +720,21 @@ Keep this separate from target risk, liquidity/capacity, transaction cost, and
 full portfolio optimization. Promoted roadmap hook:
 `v0.1.9.x Target Construction Helper Extensions`.
 
+### 2026-05-27 [risk] Affordability belongs in target risk
+
+The research fold treats strategy output as desired target quantities and
+applies deterministic next-open fills. Until the target-risk chain exists, raw
+targets can request more exposure than available cash supports; the fold records
+the fill and cash can go negative. That arithmetic is reproducible, but it is
+not a declared margin model.
+
+The v0.1.9 target-risk RFC should treat capital discipline as a first-class
+risk adapter, alongside long-only and max-weight constraints. The minimum shape
+should include an explicit capital floor or affordability rule inserted between
+target validation and fill timing, preserving the strategy contract: strategies
+declare desired holdings; risk transforms, rejects, or annotates targets before
+execution.
+
 ### 2026-05-24 [research] Beta as three distinct uses
 
 Beta is semantically important and architecturally complex partly because the
@@ -1890,6 +1905,20 @@ flip will have to rip out. The list below is the audit checklist.
   and intraday. Do not add EOD-flavored methods to the canonical strategy
   context (`ctx$today()`, `ctx$is_market_open()`) in v0.1.x — those
   belong on a future intraday-aware context, not on the existing one.
+- **Risk-layer affordability check must be net across one pulse's
+  proposed fills, not per-instrument sequential.** The fold core's fill
+  loop iterates per instrument and updates cash sequentially
+  (`R/fold-core.R:233-287`). When the v0.1.9 target-risk layer adds
+  affordability adapters, they must check feasibility against the net
+  cash delta from all proposed fills at one pulse, not per-instrument:
+  a per-instrument check would reject rebalancing strategies depending
+  on instrument iteration order (BUYs checking cash before paired SELLs
+  free it up), even though both fill at the same `t+1` open in reality.
+  Intraday rebalancing makes this acute because rebalances fire more
+  often; an equity-EOD test won't surface it. This also threads into
+  the v0.2.x OMS two-stream design — `order_events` recorded as a
+  batch atomic at the fill bar makes "shared cash pool at one fill
+  timestamp" structural rather than implicit.
 - **Storage schema stays timestamp-resolution-agnostic.** Today it is.
   The snapshot-administration RFC (v0.1.8.6) must explicitly preserve
   this and must not introduce fields that imply one row per instrument

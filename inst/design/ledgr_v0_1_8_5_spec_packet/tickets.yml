@@ -156,7 +156,7 @@ tickets:
 
   - id: "LDG-2444"
     title: "Remaining Core Vignette Quarto Migration"
-    status: "pending"
+    status: "in_progress"
     priority: "P1"
     effort: "M"
     dependencies:

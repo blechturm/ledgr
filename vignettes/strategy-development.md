@@ -1,8 +1,35 @@
-Strategy Development And Comparison
-================
+# Strategy Development
+
+
+<style>
+.ledgr-diagram {
+  margin: 1.25rem auto 1.5rem auto;
+  text-align: center;
+}
+.ledgr-diagram .mermaid {
+  display: inline-block;
+  max-width: 760px;
+  width: 100%;
+}
+.ledgr-diagram .node text,
+.ledgr-diagram .edgeLabel {
+  font-size: 18px !important;
+}
+</style>
+
+You write a ledgr strategy as a policy. At each decision pulse, the
+strategy receives `ctx`, reads only pulse-known information, and returns
+target holdings. This article teaches that contract, then shows how
+helper objects and feature maps make larger strategies easier to read
+without changing the target-vector boundary.
+
+## Prerequisites
 
 The examples use `dplyr` for demo-data preparation. Strategy functions
-use ledgr’s pulse context rather than data-frame operations.
+use ledgr’s pulse context rather than data-frame operations. The article
+assumes basic familiarity with sealed snapshots
+(`vignette("experiment-store", package = "ledgr")`) and feature IDs
+(`vignette("indicators", package = "ledgr")`).
 
 ``` r
 library(ledgr)
@@ -10,8 +37,13 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-A ledgr strategy is an ordinary R function, but the important idea is
-not the function syntax. The important idea is the pulse.
+This article moves in three steps:
+
+1.  learn the raw strategy contract:
+    `function(ctx, params) -> target vector`;
+2.  inspect pulse-known data and registered features;
+3.  use helper objects to express larger strategies while still
+    returning target holdings.
 
 A backtest in ledgr is a sequence of decision moments. At each pulse,
 ledgr shows the strategy only what could have been known at that time.
@@ -71,41 +103,18 @@ This removes one common source of leakage, but it does not certify that
 snapshots, feature definitions, event timestamps, universe construction,
 or parameter selection are causally clean.
 
-## A Strategy That Does Nothing
-
-The simplest economic policy is: hold cash and own no instruments.
-
-``` r
-flat_strategy <- function(ctx, params) {
-  ctx$flat()
-}
-```
-
-`ctx$flat()` creates a full target vector with one entry for every
-instrument in the run and every value set to zero. Economically, this
-means: after the next fill opportunity, hold no positions.
-
-This is a complete ledgr strategy. It is not useful for making money,
-but it is useful for understanding the contract: at every pulse, return
-target holdings.
-
-The return value is a named numeric vector. Names are instrument IDs
-from `ctx$universe`, values are desired quantities. `ctx$flat()`
-produces the full-universe shape with every entry at zero.
-
-The deeper mental model is that a strategy is a **policy**, not a
-sequence of orders. At each pulse, the strategy declares a desired
-state: “I want to hold this many shares of each instrument.” The engine
-compares that against current holdings, computes the gap, and fills
-accordingly. The strategy never says “buy 3 shares”; it says “I want to
-hold 3 shares.” This distinction is what keeps strategies free from
-execution-state bookkeeping, and it is what makes a ledgr strategy
-composable, testable, and directly readable as financial reasoning.
+With that boundary in mind, start with the simplest possible strategy.
 
 ## What Is `ctx`?
 
-`ctx` is the pulse context. It is the information packet ledgr gives
-your strategy at one decision time.
+> [!NOTE]
+>
+> ### Definition
+>
+> `ctx` is the pulse context: the information packet ledgr gives your
+> strategy at one decision time. It contains pulse-known bars, features,
+> positions, cash, and equity. It is deliberately not the full future
+> dataset.
 
 It contains the current timestamp, current bars, current features,
 current positions, cash, equity, and small helper functions for
@@ -117,7 +126,7 @@ accessing those values. It is deliberately not the full dataset.
 | `ctx$universe` | instruments in the run |
 | `ctx$open(id)`, `ctx$close(id)` | current bar values for one instrument |
 | `ctx$feature(id, feature_id)` | current indicator value for one instrument by engine feature ID |
-| `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias |
+| `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias, using the supplied feature map |
 | `ctx$position(id)` | current simulated position |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
 | `ctx$flat()` | target zero positions unless changed |
@@ -125,9 +134,36 @@ accessing those values. It is deliberately not the full dataset.
 
 For the installed accessor reference, see `?ledgr_strategy_context`.
 
-Use `ctx$flat()` when the strategy should be flat unless it sees a
-reason to act. Use `ctx$hold()` when the strategy should keep existing
-positions unless it sees a reason to change them.
+The pulse loop is the contract in motion:
+
+<div class="ledgr-diagram ledgr-pulse-loop">
+
+``` mermaid
+
+flowchart TB
+  state_t["pulse t state<br/>bars through t<br/>positions, cash, equity"]
+  ctx_node["ctx<br/>pulse-known projection"]
+  strategy_node["strategy(ctx, params)"]
+  target_node["target vector<br/>desired holdings"]
+  fill_node["next-open fill<br/>at t + 1"]
+  state_next["pulse t + 1 state<br/>ledger updated"]
+
+  state_t --> ctx_node --> strategy_node --> target_node --> fill_node --> state_next
+  state_next -. next pulse .-> state_t
+```
+
+</div>
+
+`ctx` is the no-lookahead handoff. It gives the strategy the current
+pulse projection, the strategy returns a target vector, and ledgr
+handles validation, fill timing, ledger events, and the next pulse.
+
+The two target starters have different economic meanings:
+
+| Helper | Starts from | Economic meaning |
+|----|----|----|
+| `ctx$flat()` | zero positions | only hold what this pulse explicitly selects |
+| `ctx$hold()` | current positions | keep existing positions unless changed |
 
 For example, this policy starts from current holdings and only changes
 the book when it sees an exit reason. Economically, it means: “keep what
@@ -151,6 +187,55 @@ This loop style is fine while the mechanics are still visible. Once you
 have helpers like `signal_*()` and `select_*()`, most strategy logic is
 easier to express at the whole-universe level instead of one instrument
 at a time.
+
+## A Strategy That Does Nothing
+
+The simplest economic policy is: hold cash and own no instruments.
+
+``` r
+flat_strategy <- function(ctx, params) {
+  ctx$flat()
+}
+```
+
+`ctx$flat()` creates a full target vector with one entry for every
+instrument in the run and every value set to zero. Economically, this
+means: after the next fill opportunity, hold no positions.
+
+This is a complete ledgr strategy: useful for understanding the
+contract, not for making money.
+
+The return value is a named numeric vector. Names are instrument IDs
+from `ctx$universe`, values are desired quantities. `ctx$flat()`
+produces the full-universe shape with every entry at zero.
+
+> [!NOTE]
+>
+> ### Definition
+>
+> A target vector is the strategy’s requested holdings for the full
+> universe at one pulse. It is named by instrument ID, numeric, and
+> complete. It is not an order list, a signal table, or a partial
+> update.
+
+The deeper mental model is that a strategy is a **policy**, not a
+sequence of orders. At each pulse, it declares a desired state: “I want
+to hold this many shares of each instrument.” The engine compares that
+against current holdings and fills the gap.
+
+That distinction keeps strategies free from execution-state bookkeeping.
+
+> [!WARNING]
+>
+> ### Affordability is not automatic
+>
+> Raw target vectors are desired holdings. ledgr does not check
+> affordability before filling them; if a target requires more cash than
+> the simulated portfolio has, the run can fill anyway and cash can go
+> negative. Use `target_rebalance(equity_fraction = ...)` or size
+> directly from `ctx$cash` and `ctx$equity` when you need capital-aware
+> targets. The planned v0.1.9 target-risk layer is the home for
+> chainable long-only, max-weight, and capital-floor constraints.
 
 ## A First Trading Rule
 
@@ -189,7 +274,23 @@ the economic idea is clear, ledgr strategies are usually easier to read
 when they use helper functions that operate on the whole universe at
 once. The later sections make that transition.
 
+> [!TIP]
+>
+> ### Try it
+>
+> Change `buy_if_up()` so it starts from `ctx$hold()` instead of
+> `ctx$flat()`. Which positions would persist after a down bar, and why
+> does that change the economic meaning of the strategy?
+
 ## Why `params` Exists
+
+> [!NOTE]
+>
+> ### Definition
+>
+> `params` is the run’s strategy configuration. Put research choices you
+> want to compare, store, or sweep into `params`; do not hide them in
+> globals or inside feature declarations.
 
 Hard-coded constants make experiments awkward. Parameters let one
 economic idea run under different assumptions.
@@ -223,8 +324,8 @@ bars <- ledgr_demo_bars |>
     instrument_id %in% c("DEMO_01", "DEMO_02"),
     between(
       ts_utc,
-      ledgr::ledgr_utc("2019-01-01"),
-      ledgr::ledgr_utc("2019-06-30")
+      ledgr_utc("2019-01-01"),
+      ledgr_utc("2019-06-30")
     )
   )
 
@@ -267,7 +368,7 @@ way to understand what your strategy will see.
 pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr::ledgr_utc("2019-03-01"),
+  ts_utc = ledgr_utc("2019-03-01"),
   features = features
 )
 
@@ -315,7 +416,10 @@ model-like thinking. The rest of this vignette uses the non-wide
 accessors because they keep the step-by-step strategy logic easier to
 read.
 
-Now build the strategy logic one transformation at a time.
+Raw loops are the clearest way to learn the contract. Once that contract
+is clear, larger strategies usually read better as a pipeline: score the
+universe, select names, assign weights, then convert those weights into
+target quantities.
 
 The economic idea:
 
@@ -400,20 +504,8 @@ floor(equity_fraction * ctx$equity / ctx$close(instrument_id))
 
 Both formulas use decision-time close and current pulse equity. Fills
 still occur at the configured later fill point, so fill value can drift
-from decision-time sizing.
-
-The helper objects are not a second execution path. They are authoring
-aids. The pipeline still ends in a `ledgr_target`, which unwraps to the
-same target quantity vector the runner has always consumed.
-
-Interactive pulse snapshots and backtest handles can be closed when you
-are done inspecting them. This releases DuckDB resources in long
-sessions; completed run artifacts are already durable when `ledgr_run()`
-returns.
-
-``` r
-close(pulse)
-```
+from decision-time sizing. Residual allocation after whole-share
+flooring remains cash and is reflected in the ledger-backed equity rows.
 
 ## Turn The Idea Into A Strategy
 
@@ -455,9 +547,8 @@ Read it economically:
 No helper registers indicators automatically. The experiment must say
 which features exist.
 
-The empty-selection path is intentionally an object path rather than a
-condition path. It lets expected warmup and “no signal today” flow
-through the same helper pipeline as an ordinary selection. Diagnostics
+Empty selections flow through the pipeline as objects, so expected
+warmup and “no signal today” look the same to your strategy. Diagnostics
 still belong at the pulse level: when a strategy produces no fills or no
 closed trades, inspect a late pulse and confirm whether the feature
 values are usable.
@@ -498,10 +589,7 @@ The strategy closes over `mapped_features`. Inside the universe loop,
 by the aliases. `passed_warmup()` is a guard for that vector: for values
 returned by `ctx$features()`, it means every requested indicator is
 usable at this pulse. It is not a signal pipeline transformation, and it
-is not a data-quality diagnostic for arbitrary vectors. A zero-length
-input is a classed error because an empty feature bundle cannot prove
-warmup has passed. The specific error classes are
-`ledgr_empty_warmup_input` and `ledgr_invalid_warmup_input`.
+is not a data-quality diagnostic for arbitrary vectors.
 
 ``` r
 mapped_return_strategy <- function(ctx, params) {
@@ -533,11 +621,11 @@ Read that as one pulse-time decision:
 
 Plain `features = list(...)` remains valid. Use it when exact IDs are
 clearest. Use a feature map when aliases make a feature-heavy strategy
-easier to read. The modern `ledgr_experiment(features = ...)` path
-accepts indicators, lists, named lists, and feature maps. The strategy
-context then uses either the exact-ID scalar accessor `ctx$feature()` or
-the mapped accessor `ctx$features()`. When in doubt, prefer the
-experiment-first workflow.
+easier to read. `ledgr_experiment(features = ...)` accepts indicators,
+lists, named lists, and feature maps. The strategy context then uses
+either the exact-ID scalar accessor `ctx$feature()` or the mapped
+accessor `ctx$features()`. When in doubt, prefer the experiment-first
+workflow.
 
 ``` r
 mapped_exp <- ledgr_experiment(
@@ -558,10 +646,6 @@ bt_mapped <- mapped_exp |>
     params = list(min_return = 0, qty = 5),
     run_id = "mapped_return"
   )
-#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-#> next-open fill model requires a following bar. No fill was emitted for this target
-#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-#> should be fillable.
 
 summary(bt_mapped)
 #> ledgr Backtest Summary
@@ -587,81 +671,12 @@ summary(bt_mapped)
 #>   Time in Market:      62.79%
 ```
 
-Feature-map strategies commonly close over the feature map object. That
-is the single-definition pattern: one object defines aliases, registers
-indicators, and drives pulse-time lookup.
+Feature-map strategies commonly close over the feature map object. Keep
+that construction code with the research record. The experiment store
+records the registered feature definitions, but recovered strategy
+source may still reference the original alias-map object by name.
 
-This has a provenance consequence. Tier 2 is common for strategy
-functions that call package helpers or depend on external symbols; the
-helper-pipeline strategy below is also tier 2. Feature maps add a more
-specific concern: the recovered strategy source may reference
-`mapped_features`, but the alias map object itself is not recovered as a
-standalone object from strategy provenance. The experiment store records
-the registered feature definitions, while the human-readable alias
-construction remains part of your research code. Keep the feature-map
-construction code with the research record when you need to rerun the
-strategy later.
-
-## Sweeping Indicator Parameters
-
-When a sweep changes an indicator parameter, ledgr materializes a
-concrete feature set for each candidate before execution. The
-active-alias pattern keeps indicator-tuning inputs out of `params`, so
-the strategy reads stable names even when the concrete indicator windows
-vary by candidate.
-
-``` r
-features <- ledgr_feature_map(
-  fast = ledgr_ind_sma(ledgr_param("fast_n")),
-  slow = ledgr_ind_sma(ledgr_param("slow_n"))
-)
-
-strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    values <- ctx$features(id)
-    if (passed_warmup(values) && values[["fast"]] > values[["slow"]]) {
-      targets[id] <- params$qty
-    }
-  }
-
-  targets
-}
-```
-
-The feature grid supplies `fast_n` and `slow_n`; the strategy grid
-supplies `qty` and any other decision parameter:
-
-``` r
-grid <- ledgr_grid_cross(
-  features = ledgr_feature_grid(
-    fast_n = c(10L, 20L),
-    slow_n = c(40L, 80L),
-    .filter = fast_n < slow_n
-  ),
-  strategy = ledgr_strategy_grid(qty = c(5, 10))
-)
-```
-
-Read this as two different contracts. Feature parameters materialize
-concrete features before execution. Strategy parameters are passed to
-`strategy(ctx, params)` at runtime.
-
-Static feature maps remain the recommended shape when aliases do not
-vary by candidate:
-
-``` r
-features <- ledgr_feature_map(
-  fast = ledgr_ind_sma(20),
-  slow = ledgr_ind_sma(50)
-)
-
-strategy <- function(ctx, params) {
-  x <- ctx$features("AAA", features)
-  ctx$flat()
-}
-```
+## Keep Feature Declaration Outside Strategy
 
 Do not declare or rebuild features inside a strategy:
 
@@ -682,9 +697,9 @@ owns feature declaration. Duplicating a parameterized feature map inside
 the strategy creates a drift risk between the experiment’s feature
 declaration and the strategy lookup map.
 
-Use `ledgr_param()` and active aliases for ledgr-owned parameterized
-indicators. Exact feature-ID lookup remains useful for concrete feature
-sets, custom indicators, and low-level debugging.
+For exploratory sweeps over indicator parameters, use active aliases and
+feature grids. The canonical walkthrough is
+`vignette("sweeps", package = "ledgr")`.
 
 ## Run One Backtest
 
@@ -786,126 +801,31 @@ means positions opened but did not close. `n_trades` counts closed round
 trips, while the fills table shows both opening and closing execution
 rows.
 
-## Compare Parameter Variants
-
-Now keep the economic idea fixed and change one assumption: hold the top
-two instruments instead of the top one.
-
-``` r
-bt_top_2 <- exp |>
-  ledgr_run(
-    params = list(lookback = 5, n = 2, equity_fraction = 0.1),
-    run_id = "top_return_2"
-  )
-
-ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2"))
-#> # ledgr comparison
-#> # A tibble: 2 x 9
-#>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
-#>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
-#> 1 top_return_1 <NA>        10045. +0.5%              0.450  -1.1%              24 45.8%
-#> 2 top_return_2 <NA>        10004. +0.0%              0.0661 -1.1%               7 57.1%
-#> # i 1 more variable: reproducibility_level <chr>
-#>
-#> # i Full identity and telemetry columns remain available on this tibble.
-#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
-```
-
-Comparison is most useful when the compared runs differ for a reason you
-can explain. Here the reason is simple: one run concentrates the
-allocation in the single strongest recent-return instrument, and the
-other splits it across two.
-
-The comparison table is not asking “which number is biggest?” in
-isolation. It is asking whether the change in assumption improved the
-run in ways you can defend: return, drawdown, number of closed trades,
-and win rate all matter.
-
-These runs share the same sealed data, initial cash, feature set, and
-cost assumptions. That keeps the teaching example narrow. A real
-comparison would also ask whether the conclusion survives different
-samples, execution costs, starting capital, and parameter choices.
-
-## Compare Against A Baseline
-
-The flat strategy is a sanity baseline, not a market benchmark. It tells
-you what the result table looks like when the strategy deliberately does
-nothing, and it keeps the comparison honest: if an active strategy
-cannot beat doing nothing on the same sealed data, that is valuable
-information.
-
-``` r
-flat_exp <- ledgr_experiment(
-  snapshot = snapshot,
-  strategy = flat_strategy,
-  opening = ledgr_opening(cash = 10000)
-)
-
-bt_flat <- flat_exp |>
-  ledgr_run(params = list(), run_id = "flat_baseline")
-
-ledgr_compare_runs(snapshot, run_ids = c("top_return_1", "top_return_2", "flat_baseline"))
-#> # ledgr comparison
-#> # A tibble: 3 x 9
-#>   run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
-#>   <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
-#> 1 top_return_1 <NA>        10045. +0.5%              0.450  -1.1%              24 45.8%
-#> 2 top_return_2 <NA>        10004. +0.0%              0.0661 -1.1%               7 57.1%
-#> 3 flat_baseli~ <NA>        10000  +0.0%             NA      0.0%                0 <NA>
-#> # i 1 more variable: reproducibility_level <chr>
-#>
-#> # i Full identity and telemetry columns remain available on this tibble.
-#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
-```
-
-The flat baseline has no win rate because it has no closed trades. That
-is not missing data; there are no wins or losses to count.
-
-For real Yahoo snapshots, keep benchmark strategies explicit rather than
-adding a hidden benchmark helper. These simple patterns are ordinary
-ledgr strategies:
-
-``` r
-flat_strategy <- function(ctx, params) {
-  ctx$flat()
-}
-
-buy_and_hold_strategy <- function(ctx, params) {
-  targets <- ctx$hold()
-  targets[params$instrument_id] <- params$qty
-  targets
-}
-
-equal_weight_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  capital <- ctx$equity * params$equity_fraction / length(ctx$universe)
-  for (id in ctx$universe) {
-    targets[id] <- floor(capital / ctx$close(id))
-  }
-  targets
-}
-
-single_instrument_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  targets[params$instrument_id] <- params$qty
-  targets
-}
-```
-
-Use these as comparison baselines for a sealed real-data snapshot; they
-are not benchmark APIs and they do not download benchmark returns. Keep
-starting cash, cost assumptions, and sizing comparable across runs. A
-fixed quantity such as `qty = 100` can make one strategy use far more
-capital than another; for real Yahoo comparisons, an equity-fraction
-baseline is usually the fairer teaching shape.
+If you want to compare variants, keep the strategy authoring question
+separate from the research-comparison question. Use
+`vignette("experiment-store", package = "ledgr")` for stored-run
+comparison and `vignette("research-workflow", package = "ledgr")` for
+promotion and review.
 
 ## Troubleshoot Helper Pipelines
 
 The helper pipeline is only an authoring layer:
 
-``` text
-ledgr_signal -> ledgr_selection -> ledgr_weights -> ledgr_target -> target vector
+<div class="ledgr-diagram ledgr-helper-pipeline">
+
+``` mermaid
+
+flowchart LR
+  signal["ledgr_signal"]
+  selection["ledgr_selection"]
+  weights["ledgr_weights"]
+  target_obj["ledgr_target"]
+  target_vec["target vector"]
+
+  signal --> selection --> weights --> target_obj --> target_vec
 ```
+
+</div>
 
 Only the final target vector is executable. A strategy must return a
 full named numeric target vector, or a `ledgr_target` that unwraps to
@@ -961,60 +881,38 @@ would fail target validation because it did not name every instrument.
 If `setdiff(names(target), pulse$universe)` is non-empty, it emitted
 targets for unknown instruments.
 
-Reusable file-level helper functions are Tier 3 unless the function can
-be represented as part of the strategy artifact. Inline small allocation
-logic or wrap it in an approved helper surface:
+## Preflight Catches Non-Reproducible Strategy Code
 
-``` r
-allocate_equal <- function(ctx, fraction) {
-  targets <- ctx$flat()
-  capital <- ctx$equity * fraction / length(ctx$universe)
-  for (id in ctx$universe) targets[id] <- floor(capital / ctx$close(id))
-  targets
-}
+Strategy functions are preflighted before execution. Keep strategy logic
+self-contained, put research variation in `params`, and avoid hidden
+session state such as unresolved helper functions or mutable globals.
 
-bad_strategy <- function(ctx, params) {
-  allocate_equal(ctx, params$equity_fraction)
-}
+`ledgr_signal_strategy()` is a separate compatibility wrapper for
+tutorial-style signal functions. It explicitly maps an inner signal
+function to target quantities. For the full tier model, read
+`vignette("reproducibility", package = "ledgr")`.
 
-ledgr_strategy_preflight(bad_strategy)
-
-self_contained_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  capital <- ctx$equity * params$equity_fraction / length(ctx$universe)
-  for (id in ctx$universe) targets[id] <- floor(capital / ctx$close(id))
-  targets
-}
-```
-
-`ledgr_signal_strategy()` is a separate explicit compatibility wrapper
-for tutorial-style signal functions. It maps an inner signal function to
-full target quantities using configured long/flat/short quantities. Use
-it when that mapping is really the strategy contract; otherwise prefer
-returning the full target vector directly. Strategy preflight reports
-this wrapper as a special allowed case because it captures an inner
-function and quantity settings. Tier 3 preflight failures remain hard
-failures: they are not downgraded to warnings or silently accepted.
-Wall-clock calls such as `Sys.time()` and global assignment with `<<-`
-are Tier 3 because ledgr cannot make them reproducible execution inputs.
-Resolved scalar values from the strategy closure are allowed as Tier 2,
-but values that define the research question should usually live in
-`params`.
+> [!NOTE]
+>
+> ### Definition
+>
+> A preflight tier is ledgr’s static reproducibility classification for
+> a strategy function. Tier 1 is self-contained, Tier 2 is inspectable
+> with user-managed environment parity, and Tier 3 is rejected before
+> execution.
 
 A compact Tier 3 hard-failure example is an unresolved helper reference:
 
 ``` r
-outside_helper <- function(ctx) ctx$flat()
-
 tier3_strategy <- function(ctx, params) {
   outside_helper(ctx)
 }
 
 preflight <- ledgr_strategy_preflight(tier3_strategy)
 preflight$tier
+#> [1] "tier_3"
 preflight$reason
-
-ledgr_run(exp, params = list(), run_id = "tier3_demo")
+#> [1] "Strategy references unresolved symbol(s): outside_helper."
 ```
 
 `ledgr_run()` and `ledgr_sweep()` reject Tier 3 strategies before
@@ -1033,40 +931,11 @@ weights, it fails before turning them into target quantities.
 Those errors are part of the design. They are meant to catch research
 mistakes while the mistake is still small enough to understand.
 
-## Inspect Stored Source
+## Stored Source
 
-The experiment store lets you come back later and know exactly what code
-and parameters produced a result. When you return to a six-month-old
-run, this is the artifact that tells you what was actually tested, not
-what you remember testing.
-
-ledgr stores strategy provenance with the run. Inspection is read-only
-by default: `trust = FALSE` returns stored text and metadata without
-parsing or evaluating it.
-
-Hash verification proves stored-text identity, not safety. That is why
-the read-only path is the default.
-
-You usually do not read the hashes yourself. They are the durable
-fingerprints ledgr uses to verify that recovered source and parameters
-are identical to the artifacts that produced the run.
-
-``` r
-ledgr_extract_strategy(snapshot, "top_return_1", trust = FALSE)
-#> ledgr Extracted Strategy
-#> ========================
-#>
-#> Run ID:          top_return_1
-#> Reproducibility: tier_1
-#> Source Hash:     a724d2475b8e5f75c6d1d0ba5c1b99e0f33cb1d88f2d93ed261a2772276cc29d
-#> Params Hash:     3caea9cbe019dbfa16b53b9bbeee913bdb2f16e4c6f196e0f5a3c8332cac270c
-#> Hash Verified:   TRUE
-#> Trust:           FALSE
-#> Source Available:TRUE
-```
-
-Use `trust = TRUE` only when you explicitly trust the experiment store
-and want to recover a function object.
+ledgr stores strategy provenance with committed runs. For source
+inspection, hash verification, and trust boundaries, read
+`vignette("reproducibility", package = "ledgr")`.
 
 ## Cleanup
 
@@ -1078,21 +947,18 @@ warnings.
 
 ``` r
 close(bt_top_1)
-close(bt_top_2)
-close(bt_flat)
 close(bt_mapped)
+close(pulse)
 ledgr_snapshot_close(snapshot)
 ```
 
-## What’s Next?
+## Where Next
 
-If you want the formal contract, read the strategy and context sections
-in `inst/design/contracts.md`. If you want the indicator story, read
-`vignette("indicators", package = "ledgr")`. For formal feature-map
-help, see `?ledgr_strategy_context`, `?ledgr_feature_map`, and
-`?passed_warmup`. If you want the deployment story, continue with
-`vignette("research-to-production", package = "ledgr")`. If you want to
-inspect or compare durable runs, read
-`vignette("experiment-store", package = "ledgr")`. If you want the
-no-lookahead target and fill timing contract, read
-`vignette("execution-semantics", package = "ledgr")`.
+- For feature declarations, aliases, and warmup inspection, read
+  `vignette("indicators", package = "ledgr")`.
+- For the no-lookahead target and fill timing contract, read
+  `vignette("execution-semantics", package = "ledgr")`.
+- For durable run inspection and comparison, read
+  `vignette("experiment-store", package = "ledgr")`.
+- For function-level context details, see `?ledgr_strategy_context`,
+  `?ledgr_feature_map`, and `?passed_warmup`.
