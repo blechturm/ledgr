@@ -601,7 +601,7 @@ Constraints:
 
 ### v0.1.8.6 Feature Projection Materialization, Storage Spike, Snapshot Administration, And Research-Loop Helpers
 
-v0.1.8.6 hosts four coordinated workstreams. They share a release but are
+v0.1.8.6 hosts five coordinated workstreams. They share a release but are
 scoped and decided independently.
 
 Sequencing:
@@ -611,6 +611,10 @@ Sequencing:
   Direction 5.0 (feature cache-key deduplication) before Direction 5.1
   (schema-only `feature_table` by default), followed by current-source
   remeasurement and an instrument x feature width sweep.
+- The structured benchmark suite is a separate local engineering workstream.
+  It gives the storage decision stable named scenarios, current-source guards,
+  machine-readable output, and a small QuantConnect-comparable subset without
+  becoming a hosted performance dashboard.
 - A full RFC cycle on snapshot administration and ETL provenance metadata
   should conclude before implementation tickets are cut for that workstream.
   The horizon entry is the seed-shape input. The research-loop ergonomics
@@ -645,6 +649,29 @@ Constraints:
 - no collapse import for the materialization fix;
 - no claim that loop throughput is width-invariant until the width sweep
   measures it.
+
+#### Workstream S: Structured Benchmark Suite
+
+Intent:
+
+- turn the feature-payload spike into repeatable named benchmark scenarios with
+  current-source guards, explicit warmup/repeat behavior, phase metrics,
+  environment metadata, and machine-readable output;
+- include a small QuantConnect/LEAN-comparable subset where ledgr has honest
+  scenario analogues, reported side by side rather than as parity or
+  speed-ranking claims;
+- keep ledgr-only scenarios such as cross-sectional feature read/score
+  measured without pretending they have a direct published LEAN analogue;
+- provide the measurement substrate for the two-mode instrument x feature width
+  sweep and the DuckDB/storage decision.
+
+Constraints:
+
+- no public hosted benchmark dashboard in this cycle;
+- no hard CI performance-regression threshold in this cycle;
+- no LEAN equivalence, parity, or "beats LEAN" language;
+- no scheduler, universe-selection, or history/window benchmark until ledgr has
+  matching public surfaces.
 
 #### Workstream A: Snapshot Administration And ETL Provenance
 

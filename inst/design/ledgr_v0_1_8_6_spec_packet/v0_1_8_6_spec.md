@@ -466,7 +466,8 @@ from auditr report intake.
 ## 9. Proposed Ticket Cut
 
 Ticket identifiers are assigned in `v0_1_8_6_tickets.md` and `tickets.yml`.
-The intended batches are:
+The intended ticket areas are below. `batch_plan.md` groups these ticket areas
+into review batches for execution and review.
 
 1. **Spec and planning alignment.** Keep README, roadmap, AGENTS, and the
    active packet in sync with v0.1.8.6 scope.

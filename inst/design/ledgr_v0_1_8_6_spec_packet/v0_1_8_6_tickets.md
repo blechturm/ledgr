@@ -33,19 +33,21 @@ or broad-collapse release.
 
 ```text
 LDG-2445 Packet Alignment And v0.1.8.6 Planning State
-  |-- LDG-2446 Feature Cache-Key Deduplication
-  |     `-- LDG-2447 Schema-Only Feature Table Default
-  |           |-- LDG-2448 Structured Benchmark Suite And LEAN Reference
-  |           |     `-- LDG-2449 Two-Mode Width Sweep And Storage Decision
-  |           |           `-- LDG-2450 Conditional Storage And Typed Event Column Gate
-  |           `-- LDG-2451 Snapshot Administration And Research-Loop Helper RFC Gate
-  `-- LDG-2452 v0.1.8.6 Release Gate And Closeout
+  `-- LDG-2446 Feature Cache-Key Deduplication
+        `-- LDG-2447 Schema-Only Feature Table Default
+              |-- LDG-2448 Structured Benchmark Suite And LEAN Reference
+              |     `-- LDG-2449 Two-Mode Width Sweep And Storage Decision
+              |           `-- LDG-2450 Conditional Storage And Typed Event Column Gate
+              `-- LDG-2451 Snapshot Administration And Research-Loop Helper RFC Gate
 
-LDG-2452 depends on LDG-2446 through LDG-2451. LDG-2450 is a decision gate:
-typed persistent event columns are implemented only if storage/schema work is
-explicitly accepted after LDG-2449. LDG-2451 is also a gate: implementation
-tickets for snapshot administration or research-loop helpers are cut only after
-the relevant RFC/spec input is accepted.
+LDG-2452 v0.1.8.6 Release Gate And Closeout
+  depends on LDG-2446 through LDG-2451.
+
+LDG-2450 is a decision gate: typed persistent event columns are implemented
+only if storage/schema work is explicitly accepted after LDG-2449. LDG-2451 is
+also a gate: implementation tickets for snapshot administration or
+research-loop helpers are cut only after the relevant RFC/spec input is
+accepted.
 ```
 
 ## Priority Levels
@@ -62,7 +64,7 @@ the relevant RFC/spec input is accepted.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Planned
+Status: Completed
 
 ### Description
 

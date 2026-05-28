@@ -87,8 +87,9 @@ research-loop helper follow-up from v0.1.8.5.
   `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`.
 
 Parallel dispatch, target risk, walk-forward, public cost/liquidity APIs, OMS
-work, live data logs, point-in-time regressors, and broad collapse adoption
-remain deferred unless the v0.1.8.6 spec explicitly scopes a bounded subset.
+work, live data logs, point-in-time regressors, public benchmark dashboards, and
+broad collapse adoption remain deferred unless the v0.1.8.6 spec explicitly
+scopes a bounded subset.
 Auditr-report bugfix intake is also deferred to the next version after prompt
 fixes in the auditr repository.
 

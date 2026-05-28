@@ -4,7 +4,7 @@ generated_from: "v0_1_8_6_spec.md"
 tickets:
   - id: "LDG-2445"
     title: "Packet Alignment And v0.1.8.6 Planning State"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "S"
     dependencies: []
