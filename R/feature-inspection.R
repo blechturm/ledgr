@@ -301,6 +301,19 @@ ledgr_pulse_feature_table <- function(pulse) {
   if (!is.data.frame(table)) {
     rlang::abort("Pulse feature table must be a data frame.", class = "ledgr_invalid_pulse_context")
   }
+  projection <- pulse$.feature_projection
+  pulse_idx <- pulse$.feature_pulse_idx
+  feature_ids <- pulse$.feature_ids
+  if (nrow(table) == 0L &&
+      !is.null(projection) &&
+      !is.null(pulse_idx) &&
+      length(ledgr_projection_feature_ids(projection, feature_ids)) > 0L) {
+    return(ledgr_projection_feature_table(
+      projection,
+      as.integer(pulse_idx),
+      feature_ids = feature_ids
+    ))
+  }
   table
 }
 

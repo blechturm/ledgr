@@ -36,7 +36,7 @@ tickets:
 
   - id: "LDG-2447"
     title: "Schema-Only Feature Table Default"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:

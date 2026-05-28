@@ -53,6 +53,9 @@ ledgr_strategy_error_features <- function(ctx) {
     feature_table <- data.frame()
   }
   features <- tryCatch(ledgr_feature_names(feature_table), error = function(e) character())
+  if (length(features) == 0L && is.data.frame(ctx$features_wide)) {
+    features <- setdiff(names(ctx$features_wide), c("instrument_id", "ts_utc"))
+  }
   ledgr_strategy_context_list(features)
 }
 

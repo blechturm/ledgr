@@ -249,12 +249,9 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
     }
 
     feature_value <- ctx$feature("TEST_A", "sma_2")
-    long_value <- ctx$feature_table$feature_value[
-      ctx$feature_table$instrument_id == "TEST_A" &
-        ctx$feature_table$feature_name == "sma_2"
-    ][[1]]
-    if (!identical(feature_value, long_value)) {
-      stop("runtime feature accessor does not match long feature table")
+    wide_value <- ctx$features_wide$sma_2[ctx$features_wide$instrument_id == "TEST_A"][[1]]
+    if (!identical(feature_value, wide_value)) {
+      stop("runtime feature accessor does not match wide feature table")
     }
 
     stats::setNames(rep(0, length(ctx$universe)), ctx$universe)

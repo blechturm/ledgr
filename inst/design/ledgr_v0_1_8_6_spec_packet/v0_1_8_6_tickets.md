@@ -193,7 +193,7 @@ scope: cache_key_dedup
 Priority: P0
 Effort: L
 Dependencies: LDG-2446
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -235,6 +235,32 @@ Direction 5.1 from the accepted feature-projection synthesis.
 Targeted runtime-projection and pulse-context tests, event-stream parity tests,
 LDG-2403 accounting parity tests, feature-inspection tests, and current-source
 spike remeasurement.
+
+Completion note:
+
+- Targeted tests passed:
+  `test-pulse-context-accessors.R`, `test-feature-inspection.R`,
+  `test-sweep.R`, `test-sweep-parity.R`, `test-backtest-wrapper.R`, and
+  `test-indicator-tools.R`.
+- Default `ledgr_projection_pulse_views()` now emits schema-only
+  `feature_table` rows; full-long remains available through the explicit
+  internal `feature_table = "full"` opt-in.
+- Non-fast and fast runtime contexts keep `ctx$feature_table` as a plain
+  zero-row data.frame by default while `ctx$feature()`, `ctx$features()`,
+  `ctx$features_wide`, `ledgr_pulse_features()`, and `ledgr_pulse_wide()`
+  continue to read current-pulse feature values.
+- `test-pulse-context-accessors.R` includes a direct non-fast attach-path
+  regression fixture: a projection plus schema-only `feature_table` leaves
+  `ctx$feature_table` at zero rows, while scalar/wide accessors and
+  single-pulse inspection still recover feature values on demand.
+- Current-source spike remeasurement, 100 instruments x 504 pulses x 20
+  features, `iters = 1`: `t_pre = 2.48s`, `gap_viewbuild = 9.50s`,
+  `t_loop = 4.11s`, `t_wall = 16.09s`, `peak_mb = 371.6`. The broad
+  `gap_viewbuild` metric includes post-run/wrapper work and was noisy at this
+  size.
+- Equivalent isolated view-build timing on the same 100 x 504 x 20 projection:
+  schema-only `ledgr_projection_pulse_views()` = 0.26s, full-long opt-in =
+  0.47s; first-pulse long rows = 0 vs 2000.
 
 ### Source Reference
 

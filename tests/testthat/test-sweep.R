@@ -627,10 +627,16 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
   runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(run_feature_matrix, "AAA", pulses_posix)
   static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
   static_feature_views <- ledgr:::ledgr_projection_pulse_views(runtime_projection, "custom_close")
+  static_feature_views_full <- ledgr:::ledgr_projection_pulse_views(
+    runtime_projection,
+    "custom_close",
+    feature_table = "full"
+  )
 
   seen <- new.env(parent = emptyenv())
   seen$built <- list()
   seen$prebuilt <- list()
+  seen$full <- list()
   seen$fast <- list()
   seen$fast_feature_fns <- list()
   seen$fast_bar_fns <- list()
@@ -672,7 +678,13 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
       bars_by_id = bars_by_id,
       bars_mat = bars_mat,
       static_bars_views = if (isTRUE(prebuilt)) static_bars_views else NULL,
-      static_feature_views = if (isTRUE(prebuilt)) static_feature_views else NULL,
+      static_feature_views = if (identical(prebuilt, "full")) {
+        static_feature_views_full
+      } else if (isTRUE(prebuilt)) {
+        static_feature_views
+      } else {
+        NULL
+      },
       feature_defs = feature_defs,
       runtime_projection = runtime_projection,
       cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0),
@@ -689,10 +701,13 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
   built <- run_fold()
   mode <- "prebuilt"
   prebuilt <- run_fold(prebuilt = TRUE)
+  mode <- "full"
+  full <- run_fold(prebuilt = "full")
   mode <- "fast"
   fast <- run_fold(use_fast_context = TRUE, prebuilt = TRUE)
 
   testthat::expect_equal(prebuilt$events, built$events)
+  testthat::expect_equal(full$events, built$events)
   testthat::expect_equal(fast$events, built$events)
   testthat::expect_equal(
     vapply(seen$prebuilt, `[[`, numeric(1), "feature"),
@@ -703,9 +718,12 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
     vapply(seen$built, `[[`, numeric(1), "feature")
   )
   for (i in seq_along(seen$built)) {
+    testthat::expect_equal(nrow(seen$built[[i]]$table), 0L)
     testthat::expect_equal(seen$prebuilt[[i]]$bar, seen$built[[i]]$bar)
     testthat::expect_equal(seen$prebuilt[[i]]$table, seen$built[[i]]$table)
     testthat::expect_equal(seen$prebuilt[[i]]$wide, seen$built[[i]]$wide)
+    testthat::expect_gt(nrow(seen$full[[i]]$table), nrow(seen$built[[i]]$table))
+    testthat::expect_equal(seen$full[[i]]$wide, seen$built[[i]]$wide)
     testthat::expect_equal(seen$fast[[i]]$bar, seen$built[[i]]$bar)
     testthat::expect_equal(seen$fast[[i]]$table, seen$built[[i]]$table)
     testthat::expect_equal(seen$fast[[i]]$wide, seen$built[[i]]$wide)
@@ -727,7 +745,11 @@ testthat::test_that("prebuilt pulse views do not leak mutation across pulses", {
   run_feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, "AAA")
   runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(run_feature_matrix, "AAA", pulses_posix)
   static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
-  static_feature_views <- ledgr:::ledgr_projection_pulse_views(runtime_projection, "custom_close")
+  static_feature_views <- ledgr:::ledgr_projection_pulse_views(
+    runtime_projection,
+    "custom_close",
+    feature_table = "full"
+  )
 
   observed <- new.env(parent = emptyenv())
   observed$pulse <- 0L
@@ -806,7 +828,11 @@ testthat::test_that("prebuilt pulse view mutation does not leak across candidate
   run_feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, "AAA")
   runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(run_feature_matrix, "AAA", pulses_posix)
   static_bars_views <- ledgr:::ledgr_bars_pulse_views(bars_mat, "AAA", pulses_posix)
-  static_feature_views <- ledgr:::ledgr_projection_pulse_views(runtime_projection, "custom_close")
+  static_feature_views <- ledgr:::ledgr_projection_pulse_views(
+    runtime_projection,
+    "custom_close",
+    feature_table = "full"
+  )
 
   run_direct_fold <- function(strategy, run_id) {
     handler <- ledgr:::ledgr_memory_output_handler(run_id)

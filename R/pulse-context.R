@@ -230,8 +230,7 @@ ledgr_attach_feature_helpers <- function(ctx,
                                          features_wide = NULL,
                                          active_alias_map = NULL) {
   if (!is.null(projection)) {
-    if (!is.data.frame(features) ||
-        (nrow(features) == 0L && length(ledgr_projection_feature_ids(projection, feature_ids)) > 0L)) {
+    if (!is.data.frame(features)) {
       features <- ledgr_projection_feature_table(projection, pulse_idx, feature_ids = feature_ids)
     }
     if (!is.data.frame(features_wide)) {
@@ -248,6 +247,9 @@ ledgr_attach_feature_helpers <- function(ctx,
     if (is.environment(ctx)) {
       ctx$feature_table <- features
       ctx$features_wide <- features_wide
+      ctx$.feature_projection <- projection
+      ctx$.feature_pulse_idx <- as.integer(pulse_idx)
+      ctx$.feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
       ctx$feature <- feature
       ctx$features <- feature_bundle
       return(invisible(ctx))
@@ -255,6 +257,9 @@ ledgr_attach_feature_helpers <- function(ctx,
 
     ctx$feature_table <- features
     ctx$features_wide <- features_wide
+    ctx$.feature_projection <- projection
+    ctx$.feature_pulse_idx <- as.integer(pulse_idx)
+    ctx$.feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
     ctx$feature <- feature
     ctx$features <- feature_bundle
     return(ctx)
@@ -342,6 +347,9 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
   if (!is.null(projection)) {
     fast_context$feature_state$pulse_idx <- as.integer(pulse_idx)
     ctx$feature_table <- features
+    ctx$.feature_projection <- projection
+    ctx$.feature_pulse_idx <- as.integer(pulse_idx)
+    ctx$.feature_ids <- ledgr_projection_feature_ids(projection, fast_context$feature_ids)
     if (!is.data.frame(features_wide)) {
       features_wide <- ledgr_projection_features_wide(
         projection,
