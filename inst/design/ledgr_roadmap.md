@@ -3,9 +3,11 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_8_4_spec_packet/`.
-**Active packet:** v0.1.8.5 canonical research workflow and teachability.
-**Active packet path:** `inst/design/ledgr_v0_1_8_5_spec_packet/`.
+**Latest completed packet:** `inst/design/ledgr_v0_1_8_5_spec_packet/`.
+**Active packet:** v0.1.8.6 feature-projection materialization,
+structured benchmark suite, storage/provenance decision work, and research-loop
+helper follow-up.
+**Active packet path:** `inst/design/ledgr_v0_1_8_6_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -98,8 +100,8 @@ versioned packet.
 | v0.1.8.2 | Done | Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup. | `inst/design/ledgr_v0_1_8_2_spec_packet/` |
 | v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
-| v0.1.8.5 | Active | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
-| v0.1.8.6 | Planned | DuckDB feature-storage measurement spike, snapshot administration and ETL provenance implementation, and research-loop ergonomics helpers (sweep review and promotion recovery summary); RFC-driven. | Future packet; horizon entries |
+| v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
+| v0.1.8.6 | Active | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, snapshot administration and ETL provenance planning, and research-loop ergonomics helpers. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
 | v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.8.8 | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
@@ -597,22 +599,52 @@ Constraints:
 - parallel dispatch must later coordinate durable writes rather than imply
   unsynchronized worker writes to one DuckDB store.
 
-### v0.1.8.6 DuckDB Feature Storage Spike, Snapshot Administration, And Research-Loop Helpers
+### v0.1.8.6 Feature Projection Materialization, Storage Spike, Snapshot Administration, And Research-Loop Helpers
 
-v0.1.8.6 hosts three coordinated workstreams. They share a release but are
+v0.1.8.6 hosts four coordinated workstreams. They share a release but are
 scoped and decided independently.
 
 Sequencing:
 
+- Feature-projection materialization is first. The accepted
+  `rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` binds
+  Direction 5.0 (feature cache-key deduplication) before Direction 5.1
+  (schema-only `feature_table` by default), followed by current-source
+  remeasurement and an instrument x feature width sweep.
 - A full RFC cycle on snapshot administration and ETL provenance metadata
-  must conclude before the v0.1.8.6 spec is cut. The horizon entry is the
-  seed-shape input. The research-loop ergonomics helpers (Workstream C)
-  fold into the same RFC because the promotion-recovery summary couples
-  directly to the snapshot/run metadata model; the RFC synthesis decides
-  helper shape alongside metadata shape.
+  should conclude before implementation tickets are cut for that workstream.
+  The horizon entry is the seed-shape input. The research-loop ergonomics
+  helpers (Workstream C) fold into the same decision path because the
+  promotion-recovery summary couples directly to the snapshot/run metadata
+  model.
 - The DuckDB feature-storage spike remains a measurement-and-decision
-  packet; its outcome is decided after the spike runs, independently of
-  the snapshot administration and helpers RFC.
+  packet. It should run after 5.0/5.1 remeasurement so it measures the
+  remaining bottleneck rather than stale setup costs.
+- Auditr-report bugfix intake is deferred to the next version. The maintainer
+  will first fix overly explicit prompts in the auditr repository, then rerun
+  the report in the next cycle.
+
+#### Workstream 0: Feature Projection Materialization
+
+Intent:
+
+- remove redundant feature fingerprint and engine-version work from the
+  per-(instrument, feature) precompute path without changing cache-key values;
+- stop building the full-panel long `feature_table` by default while preserving
+  a schema-only field, explicit internal full-long opt-in, and single-pulse
+  inspection support;
+- keep `ctx$features_wide` and projection-backed scalar/vector accessors as the
+  canonical decision-time surfaces;
+- remeasure after each change using current source, then add an instrument x
+  feature width sweep before making storage claims.
+
+Constraints:
+
+- no active-binding or function-valued replacement for `ctx$feature_table`;
+- no public deprecation of `ctx$feature_table` in this cycle;
+- no collapse import for the materialization fix;
+- no claim that loop throughput is width-invariant until the width sweep
+  measures it.
 
 #### Workstream A: Snapshot Administration And ETL Provenance
 
@@ -631,7 +663,7 @@ Intent:
 Authoritative input (planned):
 
 - RFC cycle on snapshot administration and provenance metadata, to be cut
-  after v0.1.8.5 closes and before the v0.1.8.6 spec is cut;
+  before implementation tickets are cut for that workstream;
 - `inst/design/horizon.md` snapshot-administration entry as the seed-shape
   input.
 
@@ -813,6 +845,17 @@ Non-scope:
   guarantees to fit worker scheduling;
 - no public distributed execution API.
 
+Related determinism gap (from the 2026-05-28 fold-core review):
+
+- The same RNG-state question affects run *resume*: on resume the loop
+  re-seeds and jumps to `start_idx` without restoring `.Random.seed`, so a
+  stochastic strategy diverges from a continuous run (state is correctly
+  replayed from events; the RNG stream is not). Whatever this cycle decides
+  about per-candidate seed derivation should also settle resume RNG handling —
+  checkpoint `.Random.seed`, replay-from-start, or document a
+  deterministic-only resume guarantee. See `inst/design/horizon.md` (RNG resume
+  entry).
+
 ### v0.1.8.8 Crypto-Readiness Spike And Doc Disposition
 
 v0.1.8.8 is a focused measurement spike on whether spot crypto is already
@@ -925,6 +968,23 @@ Intent:
 - consider `ledgr_snapshot_split()` only if the manual holdout workflow proves
   awkward after sweep ships.
 
+Fold-core refactor (from the 2026-05-28 adversarial review; do before
+OMS/risk/intraday open a new architecture front):
+
+- collapse the two equity-reconstruction implementations — the inline run-path
+  copy and the sweep summary, plus the test-only parity twins — into one
+  production replay kernel fed by DB or memory event sinks;
+- introduce a typed `ledgr_execution_spec()` constructor so `ledgr_run()` and
+  `ledgr_sweep()` stop hand-building divergent `execution` lists;
+- split `fold-core.R` (engine + reconstructors + metrics helpers) before those
+  concerns multiply;
+- add explicit event types (`POSITION_SEED`, and reserve `FEE`/`DIVIDEND`/
+  `SPLIT`) instead of overloading `CASHFLOW` with `meta_json` flags.
+
+See `inst/design/horizon.md` (fold-core structural-debt entry). The
+phased-pulse restructure is tracked separately as a v0.1.9 target-risk
+prerequisite (above).
+
 ### v0.1.9 Target Risk Layer
 
 Authoritative input:
@@ -948,6 +1008,18 @@ Known constraint:
   strategy function, including helpers such as `ctx$hold()`. If a future
   risk-specific context is introduced, the equivalence and method surface must
   be specified rather than assumed.
+
+Implementation prerequisite (from the 2026-05-28 fold-core review):
+
+- Net affordability and portfolio-level risk require restructuring the
+  per-pulse fill loop. It currently interleaves delta -> proposal -> cost ->
+  event -> state-mutation per instrument, which resists portfolio-level
+  decisions. The target shape is plan (targets -> deltas) -> batch proposals
+  -> batch cost -> batch/portfolio risk + net feasibility -> emit -> apply
+  atomically. A per-instrument cash check would mis-reject rebalancing buys
+  that sort before their funding sells. See `inst/design/horizon.md`
+  (affordability-in-target-risk and the 2026-05-28 fold-core structural-debt
+  entry).
 
 Cost-estimation bridge:
 
@@ -1232,7 +1304,26 @@ Intent:
   positions, and cash before trading resumes;
 - never claim the internal ledger alone is sufficient for live restart safety;
 - keep adapter-specific fee schedules and execution quirks out of core unless
-  they are stable primitives.
+  they are stable primitives;
+- simulate data streams with realistic deficiencies — missing, garbled, late,
+  duplicated, and revised ticks — at much higher than EOD frequency, to test
+  the execution seams before live;
+- require the backtest engine to model degraded data on the same execution
+  path (direction B from the 2026-05-28 live bad-data resilience horizon
+  entry), so strategies are validated against the data conditions they will
+  face live, not an artificially clean dense panel.
+
+Data-quality boundary:
+
+- Live data is an append-only data log with an ingest-time data-quality and
+  degradation policy (quarantine / reject / carry-forward-with-staleness /
+  halt-symbol / halt-session), distinct from the sealed-snapshot fail-fast gate
+  used in backtest. The dense-panel `ledgr_missing_bars` abort is a backtest
+  seal-time gate, not a universal invariant.
+- This needs a dedicated RFC (the maintainer has flagged it). Scope: a unified
+  data-quality model spanning sealed backtest and streaming live, the
+  degradation-policy surface, the bad-data simulation harness, and the
+  intersection with v0.2.x Point-In-Time Data Tables (late/revised ticks).
 
 ### v0.4.0 Observability And Operations
 

@@ -3,11 +3,12 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.5`.
-**Current active packet:** None. Use the roadmap and accepted design decisions
-to prepare the next packet; do not implement deferred work without a new packet.
-**Current active packet path:** None.
-The completed `inst/design/ledgr_v0_1_8_5_spec_packet/` is now an archival
-release record.
+**Current active packet:** `v0.1.8.6` feature-projection materialization,
+structured benchmark suite, storage/provenance decision work, and research-loop
+helper follow-up.
+**Current active packet path:** `inst/design/ledgr_v0_1_8_6_spec_packet/`.
+The completed `inst/design/ledgr_v0_1_8_5_spec_packet/` is an archival release
+record.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -20,8 +21,8 @@ For any non-trivial change, read in this order:
 1. `contracts.md` - current execution, snapshot, persistence, feature, and
    strategy contracts.
 2. `ledgr_roadmap.md` - milestone arc and active horizon.
-3. If a current spec packet exists, read it. Otherwise use the roadmap and
-   accepted design decisions to prepare the next packet, not to implement.
+3. Current spec packet:
+   `ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`.
 4. Only the architecture, RFC, audit, or spike documents relevant to the active
    ticket.
 
@@ -74,10 +75,22 @@ was grounded in `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.
   `ledgr_v0_1_8_5_spec_packet/categorized_feedback.yml`, and
   `ledgr_v0_1_8_5_spec_packet/cycle_retrospective.md`.
 
-There is no active implementation packet after v0.1.8.5 closeout. DuckDB-backed
-feature storage, parallel dispatch, target risk, cost/liquidity, snapshot
-lineage, live data logs, point-in-time regressors, walk-forward, and OMS work
-remain later milestones unless a new packet explicitly scopes them.
+The v0.1.8.6 packet is now active. Its first implementation sequence is the
+accepted feature-projection materialization path: deduplicate feature cache-key
+work, stop building full-panel long `feature_table` by default, and remeasure
+against current source. It also carries the storage/provenance decision window,
+a structured benchmark suite with a small QuantConnect-comparable subset, and
+research-loop helper follow-up from v0.1.8.5.
+
+- Spec: `ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`.
+- Primary synthesis:
+  `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`.
+
+Parallel dispatch, target risk, walk-forward, public cost/liquidity APIs, OMS
+work, live data logs, point-in-time regressors, and broad collapse adoption
+remain deferred unless the v0.1.8.6 spec explicitly scopes a bounded subset.
+Auditr-report bugfix intake is also deferred to the next version after prompt
+fixes in the auditr repository.
 
 ## Core Documents
 
@@ -120,6 +133,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Indicator codebase simplification | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 Phase 1 determinism extraction; v0.1.8.2 Phase 2 file/role cleanup | Accepted |
 | Active parameterized feature aliases | `rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` | v0.1.8.4 sweep authoring ergonomics | Accepted |
 | Research workflow and artifact topology | `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` | v0.1.8.5 canonical workflow and teachability planning | Accepted |
+| Feature projection shape, materialization policy, and lookback access | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` | v0.1.8.6 feature-projection materialization; later lookback/export/storage gates | Accepted |
 | Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
 | Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` | v0.1.9.x walk-forward ticket-cut planning after target risk | Accepted |
 | OMS semantics and order lifecycle | `rfc/rfc_ledgr_oms_seed_synthesis.md` | v0.2.x OMS data-model and lifecycle planning; paper/live deferred | Accepted |
@@ -176,6 +190,11 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_collapse_primitive_internals_v0_1_9.md`
 - `rfc/rfc_collapse_primitive_internals_v0_1_9_response.md`
 - `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`
+- `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x.md`
+- `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_response.md`
+- `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_seed_v2.md`
+- `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`
+- `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_final_review.md`
 - `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x.md`
 - `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md`
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed.md`
@@ -302,7 +321,10 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
-- `ledgr_v0_1_8_5_spec_packet/` - active v0.1.8.5 packet for canonical
+- `ledgr_v0_1_8_6_spec_packet/` - active v0.1.8.6 packet for
+  feature-projection materialization, structured benchmarks,
+  storage/provenance decision work, and research-loop helper follow-up.
+- `ledgr_v0_1_8_5_spec_packet/` - v0.1.8.5 release record for canonical
   research workflow and teachability.
 - `ledgr_v0_1_8_4_spec_packet/` - v0.1.8.4 release record for active
   parameterized feature aliases, grid helpers, and routed v0.1.8.3 auditr
@@ -327,7 +349,8 @@ contract index.
 | --- | --- |
 | Runtime/execution change | `contracts.md`, current packet if one exists, relevant architecture note |
 | Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
-| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `contracts.md`, current packet if one exists |
+| Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `contracts.md`, current packet if one exists |
+| Feature projection / materialization | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, current packet |
 | Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, relevant release packet or future packet when cut |
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
