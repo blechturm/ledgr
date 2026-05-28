@@ -286,7 +286,7 @@ scope: feature_table_materialization
 Priority: P1
 Effort: L
 Dependencies: LDG-2447
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -331,6 +331,28 @@ subset.
 
 Run the benchmark suite in a small/smoke configuration, inspect generated
 machine-readable outputs, and manually review comparability notes.
+
+Completion note:
+
+- Added `dev/bench/run_benchmarks.R`, a current-source-guarded local benchmark
+  runner with explicit warmup/repeat behavior and stable named scenarios:
+  `baseline_single_run`, `pulse_loop_empty`, `wide_panel_no_features`,
+  `feature_read_score`, `feature_turnover`, `indicator_payload`,
+  `sweep_memory_summary`, and `persistent_replay`.
+- Added `dev/bench/README.md` and `dev/bench/results/.gitignore`. Generated
+  benchmark outputs are local artifacts and are not committed by default.
+- The runner emits raw per-iteration CSV, scenario summary CSV, environment
+  metadata JSON, combined JSON result payload, compact Markdown summary, and a
+  LEAN side-by-side CSV when `dev/bench/lean_reference.csv` is present.
+- Output separates `security_bars_sec` from `feature_cells_sec`, records
+  scenario dimensions and environment metadata, labels wall-minus-pre-minus-loop
+  timing as the broad `t_residual_sec` rather than isolated view-build time,
+  and keeps `feature_read_score` as a ledgr-only scenario outside the
+  LEAN-comparable subset.
+- Smoke verification passed:
+  `Rscript dev/bench/run_benchmarks.R --preset smoke --repeats 1 --warmup 1`.
+  The smoke run produced machine-readable outputs under `dev/bench/results/`
+  and an eight-row LEAN side-by-side file for the comparable/partial scenarios.
 
 ### Source Reference
 

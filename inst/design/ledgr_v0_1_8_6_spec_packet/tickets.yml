@@ -55,7 +55,7 @@ tickets:
 
   - id: "LDG-2448"
     title: "Structured Benchmark Suite And LEAN Reference"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:
