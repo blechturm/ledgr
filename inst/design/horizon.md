@@ -26,6 +26,54 @@ an architecture note, or a spec packet.
 
 ## Open
 
+**Promotion index (horizon → roadmap).** Where open entries have a planned
+milestone. Entries not listed are pure direction with no committed home yet
+(e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized
+authoring). When a milestone closes, sweep its entries to `## Resolved`.
+
+- **v0.1.8.6** — DuckDB feature-storage spike; feature payload scale stress;
+  feature projection materialization (5.0/5.1); structured benchmark and
+  attribution closeout.
+- **v0.1.8.7** (parallel dispatch + determinism) — public parallel sweep
+  backend; parallel worker setup / Tier-2 packages; mori transport;
+  worker-local read-only DuckDB; parallel interrupt / partial-result
+  semantics; **RNG resume non-determinism**; structured RNG preflight metadata;
+  broader ambient RNG detection.
+- **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
+  typed execution spec, file split, explicit event types).
+- **v0.1.9** — affordability / target-risk (incl. the phased-pulse
+  restructure); primitive internals and collapse.
+- **v0.1.9.x** — walk-forward post-direction; cost-model post-direction;
+  randomized/blocked slice diagnostics; promotion-grade sweep artifacts;
+  target-construction helper extensions; broker/exchange cost templates.
+- **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
+  review + promotion recovery); point-in-time data tables / external regressor
+  snapshots (unify in one RFC); corporate actions and instrument master;
+  liquidity and capacity; OMS semantics + snapshot lineage + live data logs;
+  external benchmark / beta uses; external reference-data adapter provenance;
+  provider risk-free divergence; reference strategy templates / baseline
+  strategies.
+- **v0.2.x → v0.3.0** — live bad-data resilience and sim-to-real backtest
+  fidelity (direction B; needs a dedicated RFC).
+
+### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
+
+The v0.1.8.6 `LDG-2451` gate for snapshot administration, ETL provenance,
+sweep-review helpers, and promotion-recovery-summary helpers was deferred by
+maintainer decision during release closeout. The work remains useful, but it is
+not required for the v0.1.8.6 materialization, benchmark, and attribution cycle,
+and it should not distract from the v0.1.8.7 Optimization Round 2 hot-path
+lanes.
+
+When revived, likely in a v0.2.0-class RFC/spec cycle, keep the original shape:
+separate engine-computed metadata, user-supplied descriptive metadata, and
+administrative lifecycle state; preserve `snapshot_hash` independence from
+mutable user metadata; keep sweep-review helpers explicit about ranking rules;
+and keep promotion-recovery summaries factual rather than automated candidate
+selection or validation.
+
+This entry records direction, not committed work.
+
 ### 2026-05-26 [execution] Accepted OMS direction and intraday-safe target-decision storage
 
 The accepted OMS synthesis is
@@ -56,45 +104,6 @@ load-bearing for agent containment and within-cycle correctness. Once ledgr
 reaches CRAN, revisit this policy and define explicit compatibility and
 deprecation rules.
 
-### 2026-05-15 [adapters] Multi-output indicator authoring bundles
-
-Consider a v0.1.8.x adapter/indicator UX slice for multi-output indicator
-authoring bundles. The accepted RFC direction is an explicit
-`ledgr_indicator_bundle` class that flattens at feature declaration boundaries
-and materializes to ordinary single-output `ledgr_indicator` objects. This
-should improve TTR and future talib multi-output ergonomics without changing
-the core `series_fn()` contract, feature provenance, or strategy feature
-lookup.
-
-Key design decisions to preserve: bundle UX first, grouped precompute batching
-later; no polymorphic `ledgr_ind_ttr()` return type; output-specific
-fingerprints remain the external identity; default multi-output feature IDs use
-a normalized function-family prefix such as `bbands_dn`; `prefix = NULL` is an
-explicit raw-output-name opt-in; instrument IDs never enter feature IDs.
-
-RFC thread:
-
-- `inst/design/rfc/rfc_multi_output_indicator_ux.md`
-- `inst/design/rfc/rfc_multi_output_indicator_ux_response.md`
-- `inst/design/rfc/rfc_multi_output_indicator_ux_maintainer_response.md`
-- `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md`
-
-### 2026-05-13 [data] Data input and snapshot creation article
-
-The experiment-store article currently carries some advanced low-level CSV
-snapshot material. A future documentation pass may split this into a focused
-"Data Input And Snapshot Creation" article so the experiment-store article can
-stay centered on run management, labels, tags, comparisons, recovery, and
-reopening.
-
-### 2026-05-13 [execution] Compact execution semantics article
-
-Several public articles explain next-open fills, targets-as-holdings,
-decision-time close sizing, final-bar no-fill warnings, and open-position
-handling. Consider a short consolidated article once sweep design stabilizes,
-so users have one compact reference for decisions, targets, fills, and
-last-bar behavior.
-
 ### 2026-05-13 [ux] Future tune-wrapper naming
 
 After `ledgr_sweep()` exists and the fold core is stable, revisit whether a
@@ -124,64 +133,6 @@ It is only appropriate for strategies that read current pulse data, compute
 row-wise instrument targets, and do not require arbitrary per-instrument
 control flow, order-dependent allocation, or custom state mutation. Keep it
 out of v0.1.8.4; active aliases and grid helpers should stabilize first.
-
-### 2026-05-15 [ux] Parameter-grid construction helpers
-
-`ledgr_param_grid()` is the right explicit base contract, but larger studies
-will need ergonomic helpers for constructing grids without turning sweep into
-an objective/ranking API.
-
-Possible future helpers:
-
-```r
-ledgr_grid_cross(
-  sma_n = c(20, 50, 100),
-  threshold = c(0.005, 0.010),
-  qty = c(10, 20)
-)
-
-ledgr_grid_named(
-  conservative = list(...),
-  balanced = list(...),
-  aggressive = list(...)
-)
-
-ledgr_grid_add_baseline(
-  grid,
-  flat = list(qty = 0)
-)
-```
-
-These should only create candidate parameter sets. They should not rank,
-optimize, tune, choose objectives, select winners, or imply strategy-cookbook
-semantics. Keep the distinction sharp: grid-construction ergonomics are useful;
-`ledgr_tune()` and ledgr-owned objective semantics remain separate deferred
-questions.
-
-### 2026-05-25 [ux] Sweep candidate ranking views
-
-Users will write small helpers to order sweep results before calling
-`ledgr_candidate()`. ledgr should not own automatic winner selection or a
-full objective DSL, but a transparent ranking view may be useful once sweep
-ergonomics are revisited.
-
-Possible future shape:
-
-```r
-ranked <- ledgr_rank_candidates(
-  results,
-  by = "sharpe_ratio",
-  direction = "desc",
-  na_rm = TRUE
-)
-
-candidate <- ledgr_candidate(ranked, 1)
-```
-
-Filtering should remain ordinary data-frame work, via base R, dplyr, or user
-code before ranking. The helper would own ordering mechanics, classed
-validation, printability, and selection provenance. It should not call the
-result "best" or promote a candidate automatically.
 
 ### 2026-05-13 [ux] Research workflow scaffolds and companion templates
 
@@ -319,6 +270,12 @@ Serious quant research eventually needs point-in-time external data beyond
 OHLCV bars: fundamentals, macro releases, analyst estimates, vendor factors,
 and alternative data. These inputs have vintage semantics. A replay must use
 what was known at the historical decision time, not later-revised values.
+
+**Overlaps the 2026-05-25 "Point-in-time data tables" entry** — same v0.2.x
+PIT external-data substrate from two angles (this one is the regressor/feature
+use case; the other is the table/storage model). The eventual "External Data
+And Point-In-Time Regressors" RFC should unify both, and also covers the
+late/revised-tick axis of the 2026-05-28 live bad-data resilience entry.
 
 DuckDB is the right default backbone for this in ledgr's foreseeable roadmap.
 It is local-first, R-friendly, columnar, and supports ASOF-style lookup patterns
@@ -589,19 +546,6 @@ Evidence:
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
 
-### 2026-05-13 [execution] Intraday architecture feasibility
-
-The parallelism spike used intraday-like synthetic payloads only to stress data
-movement. It did not test intraday snapshot schema, pulse calendars, sub-day
-fill timing, event volume, warmup/scoring boundaries, or metrics at intraday
-scale. Keep intraday as a future architecture feasibility topic, not a planned
-v0.1.x feature.
-
-Evidence:
-
-- `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
-- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-
 ### 2026-05-13 [data] Feature payload scale and indicator-width stress
 
 The parallelism spike deliberately tested feature-width payloads because
@@ -677,28 +621,6 @@ family, such as `rbinom()`, `rpois()`, `rexp()`, and `rgamma()`, so stochastic
 strategies are not accidentally classified Tier 1.
 
 Source: LDG-2104 code review.
-
-### 2026-05-15 [execution] Single-core sweep hot-path optimization
-
-LDG-2108A/LDG-2108B showed that memory-backed sweep is faster than looping
-`ledgr_run()` calls, but the remaining single-core cost is dominated by
-pulse-context/data-frame churn and post-candidate event-derived reconstruction.
-On the 50-candidate EOD benchmark, feature matrix construction and hydration
-were negligible; `ledgr_execute_fold()` accounted for roughly two thirds of
-measured sweep time, while `ledgr_equity_from_events()` and
-`ledgr_fills_from_events()` together accounted for roughly one third.
-
-Future optimization work should investigate a faster sweep pulse context path
-that avoids rebuilding `features_wide` and helper closures every pulse, and a
-summary-only in-memory accounting path that avoids replaying the event stream
-multiple times per candidate while preserving ledger parity.
-
-Evidence:
-
-- `inst/design/audits/sweep_performance_measurement.md`
-- `inst/design/audits/sweep_hot_path_profile.md`
-- `dev/spikes/ledgr_sweep_performance/run_benchmark.R`
-- `dev/spikes/ledgr_sweep_performance/profile_hot_path.R`
 
 ### 2026-05-25 [strategy] Target construction helper extensions
 
@@ -928,34 +850,115 @@ Dependencies before promotion:
 - the post-v0.1.8.3 residual report shows memory scaling, repeated precompute,
   ML/export, or parallel-worker sharing as the next load-bearing bottleneck.
 
-### 2026-05-25 [optimization] Grid-union shared pulse views
+### 2026-05-28 [optimization] Feature projection shape post-v0.1.8.x direction
 
-The v0.1.8.3 pulse-context data model consolidation synthesis accepts
-candidate-specific prebuilt feature views as the safest first pass for
-LDG-2413. This preserves exact candidate-facing `ctx$features_wide` and
-`ctx$feature_table` schemas, but duplicates view materialization when many
-sweep candidates share the same concrete features.
+The accepted synthesis
+`rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` binds the
+next feature-projection materialization direction: v0.1.8.6 first removes
+redundant cache-key fingerprint work, then stops building full-panel long
+`ctx$feature_table` rows by default. Wide/projection-backed accessors are the
+decision-time surface; long becomes inspection/export/research shape. This entry
+uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.9, or later.
 
-Future optimization work can investigate grid-union pulse views with
-per-candidate column selection:
+#### Lookback and portfolio windows
 
-```text
-grid-level concrete feature union
-  -> shared per-pulse feature view over all concrete feature IDs
-  -> candidate-specific column selection / alias naming at fold setup
-```
+- `ctx$window()` is accepted as the causal lookback primitive, but enters
+  v0.1.9 only if target-risk or portfolio-risk work needs covariance windows.
+- First public shape, when cut, is single-feature `n_inst x lookback` matrix
+  with leading `NA_real_` warmup columns.
+- Multi-feature/tensor/list window shapes are future API work after the first
+  matrix contract exists.
 
-This belongs after v0.1.8.3 measurement, and likely after v0.1.8.4 active
-aliases clarify alias-name versus concrete-feature-name schemas. It should not
-change the public context contract or introduce per-pulse DBI traffic.
+#### Long research/export layer
 
-Promotion trigger:
+- Runtime long `ctx$feature_table` is not the training-frame surface.
+- Full-panel long feature export, ML training frames, and tidy EDA helpers need
+  a separate research/export API cycle.
+- PIT regressor and feature-store interchange belong with the later PIT/data
+  provider track.
 
-- LDG-2414 or a later residual report shows candidate-specific view
-  materialization is a material memory or setup-time cost;
-- active aliases have fixed the candidate alias-map semantics;
-- state-leak tests can prove candidate column selection does not allow one
-  candidate's mutation to corrupt another candidate's view.
+#### Persistent event schema and replay
+
+- LDG-2410 typed memory events are complete and memory-scoped.
+- Typed persistent columns for `cash_delta` and `position_delta` are the
+  persistent counterpart and are preferred over a DuckDB-SQL-only replay patch
+  if storage/schema work is accepted.
+- Broader typed event metadata remains future event-schema work.
+
+#### DuckDB-backed projection and storage
+
+- v0.1.8.6 DuckDB/storage work should consume the simplified projection
+  contract after schema-only `feature_table` is in place.
+- DuckDB must remain a block/storage boundary, not a per-pulse runtime query
+  engine.
+- No future storage path should reintroduce full-panel long materialization by
+  default.
+
+#### Collapse and primitive internals
+
+- Primitive-internals discipline applies broadly.
+- No collapse Imports dependency is authorized by the feature-projection
+  materialization directions.
+- Collapse remains governed by
+  `rfc_collapse_primitive_internals_v0_1_9_synthesis.md`: measured hot frames,
+  deterministic wrapper, and parity gates only.
+
+#### Promoted roadmap hooks
+
+- v0.1.8.6: feature cache-key dedup for feature-definition fingerprint and
+  feature-engine version.
+- v0.1.8.6: schema-only `ctx$feature_table` default plus non-fast-path rebuild
+  fix.
+- v0.1.8.6: post-5.0/post-5.1 remeasurement and instrument x feature sweep.
+- v0.1.8.6, if storage/schema work is explicitly accepted: typed persistent
+  `cash_delta` and `position_delta` columns.
+- v0.1.9, only if target-risk/portfolio-risk needs it: single-feature
+  `ctx$window()` matrix API.
+- Later: multi-feature/tensor windows.
+- Later: full-panel long export/training APIs and PIT feature-store
+  interchange.
+- Later: broader typed event metadata beyond replay deltas.
+
+#### Immediate cross-cycle obligations
+
+- The v0.1.8.6 spec packet must cut 5.0 before 5.1 and remeasure after each.
+- The v0.1.8.6 spec packet must not publish width-invariance or benchmark
+  claims until an instrument x feature sweep runs in read/score and turnover
+  modes.
+- The v0.1.8.6 spec packet must decide whether storage/schema work is in scope
+  before cutting any 5.6 typed persistent column ticket.
+- If 5.6 is deferred, the packet should record it as designed future storage
+  work, not as an incomplete SQL-only patch.
+
+This entry does not authorize any of the above by itself; it records the
+post-synthesis direction and deferrals. Concrete work remains governed by the
+accepted synthesis and the relevant spec packets.
+
+### 2026-05-28 [optimization] Persistent DB-replay reconstruction via DuckDB SQL
+
+`ledgr_reconstruct_positions()`, `ledgr_reconstruct_cash()`, and
+`ledgr_rebuild_derived_state()` (`R/derived-state.R`) replay the persisted
+`ledger_events` table with `jsonlite::fromJSON(meta_json)` **per row** in an R
+loop, plus named-vector grow-by-assignment. This is the reopen / resume /
+rebuild-from-store path - NOT the main backtest reconstruction, which is already
+vectorized via `findInterval` + `cumsum` in `ledgr_run_fold`. It is O(events)
+with a JSON parse per event and bites when reloading large persisted runs.
+
+This is a SEPARATE surface from LDG-2410 ("Typed Memory Event Representation",
+shipped v0.1.8.3, `scope: sweep_memory_path`): LDG-2410 typed the *in-memory*
+sweep events and never touched the persistent DB-replay path.
+
+Fix without a schema change: push the delta aggregation into DuckDB SQL, e.g.
+`SELECT instrument_id, SUM(CAST(json_extract(meta_json,'$.position_delta') AS
+DOUBLE)) ... GROUP BY instrument_id` (cash is the ungrouped sum). DuckDB does the
+JSON extract + grouped sum in C, eliminating the R loop and the per-row parse.
+The typed-DB-columns alternative also works but requires a `ledger_events` schema
+migration.
+
+Secondary (reopen/resume) cost today, but O(events) with a per-row JSON parse;
+the obvious next target once persisted-run reload or walk-forward replay becomes
+load-bearing. Surfaced by the v0.1.8.5 feature-payload spike's collapse-alignment
+review.
 
 ### 2026-05-25 [architecture] Primitive internals and collapse acceleration
 
@@ -1685,6 +1688,10 @@ Both gaps share a shape: ledgr already records the underlying data.
 The gap is in the summary surface that exposes the data compactly
 without flattening the visible selection rule or provenance reasoning.
 
+This entry supersedes the earlier 2026-05-25 "Sweep candidate ranking views"
+stub (the `ledgr_rank_candidates()` sketch). The sweep-review helper below is
+the same idea, taken further and tied to the vignette gap that motivates it.
+
 #### Gap 1: Sweep review helper
 
 Vignette location: the "Inspect Before You Promote" section and its
@@ -1820,6 +1827,13 @@ USP. This entry captures the multi-cycle arc to support intraday as a
 first-class workflow, plus the architectural footguns the in-progress
 v0.1.x cycles must avoid so the eventual flip is not a rewrite.
 
+This entry supersedes the earlier 2026-05-13 "Intraday architecture
+feasibility" stub. The parallelism-spike evidence it cited remains at
+`inst/design/spikes/ledgr_parallelism_spike/summary_report.md` and
+`.../architecture_synthesis.md`; that spike used intraday-like payloads only to
+stress data movement and did not test intraday snapshot schema, pulse
+calendars, sub-day fill timing, or metrics at intraday scale.
+
 The user will initiate a design audit before committing to the intraday
 arc. This entry is the audit's input shape.
 
@@ -1943,6 +1957,14 @@ flip will have to rip out. The list below is the audit checklist.
   intraday-session folds.** The accepted walk-forward synthesis represents
   scoring windows explicitly. Audit to confirm the window model does not
   hardcode day semantics.
+- **Dense-panel fail-fast is a backtest seal-time gate, not a universal
+  invariant.** `ledgr_missing_bars` aborts the run if any instrument lacks a
+  bar at any pulse (verified: cross-join completeness check
+  `backtest-runner.R:1541-1564`; per-instrument alignment
+  `backtest-runner.R:1154-1159`). That is correct for sealed backtest data and
+  wrong for live streaming, where missing/garbled ticks are routine. The
+  v0.2.x data-model and live-data work must not treat the dense panel as
+  permanent — see the 2026-05-28 live bad-data resilience entry.
 
 #### Migration efficiency requirements
 
@@ -2133,6 +2155,287 @@ from a known shape rather than re-deriving the boundary, and it
 constrains the in-progress v0.1.x cycles to avoid footguns that would
 make the eventual flip a rewrite.
 
+### 2026-05-28 [data] Live bad-data resilience and sim-to-real backtest fidelity
+
+The overall arc is backtest -> paper -> live. Live data is structurally
+different from backtest data, and the difference is a fault line the
+backtest-first design has not had to confront. Surfaced while reviewing the
+fold core; the maintainer has flagged it as RFC-worthy.
+
+The fault line
+
+ledgr's backtest correctness rests on a **sealed dense panel**, enforced
+fail-fast: every instrument must have a bar at every pulse or the run aborts
+with `ledgr_missing_bars` (verified: cross-join completeness check
+`backtest-runner.R:1541-1564`; per-instrument alignment
+`backtest-runner.R:1154-1159`). Live data is the opposite posture — a
+streaming partial feed where missing, garbled, late, duplicated, or revised
+ticks are routine. You cannot abort a live session because one symbol's tick
+did not arrive. "Validate everything upfront, fail fast" and "tolerate and
+degrade per-tick" are structurally opposed.
+
+Failure taxonomy (each needs a different policy)
+
+- **Missing tick** — skip the symbol, carry forward last value with a
+  staleness flag, halt the symbol, or halt the session.
+- **Garbled tick** — zero/negative/NaN price, OHLC violation, absurd spike.
+  Backtest catches this at seal time; live must catch it at ingest time and
+  quarantine/reject before it reaches a decision.
+- **Late / out-of-order tick** — needs a watermark/lateness policy.
+- **Duplicate tick** — idempotent ingest.
+- **Revised tick** — vendor corrects a past bar after the decision was made;
+  you cannot un-decide. Hardest case.
+
+What carries over vs what breaks
+
+Carries over: the event-sourced ledger (a live session is a longer append-only
+event stream), the pulse model (a live pulse is information available at
+decision time t; no-lookahead is trivially satisfied), and the v0.2.x OMS
+two-stream design. Breaks: the dense-panel fail-fast, and snapshot
+immutability (live appends as data arrives — an append-only data log, not a
+sealed snapshot).
+
+Chosen direction: B — the backtest must model degraded data
+
+Two ways to close the sim-to-real gap:
+
+- **(A)** force live into the dense-panel model — buffer/wait/skip. Simple,
+  preserves the backtest model, adds latency, not always viable.
+- **(B)** give the backtest the ability to model degraded data — gap
+  injection, staleness, halts, bad-tick spikes — so strategies are validated
+  against realistic data conditions before live.
+
+**Decision: direction B.** The "evidence you can defend" USP collapses if the
+evidence was gathered on a cleaner data world than the strategy will face live.
+When paper trading is designed, the maintainer wants to simulate data streams
+with all kinds of deficiencies, at a much higher frequency than EOD, to test
+the seams — and the backtest engine must be able to swallow that bad data on
+the same execution path. So the backtest data model has to grow a "this bar is
+missing / stale / suspect" representation it does not have today.
+
+Design principles
+
+- **Strategy contract does not change.** A strategy sees "current pulse-known
+  information" in both backtest and live. What changes is what the *data layer*
+  decides "current" means when a tick is missing or suspect. Degradation
+  policy must not leak into every strategy.
+- **Late/revised ticks intersect Point-In-Time Data Tables** (v0.2.x:
+  `known_at`, `available_at`, `revision_time`, source version). A PIT model
+  keeps "the decision at t used the data available at t" true even after a
+  later revision — the revision is a new vintage, not a rewrite of history.
+- **Missing/garbled at ingest needs a live data-quality layer** with an
+  explicit degradation policy (quarantine / reject / carry-forward-with-
+  staleness / halt-symbol / halt-session), distinct from the backtest
+  seal-time gate.
+
+RFC scope (when it opens)
+
+A unified data-quality model spanning sealed backtest and streaming live; the
+degradation-policy surface; the bad-data simulation harness for backtest
+(deficient high-frequency streams); and the PIT-tables intersection.
+
+Sequencing
+
+Behind PIT tables and the live data log (v0.2.x) and the OMS work; lands around
+v0.2.x -> v0.3.0 paper trading. The high-frequency deficient-stream simulation
+is a v0.3.0 paper-trading design input. Near-term footgun is already recorded
+in the intraday-readiness entry: the dense panel is a backtest gate, not a
+universal invariant.
+
+This horizon entry does not authorize the work. It records the direction and
+the chosen approach (B) so the eventual RFC starts from a known shape.
+
+### 2026-05-28 [execution] RNG resume is non-deterministic for stochastic strategies
+
+Verified correctness gap (2026-05-28), found during the fold-core validation.
+
+On resume, **state** is correct: cash and positions are reconstructed by
+replaying events as-of the resume timestamp via `ledgr_state_asof()`
+(`backtest-runner.R:1088-1099`). But the **RNG stream** is not restored. The
+runner calls `set.seed(seed)` (`backtest-runner.R:589`) and the fold calls
+`set.seed(execution_seed)` (`fold-core.R:69`); the loop then jumps to
+`start_idx` without replaying pulses 1..start_idx-1, and there is no
+`.Random.seed` checkpoint/restore anywhere (it exists only in `sim-bars.R`, the
+unrelated bar simulator).
+
+Consequence: a **deterministic** strategy resumes byte-identically (no RNG
+dependence). A **stochastic** strategy (Tier 2, e.g. `runif()`) drawing at
+pulse k on resume gets the *pulse-1* RNG draw, not the advanced stream a
+continuous run would have at pulse k. The execution-seed contract guarantees
+within-continuous-run repeatability, not resume equivalence for stochastic
+strategies.
+
+Decision needed (one of):
+
+- checkpoint `.Random.seed` at each flushed pulse and restore it on resume;
+- replay pulses 1..start_idx-1 on resume to re-advance the RNG (expensive);
+- document the limitation and restrict resume guarantees to deterministic
+  strategies (cheapest, honest).
+
+Cross-link: the v0.1.8.7 parallel-dispatch work faces the same RNG-state
+question — per-candidate seed derivation must not depend on worker scheduling
+or global RNG state. Whatever resolves resume should align with that.
+
+This entry records a verified gap, not a committed fix.
+
+### 2026-05-28 [architecture] Fold-core structural debt surfaced by adversarial review
+
+Two adversarial reviews of the fold-core workbook surfaced design debt that is
+survivable today but should be addressed before OMS / risk / intraday land.
+None is a correctness bug — the one alleged SELL cash-sign bug was a workbook
+paraphrase typo, not a code bug; the code uses absolute `fill$qty` and is
+correct (`fold-core.R:280-284`, `ledger-writer.R:66-71`). These are refactor
+candidates.
+
+- **One production replay kernel.** Two equity-reconstruction implementations
+  share one algorithm: the inline run-path copy (`backtest-runner.R:1378-1478`)
+  and the sweep reconstructor (`ledgr_sweep_summary_from_ordered_events`), with
+  `ledgr_equity_from_events`/`ledgr_fills_from_events` as test-only parity
+  twins. The split is perf-motivated (v0.1.8.3: sweep avoids the DB round-trip)
+  and guarded by `test-sweep-parity`. End-state: one production replay kernel
+  fed by DB or memory event sinks; everything else an adapter. Partial fills,
+  dividends, borrow fees, or margin would multiply the drift risk.
+- **Phased pulse for portfolio-level risk.** The per-pulse loop interleaves
+  delta -> proposal -> cost -> event -> state-mutation per instrument. That
+  shape resists portfolio-level risk and net affordability. Target shape: plan
+  (targets -> deltas) -> batch proposals -> batch cost -> batch/portfolio risk
+  + net affordability -> emit -> apply atomically. This is the structural
+  prerequisite for the v0.1.9 affordability check (see the 2026-05-27
+  affordability-in-target-risk entry) and is a v0.1.9 target-risk RFC input.
+- **Typed execution spec.** The `execution` list is a large untyped bag; run
+  and sweep hand-build equivalent-but-not-identical lists (verified divergences
+  in seed derivation, `event_mode`, hardcoded vs config fields, metric-kernel
+  timing). A typed `ledgr_execution_spec()` constructor with validation would
+  prevent run/sweep drift.
+- **Split `fold-core.R`.** It holds the engine, the reconstructors, and metrics
+  helpers in one file. Split before OMS/risk/intraday add more concerns.
+- **Explicit event types.** Opening positions are seeded as `CASHFLOW` events
+  with meta flags. Accounting-critical semantics should not live only in
+  `meta_json`; add a `POSITION_SEED` type (and reserve `FEE`, `DIVIDEND`,
+  `SPLIT` for later) rather than overloading `CASHFLOW`.
+- **Batch-aware cost model.** The per-proposal `cost_resolver` cannot model
+  batch/portfolio slippage or liquidity. Routes to the v0.2.x
+  liquidity/capacity arc; the single-order resolver remains the default
+  adapter.
+
+Verified-and-fine (recorded so the design audit does not re-raise them): the
+no-lookahead invariant holds; the `findInterval` equity mapping is correct for
+next-open fills; the dense-panel fail-fast plus whole-run DuckDB transaction
+(`run_transaction = dbWithTransaction`) make state/event consistency clean
+(state is replayed from events, never separately persisted); open-position
+drawdowns are captured by the equity curve, so there is no survivorship bias in
+the headline return/drawdown metrics.
+
+This entry records direction, not committed work.
+
+### 2026-05-28 [adapters] External-package output adapters (PerformanceAnalytics first)
+
+ledgr's stable public result tables (equity, fills, trades, ledger) plus the
+stored metric context are the right substrate for thin, optional, output-only
+adapters into the established R quant ecosystem. **Committed for v0.2.x** (see
+the roadmap "External Package Adapters" entry); this horizon note records
+direction, and an RFC synthesis — not this entry — authorizes any public API.
+
+The first adapter is **PerformanceAnalytics**, scoped to its real strength — the
+drawdown/return tables and long-tail risk/return stats, not its charts. It is a
+pure output projection (equity -> return stream -> PA), so it touches no
+causality, strategy-contract, determinism, or engine-mutation surface, and is
+the cleanest public proof of the hexagonal pattern: ledgr owns the canonical
+evidence, adapters enrich the analysis.
+
+Charting is a separate, swappable renderer over the same return stream — not a
+PA lock-in. PA's base-R graphics are a familiar/legacy option; the modern faces
+are tidyquant (ggplot2 over the same PA metrics — distinct from the academic
+tidyfinance) or a native ledgr ggplot tear-sheet (`R/plot.R` already exists).
+The reusable port is the equity -> return conversion; many renderers consume it.
+
+Why high-value: one stable result-table contract unlocks the whole
+PerformanceAnalytics / PortfolioAnalytics / tidyfinance reporting and research
+surface — a large host of additional capabilities (tear sheets, risk/return
+tables, factor research, portfolio optimization) — without ledgr reimplementing
+any of it.
+
+Adapter ranking (later ones gated on their own readiness):
+
+- PerformanceAnalytics — reporting / tear-sheet; first, output projection only.
+- PortfolioAnalytics — portfolio construction / post-ledger optimization; after
+  the v0.1.9 target-risk chain stabilizes.
+- tidyfinance — factor / data research; with the v0.2.x PIT / vintage semantics.
+- quantmod — data ingestion; useful but less differentiating.
+- PMwR / quantstrat / blotter / fPortfolio — low priority or skip (accounting /
+  engine overlap that would blur which engine is the source of truth).
+
+Boundary the RFC must bind:
+
+- output projection only — no second canonical metrics path;
+- consume ledgr's OWN canonical return series (whatever `ledgr_compute_metrics`
+  derives); never reinvent the return formula inside the adapter, or the base
+  series silently diverges;
+- PerformanceAnalytics metrics use PA conventions and can differ from ledgr's;
+  scope PA to what ledgr does NOT already compute and label any overlap rather
+  than presenting two conflicting Sharpe numbers as both authoritative;
+- optional dependency (`Suggests` + `check_installed`), never `Imports`;
+- adapters inspect, they do not select winners (no sweep ranking / promotion
+  automation) — selection stays human, per the promotion-is-not-validation
+  stance;
+- benchmark-relative metrics coordinate with the v0.2.x benchmark-context layer
+  so PA does not become the de-facto benchmark-metrics surface ahead of ledgr's
+  own contract;
+- one shared adapter namespace pattern (e.g. `ledgr_<pkg>_*`) decided up front;
+- live `findInterval`+`cumsum` reconstruction and the reopened DB-replay path
+  must yield identical adapter output.
+
+Inside ledgr under `Suggests` for the first adapter (it proves the pattern
+publicly); split into `ledgr.adapters` or per-package packages only if the
+surface grows. Source: the 2026-05-28 maintainer review of an adapter-ecosystem
+proposal.
+
+This entry records direction, not committed work.
+
 ## Resolved
 
-No resolved horizon entries yet.
+Entries move here when their idea has shipped or been answered. Each records
+what resolved it. Sweep an idea here when its milestone closes — do not leave
+shipped work in "Open."
+
+### 2026-05-15 [adapters] Multi-output indicator authoring bundles — shipped v0.1.8.1
+
+`ledgr_indicator_bundle` / `ledgr_ind_ttr_outputs()` shipped in v0.1.8.1 with
+the accepted design: flatten-at-declaration to single-output indicators,
+output-specific fingerprints, normalized prefix (`bbands_dn`), `prefix = NULL`
+raw opt-in, instrument IDs never in feature IDs. See the v0.1.8.1 packet and
+`rfc_multi_output_indicator_ux_synthesis.md`.
+
+### 2026-05-15 [ux] Parameter-grid construction helpers — shipped (core) v0.1.8.4
+
+`ledgr_feature_grid()`, `ledgr_strategy_grid()`, and `ledgr_grid_cross()`
+shipped in v0.1.8.4 as candidate-set construction helpers with no
+objective/ranking semantics. The `ledgr_grid_named()` /
+`ledgr_grid_add_baseline()` variants were not built and remain low-priority
+optional ideas if a future cycle wants them.
+
+### 2026-05-25 [optimization] Grid-union shared pulse views — shipped v0.1.8.4
+
+v0.1.8.4 adopted the grid-level concrete-feature-union: shared concrete
+features computed once across a sweep grid, not once per candidate. See the
+v0.1.8.4 packet.
+
+### 2026-05-15 [execution] Single-core sweep hot-path optimization — shipped v0.1.8.3
+
+v0.1.8.3 shipped the runtime projection + R-memory backend + fast context and
+the summary-only in-memory accounting path
+(`ledgr_sweep_summary_from_ordered_events`), addressing the pulse-context churn
+and event-replay reconstruction costs this entry identified.
+
+### 2026-05-13 [execution] Compact execution semantics article — shipped v0.1.8.5
+
+`vignettes/execution-semantics.qmd` shipped in the v0.1.8.5 teachability cycle
+(Batch 4) as the consolidated reference for next-open fills, targets-as-
+holdings, decision-time sizing, final-bar no-fill, and open positions.
+
+### 2026-05-13 [data] Data input and snapshot creation article — resolved v0.1.8.5
+
+Resolved without a separate article: the v0.1.8.5 cycle moved the low-level CSV
+bridge to the `?ledgr_snapshot_import_bars_csv` help page (reference boundary)
+and kept experiment-store centered on run management, so the split this entry
+proposed is no longer needed.

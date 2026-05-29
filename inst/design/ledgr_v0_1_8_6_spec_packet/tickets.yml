@@ -1,0 +1,232 @@
+version: "0.1.8.6"
+source: "v0_1_8_6_tickets.md"
+generated_from: "v0_1_8_6_spec.md"
+tickets:
+  - id: "LDG-2445"
+    title: "Packet Alignment And v0.1.8.6 Planning State"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.6"
+    tests:
+      - "manual_packet_review"
+      - "stale_scope_rg_checks"
+      - "git_diff_check"
+
+  - id: "LDG-2446"
+    title: "Feature Cache-Key Deduplication"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2445"
+    classification:
+      type: "optimization"
+      surface: "feature_precompute"
+      scope: "cache_key_dedup"
+    tests:
+      - "feature_cache_key_parity_tests"
+      - "fingerprint_stability_tests"
+      - "feature_precompute_tests"
+      - "current_source_spike_remeasurement"
+
+  - id: "LDG-2447"
+    title: "Schema-Only Feature Table Default"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2446"
+    classification:
+      type: "optimization"
+      surface: "runtime_projection"
+      scope: "feature_table_materialization"
+    tests:
+      - "runtime_projection_tests"
+      - "pulse_context_tests"
+      - "event_stream_parity_tests"
+      - "ldg_2403_accounting_parity_tests"
+      - "feature_inspection_tests"
+      - "current_source_spike_remeasurement"
+
+  - id: "LDG-2448"
+    title: "Structured Benchmark Suite And LEAN Reference"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2447"
+    classification:
+      type: "benchmark"
+      surface: "dev_bench"
+      scope: "structured_suite"
+    tests:
+      - "benchmark_smoke_run"
+      - "benchmark_output_schema_review"
+      - "lean_reference_provenance_review"
+      - "manual_comparability_review"
+
+  - id: "LDG-2449"
+    title: "Two-Mode Width Sweep And Storage Decision"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2448"
+    classification:
+      type: "benchmark"
+      surface: "feature_projection"
+      scope: "width_sweep_storage_decision"
+    tests:
+      - "read_score_width_sweep"
+      - "turnover_width_sweep"
+      - "benchmark_result_review"
+      - "storage_decision_review"
+
+  - id: "LDG-2450"
+    title: "Conditional Storage And Typed Event Column Gate"
+    status: "completed"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2449"
+    classification:
+      type: "decision_gate"
+      surface: "persistent_events"
+      scope: "typed_columns"
+    tests:
+      - "manual_storage_gate_review"
+      - "persistent_replay_tests_if_accepted"
+      - "migration_tests_if_accepted"
+
+  - id: "LDG-2451"
+    title: "Snapshot Administration And Research-Loop Helper RFC Gate"
+    status: "deferred"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2447"
+    classification:
+      type: "design_gate"
+      surface: "snapshot_provenance"
+      scope: "rfc_routing"
+    tests:
+      - "rfc_cycle_review"
+      - "manual_packet_review"
+
+  - id: "LDG-2453"
+    title: "Fast Wide-View DataFrame Manifestation"
+    status: "completed"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2449"
+    classification:
+      type: "optimization"
+      surface: "runtime_projection"
+      scope: "wide_view_manifestation"
+    tests:
+      - "pulse_context_tests"
+      - "feature_inspection_tests"
+      - "sweep_tests"
+      - "event_stream_parity_tests"
+      - "isolated_view_build_remeasurement"
+
+  - id: "LDG-2454"
+    title: "Cold Setup And Residual Phase Profiling"
+    status: "completed"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2453"
+    classification:
+      type: "diagnostic"
+      surface: "benchmark_telemetry"
+      scope: "cold_setup_residual_profile"
+    tests:
+      - "current_source_profile"
+      - "targeted_tests_if_hooks_added"
+      - "manual_attribution_review"
+
+  - id: "LDG-2455"
+    title: "Drop Intermediate Wide-Matrix Allocation"
+    status: "completed"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2454"
+    classification:
+      type: "optimization"
+      surface: "runtime_projection"
+      scope: "wide_view_matrix_allocation"
+    tests:
+      - "pulse_context_tests"
+      - "feature_inspection_tests"
+      - "sweep_tests"
+      - "event_stream_parity_tests"
+      - "isolated_view_build_remeasurement"
+
+  - id: "LDG-2456"
+    title: "Performance Attribution Closeout"
+    status: "completed"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2455"
+    classification:
+      type: "diagnostic"
+      surface: "benchmark_telemetry"
+      scope: "performance_attribution_closeout"
+    tests:
+      - "current_source_profile"
+      - "toggle_matrix_review"
+      - "manual_attribution_review"
+
+  - id: "LDG-2457"
+    title: "Matched Local Peer Benchmark"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2456"
+    classification:
+      type: "benchmark"
+      surface: "dev_bench"
+      scope: "matched_peer_comparison"
+    tests:
+      - "peer_benchmark_record_review"
+      - "current_source_guard"
+      - "peer_run_provenance_review"
+      - "manual_comparability_review"
+
+  - id: "LDG-2452"
+    title: "v0.1.8.6 Release Gate And Closeout"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2446"
+      - "LDG-2447"
+      - "LDG-2448"
+      - "LDG-2449"
+      - "LDG-2450"
+      - "LDG-2451"
+      - "LDG-2453"
+      - "LDG-2454"
+      - "LDG-2455"
+      - "LDG-2456"
+      - "LDG-2457"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.6"
+    tests:
+      - "targeted_tests"
+      - "full_test_suite"
+      - "package_release_checks"
+      - "benchmark_record_review"
+      - "manual_closeout_review"

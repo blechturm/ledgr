@@ -113,6 +113,98 @@ testthat::test_that("projection-backed wide views are fresh public objects", {
   testthat::expect_equal(second$signal, c(999, 4))
 })
 
+testthat::test_that("projection pulse views default to schema-only long tables", {
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
+  projection <- ledgr:::ledgr_runtime_projection(
+    feature_values = list(signal = matrix(c(1, 2, 3, 4), nrow = 2L)),
+    universe = c("AAA", "BBB"),
+    pulses_posix = pulses
+  )
+
+  schema_views <- ledgr:::ledgr_projection_pulse_views(projection, "signal")
+  full_views <- ledgr:::ledgr_projection_pulse_views(projection, "signal", feature_table = "full")
+
+  testthat::expect_true(all(vapply(schema_views$feature_table, is.data.frame, logical(1))))
+  testthat::expect_true(all(vapply(schema_views$feature_table, nrow, integer(1)) == 0L))
+  testthat::expect_identical(
+    names(schema_views$feature_table[[1]]),
+    c("instrument_id", "ts_utc", "feature_name", "feature_value")
+  )
+  testthat::expect_equal(nrow(full_views$feature_table[[1]]), 2L)
+  testthat::expect_equal(
+    schema_views$features_wide,
+    full_views$features_wide
+  )
+})
+
+testthat::test_that("projection pulse views match single-pulse wide construction", {
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2
+  projection <- ledgr:::ledgr_runtime_projection(
+    feature_values = list(
+      alpha = matrix(seq_len(6), nrow = 2L),
+      beta = matrix(seq_len(6) + 10, nrow = 2L)
+    ),
+    universe = c("AAA", "BBB"),
+    pulses_posix = pulses
+  )
+
+  views <- ledgr:::ledgr_projection_pulse_views(projection)
+
+  for (pulse_idx in seq_along(pulses)) {
+    testthat::expect_equal(
+      views$features_wide[[pulse_idx]],
+      ledgr:::ledgr_projection_features_wide(projection, pulse_idx)
+    )
+  }
+})
+
+testthat::test_that("non-fast projection contexts keep schema-only feature tables", {
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC")
+  universe <- c("AAA", "BBB")
+  projection <- ledgr:::ledgr_runtime_projection(
+    feature_values = list(signal = matrix(c(1, 2), nrow = 2L)),
+    universe = universe,
+    pulses_posix = pulses
+  )
+  bars <- data.frame(
+    instrument_id = universe,
+    ts_utc = rep(pulses[[1]], 2L),
+    open = c(10, 20),
+    high = c(11, 21),
+    low = c(9, 19),
+    close = c(10.5, 20.5),
+    volume = c(100, 200),
+    stringsAsFactors = FALSE
+  )
+  schema <- ledgr:::ledgr_projection_feature_table_schema()
+
+  ctx <- ledgr:::ledgr_pulse_context(
+    run_id = "run-1",
+    ts_utc = pulses[[1]],
+    universe = universe,
+    bars = bars,
+    features = schema,
+    cash = 1000,
+    equity = 1000
+  )
+  ctx <- ledgr:::ledgr_update_pulse_context_helpers(
+    ctx,
+    bars = bars,
+    features = schema,
+    universe = universe,
+    projection = projection,
+    pulse_idx = 1L,
+    feature_ids = "signal"
+  )
+
+  testthat::expect_s3_class(ctx, "ledgr_pulse_context")
+  testthat::expect_true(is.data.frame(ctx$feature_table))
+  testthat::expect_equal(nrow(ctx$feature_table), 0L)
+  testthat::expect_equal(ctx$feature("AAA", "signal"), 1)
+  testthat::expect_equal(ctx$features_wide$signal, c(1, 2))
+  testthat::expect_equal(nrow(ledgr_pulse_features(ctx)), 2L)
+})
+
 testthat::test_that("projection accessors can restrict a candidate feature subset", {
   pulses <- as.POSIXct("2020-01-01", tz = "UTC")
   projection <- ledgr:::ledgr_runtime_projection(

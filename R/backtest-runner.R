@@ -53,6 +53,9 @@ ledgr_strategy_error_features <- function(ctx) {
     feature_table <- data.frame()
   }
   features <- tryCatch(ledgr_feature_names(feature_table), error = function(e) character())
+  if (length(features) == 0L && is.data.frame(ctx$features_wide)) {
+    features <- setdiff(names(ctx$features_wide), c("instrument_id", "ts_utc"))
+  }
   ledgr_strategy_context_list(features)
 }
 
@@ -1205,16 +1208,21 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     )
   }
 
+  feature_engine_version <- ledgr_feature_engine_version()
   if (length(feature_defs) > 0) {
+    feature_fingerprints <- vapply(feature_defs, ledgr_feature_def_fingerprint, character(1))
     run_feature_series <- list()
-    for (def in feature_defs) {
+    for (def_idx in seq_along(feature_defs)) {
+      def <- feature_defs[[def_idx]]
+      feature_fingerprint <- feature_fingerprints[[def_idx]]
       per_inst <- list()
       for (instrument_id in instrument_ids) {
         b <- bars_by_id[[instrument_id]]
-        cache_key <- ledgr_feature_cache_key(
+        cache_key <- ledgr_feature_cache_key_from_parts(
           snapshot_hash = snapshot_hash_for_features,
           instrument_id = instrument_id,
-          feature_def = def,
+          feature_fingerprint = feature_fingerprint,
+          feature_engine_version = feature_engine_version,
           start_ts_utc = start_ts_utc,
           end_ts_utc = end_ts_utc
         )
@@ -1251,7 +1259,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     feature_matrix = run_feature_matrix %||% list(),
     universe = instrument_ids,
     pulses_posix = pulses_posix,
-    feature_engine_version = ledgr_feature_engine_version(),
+    feature_engine_version = feature_engine_version,
     alias_index = NULL
   )
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())

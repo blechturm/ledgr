@@ -1,0 +1,15 @@
+{
+  "source": "https://raw.githubusercontent.com/Limex-com/ziplime/master/README.md",
+  "page_url": "https://github.com/Limex-com/ziplime",
+  "readme_url": "https://raw.githubusercontent.com/Limex-com/ziplime/master/README.md",
+  "retrieved_at": "2026-05-29T06:45:34Z",
+  "page_sha256": "97528e3b28bcc23f95ee5cf38d0d4b7f0038b0ae52bdcd8c98b032f726b9b9f5",
+  "n_rows": 3,
+  "vendor_self_reported": true,
+  "methodology": "unstated (no repeats/warmup/variance; execution-time boundary undefined, likely includes data load)",
+  "workload": "500 assets, 5 years daily, SMA crossover",
+  "hardware": "Apple Silicon M3, Python 3.12 (NOT the ledgr bench host)",
+  "comparability": "orientation_only: peer ordering, not a controlled head-to-head",
+  "excluded": "VectorBT (vectorized engine; figure not in source / 'community consensus'; category mismatch with event-driven engines)",
+  "ledgr_matched_scenario": "peer_sma_crossover (run_benchmarks.R)"
+}

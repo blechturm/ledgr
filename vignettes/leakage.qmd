@@ -155,6 +155,8 @@ threshold do clear the full-sample one. The strategy records more
 generated in real time -- and that inflated count flows directly into the
 backtest's apparent edge.
 
+## The Strategy Boundary
+
 ::: {.ledgr-diagram .ledgr-leakage-boundary}
 
 ```{mermaid}
@@ -171,8 +173,6 @@ flowchart LR
 ```
 
 :::
-
-## The Strategy Boundary
 
 At execution time, ledgr strategies receive one pulse context. The strategy can
 read current bars, current registered features, current positions, cash, equity,

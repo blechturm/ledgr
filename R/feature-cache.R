@@ -88,11 +88,31 @@ ledgr_feature_cache_key <- function(snapshot_hash,
   if (!is.character(snapshot_hash) || length(snapshot_hash) != 1L || is.na(snapshot_hash) || !nzchar(snapshot_hash)) {
     return(NULL)
   }
+  ledgr_feature_cache_key_from_parts(
+    snapshot_hash = snapshot_hash,
+    instrument_id = instrument_id,
+    feature_fingerprint = ledgr_feature_def_fingerprint(feature_def),
+    feature_engine_version = ledgr_feature_engine_version(),
+    start_ts_utc = start_ts_utc,
+    end_ts_utc = end_ts_utc
+  )
+}
+
+ledgr_feature_cache_key_from_parts <- function(snapshot_hash,
+                                               instrument_id,
+                                               feature_fingerprint,
+                                               feature_engine_version,
+                                               start_ts_utc,
+                                               end_ts_utc) {
+  if (!is.character(snapshot_hash) || length(snapshot_hash) != 1L || is.na(snapshot_hash) || !nzchar(snapshot_hash)) {
+    return(NULL)
+  }
   payload <- list(
     snapshot_hash = snapshot_hash,
     instrument_id = instrument_id,
-    indicator_fingerprint = ledgr_feature_def_fingerprint(feature_def),
-    feature_engine_version = ledgr_feature_engine_version(),
+    # Field name is parity-critical for existing session-cache keys.
+    indicator_fingerprint = feature_fingerprint,
+    feature_engine_version = feature_engine_version,
     start_ts_utc = ledgr_normalize_ts_utc(start_ts_utc),
     end_ts_utc = ledgr_normalize_ts_utc(end_ts_utc)
   )

@@ -1,0 +1,9 @@
+{
+  "source": "https://www.quantconnect.com/performance",
+  "page_url": "https://www.quantconnect.com/performance",
+  "retrieved_at": "2026-05-28T19:13:16Z",
+  "page_sha256": "42a1583a16db37976721372792d82ba36d9d746a20f7dd7db115b01526346a85",
+  "n_rows": 18,
+  "n_benchmarks": 9,
+  "metric": "security_bars_sec = n_inst * n_pulses / t_wall; LEAN DPS = security-bars/sec"
+}

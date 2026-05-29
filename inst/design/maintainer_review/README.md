@@ -13,6 +13,10 @@ Current notebooks:
 
 - `feature_value_path_workbook.qmd` - trace how a declared feature becomes a value
   returned by `ctx$feature()` inside a strategy.
+- `fold_core_workbook.qmd` - grounded trace of `R/fold-core.R`: the shared
+  execution engine, the data structures it consumes and produces, the
+  event-to-derived-view reconstruction, and the reserved insertion points for
+  the v0.1.9 risk layer, intraday fill timing, the public cost API, and OMS.
 
 Review workflow:
 

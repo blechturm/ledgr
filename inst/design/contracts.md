@@ -42,6 +42,13 @@ the active versioned spec packet, currently
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
+- Production entry into the fold core must be guarded by the Snapshot Contract
+  trust boundary. Committed runs currently recompute and compare the sealed
+  snapshot hash before fold construction; sweep evaluation currently validates
+  a sealed snapshot handle and carries the stored snapshot hash through compact
+  candidate provenance. v0.1.8.7 must make this guard policy explicit before
+  any primitive fold-core redesign relies on a stronger no-unguarded-entry
+  invariant.
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not compute, reinterpret, or rewrite fill prices,
   fees, cash deltas, or cost metadata.
@@ -122,6 +129,12 @@ the active versioned spec packet, currently
 - `ledgr_snapshot_load(db_path, snapshot_id)` may reopen an existing sealed
   snapshot. It must never create, silently overwrite, or silently reseal a
   snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
+- Snapshot sealing, loading, and fold-entry guards form the trust boundary for
+  normalized market data. After a production caller has accepted a sealed
+  snapshot under its execution mode's guard, fold-core hot paths may treat bars,
+  pulses, timestamps, instruments, and universe membership as trusted normalized
+  primitives. They should not repeatedly revalidate OHLC shape, POSIXct/UTC
+  status, or sealed-snapshot invariants per pulse, feature, or instrument.
 - In the v0.1.7 snapshot-first workflow, `ledgr_snapshot_load()` is the normal
   new-session resumption path. After loading a snapshot handle, ordinary
   run-management APIs should use the snapshot object rather than a `db_path`
@@ -194,6 +207,12 @@ the active versioned spec packet, currently
   na = "null", digits = NA, pretty = FALSE)`.
 - Config hashes, strategy-state JSON, snapshot metadata JSON, and ledger
   `meta_json` must use this canonical path when deterministic identity matters.
+- Session-local, non-persisted lookup keys are not durable identity artifacts
+  and are not required to use canonical JSON or cryptographic hashes. They must
+  remain deterministic and unambiguous within the session, and this exemption
+  must not weaken snapshot hashes, config hashes, strategy-state JSON,
+  snapshot metadata JSON, ledger `meta_json`, or any other persisted provenance
+  surface.
 - Feature-map authoring objects are wrappers around existing indicator
   definitions. Equivalent feature maps and plain feature lists must preserve
   feature-related config identity for equivalent indicator definitions unless a
@@ -584,3 +603,7 @@ the active versioned spec packet, currently
 - Release-ticket execution should follow `inst/design/release_ci_playbook.md`.
   Main-branch CI and tag-triggered CI are separate gates; a release tag is not
   valid until the tag workflow is green.
+- Fold-core trust-boundary work must include regression coverage proving that
+  public production run/sweep paths cannot reach fold execution without the
+  accepted sealed-snapshot guard. The guard belongs at entry/setup boundaries,
+  not inside per-cell, per-feature, or per-pulse hot loops.
