@@ -143,7 +143,8 @@ bench_specs <- function(preset = "smoke") {
       feature_turnover = list(kind = "run", n_inst = 100L, n_pulses = 252L, n_feat = 20L, trade = TRUE),
       indicator_payload = list(kind = "run", n_inst = 5L, n_pulses = 504L, n_feat = 50L, trade = FALSE),
       sweep_memory_summary = list(kind = "sweep", n_inst = 10L, n_pulses = 126L, n_feat = 2L, candidates = 5L),
-      persistent_replay = list(kind = "run", n_inst = 25L, n_pulses = 252L, n_feat = 5L, trade = TRUE, replay = TRUE)
+      persistent_replay = list(kind = "run", n_inst = 25L, n_pulses = 252L, n_feat = 5L, trade = TRUE, replay = TRUE),
+      peer_sma_crossover = list(kind = "run", n_inst = 500L, n_pulses = 1260L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 20L, sma_slow = 50L, persist_features = FALSE)
     ))
   }
   list(
@@ -154,7 +155,8 @@ bench_specs <- function(preset = "smoke") {
     feature_turnover = list(kind = "run", n_inst = 20L, n_pulses = 40L, n_feat = 5L, trade = TRUE),
     indicator_payload = list(kind = "run", n_inst = 3L, n_pulses = 60L, n_feat = 10L, trade = FALSE),
     sweep_memory_summary = list(kind = "sweep", n_inst = 3L, n_pulses = 30L, n_feat = 2L, candidates = 3L),
-    persistent_replay = list(kind = "run", n_inst = 5L, n_pulses = 50L, n_feat = 3L, trade = TRUE, replay = TRUE)
+    persistent_replay = list(kind = "run", n_inst = 5L, n_pulses = 50L, n_feat = 3L, trade = TRUE, replay = TRUE),
+    peer_sma_crossover = list(kind = "run", n_inst = 20L, n_pulses = 80L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 5L, sma_slow = 10L, persist_features = FALSE)
   )
 }
 
@@ -178,6 +180,42 @@ bench_make_features <- function(n_feat) {
       series_fn = function(bars, params) as.numeric(bars$close) * (i * 1e-4) + i
     )
   })
+}
+
+bench_make_sma_features <- function(fast = 20L, slow = 50L) {
+  if (!requireNamespace("TTR", quietly = TRUE)) {
+    stop("The peer_sma_crossover scenario needs the 'TTR' package (optimized C SMA). Install TTR to run it.")
+  }
+  mk <- function(id, w) {
+    force(w)
+    ledgr_indicator(
+      id = id,
+      fn = function(window) {
+        x <- as.numeric(window$close)
+        if (length(x) < w) return(NA_real_)
+        as.numeric(TTR::SMA(x, n = w))[[length(x)]]
+      },
+      requires_bars = w,
+      series_fn = function(bars, params) as.numeric(TTR::SMA(as.numeric(bars$close), n = w))
+    )
+  }
+  list(mk("sma_fast", fast), mk("sma_slow", slow))
+}
+
+bench_sma_crossover_strategy <- function(trade) {
+  TRADE <- isTRUE(trade)
+  function(ctx, params) {
+    targets <- ctx$flat()
+    if (!TRADE) return(targets)
+    fw <- ctx$features_wide
+    fast <- fw$sma_fast
+    slow <- fw$sma_slow
+    long <- !is.na(fast) & !is.na(slow) & fast > slow
+    if (any(long)) {
+      targets[fw$instrument_id[long]] <- params$qty
+    }
+    targets
+  }
 }
 
 bench_strategy <- function(name, n_feat, trade) {
@@ -236,13 +274,23 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
   )[["elapsed"]]
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  features <- bench_make_features(spec$n_feat %||% 0L)
-  strategy <- bench_strategy(name, spec$n_feat %||% 0L, spec$trade %||% FALSE)
+  sma <- identical(spec$strategy_kind, "sma_crossover")
+  features <- if (sma) {
+    bench_make_sma_features(spec$sma_fast %||% 20L, spec$sma_slow %||% 50L)
+  } else {
+    bench_make_features(spec$n_feat %||% 0L)
+  }
+  strategy <- if (sma) {
+    bench_sma_crossover_strategy(spec$trade %||% TRUE)
+  } else {
+    bench_strategy(name, spec$n_feat %||% 0L, spec$trade %||% FALSE)
+  }
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
     features = features,
-    opening = ledgr_opening(cash = 1e7)
+    opening = ledgr_opening(cash = 1e7),
+    persist_features = spec$persist_features %||% TRUE
   )
   run_id <- sprintf("bench_%s_%03d_%s", name, iter, paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
   warnings <- character()
@@ -387,6 +435,7 @@ bench_comparability_note <- function(name) {
     feature_turnover = "ledgr-only feature plus fills/events stress.",
     sweep_memory_summary = "ledgr-only in-memory sweep summary path.",
     persistent_replay = "ledgr-only persistent replay/read-back path.",
+    peer_sma_crossover = "Matched Ziplime/Zipline/Backtrader workload (500 assets, 5yr daily, SMA crossover via TTR, persist off); orientation only -- vendor numbers are Apple M3, a different host.",
     "No external benchmark analogue."
   )
 }

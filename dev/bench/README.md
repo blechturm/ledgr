@@ -36,10 +36,41 @@ Named scenarios:
 - `indicator_payload`
 - `sweep_memory_summary`
 - `persistent_replay`
+- `peer_sma_crossover` (matched Ziplime/Zipline/Backtrader workload; see Peer Framework Reference)
 
 Use `--preset smoke` for a quick verification run and `--preset record` for the
 release-record benchmark shape. The record preset is still local and
 machine-dependent; release notes should cite it with environment metadata.
+
+## Peer Framework Reference
+
+`dev/bench/ziplime_reference.csv` holds published throughput numbers for the
+interpreted, event-driven Python peer group (Ziplime, Zipline, Backtrader),
+scraped by `fetch_ziplime_reference.R`:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e 'source("dev/bench/fetch_ziplime_reference.R"); fetch_ziplime_reference()'
+```
+
+These are **vendor self-reported** numbers from the Ziplime README (Apple Silicon
+M3, methodology unstated, execution time likely includes data load). The local
+development host is an Intel Core i9-12900K desktop system: plausibly the same
+broad single-core class as M3, but benchmark-dependent and not the same
+hardware. Every published peer row is therefore
+`comparable = "orientation_only"`: useful for peer *ordering* and
+order-of-magnitude context, never a controlled head-to-head, because package
+versions, host details, and the execution-time boundary are not controlled by
+ledgr. The VectorBT figure that circulates with this table is deliberately
+excluded -- it is not in the source and it is a vectorized engine, a category
+mismatch with per-bar event engines. Provenance is recorded in
+`ziplime_reference.meta.json` (source, retrieved_at, README sha256, exclusions).
+This reference is NOT fed into the LEAN side-by-side ratio.
+
+The `peer_sma_crossover` scenario matches that workload (500 assets, 5 years
+daily, SMA crossover via `TTR::SMA`, `persist_features = FALSE`) so ledgr can be
+measured on the same shape. A defensible comparison still requires running the
+peer engines and ledgr on the SAME machine; the published numbers above only fix
+the workload, not the host.
 
 ## Width Sweep
 

@@ -89,7 +89,7 @@ they are plausible. They enter only through the gates below.
 
 ## 2. Release Goals
 
-v0.1.8.6 has twelve release goals:
+v0.1.8.6 has thirteen release goals:
 
 1. Deduplicate feature cache-key construction by hoisting repeated
    feature-definition fingerprints and engine-version values out of the
@@ -119,13 +119,16 @@ v0.1.8.6 has twelve release goals:
    a small QuantConnect-comparable subset so future performance work is
    comparable across commits, versions, and at least a few external benchmark
    shapes.
-10. Decide the DuckDB feature-storage path only after the setup fixes are
+10. Run a matched local peer benchmark for the event-driven SMA crossover shape
+   so v0.1.8.7 starts with locally comparable peer evidence rather than only
+   scraped vendor orientation numbers.
+11. Decide the DuckDB feature-storage path only after the setup fixes are
    measured, so the spike evaluates the remaining bottleneck rather than stale
    materialization costs.
-11. Carry forward the v0.1.8.5 research-loop helper gaps and snapshot
+12. Carry forward the v0.1.8.5 research-loop helper gaps and snapshot
    administration / ETL provenance planning if their RFC/spec inputs land in
    time for ticket cut.
-12. Accept typed persistent event columns only if storage/schema work is
+13. Accept typed persistent event columns only if storage/schema work is
    explicitly accepted for this packet; otherwise keep Direction 5.6 deferred.
 
 The release succeeds when setup work is cheaper, memory pressure from unused
@@ -512,9 +515,11 @@ into review batches for execution and review.
 10. **Performance attribution closeout.** Use differential toggles and Rprof
    attribution to name and own every remaining large wall-clock bucket without
    adding phase hooks or optimizing in the closeout gate.
-11. **Snapshot/provenance and helper tickets.** Cut only after the relevant RFC
+11. **Matched local peer benchmark.** Run the SMA-crossover peer shape locally
+   and report rows as `local_matched`, `orientation_only`, or `not_run`.
+12. **Snapshot/provenance and helper tickets.** Cut only after the relevant RFC
    or spec input is accepted.
-12. **Release gates.** Update NEWS, docs, tests, package checks, and
+13. **Release gates.** Update NEWS, docs, tests, package checks, and
    retrospective records.
 
 ---
@@ -548,6 +553,10 @@ The v0.1.8.6 release may close only when:
   metrics instead of DPS alone;
 - at least the QC-comparable subset named in Section 6 runs and emits bars/sec,
   data-points/sec, wall-clock runtime, dimensions, and comparability notes;
+- the matched local peer benchmark records the ledgr SMA-crossover workload and
+  any locally runnable event-driven Python peer rows with explicit
+  comparability status; scraped vendor rows remain orientation-only, with the
+  i9-12900K versus Apple M3 host note used only as order-of-magnitude context;
 - a two-mode instrument x feature width sweep is recorded before any
   width-invariance or storage-need claim, including read/score mode and
   turnover mode;
@@ -614,6 +623,8 @@ Deferred unless a later accepted packet scopes them:
   runtime costs to guide the next optimization decision.
 - Close with a measurement/docs-only attribution table that names and owns the
   remaining large wall-clock gaps before v0.1.8.7 design work starts.
+- Add a matched local SMA-crossover peer benchmark where same-host rows are
+  comparable and scraped vendor rows remain orientation-only.
 
 ## Storage and provenance
 

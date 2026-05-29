@@ -186,6 +186,23 @@ tickets:
       - "toggle_matrix_review"
       - "manual_attribution_review"
 
+  - id: "LDG-2457"
+    title: "Matched Local Peer Benchmark"
+    status: "planned"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2456"
+    classification:
+      type: "benchmark"
+      surface: "dev_bench"
+      scope: "matched_peer_comparison"
+    tests:
+      - "peer_benchmark_record_review"
+      - "current_source_guard"
+      - "peer_run_provenance_review"
+      - "manual_comparability_review"
+
   - id: "LDG-2452"
     title: "v0.1.8.6 Release Gate And Closeout"
     status: "planned"
@@ -202,6 +219,7 @@ tickets:
       - "LDG-2454"
       - "LDG-2455"
       - "LDG-2456"
+      - "LDG-2457"
     classification:
       type: "release_gate"
       surface: "release_process"

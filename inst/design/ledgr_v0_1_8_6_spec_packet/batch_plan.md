@@ -308,7 +308,40 @@ Review focus:
 
 ---
 
-## Batch 9: Snapshot/Provenance And Helper RFC Gate
+## Batch 9: Matched Local Peer Benchmark
+
+Tickets:
+
+- `LDG-2457` Matched Local Peer Benchmark
+
+Purpose:
+
+Run the final v0.1.8.6 peer-comparison benchmark before v0.1.8.7 design work.
+The goal is a locally comparable matched workload, not a broad framework speed
+ranking. Scraped vendor numbers may orient the workload, but only same-host
+rows can be used for local comparison ratios.
+
+Review focus:
+
+- The ledgr `peer_sma_crossover` record shape runs from current source.
+- Any peer ratio uses only rows marked `local_matched`: same host, same
+  workload, same headline unit, explicit timing boundary.
+- Published Ziplime/Zipline/Backtrader rows remain `orientation_only` and are
+  not described as local comparable results.
+- The summary records that the local host is an Intel Core i9-12900K desktop
+  system, plausibly the same broad single-core class as the Apple M3 reference
+  host, but not identical hardware.
+- VectorBT remains excluded from the event-driven matched comparison.
+- Missing peer engines are recorded as `not_run` with an exact dependency or
+  runtime blocker.
+- The summary reports `security_bars_sec`, wall-clock seconds, dimensions,
+  package versions, machine metadata, and comparability status.
+- No storage/schema work, runtime optimization, public API change, or release
+  claim beyond the measured local rows ships in this batch.
+
+---
+
+## Batch 10: Snapshot/Provenance And Helper RFC Gate
 
 Tickets:
 
@@ -337,7 +370,7 @@ Review focus:
 
 ---
 
-## Batch 10: Release Gate
+## Batch 11: Release Gate
 
 Tickets:
 
@@ -362,6 +395,8 @@ Review focus:
   parity evidence or explicitly deferred with maintainer rationale.
 - The performance attribution closeout names and owns all remaining large speed
   gaps, or records a maintainer disposition for any unresolved attribution gap.
+- The matched local peer benchmark is recorded with comparability statuses, or
+  any missing local peer run has a maintainer disposition.
 - The storage/schema decision is recorded.
 - Snapshot/provenance/helper work is either backed by accepted implementation
   tickets or explicitly deferred.
@@ -388,9 +423,10 @@ Batch 0
                       -> Batch 6
                           -> Batch 7
                               -> Batch 8
-                                  -> Batch 10
+                                  -> Batch 9
+                                      -> Batch 11
 
-Batch 9 may start after Batch 0, but it does not block Batches 1-8.
+Batch 10 may start after Batch 0, but it does not block Batches 1-9.
 ```
 
 Batch 1 and Batch 2 are the mandatory shippable spine. Batch 3 provides the
@@ -401,6 +437,7 @@ Batch 6 is a diagnostic-only profiling pass that should run after the current
 manifestation optimization is reviewed. Batch 7 is the immediate narrow
 follow-up for dropping the intermediate wide-matrix allocation if LDG-2454
 confirms it remains worthwhile. Batch 8 is the diagnostic attribution closeout
-gate for remaining speed gaps. Batch 9 is a design gate that can ship only if
-its RFC/spec decision lands cleanly; otherwise it defers. Batch 10 closes the
-packet after the mandatory spine and all accepted gates are resolved.
+gate for remaining speed gaps. Batch 9 records the locally comparable peer
+benchmark. Batch 10 is a design gate that can ship only if its RFC/spec
+decision lands cleanly; otherwise it defers. Batch 11 closes the packet after
+the mandatory spine and all accepted gates are resolved.
