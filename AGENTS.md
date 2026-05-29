@@ -30,8 +30,8 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.6 release gate; update this block when
-the next packet is cut or scope changes materially):
+Current planning context (v0.1.8.7 active packet; update this block when the
+release closes or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -59,11 +59,23 @@ the next packet is cut or scope changes materially):
   `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_tickets.md`,
   `inst/design/ledgr_v0_1_8_6_spec_packet/tickets.yml`, and
   `inst/design/ledgr_v0_1_8_6_spec_packet/cycle_retrospective.md`.
-- No v0.1.8.7 implementation packet is active yet. v0.1.8.7 is an RFC-first
-  Optimization Round 2 handoff: fold-core primitive contract, run-artifact
-  materialization policy, event-emission/buffer lane, cache-key/setup lane,
-  reconstruction lane, collapse adoption behind the deterministic wrapper, and
-  ADR 0004 dependency decisions.
+- The v0.1.8.7 packet is active:
+  `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md`,
+  `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_tickets.md`, and
+  `inst/design/ledgr_v0_1_8_7_spec_packet/tickets.yml`.
+- v0.1.8.7 is Optimization Round 2. It is RFC-first: bind the fold-core
+  primitive R object/function contract and run-artifact materialization policy
+  before implementation tickets land.
+- The implementation scope, after accepted RFC synthesis, is the three
+  hot-path lanes named by v0.1.8.6 evidence: event-emission/buffer lane,
+  cache-key/setup lane, and reconstruction lane.
+- Maintainer legacy-cleanup decision for v0.1.8.7: modern execution is
+  snapshot-backed and function-strategy based. Raw `bars` execution, R6 strategy
+  execution, and run-time `data_hash` identity are removed from modern execution
+  or must fail clearly before fold entry.
+- Collapse is in scope only behind the deterministic wrapper and only for
+  measured hot frames. ADR 0004 also drops `cli` and `R6` while retaining
+  `tibble`.
 - Snapshot administration and research-loop helper follow-up from v0.1.8.5 are
   deferred to the horizon for a later RFC/spec cycle.
 - Auditr-report bugfix intake is not scoped for v0.1.8.6. The next auditr
@@ -83,9 +95,10 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.1.8.6 release record | `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`, `inst/design/ledgr_v0_1_8_6_spec_packet/cycle_retrospective.md` |
+| v0.1.8.7 active packet | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
+| v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/architecture/fold_core_trust_boundary.md`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/adr/0004-dependency-footprint-and-strategy-interface.md` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
 | Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
 | Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |

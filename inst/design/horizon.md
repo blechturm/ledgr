@@ -34,7 +34,13 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.1.8.6** — DuckDB feature-storage spike; feature payload scale stress;
   feature projection materialization (5.0/5.1); structured benchmark and
   attribution closeout.
-- **v0.1.8.7** (parallel dispatch + determinism) — public parallel sweep
+- **v0.1.8.7** (optimization round 2) — fold-core primitive contract; hot-path
+  lanes (B0 buffer/emission via collapse, R representation/formatting with a
+  durable-identity fence, C reconstruction read-back); ADR 0004 dependency moves
+  (drop cli/R6, add collapse, keep tibble); legacy cleanup (raw `bars`
+  execution, R6 strategy execution, and run-time `data_hash` identity removed
+  from modern execution); per-lane real-run re-profile + parity gates.
+- **v0.1.8.8** (parallel dispatch + determinism) — public parallel sweep
   backend; parallel worker setup / Tier-2 packages; mori transport;
   worker-local read-only DuckDB; parallel interrupt / partial-result
   semantics; **RNG resume non-determinism**; structured RNG preflight metadata;
@@ -55,6 +61,28 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   strategies.
 - **v0.2.x → v0.3.0** — live bad-data resilience and sim-to-real backtest
   fidelity (direction B; needs a dedicated RFC).
+
+### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
+
+The accepted v0.1.8.7 synthesis
+(`inst/design/rfc/rfc_optimization_round_v0_1_8_7_synthesis.md`) binds a
+single-core pure-R hot-path cleanup: surface-preserving event-buffer
+capacity/write fix (B0), hot-path representation/formatting cleanup with
+durable-identity bytes fenced off (R), and read-back reconstruction behind a
+deterministic collapse gate (C), plus ADR 0004 deps and explicit legacy
+cleanup. The modern execution contract is snapshot-backed and function-strategy
+based; raw `bars` execution, R6 strategy execution, and run-time `data_hash`
+identity are removed or fail before the fold. It does **not** authorize a
+compiled core, parallel dispatch (now v0.1.8.8), sweep crossover claims, or
+durable identity-format changes. Whole-second timestamp contract reaffirmed;
+sub-second out of scope (not HFT). Pure direction, no committed home: a
+compiled/native fold core is the later lever for decisive single-run peer wins;
+the sweep amortization / peer-crossover track stays open (measured modest ~1.18×,
+the per-candidate fold dominates — needs heavier-precompute workloads before any
+claim); the matrix-canonical strategy surface is a separate contract/ergonomics
+RFC; the deeper typed event-emission rewrite (B1) waits on an explicit
+primitive-contract binding; durable hash/provenance/fingerprint byte changes each
+need their own contract decision.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 

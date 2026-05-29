@@ -4,8 +4,8 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_8_6_spec_packet/`.
-**Active packet:** none. v0.1.8.7 is an RFC-first Optimization Round 2 handoff.
-**Active packet path:** none.
+**Active packet:** v0.1.8.7 Optimization Round 2.
+**Active packet path:** `inst/design/ledgr_v0_1_8_7_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -100,7 +100,7 @@ versioned packet.
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
 | v0.1.8.6 | Done | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, performance attribution, and v0.1.8.7 optimization handoff. Snapshot administration and research-loop helpers deferred. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
-| v0.1.8.7 | Planned | Optimization round 2: fold-core primitive contract + hot-path lanes (buffer/emission via collapse, cache-key, reconstruction) + run-artifact materialization policy; drop cli/R6, add collapse, keep tibble (ADR 0004). | Future packet; RFC first |
+| v0.1.8.7 | Active | Optimization round 2 and legacy cleanup: fold-core primitive contract + hot-path lanes (buffer/emission via collapse, cache-key, reconstruction) + run-artifact materialization policy; remove raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; drop cli/R6, add collapse, keep tibble (ADR 0004). | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
 | v0.1.8.8 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
@@ -883,6 +883,15 @@ real-run profile (the per-event buffer/append path is ~72-82% of loop R time):
 (scoped `set_collapse()`, hostile-settings-safe; see ADR 0004). Every win is
 validated by **re-profiling the real run** and re-running the LDG-2457 peer
 benchmark, not isolated micro-benchmarks.
+
+Maintainer decision (2026-05-29): v0.1.8.7 also removes the legacy execution
+gunk that keeps old representations load-bearing. Modern execution is
+snapshot-backed and function-strategy based. Raw mutable `bars` configs and R6
+strategy paths must fail clearly before entering the fold, and run-time
+`data_hash` is no longer modern sealed-run identity. Any remaining
+`ledgr_data_hash()`, `runs.data_hash`, or snapshot-adapter `data_hash` surfaces
+are either deleted by the spec packet or marked archival/historical; they must
+not remain part of the modern execution contract.
 
 Authoritative input (planned):
 
