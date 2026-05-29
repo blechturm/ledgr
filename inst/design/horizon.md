@@ -59,8 +59,9 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   external benchmark / beta uses; external reference-data adapter provenance;
   provider risk-free divergence; reference strategy templates / baseline
   strategies.
-- **v0.2.x → v0.3.0** — live bad-data resilience and sim-to-real backtest
-  fidelity (direction B; needs a dedicated RFC).
+- **v0.2.x → v0.3.0** — live bad-data resilience, ragged-universe
+  (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
+  needs a dedicated RFC).
 
 ### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
 
@@ -2201,6 +2202,39 @@ ticks are routine. You cannot abort a live session because one symbol's tick
 did not arrive. "Validate everything upfront, fail fast" and "tolerate and
 degrade per-tick" are structurally opposed.
 
+Second fault line — offline ragged universes (not just live)
+
+The dense-panel gate also blocks a purely *offline* case: a realistic surviving
+universe is inherently ragged. IPOs / late listings, delistings, halts, and
+exchange holidays mean a security legitimately has no bar at some pulses — yet
+the coverage check (`backtest-runner.R:815-822`, `LEDGR_SNAPSHOT_COVERAGE_ERROR`,
+plus the `ledgr_missing_bars` cross-join check) requires every instrument to
+have a bar at every pulse, so survivorship-realistic research is impossible
+without external pre-cleaning. This is independent of the live/streaming arc.
+
+Peer evidence (2026-05-29 research): among multi-asset / panel backtesters,
+hard-failing on any per-instrument gap is an **outlier**. The mainstream
+tolerates ragged panels — Zipline and LEAN forward-fill and model **asset
+lifetimes** (start/end/delist, masking outside the active window with NaN/zero;
+`zipline data_portal.py:1018-1030`, LEAN fill-forward-until-delisted); `bt`
+(Python) and VectorBT carry not-yet-listed / delisted assets as NaN columns and
+object only on a *held* NaN position. The only hard-failers are *single-asset*
+frameworks (backtesting.py) or per-symbol loops (quantstrat), where there is no
+cross-sectional alignment to solve. So strict single-series rejection is
+mainstream; strict *multi-asset-panel* rejection is not.
+
+Design target: **per-instrument active windows** (asset lifetimes) — an
+instrument is active over `[first_bar, last_bar]` and the fold tolerates its
+absence outside that window — plus an **explicit, sealed** absence/imputation
+policy. The ledgr-specific constraint vs peers: their ffill is *silent*; ledgr's
+"evidence you can defend" USP requires the active-window and any
+fill / NaN / staleness policy to be **declared and sealed into the snapshot**
+(and visible in provenance), not silently imputed in the fold — otherwise the
+backtest runs on a quietly different data world than the inputs claim. The
+*where* matters: active windows + the ingest policy live at the seal boundary;
+the fold then consumes a panel marked "present / absent-by-lifetime / imputed",
+and never hard-fails on legitimate absence.
+
 Failure taxonomy (each needs a different policy)
 
 - **Missing tick** — skip the symbol, carry forward last value with a
@@ -2258,7 +2292,9 @@ Design principles
 RFC scope (when it opens)
 
 A unified data-quality model spanning sealed backtest and streaming live; the
-degradation-policy surface; the bad-data simulation harness for backtest
+degradation-policy surface; **per-instrument active windows (asset lifetimes) for
+ragged offline universes, with an explicit sealed absence/imputation policy
+(vs peers' silent ffill)**; the bad-data simulation harness for backtest
 (deficient high-frequency streams); and the PIT-tables intersection.
 
 Sequencing
