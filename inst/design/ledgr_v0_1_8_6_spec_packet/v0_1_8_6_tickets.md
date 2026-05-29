@@ -2,7 +2,7 @@
 
 Version: v0.1.8.6
 Date: 2026-05-28
-Total Tickets: 8
+Total Tickets: 10
 
 ## Ticket Organization
 
@@ -20,6 +20,8 @@ packet alignment
   -> structured benchmark suite
   -> two-mode width sweep and storage decision
   -> conditional storage/schema gate
+  -> fast wide-view data.frame manifestation
+  -> cold setup/residual profiling diagnostic
   -> snapshot/provenance and helper RFC gate
   -> release gate
 ```
@@ -41,7 +43,13 @@ LDG-2445 Packet Alignment And v0.1.8.6 Planning State
               `-- LDG-2451 Snapshot Administration And Research-Loop Helper RFC Gate
 
 LDG-2452 v0.1.8.6 Release Gate And Closeout
-  depends on LDG-2446 through LDG-2451.
+  depends on LDG-2446 through LDG-2451 and LDG-2453 through LDG-2454.
+
+LDG-2453 Fast Wide-View DataFrame Manifestation
+  depends on LDG-2449 and is a late materialization follow-up before closeout.
+
+LDG-2454 Cold Setup And Residual Phase Profiling
+  depends on LDG-2453 and is a diagnostic-only ticket before closeout.
 
 LDG-2450 is a decision gate: typed persistent event columns are implemented
 only if storage/schema work is explicitly accepted after LDG-2449. LDG-2451 is
@@ -602,6 +610,157 @@ scope: rfc_routing
 
 ---
 
+## LDG-2453: Fast Wide-View DataFrame Manifestation
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2449
+Status: Completed
+
+### Description
+
+Replace the remaining eager wide-view `as.data.frame()` / `cbind()` /
+full-panel `split.data.frame()` path with internal primitive list stamping.
+This keeps the current `ctx$features_wide` data.frame contract intact while
+manifesting those data.frames more cheaply from already-materialized projection
+matrices. This is the narrow, parity-preserving materialization optimization
+found during LDG-2449 review; it is not the broader primitive-only fold-core
+contract redesign.
+
+### Tasks
+
+- Add an internal helper that stamps a named equal-length column list into a
+  data.frame with compact row names.
+- Use it for single-pulse projection `features_wide` construction.
+- Use it for default pulse-view `features_wide` construction, avoiding the
+  all-pulse data.frame plus `split.data.frame()` path.
+- Preserve column names, row order, column values, and plain data.frame output.
+- Keep the broader primitive-only fold-core / matrix-canonical strategy surface
+  as follow-up design work.
+- Remeasure isolated schema/full-long view construction at the largest
+  LDG-2449 grid.
+
+### Acceptance Criteria
+
+- Existing `ctx$features_wide` behavior remains a plain data.frame.
+- Existing feature accessor, inspection, sweep, and event-stream parity tests
+  remain green.
+- The schema-only/full-long event streams remain identical.
+- The optimization introduces no collapse dependency and no public API change.
+- Isolated view-build timing improves or is at least no worse at the largest
+  LDG-2449 grid.
+
+### Verification
+
+Targeted pulse-context, feature-inspection, sweep, sweep-parity, and
+backtest-wrapper tests plus isolated view-build remeasurement.
+
+Completion note:
+
+- Added internal `ledgr_fast_data_frame()` list-stamping helper in
+  `R/runtime-projection.R`.
+- `ledgr_projection_features_wide()` now stamps the per-pulse wide data.frame
+  from primitive columns instead of using `as.data.frame()` / `cbind()`.
+- `ledgr_projection_pulse_views()` now builds each per-pulse `features_wide`
+  frame directly from the projection matrix and stamps it, avoiding the
+  all-pulse wide data.frame plus `split.data.frame()` path.
+- Targeted tests passed:
+  `test-pulse-context-accessors.R`, `test-sweep.R`,
+  `test-sweep-parity.R`, `test-feature-inspection.R`, and
+  `test-backtest-wrapper.R`.
+- Isolated largest-grid view timing, 500 instruments x 252 pulses x 50
+  features, `repeats = 3`: schema-only `ledgr_projection_pulse_views()` =
+  `0.19s`; full-long opt-in = `1.15s`; full-long rows = `6,300,000`.
+  The previous LDG-2449 record for the same grid was `0.33s` schema-only and
+  `2.44s` full-long.
+- Width-sweep smoke verification also passed after the optimization:
+  `Rscript dev/bench/run_width_sweep.R --preset smoke --repeats 1 --warmup 1`.
+
+### Source Reference
+
+- `v0_1_8_6_spec.md` Sections 4-6
+- `rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`
+- `R/runtime-projection.R`
+- `dev/bench/run_width_sweep.R`
+
+### Classification
+
+```yaml
+type: optimization
+surface: runtime_projection
+scope: wide_view_manifestation
+```
+
+---
+
+## LDG-2454: Cold Setup And Residual Phase Profiling
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2453
+Status: Planned
+
+### Description
+
+Add a diagnostic-only profiling pass for the remaining cold setup and broad
+residual costs after the materialization fixes. This ticket exists to explain
+where `t_pre` and `t_residual_sec` are spent before the next optimization
+decision. It must not ship a behavior change, public API change, schema change,
+or new optimization.
+
+### Tasks
+
+- Profile a representative cold benchmark shape after LDG-2453 is reviewed.
+- Attribute the dominant `t_pre` cost to named code paths, such as cache-key
+  construction/lookup, feature compute/cache behavior, projection
+  materialization, or other measured setup work.
+- Attribute the broad residual cost to named code paths, at least separating
+  feature view materialization from post-fold finalization/read-back when the
+  current hooks make that possible.
+- Record the profiling method, representative dimensions, cold/warm cache
+  state, and headline attribution in the packet.
+- Keep raw generated profiler outputs out of git unless they are intentionally
+  reduced into a tracked summary.
+- Do not optimize any hotspot as part of this ticket.
+
+### Acceptance Criteria
+
+- The profiling run uses current source, not an installed stale package.
+- The ticket records whether the remaining dominant cost is `t_pre`,
+  residual, or both, with named code paths and caveats.
+- Any telemetry/timing hook added for diagnosis is read-only, internal, and
+  does not affect fold results, snapshots, event streams, or public strategy
+  surfaces.
+- Event-stream parity and targeted materialization tests remain green if any
+  read-only timing hook is added.
+- No storage/schema, primitive-only fold-core, active-binding, or collapse
+  dependency work ships under this ticket.
+
+### Verification
+
+Current-source profiler or read-only phase-timer run, targeted tests if code
+hooks are added, and manual review of the recorded attribution.
+
+### Source Reference
+
+- `v0_1_8_6_spec.md` Sections 6 and 10
+- `dev/bench/README.md`
+- `dev/bench/run_benchmarks.R`
+- `dev/bench/run_width_sweep.R`
+- `R/backtest-runner.R`
+- `R/fold-core.R`
+- `R/runtime-projection.R`
+
+### Classification
+
+```yaml
+type: diagnostic
+surface: benchmark_telemetry
+scope: cold_setup_residual_profile
+```
+
+---
+
 ## LDG-2452: v0.1.8.6 Release Gate And Closeout
 
 Priority: P0
@@ -613,6 +772,8 @@ Dependencies:
   - LDG-2449
   - LDG-2450
   - LDG-2451
+  - LDG-2453
+  - LDG-2454
 Status: Planned
 
 ### Description
@@ -630,6 +791,7 @@ updated, and release checks pass.
 - Update README/pkgdown/docs only for shipped behavior and accepted benchmark
   outputs.
 - Record benchmark outputs or their location in the packet/retrospective.
+- Record cold setup/residual profiling output or its maintainer disposition.
 - Confirm no auditr-report bugfix intake was required for closeout.
 - Run targeted tests, full tests, and package checks appropriate to shipped
   code changes.

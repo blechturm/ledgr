@@ -118,6 +118,40 @@ tickets:
       - "rfc_cycle_review"
       - "manual_packet_review"
 
+  - id: "LDG-2453"
+    title: "Fast Wide-View DataFrame Manifestation"
+    status: "completed"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2449"
+    classification:
+      type: "optimization"
+      surface: "runtime_projection"
+      scope: "wide_view_manifestation"
+    tests:
+      - "pulse_context_tests"
+      - "feature_inspection_tests"
+      - "sweep_tests"
+      - "event_stream_parity_tests"
+      - "isolated_view_build_remeasurement"
+
+  - id: "LDG-2454"
+    title: "Cold Setup And Residual Phase Profiling"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2453"
+    classification:
+      type: "diagnostic"
+      surface: "benchmark_telemetry"
+      scope: "cold_setup_residual_profile"
+    tests:
+      - "current_source_profile"
+      - "targeted_tests_if_hooks_added"
+      - "manual_attribution_review"
+
   - id: "LDG-2452"
     title: "v0.1.8.6 Release Gate And Closeout"
     status: "planned"
@@ -130,6 +164,8 @@ tickets:
       - "LDG-2449"
       - "LDG-2450"
       - "LDG-2451"
+      - "LDG-2453"
+      - "LDG-2454"
     classification:
       type: "release_gate"
       surface: "release_process"

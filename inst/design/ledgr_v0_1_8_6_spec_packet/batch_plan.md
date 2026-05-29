@@ -186,7 +186,65 @@ Review focus:
 
 ---
 
-## Batch 5: Snapshot/Provenance And Helper RFC Gate
+## Batch 5: Fast Wide-View Manifestation
+
+Tickets:
+
+- `LDG-2453` Fast Wide-View DataFrame Manifestation
+
+Purpose:
+
+Apply the narrow, parity-preserving wide-view manifestation optimization found
+during the Batch 4 review. This is not the primitive-only fold-core contract
+redesign; it keeps `ctx$features_wide` as a data.frame and only makes that
+data.frame cheaper to build from primitive projection columns.
+
+Review focus:
+
+- `ctx$features_wide` remains a plain data.frame with unchanged columns, values,
+  and row order.
+- No active binding, helper-only contract, matrix-canonical surface, or
+  primitive-only fold-core redesign ships in this batch.
+- The implementation uses primitive lists/matrices internally and stamps
+  data.frames at the boundary without adding a collapse dependency.
+- The old all-pulse wide data.frame plus `split.data.frame()` path is removed
+  from default projection pulse-view construction.
+- Event-stream parity, feature inspection, and mutation-leak fixtures remain
+  green.
+- Isolated view-build timing is remeasured at the largest Batch 4 grid.
+
+---
+
+## Batch 6: Cold Setup And Residual Profiling
+
+Tickets:
+
+- `LDG-2454` Cold Setup And Residual Phase Profiling
+
+Purpose:
+
+Record a diagnostic-only attribution of the remaining cold `t_pre` and broad
+residual costs after the materialization fixes. This batch explains the next
+optimization target; it does not optimize it.
+
+Review focus:
+
+- The current LDG-2453 wide-view manifestation work has been reviewed before
+  this profiling is executed.
+- Profiling uses current source and a representative cold benchmark shape.
+- The result attributes the dominant `t_pre` cost to named code paths and
+  records cold/warm cache state.
+- The broad residual is attributed as far as the current hooks permit,
+  separating feature view materialization from post-fold finalization/read-back
+  where possible.
+- Any temporary or retained timing hook is read-only and does not change fold
+  behavior, event streams, snapshots, schemas, or public strategy surfaces.
+- No optimization, storage/schema work, primitive-only fold-core redesign,
+  active-binding surface, or collapse dependency is introduced in this batch.
+
+---
+
+## Batch 7: Snapshot/Provenance And Helper RFC Gate
 
 Tickets:
 
@@ -215,7 +273,7 @@ Review focus:
 
 ---
 
-## Batch 6: Release Gate
+## Batch 8: Release Gate
 
 Tickets:
 
@@ -232,6 +290,10 @@ Review focus:
 - `tickets.yml` and `v0_1_8_6_tickets.md` agree.
 - Separate post-5.0 and post-5.1 measurements are recorded.
 - Structured benchmark outputs and the two-mode width sweep are recorded.
+- The late fast wide-view manifestation ticket is either accepted with parity
+  evidence or explicitly reverted/deferred.
+- The cold setup/residual profiling diagnostic is recorded or explicitly
+  deferred with maintainer rationale.
 - The storage/schema decision is recorded.
 - Snapshot/provenance/helper work is either backed by accepted implementation
   tickets or explicitly deferred.
@@ -254,13 +316,18 @@ Batch 0
       -> Batch 2
           -> Batch 3
               -> Batch 4
-                  -> Batch 6
+                  -> Batch 5
+                      -> Batch 6
+                          -> Batch 8
 
-Batch 5 may start after Batch 0, but it does not block Batches 1-4.
+Batch 7 may start after Batch 0, but it does not block Batches 1-6.
 ```
 
 Batch 1 and Batch 2 are the mandatory shippable spine. Batch 3 provides the
 repeatable measurement framework. Batch 4 uses that framework to make the
-storage decision. Batch 5 is a design gate that can ship only if its RFC/spec
-decision lands cleanly; otherwise it defers. Batch 6 closes the packet after
-the mandatory spine and all accepted gates are resolved.
+storage decision. Batch 5 is a late narrow optimization that preserves the
+current `features_wide` contract while making boundary manifestation cheaper.
+Batch 6 is a diagnostic-only profiling pass that should run after the current
+manifestation optimization is reviewed. Batch 7 is a design gate that can ship
+only if its RFC/spec decision lands cleanly; otherwise it defers. Batch 8 closes
+the packet after the mandatory spine and all accepted gates are resolved.

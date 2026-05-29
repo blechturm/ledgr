@@ -89,7 +89,7 @@ they are plausible. They enter only through the gates below.
 
 ## 2. Release Goals
 
-v0.1.8.6 has eight release goals:
+v0.1.8.6 has ten release goals:
 
 1. Deduplicate feature cache-key construction by hoisting repeated
    feature-definition fingerprints and engine-version values out of the
@@ -99,21 +99,27 @@ v0.1.8.6 has eight release goals:
    opt-in for tests/debugging/compatibility.
 3. Fix the non-fast pulse-context helper path so it does not rebuild long rows
    when the default schema-only feature table is used.
-4. Reproduce the current-source performance baseline after each materialization
+4. Make the remaining eager `features_wide` data.frame manifestation cheaper
+   without changing the `ctx$features_wide` contract or adding a collapse
+   dependency.
+5. Profile the remaining cold `t_pre` and broad residual costs after the
+   materialization fixes so follow-up optimization starts from attributed code
+   paths rather than an unexplained timing remainder.
+6. Reproduce the current-source performance baseline after each materialization
    change and add a two-mode instrument x feature width sweep before making
    throughput invariance or storage-need claims.
-5. Create a structured benchmark suite with stable named scenarios,
+7. Create a structured benchmark suite with stable named scenarios,
    current-source guards, warmup/repeat behavior, machine-readable outputs, and
    a small QuantConnect-comparable subset so future performance work is
    comparable across commits, versions, and at least a few external benchmark
    shapes.
-6. Decide the DuckDB feature-storage path only after the setup fixes are
+8. Decide the DuckDB feature-storage path only after the setup fixes are
    measured, so the spike evaluates the remaining bottleneck rather than stale
    materialization costs.
-7. Carry forward the v0.1.8.5 research-loop helper gaps and snapshot
+9. Carry forward the v0.1.8.5 research-loop helper gaps and snapshot
    administration / ETL provenance planning if their RFC/spec inputs land in
    time for ticket cut.
-8. Accept typed persistent event columns only if storage/schema work is
+10. Accept typed persistent event columns only if storage/schema work is
    explicitly accepted for this packet; otherwise keep Direction 5.6 deferred.
 
 The release succeeds when setup work is cheaper, memory pressure from unused
@@ -180,6 +186,9 @@ Binding policy:
 - Feature inspection builds only the current pulse's long shape on demand.
 - `ctx$feature_table` remains a plain data.frame field. This cycle does not
   replace it with an active binding or function-valued data field.
+- `ctx$features_wide` remains a plain data.frame field in this cycle, but its
+  data.frame manifestation should use primitive list/matrix internals and cheap
+  boundary stamping where this preserves byte-equivalent behavior.
 
 Rejected mechanisms for v0.1.8.6:
 
@@ -205,6 +214,9 @@ Acceptance gates:
   `features_wide`.
 - A measurement shows the pulse-view build gap shrinks on pulse-heavy
   workloads.
+- Any wide-view manifestation optimization preserves the existing
+  `ctx$features_wide` data.frame contract and event-stream parity, and does not
+  add a collapse dependency.
 - No public `feature_table` deprecation warning ships in this release.
 
 ---
@@ -482,9 +494,15 @@ into review batches for execution and review.
    coverage through the benchmark suite and record the post-5.0/5.1 decision.
 6. **Conditional storage/schema work.** Implement typed persistent event columns
    only if accepted after the storage decision gate.
-7. **Snapshot/provenance and helper tickets.** Cut only after the relevant RFC
+7. **Fast wide-view manifestation.** Preserve `ctx$features_wide` as a
+   data.frame while building it from primitive columns with cheap boundary
+   stamping.
+8. **Cold setup/residual profiling diagnostic.** Attribute the remaining
+   `t_pre` and residual costs after the manifestation work without optimizing
+   them in the same ticket.
+9. **Snapshot/provenance and helper tickets.** Cut only after the relevant RFC
    or spec input is accepted.
-8. **Release gates.** Update NEWS, docs, tests, package checks, and
+10. **Release gates.** Update NEWS, docs, tests, package checks, and
    retrospective records.
 
 ---
@@ -501,6 +519,11 @@ The v0.1.8.6 release may close only when:
 - the non-fast context path does not rebuild long rows by default;
 - feature-inspection and any tests needing long rows use the explicit supported
   path;
+- wide-view data.frame manifestation remains contract-compatible and is covered
+  by event-stream parity tests if accepted;
+- cold setup/residual profiling is recorded after the accepted materialization
+  work, or explicitly deferred with maintainer rationale, and does not ship
+  optimization or public-surface changes under the profiling ticket;
 - current-source remeasurement is recorded after 5.0 and after 5.1;
 - the structured benchmark suite runs from current source, writes
   machine-readable results, records environment metadata, and reports phase
@@ -555,6 +578,8 @@ Deferred unless a later accepted packet scopes them:
   fingerprint and cache-key values.
 - Avoid building the full-panel long `feature_table` by default; keep a
   schema-only pulse-context field and explicit internal opt-in for long rows.
+- Build existing `features_wide` data.frames more cheaply from primitive
+  projection columns while preserving the current strategy-facing contract.
 - Record post-fix performance measurements and a width sweep to guide the
   storage/projection decision.
 
@@ -565,6 +590,8 @@ Deferred unless a later accepted packet scopes them:
 - Include a small LEAN-comparable subset, reported side by side with
   QuantConnect's published benchmark throughput and explicit comparability
   caveats. This is an honest comparison, not a parity claim.
+- Record a diagnostic attribution of the remaining cold setup and residual
+  runtime costs to guide the next optimization decision.
 
 ## Storage and provenance
 
