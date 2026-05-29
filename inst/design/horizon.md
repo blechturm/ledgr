@@ -2308,6 +2308,70 @@ the headline return/drawdown metrics.
 
 This entry records direction, not committed work.
 
+### 2026-05-28 [adapters] External-package output adapters (PerformanceAnalytics first)
+
+ledgr's stable public result tables (equity, fills, trades, ledger) plus the
+stored metric context are the right substrate for thin, optional, output-only
+adapters into the established R quant ecosystem. **Committed for v0.2.x** (see
+the roadmap "External Package Adapters" entry); this horizon note records
+direction, and an RFC synthesis — not this entry — authorizes any public API.
+
+The first adapter is **PerformanceAnalytics**, scoped to its real strength — the
+drawdown/return tables and long-tail risk/return stats, not its charts. It is a
+pure output projection (equity -> return stream -> PA), so it touches no
+causality, strategy-contract, determinism, or engine-mutation surface, and is
+the cleanest public proof of the hexagonal pattern: ledgr owns the canonical
+evidence, adapters enrich the analysis.
+
+Charting is a separate, swappable renderer over the same return stream — not a
+PA lock-in. PA's base-R graphics are a familiar/legacy option; the modern faces
+are tidyquant (ggplot2 over the same PA metrics — distinct from the academic
+tidyfinance) or a native ledgr ggplot tear-sheet (`R/plot.R` already exists).
+The reusable port is the equity -> return conversion; many renderers consume it.
+
+Why high-value: one stable result-table contract unlocks the whole
+PerformanceAnalytics / PortfolioAnalytics / tidyfinance reporting and research
+surface — a large host of additional capabilities (tear sheets, risk/return
+tables, factor research, portfolio optimization) — without ledgr reimplementing
+any of it.
+
+Adapter ranking (later ones gated on their own readiness):
+
+- PerformanceAnalytics — reporting / tear-sheet; first, output projection only.
+- PortfolioAnalytics — portfolio construction / post-ledger optimization; after
+  the v0.1.9 target-risk chain stabilizes.
+- tidyfinance — factor / data research; with the v0.2.x PIT / vintage semantics.
+- quantmod — data ingestion; useful but less differentiating.
+- PMwR / quantstrat / blotter / fPortfolio — low priority or skip (accounting /
+  engine overlap that would blur which engine is the source of truth).
+
+Boundary the RFC must bind:
+
+- output projection only — no second canonical metrics path;
+- consume ledgr's OWN canonical return series (whatever `ledgr_compute_metrics`
+  derives); never reinvent the return formula inside the adapter, or the base
+  series silently diverges;
+- PerformanceAnalytics metrics use PA conventions and can differ from ledgr's;
+  scope PA to what ledgr does NOT already compute and label any overlap rather
+  than presenting two conflicting Sharpe numbers as both authoritative;
+- optional dependency (`Suggests` + `check_installed`), never `Imports`;
+- adapters inspect, they do not select winners (no sweep ranking / promotion
+  automation) — selection stays human, per the promotion-is-not-validation
+  stance;
+- benchmark-relative metrics coordinate with the v0.2.x benchmark-context layer
+  so PA does not become the de-facto benchmark-metrics surface ahead of ledgr's
+  own contract;
+- one shared adapter namespace pattern (e.g. `ledgr_<pkg>_*`) decided up front;
+- live `findInterval`+`cumsum` reconstruction and the reopened DB-replay path
+  must yield identical adapter output.
+
+Inside ledgr under `Suggests` for the first adapter (it proves the pattern
+publicly); split into `ledgr.adapters` or per-package packages only if the
+surface grows. Source: the 2026-05-28 maintainer review of an adapter-ecosystem
+proposal.
+
+This entry records direction, not committed work.
+
 ## Resolved
 
 Entries move here when their idea has shipped or been answered. Each records

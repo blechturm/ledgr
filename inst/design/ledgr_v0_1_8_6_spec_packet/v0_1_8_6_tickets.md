@@ -911,7 +911,7 @@ scope: wide_view_matrix_allocation
 Priority: P1
 Effort: S
 Dependencies: LDG-2455
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -978,11 +978,85 @@ Manual benchmark/profiling review, current-source guard confirmation, and
 ticket-note review. Targeted tests are required only if supporting scripts are
 changed.
 
+Completion note:
+
+- Ran current-source attribution from the v0.1.8.6 branch after LDG-2455.
+  The measurement script was temporary and wrote ignored local artifacts under
+  `dev/bench/results/`:
+  `ldg2456_attribution_matrix_20260529T090917Z.csv`,
+  `ldg2456_isolated_views_20260529T090917Z.csv`, and
+  `ldg2456_rprof_by_total_20260529T090917Z.csv`.
+- No runtime behavior, public API, schema, snapshot, event-stream, strategy
+  surface, phase-telemetry hook, or optimization change shipped under this
+  ticket.
+- Small diagnostic shape, `100 instruments x 252 pulses x 50 features`,
+  read/score mode:
+
+  ```text
+  persist cache  wall   t_pre  residual  t_loop
+  TRUE    cold   15.44   5.86      8.90    0.68
+  TRUE    warm   13.80   4.59      8.65    0.56
+  FALSE   cold    7.50   4.91      2.18    0.41
+  FALSE   warm    6.93   4.29      2.23    0.41
+  ```
+
+- No-feature baseline at `100 instruments x 252 pulses x 0 features`,
+  `persist_features = FALSE`: wall `2.41s`, `t_pre = 0.09s`, residual
+  `2.04s`, `t_loop = 0.28s`.
+- Reduced large-shape confirmation, `500 instruments x 252 pulses x 50
+  features`, cold read/score mode:
+
+  ```text
+  persist  wall   t_pre  residual  t_loop  bars/sec  feature-cells/sec
+  TRUE     58.30  25.64     30.27    2.39      2161            108062
+  FALSE    36.27  26.94      7.03    2.30      3474            173697
+  ```
+
+- Isolated default view construction is no longer a large bucket after
+  LDG-2453/LDG-2455:
+
+  ```text
+  shape              schema_view  full_long_view  full_long_rows
+  100 x 252 x 50          0.13s          0.25s        1,260,000
+  500 x 252 x 50          0.19s          1.57s        6,300,000
+  ```
+
+- Representative cold Rprof run, `100 x 252 x 50`, `persist_features = TRUE`:
+  profiled wall `12.59s`, `t_pre = 5.29s`, residual `6.81s`, `t_loop = 0.49s`.
+  Rprof is used only for function-level attribution. The largest relevant
+  total-time entries were `DBI::dbWithTransaction` / `dbAppendTable` in the
+  persistent feature-write path, and `ledgr_feature_cache_key_from_parts`
+  with nested `digest::digest`, `canonical_json`, and
+  `ledgr_normalize_ts_utc` in the setup/cache-key path. Rprof also showed
+  snapshot construction because the temporary profiler wrapped the full
+  measurement helper; that entry is not counted as `ledgr_run()` wall time.
+- Bucket ownership:
+
+  | shape | bucket | method | evidence | owner | next action |
+  | --- | --- | --- | --- | --- | --- |
+  | `100 x 252 x 50` | persistent feature-write residual tax | `persist_features` TRUE/FALSE toggle | residual `8.90s` vs `2.18s`; delta `6.72s` | `v0.1.8.7_artifact_policy` | RFC the fast/sweep ephemeral path vs durable promotion/materialization path |
+  | `500 x 252 x 50` | persistent feature-write residual tax | `persist_features` TRUE/FALSE toggle | residual `30.27s` vs `7.03s`; delta `23.24s` | `v0.1.8.7_artifact_policy` | same artifact materialization policy lane |
+  | `100 x 252 x 50` | feature compute cache benefit | same-snapshot cold/warm toggle | `persist_features = FALSE` `t_pre` `4.91s` -> `4.29s`; benefit `0.62s` | `accepted_overhead` | cache helps, but it is not the dominant setup cost |
+  | `100 x 252 x 50` | remaining feature setup/cache-key/projection cost | no-feature baseline plus Rprof | no-feature `t_pre = 0.09s`; feature `t_pre = 4.91s`; Rprof names `ledgr_feature_cache_key_from_parts` and nested JSON/hash/timestamp normalization; projection materialization rides in this setup bucket | `v0.1.8.7_cache_key_lane` | hoist trusted run-level timestamp normalization and replace session-local JSON+hash lookup keys if accepted; revisit projection materialization under primitive-contract work if it remains visible |
+  | `500 x 252 x 50` | remaining feature setup/cache-key/projection cost | large cold confirmation | `t_pre = 26.94s` with `persist_features = FALSE`, `74%` of wall | `v0.1.8.7_cache_key_lane` | same cache-key/setup lane, measured at production-like width |
+  | `100 x 252 x 50` | default feature-view construction | isolated view timing | schema-only view `0.13s`, below threshold | `accepted_overhead` | no release blocker; primitive-only fold-core redesign remains separate v0.1.8.7 design work |
+  | `500 x 252 x 50` | default feature-view construction | isolated view timing | schema-only view `0.19s`, below threshold | `accepted_overhead` | no release blocker |
+  | read/score shapes | fold loop without trading | telemetry | `0.41s` small no-persist, `2.30s` large no-persist | `accepted_overhead` | non-trading loop is not the current wall-clock bottleneck |
+  | turnover shape from fold hot-path audit | event-emission loop cost | trade-vs-flat differential plus Rprof | representative 200 instruments x 504 pulses x 2 SMA features: `t_loop` `1.04s` flat -> `13.39s` turnover on 2099 fills; profiler names per-fill emission work (`format.POSIXlt`, payload/event construction, buffer_event accessor work) | `v0.1.8.7_primitive_contract` | use `inst/design/audits/fold_path_hotpath_audit.md` as the RFC input for Lane B event emission; keep buffer-copy claim corrected per peer review |
+  | both shapes | baseline runner/interpreter/DBI overhead | no-feature baseline and residual remainder | no-feature residual `2.04s`; remaining no-persist residual `2.18s` small / `7.03s` large after view timing is expected wrapper/DBI/interpreter work | `accepted_overhead` | track in future profiling only if it grows after cache-key/artifact-policy fixes |
+
+- The genuinely unexplained-and-nameable remainder is below the LDG-2456 gate
+  after assigning the large buckets above. Remaining time is either named to
+  accepted overhead classes or routed to v0.1.8.7 artifact-policy,
+  cache-key, or primitive-contract lanes. No release-blocking unresolved
+  attribution gap remains.
+
 ### Source Reference
 
 - `dev/bench/README.md`
 - `dev/bench/run_benchmarks.R`
 - `dev/bench/run_width_sweep.R`
+- `inst/design/audits/fold_path_hotpath_audit.md`
 - `inst/design/architecture/fold_core_trust_boundary.md`
 
 ### Classification

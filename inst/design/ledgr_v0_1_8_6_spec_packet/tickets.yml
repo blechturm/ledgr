@@ -172,7 +172,7 @@ tickets:
 
   - id: "LDG-2456"
     title: "Performance Attribution Closeout"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:
