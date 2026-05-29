@@ -701,6 +701,7 @@ ledgr_memory_output_handler <- function(run_id) {
   state <- new.env(parent = emptyenv())
   state$event_count <- 0L
   state$event_capacity <- 0L
+  state$event_max_capacity <- .Machine$integer.max
   state$event_cols <- NULL
   state$status <- "RUNNING"
   handler <- list()
@@ -728,17 +729,18 @@ ledgr_memory_output_handler <- function(run_id) {
 
   ensure_event_capacity <- function(required) {
     required <- as.integer(required)
-    if (is.null(state$event_cols)) {
-      init_event_cols(max(16L, required))
-      return(invisible(TRUE))
-    }
+    next_capacity <- ledgr_event_buffer_next_capacity(
+      current_capacity = state$event_capacity,
+      required = required,
+      max_events = state$event_max_capacity
+    )
     if (required <= state$event_capacity) {
       return(invisible(TRUE))
     }
     old_cols <- state$event_cols
     old_count <- state$event_count
-    init_event_cols(max(required, state$event_capacity * 2L, 16L))
-    if (old_count > 0L) {
+    init_event_cols(next_capacity)
+    if (!is.null(old_cols) && old_count > 0L) {
       idx <- seq_len(old_count)
       for (name in names(old_cols)) {
         state$event_cols[[name]][idx] <- old_cols[[name]][idx]
@@ -833,7 +835,11 @@ ledgr_memory_output_handler <- function(run_id) {
     rlang::abort(msg, class = class)
   }
   handler$init_buffers <- function(max_events) {
-    ensure_event_capacity(state$event_count + as.integer(max_events))
+    state$event_max_capacity <- ledgr_event_buffer_checked_capacity(
+      state$event_count + as.integer(max_events),
+      "`max_events`"
+    )
+    ensure_event_capacity(state$event_count + 1L)
     invisible(TRUE)
   }
   handler$append_event_rows <- function(rows) {

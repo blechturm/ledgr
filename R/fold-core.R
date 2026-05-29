@@ -351,6 +351,54 @@ ledgr_execute_fold <- function(execution, output_handler) {
   )
 }
 
+ledgr_event_buffer_initial_capacity <- function(max_events, initial_capacity = 1024L) {
+  max_events <- ledgr_event_buffer_checked_capacity(max_events, "`max_events`")
+  initial_capacity <- ledgr_event_buffer_checked_capacity(initial_capacity, "`initial_capacity`")
+  as.integer(max(1L, min(max_events, initial_capacity)))
+}
+
+ledgr_event_buffer_next_capacity <- function(current_capacity,
+                                             required,
+                                             max_events,
+                                             initial_capacity = 1024L,
+                                             growth_factor = 2) {
+  current_capacity <- as.integer(max(0L, current_capacity %||% 0L))
+  required <- ledgr_event_buffer_checked_capacity(required, "`required`")
+  max_events <- ledgr_event_buffer_checked_capacity(max_events, "`max_events`")
+  if (required > max_events) {
+    rlang::abort(
+      "Ledger event buffer exceeded the run's maximum event capacity.",
+      class = "ledgr_event_buffer_capacity_exceeded"
+    )
+  }
+  if (required <= current_capacity) {
+    return(as.integer(current_capacity))
+  }
+  if (!is.numeric(growth_factor) || length(growth_factor) != 1L || is.na(growth_factor) ||
+      !is.finite(growth_factor) || growth_factor <= 1) {
+    rlang::abort("`growth_factor` must be a finite numeric scalar > 1.", class = "ledgr_invalid_args")
+  }
+  capacity <- max(current_capacity, ledgr_event_buffer_initial_capacity(max_events, initial_capacity))
+  while (capacity < required) {
+    grown <- ceiling(capacity * growth_factor)
+    if (grown <= capacity) {
+      grown <- capacity + 1L
+    }
+    capacity <- min(max_events, max(required, grown))
+  }
+  as.integer(capacity)
+}
+
+ledgr_event_buffer_checked_capacity <- function(x, label) {
+  if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x) || x < 1 || x != floor(x)) {
+    rlang::abort(sprintf("%s must be a positive integer-like scalar.", label), class = "ledgr_invalid_args")
+  }
+  if (x > .Machine$integer.max) {
+    rlang::abort(sprintf("%s exceeds R's integer vector length limit.", label), class = "ledgr_invalid_args")
+  }
+  as.integer(x)
+}
+
 ledgr_opening_position_event_rows <- function(run_id,
                                               ts_utc,
                                               positions,

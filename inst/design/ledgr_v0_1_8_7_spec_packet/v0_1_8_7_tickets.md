@@ -340,7 +340,7 @@ scope: wrapper
 Priority: P1
 Effort: L
 Dependencies: LDG-2459, LDG-2460
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -384,6 +384,33 @@ it.
 
 Event-stream parity tests, sweep parity tests, turnover benchmark re-profile,
 and matched peer benchmark rerun if practical.
+
+### Completion Notes
+
+Completed in Batch 3. Durable and memory event handlers now initialize event
+buffers at `min(1024, max_events)` and grow by doubling up to the hard
+worst-case cap supplied by the fold. The event surface remains unchanged:
+event IDs, event order, POSIXct UTC timestamps, per-row canonical `meta_json`,
+and typed memory-event attributes are preserved. No `collapse::setv()` path was
+introduced in this batch; the B0 win came from right-sizing/growth alone.
+
+Verification included durable buffer growth/cap tests, memory buffer growth
+tests, runner tests, sweep parity, sweep tests, and backtest-wrapper parity.
+Post-B0 current-source benchmark rows were recorded under the updated local CPU
+power profile:
+
+- durable `peer_sma_crossover` (`500 x 1260 x 2`, one measured iteration):
+  wall 32.91s, pre 1.50s, loop 20.87s, residual 10.54s, 13,355 events.
+- one-candidate `peer_sma_crossover_sweep`: wall 30.67s, 6,585 fills.
+
+The old LDG-2457 pre-B0 profile is retained as mechanism evidence, not a direct
+wall-time comparison after the local power-profile change. Its durable
+`handler$buffer_event` self-time was 137.08s / 72.43% of sampled R time. The
+post-B0 profiled durable pass under the updated local power profile recorded
+`handler$buffer_event` at 1.50s / 3.49%,
+with the remaining top self-time now in `rbind`, `format.POSIXlt`, `sprintf`,
+and strategy callback work. That confirms B0 removed the intended buffer
+bottleneck and leaves Lane R/C costs for later batches.
 
 ### Source Reference
 

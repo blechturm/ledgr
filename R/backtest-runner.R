@@ -363,21 +363,50 @@ ledgr_persistent_output_handler <- function(con,
     rlang::abort(msg, class = class)
   }
 
+  init_pending_cols <- function(capacity) {
+    capacity <- as.integer(capacity)
+    state$pending_capacity <- capacity
+    state$pending_cols <- list(
+      event_id = character(capacity),
+      run_id = character(capacity),
+      ts_utc = as.POSIXct(rep(NA_character_, capacity), tz = "UTC"),
+      event_type = character(capacity),
+      instrument_id = character(capacity),
+      side = character(capacity),
+      qty = numeric(capacity),
+      price = numeric(capacity),
+      fee = numeric(capacity),
+      meta_json = character(capacity),
+      event_seq = integer(capacity)
+    )
+    invisible(TRUE)
+  }
+
+  ensure_pending_capacity <- function(required) {
+    next_capacity <- ledgr_event_buffer_next_capacity(
+      current_capacity = state$pending_capacity %||% 0L,
+      required = required,
+      max_events = state$pending_max_events
+    )
+    if (!is.null(state$pending_cols) && next_capacity <= state$pending_capacity) {
+      return(invisible(TRUE))
+    }
+    old_cols <- state$pending_cols
+    old_count <- as.integer(state$pending_idx %||% 0L)
+    init_pending_cols(next_capacity)
+    if (!is.null(old_cols) && old_count > 0L) {
+      idx <- seq_len(old_count)
+      for (name in names(old_cols)) {
+        state$pending_cols[[name]][idx] <- old_cols[[name]][idx]
+      }
+    }
+    invisible(TRUE)
+  }
+
   handler$init_buffers <- function(max_events) {
     state$pending_idx <- 0L
-    state$pending_cols <- list(
-      event_id = character(max_events),
-      run_id = character(max_events),
-      ts_utc = as.POSIXct(rep(NA_character_, max_events), tz = "UTC"),
-      event_type = character(max_events),
-      instrument_id = character(max_events),
-      side = character(max_events),
-      qty = numeric(max_events),
-      price = numeric(max_events),
-      fee = numeric(max_events),
-      meta_json = character(max_events),
-      event_seq = integer(max_events)
-    )
+    state$pending_max_events <- ledgr_event_buffer_checked_capacity(max_events, "`max_events`")
+    init_pending_cols(ledgr_event_buffer_initial_capacity(state$pending_max_events))
     state$pending_states <- vector("list", 0)
     state$pending_states_idx <- 0L
     invisible(TRUE)
@@ -390,11 +419,9 @@ ledgr_persistent_output_handler <- function(con,
     if (is.null(state$pending_cols)) {
       rlang::abort("Ledger event buffer has not been initialized.", class = "ledgr_invalid_state")
     }
-    state$pending_idx <- state$pending_idx + 1L
-    if (state$pending_idx > length(state$pending_cols$event_id)) {
-      rlang::abort("Ledger buffer exceeded preallocated capacity.", class = "ledgr_invalid_state")
-    }
-    i <- state$pending_idx
+    i <- state$pending_idx + 1L
+    ensure_pending_capacity(i)
+    state$pending_idx <- i
     state$pending_cols$event_id[[i]] <- write_res$row$event_id
     state$pending_cols$run_id[[i]] <- write_res$row$run_id
     state$pending_cols$ts_utc[[i]] <- write_res$row$ts_utc
