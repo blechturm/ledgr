@@ -115,7 +115,7 @@ tickets:
 
   - id: "LDG-2464"
     title: "Reconstruction And Read-Back Cleanup"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:

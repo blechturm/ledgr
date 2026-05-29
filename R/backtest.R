@@ -1108,8 +1108,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
     rows <- DBI::dbFetch(ledger_res, n = fetch_size)
     if (nrow(rows) == 0) break
 
-    out_rows <- vector("list", nrow(rows) * 2L)
-    out_idx <- 0L
+    fill_rows <- ledgr_fill_row_buffer(nrow(rows) * 2L)
 
     for (i in seq_len(nrow(rows))) {
       event_type <- as.character(rows$event_type[[i]])
@@ -1145,36 +1144,20 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
       }
 
       if (is.na(qty) || qty <= 0 || is.na(price)) {
-        out_idx <- out_idx + 1L
-        out_rows[[out_idx]] <- data.frame(
-          event_seq = rows$event_seq[[i]],
-          ts_utc = rows$ts_utc[[i]],
-          instrument_id = inst,
-          side = side,
-          qty = qty,
-          price = price,
-          fee = fee,
-          realized_pnl = NA_real_,
-          action = NA_character_,
-          stringsAsFactors = FALSE
+        ledgr_fill_row_buffer_add(
+          fill_rows,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, qty, price, fee,
+          NA_real_, NA_character_
         )
         next
       }
 
       side_norm <- toupper(side)
       if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
-        out_idx <- out_idx + 1L
-        out_rows[[out_idx]] <- data.frame(
-          event_seq = rows$event_seq[[i]],
-          ts_utc = rows$ts_utc[[i]],
-          instrument_id = inst,
-          side = side,
-          qty = qty,
-          price = price,
-          fee = fee,
-          realized_pnl = NA_real_,
-          action = NA_character_,
-          stringsAsFactors = FALSE
+        ledgr_fill_row_buffer_add(
+          fill_rows,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, qty, price, fee,
+          NA_real_, NA_character_
         )
         next
       }
@@ -1190,18 +1173,10 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           sprintf("[%s:%d] Semantic Violation: BUY_TO_COVER rejected (currently Long)", inst, rows$event_seq[[i]]),
           call. = FALSE
         )
-        out_idx <- out_idx + 1L
-        out_rows[[out_idx]] <- data.frame(
-          event_seq = rows$event_seq[[i]],
-          ts_utc = rows$ts_utc[[i]],
-          instrument_id = inst,
-          side = side,
-          qty = qty,
-          price = price,
-          fee = fee,
-          realized_pnl = NA_real_,
-          action = "REJECTED",
-          stringsAsFactors = FALSE
+        ledgr_fill_row_buffer_add(
+          fill_rows,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, qty, price, fee,
+          NA_real_, "REJECTED"
         )
         next
       }
@@ -1210,18 +1185,10 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
           sprintf("[%s:%d] Semantic Violation: SELL_SHORT rejected (currently Short)", inst, rows$event_seq[[i]]),
           call. = FALSE
         )
-        out_idx <- out_idx + 1L
-        out_rows[[out_idx]] <- data.frame(
-          event_seq = rows$event_seq[[i]],
-          ts_utc = rows$ts_utc[[i]],
-          instrument_id = inst,
-          side = side,
-          qty = qty,
-          price = price,
-          fee = fee,
-          realized_pnl = NA_real_,
-          action = "REJECTED",
-          stringsAsFactors = FALSE
+        ledgr_fill_row_buffer_add(
+          fill_rows,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, qty, price, fee,
+          NA_real_, "REJECTED"
         )
         next
       }
@@ -1269,40 +1236,23 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
       }
 
       if (close_qty > 0) {
-        out_idx <- out_idx + 1L
-        out_rows[[out_idx]] <- data.frame(
-          event_seq = rows$event_seq[[i]],
-          ts_utc = rows$ts_utc[[i]],
-          instrument_id = inst,
-          side = side,
-          qty = close_qty,
-          price = price,
-          fee = fee,
-          realized_pnl = realized_close,
-          action = "CLOSE",
-          stringsAsFactors = FALSE
+        ledgr_fill_row_buffer_add(
+          fill_rows,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, close_qty, price, fee,
+          realized_close, "CLOSE"
         )
       }
       if (open_qty > 0) {
-        out_idx <- out_idx + 1L
-        out_rows[[out_idx]] <- data.frame(
-          event_seq = rows$event_seq[[i]],
-          ts_utc = rows$ts_utc[[i]],
-          instrument_id = inst,
-          side = side,
-          qty = open_qty,
-          price = price,
-          fee = fee,
-          realized_pnl = 0,
-          action = "OPEN",
-          stringsAsFactors = FALSE
+        ledgr_fill_row_buffer_add(
+          fill_rows,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, open_qty, price, fee,
+          0, "OPEN"
         )
       }
     }
 
-    if (out_idx > 0) {
-      chunk_df <- do.call(rbind, out_rows[seq_len(out_idx)])
-      DBI::dbAppendTable(con, temp_table, chunk_df)
+    if (fill_rows$n > 0L) {
+      DBI::dbAppendTable(con, temp_table, ledgr_fill_row_buffer_data_frame(fill_rows))
     }
   }
 

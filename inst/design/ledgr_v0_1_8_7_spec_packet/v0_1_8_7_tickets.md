@@ -555,7 +555,7 @@ scope: lane_r_a
 Priority: P1
 Effort: L
 Dependencies: LDG-2461, LDG-2463
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -592,6 +592,34 @@ headline run-wall claim.
 
 Focused fills reconstruction tests, sweep summary tests, hostile-collapse
 fixtures, DB-backed vs memory-backed parity, and read-back timing.
+
+### Completion Notes
+
+Completed in Batch 6. `ledgr_fills_from_events()` no longer builds one
+`data.frame()` per output row or combines rows with `do.call(rbind, rows)`.
+Fill reconstruction now writes into a primitive-column buffer and materializes
+the final tibble once. The DB-backed `ledgr_extract_fills_impl()` chunk path uses
+the same buffer before appending chunk rows to its temporary table, so both
+memory-backed and DB-backed fill read-back avoid per-row data-frame allocation.
+
+The implementation stays base R in this batch. No value-bearing `collapse`
+operation was introduced, but hostile `collapse::set_collapse()` settings are
+covered by a fills reconstruction invariance fixture. CASHFLOW-before-fill
+state seeding, FIFO lot-state progression, partial close/open split ordering,
+invalid fill rows, semantic rejection rows, output column order/classes, event
+ordering, and `event_seq` are preserved.
+
+Verification:
+
+- `test-sweep-parity.R`, `test-sweep.R`, `test-fifo-opening-positions.R`,
+  `test-fifo-torture.R`, `test-backtest-wrapper.R`,
+  `test-backtest-audit-log-equivalence.R`, `test-run-compare.R`,
+  `test-metric-oracles.R`, `test-fills-streaming.R`, and
+  `test-derived-state.R` passed.
+- Synthetic current-source memory reconstruction timing for 13,355 fill events:
+  pre-change median 8.27s over 5 reps; post-change median 4.92s over 5 reps
+  (`1.68x` faster). This is reported as read-back/materialization timing, not
+  primary run-wall speed.
 
 ### Source Reference
 
