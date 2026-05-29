@@ -136,7 +136,7 @@ tickets:
 
   - id: "LDG-2465"
     title: "Run-Artifact Materialization Policy"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:

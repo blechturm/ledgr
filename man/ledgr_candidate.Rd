@@ -27,8 +27,10 @@ The returned candidate carries \code{selection_view}, the tibble-like
 view passed to \code{ledgr_candidate()}. Promotion-context storage uses that
 view to record the filtered/sorted candidate table the user selected from.
 \code{ledgr_candidate()} is the supported way to extract params, execution seed,
-and row-level provenance for promotion. It avoids making users manually pull
-\code{params[[1]]} and \code{execution_seed} from a tibble row.
+and row-level provenance for promotion. The selected candidate also carries the
+compact reproduction key exposed by
+\code{\link[=ledgr_candidate_reproduction_key]{ledgr_candidate_reproduction_key()}}. It avoids making users manually pull
+\code{params[[1]]}, \code{execution_seed}, and provenance fields from a tibble row.
 }
 \section{Articles}{
 

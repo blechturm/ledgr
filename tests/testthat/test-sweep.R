@@ -387,6 +387,63 @@ testthat::test_that("ledgr_candidate supports degraded tibble-like inputs", {
   testthat::expect_identical(candidate$params, list())
 })
 
+testthat::test_that("sweep candidate key supports later durable materialization", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  ind <- ledgr_indicator(
+    id = "custom_close",
+    fn = function(window) tail(window$close, 1),
+    requires_bars = 1
+  )
+  strategy <- function(ctx, params) {
+    value <- ctx$feature("AAA", "custom_close")
+    targets <- ctx$flat()
+    if (!is.na(value) && value > params$threshold) {
+      targets["AAA"] <- params$qty
+    }
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy, features = list(ind))
+  grid <- ledgr_param_grid(candidate = list(qty = 1, threshold = 102))
+
+  before_counts <- ledgr_sweep_artifact_counts(snapshot)
+  results <- ledgr_sweep(exp, grid, seed = 123L)
+  after_sweep_counts <- ledgr_sweep_artifact_counts(snapshot)
+  candidate <- ledgr_candidate(results, "candidate")
+  key <- ledgr_candidate_reproduction_key(candidate)
+
+  testthat::expect_identical(before_counts, after_sweep_counts)
+  testthat::expect_s3_class(key, "ledgr_candidate_reproduction_key")
+  testthat::expect_identical(key$reproduction_key_version, "ledgr_candidate_reproduction_key_v1")
+  testthat::expect_identical(key$source_sweep$sweep_id, attr(results, "sweep_id"))
+  testthat::expect_identical(key$candidate$params, list(qty = 1, threshold = 102))
+  testthat::expect_identical(key$candidate$feature_params, candidate$feature_params)
+  testthat::expect_identical(key$snapshot$snapshot_id, snapshot$snapshot_id)
+  testthat::expect_identical(key$snapshot$snapshot_hash, attr(results, "snapshot_hash"))
+  testthat::expect_identical(key$selector$universe, "AAA")
+  testthat::expect_identical(key$strategy$strategy_hash, attr(results, "strategy_hash"))
+  testthat::expect_identical(key$features$feature_set_hash, candidate$provenance$feature_set_hash)
+  testthat::expect_identical(key$features$feature_union_hash, attr(results, "feature_union_hash"))
+  testthat::expect_identical(key$features$feature_fingerprints, candidate$feature_fingerprints)
+  testthat::expect_true(nzchar(key$engine$feature_engine_version))
+  testthat::expect_identical(key$seed$execution_seed, candidate$execution_seed)
+  testthat::expect_identical(key$seed$master_seed, 123L)
+  testthat::expect_identical(key$seed$seed_contract, "ledgr_seed_v1")
+  testthat::expect_identical(key$metric_context$metric_context_hash, attr(results, "metric_context_hash"))
+
+  bt <- ledgr_promote(exp, candidate, run_id = "materialized-candidate")
+  on.exit(close(bt), add = TRUE)
+  after_promote_counts <- ledgr_sweep_artifact_counts(snapshot)
+
+  testthat::expect_gt(after_promote_counts[["runs"]], after_sweep_counts[["runs"]])
+  testthat::expect_gt(after_promote_counts[["ledger_events"]], after_sweep_counts[["ledger_events"]])
+  testthat::expect_gt(after_promote_counts[["equity_curve"]], after_sweep_counts[["equity_curve"]])
+  testthat::expect_gt(after_promote_counts[["features"]], after_sweep_counts[["features"]])
+  equity <- ledgr_results(bt, "equity")
+  testthat::expect_equal(equity$equity[[nrow(equity)]], results$final_equity[[1]], tolerance = 1e-12)
+})
+
 testthat::test_that("ledgr_promote forwards candidate params and execution seed", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

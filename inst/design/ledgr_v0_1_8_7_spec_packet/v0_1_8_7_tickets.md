@@ -642,7 +642,7 @@ scope: lane_c_readback
 Priority: P1
 Effort: M
 Dependencies: LDG-2464
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -683,6 +683,45 @@ needed to materialize or promote later.
 
 Promotion/materialization tests, sweep result tests, parity tests, and docs grep
 for stale artifact assumptions.
+
+### Completion Notes
+
+Completed in Batch 7. Sweep remains the fast/evaluation path: it returns compact
+candidate summaries and does not write durable candidate `runs`,
+`ledger_events`, `equity_curve`, `features`, or `run_telemetry` rows. Promotion
+remains the explicit slow/materialized path through `ledgr_promote()`, which
+reruns the selected candidate through `ledgr_run()` and writes durable ledger,
+equity, feature, telemetry, and promotion-context artifacts.
+
+The compact reproduction key is now explicit through
+`ledgr_candidate_reproduction_key()`. The key records source sweep identity,
+candidate params/feature params, snapshot identity/hash, selector
+(`scoring_range` and ordered universe), strategy hash/source/preflight metadata,
+feature fingerprints and feature-set hashes, feature engine/provenance versions,
+execution/master seed metadata, metric-context identity, and execution
+assumptions. `ledgr_candidate()` and `ledgr_promote()` docs now point users at
+this boundary so they do not need to reconstruct experiment details manually.
+
+Artifact-size evidence on the small SMA materialization probe:
+
+- before sweep: `runs=0`, `ledger_events=0`, `equity_curve=0`, `features=0`,
+  `run_telemetry=0`;
+- after sweep: unchanged at zero for all five heavy tables;
+- after promotion: `runs=1`, `ledger_events=1`, `equity_curve=6`,
+  `features=6`, `run_telemetry=1`.
+
+Timing for that probe on the current host was `0.88s` for the one-candidate
+sweep and `1.14s` for explicit promotion/materialization. These are small-shape
+artifact-policy evidence only, not a peer-performance benchmark.
+
+Verification:
+
+- `test-sweep.R`, `test-sweep-parity.R`, `test-promotion-context.R`,
+  `test-api-exports.R`, and `test-documentation-contracts.R` passed.
+- The new sweep test asserts the fast path leaves heavy table counts unchanged,
+  the reproduction key contains the required snapshot/selector/strategy/feature
+  engine/seed/metric identity fields, promotion materializes heavy artifacts,
+  and promoted final equity matches the selected sweep row.
 
 ### Source Reference
 
