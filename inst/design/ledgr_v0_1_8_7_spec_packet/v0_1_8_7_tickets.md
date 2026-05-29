@@ -862,7 +862,7 @@ scope: post_lane_attribution
 Priority: P0
 Effort: M
 Dependencies: LDG-2458, LDG-2459, LDG-2460, LDG-2461, LDG-2462, LDG-2463, LDG-2464, LDG-2465, LDG-2466
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -898,6 +898,20 @@ decision, and parity, benchmark, documentation, and package checks are complete.
 
 Targeted tests, full test suite, package checks, benchmark record review,
 documentation review, and manual closeout review.
+
+### Completion Notes
+
+Completed in Batch 9. All v0.1.8.7 tickets are completed in
+`v0_1_8_7_tickets.md` and `tickets.yml`; no scoped ticket remains planned or
+deferred. The packet closeout records the legacy removals, optimization lanes,
+artifact-policy boundary, post-lane benchmark attribution, and remaining
+carry-forward work in `cycle_retrospective.md`.
+
+Release-gate bookkeeping updated `DESCRIPTION` to `0.1.8.7`, added the
+v0.1.8.7 `NEWS.md` entry, and moved the design index / agent context / roadmap
+from active v0.1.8.7 execution to completed v0.1.8.7 release record.
+
+Verification evidence is recorded in `cycle_retrospective.md`.
 
 ### Source Reference
 

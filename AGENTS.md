@@ -30,8 +30,8 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.8.7 active packet; update this block when the
-release closes or scope changes materially):
+Current planning context (post-v0.1.8.7 release; update this block when the next
+active packet is cut):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -59,29 +59,23 @@ release closes or scope changes materially):
   `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_tickets.md`,
   `inst/design/ledgr_v0_1_8_6_spec_packet/tickets.yml`, and
   `inst/design/ledgr_v0_1_8_6_spec_packet/cycle_retrospective.md`.
-- The v0.1.8.7 packet is active:
+- The completed v0.1.8.7 packet is an archival release record:
   `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md`,
-  `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_tickets.md`, and
-  `inst/design/ledgr_v0_1_8_7_spec_packet/tickets.yml`.
-- v0.1.8.7 is Optimization Round 2. It is RFC-first: bind the fold-core
-  primitive R object/function contract and run-artifact materialization policy
-  before implementation tickets land.
-- The implementation scope, after accepted RFC synthesis, is the three
-  hot-path lanes named by v0.1.8.6 evidence: event-emission/buffer lane,
-  cache-key/setup lane, and reconstruction lane.
-- Maintainer legacy-cleanup decision for v0.1.8.7: modern execution is
-  snapshot-backed and function-strategy based. Raw `bars` execution, R6 strategy
-  execution, and run-time `data_hash` identity are removed from modern execution
-  or must fail clearly before fold entry.
-- Collapse is in scope only behind the deterministic wrapper and only for
-  measured hot frames. ADR 0004 also drops `cli` and `R6` while retaining
-  `tibble`.
-- Snapshot administration and research-loop helper follow-up from v0.1.8.5 are
-  deferred to the horizon for a later RFC/spec cycle.
-- Auditr-report bugfix intake is not scoped for v0.1.8.6. The next auditr
-  report is deferred to the next version after prompt fixes in the auditr
-  repository.
-- Keep parallel dispatch, target risk, walk-forward, cost/liquidity, OMS,
+  `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_tickets.md`,
+  `inst/design/ledgr_v0_1_8_7_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`,
+  and `inst/design/ledgr_v0_1_8_7_spec_packet/cycle_retrospective.md`.
+- v0.1.8.7 shipped Optimization Round 2: modern execution is snapshot-backed
+  and function-strategy based; raw `bars` execution, R6 strategy execution, and
+  run-time `data_hash` identity were removed from modern execution or now fail
+  clearly before fold entry.
+- v0.1.8.7 also shipped the event-buffer/emission lane, representation/setup
+  cleanup, fills reconstruction/read-back cleanup, deterministic `collapse`
+  wrapper, ADR 0004 dependency moves (`cli`/`R6` dropped, `collapse` added,
+  `tibble` retained), and the sweep fast path / promotion materialization
+  boundary.
+- No next packet is active yet. Keep parallel dispatch, target risk,
+  walk-forward, cost/liquidity, OMS,
   benchmark, split stores, live data logs, point-in-time regressors, scaffold
   generation, companion-repository implementation, external-provider work, and
   broad collapse adoption deferred unless a new packet explicitly scopes a
@@ -95,7 +89,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.1.8.7 active packet | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
+| v0.1.8.7 release record | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/architecture/fold_core_trust_boundary.md`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/adr/0004-dependency-footprint-and-strategy-interface.md` |

@@ -49,6 +49,7 @@ reference:
       - ledgr_sweep
       - print.ledgr_sweep_results
       - ledgr_candidate
+      - ledgr_candidate_reproduction_key
       - print.ledgr_sweep_candidate
       - ledgr_promote
       - ledgr_promotion_context

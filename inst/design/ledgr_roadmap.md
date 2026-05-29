@@ -3,9 +3,9 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_8_6_spec_packet/`.
-**Active packet:** v0.1.8.7 Optimization Round 2.
-**Active packet path:** `inst/design/ledgr_v0_1_8_7_spec_packet/`.
+**Latest completed packet:** `inst/design/ledgr_v0_1_8_7_spec_packet/`.
+**Active packet:** none cut.
+**Active packet path:** none.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -100,7 +100,7 @@ versioned packet.
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
 | v0.1.8.6 | Done | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, performance attribution, and v0.1.8.7 optimization handoff. Snapshot administration and research-loop helpers deferred. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
-| v0.1.8.7 | Active | Optimization round 2 and legacy cleanup: fold-core primitive contract + hot-path lanes (buffer/emission via collapse, cache-key, reconstruction) + run-artifact materialization policy; remove raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; drop cli/R6, add collapse, keep tibble (ADR 0004). | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
+| v0.1.8.7 | Done | Optimization round 2 and legacy cleanup: removed raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; dropped cli/R6, added collapse, and shipped measured event-buffer, representation/setup, reconstruction, artifact-policy, and benchmark-attribution work. | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
 | v0.1.8.8 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
@@ -846,16 +846,16 @@ Non-scope:
 
 ### v0.1.8.7 Optimization Round: Fold-Core Primitive Contract And Artifact Materialization Policy
 
-v0.1.8.7 is an RFC-first implementation cycle for the fold core. The contract
-to settle and then implement is: fold-core internals pass primitive R objects
-and functions only (atomic vectors, matrices, lists, index maps, closures),
-while data.frames are manifested only at public or strategy-facing boundaries
-when explicitly needed.
+v0.1.8.7 completed the RFC-first Optimization Round 2 and legacy cleanup. The
+accepted direction is that fold-core internals should prefer primitive R objects
+and functions (atomic vectors, matrices, lists, index maps, closures), while
+data.frames are manifested only at public or strategy-facing boundaries when
+explicitly needed.
 
-The same cycle should also settle run-artifact materialization policy. The
+The same cycle also settled run-artifact materialization policy. The
 v0.1.8.6 profiling showed that persistent feature-panel writes can dominate
 wall time when `persist_features = TRUE`, while sweep candidates already avoid
-that path. v0.1.8.7 should formalize the intended fast/slow split: evaluation
+that path. v0.1.8.7 formalized the intended fast/slow split: evaluation
 paths keep heavy feature artifacts ephemeral and save compact results, while
 promotion/inspection paths explicitly materialize durable views and pay that
 tax.
@@ -893,7 +893,7 @@ strategy paths must fail clearly before entering the fold, and run-time
 spec packet; old-store migration may tolerate historical columns only long
 enough to rewrite them out.
 
-Authoritative input (planned):
+Authoritative input:
 
 - Architecture note:
   `inst/design/architecture/fold_core_trust_boundary.md`. It records the
