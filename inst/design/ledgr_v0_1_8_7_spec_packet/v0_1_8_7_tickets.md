@@ -285,7 +285,7 @@ scope: adr_0004
 Priority: P0
 Effort: M
 Dependencies: LDG-2460
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -318,6 +318,21 @@ restore caller settings on both normal and error exits.
 
 Targeted deterministic-wrapper tests, hostile-setting tests, and error-path
 restore tests.
+
+### Completion Notes
+
+Completed in Batch 4. Added internal `ledgr_with_collapse_deterministic()`,
+which captures the caller's full `collapse::set_collapse()` state, pins a known
+deterministic state for the wrapped expression, and restores the caller state on
+normal and error exit. The pinned state covers all host-exposed fields:
+`nthreads = 1L`, `na.rm = FALSE`, `sort = TRUE`, `stable.algo = TRUE`,
+`remove = NULL`, `digits = 2L`, `stub = TRUE`, `verbose = 0L`, and `mask = NULL`.
+
+Hostile-setting tests mutate `nthreads`, `na.rm`, `sort`, and `stable.algo` and
+prove restoration after success and failure. A value-bearing `collapse::fmean()`
+fixture proves hostile caller settings can change an unwrapped result, while the
+wrapper keeps the result invariant. No value-bearing production `collapse`
+operation was introduced in this batch.
 
 ### Source Reference
 

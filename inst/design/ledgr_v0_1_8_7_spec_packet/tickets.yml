@@ -58,7 +58,7 @@ tickets:
 
   - id: "LDG-2461"
     title: "Collapse Deterministic Wrapper"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
