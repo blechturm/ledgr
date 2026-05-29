@@ -5,8 +5,8 @@
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_8_5_spec_packet/`.
 **Active packet:** v0.1.8.6 feature-projection materialization,
-structured benchmark suite, storage/provenance decision work, and research-loop
-helper follow-up.
+structured benchmark suite, storage decision work, performance attribution, and
+v0.1.8.7 optimization handoff.
 **Active packet path:** `inst/design/ledgr_v0_1_8_6_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
@@ -101,7 +101,7 @@ versioned packet.
 | v0.1.8.3 | Done | Single-core R-level fold/runtime optimization after metric-kernel semantics settled. | `inst/design/ledgr_v0_1_8_3_spec_packet/` |
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
-| v0.1.8.6 | Active | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, snapshot administration and ETL provenance planning, and research-loop ergonomics helpers. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
+| v0.1.8.6 | Active | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, performance attribution, and v0.1.8.7 optimization handoff. Snapshot administration and research-loop helpers deferred. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
 | v0.1.8.7 | Planned | Optimization round 2: fold-core primitive contract + hot-path lanes (buffer/emission via collapse, cache-key, reconstruction) + run-artifact materialization policy; drop cli/R6, add collapse, keep tibble (ADR 0004). | Future packet; RFC first |
 | v0.1.8.8 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
@@ -600,10 +600,12 @@ Constraints:
 - parallel dispatch must later coordinate durable writes rather than imply
   unsynchronized worker writes to one DuckDB store.
 
-### v0.1.8.6 Feature Projection Materialization, Storage Spike, Snapshot Administration, And Research-Loop Helpers
+### v0.1.8.6 Feature Projection Materialization, Storage Spike, Benchmarks, And Optimization Handoff
 
-v0.1.8.6 hosts five coordinated workstreams. They share a release but are
-scoped and decided independently.
+v0.1.8.6 hosts coordinated materialization, benchmark, storage-decision, and
+performance-attribution workstreams. Snapshot administration and research-loop
+helper planning were considered in the packet, but deferred to the horizon by
+maintainer decision during closeout.
 
 Sequencing:
 
@@ -616,12 +618,10 @@ Sequencing:
   It gives the storage decision stable named scenarios, current-source guards,
   machine-readable output, and a small QuantConnect-comparable subset without
   becoming a hosted performance dashboard.
-- A full RFC cycle on snapshot administration and ETL provenance metadata
-  should conclude before implementation tickets are cut for that workstream.
-  The horizon entry is the seed-shape input. The research-loop ergonomics
-  helpers (Workstream C) fold into the same decision path because the
-  promotion-recovery summary couples directly to the snapshot/run metadata
-  model.
+- Snapshot administration, ETL provenance metadata, and research-loop
+  ergonomics helpers are deferred out of v0.1.8.6. The horizon entry is the
+  seed-shape input for a later RFC/spec cycle, likely v0.2.0-class work where
+  it can align with snapshot lineage and point-in-time data surfaces.
 - The DuckDB feature-storage spike remains a measurement-and-decision
   packet. It should run after 5.0/5.1 remeasurement so it measures the
   remaining bottleneck rather than stale setup costs.
@@ -674,7 +674,11 @@ Constraints:
 - no scheduler, universe-selection, or history/window benchmark until ledgr has
   matching public surfaces.
 
-#### Workstream A: Snapshot Administration And ETL Provenance
+#### Deferred Workstream A: Snapshot Administration And ETL Provenance
+
+Deferred out of v0.1.8.6 by maintainer decision. The notes below preserve the
+shape of the future RFC input; they do not authorize implementation in this
+cycle.
 
 Intent:
 
@@ -688,7 +692,7 @@ Intent:
 - define ledgr's data-provenance model as the substrate that future v0.2.x
   point-in-time, corporate-actions, and snapshot-lineage work will extend.
 
-Authoritative input (planned):
+Authoritative input (future):
 
 - RFC cycle on snapshot administration and provenance metadata, to be cut
   before implementation tickets are cut for that workstream;
@@ -789,7 +793,11 @@ Exit decisions:
 - **Reject for now:** if the bottleneck remains fold execution,
   pulse-context churn, or summary reconstruction rather than feature storage.
 
-#### Workstream C: Research-Loop Ergonomics Helpers
+#### Deferred Workstream C: Research-Loop Ergonomics Helpers
+
+Deferred out of v0.1.8.6 by maintainer decision. The notes below preserve the
+shape of the future RFC input; they do not authorize implementation in this
+cycle.
 
 Intent:
 
@@ -807,7 +815,7 @@ Intent:
   reference the new helpers, or remove them if the helpers make the
   lower-level paths unnecessary in the teaching arc.
 
-Authoritative input (planned):
+Authoritative input (future):
 
 - the same snapshot administration RFC that drives Workstream A, since the
   promotion-recovery summary couples directly to the snapshot/run metadata

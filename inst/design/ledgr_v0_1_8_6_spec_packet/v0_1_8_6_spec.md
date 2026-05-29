@@ -3,8 +3,9 @@
 **Status:** Draft implementation spec for v0.1.8.6.
 **Target Branch:** `v0.1.8.6`.
 **Scope:** Feature-projection materialization, structured benchmark suite with a
-small QuantConnect-comparable subset, storage/provenance decision work,
-and research-loop helper follow-up from v0.1.8.5.
+small QuantConnect-comparable subset, storage decision work, performance
+attribution, and v0.1.8.7 optimization handoff. Snapshot administration and
+research-loop helper follow-up from v0.1.8.5 are explicitly deferred.
 **Auditr Input:** Deferred. The next auditr report will run after prompt fixes
 in the auditr repository; no auditr bugfix intake is scoped for v0.1.8.6.
 **Non-scope for this pass:** A second execution engine, parallel dispatch,
@@ -47,13 +48,10 @@ Measurement and spike inputs:
   benchmark outputs:
   - `https://www.quantconnect.com/performance`
   - `https://www.quantconnect.com/docs/v2/cloud-platform/backtesting/engine-performance`
-- the 2026-05-28 horizon entries for feature projection materialization,
-  persistent DB replay, snapshot administration, and research-loop ergonomics.
-
-Pending inputs:
-
-- Snapshot administration / ETL provenance RFC output, if that workstream is
-  promoted into implementation tickets during this packet.
+- the 2026-05-28 horizon entries for feature projection materialization and
+  persistent DB replay;
+- the 2026-05-29 horizon entry deferring snapshot administration and
+  research-loop ergonomics.
 
 This spec promotes only the work below. Horizon entries remain non-binding
 unless explicitly named here or in follow-up tickets.
@@ -125,9 +123,9 @@ v0.1.8.6 has thirteen release goals:
 11. Decide the DuckDB feature-storage path only after the setup fixes are
    measured, so the spike evaluates the remaining bottleneck rather than stale
    materialization costs.
-12. Carry forward the v0.1.8.5 research-loop helper gaps and snapshot
-   administration / ETL provenance planning if their RFC/spec inputs land in
-   time for ticket cut.
+12. Explicitly defer the v0.1.8.5 research-loop helper gaps and snapshot
+   administration / ETL provenance planning to the horizon for a later
+   RFC/spec cycle, likely v0.2.0-class work.
 13. Accept typed persistent event columns only if storage/schema work is
    explicitly accepted for this packet; otherwise keep Direction 5.6 deferred.
 
@@ -141,8 +139,8 @@ Workstream labels in this spec map to the roadmap as follows:
 - roadmap Workstream B, DuckDB Feature Storage Spike: Section 5;
 - structured benchmark suite: Section 6, added by this spec from the
   QuantConnect comparison and required by the storage decision gate;
-- roadmap Workstream A, Snapshot Administration And ETL Provenance: Section 7;
-- roadmap Workstream C, Research-Loop Ergonomics Helpers: Section 7.
+- deferred snapshot administration / research-loop helper work: Section 7 and
+  `inst/design/horizon.md`.
 
 ---
 
@@ -430,11 +428,13 @@ Acceptance gates:
 
 ---
 
-## 7. Workstreams A And C: Snapshot Administration And Research-Loop Helpers
+## 7. Deferred Snapshot Administration And Research-Loop Helpers
 
-This workstream carries forward planned v0.1.8.6 roadmap work, but its
-implementation ticket cut depends on the relevant RFC/spec input landing before
-the release gate.
+This workstream was considered for v0.1.8.6 and explicitly deferred by
+maintainer decision during closeout. It is not implementation scope for this
+release. The future shape is parked in `inst/design/horizon.md` for a later
+RFC/spec cycle, likely v0.2.0-class work where it can align with snapshot
+lineage, point-in-time data, and broader research-workflow surfaces.
 
 Snapshot administration / ETL provenance intent:
 
@@ -464,8 +464,8 @@ Constraints:
 - no walk-forward or out-of-sample evaluation helper;
 - no production deployment approval model.
 
-If the RFC input does not land in time, keep this workstream as planned and do
-not block the mandatory 5.0/5.1 materialization fixes on it.
+This deferral does not block the mandatory materialization, benchmark,
+attribution, or v0.1.8.7 handoff work.
 
 ---
 
@@ -517,8 +517,9 @@ into review batches for execution and review.
    adding phase hooks or optimizing in the closeout gate.
 11. **Matched local peer benchmark.** Run the SMA-crossover peer shape locally
    and report rows as `local_matched`, `orientation_only`, or `not_run`.
-12. **Snapshot/provenance and helper tickets.** Cut only after the relevant RFC
-   or spec input is accepted.
+12. **Snapshot/provenance and helper deferral.** Record the maintainer deferral
+   and park the future shape in the horizon; do not cut implementation tickets
+   in v0.1.8.6.
 13. **Release gates.** Update NEWS, docs, tests, package checks, and
    retrospective records.
 
@@ -562,9 +563,8 @@ The v0.1.8.6 release may close only when:
   turnover mode;
 - any accepted storage/schema migration has reconstruction parity against the
   legacy `meta_json` path;
-- any snapshot/provenance helper work preserves `snapshot_hash` semantics;
-- any research-loop helper exposes ranking/recovery limits rather than hiding
-  them;
+- snapshot/provenance and research-loop helper work is explicitly deferred with
+  a horizon home and does not ship in v0.1.8.6;
 - no auditr-report findings are required for release closeout; the auditr
   report is deferred to the next version after prompt fixes in the auditr repo;
 - targeted tests, full tests, and release package checks pass according to
@@ -630,8 +630,8 @@ Deferred unless a later accepted packet scopes them:
 
 - Decide whether DuckDB-backed feature storage or typed persistent event
   columns are load-bearing after the setup fixes are measured.
-- Continue snapshot administration, ETL provenance, and research-loop helper
-  planning where accepted.
+- Defer snapshot administration, ETL provenance, and research-loop helper
+  planning to the horizon for a later RFC/spec cycle.
 
 ## Bug fixes
 

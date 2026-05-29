@@ -31,9 +31,9 @@ milestone. Entries not listed are pure direction with no committed home yet
 (e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized
 authoring). When a milestone closes, sweep its entries to `## Resolved`.
 
-- **v0.1.8.6** — snapshot administration; research-loop ergonomics (sweep
-  review + promotion recovery); DuckDB feature-storage spike; feature payload
-  scale stress; feature projection materialization (5.0/5.1).
+- **v0.1.8.6** — DuckDB feature-storage spike; feature payload scale stress;
+  feature projection materialization (5.0/5.1); structured benchmark and
+  attribution closeout.
 - **v0.1.8.7** (parallel dispatch + determinism) — public parallel sweep
   backend; parallel worker setup / Tier-2 packages; mori transport;
   worker-local read-only DuckDB; parallel interrupt / partial-result
@@ -46,13 +46,33 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.1.9.x** — walk-forward post-direction; cost-model post-direction;
   randomized/blocked slice diagnostics; promotion-grade sweep artifacts;
   target-construction helper extensions; broker/exchange cost templates.
-- **v0.2.x** — point-in-time data tables / external regressor snapshots (unify
-  in one RFC); corporate actions and instrument master; liquidity and capacity;
-  OMS semantics + snapshot lineage + live data logs; external benchmark /
-  beta uses; external reference-data adapter provenance; provider risk-free
-  divergence; reference strategy templates / baseline strategies.
+- **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
+  review + promotion recovery); point-in-time data tables / external regressor
+  snapshots (unify in one RFC); corporate actions and instrument master;
+  liquidity and capacity; OMS semantics + snapshot lineage + live data logs;
+  external benchmark / beta uses; external reference-data adapter provenance;
+  provider risk-free divergence; reference strategy templates / baseline
+  strategies.
 - **v0.2.x → v0.3.0** — live bad-data resilience and sim-to-real backtest
   fidelity (direction B; needs a dedicated RFC).
+
+### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
+
+The v0.1.8.6 `LDG-2451` gate for snapshot administration, ETL provenance,
+sweep-review helpers, and promotion-recovery-summary helpers was deferred by
+maintainer decision during release closeout. The work remains useful, but it is
+not required for the v0.1.8.6 materialization, benchmark, and attribution cycle,
+and it should not distract from the v0.1.8.7 Optimization Round 2 hot-path
+lanes.
+
+When revived, likely in a v0.2.0-class RFC/spec cycle, keep the original shape:
+separate engine-computed metadata, user-supplied descriptive metadata, and
+administrative lifecycle state; preserve `snapshot_hash` independence from
+mutable user metadata; keep sweep-review helpers explicit about ranking rules;
+and keep promotion-recovery summaries factual rather than automated candidate
+selection or validation.
+
+This entry records direction, not committed work.
 
 ### 2026-05-26 [execution] Accepted OMS direction and intraday-safe target-decision storage
 

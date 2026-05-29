@@ -26,8 +26,8 @@ Global review standards:
   this cycle.
 - Typed persistent event columns are conditional. They ship only if the
   storage/schema gate explicitly accepts them after measurement.
-- Snapshot administration and research-loop helper implementation is gated on
-  an accepted RFC/spec decision and must not block 5.0/5.1.
+- Snapshot administration and research-loop helper implementation is deferred
+  to the horizon and must not block v0.1.8.6 closeout.
 - Auditr-report bugfix intake is deferred to the next version after auditr
   prompt fixes.
 
@@ -349,13 +349,18 @@ Tickets:
 
 Purpose:
 
-Route snapshot administration, ETL provenance, sweep-review helper, and
-promotion-recovery-summary helper work through the required design gate. This
-batch may start during the cycle, but it must not block Batch 1 or Batch 2.
+Record the maintainer decision to defer snapshot administration, ETL provenance,
+sweep-review helper, and promotion-recovery-summary helper work out of v0.1.8.6.
+The future shape is parked in the horizon for a later RFC/spec cycle.
 
 Review focus:
 
-- An accepted RFC/spec decision exists before implementation tickets are cut.
+- `LDG-2451` is marked deferred with maintainer rationale in both
+  `v0_1_8_6_tickets.md` and `tickets.yml`.
+- `inst/design/horizon.md` records the future snapshot administration,
+  provenance, sweep-review, and promotion-recovery-summary shape.
+- The v0.1.8.6 roadmap/packet no longer describes these helpers as active
+  release scope.
 - Engine-computed metadata, user-supplied descriptive metadata, and lifecycle
   state remain separated.
 - `snapshot_hash` does not depend on mutable user metadata.
@@ -365,8 +370,8 @@ Review focus:
   recovery limitations.
 - No automatic winner-picking, statistical validation, walk-forward, or
   production deployment approval helper is introduced.
-- If the RFC/spec decision does not land in time, this batch defers without
-  blocking the release's mandatory materialization and benchmark work.
+- This batch defers without blocking the release's mandatory materialization,
+  benchmark, attribution, and v0.1.8.7 handoff work.
 
 ---
 

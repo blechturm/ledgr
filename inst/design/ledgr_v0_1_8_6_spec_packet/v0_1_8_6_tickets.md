@@ -9,7 +9,8 @@ Total Tickets: 13
 This packet implements the scoped v0.1.8.6 plan from `v0_1_8_6_spec.md`:
 feature-projection materialization, a structured benchmark suite with a small
 LEAN-comparable subset, post-fix width measurement, storage/provenance decision
-gates, and research-loop helper follow-up.
+gates, performance attribution, and the v0.1.8.7 optimization handoff. The
+snapshot/provenance and research-loop helper gate is explicitly deferred.
 
 The release spine is:
 
@@ -25,7 +26,7 @@ packet alignment
   -> drop intermediate wide-matrix allocation if profiling confirms value
   -> performance attribution closeout
   -> matched local peer benchmark
-  -> snapshot/provenance and helper RFC gate
+  -> snapshot/provenance and helper RFC gate deferred
   -> release gate
 ```
 
@@ -66,9 +67,8 @@ LDG-2457 Matched Local Peer Benchmark
 
 LDG-2450 is a decision gate: typed persistent event columns are implemented
 only if storage/schema work is explicitly accepted after LDG-2449. LDG-2451 is
-also a gate: implementation tickets for snapshot administration or
-research-loop helpers are cut only after the relevant RFC/spec input is
-accepted.
+deferred by maintainer decision: snapshot administration and research-loop
+helpers are parked in `inst/design/horizon.md` for a later RFC/spec cycle.
 ```
 
 ## Priority Levels
@@ -569,7 +569,7 @@ scope: typed_columns
 Priority: P2
 Effort: M
 Dependencies: LDG-2447
-Status: Planned
+Status: Deferred
 
 ### Description
 
@@ -620,6 +620,15 @@ type: design_gate
 surface: snapshot_provenance
 scope: rfc_routing
 ```
+
+### Deferral Note
+
+Deferred by maintainer decision on 2026-05-29. Snapshot administration, ETL
+provenance metadata, sweep-review helpers, and promotion-recovery-summary
+helpers are useful but not needed to close the v0.1.8.6 materialization,
+benchmark, and attribution cycle. The work is parked in `inst/design/horizon.md`
+for a later RFC/spec cycle, likely v0.2.0 where it can align with broader
+snapshot lineage, point-in-time data, and research-workflow surfaces.
 
 ---
 
