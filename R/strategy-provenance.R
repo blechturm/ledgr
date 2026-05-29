@@ -101,14 +101,11 @@ ledgr_strategy_reproducibility_level <- function(strategy_type, signature = NULL
     }
     return("tier_2")
   }
-  if (identical(strategy_type, "R6_object")) {
-    return("tier_2")
-  }
   "tier_3"
 }
 
 ledgr_dependency_versions_json <- function() {
-  packages <- c("ledgr", "duckdb", "DBI", "digest", "jsonlite", "tibble", "TTR")
+  packages <- c("ledgr", "collapse", "duckdb", "DBI", "digest", "jsonlite", "tibble", "TTR")
   versions <- list(R = as.character(getRversion()))
 
   for (pkg in packages) {

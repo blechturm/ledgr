@@ -843,23 +843,13 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }
 
   strategy <- ledgr_strategy_from_config(cfg)
-  strategy_fn <- NULL
-  strategy_is_functional <- FALSE
-  if (!is.null(cfg$strategy) && is.list(cfg$strategy) && identical(cfg$strategy$id, "functional")) {
-    strategy_is_functional <- TRUE
-    key <- cfg$strategy$params$strategy_key
-    strategy_fn <- ledgr_get_strategy_fn(key)
-  } else if (is.function(strategy$on_pulse)) {
-    strategy_fn <- strategy$on_pulse
-  }
+  strategy_fn <- strategy$fn
+  strategy_is_functional <- TRUE
   if (!is.function(strategy_fn)) {
-    rlang::abort("Strategy on_pulse is not a function; check strategy configuration.", class = "ledgr_invalid_strategy")
+    rlang::abort("Strategy is not a function; check strategy configuration.", class = "ledgr_invalid_strategy")
   }
-  strategy_params <- if (is.null(cfg$strategy_params)) list() else cfg$strategy_params
-  strategy_call_signature <- NULL
-  if (!is.null(cfg$strategy) && is.list(cfg$strategy) && !is.null(cfg$strategy$params$call_signature)) {
-    strategy_call_signature <- cfg$strategy$params$call_signature
-  }
+  strategy_params <- strategy$params
+  strategy_call_signature <- strategy$signature
 
   pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
   pulses_posix <- as.POSIXct(pulses, tz = "UTC")
@@ -1894,45 +1884,43 @@ ledgr_strategy_from_config <- function(cfg) {
     rlang::abort("strategy.params must be a list.", class = "ledgr_invalid_config")
   }
 
-  if (identical(id, "hold_zero")) return(HoldZeroStrategy$new(params = params))
-  if (identical(id, "echo")) return(EchoStrategy$new(params = params))
-  if (identical(id, "ts_rule")) return(TsRuleStrategy$new(params = params))
-  if (identical(id, "state_prev")) return(StatePrevStrategy$new(params = params))
+  strategy <- function(fn, params) {
+    list(fn = fn, params = params, signature = "ctx_params")
+  }
+
+  if (identical(id, "hold_zero")) return(strategy(ledgr_strategy_hold_zero, params))
+  if (identical(id, "echo")) return(strategy(ledgr_strategy_echo, params))
+  if (identical(id, "ts_rule")) return(strategy(ledgr_strategy_ts_rule, params))
+  if (identical(id, "state_prev")) return(strategy(ledgr_strategy_state_prev_targets, params))
   if (identical(id, "functional")) {
     key <- params$strategy_key
     signature <- params$call_signature
     strategy_params <- if (is.null(cfg$strategy_params)) list() else cfg$strategy_params
-    return(ledgr_strategy_fn_from_key(key, signature = signature, strategy_params = strategy_params))
+    return(list(fn = ledgr_get_strategy_fn(key), params = strategy_params, signature = signature))
   }
 
   rlang::abort(sprintf("Unknown strategy.id: %s", id), class = "ledgr_invalid_config")
 }
 
-TsRuleStrategy <- R6::R6Class(
-  "TsRuleStrategy",
-  inherit = LedgrStrategy,
-  private = list(
-    on_pulse_impl = function(ctx, params) {
-      cut <- self$params$cutover_ts_utc
-      before <- self$params$targets_before
-      after <- self$params$targets_after
+ledgr_strategy_ts_rule <- function(ctx, params) {
+  cut <- params$cutover_ts_utc
+  before <- params$targets_before
+  after <- params$targets_after
 
-      if (!is.character(cut) || length(cut) != 1 || is.na(cut) || !nzchar(cut)) {
-        rlang::abort("TsRuleStrategy requires params$cutover_ts_utc as an ISO8601 UTC string.", class = "ledgr_invalid_strategy")
-      }
-      if (!is.numeric(before) || is.null(names(before))) {
-        rlang::abort("TsRuleStrategy requires params$targets_before as a named numeric vector.", class = "ledgr_invalid_strategy")
-      }
-      if (!is.numeric(after) || is.null(names(after))) {
-        rlang::abort("TsRuleStrategy requires params$targets_after as a named numeric vector.", class = "ledgr_invalid_strategy")
-      }
+  if (!is.character(cut) || length(cut) != 1 || is.na(cut) || !nzchar(cut)) {
+    rlang::abort("ts_rule strategy requires params$cutover_ts_utc as an ISO8601 UTC string.", class = "ledgr_invalid_strategy")
+  }
+  if (!is.numeric(before) || is.null(names(before))) {
+    rlang::abort("ts_rule strategy requires params$targets_before as a named numeric vector.", class = "ledgr_invalid_strategy")
+  }
+  if (!is.numeric(after) || is.null(names(after))) {
+    rlang::abort("ts_rule strategy requires params$targets_after as a named numeric vector.", class = "ledgr_invalid_strategy")
+  }
 
-      if (ctx$ts_utc < cut) {
-        list(targets = before, state_update = list())
-      } else {
-        list(targets = after, state_update = list())
-      }
-    }
-  )
-)
+  if (ctx$ts_utc < cut) {
+    list(targets = before, state_update = list())
+  } else {
+    list(targets = after, state_update = list())
+  }
+}
 

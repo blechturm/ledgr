@@ -27,8 +27,8 @@ ledgr_backtest(
 \item{snapshot}{A \code{ledgr_snapshot} object, or a data frame for the data-first
 convenience path.}
 
-\item{strategy}{Strategy function or object with \verb{$on_pulse(ctx)} method.
-Functional strategies must use \verb{function(ctx, params)}.}
+\item{strategy}{Strategy function using \verb{function(ctx, params)}, or a
+configured strategy list.}
 
 \item{universe}{Character vector of instrument IDs. If \code{NULL}, it is inferred
 from the snapshot or data frame.}

@@ -218,7 +218,7 @@ scope: legacy_execution_removal
 Priority: P0
 Effort: M
 Dependencies: LDG-2458
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -253,6 +253,17 @@ the function strategy contract.
 
 Dependency grep, namespace checks, targeted strategy/replay/preflight tests, and
 standard package load checks.
+
+### Completion Notes
+
+Completed in Batch 2. `cli` and `R6` were removed from package imports and
+generated namespace declarations; `collapse` is now an imported dependency for
+the v0.1.8.7 hot-path lanes. Built-in/reference strategies now resolve to
+plain `function(ctx, params)` helpers (`hold_zero`, `echo`, `ts_rule`,
+`state_prev`) and the legacy `$on_pulse`/R6 strategy object path is rejected
+instead of stored as Tier 2 provenance. Targeted strategy, provenance, runner,
+sweep parity, sweep, API export, dependency, namespace, and package-load checks
+passed.
 
 ### Source Reference
 

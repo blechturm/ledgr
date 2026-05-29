@@ -20,13 +20,12 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr, quarto
 Imports:
-    cli,
+    collapse,
     codetools,
     DBI,
     digest,
     duckdb,
     jsonlite,
-    R6,
     rlang,
     tibble
 Suggests: 

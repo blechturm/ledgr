@@ -203,28 +203,23 @@ testthat::test_that("strategy params and source changes alter provenance hashes"
   ))
 })
 
-testthat::test_that("R6 strategies are stored as Tier 2 provenance", {
+testthat::test_that("legacy strategy objects are rejected instead of stored as R6 provenance", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bt <- ledgr_backtest(
-    data = test_bars,
-    strategy = ledgr:::HoldZeroStrategy$new(),
-    start = "2020-01-01",
-    end = "2020-01-05",
-    initial_cash = 10000,
-    db_path = db_path,
-    run_id = "r6-run"
+  legacy_strategy <- list(on_pulse = function(ctx) ctx$flat())
+  testthat::expect_error(
+    ledgr_backtest(
+      data = test_bars,
+      strategy = legacy_strategy,
+      start = "2020-01-01",
+      end = "2020-01-05",
+      initial_cash = 10000,
+      db_path = db_path,
+      run_id = "legacy-strategy-run"
+    ),
+    "`strategy` must be a function or configured strategy list.",
+    fixed = TRUE,
+    class = "ledgr_invalid_args"
   )
-  on.exit(close(bt), add = TRUE)
-
-  opened <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
-  provenance <- DBI::dbGetQuery(
-    opened$con,
-    "SELECT strategy_type, reproducibility_level FROM run_provenance WHERE run_id = 'r6-run'"
-  )
-
-  testthat::expect_identical(provenance$strategy_type[[1]], "R6_object")
-  testthat::expect_identical(provenance$reproducibility_level[[1]], "tier_2")
 })

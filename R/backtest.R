@@ -4,8 +4,8 @@
 #'
 #' @param snapshot A `ledgr_snapshot` object, or a data frame for the data-first
 #'   convenience path.
-#' @param strategy Strategy function or object with `$on_pulse(ctx)` method.
-#'   Functional strategies must use `function(ctx, params)`.
+#' @param strategy Strategy function using `function(ctx, params)`, or a
+#'   configured strategy list.
 #' @param strategy_params JSON-safe list passed to `function(ctx, params)`
 #'   strategies and stored as part of run provenance.
 #' @param universe Character vector of instrument IDs. If `NULL`, it is inferred
@@ -733,33 +733,8 @@ ledgr_strategy_spec <- function(strategy) {
     ))
   }
 
-  if (!is.null(strategy) && is.function(strategy$on_pulse)) {
-    fn <- function(ctx, params) strategy$on_pulse(ctx)
-    r6_key_payload <- list(
-      type = "R6_object",
-      class = class(strategy),
-      params = if (is.list(strategy$params)) strategy$params else list()
-    )
-    key <- ledgr_register_strategy_fn(
-      fn,
-      include_captures = FALSE,
-      key = digest::digest(canonical_json(r6_key_payload), algo = "sha256")
-    )
-    return(list(
-      id = "functional",
-      params = list(strategy_key = key, call_signature = "ctx_params"),
-      provenance = list(
-        strategy_type = "R6_object",
-        strategy_source = NA_character_,
-        strategy_source_hash = NA_character_,
-        strategy_source_capture_method = "R6_object",
-        reproducibility_level = "tier_2"
-      )
-    ))
-  }
-
   rlang::abort(
-    "`strategy` must be a function or an object with $on_pulse(ctx).",
+    "`strategy` must be a function or configured strategy list.",
     class = "ledgr_invalid_args"
   )
 }

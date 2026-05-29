@@ -38,7 +38,7 @@ tickets:
 
   - id: "LDG-2460"
     title: "ADR 0004 Dependency And Function-Strategy Cleanup"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
