@@ -94,7 +94,7 @@ tickets:
 
   - id: "LDG-2463"
     title: "Representation And Setup Cleanup"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:

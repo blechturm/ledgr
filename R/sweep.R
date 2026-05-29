@@ -103,7 +103,7 @@ ledgr_sweep <- function(exp,
   ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
   bars_mat <- ledgr_sweep_bars_matrix(bars_by_id, exp$universe)
   pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
-  pulses_iso <- vapply(pulses_posix, ledgr_normalize_ts_utc, character(1))
+  pulses_iso <- format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   static_bars_views <- ledgr_bars_pulse_views(
     bars_mat = bars_mat,
     instrument_ids = exp$universe,

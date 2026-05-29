@@ -26,6 +26,17 @@ test_that("ledgr_snapshot_from_df validates required columns", {
   expect_error(ledgr_snapshot_from_df(bad), "bars_df missing required column")
 })
 
+test_that("ledgr_snapshot_from_df rejects sub-second POSIXct bars", {
+  bad <- test_bars
+  bad$ts_utc <- as.POSIXct(bad$ts_utc, tz = "UTC")
+  bad$ts_utc[[1]] <- bad$ts_utc[[1]] + 0.25
+
+  expect_error(
+    ledgr_snapshot_from_df(bad),
+    class = "LEDGR_SUBSECOND_TIMESTAMP"
+  )
+})
+
 test_that("ledgr_snapshot_from_df allows custom snapshot IDs and warns on malformed generated-style IDs", {
   expect_warning(
     snap <- ledgr_snapshot_from_df(test_bars, snapshot_id = "research_baseline"),

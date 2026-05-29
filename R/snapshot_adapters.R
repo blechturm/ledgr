@@ -63,6 +63,11 @@ ledgr_snapshot_from_df <- function(bars_df,
     if (length(ts_posix) != length(ts_raw) || anyNA(ts_posix)) {
       rlang::abort("bars_df `ts_utc` must be valid POSIXt values.", class = "ledgr_invalid_args")
     }
+    ts_posix <- ledgr_assert_whole_second_utc(
+      ts_posix,
+      label = "bars_df `ts_utc`",
+      class = "ledgr_invalid_args"
+    )
     ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   } else if (inherits(ts_raw, "Date")) {
     if (length(ts_raw) == 0 || anyNA(ts_raw)) {

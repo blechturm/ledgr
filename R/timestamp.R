@@ -130,3 +130,44 @@ ledgr_utc <- function(x) {
   attr(out, "tzone") <- "UTC"
   out
 }
+
+ledgr_whole_second_posix <- function(x) {
+  seconds <- as.numeric(x)
+  is.finite(seconds) & abs(seconds - round(seconds)) < 1e-7
+}
+
+ledgr_assert_whole_second_utc <- function(x,
+                                          label = "`ts_utc`",
+                                          class = "ledgr_invalid_timestamp") {
+  out <- as.POSIXct(x, tz = "UTC")
+  if (length(out) != length(x) || anyNA(out)) {
+    rlang::abort(sprintf("%s must contain valid UTC timestamps.", label), class = class)
+  }
+  if (any(!ledgr_whole_second_posix(out))) {
+    rlang::abort(
+      sprintf("%s must use whole-second UTC timestamps; sub-second timestamps are out of scope.", label),
+      class = c("LEDGR_SUBSECOND_TIMESTAMP", class)
+    )
+  }
+  attr(out, "tzone") <- "UTC"
+  out
+}
+
+ledgr_ts_utc_posix <- function(x,
+                               label = "`ts_utc`",
+                               class = "ledgr_invalid_timestamp") {
+  if (inherits(x, "POSIXt")) {
+    out <- ledgr_assert_whole_second_utc(x, label = label, class = class)
+    if (length(out) != 1L) {
+      rlang::abort(sprintf("%s must be a scalar UTC timestamp.", label), class = class)
+    }
+    return(out)
+  }
+
+  iso <- ledgr_normalize_ts_utc(x)
+  out <- as.POSIXct(iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  if (length(out) != 1L || is.na(out)) {
+    rlang::abort(sprintf("%s must be a valid UTC timestamp.", label), class = class)
+  }
+  ledgr_assert_whole_second_utc(out, label = label, class = class)
+}

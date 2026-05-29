@@ -174,11 +174,11 @@ ledgr_fill_event_payload <- function(run_id,
     +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(commission_fixed))
   }
 
-  ts_exec_iso <- ledgr_normalize_ts_utc(ts_exec_utc)
-  ts_exec_posix <- as.POSIXct(ts_exec_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  if (is.na(ts_exec_posix)) {
-    rlang::abort("`fill_intent$ts_exec_utc` must be a valid UTC timestamp.", class = "ledgr_invalid_fill_intent")
-  }
+  ts_exec_posix <- ledgr_ts_utc_posix(
+    ts_exec_utc,
+    label = "`fill_intent$ts_exec_utc`",
+    class = "ledgr_invalid_fill_intent"
+  )
 
   meta <- list(
     commission_fixed = as.numeric(commission_fixed),
@@ -1151,13 +1151,13 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       per_inst <- list()
       for (instrument_id in instrument_ids) {
         b <- bars_by_id[[instrument_id]]
-        cache_key <- ledgr_feature_cache_key_from_parts(
+        cache_key <- ledgr_feature_cache_key_from_normalized_parts(
           snapshot_hash = snapshot_hash_for_features,
           instrument_id = instrument_id,
           feature_fingerprint = feature_fingerprint,
           feature_engine_version = feature_engine_version,
-          start_ts_utc = start_ts_utc,
-          end_ts_utc = end_ts_utc
+          start_ts_utc = start_iso,
+          end_ts_utc = end_iso
         )
         values <- ledgr_feature_cache_get(cache_key, expected_len = nrow(b))
         if (is.null(values)) {

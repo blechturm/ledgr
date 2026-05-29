@@ -147,6 +147,43 @@ testthat::test_that("feature cache key changes with indicator identity and date 
   testthat::expect_false(identical(ledgr:::ledgr_feature_engine_version(), "v0.1.4-series-fn-1"))
 })
 
+testthat::test_that("feature cache key is a deterministic length-prefixed session key", {
+  def <- list(
+    id = "key_probe",
+    requires_bars = 1L,
+    stable_after = 1L,
+    fn = function(window) tail(window$close, 1),
+    series_fn = function(bars, params = list()) bars$close,
+    params = list()
+  )
+
+  key <- ledgr:::ledgr_feature_cache_key(
+    snapshot_hash = "hash|with:delimiters",
+    instrument_id = "TEST|A:1",
+    feature_def = def,
+    start_ts_utc = "2020-01-01T00:00:00Z",
+    end_ts_utc = "2020-01-10T00:00:00Z"
+  )
+  same <- ledgr:::ledgr_feature_cache_key(
+    snapshot_hash = "hash|with:delimiters",
+    instrument_id = "TEST|A:1",
+    feature_def = def,
+    start_ts_utc = "2020-01-01T00:00:00Z",
+    end_ts_utc = "2020-01-10T00:00:00Z"
+  )
+  different <- ledgr:::ledgr_feature_cache_key(
+    snapshot_hash = "hash|with:delimiters",
+    instrument_id = "TEST|A:10",
+    feature_def = def,
+    start_ts_utc = "2020-01-01T00:00:00Z",
+    end_ts_utc = "2020-01-10T00:00:00Z"
+  )
+
+  testthat::expect_match(key, "^ledgr_feature_cache_v2\\|", perl = TRUE)
+  testthat::expect_identical(key, same)
+  testthat::expect_false(identical(key, different))
+})
+
 testthat::test_that("hoisted feature cache key parts match canonical key", {
   expect_key_parity <- function(def) {
     fingerprint <- ledgr:::ledgr_feature_def_fingerprint(def)

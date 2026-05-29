@@ -449,7 +449,7 @@ scope: b0_buffer
 Priority: P1
 Effort: L
 Dependencies: LDG-2462
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -493,6 +493,46 @@ representation leakage while keeping durable hashes fenced.
 
 Timestamp parity tests, sub-second rejection tests, hash/fingerprint pin tests,
 feature-cache tests, event-id parity tests, and current-source re-profile.
+
+### Completion Notes
+
+Completed in Batch 5. Snapshot ingest/seal now rejects sub-second bar
+timestamps rather than silently truncating them. The high-level data-frame
+adapter rejects sub-second `POSIXct` bars before writing snapshot rows, and the
+seal validator catches direct low-level `snapshot_bars` tampering with
+sub-second `TIMESTAMP` values. Whole-second daily/minute/second timestamp bytes
+remain unchanged by the durable identity paths.
+
+The fill path now carries trusted whole-second `POSIXct` timestamps through the
+internal next-open proposal and writer path when the input is already `POSIXt`.
+Character timestamp inputs still normalize through the existing ISO parser, so
+legacy string inputs keep the same observable event timestamp bytes. Event-id
+construction, `meta_json` serialization, `canonical_json()`, snapshot hashes,
+feature fingerprints, strategy/config hashes, and provenance bytes were not
+changed.
+
+Session-local feature-cache keys were changed from canonical JSON + SHA to a
+deterministic length-prefixed composite string with prefix
+`ledgr_feature_cache_v2|`. The new key is not durable evidence and remains
+session-local. Run-level `start_ts_utc` / `end_ts_utc` normalization is now
+hoisted before the per-feature/per-instrument cache loop by calling the
+normalized-parts helper from the runner.
+
+Verification:
+
+- `test-snapshot-adapters.R`, `test-snapshots-seal.R`, `test-fill-model.R`,
+  `test-feature-cache.R`, `test-ledger-writer.R`, and `test-sweep-parity.R`
+  passed.
+- `test-timestamp.R`, `test-snapshots-hash.R`, `test-runner.R`, and
+  `test-backtest-audit-log-equivalence.R` passed.
+- Post-Batch-5 current-source durable `peer_sma_crossover`
+  (`500 x 1260 x 2`, one measured iteration): wall 31.25s, pre 1.11s,
+  loop 19.42s, residual 10.72s, 13,355 events. The post-B0 baseline under the
+  same updated power profile was wall 32.91s, pre 1.50s, loop 20.87s,
+  residual 10.54s.
+- Post-Batch-5 feature setup rows (`100 x 252 x 20`, one measured iteration):
+  `feature_read_score` wall 3.44s / pre 0.34s; `feature_turnover` wall 3.06s /
+  pre 0.29s.
 
 ### Source Reference
 
