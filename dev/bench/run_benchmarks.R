@@ -144,7 +144,8 @@ bench_specs <- function(preset = "smoke") {
       indicator_payload = list(kind = "run", n_inst = 5L, n_pulses = 504L, n_feat = 50L, trade = FALSE),
       sweep_memory_summary = list(kind = "sweep", n_inst = 10L, n_pulses = 126L, n_feat = 2L, candidates = 5L),
       persistent_replay = list(kind = "run", n_inst = 25L, n_pulses = 252L, n_feat = 5L, trade = TRUE, replay = TRUE),
-      peer_sma_crossover = list(kind = "run", n_inst = 500L, n_pulses = 1260L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 20L, sma_slow = 50L, persist_features = FALSE)
+      peer_sma_crossover = list(kind = "run", n_inst = 500L, n_pulses = 1260L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 20L, sma_slow = 50L, persist_features = FALSE),
+      peer_sma_crossover_sweep = list(kind = "sweep", n_inst = 500L, n_pulses = 1260L, n_feat = 2L, candidates = 1L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 20L, sma_slow = 50L)
     ))
   }
   list(
@@ -156,7 +157,8 @@ bench_specs <- function(preset = "smoke") {
     indicator_payload = list(kind = "run", n_inst = 3L, n_pulses = 60L, n_feat = 10L, trade = FALSE),
     sweep_memory_summary = list(kind = "sweep", n_inst = 3L, n_pulses = 30L, n_feat = 2L, candidates = 3L),
     persistent_replay = list(kind = "run", n_inst = 5L, n_pulses = 50L, n_feat = 3L, trade = TRUE, replay = TRUE),
-    peer_sma_crossover = list(kind = "run", n_inst = 20L, n_pulses = 80L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 5L, sma_slow = 10L, persist_features = FALSE)
+    peer_sma_crossover = list(kind = "run", n_inst = 20L, n_pulses = 80L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 5L, sma_slow = 10L, persist_features = FALSE),
+    peer_sma_crossover_sweep = list(kind = "sweep", n_inst = 20L, n_pulses = 80L, n_feat = 2L, candidates = 1L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 5L, sma_slow = 10L)
   )
 }
 
@@ -366,16 +368,25 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
   )[["elapsed"]]
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  features <- bench_make_features(spec$n_feat %||% 0L)
-  FEATURE_COLS <- if ((spec$n_feat %||% 0L) > 0L) sprintf("bench_f_%03d", seq_len(spec$n_feat)) else character()
-  strategy <- function(ctx, params) {
-    targets <- ctx$flat()
-    if (length(FEATURE_COLS) > 0L) {
-      fw <- ctx$features_wide
-      score <- .rowSums(as.matrix(fw[FEATURE_COLS]), nrow(fw), length(FEATURE_COLS))
-      targets[[fw$instrument_id[[which.max(score)]]]] <- params$qty
+  sma <- identical(spec$strategy_kind, "sma_crossover")
+  features <- if (sma) {
+    bench_make_sma_features(spec$sma_fast %||% 20L, spec$sma_slow %||% 50L)
+  } else {
+    bench_make_features(spec$n_feat %||% 0L)
+  }
+  strategy <- if (sma) {
+    bench_sma_crossover_strategy(spec$trade %||% TRUE)
+  } else {
+    FEATURE_COLS <- if ((spec$n_feat %||% 0L) > 0L) sprintf("bench_f_%03d", seq_len(spec$n_feat)) else character()
+    function(ctx, params) {
+      targets <- ctx$flat()
+      if (length(FEATURE_COLS) > 0L) {
+        fw <- ctx$features_wide
+        score <- .rowSums(as.matrix(fw[FEATURE_COLS]), nrow(fw), length(FEATURE_COLS))
+        targets[[fw$instrument_id[[which.max(score)]]]] <- params$qty
+      }
+      targets
     }
-    targets
   }
   exp <- ledgr_experiment(snapshot, strategy, features = features, opening = ledgr_opening(cash = 1e7))
   candidate_list <- stats::setNames(
@@ -435,7 +446,8 @@ bench_comparability_note <- function(name) {
     feature_turnover = "ledgr-only feature plus fills/events stress.",
     sweep_memory_summary = "ledgr-only in-memory sweep summary path.",
     persistent_replay = "ledgr-only persistent replay/read-back path.",
-    peer_sma_crossover = "Matched Ziplime/Zipline/Backtrader workload (500 assets, 5yr daily, SMA crossover via TTR, persist off); orientation only -- vendor numbers are Apple M3, a different host.",
+    peer_sma_crossover = "Durable ledgr run for matched Ziplime/Zipline/Backtrader SMA workload; persists ledger/equity to DuckDB, so not symmetric with in-memory peer engines.",
+    peer_sma_crossover_sweep = "Ephemeral one-candidate ledgr sweep for matched Ziplime/Zipline/Backtrader SMA workload; primary in-memory peer-comparison row.",
     "No external benchmark analogue."
   )
 }

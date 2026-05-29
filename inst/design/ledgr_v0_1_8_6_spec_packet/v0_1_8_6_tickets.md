@@ -1074,7 +1074,7 @@ scope: performance_attribution_closeout
 Priority: P1
 Effort: M
 Dependencies: LDG-2456
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1155,6 +1155,72 @@ surface: dev_bench
 scope: matched_peer_comparison
 ```
 
+### Completion Note
+
+Completed 2026-05-29 on the local Intel Core i9-12900K Windows host.
+
+Tracked summary:
+
+| engine | status | host scope | wall sec | security_bars_sec | notes |
+| --- | --- | --- | ---: | ---: | --- |
+| ledgr durable run | local matched durable | same host | 313.42 | 2,010 | `peer_sma_crossover`, 500 assets x 1,260 daily bars, 2 SMA features, current-source `record` preset, `persist_features = FALSE`; writes durable run artifacts |
+| ledgr one-candidate sweep | local matched ephemeral | same host | 381.46 | 1,652 | `peer_sma_crossover_sweep`, same dimensions and SMA features, current-source `record` preset; no durable per-candidate ledger, but current sweep orchestration is slower at this one-candidate shape |
+| Backtrader | local matched orientation | same host | 114.46 | 5,504 | Same synthetic dimensions and SMA-crossover shape; data generation/feed construction excluded; timed boundary is `cerebro.run(runonce = TRUE, preload = TRUE)` |
+| Ziplime/Polars | not run | same host unavailable | NA | NA | Local install attempt for `ziplime` in the disposable peer venv timed out after 124s before the package was installed |
+| Zipline-reloaded | not run | same host unavailable | NA | NA | `pip install --dry-run zipline-reloaded` resolved packages, but no local run was completed in this ticket; Backtrader supplies the accepted same-host peer row |
+| Published Ziplime/Zipline/Backtrader rows | orientation only | Apple M3 reference host | see `dev/bench/ziplime_reference.csv` | NA | Vendor/self-reported source rows remain orientation-only and are not used for local matched ratios |
+
+Local ratio, using only same-host rows and `security_bars_sec`:
+
+- durable ledgr run / Backtrader throughput: `2010 / 5504 = 0.37x`.
+- Backtrader / durable ledgr run throughput: `5504 / 2010 = 2.74x`.
+- ephemeral one-candidate ledgr sweep / Backtrader throughput:
+  `1652 / 5504 = 0.30x`.
+- Backtrader / ephemeral one-candidate ledgr sweep throughput:
+  `5504 / 1652 = 3.33x`.
+
+Generated result artifacts are under the ignored benchmark-results convention:
+
+- `dev/bench/results/ledgr_bench_record_20260529T101029Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260529T101029Z_results.json`
+- `dev/bench/results/ledgr_bench_record_20260529T103637Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260529T103637Z_results.json`
+- `dev/bench/results/backtrader_peer_sma_crossover_local_20260529T101029Z.csv`
+- `dev/bench/results/backtrader_peer_sma_crossover_local_20260529T101029Z.json`
+- `dev/bench/results/backtrader_peer_sma_crossover_local_20260529T101029Z.md`
+
+The comparison is intentionally narrow: one local event-driven Python peer row
+on one synthetic SMA-crossover workload. It is suitable as a same-host
+orientation point, not as broad framework parity or a general speed ranking.
+The durable ledgr row is not boundary-symmetric with Backtrader because ledgr
+writes durable ledger/equity artifacts to DuckDB while the Backtrader row holds
+results in memory. The one-candidate sweep row is the closer in-memory
+comparison, but it is slower than the durable run on this shape; the
+persistence asymmetry therefore does not explain the peer gap by itself.
+
+Follow-up decomposition on the same shape confirms that the peer gap is owned by
+the v0.1.8.7 event-emission lane, not by SMA feature computation:
+
+| ledgr mode | profiled wall sec | t_pre sec | t_loop sec | residual sec | dominant sampled R cost |
+| --- | ---: | ---: | ---: | ---: | --- |
+| durable run | 295.07 | 3.05 | 257.14 | 34.88 | `handler$buffer_event`, 137.08s self / 72.43% of sampled R time |
+| one-candidate sweep | 384.40 | NA | NA | NA | `append_event_row_list`, 201.37s self / 81.72% of sampled R time |
+
+Rprof samples R execution time and does not sum to elapsed wall time, so these
+percentages should be read as attribution, not absolute wall accounting. The
+result is still decisive: both durable and sweep peer rows spend their sampled
+R time primarily appending/buffering fill events. That matches
+`inst/design/audits/fold_path_hotpath_audit.md` Finding 1 and keeps the fix
+lane in v0.1.8.7: primitive event buffers / typed event emission, followed by
+timestamp and payload cleanup. The SMA feature path is small on this workload
+(`t_pre` around 3s in the durable run).
+
+Handoff: this result is the empirical priority input for v0.1.8.7
+"Optimization Round 2" in `inst/design/ledgr_roadmap.md`, governed by
+`inst/design/adr/0004-dependency-footprint-and-strategy-interface.md`. The next
+cycle remains RFC-first and prioritizes the event-emission/buffering lane before
+parallel dispatch; parallel dispatch stays deferred to v0.1.8.8.
+
 ---
 
 ## LDG-2452: v0.1.8.6 Release Gate And Closeout
@@ -1194,6 +1260,11 @@ updated, and release checks pass.
 - Record performance attribution closeout output or its maintainer
   disposition.
 - Record matched local peer benchmark output or its maintainer disposition.
+- Confirm the v0.1.8.7 Optimization Round 2 handoff is explicit: the three
+  hot-path lanes, fold-core primitive contract, run-artifact materialization
+  policy, ADR 0004 dependency decisions, and LDG-2457 peer-benchmark
+  remeasurement gate are recorded as next-cycle RFC-first work, while parallel
+  dispatch remains deferred to v0.1.8.8.
 - Confirm no auditr-report bugfix intake was required for closeout.
 - Run targeted tests, full tests, and package checks appropriate to shipped
   code changes.
@@ -1208,6 +1279,8 @@ updated, and release checks pass.
   explicitly accepted/deferred by the maintainer.
 - Any peer-comparison claim is backed by `local_matched` same-host rows, while
   scraped vendor numbers remain labeled `orientation_only`.
+- v0.1.8.7 follow-up ownership is recorded without granting v0.1.8.7
+  implementation scope inside the v0.1.8.6 release gate.
 - Release notes make no unshipped storage/schema/helper claims and no LEAN
   parity claim.
 - Release checks pass according to `inst/design/release_ci_playbook.md`.
@@ -1221,6 +1294,8 @@ playbook, benchmark smoke/record review, and manual closeout review.
 
 - `v0_1_8_6_spec.md` Sections 9-12
 - `inst/design/release_ci_playbook.md`
+- `inst/design/ledgr_roadmap.md` v0.1.8.7 Optimization Round section
+- `inst/design/adr/0004-dependency-footprint-and-strategy-interface.md`
 - `NEWS.md`
 - `DESCRIPTION`
 

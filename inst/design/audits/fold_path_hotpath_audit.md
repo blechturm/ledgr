@@ -52,7 +52,7 @@ performance face of the sealed-data trust boundary.
 
 | # | Site | Pattern | collapse rule | Severity | Lane |
 |---|------|---------|---------------|----------|------|
-| 1 | `handler$buffer_event` (`backtest-runner.R:385-409`) | 11x `state$pending_cols$col[[i]] <- v` copies each preallocated column (length `max_events = n_inst*n_pulses`) per event. Analytic cost O(events x n_cols x n_inst x n_pulses); ~2.3e9 element-copies at 200x504, matching the 29% self time. | "Never grow/copy in loops; allocate once, fill by reference" | **HIGH** | B emission |
+| 1 | `handler$buffer_event` (`backtest-runner.R:385-409`) + sweep `append_event_row_list` | **DOMINANT cost, confirmed by the LDG-2457 real-run profile:** durable run `buffer_event` = 137.08s self / **72.43%** of sampled R time; one-candidate sweep `append_event_row_list` = 201.37s self / **81.72%**. Per-event writes into a closure-captured buffer over-allocated to `max_events = n_inst*n_pulses`. (Isolated micro-benchmarks failed to reproduce it; the real-run profile is authoritative -- see reconciliation.) | "Never grow/copy in loops; allocate realistically; fill by reference" | **HIGH (the big rock)** | B emission |
 | 2 | `ledgr_fill_event_payload` (`backtest-runner.R:176-177`) + `ledgr_next_open_fill_proposal` (`fill-model.R:70`) | Per fill: `ledgr_normalize_ts_utc` formats `POSIXct -> ISO` (in fill model), then payload re-validates the string and `as.POSIXct(...)` parses it **back** to `POSIXct` for the DB. A `POSIXct -> string -> POSIXct` round trip per fill. | "Avoid repeated coercion; coerce once" | **HIGH** | B emission |
 | 3 | `ledgr_fill_event_payload` (`backtest-runner.R:188`) | `canonical_json(meta)` per fill. `meta` varies per fill (`cash_delta`/`position_delta`), so the `canonical_json` cache always misses -> full `toJSON` per fill. | "Construct/serialize once, not per row" | **MED-HIGH** | B emission |
 | 4 | `ledgr_fill_event_payload` (`backtest-runner.R:190`) | `paste0(run_id, "_", sprintf("%08d", event_seq))` per fill. | "Avoid repeated allocation in loops" | **MED** | B emission |
@@ -283,9 +283,10 @@ boundary/reconstruction work rather than fold-loop emission.
 Before this audit becomes v0.1.8.7 RFC input, revise the lane wording:
 
 - Lane A cache-key: keep as written.
-- Lane B event emission: keep timestamp, meta-json, event-id, and next-bar
-  primitive work; downgrade the buffer-copy claim to "measured hot function,
-  accessor/payload overhead and sizing pressure, no confirmed quadratic copy."
+- Lane B event emission: **the buffer/append rewrite is the #1 target** (real-run
+  profile: `buffer_event` 72.43% / sweep `append_event_row_list` 81.72% of R
+  time); timestamp, meta-json, event-id, and next-bar primitive work are
+  secondary (an order of magnitude smaller).
 - Lane C read-back: keep as written, with the parity gates above.
 
 ---
@@ -295,22 +296,49 @@ Before this audit becomes v0.1.8.7 RFC input, revise the lane wording:
 After Codex's refutation I re-ran the buffer question with six micro-benchmarks
 on R 4.5 / i9-12900K. Outcome:
 
-- **Finding #1 is downgraded; Codex's refutation is accepted.** Results were
-  inconsistent and non-reproducible: single-numeric, single-POSIXct, and
-  11-numeric-interleaved columns were all flat across capacity; some mixed-type
-  variants scaled, a functionally-equivalent rerun did not; `tracemem` showed no
-  column copy in any case. That pattern is GC/heap-scan pressure proportional to
-  the over-allocated buffer, **not** the claimed
-  `O(events x n_cols x n_inst x n_pulses)` per-write vector copy. `buffer_event`
-  remains a measured hot function, but the confirmed costs are per-event
-  accessor/payload work plus preallocation memory/GC pressure. The actionable,
-  mechanism-independent fix is **realistic buffer sizing** (not
-  `max_events = n_inst * n_pulses`); the copy-elimination story is withdrawn.
-- The genuine, *confirmed* emission costs are findings #2/#4 (per-fill
-  `format.POSIXlt` round trip and per-fill `sprintf`), backed by Rprof
-  self-time. Finding #3 is confirmed by the code path and retained as a
-  parity-sensitive serialization target, but it was not a top self-time entry
-  in this profile. Lane B stands on those.
+> **SUPERSEDED by the LDG-2457 real-run profile below.** The micro-benchmark
+> downgrade did not hold: the profiled fold run shows `buffer_event` is the
+> dominant cost. Finding #1 is re-confirmed and reinstated as the big rock.
+
+- **Finding #1 (buffer/append): provisionally downgraded on micro-benchmarks,
+  then RE-CONFIRMED as the dominant cost by the real-run profile.** I ran six
+  isolated micro-benchmarks; they were inconsistent (single-column and
+  same-frame cases flat; the cross-frame/closure case -- which actually matches
+  the real handler -- *did* scale), and on that basis I provisionally accepted
+  Codex's refutation. That was wrong. The LDG-2457 real-run profile (next
+  section) shows `buffer_event` at 72.43% of R time and the sweep
+  `append_event_row_list` at 81.72%. **Lesson: the isolated micro-benchmarks
+  were unfaithful to the real handler's closure-captured-list refcount
+  conditions; validate against the real-run profile, not isolated
+  reproductions.** Mechanism: per-event writes into a closure-captured buffer
+  over-allocated to `max_events = n_inst * n_pulses`. Fix: realistic sizing + a
+  per-event write that does not copy, validated by **re-profiling the real run**.
+- **Ranking corrected.** The per-fill formatting costs (#2 `format.POSIXlt`
+  7.56s self; #3/#4 inside `ledgr_fill_event_payload`, ~11s total) are real but
+  **an order of magnitude smaller** than the buffer/append cost (~137s). They
+  are secondary Lane B targets; the buffer/append path is the big rock.
+
+### Real-run profile (LDG-2457, authoritative, 2026-05-29)
+
+Durable 500 x 1,260 SMA-crossover run, wall 295.07s: `t_pre` 3.05s, `t_loop`
+257.14s, residual 34.88s. In-run profile attribution:
+
+| cost | profile |
+| --- | ---: |
+| `handler$buffer_event` self | 137.08s (72.43%) |
+| `output_handler$write_fill_events` total | 148.92s (78.68%) |
+| `ledgr_fill_event_payload` total | 11.29s |
+| `format.POSIXlt` self | 7.56s |
+| snapshot/data-subset hash total | ~9.1s |
+
+One-candidate sweep (wall 384.40s, 6,462 trades): `append_event_row_list`
+201.37s self / 81.72% -- the sweep's event-collection analogue of
+`buffer_event`. Same category, same big rock; the rewrite must fix both.
+
+Conclusions: the SMA feature path is not the problem (`t_pre` ~3s); persistence
+asymmetry is real but not the explanation (sweep is slower); the peer gap is
+overwhelmingly the **event-emission/buffering** lane. Lane B's #1 target is the
+buffer/append rewrite; everything else is secondary.
 - **Finding #9 (Codex addition):** `fold-core.R` builds `next_bar <-
   b[i + 1L, , drop = FALSE]` per fill and `ledgr_next_open_fill_proposal`
   (`fill-model.R:44-52`) coerces it via `as.list`. Per-fill data.frame

@@ -397,6 +397,10 @@ Review focus:
   gaps, or records a maintainer disposition for any unresolved attribution gap.
 - The matched local peer benchmark is recorded with comparability statuses, or
   any missing local peer run has a maintainer disposition.
+- The v0.1.8.7 handoff is explicit: Optimization Round 2 is RFC-first, Lane B
+  event emission/buffering is priority one, ADR 0004 dependency decisions are
+  referenced, LDG-2457 remeasurement is the validation gate, and parallel
+  dispatch remains deferred to v0.1.8.8.
 - The storage/schema decision is recorded.
 - Snapshot/provenance/helper work is either backed by accepted implementation
   tickets or explicitly deferred.

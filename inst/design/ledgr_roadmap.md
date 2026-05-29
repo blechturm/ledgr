@@ -102,7 +102,7 @@ versioned packet.
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
 | v0.1.8.6 | Active | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, snapshot administration and ETL provenance planning, and research-loop ergonomics helpers. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
-| v0.1.8.7 | Planned | Fold-core primitive contract redesign plus run-artifact materialization policy: primitives/functions in the fold core, durable heavy views only on explicit slow paths. | Future packet; RFC first |
+| v0.1.8.7 | Planned | Optimization round 2: fold-core primitive contract + hot-path lanes (buffer/emission via collapse, cache-key, reconstruction) + run-artifact materialization policy; drop cli/R6, add collapse, keep tibble (ADR 0004). | Future packet; RFC first |
 | v0.1.8.8 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
@@ -838,7 +838,7 @@ Non-scope:
 - no walk-forward or out-of-sample evaluation helper;
 - no benchmark-relative or attribution helper.
 
-### v0.1.8.7 Fold-Core Primitive Contract And Artifact Materialization Policy
+### v0.1.8.7 Optimization Round: Fold-Core Primitive Contract And Artifact Materialization Policy
 
 v0.1.8.7 is an RFC-first implementation cycle for the fold core. The contract
 to settle and then implement is: fold-core internals pass primitive R objects
@@ -853,6 +853,30 @@ that path. v0.1.8.7 should formalize the intended fast/slow split: evaluation
 paths keep heavy feature artifacts ephemeral and save compact results, while
 promotion/inspection paths explicitly materialize durable views and pay that
 tax.
+
+This is the project's second optimization round (after the v0.1.8.6 measurement
+round) and pulls the ADR 0004 dependency/hot-path decisions into scope: drop
+`cli` (unused) and `R6` (legacy strategy interface), add `collapse` (pure C,
+zero transitive deps), keep `tibble` (tidyverse signal). The optimization
+content is the three lanes from
+`inst/design/audits/fold_path_hotpath_audit.md`, prioritized by the LDG-2457
+real-run profile (the per-event buffer/append path is ~72-82% of loop R time):
+
+- **Lane B - event emission/buffering (the big rock):** make the per-event
+  buffer write in-place (base-R env-bound columns + realistic sizing, or
+  `collapse::setv`); carry whole-second `POSIXct` end to end (no per-fill
+  format/parse round trip); batch `meta_json` per row at flush; cheap event ids.
+  Fixes both `handler$buffer_event` (durable) and `append_event_row_list` (sweep).
+- **Lane A - cache-key/setup:** hoist run-level timestamp normalization out of
+  the per-key loop; replace JSON+SHA session keys with a length-prefixed
+  composite key.
+- **Lane C - read-back reconstruction:** preallocated-column rewrite of
+  `ledgr_fills_from_events`; `.subset2`/`get_vars` reads.
+
+`collapse` adoption is gated on the `ledgr_with_collapse_deterministic()` wrapper
+(scoped `set_collapse()`, hostile-settings-safe; see ADR 0004). Every win is
+validated by **re-profiling the real run** and re-running the LDG-2457 peer
+benchmark, not isolated micro-benchmarks.
 
 Authoritative input (planned):
 
@@ -932,7 +956,9 @@ Non-scope:
 
 - no parallel sweep dispatch;
 - no target-risk implementation;
-- no broad `collapse` dependency adoption;
+- `collapse` is adopted for the hot-path lanes per ADR 0004 (gated on the
+  `ledgr_with_collapse_deterministic()` wrapper); broad/idiomatic `collapse` use
+  beyond those lanes stays out of scope;
 - no DuckDB projection/storage rewrite;
 - no active-binding or function-valued data-field mechanism unless the RFC
   explicitly accepts it.
@@ -1098,6 +1124,18 @@ Implementation gates:
 - hostile caller-side `collapse` settings must not change ledgr outputs;
 - Phase B and Phase C.1 implementation work belongs in v0.1.9.x after the
   planning gates, not in the active v0.1.8.3 packet.
+
+**Amended by ADR 0004 (2026-05-29):** the LDG-2457 real-run profile satisfies the
+"clear measured value on a production surface" gate above — the per-event
+buffer/append path is ~72-82% of loop R time
+(`inst/design/audits/fold_path_hotpath_audit.md`). `collapse` adoption for the
+buffer/emission lane is therefore pulled forward into the v0.1.8.7 fold-core
+work; the deterministic-wrapper precondition (`ledgr_with_collapse_deterministic()`,
+scoped `set_collapse()`, hostile-settings-safe) still applies. Alongside it,
+`cli` (verified unused) and `R6` (legacy strategy interface) are dropped and
+`collapse` added — a net 9 -> 8 Imports move. `tibble` is retained deliberately
+as a tidyverse-compatibility signal. See
+`inst/design/adr/0004-dependency-footprint-and-strategy-interface.md`.
 
 ### v0.1.9.x Crypto-Readiness Spike And Doc Disposition
 

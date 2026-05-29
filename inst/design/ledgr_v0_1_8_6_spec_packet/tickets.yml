@@ -188,7 +188,7 @@ tickets:
 
   - id: "LDG-2457"
     title: "Matched Local Peer Benchmark"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
