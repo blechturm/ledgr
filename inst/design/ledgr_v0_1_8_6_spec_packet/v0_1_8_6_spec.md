@@ -89,7 +89,7 @@ they are plausible. They enter only through the gates below.
 
 ## 2. Release Goals
 
-v0.1.8.6 has ten release goals:
+v0.1.8.6 has twelve release goals:
 
 1. Deduplicate feature cache-key construction by hoisting repeated
    feature-definition fingerprints and engine-version values out of the
@@ -105,21 +105,27 @@ v0.1.8.6 has ten release goals:
 5. Profile the remaining cold `t_pre` and broad residual costs after the
    materialization fixes so follow-up optimization starts from attributed code
    paths rather than an unexplained timing remainder.
-6. Reproduce the current-source performance baseline after each materialization
+6. Drop the intermediate wide-view matrix allocation after profiling as a
+   narrow cleanup if the direct-slice implementation remains cheap and
+   contract-preserving.
+7. Close the performance investigation with a measurement/docs-only attribution
+   table that names and owns every remaining large wall-clock bucket before
+   v0.1.8.7 design work starts.
+8. Reproduce the current-source performance baseline after each materialization
    change and add a two-mode instrument x feature width sweep before making
    throughput invariance or storage-need claims.
-7. Create a structured benchmark suite with stable named scenarios,
+9. Create a structured benchmark suite with stable named scenarios,
    current-source guards, warmup/repeat behavior, machine-readable outputs, and
    a small QuantConnect-comparable subset so future performance work is
    comparable across commits, versions, and at least a few external benchmark
    shapes.
-8. Decide the DuckDB feature-storage path only after the setup fixes are
+10. Decide the DuckDB feature-storage path only after the setup fixes are
    measured, so the spike evaluates the remaining bottleneck rather than stale
    materialization costs.
-9. Carry forward the v0.1.8.5 research-loop helper gaps and snapshot
+11. Carry forward the v0.1.8.5 research-loop helper gaps and snapshot
    administration / ETL provenance planning if their RFC/spec inputs land in
    time for ticket cut.
-10. Accept typed persistent event columns only if storage/schema work is
+12. Accept typed persistent event columns only if storage/schema work is
    explicitly accepted for this packet; otherwise keep Direction 5.6 deferred.
 
 The release succeeds when setup work is cheaper, memory pressure from unused
@@ -500,9 +506,15 @@ into review batches for execution and review.
 8. **Cold setup/residual profiling diagnostic.** Attribute the remaining
    `t_pre` and residual costs after the manifestation work without optimizing
    them in the same ticket.
-9. **Snapshot/provenance and helper tickets.** Cut only after the relevant RFC
+9. **Drop intermediate wide-matrix allocation.** Remove the all-pulse wide
+   matrix allocation from default pulse-view construction as a narrow cleanup
+   while preserving `ctx$features_wide`.
+10. **Performance attribution closeout.** Use differential toggles and Rprof
+   attribution to name and own every remaining large wall-clock bucket without
+   adding phase hooks or optimizing in the closeout gate.
+11. **Snapshot/provenance and helper tickets.** Cut only after the relevant RFC
    or spec input is accepted.
-10. **Release gates.** Update NEWS, docs, tests, package checks, and
+12. **Release gates.** Update NEWS, docs, tests, package checks, and
    retrospective records.
 
 ---
@@ -524,6 +536,12 @@ The v0.1.8.6 release may close only when:
 - cold setup/residual profiling is recorded after the accepted materialization
   work, or explicitly deferred with maintainer rationale, and does not ship
   optimization or public-surface changes under the profiling ticket;
+- the intermediate wide-matrix allocation follow-up is accepted with parity
+  evidence or explicitly deferred with maintainer rationale;
+- the performance attribution closeout names and owns every remaining bucket
+  above `10%` wall time or `1s`, separates expected interpreter/GC/DBI overhead
+  from genuinely unexplained-and-nameable time, and records a maintainer
+  disposition for any unresolved attribution gap;
 - current-source remeasurement is recorded after 5.0 and after 5.1;
 - the structured benchmark suite runs from current source, writes
   machine-readable results, records environment metadata, and reports phase
@@ -580,6 +598,8 @@ Deferred unless a later accepted packet scopes them:
   schema-only pulse-context field and explicit internal opt-in for long rows.
 - Build existing `features_wide` data.frames more cheaply from primitive
   projection columns while preserving the current strategy-facing contract.
+- Remove the intermediate wide-view matrix allocation as a narrow cleanup if
+  the direct-slice implementation remains cheap and contract-preserving.
 - Record post-fix performance measurements and a width sweep to guide the
   storage/projection decision.
 
@@ -592,6 +612,8 @@ Deferred unless a later accepted packet scopes them:
   caveats. This is an honest comparison, not a parity claim.
 - Record a diagnostic attribution of the remaining cold setup and residual
   runtime costs to guide the next optimization decision.
+- Close with a measurement/docs-only attribution table that names and owns the
+  remaining large wall-clock gaps before v0.1.8.7 design work starts.
 
 ## Storage and provenance
 

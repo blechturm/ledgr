@@ -102,9 +102,10 @@ versioned packet.
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
 | v0.1.8.6 | Active | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, snapshot administration and ETL provenance planning, and research-loop ergonomics helpers. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
-| v0.1.8.7 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
-| v0.1.8.8 | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
+| v0.1.8.7 | Planned | Fold-core primitive contract redesign plus run-artifact materialization policy: primitives/functions in the fold core, durable heavy views only on explicit slow paths. | Future packet; RFC first |
+| v0.1.8.8 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
+| v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
 | v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
@@ -727,7 +728,7 @@ Intent:
 - compare the current R-memory projection path against a prototype
   DuckDB-backed, block-hydrated projection path on representative workloads;
 - decide whether to implement, defer, or reject a durable feature-library
-  storage surface before v0.1.8.7 parallel dispatch;
+  storage surface before v0.1.8.8 parallel dispatch;
 - preserve the R `series_fn()` / TTR / custom-indicator extension surface in
   every prototype;
 - keep DBI access at block boundaries, never per pulse.
@@ -748,7 +749,7 @@ Required spike comparisons:
 - larger-universe or intraday-like synthetic stress cases to expose memory,
   hydration, and file-size ceilings without claiming intraday support;
 - optional worker-read or worker-transport probes if they directly inform the
-  v0.1.8.7 parallel-dispatch decision.
+  v0.1.8.8 parallel-dispatch decision.
 
 Measurement outputs:
 
@@ -837,7 +838,106 @@ Non-scope:
 - no walk-forward or out-of-sample evaluation helper;
 - no benchmark-relative or attribution helper.
 
-### v0.1.8.7 Parallel Sweep Dispatch
+### v0.1.8.7 Fold-Core Primitive Contract And Artifact Materialization Policy
+
+v0.1.8.7 is an RFC-first implementation cycle for the fold core. The contract
+to settle and then implement is: fold-core internals pass primitive R objects
+and functions only (atomic vectors, matrices, lists, index maps, closures),
+while data.frames are manifested only at public or strategy-facing boundaries
+when explicitly needed.
+
+The same cycle should also settle run-artifact materialization policy. The
+v0.1.8.6 profiling showed that persistent feature-panel writes can dominate
+wall time when `persist_features = TRUE`, while sweep candidates already avoid
+that path. v0.1.8.7 should formalize the intended fast/slow split: evaluation
+paths keep heavy feature artifacts ephemeral and save compact results, while
+promotion/inspection paths explicitly materialize durable views and pay that
+tax.
+
+Authoritative input (planned):
+
+- Architecture note:
+  `inst/design/architecture/fold_core_trust_boundary.md`. It records the
+  sealed-data trust boundary, the current committed-run versus sweep guard
+  asymmetry, and the session-cache-key stance that durable provenance formats
+  must not leak into hot lookup paths.
+- RFC cycle on primitive fold-core contract redesign, using the v0.1.8.6
+  benchmark suite, width sweep, LDG-2453 wide-view manifestation work, and
+  LDG-2454 cold setup/residual profiling as empirical input. Implementation
+  tickets are cut in the same packet after the RFC is accepted.
+- RFC cycle on **Run Artifact Materialization Policy**. Seed question:
+  `persist_features` and other heavy derived views should not be default fast
+  path side effects; they should be explicit slow-path materializations backed
+  by enough stored reproducibility identity to regenerate them.
+
+Intent:
+
+- map every data.frame currently crossing the fold-core boundary, including
+  bars, `features_wide`, `feature_table`, event buffers, and inspection/export
+  surfaces;
+- decide which strategy-facing surfaces should become primitive-native
+  surfaces, which should remain data.frame conveniences, and which should be
+  explicit helper manifestations;
+- define the cheapest allowed data.frame boundary manifestation pattern,
+  including compact-row-name list stamping where it preserves behavior;
+- preserve one execution semantics for `ledgr_run()` and `ledgr_sweep()` before
+  parallel worker boundaries multiply the cost of carrying heavy objects;
+- define fast/evaluation and slow/committed artifact policies:
+  sweeps and exploratory evaluation persist compact summaries and reproduction
+  keys, while promoted/committed runs can materialize feature panels, pulse
+  inspection views, and other heavy derived artifacts explicitly;
+- specify the minimal durable reproduction key needed for later
+  materialization: snapshot hash, strategy identity, strategy params, feature
+  definitions/fingerprints, feature params, feature-engine version, seed, config
+  identity, metric context, and later risk-chain identity;
+- implement the accepted contract in the same version, after the RFC binds the
+  strategy-context contract and parity gates.
+
+Readiness gates:
+
+- v0.1.8.6 closes with post-materialization benchmark outputs and the cold
+  setup/residual profiling note recorded;
+- the RFC distinguishes narrow parity-preserving manifestation optimizations
+  from public strategy-context contract changes;
+- strategy UX explicitly chooses between primitive helpers, data.frame helper
+  functions, and any retained compatibility fields;
+- artifact policy explicitly chooses default `persist_features` semantics and
+  any materialize-on-demand helper surface;
+- fold-entry guard policy explicitly chooses whether sweep continues to trust a
+  sealed snapshot handle or converges with committed-run hash recomputation;
+- event-stream parity, snapshot identity, no-lookahead, and mutation-leak tests
+  are named as gates for any implementation ticket.
+
+Implementation constraints:
+
+- implementation follows the accepted RFC; no ad hoc contract change lands
+  before the RFC synthesis is accepted;
+- the sequential fold remains the reference execution path and must retain
+  event-stream parity against the pre-redesign behavior on reference workloads;
+- data.frame helper manifestations are explicit boundary utilities or retained
+  compatibility surfaces named by the RFC, not implicit fold-core payloads;
+- sealed snapshot validation and timestamp normalization are run/setup-boundary
+  duties, not repeated per-cell or per-pulse fold-core work;
+- ephemeral/evaluation results and promoted/materialized committed results must
+  have a parity gate: the regenerated committed result must match the original
+  candidate/run result byte-for-byte or within existing accounting tolerances
+  where those tolerances already apply;
+- the `t_pre` cache-key construction cost remains a separate performance lane;
+  artifact materialization policy removes default persistence tax but does not
+  claim to solve feature cache-key/setup costs;
+- benchmark/profiling deltas are recorded after implementation so the
+  parallel-dispatch decision starts from the redesigned fold-core cost model.
+
+Non-scope:
+
+- no parallel sweep dispatch;
+- no target-risk implementation;
+- no broad `collapse` dependency adoption;
+- no DuckDB projection/storage rewrite;
+- no active-binding or function-valued data-field mechanism unless the RFC
+  explicitly accepts it.
+
+### v0.1.8.8 Parallel Sweep Dispatch
 
 Intent:
 
@@ -858,6 +958,9 @@ Readiness gates:
   CPU-bound enough to justify parallel overhead;
 - v0.1.8.3 R-level optimization and any v0.1.8.6 storage/projection decision
   are resolved;
+- v0.1.8.7 primitive fold-core contract redesign is accepted and any
+  contract-preserving implementation work needed before worker serialization
+  is complete or explicitly deferred;
 - grid UX has stabilized enough that larger sweeps are an intentional public
   workflow rather than accidental friction;
 - the v0.1.8.5 canonical workflow constraints are reflected in the write
@@ -882,108 +985,6 @@ Related determinism gap (from the 2026-05-28 fold-core review):
   checkpoint `.Random.seed`, replay-from-start, or document a
   deterministic-only resume guarantee. See `inst/design/horizon.md` (RNG resume
   entry).
-
-### v0.1.8.8 Crypto-Readiness Spike And Doc Disposition
-
-v0.1.8.8 is a focused measurement spike on whether spot crypto is already
-supported by ledgr's existing equity-shaped surfaces, with explicit
-disposition for documentation and any specific follow-up work. It is not
-a derivatives release; perpetuals, dated futures, funding rates, and
-margin accounting all remain part of the deferred derivatives arc that
-lands after the v0.1.x product arc completes.
-
-Intent:
-
-- verify spot-crypto support as a focused measurement spike before users
-  discover edge cases in production research;
-- confirm fractional-position correctness end-to-end (target -> fill ->
-  lot -> trade -> equity -> metrics) at sub-integer quantities;
-- confirm sub-second / sub-minute timestamp preservation through
-  snapshot, fold core, and output handlers;
-- confirm the v0.1.8.2 crypto metric-context template produces correct
-  24/7 annualization in practice;
-- probe the v0.1.9.x cost API for "% of notional" maker/taker cost
-  expressibility;
-- document the spot-crypto support level with explicit caveats, or route
-  specific gaps to follow-up cycles.
-
-This workstream is a measurement and decision packet. Implementation is
-out of scope; any code change needed to make spot crypto work cleanly is
-scoped into its own follow-up ticket or release after the spike
-concludes.
-
-Required spike axes:
-
-- **Fractional position correctness.** End-to-end test: declare a
-  strategy that targets `0.0123 BTC`, run through the fold core, inspect
-  lots, trades, equity. Verify accounting precision is not silently
-  coerced to integer at any layer.
-- **Timestamp resolution.** Seal a synthetic snapshot with sub-second
-  `ts_utc`, run a small strategy, confirm timestamps survive snapshot
-  -> fold -> output handlers without truncation.
-- **24/7 metric context.** Use the crypto metric-context template against
-  a synthetic 7-day crypto-style snapshot, confirm annualization factor
-  and Sharpe / drawdown calculations are correct for 24/7 cadence.
-- **Maker/taker cost shape.** Probe whether "% of notional" commission
-  is expressible through the existing `spread_bps` + `commission_fixed`
-  surface (with workarounds documented) or through the function-valued
-  cost-model API. Identify the API extension needed if neither path is
-  clean.
-- **Demo data.** Decide whether to ship a small synthetic crypto demo
-  dataset alongside `ledgr_demo_bars`, or leave users to bring their
-  own. Influences vignette teachability.
-
-Measurement outputs:
-
-- pass/fail evidence per axis;
-- a footgun list (similar to the intraday audit pattern) naming any code
-  path that silently constrains crypto support;
-- a support-level recommendation: **supported** (works as-is, document
-  and add small vignette section), **supported with caveats** (works
-  with named workarounds, ship a doc note), or **blocked** (specific
-  v0.1.x work required, scope into follow-up ticket).
-
-Readiness gates:
-
-- v0.1.8.5 closes (teachability documentation discipline established);
-- v0.1.8.2 metric-context crypto template is in place (already true);
-- intraday-readiness audit findings inform which footguns to probe
-  specifically; crypto and intraday share the cadence-neutrality and
-  timestamp-resolution concerns.
-
-Constraints:
-
-- spot crypto only; no perpetuals, no dated futures, no funding rates,
-  no margin model;
-- no derivatives architecture work; that arc is deferred until after
-  the v0.1.x product arc completes;
-- no new instrument-class architecture; the spike inherits ledgr's
-  existing instrument-as-string-ID model;
-- no exchange-specific adapter (Binance / Coinbase / Kraken integration
-  is out of scope);
-- the spike output is a doc disposition and a footgun list, not an
-  implementation release.
-
-Non-scope:
-
-- crypto data adapter (separate future work);
-- exchange-specific cost-model factories;
-- perpetuals or dated-futures contract specs;
-- margin or funding-rate accounting;
-- crypto demo strategy beyond what is needed to drive the spike's
-  tests.
-
-Exit decisions:
-
-- **Pass:** ship a vignette section or short doc note explaining spot
-  crypto support; close the spike with the footgun list pinned as
-  contract tests.
-- **Supported with caveats:** ship a doc note naming the workarounds,
-  route specific gaps (e.g., maker/taker cost shape) to a v0.1.9.x
-  follow-up.
-- **Blocked:** identify the minimum v0.1.x work required, scope it into
-  v0.1.9 or a v0.1.8.x patch, defer the user-facing crypto support
-  claim until the work lands.
 
 ### Later v0.1.8.x Sweep Stabilization
 
@@ -1097,6 +1098,96 @@ Implementation gates:
 - hostile caller-side `collapse` settings must not change ledgr outputs;
 - Phase B and Phase C.1 implementation work belongs in v0.1.9.x after the
   planning gates, not in the active v0.1.8.3 packet.
+
+### v0.1.9.x Crypto-Readiness Spike And Doc Disposition
+
+The crypto-readiness spike is deferred to v0.1.9.x. It remains a focused
+measurement spike on whether spot crypto is already supported by ledgr's
+existing equity-shaped surfaces, with explicit disposition for documentation
+and any specific follow-up work. It is not a derivatives release; perpetuals,
+dated futures, funding rates, and margin accounting all remain part of the
+deferred derivatives arc that lands after the v0.1.x product arc completes.
+
+Intent:
+
+- verify spot-crypto support as a focused measurement spike before users
+  discover edge cases in production research;
+- confirm fractional-position correctness end-to-end (target -> fill ->
+  lot -> trade -> equity -> metrics) at sub-integer quantities;
+- confirm sub-second / sub-minute timestamp preservation through
+  snapshot, fold core, and output handlers;
+- confirm the v0.1.8.2 crypto metric-context template produces correct
+  24/7 annualization in practice;
+- probe the v0.1.9.x cost API for "% of notional" maker/taker cost
+  expressibility;
+- document the spot-crypto support level with explicit caveats, or route
+  specific gaps to follow-up cycles.
+
+This workstream is a measurement and decision packet. Implementation is
+out of scope; any code change needed to make spot crypto work cleanly is
+scoped into its own follow-up ticket or release after the spike concludes.
+
+Required spike axes:
+
+- **Fractional position correctness.** End-to-end test: declare a strategy that
+  targets `0.0123 BTC`, run through the fold core, inspect lots, trades, and
+  equity. Verify accounting precision is not silently coerced to integer at any
+  layer.
+- **Timestamp resolution.** Seal a synthetic snapshot with sub-second
+  `ts_utc`, run a small strategy, confirm timestamps survive snapshot -> fold
+  -> output handlers without truncation.
+- **24/7 metric context.** Use the crypto metric-context template against a
+  synthetic 7-day crypto-style snapshot, confirm annualization factor and
+  Sharpe / drawdown calculations are correct for 24/7 cadence.
+- **Maker/taker cost shape.** Probe whether "% of notional" commission is
+  expressible through the existing `spread_bps` + `commission_fixed` surface
+  or through the function-valued cost-model API. Identify the API extension
+  needed if neither path is clean.
+- **Demo data.** Decide whether to ship a small synthetic crypto demo dataset
+  alongside `ledgr_demo_bars`, or leave users to bring their own.
+
+Measurement outputs:
+
+- pass/fail evidence per axis;
+- a footgun list naming any code path that silently constrains crypto support;
+- a support-level recommendation: **supported**, **supported with caveats**, or
+  **blocked**.
+
+Readiness gates:
+
+- v0.1.8.x fold-core and benchmark work has stabilized enough that crypto
+  findings are about crypto support rather than known execution scaffolding;
+- v0.1.8.2 metric-context crypto template is in place;
+- intraday-readiness audit findings inform which cadence and timestamp footguns
+  to probe specifically.
+
+Constraints:
+
+- spot crypto only; no perpetuals, no dated futures, no funding rates, no
+  margin model;
+- no derivatives architecture work;
+- no new instrument-class architecture;
+- no exchange-specific adapter;
+- the spike output is a doc disposition and a footgun list, not an
+  implementation release.
+
+Non-scope:
+
+- crypto data adapter;
+- exchange-specific cost-model factories;
+- perpetuals or dated-futures contract specs;
+- margin or funding-rate accounting;
+- crypto demo strategy beyond what is needed to drive the spike's tests.
+
+Exit decisions:
+
+- **Pass:** ship a vignette section or short doc note explaining spot crypto
+  support; close the spike with the footgun list pinned as contract tests.
+- **Supported with caveats:** ship a doc note naming the workarounds, route
+  specific gaps to a v0.1.9.x follow-up.
+- **Blocked:** identify the minimum work required, scope it into a v0.1.9.x
+  follow-up or later packet, and defer the user-facing crypto support claim
+  until the work lands.
 
 ### v0.1.9.x Walk-Forward Evaluation
 
@@ -1289,6 +1380,47 @@ Constraints:
   semantics, so they come after the external-benchmark substrate;
 - diagnostic beta should not be gated on the target-risk chain, but feature beta
   and beta constraints require additional alignment/risk designs.
+
+### v0.2.x External Package Adapters (PerformanceAnalytics first)
+
+Intent:
+
+- expose ledgr's stable public result tables (equity, fills, trades, ledger) to
+  the established R quant ecosystem through thin, optional, output-only adapters;
+- ship a PerformanceAnalytics adapter first for its real strength — the
+  drawdown/return tables and long-tail risk/return stats — as the public proof
+  of the hexagonal pattern: ledgr owns the canonical evidence, adapters enrich
+  the analysis;
+- treat charting as a separate, swappable renderer over the same return stream,
+  not a PA lock-in: PA's base-graphics charts are a familiar/legacy option, but
+  tidyquant (ggplot2 over the same PA metrics) or a native ledgr ggplot
+  tear-sheet are the modern faces; the reusable port is the equity -> return
+  conversion, which many renderers can consume;
+- rank later adapters by readiness: PerformanceAnalytics (reporting) ->
+  PortfolioAnalytics (portfolio construction, after the target-risk chain) ->
+  tidyfinance (factor/data research, with PIT semantics) -> quantmod (data
+  ingestion); PMwR / quantstrat / blotter / fPortfolio are low priority or
+  skipped due to accounting/engine overlap;
+- treat this as a large capability multiplier: one stable result-table contract
+  unlocks the whole reporting/research surface without ledgr reimplementing it.
+
+Constraints:
+
+- output projection only — no causality, no strategy-contract, no engine
+  mutation, no second canonical metrics path;
+- consume ledgr's own canonical return series (whatever `ledgr_compute_metrics`
+  derives); never reinvent the return formula inside an adapter;
+- PerformanceAnalytics metrics use PA conventions and may differ from ledgr's;
+  scope PA to what ledgr does not already compute and label any overlap rather
+  than presenting two conflicting headline numbers as both authoritative;
+- optional dependency (`Suggests` + `check_installed`), never `Imports`;
+- adapters inspect, they do not select winners (no sweep ranking / promotion
+  automation);
+- PerformanceAnalytics benchmark-relative metrics (active return, tracking
+  error, information ratio) coordinate with the v0.2.x Benchmark Context layer so
+  PA does not pre-empt ledgr's own benchmark contract;
+- gated by a full RFC cycle before any public adapter API or new `Suggests`
+  dependency ships.
 
 ### v0.2.x OMS Semantics And Snapshot Lineage
 

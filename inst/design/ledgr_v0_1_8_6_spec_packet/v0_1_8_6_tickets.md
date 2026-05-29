@@ -2,7 +2,7 @@
 
 Version: v0.1.8.6
 Date: 2026-05-28
-Total Tickets: 10
+Total Tickets: 12
 
 ## Ticket Organization
 
@@ -22,6 +22,8 @@ packet alignment
   -> conditional storage/schema gate
   -> fast wide-view data.frame manifestation
   -> cold setup/residual profiling diagnostic
+  -> drop intermediate wide-matrix allocation if profiling confirms value
+  -> performance attribution closeout
   -> snapshot/provenance and helper RFC gate
   -> release gate
 ```
@@ -43,13 +45,19 @@ LDG-2445 Packet Alignment And v0.1.8.6 Planning State
               `-- LDG-2451 Snapshot Administration And Research-Loop Helper RFC Gate
 
 LDG-2452 v0.1.8.6 Release Gate And Closeout
-  depends on LDG-2446 through LDG-2451 and LDG-2453 through LDG-2454.
+  depends on LDG-2446 through LDG-2451 and LDG-2453 through LDG-2456.
 
 LDG-2453 Fast Wide-View DataFrame Manifestation
   depends on LDG-2449 and is a late materialization follow-up before closeout.
 
 LDG-2454 Cold Setup And Residual Phase Profiling
   depends on LDG-2453 and is a diagnostic-only ticket before closeout.
+
+LDG-2455 Drop Intermediate Wide-Matrix Allocation
+  depends on LDG-2454 and runs immediately after the profiling diagnostic.
+
+LDG-2456 Performance Attribution Closeout
+  depends on LDG-2455 and is a measurement/docs-only closeout gate.
 
 LDG-2450 is a decision gate: typed persistent event columns are implemented
 only if storage/schema work is explicitly accepted after LDG-2449. LDG-2451 is
@@ -698,7 +706,7 @@ scope: wide_view_manifestation
 Priority: P1
 Effort: S
 Dependencies: LDG-2453
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -741,6 +749,51 @@ or new optimization.
 Current-source profiler or read-only phase-timer run, targeted tests if code
 hooks are added, and manual review of the recorded attribution.
 
+Completion note:
+
+- Ran current-source profiling via `pkgload::load_all()` guard from
+  `dev/bench/run_width_sweep.R` / `dev/bench/run_benchmarks.R`.
+- Representative shape: 100 instruments x 252 pulses x 50 features
+  (`1,260,000` feature cells), read/score strategy, synthetic package-owned
+  bars, same sealed snapshot for cold/warm comparisons.
+- No code hook was added; no behavior, API, snapshot, ledger, or schema change
+  shipped under this ticket.
+- Cold profiled run with `persist_features = TRUE`: wall `20.80s` under
+  `Rprof`, `t_pre = 5.83s`, broad residual `14.17s`, `t_loop = 0.80s`,
+  feature cache `0` hits / `5,000` misses.
+- Unprofiled timing matrix:
+
+  ```text
+  mode                   wall    t_pre  residual  t_loop  hits  misses
+  persist_features cold  15.47s  5.55s     9.14s   0.78s     0    5000
+  persist_features warm  14.21s  4.62s     9.15s   0.44s  5000       0
+  no-persist cold         8.32s  5.50s     2.36s   0.46s     0    5000
+  no-persist warm         7.53s  4.62s     2.41s   0.50s  5000       0
+  ```
+
+- Cold-to-warm cache reuse removes only about `0.9s` of `t_pre` at this shape.
+  The feature cache avoids feature computation, but the remaining `t_pre`
+  is dominated by cache-key construction/lookup and projection setup rather
+  than feature series computation.
+- The broad residual is dominated by work outside the fold loop:
+  `persist_features = TRUE` adds about `6.8s` residual at this shape, primarily
+  the post-fold `features` table write path in `R/backtest-runner.R`
+  (`DBI::dbWithTransaction()` / `dbAppendTable()` around the per-instrument
+  feature persistence loop). Pre-run config/provenance/strategy-preflight work
+  is also visible in the profile, especially priority-package and symbol-tier
+  checks in `R/strategy-preflight.R`.
+- Isolated feature-view construction is no longer the dominant residual after
+  LDG-2453: at this shape, schema-only `ledgr_projection_pulse_views()` median
+  was `0.12s` and full-long opt-in was `0.36s`. The LDG-2453 largest-grid
+  measurement remains `0.19s` schema-only and `1.15s` full-long at
+  500 instruments x 252 pulses x 50 features.
+- Attribution conclusion: after LDG-2453, the next large measured overheads are
+  persistent feature writes and pre-run strategy/config preflight, not the
+  fold loop and not default feature-view construction. LDG-2455 remains
+  scheduled as the immediate narrow matrix-allocation follow-up, but this
+  diagnostic shows it is an incremental materialization cleanup rather than the
+  dominant remaining bottleneck.
+
 ### Source Reference
 
 - `v0_1_8_6_spec.md` Sections 6 and 10
@@ -761,6 +814,159 @@ scope: cold_setup_residual_profile
 
 ---
 
+## LDG-2455: Drop Intermediate Wide-Matrix Allocation
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2454
+Status: Planned
+
+### Description
+
+LDG-2454 showed that feature-view construction is no longer the dominant
+remaining residual, but the remaining all-pulse `feature_wide_values` matrix is
+still an avoidable allocation in the default pulse-view path. Remove it if the
+direct-slice implementation stays cheap and parity-preserving. The optimized
+path should slice the canonical projection matrices directly per pulse and
+stamp the same `ctx$features_wide` data.frames as today.
+
+This is still the narrow, contract-preserving materialization lane. It is not
+the v0.1.8.7 primitive-only fold-core contract redesign.
+
+### Tasks
+
+- Use the LDG-2454 profiling output to keep this as a narrow cleanup rather
+  than a claimed dominant-bottleneck fix.
+- Replace the all-pulse wide matrix allocation in default pulse-view
+  construction with direct per-pulse slices from `projection$feature_values`.
+- Preserve `ctx$features_wide` as a plain data.frame with identical columns,
+  values, row order, and row names.
+- Keep the full-long `feature_table = "full"` opt-in behavior intact.
+- Do not introduce matrix-canonical strategy surfaces, active bindings, or a
+  primitive-only fold-core redesign in this ticket.
+- Remeasure isolated schema/full-long view construction at the largest
+  LDG-2449 grid.
+
+### Acceptance Criteria
+
+- Existing `ctx$features_wide` fixtures remain value-identical.
+- Schema-only/full-long event streams remain identical.
+- Feature inspection, sweep, and pulse-context tests remain green.
+- The optimization reduces or does not worsen isolated default pulse-view
+  construction at the largest LDG-2449 grid.
+- No public API, snapshot, ledger, storage schema, or collapse dependency
+  change ships under this ticket.
+
+### Verification
+
+Targeted pulse-context, feature-inspection, sweep, sweep-parity, and
+backtest-wrapper tests plus isolated view-build remeasurement.
+
+### Source Reference
+
+- `v0_1_8_6_spec.md` Sections 4-6
+- `R/runtime-projection.R`
+- `dev/bench/run_width_sweep.R`
+
+### Classification
+
+```yaml
+type: optimization
+surface: runtime_projection
+scope: wide_view_matrix_allocation
+```
+
+---
+
+## LDG-2456: Performance Attribution Closeout
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2455
+Status: Planned
+
+### Description
+
+Produce the final v0.1.8.6 diagnostic attribution of remaining wall-clock
+runtime gaps after the accepted materialization fixes. This ticket names and
+owns the remaining large buckets; it does not optimize them and does not add
+new phase hooks to the run path.
+
+The method is differential measurement plus profiling:
+
+- use clean toggles where they exist, especially `persist_features = TRUE/FALSE`
+  and cold versus warm feature-cache state;
+- use with-features versus no-features shapes where useful to separate feature
+  setup/projection pressure from bare fold scaffolding;
+- use the existing isolated schema/full-long view timing for view-build cost;
+- use `Rprof` function attribution for `t_pre` internals that do not have a
+  clean toggle, reporting percentages against the profiled run and
+  cross-checking against unprofiled toggle walls.
+
+`Rprof` may inflate absolute runtime, so this ticket must not present Rprof
+self-times as direct wall-clock seconds unless they are separately calibrated.
+It may use Rprof to name the large functions responsible for a bucket.
+
+### Tasks
+
+- Run the full attribution matrix at `100 instruments x 252 pulses x 50
+  features`, including cold/warm and `persist_features = TRUE/FALSE`.
+- Run a reduced scale confirmation at the largest representative grid, at
+  minimum read/score cold with `persist_features = TRUE/FALSE`.
+- Record isolated view-build timing from the current source after LDG-2455.
+- Profile the representative cold setup path with `Rprof` and identify the
+  dominant function-level `t_pre` contributors.
+- Produce a bucket table with columns:
+  `shape`, `mode`, `bucket`, `measurement_method`, `evidence`, `wall_share`,
+  `owner`, and `next_action`.
+- Split expected runtime overhead, such as interpreter, GC, DBI, and profiling
+  overhead, from genuinely unexplained-and-nameable time.
+- Assign every large named bucket to an owner category:
+  `accepted_overhead`, `v0.1.8.7_artifact_policy`,
+  `v0.1.8.7_cache_key_lane`, `v0.1.8.7_primitive_contract`, or
+  `release_blocker_if_unexplained`.
+- Record machine/environment metadata or point to benchmark outputs that do.
+
+### Acceptance Criteria
+
+- For both the small diagnostic shape and the reduced large-shape confirmation,
+  every bucket above `10%` of wall time or above `1s` is named to a code path,
+  measured toggle, or expected overhead class.
+- The genuinely unexplained-and-nameable remainder is below `10%` of wall time
+  or below `1s`, or the ticket explicitly marks it as a release-blocking
+  unresolved performance attribution gap.
+- Persistent feature-write tax, feature-compute cache benefit, default
+  feature-view construction, and remaining `t_pre` setup cost are each
+  represented as separate rows.
+- The owner column routes each large bucket to an accepted overhead class or a
+  concrete future lane; no row says only "slow" or "unknown" without a next
+  action.
+- No runtime behavior, public API, schema, snapshot, event stream, or strategy
+  surface changes ship under this ticket.
+
+### Verification
+
+Manual benchmark/profiling review, current-source guard confirmation, and
+ticket-note review. Targeted tests are required only if supporting scripts are
+changed.
+
+### Source Reference
+
+- `dev/bench/README.md`
+- `dev/bench/run_benchmarks.R`
+- `dev/bench/run_width_sweep.R`
+- `inst/design/architecture/fold_core_trust_boundary.md`
+
+### Classification
+
+```yaml
+type: diagnostic
+surface: benchmark_telemetry
+scope: performance_attribution_closeout
+```
+
+---
+
 ## LDG-2452: v0.1.8.6 Release Gate And Closeout
 
 Priority: P0
@@ -774,6 +980,8 @@ Dependencies:
   - LDG-2451
   - LDG-2453
   - LDG-2454
+  - LDG-2455
+  - LDG-2456
 Status: Planned
 
 ### Description
@@ -792,6 +1000,8 @@ updated, and release checks pass.
   outputs.
 - Record benchmark outputs or their location in the packet/retrospective.
 - Record cold setup/residual profiling output or its maintainer disposition.
+- Record performance attribution closeout output or its maintainer
+  disposition.
 - Confirm no auditr-report bugfix intake was required for closeout.
 - Run targeted tests, full tests, and package checks appropriate to shipped
   code changes.
@@ -802,6 +1012,8 @@ updated, and release checks pass.
 - All v0.1.8.6 tickets are completed or explicitly deferred with rationale.
 - `tickets.yml` and `v0_1_8_6_tickets.md` agree on final statuses.
 - Required benchmark outputs and measurement decisions are recorded.
+- Remaining speed gaps above the LDG-2456 threshold are named and owned, or
+  explicitly accepted/deferred by the maintainer.
 - Release notes make no unshipped storage/schema/helper claims and no LEAN
   parity claim.
 - Release checks pass according to `inst/design/release_ci_playbook.md`.

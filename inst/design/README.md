@@ -117,6 +117,7 @@ load-bearing for future sweep and fold-core work.
 - `architecture/ledgr_sweep_mode_ux.md`
 - `architecture/sweep_mode_code_review.md`
 - `architecture/ledgr_feature_map_ux.md`
+- `architecture/fold_core_trust_boundary.md`
 
 ## Accepted Design Decisions
 

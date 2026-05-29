@@ -244,7 +244,71 @@ Review focus:
 
 ---
 
-## Batch 7: Snapshot/Provenance And Helper RFC Gate
+## Batch 7: Drop Intermediate Wide-Matrix Allocation
+
+Tickets:
+
+- `LDG-2455` Drop Intermediate Wide-Matrix Allocation
+
+Purpose:
+
+Run the narrow follow-up optimization suggested by Batch 5 review after LDG-2454
+has attributed the remaining setup/residual costs. LDG-2454 showed this is not
+the dominant residual, so this batch is a cheap cleanup attempt rather than a
+headline-bottleneck fix.
+
+Review focus:
+
+- LDG-2454 profiling is recorded before this optimization starts.
+- `ctx$features_wide` remains a plain data.frame with unchanged columns, values,
+  row order, and row names.
+- Default pulse-view construction slices directly from
+  `projection$feature_values` rather than building an all-pulse
+  `feature_wide_values` matrix first.
+- Full-long `feature_table = "full"` behavior remains intact.
+- No matrix-canonical strategy surface, active binding, primitive-only fold-core
+  redesign, public API change, storage/schema change, or collapse dependency
+  ships in this batch.
+- Event-stream parity, feature inspection, and pulse-context fixtures remain
+  green.
+- Isolated view-build timing is remeasured at the largest Batch 4 grid.
+
+---
+
+## Batch 8: Performance Attribution Closeout
+
+Tickets:
+
+- `LDG-2456` Performance Attribution Closeout
+
+Purpose:
+
+Name and own the remaining wall-clock gaps after LDG-2455 without optimizing
+them. This is a diagnostic closeout gate: the release story should say which
+large buckets remain, how they were measured, and which future lane owns them.
+
+Review focus:
+
+- The method uses differential toggles and `Rprof`, not new phase hooks or
+  runtime behavior changes.
+- The full attribution matrix runs at `100 instruments x 252 pulses x 50
+  features`; the large-shape confirmation runs at least read/score cold with
+  `persist_features = TRUE/FALSE`.
+- `Rprof` output is used for function-level attribution and percentages, not
+  uncalibrated absolute wall-clock seconds.
+- The bucket table separates expected interpreter/GC/DBI/profiling overhead
+  from genuinely unexplained-and-nameable time.
+- Every bucket above `10%` of wall time or above `1s` is named and assigned an
+  owner category.
+- The genuinely unexplained-and-nameable remainder is below the threshold, or
+  the maintainer explicitly marks it as a release-blocking attribution gap.
+- No optimization, public API change, schema change, primitive-only fold-core
+  redesign, phase-telemetry hook, or storage implementation ships in this
+  batch.
+
+---
+
+## Batch 9: Snapshot/Provenance And Helper RFC Gate
 
 Tickets:
 
@@ -273,7 +337,7 @@ Review focus:
 
 ---
 
-## Batch 8: Release Gate
+## Batch 10: Release Gate
 
 Tickets:
 
@@ -294,6 +358,10 @@ Review focus:
   evidence or explicitly reverted/deferred.
 - The cold setup/residual profiling diagnostic is recorded or explicitly
   deferred with maintainer rationale.
+- The intermediate wide-matrix allocation follow-up is either accepted with
+  parity evidence or explicitly deferred with maintainer rationale.
+- The performance attribution closeout names and owns all remaining large speed
+  gaps, or records a maintainer disposition for any unresolved attribution gap.
 - The storage/schema decision is recorded.
 - Snapshot/provenance/helper work is either backed by accepted implementation
   tickets or explicitly deferred.
@@ -318,9 +386,11 @@ Batch 0
               -> Batch 4
                   -> Batch 5
                       -> Batch 6
-                          -> Batch 8
+                          -> Batch 7
+                              -> Batch 8
+                                  -> Batch 10
 
-Batch 7 may start after Batch 0, but it does not block Batches 1-6.
+Batch 9 may start after Batch 0, but it does not block Batches 1-8.
 ```
 
 Batch 1 and Batch 2 are the mandatory shippable spine. Batch 3 provides the
@@ -328,6 +398,9 @@ repeatable measurement framework. Batch 4 uses that framework to make the
 storage decision. Batch 5 is a late narrow optimization that preserves the
 current `features_wide` contract while making boundary manifestation cheaper.
 Batch 6 is a diagnostic-only profiling pass that should run after the current
-manifestation optimization is reviewed. Batch 7 is a design gate that can ship
-only if its RFC/spec decision lands cleanly; otherwise it defers. Batch 8 closes
-the packet after the mandatory spine and all accepted gates are resolved.
+manifestation optimization is reviewed. Batch 7 is the immediate narrow
+follow-up for dropping the intermediate wide-matrix allocation if LDG-2454
+confirms it remains worthwhile. Batch 8 is the diagnostic attribution closeout
+gate for remaining speed gaps. Batch 9 is a design gate that can ship only if
+its RFC/spec decision lands cleanly; otherwise it defers. Batch 10 closes the
+packet after the mandatory spine and all accepted gates are resolved.

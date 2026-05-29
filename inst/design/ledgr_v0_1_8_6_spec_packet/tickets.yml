@@ -138,7 +138,7 @@ tickets:
 
   - id: "LDG-2454"
     title: "Cold Setup And Residual Phase Profiling"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:
@@ -150,6 +150,40 @@ tickets:
     tests:
       - "current_source_profile"
       - "targeted_tests_if_hooks_added"
+      - "manual_attribution_review"
+
+  - id: "LDG-2455"
+    title: "Drop Intermediate Wide-Matrix Allocation"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2454"
+    classification:
+      type: "optimization"
+      surface: "runtime_projection"
+      scope: "wide_view_matrix_allocation"
+    tests:
+      - "pulse_context_tests"
+      - "feature_inspection_tests"
+      - "sweep_tests"
+      - "event_stream_parity_tests"
+      - "isolated_view_build_remeasurement"
+
+  - id: "LDG-2456"
+    title: "Performance Attribution Closeout"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2455"
+    classification:
+      type: "diagnostic"
+      surface: "benchmark_telemetry"
+      scope: "performance_attribution_closeout"
+    tests:
+      - "current_source_profile"
+      - "toggle_matrix_review"
       - "manual_attribution_review"
 
   - id: "LDG-2452"
@@ -166,6 +200,8 @@ tickets:
       - "LDG-2451"
       - "LDG-2453"
       - "LDG-2454"
+      - "LDG-2455"
+      - "LDG-2456"
     classification:
       type: "release_gate"
       surface: "release_process"
