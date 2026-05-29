@@ -205,7 +205,7 @@ tickets:
 
   - id: "LDG-2452"
     title: "v0.1.8.6 Release Gate And Closeout"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

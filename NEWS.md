@@ -1,3 +1,25 @@
+# ledgr 0.1.8.6
+
+- Reduced feature setup/materialization cost by deduplicating feature cache-key
+  inputs, making `ctx$feature_table` schema-only by default, and preserving
+  long-row inspection through explicit/on-demand paths.
+- Kept `ctx$features_wide` contract-compatible while making wide-view
+  data.frame manifestation cheaper and removing an intermediate all-pulse wide
+  matrix allocation.
+- Added a structured local benchmark suite with current-source guards,
+  warmup/repeat metadata, machine-readable outputs, LEAN side-by-side caveats,
+  two-mode width sweeps, and matched local peer benchmark support.
+- Recorded post-fix attribution and peer-comparison evidence: the matched
+  Backtrader SMA crossover row is faster than ledgr on this host, and profiling
+  names the event-buffering/emission path as the dominant remaining hot lane.
+- Deferred DuckDB feature storage, typed persistent event columns, snapshot
+  administration, research-loop helper APIs, auditr-report intake, target risk,
+  parallel dispatch, walk-forward, public cost/liquidity APIs, OMS, and public
+  benchmark dashboards.
+- Added the v0.1.8.7 Optimization Round 2 handoff: RFC-first fold-core
+  primitive contract, run-artifact materialization policy, event-emission lane,
+  cache-key/setup lane, reconstruction lane, and ADR 0004 dependency decisions.
+
 # ledgr 0.1.8.5
 
 - Rebuilt the documentation set around the research workflow: sealed snapshots,

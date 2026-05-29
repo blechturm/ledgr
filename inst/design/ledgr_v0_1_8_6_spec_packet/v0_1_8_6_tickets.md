@@ -1248,7 +1248,7 @@ Dependencies:
   - LDG-2455
   - LDG-2456
   - LDG-2457
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1315,3 +1315,31 @@ type: release_gate
 surface: release_process
 scope: v0.1.8.6
 ```
+
+### Completion Notes
+
+- Closed v0.1.8.6 with all tickets completed or explicitly deferred:
+  LDG-2451 was deferred to the horizon/v0.2.x track by maintainer decision;
+  storage/schema implementation remained deferred; auditr-report bugfix intake
+  stayed out of scope.
+- Updated `DESCRIPTION` to `0.1.8.6`, added release notes, and synchronized the
+  design index, roadmap, agent guidance, packet tickets, and closeout record.
+- Verification run on the v0.1.8.6 branch:
+  - targeted documentation-contract test: passed;
+  - full `testthat::test_local()` via `pkgload::load_all()`: passed with one
+    expected missing-package skip and existing warnings;
+  - `R CMD build --no-build-vignettes .`: passed and produced
+    `ledgr_0.1.8.6.tar.gz`;
+  - `R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.6.tar.gz`:
+    passed with two expected no-build-vignettes warnings about missing built
+    vignette HTML/PDF artifacts;
+  - `tools/check-coverage.R`: passed at 84.70%;
+  - `pkgdown::build_site(new_process = FALSE, install = FALSE)`: passed after
+    setting the local Quarto/Pandoc environment and using a local cache.
+- `R CMD build .` with vignette building enabled was attempted and failed on the
+  known Quarto/R build boundary where `.qmd` inputs rendered to `.md` but R's
+  build step expected `.html`. The release gate therefore used the documented
+  `--no-build-vignettes` package-check path plus pkgdown site build.
+- No release note claims DuckDB projection storage, typed persistent event
+  columns, snapshot administration helpers, auditr fixes, LEAN parity, or
+  public benchmark dashboards as shipped behavior.

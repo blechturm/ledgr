@@ -2,12 +2,11 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.5`.
-**Current active packet:** `v0.1.8.6` feature-projection materialization,
-structured benchmark suite, storage/provenance decision work, and research-loop
-helper follow-up.
-**Current active packet path:** `inst/design/ledgr_v0_1_8_6_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_5_spec_packet/` is an archival release
+**Latest completed release packet:** `v0.1.8.6`.
+**Current active packet:** none. v0.1.8.7 is an RFC-first Optimization Round 2
+handoff; do not implement it until a packet is cut.
+**Current active packet path:** none.
+The completed `inst/design/ledgr_v0_1_8_6_spec_packet/` is an archival release
 record.
 
 This directory is the design memory for ledgr. Files here do not all have the
@@ -75,12 +74,11 @@ was grounded in `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.
   `ledgr_v0_1_8_5_spec_packet/categorized_feedback.yml`, and
   `ledgr_v0_1_8_5_spec_packet/cycle_retrospective.md`.
 
-The v0.1.8.6 packet is now active. Its first implementation sequence is the
-accepted feature-projection materialization path: deduplicate feature cache-key
-work, stop building full-panel long `feature_table` by default, and remeasure
-against current source. It also carries the storage/provenance decision window,
-a structured benchmark suite with a small QuantConnect-comparable subset, and
-research-loop helper follow-up from v0.1.8.5.
+The v0.1.8.6 packet is complete. It shipped the accepted feature-projection
+materialization path, structured benchmark suite, performance attribution,
+storage-decision deferrals, and the v0.1.8.7 Optimization Round 2 handoff.
+Snapshot administration and research-loop helper follow-up from v0.1.8.5 remain
+deferred to the horizon for a later RFC/spec cycle.
 
 - Spec: `ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`.
 - Primary synthesis:
@@ -323,9 +321,9 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
-- `ledgr_v0_1_8_6_spec_packet/` - active v0.1.8.6 packet for
-  feature-projection materialization, structured benchmarks,
-  storage/provenance decision work, and research-loop helper follow-up.
+- `ledgr_v0_1_8_6_spec_packet/` - v0.1.8.6 release record for
+  feature-projection materialization, structured benchmarks, performance
+  attribution, storage-decision deferrals, and v0.1.8.7 optimization handoff.
 - `ledgr_v0_1_8_5_spec_packet/` - v0.1.8.5 release record for canonical
   research workflow and teachability.
 - `ledgr_v0_1_8_4_spec_packet/` - v0.1.8.4 release record for active

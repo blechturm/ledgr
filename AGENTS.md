@@ -30,8 +30,8 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.8.6 active packet; update this block when the
-release closes or scope changes materially):
+Current planning context (post-v0.1.8.6 release gate; update this block when
+the next packet is cut or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -54,24 +54,25 @@ release closes or scope changes materially):
   `inst/design/ledgr_v0_1_8_5_spec_packet/v0_1_8_5_tickets.md`,
   `inst/design/ledgr_v0_1_8_5_spec_packet/tickets.yml`, and
   `inst/design/ledgr_v0_1_8_5_spec_packet/cycle_retrospective.md`.
-- The v0.1.8.6 packet is active:
-  `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`.
-- Current scope starts with feature-projection materialization: hoist repeated
-  feature cache-key work, stop building full-panel long `feature_table` by
-  default, fix the non-fast helper rebuild hazard, and remeasure with current
-  source plus an instrument x feature width sweep.
-- v0.1.8.6 also carries storage/provenance decision work, research-loop helper
-  follow-up from v0.1.8.5, and a structured benchmark suite with a small
-  QuantConnect-comparable subset.
+- The completed v0.1.8.6 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`,
+  `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_tickets.md`,
+  `inst/design/ledgr_v0_1_8_6_spec_packet/tickets.yml`, and
+  `inst/design/ledgr_v0_1_8_6_spec_packet/cycle_retrospective.md`.
+- No v0.1.8.7 implementation packet is active yet. v0.1.8.7 is an RFC-first
+  Optimization Round 2 handoff: fold-core primitive contract, run-artifact
+  materialization policy, event-emission/buffer lane, cache-key/setup lane,
+  reconstruction lane, collapse adoption behind the deterministic wrapper, and
+  ADR 0004 dependency decisions.
+- Snapshot administration and research-loop helper follow-up from v0.1.8.5 are
+  deferred to the horizon for a later RFC/spec cycle.
 - Auditr-report bugfix intake is not scoped for v0.1.8.6. The next auditr
   report is deferred to the next version after prompt fixes in the auditr
   repository.
-- Typed persistent event columns are in v0.1.8.6 only if the packet explicitly
-  accepts storage/schema work; otherwise they remain deferred.
 - Keep parallel dispatch, target risk, walk-forward, cost/liquidity, OMS,
   benchmark, split stores, live data logs, point-in-time regressors, scaffold
   generation, companion-repository implementation, external-provider work, and
-  broad collapse adoption deferred unless the active packet explicitly scopes a
+  broad collapse adoption deferred unless a new packet explicitly scopes a
   bounded subset.
 
 ## Active Design Entry Points
@@ -82,7 +83,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.1.8.6 active packet | `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md` |
+| v0.1.8.6 release record | `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`, `inst/design/ledgr_v0_1_8_6_spec_packet/cycle_retrospective.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |

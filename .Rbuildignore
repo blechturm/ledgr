@@ -19,6 +19,8 @@
 ^\.quarto-cache$
 ^\.quarto-cache-exec$
 ^\.localappdata$
+^\.tmp$
+^\.tmp/
 ^vignettes/\.quarto$
 ^lib$
 ^lib-wsl$
