@@ -3,9 +3,10 @@
 # Apples-to-apples, same-host SMA-crossover throughput. Generates one seeded
 # bars set per width via ledgr_sim_bars(), writes it to a shared CSV that the
 # Python backtrader driver (peer_three_way_backtrader.py) reads, so all three
-# engines see identical data. ledgr runs its built-in
-# ledgr_demo_sma_crossover_strategy() (threshold = 0 => standard crossover);
-# quantstrat runs the matched SMA(fast)/SMA(slow) crossover.
+# engines see identical data. ledgr uses TTR-backed SMA features and the
+# feature-wide strategy surface so the canonical peer row exercises the quick
+# vectorized indicator path; quantstrat runs the matched SMA(fast)/SMA(slow)
+# crossover.
 #
 # Timing boundary (execution only; data gen + engine setup excluded):
 #   ledgr      -> ledgr_run() wall
@@ -13,8 +14,9 @@
 # Headline unit: security_bars_sec = n_inst * n_pulses / wall.
 #
 # Caveats: same-host orientation, not event/accounting parity. ledgr persists a
-# durable ledger/equity to DuckDB; quantstrat builds an in-memory blotter. SMA
-# conventions differ slightly, so fill counts are close, not identical.
+# durable ledger/equity to DuckDB; quantstrat builds an in-memory blotter. ledgr
+# and quantstrat both use TTR-backed SMA calculation; Backtrader uses its native
+# indicator implementation. Fill counts are close, not identical.
 #
 # Usage:
 #   Rscript dev/bench/peer_three_way.R --widths 10,50,100,250 --days 1260
@@ -36,14 +38,40 @@ oi <- which(a == "--out-dir"); OUT <- if (length(oi)) a[[oi + 1L]] else "dev/ben
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 
 run_ledgr <- function(bars, fast_n, slow_n) {
+  if (!requireNamespace("TTR", quietly = TRUE)) {
+    stop("The canonical ledgr peer row needs the 'TTR' package.")
+  }
+  mk <- function(id, w) {
+    force(w)
+    ledgr_indicator(
+      id = id,
+      fn = function(window) {
+        x <- as.numeric(window$close)
+        if (length(x) < w) return(NA_real_)
+        as.numeric(TTR::SMA(x, n = w))[[length(x)]]
+      },
+      requires_bars = w,
+      series_fn = function(bars, params) as.numeric(TTR::SMA(as.numeric(bars$close), n = w))
+    )
+  }
   db <- tempfile(fileext = ".duckdb"); on.exit(unlink(db), add = TRUE)
   snap <- ledgr_snapshot_from_df(bars, db_path = db); on.exit(ledgr_snapshot_close(snap), add = TRUE)
-  features <- ledgr_feature_map(fast = ledgr_ind_sma(ledgr_param("fast_n")), slow = ledgr_ind_sma(ledgr_param("slow_n")))
-  exp <- ledgr_experiment(snapshot = snap, strategy = ledgr_demo_sma_crossover_strategy(),
+  features <- ledgr_feature_map(fast = mk("sma_ttr_fast", fast_n), slow = mk("sma_ttr_slow", slow_n))
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    fw <- ctx$features_wide
+    fast <- fw$sma_ttr_fast
+    slow <- fw$sma_ttr_slow
+    long <- !is.na(fast) & !is.na(slow) & fast > slow
+    if (any(long)) {
+      targets[fw$instrument_id[long]] <- params$qty
+    }
+    targets
+  }
+  exp <- ledgr_experiment(snapshot = snap, strategy = strategy,
                           features = features, opening = ledgr_opening(cash = 1e7), persist_features = FALSE)
   rid <- paste0("peer3_", paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
-  el <- system.time(bt <- ledgr_run(exp, feature_params = list(fast_n = fast_n, slow_n = slow_n),
-                                    params = list(qty = 1, threshold = 0), run_id = rid))[["elapsed"]]
+  el <- system.time(bt <- ledgr_run(exp, params = list(qty = 1, threshold = 0), run_id = rid))[["elapsed"]]
   fills <- tryCatch(nrow(ledgr_results(bt, "fills")), error = function(e) NA_integer_); close(bt)
   list(wall = el, fills = fills)
 }

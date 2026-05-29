@@ -68,9 +68,12 @@ This reference is NOT fed into the LEAN side-by-side ratio.
 
 The `peer_sma_crossover` scenario matches that workload (500 assets, 5 years
 daily, SMA crossover via `TTR::SMA`, `persist_features = FALSE`) so ledgr can be
-measured on the same shape. A defensible comparison still requires running the
-peer engines and ledgr on the SAME machine; the published numbers above only fix
-the workload, not the host.
+measured on the same shape. The same-host peer harness
+`peer_three_way.R` also uses the quick TTR-backed ledgr indicator path as the
+canonical `engine = "ledgr"` row; slower pure-R built-in indicator experiments
+are diagnostic, not the peer-comparison headline. A defensible comparison still
+requires running the peer engines and ledgr on the SAME machine; the published
+numbers above only fix the workload, not the host.
 
 ## Width Sweep
 

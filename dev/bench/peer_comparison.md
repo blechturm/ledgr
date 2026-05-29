@@ -5,6 +5,12 @@ Not a v0.1.8.6 deliverable and not event/accounting parity. Run while the
 v0.1.8.6 release gate was in progress; deliberately kept out of the release
 packet.
 
+**Historical note:** this document records the pre-Lane-B peer-comparison input.
+The current v0.1.8.7 closeout is
+`inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
+The current `peer_three_way.R` harness canonicalizes the ledgr peer row to the
+quick TTR-backed indicator path.
+
 **Date:** 2026-05-29 · **Host:** Intel Core i9-12900K, Windows 11 ·
 **R** 4.5.2 (ledgr 0.1.8.5 source) · **Python** 3.13.2, backtrader 1.9.78.123,
 pandas 3.0.3, numpy 2.4.6.

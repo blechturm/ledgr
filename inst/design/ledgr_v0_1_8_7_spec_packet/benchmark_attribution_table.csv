@@ -1,0 +1,10 @@
+category,scenario,engine,n_inst,n_pulses,n_feat,n_candidates,wall_sec,t_pre_sec,t_loop_sec,t_residual_sec,security_bars_sec,feature_cells_sec,events,fills,scope,caveat,owner
+record,feature_read_score,ledgr,100,252,20,1,3.81,0.33,0.48,3.00,6614.17,132283.46,0,0,ledgr-only feature scoring,current-source record subset; one measured iteration,accepted overhead
+record,feature_turnover,ledgr,100,252,20,1,3.22,0.18,0.27,2.77,7826.09,156521.74,47,47,ledgr-only feature plus fills,current-source record subset; one measured iteration,accepted overhead
+record,peer_sma_crossover,ledgr,500,1260,2,1,25.91,1.22,15.70,8.99,24314.94,48629.87,13355,13355,durable ledgr run,TTR-backed features; persists durable ledger/equity to DuckDB,accepted/future compiled core
+record,peer_sma_crossover_sweep,ledgr,500,1260,2,1,30.75,NA,NA,NA,20487.80,40975.61,NA,6585,one-candidate sweep,TTR-backed features; ephemeral sweep; no phase timings,accepted/no sweep crossover claim
+peer,peer_three_way,ledgr,500,1260,2,1,31.21,NA,NA,NA,20185.84,NA,NA,13355,same-host peer SMA,TTR-backed features and feature-wide strategy; durable ledgr run,orientation_same_host
+peer,peer_three_way,backtrader,500,1260,2,1,64.40,NA,NA,NA,9781.85,NA,NA,NA,same-host peer SMA,native Backtrader SMA; in-memory cerebro.run boundary,orientation_same_host
+peer,peer_three_way,quantstrat,500,1260,2,1,114.59,NA,NA,NA,5497.86,NA,NA,12787,same-host peer SMA,TTR SMA; in-memory blotter boundary,orientation_same_host
+sweep_amortization,sma_2_features_N50,ledgr_sweep,30,504,2,50,70.35,NA,NA,NA,NA,NA,NA,NA,ledgr-only sweep amortization,TTR-backed SMA; no peer sweep rows; no crossover claim,open benchmark track
+sweep_amortization,heavy_40_features_N50,ledgr_sweep,30,504,40,50,257.81,NA,NA,NA,NA,NA,NA,NA,ledgr-only sweep amortization,TTR-backed SMA plus extra precompute load; no peer sweep rows; no crossover claim,open benchmark track

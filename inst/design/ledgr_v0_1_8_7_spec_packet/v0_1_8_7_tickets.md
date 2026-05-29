@@ -743,7 +743,7 @@ scope: fast_slow_materialization
 Priority: P1
 Effort: M
 Dependencies: LDG-2465
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -782,6 +782,63 @@ and keep peer comparisons honest.
 
 Benchmark record review, attribution-table review, current-source guard review,
 and manual comparability review.
+
+### Completion Notes
+
+Completed in Batch 8. The current-source benchmark subset, same-host peer
+comparison, and ledgr-side sweep amortization measurement were rerun after the
+optimization lanes and artifact-policy work.
+
+Tracked closeout artifacts:
+
+- `benchmark_attribution_closeout.md`
+- `benchmark_attribution_table.csv`
+
+Raw local outputs under `dev/bench/results/`:
+
+- `ledgr_bench_record_20260529T221513Z_raw.csv`
+- `ledgr_bench_record_20260529T221513Z_summary.csv`
+- `ledgr_bench_record_20260529T221513Z_environment.json`
+- `peer_three_way_results.csv`
+- `peer_sweep_three_way_ledgr.csv`
+
+Headline current-source rows:
+
+- durable TTR-backed `peer_sma_crossover`: `25.91s`, `24,315`
+  security-bars/sec, `13,355` events/fills, with phases `pre=1.22s`,
+  `loop=15.70s`, `residual=8.99s`;
+- one-candidate `peer_sma_crossover_sweep`: `30.75s`, `20,488`
+  security-bars/sec, `6,585` fills;
+- same-host canonical peer row: ledgr quick/TTR path `31.21s` / `20,186`
+  bars/sec, Backtrader `64.40s` / `9,782` bars/sec, quantstrat `114.59s` /
+  `5,498` bars/sec.
+
+The peer driver is canonicalized to use quick TTR-backed SMA features and the
+feature-wide strategy surface for the `engine = "ledgr"` row. The prior pure-R
+built-in SMA path is no longer the canonical peer row.
+
+Attribution:
+
+- B0 remains credited by same-power profile/mechanism evidence rather than
+  cross-power wall ratios: the buffer share fell from `72.43%` to `3.49%` of
+  sampled R time in the Batch 3 profile.
+- R/A remains a separate measured effect: `32.91s` to `31.25s` on the same
+  turnover shape in the Batch 5 closeout, with setup time reduced from `1.50s`
+  to `1.11s`.
+- C remains a read-back/materialization claim only: synthetic memory fill
+  reconstruction improved from `8.27s` to `4.92s` for `13,355` events.
+- Artifact policy remains a fast/slow boundary claim only: sweep leaves heavy
+  table counts unchanged; promotion materializes durable artifacts.
+
+Remaining large buckets are named and owned in
+`benchmark_attribution_closeout.md`. The largest current-source bucket is the
+turnover fold loop, owned by accepted pure-R engine cost and the future compiled
+core track. Residual durable materialization cost is accepted as a timing-boundary
+cost, with the fast sweep/evaluation path documented separately.
+
+No sweep crossover claim is made. The ledgr-only sweep amortization run shows
+modest amortization (`~1.5x` for the 2-feature SMA N=50 shape and `~1.3x` for
+the 40-feature N=50 shape), but no same-host peer optimizer rows were run.
 
 ### Source Reference
 

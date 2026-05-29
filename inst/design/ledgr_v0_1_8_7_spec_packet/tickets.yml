@@ -154,7 +154,7 @@ tickets:
 
   - id: "LDG-2466"
     title: "Post-Lane Benchmark And Attribution"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
