@@ -68,7 +68,7 @@ machinery. Value-bearing collapse operations wait for LDG-2461.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -105,6 +105,14 @@ ticket file, and machine-readable ticket metadata.
 
 Manual packet review and `rg` checks for stale active-packet, legacy-path, and
 deferred-scope language.
+
+Completion note (2026-05-29): Committed the v0.1.8.7 planning baseline in
+`51c30cb` and rechecked the active packet across the spec, tickets, batch plan,
+design index, roadmap, horizon, and AGENTS notes. Stale horizon references were
+updated so v0.1.8.7 remains the single-core pure-R optimization and legacy
+cleanup window, parallel dispatch stays deferred to v0.1.8.8, and compiled/FFI
+work remains deferred. `rg` stale-scope checks and diff review were used as the
+packet-alignment evidence.
 
 ### Source Reference
 

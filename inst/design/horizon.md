@@ -1092,10 +1092,9 @@ Near-term work that helps without committing to a port:
 - keep expanding parity tests so a future port has a clear acceptance suite;
 - formalize event, fill, lot-state, and fill-proposal shapes as typed value
   objects when touched by ordinary tickets;
-- optionally run a small FFI feasibility spike in the v0.1.8.7 window, after
-  typed memory events, single-pass reconstruction, and fast-context R-side
-  optimization have produced an optimized baseline but before the v0.1.9 target
-  risk chain starts changing fold contracts. The spike should port only an
+- defer any FFI feasibility spike until after the v0.1.8.7 single-core pure-R
+  cleanup and the v0.1.8.8 parallel-dispatch window have produced an optimized
+  baseline. When revived, the spike should port only an
   isolated helper such as `ledgr_lot_apply_event()` via `extendr`, measure
   per-call FFI overhead against the LDG-2402 harness, reuse the LDG-2403 parity
   fixtures, and document Windows/Linux build friction. It must not introduce a
@@ -2300,8 +2299,8 @@ Decision needed (one of):
 - document the limitation and restrict resume guarantees to deterministic
   strategies (cheapest, honest).
 
-Cross-link: the v0.1.8.7 parallel-dispatch work faces the same RNG-state
-question — per-candidate seed derivation must not depend on worker scheduling
+Cross-link: the v0.1.8.8 parallel-dispatch work faces the same RNG-state
+question - per-candidate seed derivation must not depend on worker scheduling
 or global RNG state. Whatever resolves resume should align with that.
 
 This entry records a verified gap, not a committed fix.
