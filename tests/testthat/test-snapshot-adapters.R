@@ -16,7 +16,8 @@ test_that("ledgr_snapshot_from_df creates a sealed snapshot", {
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   info <- ledgr_snapshot_info(con, snap$snapshot_id)
   meta <- jsonlite::fromJSON(info$meta_json[[1]], simplifyVector = TRUE)
-  expect_equal(meta$data_hash, snap$metadata$data_hash)
+  expect_false("data_hash" %in% names(meta))
+  expect_false("data_hash" %in% names(snap$metadata))
 })
 
 test_that("ledgr_snapshot_from_df validates required columns", {

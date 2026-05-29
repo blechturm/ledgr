@@ -26,7 +26,6 @@ ledgr_validate_schema <- function(con) {
         engine_version = "TEXT",
         config_json = "TEXT",
         config_hash = "TEXT",
-        data_hash = "TEXT",
         snapshot_id = "TEXT",
         status = "TEXT",
         error_msg = "TEXT",

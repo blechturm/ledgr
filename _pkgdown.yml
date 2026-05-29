@@ -147,7 +147,6 @@ reference:
       - ledgr_db_init
       - ledgr_create_schema
       - ledgr_validate_schema
-      - ledgr_data_hash
       - print.ledgr_config
       - ledgr_backtest_run
       - ledgr_backtest_bench

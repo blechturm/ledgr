@@ -138,7 +138,7 @@ scope: v0.1.8.7
 Priority: P0
 Effort: L
 Dependencies: LDG-2458
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -180,6 +180,22 @@ compatibility obligations.
 Targeted snapshot/run/resume tests, tamper tests, raw-path failure tests, schema
 tests if schema changes, and documentation grep checks for stale `data_hash`
 identity language.
+
+Completion note (2026-05-29): Removed the legacy raw-`bars` execution path from
+modern config validation (`data.source = "snapshot"` and `data.snapshot_id` are
+required before fold entry), removed run-time data-subset rehashing from
+run/resume, deleted `runs.data_hash` from the modern schema, deleted the
+exported `ledgr_data_hash()` helper and its man page, and removed snapshot
+adapter `data_hash` metadata. `ledgr_backtest()` keeps data-frame convenience
+by sealing the input into a snapshot before execution. Old-store migration still
+tolerates historical `data_hash` columns only long enough to rewrite them out.
+Verification run: targeted schema/snapshot/public API/raw-path/runner/resume
+tests passed; `test_local()` ran for 10 minutes without failures before timing
+out near the tail, and the remaining strategy/sweep tail tests passed
+separately. Grep checks show no modern R/NAMESPACE/man/vignette data-hash
+identity surface remains; remaining `data_hash` hits are migration fixtures,
+the explicit deleted-helper contract note, and unrelated indicator-adapter
+metadata.
 
 ### Source Reference
 

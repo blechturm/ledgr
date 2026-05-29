@@ -115,7 +115,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     "reproducibility_level", "strategy_type", "strategy_source_hash",
     "strategy_source_capture_method", "strategy_params_json",
     "strategy_params_hash", "ledgr_version", "R_version",
-    "dependency_versions_json", "config_hash", "data_hash", "execution_mode",
+    "dependency_versions_json", "config_hash", "execution_mode",
     "elapsed_sec", "pulse_count", "persist_features", "feature_cache_hits",
     "feature_cache_misses", "error_msg", "final_equity", "max_drawdown",
     "total_return", "n_trades", "config_json", "schema_version"

@@ -399,13 +399,6 @@ ledgr_snapshot_from_df <- function(bars_df,
   )
   on.exit(suppressWarnings(try(DBI::dbExecute(con, "DROP VIEW bars"), silent = TRUE)), add = TRUE)
 
-  data_hash <- ledgr_snapshot_adapter_data_subset_hash(
-    con,
-    sort(unique(bars_out$instrument_id)),
-    min(ts_posix),
-    max(ts_posix)
-  )
-
   created_at <- DBI::dbGetQuery(
     con,
     "SELECT created_at_utc FROM snapshots WHERE snapshot_id = ?",
@@ -420,8 +413,7 @@ ledgr_snapshot_from_df <- function(bars_df,
     n_instruments = as.integer(nrow(inst_out)),
     start_date = start_date,
     end_date = end_date,
-    created_at = ledgr_normalize_ts_utc(created_at),
-    data_hash = data_hash
+    created_at = ledgr_normalize_ts_utc(created_at)
   )
 
   DBI::dbExecute(

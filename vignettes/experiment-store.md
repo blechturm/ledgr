@@ -336,7 +336,7 @@ Useful fields include:
 | Field | Meaning |
 |----|----|
 | `run_id`, `status`, `label`, `tags`, `archived` | mutable and immutable run organization fields |
-| `snapshot_id`, `snapshot_hash`, `data_hash` | sealed data identity |
+| `snapshot_id`, `snapshot_hash` | sealed data identity |
 | `strategy_source_hash`, `strategy_params_hash`, `config_hash` | strategy, parameter, and run-configuration identity |
 | `reproducibility_level` | strategy preflight tier recorded with the run |
 | `execution_mode`, `elapsed_sec`, `pulse_count` | execution telemetry |

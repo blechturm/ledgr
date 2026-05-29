@@ -144,10 +144,10 @@ the active versioned spec packet, currently
 - Explicit custom snapshot IDs are allowed. The generated `snapshot_` pattern is
   a convention for generated IDs, not a ban on durable user names; warn only
   when a user-supplied ID starts with `snapshot_` but is malformed.
-- `ledgr_data_hash()` is a legacy v0.1.0 helper for direct `bars` table
-  workflows. Snapshot-backed workflows should use sealed `snapshot_hash`
-  values. Internal run-resume and snapshot-adapter data-subset hashes must use
-  explicit internal helpers, not the exported legacy function.
+- The legacy `ledgr_data_hash()` direct-`bars` helper is removed from the
+  modern API. Snapshot-backed workflows use sealed `snapshot_hash` values plus
+  explicit selector bounds; run/resume and snapshot adapters must not rehash
+  run-window bar values.
 
 ## Persistence Contract
 

@@ -110,6 +110,20 @@ ledgr_test_make_bars <- function(instrument_ids, ts_utc) {
   out
 }
 
+ledgr_test_snapshot_backed_config <- function(cfg, bars_df, snapshot_id = NULL) {
+  if (is.null(snapshot_id)) {
+    snapshot_id <- paste0("test_snapshot_", substr(digest::digest(list(cfg$db_path, nrow(bars_df))), 1, 12))
+  }
+  snapshot <- ledgr_snapshot_from_df(bars_df, db_path = cfg$db_path, snapshot_id = snapshot_id)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  cfg$data <- list(
+    source = "snapshot",
+    snapshot_id = snapshot$snapshot_id,
+    snapshot_db_path = snapshot$db_path
+  )
+  cfg
+}
+
 ledgr_test_norm_ts <- function(x) {
   format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 }

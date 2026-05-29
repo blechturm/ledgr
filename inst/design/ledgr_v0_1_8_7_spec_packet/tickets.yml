@@ -20,7 +20,7 @@ tickets:
 
   - id: "LDG-2459"
     title: "Legacy Execution Cleanup"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:

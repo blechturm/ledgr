@@ -25,7 +25,7 @@ testthat::test_that("completed run artifacts are visible from a fresh connection
 
   run_row <- DBI::dbGetQuery(
     opened$con,
-    "SELECT status, config_hash, data_hash FROM runs WHERE run_id = 'fresh-run'"
+    "SELECT status, config_hash, snapshot_id FROM runs WHERE run_id = 'fresh-run'"
   )
   ledger_n <- DBI::dbGetQuery(
     opened$con,
@@ -39,7 +39,7 @@ testthat::test_that("completed run artifacts are visible from a fresh connection
   testthat::expect_identical(nrow(run_row), 1L)
   testthat::expect_identical(run_row$status[[1]], "DONE")
   testthat::expect_true(nzchar(run_row$config_hash[[1]]))
-  testthat::expect_true(nzchar(run_row$data_hash[[1]]))
+  testthat::expect_identical(run_row$snapshot_id[[1]], snapshot$snapshot_id)
   testthat::expect_gt(ledger_n, 0)
   testthat::expect_gt(equity_n, 0)
 })

@@ -42,8 +42,8 @@ testthat::test_that("ledgr_state_reconstruct() returns derived artifacts and reb
   DBI::dbExecute(
     con,
     "
-    INSERT INTO runs (run_id, created_at_utc, engine_version, config_json, config_hash, data_hash, status, error_msg)
-    VALUES ('run-1', TIMESTAMP '2020-01-01 00:00:00', '0.1.0', ?, 'x', 'y', 'CREATED', NULL)
+    INSERT INTO runs (run_id, created_at_utc, engine_version, config_json, config_hash, status, error_msg)
+    VALUES ('run-1', TIMESTAMP '2020-01-01 00:00:00', '0.1.0', ?, 'x', 'CREATED', NULL)
     ",
     params = list(canonical_json(cfg))
   )

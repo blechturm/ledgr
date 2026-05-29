@@ -22,7 +22,7 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   before <- ledgr_run_info(snapshot, "tagged-run")
-  identity_cols <- c("config_hash", "data_hash", "strategy_source_hash", "strategy_params_hash")
+  identity_cols <- c("config_hash", "snapshot_id", "strategy_source_hash", "strategy_params_hash")
   tagged <- ledgr_run_tag(snapshot, "tagged-run", c(" baseline ", "demo", "demo"))
   testthat::expect_s3_class(tagged, "ledgr_snapshot")
   tagged_info <- ledgr_run_info(snapshot, "tagged-run")
@@ -52,7 +52,7 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
     "
     SELECT
       r.config_hash,
-      r.data_hash
+      r.snapshot_id
     FROM runs r
     WHERE r.run_id = 'tagged-run'
     "
@@ -69,7 +69,7 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
     "
   )[1, , drop = TRUE])
   ledgr_test_close_duckdb(opened$con, opened$drv)
-  after_identity <- c(run_identity[c("config_hash", "data_hash")], provenance_identity)
+  after_identity <- c(run_identity[c("config_hash", "snapshot_id")], provenance_identity)
   for (col in identity_cols) {
     testthat::expect_identical(after_identity[[col]], before[[col]])
   }

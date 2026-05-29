@@ -124,7 +124,7 @@ testthat::test_that("summary surfaces impossible warmup diagnostics without chan
   on.exit(opened$close(), add = TRUE)
   run_before <- DBI::dbGetQuery(
     opened$con,
-    "SELECT status, config_hash, data_hash FROM runs WHERE run_id = ?",
+    "SELECT status, config_hash, snapshot_id FROM runs WHERE run_id = ?",
     params = list(bt$run_id)
   )
 
@@ -140,7 +140,7 @@ testthat::test_that("summary surfaces impossible warmup diagnostics without chan
   testthat::expect_equal(ledgr_compute_metrics(bt), metrics_before)
   run_after <- DBI::dbGetQuery(
     opened$con,
-    "SELECT status, config_hash, data_hash FROM runs WHERE run_id = ?",
+    "SELECT status, config_hash, snapshot_id FROM runs WHERE run_id = ?",
     params = list(bt$run_id)
   )
   testthat::expect_equal(run_after, run_before)

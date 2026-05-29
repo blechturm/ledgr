@@ -888,10 +888,10 @@ Maintainer decision (2026-05-29): v0.1.8.7 also removes the legacy execution
 gunk that keeps old representations load-bearing. Modern execution is
 snapshot-backed and function-strategy based. Raw mutable `bars` configs and R6
 strategy paths must fail clearly before entering the fold, and run-time
-`data_hash` is no longer modern sealed-run identity. Any remaining
-`ledgr_data_hash()`, `runs.data_hash`, or snapshot-adapter `data_hash` surfaces
-are either deleted by the spec packet or marked archival/historical; they must
-not remain part of the modern execution contract.
+`data_hash` is no longer modern sealed-run identity. `ledgr_data_hash()`,
+`runs.data_hash`, and snapshot-adapter `data_hash` metadata are deleted by the
+spec packet; old-store migration may tolerate historical columns only long
+enough to rewrite them out.
 
 Authoritative input (planned):
 

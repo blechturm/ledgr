@@ -124,11 +124,11 @@ ledgr_create_schema <- function(con) {
       "engine_version",
       "config_json",
       "config_hash",
-      "data_hash",
       "status",
       "error_msg"
     )
     if (!all(required_cols %in% cols)) return(FALSE)
+    if ("data_hash" %in% cols) return(FALSE)
     if (!runs_status_constraint_matches()) return(FALSE)
     TRUE
   }
@@ -140,7 +140,6 @@ ledgr_create_schema <- function(con) {
       engine_version TEXT,
       config_json TEXT,
       config_hash TEXT,
-      data_hash TEXT,
       snapshot_id TEXT,
       status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','DONE','FAILED')),
       error_msg TEXT,
@@ -297,7 +296,7 @@ ledgr_create_schema <- function(con) {
 
       target_cols <- c(
         "run_id", "created_at_utc", "engine_version", "config_json", "config_hash",
-        "data_hash", "snapshot_id", "status", "error_msg", "metric_context_json",
+        "snapshot_id", "status", "error_msg", "metric_context_json",
         "metric_context_hash", "metric_context_version"
       )
       insert_sql <- sprintf(

@@ -17,7 +17,6 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_compute_equity_curve",
     "ledgr_compute_metrics",
     "ledgr_create_schema",
-    "ledgr_data_hash",
     "ledgr_db_init",
     "ledgr_deregister_indicator",
     "ledgr_demo_sma_crossover_strategy",

@@ -22,7 +22,7 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   before <- ledgr_run_info(snapshot, "label-run")
-  identity_cols <- c("run_id", "config_hash", "data_hash")
+  identity_cols <- c("run_id", "config_hash", "snapshot_id")
 
   labeled <- ledgr_run_label(snapshot, "label-run", "baseline")
   testthat::expect_s3_class(labeled, "ledgr_snapshot")
@@ -99,7 +99,7 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   before <- ledgr_run_info(snapshot, "archive-run")
-  identity_cols <- c("run_id", "config_hash", "data_hash")
+  identity_cols <- c("run_id", "config_hash", "snapshot_id")
 
   archived_snapshot <- ledgr_run_archive(snapshot, "archive-run", reason = "bad parameter test")
   testthat::expect_s3_class(archived_snapshot, "ledgr_snapshot")
