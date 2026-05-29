@@ -819,7 +819,7 @@ scope: cold_setup_residual_profile
 Priority: P1
 Effort: S
 Dependencies: LDG-2454
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -861,6 +861,29 @@ the v0.1.8.7 primitive-only fold-core contract redesign.
 
 Targeted pulse-context, feature-inspection, sweep, sweep-parity, and
 backtest-wrapper tests plus isolated view-build remeasurement.
+
+Completion note:
+
+- Removed the default-path all-pulse `feature_wide_values` matrix allocation
+  from `ledgr_projection_pulse_views()`. The wide-view builder now slices the
+  canonical `projection$feature_values` matrices directly per pulse and stamps
+  the same plain `ctx$features_wide` data.frames.
+- Added a shared internal column-list helper for single-pulse and pulse-view
+  wide construction, with pre-resolved feature matrices in the all-pulse path
+  to avoid repeated named lookups.
+- Added a multi-feature pulse-view fixture proving prebuilt
+  `features_wide[[pulse_idx]]` matches `ledgr_projection_features_wide()` for
+  each pulse.
+- No matrix-canonical strategy surface, active binding, public API change,
+  storage/schema change, or collapse dependency shipped under this ticket.
+- Targeted verification passed:
+  `test-pulse-context-accessors.R`, `test-feature-inspection.R`,
+  `test-sweep-parity.R`, `test-sweep.R`, and `test-backtest-wrapper.R`.
+- Isolated largest-grid view timing after the change, current source,
+  500 instruments x 252 pulses x 50 features, `repeats = 5`: schema-only
+  `ledgr_projection_pulse_views()` = `0.19s`; full-long opt-in = `1.14s`;
+  full-long rows = `6,300,000`. The LDG-2453 reference was `0.19s`
+  schema-only and `1.15s` full-long at the same grid.
 
 ### Source Reference
 

@@ -154,7 +154,7 @@ tickets:
 
   - id: "LDG-2455"
     title: "Drop Intermediate Wide-Matrix Allocation"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:

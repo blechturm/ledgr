@@ -137,6 +137,27 @@ testthat::test_that("projection pulse views default to schema-only long tables",
   )
 })
 
+testthat::test_that("projection pulse views match single-pulse wide construction", {
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2
+  projection <- ledgr:::ledgr_runtime_projection(
+    feature_values = list(
+      alpha = matrix(seq_len(6), nrow = 2L),
+      beta = matrix(seq_len(6) + 10, nrow = 2L)
+    ),
+    universe = c("AAA", "BBB"),
+    pulses_posix = pulses
+  )
+
+  views <- ledgr:::ledgr_projection_pulse_views(projection)
+
+  for (pulse_idx in seq_along(pulses)) {
+    testthat::expect_equal(
+      views$features_wide[[pulse_idx]],
+      ledgr:::ledgr_projection_features_wide(projection, pulse_idx)
+    )
+  }
+})
+
 testthat::test_that("non-fast projection contexts keep schema-only feature tables", {
   pulses <- as.POSIXct("2020-01-01", tz = "UTC")
   universe <- c("AAA", "BBB")
