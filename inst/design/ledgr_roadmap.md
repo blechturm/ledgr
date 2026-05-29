@@ -1054,6 +1054,94 @@ See `inst/design/horizon.md` (fold-core structural-debt entry). The
 phased-pulse restructure is tracked separately as a v0.1.9 target-risk
 prerequisite (above).
 
+### Peer Benchmark Expansion (Later v0.1.8.x)
+
+Intent:
+
+- expand the same-host peer comparison beyond `Backtrader` and `quantstrat` so
+  v0.1.8.7's measured position has broader empirical grounding;
+- replace vendor M3 orientation rows in `dev/bench/lean_reference.csv` and
+  `dev/bench/ziplime_reference.csv` with real same-host measurements where
+  feasible;
+- add a second compiled-core data point so "compiled core is the next-class
+  lever" is not a one-engine artifact.
+
+Worth running same-host:
+
+- **zipline-reloaded** — actively maintained Python event-driven backtester;
+  closest architecture match to ledgr / Backtrader; lowest setup friction
+  (pip-installable, comparable workload definition);
+- **LEAN locally (Python-strategy mode)** — the structural apples-to-apples
+  comparison for a future compiled-core ledgr: both are compiled engines with
+  interpreted-language callbacks per pulse (LEAN's `.NET ↔ Python` boundary maps
+  to a compiled-core ledgr's `C ↔ R` boundary). Closes the "we never measured a
+  compiled engine on this host" gap; higher setup friction (LEAN CLI plus mono
+  on non-Windows hosts) but highest payoff for the writeup. LEAN-C# (compiled
+  strategy) is *not* the right baseline for this question — Python-strategy
+  mode is;
+- **NautilusTrader** — Rust-core / Python-wrapper engine; second compiled-core
+  data point.
+
+Worth a contextual row, not a headline:
+
+- **VectorBT** — different paradigm (vectorized, no per-bar callback). Useful
+  as the "what does vectorized look like" reference but structurally apples-to-
+  oranges; report alongside event-driven peers only with an explicit paradigm
+  note.
+
+Out of scope for the expansion:
+
+- **backtesting.py** — single-asset; doesn't face the multi-asset alignment
+  problem (per the missing-data resilience research);
+- **PyAlgoTrade** — unmaintained;
+- **bt (Python)** — target-weight rebalance paradigm, not order-based; making
+  the comparison fair is more work than the insight justifies.
+
+Verdict-setter for compiled-core scoping (priority within the expansion):
+
+- The LEAN-Python row is the empirical verdict on whether a compiled-core ledgr
+  would land in the same performance class as LEAN. The structural argument
+  says yes — both are compiled engines with interpreted-language callbacks per
+  pulse, with ledgr keeping an additional ~2–5s residual for the per-fill
+  sealed-ledger write LEAN-Python doesn't pay by default. The LEAN-Python
+  number tells us whether that structural claim holds in measured form.
+- Prioritize LEAN-Python locally above the other expansion targets when
+  scheduling. The result is a load-bearing input for the v0.2.x+ compiled-core
+  decision (a months-long build) and changes the framing:
+  - if compiled-core ledgr would plausibly land near LEAN-Python (structural
+    claim measured-confirmed): proceed with compiled-core scoping;
+  - if the measured residual gap is larger than the structural argument
+    predicts: rethink what compiled-core needs to address before committing to
+    the build (likely callback-marshaling design, ctx access patterns, or
+    DuckDB flush amortization).
+
+Fairness constraints:
+
+- same host, same power profile;
+- same workload shape (500 × 1,260 daily SMA crossover) or one equivalent
+  reference workload per engine class;
+- indicator-implementation parity where possible — TTR-equivalent for ledgr /
+  quantstrat, engine-native indicators elsewhere with documented notes;
+- existing `dev/bench/peer_three_way.R` plus `peer_three_way_backtrader.py`
+  harness extends with one new engine row per addition; no new harness
+  architecture required.
+
+Sequencing:
+
+- Independent of v0.1.8.8 parallel-dispatch work; can land before, after, or
+  alongside. v0.1.8.7 Batch 8 stays narrow (attribution against the existing
+  three-engine peer set); peer-set expansion is a separate task whose
+  deliverable is "the peer comparison table got more rows."
+
+Non-scope:
+
+- no public hosted benchmark dashboard;
+- no cross-host peer-ranking claims; same-host scope only;
+- no architectural comparison with vectorized engines beyond a contextual row
+  with an explicit paradigm note.
+
+See `inst/design/horizon.md` (peer-benchmark expansion entry, v0.1.8.x line).
+
 ### v0.1.9 Target Risk Layer
 
 Authoritative input:

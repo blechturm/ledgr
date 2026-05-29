@@ -46,7 +46,9 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   semantics; **RNG resume non-determinism**; structured RNG preflight metadata;
   broader ambient RNG detection.
 - **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
-  typed execution spec, file split, explicit event types).
+  typed execution spec, file split, explicit event types); peer-benchmark
+  expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
+  contextual paradigm row).
 - **v0.1.9** — affordability / target-risk (incl. the phased-pulse
   restructure); primitive internals and collapse.
 - **v0.1.9.x** — walk-forward post-direction; cost-model post-direction;
@@ -84,6 +86,46 @@ claim); the matrix-canonical strategy surface is a separate contract/ergonomics
 RFC; the deeper typed event-emission rewrite (B1) waits on an explicit
 primitive-contract binding; durable hash/provenance/fingerprint byte changes each
 need their own contract decision.
+
+### 2026-05-30 [optimization] Post-v0.1.8.7 remaining fold-loop levers
+
+The v0.1.8.7 benchmark closeout leaves the main hot bucket as the pure-R
+turnover fold loop: on the current local TTR-backed peer shape, the durable run
+spends 15.70s of 25.91s in the loop while producing 13,355 fills. B0 removed the
+pathological event-buffer cost, R/A removed the obvious timestamp/setup tax, and
+C improved fills materialization/read-back. What remains is not one known bug; it
+is the accumulation of interpreted per-pulse/per-instrument/per-fill mechanics.
+
+Collapse can still help, but only in specific measured sub-operations. Candidate
+uses to preserve for later profiling:
+
+- use `collapse::setv()` for the remaining event-buffer column writes if POSIXct
+  class/tzone and event-stream parity remain byte-identical;
+- replace hot target/order selection idioms (`match`, `%in%`, repeated `which`,
+  logical-vector allocation) with `collapse::fmatch()`, `collapse::whichv()`,
+  and related vectorized operators where profiling shows lookup/selection cost;
+- precompute integer instrument maps with `fmatch()`-style semantics rather than
+  rematching character IDs inside turnover paths;
+- batch state-delta or fill aggregation with grouped `fsum()`-style operations
+  only if a future order/fill shape produces multiple same-pulse rows per
+  instrument and parity is proven;
+- keep `rowbind()`, `fcumsum()`, and summary-stat helpers as reconstruction and
+  metric materialization levers, not as a claim on live fold-loop speed.
+
+Weak collapse candidates: arbitrary strategy callbacks, branch-heavy fill-rule
+logic, and direct matrix bar/feature reads. Those are either user code, already
+cheap base-C indexing, or better addressed by the primitive-contract / compiled
+core path. Lane R-style timestamp and string-formatting cleanup is also mostly
+base-R representation discipline, not a collapse problem.
+
+The practical next diagnostic, if this becomes active work, is an intra-loop
+profile that splits context access, target/order conversion, fill resolution,
+state update, and event emission after B0/R/A/C. Do not start another broad
+collapse pass from package capability alone; require a named hot frame, a
+deterministic-wrapper boundary for value-bearing operations, and parity fixtures
+that cover durable and sweep event streams.
+
+This entry records direction, not committed work.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 
