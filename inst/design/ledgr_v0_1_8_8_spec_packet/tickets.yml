@@ -1,0 +1,195 @@
+version: "0.1.8.8"
+source: "v0_1_8_8_tickets.md"
+generated_from: "v0_1_8_8_spec.md"
+tickets:
+  - id: "LDG-2468"
+    title: "Packet Alignment And v0.1.8.8 Planning State"
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.8"
+    tests:
+      - "manual_packet_review"
+      - "stale_scope_rg_checks"
+      - "git_diff_check"
+      - "packet_alignment_evidence"
+
+  - id: "LDG-2469"
+    title: "Fold-Core Documentation And Mechanical Split"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2468"
+    classification:
+      type: "maintainability"
+      surface: "fold_core"
+      scope: "documentation_and_mechanical_split"
+    tests:
+      - "fold_tests"
+      - "sweep_tests"
+      - "replay_tests"
+      - "metrics_tests"
+      - "package_load_check"
+      - "workbook_function_reference_check"
+      - "rendered_workbook_review"
+
+  - id: "LDG-2470"
+    title: "Fold-Loop Diagnostic Profile"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2469"
+    classification:
+      type: "diagnostic"
+      surface: "fold_loop"
+      scope: "current_source_profile"
+    tests:
+      - "benchmark_script_output_review"
+      - "result_file_review"
+      - "workbook_or_packet_summary_review"
+      - "horizon_diff_review"
+
+  - id: "LDG-2471"
+    title: "RNG Resume And Pulse-Seed Contract"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2468"
+    classification:
+      type: "determinism_contract"
+      surface: "rng_resume_and_sweep"
+      scope: "pulse_seed"
+    tests:
+      - "seed_tests"
+      - "resume_tests"
+      - "sweep_seed_tests"
+      - "preflight_rng_tests"
+      - "pulse_context_tests"
+      - "ambient_rng_fail_loud_tests"
+
+  - id: "LDG-2472"
+    title: "Typed Execution Spec"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2471"
+    classification:
+      type: "internal_refactor"
+      surface: "execution_spec"
+      scope: "run_sweep_payload"
+    tests:
+      - "run_sweep_parity_tests"
+      - "execution_spec_serialization_tests"
+      - "invalid_spec_tests"
+      - "worker_payload_dry_run_tests"
+      - "fold_sweep_test_subset"
+
+  - id: "LDG-2473"
+    title: "Parallel Worker Setup And Backend Skeleton"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2472"
+    classification:
+      type: "infrastructure"
+      surface: "parallel_worker_setup"
+      scope: "mirai_backend"
+    tests:
+      - "dependency_import_checks"
+      - "worker_setup_tests"
+      - "missing_backend_tests"
+      - "preflight_metadata_tests"
+      - "sequential_sweep_regression_tests"
+      - "windows_worker_dry_run"
+
+  - id: "LDG-2474"
+    title: "Parallel Sweep Dispatch"
+    status: "pending"
+    priority: "P1"
+    effort: "XL"
+    dependencies:
+      - "LDG-2473"
+    classification:
+      type: "parallel_execution"
+      surface: "ledgr_sweep"
+      scope: "candidate_dispatch"
+    tests:
+      - "sequential_parallel_equality_tests"
+      - "warning_failure_ordering_tests"
+      - "reproduction_key_stability_tests"
+      - "artifact_count_tests"
+      - "seed_tests"
+      - "worker_count_variation_tests"
+
+  - id: "LDG-2475"
+    title: "Interrupt Semantics And Parallel Measurement"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2474"
+    classification:
+      type: "measurement"
+      surface: "parallel_sweep"
+      scope: "interrupt_and_attribution"
+    tests:
+      - "interrupt_tests_or_manual_verification"
+      - "parallel_benchmark_output_review"
+      - "parallel_result_file_review"
+      - "parallel_closeout_review"
+
+  - id: "LDG-2476"
+    title: "Repo-Local Peer Benchmark Report"
+    status: "pending"
+    priority: "P2"
+    effort: "L"
+    dependencies:
+      - "LDG-2468"
+    classification:
+      type: "benchmark_documentation"
+      surface: "dev_bench"
+      scope: "repo_local_peer_report"
+    tests:
+      - "quarto_report_render_or_dry_run"
+      - "peer_harness_smoke_or_record"
+      - "python_uv_environment_check"
+      - "result_metadata_review"
+      - "comparability_language_review"
+
+  - id: "LDG-2477"
+    title: "v0.1.8.8 Release Gate And Closeout"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2468"
+      - "LDG-2469"
+      - "LDG-2470"
+      - "LDG-2471"
+      - "LDG-2472"
+      - "LDG-2473"
+      - "LDG-2474"
+      - "LDG-2475"
+      - "LDG-2476"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.8"
+    tests:
+      - "targeted_tests"
+      - "full_test_suite"
+      - "package_build"
+      - "package_check"
+      - "parallel_benchmark_closeout_review"
+      - "documentation_review"
+      - "manual_release_checklist"
+

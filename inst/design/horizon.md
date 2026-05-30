@@ -57,10 +57,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
   review + promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
-  liquidity and capacity; OMS semantics + snapshot lineage + live data logs;
-  external benchmark / beta uses; external reference-data adapter provenance;
-  provider risk-free divergence; reference strategy templates / baseline
-  strategies.
+  explicit accounting-critical event types RFC; liquidity and capacity; OMS
+  semantics + snapshot lineage + live data logs; external benchmark / beta
+  uses; external reference-data adapter provenance; provider risk-free
+  divergence; reference strategy templates / baseline strategies.
 - **v0.2.x → v0.3.0** — live bad-data resilience, ragged-universe
   (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
   needs a dedicated RFC).
@@ -2417,7 +2417,10 @@ candidates.
 - **Explicit event types.** Opening positions are seeded as `CASHFLOW` events
   with meta flags. Accounting-critical semantics should not live only in
   `meta_json`; add a `POSITION_SEED` type (and reserve `FEE`, `DIVIDEND`,
-  `SPLIT` for later) rather than overloading `CASHFLOW`.
+  `SPLIT` for later) rather than overloading `CASHFLOW`. This is deferred from
+  v0.1.8.8 and scheduled as a dedicated v0.2.x RFC coordinated with corporate
+  actions / instrument-master work; do not slip it into fold-core documentation
+  or parallel-dispatch tickets.
 - **Batch-aware cost model.** The per-proposal `cost_resolver` cannot model
   batch/portfolio slippage or liquidity. Routes to the v0.2.x
   liquidity/capacity arc; the single-order resolver remains the default

@@ -101,7 +101,7 @@ versioned packet.
 | v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
 | v0.1.8.6 | Done | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, performance attribution, and v0.1.8.7 optimization handoff. Snapshot administration and research-loop helpers deferred. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
 | v0.1.8.7 | Done | Optimization round 2 and legacy cleanup: removed raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; dropped cli/R6, added collapse, and shipped measured event-buffer, representation/setup, reconstruction, artifact-policy, and benchmark-attribution work. | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
-| v0.1.8.8 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
+| v0.1.8.8 | Planned | Parallel sweep dispatch and determinism, fold-core maintainer documentation / containment, and repo-local reproducible peer benchmark reporting. | `inst/design/ledgr_v0_1_8_8_spec_packet/` |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
@@ -113,6 +113,7 @@ versioned packet.
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
 | v0.2.x | Planned | Point-in-time data tables for external observations and reference data. | Future packet |
 | v0.2.x | Planned | Corporate actions and instrument master for serious equity data. | Future packet |
+| v0.2.x | Planned | Explicit accounting-critical event types RFC coordinated with corporate actions and instrument master. | Future packet |
 | v0.2.x | Planned | Benchmark context and active metrics after benchmark/reference substrate. | Future packet |
 | v0.2.x | Planned | OMS semantics, snapshot lineage, and roll-forward data sources. | Future packets |
 | v0.2.x | Planned | Reference strategy templates as executable contract demonstrations. | Future packet |
@@ -1501,6 +1502,26 @@ Constraints:
   and benchmark/reference-data design;
 - adapters may provide data, but ledgr must define the interpretation contract
   before using it in committed experiments.
+
+### v0.2.x Explicit Accounting Event Types RFC
+
+Intent:
+
+- replace overloaded accounting-critical event semantics with explicit event
+  types when corporate actions, fees, and instrument-master work need them;
+- evaluate `POSITION_SEED`, `FEE`, `DIVIDEND`, and `SPLIT` together rather
+  than slipping one schema change into a maintenance cycle;
+- keep event-stream, replay, promotion, and migration consequences visible in a
+  dedicated RFC.
+
+Constraints:
+
+- do not change current opening-position `CASHFLOW` semantics as part of
+  v0.1.8.8 fold-core documentation or parallel-dispatch work;
+- the RFC must address DB schema/migration, replay semantics, event-stream
+  parity or accepted intentional parity change, reproduction keys, and docs;
+- coordinate with point-in-time data tables and corporate-action interpretation
+  policy before committed experiments depend on these event types.
 
 ### v0.2.x Benchmark Context And Active Metrics
 

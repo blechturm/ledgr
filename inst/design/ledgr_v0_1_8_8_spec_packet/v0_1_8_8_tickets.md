@@ -1,0 +1,661 @@
+# ledgr v0.1.8.8 Tickets
+
+Version: v0.1.8.8
+Date: 2026-05-30
+Total Tickets: 10
+
+## Ticket Organization
+
+This packet implements the scoped v0.1.8.8 plan from `v0_1_8_8_spec.md`:
+parallel sweep dispatch and determinism, fold-core maintainer documentation /
+containment, and a repo-local reproducible peer benchmark report.
+
+The release spine is:
+
+```text
+packet alignment
+  -> fold-core documentation + mechanical split
+  -> intra-loop diagnostic profile
+  -> RNG / pulse-seed policy
+  -> typed execution spec
+  -> parallel backend + worker setup
+  -> parallel sweep dispatch
+  -> interrupt semantics + parallel measurement
+  -> repo-local peer benchmark report
+  -> release gate
+```
+
+v0.1.8.8 is not a second execution engine, compiled-core, target-risk, OMS,
+cost/liquidity, durable identity redesign, promotion-grade artifact, public
+distributed execution, or package-vignette benchmark release. Sequential sweep
+remains the reference implementation.
+
+## Dependency DAG
+
+```text
+LDG-2468 Packet Alignment And v0.1.8.8 Planning State
+  |-- LDG-2469 Fold-Core Documentation And Mechanical Split
+  |     `-- LDG-2470 Fold-Loop Diagnostic Profile
+  |
+  |-- LDG-2471 RNG Resume And Pulse-Seed Contract
+  |     `-- LDG-2472 Typed Execution Spec
+  |           `-- LDG-2473 Parallel Worker Setup And Backend Skeleton
+  |                 `-- LDG-2474 Parallel Sweep Dispatch
+  |                       `-- LDG-2475 Interrupt Semantics And Parallel Measurement
+  |
+  `-- LDG-2476 Repo-Local Peer Benchmark Report
+
+LDG-2477 v0.1.8.8 Release Gate And Closeout
+  depends on LDG-2468 through LDG-2476.
+```
+
+LDG-2476 is separable if the cycle becomes too wide. LDG-2469 is not optional:
+the fold-core maintainer documentation and source legibility work is a release
+goal.
+
+## Priority Levels
+
+- P0: Scope gate, determinism gate, parallel contract gate, documentation gate,
+  or release gate.
+- P1: Primary v0.1.8.8 implementation or measurement work.
+- P2: Useful benchmark/documentation work that may slip if the core release is
+  too wide.
+
+---
+
+## LDG-2468: Packet Alignment And v0.1.8.8 Planning State
+
+Priority: P0
+Effort: S
+Dependencies: none
+Status: Pending
+
+### Description
+
+Finalize the v0.1.8.8 planning packet and make the active-version state
+unambiguous across the design index, roadmap, horizon, AGENTS notes, spec,
+ticket file, machine-readable ticket metadata, and batch plan.
+
+### Tasks
+
+- Keep `v0_1_8_8_spec.md`, `v0_1_8_8_tickets.md`, `tickets.yml`, and
+  `batch_plan.md` synchronized.
+- Confirm `inst/design/README.md`, `inst/design/ledgr_roadmap.md`,
+  `inst/design/horizon.md`, and `AGENTS.md` point to the v0.1.8.8 packet as
+  active.
+- Confirm the settled spec-cut decisions are visible: `mirai` as `Suggests`,
+  hybrid worker dependency handling, deterministic-only RNG resume with
+  `ctx$pulse_seed`, discard-all interrupt behavior, mandatory internal typed
+  execution spec, mechanical fold-core split paired with docs, explicit event
+  types deferred to v0.2.x, and peer-list tiers.
+- Confirm the packet explicitly defers compiled core, target risk, OMS,
+  cost/liquidity, durable identity byte redesign, public distributed execution,
+  promotion-grade artifact expansion, and package-vignette benchmark claims.
+
+### Acceptance Criteria
+
+- Spec, ticket markdown, `tickets.yml`, and batch plan agree on ticket IDs,
+  dependencies, statuses, priorities, and scope.
+- README, roadmap, horizon, and AGENTS active-packet language agrees with the
+  spec.
+- No deferred milestone is accidentally promoted by active-packet text.
+- Ticket dependencies form the intended DAG.
+- Stale-scope `rg` checks and a diff review are recorded as packet-alignment
+  evidence.
+
+### Verification
+
+Manual packet review and `rg` checks for stale active-packet, deferred-scope,
+and legacy planning language.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`
+- `inst/design/ledgr_roadmap.md`
+- `inst/design/horizon.md`
+- `AGENTS.md`
+
+### Classification
+
+```yaml
+type: governance
+surface: design_packet
+scope: v0.1.8.8
+```
+
+---
+
+## LDG-2469: Fold-Core Documentation And Mechanical Split
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2468
+Status: Pending
+
+### Description
+
+Refresh the fold-core maintainer workbook, add professional inline comments,
+and mechanically split `R/fold-core.R` along the structure the workbook
+documents. This ticket is documentation and containment work, not a behavior
+change.
+
+### Tasks
+
+- Update `inst/design/maintainer_review/fold_core_workbook.qmd` against the
+  current post-v0.1.8.7 source.
+- Update the workbook freshness statement and verification date.
+- Make the workbook function-complete for the fold-core source after any file
+  split, or explicitly classify moved/test-only/out-of-scope functions.
+- Add diagrams for high-level flow, per-pulse execution, event emission,
+  reconstruction, and metrics materialization.
+- Add inline comments in fold-core source where they explain invariants, phase
+  boundaries, replay-sensitive transitions, accounting transitions, or
+  duplicated parity-sensitive algorithms.
+- Split fold-core source mechanically into engine, reconstruction, metrics, and
+  test-only/helper files if the split remains behavior-neutral.
+- Keep the workbook organization aligned with the structure that ships.
+
+### Acceptance Criteria
+
+- No public API changes.
+- No event, equity, fills, sweep, metric, or replay behavior changes.
+- The workbook no longer presents stale v0.1.8.6/v0.1.8.7 line anchors as
+  current.
+- Every fold-core function has workbook coverage or an explicit classification.
+- Comments explain "why" and invariants, not obvious "what" code narration.
+- File-split source loading works under package load and tests.
+- Existing fold, sweep, replay, fills, and metrics parity tests pass.
+
+### Verification
+
+Targeted fold/sweep/replay/metrics tests, package load check, workbook function
+name grep/check, and manual rendered-workbook review.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Sections 5 and 6.2
+- `inst/design/maintainer_review/fold_core_workbook.qmd`
+- `inst/design/horizon.md`, fold-core structural-debt entry
+
+### Classification
+
+```yaml
+type: maintainability
+surface: fold_core
+scope: documentation_and_mechanical_split
+```
+
+---
+
+## LDG-2470: Fold-Loop Diagnostic Profile
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2469
+Status: Pending
+
+### Description
+
+Produce a current-source intra-loop diagnostic profile after v0.1.8.7 B0/R/A/C.
+The goal is attribution for documentation and future planning, not another
+optimization pass.
+
+### Tasks
+
+- Add or update a local diagnostic harness that splits the remaining pure-R
+  fold loop into named sub-buckets: context access/building, bar/feature reads,
+  strategy callback, target/order conversion, fill resolution, state update,
+  and event emission.
+- Run the diagnostic on at least the current TTR-backed peer turnover shape and
+  one low-turnover or wide shape if practical.
+- Record raw results under `dev/bench/results/`.
+- Summarize results in the fold-core workbook and/or the v0.1.8.8 packet.
+- Park future optimization options in `inst/design/horizon.md` without
+  promoting them into v0.1.8.8 implementation scope.
+
+### Acceptance Criteria
+
+- Each reported bucket has a clear measurement method and timing boundary.
+- The report does not claim a new optimization win.
+- Collapse, compiled-core, and primitive-internals follow-ups remain future
+  options unless explicitly ticketed later.
+- Results are labeled current-source, local-host, and machine-specific.
+
+### Verification
+
+Benchmark script output review, result-file review, workbook/packet summary
+review, and horizon diff review.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Sections 5.1 and 8
+- `inst/design/horizon.md`, post-v0.1.8.7 remaining fold-loop levers
+- `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
+
+### Classification
+
+```yaml
+type: diagnostic
+surface: fold_loop
+scope: current_source_profile
+```
+
+---
+
+## LDG-2471: RNG Resume And Pulse-Seed Contract
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2468
+Status: Pending
+
+### Description
+
+Bind and implement the deterministic-only resume/parallel RNG policy. Add
+`ctx$pulse_seed` so stochastic strategies can use pulse-specific,
+resume-stable, worker-stable randomness without reading ambient `.Random.seed`.
+
+### Tasks
+
+- Add `ledgr_derive_pulse_seed()` or equivalent internal helper derived from
+  `(execution_seed, pulse_idx)`.
+- Keep the helper aligned with existing `ledgr_derive_seed()` and the
+  `ledgr_seed_v1` contract; do not invent an unrelated seed derivation scheme.
+- Define `pulse_idx` as the 1-based position in the run's pulse sequence.
+- Add `ctx$pulse_seed` to strategy contexts.
+- Preserve existing `ctx$seed` semantics.
+- Extend static preflight or execution guards so ambient-RNG strategies fail
+  loudly for resume and parallel paths with migration guidance.
+- Document the deterministic-only resume guarantee and the `ctx$pulse_seed`
+  migration pattern.
+- Keep seed derivation independent of worker order and global RNG state.
+
+### Acceptance Criteria
+
+- Deterministic strategy resume remains byte-identical.
+- Strategies using `ctx$pulse_seed` reproduce across continuous run, resumed
+  run, sequential sweep, and parallel-ready execution fixtures.
+- Ambient-RNG strategies fail loudly where the policy requires them to fail.
+- Per-candidate and per-pulse seed derivation is stable across worker counts.
+- Existing seed/reproduction-key tests remain green.
+
+### Verification
+
+Targeted seed, resume, sweep, preflight, and pulse-context tests. Add fixtures
+for `ctx$pulse_seed` reproducibility and ambient-RNG fail-loud behavior.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Section 4
+- `inst/design/horizon.md`, RNG resume non-determinism entry
+- `R/fold-core.R`
+- `R/sweep.R`
+- `R/strategy-preflight.R`
+  (`ledgr_derive_seed()` / `ledgr_seed_v1`)
+
+### Classification
+
+```yaml
+type: determinism_contract
+surface: rng_resume_and_sweep
+scope: pulse_seed
+```
+
+---
+
+## LDG-2472: Typed Execution Spec
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2471
+Status: Pending
+
+### Description
+
+Replace hand-built run/sweep execution-list construction with an internal
+`ledgr_execution_spec()` constructor and validator. This is internal plumbing
+for run/sweep drift prevention and worker serialization, not a public API.
+
+### Tasks
+
+- Add an internal `ledgr_execution_spec()` constructor with a spec version and
+  validation.
+- Route both `ledgr_run()` and `ledgr_sweep()` execution assembly through the
+  constructor.
+- Preserve existing public APIs and output surfaces.
+- Add transition tests proving typed-spec output matches any remaining
+  hand-built execution-list equivalent.
+- Remove hand-built execution-list call sites once parity is verified.
+- Ensure execution specs are serializable for worker dispatch.
+- Fail before fold entry on invalid specs.
+
+### Acceptance Criteria
+
+- `ledgr_run()` and `ledgr_sweep()` build equivalent execution specs through
+  one constructor.
+- Typed-spec parity holds during transition.
+- No hand-built execution-list construction remains after parity is proven.
+- Existing run/sweep/event/replay parity tests remain green.
+- Invalid specs fail clearly before fold entry.
+- The spec object is serializable by the planned worker backend.
+
+### Verification
+
+Targeted run/sweep parity tests, serialization tests, invalid-spec tests,
+worker-payload dry-run tests, and full fold/sweep test subset.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Section 6.1
+- `inst/design/horizon.md`, fold-core structural-debt entry
+- `R/backtest-runner.R`
+- `R/sweep.R`
+- `R/fold-core.R`
+
+### Classification
+
+```yaml
+type: internal_refactor
+surface: execution_spec
+scope: run_sweep_payload
+```
+
+---
+
+## LDG-2473: Parallel Worker Setup And Backend Skeleton
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2472
+Status: Pending
+
+### Description
+
+Add the parallel backend skeleton, worker setup contract, and dependency
+handling. `mirai` is the first backend and remains a suggested dependency.
+Sequential ledgr must remain backend-free.
+
+### Tasks
+
+- Add `mirai` to `Suggests` if needed.
+- Add internal backend availability checks.
+- Fail loudly when `workers > 1` is requested and `mirai` is unavailable.
+- Add worker setup code for loading ledgr source/package code.
+- Extend static preflight metadata to identify worker package needs.
+- Attach packages required for unqualified calls on workers using the backend
+  setup mechanism, e.g. `mirai::everywhere({ library(pkg) })` where applicable.
+- Check `requireNamespace()` for qualified `pkg::fn` uses.
+- Add an explicit user override/augmentation mechanism for worker packages.
+- Reject or document `.GlobalEnv` helper smuggling as unsupported.
+- Add worker setup dry-run tests.
+
+### Acceptance Criteria
+
+- `workers = 1` does not require `mirai`.
+- `workers > 1` without `mirai` fails loudly and actionably.
+- Worker setup loads declared Tier 2 packages or reports actionable failure.
+- Qualified and unqualified package requirements are handled according to the
+  spike-grounded policy.
+- Sequential sweep behavior is unchanged.
+- No worker writes persistent artifacts during setup.
+
+### Verification
+
+Dependency/import checks, worker setup tests, missing-backend tests,
+preflight metadata tests, sequential sweep regression tests, and optional manual
+worker dry-run on Windows.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Sections 3.3 and 9
+- `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
+- `R/strategy-preflight.R`
+- `R/sweep.R`
+
+### Classification
+
+```yaml
+type: infrastructure
+surface: parallel_worker_setup
+scope: mirai_backend
+```
+
+---
+
+## LDG-2474: Parallel Sweep Dispatch
+
+Priority: P1
+Effort: XL
+Dependencies: LDG-2473
+Status: Pending
+
+### Description
+
+Implement optional candidate-level parallel sweep dispatch over the same fold
+core. Parallelism is a dispatch layer, not a second execution engine.
+
+### Tasks
+
+- Add public or experimental `workers` control to `ledgr_sweep()` according to
+  the accepted API shape.
+- Dispatch candidates to workers using typed execution specs.
+- Collect compact candidate results in orchestrator-owned order.
+- Preserve sequential result row order, warning association, failure semantics,
+  seed derivation, reproduction keys, and promotion provenance.
+- Ensure workers return results and do not write candidate ledgers, equity
+  curves, feature panels, run telemetry, or promotion artifacts.
+- Support `workers = 1` as the sequential reference.
+- Add tests for equal sequential/parallel results across worker counts.
+
+### Acceptance Criteria
+
+- `workers = 1` equals existing sequential sweep behavior.
+- `workers > 1` uses the same fold core and produces the same rows as
+  sequential for deterministic strategies.
+- Candidate rows are ordered by candidate order, not worker completion order.
+- Candidate warnings and failures attach to the correct candidate.
+- `ledgr_candidate_reproduction_key()` output is stable across worker counts
+  for the same candidate.
+- No persistent heavy artifact rows are written by workers during sweep.
+
+### Verification
+
+Sequential/parallel equality tests, warning/failure ordering tests, reproduction
+key stability tests, artifact-count tests, seed tests, and worker-count
+variation tests.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Sections 3.1, 3.2, and 9
+- `R/sweep.R`
+- `R/fold-core.R`
+- `R/backtest-runner.R`
+
+### Classification
+
+```yaml
+type: parallel_execution
+surface: ledgr_sweep
+scope: candidate_dispatch
+```
+
+---
+
+## LDG-2475: Interrupt Semantics And Parallel Measurement
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2474
+Status: Pending
+
+### Description
+
+Finish the operational parallel contract: discard-all interrupt behavior,
+progress/failure reporting where supported, and empirical measurement of worker
+overhead and parallel crossover points.
+
+### Tasks
+
+- Implement or document discard-all-on-interrupt behavior.
+- Ensure interrupted sweeps do not return partially promotable results unless a
+  future partial-result contract explicitly authorizes it.
+- Add tests or manual verification for interrupt/cancel behavior where
+  practical.
+- Measure sequential baseline, worker setup overhead, per-candidate slope, and
+  parallel timings across candidate counts and worker counts.
+- Include cheap-SMA and feature-heavy workloads where practical.
+- Record raw results and environment metadata under `dev/bench/results/`.
+- Summarize parallel attribution without claiming speedup from one shape.
+
+### Acceptance Criteria
+
+- Interrupt behavior matches the spec and does not leave ambiguous partial
+  results.
+- Parallel measurements distinguish startup overhead, per-candidate slope, and
+  crossover point.
+- Same workload rows compare sequential and parallel current-source runs.
+- Results are labeled local-host and machine-specific.
+- No public speedup claim exceeds the measured evidence.
+
+### Verification
+
+Interrupt tests/manual verification, benchmark output review, result-file
+review, and documentation/closeout review.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Sections 3.5 and 8
+- `dev/bench/`
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
+
+### Classification
+
+```yaml
+type: measurement
+surface: parallel_sweep
+scope: interrupt_and_attribution
+```
+
+---
+
+## LDG-2476: Repo-Local Peer Benchmark Report
+
+Priority: P2
+Effort: L
+Dependencies: LDG-2468
+Status: Pending
+
+### Description
+
+Create a reproducible Quarto benchmark report under `dev/bench/`. This is
+repo-local developer benchmark documentation, not package documentation,
+pkgdown content, or public hosted ranking material.
+
+### Tasks
+
+- Add `dev/bench/peer_benchmark.qmd`.
+- Add a `uv`-managed Backtrader environment under `dev/bench/python/backtrader/`
+  with `pyproject.toml`, `uv.lock`, and README.
+- Run the required same-host peer rows: ledgr canonical TTR-backed SMA, ledgr
+  built-in SMA diagnostic, quantstrat, and Backtrader.
+- Attempt LEAN Python-strategy mode if local setup is tractable; if brittle but
+  feasible, record a preliminary row rather than silently dropping it.
+- Keep zipline-reloaded and Ziplime optional and non-blocking.
+- Keep published LEAN/Ziplime rows context-only, not in same-host ratios.
+- Exclude VectorBT from the event-driven peer table except as a paradigm note.
+- Make `dev/bench/peer_comparison.md` point to the new Quarto report as the
+  current benchmark artifact.
+
+### Acceptance Criteria
+
+- Report lives under `dev/bench/` and is not included in package vignettes or
+  pkgdown.
+- Python peers run through `uv run --project ...`.
+- Shared bars are generated once and reused across same-host peers.
+- Input hashes, environment metadata, package versions, and timing boundaries
+  are visible.
+- Optional peers fail/skip loudly with status.
+- Report language distinguishes workload-specific same-host rows from general
+  speed rankings.
+
+### Verification
+
+Render or dry-run the Quarto report as practical, run the required peer harness
+or smoke shape, inspect raw results/environment metadata, and manually review
+comparability language.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Section 7
+- `dev/bench/README.md`
+- `dev/bench/peer_three_way.R`
+- `dev/bench/peer_three_way_backtrader.py`
+- `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
+
+### Classification
+
+```yaml
+type: benchmark_documentation
+surface: dev_bench
+scope: repo_local_peer_report
+```
+
+---
+
+## LDG-2477: v0.1.8.8 Release Gate And Closeout
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2468, LDG-2469, LDG-2470, LDG-2471, LDG-2472, LDG-2473, LDG-2474, LDG-2475, LDG-2476
+Status: Pending
+
+### Description
+
+Run the release gate, close the planning packet, and prepare v0.1.8.8 for merge
+and tag. If LDG-2476 slips by explicit maintainer decision, record that
+decision and keep the core release gate tied to LDG-2468 through LDG-2475.
+
+### Tasks
+
+- Confirm all required tickets are complete or explicitly deferred.
+- Confirm ticket markdown and `tickets.yml` statuses agree.
+- Run targeted tests for parallel/determinism/fold-core changes.
+- Run full test suite.
+- Run package build and check.
+- Run or review parallel benchmark attribution.
+- Review fold-core workbook freshness and rendered output.
+- Review peer benchmark report status if LDG-2476 shipped.
+- Update roadmap, horizon, NEWS/release notes, and active-packet references.
+- Ensure generated local artifacts are not committed.
+
+### Acceptance Criteria
+
+- Required tests and checks pass or have documented, accepted non-blocking
+  caveats.
+- Sequential sweep contract remains unchanged.
+- Parallel path is deterministic under the accepted worker/RNG policy.
+- Fold-core workbook and comments reflect the code that ships.
+- Measurements are current-source, local-host, and caveated.
+- Release notes do not overclaim parallel speedup or peer superiority.
+- The release branch is ready for merge and tag.
+
+### Verification
+
+Targeted tests, full tests, package build/check, benchmark closeout review,
+documentation review, and manual release checklist.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`
+- `v0_1_8_8_tickets.md`
+- `tickets.yml`
+- `batch_plan.md`
+
+### Classification
+
+```yaml
+type: release_gate
+surface: release_process
+scope: v0.1.8.8
+```
