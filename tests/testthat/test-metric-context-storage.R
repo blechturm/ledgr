@@ -81,10 +81,10 @@ testthat::test_that("legacy runs without stored metric context fall back to defa
     "
     INSERT INTO runs (
       run_id, created_at_utc, engine_version, config_json, config_hash,
-      data_hash, status, error_msg
+      status, error_msg
     ) VALUES (
       'legacy-context-run', TIMESTAMP '2020-01-01 00:00:00', '0.1.8.1',
-      '{}', 'config-hash', 'data-hash', 'DONE', NULL
+      '{}', 'config-hash', 'DONE', NULL
     )
     "
   )

@@ -856,6 +856,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_precompute_features = "sweeps",
     ledgr_sweep = "sweeps",
     ledgr_candidate = "sweeps",
+    ledgr_candidate_reproduction_key = "sweeps",
     ledgr_promote = "sweeps",
     ledgr_promotion_context = "sweeps",
     ledgr_run_promotion_context = "sweeps",
@@ -944,6 +945,7 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   root <- testthat::test_path("..", "..")
   sweep_help <- paste(readLines(file.path(root, "man", "ledgr_sweep.Rd"), warn = FALSE), collapse = "\n")
   candidate_help <- paste(readLines(file.path(root, "man", "ledgr_candidate.Rd"), warn = FALSE), collapse = "\n")
+  key_help <- paste(readLines(file.path(root, "man", "ledgr_candidate_reproduction_key.Rd"), warn = FALSE), collapse = "\n")
   promote_help <- paste(readLines(file.path(root, "man", "ledgr_promote.Rd"), warn = FALSE), collapse = "\n")
   precompute_help <- paste(readLines(file.path(root, "man", "ledgr_precompute_features.Rd"), warn = FALSE), collapse = "\n")
   promotion_help <- paste(readLines(file.path(root, "man", "ledgr_promotion_context.Rd"), warn = FALSE), collapse = "\n")
@@ -1012,7 +1014,7 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(readme, "The current ledgr research API is experiment-first", fixed = TRUE)
   testthat::expect_match(readme, "includes sequential\\s+exploratory sweep support")
 
-  for (help in list(sweep_help, candidate_help, promote_help, precompute_help, promotion_help)) {
+  for (help in list(sweep_help, candidate_help, key_help, promote_help, precompute_help, promotion_help)) {
     testthat::expect_match(help, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
     testthat::expect_match(help, "system.file(\"doc\", \"sweeps.html\", package = \"ledgr\")", fixed = TRUE)
   }
@@ -1024,6 +1026,8 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(sweep_help, "more than 20 combinations", fixed = TRUE)
   testthat::expect_match(promote_help, "require_same_snapshot = FALSE", fixed = TRUE)
   testthat::expect_match(candidate_help, "execution_seed", fixed = TRUE)
+  testthat::expect_match(key_help, "compact reproduction key", fixed = TRUE)
+  testthat::expect_match(key_help, "not durable run artifacts", fixed = TRUE)
   testthat::expect_match(precompute_help, "feature engine version", fixed = TRUE)
   testthat::expect_match(promotion_help, "not a full sweep artifact", fixed = TRUE)
 })

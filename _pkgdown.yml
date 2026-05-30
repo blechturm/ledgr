@@ -49,6 +49,7 @@ reference:
       - ledgr_sweep
       - print.ledgr_sweep_results
       - ledgr_candidate
+      - ledgr_candidate_reproduction_key
       - print.ledgr_sweep_candidate
       - ledgr_promote
       - ledgr_promotion_context
@@ -147,7 +148,6 @@ reference:
       - ledgr_db_init
       - ledgr_create_schema
       - ledgr_validate_schema
-      - ledgr_data_hash
       - print.ledgr_config
       - ledgr_backtest_run
       - ledgr_backtest_bench

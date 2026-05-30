@@ -103,7 +103,7 @@ ledgr_sweep <- function(exp,
   ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
   bars_mat <- ledgr_sweep_bars_matrix(bars_by_id, exp$universe)
   pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
-  pulses_iso <- vapply(pulses_posix, ledgr_normalize_ts_utc, character(1))
+  pulses_iso <- format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   static_bars_views <- ledgr_bars_pulse_views(
     bars_mat = bars_mat,
     instrument_ids = exp$universe,
@@ -255,6 +255,7 @@ ledgr_sweep <- function(exp,
   attr(out, "strategy_preflight") <- preflight
   attr(out, "feature_union") <- feature_union
   attr(out, "feature_union_hash") <- ledgr_feature_set_hash(feature_union)
+  attr(out, "feature_engine_version") <- runtime_projection$feature_engine_version
   attr(out, "candidate_features") <- resolved$candidate_features
   attr(out, "metric_context") <- metric_context
   attr(out, "metric_context_hash") <- ledgr_metric_context_hash(metric_context)
@@ -285,8 +286,10 @@ ledgr_sweep <- function(exp,
 #'   view passed to `ledgr_candidate()`. Promotion-context storage uses that
 #'   view to record the filtered/sorted candidate table the user selected from.
 #' `ledgr_candidate()` is the supported way to extract params, execution seed,
-#' and row-level provenance for promotion. It avoids making users manually pull
-#' `params[[1]]` and `execution_seed` from a tibble row.
+#' and row-level provenance for promotion. The selected candidate also carries
+#' the compact reproduction key exposed by
+#' [ledgr_candidate_reproduction_key()]. It avoids making users manually pull
+#' `params[[1]]`, `execution_seed`, and provenance fields from a tibble row.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -342,6 +345,91 @@ ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
   structure(out, class = c("ledgr_sweep_candidate", "list"))
 }
 
+#' Return the compact reproduction key for a sweep candidate
+#'
+#' @param candidate A `ledgr_sweep_candidate`.
+#' @return A `ledgr_candidate_reproduction_key` list.
+#' @details
+#' Sweep results are compact evaluation records, not durable run artifacts.
+#' `ledgr_candidate_reproduction_key()` exposes the small key carried by a
+#' selected candidate: snapshot identity, selector, strategy identity, feature
+#' fingerprints, engine versions, seed metadata, candidate params, and metric
+#' context. [ledgr_promote()] consumes the same candidate object to explicitly
+#' rerun the candidate through [ledgr_run()] when durable ledger and equity
+#' artifacts are needed.
+#'
+#' @section Articles:
+#' Exploratory sweeps and promotion:
+#' `vignette("sweeps", package = "ledgr")`
+#' `system.file("doc", "sweeps.html", package = "ledgr")`
+#' @export
+ledgr_candidate_reproduction_key <- function(candidate) {
+  if (!inherits(candidate, "ledgr_sweep_candidate")) {
+    rlang::abort("`candidate` must be a ledgr_sweep_candidate object.", class = "ledgr_invalid_args")
+  }
+  meta <- candidate$sweep_meta
+  if (!is.list(meta)) {
+    meta <- list()
+  }
+  provenance <- candidate$provenance
+  if (!is.list(provenance)) {
+    provenance <- list()
+  }
+
+  structure(
+    list(
+      reproduction_key_version = "ledgr_candidate_reproduction_key_v1",
+      source_sweep = list(
+        sweep_id = meta$sweep_id %||% NULL,
+        evaluation_scope = meta$evaluation_scope %||% provenance$evaluation_scope %||% NULL
+      ),
+      candidate = list(
+        run_id = candidate$run_id,
+        status = candidate$status %||% NA_character_,
+        params = candidate$params,
+        feature_params = candidate$feature_params %||% list()
+      ),
+      snapshot = list(
+        snapshot_id = meta$snapshot_id %||% NULL,
+        snapshot_hash = provenance$snapshot_hash %||% meta$snapshot_hash %||% NULL
+      ),
+      selector = list(
+        scoring_range = meta$scoring_range %||% NULL,
+        universe = meta$universe %||% NULL
+      ),
+      strategy = list(
+        strategy_hash = provenance$strategy_hash %||% meta$strategy_hash %||% NULL,
+        strategy_name = meta$strategy_name %||% NULL,
+        source_capture_method = meta$strategy_source_capture_method %||% NULL,
+        preflight = meta$strategy_preflight %||% NULL
+      ),
+      features = list(
+        feature_set_hash = provenance$feature_set_hash %||% NULL,
+        feature_union = meta$feature_union %||% NULL,
+        feature_union_hash = meta$feature_union_hash %||% NULL,
+        feature_fingerprints = candidate$feature_fingerprints %||% NULL,
+        alias_map_hash = provenance$alias_map_hash %||% NULL,
+        alias_map_version = provenance$alias_map_version %||% NULL
+      ),
+      engine = list(
+        feature_engine_version = meta$feature_engine_version %||% ledgr_feature_engine_version(),
+        provenance_version = provenance$provenance_version %||% NULL
+      ),
+      seed = list(
+        execution_seed = candidate$execution_seed,
+        master_seed = provenance$master_seed %||% meta$master_seed %||% NULL,
+        seed_contract = provenance$seed_contract %||% meta$seed_contract %||% NULL
+      ),
+      metric_context = list(
+        metric_context_hash = meta$metric_context_hash %||% NULL,
+        metric_context_version = meta$metric_context_version %||% NULL
+      ),
+      execution_assumptions = meta$execution_assumptions %||% NULL
+    ),
+    class = c("ledgr_candidate_reproduction_key", "list")
+  )
+}
+
 #' Promote a sweep candidate to a committed run
 #'
 #' Replays a selected sweep candidate through `ledgr_run()` so the result becomes
@@ -358,8 +446,11 @@ ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
 #' @details
 #' `ledgr_promote()` commits a selected sweep candidate by calling
 #' [ledgr_run()] with the candidate strategy params, feature params, and exact
-#' `execution_seed`. Runs
-#' created this way store durable promotion context that can be read with
+#' `execution_seed`. This is the slow/materialized path: the sweep keeps only
+#' compact candidate summaries and the reproduction key available through
+#' [ledgr_candidate_reproduction_key()], while promotion explicitly pays the
+#' cost to create durable ledger, equity, telemetry, and promotion-context
+#' artifacts. Runs created this way store durable promotion context that can be read with
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
 #'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
@@ -509,7 +600,7 @@ ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
     "sweep_id", "snapshot_id", "snapshot_hash", "scoring_range", "universe",
     "master_seed", "seed_contract", "evaluation_scope", "strategy_hash",
     "strategy_name", "strategy_source_capture_method", "strategy_preflight",
-    "feature_union", "feature_union_hash", "metric_context",
+    "feature_union", "feature_union_hash", "feature_engine_version", "metric_context",
     "metric_context_hash", "metric_context_version", "execution_assumptions"
   )
   stats::setNames(lapply(keys, function(key) attr(results, key, exact = TRUE)), keys)
@@ -701,6 +792,7 @@ ledgr_memory_output_handler <- function(run_id) {
   state <- new.env(parent = emptyenv())
   state$event_count <- 0L
   state$event_capacity <- 0L
+  state$event_max_capacity <- .Machine$integer.max
   state$event_cols <- NULL
   state$status <- "RUNNING"
   handler <- list()
@@ -728,17 +820,18 @@ ledgr_memory_output_handler <- function(run_id) {
 
   ensure_event_capacity <- function(required) {
     required <- as.integer(required)
-    if (is.null(state$event_cols)) {
-      init_event_cols(max(16L, required))
-      return(invisible(TRUE))
-    }
+    next_capacity <- ledgr_event_buffer_next_capacity(
+      current_capacity = state$event_capacity,
+      required = required,
+      max_events = state$event_max_capacity
+    )
     if (required <= state$event_capacity) {
       return(invisible(TRUE))
     }
     old_cols <- state$event_cols
     old_count <- state$event_count
-    init_event_cols(max(required, state$event_capacity * 2L, 16L))
-    if (old_count > 0L) {
+    init_event_cols(next_capacity)
+    if (!is.null(old_cols) && old_count > 0L) {
       idx <- seq_len(old_count)
       for (name in names(old_cols)) {
         state$event_cols[[name]][idx] <- old_cols[[name]][idx]
@@ -833,7 +926,11 @@ ledgr_memory_output_handler <- function(run_id) {
     rlang::abort(msg, class = class)
   }
   handler$init_buffers <- function(max_events) {
-    ensure_event_capacity(state$event_count + as.integer(max_events))
+    state$event_max_capacity <- ledgr_event_buffer_checked_capacity(
+      state$event_count + as.integer(max_events),
+      "`max_events`"
+    )
+    ensure_event_capacity(state$event_count + 1L)
     invisible(TRUE)
   }
   handler$append_event_rows <- function(rows) {

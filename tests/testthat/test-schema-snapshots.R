@@ -28,7 +28,7 @@ testthat::test_that("schema creation remains idempotent with snapshot tables", {
   testthat::expect_true(ledgr_validate_schema(con))
 })
 
-testthat::test_that("migration adds runs.snapshot_id and preserves existing rows", {
+testthat::test_that("migration adds runs.snapshot_id, drops data_hash, and preserves existing rows", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -69,6 +69,16 @@ testthat::test_that("migration adds runs.snapshot_id and preserves existing rows
   )
   testthat::expect_equal(nrow(cols), 1L)
   testthat::expect_identical(cols$is_nullable[[1]], "YES")
+
+  run_cols <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'main' AND table_name = 'runs'
+    "
+  )$column_name
+  testthat::expect_false("data_hash" %in% run_cols)
 
   row <- DBI::dbGetQuery(con, "SELECT run_id, snapshot_id FROM runs WHERE run_id = 'old-run'")
   testthat::expect_equal(nrow(row), 1L)

@@ -1,9 +1,10 @@
-#' Run a deterministic EOD backtest (v0.1.0)
+#' Run a deterministic EOD backtest
 #'
-#' Executes the v0.1.0 EOD pulse loop against a DuckDB database preloaded with
-#' `instruments` and `bars`, writing derived outputs back to the same database.
+#' Executes the canonical EOD pulse loop against a sealed snapshot-backed
+#' config, writing derived outputs back to the run database.
 #'
-#' @param config A config list (or JSON string) matching the v0.1.0 config contract.
+#' @param config A config list (or JSON string) with `data.source = "snapshot"`
+#'   and `data.snapshot_id`.
 #' @param run_id Optional run identifier to resume or reuse.
 #' @param metric_context Optional metric-context metadata. Public users should
 #'   normally supply this through `ledgr_experiment()`.
@@ -15,8 +16,8 @@
 #'
 #' @examples
 #' if (FALSE) {
-#'   # Most users should call ledgr_backtest(); it builds this config and calls
-#'   # ledgr_backtest_run() internally.
+#'   # Most users should call ledgr_backtest(); it converts data to a sealed
+#'   # snapshot, builds this config, and calls ledgr_backtest_run() internally.
 #'   result <- ledgr_backtest_run(config, run_id = "manual-run")
 #' }
 #' @export
@@ -173,11 +174,11 @@ ledgr_fill_event_payload <- function(run_id,
     +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(commission_fixed))
   }
 
-  ts_exec_iso <- ledgr_normalize_ts_utc(ts_exec_utc)
-  ts_exec_posix <- as.POSIXct(ts_exec_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  if (is.na(ts_exec_posix)) {
-    rlang::abort("`fill_intent$ts_exec_utc` must be a valid UTC timestamp.", class = "ledgr_invalid_fill_intent")
-  }
+  ts_exec_posix <- ledgr_ts_utc_posix(
+    ts_exec_utc,
+    label = "`fill_intent$ts_exec_utc`",
+    class = "ledgr_invalid_fill_intent"
+  )
 
   meta <- list(
     commission_fixed = as.numeric(commission_fixed),
@@ -362,21 +363,50 @@ ledgr_persistent_output_handler <- function(con,
     rlang::abort(msg, class = class)
   }
 
+  init_pending_cols <- function(capacity) {
+    capacity <- as.integer(capacity)
+    state$pending_capacity <- capacity
+    state$pending_cols <- list(
+      event_id = character(capacity),
+      run_id = character(capacity),
+      ts_utc = as.POSIXct(rep(NA_character_, capacity), tz = "UTC"),
+      event_type = character(capacity),
+      instrument_id = character(capacity),
+      side = character(capacity),
+      qty = numeric(capacity),
+      price = numeric(capacity),
+      fee = numeric(capacity),
+      meta_json = character(capacity),
+      event_seq = integer(capacity)
+    )
+    invisible(TRUE)
+  }
+
+  ensure_pending_capacity <- function(required) {
+    next_capacity <- ledgr_event_buffer_next_capacity(
+      current_capacity = state$pending_capacity %||% 0L,
+      required = required,
+      max_events = state$pending_max_events
+    )
+    if (!is.null(state$pending_cols) && next_capacity <= state$pending_capacity) {
+      return(invisible(TRUE))
+    }
+    old_cols <- state$pending_cols
+    old_count <- as.integer(state$pending_idx %||% 0L)
+    init_pending_cols(next_capacity)
+    if (!is.null(old_cols) && old_count > 0L) {
+      idx <- seq_len(old_count)
+      for (name in names(old_cols)) {
+        state$pending_cols[[name]][idx] <- old_cols[[name]][idx]
+      }
+    }
+    invisible(TRUE)
+  }
+
   handler$init_buffers <- function(max_events) {
     state$pending_idx <- 0L
-    state$pending_cols <- list(
-      event_id = character(max_events),
-      run_id = character(max_events),
-      ts_utc = as.POSIXct(rep(NA_character_, max_events), tz = "UTC"),
-      event_type = character(max_events),
-      instrument_id = character(max_events),
-      side = character(max_events),
-      qty = numeric(max_events),
-      price = numeric(max_events),
-      fee = numeric(max_events),
-      meta_json = character(max_events),
-      event_seq = integer(max_events)
-    )
+    state$pending_max_events <- ledgr_event_buffer_checked_capacity(max_events, "`max_events`")
+    init_pending_cols(ledgr_event_buffer_initial_capacity(state$pending_max_events))
     state$pending_states <- vector("list", 0)
     state$pending_states_idx <- 0L
     invisible(TRUE)
@@ -389,11 +419,9 @@ ledgr_persistent_output_handler <- function(con,
     if (is.null(state$pending_cols)) {
       rlang::abort("Ledger event buffer has not been initialized.", class = "ledgr_invalid_state")
     }
-    state$pending_idx <- state$pending_idx + 1L
-    if (state$pending_idx > length(state$pending_cols$event_id)) {
-      rlang::abort("Ledger buffer exceeded preallocated capacity.", class = "ledgr_invalid_state")
-    }
-    i <- state$pending_idx
+    i <- state$pending_idx + 1L
+    ensure_pending_capacity(i)
+    state$pending_idx <- i
     state$pending_cols$event_id[[i]] <- write_res$row$event_id
     state$pending_cols$run_id[[i]] <- write_res$row$run_id
     state$pending_cols$ts_utc[[i]] <- write_res$row$ts_utc
@@ -573,19 +601,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     rlang::abort("engine.execution_mode must be \"db_live\" or \"audit_log\".", class = "ledgr_invalid_config")
   }
 
-  snapshot_id <- NULL
-  if (!is.null(cfg$data) && is.list(cfg$data) && identical(cfg$data$source, "snapshot")) {
-    snapshot_id <- cfg$data$snapshot_id
-  }
-  if (!is.null(snapshot_id)) {
-    if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {
-      rlang::abort("config$data$snapshot_id must be a non-empty string when data.source == 'snapshot'.", class = "ledgr_invalid_config")
-    }
-  }
-  snapshot_db_path <- NULL
-  if (!is.null(snapshot_id)) {
-    snapshot_db_path <- ledgr_snapshot_db_path_from_config(cfg, db_path)
-  }
+  snapshot_id <- cfg$data$snapshot_id
+  snapshot_db_path <- ledgr_snapshot_db_path_from_config(cfg, db_path)
   snapshot_hash_for_features <- NULL
 
   if (!is.null(seed)) {
@@ -628,7 +645,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
 
   run_row <- DBI::dbGetQuery(
     con,
-    "SELECT run_id, status, config_hash, data_hash, snapshot_id, metric_context_hash FROM runs WHERE run_id = ?",
+    "SELECT run_id, status, config_hash, snapshot_id, metric_context_hash FROM runs WHERE run_id = ?",
     params = list(run_id)
   )
   if (nrow(run_row) > 0) {
@@ -648,7 +665,6 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   is_resume <- nrow(run_row) > 0
 
   if (!is_resume) {
-    run_snapshot_id <- if (is.null(snapshot_id)) NA_character_ else snapshot_id
     run_created_at_utc <- as.POSIXct(Sys.time(), tz = "UTC")
     DBI::dbExecute(
       con,
@@ -659,14 +675,13 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
         engine_version,
         config_json,
         config_hash,
-        data_hash,
         snapshot_id,
         metric_context_json,
         metric_context_hash,
         metric_context_version,
         status,
         error_msg
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ",
       params = list(
         run_id,
@@ -674,8 +689,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
         engine_version,
         config_json,
         cfg_hash,
-        NA_character_,
-        run_snapshot_id,
+        snapshot_id,
         metric_context_storage$json,
         metric_context_storage$hash,
         metric_context_storage$version,
@@ -708,13 +722,11 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       !identical(stored_metric_context_hash, metric_context_storage$hash)) {
       rlang::abort("Refusing to resume: metric_context_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
     }
-    if (!is.null(snapshot_id)) {
-      if (!is.character(stored_snapshot_id) || length(stored_snapshot_id) != 1 || is.na(stored_snapshot_id) || !nzchar(stored_snapshot_id)) {
-        rlang::abort("Refusing to resume: stored run has no snapshot_id.", class = "ledgr_run_hash_mismatch")
-      }
-      if (!identical(stored_snapshot_id, snapshot_id)) {
-        rlang::abort("Refusing to resume: snapshot_id does not match stored run.", class = "ledgr_run_hash_mismatch")
-      }
+    if (!is.character(stored_snapshot_id) || length(stored_snapshot_id) != 1 || is.na(stored_snapshot_id) || !nzchar(stored_snapshot_id)) {
+      rlang::abort("Refusing to resume: stored run has no snapshot_id.", class = "ledgr_run_hash_mismatch")
+    }
+    if (!identical(stored_snapshot_id, snapshot_id)) {
+      rlang::abort("Refusing to resume: snapshot_id does not match stored run.", class = "ledgr_run_hash_mismatch")
     }
     if (identical(run_row$status[[1]], "DONE")) {
       return(list(run_id = run_id, db_path = db_path))
@@ -744,172 +756,103 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     )
   }
 
-  # v0.1.1 snapshot integration:
+  # Snapshot integration:
   # - verify snapshot status SEALED
   # - tamper detection: recompute hash and compare
-  # - enforce universe subset and coverage
-  # - create TEMP VIEW instruments/bars so v0.1.0 pipeline reads snapshot data
-  if (!is.null(snapshot_id)) {
-    tryCatch(
-      ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, db_path),
-      error = function(e) {
-        fail_run(conditionMessage(e), class = "LEDGR_SNAPSHOT_SOURCE_ERROR")
-      }
-    )
-
-    snap <- DBI::dbGetQuery(
-      con,
-      "SELECT status, snapshot_hash FROM snapshots WHERE snapshot_id = ?",
-      params = list(snapshot_id)
-    )
-    if (nrow(snap) != 1) {
-      fail_run(sprintf("Snapshot not found: %s", snapshot_id), class = "LEDGR_SNAPSHOT_NOT_FOUND")
-    }
-    if (!identical(snap$status[[1]], "SEALED")) {
-      fail_run(
-        sprintf("LEDGR_SNAPSHOT_NOT_SEALED: snapshot status must be SEALED for backtests (got %s).", snap$status[[1]]),
-        class = "LEDGR_SNAPSHOT_NOT_SEALED"
-      )
-    }
-    stored_snapshot_hash <- snap$snapshot_hash[[1]]
-    if (!is.character(stored_snapshot_hash) || length(stored_snapshot_hash) != 1 || is.na(stored_snapshot_hash) || !nzchar(stored_snapshot_hash)) {
-      fail_run("LEDGR_SNAPSHOT_NOT_SEALED: SEALED snapshot is missing snapshot_hash.", class = "LEDGR_SNAPSHOT_NOT_SEALED")
-    }
-
-    recomputed <- ledgr_snapshot_hash(con, snapshot_id)
-    if (!identical(recomputed, stored_snapshot_hash)) {
-      fail_run("LEDGR_SNAPSHOT_CORRUPTED: stored snapshot_hash does not match recomputed hash.", class = "LEDGR_SNAPSHOT_CORRUPTED")
-    }
-    snapshot_hash_for_features <- stored_snapshot_hash
-
-    ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-    missing_inst <- DBI::dbGetQuery(
-      con,
-      paste0(
-        "SELECT u.instrument_id FROM (SELECT UNNEST([", ids_sql, "]) AS instrument_id) u ",
-        "LEFT JOIN snapshot_instruments si ON si.instrument_id = u.instrument_id AND si.snapshot_id = ? ",
-        "WHERE si.instrument_id IS NULL"
-      ),
-      params = list(snapshot_id)
-    )$instrument_id
-    if (length(missing_inst) > 0) {
-      fail_run(
-        sprintf("LEDGR_SNAPSHOT_COVERAGE_ERROR: universe instruments not present in snapshot_instruments: %s", paste(missing_inst, collapse = ", ")),
-        class = "LEDGR_SNAPSHOT_COVERAGE_ERROR"
-      )
-    }
-
-    start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
-    end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
-    start_str <- sub("Z$", "", sub("T", " ", start_iso))
-    end_str <- sub("Z$", "", sub("T", " ", end_iso))
-
-    pulses <- DBI::dbGetQuery(
-      con,
-      paste0(
-        "SELECT DISTINCT ts_utc FROM snapshot_bars ",
-        "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") ",
-        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
-        "ORDER BY ts_utc"
-      ),
-      params = list(snapshot_id, start_str, end_str)
-    )$ts_utc
-    if (length(pulses) == 0) {
-      fail_run("LEDGR_SNAPSHOT_COVERAGE_ERROR: no bars found in snapshot for requested universe/time range.", class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
-    }
-
-    coverage <- DBI::dbGetQuery(
-      con,
-      paste0(
-        "SELECT instrument_id, COUNT(*) AS n ",
-        "FROM snapshot_bars ",
-        "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") ",
-        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
-        "GROUP BY instrument_id"
-      ),
-      params = list(snapshot_id, start_str, end_str)
-    )
-    if (nrow(coverage) != length(instrument_ids) || any(as.integer(coverage$n) < length(pulses))) {
-      missing_ids <- setdiff(instrument_ids, as.character(coverage$instrument_id))
-      msg <- "LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
-      if (length(missing_ids) > 0) {
-        msg <- paste0(msg, " Missing instruments: ", paste(missing_ids, collapse = ", "), ".")
-      }
-      fail_run(msg, class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
-    }
-
-    # Snapshot-backed sourcing via TEMP VIEWs that shadow v0.1.0 tables.
-    ledgr_prepare_snapshot_runtime_views(con, snapshot_id, instrument_ids, start_ts_utc, end_ts_utc)
-
-    DBI::dbExecute(con, "UPDATE runs SET snapshot_id = ? WHERE run_id = ?", params = list(snapshot_id, run_id))
-  }
-
-  # Validate run-relevant bars subset is sane per spec (v0.1.0 fail-loud).
-  validate_bars_subset <- function() {
-    start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
-    end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
-    start_str <- sub("Z$", "", sub("T", " ", start_iso))
-    end_str <- sub("Z$", "", sub("T", " ", end_iso))
-    ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-
-    counts <- DBI::dbGetQuery(
-      con,
-      paste0(
-        "SELECT instrument_id, COUNT(*) AS n ",
-        "FROM bars ",
-        "WHERE instrument_id IN (", ids_sql, ") ",
-        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
-        "GROUP BY instrument_id"
-      ),
-      params = list(start_str, end_str)
-    )
-
-    if (nrow(counts) != length(instrument_ids) || any(counts$n < 2)) {
-      rlang::abort("Bars must include at least 2 rows per instrument in the requested range.", class = "ledgr_bad_bars")
-    }
-
-    bars <- DBI::dbGetQuery(
-      con,
-      paste0(
-        "SELECT instrument_id, ts_utc, open, high, low, close ",
-        "FROM bars ",
-        "WHERE instrument_id IN (", ids_sql, ") ",
-        "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
-        "ORDER BY instrument_id, ts_utc"
-      ),
-      params = list(start_str, end_str)
-    )
-    if (nrow(bars) == 0) rlang::abort("No bars found for requested universe/time range.", class = "ledgr_bad_bars")
-
-    bad <- which(
-      !(bars$high >= pmax(bars$open, bars$close, bars$low, na.rm = TRUE)) |
-        !(bars$low <= pmin(bars$open, bars$close, bars$high, na.rm = TRUE))
-    )
-    if (length(bad) > 0) {
-      rlang::abort("Bars contain an OHLC violation (high/low bounds).", class = "ledgr_bad_bars")
-    }
-
-    invisible(TRUE)
-  }
-
-  data_hash <- tryCatch(
-    {
-      validate_bars_subset()
-      ledgr_run_data_subset_hash(con, instrument_ids, start_ts_utc, end_ts_utc)
-    },
+  # - enforce universe subset and inclusive start/end coverage
+  # - create TEMP VIEW instruments/bars so the fold reads sealed snapshot data
+  tryCatch(
+    ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, db_path),
     error = function(e) {
-      fail_run(conditionMessage(e))
+      fail_run(conditionMessage(e), class = "LEDGR_SNAPSHOT_SOURCE_ERROR")
     }
   )
 
-  if (is_resume) {
-    stored_data_hash <- run_row$data_hash[[1]]
-    if (!identical(stored_data_hash, data_hash)) {
-      fail_run("Refusing to resume: data_hash does not match stored run.")
-    }
+  snap <- DBI::dbGetQuery(
+    con,
+    "SELECT status, snapshot_hash FROM snapshots WHERE snapshot_id = ?",
+    params = list(snapshot_id)
+  )
+  if (nrow(snap) != 1) {
+    fail_run(sprintf("Snapshot not found: %s", snapshot_id), class = "LEDGR_SNAPSHOT_NOT_FOUND")
+  }
+  if (!identical(snap$status[[1]], "SEALED")) {
+    fail_run(
+      sprintf("LEDGR_SNAPSHOT_NOT_SEALED: snapshot status must be SEALED for backtests (got %s).", snap$status[[1]]),
+      class = "LEDGR_SNAPSHOT_NOT_SEALED"
+    )
+  }
+  stored_snapshot_hash <- snap$snapshot_hash[[1]]
+  if (!is.character(stored_snapshot_hash) || length(stored_snapshot_hash) != 1 || is.na(stored_snapshot_hash) || !nzchar(stored_snapshot_hash)) {
+    fail_run("LEDGR_SNAPSHOT_NOT_SEALED: SEALED snapshot is missing snapshot_hash.", class = "LEDGR_SNAPSHOT_NOT_SEALED")
   }
 
-  DBI::dbExecute(con, "UPDATE runs SET data_hash = ? WHERE run_id = ?", params = list(data_hash, run_id))
+  recomputed <- ledgr_snapshot_hash(con, snapshot_id)
+  if (!identical(recomputed, stored_snapshot_hash)) {
+    fail_run("LEDGR_SNAPSHOT_CORRUPTED: stored snapshot_hash does not match recomputed hash.", class = "LEDGR_SNAPSHOT_CORRUPTED")
+  }
+  snapshot_hash_for_features <- stored_snapshot_hash
+
+  ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
+  missing_inst <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT u.instrument_id FROM (SELECT UNNEST([", ids_sql, "]) AS instrument_id) u ",
+      "LEFT JOIN snapshot_instruments si ON si.instrument_id = u.instrument_id AND si.snapshot_id = ? ",
+      "WHERE si.instrument_id IS NULL"
+    ),
+    params = list(snapshot_id)
+  )$instrument_id
+  if (length(missing_inst) > 0) {
+    fail_run(
+      sprintf("LEDGR_SNAPSHOT_COVERAGE_ERROR: universe instruments not present in snapshot_instruments: %s", paste(missing_inst, collapse = ", ")),
+      class = "LEDGR_SNAPSHOT_COVERAGE_ERROR"
+    )
+  }
+
+  start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
+  end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
+  start_str <- sub("Z$", "", sub("T", " ", start_iso))
+  end_str <- sub("Z$", "", sub("T", " ", end_iso))
+
+  pulses <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT DISTINCT ts_utc FROM snapshot_bars ",
+      "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") ",
+      "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
+      "ORDER BY ts_utc"
+    ),
+    params = list(snapshot_id, start_str, end_str)
+  )$ts_utc
+  if (length(pulses) == 0) {
+    fail_run("LEDGR_SNAPSHOT_COVERAGE_ERROR: no bars found in snapshot for requested universe/time range.", class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
+  }
+
+  coverage <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT instrument_id, COUNT(*) AS n ",
+      "FROM snapshot_bars ",
+      "WHERE snapshot_id = ? AND instrument_id IN (", ids_sql, ") ",
+      "AND ts_utc >= CAST(? AS TIMESTAMP) AND ts_utc <= CAST(? AS TIMESTAMP) ",
+      "GROUP BY instrument_id"
+    ),
+    params = list(snapshot_id, start_str, end_str)
+  )
+  if (nrow(coverage) != length(instrument_ids) || any(as.integer(coverage$n) < length(pulses))) {
+    missing_ids <- setdiff(instrument_ids, as.character(coverage$instrument_id))
+    msg <- "LEDGR_SNAPSHOT_COVERAGE_ERROR: per-instrument bars coverage is incomplete for requested range."
+    if (length(missing_ids) > 0) {
+      msg <- paste0(msg, " Missing instruments: ", paste(missing_ids, collapse = ", "), ".")
+    }
+    fail_run(msg, class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
+  }
+
+  # Snapshot-backed sourcing via TEMP VIEWs that shadow v0.1.0 tables.
+  ledgr_prepare_snapshot_runtime_views(con, snapshot_id, instrument_ids, start_ts_utc, end_ts_utc)
+
+  DBI::dbExecute(con, "UPDATE runs SET snapshot_id = ? WHERE run_id = ?", params = list(snapshot_id, run_id))
 
   feature_defs <- ledgr_feature_defs_from_config(cfg)
   active_alias_map <- ledgr_alias_map_from_config(cfg)
@@ -927,23 +870,13 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }
 
   strategy <- ledgr_strategy_from_config(cfg)
-  strategy_fn <- NULL
-  strategy_is_functional <- FALSE
-  if (!is.null(cfg$strategy) && is.list(cfg$strategy) && identical(cfg$strategy$id, "functional")) {
-    strategy_is_functional <- TRUE
-    key <- cfg$strategy$params$strategy_key
-    strategy_fn <- ledgr_get_strategy_fn(key)
-  } else if (is.function(strategy$on_pulse)) {
-    strategy_fn <- strategy$on_pulse
-  }
+  strategy_fn <- strategy$fn
+  strategy_is_functional <- TRUE
   if (!is.function(strategy_fn)) {
-    rlang::abort("Strategy on_pulse is not a function; check strategy configuration.", class = "ledgr_invalid_strategy")
+    rlang::abort("Strategy is not a function; check strategy configuration.", class = "ledgr_invalid_strategy")
   }
-  strategy_params <- if (is.null(cfg$strategy_params)) list() else cfg$strategy_params
-  strategy_call_signature <- NULL
-  if (!is.null(cfg$strategy) && is.list(cfg$strategy) && !is.null(cfg$strategy$params$call_signature)) {
-    strategy_call_signature <- cfg$strategy$params$call_signature
-  }
+  strategy_params <- strategy$params
+  strategy_call_signature <- strategy$signature
 
   pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
   pulses_posix <- as.POSIXct(pulses, tz = "UTC")
@@ -1218,13 +1151,13 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       per_inst <- list()
       for (instrument_id in instrument_ids) {
         b <- bars_by_id[[instrument_id]]
-        cache_key <- ledgr_feature_cache_key_from_parts(
+        cache_key <- ledgr_feature_cache_key_from_normalized_parts(
           snapshot_hash = snapshot_hash_for_features,
           instrument_id = instrument_id,
           feature_fingerprint = feature_fingerprint,
           feature_engine_version = feature_engine_version,
-          start_ts_utc = start_ts_utc,
-          end_ts_utc = end_ts_utc
+          start_ts_utc = start_iso,
+          end_ts_utc = end_iso
         )
         values <- ledgr_feature_cache_get(cache_key, expected_len = nrow(b))
         if (is.null(values)) {
@@ -1978,45 +1911,43 @@ ledgr_strategy_from_config <- function(cfg) {
     rlang::abort("strategy.params must be a list.", class = "ledgr_invalid_config")
   }
 
-  if (identical(id, "hold_zero")) return(HoldZeroStrategy$new(params = params))
-  if (identical(id, "echo")) return(EchoStrategy$new(params = params))
-  if (identical(id, "ts_rule")) return(TsRuleStrategy$new(params = params))
-  if (identical(id, "state_prev")) return(StatePrevStrategy$new(params = params))
+  strategy <- function(fn, params) {
+    list(fn = fn, params = params, signature = "ctx_params")
+  }
+
+  if (identical(id, "hold_zero")) return(strategy(ledgr_strategy_hold_zero, params))
+  if (identical(id, "echo")) return(strategy(ledgr_strategy_echo, params))
+  if (identical(id, "ts_rule")) return(strategy(ledgr_strategy_ts_rule, params))
+  if (identical(id, "state_prev")) return(strategy(ledgr_strategy_state_prev_targets, params))
   if (identical(id, "functional")) {
     key <- params$strategy_key
     signature <- params$call_signature
     strategy_params <- if (is.null(cfg$strategy_params)) list() else cfg$strategy_params
-    return(ledgr_strategy_fn_from_key(key, signature = signature, strategy_params = strategy_params))
+    return(list(fn = ledgr_get_strategy_fn(key), params = strategy_params, signature = signature))
   }
 
   rlang::abort(sprintf("Unknown strategy.id: %s", id), class = "ledgr_invalid_config")
 }
 
-TsRuleStrategy <- R6::R6Class(
-  "TsRuleStrategy",
-  inherit = LedgrStrategy,
-  private = list(
-    on_pulse_impl = function(ctx, params) {
-      cut <- self$params$cutover_ts_utc
-      before <- self$params$targets_before
-      after <- self$params$targets_after
+ledgr_strategy_ts_rule <- function(ctx, params) {
+  cut <- params$cutover_ts_utc
+  before <- params$targets_before
+  after <- params$targets_after
 
-      if (!is.character(cut) || length(cut) != 1 || is.na(cut) || !nzchar(cut)) {
-        rlang::abort("TsRuleStrategy requires params$cutover_ts_utc as an ISO8601 UTC string.", class = "ledgr_invalid_strategy")
-      }
-      if (!is.numeric(before) || is.null(names(before))) {
-        rlang::abort("TsRuleStrategy requires params$targets_before as a named numeric vector.", class = "ledgr_invalid_strategy")
-      }
-      if (!is.numeric(after) || is.null(names(after))) {
-        rlang::abort("TsRuleStrategy requires params$targets_after as a named numeric vector.", class = "ledgr_invalid_strategy")
-      }
+  if (!is.character(cut) || length(cut) != 1 || is.na(cut) || !nzchar(cut)) {
+    rlang::abort("ts_rule strategy requires params$cutover_ts_utc as an ISO8601 UTC string.", class = "ledgr_invalid_strategy")
+  }
+  if (!is.numeric(before) || is.null(names(before))) {
+    rlang::abort("ts_rule strategy requires params$targets_before as a named numeric vector.", class = "ledgr_invalid_strategy")
+  }
+  if (!is.numeric(after) || is.null(names(after))) {
+    rlang::abort("ts_rule strategy requires params$targets_after as a named numeric vector.", class = "ledgr_invalid_strategy")
+  }
 
-      if (ctx$ts_utc < cut) {
-        list(targets = before, state_update = list())
-      } else {
-        list(targets = after, state_update = list())
-      }
-    }
-  )
-)
+  if (ctx$ts_utc < cut) {
+    list(targets = before, state_update = list())
+  } else {
+    list(targets = after, state_update = list())
+  }
+}
 

@@ -28,6 +28,7 @@ testthat::test_that("AT2: run registration stores hashes and reaches DONE", {
     features = list(enabled = TRUE, defs = list(list(id = "return_1"))),
     strategy = list(id = "hold_zero", params = list())
   )
+  cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at2_snapshot")
 
   run_id <- "at2-run-1"
   out <- ledgr_backtest_run(cfg, run_id = run_id)
@@ -41,14 +42,14 @@ testthat::test_that("AT2: run registration stores hashes and reaches DONE", {
 
   row <- DBI::dbGetQuery(
     h$con,
-    "SELECT status, config_json, config_hash, data_hash, error_msg FROM runs WHERE run_id = ?",
+    "SELECT status, config_json, config_hash, snapshot_id, error_msg FROM runs WHERE run_id = ?",
     params = list(run_id)
   )
   testthat::expect_equal(nrow(row), 1L)
   testthat::expect_identical(row$status[[1]], "DONE")
   testthat::expect_true(nzchar(row$config_json[[1]]))
   testthat::expect_true(nzchar(row$config_hash[[1]]))
-  testthat::expect_true(nzchar(row$data_hash[[1]]))
+  testthat::expect_identical(row$snapshot_id[[1]], "at2_snapshot")
   testthat::expect_true(is.na(row$error_msg[[1]]))
 })
 
@@ -72,6 +73,7 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
     features = list(enabled = TRUE, defs = list(list(id = "return_1"), list(id = "sma_2"))),
     strategy = list(id = "echo", params = list(targets = c(AAA = 1, BBB = 2)))
   )
+  cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at3_snapshot")
 
   run_a <- "at3-a"
   run_b <- "at3-b"
@@ -124,7 +126,7 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
     all_runs <- DBI::dbGetQuery(
       h$con,
       "
-      SELECT run_id, status, error_msg, config_hash, data_hash
+      SELECT run_id, status, error_msg, config_hash, snapshot_id
       FROM runs
       ORDER BY run_id
       "
@@ -234,6 +236,7 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "echo", params = list(targets = c(AAA = 1)))
   )
+  cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at567_snapshot")
 
   run_id <- "at6-run-1"
   ledgr_backtest_run(cfg, run_id = run_id)
@@ -299,6 +302,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
     features = list(enabled = TRUE, defs = list(list(id = "sma_2"))),
     strategy = list(id = "state_prev", params = list())
   )
+  cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at8_snapshot")
 
   run_id <- "at8-run-1"
   ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
@@ -327,6 +331,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   db_clean <- ledgr_test_make_db(instrument_ids, ts_utc, bars_df = bars, shuffle = TRUE)
   cfg_clean <- cfg
   cfg_clean$db_path <- db_clean
+  cfg_clean <- ledgr_test_snapshot_backed_config(cfg_clean, bars, "at8_snapshot_clean")
   testthat::expect_warning(ledgr_backtest_run(cfg_clean, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
 
   gc()
@@ -377,6 +382,7 @@ testthat::test_that("last-bar policy warns and produces no fill event", {
       )
     )
   )
+  cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "lastbar_snapshot")
 
   run_id <- "lastbar-1"
   testthat::expect_warning(
@@ -395,14 +401,13 @@ testthat::test_that("last-bar policy warns and produces no fill event", {
   testthat::expect_identical(n, 0)
 })
 
-testthat::test_that("AT12: OHLC violation fails loud and run is marked FAILED", {
+testthat::test_that("AT12: raw bars configs fail before fold and OHLC violations fail at snapshot seal", {
   instrument_ids <- c("AAA")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00")
   bars <- ledgr_test_make_bars(instrument_ids, ts_utc)
-  bars$high[[2]] <- bars$low[[2]] - 1
 
   db_path <- ledgr_test_make_db(instrument_ids, ts_utc, bars_df = bars, shuffle = TRUE)
-  cfg <- list(
+  raw_cfg <- list(
     db_path = db_path,
     engine = list(seed = 1L, tz = "UTC"),
     universe = list(instrument_ids = instrument_ids),
@@ -417,16 +422,14 @@ testthat::test_that("AT12: OHLC violation fails loud and run is marked FAILED", 
     strategy = list(id = "hold_zero", params = list())
   )
 
-  run_id <- "at12-bad-bars"
-  testthat::expect_error(ledgr_backtest_run(cfg, run_id = run_id))
+  testthat::expect_error(
+    ledgr_backtest_run(raw_cfg, run_id = "at12-raw-bars"),
+    class = "ledgr_snapshot_required"
+  )
 
-  gc()
-  Sys.sleep(0.05)
-  h <- ledgr_test_open_duckdb(db_path)
-  on.exit(ledgr_test_close_duckdb(h$con, h$drv), add = TRUE)
-
-  row <- DBI::dbGetQuery(h$con, "SELECT status, error_msg FROM runs WHERE run_id = ?", params = list(run_id))
-  testthat::expect_equal(nrow(row), 1L)
-  testthat::expect_identical(row$status[[1]], "FAILED")
-  testthat::expect_true(nzchar(row$error_msg[[1]]))
+  bars$high[[2]] <- bars$low[[2]] - 1
+  testthat::expect_error(
+    ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb")),
+    class = "ledgr_invalid_args"
+  )
 })

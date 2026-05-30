@@ -1,3 +1,32 @@
+# ledgr 0.1.8.7
+
+- Removed legacy execution gunk from modern runs: execution now reaches the fold
+  only through sealed snapshots, R6 strategies are gone, and run-time
+  `data_hash` identity no longer participates in sealed-run resume or replay.
+- Dropped `cli` and `R6`, added `collapse` behind a deterministic wrapper, and
+  kept the modern strategy contract as plain functions returning full named
+  numeric target vectors.
+- Reworked the durable and sweep event buffers from worst-case preallocation to
+  grow-by-doubling, preserving event IDs, event order, POSIXct UTC timestamps,
+  per-row `meta_json`, and durable/memory event surfaces.
+- Rejected sub-second snapshot input, carried trusted whole-second POSIXct values
+  through hot fill paths, and replaced session-local feature cache JSON+hash keys
+  with deterministic length-prefixed lookup keys while keeping durable identity
+  hashes fenced.
+- Rewrote fills reconstruction/read-back around primitive column buffers instead
+  of per-row data.frames plus `do.call(rbind, ...)`, preserving FIFO semantics
+  and DB-backed/memory-backed parity.
+- Formalized the sweep fast path versus promotion/materialization slow path and
+  added `ledgr_candidate_reproduction_key()` so compact sweep candidates expose
+  the data needed for later explicit promotion.
+- Recorded the post-lane local benchmark closeout. On this host and one
+  TTR-backed SMA workload, the canonical ledgr peer row is now faster than the
+  local Backtrader and quantstrat rows, but the result is scoped to that workload,
+  timing boundary, and machine; it is not a public peer-superiority claim.
+- Deferred parallel dispatch, compiled fold-core work, matrix-canonical public
+  strategy surfaces, target risk, walk-forward, cost/liquidity, OMS, and public
+  benchmark dashboards.
+
 # ledgr 0.1.8.6
 
 - Reduced feature setup/materialization cost by deduplicating feature cache-key

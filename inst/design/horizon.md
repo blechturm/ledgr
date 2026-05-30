@@ -34,13 +34,21 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.1.8.6** — DuckDB feature-storage spike; feature payload scale stress;
   feature projection materialization (5.0/5.1); structured benchmark and
   attribution closeout.
-- **v0.1.8.7** (parallel dispatch + determinism) — public parallel sweep
+- **v0.1.8.7** (optimization round 2) — fold-core primitive contract; hot-path
+  lanes (B0 buffer/emission via collapse, R representation/formatting with a
+  durable-identity fence, C reconstruction read-back); ADR 0004 dependency moves
+  (drop cli/R6, add collapse, keep tibble); legacy cleanup (raw `bars`
+  execution, R6 strategy execution, and run-time `data_hash` identity removed
+  from modern execution); per-lane real-run re-profile + parity gates.
+- **v0.1.8.8** (parallel dispatch + determinism) — public parallel sweep
   backend; parallel worker setup / Tier-2 packages; mori transport;
   worker-local read-only DuckDB; parallel interrupt / partial-result
   semantics; **RNG resume non-determinism**; structured RNG preflight metadata;
   broader ambient RNG detection.
 - **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
-  typed execution spec, file split, explicit event types).
+  typed execution spec, file split, explicit event types); peer-benchmark
+  expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
+  contextual paradigm row).
 - **v0.1.9** — affordability / target-risk (incl. the phased-pulse
   restructure); primitive internals and collapse.
 - **v0.1.9.x** — walk-forward post-direction; cost-model post-direction;
@@ -53,8 +61,71 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   external benchmark / beta uses; external reference-data adapter provenance;
   provider risk-free divergence; reference strategy templates / baseline
   strategies.
-- **v0.2.x → v0.3.0** — live bad-data resilience and sim-to-real backtest
-  fidelity (direction B; needs a dedicated RFC).
+- **v0.2.x → v0.3.0** — live bad-data resilience, ragged-universe
+  (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
+  needs a dedicated RFC).
+
+### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
+
+The accepted v0.1.8.7 synthesis
+(`inst/design/rfc/rfc_optimization_round_v0_1_8_7_synthesis.md`) binds a
+single-core pure-R hot-path cleanup: surface-preserving event-buffer
+capacity/write fix (B0), hot-path representation/formatting cleanup with
+durable-identity bytes fenced off (R), and read-back reconstruction behind a
+deterministic collapse gate (C), plus ADR 0004 deps and explicit legacy
+cleanup. The modern execution contract is snapshot-backed and function-strategy
+based; raw `bars` execution, R6 strategy execution, and run-time `data_hash`
+identity are removed or fail before the fold. It does **not** authorize a
+compiled core, parallel dispatch (now v0.1.8.8), sweep crossover claims, or
+durable identity-format changes. Whole-second timestamp contract reaffirmed;
+sub-second out of scope (not HFT). Pure direction, no committed home: a
+compiled/native fold core is the later lever for decisive single-run peer wins;
+the sweep amortization / peer-crossover track stays open (measured modest ~1.18×,
+the per-candidate fold dominates — needs heavier-precompute workloads before any
+claim); the matrix-canonical strategy surface is a separate contract/ergonomics
+RFC; the deeper typed event-emission rewrite (B1) waits on an explicit
+primitive-contract binding; durable hash/provenance/fingerprint byte changes each
+need their own contract decision.
+
+### 2026-05-30 [optimization] Post-v0.1.8.7 remaining fold-loop levers
+
+The v0.1.8.7 benchmark closeout leaves the main hot bucket as the pure-R
+turnover fold loop: on the current local TTR-backed peer shape, the durable run
+spends 15.70s of 25.91s in the loop while producing 13,355 fills. B0 removed the
+pathological event-buffer cost, R/A removed the obvious timestamp/setup tax, and
+C improved fills materialization/read-back. What remains is not one known bug; it
+is the accumulation of interpreted per-pulse/per-instrument/per-fill mechanics.
+
+Collapse can still help, but only in specific measured sub-operations. Candidate
+uses to preserve for later profiling:
+
+- use `collapse::setv()` for the remaining event-buffer column writes if POSIXct
+  class/tzone and event-stream parity remain byte-identical;
+- replace hot target/order selection idioms (`match`, `%in%`, repeated `which`,
+  logical-vector allocation) with `collapse::fmatch()`, `collapse::whichv()`,
+  and related vectorized operators where profiling shows lookup/selection cost;
+- precompute integer instrument maps with `fmatch()`-style semantics rather than
+  rematching character IDs inside turnover paths;
+- batch state-delta or fill aggregation with grouped `fsum()`-style operations
+  only if a future order/fill shape produces multiple same-pulse rows per
+  instrument and parity is proven;
+- keep `rowbind()`, `fcumsum()`, and summary-stat helpers as reconstruction and
+  metric materialization levers, not as a claim on live fold-loop speed.
+
+Weak collapse candidates: arbitrary strategy callbacks, branch-heavy fill-rule
+logic, and direct matrix bar/feature reads. Those are either user code, already
+cheap base-C indexing, or better addressed by the primitive-contract / compiled
+core path. Lane R-style timestamp and string-formatting cleanup is also mostly
+base-R representation discipline, not a collapse problem.
+
+The practical next diagnostic, if this becomes active work, is an intra-loop
+profile that splits context access, target/order conversion, fill resolution,
+state update, and event emission after B0/R/A/C. Do not start another broad
+collapse pass from package capability alone; require a named hot frame, a
+deterministic-wrapper boundary for value-bearing operations, and parity fixtures
+that cover durable and sweep event streams.
+
+This entry records direction, not committed work.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 
@@ -1064,10 +1135,9 @@ Near-term work that helps without committing to a port:
 - keep expanding parity tests so a future port has a clear acceptance suite;
 - formalize event, fill, lot-state, and fill-proposal shapes as typed value
   objects when touched by ordinary tickets;
-- optionally run a small FFI feasibility spike in the v0.1.8.7 window, after
-  typed memory events, single-pass reconstruction, and fast-context R-side
-  optimization have produced an optimized baseline but before the v0.1.9 target
-  risk chain starts changing fold contracts. The spike should port only an
+- defer any FFI feasibility spike until after the v0.1.8.7 single-core pure-R
+  cleanup and the v0.1.8.8 parallel-dispatch window have produced an optimized
+  baseline. When revived, the spike should port only an
   isolated helper such as `ledgr_lot_apply_event()` via `extendr`, measure
   per-call FFI overhead against the LDG-2402 harness, reuse the LDG-2403 parity
   fixtures, and document Windows/Linux build friction. It must not introduce a
@@ -2174,6 +2244,39 @@ ticks are routine. You cannot abort a live session because one symbol's tick
 did not arrive. "Validate everything upfront, fail fast" and "tolerate and
 degrade per-tick" are structurally opposed.
 
+Second fault line — offline ragged universes (not just live)
+
+The dense-panel gate also blocks a purely *offline* case: a realistic surviving
+universe is inherently ragged. IPOs / late listings, delistings, halts, and
+exchange holidays mean a security legitimately has no bar at some pulses — yet
+the coverage check (`backtest-runner.R:815-822`, `LEDGR_SNAPSHOT_COVERAGE_ERROR`,
+plus the `ledgr_missing_bars` cross-join check) requires every instrument to
+have a bar at every pulse, so survivorship-realistic research is impossible
+without external pre-cleaning. This is independent of the live/streaming arc.
+
+Peer evidence (2026-05-29 research): among multi-asset / panel backtesters,
+hard-failing on any per-instrument gap is an **outlier**. The mainstream
+tolerates ragged panels — Zipline and LEAN forward-fill and model **asset
+lifetimes** (start/end/delist, masking outside the active window with NaN/zero;
+`zipline data_portal.py:1018-1030`, LEAN fill-forward-until-delisted); `bt`
+(Python) and VectorBT carry not-yet-listed / delisted assets as NaN columns and
+object only on a *held* NaN position. The only hard-failers are *single-asset*
+frameworks (backtesting.py) or per-symbol loops (quantstrat), where there is no
+cross-sectional alignment to solve. So strict single-series rejection is
+mainstream; strict *multi-asset-panel* rejection is not.
+
+Design target: **per-instrument active windows** (asset lifetimes) — an
+instrument is active over `[first_bar, last_bar]` and the fold tolerates its
+absence outside that window — plus an **explicit, sealed** absence/imputation
+policy. The ledgr-specific constraint vs peers: their ffill is *silent*; ledgr's
+"evidence you can defend" USP requires the active-window and any
+fill / NaN / staleness policy to be **declared and sealed into the snapshot**
+(and visible in provenance), not silently imputed in the fold — otherwise the
+backtest runs on a quietly different data world than the inputs claim. The
+*where* matters: active windows + the ingest policy live at the seal boundary;
+the fold then consumes a panel marked "present / absent-by-lifetime / imputed",
+and never hard-fails on legitimate absence.
+
 Failure taxonomy (each needs a different policy)
 
 - **Missing tick** — skip the symbol, carry forward last value with a
@@ -2231,7 +2334,9 @@ Design principles
 RFC scope (when it opens)
 
 A unified data-quality model spanning sealed backtest and streaming live; the
-degradation-policy surface; the bad-data simulation harness for backtest
+degradation-policy surface; **per-instrument active windows (asset lifetimes) for
+ragged offline universes, with an explicit sealed absence/imputation policy
+(vs peers' silent ffill)**; the bad-data simulation harness for backtest
 (deficient high-frequency streams); and the PIT-tables intersection.
 
 Sequencing
@@ -2272,8 +2377,8 @@ Decision needed (one of):
 - document the limitation and restrict resume guarantees to deterministic
   strategies (cheapest, honest).
 
-Cross-link: the v0.1.8.7 parallel-dispatch work faces the same RNG-state
-question — per-candidate seed derivation must not depend on worker scheduling
+Cross-link: the v0.1.8.8 parallel-dispatch work faces the same RNG-state
+question - per-candidate seed derivation must not depend on worker scheduling
 or global RNG state. Whatever resolves resume should align with that.
 
 This entry records a verified gap, not a committed fix.

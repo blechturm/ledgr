@@ -21,6 +21,7 @@ make_runner_fixture_db <- function() {
 
   DBI::dbDisconnect(con, shutdown = TRUE)
   duckdb::duckdb_shutdown(drv)
+  attr(path, "bars") <- bars
   path
 }
 
@@ -43,7 +44,7 @@ base_runner_config <- function(db_path) {
 
 testthat::test_that("runner executes a minimal end-to-end run and writes outputs", {
   db_path <- make_runner_fixture_db()
-  cfg <- base_runner_config(db_path)
+  cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
 
   out <- ledgr_backtest_run(cfg)
   testthat::expect_true(is.list(out))
@@ -77,7 +78,7 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
 
 testthat::test_that("low-level runner rejects opening positions outside the universe", {
   db_path <- make_runner_fixture_db()
-  cfg <- base_runner_config(db_path)
+  cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
   cfg$opening <- list(
     cash = 1000,
     date = NULL,
@@ -96,7 +97,7 @@ testthat::test_that("low-level runner rejects opening positions outside the univ
 testthat::test_that("runner resume appends ledger events without duplicate event_seq and rebuilds tail", {
   db_path <- make_runner_fixture_db()
 
-  cfg <- base_runner_config(db_path)
+  cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
   cfg$features$defs <- list(list(id = "sma_2"))
   cfg$strategy <- list(
     id = "ts_rule",
@@ -131,7 +132,7 @@ testthat::test_that("runner resume appends ledger events without duplicate event
 
 testthat::test_that("runner refuses to resume on config hash mismatch", {
   db_path <- make_runner_fixture_db()
-  cfg <- base_runner_config(db_path)
+  cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
 
   run_id <- "run-mismatch-1"
   ledgr_backtest_run(cfg, run_id = run_id)
@@ -155,19 +156,20 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   ledgr_create_schema(con)
 
   DBI::dbExecute(con, "INSERT INTO instruments (instrument_id) VALUES ('AAA')")
+  bars <- data.frame(
+    instrument_id = rep("AAA", 4),
+    ts_utc = as.POSIXct(c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00", "2020-01-04 00:00:00"), tz = "UTC"),
+    open = c(100, 101, 102, 103),
+    high = c(100, 101, 102, 103),
+    low = c(100, 101, 102, 103),
+    close = c(100, 101, 102, 103),
+    volume = c(1, 1, 1, 1),
+    stringsAsFactors = FALSE
+  )
   DBI::dbAppendTable(
     con,
     "bars",
-    data.frame(
-      instrument_id = rep("AAA", 4),
-      ts_utc = as.POSIXct(c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00", "2020-01-04 00:00:00"), tz = "UTC"),
-      open = c(100, 101, 102, 103),
-      high = c(100, 101, 102, 103),
-      low = c(100, 101, 102, 103),
-      close = c(100, 101, 102, 103),
-      volume = c(1, 1, 1, 1),
-      stringsAsFactors = FALSE
-    )
+    bars
   )
 
   DBI::dbDisconnect(con, shutdown = TRUE)
@@ -187,6 +189,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "state_prev", params = list())
   )
+  cfg <- ledgr_test_snapshot_backed_config(cfg, bars)
 
   run_id <- "run-state-prev"
   ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 2L))
@@ -212,7 +215,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
 
 testthat::test_that("db_live writes strategy_state only after pulse fill writes", {
   db_path <- make_runner_fixture_db()
-  cfg <- base_runner_config(db_path)
+  cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
   cfg$engine$execution_mode <- "db_live"
   cfg$features <- list(enabled = FALSE, defs = list())
 

@@ -67,7 +67,11 @@ ledgr_next_open_fill_proposal <- function(desired_qty_delta, next_bar) {
 
   side <- if (desired_qty_delta > 0) "BUY" else "SELL"
   qty <- abs(as.numeric(desired_qty_delta))
-  ts_exec_utc <- ledgr_normalize_ts_utc(ts_utc)
+  ts_exec_utc <- if (inherits(ts_utc, "POSIXt")) {
+    ledgr_ts_utc_posix(ts_utc, label = "`next_bar$ts_utc`", class = "ledgr_invalid_fill_input")
+  } else {
+    ledgr_normalize_ts_utc(ts_utc)
+  }
 
   execution_bar <- list(
     instrument_id = instrument_id,

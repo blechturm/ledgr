@@ -99,10 +99,9 @@ testthat::test_that("runs.status CHECK constraint is enforced", {
         engine_version,
         config_json,
         config_hash,
-        data_hash,
         status,
         error_msg
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ",
       params = list(
         run_id,
@@ -110,7 +109,6 @@ testthat::test_that("runs.status CHECK constraint is enforced", {
         "0.1.0",
         "{}",
         "config-hash",
-        "data-hash",
         status,
         NA_character_
       )
@@ -315,7 +313,6 @@ testthat::test_that("validator fails if runs.status does not accept DONE", {
       engine_version TEXT,
       config_json TEXT,
       config_hash TEXT,
-      data_hash TEXT,
       snapshot_id TEXT,
       status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','COMPLETED','FAILED')),
       error_msg TEXT,
@@ -352,7 +349,6 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
       engine_version TEXT,
       config_json TEXT,
       config_hash TEXT,
-      data_hash TEXT,
       snapshot_id TEXT,
       status TEXT NOT NULL CHECK (length(status) > 0),
       error_msg TEXT,
@@ -373,13 +369,13 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
     "
     INSERT INTO runs (
       run_id, created_at_utc, engine_version, config_json, config_hash,
-      data_hash, snapshot_id, status, error_msg, label, archived,
+      snapshot_id, status, error_msg, label, archived,
       archived_at_utc, archive_reason, execution_mode, schema_version,
       metric_context_json, metric_context_hash, metric_context_version
     )
     VALUES (
       'bad-check', TIMESTAMP '2020-01-01 00:00:00', '0.1.0', '{}',
-      'config', 'data', NULL, 'DONE', NULL, NULL, FALSE, NULL, NULL,
+      'config', NULL, 'DONE', NULL, NULL, FALSE, NULL, NULL,
       NULL, 108, NULL, NULL, NULL
     )
     "

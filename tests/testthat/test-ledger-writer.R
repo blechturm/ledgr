@@ -8,10 +8,9 @@ insert_test_run <- function(con, run_id) {
       engine_version,
       config_json,
       config_hash,
-      data_hash,
       status,
       error_msg
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
     ",
     params = list(
       run_id,
@@ -19,7 +18,6 @@ insert_test_run <- function(con, run_id) {
       "0.1.0",
       "{}",
       "config-hash",
-      "data-hash",
       "CREATED",
       NA_character_
     )
@@ -28,6 +26,33 @@ insert_test_run <- function(con, run_id) {
 
 parse_meta <- function(x) {
   jsonlite::fromJSON(x, simplifyVector = TRUE)
+}
+
+fake_write_result <- function(run_id, i) {
+  row <- data.frame(
+    event_id = sprintf("%s_%08d", run_id, i),
+    run_id = run_id,
+    ts_utc = as.POSIXct("2020-01-01 00:00:00", tz = "UTC") + i,
+    event_type = "FILL",
+    instrument_id = "AAA",
+    side = "BUY",
+    qty = as.numeric(i),
+    price = 100,
+    fee = 0,
+    meta_json = canonical_json(list(cash_delta = -100 * i, position_delta = i, realized_pnl = NULL)),
+    event_seq = as.integer(i),
+    stringsAsFactors = FALSE
+  )
+  structure(
+    list(
+      status = "WROTE",
+      row = row,
+      cash_delta = -100 * i,
+      position_delta = i,
+      meta = list(cash_delta = -100 * i, position_delta = i, realized_pnl = NULL)
+    ),
+    class = "ledgr_ledger_write_result"
+  )
 }
 
 testthat::test_that("BUY fill writes a correct FILL ledger event", {
@@ -113,6 +138,79 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
     DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]],
     1
   )
+})
+
+testthat::test_that("persistent output handler grows event buffer without changing rows", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+
+  run_id <- "run-ledger-buffered-grow"
+  insert_test_run(con, run_id)
+
+  handler <- ledgr:::ledgr_persistent_output_handler(
+    con = con,
+    run_id = run_id,
+    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE
+  )
+  n_events <- 1025L
+  handler$init_buffers(n_events)
+  for (i in seq_len(n_events)) {
+    handler$buffer_event(fake_write_result(run_id, i))
+  }
+  testthat::expect_identical(handler$pending_event_count(), n_events)
+  handler$flush_pending()
+
+  rows <- DBI::dbGetQuery(
+    con,
+    "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+    params = list(run_id)
+  )
+  testthat::expect_equal(nrow(rows), n_events)
+  testthat::expect_identical(rows$event_id[[1]], "run-ledger-buffered-grow_00000001")
+  testthat::expect_identical(rows$event_id[[n_events]], "run-ledger-buffered-grow_00001025")
+  testthat::expect_s3_class(rows$ts_utc, "POSIXct")
+  testthat::expect_identical(attr(rows$ts_utc, "tzone"), "UTC")
+  testthat::expect_true(all(grepl("^\\{", rows$meta_json)))
+})
+
+testthat::test_that("persistent output handler enforces hard event cap", {
+  handler <- ledgr:::ledgr_persistent_output_handler(
+    con = NULL,
+    run_id = "run-ledger-buffered-cap",
+    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE
+  )
+  handler$init_buffers(1L)
+  testthat::expect_true(handler$buffer_event(fake_write_result("run-ledger-buffered-cap", 1L)))
+  testthat::expect_error(
+    handler$buffer_event(fake_write_result("run-ledger-buffered-cap", 2L)),
+    class = "ledgr_event_buffer_capacity_exceeded"
+  )
+})
+
+testthat::test_that("memory output handler grows event buffer and preserves event surface", {
+  run_id <- "run-memory-buffered-grow"
+  handler <- ledgr:::ledgr_memory_output_handler(run_id)
+  n_events <- 1025L
+  handler$init_buffers(n_events)
+  for (i in seq_len(n_events)) {
+    handler$buffer_event(fake_write_result(run_id, i))
+  }
+
+  events <- handler$events()
+  testthat::expect_s3_class(events, "ledgr_memory_events")
+  testthat::expect_equal(nrow(events), n_events)
+  testthat::expect_identical(events$event_id[[1]], "run-memory-buffered-grow_00000001")
+  testthat::expect_identical(events$event_id[[n_events]], "run-memory-buffered-grow_00001025")
+  testthat::expect_s3_class(events$ts_utc, "POSIXct")
+  testthat::expect_identical(attr(events$ts_utc, "tzone"), "UTC")
+  testthat::expect_true(all(grepl("^\\{", events$meta_json)))
+  testthat::expect_identical(attr(events, "ledgr_event_cash_delta")[[n_events]], -100 * n_events)
+  testthat::expect_identical(attr(events, "ledgr_event_position_delta")[[n_events]], as.numeric(n_events))
 })
 
 testthat::test_that("SELL fill writes correct deltas", {

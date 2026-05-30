@@ -279,10 +279,10 @@ testthat::test_that("runs.execution_mode rejects values outside v0.1.5 modes whe
     "
     INSERT INTO runs (
       run_id, created_at_utc, engine_version, config_json, config_hash,
-      data_hash, status, error_msg
+      status, error_msg
     ) VALUES (
       'run-mode-check', TIMESTAMP '2020-01-01 00:00:00', '0.1.5',
-      '{}', 'config-hash', 'data-hash', 'DONE', NULL
+      '{}', 'config-hash', 'DONE', NULL
     )
     "
   )

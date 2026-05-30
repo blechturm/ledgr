@@ -351,6 +351,54 @@ ledgr_execute_fold <- function(execution, output_handler) {
   )
 }
 
+ledgr_event_buffer_initial_capacity <- function(max_events, initial_capacity = 1024L) {
+  max_events <- ledgr_event_buffer_checked_capacity(max_events, "`max_events`")
+  initial_capacity <- ledgr_event_buffer_checked_capacity(initial_capacity, "`initial_capacity`")
+  as.integer(max(1L, min(max_events, initial_capacity)))
+}
+
+ledgr_event_buffer_next_capacity <- function(current_capacity,
+                                             required,
+                                             max_events,
+                                             initial_capacity = 1024L,
+                                             growth_factor = 2) {
+  current_capacity <- as.integer(max(0L, current_capacity %||% 0L))
+  required <- ledgr_event_buffer_checked_capacity(required, "`required`")
+  max_events <- ledgr_event_buffer_checked_capacity(max_events, "`max_events`")
+  if (required > max_events) {
+    rlang::abort(
+      "Ledger event buffer exceeded the run's maximum event capacity.",
+      class = "ledgr_event_buffer_capacity_exceeded"
+    )
+  }
+  if (required <= current_capacity) {
+    return(as.integer(current_capacity))
+  }
+  if (!is.numeric(growth_factor) || length(growth_factor) != 1L || is.na(growth_factor) ||
+      !is.finite(growth_factor) || growth_factor <= 1) {
+    rlang::abort("`growth_factor` must be a finite numeric scalar > 1.", class = "ledgr_invalid_args")
+  }
+  capacity <- max(current_capacity, ledgr_event_buffer_initial_capacity(max_events, initial_capacity))
+  while (capacity < required) {
+    grown <- ceiling(capacity * growth_factor)
+    if (grown <= capacity) {
+      grown <- capacity + 1L
+    }
+    capacity <- min(max_events, max(required, grown))
+  }
+  as.integer(capacity)
+}
+
+ledgr_event_buffer_checked_capacity <- function(x, label) {
+  if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x) || x < 1 || x != floor(x)) {
+    rlang::abort(sprintf("%s must be a positive integer-like scalar.", label), class = "ledgr_invalid_args")
+  }
+  if (x > .Machine$integer.max) {
+    rlang::abort(sprintf("%s exceeds R's integer vector length limit.", label), class = "ledgr_invalid_args")
+  }
+  as.integer(x)
+}
+
 ledgr_opening_position_event_rows <- function(run_id,
                                               ts_utc,
                                               positions,
@@ -558,6 +606,106 @@ ledgr_equity_from_events <- function(events,
   )
 }
 
+ledgr_fill_row_buffer <- function(capacity) {
+  capacity <- max(1L, as.integer(capacity %||% 1L))
+  buffer <- new.env(parent = emptyenv())
+  buffer$capacity <- capacity
+  buffer$n <- 0L
+  buffer$event_seq <- integer(capacity)
+  buffer$ts_utc <- rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), capacity)
+  buffer$instrument_id <- character(capacity)
+  buffer$side <- character(capacity)
+  buffer$qty <- numeric(capacity)
+  buffer$price <- numeric(capacity)
+  buffer$fee <- numeric(capacity)
+  buffer$realized_pnl <- numeric(capacity)
+  buffer$action <- character(capacity)
+  buffer
+}
+
+ledgr_fill_row_buffer_grow <- function(buffer, required) {
+  if (required <= buffer$capacity) {
+    return(invisible(buffer))
+  }
+  old_capacity <- buffer$capacity
+  new_capacity <- old_capacity
+  while (new_capacity < required) {
+    new_capacity <- max(required, new_capacity * 2L)
+  }
+  idx <- seq_len(buffer$n)
+  grow_posix <- function(x) {
+    out <- rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), new_capacity)
+    if (buffer$n > 0L) out[idx] <- x[idx]
+    out
+  }
+  grow_vector <- function(x, prototype) {
+    out <- rep(prototype, new_capacity)
+    if (buffer$n > 0L) out[idx] <- x[idx]
+    out
+  }
+  buffer$event_seq <- grow_vector(buffer$event_seq, integer(1))
+  buffer$ts_utc <- grow_posix(buffer$ts_utc)
+  buffer$instrument_id <- grow_vector(buffer$instrument_id, character(1))
+  buffer$side <- grow_vector(buffer$side, character(1))
+  buffer$qty <- grow_vector(buffer$qty, numeric(1))
+  buffer$price <- grow_vector(buffer$price, numeric(1))
+  buffer$fee <- grow_vector(buffer$fee, numeric(1))
+  buffer$realized_pnl <- grow_vector(buffer$realized_pnl, numeric(1))
+  buffer$action <- grow_vector(buffer$action, character(1))
+  buffer$capacity <- as.integer(new_capacity)
+  invisible(buffer)
+}
+
+ledgr_fill_row_buffer_add <- function(buffer,
+                                      event_seq,
+                                      ts_utc,
+                                      instrument_id,
+                                      side,
+                                      qty,
+                                      price,
+                                      fee,
+                                      realized_pnl,
+                                      action) {
+  i <- buffer$n + 1L
+  if (i > buffer$capacity) {
+    ledgr_fill_row_buffer_grow(buffer, i)
+  }
+  buffer$event_seq[[i]] <- as.integer(event_seq)
+  buffer$ts_utc[[i]] <- as.POSIXct(ts_utc, tz = "UTC")
+  buffer$instrument_id[[i]] <- as.character(instrument_id)
+  buffer$side[[i]] <- as.character(side)
+  buffer$qty[[i]] <- as.numeric(qty)
+  buffer$price[[i]] <- as.numeric(price)
+  buffer$fee[[i]] <- as.numeric(fee)
+  buffer$realized_pnl[[i]] <- as.numeric(realized_pnl)
+  buffer$action[[i]] <- as.character(action)
+  buffer$n <- i
+  invisible(buffer)
+}
+
+ledgr_fill_row_buffer_data_frame <- function(buffer) {
+  if (buffer$n == 0L) {
+    return(as.data.frame(ledgr_empty_fills_table()))
+  }
+  idx <- seq_len(buffer$n)
+  data.frame(
+    event_seq = buffer$event_seq[idx],
+    ts_utc = buffer$ts_utc[idx],
+    instrument_id = buffer$instrument_id[idx],
+    side = buffer$side[idx],
+    qty = buffer$qty[idx],
+    price = buffer$price[idx],
+    fee = buffer$fee[idx],
+    realized_pnl = buffer$realized_pnl[idx],
+    action = buffer$action[idx],
+    stringsAsFactors = FALSE
+  )
+}
+
+ledgr_fill_row_buffer_tibble <- function(buffer) {
+  tibble::as_tibble(ledgr_fill_row_buffer_data_frame(buffer))
+}
+
 ledgr_fills_from_events <- function(events) {
   if (is.null(events) || nrow(events) == 0L) {
     return(ledgr_empty_fills_table())
@@ -568,18 +716,25 @@ ledgr_fills_from_events <- function(events) {
   events <- events[order_idx, , drop = FALSE]
   instrument_ids <- unique(stats::na.omit(events$instrument_id))
   lot_state <- ledgr_lot_state(instrument_ids)
-  rows <- list()
-  out_idx <- 0L
+  fill_rows <- ledgr_fill_row_buffer(nrow(events) * 2L)
+
+  event_seq_col <- .subset2(events, "event_seq")
+  ts_utc_col <- .subset2(events, "ts_utc")
+  event_type_col <- .subset2(events, "event_type")
+  instrument_col <- .subset2(events, "instrument_id")
+  side_col <- .subset2(events, "side")
+  qty_col <- .subset2(events, "qty")
+  price_col <- .subset2(events, "price")
+  fee_col <- .subset2(events, "fee")
 
   for (i in seq_len(nrow(events))) {
-    ev <- events[i, , drop = FALSE]
-    event_type <- as.character(ev$event_type[[1]])
-    inst <- as.character(ev$instrument_id[[1]])
-    side <- as.character(ev$side[[1]])
-    qty <- suppressWarnings(as.numeric(ev$qty[[1]]))
-    price <- suppressWarnings(as.numeric(ev$price[[1]]))
-    fee <- suppressWarnings(as.numeric(ev$fee[[1]]))
-    if (identical(ev$event_type[[1]], "CASHFLOW")) {
+    event_type <- as.character(event_type_col[[i]])
+    inst <- as.character(instrument_col[[i]])
+    side <- as.character(side_col[[i]])
+    qty <- suppressWarnings(as.numeric(qty_col[[i]]))
+    price <- suppressWarnings(as.numeric(price_col[[i]]))
+    fee <- suppressWarnings(as.numeric(fee_col[[i]]))
+    if (identical(event_type, "CASHFLOW")) {
       meta <- ledgr_event_meta_at(events, typed_meta, i)
       lot_res <- ledgr_lot_apply_event(
         lot_state,
@@ -594,43 +749,27 @@ ledgr_fills_from_events <- function(events) {
       lot_state <- lot_res$state
       next
     }
-    if (!identical(ev$event_type[[1]], "FILL") &&
-        !identical(ev$event_type[[1]], "FILL_PARTIAL")) {
+    if (!identical(event_type, "FILL") &&
+        !identical(event_type, "FILL_PARTIAL")) {
       next
     }
 
     meta <- ledgr_event_meta_at(events, typed_meta, i)
     if (is.na(qty) || qty <= 0 || is.na(price)) {
-      out_idx <- out_idx + 1L
-      rows[[out_idx]] <- data.frame(
-        event_seq = ev$event_seq[[1]],
-        ts_utc = ev$ts_utc[[1]],
-        instrument_id = inst,
-        side = side,
-        qty = qty,
-        price = price,
-        fee = fee,
-        realized_pnl = NA_real_,
-        action = NA_character_,
-        stringsAsFactors = FALSE
+      ledgr_fill_row_buffer_add(
+        fill_rows,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, qty, price, fee,
+        NA_real_, NA_character_
       )
       next
     }
 
     side_norm <- toupper(side)
     if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
-      out_idx <- out_idx + 1L
-      rows[[out_idx]] <- data.frame(
-        event_seq = ev$event_seq[[1]],
-        ts_utc = ev$ts_utc[[1]],
-        instrument_id = inst,
-        side = side,
-        qty = qty,
-        price = price,
-        fee = fee,
-        realized_pnl = NA_real_,
-        action = NA_character_,
-        stringsAsFactors = FALSE
+      ledgr_fill_row_buffer_add(
+        fill_rows,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, qty, price, fee,
+        NA_real_, NA_character_
       )
       next
     }
@@ -651,41 +790,25 @@ ledgr_fills_from_events <- function(events) {
     lot_state <- lot_res$state
 
     if (close_qty > 0) {
-      out_idx <- out_idx + 1L
-      rows[[out_idx]] <- data.frame(
-        event_seq = ev$event_seq[[1]],
-        ts_utc = ev$ts_utc[[1]],
-        instrument_id = inst,
-        side = side,
-        qty = close_qty,
-        price = price,
-        fee = fee,
-        realized_pnl = realized_close,
-        action = "CLOSE",
-        stringsAsFactors = FALSE
+      ledgr_fill_row_buffer_add(
+        fill_rows,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, close_qty, price, fee,
+        realized_close, "CLOSE"
       )
     }
     if (open_qty > 0) {
-      out_idx <- out_idx + 1L
-      rows[[out_idx]] <- data.frame(
-        event_seq = ev$event_seq[[1]],
-        ts_utc = ev$ts_utc[[1]],
-        instrument_id = inst,
-        side = side,
-        qty = open_qty,
-        price = price,
-        fee = fee,
-        realized_pnl = 0,
-        action = "OPEN",
-        stringsAsFactors = FALSE
+      ledgr_fill_row_buffer_add(
+        fill_rows,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, open_qty, price, fee,
+        0, "OPEN"
       )
     }
   }
 
-  if (out_idx == 0L) {
+  if (fill_rows$n == 0L) {
     return(ledgr_empty_fills_table())
   }
-  tibble::as_tibble(do.call(rbind, rows))
+  ledgr_fill_row_buffer_tibble(fill_rows)
 }
 
 ledgr_assert_events_in_fold_order <- function(events) {

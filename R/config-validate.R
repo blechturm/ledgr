@@ -215,26 +215,28 @@ validate_ledgr_config <- function(config) {
     rlang::abort("Config field alias_map_order must be a character vector.", class = "ledgr_invalid_config")
   }
 
-  # v0.1.1 snapshot integration: config$data$source == "snapshot" requires
-  # config$data$snapshot_id.
-  if (!is.null(config$data) && is.list(config$data)) {
-    data_source <- config$data$source
-    snapshot_id <- config$data$snapshot_id
+  # Modern execution is sealed-snapshot-only. `ledgr_backtest()` keeps its
+  # data-frame convenience by converting bars to a sealed snapshot before this
+  # config exists; low-level raw `bars` configs must fail before fold entry.
+  if (is.null(config$data) || !is.list(config$data)) {
+    rlang::abort(
+      "Config field data must specify sealed snapshot data (`data.source = 'snapshot'` and `data.snapshot_id`).",
+      class = "ledgr_snapshot_required"
+    )
+  }
 
-    if (!is.null(data_source)) {
-      assert_scalar_chr(data_source, "data.source")
-      if (!identical(data_source, "snapshot")) {
-        rlang::abort("Config field data.source must be 'snapshot' when provided.", class = "ledgr_invalid_config")
-      }
-    }
+  data_source <- config$data$source
+  snapshot_id <- config$data$snapshot_id
 
-    if (!is.null(snapshot_id) || identical(data_source, "snapshot")) {
-      assert_scalar_chr(snapshot_id, "data.snapshot_id")
-    }
+  assert_scalar_chr(data_source, "data.source")
+  if (!identical(data_source, "snapshot")) {
+    rlang::abort("Config field data.source must be 'snapshot'.", class = "ledgr_snapshot_required")
+  }
 
-    if (!is.null(config$data$snapshot_db_path)) {
-      assert_scalar_chr(config$data$snapshot_db_path, "data.snapshot_db_path")
-    }
+  assert_scalar_chr(snapshot_id, "data.snapshot_id")
+
+  if (!is.null(config$data$snapshot_db_path)) {
+    assert_scalar_chr(config$data$snapshot_db_path, "data.snapshot_db_path")
   }
 
   if (!is.null(config$features) && is.list(config$features) && isTRUE(config$features$enabled)) {

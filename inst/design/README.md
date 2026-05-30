@@ -2,11 +2,10 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.6`.
-**Current active packet:** none. v0.1.8.7 is an RFC-first Optimization Round 2
-handoff; do not implement it until a packet is cut.
+**Latest completed release packet:** `v0.1.8.7`.
+**Current active packet:** none cut.
 **Current active packet path:** none.
-The completed `inst/design/ledgr_v0_1_8_6_spec_packet/` is an archival release
+The completed `inst/design/ledgr_v0_1_8_7_spec_packet/` is an archival release
 record.
 
 This directory is the design memory for ledgr. Files here do not all have the
@@ -20,9 +19,12 @@ For any non-trivial change, read in this order:
 1. `contracts.md` - current execution, snapshot, persistence, feature, and
    strategy contracts.
 2. `ledgr_roadmap.md` - milestone arc and active horizon.
-3. Current spec packet:
-   `ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`.
-4. Only the architecture, RFC, audit, or spike documents relevant to the active
+3. If an active spec packet has been cut, read that packet. Otherwise use the
+   latest completed packet only as release history, not as new-work
+   authorization.
+4. For RFC-cycle work, read `rfc_cycle.md` before drafting or reviewing a seed,
+   response, synthesis, final review, or horizon entry.
+5. Only the architecture, RFC, audit, or spike documents relevant to the active
    ticket.
 
 Historical spec packets are records, not current instructions, unless a task
@@ -86,10 +88,33 @@ deferred to the horizon for a later RFC/spec cycle.
 
 Parallel dispatch, target risk, walk-forward, public cost/liquidity APIs, OMS
 work, live data logs, point-in-time regressors, public benchmark dashboards, and
-broad collapse adoption remain deferred unless the v0.1.8.6 spec explicitly
-scopes a bounded subset.
+broad collapse adoption remain deferred unless the v0.1.8.7 spec explicitly
+scopes a bounded subset. v0.1.8.7 may adopt `collapse` only behind the
+deterministic wrapper and only for measured hot frames.
 Auditr-report bugfix intake is also deferred to the next version after prompt
 fixes in the auditr repository.
+
+The v0.1.8.7 packet is complete. It shipped Optimization Round 2 and explicit
+legacy execution cleanup: modern execution is snapshot-backed and
+function-strategy based, while raw `bars` execution, R6 strategy execution, and
+run-time `data_hash` identity are removed from modern execution or fail before
+fold entry. It also shipped the event-buffer/emission lane, representation/setup
+cleanup, fills reconstruction/read-back cleanup, deterministic `collapse`
+wrapper, and fast-sweep versus promotion/materialization artifact boundary.
+
+- Spec: `ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md`.
+- Tickets: `ledgr_v0_1_8_7_spec_packet/v0_1_8_7_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_7_spec_packet/tickets.yml`.
+- Benchmark attribution:
+  `ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
+- Cycle retrospective:
+  `ledgr_v0_1_8_7_spec_packet/cycle_retrospective.md`.
+- Key inputs:
+  `audits/fold_path_hotpath_audit.md`,
+  `architecture/fold_core_trust_boundary.md`,
+  `collapse_optimization_map.md`,
+  `spikes/ledgr_optimization_round_spike/README.md`, and
+  `adr/0004-dependency-footprint-and-strategy-interface.md`.
 
 ## Core Documents
 
@@ -116,6 +141,8 @@ load-bearing for future sweep and fold-core work.
 - `architecture/sweep_mode_code_review.md`
 - `architecture/ledgr_feature_map_ux.md`
 - `architecture/fold_core_trust_boundary.md`
+- `collapse_optimization_map.md`
+- `spikes/ledgr_optimization_round_spike/README.md`
 
 ## Accepted Design Decisions
 
@@ -307,6 +334,9 @@ paper/live interaction to later RFCs.
 - `maintainer_review/feature_value_path_workbook.qmd` - internal notebook for tracing
   how declared features become `ctx$feature()` values. This is a maintainer
   code-review aid, not installed user documentation or a contract.
+- `maintainer_review/v0_1_8_7_optimization_round.qmd` - internal narrative
+  review of the v0.1.8.7 optimization round. This is a maintainer review aid,
+  not a benchmark contract or installed user documentation.
 
 ## ADRs
 
@@ -321,6 +351,11 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
+- `ledgr_v0_1_8_7_spec_packet/` - v0.1.8.7 release record for Optimization
+  Round 2: legacy execution cleanup, dependency/function-strategy cleanup,
+  event-emission/buffer lane, representation/setup cleanup, reconstruction
+  read-back cleanup, run-artifact materialization policy, and benchmark
+  attribution.
 - `ledgr_v0_1_8_6_spec_packet/` - v0.1.8.6 release record for
   feature-projection materialization, structured benchmarks, performance
   attribution, storage-decision deferrals, and v0.1.8.7 optimization handoff.

@@ -35,8 +35,11 @@ a durable experiment-store run artifact.
 \details{
 \code{ledgr_promote()} commits a selected sweep candidate by calling
 \code{\link[=ledgr_run]{ledgr_run()}} with the candidate strategy params, feature params, and exact
-\code{execution_seed}. Runs
-created this way store durable promotion context that can be read with
+\code{execution_seed}. This is the slow/materialized path: the sweep keeps only
+compact candidate summaries and the reproduction key available through
+\code{\link[=ledgr_candidate_reproduction_key]{ledgr_candidate_reproduction_key()}}, while promotion explicitly pays the
+cost to create durable ledger, equity, telemetry, and promotion-context
+artifacts. Runs created this way store durable promotion context that can be read with
 \code{\link[=ledgr_promotion_context]{ledgr_promotion_context()}} or \code{\link[=ledgr_run_promotion_context]{ledgr_run_promotion_context()}}.
 
 The default \code{require_same_snapshot = TRUE} protects same-snapshot replay. For

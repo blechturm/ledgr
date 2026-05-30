@@ -24,6 +24,38 @@ testthat::test_that("fill model is deterministic and rounds fill_price", {
   testthat::expect_equal(a$fill_price, round(100.123456789 * (1 + 7 / 10000), 8))
 })
 
+testthat::test_that("POSIXct next-bar timestamps stay POSIXct in internal fill intents", {
+  bar <- list(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct("2020-01-02 00:00:00", tz = "UTC"),
+    open = 100
+  )
+
+  proposal <- ledgr:::ledgr_next_open_fill_proposal(10, bar)
+  fill <- ledgr:::ledgr_resolve_fill_proposal(
+    proposal,
+    ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0)
+  )
+
+  testthat::expect_s3_class(proposal$ts_exec_utc, "POSIXct")
+  testthat::expect_identical(attr(proposal$ts_exec_utc, "tzone"), "UTC")
+  testthat::expect_s3_class(fill$ts_exec_utc, "POSIXct")
+  testthat::expect_identical(attr(fill$ts_exec_utc, "tzone"), "UTC")
+})
+
+testthat::test_that("sub-second fill timestamps fail loud", {
+  bar <- list(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct("2020-01-02 00:00:00", tz = "UTC") + 0.25,
+    open = 100
+  )
+
+  testthat::expect_error(
+    ledgr:::ledgr_next_open_fill_proposal(10, bar),
+    class = "LEDGR_SUBSECOND_TIMESTAMP"
+  )
+})
+
 testthat::test_that("next-open proposal and internal cost resolver preserve legacy fill intents", {
   bar <- list(
     instrument_id = "AAA",

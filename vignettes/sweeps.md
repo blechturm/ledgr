@@ -353,9 +353,14 @@ sweep
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
     # i Hidden columns (13): final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, provenance
 
-The table contains candidate summaries. It is not a full artifact store.
-Full equity, fills, trades, and ledger rows are created by committed
-runs.
+The table contains candidate summaries. It is not a full artifact store
+and it does not write durable candidate ledgers, equity curves, feature
+panels, or telemetry rows. Each row keeps the compact reproduction key
+needed for later materialization: snapshot identity, selector, strategy
+identity, feature fingerprints, seed metadata, and candidate params. Use
+`ledgr_candidate_reproduction_key()` when you want to inspect that key
+directly. Full equity, fills, trades, and ledger rows are created only by
+committed runs.
 
 ## Inspect Before Promotion
 
@@ -418,9 +423,11 @@ provenance remain attached to the rows.
 
 ## Promote One Candidate
 
-Promotion replays one selected candidate as a committed run. For the
-full research loop around promotion notes, reopen, and human review,
-read `vignette("research-workflow", package = "ledgr")`.
+Promotion replays one selected candidate as a committed run. This is the
+slow path that explicitly pays to materialize durable ledger and equity
+artifacts. For the full research loop around promotion notes, reopen,
+and human review, read `vignette("research-workflow", package =
+"ledgr")`.
 
 ``` r
 candidate <- ledgr_candidate(ranked, 1)

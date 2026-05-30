@@ -3,8 +3,8 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_8_6_spec_packet/`.
-**Active packet:** none. v0.1.8.7 is an RFC-first Optimization Round 2 handoff.
+**Latest completed packet:** `inst/design/ledgr_v0_1_8_7_spec_packet/`.
+**Active packet:** none cut.
 **Active packet path:** none.
 
 This roadmap is a directional planning document. Versioned spec packets are the
@@ -100,7 +100,7 @@ versioned packet.
 | v0.1.8.4 | Done | Active parameterized feature aliases plus separate feature-grid and strategy-grid helpers for sweep authoring. | `inst/design/ledgr_v0_1_8_4_spec_packet/` |
 | v0.1.8.5 | Done | Canonical research workflow and teachability release after active aliases and grid UX stabilize. | `inst/design/ledgr_v0_1_8_5_spec_packet/` |
 | v0.1.8.6 | Done | Feature-projection materialization, structured benchmarks, DuckDB/storage decision work, performance attribution, and v0.1.8.7 optimization handoff. Snapshot administration and research-loop helpers deferred. | `inst/design/ledgr_v0_1_8_6_spec_packet/` |
-| v0.1.8.7 | Planned | Optimization round 2: fold-core primitive contract + hot-path lanes (buffer/emission via collapse, cache-key, reconstruction) + run-artifact materialization policy; drop cli/R6, add collapse, keep tibble (ADR 0004). | Future packet; RFC first |
+| v0.1.8.7 | Done | Optimization round 2 and legacy cleanup: removed raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; dropped cli/R6, added collapse, and shipped measured event-buffer, representation/setup, reconstruction, artifact-policy, and benchmark-attribution work. | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
 | v0.1.8.8 | Planned | Parallel sweep dispatch after serial semantics, metrics, grid UX, and R-level optimization stabilize. | Future packet |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
@@ -846,16 +846,16 @@ Non-scope:
 
 ### v0.1.8.7 Optimization Round: Fold-Core Primitive Contract And Artifact Materialization Policy
 
-v0.1.8.7 is an RFC-first implementation cycle for the fold core. The contract
-to settle and then implement is: fold-core internals pass primitive R objects
-and functions only (atomic vectors, matrices, lists, index maps, closures),
-while data.frames are manifested only at public or strategy-facing boundaries
-when explicitly needed.
+v0.1.8.7 completed the RFC-first Optimization Round 2 and legacy cleanup. The
+accepted direction is that fold-core internals should prefer primitive R objects
+and functions (atomic vectors, matrices, lists, index maps, closures), while
+data.frames are manifested only at public or strategy-facing boundaries when
+explicitly needed.
 
-The same cycle should also settle run-artifact materialization policy. The
+The same cycle also settled run-artifact materialization policy. The
 v0.1.8.6 profiling showed that persistent feature-panel writes can dominate
 wall time when `persist_features = TRUE`, while sweep candidates already avoid
-that path. v0.1.8.7 should formalize the intended fast/slow split: evaluation
+that path. v0.1.8.7 formalized the intended fast/slow split: evaluation
 paths keep heavy feature artifacts ephemeral and save compact results, while
 promotion/inspection paths explicitly materialize durable views and pay that
 tax.
@@ -884,7 +884,16 @@ real-run profile (the per-event buffer/append path is ~72-82% of loop R time):
 validated by **re-profiling the real run** and re-running the LDG-2457 peer
 benchmark, not isolated micro-benchmarks.
 
-Authoritative input (planned):
+Maintainer decision (2026-05-29): v0.1.8.7 also removes the legacy execution
+gunk that keeps old representations load-bearing. Modern execution is
+snapshot-backed and function-strategy based. Raw mutable `bars` configs and R6
+strategy paths must fail clearly before entering the fold, and run-time
+`data_hash` is no longer modern sealed-run identity. `ledgr_data_hash()`,
+`runs.data_hash`, and snapshot-adapter `data_hash` metadata are deleted by the
+spec packet; old-store migration may tolerate historical columns only long
+enough to rewrite them out.
+
+Authoritative input:
 
 - Architecture note:
   `inst/design/architecture/fold_core_trust_boundary.md`. It records the
@@ -1044,6 +1053,94 @@ OMS/risk/intraday open a new architecture front):
 See `inst/design/horizon.md` (fold-core structural-debt entry). The
 phased-pulse restructure is tracked separately as a v0.1.9 target-risk
 prerequisite (above).
+
+### Peer Benchmark Expansion (Later v0.1.8.x)
+
+Intent:
+
+- expand the same-host peer comparison beyond `Backtrader` and `quantstrat` so
+  v0.1.8.7's measured position has broader empirical grounding;
+- replace vendor M3 orientation rows in `dev/bench/lean_reference.csv` and
+  `dev/bench/ziplime_reference.csv` with real same-host measurements where
+  feasible;
+- add a second compiled-core data point so "compiled core is the next-class
+  lever" is not a one-engine artifact.
+
+Worth running same-host:
+
+- **zipline-reloaded** — actively maintained Python event-driven backtester;
+  closest architecture match to ledgr / Backtrader; lowest setup friction
+  (pip-installable, comparable workload definition);
+- **LEAN locally (Python-strategy mode)** — the structural apples-to-apples
+  comparison for a future compiled-core ledgr: both are compiled engines with
+  interpreted-language callbacks per pulse (LEAN's `.NET ↔ Python` boundary maps
+  to a compiled-core ledgr's `C ↔ R` boundary). Closes the "we never measured a
+  compiled engine on this host" gap; higher setup friction (LEAN CLI plus mono
+  on non-Windows hosts) but highest payoff for the writeup. LEAN-C# (compiled
+  strategy) is *not* the right baseline for this question — Python-strategy
+  mode is;
+- **NautilusTrader** — Rust-core / Python-wrapper engine; second compiled-core
+  data point.
+
+Worth a contextual row, not a headline:
+
+- **VectorBT** — different paradigm (vectorized, no per-bar callback). Useful
+  as the "what does vectorized look like" reference but structurally apples-to-
+  oranges; report alongside event-driven peers only with an explicit paradigm
+  note.
+
+Out of scope for the expansion:
+
+- **backtesting.py** — single-asset; doesn't face the multi-asset alignment
+  problem (per the missing-data resilience research);
+- **PyAlgoTrade** — unmaintained;
+- **bt (Python)** — target-weight rebalance paradigm, not order-based; making
+  the comparison fair is more work than the insight justifies.
+
+Verdict-setter for compiled-core scoping (priority within the expansion):
+
+- The LEAN-Python row is the empirical verdict on whether a compiled-core ledgr
+  would land in the same performance class as LEAN. The structural argument
+  says yes — both are compiled engines with interpreted-language callbacks per
+  pulse, with ledgr keeping an additional ~2–5s residual for the per-fill
+  sealed-ledger write LEAN-Python doesn't pay by default. The LEAN-Python
+  number tells us whether that structural claim holds in measured form.
+- Prioritize LEAN-Python locally above the other expansion targets when
+  scheduling. The result is a load-bearing input for the v0.2.x+ compiled-core
+  decision (a months-long build) and changes the framing:
+  - if compiled-core ledgr would plausibly land near LEAN-Python (structural
+    claim measured-confirmed): proceed with compiled-core scoping;
+  - if the measured residual gap is larger than the structural argument
+    predicts: rethink what compiled-core needs to address before committing to
+    the build (likely callback-marshaling design, ctx access patterns, or
+    DuckDB flush amortization).
+
+Fairness constraints:
+
+- same host, same power profile;
+- same workload shape (500 × 1,260 daily SMA crossover) or one equivalent
+  reference workload per engine class;
+- indicator-implementation parity where possible — TTR-equivalent for ledgr /
+  quantstrat, engine-native indicators elsewhere with documented notes;
+- existing `dev/bench/peer_three_way.R` plus `peer_three_way_backtrader.py`
+  harness extends with one new engine row per addition; no new harness
+  architecture required.
+
+Sequencing:
+
+- Independent of v0.1.8.8 parallel-dispatch work; can land before, after, or
+  alongside. v0.1.8.7 Batch 8 stays narrow (attribution against the existing
+  three-engine peer set); peer-set expansion is a separate task whose
+  deliverable is "the peer comparison table got more rows."
+
+Non-scope:
+
+- no public hosted benchmark dashboard;
+- no cross-host peer-ranking claims; same-host scope only;
+- no architectural comparison with vectorized engines beyond a contextual row
+  with an explicit paradigm note.
+
+See `inst/design/horizon.md` (peer-benchmark expansion entry, v0.1.8.x line).
 
 ### v0.1.9 Target Risk Layer
 

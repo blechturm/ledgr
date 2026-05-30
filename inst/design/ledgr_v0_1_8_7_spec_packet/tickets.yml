@@ -1,0 +1,197 @@
+version: "0.1.8.7"
+source: "v0_1_8_7_tickets.md"
+generated_from: "v0_1_8_7_spec.md"
+tickets:
+  - id: "LDG-2458"
+    title: "Packet Alignment And v0.1.8.7 Planning State"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.7"
+    tests:
+      - "manual_packet_review"
+      - "stale_scope_rg_checks"
+      - "git_diff_check"
+      - "packet_alignment_evidence"
+
+  - id: "LDG-2459"
+    title: "Legacy Execution Cleanup"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2458"
+    classification:
+      type: "contract_cleanup"
+      surface: "execution_identity"
+      scope: "legacy_execution_removal"
+    tests:
+      - "snapshot_run_resume_tests"
+      - "snapshot_tamper_tests"
+      - "raw_path_failure_tests"
+      - "schema_tests_if_changed"
+      - "documentation_rg_checks"
+
+  - id: "LDG-2460"
+    title: "ADR 0004 Dependency And Function-Strategy Cleanup"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2458"
+    classification:
+      type: "dependency_cleanup"
+      surface: "strategy_interface"
+      scope: "adr_0004"
+    tests:
+      - "dependency_rg_checks"
+      - "dependency_import_before_after_review"
+      - "namespace_checks"
+      - "strategy_tests"
+      - "replay_tests"
+      - "preflight_tests"
+      - "package_load_check"
+
+  - id: "LDG-2461"
+    title: "Collapse Deterministic Wrapper"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2460"
+    classification:
+      type: "determinism_gate"
+      surface: "collapse_integration"
+      scope: "wrapper"
+    tests:
+      - "collapse_wrapper_tests"
+      - "hostile_setting_tests"
+      - "error_path_restore_tests"
+
+  - id: "LDG-2462"
+    title: "B0 Event Buffer And Emission"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2459"
+      - "LDG-2460"
+    classification:
+      type: "optimization"
+      surface: "event_emission"
+      scope: "b0_buffer"
+    tests:
+      - "event_stream_parity_tests"
+      - "sweep_parity_tests"
+      - "turnover_baseline_capture"
+      - "turnover_benchmark_reprofile"
+      - "before_after_timing_table"
+      - "matched_peer_benchmark_if_practical"
+
+  - id: "LDG-2463"
+    title: "Representation And Setup Cleanup"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2462"
+    classification:
+      type: "optimization"
+      surface: "representation_and_setup"
+      scope: "lane_r_a"
+    tests:
+      - "timestamp_parity_tests"
+      - "subsecond_rejection_tests"
+      - "hash_fingerprint_pin_tests"
+      - "feature_cache_tests"
+      - "event_id_parity_tests"
+      - "post_b0_baseline_capture"
+      - "current_source_reprofile"
+      - "before_after_timing_table"
+
+  - id: "LDG-2464"
+    title: "Reconstruction And Read-Back Cleanup"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2461"
+      - "LDG-2463"
+    classification:
+      type: "optimization"
+      surface: "reconstruction"
+      scope: "lane_c_readback"
+    tests:
+      - "fills_reconstruction_tests"
+      - "sweep_summary_tests"
+      - "hostile_collapse_tests"
+      - "db_memory_event_parity_tests"
+      - "readback_baseline_capture"
+      - "readback_timing"
+      - "before_after_readback_timing"
+
+  - id: "LDG-2465"
+    title: "Run-Artifact Materialization Policy"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2464"
+    classification:
+      type: "artifact_policy"
+      surface: "sweep_and_promotion"
+      scope: "fast_slow_materialization"
+    tests:
+      - "promotion_materialization_tests"
+      - "sweep_result_tests"
+      - "materialization_parity_tests"
+      - "fast_slow_timing_or_artifact_size_review"
+      - "documentation_rg_checks"
+
+  - id: "LDG-2466"
+    title: "Post-Lane Benchmark And Attribution"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2465"
+    classification:
+      type: "benchmark"
+      surface: "dev_bench"
+      scope: "post_lane_attribution"
+    tests:
+      - "benchmark_record_review"
+      - "attribution_table_review"
+      - "current_source_guard_review"
+      - "manual_comparability_review"
+
+  - id: "LDG-2467"
+    title: "v0.1.8.7 Release Gate And Closeout"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2458"
+      - "LDG-2459"
+      - "LDG-2460"
+      - "LDG-2461"
+      - "LDG-2462"
+      - "LDG-2463"
+      - "LDG-2464"
+      - "LDG-2465"
+      - "LDG-2466"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.7"
+    tests:
+      - "targeted_tests"
+      - "full_test_suite"
+      - "package_checks"
+      - "benchmark_record_review"
+      - "documentation_review"
+      - "manual_closeout_review"

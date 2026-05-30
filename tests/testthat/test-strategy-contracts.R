@@ -79,35 +79,32 @@ testthat::test_that("PulseContext rejects positions outside universe", {
   )
 })
 
-testthat::test_that("HoldZeroStrategy is deterministic and returns valid targets", {
+testthat::test_that("hold-zero reference strategy is deterministic and returns valid targets", {
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
   bars <- data.frame(instrument_id = c("A", "B"), ts_utc = c(ts, ts), stringsAsFactors = FALSE)
   ctx <- ledgr:::ledgr_pulse_context("run-1", ts, universe, bars, cash = 1, equity = 1)
 
-  strat <- ledgr:::HoldZeroStrategy$new()
-  out1 <- strat$on_pulse(ctx)
-  out2 <- strat$on_pulse(ctx)
+  out1 <- ledgr:::ledgr_strategy_hold_zero(ctx, list())
+  out2 <- ledgr:::ledgr_strategy_hold_zero(ctx, list())
 
   testthat::expect_identical(out1, out2)
   testthat::expect_identical(names(out1$targets), universe)
   testthat::expect_true(all(out1$targets == 0))
 })
 
-testthat::test_that("EchoStrategy validates targets names", {
+testthat::test_that("echo reference strategy validates target names", {
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
   bars <- data.frame(instrument_id = c("A", "B"), ts_utc = c(ts, ts), stringsAsFactors = FALSE)
   ctx <- ledgr:::ledgr_pulse_context("run-1", ts, universe, bars, cash = 1, equity = 1)
 
   good_targets <- stats::setNames(c(0, 1), c("A", "B"))
-  strat_ok <- ledgr:::EchoStrategy$new(params = list(targets = good_targets))
-  out <- strat_ok$on_pulse(ctx)
+  out <- ledgr:::ledgr_strategy_echo(ctx, list(targets = good_targets))
   testthat::expect_identical(out$targets, good_targets)
 
   wrapped_targets <- ledgr_target(stats::setNames(c(1, 0), c("B", "A")), universe = universe)
-  strat_wrapped <- ledgr:::EchoStrategy$new(params = list(targets = wrapped_targets))
-  out_wrapped <- strat_wrapped$on_pulse(ctx)
+  out_wrapped <- ledgr:::ledgr_strategy_echo(ctx, list(targets = wrapped_targets))
   testthat::expect_s3_class(out_wrapped$targets, "ledgr_target")
   testthat::expect_identical(
     ledgr:::ledgr_validate_strategy_targets(out_wrapped$targets, universe),
@@ -115,16 +112,21 @@ testthat::test_that("EchoStrategy validates targets names", {
   )
 
   bad_extra <- stats::setNames(c(0, 1, 2), c("A", "B", "C"))
-  strat_extra <- ledgr:::EchoStrategy$new(params = list(targets = bad_extra))
-  testthat::expect_error(strat_extra$on_pulse(ctx), "extra instruments: C", fixed = TRUE)
+  testthat::expect_error(
+    ledgr:::ledgr_strategy_echo(ctx, list(targets = bad_extra)),
+    "extra instruments: C",
+    fixed = TRUE
+  )
 
   bad_missing <- stats::setNames(c(1), c("A"))
-  strat_missing <- ledgr:::EchoStrategy$new(params = list(targets = bad_missing))
-  testthat::expect_error(strat_missing$on_pulse(ctx), "missing instruments: B", fixed = TRUE)
+  testthat::expect_error(
+    ledgr:::ledgr_strategy_echo(ctx, list(targets = bad_missing)),
+    "missing instruments: B",
+    fixed = TRUE
+  )
 
   bad_negative <- stats::setNames(c(-1, 0), c("A", "B"))
-  strat_negative <- ledgr:::EchoStrategy$new(params = list(targets = bad_negative))
-  out_negative <- strat_negative$on_pulse(ctx)
+  out_negative <- ledgr:::ledgr_strategy_echo(ctx, list(targets = bad_negative))
   testthat::expect_identical(out_negative$targets, bad_negative)
 })
 
@@ -154,13 +156,13 @@ testthat::test_that("shared target validation gives actionable contract errors",
   )
 })
 
-testthat::test_that("mutation guardrail catches a mutating strategy", {
-  ts <- "2020-01-02T00:00:00Z"
-  universe <- c("A", "B")
-  bars <- data.frame(instrument_id = c("A", "B"), ts_utc = c(ts, ts), stringsAsFactors = FALSE)
-  ctx <- ledgr:::ledgr_pulse_context("run-1", ts, universe, bars, cash = 1, equity = 1)
-
-  strat <- ledgr:::BadMutatingStrategy$new()
-  testthat::expect_error(strat$on_pulse(ctx), "mutated internal state", ignore.case = TRUE)
+testthat::test_that("legacy on_pulse strategy objects are rejected", {
+  legacy_strategy <- list(on_pulse = function(ctx) ctx$flat())
+  testthat::expect_error(
+    ledgr:::ledgr_strategy_spec(legacy_strategy),
+    "`strategy` must be a function or configured strategy list.",
+    fixed = TRUE,
+    class = "ledgr_invalid_args"
+  )
 })
 

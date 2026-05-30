@@ -16,13 +16,25 @@ test_that("ledgr_snapshot_from_df creates a sealed snapshot", {
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   info <- ledgr_snapshot_info(con, snap$snapshot_id)
   meta <- jsonlite::fromJSON(info$meta_json[[1]], simplifyVector = TRUE)
-  expect_equal(meta$data_hash, snap$metadata$data_hash)
+  expect_false("data_hash" %in% names(meta))
+  expect_false("data_hash" %in% names(snap$metadata))
 })
 
 test_that("ledgr_snapshot_from_df validates required columns", {
   bad <- test_bars
   bad$close <- NULL
   expect_error(ledgr_snapshot_from_df(bad), "bars_df missing required column")
+})
+
+test_that("ledgr_snapshot_from_df rejects sub-second POSIXct bars", {
+  bad <- test_bars
+  bad$ts_utc <- as.POSIXct(bad$ts_utc, tz = "UTC")
+  bad$ts_utc[[1]] <- bad$ts_utc[[1]] + 0.25
+
+  expect_error(
+    ledgr_snapshot_from_df(bad),
+    class = "LEDGR_SUBSECOND_TIMESTAMP"
+  )
 })
 
 test_that("ledgr_snapshot_from_df allows custom snapshot IDs and warns on malformed generated-style IDs", {

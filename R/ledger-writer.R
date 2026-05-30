@@ -70,11 +70,11 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
     +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(commission_fixed))
   }
 
-  ts_exec_iso <- ledgr_normalize_ts_utc(ts_exec_utc)
-  ts_exec_posix <- as.POSIXct(ts_exec_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  if (is.na(ts_exec_posix)) {
-    rlang::abort("`fill_intent$ts_exec_utc` must be a valid UTC timestamp.", class = "ledgr_invalid_fill_intent")
-  }
+  ts_exec_posix <- ledgr_ts_utc_posix(
+    ts_exec_utc,
+    label = "`fill_intent$ts_exec_utc`",
+    class = "ledgr_invalid_fill_intent"
+  )
 
   meta_json <- canonical_json(
     list(

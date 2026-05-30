@@ -176,7 +176,8 @@ testthat::test_that("validation passes for a minimal valid config (list and JSON
       initial_cash = 1000
     ),
     fill_model = list(type = "next_open", spread_bps = 1, commission_fixed = 0),
-    strategy = list(id = "x", params = list())
+    strategy = list(id = "x", params = list()),
+    data = list(source = "snapshot", snapshot_id = "test-snapshot")
   )
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)

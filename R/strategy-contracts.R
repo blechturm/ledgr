@@ -95,152 +95,30 @@ ledgr_validate_strategy_targets <- function(targets, universe) {
   targets[universe]
 }
 
-LedgrStrategy <- R6::R6Class(
-  "LedgrStrategy",
-  public = list(
-    params = NULL,
+ledgr_strategy_hold_zero <- function(ctx, params) {
+  targets <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
+  list(targets = targets, state_update = list())
+}
 
-    initialize = function(params = list()) {
-      if (!is.list(params)) {
-        rlang::abort("`params` must be a list.", class = "ledgr_invalid_strategy")
-      }
-      self$params <- params
-      invisible(self)
-    },
+ledgr_strategy_echo <- function(ctx, params) {
+  targets <- params$targets
+  state_update <- params$state_update
+  if (is.null(state_update)) state_update <- list()
+  ledgr_validate_strategy_targets(targets, ctx$universe)
+  list(targets = targets, state_update = state_update)
+}
 
-    reset = function() {
-      invisible(self)
-    },
+ledgr_strategy_state_prev_targets <- function(ctx, params) {
+  prev <- ctx$state_prev
 
-    on_pulse = function(ctx, params) {
-      ledgr_validate_pulse_context(ctx)
-
-      before <- private$fingerprint()
-      result <- private$on_pulse_impl(ctx)
-      private$validate_result(result, ctx)
-      after <- private$fingerprint()
-
-      if (!identical(before, after)) {
-        rlang::abort(
-          paste0(
-            "Strategy mutated internal state during on_pulse(). Persistent state must be emitted via `state_update` only."
-          ),
-          class = "ledgr_strategy_mutation_detected"
-        )
-      }
-
-      result
+  step <- 1L
+  if (!is.null(prev)) {
+    if (!is.list(prev) || is.null(prev$step) || !is.numeric(prev$step) || length(prev$step) != 1 || is.na(prev$step) || !is.finite(prev$step)) {
+      rlang::abort("state_prev strategy requires ctx$state_prev$step as a finite numeric scalar.", class = "ledgr_invalid_strategy")
     }
-  ),
-  private = list(
-    on_pulse_impl = function(ctx, params) {
-      rlang::abort(
-        "LedgrStrategy is abstract: subclasses must implement `private$on_pulse_impl(ctx)`.",
-        class = "ledgr_invalid_strategy"
-      )
-    },
+    step <- as.integer(prev$step) + 1L
+  }
 
-    snapshot = function() {
-      collect_fields <- function(env) {
-        out <- list()
-        for (nm in ls(envir = env, all.names = TRUE)) {
-          val <- tryCatch(get(nm, envir = env), error = function(e) NULL)
-          if (is.function(val)) next
-          if (is.environment(val)) next
-          if (inherits(val, "R6")) next
-          out[[nm]] <- val
-        }
-        out
-      }
-
-      list(
-        public = collect_fields(self),
-        private = collect_fields(private)
-      )
-    },
-
-    fingerprint = function() {
-      digest::digest(private$snapshot(), algo = "sha256")
-    },
-
-    validate_result = function(result, ctx) {
-      if (!is.list(result) || is.null(result$targets)) {
-        rlang::abort(
-          "Strategy on_pulse() must return a list with at least `targets`.",
-          class = "ledgr_invalid_strategy_result"
-        )
-      }
-
-      ledgr_validate_strategy_targets(result$targets, ctx$universe)
-      state_update <- result$state_update
-      if (!is.null(state_update)) {
-        if (!(is.list(state_update) || (is.character(state_update) && length(state_update) == 1))) {
-          rlang::abort("`state_update` must be a JSON-safe list (or JSON string).", class = "ledgr_invalid_strategy_result")
-        }
-        invisible(canonical_json(state_update))
-      }
-
-      invisible(TRUE)
-    }
-  )
-)
-
-HoldZeroStrategy <- R6::R6Class(
-  "HoldZeroStrategy",
-  inherit = LedgrStrategy,
-  private = list(
-    on_pulse_impl = function(ctx, params) {
-      targets <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
-      list(targets = targets, state_update = list())
-    }
-  )
-)
-
-EchoStrategy <- R6::R6Class(
-  "EchoStrategy",
-  inherit = LedgrStrategy,
-  private = list(
-    on_pulse_impl = function(ctx, params) {
-      targets <- self$params$targets
-      state_update <- self$params$state_update
-      if (is.null(state_update)) state_update <- list()
-      list(targets = targets, state_update = state_update)
-    }
-  )
-)
-
-BadMutatingStrategy <- R6::R6Class(
-  "BadMutatingStrategy",
-  inherit = LedgrStrategy,
-  public = list(
-    counter = 0L
-  ),
-  private = list(
-    on_pulse_impl = function(ctx, params) {
-      self$counter <- self$counter + 1L
-      targets <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
-      list(targets = targets, state_update = list())
-    }
-  )
-)
-
-StatePrevStrategy <- R6::R6Class(
-  "StatePrevStrategy",
-  inherit = LedgrStrategy,
-  private = list(
-    on_pulse_impl = function(ctx, params) {
-      prev <- ctx$state_prev
-
-      step <- 1L
-      if (!is.null(prev)) {
-        if (!is.list(prev) || is.null(prev$step) || !is.numeric(prev$step) || length(prev$step) != 1 || is.na(prev$step) || !is.finite(prev$step)) {
-          rlang::abort("StatePrevStrategy requires ctx$state_prev$step as a finite numeric scalar.", class = "ledgr_invalid_strategy")
-        }
-        step <- as.integer(prev$step) + 1L
-      }
-
-      targets <- stats::setNames(rep(as.numeric(step), length(ctx$universe)), ctx$universe)
-      list(targets = targets, state_update = list(step = as.integer(step)))
-    }
-  )
-)
+  targets <- stats::setNames(rep(as.numeric(step), length(ctx$universe)), ctx$universe)
+  list(targets = targets, state_update = list(step = as.integer(step)))
+}

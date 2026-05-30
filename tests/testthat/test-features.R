@@ -8,10 +8,9 @@ insert_test_run <- function(con, run_id) {
       engine_version,
       config_json,
       config_hash,
-      data_hash,
       status,
       error_msg
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
     ",
     params = list(
       run_id,
@@ -19,7 +18,6 @@ insert_test_run <- function(con, run_id) {
       "0.1.0",
       "{}",
       "config-hash",
-      "data-hash",
       "CREATED",
       NA_character_
     )

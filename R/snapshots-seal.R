@@ -278,6 +278,34 @@ ledgr_snapshot_validate_for_seal <- function(con, snapshot_id) {
     )
   }
 
+  bad_subsecond <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT instrument_id, ts_utc
+    FROM snapshot_bars
+    WHERE snapshot_id = ?
+      AND ts_utc != date_trunc('second', ts_utc)
+    ORDER BY instrument_id, ts_utc
+    LIMIT 5
+    ",
+    params = list(snapshot_id)
+  )
+
+  if (nrow(bad_subsecond) > 0) {
+    examples <- paste(
+      paste0(
+        bad_subsecond$instrument_id,
+        "@",
+        format(as.POSIXct(bad_subsecond$ts_utc, tz = "UTC"), "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+      ),
+      collapse = ", "
+    )
+    rlang::abort(
+      sprintf("LEDGR_SNAPSHOT_SUBSECOND_TS: snapshot_bars contains sub-second timestamps: %s", examples),
+      class = c("LEDGR_SNAPSHOT_SUBSECOND_TS", "LEDGR_SUBSECOND_TIMESTAMP")
+    )
+  }
+
   bad_ohlc <- DBI::dbGetQuery(
     con,
     "

@@ -2,12 +2,13 @@
 % Please edit documentation in R/backtest-runner.R
 \name{ledgr_backtest_run}
 \alias{ledgr_backtest_run}
-\title{Run a deterministic EOD backtest (v0.1.0)}
+\title{Run a deterministic EOD backtest}
 \usage{
 ledgr_backtest_run(config, run_id = NULL, metric_context = NULL)
 }
 \arguments{
-\item{config}{A config list (or JSON string) matching the v0.1.0 config contract.}
+\item{config}{A config list (or JSON string) with \code{data.source = "snapshot"}
+and \code{data.snapshot_id}.}
 
 \item{run_id}{Optional run identifier to resume or reuse.}
 
@@ -18,8 +19,8 @@ normally supply this through \code{ledgr_experiment()}.}
 A list with \code{run_id} and \code{db_path}.
 }
 \description{
-Executes the v0.1.0 EOD pulse loop against a DuckDB database preloaded with
-\code{instruments} and \code{bars}, writing derived outputs back to the same database.
+Executes the canonical EOD pulse loop against a sealed snapshot-backed
+config, writing derived outputs back to the run database.
 }
 \details{
 This is a low-level internal runner. Most users should call
@@ -28,8 +29,8 @@ use is not recommended; the example is illustrative only.
 }
 \examples{
 if (FALSE) {
-  # Most users should call ledgr_backtest(); it builds this config and calls
-  # ledgr_backtest_run() internally.
+  # Most users should call ledgr_backtest(); it converts data to a sealed
+  # snapshot, builds this config, and calls ledgr_backtest_run() internally.
   result <- ledgr_backtest_run(config, run_id = "manual-run")
 }
 }
