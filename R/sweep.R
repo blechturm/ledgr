@@ -722,7 +722,7 @@ ledgr_sweep_run_candidate <- function(exp,
     commission_fixed = exp$fill_model$commission_fixed
   )
   signature <- ledgr_strategy_signature(exp$strategy)
-  execution <- list(
+  execution <- ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = exp$universe,
     strategy_fn = exp$strategy,
@@ -740,6 +740,7 @@ ledgr_sweep_run_candidate <- function(exp,
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
     static_bars_views = static_bars_views,
+    static_feature_views = NULL,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = candidate$alias_map,

@@ -76,7 +76,7 @@ tickets:
 
   - id: "LDG-2472"
     title: "Typed Execution Spec"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:

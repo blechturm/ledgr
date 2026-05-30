@@ -1215,7 +1215,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }
   state_env$current$positions <- full_positions
 
-  fold_execution <- list(
+  fold_execution <- ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = instrument_ids,
     strategy_fn = strategy_fn,
@@ -1233,6 +1233,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
     static_bars_views = static_bars_views,
+    static_feature_views = NULL,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = active_alias_map,

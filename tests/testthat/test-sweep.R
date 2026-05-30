@@ -751,7 +751,7 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
 
   run_fold <- function(use_fast_context = FALSE, prebuilt = FALSE) {
     handler <- ledgr:::ledgr_memory_output_handler("projection-parity")
-    execution <- list(
+    execution <- ledgr:::ledgr_execution_spec(
       run_id = "projection-parity",
       instrument_ids = "AAA",
       strategy_fn = strategy,
@@ -868,7 +868,7 @@ testthat::test_that("prebuilt pulse views do not leak mutation across pulses", {
   }
 
   handler <- ledgr:::ledgr_memory_output_handler("pulse-view-leak")
-  execution <- list(
+  execution <- ledgr:::ledgr_execution_spec(
     run_id = "pulse-view-leak",
     instrument_ids = "AAA",
     strategy_fn = strategy,
@@ -927,7 +927,7 @@ testthat::test_that("prebuilt pulse view mutation does not leak across candidate
 
   run_direct_fold <- function(strategy, run_id) {
     handler <- ledgr:::ledgr_memory_output_handler(run_id)
-    execution <- list(
+    execution <- ledgr:::ledgr_execution_spec(
       run_id = run_id,
       instrument_ids = "AAA",
       strategy_fn = strategy,

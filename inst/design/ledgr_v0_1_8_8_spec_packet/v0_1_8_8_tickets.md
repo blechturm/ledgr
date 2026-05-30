@@ -356,7 +356,7 @@ scope: pulse_seed
 Priority: P0
 Effort: L
 Dependencies: LDG-2471
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -392,13 +392,24 @@ for run/sweep drift prevention and worker serialization, not a public API.
 Targeted run/sweep parity tests, serialization tests, invalid-spec tests,
 worker-payload dry-run tests, and full fold/sweep test subset.
 
+Completion note (2026-05-30): added internal `ledgr_execution_spec_v1`
+construction and validation, routed committed run and sweep candidate fold
+payloads through `ledgr_execution_spec()`, made `ledgr_execute_fold()` validate
+before unpacking fields, removed hand-built execution-list construction from
+production and direct-fold tests, and pinned the constructor as internal-only in
+the API export lock. Added execution-spec tests for former-list field-shape
+parity, invalid-spec failure, serialization round-trip, and run/sweep routing
+through the constructor. Targeted fold/sweep/API tests and the full test suite
+passed. External review approved with no blocking findings.
+
 ### Source Reference
 
 - `v0_1_8_8_spec.md`, Section 6.1
 - `inst/design/horizon.md`, fold-core structural-debt entry
 - `R/backtest-runner.R`
 - `R/sweep.R`
-- `R/fold-core.R`
+- `R/fold-engine.R`
+- `R/execution-spec.R`
 
 ### Classification
 
