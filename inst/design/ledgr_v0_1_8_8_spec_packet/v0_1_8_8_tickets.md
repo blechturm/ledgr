@@ -2,13 +2,14 @@
 
 Version: v0.1.8.8
 Date: 2026-05-30
-Total Tickets: 10
+Total Tickets: 11
 
 ## Ticket Organization
 
 This packet implements the scoped v0.1.8.8 plan from `v0_1_8_8_spec.md`:
 parallel sweep dispatch and determinism, fold-core maintainer documentation /
-containment, and a repo-local reproducible peer benchmark report.
+containment, a repo-local reproducible peer benchmark report, and a
+slip-eligible internal maintainer-manual cleanup.
 
 The release spine is:
 
@@ -22,6 +23,7 @@ packet alignment
   -> parallel sweep dispatch
   -> interrupt semantics + parallel measurement
   -> repo-local peer benchmark report
+  -> maintainer manual skeleton + stale-doc cleanup
   -> release gate
 ```
 
@@ -35,7 +37,8 @@ remains the reference implementation.
 ```text
 LDG-2468 Packet Alignment And v0.1.8.8 Planning State
   |-- LDG-2469 Fold-Core Documentation And Mechanical Split
-  |     `-- LDG-2470 Fold-Loop Diagnostic Profile
+  |     |-- LDG-2470 Fold-Loop Diagnostic Profile
+  |     `-- LDG-2478 Internal Maintainer Manual Skeleton And Stale-Doc Cleanup
   |
   |-- LDG-2471 RNG Resume And Pulse-Seed Contract
   |     `-- LDG-2472 Typed Execution Spec
@@ -46,12 +49,13 @@ LDG-2468 Packet Alignment And v0.1.8.8 Planning State
   `-- LDG-2476 Repo-Local Peer Benchmark Report
 
 LDG-2477 v0.1.8.8 Release Gate And Closeout
-  depends on LDG-2468 through LDG-2476.
+  depends on LDG-2468 through LDG-2476 plus LDG-2478, unless a P2 ticket is
+  explicitly deferred by maintainer decision.
 ```
 
-LDG-2476 is separable if the cycle becomes too wide. LDG-2469 is not optional:
-the fold-core maintainer documentation and source legibility work is a release
-goal.
+LDG-2476 and LDG-2478 are separable if the cycle becomes too wide. LDG-2469 is
+not optional: the fold-core maintainer documentation and source legibility work
+is a release goal.
 
 ## Priority Levels
 
@@ -111,12 +115,13 @@ and legacy planning language.
 Completion note (2026-05-30): Committed the reviewed v0.1.8.8 planning packet,
 then aligned the design index and AGENTS active-context notes to the new packet.
 Rechecked the spec, tickets, YAML, batch plan, roadmap, horizon, README, and
-AGENTS entries for active-packet consistency. `tickets.yml` parses with exactly
-LDG-2468 through LDG-2477, and the new spec packet remains ASCII. The packet
+AGENTS entries for active-packet consistency. The original ten-ticket
+`tickets.yml` parsed cleanly, and the new spec packet remained ASCII. The packet
 now clearly scopes parallel sweep dispatch/determinism, fold-core maintainer
-documentation/containment, and repo-local peer benchmarking while keeping
-compiled core, target risk, OMS, cost/liquidity, durable identity redesign,
-public distributed execution, and package-vignette benchmark claims deferred.
+documentation/containment, repo-local peer benchmarking, and slip-eligible
+maintainer-manual cleanup while keeping compiled core, target risk, OMS,
+cost/liquidity, durable identity redesign, public distributed execution, and
+package-vignette benchmark claims deferred.
 
 ### Source Reference
 
@@ -629,18 +634,97 @@ scope: repo_local_peer_report
 
 ---
 
+## LDG-2478: Internal Maintainer Manual Skeleton And Stale-Doc Cleanup
+
+Priority: P2
+Effort: M
+Dependencies: LDG-2468, LDG-2469
+Status: Pending
+
+### Description
+
+Create the internal maintainer-manual skeleton under `inst/design/manual/` and
+clean up stale documentation-like surfaces that confuse agents or outside
+readers. This is structural cleanup only; it does not require authoring the full
+manual in v0.1.8.8.
+
+### Tasks
+
+- Rename or migrate `inst/design/maintainer_review/` to
+  `inst/design/manual/`.
+- Preserve the current fold-core and feature-value-path workbooks under the new
+  manual tree.
+- Add `README.md`, `_quarto.yml`, and `index.qmd` for manual navigation and
+  conventions.
+- Create the manual domain directories: `execution/`, `data/`, `features/`,
+  `sweep/`, `observability/`, and `diagrams/`.
+- Move only current reusable Mermaid diagrams into the manual tree, or inline
+  them in the relevant QMD articles.
+- Delete or rewrite stale diagrams, including any schema diagram that still
+  documents removed `data_hash` execution identity.
+- Delete `inst/schemas/` unless it gains a real implemented schema artifact.
+- Audit `man/*.Rd` `system.file("doc", "*.html", package = "ledgr")`
+  references against rendered vignette names, and fix broken links.
+- Decide whether `inst/testdata/yahoo_mock.csv` remains an installed fixture
+  with an explanatory README or moves to `tests/testthat/fixtures/`.
+- Update references in the design index, roadmap, horizon, AGENTS notes, and
+  active packet files where they point at the old maintainer-review path.
+
+### Acceptance Criteria
+
+- `inst/design/manual/` is the documented home for internal maintainer articles.
+- Governance artifacts remain under `inst/design/` and are not mixed into the
+  maintainer manual.
+- No `inst/design/maintainer_review/` references remain in roadmap, horizon,
+  AGENTS notes, design README, or active packet files after the migration.
+- Package vignettes remain under `vignettes/`; `inst/doc/` build semantics are
+  preserved and not treated as a trash directory.
+- Stale standalone diagrams/schemas are removed, rewritten, or explicitly
+  classified.
+- Installed-vignette links in man pages resolve to current rendered vignette
+  names or are corrected.
+- Test fixtures under `inst/testdata/` are either documented as installed
+  fixtures or moved beside the tests that use them.
+- No generated Quarto HTML/cache artifacts are committed unless explicitly
+  intended and reviewed.
+
+### Verification
+
+Directory-tree review, stale-path `rg` checks, man-page installed-vignette link
+audit, Quarto render/dry-run for the manual index as practical, and package
+load or targeted documentation tests as needed.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Section 8
+- `inst/design/maintainer_review/`
+- `inst/diagrams/`
+- `inst/schemas/`
+- `inst/testdata/`
+- `man/`
+
+### Classification
+
+```yaml
+type: documentation_infrastructure
+surface: internal_manual
+scope: skeleton_and_stale_doc_cleanup
+```
+
+---
+
 ## LDG-2477: v0.1.8.8 Release Gate And Closeout
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2468, LDG-2469, LDG-2470, LDG-2471, LDG-2472, LDG-2473, LDG-2474, LDG-2475, LDG-2476
+Dependencies: LDG-2468, LDG-2469, LDG-2470, LDG-2471, LDG-2472, LDG-2473, LDG-2474, LDG-2475, LDG-2476, LDG-2478
 Status: Pending
 
 ### Description
 
 Run the release gate, close the planning packet, and prepare v0.1.8.8 for merge
-and tag. If LDG-2476 slips by explicit maintainer decision, record that
-decision and keep the core release gate tied to LDG-2468 through LDG-2475.
+and tag. If LDG-2476 or LDG-2478 slips by explicit maintainer decision, record
+that decision and keep the core release gate tied to LDG-2468 through LDG-2475.
 
 ### Tasks
 
@@ -652,6 +736,7 @@ decision and keep the core release gate tied to LDG-2468 through LDG-2475.
 - Run or review parallel benchmark attribution.
 - Review fold-core workbook freshness and rendered output.
 - Review peer benchmark report status if LDG-2476 shipped.
+- Review maintainer-manual cleanup status if LDG-2478 shipped.
 - Update roadmap, horizon, NEWS/release notes, and active-packet references.
 - Ensure generated local artifacts are not committed.
 

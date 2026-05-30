@@ -165,6 +165,25 @@ tickets:
       - "result_metadata_review"
       - "comparability_language_review"
 
+  - id: "LDG-2478"
+    title: "Internal Maintainer Manual Skeleton And Stale-Doc Cleanup"
+    status: "pending"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2468"
+      - "LDG-2469"
+    classification:
+      type: "documentation_infrastructure"
+      surface: "internal_manual"
+      scope: "skeleton_and_stale_doc_cleanup"
+    tests:
+      - "directory_tree_review"
+      - "stale_path_rg_checks"
+      - "man_page_inst_doc_link_audit"
+      - "manual_index_render_or_dry_run"
+      - "fixture_location_review"
+
   - id: "LDG-2477"
     title: "v0.1.8.8 Release Gate And Closeout"
     status: "pending"
@@ -180,6 +199,7 @@ tickets:
       - "LDG-2474"
       - "LDG-2475"
       - "LDG-2476"
+      - "LDG-2478"
     classification:
       type: "release_gate"
       surface: "release_process"

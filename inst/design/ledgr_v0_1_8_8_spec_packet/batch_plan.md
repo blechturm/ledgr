@@ -28,6 +28,9 @@ Global review standards:
 - Benchmarks must be current-source, local-host, and caveated.
 - The peer benchmark report lives under `dev/bench/`, not package vignettes or
   pkgdown.
+- Internal maintainer articles live under `inst/design/manual/`; governance
+  artifacts stay under `inst/design/`; package vignettes stay under
+  `vignettes/`; `inst/doc/` build semantics must be preserved.
 - No compiled core, target risk, OMS, cost/liquidity, durable identity redesign,
   public distributed execution API, promotion-grade artifact expansion, or
   package-vignette benchmark ships in this cycle.
@@ -297,7 +300,42 @@ Review focus:
 
 ---
 
-## Batch 9: Release Gate And Closeout
+## Batch 9: Maintainer Manual Skeleton And Stale-Doc Cleanup
+
+Tickets:
+
+- `LDG-2478` Internal Maintainer Manual Skeleton And Stale-Doc Cleanup
+
+Purpose:
+
+Create the internal maintainer-manual skeleton and remove or classify stale
+documentation-like surfaces. This is useful but separable if the cycle becomes
+too wide.
+
+Review focus:
+
+- `inst/design/manual/` becomes the documented internal maintainer article
+  tree.
+- `inst/design/` governance artifacts remain separate from manual articles.
+- Current `fold_core_workbook.qmd` and `feature_value_path_workbook.qmd` are
+  preserved under the new manual tree.
+- Stale `inst/diagrams/` files are moved, inlined, rewritten, or deleted.
+- Any diagram that still documents removed `data_hash` execution identity is
+  not carried forward as current architecture.
+- `inst/schemas/` is deleted unless it gains a real implemented schema
+  artifact.
+- `inst/doc/` is not deleted as "trash"; installed-vignette build semantics are
+  preserved.
+- `man/*.Rd` `system.file("doc", "*.html", package = "ledgr")` links are
+  audited against current rendered vignette names.
+- `inst/testdata/yahoo_mock.csv` is either documented as an installed test
+  fixture or moved beside the tests that consume it.
+- No generated Quarto HTML/cache artifacts are committed accidentally.
+- Empirical closeout includes stale-path `rg` checks and directory-tree review.
+
+---
+
+## Batch 10: Release Gate And Closeout
 
 Tickets:
 
@@ -305,9 +343,9 @@ Tickets:
 
 Purpose:
 
-Verify the full release, close the packet, and prepare merge/tag. If Batch 8 is
-explicitly deferred, record the maintainer decision and keep the core release
-gate tied to Batches 0-7.
+Verify the full release, close the packet, and prepare merge/tag. If Batch 8
+and/or Batch 9 is explicitly deferred, record the maintainer decision and keep
+the core release gate tied to Batches 0-7.
 
 Review focus:
 
@@ -319,5 +357,7 @@ Review focus:
 - No generated local artifacts are committed.
 - Full tests and package checks pass or have documented accepted caveats.
 - Parallel benchmark closeout is honest about overhead and crossover.
+- Peer benchmark and maintainer-manual cleanup are complete or explicitly
+  deferred by maintainer decision.
 - Release notes do not overclaim parallel speedup or peer superiority.
 - Roadmap, horizon, design index, AGENTS, and NEWS/release notes are updated.

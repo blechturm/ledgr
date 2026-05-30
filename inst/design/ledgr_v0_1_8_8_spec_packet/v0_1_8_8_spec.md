@@ -4,7 +4,7 @@
 **Target Branch:** `v0.1.8.8`.  
 **Scope:** Parallel sweep dispatch and determinism; fold-core maintainer
 documentation and code legibility; repo-local reproducible peer benchmark
-reporting.  
+reporting; internal maintainer-manual skeleton and stale documentation cleanup.  
 **Non-scope for this pass:** package-vignette peer marketing, hosted benchmark
 claims, a ledgr-authored compiled fold core, target risk / OMS / cost model
 work, durable identity byte redesign, public distributed execution APIs,
@@ -65,7 +65,7 @@ v0.1.8.7 removed the largest single-core hot-path rocks and legacy execution
 gunk. v0.1.8.8 should make the optimized engine easier to maintain and safer to
 parallelize.
 
-The release has three tracks:
+The release has four tracks:
 
 1. **Parallel sweep dispatch and determinism.** Add an optional public parallel
    sweep path while keeping sequential `ledgr_sweep()` as the reference
@@ -77,6 +77,10 @@ The release has three tracks:
 3. **Repo-local peer benchmark report.** Add a reproducible Quarto benchmark
    report under `dev/bench/`, with `uv`-managed Python peer environments and
    careful same-host comparability language.
+4. **Maintainer manual cleanup.** Establish `inst/design/manual/` as the
+   internal maintainer-facing article tree and remove or quarantine stale
+   installed-doc, diagram, schema, and fixture surfaces that confuse agents or
+   outside readers.
 
 The release should not reopen the v0.1.8.7 optimization architecture. The
 single-core pure-R fold remains the reference implementation. Parallelism is a
@@ -86,7 +90,7 @@ candidate-dispatch layer over the same fold core, not a second engine.
 
 ## 2. Release Goals
 
-v0.1.8.8 has eight release goals:
+v0.1.8.8 has nine release goals:
 
 1. Add a public, optional parallel sweep dispatch path that preserves the
    sequential sweep contract and fails loudly when required worker dependencies
@@ -111,11 +115,16 @@ v0.1.8.8 has eight release goals:
 8. Add a repo-local, reproducible peer benchmark Quarto report under
    `dev/bench/`, including same-host ledgr / quantstrat / Backtrader rows and
    a `uv`-managed Python environment for Python peers.
+9. Create the internal maintainer-manual skeleton, retire stale standalone
+   documentation surfaces, and audit installed-vignette links without turning
+   the package documentation into an internal architecture manual.
 
 The release succeeds when the parallel path is deterministic, the fold core is
 substantially easier for maintainers to reason about, and the benchmark report
 can be re-run from a clean repository checkout without relying on ambient
-Python packages.
+Python packages. The maintainer-manual cleanup is useful but separable; it may
+slip by explicit maintainer decision if the parallel/determinism release becomes
+too wide.
 
 ---
 
@@ -488,7 +497,61 @@ not create a package-vignette or pkgdown benchmark page.
 
 ---
 
-## 8. Measurement Gates
+## 8. Workstream F: Internal Maintainer Manual Skeleton
+
+This workstream creates the structure for internal maintainer-facing articles.
+It is structural cleanup only: it does not require authoring the full manual in
+v0.1.8.8.
+
+The target tree is:
+
+```text
+inst/design/manual/
+  README.md
+  _quarto.yml
+  index.qmd
+  execution/
+  data/
+  features/
+  sweep/
+  observability/
+  diagrams/
+```
+
+The boundary is important:
+
+- `inst/design/` remains the home for governance artifacts such as contracts,
+  roadmap, horizon, ADRs, RFCs, audits, spikes, and spec packets.
+- `inst/design/manual/` is the internal maintainer manual: prose and diagrams
+  explaining important ledgr concepts and load-bearing implementation paths.
+- Package vignettes remain in `vignettes/`; generated installed vignette
+  artifacts may appear in `inst/doc/` during package build and must not be
+  confused with internal maintainer docs.
+
+Required cleanup:
+
+- move or rename `inst/design/maintainer_review/` to `inst/design/manual/`;
+- preserve the current fold-core and feature-value-path workbooks under the
+  new manual tree;
+- add an index and navigation/conventions README;
+- move only current reusable Mermaid diagrams into the manual tree, or inline
+  them in relevant QMDs;
+- delete or rewrite stale diagrams, including any schema diagram that still
+  documents removed `data_hash` execution identity;
+- delete `inst/schemas/` unless it gains a real implemented schema artifact;
+- audit `man/*.Rd` `system.file("doc", "*.html", package = "ledgr")`
+  references against rendered vignette names;
+- decide whether `inst/testdata/yahoo_mock.csv` remains an installed fixture
+  with an explanatory README or moves to `tests/testthat/fixtures/`.
+
+This ticket should not author every future article. Future article targets
+include strategy contract, output handlers, time contract, snapshot spine,
+storage schema, indicator contract, replay invariants, determinism gate,
+telemetry, parallel dispatch, and benchmark methodology.
+
+---
+
+## 9. Measurement Gates
 
 v0.1.8.8 must preserve the v0.1.8.7 measurement discipline.
 
@@ -513,7 +576,7 @@ per-candidate slope, and crossover point where parallelism begins to pay.
 
 ---
 
-## 9. Verification Gates
+## 10. Verification Gates
 
 Release-ticket work must include targeted tests for:
 
@@ -539,12 +602,18 @@ Release-ticket work must include targeted tests for:
 - `ledgr_candidate_reproduction_key()` output is stable across worker counts
   for the same candidate;
 - peer benchmark report runs or skips optional peers with clear status.
+- maintainer-manual cleanup leaves package vignettes and `inst/doc/` build
+  semantics intact;
+- stale diagram/schema/testdata surfaces are deleted, moved, or explicitly
+  documented;
+- man-page installed-vignette links resolve to current rendered vignette names
+  or are corrected.
 
 Full package tests and package check are required before release.
 
 ---
 
-## 10. Settled Spec-Cut Decisions
+## 11. Settled Spec-Cut Decisions
 
 These decisions are bound for ticket cut:
 
@@ -561,7 +630,7 @@ These decisions are bound for ticket cut:
 
 ---
 
-## 11. Proposed Batch Shape
+## 12. Proposed Batch Shape
 
 Initial batch plan, subject to review:
 
@@ -588,16 +657,21 @@ Initial batch plan, subject to review:
 9. **Batch 8 - Repo-local peer benchmark report.** Add `dev/bench` Quarto
    report and `uv`-managed Backtrader environment; add LEAN Python-strategy
    mode if local setup is tractable.
-10. **Batch 9 - Release gate.** Full tests, package check, benchmark closeout,
+10. **Batch 9 - Maintainer manual skeleton and stale-doc cleanup.** Create
+    the internal manual tree, migrate the current workbooks, retire stale
+    diagrams/schema placeholders, audit installed-vignette links, and classify
+    or move installed test fixtures.
+11. **Batch 10 - Release gate.** Full tests, package check, benchmark closeout,
     docs review, and release notes.
 
 If the cycle becomes too wide, keep Batches 0-7 as the core release and move
-Batch 8 to a later same-branch documentation ticket. Do not drop Batch 1; the
-fold-core maintainer documentation is a release goal.
+Batches 8 and/or 9 to later same-branch documentation tickets by explicit
+maintainer decision. Do not drop Batch 1; the fold-core maintainer documentation
+is a release goal.
 
 ---
 
-## 12. Future Obligations Recorded
+## 13. Future Obligations Recorded
 
 Later work, not authorized here:
 
@@ -614,3 +688,5 @@ Later work, not authorized here:
 - LEAN C# / native-strategy benchmark claims outside Python-strategy mode;
 - same-host peer benchmark claims beyond rows actually measured by the repo
   harness.
+- full maintainer-manual article authoring beyond the v0.1.8.8 skeleton and
+  cleanup pass.
