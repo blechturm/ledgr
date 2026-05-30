@@ -45,6 +45,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   worker-local read-only DuckDB; parallel interrupt / partial-result
   semantics; **RNG resume non-determinism**; structured RNG preflight metadata;
   broader ambient RNG detection.
+- **v0.1.9.x** (maintainer manual) - internal maintainer-facing documentation
+  release after the v0.1.8.8 manual skeleton: architecture articles for fold
+  execution, snapshots, features, sweep, determinism, observability, and
+  benchmarking.
 - **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
   typed execution spec, file split, explicit event types); peer-benchmark
   expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
@@ -126,6 +130,44 @@ deterministic-wrapper boundary for value-bearing operations, and parity fixtures
 that cover durable and sweep event streams.
 
 This entry records direction, not committed work.
+
+### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
+
+v0.1.8.8 may create the `inst/design/manual/` skeleton and clean up stale
+documentation-like surfaces, but it should not author the full internal manual.
+The follow-up home is a v0.1.9.x maintainer-facing documentation release: turn
+the skeleton into a coherent internal manual for agents and maintainers while
+keeping governance artifacts separate from prose articles.
+
+Boundary:
+
+- `inst/design/` remains the governance home for contracts, roadmap, horizon,
+  ADRs, RFCs, audits, spikes, and spec packets.
+- `inst/design/manual/` is the internal maintainer manual.
+- `vignettes/` remains user-facing package documentation.
+- `inst/doc/` remains the installed-vignette build output location; do not treat
+  it as stale source trash.
+
+Target article backlog:
+
+- execution: fold core, pulse lifecycle, strategy contract, output handlers,
+  execution spec, RNG/determinism, and whole-second time contract;
+- data: snapshot spine, storage schema, snapshot adapters;
+- features: feature value path, cache/projection, indicator contract and
+  `series_fn` / TTR adapter semantics;
+- sweep: sweep architecture, promotion/reproduction, parallel dispatch;
+- observability: error hierarchy, telemetry, replay invariants, collapse
+  determinism gate, benchmark methodology.
+
+The release should be mostly documentation. Implementation changes should be
+limited to stale-reference cleanup, diagram correction, link repair, and small
+test/documentation guards discovered while writing. Do not use the manual
+release to reopen execution semantics, durable identity bytes, event schemas,
+target risk, OMS, or compiled-core architecture.
+
+This entry records the backlog and rationale. The roadmap schedules the release;
+the v0.1.8.8 cleanup ticket only creates the skeleton and removes confusing
+stale surfaces.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 

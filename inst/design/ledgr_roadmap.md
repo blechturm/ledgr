@@ -103,6 +103,7 @@ versioned packet.
 | v0.1.8.7 | Done | Optimization round 2 and legacy cleanup: removed raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; dropped cli/R6, added collapse, and shipped measured event-buffer, representation/setup, reconstruction, artifact-policy, and benchmark-attribution work. | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
 | v0.1.8.8 | Planned | Parallel sweep dispatch and determinism, fold-core maintainer documentation / containment, and repo-local reproducible peer benchmark reporting. | `inst/design/ledgr_v0_1_8_8_spec_packet/` |
 | v0.1.9 | Planned | Target risk layer and primitive-internals planning gates. | Future packet |
+| v0.1.9.x | Planned | Internal maintainer manual and architecture article release after the v0.1.8.8 skeleton. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
@@ -1027,6 +1028,60 @@ Related determinism gap (from the 2026-05-28 fold-core review):
   checkpoint `.Random.seed`, replay-from-start, or document a
   deterministic-only resume guarantee. See `inst/design/horizon.md` (RNG resume
   entry).
+
+### v0.1.9.x Maintainer Manual And Architecture Documentation
+
+Intent:
+
+- grow the `inst/design/manual/` skeleton from v0.1.8.8 into a coherent
+  internal maintainer-facing manual;
+- give agents and maintainers one article tree for load-bearing implementation
+  concepts, while keeping governance artifacts in `inst/design/` and
+  user-facing package documentation in `vignettes/`;
+- make important architecture surfaces discoverable without mining old RFCs,
+  spikes, audits, or stale diagrams.
+
+Target article families:
+
+- **Execution:** fold core, pulse lifecycle, strategy contract, output
+  handlers, execution spec, RNG/determinism, and whole-second time contract;
+- **Data:** snapshot spine, storage schema, and snapshot adapters;
+- **Features:** feature value path, cache/projection, indicator contract, and
+  `series_fn` / TTR adapter semantics;
+- **Sweep:** sweep architecture, promotion/reproduction, and parallel dispatch;
+- **Observability:** error hierarchy, telemetry, replay invariants, collapse
+  determinism gate, and benchmark methodology.
+
+Readiness gates:
+
+- v0.1.8.8 has either created the manual skeleton and stale-doc cleanup or
+  explicitly deferred that P2 ticket;
+- the fold-core and feature-value-path workbooks have a stable home under the
+  manual tree;
+- package vignette build semantics remain intact (`vignettes/` source,
+  `inst/doc/` build output).
+
+Implementation constraints:
+
+- this is primarily a documentation release;
+- no execution semantics, event schemas, durable identity bytes, target-risk
+  behavior, OMS policy, or compiled-core architecture changes are authorized by
+  the manual work itself;
+- small fixes are allowed only when the article work uncovers stale links,
+  stale diagrams, broken generated-doc references, or missing doc guards.
+
+Non-scope:
+
+- no package-vignette benchmark marketing;
+- no public hosted benchmark dashboard;
+- no rewrite of RFC/ADR/spec-packet governance records into articles;
+- no broad implementation refactor hidden inside documentation work.
+
+Source memory:
+
+- `inst/design/horizon.md`, entry
+  `2026-05-30 [documentation] Maintainer manual article backlog after
+  v0.1.8.8 skeleton`.
 
 ### Later v0.1.8.x Sweep Stabilization
 
