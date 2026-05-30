@@ -37,7 +37,9 @@
 #'
 #' @param strategy A function with signature `function(ctx, params)`.
 #' @return A `ledgr_strategy_preflight` object with fields `tier`, `allowed`,
-#'   `reason`, `unresolved_symbols`, `package_dependencies`, and `notes`.
+#'   `reason`, `unresolved_symbols`, `package_dependencies`,
+#'   `qualified_package_dependencies`, `attached_package_dependencies`,
+#'   `worker_dependencies`, `ambient_rng_symbols`, and `notes`.
 #' @section Articles:
 #' Reproducibility model:
 #' `vignette("reproducibility", package = "ledgr")`
@@ -63,6 +65,12 @@ ledgr_strategy_preflight <- function(strategy) {
         reason = "`ledgr_signal_strategy()` wrappers capture an inner signal function and quantity settings.",
         unresolved_symbols = character(),
         package_dependencies = character(),
+        qualified_package_dependencies = character(),
+        attached_package_dependencies = character(),
+        worker_dependencies = ledgr_strategy_worker_dependencies_fields(
+          require_namespace = character(),
+          attach = character()
+        ),
         ambient_rng_symbols = character(),
         notes = "`ledgr_signal_strategy()` is an explicit compatibility wrapper; inspect the original signal function for full reproducibility."
       ),
@@ -73,6 +81,8 @@ ledgr_strategy_preflight <- function(strategy) {
   analysis <- ledgr_strategy_preflight_analysis(strategy)
   unresolved_symbols <- analysis$unresolved_symbols
   package_dependencies <- analysis$package_dependencies
+  qualified_package_dependencies <- analysis$qualified_package_dependencies
+  attached_package_dependencies <- analysis$attached_package_dependencies
   external_objects <- analysis$external_objects
   rng_mutation_symbols <- analysis$rng_mutation_symbols
   ambient_rng_symbols <- analysis$ambient_rng_symbols
@@ -119,7 +129,7 @@ ledgr_strategy_preflight <- function(strategy) {
     reason_parts <- c(
       if (length(package_dependencies) > 0L) {
         sprintf(
-          "package-qualified dependenc%s outside the active R distribution: %s",
+          "package dependenc%s outside the active R distribution: %s",
           if (length(package_dependencies) == 1L) "y" else "ies",
           paste(package_dependencies, collapse = ", ")
         )
@@ -153,6 +163,12 @@ ledgr_strategy_preflight <- function(strategy) {
       reason = reason,
       unresolved_symbols = unresolved_symbols,
       package_dependencies = package_dependencies,
+      qualified_package_dependencies = qualified_package_dependencies,
+      attached_package_dependencies = attached_package_dependencies,
+      worker_dependencies = ledgr_strategy_worker_dependencies_fields(
+        require_namespace = qualified_package_dependencies,
+        attach = attached_package_dependencies
+      ),
       ambient_rng_symbols = ambient_rng_symbols,
       notes = notes
     ),
@@ -213,6 +229,11 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   functions <- setdiff(functions, forbidden_call_symbols)
 
   functions <- functions[!vapply(functions, ledgr_strategy_symbol_is_tier1, logical(1))]
+  unqualified_package_functions <- ledgr_strategy_unqualified_package_functions(
+    functions,
+    env = environment(strategy)
+  )
+  functions <- setdiff(functions, names(unqualified_package_functions))
 
   variables <- setdiff(variables, c("ctx", "params", ledgr_strategy_literal_constants(), string_constants))
   variables <- setdiff(variables, global_assignment_lhs)
@@ -222,12 +243,17 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
   ]
   variables <- setdiff(variables, resolved_external_objects)
 
-  dependency_packages <- character()
+  qualified_dependency_packages <- character()
   if (nrow(qualified) > 0L) {
-    dependency_packages <- qualified$package[
+    qualified_dependency_packages <- qualified$package[
       !vapply(qualified$package, ledgr_strategy_package_is_tier1, logical(1))
     ]
   }
+  attached_dependency_packages <- unname(unqualified_package_functions)
+  dependency_packages <- sort(unique(c(
+    qualified_dependency_packages,
+    attached_dependency_packages
+  )))
 
   dynamic_symbols <- intersect(
     c("do.call", "get", "eval", "assign"),
@@ -273,10 +299,22 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
       )
     )
   }
+  if (length(unqualified_package_functions) > 0L) {
+    notes <- c(
+      notes,
+      sprintf(
+        "Unqualified package call(s) detected (%s); parallel workers must attach package(s): %s.",
+        paste(sprintf("%s from %s", names(unqualified_package_functions), unname(unqualified_package_functions)), collapse = ", "),
+        paste(sort(unique(unname(unqualified_package_functions))), collapse = ", ")
+      )
+    )
+  }
 
   list(
     unresolved_symbols = sort(unique(c(functions, variables))),
     package_dependencies = sort(unique(dependency_packages)),
+    qualified_package_dependencies = sort(unique(qualified_dependency_packages)),
+    attached_package_dependencies = sort(unique(attached_dependency_packages)),
     external_objects = sort(unique(resolved_external_objects)),
     rng_mutation_symbols = rng_mutation_symbols,
     ambient_rng_symbols = ambient_rng_symbols,
@@ -407,6 +445,66 @@ ledgr_strategy_symbol_resolves_to_mutable_external_object <- function(symbol, en
   }
   value <- tryCatch(get(symbol, envir = env, inherits = TRUE), error = function(e) NULL)
   is.environment(value) || inherits(value, c("externalptr", "connection"))
+}
+
+ledgr_strategy_worker_dependencies_fields <- function(require_namespace,
+                                                       attach) {
+  list(
+    require_namespace = sort(unique(as.character(require_namespace))),
+    attach = sort(unique(as.character(attach)))
+  )
+}
+
+ledgr_strategy_unqualified_package_functions <- function(symbols, env) {
+  if (length(symbols) == 0L) {
+    return(stats::setNames(character(), character()))
+  }
+  packages <- vapply(
+    symbols,
+    ledgr_strategy_symbol_package_function,
+    character(1),
+    env = env
+  )
+  keep <- nzchar(packages) &
+    !vapply(packages, ledgr_strategy_package_is_tier1, logical(1))
+  sort(packages[keep])
+}
+
+ledgr_strategy_symbol_package_function <- function(symbol, env) {
+  if (!is.character(symbol) || length(symbol) != 1L || is.na(symbol) || !nzchar(symbol)) {
+    return("")
+  }
+  if (!is.environment(env) || !exists(symbol, envir = env, inherits = TRUE)) {
+    return("")
+  }
+  value <- tryCatch(get(symbol, envir = env, inherits = TRUE), error = function(e) NULL)
+  if (!is.function(value)) {
+    return("")
+  }
+  fn_env <- tryCatch(environment(value), error = function(e) NULL)
+  while (is.environment(fn_env)) {
+    namespace_name <- tryCatch(getNamespaceName(fn_env), error = function(e) "")
+    if (is.character(namespace_name) &&
+        length(namespace_name) == 1L &&
+        nzchar(namespace_name)) {
+      return(namespace_name)
+    }
+    env_name <- environmentName(fn_env)
+    if (is.character(env_name) &&
+        length(env_name) == 1L &&
+        startsWith(env_name, "namespace:")) {
+      return(sub("^namespace:", "", env_name))
+    }
+    if (identical(fn_env, emptyenv())) {
+      break
+    }
+    parent <- parent.env(fn_env)
+    if (identical(parent, fn_env)) {
+      break
+    }
+    fn_env <- parent
+  }
+  ""
 }
 
 ledgr_strategy_forbidden_do_call_targets <- function(expr) {

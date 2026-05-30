@@ -11,6 +11,10 @@ testthat::test_that("strategy preflight classifies Tier 1 self-contained strateg
   testthat::expect_true(preflight$allowed)
   testthat::expect_identical(preflight$unresolved_symbols, character())
   testthat::expect_identical(preflight$package_dependencies, character())
+  testthat::expect_identical(preflight$qualified_package_dependencies, character())
+  testthat::expect_identical(preflight$attached_package_dependencies, character())
+  testthat::expect_identical(preflight$worker_dependencies$require_namespace, character())
+  testthat::expect_identical(preflight$worker_dependencies$attach, character())
 })
 
 testthat::test_that("strategy preflight classifies non-standard package-qualified calls as Tier 2", {
@@ -23,7 +27,33 @@ testthat::test_that("strategy preflight classifies non-standard package-qualifie
   testthat::expect_identical(preflight$tier, "tier_2")
   testthat::expect_true(preflight$allowed)
   testthat::expect_identical(preflight$package_dependencies, "jsonlite")
+  testthat::expect_identical(preflight$qualified_package_dependencies, "jsonlite")
+  testthat::expect_identical(preflight$attached_package_dependencies, character())
+  testthat::expect_identical(preflight$worker_dependencies$require_namespace, "jsonlite")
+  testthat::expect_identical(preflight$worker_dependencies$attach, character())
   testthat::expect_identical(preflight$unresolved_symbols, character())
+})
+
+testthat::test_that("strategy preflight records unqualified package calls for worker attachment", {
+  testthat::skip_if_not_installed("TTR")
+  strategy <- local({
+    SMA <- getExportedValue("TTR", "SMA")
+    function(ctx, params) {
+      SMA(c(1, 2, 3), n = 2)
+      ctx$flat()
+    }
+  })
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_2")
+  testthat::expect_true(preflight$allowed)
+  testthat::expect_identical(preflight$unresolved_symbols, character())
+  testthat::expect_identical(preflight$package_dependencies, "TTR")
+  testthat::expect_identical(preflight$qualified_package_dependencies, character())
+  testthat::expect_identical(preflight$attached_package_dependencies, "TTR")
+  testthat::expect_identical(preflight$worker_dependencies$require_namespace, character())
+  testthat::expect_identical(preflight$worker_dependencies$attach, "TTR")
+  testthat::expect_true(any(grepl("parallel workers must attach", preflight$notes, fixed = TRUE)))
 })
 
 testthat::test_that("strategy preflight keeps base/recommended and ledgr exported calls Tier 1", {

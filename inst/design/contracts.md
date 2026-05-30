@@ -320,6 +320,11 @@ the active versioned spec packet, currently
   `ambient_rng_symbols`, and `notes`, and has class
   `ledgr_strategy_preflight`. `allowed` is `TRUE` for
   `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
+- Strategy preflight may include additive worker-dependency metadata. In
+  v0.1.8.8, `qualified_package_dependencies` identifies packages used through
+  `pkg::fn`, `attached_package_dependencies` identifies packages needed for
+  unqualified package calls on workers, and `worker_dependencies` carries the
+  `require_namespace` and `attach` sets consumed by parallel setup.
 - Ambient strategy RNG calls such as `runif()`, `rnorm()`, and `sample()` are
   Tier 2 for ordinary sequential runs, but they are not certified for resume
   or parallel equivalence. Resume and parallel equivalence are guaranteed only

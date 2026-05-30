@@ -11,7 +11,9 @@ ledgr_strategy_preflight(strategy)
 }
 \value{
 A \code{ledgr_strategy_preflight} object with fields \code{tier}, \code{allowed},
-\code{reason}, \code{unresolved_symbols}, \code{package_dependencies}, and \code{notes}.
+\code{reason}, \code{unresolved_symbols}, \code{package_dependencies},
+\code{qualified_package_dependencies}, \code{attached_package_dependencies},
+\code{worker_dependencies}, \code{ambient_rng_symbols}, and \code{notes}.
 }
 \description{
 \code{ledgr_strategy_preflight()} statically inspects a \verb{function(ctx, params)}

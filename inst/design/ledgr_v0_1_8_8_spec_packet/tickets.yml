@@ -94,7 +94,7 @@ tickets:
 
   - id: "LDG-2473"
     title: "Parallel Worker Setup And Backend Skeleton"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
