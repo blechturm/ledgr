@@ -6,593 +6,369 @@ format:
     theme: cosmo
 ---
 
-**Status:** Internal dev-facing documentation. Not a user-facing article, not a
-contract. Trace of `R/fold-core.R` and its surrounding call graph, **verified
-against the code on 2026-05-28**.
+**Status:** Internal maintainer documentation. Not a user-facing article and
+not a contract. Trace of the fold core and surrounding call graph, verified
+against the code on **2026-05-30** after the v0.1.8.8 Batch 1 source split.
 
-**How to use this:** Every structural claim carries an `R/file.R:line` anchor.
-The claims were validated by reading the actual call graph, not the fold core
-in isolation — the run/sweep entry points (`backtest-runner.R`, `sweep.R`), the
-fill model (`fill-model.R`), the pulse-context accessors (`pulse-context.R`),
-the runtime projection (`runtime-projection.R`), and the event writer
-(`ledger-writer.R`). The **Verified** blocks record the load-bearing findings
-and the evidence anchor for each.
+**How to use this:** This workbook explains the fold-core source layout,
+function roles, data flow, replay invariants, and where run/sweep intentionally
+diverge. It uses file/function anchors instead of line-number claims because
+line numbers drift during implementation. If an anchor looks stale, search for
+the named function first.
 
-Anchors were correct on 2026-05-28; line numbers drift as files change. If an
-anchor looks off, search for the named function rather than trusting the
-number. The data-structure and control-flow claims are also test-backed: the
-fold core is the most-tested code in the package, so a wrong field name or
-operation order would break the suite.
+The load-bearing invariant remains: **events are the source of truth; every
+view is deterministic replay over events.**
 
 ---
 
-## 1. What the fold core is
+## 1. Source Layout
 
-`ledgr_execute_fold(execution, output_handler)`
-([`R/fold-core.R:38`](../../R/fold-core.R#L38)) is the single execution engine
-shared by `ledgr_run()` and `ledgr_sweep()`. It walks pulses in order, builds a
-pulse context, calls the strategy, resolves fills, and emits **events**. It does
-not compute equity, trades, or metrics directly — those are reconstructed from
-events afterward (Section 6).
+v0.1.8.8 splits the former monolithic `R/fold-core.R` into four internal files.
+The split is mechanical and behavior-neutral.
 
-The same file holds two distinct concerns:
+| File | Concern | Functions |
+| --- | --- | --- |
+| `R/fold-engine.R` | The live per-pulse execution engine and telemetry finalization | `ledgr_execute_fold()`, `ledgr_finalize_fold_telemetry()` |
+| `R/fold-event-buffer.R` | Event-buffer capacity helpers and opening-position event rows | `ledgr_event_buffer_initial_capacity()`, `ledgr_event_buffer_next_capacity()`, `ledgr_event_buffer_checked_capacity()`, `ledgr_opening_position_event_rows()` |
+| `R/fold-reconstruction.R` | Event metadata access, equity/fills reconstruction, sweep memory summary | `ledgr_typed_event_metadata()`, `ledgr_event_meta_at()`, `ledgr_equity_from_events()`, `ledgr_fill_row_buffer()`, `ledgr_fill_row_buffer_grow()`, `ledgr_fill_row_buffer_add()`, `ledgr_fill_row_buffer_data_frame()`, `ledgr_fill_row_buffer_tibble()`, `ledgr_fills_from_events()`, `ledgr_assert_events_in_fold_order()`, `ledgr_sweep_summary_from_ordered_events()` |
+| `R/fold-metrics.R` | Fold-local metric helpers used by sweep summary and parity helpers | `ledgr_bars_per_year_from_pulses()`, `ledgr_metrics_from_equity_fills()` |
 
-- **The engine** — `ledgr_execute_fold()` (lines 38–352). Produces events.
-- **Reconstructors** — `ledgr_sweep_summary_from_ordered_events()` (line 705,
-  used by the sweep production path) and `ledgr_metrics_from_equity_fills()`
-  (line 911). `ledgr_equity_from_events()` (line 445) and
-  `ledgr_fills_from_events()` (line 561) also live here but have **no production
-  caller** — they are parity-reference twins used by tests
-  (`test-sweep-parity.R`, `test-sweep.R`) to assert the sweep memory path agrees
-  with an independent replay. The run path has its *own* inline reconstruction
-  (Section 6c). Verified: `grep` for both functions shows only tests and
-  `dev/spikes/` call them.
-
-The architectural invariant: **events are the source of truth; every view is a
-deterministic replay over events.** The engine never writes equity or trades.
-Note there are **two** equity-reconstruction implementations sharing one
-algorithm (Section 6c) — the inline run-path copy and the
-fold-core reconstructor family — which is exactly why `test-sweep-parity.R`
-exists.
+The files are still package-internal implementation detail. No public API is
+created by this split.
 
 ---
 
-## 2. Run vs sweep over the shared core
-
-Both entry points assemble an `execution` list plus an `output_handler`, then
-call the same `ledgr_execute_fold()`. They diverge only at the output handler
-and the reconstruction path.
+## 2. High-Level Flow
 
 ```{mermaid}
 %%| echo: false
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "12px"}}}%%
 flowchart TB
   run["ledgr_run()"]
   sweep["ledgr_sweep()"]
-  core["ledgr_execute_fold(execution, output_handler)"]
-  events["events (ledger_events rows)"]
-  db["DuckDB ledger_events table"]
-  mem["in-memory ordered events"]
-  dbviews["ledgr_equity_from_events / ledgr_fills_from_events"]
-  memviews["ledgr_sweep_summary_from_ordered_events"]
+  spec["execution list / future execution spec"]
+  core["ledgr_execute_fold()"]
+  durable["persistent output handler\nDuckDB ledger_events"]
+  memory["memory output handler\nordered events"]
+  run_replay["run-path reconstruction\nbacktest-runner.R"]
+  sweep_replay["ledgr_sweep_summary_from_ordered_events()"]
+  results["equity / fills / metrics"]
 
-  run --> core
-  sweep --> core
-  core --> events
-  events --> db
-  events --> mem
-  db --> dbviews
-  mem --> memviews
+  run --> spec
+  sweep --> spec
+  spec --> core
+  core --> durable
+  core --> memory
+  durable --> run_replay
+  memory --> sweep_replay
+  run_replay --> results
+  sweep_replay --> results
 ```
 
-- **Run** assembles `execution` in `ledgr_run_fold()`
-  ([`R/backtest-runner.R:1271-1298`](../../R/backtest-runner.R#L1271-L1298)) and
-  passes a `ledgr_persistent_output_handler()`
-  ([`R/backtest-runner.R:281`](../../R/backtest-runner.R#L281)) that writes
-  events to the DuckDB `ledger_events` table. After the fold returns, it reads
-  those events back ([`R/backtest-runner.R:1332-1341`](../../R/backtest-runner.R#L1332-L1341))
-  and **reconstructs equity inline**
-  ([`R/backtest-runner.R:1378-1478`](../../R/backtest-runner.R#L1378-L1478)).
-- **Sweep** assembles `execution` in `ledgr_sweep_run_candidate()`
-  ([`R/sweep.R:634-661`](../../R/sweep.R#L634-L661)) and passes a
-  `ledgr_memory_output_handler()` ([`R/sweep.R:700`](../../R/sweep.R#L700)) that
-  buffers events in memory. Views are reconstructed by
-  `ledgr_sweep_summary_from_ordered_events()`
-  ([`R/fold-core.R:705`](../../R/fold-core.R#L705)) with no DB round trip.
+`ledgr_execute_fold()` is the single fold engine shared by run and sweep. The
+two entry points diverge at the output handler and post-fold reconstruction:
 
-> **Verified (2026-05-28):** Run and sweep do **not** diverge only at the output
-> handler. The shared `ledgr_execute_fold()` is identical for both, but they
-> differ in three places:
->
-> 1. **Output handler + reconstruction.** Persistent DuckDB handler + inline
->    read-back reconstruction (run) vs in-memory handler +
->    `ledgr_sweep_summary_from_ordered_events()` (sweep). The run path does
->    **not** call `ledgr_equity_from_events()` — that's the test-only twin.
-> 2. **`execution`-list assembly.** Same field *set*, different values/origin:
->    `seed` (run passes the config seed verbatim; sweep derives a per-candidate
->    seed via `ledgr_derive_seed()`), `event_mode` (run is conditional
->    `live`/`buffered`; sweep is always `buffered`), and `start_idx` /
->    `max_pulses` / `checkpoint_every` / `telemetry_stride` /
->    `strategy_is_functional` (run reads real config/resume values; sweep
->    hardcodes `1L` / `Inf` / `0L` / `0L` / `TRUE`).
-> 3. **Metric-kernel timing** (Section 10): sweep binds a kernel eagerly during
->    summary; run computes metrics lazily on read-back.
+- committed runs use the persistent output handler and reconstruct durable
+  views after reading `ledger_events`;
+- sweeps use the memory output handler and reconstruct compact candidate
+  summaries from ordered in-memory events.
+
+The future v0.1.8.8 typed execution-spec work should reduce drift in how run and
+sweep build the execution payload, but it must not add a second engine.
 
 ---
 
-## 3. INPUT: the `execution` list
+## 3. The Fold Engine
 
-`ledgr_execute_fold()` destructures `execution` at
-[`R/fold-core.R:39-66`](../../R/fold-core.R#L39-L66). Fields grouped by role:
+### `ledgr_execute_fold(execution, output_handler)`
 
-| Group | Field | Meaning |
-|---|---|---|
-| Identity | `run_id` | run identity string |
-| | `instrument_ids` | universe order (drives target validation + matrix columns) |
-| Strategy | `strategy_fn` | the `function(ctx, params)` |
-| | `strategy_params` | per-run parameter list |
-| | `strategy_call_signature` | how to invoke (functional vs bare) |
-| | `strategy_is_functional` | dispatch flag |
-| Time | `pulses_posix` / `pulses_iso` | decision timestamps (POSIXct / ISO string) |
-| | `start_idx` | resume index (≥1) |
-| | `max_pulses` | early-stop bound |
-| State | `state` | `list(cash = <num>, positions = <named num>)` — mutated in place |
-| | `state_prev` | previous strategy state object (for stateful strategies) |
-| Market data | `bars_by_id` | per-instrument bar data.frames (row `i+1` is the fill bar) |
-| | `bars_mat` | matrix form; `bars_mat$close[j, i]` is instrument `j` at pulse `i` |
-| Features | `feature_defs` | resolved feature definitions (id-bearing) |
-| | `runtime_projection` | the feature value projection (R-memory backend today) |
-| | `active_alias_map` | alias → concrete feature id map |
-| | `static_bars_views` / `static_feature_views` | precomputed pulse views (optional) |
-| Execution policy | `cost_resolver` | `function(proposal, fill_context) -> fill_intent` (Section 5) |
-| Bookkeeping | `event_seq_start` | first event sequence number |
-| | `telemetry`, `telemetry_stride`, `checkpoint_every` | instrumentation + flush cadence |
-| | `seed` | execution seed (set via `set.seed` at [`:68`](../../R/fold-core.R#L68)) |
-| | `event_mode` | `"live"` vs buffered |
-| | `use_fast_context` | fast-context optimization flag |
+Role:
 
-> **Verified (2026-05-28):** The split is intentional, not redundant.
-> `bars_by_id` is used only for the next-bar fill lookup
-> ([`:241-242`](../../R/fold-core.R#L241-L242)) — per-instrument data.frames
-> indexed by row `i+1`. `bars_mat` is the matrix form, used for the vectorized
-> `positions_value` (`bars_mat$close[j, i]`, [`:152`](../../R/fold-core.R#L152))
-> and as the `close_mat` for equity reconstruction. Two shapes, two access
-> patterns: per-id frame for the single next-bar row, matrix column for
-> vectorized math.
+- walks pulses in order;
+- builds a strategy-visible pulse context;
+- calls the strategy;
+- validates full named numeric targets;
+- converts target deltas to next-open fill proposals;
+- resolves fill cost;
+- emits events through the output handler;
+- mutates in-memory cash/position state immediately after the event write;
+- buffers strategy-state updates;
+- records loop telemetry and checkpoint flushes.
 
-> **Verified (2026-05-28) — dense-panel precondition.** Both `bars_by_id` and
-> `bars_mat` rely on a **dense aligned panel**: every instrument has a bar at
-> every pulse. This is enforced fail-fast before execution — a cross-join
-> completeness check ([`R/backtest-runner.R:1541-1564`](../../R/backtest-runner.R#L1541-L1564))
-> and a per-instrument `nrow(b) != length(pulses)` / timestamp-equality check
-> ([`R/backtest-runner.R:1154-1159`](../../R/backtest-runner.R#L1154-L1159)),
-> both raising `ledgr_missing_bars`. This is what makes `bars_by_id[[id]][i+1]`
-> safe as a row-index lookup: row `i+1` *is* pulse `i+1` for every instrument.
-> The dense panel is a backtest seal-time gate, **not a universal invariant** —
-> live streaming will need a tolerate-and-degrade posture instead (see
-> `inst/design/horizon.md`, live bad-data resilience).
+The engine is intentionally event-first. When a fill is emitted, the event write
+and state mutation stay adjacent so durable run replay and sweep memory replay
+see the same ordered event stream.
 
-> **Verified (2026-05-28) — resume determinism.** On resume (`start_idx > 1`),
-> cash/positions are correctly restored by replaying events as-of the resume
-> timestamp (`ledgr_state_asof()`, [`R/backtest-runner.R:1088-1099`](../../R/backtest-runner.R#L1088-L1099)).
-> But the RNG stream is **not** restored: the loop jumps to `start_idx` after
-> `set.seed(seed)` without replaying earlier pulses, and no `.Random.seed`
-> checkpoint exists. So resume is byte-identical to a continuous run **only for
-> deterministic strategies**; a stochastic (Tier 2) strategy diverges. Tracked
-> in `inst/design/horizon.md` (RNG resume entry).
-
----
-
-## 4. The per-pulse sequence (the heart)
-
-The loop runs at [`R/fold-core.R:132-331`](../../R/fold-core.R#L132-L331).
+### Per-pulse sequence
 
 ```{mermaid}
 %%| echo: false
-flowchart TB
-  state_t["pulse t state<br/>bars up to t, positions, cash"]
-  ctx["build ctx<br/>pulse-known projection (no future)"]
-  strat["strategy(ctx, params)"]
-  validate["validate targets<br/>full named numeric vector"]
-  risk["risk step<br/>(no-op today)"]
-  fills["per instrument:<br/>delta to next-open fill"]
-  state_t1["state update<br/>cash + positions"]
+sequenceDiagram
+  participant Loop as ledgr_execute_fold()
+  participant Ctx as pulse context
+  participant Strat as strategy_fn(ctx, params)
+  participant Fill as fill model
+  participant Out as output_handler
+  participant State as cash/positions
 
-  state_t --> ctx
-  ctx --> strat
-  strat --> validate
-  validate --> risk
-  risk --> fills
-  fills --> state_t1
-  state_t1 -. next pulse .-> state_t
+  Loop->>Ctx: current bars/features/state
+  Ctx->>Strat: no-lookahead context
+  Strat-->>Loop: targets + optional state_update
+  Loop->>Fill: target delta + next bar
+  Fill-->>Loop: fill intent or no-fill
+  Loop->>Out: write_fill_events(event_seq)
+  Out-->>Loop: next_event_seq
+  Loop->>State: apply cash/position delta
+  Loop->>Out: flush/checkpoint if needed
 ```
 
-Step by step, with anchors:
+No-lookahead boundary:
 
-1. **Build pulse-known views** — `bars_current`, `features_current`,
-   `features_wide_current` for pulse `i`
-   ([`:137-145`](../../R/fold-core.R#L137-L145)). These are pre-sliced; no future
-   bars are reachable.
-2. **Compute `positions_value`** — sum of `qty * close` at pulse `i`
-   ([`:147-153`](../../R/fold-core.R#L147-L153)).
-3. **Construct `ctx`** — a `ledgr_pulse_context`
-   ([`:155-168`](../../R/fold-core.R#L155-L168)), then attach helper methods via
-   `ledgr_update_fast_pulse_context_helpers()` or
-   `ledgr_update_pulse_context_helpers()` ([`:169-194`](../../R/fold-core.R#L169-L194)).
-   The plain `ctx` list carries: `run_id`, `ts_utc`, `universe`, `bars`,
-   `feature_table`, `positions`, `cash`, `equity`, `seed`, `state_prev`,
-   `safety_state`.
-4. **Call the strategy** — `ledgr_call_strategy_fn(...)`
-   ([`:198-208`](../../R/fold-core.R#L198-L208)), wrapped in `tryCatch` that routes
-   errors through `ledgr_abort_strategy_error`.
-5. **Normalize + validate the result** — a bare numeric is wrapped as
-   `list(targets = result, state_update = NULL)` ([`:214-216`](../../R/fold-core.R#L214-L216));
-   then `ledgr_validate_strategy_targets()` ([`:227-230`](../../R/fold-core.R#L227-L230)).
-6. **Risk step (reserved)** — `ledgr_apply_target_risk_noop(targets, ctx, strategy_params)`
-   ([`:231`](../../R/fold-core.R#L231)). **This is the v0.1.9 target-risk insertion
-   point.** Today it is a pass-through.
-7. **Per-instrument fill resolution** ([`:233-287`](../../R/fold-core.R#L233-L287)):
-   - `delta = desired - current`; skip if `|delta| <= sqrt(eps)`.
-   - `next_bar = bars_by_id[[id]][i+1]` — fills happen at the **next** bar's open.
-   - `proposal = ledgr_next_open_fill_proposal(delta, next_bar)` (Section 5).
-   - `fill = ledgr_resolve_fill_proposal(proposal, cost_resolver)`.
-   - `ledgr_fill_none` → maybe warn `LEDGR_LAST_BAR_NO_FILL`, skip.
-   - else write fill events via `output_handler$write_fill_events()`.
-   - **update `state$positions` and `state$cash` sequentially** — see Section 7.
-8. **Persist strategy state** if `result$state_update` is non-null
-   ([`:289-297`](../../R/fold-core.R#L289-L297)).
-9. **Telemetry / checkpoint / interrupt** ([`:299-330`](../../R/fold-core.R#L299-L330)).
+- the strategy sees current-pulse bars/features and current state;
+- the fill model uses the next bar for next-open fills;
+- final-bar target changes can warn and produce no fill because no following bar
+  exists.
 
-> **Verified (2026-05-28) — the load-bearing invariant.** A strategy cannot
-> reach pulse `i+1` data. Two independent guards:
->
-> - **Feature accessors are bound to `pulse_idx`.** The closure returned by
->   `ledgr_projection_feature_accessor()` reads `mat[[inst_idx, pulse_idx]]`
->   with `pulse_idx` captured via `force()` at construction
->   ([`R/runtime-projection.R:310-345`](../../R/runtime-projection.R#L310-L345)).
->   The strategy-facing closure signature is
->   `function(instrument_id, feature_name, default)` — there is **no pulse
->   argument**, so the strategy has no API to request a different (future)
->   column. The fast-context variant reads `mat[[inst_idx, state$pulse_idx]]`
->   where `state$pulse_idx` is set by the fold loop *before* each strategy call
->   ([`R/pulse-context.R:343`](../../R/pulse-context.R#L343)); the strategy
->   cannot mutate it through the accessor.
-> - **Bar accessors read the pulse-`i` slice.** `ctx$close(id)` etc. read the
->   lookup populated from `bars_current = bars_views[[i]]`, the pre-sliced pulse-
->   `i` view. The `i+1` fill bar is consumed by the engine *after* the strategy
->   returns ([`:241-242`](../../R/fold-core.R#L241-L242)) and never enters `ctx`.
->
-> **Trust boundary.** This prevents lookahead *through `ctx`*. It does **not**
-> sandbox arbitrary R: a careless or malicious strategy could close over the
-> original bars, read globals, touch files, or mutate external state. The
-> contract is "ledgr prevents lookahead via `ctx`; ledgr does not sandbox R."
-> The reproducibility tier system partly covers the careless case — Tier 3
-> rejects unqualified helpers, `<<-`, `Sys.time()`, and dynamic evaluation
-> before execution. One residual: if `state_prev` is a reference object
-> (environment, R6), a strategy could mutate it outside the explicit
-> `state_update` return path, breaking replay; Tier-3 preflight catches the
-> common mutation patterns but reference semantics are a known sharp edge.
+### `ledgr_finalize_fold_telemetry(...)`
+
+Role:
+
+- trims preallocated telemetry vectors to the number of recorded samples;
+- stores session telemetry through the output handler;
+- writes final telemetry status.
+
+This helper is called by orchestration code after fold completion/failure. It
+does not alter fold behavior.
 
 ---
 
-## 5. The fill proposal → intent chain
+## 4. Event Buffer And Opening Events
 
-Defined in `R/fill-model.R`. The cost step is a **pluggable function**, which
-is the reserved cost-model insertion point.
+### Event-buffer capacity helpers
 
-```{mermaid}
-%%| echo: false
-%%{init: {"theme": "base", "themeVariables": {"fontSize": "12px"}}}%%
-flowchart TB
-  delta["delta (desired - current)"]
-  prop["ledgr_next_open_fill_proposal(delta, next_bar)"]
-  none_zero["ledgr_fill_none<br/>status: NO_FILL"]
-  none_last["ledgr_fill_none<br/>warn: LEDGR_LAST_BAR_NO_FILL"]
-  proposal["ledgr_fill_proposal"]
-  resolver["cost_resolver(proposal, fill_context)"]
-  intent["ledgr_fill_intent"]
+`ledgr_event_buffer_initial_capacity()`,
+`ledgr_event_buffer_next_capacity()`, and
+`ledgr_event_buffer_checked_capacity()` define shared grow-by-doubling capacity
+rules used by durable and memory output handlers.
 
-  delta --> prop
-  prop -->|"delta == 0"| none_zero
-  prop -->|"next_bar == NULL"| none_last
-  prop -->|"otherwise"| proposal
-  proposal --> resolver
-  resolver --> intent
-```
+Invariants:
 
-| Object | Class | Fields | Anchor |
-|---|---|---|---|
-| proposal | `ledgr_fill_proposal` | `instrument_id`, `side` (BUY/SELL), `qty` (abs), `ts_exec_utc`, `execution_bar{open,high,low,close,volume}` | [`R/fill-model.R:82-91`](../../R/fill-model.R#L82-L91) |
-| no-fill | `ledgr_fill_none` | `status`, `warn_code?`, `reason` | [`R/fill-model.R:24-42`](../../R/fill-model.R#L24-L42) |
-| intent | `ledgr_fill_intent` | `instrument_id`, `side`, `qty`, `fill_price`, `commission_fixed`, `ts_exec_utc` | [`R/fill-model.R:180-190`](../../R/fill-model.R#L180-L190) |
+- buffer growth never exceeds the fold's maximum event capacity;
+- overflow fails loudly with `ledgr_event_buffer_capacity_exceeded`;
+- durable run and sweep memory handlers use the same capacity arithmetic.
 
-The default cost resolver `ledgr_default_cost_resolve()`
-([`R/fill-model.R:158`](../../R/fill-model.R#L158)) applies the **full**
-`spread_bps` on each leg: `fill_price = open * (1 ± spread_bps/10000)`. A round
-trip therefore costs ~`2 * spread_bps` before commission. The `execution_bar`
-carries next-bar OHLCV so a future cost model can use it — but quantity is not
-mutated by the current resolver.
+### `ledgr_opening_position_event_rows(...)`
 
-> **Verified (2026-05-28):** `cost_resolver` is
-> `function(proposal, fill_context) -> ledgr_fill_intent`
-> ([`R/fill-model.R:144-156`](../../R/fill-model.R#L144-L156)), closed over
-> `spread_bps` / `commission_fixed` at construction
-> ([`R/fill-model.R:114-142`](../../R/fill-model.R#L114-L142)). Nothing
-> downstream assumes the internal spread+commission shape: the fold core writes
-> the intent unchanged, and the ledger writer reads only the generic
-> `ledgr_fill_intent` fields — `instrument_id`, `side`, `qty`, `fill_price`,
-> `commission_fixed` ([`R/ledger-writer.R:27-32`](../../R/ledger-writer.R#L27-L32)).
-> So the public cost-model API (v0.1.9.x) can replace this function by returning
-> the same intent shape.
+Role:
+
+- converts opening positions into ordered `CASHFLOW` events with `meta_json`
+  flags;
+- validates finite cost basis;
+- assigns event IDs and event sequence numbers before the fold starts.
+
+This is a current implementation compromise: opening positions are accounting
+state seeded through `CASHFLOW` plus metadata. The explicit `POSITION_SEED`
+event type is deliberately deferred to a v0.2.x RFC, not part of v0.1.8.8.
 
 ---
 
-## 6. OUTPUT: events, and the views derived from them
+## 5. Event Metadata
 
-### 6a. The fold return value
+### `ledgr_typed_event_metadata(events, order_idx = NULL)`
 
-`ledgr_execute_fold()` returns ([`R/fold-core.R:344-351`](../../R/fold-core.R#L344-L351)):
+Role:
 
-```r
-list(
-  processed      = <int>,   # pulses executed
-  full_run       = <lgl>,   # FALSE if max_pulses / interrupt cut it short
-  telemetry      = <list>,  # timing samples
-  state          = <list>,  # final cash + positions
-  state_prev     = <obj>,   # final strategy state
-  next_event_seq = <int>    # next free event sequence number
-)
-```
+- reads typed metadata attributes from in-memory sweep events when present;
+- optionally reorders the metadata in lockstep with sorted events;
+- returns `NULL` when attributes are absent or malformed.
 
-Plus the **side effect**: events written through `output_handler`.
+This is the fast path for sweep memory events. Durable DB events do not carry R
+attributes, so replay falls back to `meta_json`.
 
-> **Verified (2026-05-28) — commit boundary.** The run path wraps the entire
-> fold loop in one DuckDB transaction: `run_transaction <- function(fn)
-> DBI::dbWithTransaction(con, fn())` ([`R/backtest-runner.R:294-295`](../../R/backtest-runner.R#L294-L295)),
-> invoked at [`R/fold-core.R:340`](../../R/fold-core.R#L340). Cooperative
-> interrupts fire at pulse boundaries (the `ledgr.interrupt` check is after the
-> per-instrument fill loop, [`:327`](../../R/fold-core.R#L327)), so a pulse is
-> always committed whole or not at all. Crucially, **state is never persisted
-> separately — it is replayed from committed events** (`ledgr_state_asof()`),
-> so an event/state desync is structurally impossible. The residual is the
-> standard "uncommitted work since the last flush is lost on a hard crash,"
-> which is atomic, not corrupting; idempotent event IDs (`run_id` + `event_seq`)
-> make re-execution safe. The sweep path's `run_transaction` is a no-op
-> (`function(fn) fn()`, [`R/sweep.R:819`](../../R/sweep.R#L819)) because it is
-> in-memory and ephemeral.
+### `ledgr_event_meta_at(events, typed_meta, i)`
 
-### 6b. The canonical event row
+Role:
 
-Every fill becomes a `ledger_events` row
-([`R/ledger-writer.R:101-131`](../../R/ledger-writer.R#L101-L131)):
+- returns typed metadata for row `i` when available;
+- otherwise parses `events$meta_json[[i]]`.
 
-| Column | Meaning |
-|---|---|
-| `event_id` | `run_id` + zero-padded `event_seq` |
-| `run_id` | run identity |
-| `ts_utc` | execution timestamp (the **fill** bar, i.e. `t+1`) |
-| `event_type` | `FILL`, `FILL_PARTIAL`, or `CASHFLOW` |
-| `instrument_id` | instrument (NA for some cashflows) |
-| `side` | BUY / SELL (NA for cashflow) |
-| `qty` | absolute fill quantity |
-| `price` | fill price |
-| `fee` | commission |
-| `meta_json` | `{commission_fixed, cash_delta, position_delta, realized_pnl, ...}` |
-| `event_seq` | strictly increasing fold-produced order |
-
-Opening positions are seeded as `CASHFLOW` events with a cost basis
-([`R/fold-core.R:354-408`](../../R/fold-core.R#L354-L408)) so the lot replay has a
-starting basis.
-
-### 6c. Derived views (replay over events)
-
-All views are reconstructed by replaying events through the FIFO lot state
-(`ledgr_lot_state` / `ledgr_lot_apply_event`). The column shapes:
-
-| View | Columns |
-|---|---|
-| equity | `run_id, ts_utc, cash, positions_value, equity, realized_pnl, unrealized_pnl` |
-| fills | `event_seq, ts_utc, instrument_id, side, qty, price, fee, realized_pnl, action{OPEN,CLOSE}` |
-| metrics | `total_return, annualized_return, volatility, sharpe_ratio, max_drawdown, n_trades, win_rate, avg_trade, time_in_market` |
-
-Trades are the subset of fill rows with `action == "CLOSE"` (carry
-`realized_pnl`). A fill that both closes and opens quantity emits two rows.
-
-**Two reconstruction implementations, one algorithm.** Verified
-(2026-05-28):
-
-- **Run path** reconstructs equity **inline** in
-  [`R/backtest-runner.R:1378-1478`](../../R/backtest-runner.R#L1378-L1478) after
-  reading `ledger_events` back from DuckDB.
-- **Sweep path** reconstructs via `ledgr_sweep_summary_from_ordered_events()`
-  ([`R/fold-core.R:705`](../../R/fold-core.R#L705)) over in-memory events in one
-  pass.
-- `ledgr_equity_from_events()` / `ledgr_fills_from_events()`
-  ([`R/fold-core.R:445`/`561`](../../R/fold-core.R#L445)) are the **test-only
-  twins** of the inline run-path logic — same algorithm, used by
-  `test-sweep-parity.R` to assert the sweep memory path matches an independent
-  replay. They have no production caller.
-
-> **Verified (2026-05-28):** The `findInterval(pulse_ts, event_ts)` mapping is
-> correct for next-open fills. `findInterval` returns, per pulse, the count of
-> event timestamps `<= pulse_ts`. A fill executes at bar `t+1`, so its event
-> `ts_utc` is `t+1`: at pulse `t` it is excluded (`t+1 > t`), at pulse `t+1` it
-> is included (`t+1 <= t+1`). So the fill correctly affects equity **from pulse
-> `t+1` onward, not pulse `t`**. The same mapping appears in the run-path inline
-> copy ([`backtest-runner.R:1395`](../../R/backtest-runner.R#L1395)) and the
-> fold-core reconstructors — identical logic.
+All replay paths should use this accessor rather than open-coding the typed
+metadata / JSON fallback.
 
 ---
 
-## 7. Per-fill state mutation — the ordering subtlety
+## 6. Reconstruction Helpers
 
-Inside the per-instrument loop ([`R/fold-core.R:279-286`](../../R/fold-core.R#L279-L286)):
+### `ledgr_equity_from_events(...)`
 
-```r
-# `fill$qty` is ALWAYS absolute (fill-model.R:69 sets qty = abs(delta)).
-# `qty` below is the SIGNED position delta; it is used only for positions.
-# The cash formula uses the ABSOLUTE fill$qty in both branches.
-qty <- if (side == "BUY") fill$qty else -fill$qty
-cash_delta <- if (side == "BUY") {
-  -(fill$qty * price + commission)   # BUY: pay proceeds + commission -> cash down
-} else {
-  fill$qty * price - commission      # SELL: receive proceeds - commission -> cash up
-}
-state$positions[[instrument_id]] <- cur_qty + qty
-state$cash <- state$cash + cash_delta
-```
+Role:
 
-The split matters: the **signed** `qty` updates the position; the **absolute**
-`fill$qty` drives the cash delta. Reusing the signed value in the cash formula
-would make a sale reduce cash — a sign bug the code avoids by using `fill$qty`
-([`fold-core.R:280-284`](../../R/fold-core.R#L280-L284), mirrored in the
-persistent path at [`ledger-writer.R:66-71`](../../R/ledger-writer.R#L66-L71)).
+- test/reference reconstruction of an equity curve from an event table;
+- sorts by `event_seq`;
+- maps events onto pulse timestamps with `findInterval()`;
+- reconstructs cash, positions, realized PnL, cost basis, and unrealized PnL.
 
-The loop iterates over `names(targets)` and updates `state$cash` **sequentially,
-per instrument**.
+This function is not the production run-path reconstructor. It is an internal
+parity/reference helper used by tests and sweep parity checks. The production
+run path still reconstructs durable views in `R/backtest-runner.R`; sweep uses
+`ledgr_sweep_summary_from_ordered_events()`.
+
+Replay invariant:
+
+- event streams are step functions over pulse time;
+- a pulse sees the most recent event at or before that timestamp;
+- no future event can affect an earlier pulse.
 
 ```{mermaid}
 %%| echo: false
 flowchart LR
-  t["targets<br/>(named vector)"]
-  i1["instrument 1<br/>fill -> cash delta"]
-  i2["instrument 2<br/>fill -> cash delta"]
-  i3["instrument ...<br/>fill -> cash delta"]
-  s["state.cash<br/>(running)"]
+  events["ledger events"]
+  sort["sort by event_seq"]
+  map["findInterval()\nmap pulses to latest prior event"]
+  cash["cash cumsum"]
+  pos["position / lot state"]
+  equity["equity curve"]
+  fills["fills table"]
 
-  t --> i1 --> s
-  i1 --> i2 --> s
-  i2 --> i3 --> s
+  events --> sort
+  sort --> map
+  map --> cash
+  map --> pos
+  cash --> equity
+  pos --> equity
+  sort --> fills
 ```
 
-Two consequences:
+### Fill row buffer helpers
 
-- **Today:** no affordability check. Every fill executes regardless of
-  intermediate cash; `state$cash` can go negative (unmodeled margin). Because
-  there is no check, iteration order does not affect the final state (the sum of
-  `cash_delta` is order-independent).
-- **When the v0.1.9 risk layer adds affordability:** iteration order becomes
-  load-bearing. A per-instrument cash check would reject rebalancing BUYs that
-  fire before paired SELLs have freed capital, even though both fill at the same
-  `t+1` open. The affordability adapter must check **net** feasibility across
-  all proposed fills at the pulse, not per-instrument sequentially. (Captured in
-  `inst/design/horizon.md`, intraday-readiness footgun.)
+`ledgr_fill_row_buffer()`, `ledgr_fill_row_buffer_grow()`,
+`ledgr_fill_row_buffer_add()`, `ledgr_fill_row_buffer_data_frame()`, and
+`ledgr_fill_row_buffer_tibble()` implement primitive-column fill materialization.
 
-> **Verified (2026-05-28):** The loop iterates over `names(targets)`
-> ([`:233`](../../R/fold-core.R#L233)), but the order is **deterministic universe
-> order**, not strategy-return order: `ledgr_validate_strategy_targets()` returns
-> `targets[universe]` ([`R/strategy-contracts.R:95`](../../R/strategy-contracts.R#L95)),
-> reindexing to `instrument_ids` before the loop. Today (no affordability check)
-> the final state is order-independent because cash deltas sum commutatively.
-> When the v0.1.9 risk layer adds an affordability check, this universe-order
-> iteration is the code it must not check per-instrument — a per-instrument cash
-> check would reject rebalancing BUYs that happen to sort before their funding
-> SELLs. The check must be net across all proposed fills at the pulse.
+Invariants:
+
+- column order and classes match the public fills table;
+- `ts_utc` stays POSIXct UTC across buffer growth;
+- rows are appended in event order;
+- close/open split rows keep `CLOSE` before `OPEN`.
+
+### `ledgr_fills_from_events(events)`
+
+Role:
+
+- test/reference reconstruction of the public fills table from events;
+- walks events in `event_seq` order;
+- applies lot-state accounting;
+- skips `CASHFLOW` events after updating lot state;
+- splits close/open fills when one event both closes an old lot and opens a new
+  one.
+
+FIFO and split-row ordering are load-bearing. A future optimization must keep
+the same row order and realized-PnL semantics.
+
+### `ledgr_assert_events_in_fold_order(events)`
+
+Role:
+
+- validates that sweep memory events are already in strictly increasing
+  `event_seq` order.
+
+Sweep memory reconstruction relies on the fold-produced order. If this assertion
+fails, the issue is upstream event collection, not replay.
 
 ---
 
-## 8. Reserved insertion points (where future cycles plug in)
+## 7. Sweep Summary
+
+### `ledgr_sweep_summary_from_ordered_events(...)`
+
+Role:
+
+- production sweep memory reconstructor;
+- assumes ordered in-memory events;
+- reconstructs equity, fills, metrics, and final equity without a DB round trip.
+
+This function intentionally duplicates parts of the reference replay algorithm
+because sweep avoids the persistent read-back cost. `test-sweep-parity.R` is the
+guard that keeps the memory path equivalent to the durable/event-reference
+views.
+
+Key differences from `ledgr_equity_from_events()` + `ledgr_fills_from_events()`:
+
+- it validates existing fold order rather than sorting;
+- it computes equity and fills in one pass over events;
+- it uses typed metadata attributes when present;
+- it returns compact candidate summary components for sweep result assembly.
+
+---
+
+## 8. Metrics Helpers
+
+### `ledgr_bars_per_year_from_pulses(pulses_posix)`
+
+Role:
+
+- infers a simple annualization frequency from pulse spacing;
+- falls back to 252 when fewer than two pulses are available.
+
+### `ledgr_metrics_from_equity_fills(...)`
+
+Role:
+
+- computes standard sweep/parity metrics from equity and fills;
+- honors a supplied metric kernel when present;
+- computes total return, annualized return, volatility, Sharpe ratio, max
+  drawdown, trade count, win rate, average trade, and time in market.
+
+The public run metrics path has its own user-facing wrappers in `R/backtest.R`.
+This helper remains the sweep/reference metric kernel bridge.
 
 ```{mermaid}
 %%| echo: false
-flowchart TB
-  strat["strategy targets"]
-  risk["risk step<br/>[v0.1.9 target-risk]"]
-  timing["fill timing<br/>[intraday: pulse-touch / VWAP / session-close]"]
-  cost["cost resolver<br/>[v0.1.9.x public cost API]"]
-  emit["fill events<br/>[v0.2.x OMS: order_events stream]"]
-  handler["output handler<br/>[v0.1.8.7 parallel dispatch]"]
+flowchart LR
+  equity["equity curve"]
+  fills["fills table"]
+  kernel["metric kernel\noptional"]
+  fallback["standard metrics\nfallback"]
+  summary["sweep / parity\nmetric summary"]
 
-  strat --> risk --> timing --> cost --> emit --> handler
+  equity --> kernel
+  fills --> kernel
+  equity --> fallback
+  fills --> fallback
+  kernel --> summary
+  fallback --> summary
 ```
-
-| Slot | Today | Future owner | Anchor |
-|---|---|---|---|
-| risk step | `ledgr_apply_target_risk_noop()` pass-through | v0.1.9 target-risk layer | [`:231`](../../R/fold-core.R#L231) |
-| fill timing | `ledgr_next_open_fill_proposal()` only | intraday fill-timing policy | [`:243`](../../R/fold-core.R#L243) |
-| cost resolver | internal spread+commission | v0.1.9.x public cost-model API | [`:247`](../../R/fold-core.R#L247) |
-| event emission | single `FILL` per fill | v0.2.x OMS `order_events` stream | [`:272`](../../R/fold-core.R#L272) |
-| output handler | DB writer (run) / memory buffer (sweep) | v0.1.8.7 parallel dispatch | [`:272`](../../R/fold-core.R#L272) |
-
-> **Verified (2026-05-28):** These five are the seams in the per-pulse loop.
-> There is **no** pre-strategy hook — `ctx` is built and the strategy is called
-> directly ([`:196-208`](../../R/fold-core.R#L196-L208)). The only post-strategy
-> work beyond the fill loop is state persistence
-> ([`:289-297`](../../R/fold-core.R#L289-L297)), telemetry, and checkpoint
-> flushing — instrumentation, not extension seams. One reserved-but-unused
-> field exists: `ctx$safety_state` is hardcoded to `"GREEN"` at ctx construction
-> ([`:166`](../../R/fold-core.R#L166)) — a placeholder, not a live hook.
 
 ---
 
-## 9. Optional: see the real shapes
+## 9. Current Intentional Divergences
 
-Run this against a tiny backtest to confirm the abstract tables above match
-real output. Uses exported functions only.
+| Surface | Run | Sweep | Guard |
+| --- | --- | --- | --- |
+| Output handler | Persistent DuckDB writer | In-memory ordered events | Event-stream parity tests |
+| Reconstruction | Durable read-back in `R/backtest-runner.R` | `ledgr_sweep_summary_from_ordered_events()` | `test-sweep-parity.R` |
+| Candidate identity | Run ID / config / snapshot identity | Candidate row + reproduction key | Promotion/reproduction-key tests |
+| Telemetry/materialization | Durable run artifacts | Compact summary unless promoted | Artifact policy tests |
 
-```{r}
-#| label: real-shapes
-#| eval: false
-
-library(ledgr)
-
-bars <- data.frame(
-  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
-  instrument_id = "AAA",
-  open = c(100, 101, 105, 106, 106),
-  high = c(100, 101, 105, 106, 106),
-  low = c(100, 101, 105, 106, 106),
-  close = c(100, 101, 105, 106, 106),
-  volume = 1
-)
-
-one_day <- function(ctx, params) {
-  targets <- ctx$flat()
-  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) targets["AAA"] <- 1
-  targets
-}
-
-bt <- ledgr_backtest(bars, one_day, initial_cash = 1000, run_id = "fold_core_demo")
-
-# the canonical events:
-ledgr_results(bt, what = "ledger")
-# the derived views (replay over those events):
-ledgr_results(bt, what = "fills")
-ledgr_results(bt, what = "equity")
-ledgr_compute_metrics(bt)
-
-close(bt)
-```
-
-> **Maintainer note:** After running, compare the `ledger` columns to Section
-> 6b and the `equity`/`fills` columns to Section 6c. Note any field this
-> workbook named that the real table does not have, or vice versa.
+These divergences are accepted for performance and artifact-policy reasons. They
+are not license to add new execution semantics.
 
 ---
 
-## 10. Resolved questions
+## 10. What This Workbook Does Not Bind
 
-All open questions from the first-pass trace were verified against the code on
-2026-05-28:
+This workbook is explanatory. The authoritative contracts remain in
+`inst/design/contracts.md`, the active v0.1.8.8 packet, and accepted RFC/ADR
+artifacts.
 
-1. **`bars_by_id` vs `bars_mat`** — intentional split, not redundant. Per-id
-   frames for the single next-bar fill row; matrix for vectorized
-   `positions_value` and reconstruction `close_mat` (Section 3).
-2. **`findInterval` equity mapping** — correct for next-open fills; a `t+1` fill
-   attributes to pulse `t+1`, not `t` (Section 6c).
-3. **No-lookahead invariant** — holds; feature accessors are bound to `pulse_idx`
-   with no strategy-facing pulse argument (Section 4).
-4. **Reserved seams** — the five in Section 8 are complete; no pre-strategy hook;
-   `ctx$safety_state` is a reserved-but-unused placeholder.
-5. **Run vs sweep divergence** — they differ in output handler + reconstruction,
-   `execution`-list assembly, and metric-kernel timing — not only the output
-   handler (Section 2).
-6. **Metric-kernel binding** — sweep builds the kernel eagerly with pulses
-   (`ledgr_metric_kernel(context, pulses)`,
-   [`R/sweep.R:113`](../../R/sweep.R#L113)) and threads it into the summary; run
-   builds none during the fold and computes metrics lazily on read-back
-   (`ledgr_metric_kernel(context)`, [`R/backtest.R:1569`](../../R/backtest.R#L1569);
-   compare path [`R/run-store.R:668`](../../R/run-store.R#L668)). `bars_per_year`
-   comes from the metric-context calendar; `ledgr_bars_per_year_from_pulses()`
-   ([`R/fold-core.R:903`](../../R/fold-core.R#L903)) is a fallback used only when
-   a context is absent but pulses are supplied.
+Not authorized by this workbook:
+
+- a second execution engine;
+- public distributed execution APIs;
+- explicit accounting event types;
+- one production replay kernel;
+- target-risk phased pulse;
+- compiled fold core;
+- changes to durable identity bytes.
+
+Those items require their own ticket/RFC path.

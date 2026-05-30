@@ -20,7 +20,7 @@ tickets:
 
   - id: "LDG-2469"
     title: "Fold-Core Documentation And Mechanical Split"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:

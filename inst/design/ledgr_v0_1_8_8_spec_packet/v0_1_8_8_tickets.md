@@ -140,7 +140,7 @@ scope: v0.1.8.8
 Priority: P0
 Effort: L
 Dependencies: LDG-2468
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -180,6 +180,22 @@ change.
 
 Targeted fold/sweep/replay/metrics tests, package load check, workbook function
 name grep/check, and manual rendered-workbook review.
+
+Completion note (2026-05-30): Mechanically split the former `R/fold-core.R`
+into `R/fold-engine.R`, `R/fold-event-buffer.R`,
+`R/fold-reconstruction.R`, and `R/fold-metrics.R`. Added inline comments only
+where they document no-lookahead, event/state adjacency, replay step-function,
+and close-before-open invariants. Refreshed `fold_core_workbook.qmd` against
+the new source layout with function-complete coverage and diagrams for
+high-level flow, per-pulse/event emission, reconstruction, and metrics
+materialization. Claude reviewed the batch and approved with no blocking
+findings; the only suggested diagram polish was folded in before commit.
+Verification passed: `pkgload::load_all('.', quiet=TRUE)`,
+`test-sweep.R`, `test-sweep-parity.R`, `test-metric-kernel.R`,
+`test-metric-oracles.R`, `test-metrics-zero-trades.R`,
+`test-backtest-audit-log-equivalence.R`, `test-fills-streaming.R`,
+`test-ledger-writer.R`, `test-api-exports.R`, ASCII scan, function-reference
+grep, and Quarto render of the workbook.
 
 ### Source Reference
 
