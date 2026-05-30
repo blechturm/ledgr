@@ -1,7 +1,7 @@
 .ledgr_sweep_id_state <- new.env(parent = emptyenv())
 .ledgr_sweep_id_state$counter <- 0L
 
-#' Run a sequential parameter sweep
+#' Run a parameter sweep
 #'
 #' `ledgr_sweep()` evaluates a `ledgr_param_grid` against a `ledgr_experiment`
 #' without writing candidate runs to the experiment store. Sweep is an
@@ -15,6 +15,11 @@
 #'   receives a deterministic derived execution seed.
 #' @param stop_on_error Logical. When `FALSE`, candidate-level execution errors
 #'   are captured as failed rows; when `TRUE`, they are rethrown.
+#' @param workers Whole-number worker count. The default `1` uses the
+#'   sequential reference path. Values greater than `1` dispatch candidates
+#'   through the optional `mirai` backend.
+#' @param worker_packages Optional character vector of packages to attach on
+#'   parallel workers for unqualified package calls in strategy code.
 #' @return A `ledgr_sweep_results` tibble.
 #' @details
 #' For larger grids, precompute shared feature payloads with
@@ -50,9 +55,9 @@
 #' class-vector equality.
 #'
 #' Current sweep mode intentionally does not ship automatic ranking,
-#' `ledgr_tune()`, parallel sweep, walk-forward/PBO/CSCV helpers, risk-layer
-#' insertion, public cost-model factories, paper/live adapters,
-#' intraday-specific support, or full sweep artifact persistence.
+#' `ledgr_tune()`, walk-forward/PBO/CSCV helpers, risk-layer insertion, public
+#' cost-model factories, paper/live adapters, intraday-specific support, or
+#' full sweep artifact persistence.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
@@ -63,7 +68,9 @@ ledgr_sweep <- function(exp,
                         param_grid,
                         precomputed_features = NULL,
                         seed = NULL,
-                        stop_on_error = FALSE) {
+                        stop_on_error = FALSE,
+                        workers = 1L,
+                        worker_packages = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -73,11 +80,24 @@ ledgr_sweep <- function(exp,
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
     rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  workers <- ledgr_parallel_workers_normalize(workers)
   seed <- ledgr_seed_normalize(seed)
 
   preflight <- ledgr_strategy_preflight(exp$strategy)
   if (!isTRUE(preflight$allowed)) {
     ledgr_abort_strategy_preflight(preflight)
+  }
+  if (workers > 1L) {
+    ledgr_abort_strategy_ambient_rng_for_parallel(preflight)
+  }
+  worker_setup <- ledgr_parallel_worker_setup(
+    workers = workers,
+    preflight = preflight,
+    worker_packages = worker_packages,
+    dry_run = workers <= 1L
+  )
+  if (isTRUE(worker_setup$initialized)) {
+    on.exit(ledgr_parallel_mirai_stop(), add = TRUE)
   }
   ledgr_validate_feature_factory_grid(exp, param_grid)
 
@@ -143,101 +163,35 @@ ledgr_sweep <- function(exp,
   source_info <- ledgr_strategy_source_info(exp$strategy)
   strategy_hash <- source_info$hash
   strategy_name <- ledgr_sweep_strategy_name(exp$strategy)
-
-  for (i in seq_along(param_grid$params)) {
-    label <- param_grid$labels[[i]]
-    params <- param_grid$params[[i]]
-    strategy_params <- ledgr_grid_candidate_strategy_params(params)
-    feature_params <- ledgr_grid_candidate_feature_params(params)
-    execution_seed <- if (is.null(seed)) {
-      NA_integer_
-    } else {
-      ledgr_derive_seed(seed, list(run_id = label, params = params))
-    }
-
-    candidate <- resolved$candidates[[i]]
-    feature_row <- resolved$candidate_features[i, , drop = FALSE]
-    if (identical(feature_row$status[[1]], "failed")) {
-      if (isTRUE(stop_on_error)) {
-        stop(candidate$error)
-      }
-      rows[[i]] <- ledgr_sweep_failure_row(
-        run_id = label,
-        params = strategy_params,
-        feature_params = feature_params,
-        execution_seed = execution_seed,
-        error_class = feature_row$error_class[[1]],
-        error_msg = feature_row$error_msg[[1]],
-        feature_fingerprints = feature_row$feature_fingerprints[[1]],
-        provenance = ledgr_sweep_provenance(
-          snapshot_hash = meta$snapshot_hash,
-          strategy_hash = strategy_hash,
-          feature_set_hash = feature_row$feature_set_hash[[1]],
-          alias_map_json = feature_row$alias_map_json[[1]],
-          alias_map_hash = feature_row$alias_map_hash[[1]],
-          alias_map_version = feature_row$alias_map_version[[1]],
-          master_seed = seed
-        ),
-        warnings = list()
-      )
-      next
-    }
-
-    warnings <- list()
-    row <- tryCatch(
-      withCallingHandlers(
-        ledgr_sweep_run_candidate(
-          exp = exp,
-          run_id = label,
-          params = strategy_params,
-          feature_params = feature_params,
-          execution_seed = execution_seed,
-          bars_by_id = bars_by_id,
-          bars_mat = bars_mat,
-          static_bars_views = static_bars_views,
-          pulses_posix = pulses_posix,
-          pulses_iso = pulses_iso,
-          metric_kernel = metric_kernel,
-          candidate = candidate,
-          candidate_feature_row = feature_row,
-          precomputed_features = precomputed_features,
-          runtime_projection = runtime_projection,
-          snapshot_hash = meta$snapshot_hash,
-          strategy_hash = strategy_hash,
-          master_seed = seed
-        ),
-        warning = function(w) {
-          warnings <<- c(warnings, list(w))
-          invokeRestart("muffleWarning")
-        }
-      ),
-      error = function(e) {
-        if (isTRUE(stop_on_error)) {
-          stop(e)
-        }
-        ledgr_sweep_failure_row(
-          run_id = label,
-          params = params,
-          execution_seed = execution_seed,
-          error_class = ledgr_condition_class(e),
-          error_msg = conditionMessage(e),
-          feature_fingerprints = feature_row$feature_fingerprints[[1]],
-          provenance = ledgr_sweep_provenance(
-            snapshot_hash = meta$snapshot_hash,
-            strategy_hash = strategy_hash,
-            feature_set_hash = feature_row$feature_set_hash[[1]],
-            alias_map_json = feature_row$alias_map_json[[1]],
-            alias_map_hash = feature_row$alias_map_hash[[1]],
-            alias_map_version = feature_row$alias_map_version[[1]],
-            master_seed = seed
-          ),
-          warnings = warnings
-        )
-      }
-    )
-    row$warnings[[1]] <- warnings
-    rows[[i]] <- row
+  tasks <- ledgr_sweep_candidate_tasks(
+    exp = exp,
+    param_grid = param_grid,
+    resolved = resolved,
+    seed = seed,
+    bars_by_id = bars_by_id,
+    bars_mat = bars_mat,
+    static_bars_views = static_bars_views,
+    pulses_posix = pulses_posix,
+    pulses_iso = pulses_iso,
+    metric_kernel = metric_kernel,
+    precomputed_features = precomputed_features,
+    runtime_projection = runtime_projection,
+    snapshot_hash = meta$snapshot_hash,
+    strategy_hash = strategy_hash
+  )
+  results <- if (workers <= 1L) {
+    lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
+  } else {
+    ledgr_sweep_eval_candidate_tasks_parallel(tasks, workers = workers)
   }
+  if (isTRUE(stop_on_error)) {
+    for (result in results) {
+      if (!is.null(result$error)) {
+        stop(result$error)
+      }
+    }
+  }
+  rows <- lapply(results, `[[`, "row")
 
   out <- tibble::as_tibble(do.call(rbind, rows))
   feature_union <- ledgr_sweep_feature_union(resolved$candidate_features)
@@ -671,6 +625,184 @@ ledgr_generate_sweep_id <- function() {
     time = ledgr_normalize_ts_utc(Sys.time())
   )
   paste0("sweep_", substr(digest::digest(canonical_json(payload), algo = "sha256"), 1L, 16L))
+}
+
+ledgr_sweep_candidate_tasks <- function(exp,
+                                        param_grid,
+                                        resolved,
+                                        seed,
+                                        bars_by_id,
+                                        bars_mat,
+                                        static_bars_views,
+                                        pulses_posix,
+                                        pulses_iso,
+                                        metric_kernel,
+                                        precomputed_features,
+                                        runtime_projection,
+                                        snapshot_hash,
+                                        strategy_hash) {
+  exp_payload <- ledgr_sweep_exp_payload(exp)
+  tasks <- vector("list", length(param_grid$params))
+  for (i in seq_along(param_grid$params)) {
+    label <- param_grid$labels[[i]]
+    raw_params <- param_grid$params[[i]]
+    tasks[[i]] <- list(
+      index = i,
+      exp = exp_payload,
+      run_id = label,
+      raw_params = raw_params,
+      params = ledgr_grid_candidate_strategy_params(raw_params),
+      feature_params = ledgr_grid_candidate_feature_params(raw_params),
+      execution_seed = if (is.null(seed)) {
+        NA_integer_
+      } else {
+        ledgr_derive_seed(seed, list(run_id = label, params = raw_params))
+      },
+      bars_by_id = bars_by_id,
+      bars_mat = bars_mat,
+      static_bars_views = static_bars_views,
+      pulses_posix = pulses_posix,
+      pulses_iso = pulses_iso,
+      metric_kernel = metric_kernel,
+      candidate = resolved$candidates[[i]],
+      candidate_feature_row = resolved$candidate_features[i, , drop = FALSE],
+      precomputed_features = precomputed_features,
+      runtime_projection = runtime_projection,
+      snapshot_hash = snapshot_hash,
+      strategy_hash = strategy_hash,
+      master_seed = seed
+    )
+  }
+  tasks
+}
+
+ledgr_sweep_exp_payload <- function(exp) {
+  list(
+    strategy = exp$strategy,
+    universe = exp$universe,
+    opening = exp$opening,
+    fill_model = exp$fill_model
+  )
+}
+
+ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
+  feature_row <- task$candidate_feature_row
+  if (identical(feature_row$status[[1]], "failed")) {
+    if (isTRUE(stop_on_error)) {
+      stop(task$candidate$error)
+    }
+    row <- ledgr_sweep_failure_row(
+      run_id = task$run_id,
+      params = task$params,
+      feature_params = task$feature_params,
+      execution_seed = task$execution_seed,
+      error_class = feature_row$error_class[[1]],
+      error_msg = feature_row$error_msg[[1]],
+      feature_fingerprints = feature_row$feature_fingerprints[[1]],
+      provenance = ledgr_sweep_provenance(
+        snapshot_hash = task$snapshot_hash,
+        strategy_hash = task$strategy_hash,
+        feature_set_hash = feature_row$feature_set_hash[[1]],
+        alias_map_json = feature_row$alias_map_json[[1]],
+        alias_map_hash = feature_row$alias_map_hash[[1]],
+        alias_map_version = feature_row$alias_map_version[[1]],
+        master_seed = task$master_seed
+      ),
+      warnings = list()
+    )
+    return(list(row = row, warnings = list(), error = task$candidate$error))
+  }
+
+  warnings <- list()
+  err <- NULL
+  row <- tryCatch(
+    withCallingHandlers(
+      ledgr_sweep_run_candidate(
+        exp = task$exp,
+        run_id = task$run_id,
+        params = task$params,
+        feature_params = task$feature_params,
+        execution_seed = task$execution_seed,
+        bars_by_id = task$bars_by_id,
+        bars_mat = task$bars_mat,
+        static_bars_views = task$static_bars_views,
+        pulses_posix = task$pulses_posix,
+        pulses_iso = task$pulses_iso,
+        metric_kernel = task$metric_kernel,
+        candidate = task$candidate,
+        candidate_feature_row = feature_row,
+        precomputed_features = task$precomputed_features,
+        runtime_projection = task$runtime_projection,
+        snapshot_hash = task$snapshot_hash,
+        strategy_hash = task$strategy_hash,
+        master_seed = task$master_seed
+      ),
+      warning = function(w) {
+        warnings <<- c(warnings, list(w))
+        invokeRestart("muffleWarning")
+      }
+    ),
+    error = function(e) {
+      err <<- e
+      if (isTRUE(stop_on_error)) {
+        stop(e)
+      }
+      ledgr_sweep_failure_row(
+        run_id = task$run_id,
+        params = task$raw_params,
+        execution_seed = task$execution_seed,
+        error_class = ledgr_condition_class(e),
+        error_msg = conditionMessage(e),
+        feature_fingerprints = feature_row$feature_fingerprints[[1]],
+        provenance = ledgr_sweep_provenance(
+          snapshot_hash = task$snapshot_hash,
+          strategy_hash = task$strategy_hash,
+          feature_set_hash = feature_row$feature_set_hash[[1]],
+          alias_map_json = feature_row$alias_map_json[[1]],
+          alias_map_hash = feature_row$alias_map_hash[[1]],
+          alias_map_version = feature_row$alias_map_version[[1]],
+          master_seed = task$master_seed
+        ),
+        warnings = warnings
+      )
+    }
+  )
+  row$warnings[[1]] <- warnings
+  list(row = row, warnings = warnings, error = err)
+}
+
+ledgr_sweep_eval_candidate_tasks_parallel <- function(tasks, workers) {
+  workers <- ledgr_parallel_workers_normalize(workers)
+  if (length(tasks) == 0L) {
+    return(list())
+  }
+  mirai <- getExportedValue("mirai", "mirai")
+  promises <- lapply(tasks, function(task) {
+    mirai(
+      {
+        get("ledgr_sweep_worker_eval_candidate_task", envir = asNamespace("ledgr"))(task)
+      },
+      task = task
+    )
+  })
+  lapply(seq_along(promises), function(i) {
+    result <- promises[[i]][]
+    if (inherits(result, "errorValue")) {
+      rlang::abort(
+        sprintf(
+          "Parallel worker failed before returning candidate '%s': %s",
+          tasks[[i]]$run_id,
+          as.character(result)
+        ),
+        class = c("ledgr_parallel_worker_failed", "ledgr_parallel_error")
+      )
+    }
+    result
+  })
+}
+
+ledgr_sweep_worker_eval_candidate_task <- function(task) {
+  ledgr_sweep_eval_candidate_task(task, stop_on_error = FALSE)
 }
 
 ledgr_sweep_run_candidate <- function(exp,

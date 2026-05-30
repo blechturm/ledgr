@@ -487,7 +487,7 @@ scope: mirai_backend
 Priority: P1
 Effort: XL
 Dependencies: LDG-2473
-Status: Pending
+Status: Completed
 
 ### Description
 

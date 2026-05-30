@@ -713,3 +713,23 @@ ledgr_abort_strategy_ambient_rng_for_resume <- function(preflight) {
     )
   )
 }
+
+ledgr_abort_strategy_ambient_rng_for_parallel <- function(preflight) {
+  symbols <- ledgr_strategy_preflight_ambient_rng_symbols(preflight)
+  if (length(symbols) == 0L) {
+    return(invisible(FALSE))
+  }
+  rlang::abort(
+    paste0(
+      "Refusing to run a parallel sweep for a strategy that reads ambient RNG state: ",
+      paste(symbols, collapse = ", "),
+      ". Parallel equivalence is guaranteed only for strategies deterministic in `(ctx, params)`. ",
+      "Use `ctx$pulse_seed` to derive pulse-specific stochastic inputs without reading `.Random.seed`."
+    ),
+    class = c(
+      "ledgr_strategy_ambient_rng_parallel",
+      "ledgr_strategy_ambient_rng_not_supported",
+      "ledgr_strategy_preflight_error"
+    )
+  )
+}

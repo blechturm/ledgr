@@ -198,11 +198,13 @@ ledgr_parallel_worker_setup <- function(workers = 1L,
   if (!isTRUE(dry_run)) {
     ledgr_parallel_mirai_start(workers)
     ledgr_parallel_mirai_everywhere_expr(
-      ledgr_parallel_ledgr_load_expr(source_path)
+      ledgr_parallel_ledgr_load_expr(source_path),
+      workers = workers
     )
     for (pkg in dependencies$attach) {
       ledgr_parallel_mirai_everywhere_expr(
-        ledgr_parallel_worker_attach_expr(pkg)
+        ledgr_parallel_worker_attach_expr(pkg),
+        workers = workers
       )
     }
   }
@@ -236,15 +238,42 @@ ledgr_parallel_worker_setup_plan <- function(workers,
 }
 
 ledgr_parallel_ledgr_source_path <- function() {
+  namespace_path <- tryCatch(getNamespaceInfo("ledgr", "path"), error = function(e) NULL)
+  if (is.character(namespace_path) &&
+      length(namespace_path) == 1L &&
+      !is.na(namespace_path) &&
+      nzchar(namespace_path)) {
+    if (ledgr_parallel_is_source_package_path(namespace_path)) {
+      return(normalizePath(namespace_path, winslash = "/", mustWork = FALSE))
+    }
+  }
   desc <- file.path(getwd(), "DESCRIPTION")
   if (!file.exists(desc)) {
     return(NULL)
   }
-  first <- tryCatch(readLines(desc, n = 5L, warn = FALSE), error = function(e) character())
-  if (any(grepl("^Package: ledgr$", first))) {
+  if (ledgr_parallel_is_source_package_path(getwd())) {
     return(normalizePath(getwd(), winslash = "/", mustWork = FALSE))
   }
   NULL
+}
+
+ledgr_parallel_is_source_package_path <- function(path) {
+  if (!is.character(path) ||
+      length(path) != 1L ||
+      is.na(path) ||
+      !nzchar(path)) {
+    return(FALSE)
+  }
+  desc <- file.path(path, "DESCRIPTION")
+  if (!file.exists(desc)) {
+    return(FALSE)
+  }
+  first <- tryCatch(readLines(desc, n = 5L, warn = FALSE), error = function(e) character())
+  if (!any(grepl("^Package: ledgr$", first))) {
+    return(FALSE)
+  }
+  r_dir <- file.path(path, "R")
+  dir.exists(r_dir) && length(list.files(r_dir, pattern = "[.][Rr]$", full.names = TRUE)) > 0L
 }
 
 ledgr_parallel_ledgr_load_action <- function(source_path) {
@@ -260,6 +289,10 @@ ledgr_parallel_ledgr_load_action <- function(source_path) {
 ledgr_parallel_ledgr_load_expr <- function(source_path) {
   substitute(
     {
+      .ledgr_lib_paths <- LIB_PATHS
+      if (is.character(.ledgr_lib_paths) && length(.ledgr_lib_paths) > 0L) {
+        .libPaths(unique(c(.ledgr_lib_paths, .libPaths())))
+      }
       .ledgr_source_path <- SOURCE_PATH
       if (is.character(.ledgr_source_path) &&
           length(.ledgr_source_path) == 1L &&
@@ -272,7 +305,7 @@ ledgr_parallel_ledgr_load_expr <- function(source_path) {
       }
       TRUE
     },
-    list(SOURCE_PATH = source_path %||% "")
+    list(SOURCE_PATH = source_path %||% "", LIB_PATHS = .libPaths())
   )
 }
 
@@ -296,8 +329,15 @@ ledgr_parallel_mirai_start <- function(workers) {
   invisible(TRUE)
 }
 
-ledgr_parallel_mirai_everywhere_expr <- function(expr) {
+ledgr_parallel_mirai_stop <- function() {
+  daemons <- getExportedValue("mirai", "daemons")
+  daemons(0L)
+  invisible(TRUE)
+}
+
+ledgr_parallel_mirai_everywhere_expr <- function(expr, workers = 1L) {
+  workers <- ledgr_parallel_workers_normalize(workers)
   everywhere <- getExportedValue("mirai", "everywhere")
-  eval(substitute(FUN(EXPR), list(FUN = everywhere, EXPR = expr)))
+  eval(substitute(FUN(EXPR, .min = WORKERS), list(FUN = everywhere, EXPR = expr, WORKERS = workers)))
   invisible(TRUE)
 }

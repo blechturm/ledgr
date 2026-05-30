@@ -113,7 +113,7 @@ tickets:
 
   - id: "LDG-2474"
     title: "Parallel Sweep Dispatch"
-    status: "pending"
+    status: "completed"
     priority: "P1"
     effort: "XL"
     dependencies:

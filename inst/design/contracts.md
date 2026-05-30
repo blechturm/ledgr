@@ -42,6 +42,11 @@ the active versioned spec packet, currently
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
+- Parallel sweep is candidate-level dispatch over the same fold core. Workers
+  return compact candidate result rows to the orchestrator; they must not write
+  candidate ledgers, equity curves, feature panels, run telemetry, or promotion
+  artifacts. The orchestrator owns row ordering, warning/error association,
+  result binding, and any durable writes.
 - Production entry into the fold core must be guarded by the Snapshot Contract
   trust boundary. Committed runs currently recompute and compare the sealed
   snapshot hash before fold construction; sweep evaluation currently validates

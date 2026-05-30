@@ -2,14 +2,16 @@
 % Please edit documentation in R/sweep.R
 \name{ledgr_sweep}
 \alias{ledgr_sweep}
-\title{Run a sequential parameter sweep}
+\title{Run a parameter sweep}
 \usage{
 ledgr_sweep(
   exp,
   param_grid,
   precomputed_features = NULL,
   seed = NULL,
-  stop_on_error = FALSE
+  stop_on_error = FALSE,
+  workers = 1L,
+  worker_packages = NULL
 )
 }
 \arguments{
@@ -24,6 +26,13 @@ receives a deterministic derived execution seed.}
 
 \item{stop_on_error}{Logical. When \code{FALSE}, candidate-level execution errors
 are captured as failed rows; when \code{TRUE}, they are rethrown.}
+
+\item{workers}{Whole-number worker count. The default \code{1} uses the
+sequential reference path. Values greater than \code{1} dispatch candidates
+through the optional \code{mirai} backend.}
+
+\item{worker_packages}{Optional character vector of packages to attach on
+parallel workers for unqualified package calls in strategy code.}
 }
 \value{
 A \code{ledgr_sweep_results} tibble.
@@ -68,9 +77,9 @@ assert with \code{inherits(e, "ledgr_strategy_error")} rather than exact
 class-vector equality.
 
 Current sweep mode intentionally does not ship automatic ranking,
-\code{ledgr_tune()}, parallel sweep, walk-forward/PBO/CSCV helpers, risk-layer
-insertion, public cost-model factories, paper/live adapters,
-intraday-specific support, or full sweep artifact persistence.
+\code{ledgr_tune()}, walk-forward/PBO/CSCV helpers, risk-layer insertion, public
+cost-model factories, paper/live adapters, intraday-specific support, or
+full sweep artifact persistence.
 }
 \section{Articles}{
 
