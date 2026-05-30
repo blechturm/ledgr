@@ -68,7 +68,7 @@ goal.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -107,6 +107,16 @@ ticket file, machine-readable ticket metadata, and batch plan.
 
 Manual packet review and `rg` checks for stale active-packet, deferred-scope,
 and legacy planning language.
+
+Completion note (2026-05-30): Committed the reviewed v0.1.8.8 planning packet,
+then aligned the design index and AGENTS active-context notes to the new packet.
+Rechecked the spec, tickets, YAML, batch plan, roadmap, horizon, README, and
+AGENTS entries for active-packet consistency. `tickets.yml` parses with exactly
+LDG-2468 through LDG-2477, and the new spec packet remains ASCII. The packet
+now clearly scopes parallel sweep dispatch/determinism, fold-core maintainer
+documentation/containment, and repo-local peer benchmarking while keeping
+compiled core, target risk, OMS, cost/liquidity, durable identity redesign,
+public distributed execution, and package-vignette benchmark claims deferred.
 
 ### Source Reference
 

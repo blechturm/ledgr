@@ -4,8 +4,8 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_8_7_spec_packet/`.
-**Active packet:** none cut.
-**Active packet path:** none.
+**Active packet:** `v0.1.8.8`.
+**Active packet path:** `inst/design/ledgr_v0_1_8_8_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC

@@ -30,8 +30,9 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.7 release; update this block when the next
-active packet is cut):
+Current planning context (v0.1.8.8 parallel dispatch and fold-core
+maintainability cycle; update this block when the release closes or scope
+changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -74,12 +75,26 @@ active packet is cut):
   wrapper, ADR 0004 dependency moves (`cli`/`R6` dropped, `collapse` added,
   `tibble` retained), and the sweep fast path / promotion materialization
   boundary.
-- No next packet is active yet. Keep parallel dispatch, target risk,
-  walk-forward, cost/liquidity, OMS,
-  benchmark, split stores, live data logs, point-in-time regressors, scaffold
-  generation, companion-repository implementation, external-provider work, and
-  broad collapse adoption deferred unless a new packet explicitly scopes a
-  bounded subset.
+- The v0.1.8.8 packet is the active implementation-planning packet:
+  `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_spec.md`,
+  `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_tickets.md`,
+  `inst/design/ledgr_v0_1_8_8_spec_packet/tickets.yml`, and
+  `inst/design/ledgr_v0_1_8_8_spec_packet/batch_plan.md`.
+- v0.1.8.8 scopes parallel sweep dispatch and determinism, fold-core
+  maintainer documentation / containment, and a repo-local reproducible peer
+  benchmark report under `dev/bench/`.
+- Sequential `ledgr_sweep()` remains the reference implementation. Parallelism
+  is candidate dispatch over the same fold core, not a second execution engine.
+- v0.1.8.8 binds deterministic-only resume/parallel RNG semantics with
+  `ctx$pulse_seed`, `mirai` as a suggested parallel backend with fail-loud
+  missing-backend behavior, hybrid worker dependency handling, an internal
+  typed execution-spec constructor, and a mechanical fold-core split paired
+  with documentation if behavior-neutral.
+- Keep target risk, walk-forward, cost/liquidity, OMS, split stores, live data
+  logs, point-in-time regressors, scaffold generation, companion-repository
+  implementation, external-provider work, broad collapse adoption, compiled
+  fold core, and package-vignette benchmark claims deferred unless the active
+  packet explicitly scopes a bounded subset.
 
 ## Active Design Entry Points
 
@@ -89,6 +104,10 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
+| Active v0.1.8.8 packet | `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_spec.md`, `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_tickets.md`, `inst/design/ledgr_v0_1_8_8_spec_packet/batch_plan.md` |
+| v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
+| v0.1.8.8 fold-core documentation | `inst/design/maintainer_review/fold_core_workbook.qmd`, `inst/design/maintainer_review/feature_value_path_workbook.qmd`, `inst/design/horizon.md` |
+| v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
 | v0.1.8.7 release record | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |

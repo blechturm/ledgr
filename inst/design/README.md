@@ -3,10 +3,10 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.7`.
-**Current active packet:** none cut.
-**Current active packet path:** none.
+**Current active packet:** `v0.1.8.8`.
+**Current active packet path:** `inst/design/ledgr_v0_1_8_8_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_8_7_spec_packet/` is an archival release
-record.
+record; v0.1.8.8 is the active implementation-planning packet.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -86,13 +86,11 @@ deferred to the horizon for a later RFC/spec cycle.
 - Primary synthesis:
   `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`.
 
-Parallel dispatch, target risk, walk-forward, public cost/liquidity APIs, OMS
-work, live data logs, point-in-time regressors, public benchmark dashboards, and
-broad collapse adoption remain deferred unless the v0.1.8.7 spec explicitly
-scopes a bounded subset. v0.1.8.7 may adopt `collapse` only behind the
-deterministic wrapper and only for measured hot frames.
-Auditr-report bugfix intake is also deferred to the next version after prompt
-fixes in the auditr repository.
+Target risk, walk-forward, public cost/liquidity APIs, OMS work, live data
+logs, point-in-time regressors, public benchmark dashboards, and broad collapse
+adoption remain deferred unless a later active packet explicitly scopes a
+bounded subset. Auditr-report bugfix intake is also deferred until a future
+packet routes it.
 
 The v0.1.8.7 packet is complete. It shipped Optimization Round 2 and explicit
 legacy execution cleanup: modern execution is snapshot-backed and
@@ -115,6 +113,25 @@ wrapper, and fast-sweep versus promotion/materialization artifact boundary.
   `collapse_optimization_map.md`,
   `spikes/ledgr_optimization_round_spike/README.md`, and
   `adr/0004-dependency-footprint-and-strategy-interface.md`.
+
+The v0.1.8.8 packet is active. It scopes parallel sweep dispatch and
+determinism, fold-core maintainer documentation / containment, and a
+repo-local reproducible peer benchmark report. Sequential sweep remains the
+reference implementation; parallelism is candidate dispatch over the same fold
+core. The packet also binds deterministic-only resume/parallel RNG semantics
+with `ctx$pulse_seed`, an internal typed execution-spec constructor, and a
+mechanical fold-core split paired with documentation if behavior-neutral.
+
+- Spec: `ledgr_v0_1_8_8_spec_packet/v0_1_8_8_spec.md`.
+- Tickets: `ledgr_v0_1_8_8_spec_packet/v0_1_8_8_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_8_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_8_8_spec_packet/batch_plan.md`.
+- Key inputs:
+  `spikes/ledgr_parallelism_spike/summary_report.md`,
+  `spikes/ledgr_parallelism_spike/architecture_synthesis.md`,
+  `architecture/ledgr_v0_1_8_sweep_architecture.md`,
+  `maintainer_review/fold_core_workbook.qmd`, and
+  `ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
 
 ## Core Documents
 
@@ -141,7 +158,10 @@ load-bearing for future sweep and fold-core work.
 - `architecture/sweep_mode_code_review.md`
 - `architecture/ledgr_feature_map_ux.md`
 - `architecture/fold_core_trust_boundary.md`
+- `architecture/ledgr_v0_1_8_sweep_architecture.md`
 - `collapse_optimization_map.md`
+- `spikes/ledgr_parallelism_spike/summary_report.md`
+- `spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `spikes/ledgr_optimization_round_spike/README.md`
 
 ## Accepted Design Decisions
