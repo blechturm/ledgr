@@ -6,6 +6,8 @@ ledgr_pulse_context <- function(run_id,
                                 positions = numeric(),
                                 cash,
                                 equity,
+                                seed = NULL,
+                                pulse_seed = NULL,
                                 state_prev = NULL,
                                 safety_state = "GREEN") {
   ctx <- list(
@@ -20,6 +22,8 @@ ledgr_pulse_context <- function(run_id,
     positions = positions,
     cash = cash,
     equity = equity,
+    seed = seed,
+    pulse_seed = pulse_seed,
     state_prev = state_prev,
     safety_state = safety_state
   )
@@ -742,6 +746,21 @@ ledgr_validate_pulse_context <- function(ctx) {
   if (!is.numeric(ctx$equity) || length(ctx$equity) != 1 || is.na(ctx$equity) || !is.finite(ctx$equity)) {
     rlang::abort("PulseContext `equity` must be a finite numeric scalar.", class = "ledgr_invalid_pulse_context")
   }
+
+  validate_optional_seed <- function(x, label) {
+    if (is.null(x)) {
+      return(invisible(TRUE))
+    }
+    if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x) || x %% 1 != 0) {
+      rlang::abort(
+        sprintf("PulseContext `%s` must be NULL or an integer-like scalar.", label),
+        class = "ledgr_invalid_pulse_context"
+      )
+    }
+    invisible(TRUE)
+  }
+  validate_optional_seed(ctx$seed, "seed")
+  validate_optional_seed(ctx$pulse_seed, "pulse_seed")
 
   if (!is.null(ctx$state_prev)) {
     if (!(is.list(ctx$state_prev) || (is.character(ctx$state_prev) && length(ctx$state_prev) == 1))) {

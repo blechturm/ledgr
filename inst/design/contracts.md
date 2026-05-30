@@ -316,9 +316,16 @@ the active versioned spec packet, currently
   strategies, S3/S4/R6 runtime state, `<<-`, and closures that mutate captured
   environments.
 - The minimum `ledgr_strategy_preflight` result contract contains `tier`,
-  `allowed`, `reason`, `unresolved_symbols`, `package_dependencies`, and
-  `notes`, and has class `ledgr_strategy_preflight`. `allowed` is `TRUE` for
+  `allowed`, `reason`, `unresolved_symbols`, `package_dependencies`,
+  `ambient_rng_symbols`, and `notes`, and has class
+  `ledgr_strategy_preflight`. `allowed` is `TRUE` for
   `tier_1` and `tier_2`, and `FALSE` for `tier_3`.
+- Ambient strategy RNG calls such as `runif()`, `rnorm()`, and `sample()` are
+  Tier 2 for ordinary sequential runs, but they are not certified for resume
+  or parallel equivalence. Resume and parallel equivalence are guaranteed only
+  for strategies deterministic in `(ctx, params)`. Strategies needing
+  pulse-specific stochastic inputs in those paths should derive them from
+  `ctx$pulse_seed`, not from ambient `.Random.seed`.
 - Sweep mode inherits the public preflight semantics. Sweep may accept Tier 1
   and Tier 2 strategies, but Tier 3 strategies must be rejected before
   execution.

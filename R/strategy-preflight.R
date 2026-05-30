@@ -28,8 +28,12 @@
 #' context mutation such as `attr(ctx, "secret") <- 1`.
 #'
 #' Ambient strategy RNG calls such as `runif(1)` are Tier 2 under the execution
-#' seed contract. Custom indicator generation has a stricter deterministic
-#' feature contract; do not infer indicator RNG policy from strategy preflight.
+#' seed contract for ordinary sequential runs, but they are not certified for
+#' resume or parallel equivalence. Strategies that need pulse-specific
+#' stochastic inputs in those paths should derive them from `ctx$pulse_seed`
+#' without reading ambient `.Random.seed`. Custom indicator generation has a
+#' stricter deterministic feature contract; do not infer indicator RNG policy
+#' from strategy preflight.
 #'
 #' @param strategy A function with signature `function(ctx, params)`.
 #' @return A `ledgr_strategy_preflight` object with fields `tier`, `allowed`,
@@ -59,6 +63,7 @@ ledgr_strategy_preflight <- function(strategy) {
         reason = "`ledgr_signal_strategy()` wrappers capture an inner signal function and quantity settings.",
         unresolved_symbols = character(),
         package_dependencies = character(),
+        ambient_rng_symbols = character(),
         notes = "`ledgr_signal_strategy()` is an explicit compatibility wrapper; inspect the original signal function for full reproducibility."
       ),
       class = "ledgr_strategy_preflight"
@@ -148,6 +153,7 @@ ledgr_strategy_preflight <- function(strategy) {
       reason = reason,
       unresolved_symbols = unresolved_symbols,
       package_dependencies = package_dependencies,
+      ambient_rng_symbols = ambient_rng_symbols,
       notes = notes
     ),
     class = "ledgr_strategy_preflight"
@@ -575,5 +581,37 @@ ledgr_abort_strategy_preflight <- function(preflight) {
       " There is no force override on `ledgr_run()` or `ledgr_sweep()`."
     ),
     class = c("ledgr_strategy_tier3", "ledgr_strategy_preflight_error")
+  )
+}
+
+ledgr_strategy_preflight_ambient_rng_symbols <- function(preflight) {
+  symbols <- preflight$ambient_rng_symbols
+  if (is.null(symbols)) {
+    return(character())
+  }
+  sort(unique(as.character(symbols)))
+}
+
+ledgr_strategy_preflight_uses_ambient_rng <- function(preflight) {
+  length(ledgr_strategy_preflight_ambient_rng_symbols(preflight)) > 0L
+}
+
+ledgr_abort_strategy_ambient_rng_for_resume <- function(preflight) {
+  symbols <- ledgr_strategy_preflight_ambient_rng_symbols(preflight)
+  if (length(symbols) == 0L) {
+    return(invisible(FALSE))
+  }
+  rlang::abort(
+    paste0(
+      "Refusing to resume a strategy that reads ambient RNG state: ",
+      paste(symbols, collapse = ", "),
+      ". Resume equivalence is guaranteed only for strategies deterministic in `(ctx, params)`. ",
+      "Use `ctx$pulse_seed` to derive pulse-specific stochastic inputs without reading `.Random.seed`."
+    ),
+    class = c(
+      "ledgr_strategy_ambient_rng_resume",
+      "ledgr_strategy_ambient_rng_not_supported",
+      "ledgr_strategy_preflight_error"
+    )
   )
 }

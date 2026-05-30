@@ -186,6 +186,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
         cash = state$cash,
         equity = state$cash + positions_value,
         seed = execution_seed,
+        pulse_seed = ledgr_derive_pulse_seed(execution_seed, i),
         state_prev = state_prev_mem,
         safety_state = "GREEN"
       )

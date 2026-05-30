@@ -57,7 +57,7 @@ tickets:
 
   - id: "LDG-2471"
     title: "RNG Resume And Pulse-Seed Contract"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:

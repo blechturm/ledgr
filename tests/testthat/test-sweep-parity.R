@@ -396,6 +396,43 @@ testthat::test_that("seeded stochastic sweep promotion reproduces the selected c
   testthat::expect_equal(context$candidate_summary[[1]]$final_equity, results$final_equity[[1]], tolerance = 0)
 })
 
+testthat::test_that("pulse_seed sweep promotion reproduces the selected candidate", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  snapshot <- ledgr_snapshot_from_df(ledgr_parity_bars(), db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (!is.null(ctx$pulse_seed) && (ctx$pulse_seed %% params$modulus) == 0L) {
+      targets["AAA"] <- params$qty
+    }
+    targets
+  }
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    opening = ledgr_opening(cash = 10000),
+    universe = "AAA"
+  )
+  grid <- ledgr_param_grid(candidate = list(qty = 3, modulus = 3L))
+
+  results <- ledgr_sweep(exp, grid, seed = 123L)
+  candidate <- ledgr_candidate(results, "candidate")
+  promoted <- suppressWarnings(ledgr_promote(exp, candidate, run_id = "pulse-seed-promoted"))
+  direct <- suppressWarnings(ledgr_run(
+    exp,
+    params = candidate$params,
+    run_id = "pulse-seed-direct",
+    seed = candidate$execution_seed
+  ))
+  on.exit(close(promoted), add = TRUE)
+  on.exit(close(direct), add = TRUE)
+
+  ledgr_expect_sweep_row_matches_run(results[1, , drop = FALSE], promoted)
+  ledgr_expect_run_artifacts_identical(promoted, direct)
+})
+
 testthat::test_that("feature-factory sweep parity covers candidate-varying feature sets and warmup", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

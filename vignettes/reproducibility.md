@@ -388,13 +388,26 @@ base/recommended namespace. They are not package dependencies outside
 the active R distribution.
 
 Ambient strategy RNG calls such as `runif(1)` are a separate case. They
-are allowed as Tier 2 because ledgrâ€™s execution seed contract can make
-the strategy run repeatable, but they still deserve scrutiny because the
-random draw is a decision input. This is different from custom-indicator
-RNG restrictions: feature generation must be deterministic for a given
-snapshot and feature definition. Prefer making random decisions explicit
-in the research design. A seeded RNG call may be repeatable, but it is
-still part of the decision process.
+are allowed as Tier 2 for ordinary sequential runs because ledgrâ€™s
+execution seed contract can make a continuous strategy run repeatable,
+but they are not certified for resume or parallel equivalence. A resumed
+run reconstructs positions and cash from events; it does not restore
+`.Random.seed` to the exact point a continuous run would have reached
+before the next pulse.
+
+Strategies that need pulse-specific stochastic inputs in resume-safe or
+parallel-safe paths should derive those inputs from `ctx$pulse_seed`. The
+field is a stable integer derived from the execution seed and the 1-based
+pulse position in the runâ€™s pulse sequence, so it does not depend on
+worker order, timestamps, event sequence numbers, or ambient RNG state.
+`ctx$seed` remains the per-execution seed; `ctx$pulse_seed` is the
+per-pulse derivative.
+
+This is different from custom-indicator RNG restrictions: feature
+generation must be deterministic for a given snapshot and feature
+definition. Prefer making random decisions explicit in the research
+design. A seeded decision may be repeatable, but it is still part of the
+decision process.
 
 ## Hidden Mutable State
 

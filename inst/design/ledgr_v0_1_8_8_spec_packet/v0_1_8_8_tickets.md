@@ -286,7 +286,7 @@ scope: current_source_profile
 Priority: P0
 Effort: L
 Dependencies: LDG-2468
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -322,6 +322,15 @@ resume-stable, worker-stable randomness without reading ambient `.Random.seed`.
 
 Targeted seed, resume, sweep, preflight, and pulse-context tests. Add fixtures
 for `ctx$pulse_seed` reproducibility and ambient-RNG fail-loud behavior.
+
+Completion note (2026-05-30): added internal `ledgr_derive_pulse_seed()` as a
+`ledgr_derive_seed()` derivative under `ledgr_seed_v1`; exposed
+`ctx$pulse_seed` while preserving `ctx$seed`; added structured
+`ambient_rng_symbols` to strategy preflight; made ambient-RNG strategies fail
+loudly on resume with `ctx$pulse_seed` migration guidance; and updated
+contracts, help, and reproducibility docs. Targeted seed, preflight, resume,
+sweep parity, sweep, pulse-context, runner, and documentation-contract tests
+passed. External review approved the batch with no blocking findings.
 
 ### Source Reference
 

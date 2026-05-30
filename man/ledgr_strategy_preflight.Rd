@@ -45,8 +45,12 @@ forbidden calls include direct wall-clock/process-environment calls such as
 context mutation such as \code{attr(ctx, "secret") <- 1}.
 
 Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
-seed contract. Custom indicator generation has a stricter deterministic
-feature contract; do not infer indicator RNG policy from strategy preflight.
+seed contract for ordinary sequential runs, but they are not certified for
+resume or parallel equivalence. Strategies that need pulse-specific stochastic
+inputs in those paths should derive them from \code{ctx$pulse_seed} without
+reading ambient \code{.Random.seed}. Custom indicator generation has a stricter
+deterministic feature contract; do not infer indicator RNG policy from strategy
+preflight.
 }
 \section{Articles}{
 

@@ -29,3 +29,29 @@ ledgr_derive_seed <- function(base_seed, salt) {
   seed <- (sum(as.numeric(values) * weights) %% 2147483647) + 1
   as.integer(seed)
 }
+
+ledgr_derive_pulse_seed <- function(execution_seed, pulse_idx) {
+  if (is.null(execution_seed)) {
+    return(NULL)
+  }
+  execution_seed <- ledgr_seed_normalize(
+    execution_seed,
+    arg = "execution_seed",
+    allow_null = FALSE
+  )
+  if (!is.numeric(pulse_idx) ||
+      length(pulse_idx) != 1L ||
+      is.na(pulse_idx) ||
+      !is.finite(pulse_idx) ||
+      pulse_idx < 1L ||
+      pulse_idx %% 1 != 0) {
+    rlang::abort(
+      "`pulse_idx` must be a positive integer-like scalar.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  ledgr_derive_seed(
+    execution_seed,
+    list(scope = "pulse", pulse_idx = as.integer(pulse_idx))
+  )
+}

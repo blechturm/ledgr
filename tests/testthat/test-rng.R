@@ -10,3 +10,22 @@ testthat::test_that("ledgr_derive_seed is stable and independent of ambient RNG"
   testthat::expect_true(first <= 2147483647L)
   testthat::expect_identical(first, 350931654L)
 })
+
+testthat::test_that("ledgr_derive_pulse_seed is stable and independent of ambient RNG", {
+  set.seed(1)
+  first <- ledgr:::ledgr_derive_pulse_seed(350931654L, 3L)
+  stats::runif(10)
+  second <- ledgr:::ledgr_derive_pulse_seed(350931654L, 3L)
+  adjacent <- ledgr:::ledgr_derive_pulse_seed(350931654L, 4L)
+
+  testthat::expect_identical(first, second)
+  testthat::expect_false(identical(first, adjacent))
+  testthat::expect_type(first, "integer")
+  testthat::expect_true(first >= 1L)
+  testthat::expect_true(first <= 2147483647L)
+  testthat::expect_null(ledgr:::ledgr_derive_pulse_seed(NULL, 1L))
+  testthat::expect_error(
+    ledgr:::ledgr_derive_pulse_seed(350931654L, 0L),
+    class = "ledgr_invalid_args"
+  )
+})

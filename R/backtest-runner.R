@@ -877,6 +877,10 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }
   strategy_params <- strategy$params
   strategy_call_signature <- strategy$signature
+  strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
+  if (is_resume) {
+    ledgr_abort_strategy_ambient_rng_for_resume(strategy_preflight)
+  }
 
   pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
   pulses_posix <- as.POSIXct(pulses, tz = "UTC")
