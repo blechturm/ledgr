@@ -95,3 +95,18 @@ Modes:
 The isolated view timing is the one to use for schema-only versus full-long
 materialization cost. The benchmark `t_residual_sec` column is deliberately a
 broad wall-minus-pre-minus-loop residual and includes wrapper/read-back work.
+
+## Parallel Sweep Measurement
+
+Batch 7 uses a parallel sweep attribution harness:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/parallel_sweep_measurement.R --preset smoke --repeats 1 --warmup 0
+```
+
+The harness writes raw rows, summary rows, environment metadata, combined JSON,
+and a compact Markdown summary under `dev/bench/results/`. It measures
+worker-setup overhead separately from full `ledgr_sweep()` wall time, varies
+candidate counts and worker counts, and checks each worker-backed result against
+the sequential reference for the same workload. Rows are current-source,
+local-host, and machine-specific; they are not public speedup claims.

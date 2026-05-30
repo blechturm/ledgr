@@ -546,7 +546,7 @@ scope: candidate_dispatch
 Priority: P1
 Effort: L
 Dependencies: LDG-2474
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -581,6 +581,20 @@ overhead and parallel crossover points.
 
 Interrupt tests/manual verification, benchmark output review, result-file
 review, and documentation/closeout review.
+
+Completion note (2026-05-30): implemented the v0.1.8.8 discard-all interrupt
+contract for worker-backed sweep collection with structured
+`ledgr_parallel_sweep_interrupted` errors and backend cleanup. Documented the
+contract in `ledgr_sweep()` help and `inst/design/contracts.md`. Added
+`dev/bench/parallel_sweep_measurement.R` to measure worker setup overhead,
+candidate-count scaling inputs, worker-count rows, cheap-SMA and feature-heavy
+workloads, sequential/parallel equality, and environment metadata. Ran the
+smoke harness on the local Windows host; all worker-backed rows matched the
+sequential reference, and no crossover was observed for the tiny candidate
+counts measured. Raw local result files were written under ignored
+`dev/bench/results/`, and the closeout summary was recorded in
+`parallel_sweep_measurement_closeout.md`. Targeted parallel sweep and contract
+documentation tests passed.
 
 ### Source Reference
 

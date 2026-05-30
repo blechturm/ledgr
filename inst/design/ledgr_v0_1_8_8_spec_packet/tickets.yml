@@ -132,7 +132,7 @@ tickets:
 
   - id: "LDG-2475"
     title: "Interrupt Semantics And Parallel Measurement"
-    status: "pending"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:

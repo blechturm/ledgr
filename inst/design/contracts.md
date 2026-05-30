@@ -47,6 +47,12 @@ the active versioned spec packet, currently
   candidate ledgers, equity curves, feature panels, run telemetry, or promotion
   artifacts. The orchestrator owns row ordering, warning/error association,
   result binding, and any durable writes.
+- Parallel sweep interruption is discard-all in v0.1.8.8. If a worker-backed
+  sweep is interrupted before all candidate results return, ledgr must stop the
+  worker backend where possible and throw a structured
+  `ledgr_parallel_sweep_interrupted` error. It must not return a partial sweep
+  table or partially promotable candidate result; partial-result recovery
+  requires a future explicit contract.
 - Production entry into the fold core must be guarded by the Snapshot Contract
   trust boundary. Committed runs currently recompute and compare the sealed
   snapshot hash before fold construction; sweep evaluation currently validates

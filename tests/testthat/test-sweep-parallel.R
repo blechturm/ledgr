@@ -196,3 +196,37 @@ testthat::test_that("parallel sweep rejects ambient RNG strategies", {
   testthat::expect_s3_class(err, "ledgr_strategy_preflight_error")
   testthat::expect_match(conditionMessage(err), "ctx$pulse_seed", fixed = TRUE)
 })
+
+testthat::test_that("parallel task interruption discards partial results", {
+  stopped <- FALSE
+  tasks <- list(
+    list(run_id = "first"),
+    list(run_id = "second")
+  )
+  submit <- function(task) task
+  value <- function(promise) {
+    signalCondition(structure(
+      list(message = "simulated interrupt", call = NULL),
+      class = c("interrupt", "condition")
+    ))
+    list(row = NULL, warnings = list(), error = NULL)
+  }
+  cleanup <- function() {
+    stopped <<- TRUE
+  }
+
+  err <- testthat::capture_error(
+    ledgr:::ledgr_sweep_eval_candidate_tasks_parallel(
+      tasks = tasks,
+      workers = 2L,
+      submit = submit,
+      value = value,
+      cleanup = cleanup
+    )
+  )
+
+  testthat::expect_s3_class(err, "ledgr_parallel_sweep_interrupted")
+  testthat::expect_s3_class(err, "ledgr_parallel_error")
+  testthat::expect_match(conditionMessage(err), "Discarding partial worker results", fixed = TRUE)
+  testthat::expect_true(stopped)
+})

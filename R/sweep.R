@@ -54,6 +54,11 @@
 #' assert with `inherits(e, "ledgr_strategy_error")` rather than exact
 #' class-vector equality.
 #'
+#' Parallel sweep interruption is discard-all in v0.1.8.8. If a parallel sweep
+#' is interrupted before all workers return, ledgr stops the worker backend and
+#' throws `ledgr_parallel_sweep_interrupted`; no partially promotable sweep
+#' result is returned. Partial-result recovery is intentionally deferred.
+#'
 #' Current sweep mode intentionally does not ship automatic ranking,
 #' `ledgr_tune()`, walk-forward/PBO/CSCV helpers, risk-layer insertion, public
 #' cost-model factories, paper/live adapters, intraday-specific support, or
@@ -771,34 +776,62 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
   list(row = row, warnings = warnings, error = err)
 }
 
-ledgr_sweep_eval_candidate_tasks_parallel <- function(tasks, workers) {
+ledgr_sweep_eval_candidate_tasks_parallel <- function(tasks,
+                                                      workers,
+                                                      submit = NULL,
+                                                      value = NULL,
+                                                      cleanup = ledgr_parallel_mirai_stop) {
   workers <- ledgr_parallel_workers_normalize(workers)
   if (length(tasks) == 0L) {
     return(list())
   }
-  mirai <- getExportedValue("mirai", "mirai")
-  promises <- lapply(tasks, function(task) {
-    mirai(
-      {
-        get("ledgr_sweep_worker_eval_candidate_task", envir = asNamespace("ledgr"))(task)
-      },
-      task = task
-    )
-  })
-  lapply(seq_along(promises), function(i) {
-    result <- promises[[i]][]
-    if (inherits(result, "errorValue")) {
-      rlang::abort(
-        sprintf(
-          "Parallel worker failed before returning candidate '%s': %s",
-          tasks[[i]]$run_id,
-          as.character(result)
-        ),
-        class = c("ledgr_parallel_worker_failed", "ledgr_parallel_error")
+  if (is.null(submit)) {
+    mirai <- getExportedValue("mirai", "mirai")
+    submit <- function(task) {
+      mirai(
+        {
+          get("ledgr_sweep_worker_eval_candidate_task", envir = asNamespace("ledgr"))(task)
+        },
+        task = task
       )
     }
-    result
+  }
+  if (is.null(value)) {
+    value <- function(promise) promise[]
+  }
+  tryCatch({
+    promises <- lapply(tasks, submit)
+    lapply(seq_along(promises), function(i) {
+      result <- value(promises[[i]])
+      if (inherits(result, "errorValue")) {
+        rlang::abort(
+          sprintf(
+            "Parallel worker failed before returning candidate '%s': %s",
+            tasks[[i]]$run_id,
+            as.character(result)
+          ),
+          class = c("ledgr_parallel_worker_failed", "ledgr_parallel_error")
+        )
+      }
+      result
+    })
+  }, interrupt = function(e) {
+    if (is.function(cleanup)) {
+      try(cleanup(), silent = TRUE)
+    }
+    ledgr_abort_parallel_sweep_interrupted(e)
   })
+}
+
+ledgr_abort_parallel_sweep_interrupted <- function(parent = NULL) {
+  rlang::abort(
+    paste0(
+      "Parallel sweep interrupted before all candidates completed. ",
+      "Discarding partial worker results; no promotable sweep result was returned."
+    ),
+    class = c("ledgr_parallel_sweep_interrupted", "ledgr_parallel_error"),
+    parent = parent
+  )
 }
 
 ledgr_sweep_worker_eval_candidate_task <- function(task) {

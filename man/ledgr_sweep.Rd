@@ -76,6 +76,11 @@ failed candidates. When \code{stop_on_error = TRUE} rethrows a strategy failure,
 assert with \code{inherits(e, "ledgr_strategy_error")} rather than exact
 class-vector equality.
 
+Parallel sweep interruption is discard-all in v0.1.8.8. If a parallel sweep
+is interrupted before all workers return, ledgr stops the worker backend and
+throws \code{ledgr_parallel_sweep_interrupted}; no partially promotable sweep
+result is returned. Partial-result recovery is intentionally deferred.
+
 Current sweep mode intentionally does not ship automatic ranking,
 \code{ledgr_tune()}, walk-forward/PBO/CSCV helpers, risk-layer insertion, public
 cost-model factories, paper/live adapters, intraday-specific support, or
