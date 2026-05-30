@@ -1183,6 +1183,8 @@ ledgr_sweep_telemetry_env <- function() {
   telemetry$t_state <- numeric()
   telemetry$t_feats <- numeric()
   telemetry$t_strat <- numeric()
+  telemetry$t_target <- numeric()
+  telemetry$t_event <- numeric()
   telemetry$t_exec <- numeric()
   telemetry$feature_cache_hits <- 0L
   telemetry$feature_cache_misses <- 0L

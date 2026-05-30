@@ -129,6 +129,28 @@ collapse pass from package capability alone; require a named hot frame, a
 deterministic-wrapper boundary for value-bearing operations, and parity fixtures
 that cover durable and sweep event streams.
 
+v0.1.8.8 Batch 2 ran that first diagnostic locally with per-pulse telemetry
+sampling (`control$telemetry_stride = 1`). Treat the numbers as local,
+current-source, machine-specific attribution only; the full-stride telemetry
+adds overhead, so this is not a new speed claim. On the TTR-backed
+`peer_sma_crossover` shape (500 instruments x 1260 pulses x 2 features),
+measured fold-loop bucket shares were: target/order conversion about 34.6%,
+event emission about 27.6%, unattributed loop overhead about 22.9%,
+bar-read/mark-to-market about 10.0%, fill resolution about 2.0%, state update
+about 1.7%, context build about 0.9%, strategy callback about 0.3%, and feature
+view read effectively zero. On the wide no-feature/no-trade shape, the visible
+cost was mostly target/order conversion (~41.9%), unattributed loop overhead
+(~43.6%), and bar-read/mark-to-market (~14.1%).
+
+Implications to preserve for future work: target/order conversion needs a named
+profile of target validation, per-instrument delta scanning, next-bar lookup,
+and proposal construction before any rewrite; event emission remains the main
+turnover-specific R bucket after B0, but further handler work must prove exact
+event-stream parity; and the wide no-trade result points at interpreted
+per-instrument scanning/loop overhead, which is more likely a primitive-contract
+or compiled-core lever than a small collapse substitution. Context construction
+and the strategy callback are not the lead buckets on these shapes.
+
 This entry records direction, not committed work.
 
 ### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton

@@ -40,7 +40,7 @@ tickets:
 
   - id: "LDG-2470"
     title: "Fold-Loop Diagnostic Profile"
-    status: "pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -148,22 +148,28 @@ tickets:
       - "parallel_closeout_review"
 
   - id: "LDG-2476"
-    title: "Repo-Local Peer Benchmark Report"
+    title: "Repo-Local Peer Benchmark And Parity Report"
     status: "pending"
     priority: "P2"
-    effort: "L"
+    effort: "XL"
     dependencies:
       - "LDG-2468"
     classification:
       type: "benchmark_documentation"
       surface: "dev_bench"
-      scope: "repo_local_peer_report"
+      scope: "repo_local_peer_report_and_internal_parity_check"
     tests:
       - "quarto_report_render_or_dry_run"
       - "peer_harness_smoke_or_record"
       - "python_uv_environment_check"
       - "result_metadata_review"
       - "comparability_language_review"
+      - "per_bar_equity_curve_parity_check"
+      - "top_line_metric_parity_check"
+      - "trade_level_parity_check"
+      - "divergence_attribution_review"
+      - "parity_history_atomic_append_check"
+      - "three_source_attribution_rule_review"
 
   - id: "LDG-2478"
     title: "Internal Maintainer Manual Skeleton And Stale-Doc Cleanup"

@@ -36,6 +36,53 @@ testthat::test_that("successful runs persist compact telemetry and print executi
   testthat::expect_true(any(grepl("Persist Features:", printed_info, fixed = TRUE)))
 })
 
+testthat::test_that("diagnostic fold-loop telemetry records sampled buckets", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets[[ctx$universe[[1L]]]] <- 1
+    targets
+  }
+
+  bt <- ledgr_backtest(
+    data = test_bars,
+    strategy = strategy,
+    start = "2020-01-01",
+    end = "2020-01-05",
+    db_path = db_path,
+    run_id = "telemetry-buckets",
+    persist_features = FALSE,
+    control = list(telemetry_stride = 1L)
+  )
+  on.exit(close(bt), add = TRUE)
+
+  bench <- ledgr_backtest_bench(bt)
+  telemetry <- ledgr:::ledgr_get_run_telemetry(bt$run_id)
+  expected <- c(
+    "t_pulse",
+    "t_bars",
+    "t_ctx",
+    "t_fill",
+    "t_state",
+    "t_feats",
+    "t_strat",
+    "t_target",
+    "t_event",
+    "t_exec"
+  )
+  testthat::expect_true(all(expected %in% bench$component))
+  testthat::expect_gt(length(telemetry$t_pulse), 0L)
+  testthat::expect_equal(
+    telemetry$t_exec,
+    telemetry$t_target + telemetry$t_fill + telemetry$t_event + telemetry$t_state
+  )
+  sampled <- bench[bench$component %in% expected, , drop = FALSE]
+  testthat::expect_true(all(is.finite(sampled$mean)))
+  testthat::expect_true(bench$mean[bench$component == "t_pulse"] >= 0)
+})
+
 testthat::test_that("failed runs persist minimum telemetry diagnostics", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

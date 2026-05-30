@@ -1003,6 +1003,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   telemetry$t_state <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
   telemetry$t_feats <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
   telemetry$t_strat <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_target <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
+  telemetry$t_event <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
   telemetry$t_exec <- if (telemetry_cap > 0) rep(NA_real_, telemetry_cap) else numeric(0)
   telemetry$feature_cache_hits <- 0L
   telemetry$feature_cache_misses <- 0L

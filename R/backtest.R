@@ -1635,6 +1635,8 @@ ledgr_backtest_bench <- function(bt) {
     "t_state",
     "t_feats",
     "t_strat",
+    "t_target",
+    "t_event",
     "t_exec",
     "feature_cache_hits",
     "feature_cache_misses"

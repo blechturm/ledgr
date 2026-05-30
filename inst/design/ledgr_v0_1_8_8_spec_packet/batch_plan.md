@@ -268,20 +268,25 @@ Review focus:
 
 ---
 
-## Batch 8: Repo-Local Peer Benchmark Report
+## Batch 8: Repo-Local Peer Benchmark And Parity Report
 
 Tickets:
 
-- `LDG-2476` Repo-Local Peer Benchmark Report
+- `LDG-2476` Repo-Local Peer Benchmark And Parity Report
 
 Purpose:
 
 Create the repo-local Quarto benchmark report and `uv`-managed Python peer
-environment. This is valuable but separable if the cycle becomes too wide.
+environment. The report has two purposes: same-host wall-time comparison and
+an internal cross-engine parity sanity check on equity curves, derived
+metrics, and trade-level outputs. This is valuable but separable if the cycle
+becomes too wide.
 
 Review focus:
 
 - The report lives under `dev/bench/`, not package vignettes or pkgdown.
+- The parity check is an internal building-phase sanity check, not a
+  marketing artifact; no user-facing or release-note claims ride this ticket.
 - Required rows: ledgr canonical TTR, ledgr built-in SMA diagnostic,
   quantstrat, Backtrader.
 - Backtrader runs through a `uv`-managed Python environment.
@@ -296,7 +301,29 @@ Review focus:
   paradigm note.
 - `dev/bench/peer_comparison.md` points to the new report as the current
   artifact.
-- Empirical closeout includes a render/dry-run and result/comparability review.
+- Each required peer emits a canonical-schema equity curve. Fills and trade
+  tables are emitted where the peer exposes comparable data; missing surfaces
+  are labeled with unavailable metadata.
+- Tier 1 per-bar parity is computed: equity-curve correlation, cash trajectory
+  match, per-instrument position match, daily-return correlation.
+- Tier 2 derived top-line parity is computed: total return, annualized return,
+  volatility, Sharpe ratio, max drawdown.
+- Tier 3 trade-level parity is computed for peers that emit comparable trade
+  data; missing trade data is labeled, not silently dropped.
+- Every residual divergence is attributed to one of six documented sources:
+  indicator initialization, fill timing, cost/margin defaults, position-sizing
+  rounding, timestamp alignment, float ordering.
+- The three-source attribution rule is documented in the report: when a
+  parity check fails, candidates are ledgr / peer / harness; default mental
+  move considers all three, not ledgr first.
+- Parity history is appended atomically under
+  `dev/bench/results/parity_history/` per release tag.
+- One failing parity check is walked end to end as the divergence-attribution
+  template.
+- The wall-time table labels each row with parity status; no row claims
+  faster wall time without disclosing whether parity holds.
+- Empirical closeout includes a render/dry-run, result/comparability review,
+  parity-attribution review, and parity-history append check.
 
 ---
 

@@ -133,6 +133,17 @@ ledgr_execute_fold <- function(execution, output_handler) {
       ts <- pulses_posix[[i]]
       ts_iso <- pulses_iso[[i]]
       pulse_start <- ledgr_time_now()
+      sample_telemetry <- telemetry_stride > 0L &&
+        ((processed + 1L) %% telemetry_stride == 0L)
+      sample_start <- if (sample_telemetry) pulse_start else NULL
+      t_bars <- 0
+      t_feats <- 0
+      t_ctx <- 0
+      t_strat <- 0
+      t_target <- 0
+      t_fill <- 0
+      t_event <- 0
+      t_state <- 0
 
       bars_current <- bars_views[[i]]
       features_current <- feature_table_views[[i]]
@@ -143,6 +154,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
       if (!is.data.frame(features_wide_current)) {
         features_wide_current <- empty_df
       }
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_feats <- ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
 
       positions_value <- 0
       for (j in seq_along(instrument_ids)) {
@@ -150,6 +166,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
         qty <- as.numeric(state$positions[[inst]] %||% 0)
         if (qty == 0) next
         positions_value <- positions_value + qty * bars_mat$close[j, i]
+      }
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_bars <- ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
       }
 
       # The pulse context is the only strategy-visible boundary in the fold.
@@ -195,6 +216,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
           active_alias_map = active_alias_map
         )
       }
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_ctx <- ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
 
       result <- tryCatch(
         {
@@ -211,6 +237,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
         },
         error = function(e) ledgr_abort_strategy_error(e, ctx)
       )
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_strat <- ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
       if (ledgr_is_strategy_intermediate(result)) {
         ledgr_abort_intermediate_strategy_result(result)
       }
@@ -232,15 +263,24 @@ ledgr_execute_fold <- function(execution, output_handler) {
         instrument_ids
       )
       targets <- ledgr_apply_target_risk_noop(targets, ctx, strategy_params)
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
 
       # Target deltas are applied one instrument at a time today. Event emission
       # and state mutation must stay adjacent so in-memory sweep and durable run
       # replay see the exact same ordered event stream.
       for (instrument_id in names(targets)) {
+        if (sample_telemetry) sample_start <- ledgr_time_now()
         desired <- as.numeric(targets[[instrument_id]])
         cur_qty <- as.numeric(state$positions[[instrument_id]] %||% 0)
         delta <- desired - cur_qty
         if (abs(delta) <= sqrt(.Machine$double.eps)) {
+          if (sample_telemetry) {
+            t_target <- t_target + ledgr_time_elapsed(sample_start, ledgr_time_now())
+          }
           next
         }
 
@@ -250,9 +290,17 @@ ledgr_execute_fold <- function(execution, output_handler) {
           desired_qty_delta = delta,
           next_bar = next_bar
         )
+        if (sample_telemetry) {
+          sample_now <- ledgr_time_now()
+          t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
+          sample_start <- sample_now
+        }
         fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
 
         if (inherits(fill, "ledgr_fill_none")) {
+          if (sample_telemetry) {
+            t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
+          }
           if (is.character(fill$warn_code) &&
               identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
             warning(
@@ -269,11 +317,19 @@ ledgr_execute_fold <- function(execution, output_handler) {
         }
 
         if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
+          if (sample_telemetry) {
+            t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
+          }
           next
         }
 
         fill$instrument_id <- instrument_id
         fill$ts_signal_utc <- ts_iso
+        if (sample_telemetry) {
+          sample_now <- ledgr_time_now()
+          t_fill <- t_fill + ledgr_time_elapsed(sample_start, sample_now)
+          sample_start <- sample_now
+        }
 
         write_res <- output_handler$write_fill_events(
           fill_intent = fill,
@@ -281,6 +337,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
           use_transaction = identical(event_mode, "live")
         )
         event_seq <- write_res$next_event_seq
+        if (sample_telemetry) {
+          sample_now <- ledgr_time_now()
+          t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
+          sample_start <- sample_now
+        }
 
         qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
         cash_delta <- if (identical(fill$side, "BUY")) {
@@ -290,9 +351,13 @@ ledgr_execute_fold <- function(execution, output_handler) {
         }
         state$positions[[instrument_id]] <- cur_qty + qty
         state$cash <- state$cash + cash_delta
+        if (sample_telemetry) {
+          t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
+        }
       }
 
       if (is.list(result) && !is.null(result$state_update)) {
+        if (sample_telemetry) sample_start <- ledgr_time_now()
         state_json <- canonical_json(result$state_update)
         state_prev_mem <- result$state_update
         if (identical(event_mode, "live")) {
@@ -300,23 +365,28 @@ ledgr_execute_fold <- function(execution, output_handler) {
         } else {
           output_handler$buffer_strategy_state(ts_utc = ts_iso, state_json = state_json)
         }
+        if (sample_telemetry) {
+          t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
+        }
       }
 
       processed <<- processed + 1L
 
       if (telemetry_stride > 0L && processed %% telemetry_stride == 0L) {
-        telemetry_idx <- telemetry_idx + 1L
+        telemetry_idx <<- telemetry_idx + 1L
         telemetry$t_pulse[[telemetry_idx]] <- ledgr_time_elapsed(
           pulse_start,
           ledgr_time_now()
         )
-        telemetry$t_bars[[telemetry_idx]] <- NA_real_
-        telemetry$t_ctx[[telemetry_idx]] <- NA_real_
-        telemetry$t_fill[[telemetry_idx]] <- NA_real_
-        telemetry$t_state[[telemetry_idx]] <- NA_real_
-        telemetry$t_feats[[telemetry_idx]] <- NA_real_
-        telemetry$t_strat[[telemetry_idx]] <- NA_real_
-        telemetry$t_exec[[telemetry_idx]] <- NA_real_
+        telemetry$t_bars[[telemetry_idx]] <- t_bars
+        telemetry$t_ctx[[telemetry_idx]] <- t_ctx
+        telemetry$t_fill[[telemetry_idx]] <- t_fill
+        telemetry$t_state[[telemetry_idx]] <- t_state
+        telemetry$t_feats[[telemetry_idx]] <- t_feats
+        telemetry$t_strat[[telemetry_idx]] <- t_strat
+        telemetry$t_target[[telemetry_idx]] <- t_target
+        telemetry$t_event[[telemetry_idx]] <- t_event
+        telemetry$t_exec[[telemetry_idx]] <- t_target + t_fill + t_event + t_state
       }
 
       if (checkpoint_every > 0L &&

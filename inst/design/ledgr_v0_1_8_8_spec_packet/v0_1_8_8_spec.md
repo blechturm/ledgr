@@ -4,7 +4,8 @@
 **Target Branch:** `v0.1.8.8`.  
 **Scope:** Parallel sweep dispatch and determinism; fold-core maintainer
 documentation and code legibility; repo-local reproducible peer benchmark
-reporting; internal maintainer-manual skeleton and stale documentation cleanup.  
+reporting with internal cross-engine parity sanity check; internal
+maintainer-manual skeleton and stale documentation cleanup.
 **Non-scope for this pass:** package-vignette peer marketing, hosted benchmark
 claims, a ledgr-authored compiled fold core, target risk / OMS / cost model
 work, durable identity byte redesign, public distributed execution APIs,
@@ -74,9 +75,13 @@ The release has four tracks:
 2. **Fold-core legibility.** Turn the current fold-core workbook into a
    current, function-complete maintainer guide and add professional inline
    comments to the fold-core source where the control flow is load-bearing.
-3. **Repo-local peer benchmark report.** Add a reproducible Quarto benchmark
-   report under `dev/bench/`, with `uv`-managed Python peer environments and
-   careful same-host comparability language.
+3. **Repo-local peer benchmark report and internal parity sanity check.** Add
+   a reproducible Quarto benchmark report under `dev/bench/`, with
+   `uv`-managed Python peer environments, careful same-host comparability
+   language, and an internal cross-engine parity check on equity curves,
+   derived top-line metrics, and trade-level outputs as a building-phase
+   sanity check that ledgr's engine produces the right results when given
+   equivalent inputs.
 4. **Maintainer manual cleanup.** Establish `inst/design/manual/` as the
    internal maintainer-facing article tree and remove or quarantine stale
    installed-doc, diagram, schema, and fixture surfaces that confuse agents or
@@ -90,7 +95,7 @@ candidate-dispatch layer over the same fold core, not a second engine.
 
 ## 2. Release Goals
 
-v0.1.8.8 has nine release goals:
+v0.1.8.8 has ten release goals:
 
 1. Add a public, optional parallel sweep dispatch path that preserves the
    sequential sweep contract and fails loudly when required worker dependencies
@@ -115,16 +120,23 @@ v0.1.8.8 has nine release goals:
 8. Add a repo-local, reproducible peer benchmark Quarto report under
    `dev/bench/`, including same-host ledgr / quantstrat / Backtrader rows and
    a `uv`-managed Python environment for Python peers.
-9. Create the internal maintainer-manual skeleton, retire stale standalone
-   documentation surfaces, and audit installed-vignette links without turning
-   the package documentation into an internal architecture manual.
+9. Compute internal cross-engine parity (per-bar equity, derived top-line
+   metrics, trade-level data where available) against the peer rows as a
+   building-phase sanity check that ledgr's engine produces the right results
+   when given equivalent inputs, with every residual divergence attributed to
+   a documented source and the parity track record persisted across releases.
+10. Create the internal maintainer-manual skeleton, retire stale standalone
+    documentation surfaces, and audit installed-vignette links without turning
+    the package documentation into an internal architecture manual.
 
-The release succeeds when the parallel path is deterministic, the fold core is
-substantially easier for maintainers to reason about, and the benchmark report
-can be re-run from a clean repository checkout without relying on ambient
-Python packages. The maintainer-manual cleanup is useful but separable; it may
-slip by explicit maintainer decision if the parallel/determinism release becomes
-too wide.
+The release succeeds when the parallel path is deterministic and the fold core
+is substantially easier for maintainers to reason about. If Batch 8 ships in
+this release, the benchmark report must be re-runnable from a clean repository
+checkout without relying on ambient Python packages, and the parity sanity
+check must tell the maintainer honestly whether ledgr's engine matches
+established peer engines on equivalent inputs. The peer/parity report and the
+maintainer-manual cleanup are useful but separable; either may slip by explicit
+maintainer decision if the parallel/determinism release becomes too wide.
 
 ---
 
@@ -405,7 +417,7 @@ The following remain deferred unless separately authorized:
 
 ---
 
-## 7. Workstream E: Repo-Local Peer Benchmark Report
+## 7. Workstream E: Repo-Local Peer Benchmark And Parity Report
 
 This workstream creates a reproducible benchmark report in the repository. It
 is not package documentation.
@@ -492,8 +504,60 @@ The report must be careful about comparability:
 - ledgr durable-run rows persist ledger/equity artifacts where peers may be
   in-memory only, and that asymmetry must be labeled.
 
-The report may include a "safe language" section for release notes, but it must
-not create a package-vignette or pkgdown benchmark page.
+The report is repo-local building-phase artifact only. It must not create a
+package-vignette, pkgdown page, or release-note marketing claim in v0.1.8.8.
+Surfacing benchmark or parity findings to users is a v0.2.x+ decision with its
+own scope.
+
+### 7.4 Cross-Engine Parity Discipline
+
+The benchmark report doubles as an internal cross-engine sanity check that
+ledgr's engine produces the right results when given equivalent inputs. The
+parity check is for the maintainer, not for outside readers.
+
+Three parity tiers are computed against the ledgr canonical row:
+
+- **Tier 1 (per-bar):** equity-curve correlation, cash trajectory match,
+  per-instrument position match, daily-return correlation. This is the
+  strongest gate: if Tier 1 holds, Tier 2 follows modulo float order.
+- **Tier 2 (derived top-line):** total return, annualized return, volatility,
+  Sharpe ratio, max drawdown. Legibility surface for the maintainer; should
+  follow from Tier 1.
+- **Tier 3 (trade-level):** trade count, per-trade entry/exit timestamps,
+  entry/exit prices, PnL, duration, win rate, average trade. Separate parity
+  surface that tests fill semantics directly. Computed where the peer emits
+  comparable trade data; missing data is labeled, not silently dropped.
+
+Every residual divergence must be attributed to one of six documented sources:
+
+1. Indicator initialization window (TTR vs Backtrader vs LEAN ready-bar).
+2. Fill timing edges (last bar, gaps, missing data).
+3. Cost/margin defaults (commission models, slippage models).
+4. Position-sizing rounding (whole share vs fractional).
+5. Timestamp alignment (UTC vs naive, bar open vs close).
+6. Float ordering (sum order, cumulation order).
+
+Divergences that do not fit a documented source are flagged as unattributed
+and queued for investigation, not silently absorbed.
+
+Three-source attribution rule. When a parity check fails, the default mental
+move is to consider three candidates, not to pre-assume ledgr is the bug:
+
+1. ledgr is wrong (real engine bug; investigate).
+2. The peer is wrong (known peer edge case; document, move on).
+3. The harness is wrong (input mismatch, timestamp alignment, initialization
+   window misalignment; most divergences end up here).
+
+The discipline only works if attribution is honest in both directions.
+
+Parity history is persisted as append-only JSON under
+`dev/bench/results/parity_history/`, keyed by release tag and workload, so the
+parity track record accumulates across releases. One failing parity check must
+be walked end to end in each report cycle as the divergence-attribution
+template, so the discipline survives by example.
+
+Wall-time rows must be labeled with parity status. No row claims faster wall
+time without disclosing whether parity holds.
 
 ---
 
@@ -601,7 +665,20 @@ Release-ticket work must include targeted tests for:
 - fold-core comments do not mask behavior changes;
 - `ledgr_candidate_reproduction_key()` output is stable across worker counts
   for the same candidate;
-- peer benchmark report runs or skips optional peers with clear status.
+- peer benchmark report runs or skips optional peers with clear status;
+- per-bar equity-curve parity is computed for every required peer with
+  attribution for any residual divergence;
+- derived top-line metric parity is computed and consistent with per-bar
+  parity within float-ordering tolerance;
+- trade-level parity is computed for peers that emit comparable trade data,
+  or labeled unavailable when not;
+- parity history JSON is appended atomically per release tag with no
+  destructive rewrites;
+- one failing parity check is walked end to end as the divergence-attribution
+  template;
+- the three-source attribution rule is documented in the report;
+- wall-time rows carry parity-status labels and do not claim speed without
+  disclosing parity state;
 - maintainer-manual cleanup leaves package vignettes and `inst/doc/` build
   semantics intact;
 - stale diagram/schema/testdata surfaces are deleted, moved, or explicitly
@@ -654,9 +731,9 @@ Initial batch plan, subject to review:
    deterministic collection, warnings, errors, and result ordering.
 8. **Batch 7 - Interrupt/progress semantics and measurement.** Finish
    user-facing operational behavior and parallel attribution.
-9. **Batch 8 - Repo-local peer benchmark report.** Add `dev/bench` Quarto
-   report and `uv`-managed Backtrader environment; add LEAN Python-strategy
-   mode if local setup is tractable.
+9. **Batch 8 - Repo-local peer benchmark and parity report.** Add `dev/bench`
+   Quarto report and `uv`-managed Backtrader environment; add LEAN
+   Python-strategy mode if local setup is tractable.
 10. **Batch 9 - Maintainer manual skeleton and stale-doc cleanup.** Create
     the internal manual tree, migrate the current workbooks, retire stale
     diagrams/schema placeholders, audit installed-vignette links, and classify

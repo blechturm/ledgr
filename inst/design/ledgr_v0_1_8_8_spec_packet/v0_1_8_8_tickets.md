@@ -22,7 +22,7 @@ packet alignment
   -> parallel backend + worker setup
   -> parallel sweep dispatch
   -> interrupt semantics + parallel measurement
-  -> repo-local peer benchmark report
+  -> repo-local peer benchmark and parity report
   -> maintainer manual skeleton + stale-doc cleanup
   -> release gate
 ```
@@ -46,7 +46,7 @@ LDG-2468 Packet Alignment And v0.1.8.8 Planning State
   |                 `-- LDG-2474 Parallel Sweep Dispatch
   |                       `-- LDG-2475 Interrupt Semantics And Parallel Measurement
   |
-  `-- LDG-2476 Repo-Local Peer Benchmark Report
+  `-- LDG-2476 Repo-Local Peer Benchmark And Parity Report
 
 LDG-2477 v0.1.8.8 Release Gate And Closeout
   depends on LDG-2468 through LDG-2476 plus LDG-2478, unless a P2 ticket is
@@ -223,7 +223,7 @@ scope: documentation_and_mechanical_split
 Priority: P1
 Effort: M
 Dependencies: LDG-2469
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -256,6 +256,14 @@ optimization pass.
 
 Benchmark script output review, result-file review, workbook/packet summary
 review, and horizon diff review.
+
+Completion note (2026-05-30): implemented fold-loop bucket telemetry for
+`t_feats`, `t_bars`, `t_ctx`, `t_strat`, `t_target`, `t_fill`, `t_event`, and
+`t_state`; fixed the sampled-telemetry index so diagnostic vectors persist;
+added `dev/bench/fold_loop_diagnostic.R`; recorded local current-source packet
+artifacts; and parked future implications in `inst/design/horizon.md`. Targeted
+telemetry, durable-run parity, sweep parity, ledger-writer, and sweep tests
+passed. External review approved the batch with no blocking findings.
 
 ### Source Reference
 
@@ -570,18 +578,30 @@ scope: interrupt_and_attribution
 
 ---
 
-## LDG-2476: Repo-Local Peer Benchmark Report
+## LDG-2476: Repo-Local Peer Benchmark And Parity Report
 
 Priority: P2
-Effort: L
+Effort: XL
 Dependencies: LDG-2468
 Status: Pending
 
 ### Description
 
 Create a reproducible Quarto benchmark report under `dev/bench/`. This is
-repo-local developer benchmark documentation, not package documentation,
-pkgdown content, or public hosted ranking material.
+repo-local developer benchmark documentation and an internal correctness
+sanity check, not package documentation, pkgdown content, or public hosted
+ranking material.
+
+The report has two purposes:
+
+1. Measure wall-time across same-host peers with the existing comparability
+   discipline.
+2. Compare ledgr's per-bar equity curves, derived top-line metrics, and
+   trade-level outputs against the peer engines as an internal sanity check
+   that ledgr's engine produces the right results when given the same inputs.
+
+The parity check is for the maintainer, not for outside readers. It is a
+building-phase quality gate, not a marketing artifact.
 
 ### Tasks
 
@@ -597,6 +617,32 @@ pkgdown content, or public hosted ranking material.
 - Exclude VectorBT from the event-driven peer table except as a paradigm note.
 - Make `dev/bench/peer_comparison.md` point to the new Quarto report as the
   current benchmark artifact.
+- Each peer harness emits a canonical-schema equity curve under
+  `dev/bench/results/` per peer per workload, plus fills and trade tables where
+  the peer exposes comparable data. Missing fills/trade surfaces are recorded
+  with explicit unavailable metadata, not silently dropped.
+- Compute Tier 1 per-bar parity against ledgr canonical: equity-curve
+  correlation, cash trajectory match, per-instrument position match, and
+  daily-return correlation.
+- Compute Tier 2 derived top-line parity: total return, annualized return,
+  volatility, Sharpe ratio, max drawdown.
+- Compute Tier 3 trade-level parity where the peer emits comparable trade
+  data: trade count, per-trade entry/exit timestamps, entry/exit prices, PnL,
+  duration, win rate, average trade.
+- Attribute every residual divergence to one of six documented sources:
+  indicator initialization window, fill-timing edges, cost/margin defaults,
+  position-sizing rounding, timestamp alignment, or float-ordering rounding.
+- Persist parity numbers under `dev/bench/results/parity_history/` as
+  append-only JSON keyed by release tag and workload, so parity track record
+  accumulates across releases.
+- Walk one failing parity check end to end in the report as the
+  divergence-attribution template, so future cycles inherit the discipline.
+- Record the three-source attribution rule in the report: when a parity check
+  fails, the candidate explanations are (1) ledgr is wrong, (2) the peer is
+  wrong, (3) the harness is wrong; default mental move is to consider all
+  three, not to assume ledgr first.
+- Label each wall-time row with parity status. Rows failing any parity check
+  carry an inline footnote naming the failed check and its attributed source.
 
 ### Acceptance Criteria
 
@@ -609,12 +655,35 @@ pkgdown content, or public hosted ranking material.
 - Optional peers fail/skip loudly with status.
 - Report language distinguishes workload-specific same-host rows from general
   speed rankings.
+- Each required peer emits a canonical-schema equity curve consumed by the
+  parity computer. Fills and trade tables are emitted where the peer exposes
+  comparable data; otherwise the peer emits explicit unavailable metadata.
+- Tier 1 per-bar parity is computed for every required peer; passes when daily
+  equity correlation > 0.999 against ledgr canonical and max single-bar
+  divergence < 1% of equity; failures attributed to a documented source.
+- Tier 2 derived top-line parity is computed and reported; metric-level
+  divergence is honest about whether it follows from a Tier 1 divergence or is
+  metric-definition-specific.
+- Tier 3 trade-level parity is computed for peers that emit comparable trade
+  data; missing trade data is labeled "trade-level parity unavailable", not
+  silently dropped.
+- Every residual divergence is attributed to one of the six documented
+  sources, or flagged as unattributed and queued for investigation.
+- Parity history JSON is appended atomically per release tag with no
+  destructive rewrites; the history file is the parity track record across
+  releases.
+- The walked failing-parity example is present and follows the three-source
+  attribution rule.
+- The wall-time table labels each row with parity status; no row claims faster
+  wall time without disclosing whether parity holds.
 
 ### Verification
 
-Render or dry-run the Quarto report as practical, run the required peer harness
-or smoke shape, inspect raw results/environment metadata, and manually review
-comparability language.
+Render or dry-run the Quarto report as practical, run the required peer
+harness or smoke shape, inspect raw results/environment metadata, inspect the
+parity history JSON for atomic append behavior, review divergence-attribution
+text for honesty (especially the three-source default), and manually review
+comparability and parity language.
 
 ### Source Reference
 
@@ -629,7 +698,7 @@ comparability language.
 ```yaml
 type: benchmark_documentation
 surface: dev_bench
-scope: repo_local_peer_report
+scope: repo_local_peer_report_and_internal_parity_check
 ```
 
 ---
