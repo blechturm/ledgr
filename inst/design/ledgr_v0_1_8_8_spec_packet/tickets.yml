@@ -149,7 +149,7 @@ tickets:
 
   - id: "LDG-2476"
     title: "Repo-Local Peer Benchmark And Parity Report"
-    status: "pending"
+    status: "completed"
     priority: "P2"
     effort: "XL"
     dependencies:
@@ -170,6 +170,25 @@ tickets:
       - "divergence_attribution_review"
       - "parity_history_atomic_append_check"
       - "three_source_attribution_rule_review"
+
+  - id: "LDG-2479"
+    title: "Self-Profiling Workload Grid Extension"
+    status: "in_progress"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2476"
+    classification:
+      type: "self_profiling_benchmark"
+      surface: "dev_bench_workload_grid"
+      scope: "density_x_universe_size_x_persistence"
+    tests:
+      - "smoke_preset_run"
+      - "record_preset_baseline_capture"
+      - "existing_scenarios_unchanged"
+      - "phase_decomposition_columns_present"
+      - "per_fill_metric_computation"
+      - "closeout_note_review"
 
   - id: "LDG-2478"
     title: "Internal Maintainer Manual Skeleton And Stale-Doc Cleanup"
@@ -205,6 +224,7 @@ tickets:
       - "LDG-2474"
       - "LDG-2475"
       - "LDG-2476"
+      - "LDG-2479"
       - "LDG-2478"
     classification:
       type: "release_gate"
@@ -216,5 +236,6 @@ tickets:
       - "package_build"
       - "package_check"
       - "parallel_benchmark_closeout_review"
+      - "workload_grid_baseline_closeout_review"
       - "documentation_review"
       - "manual_release_checklist"

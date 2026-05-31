@@ -1,0 +1,10 @@
+[project]
+name = "ledgr-backtrader-peer"
+version = "0.1.0"
+description = "Repo-local Backtrader peer harness for ledgr benchmark parity checks"
+requires-python = ">=3.11"
+dependencies = [
+  "backtrader==1.9.78.123",
+  "numpy",
+  "pandas"
+]

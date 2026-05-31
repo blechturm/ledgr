@@ -8,8 +8,8 @@
 # side-by-side for scenarios with a reasonable published analogue.
 #
 # Usage:
-#   Rscript dev/bench/run_benchmarks.R --preset smoke --repeats 1 --warmup 1
-#   Rscript dev/bench/run_benchmarks.R --preset record --repeats 3 --warmup 1
+#   Rscript dev/bench/shared/run_benchmarks.R --preset smoke --repeats 1 --warmup 1
+#   Rscript dev/bench/shared/run_benchmarks.R --preset record --repeats 3 --warmup 1
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
@@ -50,7 +50,7 @@ bench_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
       i <- i + 2L
     } else if (key %in% c("--help", "-h")) {
       cat(paste(
-        "Usage: Rscript dev/bench/run_benchmarks.R [options]",
+        "Usage: Rscript dev/bench/shared/run_benchmarks.R [options]",
         "",
         "Options:",
         "  --preset smoke|record",

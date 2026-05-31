@@ -1,112 +1,74 @@
 # ledgr Local Benchmark Suite
 
-This directory contains the v0.1.8.6 structured benchmark suite. It is a local
-development harness, not a public performance dashboard.
+This directory contains local development benchmark harnesses. They are
+maintainer artifacts, not package documentation, not pkgdown content, and not
+public release-note performance claims.
+
+## Layout
+
+- `peer_benchmark/` - current v0.1.8.8 peer benchmark and parity report.
+- `parallel_sweep/` - Batch 7 parallel sweep attribution harness.
+- `fold_loop/` - fold-loop diagnostic profiler.
+- `references/` - published context-only reference data and fetchers.
+- `shared/` - cross-harness benchmark runner material.
+- `archive/` - superseded v0.1.8.7-era orientation harnesses.
+- `results/` - local-only generated artifacts, ignored by git.
+
+## Current Peer Benchmark
 
 Run from the package root:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/run_benchmarks.R --preset smoke --repeats 1 --warmup 1
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
 ```
 
-The runner loads current source with `pkgload::load_all(".")` when it is run
-from the ledgr source tree and fails rather than silently measuring a stale
-installed package. Outputs are written under `dev/bench/results/` by default:
+The peer benchmark has two explicitly separated outputs:
 
-- raw per-iteration CSV;
-- scenario summary CSV;
-- environment metadata JSON;
-- combined JSON result payload;
-- compact Markdown summary;
-- QuantConnect/LEAN side-by-side CSV when `lean_reference.csv` is present.
+- parity: canonical equity/trade-surface checks against the ledgr TTR-backed SMA
+  row;
+- performance: same-host timing under declared per-engine boundaries.
 
-The QuantConnect/LEAN comparison is a caveated side-by-side throughput
-reference. It is not a parity claim and not a speed ranking. The comparable
-headline unit is `security_bars_sec = n_inst * n_pulses / t_wall`; do not
-substitute `feature_cells_sec`, which is `n_feat` times larger for feature
-payload scenarios.
+The primary zipline row is `zipline-reloaded-full`, which exercises
+zipline-reloaded csvdir bundle ingestion plus `run_algorithm()`.
 
-Named scenarios:
+It writes canonical equity, fills, trade-summary, status, parity, performance,
+environment, and parity-history artifacts under `dev/bench/results/`. See
+`peer_benchmark/README.md`.
 
-- `baseline_single_run`
-- `pulse_loop_empty`
-- `wide_panel_no_features`
-- `feature_read_score`
-- `feature_turnover`
-- `indicator_payload`
-- `sweep_memory_summary`
-- `persistent_replay`
-- `peer_sma_crossover` (matched Ziplime/Zipline/Backtrader workload; see Peer Framework Reference)
+## Other Harnesses
 
-Use `--preset smoke` for a quick verification run and `--preset record` for the
-release-record benchmark shape. The record preset is still local and
-machine-dependent; release notes should cite it with environment metadata.
-
-## Peer Framework Reference
-
-`dev/bench/ziplime_reference.csv` holds published throughput numbers for the
-interpreted, event-driven Python peer group (Ziplime, Zipline, Backtrader),
-scraped by `fetch_ziplime_reference.R`:
+Parallel sweep attribution:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e 'source("dev/bench/fetch_ziplime_reference.R"); fetch_ziplime_reference()'
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/parallel_sweep/parallel_sweep_measurement.R --preset smoke --repeats 1 --warmup 0
 ```
 
-These are **vendor self-reported** numbers from the Ziplime README (Apple Silicon
-M3, methodology unstated, execution time likely includes data load). The local
-development host is an Intel Core i9-12900K desktop system: plausibly the same
-broad single-core class as M3, but benchmark-dependent and not the same
-hardware. Every published peer row is therefore
-`comparable = "orientation_only"`: useful for peer *ordering* and
-order-of-magnitude context, never a controlled head-to-head, because package
-versions, host details, and the execution-time boundary are not controlled by
-ledgr. The VectorBT figure that circulates with this table is deliberately
-excluded -- it is not in the source and it is a vectorized engine, a category
-mismatch with per-bar event engines. Provenance is recorded in
-`ziplime_reference.meta.json` (source, retrieved_at, README sha256, exclusions).
-This reference is NOT fed into the LEAN side-by-side ratio.
-
-The `peer_sma_crossover` scenario matches that workload (500 assets, 5 years
-daily, SMA crossover via `TTR::SMA`, `persist_features = FALSE`) so ledgr can be
-measured on the same shape. The same-host peer harness
-`peer_three_way.R` also uses the quick TTR-backed ledgr indicator path as the
-canonical `engine = "ledgr"` row; slower pure-R built-in indicator experiments
-are diagnostic, not the peer-comparison headline. A defensible comparison still
-requires running the peer engines and ledgr on the SAME machine; the published
-numbers above only fix the workload, not the host.
-
-## Width Sweep
-
-Batch 4 uses a separate two-mode width sweep:
+Fold-loop diagnostics:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/run_width_sweep.R --preset smoke --repeats 1 --warmup 1
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/fold_loop/fold_loop_diagnostic.R --preset smoke --repeats 1
 ```
 
-The width sweep writes raw results, summaries, isolated schema-vs-full-long
-view timings, and a storage decision record under `dev/bench/results/`.
-
-Modes:
-
-- `read_score`: reads and scores features without fills.
-- `turnover`: reads and scores features, generates representative fills, and
-  measures persistent replay/read-back.
-
-The isolated view timing is the one to use for schema-only versus full-long
-materialization cost. The benchmark `t_residual_sec` column is deliberately a
-broad wall-minus-pre-minus-loop residual and includes wrapper/read-back work.
-
-## Parallel Sweep Measurement
-
-Batch 7 uses a parallel sweep attribution harness:
+Shared structured benchmark runner:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/parallel_sweep_measurement.R --preset smoke --repeats 1 --warmup 0
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/shared/run_benchmarks.R --preset smoke --repeats 1 --warmup 1
 ```
 
-The harness writes raw rows, summary rows, environment metadata, combined JSON,
-and a compact Markdown summary under `dev/bench/results/`. It measures
-worker-setup overhead separately from full `ledgr_sweep()` wall time, varies
-candidate counts and worker counts, and checks each worker-backed result against
-the sequential reference for the same workload. Rows are current-source,
-local-host, and machine-specific; they are not public speedup claims.
+## Reference Data
+
+Published LEAN/Ziplime rows under `references/` are context-only. They are not
+mixed into same-host ratios or parity checks.
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e 'source("dev/bench/references/fetch_ziplime_reference.R"); fetch_ziplime_reference()'
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e 'source("dev/bench/references/fetch_lean_reference.R"); fetch_lean_reference()'
+```
+
+## Archived Material
+
+`archive/` keeps older timing-only peer scripts and width sweeps for provenance.
+They do not replace the current peer benchmark because they do not emit the
+canonical per-engine equity curves, parity tiers, status rows, and parity
+history required by v0.1.8.8.

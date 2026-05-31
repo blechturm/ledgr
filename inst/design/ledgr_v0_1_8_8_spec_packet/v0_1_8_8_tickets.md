@@ -1,15 +1,16 @@
 # ledgr v0.1.8.8 Tickets
 
 Version: v0.1.8.8
-Date: 2026-05-30
-Total Tickets: 11
+Date: 2026-05-31
+Total Tickets: 12
 
 ## Ticket Organization
 
 This packet implements the scoped v0.1.8.8 plan from `v0_1_8_8_spec.md`:
 parallel sweep dispatch and determinism, fold-core maintainer documentation /
-containment, a repo-local reproducible peer benchmark report, and a
-slip-eligible internal maintainer-manual cleanup.
+containment, a repo-local reproducible peer benchmark report, a self-profiling
+workload grid extension for v0.1.9 input, and a slip-eligible internal
+maintainer-manual cleanup.
 
 The release spine is:
 
@@ -23,6 +24,7 @@ packet alignment
   -> parallel sweep dispatch
   -> interrupt semantics + parallel measurement
   -> repo-local peer benchmark and parity report
+  -> self-profiling workload grid extension
   -> maintainer manual skeleton + stale-doc cleanup
   -> release gate
 ```
@@ -46,16 +48,21 @@ LDG-2468 Packet Alignment And v0.1.8.8 Planning State
   |                 `-- LDG-2474 Parallel Sweep Dispatch
   |                       `-- LDG-2475 Interrupt Semantics And Parallel Measurement
   |
-  `-- LDG-2476 Repo-Local Peer Benchmark And Parity Report
+  |-- LDG-2476 Repo-Local Peer Benchmark And Parity Report
+  |     `-- LDG-2479 Self-Profiling Workload Grid Extension
+  `-- LDG-2479 (also depends on LDG-2476)
 
 LDG-2477 v0.1.8.8 Release Gate And Closeout
-  depends on LDG-2468 through LDG-2476 plus LDG-2478, unless a P2 ticket is
-  explicitly deferred by maintainer decision.
+  depends on LDG-2468 through LDG-2476, LDG-2479, plus LDG-2478, unless a P2
+  ticket is explicitly deferred by maintainer decision.
 ```
 
-LDG-2476 and LDG-2478 are separable if the cycle becomes too wide. LDG-2469 is
-not optional: the fold-core maintainer documentation and source legibility work
-is a release goal.
+LDG-2476, LDG-2479, and LDG-2478 are separable if the cycle becomes too wide.
+LDG-2479 depends on LDG-2476 because the grid scenarios reuse the same
+`bench_sma_crossover_strategy()` definition and the cost-surface ranking is
+calibrated against the LDG-2476 peer benchmark record. LDG-2469 is not optional:
+the fold-core maintainer documentation and source legibility work is a release
+goal.
 
 ## Priority Levels
 
@@ -617,7 +624,7 @@ scope: interrupt_and_attribution
 Priority: P2
 Effort: XL
 Dependencies: LDG-2468
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -719,6 +726,38 @@ parity history JSON for atomic append behavior, review divergence-attribution
 text for honesty (especially the three-source default), and manually review
 comparability and parity language.
 
+Completion note (2026-05-30): added the repo-local
+`dev/bench/peer_benchmark.qmd` report and `dev/bench/peer_benchmark.R` harness.
+The harness generates one shared bars file, records an input hash, runs ledgr
+canonical TTR, ledgr built-in SMA, quantstrat where installed, and Backtrader
+through a `uv`-managed Python project. It also probes separate `uv` projects for
+optional zipline-reloaded and LEAN Python tooling, recording environment-ready
+or unavailable rows without treating them as parity-comparable engine outputs
+until canonical harnesses are wired. It computes Tier 1/Tier 2/Tier 3 parity
+surfaces and appends parity history under ignored
+`dev/bench/results/parity_history/`. Added the Backtrader, zipline-reloaded,
+and LEAN `uv` project files and lockfiles under `dev/bench/python/`. Updated
+`peer_comparison.md` to point to the new report as current. Smoke harness output
+and closeout evidence are summarized in
+`peer_benchmark_parity_closeout.md`. Targeted report/harness checks and package
+checks passed; Quarto rendered successfully through the RStudio-bundled
+executable, and generated HTML artifacts were removed before commit.
+
+Follow-up note (2026-05-31): three-phase decomposition work was completed after
+the 2026-05-30 LDG-2476 closure and does not reopen this ticket. The original
+acceptance criteria remain met. The follow-up evidence in
+`dev/bench/peer_benchmark/notes/three_phase_decomposition_design.md`,
+`dev/bench/peer_benchmark/notes/three_phase_decomposition_results.md`,
+`dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md`, and
+`dev/bench/peer_benchmark/notes/backtrader_scale_check.md` refined the v0.1.9
+optimization inputs: durable ledgr is currently faster than the parity-matched
+ephemeral path at high fill density, durable ledgr's engine loop is 1.74x
+Backtrader on the 500 x 1260 SMA 5/10 workload, and memory output-handler cost
+plus in-memory event reconstruction are now explicit v0.1.9 optimization
+targets. Headline findings are recorded in
+`inst/design/ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md` and
+the 2026-05-31 optimization entry in `inst/design/horizon.md`.
+
 ### Source Reference
 
 - `v0_1_8_8_spec.md`, Section 7
@@ -733,6 +772,132 @@ comparability and parity language.
 type: benchmark_documentation
 surface: dev_bench
 scope: repo_local_peer_report_and_internal_parity_check
+```
+
+---
+
+## LDG-2479: Self-Profiling Workload Grid Extension
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2476
+Status: In Progress
+
+### Description
+
+Extend the existing `dev/bench/shared/run_benchmarks.R` suite with a structured
+self-profiling workload grid that varies universe size, history length, fill
+density, and persistence mode. This is the v0.1.8.8 contribution to the v0.1.9
+single-core optimization round: it captures cost-surface scaling behavior that
+the LDG-2476 single-point peer benchmark could not see, and gives the v0.1.9
+spec a measured baseline.
+
+This is a self-profiling tool, not a peer benchmark, not a public performance
+dashboard, and not a competitive ranking artifact. The grid scenarios are
+ledgr-only.
+
+The need for the grid surfaced in LDG-2476 closeout work: the apparent peer
+regression at 500x1260 SMA 5/10 decomposed into per-fill cost surfaces
+(engine fill emission ~1.7 ms/fill, fills read-back ~1.2 ms/fill with
+super-linear scaling) that were invisible at the SMA 20/50 density used by the
+v0.1.8.7 closeout. A grid that varies fill density and universe size makes the
+cost-surface behavior directly attributable per dimension.
+
+### Tasks
+
+- Add sixteen named density-by-universe-size scenarios to `bench_specs()` in
+  `dev/bench/shared/run_benchmarks.R` for both `smoke` and `record` presets.
+  The cells are SMA windows {20/50, 5/10} crossed with universe sizes
+  {50, 100, 500, 1000} (all at n_pulses = 1260 except small at n_pulses =
+  252), crossed with persistence modes {durable, ephemeral}.
+- For durable cells, route through the existing `bench_run_scenario_once()`
+  path (`ledgr_run` durable).
+- For ephemeral cells, route through the existing `bench_run_sweep_once()`
+  path with `candidates = 1L`, matching the existing
+  `peer_sma_crossover_sweep` ephemeral pattern.
+- Add `fills_extract_sec`, `equity_extract_sec`, and `ledger_extract_sec`
+  phase columns to `bench_run_scenario_once()` output rows. Time each
+  `ledgr_results()` call individually with `system.time()`. Record `NA` for
+  cells where the call is not made.
+- Add `mus_per_fill_engine` and `mus_per_fill_extract` derived columns to the
+  per-row output and the summary CSV.
+- Update `bench_comparability_note()` so each new grid scenario carries the
+  classification "Self-profiling workload grid cell; not a peer comparison
+  row" with the specific `(density, universe_size, persistence)` tuple
+  documented.
+- Run the `record` preset on the local host with the grid scenarios, write the
+  baseline record under `dev/bench/results/`, and capture environment metadata
+  the same way the existing suite does.
+- Write `dev/bench/notes/workload_grid_baseline_closeout.md` documenting the
+  per-cell phase decomposition, per-fill cost ranking, observed scaling
+  behavior across each grid dimension, and the v0.1.9 single-core optimization
+  target stack derived from the ranking.
+- Note in the closeout that ephemeral cells record `snapshot_sec` and
+  `t_wall_sec` only (the existing sweep path does not surface per-pulse
+  telemetry); per-pulse decomposition on the ephemeral path is deferred to
+  v0.1.9.
+
+### Acceptance Criteria
+
+- The sixteen new scenarios appear in both smoke and record presets of
+  `bench_specs()`.
+- A targeted smoke run, for example
+  `Rscript dev/bench/shared/run_benchmarks.R --preset smoke --repeats 1
+  --warmup 0 --scenarios
+  density_low_small_durable,density_high_small_durable,
+  density_low_small_ephemeral,density_high_small_ephemeral`, completes without
+  error on the local host and produces a row per cell.
+- The existing ten v0.1.8.6 Workstream S scenarios still run unchanged at
+  smoke and record presets, with byte-identical scenario definitions.
+- Per-row output includes `fills_extract_sec`, `equity_extract_sec`, and
+  `ledger_extract_sec` columns. Durable cells populate them; ephemeral cells
+  may carry `NA` where the call is not made.
+- `mus_per_fill_engine` and `mus_per_fill_extract` are computed in the per-row
+  output and the summary CSV.
+- The baseline `record` preset run captures all sixteen new scenarios on the
+  local host. The record file path is recorded in the closeout note.
+- The closeout note ranks observed cost surfaces by both absolute magnitude
+  and scaling behavior, derives a v0.1.9 optimization target stack from the
+  ranking, and labels the result as local-host, machine-specific,
+  current-source evidence rather than a public performance claim.
+- No public API changes; no changes to `ledgr_run()`, `ledgr_sweep()`, or the
+  function-strategy contract.
+- No peer engine work (Backtrader, quantstrat, zipline, LEAN) ships in this
+  ticket.
+
+### Verification
+
+Run `Rscript dev/bench/shared/run_benchmarks.R --preset smoke` and confirm the
+existing scenarios plus the sixteen new scenarios produce rows without error.
+Run `Rscript dev/bench/shared/run_benchmarks.R --preset record --scenarios
+<grid-only-list>` on the local host to capture the baseline grid record.
+Spot-check the output CSV for the new phase decomposition columns and the
+derived per-fill metrics. Review the closeout note for honest scaling claims
+and a defensible v0.1.9 target stack.
+
+The largest cells (1000 x 1260 SMA 5/10 durable) may take >10 minutes per run
+on the local host. Recording can be done over multiple `--scenarios` calls if
+single-session wall time is impractical, as long as the same record file
+prefix and environment metadata are preserved.
+
+### Source Reference
+
+- `v0_1_8_8_spec.md`, Section 9 (Workstream G)
+- `dev/bench/shared/run_benchmarks.R`
+- `dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md`
+- `dev/bench/peer_benchmark/notes/backtrader_scale_check.md`
+- `dev/bench/peer_benchmark/notes/three_phase_decomposition_design.md`
+- `dev/bench/peer_benchmark/notes/three_phase_decomposition_results.md`
+- `inst/design/ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md`
+- `inst/design/horizon.md` (2026-05-31 [optimization] LDG-2476 peer-benchmark
+  turnover cost decomposition entry)
+
+### Classification
+
+```yaml
+type: self_profiling_benchmark
+surface: dev_bench_workload_grid
+scope: density_x_universe_size_x_persistence
 ```
 
 ---
@@ -820,14 +985,15 @@ scope: skeleton_and_stale_doc_cleanup
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2468, LDG-2469, LDG-2470, LDG-2471, LDG-2472, LDG-2473, LDG-2474, LDG-2475, LDG-2476, LDG-2478
+Dependencies: LDG-2468, LDG-2469, LDG-2470, LDG-2471, LDG-2472, LDG-2473, LDG-2474, LDG-2475, LDG-2476, LDG-2479, LDG-2478
 Status: Pending
 
 ### Description
 
 Run the release gate, close the planning packet, and prepare v0.1.8.8 for merge
-and tag. If LDG-2476 or LDG-2478 slips by explicit maintainer decision, record
-that decision and keep the core release gate tied to LDG-2468 through LDG-2475.
+and tag. If LDG-2476, LDG-2479, or LDG-2478 slips by explicit maintainer
+decision, record that decision and keep the core release gate tied to LDG-2468
+through LDG-2475.
 
 ### Tasks
 
@@ -839,6 +1005,9 @@ that decision and keep the core release gate tied to LDG-2468 through LDG-2475.
 - Run or review parallel benchmark attribution.
 - Review fold-core workbook freshness and rendered output.
 - Review peer benchmark report status if LDG-2476 shipped.
+- Review workload grid extension closeout note and baseline record if
+  LDG-2479 shipped; confirm the grid extension did not change the existing
+  v0.1.8.6 Workstream S scenarios.
 - Review maintainer-manual cleanup status if LDG-2478 shipped.
 - Update roadmap, horizon, NEWS/release notes, and active-packet references.
 - Ensure generated local artifacts are not committed.

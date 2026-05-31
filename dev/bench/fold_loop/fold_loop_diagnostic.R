@@ -4,8 +4,8 @@
 # This is a local development harness, not a public benchmark dashboard.
 #
 # Usage:
-#   Rscript dev/bench/fold_loop_diagnostic.R --preset smoke --repeats 1
-#   Rscript dev/bench/fold_loop_diagnostic.R --preset record --repeats 1 \
+#   Rscript dev/bench/fold_loop/fold_loop_diagnostic.R --preset smoke --repeats 1
+#   Rscript dev/bench/fold_loop/fold_loop_diagnostic.R --preset record --repeats 1 \
 #     --scenarios peer_sma_crossover,wide_panel_no_features
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
@@ -47,7 +47,7 @@ diag_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
       i <- i + 2L
     } else if (key %in% c("--help", "-h")) {
       cat(paste(
-        "Usage: Rscript dev/bench/fold_loop_diagnostic.R [options]",
+        "Usage: Rscript dev/bench/fold_loop/fold_loop_diagnostic.R [options]",
         "",
         "Options:",
         "  --preset smoke|record",

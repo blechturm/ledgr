@@ -5,7 +5,7 @@
 # comparison baseline.
 #
 # PRODUCES
-#   dev/bench/lean_reference.csv, one row per (benchmark, language):
+#   dev/bench/references/lean_reference.csv, one row per (benchmark, language):
 #     benchmark, language, dps_median, dps_latest, n_points, ledgr_scenario,
 #     comparable, source_url, notes
 #
@@ -30,7 +30,7 @@
 #   returning stale numbers.
 #
 # USAGE
-#   Rscript -e 'source("dev/bench/fetch_lean_reference.R"); fetch_lean_reference()'
+#   Rscript -e 'source("dev/bench/references/fetch_lean_reference.R"); fetch_lean_reference()'
 #   # offline / deterministic (against a saved copy of the page):
 #   fetch_lean_reference(source = "path/to/qc_perf.html")
 #
@@ -86,7 +86,7 @@ LEAN_PERF_URL <- "https://www.quantconnect.com/performance"
 }
 
 fetch_lean_reference <- function(source = LEAN_PERF_URL,
-                                 out = "dev/bench/lean_reference.csv") {
+                                 out = "dev/bench/references/lean_reference.csv") {
   html <- .lean_read_html(source)
   series <- .lean_extract_series(html)
   sources <- .lean_extract_sources(html)

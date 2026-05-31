@@ -153,6 +153,104 @@ and the strategy callback are not the lead buckets on these shapes.
 
 This entry records direction, not committed work.
 
+### 2026-05-31 [optimization] LDG-2476 peer-benchmark turnover cost decomposition
+
+The LDG-2476 follow-up peer benchmark initially looked like a severe ledgr
+regression: on a 500 x 1260 shape, the current apples-to-apples peer harness
+reported ledgr_ttr_canonical at 240.64s versus Backtrader at 80.30s. The
+current-source A/B evidence in
+`dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md` changes the
+interpretation. The v0.1.8.7/current-source reference row used SMA 20/50
+continuous-target semantics and produced 13,355 fills; the current parity row
+uses SMA 5/10 crossover-event semantics and produced 68,324 fills. Re-running
+the old-shape style on current source landed at 31.60s with 13,355 fills,
+matching the 30.75s class from the previous closeout. That rules out a broad
+"fold core got 9x slower" diagnosis for the historical workload.
+
+Supporting local artifacts:
+
+- `dev/bench/peer_benchmark/notes/backtrader_scale_check.md`
+- `dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md`
+- `dev/bench/peer_benchmark/notes/three_phase_decomposition_design.md`
+- `dev/bench/peer_benchmark/notes/three_phase_decomposition_results.md`
+- `dev/bench/results/peer_benchmark_record_20260531T053230Z_performance.csv`
+- `dev/bench/results/peer_benchmark_record_20260531T114451Z_performance.csv`
+- `dev/bench/results/ledgr_regression_continuous_20260531T101455Z.csv`
+- `dev/bench/results/ledgr_regression_continuous_20_50_20260531T101945Z.csv`
+
+Read these as local, current-source, machine-specific evidence only. They are
+not a public speed claim and are not a release benchmark ranking.
+
+The later three-phase decomposition refined the interpretation again. On the
+same 500 x 1260 SMA 5/10 crossover workload, Backtrader engine time was
+79.704s and durable ledgr engine time was 138.370s, so the direct engine-loop
+gap is 1.74x rather than the roughly 3x bundled wall-clock gap. The remaining
+wall-clock gap is mostly results materialization: durable ledgr results took
+83.000s, while Backtrader results took 0.153s because its fills are captured
+inline during `notify_order`.
+
+The ephemeral ledgr diagnostic row was the important surprise. It uses the same
+fold core with a memory output handler and produced parity with the durable
+row, but it was slower overall: durable ledgr was 242.080s and ephemeral ledgr
+was 289.620s. Removing the durable snapshot saved 9.740s of ingestion, but the
+memory output handler added 16.380s during engine execution and in-memory
+event-stream reconstruction added 40.900s during results materialization. In
+this high-fill-density regime, the durable DuckDB-backed path is currently the
+efficient ledgr path, not an avoidable cost wrapper around a faster ephemeral
+engine.
+
+The exposed optimization targets are narrower, in expected impact order:
+
+- **Fills read-back reconstruction.** On the 500 x 1260 diagnostic,
+  `ledgr_results(bt, "fills")` took 6.75s for 13,355 fills and 82.28s for
+  68,324 fills. This scales worse than linearly and is the clearest post-run
+  bottleneck.
+- **Memory output-handler per-fill cost.** The parity-matched ephemeral row was
+  16.380s slower than durable during engine execution at 68k fills. The memory
+  handler is not currently the cheap write path on high-turnover workloads.
+- **In-memory event-stream reconstruction.** The ephemeral results phase was
+  40.900s slower than durable `ledgr_results()` reconstruction on the same
+  event stream. This is a separate optimization lane from DuckDB read-back.
+- **Fill/event throughput during the run.** Moving from 13,355 to 68,324 fills
+  raised loop time from about 20s to about 122s. Event/fill turnover remains a
+  main runtime pressure point, and durable ledgr's engine loop was 1.74x
+  Backtrader on the boundary-equivalent row.
+- **Data ingestion and snapshot creation.** Snapshot creation on the 500 x 1260
+  shape is visible but no longer the lead target: durable ledgr ingestion was
+  20.710s and ephemeral ledgr ingestion was 10.970s in the three-phase record.
+  CSV parsing, validation, DuckDB insert, sealing, and hash work should still be
+  separated before optimization.
+- **Strategy-state persistence.** The crossover `state_update` path wrote 1,260
+  rows and about 10.3 MB of JSON. It added measurable overhead, but it is
+  secondary to fill/event volume and fills reconstruction on this workload.
+- **Target/state vector copying.** The peer strategy is now vectorized, but the
+  engine still scans named target/position surfaces and computes deltas every
+  pulse. Keep this as a lower-confidence target tied to prior fold-loop
+  diagnostics.
+
+Feature precompute is not a lead target for this specific SMA workload: `t_pre`
+remained about 0.9s in both the old-shape and no-state control rows. Future
+work should start from a decomposition that separates ingestion, fold loop,
+event emission, fills read-back, and strategy-state persistence instead of
+comparing aggregate peer rows across different SMA windows and turnover levels.
+
+Benchmark interpretation caveat to preserve: ledgr rows include durable
+DuckDB-backed event/equity persistence and result reconstruction, while Python
+peer rows in the harness generally write only canonical CSV artifacts. That is
+part of ledgr's product contract, but it must be separated from pure engine
+loop time when diagnosing performance.
+
+This entry records the optimization target stack, not committed work. A future
+v0.1.9 optimization packet should start from phase-separated timing for
+ingestion, fold-loop fill/event work, state persistence, and result
+reconstruction before choosing a fix.
+
+The v0.1.8.8 contribution is `LDG-2479` (Self-Profiling Workload Grid
+Extension), which captures the cost-surface scaling behavior across universe
+size, history length, fill density, and persistence mode that this single-point
+peer benchmark could not see. The grid output is the planned baseline for the
+v0.1.9 optimization spec.
+
 ### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
 
 v0.1.8.8 may create the `inst/design/manual/` skeleton and clean up stale
@@ -190,6 +288,66 @@ target risk, OMS, or compiled-core architecture.
 This entry records the backlog and rationale. The roadmap schedules the release;
 the v0.1.8.8 cleanup ticket only creates the skeleton and removes confusing
 stale surfaces.
+
+### 2026-05-30 [architecture] Compiled fold core as `ledgrcore` sister package
+
+The 2026-05-25 entry above records that a compiled fold core remains future
+direction and lists the minimum gates before a port RFC. Batch 4 of v0.1.8.8
+(typed execution spec, LDG-2472) and Batch 3 (deterministic-only RNG with
+`ctx$pulse_seed`, LDG-2471) have now closed two of the structural prerequisites
+the 2026-05-25 entry called out. With those in place, the assumed architecture
+becomes concrete enough to document:
+
+Pattern:
+
+- compiled fold core ships as a separate `ledgrcore` sister package;
+- ledgr declares `ledgrcore` as `Suggests`, not `Imports` — pure-R ledgr
+  remains the CRAN-friendly reference;
+- both implementations consume the same `ledgr_execution_spec_v1` payload
+  through `ledgr_execution_spec()`;
+- both implementations emit events through the same output-handler interface
+  (`write_fill_events`, `buffer_strategy_state`, etc.);
+- strategy callbacks remain R-side (the Batch 2 diagnostic measured strategy
+  callback at 0.3% of loop time, so the cross-language callback overhead is
+  negligible against the buckets a compiled core would attack);
+- byte-identical event-stream parity against the pure-R reference is the
+  release contract for any `ledgrcore` version.
+
+The R fold core stays the reference implementation. `ledgrcore` is bound to
+match it byte-for-byte; spec drift becomes a failing parity test, not a silent
+divergence. This is the same discipline that gated v0.1.8.7's optimization
+lanes and the v0.1.8.8 cross-engine parity benchmark (LDG-2476).
+
+Trade-offs to keep visible:
+
+- two implementations to maintain — parity gate enforces equivalence;
+- `Suggests` becomes "everyone installs anyway" once `ledgrcore` ships —
+  accept it; document that pure-R is the fallback;
+- pure-R path rots silently if nobody runs it — keep pure-R as the test
+  default; run `ledgrcore` in a separate CI matrix;
+- versioning matrix grows — `spec_version` on the typed spec is the
+  compatibility gate.
+
+Language choice (C++ via cpp11 vs Rust via extendr) is deferred. The
+ecosystem-alignment argument favours C++ (ledgr already depends on duckdb,
+which is bundled C++); the memory-safety argument favours Rust. Decide when
+the build is authorized, not before.
+
+The decision to build is gated on:
+
+- v0.1.8.9 single-core optimization round, which is expected to recover
+  ~5-8s of pure-R wall on the TTR-backed peer workload per the Batch 2
+  diagnostic-attribution numbers;
+- the LDG-2476 LEAN-Python parity row, which is the empirical anchor for
+  the compiled-core scoping question.
+
+If after v0.1.8.9 ledgr is within ~2x LEAN-Python on a matched workload,
+`ledgrcore` is maintenance overhead with marginal payoff. If the gap is 5x+,
+the compiled story becomes load-bearing. The 2026-05-25 entry's minimum gates
+(target risk stability, walk-forward workloads, cost/liquidity boundaries,
+typed value objects) remain binding alongside this empirical gate.
+
+This entry records direction, not committed work.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 

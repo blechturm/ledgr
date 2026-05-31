@@ -4,8 +4,9 @@
 **Target Branch:** `v0.1.8.8`.  
 **Scope:** Parallel sweep dispatch and determinism; fold-core maintainer
 documentation and code legibility; repo-local reproducible peer benchmark
-reporting with internal cross-engine parity sanity check; internal
-maintainer-manual skeleton and stale documentation cleanup.
+reporting with internal cross-engine parity sanity check; self-profiling
+workload grid extension as input to the v0.1.9 single-core optimization
+round; internal maintainer-manual skeleton and stale documentation cleanup.
 **Non-scope for this pass:** package-vignette peer marketing, hosted benchmark
 claims, a ledgr-authored compiled fold core, target risk / OMS / cost model
 work, durable identity byte redesign, public distributed execution APIs,
@@ -66,7 +67,7 @@ v0.1.8.7 removed the largest single-core hot-path rocks and legacy execution
 gunk. v0.1.8.8 should make the optimized engine easier to maintain and safer to
 parallelize.
 
-The release has four tracks:
+The release has five tracks:
 
 1. **Parallel sweep dispatch and determinism.** Add an optional public parallel
    sweep path while keeping sequential `ledgr_sweep()` as the reference
@@ -82,7 +83,14 @@ The release has four tracks:
    derived top-line metrics, and trade-level outputs as a building-phase
    sanity check that ledgr's engine produces the right results when given
    equivalent inputs.
-4. **Maintainer manual cleanup.** Establish `inst/design/manual/` as the
+4. **Self-profiling workload grid extension.** Extend the existing
+   `dev/bench/shared/run_benchmarks.R` suite with a structured grid that
+   varies universe size, history length, fill density, and persistence mode,
+   together with post-fold extraction phase decomposition. The grid is
+   ledgr-only self-profiling, not a peer comparison, and feeds the v0.1.9
+   single-core optimization spec with measured cost-surface scaling
+   evidence the LDG-2476 single-point peer benchmark could not see.
+5. **Maintainer manual cleanup.** Establish `inst/design/manual/` as the
    internal maintainer-facing article tree and remove or quarantine stale
    installed-doc, diagram, schema, and fixture surfaces that confuse agents or
    outside readers.
@@ -95,7 +103,7 @@ candidate-dispatch layer over the same fold core, not a second engine.
 
 ## 2. Release Goals
 
-v0.1.8.8 has ten release goals:
+v0.1.8.8 has eleven release goals:
 
 1. Add a public, optional parallel sweep dispatch path that preserves the
    sequential sweep contract and fails loudly when required worker dependencies
@@ -125,7 +133,13 @@ v0.1.8.8 has ten release goals:
    building-phase sanity check that ledgr's engine produces the right results
    when given equivalent inputs, with every residual divergence attributed to
    a documented source and the parity track record persisted across releases.
-10. Create the internal maintainer-manual skeleton, retire stale standalone
+10. Extend the existing `dev/bench/shared/run_benchmarks.R` suite with a
+    self-profiling workload grid that varies universe size, history length,
+    fill density, and persistence mode, plus post-fold extraction phase
+    decomposition; capture a baseline grid record under current source for
+    v0.1.9 optimization input. The grid is ledgr-only, not a peer comparison,
+    and not a public performance claim.
+11. Create the internal maintainer-manual skeleton, retire stale standalone
     documentation surfaces, and audit installed-vignette links without turning
     the package documentation into an internal architecture manual.
 
@@ -134,9 +148,13 @@ is substantially easier for maintainers to reason about. If Batch 8 ships in
 this release, the benchmark report must be re-runnable from a clean repository
 checkout without relying on ambient Python packages, and the parity sanity
 check must tell the maintainer honestly whether ledgr's engine matches
-established peer engines on equivalent inputs. The peer/parity report and the
-maintainer-manual cleanup are useful but separable; either may slip by explicit
-maintainer decision if the parallel/determinism release becomes too wide.
+established peer engines on equivalent inputs. If Batch 8B ships, the workload
+grid must extend the existing benchmark suite without changing the existing
+scenarios, and must produce a baseline grid record plus closeout note labeled
+as local-host, machine-specific, current-source evidence. The peer/parity
+report, the workload grid extension, and the maintainer-manual cleanup are
+useful but separable; any may slip by explicit maintainer decision if the
+parallel/determinism release becomes too wide.
 
 ---
 
@@ -415,6 +433,20 @@ The following remain deferred unless separately authorized:
 - compiled fold core;
 - matrix-canonical public strategy surface.
 
+The compiled fold core, when authorized, is assumed to ship as a separate
+`ledgrcore` sister package declared as `Suggests` from ledgr. It consumes the
+`ledgr_execution_spec_v1` payload (Workstream D / LDG-2472) through the same
+internal constructor ledgr uses and emits events through the existing
+output-handler interface. The pure-R fold core remains the reference
+implementation; the release contract for any `ledgrcore` version is
+byte-identical event-stream parity against the fixtures already used for
+run-vs-sweep and audit-log-equivalence. The decision to build is gated on
+the v0.1.8.9 single-core optimization round and the LDG-2476 LEAN-Python
+parity row; this paragraph records the architectural assumption, not
+authorization. See the `2026-05-30 [architecture] Compiled fold core as
+ledgrcore sister package` entry in `inst/design/horizon.md` for the full
+trade-off enumeration.
+
 ---
 
 ## 7. Workstream E: Repo-Local Peer Benchmark And Parity Report
@@ -615,7 +647,139 @@ telemetry, parallel dispatch, and benchmark methodology.
 
 ---
 
-## 9. Measurement Gates
+## 9. Workstream G: Self-Profiling Workload Grid Extension
+
+This workstream is the v0.1.8.8 contribution to the v0.1.9 single-core
+optimization round. The LDG-2476 peer benchmark surfaced a per-fill cost
+surface that was not visible at the SMA 20/50 density used by the v0.1.8.7
+closeout but dominates at the SMA 5/10 density used by the apples-to-apples
+parity harness. The workstream extends the existing
+`dev/bench/shared/run_benchmarks.R` suite (the v0.1.8.6 Workstream S harness)
+with a structured grid that varies universe size, history length, fill
+density, and persistence mode so cost-surface scaling is directly visible per
+dimension.
+
+This is a self-profiling tool. It is not a peer benchmark, not a public
+performance dashboard, and not a competitive ranking artifact. The grid runs
+only ledgr.
+
+### 9.1 Bound Scope
+
+The workload grid extension must:
+
+- extend the existing v0.1.8.6 Workstream S suite
+  (`dev/bench/shared/run_benchmarks.R`) with named density-by-universe-size
+  scenarios, not replace it;
+- preserve the existing scenario contracts (`baseline_single_run`,
+  `pulse_loop_empty`, `wide_panel_no_features`, `feature_read_score`,
+  `feature_turnover`, `indicator_payload`, `sweep_memory_summary`,
+  `persistent_replay`, `peer_sma_crossover`, `peer_sma_crossover_sweep`);
+- cover both `durable` (`ledgr_run` path) and `ephemeral` (`ledgr_sweep`
+  candidates=1 path) variants for every density-by-universe-size cell;
+- add post-fold extraction phase decomposition columns to the existing
+  benchmark output schema;
+- run the new scenarios at `record` preset, write a baseline grid record under
+  `dev/bench/results/`, and produce a closeout note ranking cost surfaces.
+
+### 9.2 Grid Cells
+
+Sixteen new named scenarios. SMA windows control fill density; universe size
+and history length control scale.
+
+| Scenario | n_inst | n_pulses | SMA windows | Persistence |
+| --- | ---: | ---: | --- | --- |
+| `density_low_small_durable` | 50 | 252 | 20/50 | durable |
+| `density_high_small_durable` | 50 | 252 | 5/10 | durable |
+| `density_low_med_durable` | 100 | 1260 | 20/50 | durable |
+| `density_high_med_durable` | 100 | 1260 | 5/10 | durable |
+| `density_low_wide_durable` | 500 | 1260 | 20/50 | durable |
+| `density_high_wide_durable` | 500 | 1260 | 5/10 | durable |
+| `density_low_xwide_durable` | 1000 | 1260 | 20/50 | durable |
+| `density_high_xwide_durable` | 1000 | 1260 | 5/10 | durable |
+| `density_low_small_ephemeral` | 50 | 252 | 20/50 | ephemeral |
+| `density_high_small_ephemeral` | 50 | 252 | 5/10 | ephemeral |
+| `density_low_med_ephemeral` | 100 | 1260 | 20/50 | ephemeral |
+| `density_high_med_ephemeral` | 100 | 1260 | 5/10 | ephemeral |
+| `density_low_wide_ephemeral` | 500 | 1260 | 20/50 | ephemeral |
+| `density_high_wide_ephemeral` | 500 | 1260 | 5/10 | ephemeral |
+| `density_low_xwide_ephemeral` | 1000 | 1260 | 20/50 | ephemeral |
+| `density_high_xwide_ephemeral` | 1000 | 1260 | 5/10 | ephemeral |
+
+All cells use the SMA crossover-event strategy from
+`bench_sma_crossover_strategy()`, `trade = TRUE`, and the existing
+`bench_make_sma_features()` indicator definition. Smoke preset shrinks each
+cell to the existing smoke-preset shape ratios.
+
+### 9.3 Phase Decomposition
+
+The existing suite records `snapshot_sec`, `t_pre_sec`, `t_loop_sec`,
+`t_residual_sec`, `t_wall_sec`, and `replay_sec`. Add post-fold extraction
+columns to the per-row CSV:
+
+- `fills_extract_sec`: wall for `ledgr_results(bt, "fills")`.
+- `equity_extract_sec`: wall for `ledgr_results(bt, "equity")`.
+- `ledger_extract_sec`: wall for `ledgr_results(bt, "ledger")`.
+
+Add derived per-fill metrics:
+
+- `mus_per_fill_engine = t_loop_sec / fills * 1e6`.
+- `mus_per_fill_extract = fills_extract_sec / fills * 1e6`.
+
+These columns must populate for durable cells. Ephemeral cells use the
+existing `bench_run_sweep_once()` path, which does not surface per-pulse
+telemetry or run a separate `ledgr_results()` extraction; ephemeral cells
+record `snapshot_sec` and `t_wall_sec` only, and the missing columns carry
+`NA`. The asymmetry must be documented in the closeout note. Exposing
+per-candidate telemetry on the ephemeral path is deferred to v0.1.9.
+
+### 9.4 Reproducibility
+
+The grid must use:
+
+- `set.seed(args$seed)` from the existing harness;
+- per-iteration seed offsets (`seed + iter`) for replication semantics;
+- `OMP_NUM_THREADS = 1`, `OPENBLAS_NUM_THREADS = 1`, `MKL_NUM_THREADS = 1`,
+  `NUMEXPR_NUM_THREADS = 1` thread environment;
+- the existing installed-package mismatch guard.
+
+The grid runs on current source. Cross-release comparison requires identical
+scenario definitions and identical environment metadata; do not edit
+shipped scenario shapes mid-release.
+
+### 9.5 Closeout Artifact
+
+The release must include `dev/bench/notes/workload_grid_baseline_closeout.md`
+documenting:
+
+- the record file path and environment metadata;
+- per-cell phase decomposition;
+- per-cell per-fill engine and extraction costs;
+- ranking of observed cost surfaces by absolute magnitude and by scaling
+  behavior across the grid dimensions;
+- the v0.1.9 single-core optimization target stack derived from the ranking;
+- explicit caveats: local-host, machine-specific, current-source, not a
+  competitive comparison, not a public performance claim.
+
+### 9.6 Non-Goals
+
+The workload grid extension is not:
+
+- a peer benchmark (no Backtrader / quantstrat / zipline / LEAN rows);
+- a public performance dashboard or pkgdown article;
+- a v0.1.9 optimization implementation (the grid measures; the optimization
+  round acts);
+- a contract change to `ledgr_run()`, `ledgr_sweep()`, or any public surface;
+- authorization for a new public ephemeral entry point. The ephemeral cells
+  exercise the existing `ledgr_sweep()` candidates=1 path already used by the
+  pre-existing `peer_sma_crossover_sweep` scenario; if a cleaner ephemeral
+  entry point is needed, that is a separate v0.1.9 ticket.
+
+The grid is a measurement tool for the v0.1.9 spec inputs, not a deliverable
+to outside readers.
+
+---
+
+## 10. Measurement Gates
 
 v0.1.8.8 must preserve the v0.1.8.7 measurement discipline.
 
@@ -626,13 +790,18 @@ Required measurements:
 - worker setup overhead;
 - deterministic equality between sequential and parallel rows;
 - current-source intra-loop profile for fold-core documentation;
-- peer benchmark report rerun after the benchmark harness is finalized.
+- peer benchmark report rerun after the benchmark harness is finalized;
+- self-profiling workload grid baseline capture under current source if
+  Batch 8B ships, recorded under `dev/bench/results/` with per-cell phase
+  decomposition and per-fill metrics.
 
 Recommended benchmark dimensions:
 
 - cheap SMA workload;
 - feature-heavy workload where sweep amortization can matter;
 - small, medium, and record-width shapes;
+- explicit fill-density coverage (low vs high turnover) across universe
+  sizes, captured by the Workstream G workload grid;
 - Windows host first, because Windows-safe behavior is a release goal.
 
 Do not claim parallel speedup from one shape alone. Report startup overhead,
@@ -640,7 +809,7 @@ per-candidate slope, and crossover point where parallelism begins to pay.
 
 ---
 
-## 10. Verification Gates
+## 11. Verification Gates
 
 Release-ticket work must include targeted tests for:
 
@@ -679,6 +848,17 @@ Release-ticket work must include targeted tests for:
 - the three-source attribution rule is documented in the report;
 - wall-time rows carry parity-status labels and do not claim speed without
   disclosing parity state;
+- if Batch 8B ships: the sixteen workload grid scenarios run on the local
+  host at smoke and record presets without altering the existing
+  v0.1.8.6 Workstream S scenarios;
+- if Batch 8B ships: per-row output includes `fills_extract_sec`,
+  `equity_extract_sec`, `ledger_extract_sec`, `mus_per_fill_engine`, and
+  `mus_per_fill_extract` columns; durable cells populate them; ephemeral
+  cells use `NA` where the extraction call is not made;
+- if Batch 8B ships: the closeout note ranks observed cost surfaces by
+  absolute magnitude and by scaling behavior, derives a v0.1.9 optimization
+  target stack, and labels the result as local-host, machine-specific,
+  current-source evidence rather than a public performance claim;
 - maintainer-manual cleanup leaves package vignettes and `inst/doc/` build
   semantics intact;
 - stale diagram/schema/testdata surfaces are deleted, moved, or explicitly
@@ -690,7 +870,7 @@ Full package tests and package check are required before release.
 
 ---
 
-## 11. Settled Spec-Cut Decisions
+## 12. Settled Spec-Cut Decisions
 
 These decisions are bound for ticket cut:
 
@@ -704,10 +884,11 @@ These decisions are bound for ticket cut:
 | 6 | File split | Pair mechanical `R/fold-core.R` split with Batch 1 documentation refresh. |
 | 7 | Explicit event types | Defer from v0.1.8.8; schedule dedicated RFC in the v0.2.x corporate-actions arc. |
 | 8 | Peer list | Required: ledgr canonical, ledgr built-in diagnostic, quantstrat, Backtrader. Strongly recommended if local setup allows: LEAN Python-strategy mode. Optional: zipline-reloaded, Ziplime. |
+| 9 | Self-profiling workload grid | Extend the existing `dev/bench/shared/run_benchmarks.R` suite (sixteen density-by-universe-size cells across durable and ephemeral persistence modes plus post-fold extraction phase decomposition). Ledgr-only, not a peer benchmark. Baseline grid record and closeout note feed the v0.1.9 single-core optimization spec. |
 
 ---
 
-## 12. Proposed Batch Shape
+## 13. Proposed Batch Shape
 
 Initial batch plan, subject to review:
 
@@ -734,21 +915,27 @@ Initial batch plan, subject to review:
 9. **Batch 8 - Repo-local peer benchmark and parity report.** Add `dev/bench`
    Quarto report and `uv`-managed Backtrader environment; add LEAN
    Python-strategy mode if local setup is tractable.
-10. **Batch 9 - Maintainer manual skeleton and stale-doc cleanup.** Create
+10. **Batch 8B - Self-profiling workload grid extension.** Extend the existing
+    `dev/bench/shared/run_benchmarks.R` suite with the sixteen
+    density-by-universe-size grid scenarios plus post-fold extraction phase
+    decomposition. Capture a baseline grid record on the local host and write
+    the closeout note that ranks observed cost surfaces and derives the v0.1.9
+    optimization target stack.
+11. **Batch 9 - Maintainer manual skeleton and stale-doc cleanup.** Create
     the internal manual tree, migrate the current workbooks, retire stale
     diagrams/schema placeholders, audit installed-vignette links, and classify
     or move installed test fixtures.
-11. **Batch 10 - Release gate.** Full tests, package check, benchmark closeout,
+12. **Batch 10 - Release gate.** Full tests, package check, benchmark closeout,
     docs review, and release notes.
 
 If the cycle becomes too wide, keep Batches 0-7 as the core release and move
-Batches 8 and/or 9 to later same-branch documentation tickets by explicit
-maintainer decision. Do not drop Batch 1; the fold-core maintainer documentation
-is a release goal.
+Batches 8, 8B, and/or 9 to later same-branch documentation tickets by explicit
+maintainer decision. Do not drop Batch 1; the fold-core maintainer
+documentation is a release goal.
 
 ---
 
-## 13. Future Obligations Recorded
+## 14. Future Obligations Recorded
 
 Later work, not authorized here:
 

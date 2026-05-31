@@ -1,0 +1,9 @@
+[project]
+name = "ledgr-lean-peer"
+version = "0.1.0"
+description = "Repo-local LEAN CLI peer harness for ledgr benchmark parity checks"
+requires-python = ">=3.10"
+dependencies = [
+  "lean==1.0.225",
+  "pandas",
+]

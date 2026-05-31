@@ -1,0 +1,9 @@
+[project]
+name = "ledgr-zipline-peer"
+version = "0.1.0"
+description = "Repo-local zipline-reloaded peer harness for ledgr benchmark parity checks"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "zipline-reloaded==3.1.1",
+  "pandas",
+]

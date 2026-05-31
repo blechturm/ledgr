@@ -6,7 +6,7 @@
 # row. Headline unit: security_bars_sec = n_inst * n_pulses / wall.
 #
 # Run peer_three_way.R first (it writes the shared CSVs), then:
-#   python dev/bench/peer_three_way_backtrader.py --widths 10,50,100,250
+#   python dev/bench/archive/peer_three_way_backtrader.py --widths 10,50,100,250
 #
 # Requires: backtrader, pandas (Codex's LDG-2457 row used backtrader 1.9.78.123,
 # pandas 3.0.3, numpy 2.4.6 on Python 3.13).

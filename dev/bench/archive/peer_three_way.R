@@ -19,8 +19,8 @@
 # indicator implementation. Fill counts are close, not identical.
 #
 # Usage:
-#   Rscript dev/bench/peer_three_way.R --widths 10,50,100,250 --days 1260
-#   then:  python dev/bench/peer_three_way_backtrader.py --widths 10,50,100,250
+#   Rscript dev/bench/archive/peer_three_way.R --widths 10,50,100,250 --days 1260
+#   then:  python dev/bench/archive/peer_three_way_backtrader.py --widths 10,50,100,250
 
 suppressWarnings(suppressMessages({
   if (file.exists("DESCRIPTION") &&

@@ -7,8 +7,8 @@
 # decision. It reuses the structured benchmark harness in run_benchmarks.R.
 #
 # Usage:
-#   Rscript dev/bench/run_width_sweep.R --preset smoke --repeats 1 --warmup 1
-#   Rscript dev/bench/run_width_sweep.R --preset record --repeats 3 --warmup 1
+#   Rscript dev/bench/archive/run_width_sweep.R --preset smoke --repeats 1 --warmup 1
+#   Rscript dev/bench/archive/run_width_sweep.R --preset record --repeats 3 --warmup 1
 
 source(file.path("dev", "bench", "run_benchmarks.R"))
 

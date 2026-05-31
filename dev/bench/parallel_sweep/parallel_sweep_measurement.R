@@ -4,8 +4,8 @@
 # This is a local development benchmark, not a public performance dashboard.
 #
 # Usage:
-#   Rscript dev/bench/parallel_sweep_measurement.R --preset smoke --repeats 1 --warmup 0
-#   Rscript dev/bench/parallel_sweep_measurement.R --preset record --repeats 3 --warmup 1
+#   Rscript dev/bench/parallel_sweep/parallel_sweep_measurement.R --preset smoke --repeats 1 --warmup 0
+#   Rscript dev/bench/parallel_sweep/parallel_sweep_measurement.R --preset record --repeats 3 --warmup 1
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
@@ -50,7 +50,7 @@ psm_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
       i <- i + 2L
     } else if (key %in% c("--help", "-h")) {
       cat(paste(
-        "Usage: Rscript dev/bench/parallel_sweep_measurement.R [options]",
+        "Usage: Rscript dev/bench/parallel_sweep/parallel_sweep_measurement.R [options]",
         "",
         "Options:",
         "  --preset smoke|record",

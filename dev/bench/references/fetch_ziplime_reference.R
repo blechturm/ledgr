@@ -28,7 +28,7 @@
 #   scenario is `peer_sma_crossover` in run_benchmarks.R.
 #
 # USAGE
-#   Rscript -e 'source("dev/bench/fetch_ziplime_reference.R"); fetch_ziplime_reference()'
+#   Rscript -e 'source("dev/bench/references/fetch_ziplime_reference.R"); fetch_ziplime_reference()'
 #   # offline / deterministic (against a saved copy of the README):
 #   fetch_ziplime_reference(source = "path/to/ziplime_README.md")
 #
@@ -78,7 +78,7 @@ ZIPLIME_README_URL <- "https://raw.githubusercontent.com/Limex-com/ziplime/maste
 }
 
 fetch_ziplime_reference <- function(source = ZIPLIME_README_URL,
-                                    out = "dev/bench/ziplime_reference.csv") {
+                                    out = "dev/bench/references/ziplime_reference.csv") {
   readme <- .ziplime_read_readme(source)
   lines <- strsplit(readme, "\n", fixed = TRUE)[[1L]]
 

@@ -1,7 +1,8 @@
 # v0.1.8.8 Batch Plan
 
 **Status:** Review batching plan for the v0.1.8.8 parallel dispatch,
-fold-core maintainability, and repo-local peer benchmark cycle.  
+fold-core maintainability, repo-local peer benchmark, and self-profiling
+workload grid cycle.  
 **Scope:** Groups the v0.1.8.8 tickets into implementation/review batches.
 
 v0.1.8.8 makes the optimized v0.1.8.7 engine easier to maintain and safe to
@@ -327,6 +328,53 @@ Review focus:
 
 ---
 
+## Batch 8B: Self-Profiling Workload Grid Extension
+
+Tickets:
+
+- `LDG-2479` Self-Profiling Workload Grid Extension
+
+Purpose:
+
+Extend the existing `dev/bench/shared/run_benchmarks.R` suite with a structured
+grid that varies universe size, history length, fill density, and persistence
+mode. The grid is ledgr-only self-profiling, not a peer comparison. It is the
+v0.1.8.8 contribution to the v0.1.9 single-core optimization round: it captures
+cost-surface scaling behavior the LDG-2476 single-point peer benchmark could
+not see and gives the v0.1.9 spec a measured baseline.
+
+Review focus:
+
+- New scenarios extend `bench_specs()`; they do not replace or modify the
+  existing ten v0.1.8.6 Workstream S scenarios.
+- Durable cells route through the existing `bench_run_scenario_once()` path;
+  ephemeral cells route through the existing `bench_run_sweep_once()` path
+  with `candidates = 1L`. No new public entry points are introduced.
+- Post-fold extraction phase columns (`fills_extract_sec`,
+  `equity_extract_sec`, `ledger_extract_sec`) populate for durable cells.
+  Ephemeral cells carry `NA` where the extraction call is not made; this
+  asymmetry is documented in the closeout note.
+- Derived per-fill metrics (`mus_per_fill_engine`, `mus_per_fill_extract`)
+  appear in the per-row and summary outputs.
+- The `record` preset baseline grid run lives under `dev/bench/results/` with
+  the same environment metadata convention as the existing suite.
+- The closeout note labels the result as local-host, machine-specific,
+  current-source evidence; it does not claim public performance or a
+  competitive ranking.
+- The closeout note ranks cost surfaces by both absolute magnitude and
+  scaling behavior across the grid dimensions, and derives a v0.1.9
+  optimization target stack from the ranking.
+- No public API changes; no peer engine work; no compiled-core implications.
+- Empirical closeout is the closeout note review, the baseline record file
+  review, and a spot-check that the existing scenarios still run unchanged.
+
+This batch is separable: if the v0.1.8.8 cycle becomes too wide, LDG-2479 may
+be deferred by explicit maintainer decision and re-cut against v0.1.8.9. The
+v0.1.9 optimization spec depends on having a grid baseline measured under
+current source; deferring LDG-2479 means deferring or rescoping that spec.
+
+---
+
 ## Batch 9: Maintainer Manual Skeleton And Stale-Doc Cleanup
 
 Tickets:
@@ -370,9 +418,9 @@ Tickets:
 
 Purpose:
 
-Verify the full release, close the packet, and prepare merge/tag. If Batch 8
-and/or Batch 9 is explicitly deferred, record the maintainer decision and keep
-the core release gate tied to Batches 0-7.
+Verify the full release, close the packet, and prepare merge/tag. If Batch 8,
+Batch 8B, and/or Batch 9 is explicitly deferred, record the maintainer
+decision and keep the core release gate tied to Batches 0-7.
 
 Review focus:
 
@@ -384,7 +432,7 @@ Review focus:
 - No generated local artifacts are committed.
 - Full tests and package checks pass or have documented accepted caveats.
 - Parallel benchmark closeout is honest about overhead and crossover.
-- Peer benchmark and maintainer-manual cleanup are complete or explicitly
-  deferred by maintainer decision.
+- Peer benchmark, workload grid extension closeout, and maintainer-manual
+  cleanup are complete or explicitly deferred by maintainer decision.
 - Release notes do not overclaim parallel speedup or peer superiority.
 - Roadmap, horizon, design index, AGENTS, and NEWS/release notes are updated.
