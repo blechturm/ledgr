@@ -21,7 +21,7 @@ bench_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     warmup = 1L,
     scenarios = NULL,
     seed = 20260528L,
-    lean_ref = file.path("dev", "bench", "lean_reference.csv")
+    lean_ref = file.path("dev", "bench", "references", "lean_reference.csv")
   )
   i <- 1L
   while (i <= length(args)) {
@@ -134,8 +134,9 @@ bench_environment <- function(args) {
 }
 
 bench_specs <- function(preset = "smoke") {
+  grid <- bench_workload_grid_specs(preset)
   if (identical(preset, "record")) {
-    return(list(
+    base <- list(
       baseline_single_run = list(kind = "run", n_inst = 1L, n_pulses = 252L, n_feat = 0L, trade = TRUE),
       pulse_loop_empty = list(kind = "run", n_inst = 1L, n_pulses = 1000L, n_feat = 0L, trade = FALSE),
       wide_panel_no_features = list(kind = "run", n_inst = 400L, n_pulses = 252L, n_feat = 0L, trade = FALSE),
@@ -146,9 +147,10 @@ bench_specs <- function(preset = "smoke") {
       persistent_replay = list(kind = "run", n_inst = 25L, n_pulses = 252L, n_feat = 5L, trade = TRUE, replay = TRUE),
       peer_sma_crossover = list(kind = "run", n_inst = 500L, n_pulses = 1260L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 20L, sma_slow = 50L, persist_features = FALSE),
       peer_sma_crossover_sweep = list(kind = "sweep", n_inst = 500L, n_pulses = 1260L, n_feat = 2L, candidates = 1L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 20L, sma_slow = 50L)
-    ))
+    )
+    return(c(base, grid))
   }
-  list(
+  base <- list(
     baseline_single_run = list(kind = "run", n_inst = 1L, n_pulses = 30L, n_feat = 0L, trade = TRUE),
     pulse_loop_empty = list(kind = "run", n_inst = 1L, n_pulses = 60L, n_feat = 0L, trade = FALSE),
     wide_panel_no_features = list(kind = "run", n_inst = 20L, n_pulses = 40L, n_feat = 0L, trade = FALSE),
@@ -160,6 +162,56 @@ bench_specs <- function(preset = "smoke") {
     peer_sma_crossover = list(kind = "run", n_inst = 20L, n_pulses = 80L, n_feat = 2L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 5L, sma_slow = 10L, persist_features = FALSE),
     peer_sma_crossover_sweep = list(kind = "sweep", n_inst = 20L, n_pulses = 80L, n_feat = 2L, candidates = 1L, trade = TRUE, strategy_kind = "sma_crossover", sma_fast = 5L, sma_slow = 10L)
   )
+  c(base, grid)
+}
+
+bench_workload_grid_specs <- function(preset = "smoke") {
+  densities <- list(
+    low = c(fast = 20L, slow = 50L),
+    high = c(fast = 5L, slow = 10L)
+  )
+  sizes <- if (identical(preset, "record")) {
+    list(
+      small = c(n_inst = 50L, n_pulses = 252L),
+      medium = c(n_inst = 100L, n_pulses = 1260L),
+      large = c(n_inst = 500L, n_pulses = 1260L),
+      xlarge = c(n_inst = 1000L, n_pulses = 1260L)
+    )
+  } else {
+    # Smoke keeps the same 16 scenario names but uses reduced shapes so local
+    # validation remains practical before the record preset is launched.
+    list(
+      small = c(n_inst = 5L, n_pulses = 40L),
+      medium = c(n_inst = 10L, n_pulses = 60L),
+      large = c(n_inst = 20L, n_pulses = 80L),
+      xlarge = c(n_inst = 40L, n_pulses = 100L)
+    )
+  }
+  persistence <- c("durable", "ephemeral")
+  out <- list()
+  for (density in names(densities)) {
+    for (size in names(sizes)) {
+      for (mode in persistence) {
+        nm <- sprintf("density_%s_%s_%s", density, size, mode)
+        out[[nm]] <- list(
+          kind = if (identical(mode, "durable")) "run" else "sweep",
+          n_inst = as.integer(sizes[[size]][["n_inst"]]),
+          n_pulses = as.integer(sizes[[size]][["n_pulses"]]),
+          n_feat = 2L,
+          candidates = 1L,
+          trade = TRUE,
+          strategy_kind = "sma_crossover",
+          sma_fast = as.integer(densities[[density]][["fast"]]),
+          sma_slow = as.integer(densities[[density]][["slow"]]),
+          persist_features = FALSE,
+          grid_density = density,
+          grid_size = size,
+          persistence = mode
+        )
+      }
+    }
+  }
+  out
 }
 
 bench_make_bars <- function(n_inst, n_pulses, seed) {
@@ -201,17 +253,22 @@ bench_make_sma_features <- function(fast = 20L, slow = 50L) {
       series_fn = function(bars, params) as.numeric(TTR::SMA(as.numeric(bars$close), n = w))
     )
   }
-  list(mk("sma_fast", fast), mk("sma_slow", slow))
+  list(
+    mk(sprintf("sma_fast_%d", as.integer(fast)), fast),
+    mk(sprintf("sma_slow_%d", as.integer(slow)), slow)
+  )
 }
 
-bench_sma_crossover_strategy <- function(trade) {
+bench_sma_crossover_strategy <- function(trade, fast_id = "sma_fast_20", slow_id = "sma_slow_50") {
   TRADE <- isTRUE(trade)
+  FAST_ID <- fast_id
+  SLOW_ID <- slow_id
   function(ctx, params) {
     targets <- ctx$flat()
     if (!TRADE) return(targets)
     fw <- ctx$features_wide
-    fast <- fw$sma_fast
-    slow <- fw$sma_slow
+    fast <- fw[[FAST_ID]]
+    slow <- fw[[SLOW_ID]]
     long <- !is.na(fast) & !is.na(slow) & fast > slow
     if (any(long)) {
       targets[fw$instrument_id[long]] <- params$qty
@@ -254,6 +311,14 @@ bench_count_rows <- function(bt, what) {
   tryCatch(nrow(ledgr_results(bt, what)), error = function(e) NA_integer_)
 }
 
+bench_extract_result <- function(bt, what) {
+  rows <- NA_integer_
+  elapsed <- system.time({
+    rows <- tryCatch(nrow(ledgr_results(bt, what)), error = function(e) NA_integer_)
+  })[["elapsed"]]
+  list(rows = rows, elapsed = as.numeric(elapsed))
+}
+
 bench_capture_warnings <- function(expr) {
   warnings <- character()
   value <- withCallingHandlers(
@@ -277,13 +342,17 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   sma <- identical(spec$strategy_kind, "sma_crossover")
+  sma_fast <- spec$sma_fast %||% 20L
+  sma_slow <- spec$sma_slow %||% 50L
+  sma_fast_id <- sprintf("sma_fast_%d", as.integer(sma_fast))
+  sma_slow_id <- sprintf("sma_slow_%d", as.integer(sma_slow))
   features <- if (sma) {
-    bench_make_sma_features(spec$sma_fast %||% 20L, spec$sma_slow %||% 50L)
+    bench_make_sma_features(sma_fast, sma_slow)
   } else {
     bench_make_features(spec$n_feat %||% 0L)
   }
   strategy <- if (sma) {
-    bench_sma_crossover_strategy(spec$trade %||% TRUE)
+    bench_sma_crossover_strategy(spec$trade %||% TRUE, sma_fast_id, sma_slow_id)
   } else {
     bench_strategy(name, spec$n_feat %||% 0L, spec$trade %||% FALSE)
   }
@@ -308,8 +377,18 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
   tel <- bench_read_telemetry(run_id)
   info <- tryCatch(ledgr_run_info(snapshot, run_id), error = function(e) NULL)
   n_pulses <- if (is.null(info)) spec$n_pulses else as.integer(info$pulse_count)
-  ledger_rows <- bench_count_rows(bt, "ledger")
-  fill_rows <- bench_count_rows(bt, "fills")
+  equity_extract <- bench_extract_result(bt, "equity")
+  fills_extract <- bench_extract_result(bt, "fills")
+  ledger_extract <- bench_extract_result(bt, "ledger")
+  ledger_rows <- ledger_extract$rows
+  fill_rows <- fills_extract$rows
+  fill_rows_source <- "fills"
+  fill_rows_bad <- length(fill_rows) != 1L || is.na(fill_rows) || !is.finite(fill_rows)
+  ledger_rows_ok <- length(ledger_rows) == 1L && !is.na(ledger_rows) && is.finite(ledger_rows)
+  if (fill_rows_bad && ledger_rows_ok) {
+    fill_rows <- ledger_rows
+    fill_rows_source <- "ledger_fallback"
+  }
   replay_sec <- NA_real_
   if (isTRUE(spec$replay)) {
     close(bt)
@@ -344,6 +423,9 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
     t_residual_sec = as.numeric(t_residual),
     t_loop_sec = as.numeric(t_loop),
     t_wall_sec = as.numeric(elapsed),
+    equity_extract_sec = as.numeric(equity_extract$elapsed),
+    fills_extract_sec = as.numeric(fills_extract$elapsed),
+    ledger_extract_sec = as.numeric(ledger_extract$elapsed),
     replay_sec = as.numeric(replay_sec),
     security_bars = spec$n_inst * n_pulses,
     feature_cells = feature_cells,
@@ -351,7 +433,18 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
     feature_cells_sec = if (is.finite(feature_cells)) feature_cells / elapsed else NA_real_,
     events = ledger_rows,
     fills = fill_rows,
+    fills_count_source = fill_rows_source,
     events_sec = if (is.finite(ledger_rows) && elapsed > 0) ledger_rows / elapsed else NA_real_,
+    mus_per_fill_engine = if (is.finite(fill_rows) && fill_rows > 0L && is.finite(t_loop)) {
+      as.numeric(t_loop) / fill_rows * 1e6
+    } else {
+      NA_real_
+    },
+    mus_per_fill_extract = if (is.finite(fill_rows) && fill_rows > 0L && is.finite(fills_extract$elapsed)) {
+      as.numeric(fills_extract$elapsed) / fill_rows * 1e6
+    } else {
+      NA_real_
+    },
     warnings = length(warnings),
     failures = 0L,
     comparability_note = bench_comparability_note(name),
@@ -369,13 +462,17 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   sma <- identical(spec$strategy_kind, "sma_crossover")
+  sma_fast <- spec$sma_fast %||% 20L
+  sma_slow <- spec$sma_slow %||% 50L
+  sma_fast_id <- sprintf("sma_fast_%d", as.integer(sma_fast))
+  sma_slow_id <- sprintf("sma_slow_%d", as.integer(sma_slow))
   features <- if (sma) {
-    bench_make_sma_features(spec$sma_fast %||% 20L, spec$sma_slow %||% 50L)
+    bench_make_sma_features(sma_fast, sma_slow)
   } else {
     bench_make_features(spec$n_feat %||% 0L)
   }
   strategy <- if (sma) {
-    bench_sma_crossover_strategy(spec$trade %||% TRUE)
+    bench_sma_crossover_strategy(spec$trade %||% TRUE, sma_fast_id, sma_slow_id)
   } else {
     FEATURE_COLS <- if ((spec$n_feat %||% 0L) > 0L) sprintf("bench_f_%03d", seq_len(spec$n_feat)) else character()
     function(ctx, params) {
@@ -420,6 +517,9 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
     t_residual_sec = NA_real_,
     t_loop_sec = NA_real_,
     t_wall_sec = as.numeric(elapsed),
+    equity_extract_sec = NA_real_,
+    fills_extract_sec = NA_real_,
+    ledger_extract_sec = NA_real_,
     replay_sec = NA_real_,
     security_bars = security_bars,
     feature_cells = feature_cells,
@@ -427,7 +527,10 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
     feature_cells_sec = if (is.finite(feature_cells)) feature_cells / elapsed else NA_real_,
     events = NA_integer_,
     fills = tryCatch(sum(sweep$n_trades, na.rm = TRUE), error = function(e) NA_real_),
+    fills_count_source = "sweep_n_trades",
     events_sec = NA_real_,
+    mus_per_fill_engine = NA_real_,
+    mus_per_fill_extract = NA_real_,
     warnings = length(warnings) + result_warnings,
     failures = failures,
     comparability_note = bench_comparability_note(name),
@@ -436,6 +539,18 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
 }
 
 bench_comparability_note <- function(name) {
+  if (grepl("^density_", name)) {
+    parts <- strsplit(name, "_", fixed = TRUE)[[1L]]
+    if (length(parts) >= 4L) {
+      return(sprintf(
+        "Self-profiling workload grid cell; not a peer comparison row. density=%s, universe_size=%s, persistence=%s.",
+        parts[[2L]],
+        parts[[3L]],
+        parts[[4L]]
+      ))
+    }
+    return("Self-profiling workload grid cell; not a peer comparison row.")
+  }
   switch(
     name,
     baseline_single_run = "QC Basic Template analogue; side-by-side throughput only, not engine parity.",
@@ -508,10 +623,15 @@ bench_summarize_results <- function(measured) {
       median_t_pre_sec = bench_median(df$t_pre_sec),
       median_t_residual_sec = bench_median(df$t_residual_sec),
       median_t_loop_sec = bench_median(df$t_loop_sec),
+      median_equity_extract_sec = bench_median(df$equity_extract_sec),
+      median_fills_extract_sec = bench_median(df$fills_extract_sec),
+      median_ledger_extract_sec = bench_median(df$ledger_extract_sec),
       median_replay_sec = bench_median(df$replay_sec),
       median_security_bars_sec = bench_median(df$security_bars_sec),
       median_feature_cells_sec = bench_median(df$feature_cells_sec),
       median_events_sec = bench_median(df$events_sec),
+      median_mus_per_fill_engine = bench_median(df$mus_per_fill_engine),
+      median_mus_per_fill_extract = bench_median(df$mus_per_fill_extract),
       warnings = sum(df$warnings, na.rm = TRUE),
       failures = sum(df$failures, na.rm = TRUE),
       comparability_note = first$comparability_note,
@@ -570,17 +690,19 @@ bench_write_markdown <- function(summary, env, path) {
     "This is a local development benchmark. QuantConnect/LEAN comparisons are",
     "caveated side-by-side throughput references, not parity or speed-ranking claims.",
     "",
-    "| Scenario | Wall s | Bars/sec | Feature cells/sec | Loop s | Notes |",
-    "| --- | ---: | ---: | ---: | ---: | --- |"
+    "| Scenario | Wall s | Bars/sec | Loop s | Fills extract s | us/fill engine | us/fill extract | Notes |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |"
   ), con)
   for (i in seq_len(nrow(summary))) {
     writeLines(sprintf(
-      "| `%s` | %.4f | %.1f | %.1f | %.4f | %s |",
+      "| `%s` | %.4f | %.1f | %.4f | %.4f | %.1f | %.1f | %s |",
       summary$scenario[[i]],
       summary$median_t_wall_sec[[i]],
       summary$median_security_bars_sec[[i]],
-      summary$median_feature_cells_sec[[i]],
       summary$median_t_loop_sec[[i]],
+      summary$median_fills_extract_sec[[i]],
+      summary$median_mus_per_fill_engine[[i]],
+      summary$median_mus_per_fill_extract[[i]],
       gsub("\\|", "/", summary$comparability_note[[i]])
     ), con)
   }

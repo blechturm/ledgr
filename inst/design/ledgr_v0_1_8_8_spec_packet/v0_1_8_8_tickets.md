@@ -781,7 +781,7 @@ scope: repo_local_peer_report_and_internal_parity_check
 Priority: P1
 Effort: M
 Dependencies: LDG-2476
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -880,10 +880,21 @@ on the local host. Recording can be done over multiple `--scenarios` calls if
 single-session wall time is impractical, as long as the same record file
 prefix and environment metadata are preserved.
 
+Completion note (2026-05-31): added sixteen self-profiling grid scenarios to
+`dev/bench/shared/run_benchmarks.R`, with SMA density {20/50, 5/10}, universe
+size {small, medium, large, xlarge}, and persistence {durable, ephemeral}.
+Durable rows now time `ledgr_results()` extraction for equity, fills, and
+ledger separately and compute per-fill engine/extraction microsecond metrics.
+The smoke preset ran all existing scenarios plus all sixteen grid cells. The
+grid-only record preset wrote
+`dev/bench/results/ledgr_bench_record_20260531T132910Z_*`, and the baseline
+interpretation is recorded in `dev/bench/notes/workload_grid_baseline_closeout.md`.
+
 ### Source Reference
 
 - `v0_1_8_8_spec.md`, Section 9 (Workstream G)
 - `dev/bench/shared/run_benchmarks.R`
+- `dev/bench/notes/workload_grid_baseline_closeout.md`
 - `dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md`
 - `dev/bench/peer_benchmark/notes/backtrader_scale_check.md`
 - `dev/bench/peer_benchmark/notes/three_phase_decomposition_design.md`
