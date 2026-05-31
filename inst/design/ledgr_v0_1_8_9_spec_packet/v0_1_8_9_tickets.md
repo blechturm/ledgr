@@ -70,13 +70,13 @@ from hiding an under-delivering hot-path fix.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Pending
+Status: Completed
 
 ### Description
 
 Finalize the v0.1.8.9 spec packet and make the active-version state
 unambiguous across the design index, spec, ticket file, machine-readable
-ticket metadata, batch plan, and Claude review prompt.
+ticket metadata, batch plan, and Claude review loop.
 
 ### Tasks
 
@@ -101,7 +101,8 @@ ticket metadata, batch plan, and Claude review prompt.
 - No implementation tickets are missing a measurement gate.
 - No deferred milestone is accidentally promoted by active-packet text.
 - Ticket dependencies form the intended sequential DAG.
-- Claude review prompt exists and names the key ticket-cut risks.
+- Claude ticket-cut review feedback is patched into the packet or explicitly
+  accepted by the maintainer.
 - Claude ticket-cut review feedback is either patched into the packet or
   recorded as accepted caveats with maintainer sign-off.
 
@@ -110,9 +111,16 @@ ticket metadata, batch plan, and Claude review prompt.
 Manual packet review, `rg` checks for stale version/scope text, YAML review,
 and Claude peer-review response.
 
+### Completion Note
+
+Completed 2026-05-31. Claude returned "Approve With Caveats"; all caveats were
+patched into the spec, ticket markdown, `tickets.yml`, and batch plan. The
+review outcome is recorded in `ticket_cut_review_closeout.md`.
+
 ### Source Reference
 
 - `v0_1_8_9_spec.md`
+- `ticket_cut_review_closeout.md`
 - `inst/design/README.md`
 - `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`
 

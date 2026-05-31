@@ -1,6 +1,7 @@
 # ledgr v0.1.8.9 Spec
 
-**Status:** Draft implementation packet with tickets cut for peer review.
+**Status:** Implementation packet approved for Batch 1 after Batch 0 ticket-cut
+review closeout.
 **Target Branch:** `v0.1.8.9`.
 **Scope:** Single-core optimization round driven by the v0.1.8.9 spike
 synthesis: remove measured pure-R implementation debt in durable and
@@ -60,8 +61,9 @@ Spike logs feeding this packet:
 
 The spike synthesis is the source of scope. The pre-RFC spike-ticket markdown
 is evidence, not implementation scope. Implementation tickets are cut in
-`v0_1_8_9_tickets.md` and `tickets.yml`; they remain pending until peer review
-approves the packet.
+`v0_1_8_9_tickets.md` and `tickets.yml`. `LDG-2495` records the completed
+ticket-cut review; implementation lanes remain pending until their batches
+start.
 
 ---
 

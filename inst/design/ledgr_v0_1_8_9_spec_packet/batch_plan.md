@@ -1,7 +1,6 @@
 # ledgr v0.1.8.9 Batch Plan
 
-**Status:** Draft batch plan generated from `v0_1_8_9_spec.md` and
-`v0_1_8_9_tickets.md`.
+**Status:** Batch 0 complete; Batch 1 ready.
 
 The batch plan preserves per-lane measurement attribution. Do not merge two
 headline hot-path fixes into one batch unless the maintainer explicitly waives
@@ -10,6 +9,7 @@ attribution in writing.
 ## Batch 0 - Packet Review And Ticket Alignment
 
 Ticket: `LDG-2495`
+Status: Complete
 
 Goal: finalize the packet, tickets, YAML, batch plan, design index, and Claude
 review loop before implementation.
@@ -24,6 +24,7 @@ Exit criteria:
 ## Batch 1 - Fills Extractor setv
 
 Ticket: `LDG-2496`
+Status: Ready
 
 Goal: land the shared fills extractor `setv` fix and measure it before any
 other hot-path optimization lands.
@@ -38,6 +39,7 @@ Exit criteria:
 ## Batch 2 - Persistent Durable Handler setv
 
 Ticket: `LDG-2497`
+Status: Pending
 
 Goal: land the durable output-handler pending-column `setv` fix.
 
@@ -50,6 +52,7 @@ Exit criteria:
 ## Batch 3 - Memory Output Handler setv
 
 Ticket: `LDG-2498`
+Status: Pending
 
 Goal: land the internal memory output-handler `setv` fix without creating a
 public ephemeral API or changing the `meta` list-column structure.
@@ -64,6 +67,7 @@ Exit criteria:
 ## Batch 4 - Position Valuation Vectorization
 
 Ticket: `LDG-2499`
+Status: Pending
 
 Goal: vectorize position valuation with alignment-safe fixtures.
 
@@ -77,6 +81,7 @@ Exit criteria:
 ## Batch 5 - Target Delta Vectorization
 
 Ticket: `LDG-2500`
+Status: Pending
 
 Goal: vectorize target-delta handling separately from position valuation.
 
@@ -90,6 +95,7 @@ Exit criteria:
 ## Batch 6 - yyjsonr And Canonical JSON v2
 
 Ticket: `LDG-2501`
+Status: Pending
 
 Goal: drop jsonlite, add yyjsonr, version canonical JSON byte format, and
 document hash/fingerprint fallout.
@@ -106,6 +112,7 @@ Exit criteria:
 ## Batch 7 - Optional Cleanup Triage
 
 Ticket: `LDG-2502`
+Status: Pending
 
 Goal: use the post-main-lane profile to decide whether the small cleanup lanes
 belong in v0.1.8.9 or defer.
@@ -120,6 +127,7 @@ Exit criteria:
 ## Batch 8 - Measurement Closeout
 
 Ticket: `LDG-2503`
+Status: Pending
 
 Goal: aggregate per-lane attribution, rerun the workload grid and peer
 benchmark, and write the v0.1.8.8 to v0.1.8.9 closeout comparison.
@@ -135,6 +143,7 @@ Exit criteria:
 ## Batch 9 - Release Gate
 
 Ticket: `LDG-2504`
+Status: Pending
 
 Goal: run final tests/checks, close the packet, update release notes, and
 prepare merge/tag.
