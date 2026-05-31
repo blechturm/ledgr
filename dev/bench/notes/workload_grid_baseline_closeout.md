@@ -96,6 +96,19 @@ high-density large, and from 18.06s at low-density xlarge to 197.11s at
 high-density xlarge. Extract microseconds per fill also worsened with the
 largest cells.
 
+Per-fill cost grows with universe size, not just with raw fill count. In the
+high-density durable rows, engine cost rose from 802 us/fill at 50 instruments
+to 931 us/fill at 100 instruments, 2040 us/fill at 500 instruments, and
+3107 us/fill at 1000 instruments. That points to a universe-size component
+inside per-fill bookkeeping, such as position valuation, lot/state lookup, or
+target/delta scanning. The extraction path shows the same shape: 238, 481,
+1215, then 1481 us/fill across the same universe sizes.
+
+At large high-density scale, the fold loop dominates the row. Durable loop
+share rose from 59% at high-density small to 80% at medium, 90% at large, and
+93% at xlarge. At the largest cell, the fold loop is the primary optimization
+surface; ingestion and setup are secondary.
+
 Ephemeral is not uniformly faster. At small and medium high-density shapes it
 was faster than durable, but at large and xlarge it became slower:
 
@@ -120,13 +133,15 @@ semantics.
 The grid reinforces this target order:
 
 1. Fill/event throughput inside the fold loop, especially high-density xlarge
-   cells where durable loop time reached 413.47s.
+   cells where durable loop time reached 413.47s and 93% of row wall time.
 2. Fills read-back reconstruction, where durable extraction reached 197.11s on
-   the high-density xlarge cell.
+   the high-density xlarge cell and also showed universe-size-sensitive
+   us/fill scaling.
 3. Memory output-handler and ephemeral reconstruction cost, because ephemeral
    became 178.85s slower than durable on the high-density xlarge cell.
 4. Target/state vector scanning and delta construction, which should be
-   profiled against the high-density cells before a rewrite.
+   profiled against the high-density cells before a rewrite because per-fill
+   engine cost grows with universe size.
 5. Snapshot/data ingestion, still visible but no longer the lead cost surface
    on these SMA scenarios.
 

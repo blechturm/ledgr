@@ -77,7 +77,7 @@ diag_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
 }
 
 diag_source_benchmark_helpers <- function() {
-  source(file.path("dev", "bench", "run_benchmarks.R"), local = globalenv())
+  source(file.path("dev", "bench", "shared", "run_benchmarks.R"), local = globalenv())
   bench_load_ledgr_source()
 }
 
@@ -89,7 +89,13 @@ diag_specs <- function(preset) {
 diag_make_strategy <- function(name, spec) {
   sma <- identical(spec$strategy_kind, "sma_crossover")
   if (sma) {
-    bench_sma_crossover_strategy(spec$trade %||% TRUE)
+    fast <- spec$sma_fast %||% 20L
+    slow <- spec$sma_slow %||% 50L
+    bench_sma_crossover_strategy(
+      spec$trade %||% TRUE,
+      sprintf("sma_fast_%d", as.integer(fast)),
+      sprintf("sma_slow_%d", as.integer(slow))
+    )
   } else {
     bench_strategy(name, spec$n_feat %||% 0L, spec$trade %||% FALSE)
   }
