@@ -416,10 +416,13 @@ ledgr_persistent_output_handler <- function(con,
 
   set_pending_value <- function(name, i, value) {
     col <- state$pending_cols[[name]]
+    if (is.character(col)) {
+      col[[i]] <- as.character(value)[[1]]
+      state$pending_cols[[name]] <- col
+      return(invisible(NULL))
+    }
     value <- if (inherits(col, "POSIXct")) {
       as.POSIXct(value, tz = "UTC")[[1]]
-    } else if (is.character(col)) {
-      as.character(value)[[1]]
     } else if (is.integer(col)) {
       as.integer(value)[[1]]
     } else {

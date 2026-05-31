@@ -94,15 +94,18 @@ into extraction subphases.
 
 ## LDG-2497: Persistent Durable Handler `setv`
 
-Status: implementation candidate, not committed.
+Status: post-review fix candidate, not committed.
 
 Change:
 
-- Replaced the eleven base-R per-row writes in the persistent durable
-  output-handler `pending_cols` buffer with `collapse::setv(..., vind1 = TRUE)`.
+- Replaced numeric, integer, and POSIXct per-row writes in the persistent
+  durable output-handler `pending_cols` buffer with
+  `collapse::setv(..., vind1 = TRUE)`.
+- Kept character-column writes on base scalar assignment after record-scale
+  measurement exposed local `collapse::setv` character-vector corruption at
+  durable handler growth boundaries.
 - Changed the internal `pending_cols` storage from a list to an environment so
-  `setv` writes target stable preallocated vectors, matching the safe Batch 1
-  buffer shape.
+  writes target stable preallocated vectors.
 - No durable table schema, flush boundary, event ordering, event sequence,
   timestamp, or `DBI::dbAppendTable` behavior changed intentionally.
 
@@ -118,14 +121,15 @@ Verification:
 
 Review caveats logged:
 
-- The production `set_pending_value()` path necessarily includes
-  pull/coerce/`setv`/writeback overhead to avoid the list-contained-vector
-  corruption caught during implementation. Record-scale recovery may land below
-  Spike 11's bare-`setv` upper projection; the record attribution row should
-  call this out explicitly.
-- The current tests cover all pending columns at no-growth scale and growth at
-  spot-check scale. A future polish test can combine full-column parity with a
-  growth-crossing fixture.
+- The production `set_pending_value()` path is intentionally a partial `setv`
+  fix. Character columns remain on base assignment because long character-vector
+  `setv` corrupted values at growth/subset boundaries in this local collapse
+  build (`collapse` 2.1.7). A 70,000-event full-character-`setv` handler
+  reproducer verified the broken shape fails with
+  `SET_STRING_ELT() must be a 'CHARSXP' not a 'character'`; the partial-`setv`
+  correction passes record-scale large/xlarge durable runs.
+- The record recovery should be read as the realized production lane result,
+  not as the bare-`setv` Spike 11 upper-bound projection.
 - The environment growth loop iterates columns by name; column write order is
   currently independent.
 
@@ -133,13 +137,13 @@ Direct helper attribution:
 
 Method: compare a local copy of the old list-backed base-R `[[<-`
 implementation against the current production persistent handler in the same R
-session. The current handler uses environment-backed pending columns and
-`collapse::setv` writes.
+session. The current handler uses environment-backed pending columns, `setv`
+for POSIXct/numeric/integer columns, and base assignment for character columns.
 
-| Rows | Old Base-R s | New `setv` s | Speedup |
+| Rows | Old Base-R s | New Partial `setv` s | Speedup |
 | ---: | ---: | ---: | ---: |
-| 10,000 | 2.05 | 0.80 | 2.56x |
-| 30,000 | 16.98 | 1.72 | 9.87x |
+| 10,000 | 1.95 | 1.87 | 1.04x |
+| 30,000 | 18.25 | 6.89 | 2.65x |
 
 Paired local smoke attribution:
 
@@ -151,8 +155,33 @@ Artifact prefix:
 | `density_high_large_durable` | 1.84 | 0.25 | 0.16 | 0 | smoke shape; no-failure harness check |
 | `density_high_xlarge_durable` | 1.64 | 0.38 | 0.22 | 0 | smoke shape; no-failure harness check |
 
-Interpretation: the helper benchmark confirms the persistent handler's
-base-R column-write growth signature was removed for the implementation shape.
-The smoke grid confirms the durable harness still runs cleanly. Record-scale
-large/xlarge durable reruns remain required after review and before LDG-2498
-starts.
+Record-scale attribution:
+
+Baseline sources after LDG-2496:
+
+- `dev/bench/results/ledgr_bench_record_20260531T202847Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T203715Z_summary.csv`
+
+After sources:
+
+- `dev/bench/results/ledgr_bench_record_20260531T212128Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T212819Z_summary.csv`
+
+| Scenario | Metric | Baseline | After | Delta | Notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| `density_high_large_durable` | wall s | 141.09 | 115.97 | -25.12 | zero failures |
+| `density_high_large_durable` | loop s | 124.72 | 99.34 | -25.38 | load-bearing lane metric |
+| `density_high_large_durable` | fills extract s | 9.73 | 9.79 | +0.06 | unchanged; Batch 1 lane |
+| `density_high_large_durable` | engine us/fill | 1831.48 | 1458.78 | -372.70 | load-bearing lane metric |
+| `density_high_xlarge_durable` | wall s | 410.39 | 311.85 | -98.54 | zero failures |
+| `density_high_xlarge_durable` | loop s | 377.73 | 278.07 | -99.66 | load-bearing lane metric |
+| `density_high_xlarge_durable` | fills extract s | 21.00 | 21.42 | +0.42 | unchanged; Batch 1 lane |
+| `density_high_xlarge_durable` | engine us/fill | 2836.77 | 2088.32 | -748.45 | load-bearing lane metric |
+
+Interpretation: despite falling back to base assignment for character columns,
+LDG-2497 delivered the durable-handler lane at production scale. The xlarge
+durable loop phase fell by 99.66s and wall fell by 98.54s relative to the
+post-LDG-2496 baseline. This exceeds the Spike 11 50-80s production recovery
+range; the direct helper benchmark understated the real-run result because the
+durable fold loop exercises the pending-column writes under a different mix of
+payload construction, buffering, and capacity growth.
