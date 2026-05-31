@@ -2,11 +2,11 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.7`.
-**Current active packet:** `v0.1.8.8`.
-**Current active packet path:** `inst/design/ledgr_v0_1_8_8_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_7_spec_packet/` is an archival release
-record; v0.1.8.8 is the active implementation-planning packet.
+**Latest completed release packet:** `v0.1.8.8`.
+**Current active packet:** `v0.1.9`.
+**Current active packet path:** Future packet.
+The completed `inst/design/ledgr_v0_1_8_8_spec_packet/` is an archival release
+record; v0.1.9 is the next planning packet.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -114,18 +114,22 @@ wrapper, and fast-sweep versus promotion/materialization artifact boundary.
   `spikes/ledgr_optimization_round_spike/README.md`, and
   `adr/0004-dependency-footprint-and-strategy-interface.md`.
 
-The v0.1.8.8 packet is active. It scopes parallel sweep dispatch and
-determinism, fold-core maintainer documentation / containment, and a
-repo-local reproducible peer benchmark report. Sequential sweep remains the
-reference implementation; parallelism is candidate dispatch over the same fold
-core. The packet also binds deterministic-only resume/parallel RNG semantics
-with `ctx$pulse_seed`, an internal typed execution-spec constructor, and a
-mechanical fold-core split paired with documentation if behavior-neutral.
+The v0.1.8.8 packet is complete. It shipped parallel sweep dispatch and
+determinism, fold-core diagnostics / containment, a repo-local reproducible
+peer benchmark report, and a self-profiling workload grid extension for
+v0.1.9 optimization scoping. Sequential sweep remains the reference
+implementation; parallelism is candidate dispatch over the same fold core. The
+packet also binds deterministic-only resume/parallel RNG semantics with
+`ctx$pulse_seed`, an internal typed execution-spec constructor, and a
+mechanical fold-core split paired with documentation if behavior-neutral. The
+maintainer-manual skeleton and stale-doc cleanup ticket was explicitly
+deferred.
 
 - Spec: `ledgr_v0_1_8_8_spec_packet/v0_1_8_8_spec.md`.
 - Tickets: `ledgr_v0_1_8_8_spec_packet/v0_1_8_8_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_8_spec_packet/tickets.yml`.
 - Batch plan: `ledgr_v0_1_8_8_spec_packet/batch_plan.md`.
+- Release closeout: `ledgr_v0_1_8_8_spec_packet/release_closeout.md`.
 - Key inputs:
   `spikes/ledgr_parallelism_spike/summary_report.md`,
   `spikes/ledgr_parallelism_spike/architecture_synthesis.md`,

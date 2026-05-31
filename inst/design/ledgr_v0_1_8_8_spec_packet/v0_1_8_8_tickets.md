@@ -1049,7 +1049,7 @@ Completion note (2026-05-31): completed the v0.1.8.8 release gate with
 `LDG-2478` explicitly deferred by maintainer decision. Targeted
 parallel/sweep/RNG/execution-spec tests passed, the full local test suite
 passed with one expected skip, `R CMD build --no-build-vignettes .` passed, and
-`R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.7.tar.gz` completed
+`R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.8.tar.gz` completed
 with two accepted vignette-output warnings from the no-build-vignettes boundary.
 Release evidence and caveats are recorded in `release_closeout.md`.
 

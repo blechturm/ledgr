@@ -5,7 +5,7 @@ Created: 2026-05-31
 Scope: v0.1.8.8 release-gate evidence and deferred-work record
 
 This closeout records the local release-gate checks for v0.1.8.8. The package
-version string remains `0.1.8.7` until the separate release-bump gate.
+version string was bumped to `0.1.8.8` during the final release-publish step.
 
 ## Ticket Status
 
@@ -54,7 +54,7 @@ Package build/check:
 
 ```powershell
 & "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build --no-build-vignettes .
-& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_0.1.8.7.tar.gz
+& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_0.1.8.8.tar.gz
 ```
 
 Result: build passed. Check completed with two warnings caused by the
