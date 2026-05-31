@@ -25,7 +25,7 @@ packet alignment
   -> interrupt semantics + parallel measurement
   -> repo-local peer benchmark and parity report
   -> self-profiling workload grid extension
-  -> maintainer manual skeleton + stale-doc cleanup
+  -> maintainer manual skeleton + stale-doc cleanup (deferred)
   -> release gate
 ```
 
@@ -53,8 +53,8 @@ LDG-2468 Packet Alignment And v0.1.8.8 Planning State
   `-- LDG-2479 (also depends on LDG-2476)
 
 LDG-2477 v0.1.8.8 Release Gate And Closeout
-  depends on LDG-2468 through LDG-2476, LDG-2479, plus LDG-2478, unless a P2
-  ticket is explicitly deferred by maintainer decision.
+  depends on LDG-2468 through LDG-2476 plus LDG-2479; LDG-2478 is explicitly
+  deferred by maintainer decision.
 ```
 
 LDG-2476, LDG-2479, and LDG-2478 are separable if the cycle becomes too wide.
@@ -918,7 +918,7 @@ scope: density_x_universe_size_x_persistence
 Priority: P2
 Effort: M
 Dependencies: LDG-2468, LDG-2469
-Status: Pending
+Status: Deferred
 
 ### Description
 
@@ -973,6 +973,12 @@ Directory-tree review, stale-path `rg` checks, man-page installed-vignette link
 audit, Quarto render/dry-run for the manual index as practical, and package
 load or targeted documentation tests as needed.
 
+Deferral note (2026-05-31): deferred by maintainer decision to keep the
+v0.1.8.8 release gate focused on completed parallel dispatch, fold-core
+diagnostics, peer benchmark, and workload-grid work. This P2 cleanup remains
+scoped for a future maintainer-manual / architecture-documentation release and
+does not block `LDG-2477`.
+
 ### Source Reference
 
 - `v0_1_8_8_spec.md`, Section 8
@@ -996,15 +1002,15 @@ scope: skeleton_and_stale_doc_cleanup
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2468, LDG-2469, LDG-2470, LDG-2471, LDG-2472, LDG-2473, LDG-2474, LDG-2475, LDG-2476, LDG-2479, LDG-2478
-Status: Pending
+Dependencies: LDG-2468, LDG-2469, LDG-2470, LDG-2471, LDG-2472, LDG-2473, LDG-2474, LDG-2475, LDG-2476, LDG-2479
+Status: Completed
 
 ### Description
 
 Run the release gate, close the planning packet, and prepare v0.1.8.8 for merge
-and tag. If LDG-2476, LDG-2479, or LDG-2478 slips by explicit maintainer
-decision, record that decision and keep the core release gate tied to LDG-2468
-through LDG-2475.
+and tag. `LDG-2478` slipped by explicit maintainer decision on 2026-05-31; the
+core release gate is tied to LDG-2468 through LDG-2476 plus the completed
+LDG-2479 workload grid.
 
 ### Tasks
 
@@ -1039,12 +1045,21 @@ through LDG-2475.
 Targeted tests, full tests, package build/check, benchmark closeout review,
 documentation review, and manual release checklist.
 
+Completion note (2026-05-31): completed the v0.1.8.8 release gate with
+`LDG-2478` explicitly deferred by maintainer decision. Targeted
+parallel/sweep/RNG/execution-spec tests passed, the full local test suite
+passed with one expected skip, `R CMD build --no-build-vignettes .` passed, and
+`R CMD check --no-manual --no-build-vignettes ledgr_0.1.8.7.tar.gz` completed
+with two accepted vignette-output warnings from the no-build-vignettes boundary.
+Release evidence and caveats are recorded in `release_closeout.md`.
+
 ### Source Reference
 
 - `v0_1_8_8_spec.md`
 - `v0_1_8_8_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`
+- `release_closeout.md`
 
 ### Classification
 

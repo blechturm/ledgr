@@ -1,12 +1,13 @@
 # ledgr v0.1.8.8 Spec
 
-**Status:** Draft planning spec for v0.1.8.8.  
+**Status:** Release-gate closeout spec for v0.1.8.8.
 **Target Branch:** `v0.1.8.8`.  
 **Scope:** Parallel sweep dispatch and determinism; fold-core maintainer
 documentation and code legibility; repo-local reproducible peer benchmark
 reporting with internal cross-engine parity sanity check; self-profiling
 workload grid extension as input to the v0.1.9 single-core optimization
-round; internal maintainer-manual skeleton and stale documentation cleanup.
+round. The internal maintainer-manual skeleton and stale documentation cleanup
+ticket was explicitly deferred on 2026-05-31.
 **Non-scope for this pass:** package-vignette peer marketing, hosted benchmark
 claims, a ledgr-authored compiled fold core, target risk / OMS / cost model
 work, durable identity byte redesign, public distributed execution APIs,
@@ -67,7 +68,7 @@ v0.1.8.7 removed the largest single-core hot-path rocks and legacy execution
 gunk. v0.1.8.8 should make the optimized engine easier to maintain and safer to
 parallelize.
 
-The release has five tracks:
+The release ships four tracks and records one explicit deferral:
 
 1. **Parallel sweep dispatch and determinism.** Add an optional public parallel
    sweep path while keeping sequential `ledgr_sweep()` as the reference
@@ -90,10 +91,11 @@ The release has five tracks:
    ledgr-only self-profiling, not a peer comparison, and feeds the v0.1.9
    single-core optimization spec with measured cost-surface scaling
    evidence the LDG-2476 single-point peer benchmark could not see.
-5. **Maintainer manual cleanup.** Establish `inst/design/manual/` as the
-   internal maintainer-facing article tree and remove or quarantine stale
-   installed-doc, diagram, schema, and fixture surfaces that confuse agents or
-   outside readers.
+5. **Deferred maintainer manual cleanup.** `LDG-2478` would establish
+   `inst/design/manual/` as the internal maintainer-facing article tree and
+   remove or quarantine stale installed-doc, diagram, schema, and fixture
+   surfaces. It was deferred by maintainer decision on 2026-05-31 and does not
+   block v0.1.8.8.
 
 The release should not reopen the v0.1.8.7 optimization architecture. The
 single-core pure-R fold remains the reference implementation. Parallelism is a

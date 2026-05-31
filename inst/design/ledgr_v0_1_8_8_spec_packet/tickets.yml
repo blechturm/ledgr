@@ -192,7 +192,7 @@ tickets:
 
   - id: "LDG-2478"
     title: "Internal Maintainer Manual Skeleton And Stale-Doc Cleanup"
-    status: "pending"
+    status: "deferred"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -211,7 +211,7 @@ tickets:
 
   - id: "LDG-2477"
     title: "v0.1.8.8 Release Gate And Closeout"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -225,7 +225,6 @@ tickets:
       - "LDG-2475"
       - "LDG-2476"
       - "LDG-2479"
-      - "LDG-2478"
     classification:
       type: "release_gate"
       surface: "release_process"

@@ -1,3 +1,30 @@
+# ledgr 0.1.8.8
+
+- Added optional parallel sweep dispatch over the existing fold core, keeping
+  `workers = 1` on the sequential reference path and making worker setup,
+  package loading, deterministic row ordering, warning/error association, and
+  discard-all interrupt behavior explicit.
+- Added deterministic per-pulse seed plumbing through `ctx$pulse_seed` and
+  rejected ambient-RNG strategy behavior for resume/parallel equivalence
+  surfaces while preserving deterministic strategies.
+- Introduced an internal typed execution-spec payload and validation boundary
+  so run, sweep, fold, and worker dispatch share one structured execution
+  contract without adding public API surface.
+- Refreshed fold-core diagnostics and maintainer evidence, including bucketed
+  fold-loop profiling and current-source closeout artifacts for future
+  optimization work.
+- Reorganized `dev/bench/`, added a repo-local peer benchmark with
+  boundary-equivalent ingestion/engine/results timing, real engine invocation
+  gates, divergence attribution artifacts, and explicit caveats that the report
+  is an internal sanity check rather than a public ranking.
+- Added a ledgr-only self-profiling workload grid across SMA density, universe
+  size, history length, and persistence mode. The baseline confirms that
+  high-fill-density workloads are dominated by fold-loop fill/event throughput
+  and fills reconstruction, and that the memory-backed path is not currently a
+  universal fast path at large scale.
+- Deferred the maintainer-manual skeleton and stale-document cleanup ticket to
+  a future maintainer-manual / architecture-documentation release.
+
 # ledgr 0.1.8.7
 
 - Removed legacy execution gunk from modern runs: execution now reaches the fold

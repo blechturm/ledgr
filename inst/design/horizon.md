@@ -251,6 +251,47 @@ size, history length, fill density, and persistence mode that this single-point
 peer benchmark could not see. The grid output is the planned baseline for the
 v0.1.9 optimization spec.
 
+**Per-pulse complexity finding (post-LDG-2479 grid run).** The grid revealed
+per-fill engine cost growing with universe size on the same strategy and
+density: 931 us/fill at 100 instruments, 2,040 at 500, 3,107 at 1000, all on
+the 1260-pulse SMA 5/10 crossover. Fills per instrument is constant at ~135
+across these rows, so total fills scale linearly with `n_inst`. A correctly
+implemented event-driven engine should have flat per-fill cost; ledgr's is
+super-linear. Architecture is correct; implementation has R-idiom debt.
+Three specific suspects in `R/fold-engine.R`, all mechanical to fix:
+
+- Per-pulse position valuation loop at `R/fold-engine.R:164-170` iterates
+  `seq_along(instrument_ids)` per pulse to mark positions to market. O(n_inst)
+  per pulse with no fill dependency. Vectorizing to
+  `sum(as.numeric(state$positions) * bars_mat$close[, i])` is expected to
+  recover ~9s of 413s loop time on the xlarge cell.
+- Per-target early-skip loop at `R/fold-engine.R:277-359` iterates
+  `names(targets)` per pulse and does per-instrument lookups even when no
+  fill will fire. Computing a delta vector once and iterating only over
+  `which(abs(delta_vec) > tol)` is expected to recover ~12s on the xlarge
+  cell.
+- Named-vector copy-on-write on `state$positions` at `R/fold-engine.R:354-355`
+  may force whole-vector copies because the pulse-context constructor holds a
+  reference. Switching `state` to an environment, or `state$positions` to
+  integer-indexed numeric with a one-time id-to-idx map, is expected to
+  recover ~1.5s.
+
+Combined cheap recovery on `density_high_xlarge_durable`: ~22.5s of 413s loop
+time. The bigger architectural win is that the per-fill cost curve flattens —
+the apparent "ledgr scales with universe" symptom is the artifact of R loops,
+not a deep engine problem.
+
+After these three fixes, the next-largest target is per-fill
+`output_handler$write_fill_events()` batching: the current path inserts one
+DuckDB row per fill, and at 133k fills per-fill DuckDB cost is sizable.
+Chunked writes of 100-1000 fills should give the next big win after the
+per-pulse fixes land.
+
+Full diagnosis with code excerpts, fix sketches, risk notes, alignment
+caveats, and verification discipline is in
+`dev/bench/notes/per_pulse_complexity_findings.md`. That note is the
+load-bearing input for the v0.1.9 single-core optimization spec.
+
 ### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
 
 v0.1.8.8 may create the `inst/design/manual/` skeleton and clean up stale

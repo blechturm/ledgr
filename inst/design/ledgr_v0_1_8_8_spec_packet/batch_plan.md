@@ -1,6 +1,6 @@
 # v0.1.8.8 Batch Plan
 
-**Status:** Review batching plan for the v0.1.8.8 parallel dispatch,
+**Status:** Completed batching record for the v0.1.8.8 parallel dispatch,
 fold-core maintainability, repo-local peer benchmark, and self-profiling
 workload grid cycle.  
 **Scope:** Groups the v0.1.8.8 tickets into implementation/review batches.
