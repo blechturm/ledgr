@@ -176,6 +176,52 @@ testthat::test_that("persistent output handler grows event buffer without changi
   testthat::expect_true(all(grepl("^\\{", rows$meta_json)))
 })
 
+testthat::test_that("persistent output handler preserves all pending event columns", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+
+  run_id <- "run-ledger-buffered-columns"
+  insert_test_run(con, run_id)
+
+  handler <- ledgr:::ledgr_persistent_output_handler(
+    con = con,
+    run_id = run_id,
+    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE
+  )
+  handler$init_buffers(3L)
+  for (i in seq_len(3L)) {
+    testthat::expect_true(handler$buffer_event(fake_write_result(run_id, i)))
+  }
+  handler$flush_pending()
+
+  rows <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,
+           qty, price, fee, meta_json, event_seq
+    FROM ledger_events
+    WHERE run_id = ?
+    ORDER BY event_seq
+    ",
+    params = list(run_id)
+  )
+  expected <- do.call(rbind, lapply(seq_len(3L), function(i) fake_write_result(run_id, i)$row))
+  testthat::expect_identical(rows$event_id, expected$event_id)
+  testthat::expect_identical(rows$run_id, expected$run_id)
+  testthat::expect_equal(rows$ts_utc, expected$ts_utc)
+  testthat::expect_identical(rows$event_type, expected$event_type)
+  testthat::expect_identical(rows$instrument_id, expected$instrument_id)
+  testthat::expect_identical(rows$side, expected$side)
+  testthat::expect_equal(rows$qty, expected$qty)
+  testthat::expect_equal(rows$price, expected$price)
+  testthat::expect_equal(rows$fee, expected$fee)
+  testthat::expect_identical(rows$meta_json, as.character(expected$meta_json))
+  testthat::expect_identical(as.integer(rows$event_seq), expected$event_seq)
+})
+
 testthat::test_that("persistent output handler enforces hard event cap", {
   handler <- ledgr:::ledgr_persistent_output_handler(
     con = NULL,

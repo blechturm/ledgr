@@ -1,6 +1,6 @@
 # ledgr v0.1.8.9 Batch Plan
 
-**Status:** Batch 0 complete; Batch 1 ready.
+**Status:** Batch 1 complete; Batch 2 in progress.
 
 The batch plan preserves per-lane measurement attribution. Do not merge two
 headline hot-path fixes into one batch unless the maintainer explicitly waives
@@ -24,7 +24,7 @@ Exit criteria:
 ## Batch 1 - Fills Extractor setv
 
 Ticket: `LDG-2496`
-Status: Implementation approved; record attribution pending
+Status: Complete
 
 Goal: land the shared fills extractor `setv` fix and measure it before any
 other hot-path optimization lands.
@@ -35,12 +35,12 @@ Exit criteria:
 - Stream-threshold materialization works.
 - Large/xlarge durable and ephemeral cells are remeasured.
 - Per-lane attribution row is recorded.
-- Do not start Batch 2 until record-scale attribution is appended.
+- Record-scale attribution is appended.
 
 ## Batch 2 - Persistent Durable Handler setv
 
 Ticket: `LDG-2497`
-Status: Blocked pending Batch 1 record attribution
+Status: In Progress
 
 Goal: land the durable output-handler pending-column `setv` fix.
 

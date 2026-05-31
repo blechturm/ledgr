@@ -139,7 +139,7 @@ scope: v0.1.8.9
 Priority: P1
 Effort: M
 Dependencies: LDG-2495
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -179,13 +179,14 @@ Targeted reconstruction/fills tests, xlarge-ish fixture test above
 `stream_threshold`, workload-grid large/xlarge rerun for durable and ephemeral
 cells, and per-lane attribution review.
 
-### Implementation Note
+### Completion Note
 
-Implementation review approved 2026-05-31. The code change and targeted tests
-are ready to commit. The per-lane attribution row remains open until
-record-scale large/xlarge durable and ephemeral reruns are appended to
-`per_lane_attribution.md`; `LDG-2497` must not start before that measurement
-gate is closed.
+Completed 2026-05-31. Implementation review approved the narrow
+`collapse::setv` replacement in `ledgr_fill_row_buffer_add()`. Targeted fills,
+FIFO, sweep, and sweep-parity tests passed. Record-scale large/xlarge durable
+and ephemeral reruns were appended to `per_lane_attribution.md` before
+`LDG-2497` started; xlarge durable fills extraction fell from 197.11s to
+21.00s.
 
 ### Source Reference
 
@@ -211,7 +212,7 @@ scope: fill_row_buffer_setv
 Priority: P1
 Effort: M
 Dependencies: LDG-2496
-Status: Pending
+Status: In Progress
 
 ### Description
 
