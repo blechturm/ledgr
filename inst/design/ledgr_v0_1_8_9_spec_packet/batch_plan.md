@@ -1,6 +1,6 @@
 # ledgr v0.1.8.9 Batch Plan
 
-**Status:** Batch 2 complete; Batch 3 in progress.
+**Status:** Batch 3 complete; Batch 4 in progress.
 
 The batch plan preserves per-lane measurement attribution. Do not merge two
 headline hot-path fixes into one batch unless the maintainer explicitly waives
@@ -53,7 +53,7 @@ Exit criteria:
 ## Batch 3 - Memory Output Handler setv
 
 Ticket: `LDG-2498`
-Status: In Progress
+Status: Complete
 
 Goal: land the internal memory output-handler `setv` fix without creating a
 public ephemeral API or changing the `meta` list-column structure. Batch 1
@@ -72,7 +72,7 @@ Exit criteria:
 ## Batch 4 - Position Valuation Vectorization
 
 Ticket: `LDG-2499`
-Status: Pending
+Status: In Progress
 
 Goal: vectorize position valuation with alignment-safe fixtures.
 

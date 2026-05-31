@@ -161,12 +161,13 @@ ledgr_execute_fold <- function(execution, output_handler) {
         sample_start <- sample_now
       }
 
-      positions_value <- 0
-      for (j in seq_along(instrument_ids)) {
-        inst <- instrument_ids[[j]]
-        qty <- as.numeric(state$positions[[inst]] %||% 0)
-        if (qty == 0) next
-        positions_value <- positions_value + qty * bars_mat$close[j, i]
+      position_qty <- as.numeric(state$positions[instrument_ids])
+      position_qty[is.na(position_qty)] <- 0
+      active_positions <- position_qty != 0
+      positions_value <- if (any(active_positions)) {
+        sum(position_qty[active_positions] * bars_mat$close[active_positions, i])
+      } else {
+        0
       }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()

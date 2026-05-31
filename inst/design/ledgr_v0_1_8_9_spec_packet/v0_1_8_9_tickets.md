@@ -277,7 +277,7 @@ scope: pending_cols_setv
 Priority: P1
 Effort: M
 Dependencies: LDG-2497
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -323,6 +323,14 @@ Sweep parity tests, parallel sweep tests if available locally, artifact-count
 tests, ephemeral workload-grid large/xlarge rerun, and per-lane attribution
 review.
 
+### Completion Note
+
+Completed 2026-05-31. The memory handler and the routed inline sweep-summary
+fill buffer use the partial `setv` strategy established by LDG-2497: safe
+POSIXct/numeric/integer columns use `collapse::setv`, while character and list
+columns stay on base assignment. Xlarge ephemeral wall fell from 508.08s to
+346.63s.
+
 ### Source Reference
 
 - `v0_1_8_9_spec.md`, Workstream B.2
@@ -345,7 +353,7 @@ scope: event_cols_setv
 Priority: P1
 Effort: S
 Dependencies: LDG-2498
-Status: Pending
+Status: In Progress
 
 ### Description
 

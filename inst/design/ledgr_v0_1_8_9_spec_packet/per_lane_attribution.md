@@ -262,3 +262,100 @@ results subphases, so wall is the available lane metric for these ephemeral
 cells. The xlarge ephemeral wall recovery is larger than the Spike 6
 50-100s estimate, likely because the handler change and inline sweep-summary
 fill-buffer change both affect the same ephemeral workload path.
+
+## LDG-2499: Position Valuation Vectorize
+
+Status: review candidate, not committed.
+
+Change:
+
+- Replaced the per-instrument R loop used for mark-to-market position
+  valuation in `ledgr_execute_fold()` with an aligned vector expression.
+- The implementation indexes `state$positions[instrument_ids]` before coercion
+  so position quantities stay explicitly aligned to the current universe order.
+- Zero-position rows are masked before multiplying by close prices, preserving
+  the old loop's `qty == 0` skip behavior when a zero-position instrument has
+  a missing close.
+- No target validation, fill generation, lot accounting, output handler, or
+  public API behavior changed intentionally.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `test-execution-spec.R` | PASS |
+| `test-backtest-audit-log-equivalence.R` | PASS |
+| `test-sweep-parity.R` | PASS |
+| `test-backtest-wrapper.R` | PASS |
+| `test-runner.R` | PASS |
+| `tickets.yml` parse | PASS |
+
+Targeted regression coverage:
+
+- Added a shuffled-position alignment fixture where `state$positions` is named
+  `BBB, AAA` while the universe is `AAA, BBB`.
+- The fixture observes `ctx$equity` inside the fold and verifies that position
+  values are marked to market by instrument name, not by vector storage order.
+  A storage-order valuation would produce first-pulse equity of 1301 instead
+  of the asserted 1302.
+- The fixture also verifies that the strategy sees the original named
+  positions and can explicitly realign them to `ctx$universe`.
+
+Direct helper attribution:
+
+Method: compare the old per-instrument loop against the new aligned vector
+expression in the same R session for 5,000 repeated valuations. Positions are
+named by instrument id, closes are already in universe order, and full numeric
+parity is required before timing.
+
+| Instruments | Repetitions | Old Loop s | New Vector s | Speedup | Parity |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 500 | 5,000 | 3.47 | 0.08 | 43.38x | TRUE |
+| 1,000 | 5,000 | 12.26 | 0.12 | 102.17x | TRUE |
+
+Record-scale attribution:
+
+Durable baseline sources after LDG-2497:
+
+- `dev/bench/results/ledgr_bench_record_20260531T212128Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T212819Z_summary.csv`
+
+Ephemeral baseline sources after LDG-2498:
+
+- `dev/bench/results/ledgr_bench_record_20260531T214414Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T215057Z_summary.csv`
+
+After sources:
+
+- `dev/bench/results/ledgr_bench_record_20260531T220859Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T221549Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T221854Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T222547Z_summary.csv`
+
+| Scenario | Metric | Baseline | After | Delta | Notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| `density_high_large_durable` | wall s | 115.97 | 110.72 | -5.25 | zero failures |
+| `density_high_large_durable` | loop s | 99.34 | 94.22 | -5.12 | load-bearing lane metric |
+| `density_high_large_durable` | fills extract s | 9.79 | 9.70 | -0.09 | unchanged; extraction lane |
+| `density_high_large_durable` | engine us/fill | 1458.78 | 1383.59 | -75.19 | load-bearing lane metric |
+| `density_high_xlarge_durable` | wall s | 311.85 | 309.44 | -2.41 | zero failures |
+| `density_high_xlarge_durable` | loop s | 278.07 | 276.18 | -1.89 | load-bearing lane metric |
+| `density_high_xlarge_durable` | fills extract s | 21.42 | 22.50 | +1.08 | unchanged; extraction lane/noise |
+| `density_high_xlarge_durable` | engine us/fill | 2088.32 | 2074.12 | -14.20 | load-bearing lane metric |
+| `density_high_large_ephemeral` | wall s | 103.92 | 102.73 | -1.19 | zero failures; no sweep subphase split |
+| `density_high_xlarge_ephemeral` | wall s | 346.63 | 352.23 | +5.60 | zero failures; host/noise-level regression |
+
+Interpretation: the vector expression is materially faster in isolation and
+preserves named-instrument alignment, but the record-grid effect is modest after
+the LDG-2496/2497/2498 buffer-write lanes. Durable loop time still moves in the
+expected direction, with the clearest signal at the large cell (-5.12s loop,
+-75.19 us/fill). The xlarge durable wall recovery (-2.41s) is
+mechanism-consistent with the helper benchmark's expected low-single-digit
+second production savings. The xlarge ephemeral +5.60s wall delta is the
+largest counter-direction in the table; it is attributed to local-host CPU drift
+on a 1.6% relative basis, supported by the fact that this fold-core
+vectorization has no mechanism by which it would specifically slow the
+ephemeral path while improving the durable path that shares the same fold
+engine. If a future rerun after LDG-2500 still shows positive xlarge ephemeral
+drift, revisit. This lane should be recorded as a correctness-preserving
+micro-optimization, not a headline wall-recovery lane.

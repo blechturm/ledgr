@@ -57,7 +57,7 @@ tickets:
 
   - id: "LDG-2498"
     title: "Memory Output Handler setv"
-    status: "in_progress"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -76,7 +76,7 @@ tickets:
 
   - id: "LDG-2499"
     title: "Position Valuation Vectorize"
-    status: "pending"
+    status: "in_progress"
     priority: "P1"
     effort: "S"
     dependencies:

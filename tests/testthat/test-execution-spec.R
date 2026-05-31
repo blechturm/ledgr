@@ -148,6 +148,28 @@ testthat::test_that("execution specs are serializable worker payloads", {
   testthat::expect_silent(ledgr:::ledgr_validate_execution_spec(round_trip))
 })
 
+testthat::test_that("fold position valuation aligns shuffled positions by instrument id", {
+  observed_equity <- numeric()
+  observed_positions <- list()
+  strategy <- function(ctx, params) {
+    observed_equity <<- c(observed_equity, ctx$equity)
+    observed_positions[[length(observed_positions) + 1L]] <<- ctx$positions
+    stats::setNames(as.numeric(ctx$positions[ctx$universe]), ctx$universe)
+  }
+  spec <- ledgr_test_execution_spec(
+    strategy_fn = strategy,
+    strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy),
+    state = list(cash = 1000, positions = c(BBB = 2, AAA = 1))
+  )
+  handler <- ledgr:::ledgr_memory_output_handler("position-valuation-alignment")
+
+  ledgr:::ledgr_execute_fold(spec, handler)
+
+  testthat::expect_equal(observed_equity, c(1302, 1602))
+  testthat::expect_identical(names(observed_positions[[1L]]), c("BBB", "AAA"))
+  testthat::expect_equal(as.numeric(observed_positions[[1L]][c("AAA", "BBB")]), c(1, 2))
+})
+
 testthat::test_that("run and sweep route fold payloads through one constructor", {
   run_body <- paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n")
   sweep_body <- paste(deparse(body(ledgr:::ledgr_sweep_run_candidate)), collapse = "\n")
