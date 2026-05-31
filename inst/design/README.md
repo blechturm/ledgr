@@ -3,10 +3,10 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.8`.
-**Current active packet:** `v0.1.9`.
-**Current active packet path:** Future packet.
+**Current active packet:** `v0.1.8.9`.
+**Current active packet path:** `inst/design/ledgr_v0_1_8_9_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_8_8_spec_packet/` is an archival release
-record; v0.1.9 is the next planning packet.
+record; v0.1.8.9 is the active optimization packet.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -117,7 +117,7 @@ wrapper, and fast-sweep versus promotion/materialization artifact boundary.
 The v0.1.8.8 packet is complete. It shipped parallel sweep dispatch and
 determinism, fold-core diagnostics / containment, a repo-local reproducible
 peer benchmark report, and a self-profiling workload grid extension for
-v0.1.9 optimization scoping. Sequential sweep remains the reference
+v0.1.8.9 optimization scoping. Sequential sweep remains the reference
 implementation; parallelism is candidate dispatch over the same fold core. The
 packet also binds deterministic-only resume/parallel RNG semantics with
 `ctx$pulse_seed`, an internal typed execution-spec constructor, and a
@@ -136,6 +136,19 @@ deferred.
   `architecture/ledgr_v0_1_8_sweep_architecture.md`,
   `maintainer_review/fold_core_workbook.qmd`, and
   `ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
+
+The v0.1.8.9 packet is active. It scopes the single-core optimization round
+fed by the v0.1.8.9 spike synthesis: `collapse::setv` fixes for
+scale-growing column buffers, per-pulse vectorization, yyjsonr dependency
+consolidation with canonical JSON byte-format v2, and workload-grid /
+peer-benchmark remeasurement.
+
+- Spec: `ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`.
+- Tickets: `ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_9_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_8_9_spec_packet/batch_plan.md`.
+- Primary synthesis:
+  `spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`.
 
 ## Core Documents
 
@@ -375,6 +388,12 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
+- `ledgr_v0_1_8_9_spec_packet/` - active v0.1.8.9 optimization packet for
+  column-buffer `setv` fixes, per-pulse vectorization, yyjsonr consolidation,
+  and post-fix measurement gates.
+- `ledgr_v0_1_8_8_spec_packet/` - v0.1.8.8 release record for parallel sweep
+  dispatch and determinism, fold-core diagnostics / containment, repo-local
+  peer benchmark reporting, and the self-profiling workload grid.
 - `ledgr_v0_1_8_7_spec_packet/` - v0.1.8.7 release record for Optimization
   Round 2: legacy execution cleanup, dependency/function-strategy cleanup,
   event-emission/buffer lane, representation/setup cleanup, reconstruction

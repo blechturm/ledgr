@@ -1,0 +1,284 @@
+version: "v0.1.8.9-pre-rfc"
+source: "spike_tickets.md"
+generated_from: "README.md"
+note: |
+  Pre-RFC spike round. Not part of any release packet. Tickets do not gate
+  v0.1.8.8 release. Feed v0.1.8.9 spec packet inputs. Numbering continues from
+  v0.1.8.8 (last ticket LDG-2479).
+status_metadata_disclaimer: |
+  Per-ticket status values ("pending") in this file were captured at
+  ticket creation time and are NOT actively maintained. The spikes ran,
+  the synthesis was written, and the Codex Round 1, 2, and 3 reviews
+  closed; this file did not get re-walked at each milestone. Treat the
+  status fields as archival scaffolding rather than governance metadata.
+  The load-bearing artifacts for the round's current state are
+  `architecture_synthesis.md`, the per-spike logs under
+  `dev/spikes/spike-*.md`, and `README.md`.
+tickets:
+  - id: "LDG-2480"
+    title: "Spike 1 - Per-Pulse Position Valuation Vectorize"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_per_pulse"
+      scope: "position_valuation_vectorize"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "spike_log_template_compliance"
+      - "alignment_risk_addressed_in_log"
+      - "amdahl_wall_translation_present"
+      - "byte_identical_output_across_variants"
+
+  - id: "LDG-2481"
+    title: "Spike 2 - Per-Target Delta Vectorize"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_per_pulse"
+      scope: "target_delta_vectorize"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "spike_log_template_compliance"
+      - "alignment_risk_addressed_in_log"
+      - "amdahl_wall_translation_present"
+      - "byte_identical_fill_set_across_variants"
+      - "skip_to_fill_ratio_reported"
+
+  - id: "LDG-2482"
+    title: "Spike 3 - state$positions Representation"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_state_mutation"
+      scope: "positions_representation"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "tracemem_evidence_documented"
+      - "production_blast_radius_enumerated"
+      - "byte_identical_final_positions_across_variants"
+      - "amdahl_wall_translation_present"
+
+  - id: "LDG-2483"
+    title: "Spike 4 - Batch Fill Writes (DuckDB)"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "durable_output_handler"
+      scope: "batch_fill_writes"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "per_fill_cost_at_batch_sizes_1_10_100_1000_10000"
+      - "knee_batch_size_identified"
+      - "parity_gate_risk_addressed_in_log"
+      - "row_count_parity_check"
+      - "amdahl_wall_translation_present"
+
+  - id: "LDG-2484"
+    title: "Spike 5 - Per-Fill Next-Bar Extraction"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_per_fill"
+      scope: "next_bar_extraction"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "isolated_speedup_reported_at_production_scale"
+      - "byte_identical_values_returned"
+      - "proceed_or_park_decision_recorded"
+
+  - id: "LDG-2485"
+    title: "Spike 6 - Memory Output Handler Scaling"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "memory_output_handler"
+      scope: "per_event_growth"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "per_event_cost_at_intervals_1k_to_133k"
+      - "growth_pattern_confirmed_or_rejected"
+      - "responsible_operation_named_if_confirmed"
+      - "wall_translation_against_178s_xlarge_delta"
+
+  - id: "LDG-2486"
+    title: "Spike 7 - Fills Reconstruction Scaling"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_reconstruction"
+      scope: "fills_reconstruction_scaling"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "scaling_curves_at_13k_30k_68k_130k"
+      - "mechanism_confirmed_or_rejected"
+      - "responsible_sub_path_named_if_anti_pattern_found"
+      - "byte_identical_output_across_paths"
+      - "amdahl_wall_translation_present"
+
+  - id: "LDG-2487"
+    title: "Spike 8 - Event-Stream Reconstruction Scaling"
+    status: "pending"
+    priority: "P2"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_reconstruction"
+      scope: "event_stream_reconstruction_scaling"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "scaling_curves_per_function"
+      - "byte_identical_output_across_paths"
+      - "amdahl_wall_translation_present"
+
+  - id: "LDG-2488"
+    title: "Spike 9 - Fills Extraction Xlarge Breakdown"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_reconstruction"
+      scope: "fills_extract_xlarge_robustness"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "failing_stage_named"
+      - "reproducible_threshold_reported"
+      - "fix_path_or_escalation_recorded"
+
+  - id: "LDG-2489"
+    title: "Spike 10 - DuckDB Equity Round-Trip Noise"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_reconstruction"
+      scope: "float_round_trip_origin"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "mechanism_named_and_supported_by_byte_compare"
+      - "recommendation_with_rationale_recorded"
+
+  # Round 2: post-peer-review corrections (Codex review identified 3
+  # blocking findings on the synthesis; these tickets close the gaps
+  # before the synthesis is finalized).
+
+  - id: "LDG-2490"
+    title: "Spike 11 - Persistent Durable Handler pending_cols Buffer"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2483"
+      - "LDG-2485"
+    classification:
+      type: "spike"
+      surface: "persistent_durable_output_handler"
+      scope: "pending_cols_buffer_writes"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "per_event_cost_at_intervals_1k_to_130k"
+      - "growth_pattern_confirmed_or_rejected"
+      - "setv_speedup_at_130k_reported"
+      - "durable_path_wall_translation_separate_from_ephemeral"
+      - "lane_replacement_or_supplement_to_LDG_2483_stated"
+
+  - id: "LDG-2491"
+    title: "Spike 12 - Chunked Extractor Wall Recovery Measurement"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2486"
+    classification:
+      type: "spike"
+      surface: "fold_reconstruction"
+      scope: "chunked_extractor_wall_recovery"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "chunk_size_pattern_documented"
+      - "measured_recovery_number_not_extrapolation"
+      - "replaces_LDG_2486_170s_projection_in_synthesis"
+      - "lane_ordering_adjustment_stated"
+
+  - id: "LDG-2493"
+    title: "Spike 13 - yyjsonr Read-Path Parity And Recovery"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2491"
+    classification:
+      type: "spike"
+      surface: "hot_path_json_read"
+      scope: "yyjsonr_parity_and_recovery"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "parity_identical_check_per_fixture"
+      - "measured_recovery_on_133k_events"
+      - "class_b_canonical_json_explicitly_not_touched"
+      - "proceed_park_or_defer_decision_recorded"
+
+  - id: "LDG-2494"
+    title: "Spike 14 - yyjsonr canonical_json Write Byte-Identity Test"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "canonical_json_byte_identity"
+      scope: "yyjsonr_write_parity_test"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "at_least_15_input_shapes_tested"
+      - "byte_diff_characterized_per_fixture"
+      - "convergence_attempts_with_yyjsonr_options_documented"
+      - "proceed_defer_or_park_decision_recorded"
+
+  - id: "LDG-2492"
+    title: "Synthesis Revision And Re-Review"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2490"
+      - "LDG-2491"
+    classification:
+      type: "documentation_revision"
+      surface: "spike_round_synthesis"
+      scope: "post_peer_review_corrections"
+    tests:
+      - "synthesis_L2_env_vs_list_correction_landed"
+      - "synthesis_L2_persistent_handler_added_as_third_site"
+      - "synthesis_L6_measured_numbers_replace_estimates"
+      - "synthesis_L6_lane_sequencing_matches_codex_recommendation"
+      - "spike_4_log_reclassified_as_live_mode_only"
+      - "spike_7_log_buffer_wording_corrected"
+      - "readme_spike_11_and_12_rows_added"
+      - "readme_coding_rule_updated_for_four_sites"
+      - "codex_re_review_returns_sign_off"

@@ -5,7 +5,7 @@ Scope: Post-LDG-2479 diagnosis of why per-fill engine cost grows with universe
 size, derived from the workload grid baseline record and the
 `R/fold-engine.R` per-pulse code path.
 
-This is a v0.1.9 spec input. It is not a fix, not a benchmark, and not a
+This is a v0.1.8.9 spec input. It is not a fix, not a benchmark, and not a
 public performance claim. It identifies the specific R-idiom patterns in the
 fold engine that cause per-fill cost to scale with universe size when it
 architecturally should not.
@@ -170,7 +170,7 @@ Once these land, the next-largest bottleneck is per-fill
 The current loop calls `write_fill_events` once per fill. Batching to chunks
 of 100-1000 fills should give the next big win.
 
-The lane sequencing for v0.1.9 single-core perf:
+The lane sequencing for v0.1.8.9 single-core perf:
 
 1. Suspect 1: vectorize per-pulse position valuation. Smallest blast radius,
    biggest single win, easiest verification.
@@ -203,7 +203,7 @@ suggests a constant-cost saving rather than a scaling fix.
 
 ## What This Note Is Not
 
-- Not authorization to change `R/fold-engine.R`. Cuts a v0.1.9 ticket first.
+- Not authorization to change `R/fold-engine.R`. Cuts a v0.1.8.9 ticket first.
 - Not a peer benchmark claim. The numbers are local-host, current-source,
   ledgr-only.
 - Not a contract change. Public APIs (`ledgr_run`, `ledgr_sweep`,

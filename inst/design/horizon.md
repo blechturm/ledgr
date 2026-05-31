@@ -45,7 +45,7 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   worker-local read-only DuckDB; parallel interrupt / partial-result
   semantics; **RNG resume non-determinism**; structured RNG preflight metadata;
   broader ambient RNG detection.
-- **v0.1.9.x** (maintainer manual) - internal maintainer-facing documentation
+- **v0.1.8.9.x** (maintainer manual) - internal maintainer-facing documentation
   release after the v0.1.8.8 manual skeleton: architecture articles for fold
   execution, snapshots, features, sweep, determinism, observability, and
   benchmarking.
@@ -53,9 +53,9 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   typed execution spec, file split, explicit event types); peer-benchmark
   expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
   contextual paradigm row).
-- **v0.1.9** — affordability / target-risk (incl. the phased-pulse
+- **v0.1.8.9** — affordability / target-risk (incl. the phased-pulse
   restructure); primitive internals and collapse.
-- **v0.1.9.x** — walk-forward post-direction; cost-model post-direction;
+- **v0.1.8.9.x** — walk-forward post-direction; cost-model post-direction;
   randomized/blocked slice diagnostics; promotion-grade sweep artifacts;
   target-construction helper extensions; broker/exchange cost templates.
 - **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
@@ -241,7 +241,7 @@ part of ledgr's product contract, but it must be separated from pure engine
 loop time when diagnosing performance.
 
 This entry records the optimization target stack, not committed work. A future
-v0.1.9 optimization packet should start from phase-separated timing for
+v0.1.8.9 optimization packet should start from phase-separated timing for
 ingestion, fold-loop fill/event work, state persistence, and result
 reconstruction before choosing a fix.
 
@@ -249,7 +249,7 @@ The v0.1.8.8 contribution is `LDG-2479` (Self-Profiling Workload Grid
 Extension), which captures the cost-surface scaling behavior across universe
 size, history length, fill density, and persistence mode that this single-point
 peer benchmark could not see. The grid output is the planned baseline for the
-v0.1.9 optimization spec.
+v0.1.8.9 optimization spec.
 
 **Per-pulse complexity finding (post-LDG-2479 grid run).** The grid revealed
 per-fill engine cost growing with universe size on the same strategy and
@@ -290,13 +290,13 @@ per-pulse fixes land.
 Full diagnosis with code excerpts, fix sketches, risk notes, alignment
 caveats, and verification discipline is in
 `dev/bench/notes/per_pulse_complexity_findings.md`. That note is the
-load-bearing input for the v0.1.9 single-core optimization spec.
+load-bearing input for the v0.1.8.9 single-core optimization spec.
 
 ### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
 
 v0.1.8.8 may create the `inst/design/manual/` skeleton and clean up stale
 documentation-like surfaces, but it should not author the full internal manual.
-The follow-up home is a v0.1.9.x maintainer-facing documentation release: turn
+The follow-up home is a v0.1.8.9.x maintainer-facing documentation release: turn
 the skeleton into a coherent internal manual for agents and maintainers while
 keeping governance artifacts separate from prose articles.
 
@@ -387,6 +387,41 @@ If after v0.1.8.9 ledgr is within ~2x LEAN-Python on a matched workload,
 the compiled story becomes load-bearing. The 2026-05-25 entry's minimum gates
 (target risk stability, walk-forward workloads, cost/liquidity boundaries,
 typed value objects) remain binding alongside this empirical gate.
+
+**Canonical JSON encoder/decoder belongs in `ledgrcore` (2026-05-31 update,
+from v0.1.8.9 round LDG-2493 / LDG-2494 work).** The v0.1.8.9 round investigates
+`yyjsonr` as a faster replacement for `jsonlite::fromJSON` (read-side hot
+path) and potentially for `jsonlite::toJSON` in `canonical_json` (write-side
+durable identity). If those spikes land in v0.1.8.9, they are a bridge solution,
+not the end state. The end state is: `ledgrcore` exposes
+`ledgrcore::canonical_json()` and `ledgrcore::parse_event_meta()` backed by
+the compiled core's host-language JSON library (rapidjson for C++,
+serde_json for Rust, or yyjson directly). Three reasons this lives in
+`ledgrcore` rather than ledgr:
+
+- **Determinism is owned by the compiled contract.** `ledgrcore`'s release
+  contract is byte-identical event-stream parity. JSON output bytes ARE
+  part of the event stream (event meta_json columns). The compiled core
+  pins the JSON encoder version and options inside its parity gate, which
+  is stricter than anything ledgr's pure-R surface can guarantee via
+  third-party R packages whose version defaults may drift across CRAN
+  releases.
+- **The hot path eliminates the R-level call entirely.** With `ledgrcore`
+  owning the encoder, the per-event meta parse and the per-pulse
+  state_update serialization happen inside compiled code, bypassing the
+  R interpreter for JSON I/O entirely. That is larger than the v0.1.8.9
+  yyjsonr win because it removes the R↔C transition cost as well.
+- **Reproducibility surface narrows.** Today ledgr's durable identity
+  depends on `jsonlite`'s byte stability across versions; tomorrow it
+  could depend on `yyjsonr`'s. With `ledgrcore` owning the encoder, the
+  durable identity contract has one bound binary, not a moving third-party
+  R-package surface.
+
+Scope note: this is a `ledgrcore` deliverable when K1 lands, not a
+v0.1.8.9 line item. v0.1.8.9's yyjsonr work (if it lands) is the bridge —
+correct byte format chosen so the eventual `ledgrcore` encoder can match it,
+or with a documented format version bump if yyjsonr differs from jsonlite.
+v0.1.8.9 spec should not over-promise compiled-core JSON as imminent.
 
 This entry records direction, not committed work.
 
@@ -699,7 +734,7 @@ parked until the research-to-paper arc is stable enough for focused RFCs.
 
 Do not confuse full portfolio optimization with the existing helper pipeline
 (`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()`). The roadmap now
-names `v0.1.9.x Target Construction Helper Extensions` for small additions to
+names `v0.1.8.9.x Target Construction Helper Extensions` for small additions to
 that helper surface. Full solver-style portfolio optimization remains deferred.
 
 ML strategy artifact management depends on stable walk-forward windows,
@@ -787,7 +822,7 @@ The accepted first walk-forward design is
 diagnostic work should consume its fold/session/score artifacts rather than
 reopening the v1 wrapper-over-run/sweep architecture.
 
-Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
+Promoted roadmap hook: `v0.1.8.9.x Selection Integrity Diagnostics`.
 
 ### 2026-05-13 [infrastructure] Public parallel sweep backend
 
@@ -936,7 +971,7 @@ warnings/errors, metric context, feature-set hashes, execution seeds, ranking or
 selection view, manifest data, and snapshot locator hints. Do not persist full
 ledger, fill, trade, or equity artifacts for every candidate by default.
 
-Promoted roadmap hook: `v0.1.9.x Sweep Artifact Persistence`.
+Promoted roadmap hook: `v0.1.8.9.x Sweep Artifact Persistence`.
 
 ### 2026-05-14 [execution] Structured RNG preflight metadata
 
@@ -974,7 +1009,7 @@ Potential additions:
 
 Keep this separate from target risk, liquidity/capacity, transaction cost, and
 full portfolio optimization. Promoted roadmap hook:
-`v0.1.9.x Target Construction Helper Extensions`.
+`v0.1.8.9.x Target Construction Helper Extensions`.
 
 ### 2026-05-27 [risk] Affordability belongs in target risk
 
@@ -984,7 +1019,7 @@ targets can request more exposure than available cash supports; the fold records
 the fill and cash can go negative. That arithmetic is reproducible, but it is
 not a declared margin model.
 
-The v0.1.9 target-risk RFC should treat capital discipline as a first-class
+The v0.1.8.9 target-risk RFC should treat capital discipline as a first-class
 risk adapter, alongside long-only and max-weight constraints. The minimum shape
 should include an explicit capital floor or affordability rule inserted between
 target validation and fill timing, preserving the strategy contract: strategies
@@ -1009,7 +1044,7 @@ Each use has a different complexity profile and different upstream
 dependencies. Diagnostic beta needs benchmark returns only. Feature beta also
 needs point-in-time alignment with the strategy's decision time and would
 interact with feature fingerprinting (the determinism module extracted in
-LDG-2212). Constraint beta needs both of the above plus the v0.1.9
+LDG-2212). Constraint beta needs both of the above plus the v0.1.8.9
 target-risk chain.
 
 When beta work eventually opens, keep these three uses as separately scoped
@@ -1025,7 +1060,7 @@ feature beta    : after benchmark substrate plus a point-in-time
                   rolling beta at pulse t may use returns ending at t or
                   must use returns strictly before t.
 constraint beta : after benchmark substrate, feature-alignment design, and
-                  the v0.1.9 target-risk chain.
+                  the v0.1.8.9 target-risk chain.
 ```
 
 Do not gate diagnostic beta on the risk chain; the dependency is
@@ -1192,12 +1227,12 @@ next feature-projection materialization direction: v0.1.8.6 first removes
 redundant cache-key fingerprint work, then stops building full-panel long
 `ctx$feature_table` rows by default. Wide/projection-backed accessors are the
 decision-time surface; long becomes inspection/export/research shape. This entry
-uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.9, or later.
+uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.8.9, or later.
 
 #### Lookback and portfolio windows
 
 - `ctx$window()` is accepted as the causal lookback primitive, but enters
-  v0.1.9 only if target-risk or portfolio-risk work needs covariance windows.
+  v0.1.8.9 only if target-risk or portfolio-risk work needs covariance windows.
 - First public shape, when cut, is single-feature `n_inst x lookback` matrix
   with leading `NA_real_` warmup columns.
 - Multi-feature/tensor/list window shapes are future API work after the first
@@ -1246,7 +1281,7 @@ uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.9, or later.
 - v0.1.8.6: post-5.0/post-5.1 remeasurement and instrument x feature sweep.
 - v0.1.8.6, if storage/schema work is explicitly accepted: typed persistent
   `cash_delta` and `position_delta` columns.
-- v0.1.9, only if target-risk/portfolio-risk needs it: single-feature
+- v0.1.8.9, only if target-risk/portfolio-risk needs it: single-feature
   `ctx$window()` matrix API.
 - Later: multi-feature/tensor windows.
 - Later: full-panel long export/training APIs and PIT feature-store
@@ -1332,9 +1367,9 @@ Near-term policy:
   to recover the measured pulse-view setup cost;
 - do not add `collapse` as an `Imports` dependency during v0.1.8.3 solely for
   pulse-view construction;
-- preserve the spike results as evidence for v0.1.9 planning gates.
+- preserve the spike results as evidence for v0.1.8.9 planning gates.
 
-Promoted v0.1.9 planning direction:
+Promoted v0.1.8.9 planning direction:
 
 - write a primitive-internals developer guide before broad implementation
   work;
@@ -1381,7 +1416,7 @@ that the port can be contract-following rather than contract-setting.
 Minimum gates before a serious port RFC:
 
 - v0.1.8.4 active parameterized feature aliases have landed or been abandoned;
-- the v0.1.9 target-risk chain has stabilized, including second-pass target
+- the v0.1.8.9 target-risk chain has stabilized, including second-pass target
   validation and risk identity;
 - walk-forward has produced real large-sweep workloads that justify native
   fold speed;
@@ -1484,15 +1519,15 @@ Until those pieces exist, the operations dashboard is a sketch, not a design.
 Record it here so the eventual UI work has a target shape rather than being
 invented under deployment pressure.
 
-### 2026-05-27 [evaluation] Walk-forward post-v0.1.9.x direction
+### 2026-05-27 [evaluation] Walk-forward post-v0.1.8.9.x direction
 
-The accepted v0.1.9.x walk-forward synthesis
+The accepted v0.1.8.9.x walk-forward synthesis
 (`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`) binds the
 first walk-forward implementation: rolling and anchored folds, calendar-time
 boundaries, single sealed snapshot, classed selection rules, scalar score
 matrix, and extraction-for-promotion. The synthesis uses "v1" as shorthand for
 that first implementation; ledgr's roadmap does not have a "walk-forward v2"
-milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at their
+milestone. The post-v0.1.8.9.x direction lives in named follow-up RFCs at their
 own roadmap windows. This entry records the shape of that direction so the
 follow-up work has a target rather than being invented under pressure.
 
@@ -1559,10 +1594,10 @@ Paper/live walk-forward and OMS interaction:
 
 Promoted roadmap hooks (named follow-up RFCs):
 
-- diagnostic retention tiers RFC (v0.1.9.x or later);
-- selection-integrity diagnostics RFC (v0.1.9.x, after retention tiers
+- diagnostic retention tiers RFC (v0.1.8.9.x or later);
+- selection-integrity diagnostics RFC (v0.1.8.9.x, after retention tiers
   stabilize enough to consume);
-- purged and embargoed folds RFC (v0.1.9.x or v0.2.x);
+- purged and embargoed folds RFC (v0.1.8.9.x or v0.2.x);
 - combinatorial purged CV RFC (after purging);
 - trading-time / state-fold RFC (v0.2.x, coordinated with market-calendar
   work);
@@ -1578,9 +1613,9 @@ This horizon entry does not authorize any of the above. It records the
 direction so that when each follow-up cycle opens, the seed author can start
 from a known shape rather than re-deriving the boundary.
 
-### 2026-05-27 [execution] Cost-model post-v0.1.9.x direction
+### 2026-05-27 [execution] Cost-model post-v0.1.8.9.x direction
 
-The accepted v0.1.9.x/v0.2.0 public transaction-cost API synthesis
+The accepted v0.1.8.9.x/v0.2.0 public transaction-cost API synthesis
 (`inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`)
 binds the first public cost API: classed `ledgr_cost_*` objects, ordered
 `ledgr_cost_chain()` composition with two-stage discipline (price transforms
@@ -1590,7 +1625,7 @@ quoted-spread semantics for `spread_bps`, single account currency, one total
 fee per fill, cost identity via `cost_model_hash` + `cost_plan_json`, and
 experiment-level (non-per-candidate) cost in v1. The synthesis explicitly
 defers ~18 cost-adjacent capabilities and records 10 future-RFC obligations.
-This entry groups the post-v0.1.9.x direction so each follow-up cycle starts
+This entry groups the post-v0.1.8.9.x direction so each follow-up cycle starts
 from a known shape.
 
 Cost-model expressiveness extensions:
@@ -1701,9 +1736,9 @@ Promoted roadmap hooks (named follow-up RFCs):
 Immediate cross-cycle obligations recorded by the synthesis (not horizon
 material, just noted for follow-on cycles):
 
-- v0.1.9.x walk-forward spec packet must extend `candidate_key` and
+- v0.1.8.9.x walk-forward spec packet must extend `candidate_key` and
   `session_id` to include `cost_model_hash`;
-- v0.1.9.x cost-API spec packet must update
+- v0.1.8.9.x cost-API spec packet must update
   `vignettes/metrics-and-accounting.Rmd` which currently teaches the legacy
   full-per-leg spread convention.
 
@@ -1809,13 +1844,13 @@ Dependencies on prior cycles
 
 This RFC lands well after the prerequisite work:
 
-- walk-forward (v0.1.9.x) so comparisons can be made over OOS fold windows,
+- walk-forward (v0.1.8.9.x) so comparisons can be made over OOS fold windows,
   not just full snapshots;
-- target risk (v0.1.9) so baselines can be risk-adjusted comparable to
+- target risk (v0.1.8.9) so baselines can be risk-adjusted comparable to
   risk-aware strategies;
-- public cost API (v0.1.9.x/v0.2.0) so cost-aware comparisons are honest
+- public cost API (v0.1.8.9.x/v0.2.0) so cost-aware comparisons are honest
   (baselines have different turnover; comparing without cost can mislead);
-- selection-integrity diagnostics (v0.1.9.x) so the comparison can be paired
+- selection-integrity diagnostics (v0.1.8.9.x) so the comparison can be paired
   with multiplicity-aware significance reporting if the user wants it.
 
 The v0.2.x slot is the right window — after the prerequisites stabilize and
@@ -2191,7 +2226,7 @@ Every layer above storage assumes EOD shape, however:
   order lifecycle (place / modify / cancel, partial fills). That work is
   v0.2.x with an accepted synthesis at
   `inst/design/rfc/rfc_ledgr_oms_seed_synthesis.md`.
-- **Cost / liquidity policy is not intraday-aware.** The v0.1.9.x/v0.2.0
+- **Cost / liquidity policy is not intraday-aware.** The v0.1.8.9.x/v0.2.0
   cost API works for intraday in principle, but participation, capacity,
   and minimum-ADV policy (also v0.2.x) is what intraday actually needs.
 - **Storage scale changes.** The v0.1.8.6 feature-storage spike measures
@@ -2211,7 +2246,7 @@ First-class intraday is a multi-cycle endeavor:
    `ledger_events` separation.
 2. **Session calendar infrastructure** (new RFC, post-OMS) — exchange
    sessions, holidays, half-days, lunch breaks, pre/post-market handling.
-3. **Intraday fill-timing policy** (extends v0.1.9.x cost API arc) —
+3. **Intraday fill-timing policy** (extends v0.1.8.9.x cost API arc) —
    next-pulse-touch, mid-point, VWAP, session-open / session-close, with
    the same swappable boundary the EOD `next_open_timing` already uses.
 4. **Intraday-aware metric context** (extends v0.1.8.2 metric context
@@ -2229,7 +2264,7 @@ synthesis is the entry point. Calendar infrastructure is the missing RFC.
 #### Architectural footguns the v0.1.x cycles must avoid
 
 This is the operative section. The current cycles (v0.1.8.5 through
-v0.1.9.x) must not paint the framework into corners that the intraday
+v0.1.8.9.x) must not paint the framework into corners that the intraday
 flip will have to rip out. The list below is the audit checklist.
 
 - **Pulse cadence is a snapshot-derived property, not a global constant.**
@@ -2255,7 +2290,7 @@ flip will have to rip out. The list below is the audit checklist.
 - **Risk-layer affordability check must be net across one pulse's
   proposed fills, not per-instrument sequential.** The fold core's fill
   loop iterates per instrument and updates cash sequentially
-  (`R/fold-core.R:233-287`). When the v0.1.9 target-risk layer adds
+  (`R/fold-core.R:233-287`). When the v0.1.8.9 target-risk layer adds
   affordability adapters, they must check feasibility against the net
   cash delta from all proposed fills at one pulse, not per-instrument:
   a per-instrument check would reject rebalancing strategies depending
@@ -2280,7 +2315,7 @@ flip will have to rip out. The list below is the audit checklist.
   per-decision shape but must not commit to a schema the OMS work will
   have to rip out destructively.
 - **Cost API spread / participation assumptions stay EOD-neutral.** The
-  accepted v0.1.9.x cost API synthesis keeps `cost_spread_bps()` as a
+  accepted v0.1.8.9.x cost API synthesis keeps `cost_spread_bps()` as a
   quoted-spread function over a fill context. Intraday extends the
   context, not the cost API. Preserve that boundary.
 - **Demo data and demo strategies stay EOD-shaped.** That is fine. The
@@ -2438,9 +2473,9 @@ opens; or open a follow-up RFC to extend the existing synthesis.
   amended with an intraday-readiness scope risk;
 - the research-loop ergonomics helpers entry (2026-05-27, this file) —
   helper output shape must be cadence-neutral;
-- the walk-forward post-v0.1.9.x direction entry (2026-05-27, this file)
+- the walk-forward post-v0.1.8.9.x direction entry (2026-05-27, this file)
   — confirm follow-up directions extend cleanly to intraday folds;
-- the cost-model post-v0.1.9.x direction entry (2026-05-27, this file)
+- the cost-model post-v0.1.8.9.x direction entry (2026-05-27, this file)
   — confirm timing/cost extensions accommodate intraday fill policies.
 
 The audit should record, for each RFC above, whether it is **pinned**
@@ -2459,7 +2494,7 @@ planning.
   line; cut after OMS lands;
 - intraday metric context extension — extends v0.1.8.2 metric context
   work; same calendar surface, parameterized cadence;
-- intraday fill timing policy — extends v0.1.9.x/v0.2.0 cost API arc;
+- intraday fill timing policy — extends v0.1.8.9.x/v0.2.0 cost API arc;
 - intraday storage scale evidence — extends v0.1.8.6 feature-storage
   spike with intraday workload comparisons if the spike is rerun;
 - design audit for intraday-readiness footguns — user-initiated, no
@@ -2469,7 +2504,7 @@ planning.
 
 This entry does not authorize new cycles. Its operative effect is on
 the in-progress v0.1.8.5 cycle and the planned v0.1.8.6, v0.1.8.7,
-v0.1.9, and v0.1.9.x cycles: each must avoid the footguns named above.
+v0.1.8.9, and v0.1.8.9.x cycles: each must avoid the footguns named above.
 The user-initiated design audit will produce a sharper list of "preserve
 this" and "fix this before it becomes permanent" findings. Until the
 audit lands, treat this entry as a soft constraint on architectural
@@ -2668,8 +2703,8 @@ candidates.
   shape resists portfolio-level risk and net affordability. Target shape: plan
   (targets -> deltas) -> batch proposals -> batch cost -> batch/portfolio risk
   + net affordability -> emit -> apply atomically. This is the structural
-  prerequisite for the v0.1.9 affordability check (see the 2026-05-27
-  affordability-in-target-risk entry) and is a v0.1.9 target-risk RFC input.
+  prerequisite for the v0.1.8.9 affordability check (see the 2026-05-27
+  affordability-in-target-risk entry) and is a v0.1.8.9 target-risk RFC input.
 - **Typed execution spec.** The `execution` list is a large untyped bag; run
   and sweep hand-build equivalent-but-not-identical lists (verified divergences
   in seed derivation, `event_mode`, hardcoded vs config fields, metric-kernel
@@ -2730,7 +2765,7 @@ Adapter ranking (later ones gated on their own readiness):
 
 - PerformanceAnalytics — reporting / tear-sheet; first, output projection only.
 - PortfolioAnalytics — portfolio construction / post-ledger optimization; after
-  the v0.1.9 target-risk chain stabilizes.
+  the v0.1.8.9 target-risk chain stabilizes.
 - tidyfinance — factor / data research; with the v0.2.x PIT / vintage semantics.
 - quantmod — data ingestion; useful but less differentiating.
 - PMwR / quantstrat / blotter / fPortfolio — low priority or skip (accounting /
