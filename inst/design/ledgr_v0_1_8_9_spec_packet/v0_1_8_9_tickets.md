@@ -212,7 +212,7 @@ scope: fill_row_buffer_setv
 Priority: P1
 Effort: M
 Dependencies: LDG-2496
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -248,6 +248,14 @@ lane and replaces Spike 4 for default durable runs.
 Durable run parity tests, audit-log equivalence tests, ledger-writer tests,
 large/xlarge durable workload-grid rerun, and per-lane attribution review.
 
+### Completion Note
+
+Completed 2026-05-31. The handler uses environment-backed pending columns with
+`collapse::setv` on POSIXct, numeric, and integer columns, while character
+columns remain on base scalar assignment because `collapse` 2.1.7 corrupted
+long character vectors at growth boundaries. The post-LDG-2496 xlarge durable
+wall fell from 410.39s to 311.85s and loop time fell from 377.73s to 278.07s.
+
 ### Source Reference
 
 - `v0_1_8_9_spec.md`, Workstream B.1
@@ -269,21 +277,23 @@ scope: pending_cols_setv
 Priority: P1
 Effort: M
 Dependencies: LDG-2497
-Status: Pending
+Status: In Progress
 
 ### Description
 
-Replace base-R per-row writes in the memory output handler's atomic event
-columns with `collapse::setv`, preserving the existing in-memory event schema
-and keeping the `meta` list-column to `meta_json` refactor deferred. Batch 1
-review also found the same per-row inline fill-buffer write pattern in
+Replace safe non-character memory output handler event-column writes with
+`collapse::setv`, preserving the existing in-memory event schema and keeping
+the `meta` list-column to `meta_json` refactor deferred. Character columns stay
+on base scalar assignment until the local `collapse` character-vector issue is
+resolved. Batch 1 review also found the same per-row inline fill-buffer write
+pattern in
 `ledgr_sweep_summary_from_ordered_events()`; this ticket must either patch that
 site with its own attribution row or record an explicit deferral before
 closing.
 
 ### Tasks
 
-- Replace atomic memory-handler event-column writes with
+- Replace safe non-character memory-handler event-column writes with
   `collapse::setv(..., vind1 = TRUE)`.
 - Patch or explicitly defer the inline sweep-summary fill-buffer writes in
   `ledgr_sweep_summary_from_ordered_events()`.

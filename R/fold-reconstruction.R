@@ -438,14 +438,14 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
 
   add_fill_row <- function(i, inst, side, qty, price, fee, realized_pnl, action) {
     fill_idx <<- fill_idx + 1L
-    fill_event_seq[[fill_idx]] <<- events$event_seq[[i]]
-    fill_ts_utc[[fill_idx]] <<- event_ts[[i]]
+    collapse::setv(fill_event_seq, fill_idx, as.integer(events$event_seq[[i]]), vind1 = TRUE)
+    collapse::setv(fill_ts_utc, fill_idx, as.POSIXct(event_ts[[i]], tz = "UTC"), vind1 = TRUE)
     fill_instrument_id[[fill_idx]] <<- inst
     fill_side[[fill_idx]] <<- side
-    fill_qty[[fill_idx]] <<- qty
-    fill_price[[fill_idx]] <<- price
-    fill_fee[[fill_idx]] <<- fee
-    fill_realized_pnl[[fill_idx]] <<- realized_pnl
+    collapse::setv(fill_qty, fill_idx, as.numeric(qty), vind1 = TRUE)
+    collapse::setv(fill_price, fill_idx, as.numeric(price), vind1 = TRUE)
+    collapse::setv(fill_fee, fill_idx, as.numeric(fee), vind1 = TRUE)
+    collapse::setv(fill_realized_pnl, fill_idx, as.numeric(realized_pnl), vind1 = TRUE)
     fill_action[[fill_idx]] <<- action
     invisible(TRUE)
   }

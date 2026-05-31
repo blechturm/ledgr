@@ -185,3 +185,80 @@ post-LDG-2496 baseline. This exceeds the Spike 11 50-80s production recovery
 range; the direct helper benchmark understated the real-run result because the
 durable fold loop exercises the pending-column writes under a different mix of
 payload construction, buffering, and capacity growth.
+
+## LDG-2498: Memory Output Handler `setv`
+
+Status: review candidate, not committed.
+
+Change:
+
+- Changed the memory output handler's internal `event_cols` storage from a
+  list to an environment, matching the corrected LDG-2497 handler pattern.
+- Replaced POSIXct, numeric, and integer per-event writes in
+  `ledgr_memory_output_handler()` with `collapse::setv(..., vind1 = TRUE)`.
+- Kept character and list columns on base assignment because `collapse` 2.1.7
+  corrupts long character vectors in this write pattern.
+- Applied the same partial `setv` rule to the inline
+  `ledgr_sweep_summary_from_ordered_events()` fill-buffer site: event sequence,
+  timestamp, and numeric columns use `setv`; character columns remain base
+  scalar writes.
+- No public ephemeral execution API, worker durable writes, table schema, or
+  event materialization surface changed intentionally.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `test-sweep.R` | PASS |
+| `test-sweep-parity.R` | PASS |
+| `test-sweep-parallel.R` | PASS |
+
+Targeted regression coverage:
+
+- Added a 1025-event memory-handler full-column growth test using real
+  `ledgr_fill_event_row()` payloads.
+- The test checks all materialized event columns plus the typed
+  `ledgr_event_cash_delta`, `ledgr_event_position_delta`, and
+  `ledgr_event_meta` attributes, with list-column spot checks at the 1024/1025
+  growth boundary.
+- A pre-fix full-character-`setv` memory-handler shape inherits the same
+  `collapse` 2.1.7 long-character-vector failure proved during the LDG-2497
+  correction; Batch 3 starts from the partial `setv` strategy rather than
+  reproducing that unsafe path.
+- Existing single-pass sweep-summary parity test covers the inline
+  `ledgr_sweep_summary_from_ordered_events()` fill-buffer site against
+  separate reconstruction helpers.
+
+Paired local smoke attribution:
+
+Artifact prefix:
+`dev/bench/results/ledgr_bench_smoke_20260531T214154Z`.
+
+| Scenario | Wall s | Failures | Notes |
+| --- | ---: | ---: | --- |
+| `density_high_large_ephemeral` | 1.26 | 0 | smoke shape; no-failure harness check |
+| `density_high_xlarge_ephemeral` | 0.91 | 0 | smoke shape; no-failure harness check |
+
+Record-scale attribution:
+
+Baseline sources after LDG-2496:
+
+- `dev/bench/results/ledgr_bench_record_20260531T204232Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T204852Z_summary.csv`
+
+After sources:
+
+- `dev/bench/results/ledgr_bench_record_20260531T214414Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T215057Z_summary.csv`
+
+| Scenario | Metric | Baseline | After | Delta | Notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| `density_high_large_ephemeral` | wall s | 159.53 | 103.92 | -55.61 | zero failures |
+| `density_high_xlarge_ephemeral` | wall s | 508.08 | 346.63 | -161.45 | zero failures |
+
+Interpretation: LDG-2498 delivered the intended ephemeral memory-path recovery
+at record scale. The workload-grid harness does not expose sweep-row loop or
+results subphases, so wall is the available lane metric for these ephemeral
+cells. The xlarge ephemeral wall recovery is larger than the Spike 6
+50-100s estimate, likely because the handler change and inline sweep-summary
+fill-buffer change both affect the same ephemeral workload path.

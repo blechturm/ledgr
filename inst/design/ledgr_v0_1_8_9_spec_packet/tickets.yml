@@ -39,7 +39,7 @@ tickets:
 
   - id: "LDG-2497"
     title: "Persistent Durable Handler setv"
-    status: "in_progress"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -57,7 +57,7 @@ tickets:
 
   - id: "LDG-2498"
     title: "Memory Output Handler setv"
-    status: "pending"
+    status: "in_progress"
     priority: "P1"
     effort: "M"
     dependencies:

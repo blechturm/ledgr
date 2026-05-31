@@ -965,22 +965,22 @@ ledgr_memory_output_handler <- function(run_id) {
 
   init_event_cols <- function(capacity) {
     state$event_capacity <- as.integer(max(0L, capacity))
-    state$event_cols <- list(
-      event_id = character(state$event_capacity),
-      run_id = character(state$event_capacity),
-      ts_utc = as.POSIXct(rep(NA_character_, state$event_capacity), tz = "UTC"),
-      event_type = character(state$event_capacity),
-      instrument_id = character(state$event_capacity),
-      side = character(state$event_capacity),
-      qty = numeric(state$event_capacity),
-      price = numeric(state$event_capacity),
-      fee = numeric(state$event_capacity),
-      meta_json = character(state$event_capacity),
-      event_seq = integer(state$event_capacity),
-      cash_delta = numeric(state$event_capacity),
-      position_delta = numeric(state$event_capacity),
-      meta = vector("list", state$event_capacity)
-    )
+    event_cols <- new.env(parent = emptyenv())
+    event_cols$event_id <- character(state$event_capacity)
+    event_cols$run_id <- character(state$event_capacity)
+    event_cols$ts_utc <- as.POSIXct(rep(NA_character_, state$event_capacity), tz = "UTC")
+    event_cols$event_type <- character(state$event_capacity)
+    event_cols$instrument_id <- character(state$event_capacity)
+    event_cols$side <- character(state$event_capacity)
+    event_cols$qty <- numeric(state$event_capacity)
+    event_cols$price <- numeric(state$event_capacity)
+    event_cols$fee <- numeric(state$event_capacity)
+    event_cols$meta_json <- character(state$event_capacity)
+    event_cols$event_seq <- integer(state$event_capacity)
+    event_cols$cash_delta <- numeric(state$event_capacity)
+    event_cols$position_delta <- numeric(state$event_capacity)
+    event_cols$meta <- vector("list", state$event_capacity)
+    state$event_cols <- event_cols
     invisible(TRUE)
   }
 
@@ -999,11 +999,37 @@ ledgr_memory_output_handler <- function(run_id) {
     init_event_cols(next_capacity)
     if (!is.null(old_cols) && old_count > 0L) {
       idx <- seq_len(old_count)
-      for (name in names(old_cols)) {
-        state$event_cols[[name]][idx] <- old_cols[[name]][idx]
+      for (name in ls(old_cols, all.names = TRUE)) {
+        col <- state$event_cols[[name]]
+        col[idx] <- old_cols[[name]][idx]
+        state$event_cols[[name]] <- col
       }
     }
     invisible(TRUE)
+  }
+
+  set_event_value <- function(name, i, value) {
+    col <- state$event_cols[[name]]
+    if (is.character(col)) {
+      col[[i]] <- as.character(value)[[1]]
+      state$event_cols[[name]] <- col
+      return(invisible(NULL))
+    }
+    if (is.list(col)) {
+      col[i] <- list(value)
+      state$event_cols[[name]] <- col
+      return(invisible(NULL))
+    }
+    value <- if (inherits(col, "POSIXct")) {
+      as.POSIXct(value, tz = "UTC")[[1]]
+    } else if (is.integer(col)) {
+      as.integer(value)[[1]]
+    } else {
+      as.numeric(value)[[1]]
+    }
+    collapse::setv(col, i, value, vind1 = TRUE)
+    state$event_cols[[name]] <- col
+    invisible(NULL)
   }
 
   append_event_row_list <- function(row,
@@ -1013,20 +1039,20 @@ ledgr_memory_output_handler <- function(run_id) {
     ensure_event_capacity(state$event_count + 1L)
     state$event_count <- state$event_count + 1L
     i <- state$event_count
-    state$event_cols$event_id[[i]] <- row$event_id
-    state$event_cols$run_id[[i]] <- row$run_id
-    state$event_cols$ts_utc[[i]] <- row$ts_utc
-    state$event_cols$event_type[[i]] <- row$event_type
-    state$event_cols$instrument_id[[i]] <- row$instrument_id
-    state$event_cols$side[[i]] <- row$side
-    state$event_cols$qty[[i]] <- as.numeric(row$qty)
-    state$event_cols$price[[i]] <- as.numeric(row$price)
-    state$event_cols$fee[[i]] <- as.numeric(row$fee)
-    state$event_cols$meta_json[[i]] <- row$meta_json
-    state$event_cols$event_seq[[i]] <- as.integer(row$event_seq)
-    state$event_cols$cash_delta[[i]] <- as.numeric(cash_delta)
-    state$event_cols$position_delta[[i]] <- as.numeric(position_delta)
-    state$event_cols$meta[i] <- list(meta)
+    set_event_value("event_id", i, row$event_id)
+    set_event_value("run_id", i, row$run_id)
+    set_event_value("ts_utc", i, row$ts_utc)
+    set_event_value("event_type", i, row$event_type)
+    set_event_value("instrument_id", i, row$instrument_id)
+    set_event_value("side", i, row$side)
+    set_event_value("qty", i, row$qty)
+    set_event_value("price", i, row$price)
+    set_event_value("fee", i, row$fee)
+    set_event_value("meta_json", i, row$meta_json)
+    set_event_value("event_seq", i, row$event_seq)
+    set_event_value("cash_delta", i, cash_delta)
+    set_event_value("position_delta", i, position_delta)
+    set_event_value("meta", i, meta)
     invisible(TRUE)
   }
 
@@ -1120,9 +1146,9 @@ ledgr_memory_output_handler <- function(run_id) {
       for (j in seq_len(n)) {
         meta <- ledgr_lot_parse_meta(rows$meta_json[[j]])
         pos <- start + j - 1L
-        state$event_cols$meta[pos] <- list(meta)
-        state$event_cols$cash_delta[[pos]] <- as.numeric(meta$cash_delta %||% NA_real_)
-        state$event_cols$position_delta[[pos]] <- as.numeric(meta$position_delta %||% NA_real_)
+        set_event_value("meta", pos, meta)
+        set_event_value("cash_delta", pos, meta$cash_delta %||% NA_real_)
+        set_event_value("position_delta", pos, meta$position_delta %||% NA_real_)
       }
       state$event_count <- end
     }
