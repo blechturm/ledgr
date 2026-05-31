@@ -24,7 +24,7 @@ Exit criteria:
 ## Batch 1 - Fills Extractor setv
 
 Ticket: `LDG-2496`
-Status: Ready
+Status: Implementation approved; record attribution pending
 
 Goal: land the shared fills extractor `setv` fix and measure it before any
 other hot-path optimization lands.
@@ -35,11 +35,12 @@ Exit criteria:
 - Stream-threshold materialization works.
 - Large/xlarge durable and ephemeral cells are remeasured.
 - Per-lane attribution row is recorded.
+- Do not start Batch 2 until record-scale attribution is appended.
 
 ## Batch 2 - Persistent Durable Handler setv
 
 Ticket: `LDG-2497`
-Status: Pending
+Status: Blocked pending Batch 1 record attribution
 
 Goal: land the durable output-handler pending-column `setv` fix.
 
@@ -55,11 +56,15 @@ Ticket: `LDG-2498`
 Status: Pending
 
 Goal: land the internal memory output-handler `setv` fix without creating a
-public ephemeral API or changing the `meta` list-column structure.
+public ephemeral API or changing the `meta` list-column structure. Batch 1
+review also routed the inline sweep-summary fill-buffer write site here for
+patch-or-defer triage.
 
 Exit criteria:
 
 - Sweep candidate memory event parity passes.
+- Inline sweep-summary fill-buffer site is patched with parity or explicitly
+  deferred.
 - Parallel/sweep artifact-count surfaces remain clean.
 - Ephemeral large/xlarge cells are remeasured.
 - Per-lane attribution row is recorded.

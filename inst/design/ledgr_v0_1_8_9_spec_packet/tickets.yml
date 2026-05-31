@@ -21,7 +21,7 @@ tickets:
 
   - id: "LDG-2496"
     title: "Fills Extractor setv"
-    status: "pending"
+    status: "in_progress"
     priority: "P1"
     effort: "M"
     dependencies:

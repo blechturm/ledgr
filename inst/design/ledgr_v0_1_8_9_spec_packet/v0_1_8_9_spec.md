@@ -225,6 +225,9 @@ Required work:
 
 - replace atomic-column writes in the memory output handler with
   `collapse::setv`;
+- replace the same per-row inline fill-buffer writes in
+  `ledgr_sweep_summary_from_ordered_events()` or explicitly measure and defer
+  that site;
 - preserve the current memory-handler event schema and `meta` list-column
   behavior;
 - do not introduce a public ephemeral fast-path API;
@@ -235,6 +238,8 @@ Acceptance gates:
 
 - byte-identical in-memory event records for representative sweep candidates
   before and after the change;
+- byte-identical sweep-summary fills for the inline fill-buffer path, if it is
+  patched in this release;
 - sequential and parallel sweep candidate parity unchanged;
 - no durable writes from worker/candidate memory paths;
 - high-density large and xlarge ephemeral grid cells record the measured

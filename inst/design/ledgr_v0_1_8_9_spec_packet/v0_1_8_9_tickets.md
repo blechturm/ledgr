@@ -139,7 +139,7 @@ scope: v0.1.8.9
 Priority: P1
 Effort: M
 Dependencies: LDG-2495
-Status: Pending
+Status: In Progress
 
 ### Description
 
@@ -179,11 +179,20 @@ Targeted reconstruction/fills tests, xlarge-ish fixture test above
 `stream_threshold`, workload-grid large/xlarge rerun for durable and ephemeral
 cells, and per-lane attribution review.
 
+### Implementation Note
+
+Implementation review approved 2026-05-31. The code change and targeted tests
+are ready to commit. The per-lane attribution row remains open until
+record-scale large/xlarge durable and ephemeral reruns are appended to
+`per_lane_attribution.md`; `LDG-2497` must not start before that measurement
+gate is closed.
+
 ### Source Reference
 
 - `v0_1_8_9_spec.md`, Workstream C
 - `dev/spikes/spike-fills-reconstruction-scaling.md`
 - `dev/spikes/spike-chunked-extractor-wall-recovery.md`
+- `per_lane_attribution.md`
 - `R/fold-reconstruction.R`
 - `R/backtest.R`
 
@@ -265,12 +274,18 @@ Status: Pending
 
 Replace base-R per-row writes in the memory output handler's atomic event
 columns with `collapse::setv`, preserving the existing in-memory event schema
-and keeping the `meta` list-column to `meta_json` refactor deferred.
+and keeping the `meta` list-column to `meta_json` refactor deferred. Batch 1
+review also found the same per-row inline fill-buffer write pattern in
+`ledgr_sweep_summary_from_ordered_events()`; this ticket must either patch that
+site with its own attribution row or record an explicit deferral before
+closing.
 
 ### Tasks
 
 - Replace atomic memory-handler event-column writes with
   `collapse::setv(..., vind1 = TRUE)`.
+- Patch or explicitly defer the inline sweep-summary fill-buffer writes in
+  `ledgr_sweep_summary_from_ordered_events()`.
 - Preserve the `meta` list-column behavior.
 - Preserve sweep candidate output, warning/error association, and result
   ordering.
@@ -282,6 +297,8 @@ and keeping the `meta` list-column to `meta_json` refactor deferred.
 
 - Byte-identical in-memory event records for representative sweep candidates
   before and after the change.
+- Sweep-summary inline fill-buffer parity is either byte-identical after a
+  patch or explicitly deferred with rationale.
 - Sequential and parallel sweep candidate parity remains unchanged.
 - No new public ephemeral execution API.
 - No worker/candidate durable writes are introduced.
@@ -300,6 +317,7 @@ review.
 - `v0_1_8_9_spec.md`, Workstream B.2
 - `dev/spikes/spike-memory-output-handler-growth.md`
 - `R/sweep.R`
+- `R/fold-reconstruction.R`
 
 ### Classification
 
