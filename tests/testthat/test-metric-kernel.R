@@ -39,8 +39,8 @@ testthat::test_that("metric kernel is a serialization-safe plain list", {
   testthat::expect_identical(kernel$metric_context$risk_free_rate$label, "manual 4pct")
   testthat::expect_false(ledgr_kernel_has_reference_state(kernel))
 
-  json <- jsonlite::toJSON(kernel, auto_unbox = TRUE, null = "null")
-  testthat::expect_type(jsonlite::fromJSON(json, simplifyVector = FALSE), "list")
+  json <- ledgr:::canonical_json(kernel)
+  testthat::expect_type(ledgr:::ledgr_json_read_nested(json), "list")
 })
 
 testthat::test_that("single-run metrics use stored context by default and support ephemeral overrides", {

@@ -74,13 +74,13 @@ testthat::test_that("ledgr_run accepts execution seeds and stores them in config
   bt_seeded <- ledgr_run(exp, seed = 123L, run_id = "seeded-run")
   on.exit(close(bt_seeded), add = TRUE)
   seeded_config_json <- ledgr_run_info(snapshot, "seeded-run")$config_json
-  seeded_cfg <- jsonlite::fromJSON(seeded_config_json, simplifyVector = FALSE)
+  seeded_cfg <- ledgr:::ledgr_json_read_nested(seeded_config_json)
   testthat::expect_identical(seeded_cfg$engine$seed, 123L)
 
   bt <- ledgr_run(exp, run_id = "null-seed-run")
   on.exit(close(bt), add = TRUE)
   config_json <- ledgr_run_info(snapshot, "null-seed-run")$config_json
-  cfg <- jsonlite::fromJSON(config_json, simplifyVector = FALSE)
+  cfg <- ledgr:::ledgr_json_read_nested(config_json)
   testthat::expect_null(cfg$engine$seed)
 })
 
@@ -321,7 +321,7 @@ testthat::test_that("ledgr_run records opening positions as ledger events", {
   testthat::expect_equal(nrow(opening), 1L)
   testthat::expect_identical(as.character(opening$instrument_id[[1]]), "AAA")
   testthat::expect_equal(as.numeric(opening$qty[[1]]), 1)
-  meta <- jsonlite::fromJSON(opening$meta_json[[1]], simplifyVector = FALSE)
+  meta <- ledgr:::ledgr_json_read_nested(opening$meta_json[[1]])
   testthat::expect_identical(meta$source, "opening_position")
 
   opened <- ledgr_test_open_duckdb(db_path)

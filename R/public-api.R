@@ -137,7 +137,7 @@ ledgr_state_reconstruct <- function(run_id, con) {
     rlang::abort("runs.config_json is required for reconstruction.", class = "ledgr_invalid_run")
   }
 
-  cfg <- jsonlite::fromJSON(row$config_json[[1]], simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE)
+  cfg <- ledgr_json_read_config(row$config_json[[1]])
   universe <- cfg$universe$instrument_ids
   initial_cash <- cfg$backtest$initial_cash
   if (!is.numeric(initial_cash) || length(initial_cash) != 1 || is.na(initial_cash) || !is.finite(initial_cash)) {

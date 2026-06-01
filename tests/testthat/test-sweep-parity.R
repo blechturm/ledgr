@@ -510,6 +510,6 @@ testthat::test_that("scalar execution config hash remains pinned across sweep pa
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "948146c214583b5bf2e200113d0bc5c065d834624b0701b1d099157b15833b3f"
+    "a9e6419d121ff6197c617b5b18f7fab9f74f896f3c2108d806909f92ba6a5304"
   )
 })

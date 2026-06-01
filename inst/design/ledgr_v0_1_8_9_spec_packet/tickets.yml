@@ -95,7 +95,7 @@ tickets:
 
   - id: "LDG-2500"
     title: "Target Delta Vectorize"
-    status: "in_progress"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -114,7 +114,7 @@ tickets:
 
   - id: "LDG-2501"
     title: "yyjsonr And Canonical JSON v2"
-    status: "pending"
+    status: "in_progress"
     priority: "P0"
     effort: "L"
     dependencies:

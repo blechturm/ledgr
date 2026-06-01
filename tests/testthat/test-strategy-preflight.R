@@ -19,17 +19,20 @@ testthat::test_that("strategy preflight classifies Tier 1 self-contained strateg
 
 testthat::test_that("strategy preflight classifies non-standard package-qualified calls as Tier 2", {
   strategy <- function(ctx, params) {
-    jsonlite::toJSON(list(qty = params$qty), auto_unbox = TRUE)
+    yyjsonr::write_json_str(
+      list(qty = params$qty),
+      opts = yyjsonr::opts_write_json(auto_unbox = TRUE)
+    )
     ctx$flat()
   }
 
   preflight <- ledgr_strategy_preflight(strategy)
   testthat::expect_identical(preflight$tier, "tier_2")
   testthat::expect_true(preflight$allowed)
-  testthat::expect_identical(preflight$package_dependencies, "jsonlite")
-  testthat::expect_identical(preflight$qualified_package_dependencies, "jsonlite")
+  testthat::expect_identical(preflight$package_dependencies, "yyjsonr")
+  testthat::expect_identical(preflight$qualified_package_dependencies, "yyjsonr")
   testthat::expect_identical(preflight$attached_package_dependencies, character())
-  testthat::expect_identical(preflight$worker_dependencies$require_namespace, "jsonlite")
+  testthat::expect_identical(preflight$worker_dependencies$require_namespace, "yyjsonr")
   testthat::expect_identical(preflight$worker_dependencies$attach, character())
   testthat::expect_identical(preflight$unresolved_symbols, character())
 })

@@ -20,7 +20,7 @@ ledgr_config_named_numeric <- function(x) {
 validate_ledgr_config <- function(config) {
   if (is.character(config) && length(config) == 1 && !is.na(config)) {
     config <- tryCatch(
-      jsonlite::fromJSON(config, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
+      ledgr_json_read_config(config),
       error = function(e) {
         rlang::abort("`config` is not valid JSON.", class = "ledgr_invalid_config")
       }

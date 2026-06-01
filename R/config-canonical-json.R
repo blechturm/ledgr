@@ -24,6 +24,43 @@
   digest::digest(x, algo = "sha256")
 }
 
+ledgr_json_read_nested <- function(x) {
+  yyjsonr::read_json_str(
+    x,
+    opts = yyjsonr::opts_read_json(
+      obj_of_arrs_to_df = FALSE,
+      arr_of_objs_to_df = FALSE,
+      arr_of_arrs_to_matrix = FALSE,
+      length1_array_asis = TRUE
+    )
+  )
+}
+
+ledgr_json_read_config <- function(x) {
+  yyjsonr::read_json_str(
+    x,
+    opts = yyjsonr::opts_read_json(
+      obj_of_arrs_to_df = FALSE,
+      arr_of_objs_to_df = FALSE,
+      arr_of_arrs_to_matrix = FALSE,
+      length1_array_asis = FALSE
+    )
+  )
+}
+
+ledgr_json_write_canonical_v2 <- function(x) {
+  yyjsonr::write_json_str(
+    x,
+    opts = yyjsonr::opts_write_json(
+      pretty = FALSE,
+      auto_unbox = TRUE,
+      digits = -1L,
+      null = "null",
+      num_specials = "null"
+    )
+  )
+}
+
 canonical_json <- function(x) {
   if (is.character(x) && length(x) == 1 && !is.na(x)) {
     if (isTRUE(attr(x, "ledgr_canonical_json"))) return(unname(x))
@@ -35,7 +72,7 @@ canonical_json <- function(x) {
 
   if (is.character(x) && length(x) == 1 && !is.na(x)) {
     x <- tryCatch(
-      jsonlite::fromJSON(x, simplifyVector = FALSE),
+      ledgr_json_read_nested(x),
       error = function(e) {
         rlang::abort(
           "canonical_json() received a character input that is not valid JSON.",
@@ -112,14 +149,7 @@ canonical_json <- function(x) {
   }
 
   payload <- canonicalize(x)
-  out <- jsonlite::toJSON(
-    payload,
-    auto_unbox = TRUE,
-    null = "null",
-    na = "null",
-    digits = NA,
-    pretty = FALSE
-  )
+  out <- ledgr_json_write_canonical_v2(payload)
   attr(out, "ledgr_canonical_json") <- TRUE
   .ledgr_json_cache_set(cache_key, out)
   out

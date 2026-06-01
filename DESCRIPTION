@@ -25,9 +25,9 @@ Imports:
     DBI,
     digest,
     duckdb,
-    jsonlite,
     rlang,
-    tibble
+    tibble,
+    yyjsonr (>= 0.1.22)
 Suggests: 
     covr,
     dplyr,

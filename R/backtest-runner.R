@@ -586,7 +586,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   validate_ledgr_config(config)
 
   cfg <- if (is.character(config)) {
-    jsonlite::fromJSON(config, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE)
+    ledgr_json_read_config(config)
   } else {
     config
   }
@@ -1354,7 +1354,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   event_meta <- vector("list", n_events)
   if (n_events > 0) {
     for (i in seq_len(n_events)) {
-      meta <- jsonlite::fromJSON(events_df$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_json_read_nested(events_df$meta_json[[i]])
       event_meta[[i]] <- meta
       cash_delta[[i]] <- as.numeric(meta$cash_delta)
       position_delta[[i]] <- as.numeric(meta$position_delta)
@@ -1564,7 +1564,7 @@ ledgr_strategy_state_prev <- function(con, run_id, ts_utc) {
   )
 
   if (nrow(row) == 0) return(NULL)
-  jsonlite::fromJSON(row$state_json[[1]], simplifyVector = FALSE)
+  ledgr_json_read_nested(row$state_json[[1]])
 }
 
 ledgr_features_at_pulse <- function(con,
@@ -1784,7 +1784,7 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc) {
   pos <- numeric(0)
   if (nrow(rows) > 0) {
     for (i in seq_len(nrow(rows))) {
-      meta <- jsonlite::fromJSON(rows$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_json_read_nested(rows$meta_json[[i]])
       cash <- cash + as.numeric(meta$cash_delta)
       instrument_id <- rows$instrument_id[[i]]
       if (!is.na(instrument_id) && nzchar(instrument_id)) {
@@ -1842,7 +1842,7 @@ ledgr_update_state_incremental <- function(con, run_id, last_event_seq, ts_utc, 
 
   if (nrow(rows) > 0) {
     for (i in seq_len(nrow(rows))) {
-      meta <- jsonlite::fromJSON(rows$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_json_read_nested(rows$meta_json[[i]])
       cash <- cash + as.numeric(meta$cash_delta)
       instrument_id <- rows$instrument_id[[i]]
       if (!is.na(instrument_id) && nzchar(instrument_id)) {

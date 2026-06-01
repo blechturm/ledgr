@@ -416,7 +416,7 @@ scope: position_valuation_vectorize
 Priority: P1
 Effort: M
 Dependencies: LDG-2499
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -451,6 +451,15 @@ and bisection.
 Strategy target validation tests, fold-engine tests, sweep/run parity tests,
 large/xlarge workload-grid rerun, and per-lane attribution review.
 
+### Completion Note
+
+Completed after review with the target-delta scan vectorized through
+name-aligned `state$positions[names(targets)]` lookup. The shuffled-target
+fixture proves that strategy-return order cannot leak into event order or
+quantity alignment. Record attribution showed the xlarge durable loop phase
+falling from 276.18s to 253.29s and the xlarge ephemeral wall falling from
+352.23s to 326.00s.
+
 ### Source Reference
 
 - `v0_1_8_9_spec.md`, Workstream D
@@ -472,7 +481,7 @@ scope: target_delta_vectorize
 Priority: P0
 Effort: L
 Dependencies: LDG-2500
-Status: Pending
+Status: In Progress
 
 ### Description
 

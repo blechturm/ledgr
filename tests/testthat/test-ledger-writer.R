@@ -25,7 +25,7 @@ insert_test_run <- function(con, run_id) {
 }
 
 parse_meta <- function(x) {
-  jsonlite::fromJSON(x, simplifyVector = TRUE)
+  ledgr:::ledgr_json_read_config(x)
 }
 
 fake_write_result <- function(run_id, i) {

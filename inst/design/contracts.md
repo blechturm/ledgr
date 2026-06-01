@@ -214,8 +214,14 @@ the active versioned spec packet, currently
 
 - Canonical JSON is produced by `canonical_json()`.
 - Named vectors and named lists are sorted by key before serialization.
-- Serialization uses `jsonlite::toJSON(auto_unbox = TRUE, null = "null",
-  na = "null", digits = NA, pretty = FALSE)`.
+- Serialization uses `yyjsonr::write_json_str()` with
+  `yyjsonr::opts_write_json(pretty = FALSE, auto_unbox = TRUE,
+  digits = -1L, null = "null", num_specials = "null")`.
+- v0.1.8.9 intentionally bumps the canonical JSON byte format to v2.
+  Whole-number doubles serialize with a decimal suffix, full-precision doubles
+  keep yyjsonr's shortest round-trippable representation, and exponent notation
+  may differ from the v1 jsonlite surface. Hashes that include canonical JSON
+  bytes are not expected to match pre-v0.1.8.9 values.
 - Config hashes, strategy-state JSON, snapshot metadata JSON, and ledger
   `meta_json` must use this canonical path when deterministic identity matters.
 - Session-local, non-persisted lookup keys are not durable identity artifacts

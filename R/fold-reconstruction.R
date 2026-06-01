@@ -30,7 +30,7 @@ ledgr_event_meta_at <- function(events, typed_meta, i) {
       return(meta)
     }
   }
-  jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+  ledgr_json_read_nested(events$meta_json[[i]])
 }
 
 ledgr_equity_from_events <- function(events,

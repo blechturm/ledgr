@@ -3,7 +3,7 @@ ledgr_strategy_extract_parse_json <- function(json, empty = list(), label = "JSO
     return(empty)
   }
   tryCatch(
-    jsonlite::fromJSON(json, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
+    ledgr_json_read_config(json),
     error = function(e) {
       rlang::abort(sprintf("Stored %s could not be parsed.", label), class = "ledgr_invalid_run", parent = e)
     }

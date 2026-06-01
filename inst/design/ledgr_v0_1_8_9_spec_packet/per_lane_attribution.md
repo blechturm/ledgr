@@ -367,7 +367,7 @@ as a persistent mechanism regression.
 
 ## LDG-2500: Target Delta Vectorize
 
-Status: review candidate, not committed.
+Status: implemented, committed, and measured.
 
 Change:
 
@@ -465,3 +465,125 @@ Residual: the per-target `state$positions[[instrument_id]] <- cur_qty + qty`
 write remains the Spike 3 audit-gated surface. LDG-2500 removes the read-side
 skip-loop cost; the write-side named-vector update is explicitly left for
 LDG-2502 triage rather than bundled into this lane.
+
+## LDG-2501: yyjsonr And Canonical JSON v2
+
+Status: review candidate, not committed.
+
+Change:
+
+- Replaced production `jsonlite` read/write call sites with yyjsonr-backed
+  internal helpers.
+- `canonical_json()` now emits canonical JSON byte-format v2 through
+  `yyjsonr::write_json_str()` with pinned write options.
+- Added separate read helpers for nested metadata shapes and config-like
+  simplify-vector shapes.
+- Removed `jsonlite` from `DESCRIPTION`/`NAMESPACE` and added `yyjsonr
+  (>= 0.1.22)`.
+- Updated strategy provenance package fingerprints to track `yyjsonr`.
+- Regenerated expected config, param-grid, and fingerprint fixtures where the
+  canonical byte-format bump intentionally changes identity bytes.
+- Normalized integer-like built-in indicator window parameters before
+  fingerprinting so `ledgr_ind_sma(2)` and parameterized
+  `ledgr_ind_sma(2L)` remain the same concrete indicator.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `rg "jsonlite|fromJSON|toJSON" R DESCRIPTION NAMESPACE tests/testthat -n` | no matches |
+| yyjsonr package version | 0.1.22 |
+| `test-canonical-json-byte-format.R` | PASS |
+| `test-config.R` | PASS |
+| `test-sweep-parity.R` | PASS |
+| `test-promotion-context.R` | PASS |
+| `test-backtest-wrapper.R` | PASS |
+| `test-experiment-run.R` | PASS |
+| `test-snapshot-adapters.R` | PASS, one existing quantmod-path skip |
+| `test-ledger-writer.R` | PASS |
+| `test-runner.R` | PASS |
+| `test-parallel-workers.R` | PASS |
+| `test-strategy-preflight.R` | PASS |
+| `test-metric-kernel.R` | PASS |
+| `test-fingerprint-stability.R` | PASS |
+| `test-strategy-provenance.R` | PASS |
+| `test-sweep.R` | PASS |
+| `test-param-grid.R` | PASS |
+| full `testthat::test_local()` | PASS, one existing snapshot-adapter skip |
+
+Canonical byte-format fixtures:
+
+- Added stored-byte fixtures for integer scalars, whole-number doubles,
+  full-precision doubles, exponent notation, canonical metadata with `NULL`,
+  escaped strings, POSIXct UTC values, and sorted nested objects.
+- Added read-shape fixtures covering nested metadata (`length1_array_asis =
+  TRUE`) and config-like shapes (`length1_array_asis = FALSE`).
+
+Direct helper attribution:
+
+Method: compare jsonlite v1-style write/read calls against yyjsonr write/read
+helpers on 50,000 representative fill metadata payloads in one R session.
+
+| Payloads | Old write s | yyjsonr write s | Write speedup | Old read s | yyjsonr read s | Read speedup |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 50,000 | 8.47 | 1.51 | 5.61x | 0.53 | 1.21 | 0.44x |
+
+Interpretation: the write path delivers the expected speedup. The read helper
+is slower on this micro-shape, so this lane should be judged primarily on
+canonical write-heavy runtime surfaces and on the explicit identity-format
+migration gates.
+
+Record-scale attribution:
+
+Durable baseline sources after LDG-2500:
+
+- `dev/bench/results/ledgr_bench_record_20260531T225058Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T225726Z_summary.csv`
+
+Ephemeral baseline sources after LDG-2500:
+
+- `dev/bench/results/ledgr_bench_record_20260531T225929Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T230550Z_summary.csv`
+
+After sources:
+
+- `dev/bench/results/ledgr_bench_record_20260601T053840Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260601T054456Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260601T054702Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260601T055332Z_summary.csv`
+
+| Scenario | Metric | Baseline | After | Delta | Notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| `density_high_large_durable` | wall s | 106.72 | 92.34 | -14.38 | zero failures |
+| `density_high_large_durable` | loop s | 90.16 | 74.47 | -15.69 | load-bearing durable write-path signal |
+| `density_high_large_durable` | fills extract s | 10.12 | 11.61 | +1.49 | unchanged; extraction/noise |
+| `density_high_large_durable` | engine us/fill | 1323.97 | 1093.57 | -230.40 | load-bearing durable write-path signal |
+| `density_high_large_durable` | extract us/fill | 148.61 | 170.49 | +21.88 | read/extract did not improve |
+| `density_high_xlarge_durable` | wall s | 287.16 | 267.84 | -19.32 | zero failures |
+| `density_high_xlarge_durable` | loop s | 253.29 | 231.17 | -22.12 | load-bearing durable write-path signal |
+| `density_high_xlarge_durable` | fills extract s | 21.19 | 25.04 | +3.85 | read/extract did not improve |
+| `density_high_xlarge_durable` | engine us/fill | 1902.22 | 1736.10 | -166.12 | load-bearing durable write-path signal |
+| `density_high_xlarge_durable` | extract us/fill | 159.14 | 188.05 | +28.91 | read/extract did not improve |
+| `density_high_large_ephemeral` | wall s | 96.09 | 98.40 | +2.31 | zero failures; no sweep subphase split |
+| `density_high_xlarge_ephemeral` | wall s | 326.00 | 333.14 | +7.14 | zero failures; no sweep subphase split |
+
+Interpretation: LDG-2501 delivered a real durable-path runtime improvement,
+with xlarge durable wall down 19.32s and loop down 22.12s. This matches the
+helper benchmark's write-path signal and slightly exceeds the synthesis's
+13-15s production estimate. The fills-extraction phase regressed by 3.85s on
+xlarge durable, consistent with the helper benchmark showing yyjsonr reads are
+slower on representative nested metadata payloads. The ephemeral path regressed
+modestly in both measured cells; because sweep rows do not expose a loop/results
+split, this cannot be cleanly decomposed here, but the read-path penalty is the
+most plausible source. The release closeout should report the durable win and
+the ephemeral/read-path caveat together rather than treating yyjsonr as a
+universal speed lane.
+
+Identity fallout:
+
+- The canonical JSON byte-format changed intentionally to v2.
+- Config hashes, param-grid labels, feature fingerprints, feature-set hashes,
+  feature-union hashes, and strategy provenance fingerprints were regenerated
+  where tests pin those values.
+- Pre-v0.1.8.9 identity artifacts are not byte-comparable to v0.1.8.9 identity
+  artifacts when canonical JSON participates in the hash.

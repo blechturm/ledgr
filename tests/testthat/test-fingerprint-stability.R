@@ -25,13 +25,13 @@ testthat::test_that("core indicator fingerprints remain stable", {
   }
 
   pins <- c(
-    sma_20 = "7acd8f973292bbb37a08d90e140b64e2f63aadc203aa565bd4b338a2a28b4fec",
-    ema_20 = "ab844101bf706073282155ea6b34d2a19a9d253a92364e203a8be9abd4e24eb7",
-    rsi_14 = "a45bceb58098c057ae645490983104754c2f6ae538c2e86dc32804b2a70c3273",
-    return_5 = "4c20af36633f035ae1eae3de337e6cddd08f7951161251fd13daf8d2a8163a27",
-    adapter_r = "29d69fb6245753308dc8100bb8f938a315e02c07c3d4616b2f4699c2944a7824",
-    strategy_fn = "260a0f78904346c276fb0918c4ea91ef417b72ea707005a195e232a90585c873",
-    feature_engine = "b11921954d7b959b385dd3101cbdac8d4896f3128c8b88bfbc0259c0325df2fa"
+    sma_20 = "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc",
+    ema_20 = "ed5d334c60ebec6e23d9b2572e71528b02d9657497cd3f84ca85ad173f07886c",
+    rsi_14 = "486e61f755bc773dd751c29c34b1eee31d0a673c5e2d721bb205552c0b975357",
+    return_5 = "9e59cad71da4e6ffd035b1783dcc98c38cc9c17318abb21aa21839ca235218ed",
+    adapter_r = "ffee226bce01827ed2fe1bc1b33cba7d1f0d95e43198fc72b9be0165207d608f",
+    strategy_fn = "bf2bef3c9c4540717f9165a987e62d35033f4af3c706f22014e5ae78ff6393c8",
+    feature_engine = "0b51c145bdf4db5573bd14d647251f6c1d92e1752d6a4fb1de8a4e7140b92ef3"
   )
 
   observed <- c(
@@ -81,8 +81,8 @@ testthat::test_that("TTR indicator fingerprints remain stable by TTR version", {
     )
   )
   pins <- c(
-    ttr_rsi_14 = "8d6b1c7fdb965836a161586e2c9df4a72995ce9756a1fe62861bfa5502ebdbfd",
-    ttr_bbands_up_20 = "372ab0f50b5950692a6640019e8a1d94f12c4e511c7eccf441e33a67c521b79c"
+    ttr_rsi_14 = "e0a6a07b0c09a68bbbd8d7dd781926a9a54eef1a9a3df51982ac7fbe2aa37d22",
+    ttr_bbands_up_20 = "3f4d0d9d7f1de20584f4070fcbac6dce1ecf20bcfcab2458bc90aac74096c92a"
   )
 
   testthat::expect_identical(observed, pins)
@@ -119,26 +119,26 @@ testthat::test_that("feature-factory sweep identity remains stable", {
   testthat::expect_identical(
     unlist(out$feature_fingerprints, use.names = FALSE),
     c(
-      "e95c45f270ee5a060034850cf37d947f5b8da74c6ce705af26364623b72747c5",
-      "7acd8f973292bbb37a08d90e140b64e2f63aadc203aa565bd4b338a2a28b4fec"
+      "0a63e853ab6575ae4735f06d72943d177a19925573d3758f465a76dedd8de228",
+      "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
     )
   )
   testthat::expect_identical(
     feature_set_hashes,
     c(
-      "e6406699c2f5200b8e0af87474c13124db46965d2ab0fdb1be7edbe5def74b96",
-      "7cf0ca39a0d9c5f168e7fae26c060bc4bafc57c1d379c3e3014bd89451744226"
+      "3fca8f891000430d9acb774b9d0eeaf2d499c6d21e20b56efaca635ce3903f89",
+      "7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e"
     )
   )
   testthat::expect_identical(
     attr(out, "feature_union"),
     c(
-      "7acd8f973292bbb37a08d90e140b64e2f63aadc203aa565bd4b338a2a28b4fec",
-      "e95c45f270ee5a060034850cf37d947f5b8da74c6ce705af26364623b72747c5"
+      "0a63e853ab6575ae4735f06d72943d177a19925573d3758f465a76dedd8de228",
+      "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
     )
   )
   testthat::expect_identical(
     attr(out, "feature_union_hash"),
-    "d16cd0d4357c24bbf0f3015362fbd1ba1238938065f68a1c7cc449de1eafc949"
+    "e5fbf0013f67e30f4d6d4bb75e5fa7c056b3e93ea61f08076575a974da10ee70"
   )
 })

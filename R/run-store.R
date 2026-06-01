@@ -955,7 +955,7 @@ ledgr_run_open <- function(snapshot, run_id) {
   }
 
   cfg <- tryCatch(
-    jsonlite::fromJSON(config_json, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
+    ledgr_json_read_config(config_json),
     error = function(e) {
       rlang::abort(sprintf("Run '%s' has invalid config_json and cannot be reopened.", run_id), class = "ledgr_invalid_run", parent = e)
     }

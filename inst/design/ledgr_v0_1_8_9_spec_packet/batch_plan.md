@@ -1,6 +1,6 @@
 # ledgr v0.1.8.9 Batch Plan
 
-**Status:** Batch 4 complete; Batch 5 in progress.
+**Status:** Batch 5 complete; Batch 6 in progress.
 
 The batch plan preserves per-lane measurement attribution. Do not merge two
 headline hot-path fixes into one batch unless the maintainer explicitly waives
@@ -86,7 +86,7 @@ Exit criteria:
 ## Batch 5 - Target Delta Vectorization
 
 Ticket: `LDG-2500`
-Status: In Progress
+Status: Complete
 
 Goal: vectorize target-delta handling separately from position valuation.
 
@@ -100,7 +100,7 @@ Exit criteria:
 ## Batch 6 - yyjsonr And Canonical JSON v2
 
 Ticket: `LDG-2501`
-Status: Pending
+Status: In Progress
 
 Goal: drop jsonlite, add yyjsonr, version canonical JSON byte format, and
 document hash/fingerprint fallout.

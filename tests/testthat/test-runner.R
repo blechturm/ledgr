@@ -208,7 +208,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
     "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
     params = list(run_id)
   )
-  steps <- vapply(states$state_json, function(x) jsonlite::fromJSON(x, simplifyVector = FALSE)$step, numeric(1))
+  steps <- vapply(states$state_json, function(x) ledgr:::ledgr_json_read_nested(x)$step, numeric(1))
   testthat::expect_identical(states$ts_utc, c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z", "2020-01-04T00:00:00Z"))
   testthat::expect_identical(as.integer(steps), c(1L, 2L, 3L, 4L))
 })

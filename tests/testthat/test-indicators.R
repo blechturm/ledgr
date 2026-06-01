@@ -132,6 +132,15 @@ testthat::test_that("built-in constructors accept parameter references only in s
   )
 })
 
+testthat::test_that("built-in indicator windows reject values above R integer range", {
+  too_large <- .Machine$integer.max + 1
+
+  testthat::expect_error(ledgr_ind_sma(too_large), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_ind_ema(too_large), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_ind_rsi(too_large), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_ind_returns(too_large), class = "ledgr_invalid_args")
+})
+
 testthat::test_that("print.ledgr_indicator surfaces the feature ID", {
   out <- utils::capture.output(print(ledgr_ind_sma(20)))
   testthat::expect_true(any(grepl("ID:\\s*sma_20", out)))
