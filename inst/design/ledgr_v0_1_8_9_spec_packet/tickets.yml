@@ -135,7 +135,7 @@ tickets:
 
   - id: "LDG-2502"
     title: "Optional Cleanup Triage"
-    status: "in_progress"
+    status: "completed"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -153,7 +153,7 @@ tickets:
 
   - id: "LDG-2503"
     title: "Per-Lane Measurement And Benchmark Closeout"
-    status: "pending"
+    status: "in_progress"
     priority: "P0"
     effort: "L"
     dependencies:

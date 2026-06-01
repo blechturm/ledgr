@@ -561,7 +561,7 @@ scope: yyjsonr_and_byte_format_v2
 Priority: P2
 Effort: M
 Dependencies: LDG-2501
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -618,6 +618,14 @@ surface: fold_and_reconstruction
 scope: optional_small_lanes
 ```
 
+### Completion Note
+
+Completed 2026-06-01. Post-main-lane triage deferred Spike 5 next-bar matrix
+lookup and Spike 3 `state$positions` representation to v0.1.8.10+ / substrate
+work, treated the xlarge fills row-count fallback as resolved by LDG-2496, and
+corrected Kahan-vs-cumsum attribution language in the peer-benchmark evidence
+layer. No additional code lane cleared the v0.1.8.9 threshold.
+
 ---
 
 ## LDG-2503: Per-Lane Measurement And Benchmark Closeout
@@ -625,7 +633,7 @@ scope: optional_small_lanes
 Priority: P0
 Effort: L
 Dependencies: LDG-2496, LDG-2497, LDG-2498, LDG-2499, LDG-2500, LDG-2501, LDG-2502
-Status: Pending
+Status: In Progress
 
 ### Description
 

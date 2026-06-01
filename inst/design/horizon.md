@@ -314,6 +314,28 @@ v0.1.8.9 threshold:
   Kahan compensated summation versus naive `cumsum()`, not DuckDB double
   round-trip precision.
 
+**v0.1.8.9 Batch 8 measurement closeout (2026-06-01).** The full record
+workload-grid rerun closed the round with the high-density xlarge durable cell
+at 232.03s wall, 199.06s loop, and 23.36s fills extraction, down from the
+v0.1.8.8 baseline of 445.02s wall, 413.47s loop, and 197.11s fills
+extraction. Per-fill engine cost fell from 3107.33 to 1494.95 us/fill and
+per-fill extraction cost fell from 1481.33 to 175.43 us/fill. The comparable
+large durable cell moved 153.76s -> 85.12s wall.
+
+The peer benchmark rerun at the LDG-2476 shape shows ledgr's phase-separated
+engine row much closer to Backtrader: durable ledgr engine time moved from
+138.37s to 88.00s while Backtrader stayed essentially flat at 79.70s -> 78.53s.
+That changes the local engine-only ratio from 1.74x to 1.12x. Total ledgr wall
+is still 118.79s versus Backtrader's 79.34s because ledgr retains ingestion and
+results surfaces that Backtrader mostly avoids.
+
+Residual optimization direction changes accordingly. The next productive work
+is not another per-row buffer-write patch; it is R-side substrate work
+(typed/state vectors, matrix-canonical next-bar access, pulse-context data
+structures), better ephemeral phase telemetry, and a yyjsonr read-path
+investigation. Any future `ledgrcore` build should be gated by a post-substrate
+measurement spike rather than assumed from the pre-v0.1.8.9 gap.
+
 ### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
 
 v0.1.8.8 may create the `inst/design/manual/` skeleton and clean up stale
@@ -445,6 +467,44 @@ correct byte format chosen so the eventual `ledgrcore` encoder can match it,
 or with a documented format version bump if yyjsonr differs from jsonlite.
 v0.1.8.9 spec should not over-promise compiled-core JSON as imminent.
 
+**Build authorization is gated on a measurement spike (2026-06-01 update,
+from v0.1.8.9 closeout discussion).** The trigger conditions above are
+necessary but not sufficient. Before any `ledgrcore` build is authorized,
+a minimum-viable measurement spike runs two compiled fold cores — one in
+C++ via cpp11, one in Rust via extendr — and measures four load-bearing
+numbers:
+
+- per-pulse cost with R strategy callback (realistic boundary case);
+- per-pulse cost with an inline static strategy (compiled-only ceiling);
+- per-fill cost with R output-handler callback (realistic boundary case);
+- per-fill cost with inline event accumulation (compiled-only ceiling).
+
+The gap between realistic and inline numbers measures how much K1 actually
+buys. Small gap means K1 is bounded by the R-callback boundary and is not
+worth the complexity. Large gap means K1 has real headroom. The spike
+does not reimplement the fold engine; it implements a minimum-viable
+per-pulse loop (bars matrix in, equity vector out) and produces an
+apples-to-apples per-language comparison plus a build/don't-build verdict.
+
+**The spike is scoped after the v0.1.9 substrate round** (per the
+2026-06-01 R-side data structures entry below). If the spike runs against
+pre-substrate R, it overstates the compiled-core win because R-side
+per-pulse work is still in the substrate-debt regime; post-substrate that
+drops materially and the boundary-crossing overhead becomes proportionally
+larger. The fair comparison is post-substrate R vs compiled, not current R
+vs compiled.
+
+Decision shape from the spike:
+
+- compiled vs post-substrate-R gaps < 1.5x on both per-pulse and per-fill:
+  `ledgrcore` stays parked; substrate absorbed most of the structural win;
+- gaps 2-3x: `ledgrcore` is worth scoping with explicit cost/benefit math
+  against the substrate-round residual;
+- gaps 5x+: the compiled story is empirically load-bearing and the build
+  is authorized, with the language choice driven by the spike's measured
+  boundary-cost differential between extendr and cpp11 (not by the
+  ecosystem/memory-safety priors the original entry listed).
+
 This entry records direction, not committed work.
 
 ### 2026-06-01 [architecture] R-side data structures as shared substrate for compiled-core path
@@ -517,6 +577,51 @@ This entry records direction, not committed work. `ledgrcore` remains
 parked behind the gates listed in the 2026-05-30 entry above, plus
 the addition of "R-side substrate must be exhausted first" as a new
 gate informed by the Backtrader analysis.
+
+### 2026-06-01 [documentation] User-facing research-software disclaimer for financial backtesting
+
+ledgr touches users' financial decisions when backtest results inform live
+trading. The MIT license in `LICENSE` handles the legal baseline for
+warranty disclaimer and liability, but does not make the financial-software
+context explicit to users who may not read `LICENSE` before writing
+strategies that go on to be deployed with real capital. Worth adding a
+user-facing disclaimer layer in a next release.
+
+Candidate scope:
+
+- A standalone `DISCLAIMER.md` at repo root carrying the financial-software
+  disclaimer. Plain English, no fake-lawyer language. Coverage: not
+  investment advice; backtests do not predict future performance; no
+  professional credentials; use in live/paper trading at user's own risk;
+  audit/replay features are research tools, not regulatory or compliance
+  frameworks; user is responsible for independent validation if deploying
+  any strategy with real money.
+- README addition: a short pointer near the top, not a prominent block.
+  Links to `DISCLAIMER.md` for the full text. Mirrors how `CODE_OF_CONDUCT.md`
+  and `CONTRIBUTING.md` are typically linked from README rather than inlined.
+- Optional: a one-line reminder at the top of the introductory vignette and
+  the strategy-authoring vignette, pointing at `DISCLAIMER.md`.
+- Optional: a one-line addition to `DESCRIPTION`'s `Description:` field
+  noting "research software; not investment advice."
+
+Promotion candidate: v0.1.8.9.x (maintainer manual release) or v0.1.9
+(substrate round) — either fits; maintainer chooses based on release
+scope and timing.
+
+This is hobby-OSS-grade coverage, not commercial-grade. Escalation
+triggers that would warrant actual legal review:
+
+- ledgr goes commercial (paid version, hosted service, SaaS);
+- a user requests indemnity, support contracts, or compliance attestations;
+- ledgr reaches CRAN and starts having paying users in jurisdictions with
+  strong consumer-protection law (Germany, EU broadly);
+- a formal contributor agreement (CLA/DCO) becomes useful as the
+  contributor base grows.
+
+None of those triggers are current. This entry records direction for the
+disclaimer addition only. The current MIT license provides the legal
+baseline; the disclaimer additions are clarity/discoverability layers on
+top.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 

@@ -94,7 +94,7 @@ into extraction subphases.
 
 ## LDG-2497: Persistent Durable Handler `setv`
 
-Status: post-review fix candidate, not committed.
+Status: implemented, committed, and measured.
 
 Change:
 
@@ -188,7 +188,7 @@ payload construction, buffering, and capacity growth.
 
 ## LDG-2498: Memory Output Handler `setv`
 
-Status: review candidate, not committed.
+Status: implemented, committed, and measured.
 
 Change:
 
@@ -265,7 +265,7 @@ fill-buffer change both affect the same ephemeral workload path.
 
 ## LDG-2499: Position Valuation Vectorize
 
-Status: review candidate, not committed.
+Status: implemented, committed, and measured.
 
 Change:
 
@@ -590,7 +590,7 @@ Identity fallout:
 
 ## LDG-2502: Optional Cleanup Triage
 
-Status: review candidate, not committed.
+Status: implemented, committed, and measured.
 
 Scope:
 
