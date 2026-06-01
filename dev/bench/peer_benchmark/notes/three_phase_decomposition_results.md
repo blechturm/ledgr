@@ -74,4 +74,6 @@ bundle ingest is now visible separately from `run_algorithm()`.
 The ledgr durable versus ephemeral parity gate passed before the peer rows were
 accepted. Fills match exactly after stripping result-only attributes. Equity
 matches within 1e-8; the residual 0.000044 total absolute divergence is
-sub-1e-8-per-bar DuckDB round-trip floating noise.
+sub-1e-8-per-bar accumulation-method noise from Kahan compensated summation in
+durable lot accounting versus naive `cumsum()` in in-memory reconstruction.
+Spike 10 later rejected DuckDB double round-trip drift as the source.

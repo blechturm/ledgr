@@ -468,7 +468,7 @@ LDG-2502 triage rather than bundled into this lane.
 
 ## LDG-2501: yyjsonr And Canonical JSON v2
 
-Status: review candidate, not committed.
+Status: implemented, committed, and measured.
 
 Change:
 
@@ -587,3 +587,67 @@ Identity fallout:
   where tests pin those values.
 - Pre-v0.1.8.9 identity artifacts are not byte-comparable to v0.1.8.9 identity
   artifacts when canonical JSON participates in the hash.
+
+## LDG-2502: Optional Cleanup Triage
+
+Status: review candidate, not committed.
+
+Scope:
+
+- Review the post-main-lane profile after LDG-2496 through LDG-2501.
+- Decide whether Spike 5 next-bar lookup, Spike 3 `state$positions`
+  representation, or residual fills extraction robustness should land in
+  v0.1.8.9.
+- Do not land any cleanup without its own measurement row.
+
+Post-main-lane profile inputs:
+
+- `dev/bench/results/ledgr_bench_record_20260601T053840Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260601T054456Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260601T054702Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260601T055332Z_summary.csv`
+
+Current high-density xlarge durable profile after LDG-2501:
+
+| Metric | Value |
+| --- | ---: |
+| wall s | 267.84 |
+| pre s | 1.74 |
+| residual s | 34.93 |
+| loop s | 231.17 |
+| fills extract s | 25.04 |
+| ledger extract s | 0.21 |
+| engine us/fill | 1736.10 |
+| extract us/fill | 188.05 |
+| failures | 0 |
+
+Decisions:
+
+| Cleanup lane | Decision | Rationale |
+| --- | --- | --- |
+| Spike 5 next-bar matrix lookup | Defer to v0.1.8.10+ / matrix-canonical work | The spike projected about 5s recovery at 133k fills, now less than 2% of the post-main-lane xlarge durable wall. The fix changes the fill-proposal boundary from row-shaped `next_bar` to scalar `next_open_price`, so the blast radius is not worth adding after the main v0.1.8.9 lanes. |
+| Spike 3 `state$positions` representation | Defer to v0.1.8.10+ / compiled-core or state-representation audit | The semantic-preserving option projected less than 1s xlarge wall recovery and requires id-map plumbing through the fold. The faster env/setv options have pulse-context snapshot semantics risk. Batches 4 and 5 already removed the read-side per-pulse costs, leaving the write-side residual too small for this release. |
+| Fills extraction row-count fallback | Treat as resolved by LDG-2496; no additional fix in Batch 7 | The original xlarge fallback no longer reproduces in the measured high-density xlarge durable runs. `median_fills_extract_sec` is recorded directly, failures are zero, and no ledger-count fallback was needed after the LDG-2496 fill-buffer rewrite. The remaining extraction cost is performance work, not a robustness blocker. |
+
+Kahan-vs-cumsum documentation:
+
+- Spike 10 showed that the sub-1e-8 durable-vs-ephemeral equity noise is not
+  DuckDB double round-trip drift. DuckDB DBI round-trips were byte-identical.
+- The documented mechanism is Kahan compensated summation in durable lot
+  accounting versus naive `cumsum()` in memory reconstruction.
+- Batch 7 updates the peer-benchmark evidence layer now so release-gate review
+  does not carry stale "DuckDB float noise" wording forward.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| Post-main-lane xlarge durable profile reviewed | COMPLETE |
+| Spike 5 disposition recorded | DEFER |
+| Spike 3 disposition recorded | DEFER |
+| Fills fallback disposition recorded | RESOLVED |
+| Kahan-vs-cumsum wording updated in peer-benchmark evidence | COMPLETE |
+
+Interpretation: no code cleanup lane clears the v0.1.8.9 threshold after the
+main lanes. Batch 7 should close as a triage/documentation batch, and Batch 8
+should move to aggregate measurement closeout.

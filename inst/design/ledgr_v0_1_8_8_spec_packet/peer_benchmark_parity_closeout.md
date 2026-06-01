@@ -129,8 +129,10 @@ Interpretation:
 - ledgr built-in SMA matches the TTR-backed canonical row exactly on this shape.
 - ledgr ephemeral uses the same fold core through `ledgr_memory_output_handler`
   and passes the ledgr-to-ledgr gate. Fills match exactly after stripping
-  result attributes; equity differs only by sub-1e-8 floating round-trip noise
-  from the durable DuckDB path.
+  result attributes; equity differs only by sub-1e-8 accumulation-method noise:
+  durable lot accounting uses Kahan compensated summation while the memory
+  reconstruction uses naive `cumsum()`. Spike 10 later verified that DuckDB DBI
+  double round-trips are byte-identical, so this is not DuckDB precision drift.
 - quantstrat passes Tier 1 tolerance, but its surface remains partial because
   this harness currently has account equity and transaction count, not comparable
   realized trade P&L. It is not full trade-level parity.

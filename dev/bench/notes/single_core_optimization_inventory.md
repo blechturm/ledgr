@@ -101,8 +101,8 @@ held reference (mimicking the ctx list closure) to force refcount > 1.
 large and xlarge (the scaling curve becomes less super-linear).
 
 **Parity gate:** All `tests/testthat/` tests pass byte-identically. Peer
-benchmark Tier 1 parity within float-noise tolerance. Workload grid scenario
-definitions unchanged.
+benchmark Tier 1 parity within the documented Kahan-vs-cumsum tolerance.
+Workload grid scenario definitions unchanged.
 
 ### A4 simulation plan
 
@@ -236,7 +236,7 @@ output. This is bench-harness work, not engine work.
 | D2 | Fix `ledgr_results(bt, "fills")` returning no row count at xlarge | same | MEASURED (bug) | SIM-CONFIRMABLE | Robustness, not perf |
 | D3 | In-memory event-stream reconstruction (`ledgr_equity_from_events`, `ledgr_fills_from_events`) | `R/fold-reconstruction.R` | MEASURED | SIM-CONFIRMABLE | ~40s at 68k fills |
 | D4 | `ledgr_results(bt, "equity")` reconstruction at extreme scale | same module | INFERRED | PROFILE-NEEDED | Low on SMA workloads |
-| D5 | Investigate 8e-9 DuckDB equity round-trip noise | durable reconstruction path | MEASURED | SIM-CONFIRMABLE | Correctness/discipline win |
+| D5 | 8e-9 durable-vs-ephemeral equity noise (resolved: Kahan vs cumsum) | durable reconstruction path | MEASURED | SIM-CONFIRMABLE | Correctness/discipline win |
 
 ### D1 simulation plan (the largest single-lane wall-time win)
 
@@ -305,23 +305,17 @@ pattern.
 **Real-run gate:** rewrite, re-run xlarge ephemeral, confirm
 `results_sec` drops materially.
 
-### D5 (float noise investigation)
+### D5 (resolved Kahan-vs-cumsum attribution)
 
-**Mechanism hypothesis (open):** DuckDB stores DOUBLE which is identical
-to R numeric IEEE 754, so a pure round-trip should be byte-identical. The
-8e-9 noise indicates one of: (a) DuckDB internally promotes/demotes through
-DECIMAL or NUMERIC; (b) the reconstruction uses a different accumulation
-order than the in-memory equity walk; (c) a cast to/from a different
-precision somewhere in the chunked reader path.
+**Disposition:** resolved as documentation/attribution, not a code fix. Spike
+10 showed that DuckDB DBI double round-trips are byte-identical, including
+direct write/read, R `cumsum()` after read-back, and DuckDB `SUM() OVER`.
 
-**Isolated simulation:** write a 100-element double vector to DuckDB, read
-it back, compare byte-by-byte with the original. If identical, the
-mechanism is accumulation order (b). If differs, it is DuckDB precision (a)
-or cast (c).
-
-**Decision rule:** if accumulation order, document it as expected and keep
-the 1e-8 parity tolerance. If precision or cast, fix the responsible
-boundary and restore byte-identical parity.
+The sub-1e-8 durable-vs-ephemeral equity noise is attributed to accumulation
+method: durable lot accounting uses Kahan compensated summation while memory
+reconstruction uses naive `cumsum()` over event deltas. Keep the 1e-8 parity
+tolerance and document it as "Kahan compensated summation vs naive cumsum",
+not as DuckDB round-trip noise.
 
 ## E. Ingestion / Snapshot Creation
 

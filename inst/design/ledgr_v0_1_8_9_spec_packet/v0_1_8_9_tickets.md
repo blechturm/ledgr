@@ -481,7 +481,7 @@ scope: target_delta_vectorize
 Priority: P0
 Effort: L
 Dependencies: LDG-2500
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -527,6 +527,16 @@ load, targeted config/snapshot/provenance tests, full test suite after fixture
 regeneration, large/xlarge workload-grid sanity run if measurable, and
 per-lane attribution review.
 
+### Completion Note
+
+Completed with production JSON reads/writes migrated from jsonlite to yyjsonr,
+canonical JSON byte-format v2 pinned by stored-byte fixtures, and expected
+hash/fingerprint fallout regenerated. Record attribution showed a durable
+write-path win (`density_high_xlarge_durable` wall 287.16s to 267.84s) plus a
+read-path caveat (`fills_extract_sec` 21.19s to 25.04s and xlarge ephemeral
+wall 326.00s to 333.14s). The release closeout must present this as a durable
+write-path win and identity-format migration, not a universal speed lane.
+
 ### Source Reference
 
 - `v0_1_8_9_spec.md`, Workstream E
@@ -551,7 +561,7 @@ scope: yyjsonr_and_byte_format_v2
 Priority: P2
 Effort: M
 Dependencies: LDG-2501
-Status: Pending
+Status: In Progress
 
 ### Description
 

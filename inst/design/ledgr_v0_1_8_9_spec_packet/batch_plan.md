@@ -1,6 +1,6 @@
 # ledgr v0.1.8.9 Batch Plan
 
-**Status:** Batch 5 complete; Batch 6 in progress.
+**Status:** Batch 6 complete; Batch 7 in progress.
 
 The batch plan preserves per-lane measurement attribution. Do not merge two
 headline hot-path fixes into one batch unless the maintainer explicitly waives
@@ -100,7 +100,7 @@ Exit criteria:
 ## Batch 6 - yyjsonr And Canonical JSON v2
 
 Ticket: `LDG-2501`
-Status: In Progress
+Status: Complete
 
 Goal: drop jsonlite, add yyjsonr, version canonical JSON byte format, and
 document hash/fingerprint fallout.
@@ -117,7 +117,7 @@ Exit criteria:
 ## Batch 7 - Optional Cleanup Triage
 
 Ticket: `LDG-2502`
-Status: Pending
+Status: In Progress
 
 Goal: use the post-main-lane profile to decide whether the small cleanup lanes
 belong in v0.1.8.9 or defer.

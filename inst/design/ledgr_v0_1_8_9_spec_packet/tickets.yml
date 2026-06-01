@@ -114,7 +114,7 @@ tickets:
 
   - id: "LDG-2501"
     title: "yyjsonr And Canonical JSON v2"
-    status: "in_progress"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -135,7 +135,7 @@ tickets:
 
   - id: "LDG-2502"
     title: "Optional Cleanup Triage"
-    status: "pending"
+    status: "in_progress"
     priority: "P2"
     effort: "M"
     dependencies:

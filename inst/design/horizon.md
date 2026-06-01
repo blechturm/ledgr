@@ -292,6 +292,28 @@ caveats, and verification discipline is in
 `dev/bench/notes/per_pulse_complexity_findings.md`. That note is the
 load-bearing input for the v0.1.8.9 single-core optimization spec.
 
+**v0.1.8.9 Batch 7 cleanup triage (2026-06-01).** After the main
+optimization lanes landed, the high-density xlarge durable cell was down to
+267.84s wall and 231.17s loop. The optional cleanup lanes no longer clear the
+v0.1.8.9 threshold:
+
+- Spike 5 next-bar matrix lookup is deferred to v0.1.8.10+ or a broader
+  matrix-canonical/compiled-core pass. It still has a valid mechanism, but the
+  projected ~5s recovery is now less than 2% of wall and requires changing the
+  fill-proposal boundary from row-shaped `next_bar` to scalar
+  `next_open_price`.
+- Spike 3 `state$positions` representation is deferred to v0.1.8.10+ or a
+  state-representation audit. The semantic-preserving id-map option projects
+  less than 1s recovery, while the faster env/setv variants risk changing
+  pulse-context snapshot semantics.
+- The LDG-2479 fills row-count fallback is treated as resolved by the
+  LDG-2496 fills-buffer rewrite: post-main-lane xlarge durable runs materialize
+  fills directly with zero failures and no ledger-count fallback.
+- Spike 10's Kahan-vs-cumsum finding is documentation fallout, not a runtime
+  lane. Durable-vs-ephemeral sub-1e-8 equity noise should be attributed to
+  Kahan compensated summation versus naive `cumsum()`, not DuckDB double
+  round-trip precision.
+
 ### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
 
 v0.1.8.8 may create the `inst/design/manual/` skeleton and clean up stale
@@ -424,6 +446,77 @@ or with a documented format version bump if yyjsonr differs from jsonlite.
 v0.1.8.9 spec should not over-promise compiled-core JSON as imminent.
 
 This entry records direction, not committed work.
+
+### 2026-06-01 [architecture] R-side data structures as shared substrate for compiled-core path
+
+Source-code analysis of Backtrader (`mementum/backtrader` on GitHub) during
+v0.1.8.9 closeout discussion: Backtrader runs ~127 us/bar at the LDG-2476
+peer-benchmark shape (500 inst x 1260 bars) in pure Python — no Cython, no
+compiled core. Its lead over ledgr at that shape (~1.6-2x post-v0.1.8.9)
+comes from architectural choices that do not require leaving the host
+language:
+
+- `array.array('d')` C-level contiguous double storage for all price and
+  indicator series, indexed by integer offset (`backtrader/linebuffer.py`,
+  `self.array = array.array(str('d'))` and `__getitem__` as
+  `self.array[self.idx + ago]`).
+- Integer-cursor advance per bar (`self.idx += size`) rather than per-bar
+  context object construction.
+- Vectorized indicator precompute via the `once()` method, with strategy
+  callbacks running event-based against the precomputed C arrays.
+- Inline fill emission to in-memory Python lists, no event-log
+  reconstruction phase.
+
+ledgr already matches indicator precompute (TTR fast path + series_fn).
+The other three are R-addressable through data-structure work, not
+compilation. That changes the framing of the v0.2.x compiled-core
+conversation.
+
+**Substrate framing.** Better R-side data structures pay off twice. Once
+as direct R-side optimization in v0.1.9 (typed primitive `state$positions`
+matching inventory A3, reusable pulse-context env matching A5/A6,
+matrix-canonical next-bar matching B2, ephemeral memory-handler inline
+equity accumulation removing the sweep-summary reconstruction pass). And
+again as the substrate any future `ledgrcore` would have to consume across
+the R-to-compiled boundary. Bad data structures cap a compiled core's
+per-pulse ceiling at the strategy-callback boundary, because the compiled
+core still pays R-side ctx construction per call. Good data structures
+remove that cap. So data-structure investment is no-regret regardless of
+whether K1 follows.
+
+**K1 trigger reframing.** The K1 entry above gates the compiled-core build
+on "if ledgr is within ~2x peer comparator after v0.1.8.9, ledgrcore is
+maintenance overhead with marginal payoff." Post-v0.1.8.9 (Batches 1-6
+landed, Batch 7-9 in flight) ledgr is at ~1.7x Backtrader at the peer
+benchmark shape. By the K1 entry's own gate, the compiled-core build is
+no longer the empirically-supported automatic next step.
+
+A cleaner gating shape going forward:
+
+- v0.1.9 invests in primitive typed data structures as substrate. Expected
+  R-side recovery is bounded (~10-30s additional xlarge wall projected),
+  but the substrate is what makes any future K1 worth its complexity.
+- A strategy callback contract addendum is the public-surface piece that
+  needs RFC-style discussion before v0.1.9 ticket cut. Backward-compatible
+  shape: keep current `ctx$bars$close` accessors as the user-facing API,
+  expose integer-indexed accessors (`ctx$close[idx]` or similar) as the
+  high-throughput path, document both as first-class.
+- K1 is reframed from "automatic v0.2.x next step" to "ambition-tier
+  choice triggered by either (a) post-v0.1.9 measurement showing R-side
+  has reached its ceiling and the residual gap to Backtrader is still
+  material, or (b) demand for Polars/Rust-class throughput that pure-R
+  cannot reach (Ziplime's 12.4s on M3 vendor reference is the orientation
+  number for that tier)."
+
+The maintainer's stance during v0.1.8.9 closeout: exhaust R-side
+optimizations, especially data structures, before committing to a
+compiled core. The Backtrader source-code evidence supports the stance —
+they got their lead from data structures, not compilation.
+
+This entry records direction, not committed work. `ledgrcore` remains
+parked behind the gates listed in the 2026-05-30 entry above, plus
+the addition of "R-side substrate must be exhausted first" as a new
+gate informed by the Backtrader analysis.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 
