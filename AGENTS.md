@@ -30,7 +30,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.8 release gate; v0.1.9 planning next;
+Current planning context (post-v0.1.8.9 release gate; v0.1.9 planning next;
 update this block when the next packet opens or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
@@ -81,7 +81,7 @@ update this block when the next packet opens or scope changes materially):
   `inst/design/ledgr_v0_1_8_8_spec_packet/release_closeout.md`.
 - v0.1.8.8 shipped parallel sweep dispatch and determinism, fold-core
   diagnostics / containment, repo-local peer benchmark reporting under
-  `dev/bench/`, and a self-profiling workload grid extension for v0.1.9
+  `dev/bench/`, and a self-profiling workload grid extension for v0.1.8.9
   optimization scoping. The maintainer-manual skeleton and stale-doc cleanup
   ticket was explicitly deferred.
 - Sequential `ledgr_sweep()` remains the reference implementation. Parallelism
@@ -91,13 +91,23 @@ update this block when the next packet opens or scope changes materially):
   missing-backend behavior, hybrid worker dependency handling, an internal
   typed execution-spec constructor, and a mechanical fold-core split paired
   with documentation if behavior-neutral.
+- The completed v0.1.8.9 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/per_lane_attribution.md`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`,
+  and `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`.
+- v0.1.8.9 shipped the single-core optimization round: scale-growing buffer
+  write fixes, per-pulse vectorization, yyjsonr canonical JSON byte-format v2
+  migration, per-lane attribution, and workload-grid / peer-benchmark closeout.
 - The v0.1.9 planning inputs are the target-risk accepted RFC, primitive
-  internals / collapse RFC, and the v0.1.8.8 workload-grid cost-surface
-  findings. Keep walk-forward, cost/liquidity, OMS, split stores, live data
-  logs, point-in-time regressors, scaffold generation, companion-repository
-  implementation, external-provider work, broad collapse adoption, compiled
-  fold core, and package-vignette benchmark claims deferred unless the next
-  packet explicitly scopes a bounded subset.
+  internals / collapse RFC, v0.1.8.9 residual substrate findings, and the
+  v0.1.8.10 accessor/helper RFC cycle. Keep walk-forward, cost/liquidity, OMS,
+  split stores, live data logs, point-in-time regressors, scaffold generation,
+  companion-repository implementation, external-provider work, broad collapse
+  adoption, compiled fold core, and package-vignette benchmark claims deferred
+  unless the next packet explicitly scopes a bounded subset.
 
 ## Active Design Entry Points
 
@@ -107,7 +117,8 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.1.8.8 release record | `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_spec.md`, `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_tickets.md`, `inst/design/ledgr_v0_1_8_8_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_8_spec_packet/release_closeout.md` |
+| v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
+| v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
 | v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
 | v0.1.8.8 fold-core documentation | `inst/design/maintainer_review/fold_core_workbook.qmd`, `inst/design/maintainer_review/feature_value_path_workbook.qmd`, `inst/design/horizon.md` |
 | v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
@@ -122,7 +133,7 @@ packets are records, not authorization for new work.
 | Research workflow / artifact topology | `inst/design/rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` (accepted for v0.1.8.5 planning) |
 | v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
 | Primitive internals / collapse acceleration | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` (accepted for v0.1.9 planning) |
-| v0.1.9 performance scoping | `dev/bench/notes/workload_grid_baseline_closeout.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `inst/design/horizon.md` |
+| v0.1.9 performance scoping | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `inst/design/horizon.md` |
 
 ## Local Verification
 
