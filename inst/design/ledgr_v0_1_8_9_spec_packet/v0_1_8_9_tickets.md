@@ -353,7 +353,7 @@ scope: event_cols_setv
 Priority: P1
 Effort: S
 Dependencies: LDG-2498
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -385,6 +385,16 @@ alignment and public strategy semantics. This is the Spike 1 per-pulse lane.
 Fold-engine tests, multi-instrument accounting tests, sweep/run parity tests,
 large/xlarge workload-grid rerun, and per-lane attribution review.
 
+### Completion Note
+
+Completed 2026-05-31. Position valuation now uses an aligned vector expression
+over `state$positions[instrument_ids]` with explicit inactive-position masking.
+The shuffled-position fixture proves mark-to-market valuation follows
+instrument names rather than named-vector storage order. Record-scale durable
+loop recovery was modest (-5.12s large, -1.89s xlarge), so this lane is
+recorded as a correctness-preserving micro-optimization rather than a headline
+wall-recovery lane.
+
 ### Source Reference
 
 - `v0_1_8_9_spec.md`, Workstream D
@@ -406,7 +416,7 @@ scope: position_valuation_vectorize
 Priority: P1
 Effort: M
 Dependencies: LDG-2499
-Status: Pending
+Status: In Progress
 
 ### Description
 

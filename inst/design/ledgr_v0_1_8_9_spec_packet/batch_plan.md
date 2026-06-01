@@ -1,6 +1,6 @@
 # ledgr v0.1.8.9 Batch Plan
 
-**Status:** Batch 3 complete; Batch 4 in progress.
+**Status:** Batch 4 complete; Batch 5 in progress.
 
 The batch plan preserves per-lane measurement attribution. Do not merge two
 headline hot-path fixes into one batch unless the maintainer explicitly waives
@@ -72,7 +72,7 @@ Exit criteria:
 ## Batch 4 - Position Valuation Vectorization
 
 Ticket: `LDG-2499`
-Status: In Progress
+Status: Complete
 
 Goal: vectorize position valuation with alignment-safe fixtures.
 
@@ -86,7 +86,7 @@ Exit criteria:
 ## Batch 5 - Target Delta Vectorization
 
 Ticket: `LDG-2500`
-Status: Pending
+Status: In Progress
 
 Goal: vectorize target-delta handling separately from position valuation.
 

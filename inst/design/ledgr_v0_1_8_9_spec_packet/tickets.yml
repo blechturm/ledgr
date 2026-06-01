@@ -76,7 +76,7 @@ tickets:
 
   - id: "LDG-2499"
     title: "Position Valuation Vectorize"
-    status: "in_progress"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:
@@ -95,7 +95,7 @@ tickets:
 
   - id: "LDG-2500"
     title: "Target Delta Vectorize"
-    status: "pending"
+    status: "in_progress"
     priority: "P1"
     effort: "M"
     dependencies:

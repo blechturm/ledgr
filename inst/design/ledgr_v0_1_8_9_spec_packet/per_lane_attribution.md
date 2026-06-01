@@ -359,3 +359,109 @@ ephemeral path while improving the durable path that shares the same fold
 engine. If a future rerun after LDG-2500 still shows positive xlarge ephemeral
 drift, revisit. This lane should be recorded as a correctness-preserving
 micro-optimization, not a headline wall-recovery lane.
+
+Postscript: LDG-2500's measurement vindicated the xlarge ephemeral noise
+interpretation above. The same cell improved by 26.23s under the next-lane
+target-delta change, so the LDG-2499 +5.60s counter-direction was not treated
+as a persistent mechanism regression.
+
+## LDG-2500: Target Delta Vectorize
+
+Status: review candidate, not committed.
+
+Change:
+
+- Replaced the skip-heavy per-target loop setup in `ledgr_execute_fold()` with
+  a vectorized target-delta scan.
+- The fold still validates the full named numeric target vector before any
+  optimization. Missing, extra, duplicate, unnamed, non-finite, or malformed
+  targets continue to fail at `ledgr_validate_strategy_targets()`.
+- The implementation computes `delta_vec` through
+  `state$positions[names(targets)]`, masks absent state positions to zero, and
+  iterates only `which(abs(delta_vec) > sqrt(.Machine$double.eps))`.
+- Event emission and state mutation remain adjacent and ordered by the
+  validated target vector so durable and sweep event streams keep the same
+  ordering contract.
+- No fill proposal, cost, lot accounting, output handler, target-risk, or
+  public strategy contract behavior changed intentionally.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `test-execution-spec.R` | PASS |
+| `test-strategy-contracts.R` | PASS |
+| `test-strategy-types.R` | PASS |
+| `test-backtest-audit-log-equivalence.R` | PASS |
+| `test-sweep-parity.R` | PASS |
+| `test-backtest-wrapper.R` | PASS |
+| `test-accounting-consistency.R` | PASS |
+
+Targeted regression coverage:
+
+- Added a shuffled-target fixture where the strategy returns `BBB, AAA` while
+  the universe is `AAA, BBB`.
+- The fixture verifies that emitted events remain in validated universe order
+  (`AAA`, then `BBB`) with quantities aligned to instrument names.
+- The fixture also verifies that the second pulse observes positions `AAA = 1`,
+  `BBB = 2`, proving the vectorized delta scan drove the same state transition
+  as the original per-target loop.
+
+Direct helper attribution:
+
+Method: compare the old per-target loop against the new `delta_vec` +
+`which()` scan in the same R session. The benchmark uses 1,260 pulses and a
+fill density of 135 fills per instrument, matching the high-density record
+cells. Full fill-count parity is required before timing.
+
+| Instruments | Pulses | Fills | Old Loop s | New Vector s | Speedup | Parity |
+| ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 500 | 1,260 | 68,040 | 1.63 | 0.02 | 81.50x | TRUE |
+| 1,000 | 1,260 | 136,080 | 5.96 | 0.03 | 198.67x | TRUE |
+
+Record-scale attribution:
+
+Durable baseline sources after LDG-2499:
+
+- `dev/bench/results/ledgr_bench_record_20260531T220859Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T221549Z_summary.csv`
+
+Ephemeral baseline sources after LDG-2499:
+
+- `dev/bench/results/ledgr_bench_record_20260531T221854Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T222547Z_summary.csv`
+
+After sources:
+
+- `dev/bench/results/ledgr_bench_record_20260531T225058Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T225726Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T225929Z_summary.csv`
+- `dev/bench/results/ledgr_bench_record_20260531T230550Z_summary.csv`
+
+| Scenario | Metric | Baseline | After | Delta | Notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| `density_high_large_durable` | wall s | 110.72 | 106.72 | -4.00 | zero failures |
+| `density_high_large_durable` | loop s | 94.22 | 90.16 | -4.06 | load-bearing lane metric |
+| `density_high_large_durable` | fills extract s | 9.70 | 10.12 | +0.42 | unchanged; extraction lane/noise |
+| `density_high_large_durable` | engine us/fill | 1383.59 | 1323.97 | -59.62 | load-bearing lane metric |
+| `density_high_xlarge_durable` | wall s | 309.44 | 287.16 | -22.28 | zero failures |
+| `density_high_xlarge_durable` | loop s | 276.18 | 253.29 | -22.89 | load-bearing lane metric |
+| `density_high_xlarge_durable` | fills extract s | 22.50 | 21.19 | -1.31 | unchanged; extraction lane/noise |
+| `density_high_xlarge_durable` | engine us/fill | 2074.12 | 1902.22 | -171.90 | load-bearing lane metric |
+| `density_high_large_ephemeral` | wall s | 102.73 | 96.09 | -6.64 | zero failures; no sweep subphase split |
+| `density_high_xlarge_ephemeral` | wall s | 352.23 | 326.00 | -26.23 | zero failures; no sweep subphase split |
+
+Interpretation: LDG-2500 delivered a clear record-scale recovery, especially
+at the xlarge high-density cell where the skip-heavy per-target loop had the
+largest surface area. The xlarge durable loop phase fell by 22.89s and
+per-fill engine cost fell by 171.90 us/fill. The xlarge ephemeral rerun also
+reversed the LDG-2499 counter-direction and improved by 26.23s, supporting the
+Batch 4 interpretation that the previous +5.60s ephemeral delta was local-host
+noise rather than a mechanism regression. This is the stronger of the two
+per-pulse vectorization lanes and should be treated as a real scaling-flatten
+result in the release closeout.
+
+Residual: the per-target `state$positions[[instrument_id]] <- cur_qty + qty`
+write remains the Spike 3 audit-gated surface. LDG-2500 removes the read-side
+skip-loop cost; the write-side named-vector update is explicitly left for
+LDG-2502 triage rather than bundled into this lane.

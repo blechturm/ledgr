@@ -170,6 +170,26 @@ testthat::test_that("fold position valuation aligns shuffled positions by instru
   testthat::expect_equal(as.numeric(observed_positions[[1L]][c("AAA", "BBB")]), c(1, 2))
 })
 
+testthat::test_that("fold target deltas align shuffled targets by instrument id", {
+  observed_positions <- list()
+  strategy <- function(ctx, params) {
+    observed_positions[[length(observed_positions) + 1L]] <<- ctx$positions
+    stats::setNames(c(2, 1), c("BBB", "AAA"))
+  }
+  spec <- ledgr_test_execution_spec(
+    strategy_fn = strategy,
+    strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy)
+  )
+  handler <- ledgr:::ledgr_memory_output_handler("target-delta-alignment")
+
+  ledgr:::ledgr_execute_fold(spec, handler)
+  events <- handler$events()
+
+  testthat::expect_equal(as.numeric(observed_positions[[2L]][c("AAA", "BBB")]), c(1, 2))
+  testthat::expect_identical(events$instrument_id, c("AAA", "BBB"))
+  testthat::expect_equal(events$qty, c(1, 2))
+})
+
 testthat::test_that("run and sweep route fold payloads through one constructor", {
   run_body <- paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n")
   sweep_body <- paste(deparse(body(ledgr:::ledgr_sweep_run_candidate)), collapse = "\n")
