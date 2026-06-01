@@ -2,11 +2,11 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.8`.
-**Current active packet:** `v0.1.8.9`.
-**Current active packet path:** `inst/design/ledgr_v0_1_8_9_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_8_spec_packet/` is an archival release
-record; v0.1.8.9 is the active optimization packet.
+**Latest completed release packet:** `v0.1.8.9`.
+**Current active packet:** `v0.1.9`.
+**Current active packet path:** Future packet.
+The completed `inst/design/ledgr_v0_1_8_9_spec_packet/` is an archival release
+record; v0.1.9 has not yet been cut.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -137,7 +137,7 @@ deferred.
   `maintainer_review/fold_core_workbook.qmd`, and
   `ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
 
-The v0.1.8.9 packet is active. It scopes the single-core optimization round
+The v0.1.8.9 packet is complete. It shipped the single-core optimization round
 fed by the v0.1.8.9 spike synthesis: `collapse::setv` fixes for
 scale-growing column buffers, per-pulse vectorization, yyjsonr dependency
 consolidation with canonical JSON byte-format v2, and workload-grid /
@@ -147,6 +147,7 @@ peer-benchmark remeasurement.
 - Tickets: `ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_1_8_9_spec_packet/tickets.yml`.
 - Batch plan: `ledgr_v0_1_8_9_spec_packet/batch_plan.md`.
+- Release closeout: `ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`.
 - Primary synthesis:
   `spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`.
 
@@ -388,7 +389,7 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
-- `ledgr_v0_1_8_9_spec_packet/` - active v0.1.8.9 optimization packet for
+- `ledgr_v0_1_8_9_spec_packet/` - v0.1.8.9 release record for
   column-buffer `setv` fixes, per-pulse vectorization, yyjsonr consolidation,
   and post-fix measurement gates.
 - `ledgr_v0_1_8_8_spec_packet/` - v0.1.8.8 release record for parallel sweep

@@ -505,6 +505,39 @@ Decision shape from the spike:
   boundary-cost differential between extendr and cpp11 (not by the
   ecosystem/memory-safety priors the original entry listed).
 
+**Repo-split decision (2026-06-01 evening update, from v0.1.8.10 spike
+round scoping).** The K1 measurement spike was initially scoped into the
+v0.1.8.10 spike round
+(`inst/design/spikes/ledgr_v0_1_8_10_optimization_round_spike/`). It was
+moved out of that round and into a dedicated `ledgrcore-spike` repo for
+three reasons:
+
+- **Cadence mismatch.** R-side spikes iterate at 1-3 day cycles; Rust /
+  C++ FFI development iterates at week-scale cycles. Bundling them would
+  make v0.1.8.10 closeout wait on the K1 spike, defeating the
+  fast-iteration intent of staying in the v0.1.8.x single-core arc.
+- **Build-system hygiene.** Adding `Cargo.toml` plus a C++ toolchain to
+  the ledgr repo would force every R contributor to install Rust or
+  full C++ tooling just to clone and run tests, a tax that delivers
+  nothing to R-side contributors. The separate repo keeps ledgr's build
+  surface clean.
+- **Stronger measurement baseline.** Timing the spike to run after
+  v0.1.8.10 ships lets the comparison use post-v0.1.8.10 production R as
+  the baseline rather than a substrate-emulated R variant. That is the
+  strongest possible fair comparison and exactly what this entry's
+  original "fair comparison is post-substrate R vs compiled" framing
+  intended.
+
+Repo name: `ledgrcore-spike` (clearer intent than `ledgrcore` until the
+spike concludes "build authorized"; renamed to `ledgrcore` at that point
+as a one-time GitHub operation if the verdict goes that way).
+
+The horizon's K1 spike specification (the four load-bearing numbers, the
+decision-rule thresholds, the C++ vs Rust language comparison) remains
+authoritative. The separate-repo spike implements that spec against
+post-v0.1.8.10 production R and feeds results back to a future ledgr
+horizon update.
+
 This entry records direction, not committed work.
 
 ### 2026-06-01 [architecture] R-side data structures as shared substrate for compiled-core path
@@ -622,6 +655,110 @@ None of those triggers are current. This entry records direction for the
 disclaimer addition only. The current MIT license provides the legal
 baseline; the disclaimer additions are clarity/discoverability layers on
 top.
+
+### 2026-06-01 [strategy] Strategy callback contract + authoring helpers post-v0.1.8.x direction
+
+The paired RFC cycle for the v0.1.8.10 strategy callback contract addendum
+(`rfc_strategy_callback_contract_addendum_v0_1_8_10_synthesis.md`, final
+review approved) and the v0.1.8.x strategy authoring helpers
+(`rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md`, final review
+approved) closes the cross-sectional strategy authoring direction for the
+v0.1.8.x arc. The accessor synthesis binds the `ctx$vec` universe-aligned
+vector namespace, the `ctx$idx()` instrument-id-to-position resolver, and
+bulk `ctx$vec$feature(feature_id)` reads. The helpers synthesis binds
+extension (not replacement) of the existing exported pipeline
+(`signal_return`, `select_top_n`, `weight_equal`, `target_rebalance` plus
+value types `ledgr_signal`, `ledgr_selection`, `ledgr_weights`,
+`ledgr_target`) across two passes: Pass 1 internal optimization in
+v0.1.8.10 where existing helpers consume `ctx$vec` with no public surface
+change, Pass 2 per-stage public helper additions in v0.1.9.
+
+Feature-engine vector extensions
+- Bulk multi-feature reads beyond the single-feature
+  `ctx$vec$feature(feature_id)` surface — separate feature-engine RFC if
+  the single-feature surface proves insufficient in practice.
+- Feature-map vector output and alias-map vector interactions — same
+  feature-engine RFC.
+- Lookback-window vector access (per-instrument history through
+  `ctx$vec`) — same feature-engine RFC.
+- Public scalar `ctx$feature_at(feature_id, idx)` sugar over
+  `ctx$feature(ctx$vec$id[idx], feature_id)` — same RFC.
+
+Long-short, hedged, and levered authoring helpers
+- Short, market-neutral, pair-helper families. Currently gated by the
+  negative/levered-weights rejection at `R/strategy-helpers.R:226-231`;
+  cannot be promoted to public helpers without first binding
+  shorting/leverage contract semantics in a separate RFC.
+- Hedge-ratio constructors and beta-neutral target builders — same gate.
+
+Cost-aware sizing
+- Strategies do not receive cost-related state today; the cost-API
+  synthesis (prior horizon entries) puts cost wiring downstream of the
+  strategy callback. Any helper that estimates or optimizes transaction
+  costs inside the strategy callback needs a read-only estimator RFC
+  after the public cost API lands.
+
+Declarative strategy constructor
+- A `ledgr_strategy()` constructor composing signal / selection /
+  weighting / sizing / triggers as named arguments — larger DSL, future
+  RFC if the helper family grows enough to justify it. Not in scope for
+  Pass 2.
+
+Stronger read-only enforcement
+- v0.1.8.10 enforces `ctx$vec` and `ctx$idx()` read-only semantics
+  through documented convention plus mutation-leak tests. If post-CRAN
+  use surfaces drift, a contract-hardening RFC evaluates locked
+  bindings, active bindings, copy-on-access, or R6-style read-only
+  context objects.
+
+Compiled-strategy callback boundary
+- The `ledgrcore-spike` external repo will report whether a compiled
+  fold core changes strategy-callback economics. A compiled-strategy
+  callback contract RFC is downstream of the spike report and out of
+  scope until then.
+
+Promoted roadmap hooks
+- **v0.1.8.10**: accessor synthesis implementation (`ctx$vec`
+  namespace, `ctx$idx()` resolver, bulk
+  `ctx$vec$feature(feature_id)`); helpers synthesis Pass 1 internal
+  optimization (existing exported helpers consume `ctx$vec` where it
+  helps, no public surface change).
+- **v0.1.9 Target Construction Helper Extensions** (paired with the
+  2026-05-25 horizon entry; supersedes the older `v0.1.8.9.x` hook):
+  Pass 2 per-stage extensions per the helpers synthesis — rank-weight,
+  inverse-vol, normalization, rebalance bands, target diagnostics.
+- **v0.1.9 or later — Feature-engine vector extensions**: bulk
+  multi-feature reads, lookback vectors, alias-map vector interactions.
+- **v0.1.9+ or v0.2.x — Long-short / hedged / levered authoring
+  helpers**: gated on shorting/leverage contract RFC.
+- **Post cost-API GA — Cost-aware sizing read-only estimator**: gated
+  on the public cost API landing.
+- **v0.2.x or later — Declarative strategy constructor**: larger DSL,
+  conditional on helper family growth.
+- **Post-CRAN or on user demand — Stronger read-only enforcement**:
+  contract-hardening RFC for ctx immutability.
+- **Post-`ledgrcore-spike` report — Compiled-strategy callback boundary
+  contract**: gated on the external K1 spike comparison.
+
+Immediate cross-cycle obligations
+
+- The v0.1.8.10 spec packet must list both synthesis artifacts as
+  binding design inputs at ticket-cut time, not as background reading.
+- The negative/levered weights rejection block in `target_rebalance()`
+  lives at `R/strategy-helpers.R:226-231` (precision over the helpers
+  synthesis's `:226-230` citation); future RFCs and tickets citing
+  this gate should use the corrected range.
+- The v0.1.8.10 release closeout should re-check that any horizon
+  entries created during that cycle's RFC closeouts land in one
+  documentation pass, the same way this entry pairs the accessor and
+  helpers cycles.
+
+This entry does not authorize any of the above; it records the
+direction. The accessor synthesis is binding for v0.1.8.10
+implementation; the helpers synthesis is binding for v0.1.8.10 Pass 1
+implementation and for v0.1.9 Pass 2 design. Tickets cut from either
+synthesis must respect that binding language and treat the deferrals
+above as separate downstream RFCs.
 
 ### 2026-05-29 [research] Snapshot administration and research-loop helpers deferred
 
@@ -1207,7 +1344,11 @@ Potential additions:
 
 Keep this separate from target risk, liquidity/capacity, transaction cost, and
 full portfolio optimization. Promoted roadmap hook:
-`v0.1.8.9.x Target Construction Helper Extensions`.
+`v0.1.9 Target Construction Helper Extensions` (updated from `v0.1.8.9.x`
+per the paired-cycle synthesis in
+`rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md`, which binds the
+per-stage helper extensions to Pass 2 in v0.1.9; see the 2026-06-01
+post-synthesis horizon entry below).
 
 ### 2026-05-27 [risk] Affordability belongs in target risk
 

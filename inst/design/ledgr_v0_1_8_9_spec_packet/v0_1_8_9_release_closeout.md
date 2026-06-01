@@ -1,6 +1,6 @@
 # v0.1.8.9 Measurement Closeout
 
-Status: Batch 8 review candidate
+Status: Final release closeout
 Created: 2026-06-01
 Scope: v0.1.8.8 to v0.1.8.9 local benchmark comparison
 
@@ -150,5 +150,58 @@ not "optimize the same bug again." The residual targets are different:
    benchmark engine gap is now narrow enough that a compiled core should be
    justified by post-substrate measurements, not assumed.
 
-The next release gate (`LDG-2504`) should verify this closeout, run the required
-test/check surface, and ensure no generated benchmark artifacts are committed.
+The release gate (`LDG-2504`) verifies this closeout, runs the required
+test/check surface, and confirms generated benchmark/build artifacts are not
+part of the release commit.
+
+## Release Gate Verification
+
+Batch 9 ran the release gate against package version `0.1.8.9`.
+
+Targeted test command:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); files <- c('tests/testthat/test-execution-spec.R','tests/testthat/test-fills-streaming.R','tests/testthat/test-fifo-torture.R','tests/testthat/test-ledger-writer.R','tests/testthat/test-backtest-audit-log-equivalence.R','tests/testthat/test-runner.R','tests/testthat/test-backtest-wrapper.R','tests/testthat/test-sweep.R','tests/testthat/test-sweep-parity.R','tests/testthat/test-sweep-parallel.R','tests/testthat/test-parallel-workers.R','tests/testthat/test-rng.R','tests/testthat/test-canonical-json-byte-format.R','tests/testthat/test-config.R','tests/testthat/test-fingerprint-stability.R','tests/testthat/test-param-grid.R','tests/testthat/test-strategy-provenance.R'); for (f in files) { cat('\n## ', f, '\n', sep=''); testthat::test_file(f, reporter='summary') }"
+```
+
+Result: passed.
+
+Full local test suite:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
+```
+
+Result: passed with one expected skip for the missing-package
+snapshot-adapter path and the usual broad-suite warnings.
+
+Package build/check:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build --no-build-vignettes .
+& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_0.1.8.9.tar.gz
+```
+
+Result: build passed. Check completed with two warnings caused by the
+`--no-build-vignettes` boundary: files exist under `vignettes/` but no
+corresponding `inst/doc` outputs were built. Examples, tests, package load,
+namespace checks, Rd checks, and vignette code execution all passed. `R CMD
+check` also reported repository index warnings from unavailable CRAN/Bioconductor
+network lookups; dependency checks still passed from the local library.
+
+Release-specific greps:
+
+```powershell
+rg "jsonlite|fromJSON|toJSON" R DESCRIPTION NAMESPACE tests/testthat
+rg "DuckDB float round-trip|DuckDB round-trip|float round-trip" inst/design/ledgr_v0_1_8_9_spec_packet dev/bench/peer_benchmark inst/design/ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md dev/bench/notes
+```
+
+Result: no production `jsonlite`/`fromJSON`/`toJSON` references remain in `R/`,
+`DESCRIPTION`, `NAMESPACE`, or `tests/testthat`. The stale-attribution grep has
+only intentional hits: the spec/ticket text names the old phrase as the wording
+being corrected, and the inventory states the corrected "not as DuckDB
+round-trip noise" conclusion.
+
+Generated artifacts from build/check (`ledgr_0.1.8.9.tar.gz`, `ledgr.Rcheck`,
+and `tests/testthat/Rplots.pdf`) were removed after verification and are not
+part of the release commit.

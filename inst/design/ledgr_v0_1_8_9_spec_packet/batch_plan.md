@@ -1,6 +1,6 @@
 # ledgr v0.1.8.9 Batch Plan
 
-**Status:** Batch 7 complete; Batch 8 in progress.
+**Status:** Complete.
 
 The batch plan preserves per-lane measurement attribution. Do not merge two
 headline hot-path fixes into one batch unless the maintainer explicitly waives
@@ -132,7 +132,7 @@ Exit criteria:
 ## Batch 8 - Measurement Closeout
 
 Ticket: `LDG-2503`
-Status: In Progress
+Status: Complete
 
 Goal: aggregate per-lane attribution, rerun the workload grid and peer
 benchmark, and write the v0.1.8.8 to v0.1.8.9 closeout comparison.
@@ -148,7 +148,7 @@ Exit criteria:
 ## Batch 9 - Release Gate
 
 Ticket: `LDG-2504`
-Status: Pending
+Status: Complete
 
 Goal: run final tests/checks, close the packet, update release notes, and
 prepare merge/tag.

@@ -153,7 +153,7 @@ tickets:
 
   - id: "LDG-2503"
     title: "Per-Lane Measurement And Benchmark Closeout"
-    status: "in_progress"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -178,7 +178,7 @@ tickets:
 
   - id: "LDG-2504"
     title: "v0.1.8.9 Release Gate And Closeout"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

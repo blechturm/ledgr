@@ -633,7 +633,7 @@ layer. No additional code lane cleared the v0.1.8.9 threshold.
 Priority: P0
 Effort: L
 Dependencies: LDG-2496, LDG-2497, LDG-2498, LDG-2499, LDG-2500, LDG-2501, LDG-2502
-Status: In Progress
+Status: Completed
 
 ### Description
 
@@ -687,6 +687,16 @@ surface: benchmark_suite
 scope: v0.1.8.8_to_v0.1.8.9_comparison
 ```
 
+### Completion Note
+
+Completed 2026-06-01. The closeout reran the full LDG-2479 workload grid and
+LDG-2476 peer benchmark, compared v0.1.8.8 and v0.1.8.9 headline figures, and
+recorded the result in `v0_1_8_9_release_closeout.md`. The closeout keeps all
+benchmark language local-host/current-source, treats within-run phase shares as
+load-bearing, and routes residual targets to R-side substrate work, ephemeral
+phase telemetry, yyjsonr read-path investigation, and a gated future
+`ledgrcore` measurement spike.
+
 ---
 
 ## LDG-2504: v0.1.8.9 Release Gate And Closeout
@@ -694,7 +704,7 @@ scope: v0.1.8.8_to_v0.1.8.9_comparison
 Priority: P0
 Effort: M
 Dependencies: LDG-2495, LDG-2496, LDG-2497, LDG-2498, LDG-2499, LDG-2500, LDG-2501, LDG-2502, LDG-2503
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -738,6 +748,15 @@ merge and tag. This gate requires the per-lane measurement closeout from
 Targeted tests, full tests, package build/check, release closeout review,
 NEWS review, documentation grep for stale attribution language, documentation
 index review, and manual release checklist.
+
+### Completion Note
+
+Completed 2026-06-01. The release gate verified targeted test coverage, the
+full local test suite, package build/check, release closeout review, NEWS and
+design-index hygiene, Kahan-vs-cumsum attribution cleanup, jsonlite removal,
+canonical JSON byte-format v2 documentation, and generated-artifact exclusion.
+`v0_1_8_9_release_closeout.md` records the commands, results, and accepted
+`R CMD check --no-build-vignettes` warnings.
 
 ### Source Reference
 

@@ -10,6 +10,11 @@
 - Continued the single-core optimization round with measured per-lane
   attribution for fills reconstruction, durable and memory output handlers,
   position valuation, and target-delta handling.
+- Recorded the local v0.1.8.8-to-v0.1.8.9 benchmark closeout. On the
+  high-density xlarge workload-grid cell, durable wall time moved from 445.02s
+  to 232.03s, per-fill engine cost fell 51.9%, and per-fill extraction cost
+  fell 88.2%; these numbers are local-host/current-source evidence, not a
+  public speed ranking.
 
 # ledgr 0.1.8.8
 
