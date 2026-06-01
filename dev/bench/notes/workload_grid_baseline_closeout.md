@@ -2,7 +2,7 @@
 
 Status: Completed local baseline  
 Created: 2026-05-31  
-Scope: v0.1.8.8 self-profiling workload grid for v0.1.9 optimization scoping
+Scope: v0.1.8.8 self-profiling workload grid for v0.1.8.9 optimization scoping
 
 This is a local-host, current-source development benchmark. It is not a public
 performance claim, not a peer benchmark, and not a release ranking. The grid is
@@ -88,7 +88,7 @@ not a product contract.
 High-density workloads dominate the observed cost surface. At 1000 x 1260,
 moving from SMA 20/50 to SMA 5/10 increased durable wall time from 56.76s to
 445.02s and loop time from 37.04s to 413.47s. The fill-density surface is the
-lead v0.1.9 input.
+lead v0.1.8.9 input.
 
 Fills extraction remains a first-order post-run cost. On durable rows,
 `fills_extract_sec` rose from 6.63s at low-density large to 82.67s at
@@ -128,7 +128,7 @@ guaranteed fast path at high fill density. Persistence mode has a crossover
 surface that must be measured by workload shape, not inferred from storage
 semantics.
 
-## v0.1.9 Target Stack
+## v0.1.8.9 Target Stack
 
 The grid reinforces this target order:
 

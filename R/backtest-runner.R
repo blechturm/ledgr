@@ -366,19 +366,19 @@ ledgr_persistent_output_handler <- function(con,
   init_pending_cols <- function(capacity) {
     capacity <- as.integer(capacity)
     state$pending_capacity <- capacity
-    state$pending_cols <- list(
-      event_id = character(capacity),
-      run_id = character(capacity),
-      ts_utc = as.POSIXct(rep(NA_character_, capacity), tz = "UTC"),
-      event_type = character(capacity),
-      instrument_id = character(capacity),
-      side = character(capacity),
-      qty = numeric(capacity),
-      price = numeric(capacity),
-      fee = numeric(capacity),
-      meta_json = character(capacity),
-      event_seq = integer(capacity)
-    )
+    pending_cols <- new.env(parent = emptyenv())
+    pending_cols$event_id <- character(capacity)
+    pending_cols$run_id <- character(capacity)
+    pending_cols$ts_utc <- as.POSIXct(rep(NA_character_, capacity), tz = "UTC")
+    pending_cols$event_type <- character(capacity)
+    pending_cols$instrument_id <- character(capacity)
+    pending_cols$side <- character(capacity)
+    pending_cols$qty <- numeric(capacity)
+    pending_cols$price <- numeric(capacity)
+    pending_cols$fee <- numeric(capacity)
+    pending_cols$meta_json <- character(capacity)
+    pending_cols$event_seq <- integer(capacity)
+    state$pending_cols <- pending_cols
     invisible(TRUE)
   }
 
@@ -396,8 +396,10 @@ ledgr_persistent_output_handler <- function(con,
     init_pending_cols(next_capacity)
     if (!is.null(old_cols) && old_count > 0L) {
       idx <- seq_len(old_count)
-      for (name in names(old_cols)) {
-        state$pending_cols[[name]][idx] <- old_cols[[name]][idx]
+      for (name in ls(old_cols, all.names = TRUE)) {
+        col <- state$pending_cols[[name]]
+        col[idx] <- old_cols[[name]][idx]
+        state$pending_cols[[name]] <- col
       }
     }
     invisible(TRUE)
@@ -412,6 +414,25 @@ ledgr_persistent_output_handler <- function(con,
     invisible(TRUE)
   }
 
+  set_pending_value <- function(name, i, value) {
+    col <- state$pending_cols[[name]]
+    if (is.character(col)) {
+      col[[i]] <- as.character(value)[[1]]
+      state$pending_cols[[name]] <- col
+      return(invisible(NULL))
+    }
+    value <- if (inherits(col, "POSIXct")) {
+      as.POSIXct(value, tz = "UTC")[[1]]
+    } else if (is.integer(col)) {
+      as.integer(value)[[1]]
+    } else {
+      as.numeric(value)[[1]]
+    }
+    collapse::setv(col, i, value, vind1 = TRUE)
+    state$pending_cols[[name]] <- col
+    invisible(NULL)
+  }
+
   handler$buffer_event <- function(write_res) {
     if (!inherits(write_res, "ledgr_ledger_write_result") || !identical(write_res$status, "WROTE")) {
       return(invisible(FALSE))
@@ -422,17 +443,17 @@ ledgr_persistent_output_handler <- function(con,
     i <- state$pending_idx + 1L
     ensure_pending_capacity(i)
     state$pending_idx <- i
-    state$pending_cols$event_id[[i]] <- write_res$row$event_id
-    state$pending_cols$run_id[[i]] <- write_res$row$run_id
-    state$pending_cols$ts_utc[[i]] <- write_res$row$ts_utc
-    state$pending_cols$event_type[[i]] <- write_res$row$event_type
-    state$pending_cols$instrument_id[[i]] <- write_res$row$instrument_id
-    state$pending_cols$side[[i]] <- write_res$row$side
-    state$pending_cols$qty[[i]] <- as.numeric(write_res$row$qty)
-    state$pending_cols$price[[i]] <- as.numeric(write_res$row$price)
-    state$pending_cols$fee[[i]] <- as.numeric(write_res$row$fee)
-    state$pending_cols$meta_json[[i]] <- write_res$row$meta_json
-    state$pending_cols$event_seq[[i]] <- as.integer(write_res$row$event_seq)
+    set_pending_value("event_id", i, write_res$row$event_id)
+    set_pending_value("run_id", i, write_res$row$run_id)
+    set_pending_value("ts_utc", i, write_res$row$ts_utc)
+    set_pending_value("event_type", i, write_res$row$event_type)
+    set_pending_value("instrument_id", i, write_res$row$instrument_id)
+    set_pending_value("side", i, write_res$row$side)
+    set_pending_value("qty", i, write_res$row$qty)
+    set_pending_value("price", i, write_res$row$price)
+    set_pending_value("fee", i, write_res$row$fee)
+    set_pending_value("meta_json", i, write_res$row$meta_json)
+    set_pending_value("event_seq", i, write_res$row$event_seq)
     invisible(TRUE)
   }
 
@@ -565,7 +586,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   validate_ledgr_config(config)
 
   cfg <- if (is.character(config)) {
-    jsonlite::fromJSON(config, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE)
+    ledgr_json_read_config(config)
   } else {
     config
   }
@@ -1333,7 +1354,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   event_meta <- vector("list", n_events)
   if (n_events > 0) {
     for (i in seq_len(n_events)) {
-      meta <- jsonlite::fromJSON(events_df$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_json_read_nested(events_df$meta_json[[i]])
       event_meta[[i]] <- meta
       cash_delta[[i]] <- as.numeric(meta$cash_delta)
       position_delta[[i]] <- as.numeric(meta$position_delta)
@@ -1543,7 +1564,7 @@ ledgr_strategy_state_prev <- function(con, run_id, ts_utc) {
   )
 
   if (nrow(row) == 0) return(NULL)
-  jsonlite::fromJSON(row$state_json[[1]], simplifyVector = FALSE)
+  ledgr_json_read_nested(row$state_json[[1]])
 }
 
 ledgr_features_at_pulse <- function(con,
@@ -1763,7 +1784,7 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc) {
   pos <- numeric(0)
   if (nrow(rows) > 0) {
     for (i in seq_len(nrow(rows))) {
-      meta <- jsonlite::fromJSON(rows$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_json_read_nested(rows$meta_json[[i]])
       cash <- cash + as.numeric(meta$cash_delta)
       instrument_id <- rows$instrument_id[[i]]
       if (!is.na(instrument_id) && nzchar(instrument_id)) {
@@ -1821,7 +1842,7 @@ ledgr_update_state_incremental <- function(con, run_id, last_event_seq, ts_utc, 
 
   if (nrow(rows) > 0) {
     for (i in seq_len(nrow(rows))) {
-      meta <- jsonlite::fromJSON(rows$meta_json[[i]], simplifyVector = FALSE)
+      meta <- ledgr_json_read_nested(rows$meta_json[[i]])
       cash <- cash + as.numeric(meta$cash_delta)
       instrument_id <- rows$instrument_id[[i]]
       if (!is.na(instrument_id) && nzchar(instrument_id)) {

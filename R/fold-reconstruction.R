@@ -30,7 +30,7 @@ ledgr_event_meta_at <- function(events, typed_meta, i) {
       return(meta)
     }
   }
-  jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+  ledgr_json_read_nested(events$meta_json[[i]])
 }
 
 ledgr_equity_from_events <- function(events,
@@ -216,15 +216,15 @@ ledgr_fill_row_buffer_add <- function(buffer,
   if (i > buffer$capacity) {
     ledgr_fill_row_buffer_grow(buffer, i)
   }
-  buffer$event_seq[[i]] <- as.integer(event_seq)
-  buffer$ts_utc[[i]] <- as.POSIXct(ts_utc, tz = "UTC")
-  buffer$instrument_id[[i]] <- as.character(instrument_id)
-  buffer$side[[i]] <- as.character(side)
-  buffer$qty[[i]] <- as.numeric(qty)
-  buffer$price[[i]] <- as.numeric(price)
-  buffer$fee[[i]] <- as.numeric(fee)
-  buffer$realized_pnl[[i]] <- as.numeric(realized_pnl)
-  buffer$action[[i]] <- as.character(action)
+  collapse::setv(buffer$event_seq, i, as.integer(event_seq), vind1 = TRUE)
+  collapse::setv(buffer$ts_utc, i, as.POSIXct(ts_utc, tz = "UTC"), vind1 = TRUE)
+  collapse::setv(buffer$instrument_id, i, as.character(instrument_id), vind1 = TRUE)
+  collapse::setv(buffer$side, i, as.character(side), vind1 = TRUE)
+  collapse::setv(buffer$qty, i, as.numeric(qty), vind1 = TRUE)
+  collapse::setv(buffer$price, i, as.numeric(price), vind1 = TRUE)
+  collapse::setv(buffer$fee, i, as.numeric(fee), vind1 = TRUE)
+  collapse::setv(buffer$realized_pnl, i, as.numeric(realized_pnl), vind1 = TRUE)
+  collapse::setv(buffer$action, i, as.character(action), vind1 = TRUE)
   buffer$n <- i
   invisible(buffer)
 }
@@ -438,14 +438,14 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
 
   add_fill_row <- function(i, inst, side, qty, price, fee, realized_pnl, action) {
     fill_idx <<- fill_idx + 1L
-    fill_event_seq[[fill_idx]] <<- events$event_seq[[i]]
-    fill_ts_utc[[fill_idx]] <<- event_ts[[i]]
+    collapse::setv(fill_event_seq, fill_idx, as.integer(events$event_seq[[i]]), vind1 = TRUE)
+    collapse::setv(fill_ts_utc, fill_idx, as.POSIXct(event_ts[[i]], tz = "UTC"), vind1 = TRUE)
     fill_instrument_id[[fill_idx]] <<- inst
     fill_side[[fill_idx]] <<- side
-    fill_qty[[fill_idx]] <<- qty
-    fill_price[[fill_idx]] <<- price
-    fill_fee[[fill_idx]] <<- fee
-    fill_realized_pnl[[fill_idx]] <<- realized_pnl
+    collapse::setv(fill_qty, fill_idx, as.numeric(qty), vind1 = TRUE)
+    collapse::setv(fill_price, fill_idx, as.numeric(price), vind1 = TRUE)
+    collapse::setv(fill_fee, fill_idx, as.numeric(fee), vind1 = TRUE)
+    collapse::setv(fill_realized_pnl, fill_idx, as.numeric(realized_pnl), vind1 = TRUE)
     fill_action[[fill_idx]] <<- action
     invisible(TRUE)
   }

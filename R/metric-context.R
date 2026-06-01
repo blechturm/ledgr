@@ -542,7 +542,7 @@ ledgr_metric_context_from_json <- function(json) {
     return(ledgr_metric_context_resolve(NULL))
   }
   payload <- tryCatch(
-    jsonlite::fromJSON(json, simplifyVector = FALSE),
+    ledgr_json_read_nested(json),
     error = function(e) {
       rlang::abort("Stored metric_context_json is not valid JSON.", class = "ledgr_invalid_metric_context", parent = e)
     }

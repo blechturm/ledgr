@@ -1,3 +1,21 @@
+# ledgr 0.1.8.9
+
+- Switched canonical JSON serialization and parsing from jsonlite to yyjsonr
+  and intentionally bumped the canonical JSON byte format to v2. Config,
+  snapshot, strategy, reproduction, and ledger metadata hashes that include
+  canonical JSON bytes are not byte-comparable with pre-v0.1.8.9 values.
+- Updated strategy provenance package fingerprints to track yyjsonr instead
+  of jsonlite. This is an expected identity-surface change for the v0.1.8.9
+  dependency migration, not a strategy-semantics change.
+- Continued the single-core optimization round with measured per-lane
+  attribution for fills reconstruction, durable and memory output handlers,
+  position valuation, and target-delta handling.
+- Recorded the local v0.1.8.8-to-v0.1.8.9 benchmark closeout. On the
+  high-density xlarge workload-grid cell, durable wall time moved from 445.02s
+  to 232.03s, per-fill engine cost fell 51.9%, and per-fill extraction cost
+  fell 88.2%; these numbers are local-host/current-source evidence, not a
+  public speed ranking.
+
 # ledgr 0.1.8.8
 
 - Added optional parallel sweep dispatch over the existing fold core, keeping

@@ -46,8 +46,8 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
     params = list(result_wrapper$run_id)
   )$config_json[[1]]
 
-  cfg_direct <- jsonlite::fromJSON(cfg_json_direct, simplifyVector = FALSE)
-  cfg_wrapper <- jsonlite::fromJSON(cfg_json_wrapper, simplifyVector = FALSE)
+  cfg_direct <- ledgr:::ledgr_json_read_nested(cfg_json_direct)
+  cfg_wrapper <- ledgr:::ledgr_json_read_nested(cfg_json_wrapper)
   cfg_direct$db_path <- NULL
   cfg_wrapper$db_path <- NULL
   cfg_direct$data$snapshot_db_path <- NULL

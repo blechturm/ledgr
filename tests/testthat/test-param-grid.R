@@ -16,7 +16,7 @@ testthat::test_that("ledgr_param_grid generates stable labels for unnamed params
 
   testthat::expect_match(grid_a$labels, "^grid_[0-9a-f]{12}$")
   testthat::expect_identical(grid_a$labels, grid_b$labels)
-  testthat::expect_identical(grid_a$labels, "grid_ac205cddf9cf")
+  testthat::expect_identical(grid_a$labels, "grid_eee9d719309a")
 })
 
 testthat::test_that("ledgr_param_grid rejects duplicate labels and invalid entries", {

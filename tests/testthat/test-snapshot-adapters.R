@@ -15,7 +15,7 @@ test_that("ledgr_snapshot_from_df creates a sealed snapshot", {
   con <- ledgr_db_init(snap$db_path)
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   info <- ledgr_snapshot_info(con, snap$snapshot_id)
-  meta <- jsonlite::fromJSON(info$meta_json[[1]], simplifyVector = TRUE)
+  meta <- ledgr:::ledgr_json_read_config(info$meta_json[[1]])
   expect_false("data_hash" %in% names(meta))
   expect_false("data_hash" %in% names(snap$metadata))
 })
@@ -125,7 +125,7 @@ test_that("create/import/seal CSV snapshots infer runnable metadata", {
   snapshot <- seal_manual_csv_snapshot(make_manual_csv_bars())
   on.exit(unlink(snapshot$db_path), add = TRUE)
 
-  meta <- jsonlite::fromJSON(snapshot$info$meta_json[[1]], simplifyVector = FALSE)
+  meta <- ledgr:::ledgr_json_read_nested(snapshot$info$meta_json[[1]])
   expect_equal(meta$n_bars, 8L)
   expect_equal(meta$n_instruments, 2L)
   expect_equal(meta$start_date, "2020-04-01T00:00:00Z")
@@ -159,7 +159,7 @@ test_that("CSV seal metadata derivation preserves existing user metadata", {
   )
   on.exit(unlink(snapshot$db_path), add = TRUE)
 
-  meta <- jsonlite::fromJSON(snapshot$info$meta_json[[1]], simplifyVector = FALSE)
+  meta <- ledgr:::ledgr_json_read_nested(snapshot$info$meta_json[[1]])
   expect_equal(meta$description, "manual research fixture")
   expect_equal(meta$n_bars, 999L)
   expect_equal(meta$n_instruments, 2L)

@@ -161,12 +161,13 @@ ledgr_execute_fold <- function(execution, output_handler) {
         sample_start <- sample_now
       }
 
-      positions_value <- 0
-      for (j in seq_along(instrument_ids)) {
-        inst <- instrument_ids[[j]]
-        qty <- as.numeric(state$positions[[inst]] %||% 0)
-        if (qty == 0) next
-        positions_value <- positions_value + qty * bars_mat$close[j, i]
+      position_qty <- as.numeric(state$positions[instrument_ids])
+      position_qty[is.na(position_qty)] <- 0
+      active_positions <- position_qty != 0
+      positions_value <- if (any(active_positions)) {
+        sum(position_qty[active_positions] * bars_mat$close[active_positions, i])
+      } else {
+        0
       }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
@@ -271,20 +272,25 @@ ledgr_execute_fold <- function(execution, output_handler) {
         sample_start <- sample_now
       }
 
-      # Target deltas are applied one instrument at a time today. Event emission
-      # and state mutation must stay adjacent so in-memory sweep and durable run
-      # replay see the exact same ordered event stream.
-      for (instrument_id in names(targets)) {
+      target_names <- names(targets)
+      desired_vec <- as.numeric(targets)
+      current_qty_vec <- as.numeric(state$positions[target_names])
+      current_qty_vec[is.na(current_qty_vec)] <- 0
+      delta_vec <- desired_vec - current_qty_vec
+      actionable_idx <- which(abs(delta_vec) > sqrt(.Machine$double.eps))
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
+
+      # Event emission and state mutation stay adjacent and ordered by the
+      # validated target vector so sweep and durable replay see the same stream.
+      for (target_idx in actionable_idx) {
         if (sample_telemetry) sample_start <- ledgr_time_now()
-        desired <- as.numeric(targets[[instrument_id]])
-        cur_qty <- as.numeric(state$positions[[instrument_id]] %||% 0)
-        delta <- desired - cur_qty
-        if (abs(delta) <= sqrt(.Machine$double.eps)) {
-          if (sample_telemetry) {
-            t_target <- t_target + ledgr_time_elapsed(sample_start, ledgr_time_now())
-          }
-          next
-        }
+        instrument_id <- target_names[[target_idx]]
+        delta <- delta_vec[[target_idx]]
+        cur_qty <- current_qty_vec[[target_idx]]
 
         b <- bars_by_id[[instrument_id]]
         next_bar <- if (!is.null(b) && i < nrow(b)) b[i + 1L, , drop = FALSE] else NULL

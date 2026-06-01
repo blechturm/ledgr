@@ -273,13 +273,13 @@ ledgr_parse_promotion_context <- function(row) {
     promoted_at_utc = as.POSIXct(row$promoted_at_utc[[1]], tz = "UTC"),
     note = if (is.na(row$note[[1]])) NULL else as.character(row$note[[1]]),
     selected_candidate = ledgr_parse_candidate_summary_record(row$selected_candidate_json[[1]]),
-    source_sweep = ledgr_parse_json_field(row$source_sweep_json[[1]]),
+    source_sweep = ledgr_parse_source_sweep_record(row$source_sweep_json[[1]]),
     candidate_summary = ledgr_parse_candidate_summary(row$candidate_summary_json[[1]])
   ), class = c("ledgr_promotion_context", "list"))
 }
 
 ledgr_parse_json_field <- function(json) {
-  jsonlite::fromJSON(json, simplifyVector = FALSE)
+  ledgr_json_read_nested(json)
 }
 
 ledgr_parse_candidate_summary <- function(json) {
@@ -294,6 +294,23 @@ ledgr_parse_candidate_summary_record <- function(json) {
 ledgr_normalize_candidate_summary_record <- function(record) {
   if (!is.null(record$warning_classes)) {
     record$warning_classes <- as.character(unlist(record$warning_classes, use.names = FALSE))
+  }
+  if (!is.null(record$execution_seed)) {
+    record$execution_seed <- as.integer(record$execution_seed)
+  }
+  if (!is.null(record$n_trades)) {
+    record$n_trades <- as.integer(record$n_trades)
+  }
+  if (!is.null(record$n_warnings)) {
+    record$n_warnings <- as.integer(record$n_warnings)
+  }
+  record
+}
+
+ledgr_parse_source_sweep_record <- function(json) {
+  record <- ledgr_parse_json_field(json)
+  if (!is.null(record$master_seed)) {
+    record$master_seed <- as.integer(record$master_seed)
   }
   record
 }

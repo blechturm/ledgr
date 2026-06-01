@@ -206,7 +206,7 @@ ledgr_snapshot_metadata_for_seal <- function(con, snapshot_id) {
   metadata <- list()
   if (is.character(raw) && length(raw) == 1L && !is.na(raw) && nzchar(raw)) {
     metadata <- tryCatch(
-      jsonlite::fromJSON(raw, simplifyVector = FALSE),
+      ledgr_json_read_nested(raw),
       error = function(e) list()
     )
     if (!is.list(metadata) || is.data.frame(metadata)) {

@@ -127,7 +127,7 @@ ledgr_snapshot_info_parse_meta <- function(meta_json) {
     return(list())
   }
   out <- tryCatch(
-    jsonlite::fromJSON(meta_json, simplifyVector = FALSE),
+    ledgr_json_read_nested(meta_json),
     error = function(e) list()
   )
   if (!is.list(out)) list() else out

@@ -1,0 +1,206 @@
+version: "0.1.8.9"
+source: "v0_1_8_9_tickets.md"
+generated_from: "v0_1_8_9_spec.md"
+tickets:
+  - id: "LDG-2495"
+    title: "Packet Alignment And v0.1.8.9 Ticket Cut"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.9"
+    tests:
+      - "manual_packet_review"
+      - "stale_scope_rg_checks"
+      - "yaml_review"
+      - "claude_peer_review"
+      - "claude_review_caveats_resolved"
+
+  - id: "LDG-2496"
+    title: "Fills Extractor setv"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2495"
+    classification:
+      type: "optimization"
+      surface: "fills_extraction"
+      scope: "fill_row_buffer_setv"
+    tests:
+      - "full_fill_table_parity"
+      - "stream_threshold_materialization"
+      - "fold_reconstruction_tests"
+      - "large_xlarge_workload_grid_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2497"
+    title: "Persistent Durable Handler setv"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2496"
+    classification:
+      type: "optimization"
+      surface: "durable_output_handler"
+      scope: "pending_cols_setv"
+    tests:
+      - "byte_identical_ledger_events"
+      - "audit_log_equivalence_tests"
+      - "ledger_writer_tests"
+      - "durable_large_xlarge_grid_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2498"
+    title: "Memory Output Handler setv"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2497"
+    classification:
+      type: "optimization"
+      surface: "memory_output_handler"
+      scope: "event_cols_setv"
+    tests:
+      - "byte_identical_memory_events"
+      - "sweep_parity_tests"
+      - "parallel_sweep_tests"
+      - "artifact_count_tests"
+      - "ephemeral_large_xlarge_grid_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2499"
+    title: "Position Valuation Vectorize"
+    status: "completed"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2498"
+    classification:
+      type: "optimization"
+      surface: "fold_engine_per_pulse"
+      scope: "position_valuation_vectorize"
+    tests:
+      - "fold_engine_tests"
+      - "shuffled_alignment_fixture"
+      - "multi_instrument_accounting_tests"
+      - "run_sweep_parity_tests"
+      - "large_xlarge_grid_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2500"
+    title: "Target Delta Vectorize"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2499"
+    classification:
+      type: "optimization"
+      surface: "fold_engine_per_pulse"
+      scope: "target_delta_vectorize"
+    tests:
+      - "strategy_target_validation_tests"
+      - "shuffled_alignment_fixture"
+      - "unknown_instrument_rejection_tests"
+      - "run_sweep_parity_tests"
+      - "large_xlarge_grid_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2501"
+    title: "yyjsonr And Canonical JSON v2"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2500"
+    classification:
+      type: "dependency_migration"
+      surface: "canonical_json"
+      scope: "yyjsonr_and_byte_format_v2"
+    tests:
+      - "canonical_json_v2_byte_fixture_tests"
+      - "simplify_false_read_parity_tests"
+      - "simplify_true_read_parity_tests"
+      - "config_hash_fixture_regeneration"
+      - "jsonlite_grep_audit"
+      - "package_load_check"
+      - "full_test_suite_after_fixture_regeneration"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2502"
+    title: "Optional Cleanup Triage"
+    status: "completed"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2501"
+    classification:
+      type: "cleanup_triage"
+      surface: "fold_and_reconstruction"
+      scope: "optional_small_lanes"
+    tests:
+      - "post_main_lane_profile_review"
+      - "fill_timing_tests_if_landed"
+      - "fills_extraction_robustness_tests_if_needed"
+      - "spike3_disposition_review"
+      - "per_lane_attribution_row_if_landed"
+
+  - id: "LDG-2503"
+    title: "Per-Lane Measurement And Benchmark Closeout"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2496"
+      - "LDG-2497"
+      - "LDG-2498"
+      - "LDG-2499"
+      - "LDG-2500"
+      - "LDG-2501"
+      - "LDG-2502"
+    classification:
+      type: "measurement_closeout"
+      surface: "benchmark_suite"
+      scope: "v0.1.8.8_to_v0.1.8.9_comparison"
+    tests:
+      - "per_lane_attribution_table_review"
+      - "workload_grid_record_rerun"
+      - "peer_benchmark_rerun"
+      - "closeout_artifact_review"
+      - "horizon_diff_review"
+      - "claim_language_review"
+
+  - id: "LDG-2504"
+    title: "v0.1.8.9 Release Gate And Closeout"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2495"
+      - "LDG-2496"
+      - "LDG-2497"
+      - "LDG-2498"
+      - "LDG-2499"
+      - "LDG-2500"
+      - "LDG-2501"
+      - "LDG-2502"
+      - "LDG-2503"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.9"
+    tests:
+      - "targeted_tests"
+      - "full_test_suite"
+      - "package_build"
+      - "package_check"
+      - "release_closeout_review"
+      - "news_review"
+      - "parity_attribution_grep"
+      - "documentation_index_review"

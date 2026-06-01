@@ -34,18 +34,21 @@ testthat::test_that("workers > 1 without mirai fails loudly and actionably", {
 
 testthat::test_that("worker dependencies distinguish qualified and attached packages", {
   qualified_strategy <- function(ctx, params) {
-    jsonlite::toJSON(list(qty = 1), auto_unbox = TRUE)
+    yyjsonr::write_json_str(
+      list(qty = 1),
+      opts = yyjsonr::opts_write_json(auto_unbox = TRUE)
+    )
     ctx$flat()
   }
   qualified_preflight <- ledgr_strategy_preflight(qualified_strategy)
   qualified_deps <- ledgr:::ledgr_parallel_worker_dependencies(
     qualified_preflight,
-    worker_packages = "jsonlite"
+    worker_packages = "yyjsonr"
   )
 
-  testthat::expect_identical(qualified_deps$require_namespace, "jsonlite")
-  testthat::expect_identical(qualified_deps$attach, "jsonlite")
-  testthat::expect_identical(qualified_deps$all_packages, "jsonlite")
+  testthat::expect_identical(qualified_deps$require_namespace, "yyjsonr")
+  testthat::expect_identical(qualified_deps$attach, "yyjsonr")
+  testthat::expect_identical(qualified_deps$all_packages, "yyjsonr")
 
   testthat::skip_if_not_installed("TTR")
   unqualified_strategy <- local({
@@ -65,7 +68,10 @@ testthat::test_that("worker dependencies distinguish qualified and attached pack
 
 testthat::test_that("worker setup dry run reports ledgr and package setup actions", {
   strategy <- function(ctx, params) {
-    jsonlite::toJSON(list(qty = 1), auto_unbox = TRUE)
+    yyjsonr::write_json_str(
+      list(qty = 1),
+      opts = yyjsonr::opts_write_json(auto_unbox = TRUE)
+    )
     ctx$flat()
   }
   preflight <- ledgr_strategy_preflight(strategy)
@@ -73,7 +79,7 @@ testthat::test_that("worker setup dry run reports ledgr and package setup action
   plan <- ledgr:::ledgr_parallel_worker_setup(
     workers = 2L,
     preflight = preflight,
-    worker_packages = "jsonlite",
+    worker_packages = "yyjsonr",
     backend_available = TRUE,
     dry_run = TRUE
   )
@@ -83,8 +89,8 @@ testthat::test_that("worker setup dry run reports ledgr and package setup action
   testthat::expect_identical(plan$backend, "mirai")
   testthat::expect_false(plan$initialized)
   testthat::expect_true(any(plan$actions %in% c("pkgload::load_all", "library:ledgr")))
-  testthat::expect_true("requireNamespace:jsonlite" %in% plan$actions)
-  testthat::expect_true("library:jsonlite" %in% plan$actions)
+  testthat::expect_true("requireNamespace:yyjsonr" %in% plan$actions)
+  testthat::expect_true("library:yyjsonr" %in% plan$actions)
 })
 
 testthat::test_that("worker setup reports missing worker packages", {

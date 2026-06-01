@@ -1124,7 +1124,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
         !(is.atomic(meta_raw) && length(meta_raw) == 1 && is.na(meta_raw)) &&
         !(is.character(meta_raw) && length(meta_raw) == 1 && !nzchar(meta_raw))) {
         meta <- tryCatch(
-          jsonlite::fromJSON(meta_raw, simplifyVector = FALSE),
+          ledgr_json_read_nested(meta_raw),
           error = function(e) {
             meta_parse_error <<- TRUE
             NULL

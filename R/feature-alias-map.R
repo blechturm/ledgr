@@ -58,7 +58,7 @@ ledgr_alias_map_from_json <- function(alias_map_json, alias_map_order = NULL) {
     return(NULL)
   }
   payload <- tryCatch(
-    jsonlite::fromJSON(alias_map_json, simplifyVector = FALSE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
+    ledgr_json_read_nested(alias_map_json),
     error = function(e) {
       rlang::abort("`alias_map_json` is not valid JSON.", class = c("ledgr_invalid_alias_map", "ledgr_invalid_config"))
     }

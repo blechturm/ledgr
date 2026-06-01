@@ -174,7 +174,7 @@ ledgr_lot_parse_meta <- function(meta_json) {
     (is.character(meta_json) && length(meta_json) == 1L && !nzchar(meta_json))) {
     return(NULL)
   }
-  tryCatch(jsonlite::fromJSON(meta_json, simplifyVector = FALSE), error = function(e) NULL)
+  tryCatch(ledgr_json_read_nested(meta_json), error = function(e) NULL)
 }
 
 ledgr_lot_apply_event <- function(state,

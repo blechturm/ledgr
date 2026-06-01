@@ -59,10 +59,12 @@ The benchmark aborts unless durable and ephemeral ledgr agree before peer rows
 are accepted.
 
 Fills are compared exactly after stripping result-only attributes. Equity is
-compared with `all.equal(..., tolerance = 1e-8)` because the durable path reads
-through DuckDB and can differ from the in-memory reconstruction by sub-1e-8
-floating round-trip noise. The observed smoke difference was around 8e-9 in
-positions value, with identical fill rows.
+compared with `all.equal(..., tolerance = 1e-8)` because durable lot accounting
+uses Kahan compensated summation while the in-memory reconstruction uses naive
+`cumsum()` over the event stream. The observed smoke difference was around
+8e-9 in positions value, with identical fill rows. Spike 10 later verified that
+DuckDB DBI double round-trips are byte-identical, so this tolerance is an
+accumulation-method tolerance, not a DuckDB precision caveat.
 
 ## Boundary Ambiguity Decisions
 

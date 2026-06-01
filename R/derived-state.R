@@ -26,7 +26,7 @@ ledgr_reconstruct_positions <- function(con, run_id) {
     instrument_id <- rows$instrument_id[[i]]
     if (is.na(instrument_id) || !nzchar(instrument_id)) next
 
-    meta <- jsonlite::fromJSON(rows$meta_json[[i]], simplifyVector = FALSE)
+    meta <- ledgr_json_read_nested(rows$meta_json[[i]])
     delta <- meta$position_delta
     if (!is.numeric(delta) || length(delta) != 1 || is.na(delta) || !is.finite(delta)) {
       rlang::abort("ledger_events.meta_json must include a finite numeric scalar `position_delta`.", class = "ledgr_invalid_ledger_meta")
@@ -67,7 +67,7 @@ ledgr_reconstruct_cash <- function(con, run_id, initial_cash) {
   }
 
   for (i in seq_len(nrow(rows))) {
-    meta <- jsonlite::fromJSON(rows$meta_json[[i]], simplifyVector = FALSE)
+    meta <- ledgr_json_read_nested(rows$meta_json[[i]])
     delta <- meta$cash_delta
     if (!is.numeric(delta) || length(delta) != 1 || is.na(delta) || !is.finite(delta)) {
       rlang::abort("ledger_events.meta_json must include a finite numeric scalar `cash_delta`.", class = "ledgr_invalid_ledger_meta")
@@ -97,7 +97,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     rlang::abort("runs.config_json is required for deterministic derived-state reconstruction.", class = "ledgr_invalid_run")
   }
 
-  cfg <- jsonlite::fromJSON(run_cfg$config_json[[1]], simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE)
+  cfg <- ledgr_json_read_config(run_cfg$config_json[[1]])
   instrument_ids <- cfg$universe$instrument_ids
   start_ts_utc <- cfg$backtest$start_ts_utc
   end_ts_utc <- cfg$backtest$end_ts_utc
@@ -217,7 +217,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   n_events <- nrow(events)
 
   apply_event <- function(row) {
-    meta <- jsonlite::fromJSON(row$meta_json[[1]], simplifyVector = FALSE)
+    meta <- ledgr_json_read_nested(row$meta_json[[1]])
     cash_delta <- meta$cash_delta
     position_delta <- meta$position_delta
     if (!is.numeric(cash_delta) || length(cash_delta) != 1 || is.na(cash_delta) || !is.finite(cash_delta)) {
@@ -341,7 +341,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   total_cash_delta <- 0
   pos_deltas <- numeric(0)
   for (i in seq_len(nrow(events))) {
-    meta <- jsonlite::fromJSON(events$meta_json[[i]], simplifyVector = FALSE)
+    meta <- ledgr_json_read_nested(events$meta_json[[i]])
     total_cash_delta <- total_cash_delta + as.numeric(meta$cash_delta)
     instrument_id <- events$instrument_id[[i]]
     if (!is.na(instrument_id) && nzchar(instrument_id)) {

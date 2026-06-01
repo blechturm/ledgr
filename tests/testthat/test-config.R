@@ -75,7 +75,7 @@ testthat::test_that("scalar fill-model config hash is stable across internal cos
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "948146c214583b5bf2e200113d0bc5c065d834624b0701b1d099157b15833b3f"
+    "a9e6419d121ff6197c617b5b18f7fab9f74f896f3c2108d806909f92ba6a5304"
   )
 })
 
@@ -182,6 +182,6 @@ testthat::test_that("validation passes for a minimal valid config (list and JSON
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)
 
-  cfg_json <- jsonlite::toJSON(cfg, auto_unbox = TRUE, null = "null", digits = NA)
+  cfg_json <- ledgr:::canonical_json(cfg)
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg_json), NA)
 })

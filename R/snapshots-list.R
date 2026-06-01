@@ -232,7 +232,7 @@ ledgr_snapshot_load <- function(db_path, snapshot_id = NULL, verify = FALSE) {
   meta_json <- info$meta_json[[1]]
   if (!is.null(meta_json) && !is.na(meta_json) && nzchar(meta_json)) {
     metadata <- tryCatch(
-      jsonlite::fromJSON(meta_json, simplifyVector = FALSE),
+      ledgr_json_read_nested(meta_json),
       error = function(e) list()
     )
   }

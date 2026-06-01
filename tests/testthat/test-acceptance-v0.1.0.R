@@ -269,7 +269,7 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
     pos_by_id <- numeric(0)
     cash_delta_sum <- 0
     for (i in seq_len(nrow(meta))) {
-      m <- jsonlite::fromJSON(meta$meta_json[[i]], simplifyVector = FALSE)
+      m <- ledgr:::ledgr_json_read_nested(meta$meta_json[[i]])
       cash_delta_sum <- cash_delta_sum + as.numeric(m$cash_delta)
       id <- meta$instrument_id[[i]]
       if (!is.na(id) && nzchar(id)) {

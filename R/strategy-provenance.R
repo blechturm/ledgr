@@ -105,7 +105,7 @@ ledgr_strategy_reproducibility_level <- function(strategy_type, signature = NULL
 }
 
 ledgr_dependency_versions_json <- function() {
-  packages <- c("ledgr", "collapse", "duckdb", "DBI", "digest", "jsonlite", "tibble", "TTR")
+  packages <- c("ledgr", "collapse", "duckdb", "DBI", "digest", "yyjsonr", "tibble", "TTR")
   versions <- list(R = as.character(getRversion()))
 
   for (pkg in packages) {

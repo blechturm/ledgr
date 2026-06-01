@@ -64,6 +64,61 @@ testthat::test_that("memory output handler stores typed events equivalent to led
   )
 })
 
+testthat::test_that("memory output handler preserves full event columns across growth", {
+  run_id <- "typed-memory-growth"
+  handler <- ledgr:::ledgr_memory_output_handler(run_id)
+  n_events <- 1025L
+  handler$init_buffers(n_events)
+  expected <- vector("list", n_events)
+  expected_cash_delta <- numeric(n_events)
+  expected_position_delta <- numeric(n_events)
+  expected_meta <- vector("list", n_events)
+  for (i in seq_len(n_events)) {
+    fill <- ledgr:::ledgr_fill_next_open(
+      desired_qty_delta = i,
+      next_bar = list(
+        instrument_id = sprintf("inst-%04d", i),
+        ts_utc = as.POSIXct("2020-01-01 00:00:00", tz = "UTC") + i,
+        open = 100 + i
+      ),
+      spread_bps = 0,
+      commission_fixed = i / 100
+    )
+    write_res <- ledgr:::ledgr_fill_event_row(run_id, fill, i)
+    expected[[i]] <- write_res$row
+    expected_cash_delta[[i]] <- write_res$cash_delta
+    expected_position_delta[[i]] <- write_res$position_delta
+    expected_meta[[i]] <- write_res$meta
+    handler$buffer_event(write_res)
+  }
+
+  events <- handler$events()
+  expected <- do.call(rbind.data.frame, c(expected, list(stringsAsFactors = FALSE)))
+  testthat::expect_identical(events$event_id, expected$event_id)
+  testthat::expect_identical(events$run_id, expected$run_id)
+  testthat::expect_equal(
+    as.POSIXct(events$ts_utc, tz = "UTC"),
+    as.POSIXct(expected$ts_utc, tz = "UTC")
+  )
+  testthat::expect_identical(events$event_type, expected$event_type)
+  testthat::expect_identical(events$instrument_id, expected$instrument_id)
+  testthat::expect_identical(events$side, expected$side)
+  testthat::expect_equal(events$qty, expected$qty)
+  testthat::expect_equal(events$price, expected$price)
+  testthat::expect_equal(events$fee, expected$fee)
+  testthat::expect_identical(events$meta_json, as.character(expected$meta_json))
+  testthat::expect_identical(as.integer(events$event_seq), expected$event_seq)
+  testthat::expect_equal(
+    attr(events, "ledgr_event_cash_delta"),
+    expected_cash_delta
+  )
+  testthat::expect_equal(attr(events, "ledgr_event_position_delta"), expected_position_delta)
+  testthat::expect_identical(length(attr(events, "ledgr_event_meta")), n_events)
+  for (i in c(1L, 1024L, 1025L)) {
+    testthat::expect_equal(attr(events, "ledgr_event_meta")[[i]], expected_meta[[i]])
+  }
+})
+
 testthat::test_that("single-pass sweep summary matches separate reconstruction helpers", {
   handler <- ledgr:::ledgr_memory_output_handler("single-pass-summary")
   pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
