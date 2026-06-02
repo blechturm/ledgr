@@ -192,6 +192,87 @@ testthat::test_that("single-pass sweep summary matches separate reconstruction h
   )
 })
 
+testthat::test_that("inline accounting summary matches reconstruction with opening and split fill", {
+  run_id <- "inline-accounting-summary"
+  handler <- ledgr:::ledgr_memory_output_handler(run_id)
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
+  opening <- ledgr:::ledgr_opening_position_event_rows(
+    run_id = run_id,
+    ts_utc = pulses[[1L]],
+    positions = c(AAA = 2),
+    cost_basis = c(AAA = 10),
+    event_seq_start = 1L
+  )
+  handler$append_event_rows(opening)
+  handler$init_buffers(1L)
+
+  lot_state <- ledgr:::ledgr_lot_state_from_opening(
+    instrument_ids = "AAA",
+    positions = c(AAA = 2),
+    cost_basis = c(AAA = 10)
+  )
+  handler$record_equity_fact(
+    ts_utc = pulses[[1L]],
+    cash = 1000,
+    positions_value = 20,
+    realized_pnl = lot_state$realized_pnl,
+    cost_basis = lot_state$total_cost_basis
+  )
+
+  fill <- structure(
+    list(
+      instrument_id = "AAA",
+      side = "SELL",
+      qty = 3,
+      fill_price = 12,
+      commission_fixed = 0.25,
+      ts_exec_utc = "2020-01-02T00:00:00Z"
+    ),
+    class = "ledgr_fill_intent"
+  )
+  lot_res <- ledgr:::ledgr_lot_apply_fill(
+    lot_state,
+    instrument_id = fill$instrument_id,
+    side = fill$side,
+    qty = fill$qty,
+    price = fill$fill_price,
+    fee = fill$commission_fixed
+  )
+  lot_state <- lot_res$state
+  write_res <- handler$write_fill_events(fill, 2L)
+  handler$record_accounting_fact(write_res, lot_res, lot_state)
+  handler$record_equity_fact(
+    ts_utc = pulses[[2L]],
+    cash = 1000 + write_res$cash_delta,
+    positions_value = -12,
+    realized_pnl = lot_state$realized_pnl,
+    cost_basis = lot_state$total_cost_basis
+  )
+
+  events <- handler$typed_events()
+  close_mat <- matrix(c(10, 12), nrow = 1L, dimnames = list("AAA", NULL))
+  metric_kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = pulses)
+  reconstructed <- ledgr:::ledgr_sweep_summary_from_ordered_events(
+    events = events,
+    pulses_posix = pulses,
+    close_mat = close_mat,
+    initial_cash = 1000,
+    instrument_ids = "AAA",
+    run_id = run_id,
+    metric_kernel = metric_kernel
+  )
+  inline <- handler$inline_summary(run_id, metric_kernel)
+
+  testthat::expect_equal(inline$equity, reconstructed$equity)
+  testthat::expect_equal(inline$fills, reconstructed$fills)
+  testthat::expect_equal(inline$metrics, reconstructed$metrics)
+  testthat::expect_equal(inline$final_equity, reconstructed$final_equity)
+  testthat::expect_equal(attr(events, "ledgr_event_realized")[[2L]], lot_state$realized_pnl)
+  testthat::expect_equal(attr(events, "ledgr_event_cost_basis")[[2L]], lot_state$total_cost_basis)
+  testthat::expect_equal(inline$fills$action, c("CLOSE", "OPEN"))
+  testthat::expect_equal(inline$fills$qty, c(2, 1))
+})
+
 testthat::test_that("fills reconstruction is invariant under hostile collapse settings", {
   events <- data.frame(
     event_id = sprintf("event_%02d", 1:4),

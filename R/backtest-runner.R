@@ -1036,29 +1036,34 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   telemetry_idx <- 0L
 
   state_env <- new.env(parent = emptyenv())
+  initial_lot_state <- ledgr_lot_state_from_opening(
+    instrument_ids = instrument_ids,
+    positions = opening_positions,
+    cost_basis = opening_cost_basis
+  )
   if (identical(execution_mode, "audit_log")) {
     initial_positions <- rep(0, length(instrument_ids))
     names(initial_positions) <- instrument_ids
     if (length(opening_positions) > 0L) {
       initial_positions[names(opening_positions)] <- as.numeric(opening_positions)
     }
-    state_env$current <- list(cash = as.numeric(initial_cash), positions = initial_positions)
+    state_env$current <- list(cash = as.numeric(initial_cash), positions = initial_positions, lot_state = initial_lot_state)
   } else {
-    state_env$current <- list(cash = as.numeric(initial_cash), positions = opening_positions)
+    state_env$current <- list(cash = as.numeric(initial_cash), positions = opening_positions, lot_state = initial_lot_state)
   }
   instrument_index <- seq_along(instrument_ids)
   names(instrument_index) <- instrument_ids
   if (is_resume && length(pulses) > 0) {
-    resume_state <- ledgr_state_asof(con, run_id, initial_cash, resume_posix)
+    resume_state <- ledgr_state_asof(con, run_id, initial_cash, resume_posix, instrument_ids = instrument_ids)
     if (identical(execution_mode, "audit_log")) {
       pos_vec <- rep(0, length(instrument_ids))
       names(pos_vec) <- instrument_ids
       if (!is.null(resume_state$positions) && length(resume_state$positions) > 0) {
         pos_vec[names(resume_state$positions)] <- as.numeric(resume_state$positions)
       }
-      state_env$current <- list(cash = resume_state$cash, positions = pos_vec)
+      state_env$current <- list(cash = resume_state$cash, positions = pos_vec, lot_state = resume_state$lot_state)
     } else {
-      state_env$current <- list(cash = resume_state$cash, positions = resume_state$positions)
+      state_env$current <- list(cash = resume_state$cash, positions = resume_state$positions, lot_state = resume_state$lot_state)
     }
   }
 
@@ -1768,11 +1773,11 @@ ledgr_features_at_pulse_cached <- function(con,
   out_df[, c("instrument_id", "ts_utc", "feature_name", "feature_value")]
 }
 
-ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc) {
+ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids = character()) {
   rows <- DBI::dbGetQuery(
     con,
     "
-    SELECT instrument_id, meta_json
+    SELECT event_seq, event_type, instrument_id, side, qty, price, fee, meta_json
     FROM ledger_events
     WHERE run_id = ? AND ts_utc <= ?
     ORDER BY event_seq
@@ -1815,7 +1820,8 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc) {
   list(
     cash = cash,
     positions = pos,
-    equity = cash + positions_value
+    equity = cash + positions_value,
+    lot_state = ledgr_lot_state_from_events(rows, instrument_ids = instrument_ids)
   )
 }
 

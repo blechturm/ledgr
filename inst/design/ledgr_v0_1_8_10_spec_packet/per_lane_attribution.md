@@ -100,7 +100,41 @@ Interpretation:
 
 ## LDG-2520: Fold-Owned FIFO Accounting And Inline State Capture
 
-Status: pending.
+Status: in review.
+
+Change summary:
+
+- Added fold-owned `lot_state` initialized from opening positions/cost basis or
+  reconstructed from prior events on resume.
+- Applied FIFO lot accounting immediately after fill resolution and before
+  output-handler accounting fact emission.
+- Preserved materialized event rows and `meta_json` identity; inline
+  accounting is emitted through typed memory-handler facts.
+- Added memory-handler inline equity and fill facts so fresh ephemeral sweep
+  summaries can use fold-owned accounting without the reconstruction pass.
+- Kept durable extraction, reconstruction, and readback compatible as verifier
+  and fallback paths.
+
+Verification:
+
+- `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-sweep.R', reporter='summary')"`
+- `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-fifo-opening-positions.R', reporter='summary'); testthat::test_file('tests/testthat/test-fifo-torture.R', reporter='summary'); testthat::test_file('tests/testthat/test-sweep-parity.R', reporter='summary'); testthat::test_file('tests/testthat/test-backtest-wrapper.R', reporter='summary')"`
+- `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-ledger-writer.R', reporter='summary'); testthat::test_file('tests/testthat/test-derived-state.R', reporter='summary'); testthat::test_file('tests/testthat/test-release-coverage-branches.R', reporter='summary')"`
+
+Measurement status:
+
+- Large/xlarge durable and ephemeral workload-grid reruns are not recorded yet.
+  They remain the post-review attribution gate before `LDG-2520` should be
+  marked completed.
+
+Interpretation:
+
+- This lane is an accounting-ownership substrate lane first. Event rows remain
+  canonical; inline accounting facts are a fresh-sweep acceleration surface and
+  are not a replacement for durable reconstruction/readback.
+- The memory summary bypass is gated by parity tests against reconstruction.
+  Closeout language must report both any `t_results` movement and any `t_engine`
+  increase from moving FIFO work into the fold.
 
 ## LDG-2521: yyjsonr Options Hoist
 

@@ -57,7 +57,7 @@ tickets:
 
   - id: "LDG-2520"
     title: "Fold-Owned FIFO Accounting And Inline State Capture"
-    status: "pending"
+    status: "in_review"
     priority: "P0"
     effort: "XL"
     dependencies:

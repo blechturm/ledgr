@@ -257,7 +257,7 @@ scope: matrix_canonical_accessors
 Priority: P0
 Effort: XL
 Dependencies: LDG-2519
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -300,6 +300,16 @@ the event log and reconstruction verifier path.
 FIFO torture tests, sweep parity tests, backtest wrapper tests, durable
 readback tests, opening-position fixtures, invalid-side fixtures, workload-grid
 rerun, and per-lane attribution review.
+
+### Review Note
+
+Batch 3 code and targeted verification are staged for review. The
+implementation adds fold-owned `lot_state`, applies FIFO accounting after fill
+resolution, records typed accounting/equity/fill facts on the memory output
+handler without changing materialized event rows, uses inline facts for fresh
+ephemeral sweep summaries, and keeps durable reconstruction/readback paths
+compatible. Large/xlarge workload-grid reruns remain the post-review
+attribution gate before completion.
 
 ### Source Reference
 

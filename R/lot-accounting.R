@@ -71,6 +71,66 @@ ledgr_lot_apply_opening <- function(state, instrument_id, qty, cost_basis) {
   ledgr_lot_set(state, instrument_id, lots)
 }
 
+ledgr_lot_state_from_opening <- function(instrument_ids,
+                                         positions = numeric(0),
+                                         cost_basis = numeric(0)) {
+  state <- ledgr_lot_state(instrument_ids)
+  if (is.null(positions) || length(positions) == 0L) {
+    return(state)
+  }
+  position_names <- names(positions)
+  positions <- as.numeric(positions)
+  names(positions) <- position_names %||% character(length(positions))
+  cost_basis_names <- names(cost_basis)
+  cost_basis <- as.numeric(cost_basis)
+  names(cost_basis) <- cost_basis_names %||% character(length(cost_basis))
+  for (id in names(positions)) {
+    if (!nzchar(id)) next
+    qty <- positions[[id]]
+    basis <- if (id %in% names(cost_basis)) cost_basis[[id]] else NA_real_
+    state <- ledgr_lot_apply_opening(state, id, qty, basis)
+  }
+  state
+}
+
+ledgr_lot_state_from_events <- function(events, instrument_ids = character()) {
+  state <- ledgr_lot_state(instrument_ids)
+  if (is.null(events) || nrow(events) == 0L) {
+    return(state)
+  }
+  events <- events[order(events$event_seq), , drop = FALSE]
+  for (i in seq_len(nrow(events))) {
+    meta <- ledgr_lot_parse_meta(events$meta_json[[i]])
+    out <- ledgr_lot_apply_event(
+      state,
+      event_type = events$event_type[[i]],
+      instrument_id = events$instrument_id[[i]],
+      side = events$side[[i]],
+      qty = events$qty[[i]],
+      price = events$price[[i]],
+      fee = events$fee[[i]],
+      meta = meta
+    )
+    state <- out$state
+  }
+  state
+}
+
+ledgr_lot_state_asof <- function(con, run_id, instrument_ids, ts_utc) {
+  rows <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT event_seq, event_type, instrument_id, side, qty, price, fee, meta_json
+    FROM ledger_events
+    WHERE run_id = ? AND ts_utc <= ?
+      AND event_type IN ('CASHFLOW', 'FILL', 'FILL_PARTIAL')
+    ORDER BY event_seq
+    ",
+    params = list(run_id, ts_utc)
+  )
+  ledgr_lot_state_from_events(rows, instrument_ids = instrument_ids)
+}
+
 ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0) {
   direction <- ledgr_lot_direction(side)
   qty <- suppressWarnings(as.numeric(qty))

@@ -77,6 +77,9 @@ ledgr_execute_fold <- function(execution, output_handler) {
   telemetry_stride <- execution$telemetry_stride
   state <- execution$state
   state$positions <- ledgr_fold_positions_to_vec(state$positions, instrument_ids)
+  if (!is.list(state$lot_state)) {
+    state$lot_state <- ledgr_lot_state(instrument_ids)
+  }
   state_prev_mem <- execution$state_prev
   bars_by_id <- execution$bars_by_id
   bars_mat <- execution$bars_mat
@@ -194,6 +197,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
         sum(position_qty[active_positions] * bars_mat$close[active_positions, i])
       } else {
         0
+      }
+      if (is.function(output_handler$record_equity_fact)) {
+        output_handler$record_equity_fact(
+          ts_utc = ts,
+          cash = state$cash,
+          positions_value = positions_value,
+          realized_pnl = state$lot_state$realized_pnl,
+          cost_basis = state$lot_state$total_cost_basis
+        )
       }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
@@ -373,12 +385,34 @@ ledgr_execute_fold <- function(execution, output_handler) {
           sample_start <- sample_now
         }
 
+        lot_res <- ledgr_lot_apply_fill(
+          state$lot_state,
+          instrument_id = instrument_id,
+          side = fill$side,
+          qty = fill$qty,
+          price = fill$fill_price,
+          fee = fill$commission_fixed
+        )
+        state$lot_state <- lot_res$state
+        if (sample_telemetry) {
+          sample_now <- ledgr_time_now()
+          t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
+          sample_start <- sample_now
+        }
+
         write_res <- output_handler$write_fill_events(
           fill_intent = fill,
           event_seq = event_seq,
           use_transaction = identical(event_mode, "live")
         )
         event_seq <- write_res$next_event_seq
+        if (is.function(output_handler$record_accounting_fact)) {
+          output_handler$record_accounting_fact(
+            write_res = write_res,
+            lot_res = lot_res,
+            lot_state = state$lot_state
+          )
+        }
         if (sample_telemetry) {
           sample_now <- ledgr_time_now()
           t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)

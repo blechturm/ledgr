@@ -881,6 +881,11 @@ ledgr_sweep_run_candidate <- function(exp,
   if (length(opening_positions) > 0L) {
     initial_positions[names(opening_positions)] <- as.numeric(opening_positions)
   }
+  initial_lot_state <- ledgr_lot_state_from_opening(
+    instrument_ids = exp$universe,
+    positions = opening_positions,
+    cost_basis = opening_cost_basis
+  )
   telemetry <- ledgr_sweep_telemetry_env()
   cost_resolver <- ledgr_cost_spread_commission_internal(
     spread_bps = exp$fill_model$spread_bps,
@@ -900,7 +905,7 @@ ledgr_sweep_run_candidate <- function(exp,
     max_pulses = Inf,
     checkpoint_every = 0L,
     telemetry_stride = 0L,
-    state = list(cash = exp$opening$cash, positions = initial_positions),
+    state = list(cash = exp$opening$cash, positions = initial_positions, lot_state = initial_lot_state),
     state_prev = NULL,
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
@@ -921,20 +926,27 @@ ledgr_sweep_run_candidate <- function(exp,
   telemetry$t_engine <- ledgr_time_elapsed(engine_start, ledgr_time_now())
 
   results_start <- ledgr_time_now()
-  events <- if (is.function(output_handler$typed_events)) {
-    output_handler$typed_events()
+  summary <- if (is.function(output_handler$inline_summary)) {
+    output_handler$inline_summary(
+      run_id = run_id,
+      metric_kernel = metric_kernel
+    )
   } else {
-    output_handler$events()
+    events <- if (is.function(output_handler$typed_events)) {
+      output_handler$typed_events()
+    } else {
+      output_handler$events()
+    }
+    ledgr_sweep_summary_from_ordered_events(
+      events = events,
+      pulses_posix = pulses_posix,
+      close_mat = bars_mat$close,
+      initial_cash = exp$opening$cash,
+      instrument_ids = exp$universe,
+      run_id = run_id,
+      metric_kernel = metric_kernel
+    )
   }
-  summary <- ledgr_sweep_summary_from_ordered_events(
-    events = events,
-    pulses_posix = pulses_posix,
-    close_mat = bars_mat$close,
-    initial_cash = exp$opening$cash,
-    instrument_ids = exp$universe,
-    run_id = run_id,
-    metric_kernel = metric_kernel
-  )
   telemetry$t_results <- ledgr_time_elapsed(results_start, ledgr_time_now())
   telemetry$t_fills_extract <- 0
 
@@ -987,6 +999,8 @@ ledgr_memory_output_handler <- function(run_id) {
     event_cols$event_seq <- integer(state$event_capacity)
     event_cols$cash_delta <- numeric(state$event_capacity)
     event_cols$position_delta <- numeric(state$event_capacity)
+    event_cols$event_realized <- numeric(state$event_capacity)
+    event_cols$event_cost_basis <- numeric(state$event_capacity)
     event_cols$meta <- vector("list", state$event_capacity)
     state$event_cols <- event_cols
     invisible(TRUE)
@@ -1043,6 +1057,8 @@ ledgr_memory_output_handler <- function(run_id) {
   append_event_row_list <- function(row,
                                     cash_delta = NA_real_,
                                     position_delta = NA_real_,
+                                    event_realized = NA_real_,
+                                    event_cost_basis = NA_real_,
                                     meta = NULL) {
     ensure_event_capacity(state$event_count + 1L)
     state$event_count <- state$event_count + 1L
@@ -1060,6 +1076,8 @@ ledgr_memory_output_handler <- function(run_id) {
     set_event_value("event_seq", i, row$event_seq)
     set_event_value("cash_delta", i, cash_delta)
     set_event_value("position_delta", i, position_delta)
+    set_event_value("event_realized", i, event_realized)
+    set_event_value("event_cost_basis", i, event_cost_basis)
     set_event_value("meta", i, meta)
     invisible(TRUE)
   }
@@ -1105,6 +1123,8 @@ ledgr_memory_output_handler <- function(run_id) {
     attr(out, "ledgr_event_cash_delta") <- state$event_cols$cash_delta[idx]
     attr(out, "ledgr_event_position_delta") <- state$event_cols$position_delta[idx]
     attr(out, "ledgr_event_meta") <- state$event_cols$meta[idx]
+    attr(out, "ledgr_event_realized") <- state$event_cols$event_realized[idx]
+    attr(out, "ledgr_event_cost_basis") <- state$event_cols$event_cost_basis[idx]
     class(out) <- unique(c("ledgr_memory_events", class(out)))
     out
   }
@@ -1157,6 +1177,8 @@ ledgr_memory_output_handler <- function(run_id) {
         set_event_value("meta", pos, meta)
         set_event_value("cash_delta", pos, meta$cash_delta %||% NA_real_)
         set_event_value("position_delta", pos, meta$position_delta %||% NA_real_)
+        set_event_value("event_realized", pos, NA_real_)
+        set_event_value("event_cost_basis", pos, NA_real_)
       }
       state$event_count <- end
     }
@@ -1173,6 +1195,99 @@ ledgr_memory_output_handler <- function(run_id) {
       )
     }
     invisible(TRUE)
+  }
+  state$inline_fills <- ledgr_fill_row_buffer(1024L)
+  state$equity_facts <- vector("list", 0L)
+  state$equity_fact_n <- 0L
+  handler$record_accounting_fact <- function(write_res, lot_res, lot_state) {
+    if (!inherits(write_res, "ledgr_ledger_write_result") ||
+        !identical(write_res$status, "WROTE") ||
+        state$event_count == 0L) {
+      return(invisible(FALSE))
+    }
+    i <- state$event_count
+    set_event_value("event_realized", i, as.numeric(lot_state$realized_pnl))
+    set_event_value("event_cost_basis", i, as.numeric(lot_state$total_cost_basis))
+    if (isTRUE(lot_res$close_qty > 0)) {
+      ledgr_fill_row_buffer_add(
+        state$inline_fills,
+        write_res$row$event_seq,
+        write_res$row$ts_utc,
+        write_res$row$instrument_id,
+        write_res$row$side,
+        lot_res$close_qty,
+        write_res$row$price,
+        write_res$row$fee,
+        lot_res$realized_close,
+        "CLOSE"
+      )
+    }
+    if (isTRUE(lot_res$open_qty > 0)) {
+      ledgr_fill_row_buffer_add(
+        state$inline_fills,
+        write_res$row$event_seq,
+        write_res$row$ts_utc,
+        write_res$row$instrument_id,
+        write_res$row$side,
+        lot_res$open_qty,
+        write_res$row$price,
+        write_res$row$fee,
+        0,
+        "OPEN"
+      )
+    }
+    invisible(TRUE)
+  }
+  handler$record_equity_fact <- function(ts_utc, cash, positions_value, realized_pnl, cost_basis) {
+    state$equity_fact_n <- state$equity_fact_n + 1L
+    state$equity_facts[[state$equity_fact_n]] <- list(
+      ts_utc = as.POSIXct(ts_utc, tz = "UTC"),
+      cash = as.numeric(cash),
+      positions_value = as.numeric(positions_value),
+      realized_pnl = as.numeric(realized_pnl),
+      cost_basis = as.numeric(cost_basis)
+    )
+    invisible(TRUE)
+  }
+  handler$inline_summary <- function(run_id, metric_kernel) {
+    if (state$equity_fact_n == 0L) {
+      equity <- ledgr_empty_equity_curve()
+      fills <- ledgr_fill_row_buffer_tibble(state$inline_fills)
+      metrics <- ledgr_metrics_from_equity_fills(
+        equity = equity,
+        fills = fills,
+        metric_kernel = metric_kernel
+      )
+      return(list(equity = equity, fills = fills, metrics = metrics, final_equity = NA_real_))
+    }
+    facts <- state$equity_facts[seq_len(state$equity_fact_n)]
+    ts_utc <- as.POSIXct(vapply(facts, function(x) as.numeric(x$ts_utc), numeric(1)), origin = "1970-01-01", tz = "UTC")
+    cash <- vapply(facts, function(x) x$cash, numeric(1))
+    positions_value <- vapply(facts, function(x) x$positions_value, numeric(1))
+    realized_pnl <- vapply(facts, function(x) x$realized_pnl, numeric(1))
+    cost_basis <- vapply(facts, function(x) x$cost_basis, numeric(1))
+    equity <- data.frame(
+      run_id = rep(run_id, length(facts)),
+      ts_utc = ts_utc,
+      cash = cash,
+      positions_value = positions_value,
+      equity = cash + positions_value,
+      realized_pnl = realized_pnl,
+      unrealized_pnl = positions_value - cost_basis,
+      stringsAsFactors = FALSE
+    )
+    fills <- ledgr_fill_row_buffer_tibble(state$inline_fills)
+    metrics <- ledgr_metrics_from_equity_fills(
+      equity = equity,
+      fills = fills,
+      metric_kernel = metric_kernel
+    )
+    list(
+      equity = equity,
+      fills = fills,
+      metrics = metrics,
+      final_equity = equity$equity[[nrow(equity)]]
+    )
   }
   handler$pending_event_count <- function() 0L
   handler$flush_pending <- function() invisible(TRUE)

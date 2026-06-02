@@ -7,6 +7,11 @@
 - `ctx$positions` remains a named pulse-start snapshot, but its name order is
   now canonicalized to `ctx$universe` even when the internal fold state was
   initialized from a differently ordered named position vector.
+- Moved FIFO lot accounting ownership into the fold state transition for fresh
+  sweep execution while preserving event rows and durable reconstruction /
+  readback as verifier and fallback paths. Fresh memory-backed sweeps now use
+  the handler's inline summary facts when available instead of replaying the
+  event stream for equity/fills/metrics.
 
 # ledgr 0.1.8.9
 

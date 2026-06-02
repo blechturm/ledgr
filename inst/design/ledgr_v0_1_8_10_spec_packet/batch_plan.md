@@ -65,7 +65,7 @@ Exit criteria:
 ## Batch 3 - Fold-Owned FIFO Accounting
 
 Ticket: `LDG-2520`
-Status: Pending
+Status: In Review
 
 Goal: move FIFO lot accounting into the fold-owned accounting state transition
 while preserving the event stream and reconstruction verifier/readback path.
