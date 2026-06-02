@@ -178,6 +178,20 @@ Interpretation:
 
 Status: pending.
 
+Scope guard:
+
+- Record the Sub-A `ledgrcore-spike` verdict as feasibility evidence for a
+  spot-asset FIFO fill-batch accelerator, not as a production wall claim.
+- Sub-B attribution must name the ledgr gate as
+  `compiled_accounting_model = "spot_fifo"` and keep `NULL` as the canonical R
+  fold baseline.
+- Unsupported accounting models must be treated as fail-closed scope guards, not
+  as auto-routed fallbacks.
+- Report wall recovery, parity outcome, build flags, and disposition with
+  "spot-asset FIFO" / "spot-FIFO" language. Do not summarize the lane as a
+  general compiled fold core, derivatives-capable engine, or public compiled
+  execution mode.
+
 ## LDG-2523: Parked Spike Disposition
 
 Status: pending.

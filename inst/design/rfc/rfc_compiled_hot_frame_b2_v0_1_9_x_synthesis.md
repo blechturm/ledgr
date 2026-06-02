@@ -98,10 +98,13 @@ alias set is part of `ledgr_lot_apply_event()` replay semantics in
 ### D5: Production measurement mechanism
 
 **Binding answer:** Sub-B must measure through the real ledgr fold path
-using an internal, unexported execution-spec field such as
-`use_compiled_fills`, defaulting to `FALSE`. Instrumented copies,
-`assignInNamespace` swaps, or benchmark-only alternate fold engines are
-not acceptable for the promotion gate.
+using an internal, unexported execution-spec enum
+`compiled_accounting_model`, defaulting to `NULL`. In the first scoped
+gate the closed set is `NULL` and `"spot_fifo"`: `NULL` means the
+canonical R fold path, and `"spot_fifo"` means the internal spot-asset
+FIFO fill-batch accelerator. Instrumented copies, `assignInNamespace`
+swaps, or benchmark-only alternate fold engines are not acceptable for
+the promotion gate.
 
 **Reason:** The gate is whether production ledgr should adopt the
 compiled path. That requires the same fold entry, output handler
@@ -109,8 +112,9 @@ contract, validation boundary, and result materialization surfaces the
 package will actually ship. A benchmark-only wrapper can test a
 mechanism, but it cannot authorize promotion.
 
-**Disposition:** Closed decision, with exact field naming/placement
-promoted to spec-cut.
+**Disposition:** Closed decision. Exact field placement remains
+spec-cut, but the field shape is now bound as a closed accounting-model
+enum rather than a boolean compiled-fill switch.
 
 ### D6: Ticket 5 ownership split
 
@@ -180,13 +184,16 @@ spec-cut.
 
 ### D10: Public API and durable scope
 
-**Binding answer:** `use_compiled_fills` remains internal and disabled
-by default. No public compiled-mode flag ships in this RFC. Durable-path
-compiled integration is explicitly deferred until the ephemeral gate
-passes and a separate durable integration design is justified.
+**Binding answer:** `compiled_accounting_model` remains internal and
+disabled by default via `NULL`. No public compiled-mode flag ships in
+this RFC. Durable-path compiled integration is explicitly deferred until
+the ephemeral gate passes and a separate durable integration design is
+justified. Non-spot-FIFO accounting models are also deferred and require
+separate model values, RFC scope, and parity gates.
 
-**Reason:** The decision under test is whether compiled per-pulse fill
-batches are worth promoting at all. Public API and durable persistence
+**Reason:** The decision under test is whether compiled per-pulse
+spot-asset FIFO fill batches are worth promoting at all. Public API,
+durable persistence semantics, and broader instrument-accounting
 semantics add surfaces that would obscure the first production gate.
 
 **Disposition:** Closed decision.

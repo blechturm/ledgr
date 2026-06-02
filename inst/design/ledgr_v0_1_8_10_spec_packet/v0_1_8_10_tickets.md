@@ -400,16 +400,24 @@ Status: Pending
 Run the accepted B2-first compiled hot-frame measurement gate without
 authorizing public compiled execution. The gate has two sub-artifacts: Sub-A in
 `ledgrcore-spike` for language/feasibility and Sub-B in ledgr `dev/bench/` for
-the production decision-bearing Pattern B measurement.
+the production decision-bearing Pattern B measurement. Sub-B is a spot-asset
+FIFO fill-batch accelerator gate, not a general compiled fold-core or
+derivatives-accounting gate.
 
 ### Tasks
 
 - Record or consume the Sub-A `ledgrcore-spike` artifact: language choice,
   build flags, small-fixture parity, and cross-platform parity smoke.
-- Add an internal, unexported production switch such as `use_compiled_fills`,
-  disabled by default, for the Sub-B measurement path.
-- Route the real ledgr fold path to Pattern B only when the internal switch is
-  explicitly enabled.
+- Add an internal, unexported `compiled_accounting_model` execution-spec enum
+  for the Sub-B measurement path. In v0.1.8.10 the closed set is `NULL` and
+  `"spot_fifo"`: `NULL` means canonical R fold, `"spot_fifo"` means the
+  internal spot-asset FIFO fill-batch accelerator.
+- Validate `compiled_accounting_model` at execution-spec construction and at
+  dispatch. Unsupported values must fail closed with a named
+  unsupported-accounting-model error; no silent compiled fallback is allowed
+  once a compiled model is requested.
+- Route the real ledgr fold path to Pattern B only when
+  `compiled_accounting_model == "spot_fifo"`.
 - Measure Pattern B on the LDG-2479 `density_high_xlarge_ephemeral` production
   cell.
 - Preserve Pattern A as parity/debug staging only; do not use Pattern A timing
@@ -421,12 +429,20 @@ the production decision-bearing Pattern B measurement.
 
 - Sub-B uses the real fold path; benchmark-only alternate fold engines,
   instrumented copies, and `assignInNamespace` swaps are not accepted.
-- Pattern B owns post-resolution fill-batch work only: fresh BUY/SELL FIFO
-  lot-state transition, cash and positions mutation, event row value
-  construction, and typed event accumulation.
+- `compiled_accounting_model` defaults to `NULL`, and explicit `NULL` is
+  equivalent to the default canonical R fold path.
+- `"spot_fifo"` is the only v0.1.8.10 compiled accounting model; unsupported
+  strings such as `"futures_margin"` fail fast with a named error before any
+  compiled work runs.
+- Pattern B owns spot-asset post-resolution fill-batch work only: fresh
+  BUY/SELL FIFO lot-state transition, cash and positions mutation, event row
+  value construction, and typed event accumulation.
 - R remains owner of strategy execution, ctx construction, target validation,
   target risk, next-open proposal, cost resolution, features, equity, metrics,
   durable persistence, and replay.
+- The spot-FIFO kernel must not be extended to derivatives, margin, options, or
+  other accounting models in this ticket. Future accounting models require
+  separate model values, RFC scope, and parity gates.
 - Parity covers the Round-3 substrate gates plus B2 fresh/replay side semantics:
   event log, equity, fills, lot state, opening-position/CASHFLOW, invalid and
   semantic-violation fixtures, durable readback compatibility, no strategy
@@ -438,15 +454,18 @@ the production decision-bearing Pattern B measurement.
 - Pattern B build does not use `-ffast-math` or `-funsafe-math-optimizations`;
   if an optimization profile breaks parity, fall back to the fastest
   parity-preserving build profile per B2 RFC D9.
-- No public compiled execution path, default compiled mode, or durable compiled
-  integration is enabled by this ticket.
+- No public compiled execution path, default compiled mode, durable compiled
+  integration, or non-spot-FIFO compiled accounting model is enabled by this
+  ticket.
 - Attribution row is recorded before `LDG-2523` starts.
 
 ### Verification
 
-Sub-A artifact review, compiled fill-batch parity tests, production internal
-switch tests, LDG-2479 xlarge ephemeral B2 benchmark, cross-platform parity
-smoke, and per-lane attribution review.
+Sub-A artifact review, compiled spot-FIFO fill-batch parity tests,
+`compiled_accounting_model` validator tests, unsupported-accounting-model
+fail-closed tests, production internal dispatch tests, LDG-2479 xlarge
+ephemeral B2 benchmark, cross-platform parity smoke, and per-lane attribution
+review.
 
 ### Source Reference
 
@@ -547,6 +566,9 @@ write the v0.1.8.9 to v0.1.8.10 closeout comparison.
 - Peer benchmark remains local-host/current-source only.
 - Residual/deferred items are routed.
 - B2 pass / review-band / fail disposition is explicit.
+- B2 is framed as a spot-asset FIFO fill-batch accelerator; closeout language
+  must not describe it as a general compiled fold core or derivatives-capable
+  accounting engine.
 - If B2 disposition is review-band or fail, a horizon entry routes the
   ephemeral wall attribution spike to v0.1.9.x as the next diagnostic path.
 - No generated benchmark artifacts are committed unless explicitly scoped.

@@ -15,7 +15,7 @@ Structural changes from v2:
 1. **Binding maintainer decision** - new section near top recording the accepted B2-first override; v2's override-request section retired.
 2. **Recoverable-slice table re-bucketed** per v2-review Finding 2. Three explicit buckets: B2 first-cut recoverable (matches compiled scope), R residual outside first-cut (next-open proposal, cost resolver, target validation, ctx/helpers/features, equity), Future B2 extension candidates. 30s gate threshold calibrated against the first-cut compiled scope only.
 3. **Pattern B promoted to decision-bearing** per v2-review Finding 3. Pattern A is now a contract-preserving conservative shim used as a parity/debug staging path. Pattern B (compiled event accumulation; no per-fill R handler writes) is the K1-equivalent design that inherits K1's inline-output authorization. Pattern A failure alone does NOT park B2; triggers Pattern B follow-up.
-4. **Sub-B swap mechanism resolved** per v2-review Finding 4. An internal unexported execution-spec field (`use_compiled_fills`) dispatches the production fold engine to the compiled path. Disabled by default; not public API. Instrumented copies are explicitly NOT acceptable for the promotion gate.
+4. **Sub-B swap mechanism resolved** per v2-review Finding 4 and post-synthesis maintainer clarification. An internal unexported execution-spec enum (`compiled_accounting_model = NULL | "spot_fifo"`) dispatches the production fold engine to the scoped spot-FIFO compiled path. `NULL` is the default canonical R fold path; not public API. Instrumented copies are explicitly NOT acceptable for the promotion gate.
 5. **Fresh-fill side semantics clarified** per v2-review Finding 5. Fresh fold path emits BUY/SELL only (matches `R/fill-model.R:68-96`, `R/backtest-runner.R:163-218`, `R/ledger-writer.R:27-39`). Lot-accounting side aliases (COVER, BUY_TO_COVER, SHORT, SELL_SHORT) live in `ledgr_lot_apply_event()` replay semantics for persisted events. Parity requirement split between fresh-fill path and reconstruction/verifier path.
 6. **Ticket 5 ownership split** per v2-review Finding 6. Sub-A artifact lives in `ledgrcore-spike`. Sub-B artifact lives in ledgr `dev/bench/`. Both belong to v0.1.8.10 Ticket 5; the synthesis identifies them as separate ledger items under the same ticket.
 7. **Middle-band review disposition added** per v2-review Finding 7. Outcome matrix gains a 15-30s "review band" row: does not pass promotion automatically; triggers maintainer review on Pattern B follow-up vs attribution sequencing.
@@ -231,10 +231,10 @@ Sub-A produces inputs to the promotion language choice; it does NOT pass or fail
 
 **Purpose:** measure wall recovery and parity of the compiled Pattern B path against the post-v0.1.8.10 production R fold engine. This IS the promotion gate.
 
-**Swap mechanism:** internal unexported execution-spec field `use_compiled_fills`, defaulting to `FALSE`. The fold engine reads the field at fold entry and dispatches per-fill work either to the production R loop (`R/fold-engine.R:288-365`) or to the compiled hot frame.
+**Swap mechanism:** internal unexported execution-spec enum `compiled_accounting_model`, defaulting to `NULL`. In the first scoped gate the closed set is `NULL` and `"spot_fifo"`: `NULL` means the production R loop (`R/fold-engine.R:288-365`), and `"spot_fifo"` means the scoped spot-asset FIFO compiled hot frame.
 
 - **Not public API.** Documented in internal-only context.
-- **Tested:** unit tests exercise both dispatch paths; `use_compiled_fills = TRUE` path requires the chosen language toolchain installed (`Suggests`-style availability gate). Test fixtures cover BUY/SELL fresh-fill semantics, `LEDGR_LAST_BAR_NO_FILL` semantics, invalid-fill_price path, and the 8 substrate-decision parity gates.
+- **Tested:** unit tests exercise both dispatch paths; `compiled_accounting_model = "spot_fifo"` path requires the chosen language toolchain installed (`Suggests`-style availability gate). Test fixtures cover BUY/SELL fresh-fill semantics, `LEDGR_LAST_BAR_NO_FILL` semantics, invalid-fill_price path, unsupported accounting-model fail-closed behavior, and the 8 substrate-decision parity gates.
 - **Production-grade integration:** lives in `R/fold-engine.R` and the compiled function is registered via the ledger-spike crate (Sub-A) or ledgr-internal compiled source (post-promotion).
 
 Instrumented-copy / `assignInNamespace()` is explicitly NOT acceptable for the Sub-B gate. The attribution spike's instrumented-copy approach is for attribution measurement, not for production integration validation.
@@ -242,7 +242,7 @@ Instrumented-copy / `assignInNamespace()` is explicitly NOT acceptable for the S
 **Workload:** LDG-2479 `density_high_xlarge_ephemeral` cell at production scale (1000 inst x 1260 pulses x ~130k fills).
 
 **Output:**
-- Wall recovery (median over 5 reps + 1 warm): production R baseline vs `use_compiled_fills = TRUE` run
+- Wall recovery (median over 5 reps + 1 warm): production R baseline vs `compiled_accounting_model = "spot_fifo"` run
 - Parity outcome against all 9 parity gates (8 substrate + B2-specific lot semantics; see Parity Contract)
 - Build flags actually used (recorded for reproducibility)
 - Cross-platform parity confirmation at small fixture
@@ -264,7 +264,7 @@ Pattern A failure is **not** in the matrix. If Pattern A is used as a parity/deb
 | Sub-artifact | Repository | Owner |
 |:-------------|:-----------|:------|
 | Sub-A: Rust + C++ Pattern B implementations + ledgrcore-spike parity tests + cross-platform check | `ledgrcore-spike` | Sub-A artifact within Ticket 5 |
-| Sub-B: ledgr `use_compiled_fills` dispatch + production-harness benchmark + parity test suite | `ledgr` | Sub-B artifact within Ticket 5 |
+| Sub-B: ledgr `compiled_accounting_model = "spot_fifo"` dispatch + production-harness benchmark + parity test suite | `ledgr` | Sub-B artifact within Ticket 5 |
 
 Both Sub-A and Sub-B belong to the same Ticket 5. The synthesis lists them as separate ledger items under the ticket. If the maintainer ever revisits the B2-first decision and restores attribution-first sequencing, Sub-A's design remains as a reusable spike input; Sub-B does not run until B2 is re-sequenced.
 
@@ -294,12 +294,12 @@ These are decisions the synthesis stage (or spec-cut writer) should bind:
 
 Seed recommends B.1 (matches K1's `*_handler_inline` model most directly). The synthesis can confirm or revise based on Sub-A measurement of marshalling cost. If B.1 surfaces FFI marshalling complexity that B.2 avoids, B.2 becomes the fallback.
 
-### Q2 - `use_compiled_fills` field placement on the execution spec
+### Q2 - `compiled_accounting_model` field placement on the execution spec
 
 The seed places this as an unexported field on the execution spec. The synthesis should bind:
-- exact field name (`use_compiled_fills` is provisional);
+- exact field placement (`compiled_accounting_model` is the post-synthesis field shape);
 - which `ledgr_execution_spec_v1` slot it lives in;
-- default value (FALSE) and visibility (unexported);
+- default value (`NULL`) and visibility (unexported);
 - behavior when the toolchain is unavailable (graceful error vs silent fallback to R).
 
 ### Q3 - Long-lived buffer lifetime and reset semantics
@@ -333,7 +333,7 @@ Sub-A confirms cross-platform parity at small fixture. Promotion requires Linux 
 - **Cross-platform build friction (Rust extendr on macOS / Windows):** Sub-A's small-fixture cross-platform check catches build-system issues. Failure blocks promotion until resolved.
 - **Per-pulse R-to-compiled FFI overhead is materially higher than 1ms:** the 30s gate absorbs FFI overhead up to roughly 24ms per pulse before the slice is uncoverable. Sub-A measures the actual FFI cost; Sub-B's measurement quantifies it at production-shape.
 - **Replay-path side alias regression:** B2 does not modify the replay path, but the parity test suite must exercise replay explicitly to confirm. A regression here is a parity gate failure (#9 caveat).
-- **`use_compiled_fills` flag surface broadens beyond intended:** the field is unexported and tests cover both paths. Any future RFC that exposes the field publicly requires its own RFC.
+- **`compiled_accounting_model` surface broadens beyond intended:** the field is unexported, closed to `NULL | "spot_fifo"` in the first gate, and tests cover both paths plus unsupported values. Any future RFC that exposes the field publicly or adds a non-spot accounting value requires its own RFC.
 
 ## What this RFC does NOT propose
 
@@ -344,10 +344,10 @@ Sub-A confirms cross-platform parity at small fixture. Promotion requires Linux 
 - Adopting B2 on the durable path. Ephemeral only for v0.1.9.x.
 - Modifying replay-path side semantics. Lot-accounting aliases (COVER, BUY_TO_COVER, SHORT, SELL_SHORT) for persisted events are unchanged.
 - Replacing the K1 measurement spike's verdict. K1's "build authorized for inline-output design only" stands; B2 Pattern B IS an inline-output design and inherits that authorization. Pattern A does not.
-- Making `assignInNamespace()` an acceptable Sub-B mechanism. The promotion gate requires production-grade dispatch via the unexported `use_compiled_fills` field.
+- Making `assignInNamespace()` an acceptable Sub-B mechanism. The promotion gate requires production-grade dispatch via the unexported `compiled_accounting_model` enum.
 - Bypassing the horizon's attribution gate as general policy. The override is specifically for this cycle with the binding maintainer decision above.
 - Authorizing FILL_PARTIAL semantics. Hot frame emits `event_type = "FILL"` only; partial-fill semantics live in a separate RFC if ever scoped.
-- Authorizing public API surface for the `use_compiled_fills` field. The field is internal-only; exposing it publicly requires its own RFC.
+- Authorizing public API surface for `compiled_accounting_model`. The field is internal-only; exposing it publicly requires its own RFC.
 
 ## References
 

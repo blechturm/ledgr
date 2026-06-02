@@ -815,6 +815,28 @@ substrate must be exhausted first" gate is now joined by an
 "Architecture B must be measured before Architecture A is
 authorized" gate.
 
+### 2026-06-02 [architecture] B2 spot-FIFO accelerator is not a derivatives accounting model
+
+The v0.1.8.10 LDG-2522 B2 gate is scoped to a spot-asset FIFO
+fill-batch accelerator. The internal ledgr gate is a closed
+`compiled_accounting_model` enum, not a generic boolean compiled-fill
+switch: `NULL` means the canonical R fold path, and `"spot_fifo"` is
+the only compiled accounting model v0.1.8.10 may measure.
+
+This scope guard exists to preserve future derivatives and margin
+accounting work. The spot-FIFO kernel must not be extended into futures,
+options, derivatives, margin, or other instrument-accounting semantics
+by accretion. A future non-spot accounting model needs its own model
+value, RFC, parity suite, and closeout language. Unsupported
+`compiled_accounting_model` values should fail closed with a named error
+rather than silently falling back after partial compiled execution or
+pretending the spot-FIFO kernel is a general instrument engine.
+
+Closeout and attribution language should therefore say "spot-asset FIFO
+fill-batch accelerator" or equivalent. It should not describe LDG-2522
+as shipping a general compiled fold core, a public compiled execution
+mode, or a derivatives-capable accounting engine.
+
 ### 2026-06-01 [optimization] Ephemeral-mode xlarge wall attribution as gate for ledgrcore / Architecture B2 commit
 
 **Maintainer goal:** ephemeral mode should be fast. The current xlarge

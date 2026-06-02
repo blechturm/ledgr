@@ -107,11 +107,13 @@ tickets:
     classification:
       type: "measurement_gate"
       surface: "compiled_hot_frame_b2"
-      scope: "pattern_b_production_gate"
+      scope: "spot_fifo_pattern_b_production_gate"
     tests:
       - "ledgrcore_spike_sub_a_review"
-      - "compiled_fill_batch_parity_tests"
-      - "production_internal_switch_tests"
+      - "compiled_spot_fifo_fill_batch_parity_tests"
+      - "compiled_accounting_model_validator_tests"
+      - "unsupported_accounting_model_fail_closed_tests"
+      - "production_internal_dispatch_tests"
       - "xlarge_ephemeral_b2_benchmark"
       - "cross_platform_parity_smoke"
       - "per_lane_attribution_row"

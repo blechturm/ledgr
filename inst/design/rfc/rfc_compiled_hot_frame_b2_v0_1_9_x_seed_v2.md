@@ -2,6 +2,10 @@
 
 **Status:** Seed v2. Incorporates Codex Round-1 response. Not accepted.
 Not authorized implementation scope.
+Superseded by seed v3, synthesis, final review, and the 2026-06-02
+maintainer clarification binding `compiled_accounting_model = NULL |
+"spot_fifo"`. Historical v2 recommendations for Pattern A or
+`assignInNamespace()` are not binding.
 **Cycle:** Architecture B2 measurement gate (v0.1.8.10 Ticket 5) plus
 promotion ticket (v0.1.9.x if gate passes).
 **Promotion candidate:** v0.1.8.10 Ticket 5 (gate measurement; lives
@@ -780,8 +784,9 @@ Runs in ledgr's `dev/bench/`. Compares:
 
 The swap is via `assignInNamespace()` per the v0.1.8.10 attribution
 spike spec's instrumentation discipline OR via an explicit
-`use_compiled_fills = TRUE` flag in the execution spec (v2 open
-question — see below).
+internal execution-spec gate. Post-synthesis maintainer clarification
+binds that gate as `compiled_accounting_model = NULL | "spot_fifo"`
+rather than the boolean flag this superseded v2 seed considered.
 
 Workload: LDG-2479 `density_high_xlarge_ephemeral` cell at production
 scale.
@@ -896,8 +901,10 @@ Two options:
 - **`assignInNamespace`**: monkey-patches the fold engine to call
   the hot frame; matches the attribution spike's instrumentation
   pattern.
-- **`use_compiled_fills = TRUE` flag**: explicit execution-spec
-  field that the fold engine reads to dispatch to the hot frame.
+- **Internal execution-spec gate**: explicit field that the fold engine
+  reads to dispatch to the hot frame. Post-synthesis maintainer
+  clarification binds this as
+  `compiled_accounting_model = NULL | "spot_fifo"`.
 
 **Recommended**: `assignInNamespace` for Sub-B (measurement
 discipline matches attribution spike; no production code change to

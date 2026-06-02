@@ -98,20 +98,25 @@ Exit criteria:
 Ticket: `LDG-2522`
 Status: Pending
 
-Goal: run the B2-first compiled hot-frame measurement gate without authorizing a
-public compiled execution path.
+Goal: run the B2-first spot-asset FIFO fill-batch measurement gate without
+authorizing a public compiled execution path or a general compiled accounting
+engine.
 
 Exit criteria:
 
 - Sub-A language/feasibility artifact is recorded in `ledgrcore-spike`.
 - Sub-B production gate uses the real ledgr fold path through an internal,
-  disabled-by-default execution-spec switch.
+  disabled-by-default `compiled_accounting_model` enum.
+- `compiled_accounting_model` is closed in this batch: `NULL` means canonical
+  R fold, `"spot_fifo"` means the internal spot-asset FIFO accelerator, and
+  unsupported values fail closed with a named error.
 - Pattern B, not Pattern A, is the decision-bearing measurement.
 - All parity gates pass or the B2 path is parked.
 - LDG-2479 xlarge ephemeral wall recovery is classified as pass, review band,
   or fail using the RFC threshold matrix.
 - Per-lane attribution row records build flags, parity, wall recovery, and
-  disposition.
+  disposition using scoped spot-FIFO language, not general compiled fold-core
+  language.
 
 ## Batch 6 - Parked Spike Disposition
 

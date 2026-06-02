@@ -91,7 +91,7 @@ Cross-checked synthesis's `v3 absorption verification` section against seed v3's
 | Binding maintainer decision recorded; override-request retired | D1 | Absorbed |
 | Recoverable-slice table re-bucketed; 30s gate calibrated to first-cut | D3 + D7 reasoning | Absorbed |
 | Pattern B decision-bearing; Pattern A staging only | D2 | Absorbed |
-| Sub-B internal `use_compiled_fills` flag; no instrumented copies | D5 | Absorbed |
+| Sub-B internal `compiled_accounting_model = NULL \| "spot_fifo"` enum; no instrumented copies | D5 | Absorbed |
 | Fresh-fill BUY/SELL vs replay alias semantics split | D4 | Absorbed |
 | Ticket 5 split: Sub-A in ledgrcore-spike, Sub-B in ledgr | D6 | Absorbed |
 | 15-30s review band | D7 | Absorbed |
