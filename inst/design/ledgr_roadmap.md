@@ -103,8 +103,10 @@ versioned packet.
 | v0.1.8.7 | Done | Optimization round 2 and legacy cleanup: removed raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; dropped cli/R6, added collapse, and shipped measured event-buffer, representation/setup, reconstruction, artifact-policy, and benchmark-attribution work. | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
 | v0.1.8.8 | Done | Parallel sweep dispatch and determinism, fold-core diagnostics and containment, repo-local peer benchmark reporting, and self-profiling workload-grid evidence for v0.1.8.9 optimization scoping. Maintainer-manual skeleton cleanup deferred. | `inst/design/ledgr_v0_1_8_8_spec_packet/` |
 | v0.1.8.9 | Done | Single-core optimization round: scale-growing buffer write fixes, per-pulse vectorization, yyjsonr canonical JSON byte-format v2 migration, per-lane attribution, and workload-grid / peer-benchmark closeout. | `inst/design/ledgr_v0_1_8_9_spec_packet/` |
+| v0.1.8.10 | Active | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
+| v0.1.8.11 | Planned | Documentation, structure, and cleanup release before v0.1.9 features. RFC synthesis, ADR population, decision-log synthesis, vignette refresh for post-B2 reality, contracts.md structural pass, internal performance-arc narrative, and the maintainer manual backlog. Entropy management cycle for the post-v0.1.8.10 codified-architecture surface. | Future packet |
 | v0.1.9 | Planned | Target risk layer and post-optimization primitive-internals / substrate planning gates. | Future packet |
-| v0.1.9.x | Planned | Internal maintainer manual and architecture article release after the v0.1.8.8 deferral. | Future packet |
+| v0.1.9.x | Planned | Internal maintainer manual and architecture article release after the v0.1.8.8 deferral. Foundation absorbed into v0.1.8.11 documentation/cleanup release. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
@@ -1198,6 +1200,110 @@ Non-scope:
   with an explicit paradigm note.
 
 See `inst/design/horizon.md` (peer-benchmark expansion entry, v0.1.8.x line).
+
+### v0.1.8.11 Documentation, Structure, And Cleanup
+
+v0.1.8.11 is a documentation, structure, and cleanup release. It precedes
+v0.1.9 target risk and any other v0.1.9.x feature work. It is the entropy
+management cycle the post-v0.1.8.10 / B2 codified-architecture surface
+requires.
+
+It supersedes and expands the previously planned v0.1.9.x Maintainer Manual
+And Architecture Documentation milestone (kept below as the foundation). The
+expansion absorbs RFC synthesis, ADR population, and decision-log synthesis
+that the earlier milestone excluded as non-scope. That exclusion was correct
+for v0.1.8.8; it is no longer correct after the v0.1.8.10 / B2 arc.
+
+Authoritative input:
+
+- `inst/design/horizon.md` entry
+  `2026-06-02 [documentation] Documentation, structure, and cleanup release
+  before v0.1.9 features`;
+- the existing 2026-05-30 maintainer manual backlog as foundation.
+
+Intent:
+
+- synthesize codified architectural decisions from accepted RFCs, decision
+  logs, and spec packets into discoverable, human- and agent-readable form;
+- populate ADRs for stabilized architectural decisions that currently live
+  only as RFC bindings;
+- refresh user-facing vignettes (who-ledgr-is-for, why-r,
+  strategy-development, research-workflow) to reflect the post-v0.1.8.10 /
+  B2 reality, including ephemeral sweep as a real sweep mode and the
+  v0.1.8.x performance arc as evidence that R can be fast;
+- author an internal v0.1.8.x performance-arc narrative that names what got
+  faster and how to attribute it;
+- structural pass on `inst/design/contracts.md` organized by surface
+  (execution-spec, fold-engine, output-handler, lot-accounting, ctx, etc.)
+  rather than chronologically;
+- grow `inst/design/manual/` per the 2026-05-30 backlog (execution, data,
+  features, sweep, observability);
+- audit and refresh man pages that have drifted during the v0.1.8.x arc;
+- add an RFC index that points readers at the load-bearing decisions and
+  marks the rest as scaffolding;
+- internal compiled-accounting documentation
+  (`compiled_accounting_model` enum scope guard) for future contributors
+  and future-self.
+
+Tone target:
+
+- prose, not reference manual;
+- a point of view, not a fact dump;
+- examples that teach, not exhaustive enumeration;
+- the maintainer voice should signal "this was thought about, here is why";
+- a little fun to read - the synthesis layer earns its place by being more
+  readable than the source.
+
+Sequencing rationale:
+
+- The v0.1.8.x arc has grown the codified-architecture surface past what
+  the maintainer can hold in head. The RFC discipline ratifies decisions
+  correctly but does not synthesize them into discoverable form.
+- Deferring synthesis risks making the next architectural decision against
+  a codified surface the maintainer no longer has full visibility on. That
+  is the failure mode the RFC discipline was built to prevent.
+- v0.1.9 target risk, v0.1.9.x crypto-readiness, walk-forward, and other
+  planned feature work sit behind this release.
+
+Readiness gates:
+
+- v0.1.8.10 has shipped, including the B2 LDG-2522 disposition;
+- the v0.1.9 feature arc has not started (target risk RFC scoping may run
+  in parallel but implementation waits);
+- existing vignette build semantics are intact (`vignettes/` source,
+  `inst/doc/` build output);
+- maintainer has explicit time budget for the synthesis-and-prose work;
+  this is not a back-of-the-couch release.
+
+Implementation constraints:
+
+- this is a documentation, structure, and cleanup release;
+- no execution semantics, event schemas, durable identity bytes,
+  target-risk behavior, OMS policy, or compiled-core architecture changes
+  are authorized by this release;
+- small fixes are allowed only when the article work uncovers stale links,
+  stale diagrams, broken generated-doc references, or missing doc guards;
+- if a synthesis pass reveals an actual contract bug rather than a doc
+  bug, it gets its own ticket in a later cycle; do not fix architecture
+  bugs as side effects of documentation work.
+
+Non-scope:
+
+- no new public API;
+- no execution-semantics or fold-core changes;
+- no target risk, OMS, walk-forward, or compiled promotion work;
+- no public hosted benchmark dashboard;
+- no rewrite of accepted RFC text into prose articles (the RFCs remain
+  authoritative; synthesis points at them, not replaces them);
+- no broad implementation refactor hidden inside documentation work.
+
+Source memory:
+
+- `inst/design/horizon.md`, entries
+  `2026-06-02 [documentation] Documentation, structure, and cleanup
+  release before v0.1.9 features` and
+  `2026-05-30 [documentation] Maintainer manual article backlog after
+  v0.1.8.8 skeleton`.
 
 ### v0.1.9 Target Risk Layer
 

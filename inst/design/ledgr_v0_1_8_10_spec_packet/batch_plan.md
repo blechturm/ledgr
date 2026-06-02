@@ -26,7 +26,7 @@ Exit criteria:
 ## Batch 1 - Ephemeral Subphase Telemetry
 
 Ticket: `LDG-2518`
-Status: In Review
+Status: Completed
 
 Goal: expose `t_engine`, `t_results`, and `t_fills_extract` for ephemeral
 workload-grid rows before substantive ephemeral changes land.
@@ -47,7 +47,7 @@ Review note:
 ## Batch 2 - Matrix-Canonical Substrate And Accessors
 
 Ticket: `LDG-2519`
-Status: In Review
+Status: Completed
 
 Goal: land the accepted accessor RFC and the integer-indexed substrate it
 consumes.
@@ -65,7 +65,7 @@ Exit criteria:
 ## Batch 3 - Fold-Owned FIFO Accounting
 
 Ticket: `LDG-2520`
-Status: In Review
+Status: Completed
 
 Goal: move FIFO lot accounting into the fold-owned accounting state transition
 while preserving the event stream and reconstruction verifier/readback path.
@@ -82,7 +82,7 @@ Exit criteria:
 ## Batch 4 - yyjsonr Options Hoist
 
 Ticket: `LDG-2521`
-Status: In Review
+Status: Completed
 
 Goal: hoist fixed yyjsonr option objects out of hot helper bodies.
 
@@ -158,7 +158,7 @@ Completion note:
 ## Batch 7 - Measurement Closeout
 
 Ticket: `LDG-2524`
-Status: Pending
+Status: In Review
 
 Goal: aggregate attribution and write the v0.1.8.9 to v0.1.8.10 closeout.
 
@@ -171,6 +171,13 @@ Exit criteria:
   separate v0.1.9.x promotion ticket is cut.
 - Peer and workload-grid shapes are not mixed.
 - No public speed-claim language appears.
+
+Review note:
+
+- `v0_1_8_10_release_closeout.md` is staged for review. The canonical workload
+  record is `ledgr_bench_record_20260602T155628Z`; the seed-matched B2
+  xlarge-ephemeral gate record is `ledgr_bench_record_20260602T162911Z`; the
+  peer record is `peer_benchmark_record_20260602T162318Z`.
 
 ## Batch 8 - Release Gate
 

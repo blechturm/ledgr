@@ -122,7 +122,7 @@ scope: v0.1.8.10
 Priority: P0
 Effort: S
 Dependencies: LDG-2517
-Status: In Review
+Status: Completed
 
 ### Description
 
@@ -181,7 +181,7 @@ scope: ephemeral_subphase_attribution
 Priority: P1
 Effort: L
 Dependencies: LDG-2518
-Status: In Review
+Status: Completed
 
 ### Description
 
@@ -257,7 +257,7 @@ scope: matrix_canonical_accessors
 Priority: P0
 Effort: XL
 Dependencies: LDG-2519
-Status: In Review
+Status: Completed
 
 ### Description
 
@@ -337,7 +337,7 @@ scope: event_preserving_fifo_lot_state
 Priority: P1
 Effort: S
 Dependencies: LDG-2520
-Status: In Review
+Status: Completed
 
 ### Description
 
@@ -573,7 +573,7 @@ scope: parked_spike_disposition
 Priority: P0
 Effort: L
 Dependencies: LDG-2518, LDG-2519, LDG-2520, LDG-2521, LDG-2522, LDG-2523
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -608,6 +608,18 @@ write the v0.1.8.9 to v0.1.8.10 closeout comparison.
 
 Per-lane ledger review, workload-grid rerun, peer-benchmark rerun, closeout
 review, and claim-language review.
+
+### Review Note
+
+Batch 7 is staged for review. `v0_1_8_10_release_closeout.md` cites the
+canonical workload-grid record
+`dev/bench/results/ledgr_bench_record_20260602T155628Z_summary.csv`, the
+seed-matched internal B2 xlarge-ephemeral record
+`dev/bench/results/ledgr_bench_record_20260602T162911Z_summary.csv`, and the
+peer record `dev/bench/results/peer_benchmark_record_20260602T162318Z_*`.
+The closeout keeps canonical R, internal B2 spot-FIFO, and peer benchmark
+shapes separate and keeps B2 language scoped to the internal spot-asset FIFO
+fill-batch accelerator gate.
 
 ### Source Reference
 

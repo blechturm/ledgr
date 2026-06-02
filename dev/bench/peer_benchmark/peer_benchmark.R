@@ -18,7 +18,8 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     n_days = NULL,
     fast = 5L,
     slow = 10L,
-    seed = 20260530L
+    seed = 20260530L,
+    compiled_accounting_model = NULL
   )
   i <- 1L
   while (i <= length(args)) {
@@ -48,6 +49,9 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     } else if (identical(key, "--seed")) {
       out$seed <- as.integer(val)
       i <- i + 2L
+    } else if (identical(key, "--compiled-accounting-model")) {
+      out$compiled_accounting_model <- if (identical(val, "NULL")) NULL else val
+      i <- i + 2L
     } else if (key %in% c("--help", "-h")) {
       cat(paste(
         "Usage: Rscript dev/bench/peer_benchmark/peer_benchmark.R [options]",
@@ -61,6 +65,7 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --fast N",
         "  --slow N",
         "  --seed N",
+        "  --compiled-accounting-model NULL|spot_fifo",
         sep = "\n"
       ), "\n")
       quit(status = 0L)
@@ -70,6 +75,10 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
   }
   if (!out$preset %in% c("smoke", "record")) {
     stop("`--preset` must be `smoke` or `record`.", call. = FALSE)
+  }
+  if (!is.null(out$compiled_accounting_model) &&
+      !identical(out$compiled_accounting_model, "spot_fifo")) {
+    stop("`--compiled-accounting-model` must be NULL or spot_fifo.", call. = FALSE)
   }
   if (is.null(out$n_inst)) {
     out$n_inst <- if (identical(out$preset, "record")) 100L else 5L
@@ -320,7 +329,8 @@ peer_ledgr_ephemeral_prepare <- function(bars_path, features) {
   )
 }
 
-peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed) {
+peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed,
+                                     compiled_accounting_model = NULL) {
   t0 <- proc.time()[["elapsed"]]
   prep <- peer_ledgr_ephemeral_prepare(bars_path, features)
   t1 <- proc.time()[["elapsed"]]
@@ -356,7 +366,8 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
     telemetry = telemetry,
     seed = seed,
     event_mode = "buffered",
-    use_fast_context = TRUE
+    use_fast_context = TRUE,
+    compiled_accounting_model = compiled_accounting_model
   )
   ledgr:::ledgr_execute_fold(execution, output_handler)
   t2 <- proc.time()[["elapsed"]]
@@ -388,6 +399,7 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
       status = "DONE",
       wall_sec = as.numeric(elapsed),
       phase_sec = phase_sec,
+      compiled_accounting_model = compiled_accounting_model,
       boundary_check = c("bars_csv_read", "in_memory_projection", "engine_run", "canonical_equity_write", "fills_write")
     ),
     reason = NA_character_
@@ -773,6 +785,7 @@ peer_performance_boundary <- function(engine) {
     engine,
     ledgr_ttr_canonical = "durable ledgr: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
     ledgr_ttr_canonical_ephemeral = "ephemeral ledgr: ingestion=bars CSV read plus in-memory bars/features/projection; engine=ledgr_execute_fold with memory output handler; results=event-stream equity/fills reconstruction plus canonical materialization",
+    ledgr_ttr_compiled_spot_fifo_ephemeral = "ephemeral ledgr with compiled_accounting_model=spot_fifo: same bars/projection/strategy surface as ledgr_ttr_canonical_ephemeral; engine uses compiled spot-FIFO fill/accounting batch; results=event-stream equity/fills canonical materialization",
     ledgr_builtin_sma = "durable ledgr built-in SMA: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
     quantstrat = "ingestion=bars CSV read, xts/globalenv setup, initPortf/initAcct/initOrders/strategy setup; engine=applyStrategy plus account updates; results=equity/transaction extraction plus canonical writes",
     backtrader = "ingestion=bars CSV read, PandasData feed construction, cerebro.adddata loop; engine=cerebro.run; results=canonical equity/fill/trade writes",
@@ -1260,6 +1273,18 @@ peer_main <- function(args = peer_parse_args()) {
     seed = args$seed
   ))
   peer_compare_ledgr_surfaces(canonical, canonical_ephemeral)
+  compiled_ephemeral <- NULL
+  if (!is.null(args$compiled_accounting_model)) {
+    compiled_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
+      engine = "ledgr_ttr_compiled_spot_fifo_ephemeral",
+      bars_path = bars_path,
+      features = canonical_features,
+      strategy = canonical_strategy,
+      seed = args$seed,
+      compiled_accounting_model = args$compiled_accounting_model
+    ))
+    peer_compare_ledgr_surfaces(canonical, compiled_ephemeral)
+  }
   builtin <- peer_timed(peer_run_ledgr(
     engine = "ledgr_builtin_sma",
     bars_path = bars_path,
@@ -1271,7 +1296,11 @@ peer_main <- function(args = peer_parse_args()) {
   backtrader <- peer_timed(peer_run_backtrader(bars_path, args$fast, args$slow))
   zipline_full <- peer_timed(peer_run_zipline_full(bars_path, args$fast, args$slow))
   lean <- peer_timed(peer_run_lean(bars_path, args$fast, args$slow))
-  results <- list(canonical, canonical_ephemeral, builtin, quantstrat, backtrader, zipline_full, lean)
+  results <- list(canonical, canonical_ephemeral)
+  if (!is.null(compiled_ephemeral)) {
+    results <- c(results, list(compiled_ephemeral))
+  }
+  results <- c(results, list(builtin, quantstrat, backtrader, zipline_full, lean))
   parity <- do.call(rbind, lapply(results[-1L], peer_parity, reference = canonical))
   statuses <- lapply(results, peer_surface_status)
   performance <- peer_performance_rows(results, args)

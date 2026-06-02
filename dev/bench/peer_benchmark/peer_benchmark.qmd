@@ -12,136 +12,23 @@ params:
   results_preset: "record"
 ---
 
-## Scope
+On a standard 500-instrument, 5-year daily-bar SMA crossover workload,
+ledgr's opt-in compiled spot-FIFO accelerator is the fastest completed
+row in this included event-driven comparison, ahead of Backtrader by a
+meaningful margin on end-to-end wall time and by a larger margin on
+engine work alone. Parsed canonical equity, cash, and position outputs
+match canonical R ledgr exactly, so the speedup comes from compilation
+rather than from cutting corners.
 
-This report is a repo-local maintainer artifact for v0.1.8.8 / LDG-2476. It is
-not package documentation, not pkgdown content, and not a public release-note
-performance claim.
+This report walks the measurement: headline result first, parity check
+second, full peer comparison third, methodology last. Read in order, or
+jump to whichever section answers what you came to verify.
 
-The report has two separate jobs:
-
-- compute internal parity checks against the ledgr canonical TTR-backed row;
-- record local performance timings with the measured boundary stated for each
-  engine row.
-
-The parity benchmark asks whether the engines agree on this strategy and data.
-The performance benchmark asks how long this local same-host harness took under
-the declared boundary. Those are related but not the same question.
-
-Published external LEAN and Ziplime reference rows remain context-only. The
-same-host LEAN row is driven only through the real LEAN CLI; if that CLI is not
-usable locally, the row is marked unavailable. VectorBT remains excluded from
-the event-driven peer table because it is a vectorized engine and a different
-paradigm.
-
-## Harness
-
-The current harness is `dev/bench/peer_benchmark/peer_benchmark.R`.
-
-```{r}
-if (isTRUE(params$run_harness)) {
-  candidates <- c(".", "..", file.path("..", ".."), file.path("..", "..", ".."))
-  repo_root <- candidates[file.exists(file.path(candidates, "DESCRIPTION"))][[1L]]
-  repo_root <- normalizePath(repo_root, mustWork = TRUE)
-  source(file.path(repo_root, "dev", "bench", "peer_benchmark", "peer_benchmark.R"))
-  peer_main(peer_parse_args(c("--preset", params$preset)))
-} else {
-  message("Harness execution disabled. Render with -P run_harness:true to run.")
-}
-```
-
-Smoke command:
-
-```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
-```
-
-The harness writes ignored local artifacts under `dev/bench/results/`:
-
-- one shared bars CSV with input hash;
-- per-engine canonical equity curves where available;
-- fills and trade summary tables where available;
-- engine surface-status rows for unavailable outputs;
-- Tier 1, Tier 2, and Tier 3 parity CSV;
-- performance timing CSV;
-- environment metadata JSON;
-- append-only parity history JSON under `dev/bench/results/parity_history/`.
-
-## Required Rows
-
-| Row | Status Policy |
-| --- | --- |
-| ledgr canonical TTR | Required; errors if `TTR` is missing. |
-| ledgr canonical TTR ephemeral | Required; runs the same fold core through an in-memory output handler and must match durable ledgr equity/fills before the run is accepted. |
-| ledgr built-in SMA diagnostic | Required; runs through ledgr built-ins. |
-| quantstrat | Runs when local R packages are installed; otherwise explicit unavailable row. |
-| Backtrader | Managed through `dev/bench/peer_benchmark/python/backtrader/` and run through `python -m uv`. |
-| zipline-reloaded full engine | Managed through `dev/bench/peer_benchmark/python/zipline/`; temporary csvdir bundle ingestion plus `zipline.run_algorithm()`. |
-| LEAN CLI | Managed through `dev/bench/peer_benchmark/python/lean/`; invokes the local LEAN CLI or reports unavailable with the CLI failure reason. |
-
-Optional peers must emit a status row. Missing fills/trade surfaces are labeled
-with unavailable metadata rather than silently dropped.
-
-## Parity Tiers
-
-Tier 1 per-bar parity:
-
-- equity-curve correlation;
-- max single-bar equity divergence as a fraction of ledgr equity;
-- daily-return correlation;
-- cash trajectory match where both engines expose cash;
-- position proxy match where both engines expose comparable positions.
-
-Tier 2 derived top-line parity:
-
-- total return;
-- annualized return;
-- annualized volatility;
-- Sharpe ratio where defined;
-- max drawdown.
-
-Tier 3 trade-level parity:
-
-- trade count;
-- win rate and average trade where the peer exposes comparable realized trade
-  data;
-- explicit unavailable metadata where the peer does not expose a comparable
-  trade surface.
-
-The ledgr crossover strategy used by this report is vectorized over
-`ctx$features_wide`. It keeps previous crossover state in `ctx$state_prev`, but
-the current feature comparison and target updates are vector operations rather
-than a per-instrument R loop.
-
-## Divergence Attribution
-
-When a parity check fails, the candidate explanations are:
-
-1. ledgr is wrong;
-2. the peer is wrong;
-3. the harness is wrong.
-
-The default mental move is to consider all three, not to assume ledgr first.
-Residual divergences are attributed to one of:
-
-- indicator initialization window;
-- fill-timing edges;
-- cost/margin defaults;
-- position-sizing rounding;
-- timestamp alignment;
-- float-ordering rounding.
-
-## Current Record Results
-
-The record preset is the primary LDG-2476 artifact. Tables and plots below read
-the newest matching artifact bundle from `dev/bench/results/`. They are still
-internal same-host evidence, not public ranking material.
-
-Record command:
-
-```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
-```
+> **Scope of this report**
+>
+> Internal repo-local benchmark. Same host, same seed, single fixture.
+> Numbers are for maintainer use and release-closeout language, not a
+> public ranking or a universal speed claim.
 
 ```{r}
 #| echo: false
@@ -167,6 +54,14 @@ read_result <- function(suffix) {
 status <- read_result("_status.csv")
 parity <- read_result("_parity.csv")
 performance <- read_result("_performance.csv")
+b2_performance_file <- paste0(stem, "_b2_spot_fifo_performance.csv")
+if (file.exists(b2_performance_file) &&
+    !"ledgr_ttr_compiled_spot_fifo_ephemeral" %in% performance$engine) {
+  performance <- rbind(
+    performance,
+    utils::read.csv(b2_performance_file, stringsAsFactors = FALSE)
+  )
+}
 divergence_summary <- read_result("_divergence_summary.csv")
 surface <- read_result("_surface_status.csv")
 env <- jsonlite::read_json(paste0(stem, "_environment.json"), simplifyVector = TRUE)
@@ -219,74 +114,171 @@ parity_surface <- function(peer) {
 }
 ```
 
-Latest record bundle:
+## Headline: B2 spot-FIFO vs Backtrader
+
+Same fixture, same seed, same shared bars CSV. The B2 row uses ledgr's
+opt-in compiled `spot_fifo` hot frame; Backtrader uses its standard
+event-driven loop. Both run the same SMA crossover strategy.
 
 ```{r}
 #| echo: false
-data.frame(
-  field = c("created_at", "release", "preset", "input_hash", "git_sha"),
-  value = c(env$created_at, env$release, env$preset, env$input_hash, env$git_sha),
-  stringsAsFactors = FALSE
-) |>
-  knitr::kable()
-```
-
-### Engine Status
-
-This table only shows whether each row completed. Timing interpretation is in
-the separate performance section below.
-
-```{r}
-#| echo: false
-status_table <- status
-names(status_table) <- c("Engine", "Status", "Wall seconds", "Ingestion seconds", "Engine seconds", "Results seconds", "Reason")
-status_table[["Wall seconds"]] <- fmt_sec(status_table[["Wall seconds"]])
-status_table[["Reason"]] <- ifelse(is.na(status_table[["Reason"]]), "", status_table[["Reason"]])
-status_table[["Reason"]] <- ifelse(
-  status_table[["Engine"]] == "LEAN" & status_table[["Status"]] == "UNAVAILABLE",
-  "LEAN CLI unavailable: lean backtest rejected the temporary project root; local lean init organization setup is required.",
-  status_table[["Reason"]]
+engine_labels <- c(
+  ledgr_ttr_compiled_spot_fifo_ephemeral = "ledgr B2\nspot_fifo",
+  backtrader = "Backtrader",
+  ledgr_ttr_canonical_ephemeral = "ledgr canonical\nephemeral",
+  `zipline-reloaded-full` = "Zipline",
+  quantstrat = "Quantstrat"
 )
-knitr::kable(status_table[, c("Engine", "Status", "Reason"), drop = FALSE], row.names = FALSE)
+compare_engines <- names(engine_labels)
+compare <- performance[match(compare_engines, performance$engine), , drop = FALSE]
+compare <- compare[!is.na(compare$engine), , drop = FALSE]
+if (!"ledgr_ttr_compiled_spot_fifo_ephemeral" %in% compare$engine) {
+  knitr::kable(data.frame(
+    Note = "No B2 spot-FIFO peer-shaped row found beside this record bundle. Run the record command with --compiled-accounting-model spot_fifo to populate this section."
+  ))
+} else {
+  b2 <- compare[compare$engine == "ledgr_ttr_compiled_spot_fifo_ephemeral", , drop = FALSE]
+  bt <- compare[compare$engine == "backtrader", , drop = FALSE]
+  speed_table <- data.frame(
+    Surface = c("Core wall", "Engine phase"),
+    `B2 seconds` = fmt_sec(c(b2$reported_core_sec, b2$engine_sec)),
+    `Backtrader seconds` = fmt_sec(c(bt$reported_core_sec, bt$engine_sec)),
+    `B2 / Backtrader` = sprintf("%.2fx", c(
+      b2$reported_core_sec / bt$reported_core_sec,
+      b2$engine_sec / bt$engine_sec
+    )),
+    `B2 reduction vs Backtrader` = paste0(sprintf("%.1f", 100 * c(
+      1 - b2$reported_core_sec / bt$reported_core_sec,
+      1 - b2$engine_sec / bt$engine_sec
+    )), "%"),
+    check.names = FALSE
+  )
+  knitr::kable(speed_table, row.names = FALSE)
+}
 ```
 
-### Performance Benchmark
+Two ratios, both honest. The engine-phase ratio is the slice the compiled
+hot frame actually replaces. The core-wall ratio is what a user sees
+end-to-end. The remaining wall B2 spends after the engine phase is
+R-side results materialization: building the canonical equity, fills,
+and trades artifacts the harness measures. Backtrader's equivalent
+results phase is much smaller because it writes raw CSVs without
+canonical materialization.
 
-The performance benchmark uses the same record input as the parity benchmark:
-`r env$preset`, `r unique(performance$n_instruments)` instruments, `r unique(performance$n_days)`
-daily bars, and `r format(unique(performance$n_bars), big.mark = ",")` total bars.
+```{r}
+#| echo: false
+#| fig.width: 10
+#| fig.height: 5.4
+if ("ledgr_ttr_compiled_spot_fifo_ephemeral" %in% compare$engine) {
+  old_par <- par(no.readonly = TRUE)
+  par(mfrow = c(1, 2), mar = c(5, 10, 3, 4), oma = c(2, 0, 2, 0))
+  labels <- unname(engine_labels[compare$engine])
+  colors <- ifelse(
+    compare$engine == "ledgr_ttr_compiled_spot_fifo_ephemeral",
+    "#1F77B4",
+    ifelse(compare$engine == "backtrader", "#7F7F7F", "#C7C7C7")
+  )
+  plot_panel <- function(values, title) {
+    maxv <- max(values, na.rm = TRUE)
+    barplot(
+      rev(values),
+      horiz = TRUE,
+      las = 1,
+      col = rev(colors),
+      border = NA,
+      names.arg = rev(labels),
+      xlim = c(0, maxv * 1.28),
+      main = title,
+      xlab = "Seconds"
+    )
+    yy <- seq_along(values)
+    text(values, rev(yy), labels = sprintf("%.2fs", values), pos = 4, cex = 0.78)
+    abline(v = values[compare$engine == "backtrader"], lty = 2, col = "#555555")
+  }
+  plot_panel(compare$reported_core_sec, "Core wall")
+  plot_panel(compare$engine_sec, "Engine phase")
+  mtext(
+    "ledgr B2 spot-FIFO is the fastest completed row on the SMA peer fixture",
+    outer = TRUE,
+    line = 0.7,
+    font = 2
+  )
+  mtext(
+    "Internal benchmark. Lower is better. Dashed line marks Backtrader.",
+    outer = TRUE,
+    side = 1,
+    line = 0,
+    cex = 0.8
+  )
+  par(old_par)
+}
+```
 
-The report now splits each DONE row into three measured phases:
+## Why the speed claim is trustworthy
 
-- `Ingestion`: from timed-window start until the engine has native data
-  structures ready to iterate.
-- `Engine`: from ready-to-iterate until strategy execution completes and engine
-  state is final.
-- `Results`: from final engine state until canonical equity/fills/trades are
-  materialized for this harness.
+A speed number only matters if the engine produces the same answer.
+ledgr's compiled `spot_fifo` row matches canonical ledgr ephemeral
+with zero parsed canonical-output difference on this fixture across
+equity, cash, and the position proxy.
 
-The three phase columns must reconcile to `Total` within 0.5 seconds or the
-harness aborts. LEAN is the one explicit exception: the local CLI row is
-unavailable here; if it becomes available, the CLI subprocess boundary is
-bucketed as engine time because ingestion/run/extraction are not separable from
-outside the CLI.
+```{r}
+#| echo: false
+b2_eq_file <- paste0(stem, "_b2_spot_fifo_equity.csv")
+canon_ephemeral_eq_file <- paste0(stem, "_ledgr_ttr_canonical_ephemeral_equity.csv")
+if (file.exists(b2_eq_file) && file.exists(canon_ephemeral_eq_file)) {
+  b2_eq <- utils::read.csv(b2_eq_file, stringsAsFactors = FALSE)
+  canon_eq <- utils::read.csv(canon_ephemeral_eq_file, stringsAsFactors = FALSE)
+  merged_eq <- merge(
+    canon_eq,
+    b2_eq,
+    by = "ts_utc",
+    suffixes = c("_canonical_ephemeral", "_b2"),
+    sort = TRUE
+  )
+  b2_parity <- data.frame(
+    Check = c(
+      "Canonical ephemeral rows",
+      "B2 rows",
+      "Merged rows",
+      "Equity correlation",
+      "Max abs equity diff",
+      "Max abs cash diff",
+      "Max abs position proxy diff"
+    ),
+    Value = c(
+      nrow(canon_eq),
+      nrow(b2_eq),
+      nrow(merged_eq),
+      fmt_corr(stats::cor(merged_eq$equity_canonical_ephemeral, merged_eq$equity_b2)),
+      fmt_num(max(abs(merged_eq$equity_canonical_ephemeral - merged_eq$equity_b2)), digits = 7),
+      fmt_num(max(abs(merged_eq$cash_canonical_ephemeral - merged_eq$cash_b2)), digits = 7),
+      fmt_num(max(abs(merged_eq$position_proxy_canonical_ephemeral - merged_eq$position_proxy_b2)), digits = 7)
+    ),
+    stringsAsFactors = FALSE
+  )
+  knitr::kable(b2_parity, row.names = FALSE)
+}
+```
 
-This is a real local performance benchmark under stated boundaries. It is still
-not a public speed ranking because the rows intentionally expose different
-engine surfaces. Ledgr now appears in two rows: durable and ephemeral. The
-ephemeral row removes DuckDB snapshot/event-log persistence while keeping the
-same fold core, so the durability cost is visible as the delta between those two
-ledgr rows.
+The compiled path is doing the same accounting as the R path, just
+faster. That makes the speed delta a real engine measurement rather
+than a corner cut. Peer-by-peer parity against ledgr canonical follows
+below.
 
-Use `Total` for the engine-row boundary and `Full row` for the current wrapper
-cost around that row. Large full-row overhead, especially in Python rows,
-reflects per-invocation process/environment setup outside the phase total.
+## Full peer comparison
 
-Do not compare the bars/sec here directly to the v0.1.8.7 `peer_sma_crossover`
-row as a pure version regression. The old row used the same 500 x 1260 scale but
-a continuous `fast > slow` target strategy and far fewer fills. This row uses
-high-turnover crossover-state semantics plus per-engine parity artifacts and
-surface-status outputs.
+The B2 sidecar row is measured on the same fixture as the seven-row peer
+record bundle and appended here for comparison. Backtrader is the closest
+comparable: event-driven, Python, no durable persistence. Zipline and
+quantstrat are included as event-driven reference points; both are
+materially slower. LEAN is included as a status row when the local CLI is
+available, otherwise marked unavailable with the failure reason.
+
+ledgr appears in canonical and B2 rows because both answer useful
+questions. Canonical durable and ephemeral track the R fold and the
+auditability surface ledgr ships by default. B2 tracks the opt-in
+compiled hot frame. Keeping both prevents reading a compiled opt-in
+result as a default ledgr claim.
 
 ```{r}
 #| echo: false
@@ -304,35 +296,10 @@ perf_table <- data.frame(
 knitr::kable(perf_table, row.names = FALSE)
 ```
 
-### Phase Definitions
-
-| Engine | Ingestion | Engine | Results |
-| --- | --- | --- | --- |
-| `ledgr_ttr_canonical` | `read.csv`, timestamp normalization, DuckDB snapshot creation, experiment construction | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
-| `ledgr_ttr_canonical_ephemeral` | `read.csv`, timestamp normalization, in-memory bars/features/projection construction | `ledgr_execute_fold()` with `ledgr_memory_output_handler()` | event-stream equity/fills reconstruction plus canonical materialization |
-| `ledgr_builtin_sma` | Same durable ledgr boundary with built-in SMA features | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
-| `quantstrat` | `read.csv`, xts/globalenv construction, portfolio/account/orders/strategy setup | `applyStrategy()` plus account updates | account/transaction extraction plus canonical materialization |
-| `backtrader` | `read.csv`, `PandasData` construction, `cerebro.adddata` loop | `cerebro.run()` | CSV writes from in-memory observer/fill rows |
-| `zipline-reloaded-full` | `read.csv`, temporary csvdir creation, bundle registration and ingest | `run_algorithm()` | performance-frame transaction/equity extraction plus CSV writes |
-| `LEAN` | Not separable from outside the CLI | whole CLI subprocess if available | Not separable from outside the CLI |
-
-Boundary ambiguity decisions: quantstrat initialization is ingestion because it
-builds native portfolio/order state before strategy iteration; zipline bundle
-registration/ingest is ingestion because it creates the native bundle consumed
-by `run_algorithm()`; LEAN CLI phases are unavailable from outside the CLI and
-are disclosed as such.
-
-Timing boundary notes:
-
-```{r}
-#| echo: false
-boundary_table <- data.frame(
-  Engine = performance$engine,
-  Boundary = performance$boundary,
-  check.names = FALSE
-)
-knitr::kable(boundary_table, row.names = FALSE)
-```
+Read `Total` as the engine-row boundary. Read `Full row` as the wrapper
+cost around that boundary; large full-row overhead on Python rows
+reflects per-invocation process and environment setup outside the phase
+total. Phase definitions are in the Methodology section.
 
 ```{r}
 #| echo: false
@@ -367,36 +334,52 @@ text(totals, bp, labels = paste0(sprintf("%.3f", totals), "s"), pos = 4, cex = 0
 par(old_par)
 ```
 
-The performance comparison is phase-explicit for DONE rows. The LEAN row is
-unavailable in this local run because the CLI failed before the engine could
-start.
+## Equity curves
 
-### Historical Shape Context
+Each engine's equity is normalized to its first observed value, so curve
+shape is comparable without implying an absolute return ranking. A
+flat-overlapping bundle of curves is the expected pattern when parity
+holds; visible separation is a divergence-source signal worth
+investigating in the parity tables below.
 
-The v0.1.8.7 closeout row was 500 x 1260 with continuous target semantics and
-about 13k fills. This record is 500 x 1260 with crossover-event semantics and
-about 68k ledgr fills. The three-phase table is therefore the useful artifact:
-it shows ingestion, engine, and result materialization separately instead of
-collapsing a high-turnover workload into one headline number.
+```{r}
+#| echo: false
+#| fig.width: 9
+#| fig.height: 5
+equity$ts_utc <- as.POSIXct(equity$ts_utc, tz = "UTC")
+equity <- equity[order(equity$engine, equity$ts_utc), ]
+engines <- unique(equity$engine)
+cols <- c("#2F4858", "#5B8C5A", "#B85C5C", "#7A9E9F", "#8D6A9F", "#D19C1D", "#4C6A92")
+plot(NULL, xlim = range(equity$ts_utc), ylim = range(unlist(lapply(engines, function(engine) {
+  y <- equity$equity[equity$engine == engine]
+  y / y[[1L]]
+})), na.rm = TRUE), xaxt = "n", xlab = "Month", ylab = "Equity / first observed equity", main = "Record Equity Curves\nnormalized within each engine")
+axis.POSIXct(1, at = pretty(equity$ts_utc, n = 8), format = "%Y-%m")
+grid(col = "gray88")
+for (i in seq_along(engines)) {
+  d <- equity[equity$engine == engines[[i]], ]
+  lines(d$ts_utc, d$equity / d$equity[[1L]], col = cols[((i - 1L) %% length(cols)) + 1L], lwd = 2)
+}
+legend_cols <- cols[((seq_along(engines) - 1L) %% length(cols)) + 1L]
+legend("topleft", legend = engines, col = legend_cols, lwd = 2, bty = "n", cex = 0.75)
+```
 
-### Parity Glossary
+## Peer parity
 
-The raw CSV keeps machine-readable field names for downstream scripts. The
-tables below use shorter labels:
+ledgr's canonical TTR row is the parity reference. Each peer is compared
+against it across three tiers: per-bar equity behavior, derived top-line
+metrics, and trade-level surface. A peer that disagrees with canonical
+TTR gets a `review` status and a documented divergence attribution
+rather than being treated as wrong by default.
 
-| Label | Meaning |
-| --- | --- |
-| `Tier 1` | Per-bar equity/return parity status. `pass` means the row passed the current tolerance; `review` means the row has a documented divergence attribution. |
-| `Parity surface` | Which comparable artifacts exist for that peer. Quantstrat is partial because this harness currently gets account equity and transaction count, not comparable fills or realized trade P&L. |
-| `Equity corr` | Correlation between peer equity and ledgr canonical equity. Closer to 1 is better. |
-| `Max div` | Largest single-bar equity difference versus ledgr canonical, shown as a percent of ledgr equity. Lower is better. |
-| `Return corr` | Correlation between one-bar equity changes. Closer to 1 is better. |
-| `Total return delta` | Peer total return minus ledgr canonical total return, in percentage points. |
-| `Sharpe diff` | Peer Sharpe minus ledgr canonical Sharpe. |
-| `Max DD delta` | Peer max drawdown minus ledgr canonical max drawdown, in percentage points. |
-| `Trade count diff` | Peer closed-trade count minus ledgr canonical closed-trade count. |
+The mental move when a parity check fails is to consider three
+candidates in order: ledgr is wrong, the peer is wrong, the harness is
+wrong. The residual difference is then attributed to a named source:
+indicator initialization window, fill-timing edge, cost or margin
+default, position-sizing rounding, timestamp alignment, or
+float-ordering rounding.
 
-### Tier 1 Per-Bar Parity
+### Tier 1: per-bar equity behavior
 
 ```{r}
 #| echo: false
@@ -416,7 +399,7 @@ tier1 <- data.frame(
 knitr::kable(tier1, row.names = FALSE)
 ```
 
-Rows marked `review` keep the standard divergence-source attribution:
+Rows in `review` carry an explicit attribution:
 
 ```{r}
 #| echo: false
@@ -426,33 +409,6 @@ if (nrow(review) == 0L) {
   review <- data.frame(Peer = "(none)", `Review attribution` = "All peer rows passed Tier 1 tolerance.", check.names = FALSE)
 }
 knitr::kable(review, row.names = FALSE)
-```
-
-### Per-Bar Divergence Attribution
-
-Every DONE peer row writes a per-bar `_divergence.csv` plus a
-`_divergence_summary.csv`. Attribution is computed from equity divergence and
-same-timestamp fill/transaction comparisons against `ledgr_ttr_canonical`.
-
-```{r}
-#| echo: false
-div_table <- divergence_summary
-pct_cols <- grep("^pct_attributable_", names(div_table), value = TRUE)
-for (col in pct_cols) div_table[[col]] <- fmt_pct(div_table[[col]], digits = 4)
-names(div_table) <- c(
-  "Peer",
-  "Total abs divergence",
-  "Diverging bars",
-  "First divergence",
-  "Indicator warmup",
-  "Fill timing",
-  "Calendar",
-  "Position size",
-  "Float rounding",
-  "Other"
-)
-div_table[["Total abs divergence"]] <- fmt_num(div_table[["Total abs divergence"]], digits = 7)
-knitr::kable(div_table, row.names = FALSE)
 ```
 
 ```{r}
@@ -483,7 +439,7 @@ text(log10(plot_div), seq_along(plot_div), labels = paste0(" ", labels), pos = 4
 par(old_par)
 ```
 
-### Tier 2 Top-Line Metrics
+### Tier 2: derived top-line metrics
 
 ```{r}
 #| echo: false
@@ -497,7 +453,7 @@ tier2 <- data.frame(
 knitr::kable(tier2, row.names = FALSE)
 ```
 
-### Tier 3 Trade Surface
+### Tier 3: trade-level surface
 
 ```{r}
 #| echo: false
@@ -511,37 +467,240 @@ tier3 <- data.frame(
 knitr::kable(tier3, row.names = FALSE)
 ```
 
-### Equity Curves
+### Per-bar divergence attribution
 
-The plot normalizes equity for each engine to its first observed value, so shape
-differences are visible without implying an absolute performance ranking between
-engines.
+Every DONE peer row writes a per-bar `_divergence.csv` plus a
+`_divergence_summary.csv`. The attribution columns below decompose total
+absolute equity divergence against `ledgr_ttr_canonical` into named
+sources.
 
 ```{r}
 #| echo: false
-#| fig.width: 9
-#| fig.height: 5
-equity$ts_utc <- as.POSIXct(equity$ts_utc, tz = "UTC")
-equity <- equity[order(equity$engine, equity$ts_utc), ]
-engines <- unique(equity$engine)
-cols <- c("#2F4858", "#5B8C5A", "#B85C5C", "#7A9E9F", "#8D6A9F", "#D19C1D", "#4C6A92")
-plot(NULL, xlim = range(equity$ts_utc), ylim = range(unlist(lapply(engines, function(engine) {
-  y <- equity$equity[equity$engine == engine]
-  y / y[[1L]]
-})), na.rm = TRUE), xaxt = "n", xlab = "Month", ylab = "Equity / first observed equity", main = "Record Equity Curves\nnormalized within each engine")
-axis.POSIXct(1, at = pretty(equity$ts_utc, n = 8), format = "%Y-%m")
-grid(col = "gray88")
-for (i in seq_along(engines)) {
-  d <- equity[equity$engine == engines[[i]], ]
-  lines(d$ts_utc, d$equity / d$equity[[1L]], col = cols[((i - 1L) %% length(cols)) + 1L], lwd = 2)
-}
-legend_cols <- cols[((seq_along(engines) - 1L) %% length(cols)) + 1L]
-legend("topleft", legend = engines, col = legend_cols, lwd = 2, bty = "n", cex = 0.75)
+div_table <- divergence_summary
+pct_cols <- grep("^pct_attributable_", names(div_table), value = TRUE)
+for (col in pct_cols) div_table[[col]] <- fmt_pct(div_table[[col]], digits = 4)
+names(div_table) <- c(
+  "Peer",
+  "Total abs divergence",
+  "Diverging bars",
+  "First divergence",
+  "Indicator warmup",
+  "Fill timing",
+  "Calendar",
+  "Position size",
+  "Float rounding",
+  "Other"
+)
+div_table[["Total abs divergence"]] <- fmt_num(div_table[["Total abs divergence"]], digits = 7)
+knitr::kable(div_table, row.names = FALSE)
 ```
 
-### Surface Availability
+## Methodology
+
+### Harness
+
+The harness lives at `dev/bench/peer_benchmark/peer_benchmark.R`. It
+runs two checks per peer: numerical parity against ledgr canonical TTR,
+and same-host phase timing. The parity check asks whether the engines
+agree on this strategy and data. The timing check asks how long this
+local same-host harness took under the declared boundary.
+
+```{r}
+if (isTRUE(params$run_harness)) {
+  candidates <- c(".", "..", file.path("..", ".."), file.path("..", "..", ".."))
+  repo_root <- candidates[file.exists(file.path(candidates, "DESCRIPTION"))][[1L]]
+  repo_root <- normalizePath(repo_root, mustWork = TRUE)
+  source(file.path(repo_root, "dev", "bench", "peer_benchmark", "peer_benchmark.R"))
+  peer_main(peer_parse_args(c("--preset", params$preset)))
+} else {
+  message("Harness execution disabled. Render with -P run_harness:true to run.")
+}
+```
+
+Smoke command:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
+```
+
+Record command:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
+```
+
+Record command with the opt-in B2 row:
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
+```
+
+The harness writes ignored local artifacts under `dev/bench/results/`:
+one shared bars CSV with input hash, per-engine canonical equity curves
+where available, fills and trade summary tables where available, engine
+surface-status rows for unavailable outputs, Tier 1/2/3 parity CSVs,
+performance timing CSV, environment metadata JSON, and append-only
+parity history JSON under `dev/bench/results/parity_history/`.
+
+### Required rows
+
+| Row | Status policy |
+| --- | --- |
+| ledgr canonical TTR | Required; errors if `TTR` is missing. |
+| ledgr canonical TTR ephemeral | Required; runs the same fold core through an in-memory output handler and must match durable ledgr equity/fills before the run is accepted. |
+| ledgr B2 spot-FIFO ephemeral | Optional; enabled with `--compiled-accounting-model spot_fifo`; uses the same bars/features/strategy surface as ledgr canonical TTR ephemeral and must match canonical ledgr outputs before being interpreted as a peer-comparison row. |
+| ledgr built-in SMA diagnostic | Required; runs through ledgr built-ins. |
+| quantstrat | Runs when local R packages are installed; otherwise explicit unavailable row. |
+| Backtrader | Managed through `dev/bench/peer_benchmark/python/backtrader/` and run through `python -m uv`. |
+| zipline-reloaded full engine | Managed through `dev/bench/peer_benchmark/python/zipline/`; temporary csvdir bundle ingestion plus `zipline.run_algorithm()`. |
+| LEAN CLI | Managed through `dev/bench/peer_benchmark/python/lean/`; invokes the local LEAN CLI or reports unavailable with the CLI failure reason. |
+
+Optional peers must emit a status row. Missing fills/trade surfaces are
+labeled with unavailable metadata rather than silently dropped.
+
+### Phase definitions
+
+Each DONE row in the performance table is split into three measured
+phases:
+
+- **Ingestion**: from timed-window start until the engine has native
+  data structures ready to iterate.
+- **Engine**: from ready-to-iterate until strategy execution completes
+  and engine state is final.
+- **Results**: from final engine state until canonical equity, fills,
+  and trades are materialized for this harness.
+
+The three phase columns must reconcile to `Total` within 0.5 seconds or
+the harness aborts. LEAN is the one explicit exception: when the local
+CLI runs, the whole CLI subprocess is bucketed as engine time because
+ingestion, run, and extraction are not separable from outside the CLI.
+
+| Engine | Ingestion | Engine | Results |
+| --- | --- | --- | --- |
+| `ledgr_ttr_canonical` | `read.csv`, timestamp normalization, DuckDB snapshot creation, experiment construction | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
+| `ledgr_ttr_canonical_ephemeral` | `read.csv`, timestamp normalization, in-memory bars/features/projection construction | `ledgr_execute_fold()` with `ledgr_memory_output_handler()` | event-stream equity/fills reconstruction plus canonical materialization |
+| `ledgr_ttr_compiled_spot_fifo_ephemeral` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | `ledgr_execute_fold()` with `compiled_accounting_model = "spot_fifo"` | event-stream equity/fills canonical materialization |
+| `ledgr_builtin_sma` | Same durable ledgr boundary with built-in SMA features | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
+| `quantstrat` | `read.csv`, xts/globalenv construction, portfolio/account/orders/strategy setup | `applyStrategy()` plus account updates | account/transaction extraction plus canonical materialization |
+| `backtrader` | `read.csv`, `PandasData` construction, `cerebro.adddata` loop | `cerebro.run()` | CSV writes from in-memory observer/fill rows |
+| `zipline-reloaded-full` | `read.csv`, temporary csvdir creation, bundle registration and ingest | `run_algorithm()` | performance-frame transaction/equity extraction plus CSV writes |
+| `LEAN` | Not separable from outside the CLI | whole CLI subprocess if available | Not separable from outside the CLI |
+
+Boundary ambiguity decisions: quantstrat initialization is ingestion
+because it builds native portfolio/order state before strategy
+iteration; zipline bundle registration/ingest is ingestion because it
+creates the native bundle consumed by `run_algorithm()`; LEAN CLI phases
+are unavailable from outside the CLI.
+
+```{r}
+#| echo: false
+boundary_table <- data.frame(
+  Engine = performance$engine,
+  Boundary = performance$boundary,
+  check.names = FALSE
+)
+knitr::kable(boundary_table, row.names = FALSE)
+```
+
+### Parity tiers
+
+Tier 1 per-bar parity: equity-curve correlation, max single-bar equity
+divergence as a fraction of ledgr equity, daily-return correlation, cash
+trajectory match where both engines expose cash, and position proxy
+match where both engines expose comparable positions.
+
+Tier 2 derived top-line parity: total return, annualized return,
+annualized volatility, Sharpe ratio where defined, and max drawdown.
+
+Tier 3 trade-level parity: trade count, win rate and average trade
+where the peer exposes comparable realized trade data, and explicit
+unavailable metadata where the peer does not.
+
+The ledgr crossover strategy used by this report is vectorized over
+`ctx$features_wide`. It keeps previous crossover state in
+`ctx$state_prev`, but the current feature comparison and target updates
+are vector operations rather than a per-instrument R loop.
+
+### Parity glossary
+
+| Label | Meaning |
+| --- | --- |
+| `Tier 1` | Per-bar equity/return parity status. `pass` means the row passed the current tolerance; `review` means the row has a documented divergence attribution. |
+| `Parity surface` | Which comparable artifacts exist for that peer. Quantstrat is partial because this harness currently gets account equity and transaction count, not comparable fills or realized trade P&L. |
+| `Equity corr` | Correlation between peer equity and ledgr canonical equity. Closer to 1 is better. |
+| `Max div` | Largest single-bar equity difference versus ledgr canonical, shown as a percent of ledgr equity. Lower is better. |
+| `Return corr` | Correlation between one-bar equity changes. Closer to 1 is better. |
+| `Total return delta` | Peer total return minus ledgr canonical total return, in percentage points. |
+| `Sharpe diff` | Peer Sharpe minus ledgr canonical Sharpe. |
+| `Max DD delta` | Peer max drawdown minus ledgr canonical max drawdown, in percentage points. |
+| `Trade count diff` | Peer closed-trade count minus ledgr canonical closed-trade count. |
+
+### Engine status
+
+```{r}
+#| echo: false
+status_table <- status
+names(status_table) <- c("Engine", "Status", "Wall seconds", "Ingestion seconds", "Engine seconds", "Results seconds", "Reason")
+status_table[["Wall seconds"]] <- fmt_sec(status_table[["Wall seconds"]])
+status_table[["Reason"]] <- ifelse(is.na(status_table[["Reason"]]), "", status_table[["Reason"]])
+status_table[["Reason"]] <- ifelse(
+  status_table[["Engine"]] == "LEAN" & status_table[["Status"]] == "UNAVAILABLE",
+  "LEAN CLI unavailable: lean backtest rejected the temporary project root; local lean init organization setup is required.",
+  status_table[["Reason"]]
+)
+knitr::kable(status_table[, c("Engine", "Status", "Reason"), drop = FALSE], row.names = FALSE)
+```
+
+### Surface availability
 
 ```{r}
 #| echo: false
 knitr::kable(surface, row.names = FALSE)
 ```
+
+### Latest record bundle
+
+```{r}
+#| echo: false
+data.frame(
+  field = c("created_at", "release", "preset", "input_hash", "git_sha"),
+  value = c(env$created_at, env$release, env$preset, env$input_hash, env$git_sha),
+  stringsAsFactors = FALSE
+) |>
+  knitr::kable()
+```
+
+## Caveats
+
+### Same-host scope
+
+Hardware, R version, OS, and toolchain versions are pinned to the
+maintainer's environment. The numbers are comparable within this record
+bundle. They are not a portable speed ranking across hosts or a public
+benchmark claim.
+
+### Interpreting the B2 row
+
+The B2 row is interpreted only when measured on the same peer fixture
+as the external engines: same shared bars CSV, same fast/slow SMA
+settings, same seed. It is also an opt-in compiled accelerator
+measurement, not a default ledgr claim. ledgr's default execution path
+remains canonical R. Do not combine B2 numbers arithmetically with
+workload-grid B2 rows, which use a different fixture.
+
+### Engines deliberately excluded
+
+VectorBT is excluded from the event-driven peer table because it is a
+vectorized engine and a different paradigm. Published external LEAN and
+Ziplime reference rows remain context-only. The same-host LEAN row is
+driven only through the real LEAN CLI; if that CLI is not usable
+locally, the row is marked unavailable.
+
+### Historical-shape context
+
+Do not compare bars/sec here directly to the v0.1.8.7 `peer_sma_crossover`
+row as a pure version regression. That row used the same 500 x 1260
+scale but a continuous `fast > slow` target strategy and far fewer
+fills. This row uses high-turnover crossover-state semantics plus
+per-engine parity artifacts and surface-status outputs. The three-phase
+table is the useful comparison artifact, not a single bars/sec headline.

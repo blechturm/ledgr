@@ -20,7 +20,7 @@ tickets:
 
   - id: "LDG-2518"
     title: "Ephemeral Subphase Telemetry"
-    status: "in_review"
+    status: "completed"
     priority: "P0"
     effort: "S"
     dependencies:
@@ -37,7 +37,7 @@ tickets:
 
   - id: "LDG-2519"
     title: "Matrix-Canonical Substrate And Accessors"
-    status: "in_review"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -57,7 +57,7 @@ tickets:
 
   - id: "LDG-2520"
     title: "Fold-Owned FIFO Accounting And Inline State Capture"
-    status: "in_review"
+    status: "completed"
     priority: "P0"
     effort: "XL"
     dependencies:
@@ -80,7 +80,7 @@ tickets:
 
   - id: "LDG-2521"
     title: "yyjsonr Options Hoist"
-    status: "in_review"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:
@@ -137,7 +137,7 @@ tickets:
 
   - id: "LDG-2524"
     title: "Measurement Closeout"
-    status: "pending"
+    status: "in_review"
     priority: "P0"
     effort: "L"
     dependencies:

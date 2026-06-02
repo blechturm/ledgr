@@ -837,6 +837,74 @@ fill-batch accelerator" or equivalent. It should not describe LDG-2522
 as shipping a general compiled fold core, a public compiled execution
 mode, or a derivatives-capable accounting engine.
 
+### 2026-06-02 [documentation] Documentation, structure, and cleanup release before v0.1.9 features
+
+The v0.1.8.x optimization arc plus the v0.1.8.10 substrate work plus the B2
+compiled spot-FIFO accelerator land a substantial codified architecture that
+is captured in RFCs, decision logs, contracts, and spec packets but is not
+synthesized in any human-discoverable form. The governance pattern is
+working: every load-bearing decision is ratified, recorded, and traceable.
+But the volume has grown past what the maintainer can hold in head, and
+reviewing the codified architecture currently requires mining the governance
+archive.
+
+The next release should be documentation, structure, and cleanup only,
+before any new feature work resumes. The goal is entropy reduction: extract
+codified architectural decisions from RFCs and decision logs, synthesize
+them into a human- and agent-readable form, and make them discoverable
+without mining seven RFCs and thirty decision-log entries.
+
+This expands the previously planned v0.1.9.x maintainer manual scope (see
+the 2026-05-30 [documentation] entry below), which explicitly excluded
+"rewrite of RFC/ADR/spec-packet governance records into articles." That
+exclusion was correct for the v0.1.8.8 window; it is no longer correct
+after the v0.1.8.10 / B2 arc multiplied the codified-decision surface.
+Synthesis is now part of the scope.
+
+Scope additions over the 2026-05-30 maintainer manual entry:
+
+- RFC synthesis pass: extract load-bearing decisions from accepted RFCs
+  into a discoverable index that says "if you are trying to understand X,
+  the binding decisions are these and the others are scaffolding."
+- ADR population: many architectural decisions live as RFC bindings
+  without dedicated ADR records. The ADR directory should be populated
+  where the decision has stabilized.
+- Decision-log synthesis: the sister-repo decision-log pattern is great
+  archaeology; the equivalent ledger-side synthesis should be a
+  discoverable artifact, not a chronological dump.
+- Vignette refresh: who-ledgr-is-for, why-r, strategy-development, and
+  research-workflow articles need updates reflecting the post-v0.1.8.10 /
+  B2 reality. Ephemeral sweep is now a real sweep mode at scale; the
+  parameter-exploration economics shifted from "expensive but possible" to
+  "feasible at serious-research scale." The articles should say so.
+- Performance-arc narrative: a coherent v0.1.8.x story that names what got
+  faster and how to attribute it. Internal-facing first; external
+  publication (R/Finance talk, blog post) is a follow-on decision.
+- contracts.md structural pass: organized by surface (execution-spec,
+  fold-engine, output-handler, lot-accounting, ctx, etc.) rather than
+  chronologically.
+- Internal compiled-accounting documentation
+  (`compiled_accounting_model` enum scope guard) for future contributors
+  and future-self.
+
+Tone target: the documentation should be human-readable AND agent-readable
+AND a little fun to read. Not dry reference material. Prose with a point of
+view, examples that teach, a maintainer voice that signals "this was
+thought about, here is why." Dry reference is what RFCs and contracts.md
+already do; the synthesis layer earns its place by being more readable than
+the source.
+
+Sequencing rationale: features can wait; entropy management cannot. The
+risk of deferring is that the next architectural decision is made against a
+codified surface the maintainer no longer has full visibility on, which is
+exactly the failure mode the RFC discipline was built to prevent. v0.1.9
+target risk, v0.1.9.x crypto-readiness, walk-forward, and other planned
+feature work sit behind this release.
+
+Proposed name: v0.1.8.11, modeled on v0.1.8.00 as a prep-release that
+precedes the next feature cycle. The roadmap entry expands and re-sequences
+the existing v0.1.9.x maintainer manual milestone.
+
 ### 2026-06-01 [optimization] Ephemeral-mode xlarge wall attribution as gate for ledgrcore / Architecture B2 commit
 
 **Maintainer goal:** ephemeral mode should be fast. The current xlarge

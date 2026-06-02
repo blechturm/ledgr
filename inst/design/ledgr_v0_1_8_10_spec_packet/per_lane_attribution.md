@@ -20,7 +20,7 @@ Each implementation lane should record:
 
 ## LDG-2518: Ephemeral Subphase Telemetry
 
-Status: in review.
+Status: completed.
 
 Change summary:
 
@@ -42,9 +42,10 @@ Verification:
 
 Measurement status:
 
-- Large/xlarge ephemeral workload-grid reruns are not recorded yet. They remain
-  the post-review attribution gate before `LDG-2518` should be marked
-  completed.
+- Large/xlarge ephemeral workload-grid reruns are recorded in the Batch 7
+  closeout record `dev/bench/results/ledgr_bench_record_20260602T155628Z_*`.
+  The xlarge ephemeral canonical row reports 375.14s wall / 342.25s engine /
+  0.00s results and zero failures.
 
 Interpretation:
 
@@ -65,7 +66,7 @@ Interpretation:
 
 ## LDG-2519: Matrix-Canonical Substrate And Accessors
 
-Status: in review.
+Status: completed.
 
 Change summary:
 
@@ -86,8 +87,10 @@ Verification:
 
 Measurement status:
 
-- Large/xlarge workload-grid reruns are not recorded yet. They remain the
-  post-review attribution gate before `LDG-2519` should be marked completed.
+- Large/xlarge workload-grid reruns are recorded in the Batch 7 closeout record
+  `dev/bench/results/ledgr_bench_record_20260602T155628Z_*`. The closeout
+  interprets this lane as substrate/contract work; wall effects are folded into
+  later accounting and B2 measurements.
 
 Interpretation:
 
@@ -100,7 +103,7 @@ Interpretation:
 
 ## LDG-2520: Fold-Owned FIFO Accounting And Inline State Capture
 
-Status: in review.
+Status: completed.
 
 Change summary:
 
@@ -123,9 +126,12 @@ Verification:
 
 Measurement status:
 
-- Large/xlarge durable and ephemeral workload-grid reruns are not recorded yet.
-  They remain the post-review attribution gate before `LDG-2520` should be
-  marked completed.
+- Large/xlarge durable and ephemeral workload-grid reruns are recorded in the
+  Batch 7 closeout record
+  `dev/bench/results/ledgr_bench_record_20260602T155628Z_*`. The canonical R
+  xlarge durable row records the expected engine increase from moving FIFO work
+  into the fold; the xlarge ephemeral row records the fresh-summary bypass with
+  results near zero.
 
 Interpretation:
 
@@ -138,7 +144,7 @@ Interpretation:
 
 ## LDG-2521: yyjsonr Options Hoist
 
-Status: in review.
+Status: completed.
 
 Change summary:
 
