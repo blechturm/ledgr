@@ -367,6 +367,36 @@ ledgr_projection_feature_accessor <- function(projection, pulse_idx, feature_ids
   }
 }
 
+ledgr_projection_feature_vector_accessor <- function(projection, pulse_idx, feature_ids = NULL) {
+  force(projection)
+  force(pulse_idx)
+  pulse_idx <- as.integer(pulse_idx)
+  available_features <- ledgr_projection_feature_ids(projection, feature_ids)
+  available_message <- ledgr_feature_names_message(sort(available_features))
+  feature_values <- projection$feature_values
+
+  function(feature_name, default = NA_real_) {
+    if (!is.character(feature_name) || length(feature_name) != 1L || is.na(feature_name) || !nzchar(feature_name)) {
+      rlang::abort("`feature_name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+    }
+    if (length(available_features) == 0L || !(feature_name %in% available_features)) {
+      rlang::abort(
+        sprintf(
+          "Unknown feature ID `%s`. Available feature IDs: %s.",
+          feature_name,
+          available_message
+        ),
+        class = "ledgr_unknown_feature_id"
+      )
+    }
+    mat <- feature_values[[feature_name]]
+    if (is.null(mat)) {
+      return(rep(as.numeric(default), length(projection$instrument_index)))
+    }
+    as.numeric(mat[, pulse_idx])
+  }
+}
+
 ledgr_projection_feature_accessor_state <- function(projection, state, feature_ids = NULL) {
   force(projection)
   force(state)

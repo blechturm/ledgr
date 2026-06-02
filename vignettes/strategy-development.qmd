@@ -171,10 +171,14 @@ It is deliberately not the full dataset.
 |---|---|
 | `ctx$ts_utc` | current decision timestamp |
 | `ctx$universe` | instruments in the run |
+| `ctx$idx(id)` | 1-based universe position for one instrument |
 | `ctx$open(id)`, `ctx$close(id)` | current bar values for one instrument |
+| `ctx$vec$close` | current close values for the full universe |
 | `ctx$feature(id, feature_id)` | current indicator value for one instrument by engine feature ID |
+| `ctx$vec$feature(feature_id)` | current indicator values for the full universe by engine feature ID |
 | `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias, using the supplied feature map |
 | `ctx$position(id)` | current simulated position |
+| `ctx$vec$positions` | current simulated positions aligned to `ctx$universe` |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
 | `ctx$flat()` | target zero positions unless changed |
 | `ctx$hold()` | target current positions unless changed |
@@ -463,7 +467,9 @@ The economic idea:
 
 `signal_return()` is a thin helper around the same feature you inspected above:
 it reads `return_N` for every instrument in the pulse and returns one
-universe-wide signal object.
+universe-wide signal object. In current ledgr builds it uses the vector
+accessor `ctx$vec$feature(feature_id)` when available, then falls back to the
+scalar `ctx$feature(id, feature_id)` path for compatibility.
 
 The helper pipeline has four stages:
 
@@ -495,8 +501,9 @@ target
 ```
 
 `target_rebalance()` sizes with current pulse equity and current close prices,
-then floors to whole shares. For the selected `DEMO_01` pulse above, 10% of
-equity is allocated to the one selected instrument:
+using `ctx$vec$close` when available, then floors to whole shares. For the
+selected `DEMO_01` pulse above, 10% of equity is allocated to the one selected
+instrument:
 
 ```{r}
 #| label: floor-sizing
@@ -583,6 +590,12 @@ The examples above keep the exact feature ID contract visible:
 `ctx$feature(id, feature_id)` reads one registered feature for one instrument at
 one pulse. That contract remains the foundation.
 
+For cross-sectional strategies, `ctx$vec$feature(feature_id)` returns the same
+feature at the same pulse for every instrument in `ctx$universe`. Warmup for a
+known feature remains `NA`; an unknown feature ID fails loudly. The scalar
+helper stays the clearest teaching surface, while the vector helper is the
+lower-overhead surface for universe-wide scoring.
+
 When a strategy reads several features per instrument, repeating feature ID
 strings can obscure the trading idea. A feature map bundles indicator objects
 with strategy-facing aliases. The same object can be registered with the
@@ -640,8 +653,9 @@ Plain `features = list(...)` remains valid. Use it when exact IDs are clearest.
 Use a feature map when aliases make a feature-heavy strategy easier to read.
 `ledgr_experiment(features = ...)` accepts indicators, lists, named lists, and
 feature maps. The strategy context then uses either the exact-ID scalar accessor
-`ctx$feature()` or the mapped accessor `ctx$features()`. When in doubt, prefer
-the experiment-first workflow.
+`ctx$feature()`, the exact-ID vector accessor `ctx$vec$feature()`, or the
+mapped accessor `ctx$features()`. When in doubt, prefer the experiment-first
+workflow.
 
 ```{r}
 #| label: feature-map-experiment

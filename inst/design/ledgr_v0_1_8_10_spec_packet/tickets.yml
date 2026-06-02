@@ -37,7 +37,7 @@ tickets:
 
   - id: "LDG-2519"
     title: "Matrix-Canonical Substrate And Accessors"
-    status: "pending"
+    status: "in_review"
     priority: "P1"
     effort: "L"
     dependencies:

@@ -47,7 +47,7 @@ Review note:
 ## Batch 2 - Matrix-Canonical Substrate And Accessors
 
 Ticket: `LDG-2519`
-Status: Pending
+Status: In Review
 
 Goal: land the accepted accessor RFC and the integer-indexed substrate it
 consumes.

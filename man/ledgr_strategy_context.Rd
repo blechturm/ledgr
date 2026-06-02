@@ -14,16 +14,24 @@ Common accessors:
 \itemize{
 \item \code{ctx$ts_utc}: current decision timestamp.
 \item \code{ctx$universe}: character vector of instruments in the run.
+\item \code{ctx$idx(id)}: 1-based universe position for one instrument.
 \item \code{ctx$open(id)}, \code{ctx$high(id)}, \code{ctx$low(id)},
 \code{ctx$close(id)}, \code{ctx$volume(id)}: current bar values for one
 instrument.
+\item \code{ctx$vec$open}, \code{ctx$vec$high}, \code{ctx$vec$low},
+\code{ctx$vec$close}, \code{ctx$vec$volume}: current bar values for the full
+universe, aligned to \code{ctx$universe}.
 \item \code{ctx$bar(id)}: the current OHLCV row for one instrument.
 \item \code{ctx$feature(id, feature_id)}: one registered feature value for one
 instrument, addressed by ledgr's exact engine feature ID such as
 \code{"return_5"}.
+\item \code{ctx$vec$feature(feature_id)}: one registered feature value vector
+for the full universe, aligned to \code{ctx$universe}.
 \item \code{ctx$features(id, feature_map)}: mapped feature values for one
 instrument, returned as a named numeric vector keyed by feature-map aliases.
 \item \code{ctx$position(id)}: current simulated position for one instrument.
+\item \code{ctx$vec$positions}: current simulated positions for the full
+universe, aligned to \code{ctx$universe}.
 \item \code{ctx$cash} and \code{ctx$equity}: current simulated portfolio state.
 \item \code{ctx$flat()}: full named target vector initialized to zero.
 \item \code{ctx$hold()}: full named target vector initialized to current
@@ -35,6 +43,14 @@ Feature IDs and feature-map aliases are different namespaces.
 \code{ctx$features()} uses a \code{ledgr_feature_map} object and returns values
 named by alias. Unknown engine feature IDs fail loudly; warmup for a known
 feature is represented by \code{NA_real_}.
+
+\code{ctx$idx(id)} fails loudly for unknown instruments by default. Use
+\code{ctx$idx(id, missing = "na")} only when an explicit \code{NA_integer_}
+sentinel is part of the strategy logic.
+
+\code{ctx$positions} is a public pulse-start snapshot. \code{ctx$vec$positions}
+is the aligned vector view of the same pulse-known state. Strategy code should
+treat all context fields and vector views as read-only.
 
 Strategies should return full named numeric target vectors. The helpers
 \code{ctx$flat()} and \code{ctx$hold()} are the safest starting points because

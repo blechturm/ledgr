@@ -78,12 +78,16 @@ signal_return <- function(ctx, lookback = 20L) {
   lookback <- ledgr_strategy_helper_validate_lookback(lookback)
   feature_id <- sprintf("return_%d", lookback)
 
-  values <- vapply(
-    universe,
-    function(id) as.numeric(ctx$feature(id, feature_id)),
-    numeric(1)
-  )
-  ledgr_signal(values, universe = universe, origin = feature_id)
+  values <- if (is.list(ctx$vec) && is.function(ctx$vec$feature)) {
+    as.numeric(ctx$vec$feature(feature_id))
+  } else {
+    vapply(
+      universe,
+      function(id) as.numeric(ctx$feature(id, feature_id)),
+      numeric(1)
+    )
+  }
+  ledgr_signal(stats::setNames(as.numeric(values), universe), universe = universe, origin = feature_id)
 }
 
 #' Select the top instruments from a signal
@@ -235,8 +239,17 @@ target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
     return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
   }
 
+  close_vec <- if (is.list(ctx$vec) && is.numeric(ctx$vec$close) && length(ctx$vec$close) == length(universe)) {
+    as.numeric(ctx$vec$close)
+  } else {
+    NULL
+  }
   for (id in names(weights)) {
-    price <- as.numeric(ctx$close(id))
+    price <- if (!is.null(close_vec) && is.function(ctx$idx)) {
+      close_vec[[ctx$idx(id)]]
+    } else {
+      as.numeric(ctx$close(id))
+    }
     if (length(price) != 1L || is.na(price) || !is.finite(price) || price <= 0) {
       rlang::warn(
         sprintf("Cannot size target for `%s`: close price is missing, non-finite, or non-positive. Targeting 0.", id),

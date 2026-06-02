@@ -370,9 +370,21 @@ the active versioned spec packet, currently
 
 - Runtime and interactive pulse contexts expose data-frame-compatible
   `ctx$bars` and long-table `ctx$feature_table`.
-- Ergonomic helpers such as `ctx$feature()` and `ctx$features()` are derived
-  views over `ctx$feature_table`; they do not change feature computation
-  semantics.
+- Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, `ctx$idx()`,
+  and `ctx$vec` are derived views over pulse-known data; they do not change
+  feature computation semantics or no-lookahead boundaries.
+- `ctx$idx(instrument_id, missing = c("error", "na"))` returns the 1-based
+  universe position for an instrument. Unknown IDs fail loudly by default and
+  return `NA_integer_` only when `missing = "na"` is requested explicitly.
+- `ctx$vec` exposes universe-aligned vector views for cross-sectional strategy
+  logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
+  `positions`, and `feature`. `ctx$vec$feature(feature_id)` returns the current
+  universe-aligned vector for one engine feature ID.
+- `ctx$positions` remains a public pulse-start snapshot. `ctx$vec$positions`
+  is the aligned vector view of the same pulse-known state. Strategies must
+  treat both as read-only; mutating them is outside the strategy contract and
+  must not be required for any supported workflow. The `ctx$positions` name
+  order is canonicalized to `ctx$universe`.
 - `ctx$flat(default = 0)` constructs a full target vector initialized to a
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default

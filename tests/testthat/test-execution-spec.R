@@ -90,6 +90,7 @@ testthat::test_that("execution spec constructor preserves the former list payloa
     c(
       "run_id",
       "instrument_ids",
+      "id_to_idx",
       "strategy_fn",
       "strategy_params",
       "strategy_call_signature",
@@ -117,6 +118,7 @@ testthat::test_that("execution spec constructor preserves the former list payloa
       "use_fast_context"
     )
   )
+  testthat::expect_identical(spec$id_to_idx, stats::setNames(as.integer(1:2), c("AAA", "BBB")))
 })
 
 testthat::test_that("execution specs validate before fold entry", {
@@ -166,7 +168,7 @@ testthat::test_that("fold position valuation aligns shuffled positions by instru
   ledgr:::ledgr_execute_fold(spec, handler)
 
   testthat::expect_equal(observed_equity, c(1302, 1602))
-  testthat::expect_identical(names(observed_positions[[1L]]), c("BBB", "AAA"))
+  testthat::expect_identical(names(observed_positions[[1L]]), c("AAA", "BBB"))
   testthat::expect_equal(as.numeric(observed_positions[[1L]][c("AAA", "BBB")]), c(1, 2))
 })
 
@@ -188,6 +190,36 @@ testthat::test_that("fold target deltas align shuffled targets by instrument id"
   testthat::expect_equal(as.numeric(observed_positions[[2L]][c("AAA", "BBB")]), c(1, 2))
   testthat::expect_identical(events$instrument_id, c("AAA", "BBB"))
   testthat::expect_equal(events$qty, c(1, 2))
+})
+
+testthat::test_that("fold primitive positions preserve public named ctx snapshot", {
+  observed <- list()
+  strategy <- function(ctx, params) {
+    observed[[length(observed) + 1L]] <<- list(
+      positions = ctx$positions,
+      vec_positions = ctx$vec$positions,
+      idx_aaa = ctx$idx("AAA"),
+      idx_bad = ctx$idx("ZZZ", missing = "na"),
+      idx_error = testthat::capture_error(ctx$idx("ZZZ"))
+    )
+    stats::setNames(c(1, 0), c("AAA", "BBB"))
+  }
+  spec <- ledgr_test_execution_spec(
+    strategy_fn = strategy,
+    strategy_call_signature = ledgr:::ledgr_strategy_signature(strategy),
+    state = list(cash = 1000, positions = c(0, 0))
+  )
+  handler <- ledgr:::ledgr_memory_output_handler("primitive-position-snapshot")
+
+  ledgr:::ledgr_execute_fold(spec, handler)
+
+  testthat::expect_identical(names(observed[[1L]]$positions), c("AAA", "BBB"))
+  testthat::expect_equal(as.numeric(observed[[1L]]$positions), c(0, 0))
+  testthat::expect_null(names(observed[[1L]]$vec_positions))
+  testthat::expect_equal(observed[[2L]]$vec_positions, c(1, 0))
+  testthat::expect_identical(observed[[1L]]$idx_aaa, 1L)
+  testthat::expect_identical(observed[[1L]]$idx_bad, NA_integer_)
+  testthat::expect_s3_class(observed[[1L]]$idx_error, "ledgr_invalid_pulse_context")
 })
 
 testthat::test_that("run and sweep route fold payloads through one constructor", {

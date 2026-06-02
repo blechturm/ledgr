@@ -38,6 +38,10 @@ ledgr_execution_spec_check <- function(ok, message) {
   }
 }
 
+ledgr_execution_id_to_idx <- function(instrument_ids) {
+  stats::setNames(as.integer(seq_along(instrument_ids)), as.character(instrument_ids))
+}
+
 ledgr_execution_spec <- function(run_id,
                                  instrument_ids,
                                  strategy_fn,
@@ -66,10 +70,12 @@ ledgr_execution_spec <- function(run_id,
                                  event_mode = c("live", "buffered"),
                                  use_fast_context = FALSE) {
   event_mode <- match.arg(event_mode)
+  id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   spec <- list(
     spec_version = ledgr_execution_spec_version(),
     run_id = run_id,
     instrument_ids = instrument_ids,
+    id_to_idx = id_to_idx,
     strategy_fn = strategy_fn,
     strategy_params = strategy_params,
     strategy_call_signature = strategy_call_signature,
@@ -122,6 +128,13 @@ ledgr_validate_execution_spec <- function(spec) {
     "`execution$instrument_ids` must be unique non-empty character values."
   )
   ledgr_execution_spec_check(
+    is.integer(spec$id_to_idx) &&
+      length(spec$id_to_idx) == length(spec$instrument_ids) &&
+      identical(names(spec$id_to_idx), as.character(spec$instrument_ids)) &&
+      identical(as.integer(spec$id_to_idx), as.integer(seq_along(spec$instrument_ids))),
+    "`execution$id_to_idx` must map instrument_ids to 1-based integer positions."
+  )
+  ledgr_execution_spec_check(
     is.function(spec$strategy_fn),
     "`execution$strategy_fn` must be a function."
   )
@@ -162,13 +175,16 @@ ledgr_validate_execution_spec <- function(spec) {
     "`execution$telemetry_stride` must be an integer-like scalar >= 0."
   )
   ledgr_execution_spec_check(
-    is.list(spec$state) &&
+      is.list(spec$state) &&
       is.numeric(spec$state$cash) &&
       length(spec$state$cash) == 1L &&
       is.finite(spec$state$cash) &&
       is.numeric(spec$state$positions) &&
-      !is.null(names(spec$state$positions)),
-    "`execution$state` must include scalar cash and named numeric positions."
+      (
+        !is.null(names(spec$state$positions)) ||
+          length(spec$state$positions) == length(spec$instrument_ids)
+      ),
+    "`execution$state` must include scalar cash and numeric positions."
   )
   ledgr_execution_spec_check(
     is.list(spec$bars_by_id),

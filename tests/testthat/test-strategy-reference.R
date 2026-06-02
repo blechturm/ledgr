@@ -150,6 +150,44 @@ testthat::test_that("target_rebalance builds full-universe targets and rejects i
   )
 })
 
+testthat::test_that("strategy helpers consume ctx vec accessors when available", {
+  ts <- ledgr_utc("2020-01-03")
+  bars <- data.frame(
+    ts_utc = rep(ts, 2),
+    instrument_id = c("AAA", "BBB"),
+    open = c(100, 50),
+    high = c(100, 50),
+    low = c(100, 50),
+    close = c(100, 50),
+    volume = c(1000, 1000)
+  )
+  features <- data.frame(
+    ts_utc = rep(ts, 2),
+    instrument_id = c("AAA", "BBB"),
+    feature_name = rep("return_2", 2),
+    feature_value = c(0.02, 0.01)
+  )
+  ctx <- ledgr:::ledgr_pulse_context(
+    "helper-run",
+    ts,
+    c("AAA", "BBB"),
+    bars,
+    features = features,
+    cash = 1000,
+    equity = 1000
+  )
+  ctx$feature <- function(...) rlang::abort("scalar feature path should not be used")
+  ctx$close <- function(...) rlang::abort("scalar close path should not be used")
+
+  signal <- signal_return(ctx, lookback = 2)
+  weights <- weight_equal(select_top_n(signal, 1))
+  target <- target_rebalance(weights, ctx, equity_fraction = 0.5)
+
+  testthat::expect_identical(as.numeric(signal), c(0.02, 0.01))
+  testthat::expect_identical(as.numeric(target), c(5, 0))
+  testthat::expect_identical(names(target), c("AAA", "BBB"))
+})
+
 testthat::test_that("reference helper pipeline runs through ledgr_run", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

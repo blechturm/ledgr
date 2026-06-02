@@ -181,7 +181,7 @@ scope: ephemeral_subphase_attribution
 Priority: P1
 Effort: L
 Dependencies: LDG-2518
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -221,6 +221,15 @@ next-bar lookup preserving fill-model context.
 Pulse-context accessor tests, execution-spec tests, fill-model tests,
 strategy-contract tests, strategy helper tests, workload-grid rerun, and
 per-lane attribution review.
+
+### Review Note
+
+Batch 2 code and targeted verification are staged for review. The implementation
+adds execution-spec `id_to_idx`, primitive internal fold positions with public
+named `ctx$positions` snapshots preserved, `ctx$idx()`, `ctx$vec`, bulk vector
+feature reads, matrix-backed next-bar scalar lookup, and helper Pass 1
+`ctx$vec` consumption. Large/xlarge workload-grid reruns remain the
+post-review attribution gate before completion.
 
 ### Source Reference
 

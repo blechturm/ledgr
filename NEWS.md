@@ -1,3 +1,13 @@
+# ledgr 0.1.8.10
+
+- Added the matrix-canonical strategy context substrate: `ctx$idx()`,
+  universe-aligned `ctx$vec` OHLCV/positions views, and
+  `ctx$vec$feature(feature_id)` for bulk feature reads. Existing scalar
+  helpers remain supported.
+- `ctx$positions` remains a named pulse-start snapshot, but its name order is
+  now canonicalized to `ctx$universe` even when the internal fold state was
+  initialized from a differently ordered named position vector.
+
 # ledgr 0.1.8.9
 
 - Switched canonical JSON serialization and parsing from jsonlite to yyjsonr

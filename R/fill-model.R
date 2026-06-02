@@ -15,7 +15,15 @@ ledgr_fill_next_open <- function(desired_qty_delta, next_bar, spread_bps, commis
   ledgr_resolve_fill_proposal(proposal, cost_resolver)
 }
 
-ledgr_next_open_fill_proposal <- function(desired_qty_delta, next_bar) {
+ledgr_next_open_fill_proposal <- function(desired_qty_delta,
+                                          next_bar = NULL,
+                                          next_open_price = NULL,
+                                          instrument_id = NULL,
+                                          ts_utc = NULL,
+                                          high = NA_real_,
+                                          low = NA_real_,
+                                          close = NA_real_,
+                                          volume = NA_real_) {
   if (!is.numeric(desired_qty_delta) || length(desired_qty_delta) != 1 || is.na(desired_qty_delta) || !is.finite(desired_qty_delta)) {
     rlang::abort("`desired_qty_delta` must be a finite numeric scalar.", class = "ledgr_invalid_fill_input")
   }
@@ -30,7 +38,7 @@ ledgr_next_open_fill_proposal <- function(desired_qty_delta, next_bar) {
     ))
   }
 
-  if (is.null(next_bar)) {
+  if (is.null(next_bar) && is.null(next_open_price)) {
     return(structure(
       list(
         status = "NO_FILL",
@@ -41,28 +49,40 @@ ledgr_next_open_fill_proposal <- function(desired_qty_delta, next_bar) {
     ))
   }
 
-  if (!is.list(next_bar) && !is.data.frame(next_bar)) {
-    rlang::abort("`next_bar` must be a one-row list or data.frame.", class = "ledgr_invalid_fill_input")
-  }
-  if (is.data.frame(next_bar)) {
-    if (nrow(next_bar) != 1) {
-      rlang::abort("`next_bar` must be a one-row data.frame.", class = "ledgr_invalid_fill_input")
+  open_label <- "`next_open_price`"
+  if (!is.null(next_bar)) {
+    if (!is.list(next_bar) && !is.data.frame(next_bar)) {
+      rlang::abort("`next_bar` must be a one-row list or data.frame.", class = "ledgr_invalid_fill_input")
     }
-    next_bar <- as.list(next_bar)
+    if (is.data.frame(next_bar)) {
+      if (nrow(next_bar) != 1) {
+        rlang::abort("`next_bar` must be a one-row data.frame.", class = "ledgr_invalid_fill_input")
+      }
+      next_bar <- as.list(next_bar)
+    }
+    instrument_id <- next_bar$instrument_id
+    ts_utc <- next_bar$ts_utc
+    open <- next_bar$open
+    high <- next_bar$high
+    low <- next_bar$low
+    close <- next_bar$close
+    volume <- next_bar$volume
+    open_label <- "`next_bar$open`"
+  } else {
+    if (!is.numeric(next_open_price) || length(next_open_price) != 1 || is.na(next_open_price) || !is.finite(next_open_price) || next_open_price <= 0) {
+      rlang::abort("`next_open_price` must be a finite numeric scalar > 0.", class = "ledgr_invalid_fill_input")
+    }
+    open <- next_open_price
   }
-
-  instrument_id <- next_bar$instrument_id
-  ts_utc <- next_bar$ts_utc
-  open <- next_bar$open
 
   if (!is.character(instrument_id) || length(instrument_id) != 1 || is.na(instrument_id) || !nzchar(instrument_id)) {
-    rlang::abort("`next_bar$instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_fill_input")
+    rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_fill_input")
   }
   if (is.null(ts_utc)) {
-    rlang::abort("`next_bar$ts_utc` is required.", class = "ledgr_invalid_fill_input")
+    rlang::abort("`ts_utc` is required.", class = "ledgr_invalid_fill_input")
   }
   if (!is.numeric(open) || length(open) != 1 || is.na(open) || !is.finite(open) || open <= 0) {
-    rlang::abort("`next_bar$open` must be a finite numeric scalar > 0.", class = "ledgr_invalid_fill_input")
+    rlang::abort(sprintf("%s must be a finite numeric scalar > 0.", open_label), class = "ledgr_invalid_fill_input")
   }
 
   side <- if (desired_qty_delta > 0) "BUY" else "SELL"
@@ -77,10 +97,10 @@ ledgr_next_open_fill_proposal <- function(desired_qty_delta, next_bar) {
     instrument_id = instrument_id,
     ts_utc = ts_exec_utc,
     open = as.numeric(open),
-    high = ledgr_fill_optional_bar_numeric(next_bar$high),
-    low = ledgr_fill_optional_bar_numeric(next_bar$low),
-    close = ledgr_fill_optional_bar_numeric(next_bar$close),
-    volume = ledgr_fill_optional_bar_numeric(next_bar$volume)
+    high = ledgr_fill_optional_bar_numeric(high),
+    low = ledgr_fill_optional_bar_numeric(low),
+    close = ledgr_fill_optional_bar_numeric(close),
+    volume = ledgr_fill_optional_bar_numeric(volume)
   )
 
   structure(

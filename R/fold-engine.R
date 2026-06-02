@@ -35,10 +35,36 @@ ledgr_finalize_fold_telemetry <- function(output_handler,
   )
 }
 
+ledgr_fold_positions_to_vec <- function(positions, instrument_ids) {
+  if (is.null(positions) || length(positions) == 0L) {
+    return(rep(0, length(instrument_ids)))
+  }
+  if (!is.numeric(positions)) {
+    rlang::abort("Fold state positions must be numeric.", class = "ledgr_invalid_fold_execution")
+  }
+  if (!is.null(names(positions))) {
+    out <- rep(0, length(instrument_ids))
+    matched <- intersect(names(positions), instrument_ids)
+    if (length(matched) > 0L) {
+      out[match(matched, instrument_ids)] <- as.numeric(positions[matched])
+    }
+    return(out)
+  }
+  if (length(positions) != length(instrument_ids)) {
+    rlang::abort("Primitive fold state positions must align with instrument_ids.", class = "ledgr_invalid_fold_execution")
+  }
+  as.numeric(positions)
+}
+
+ledgr_fold_positions_snapshot <- function(position_vec, instrument_ids) {
+  stats::setNames(as.numeric(position_vec), instrument_ids)
+}
+
 ledgr_execute_fold <- function(execution, output_handler) {
   execution <- ledgr_validate_execution_spec(execution)
   run_id <- execution$run_id
   instrument_ids <- execution$instrument_ids
+  id_to_idx <- execution$id_to_idx
   strategy_fn <- execution$strategy_fn
   strategy_params <- execution$strategy_params
   strategy_call_signature <- execution$strategy_call_signature
@@ -50,6 +76,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
   checkpoint_every <- execution$checkpoint_every
   telemetry_stride <- execution$telemetry_stride
   state <- execution$state
+  state$positions <- ledgr_fold_positions_to_vec(state$positions, instrument_ids)
   state_prev_mem <- execution$state_prev
   bars_by_id <- execution$bars_by_id
   bars_mat <- execution$bars_mat
@@ -161,8 +188,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
         sample_start <- sample_now
       }
 
-      position_qty <- as.numeric(state$positions[instrument_ids])
-      position_qty[is.na(position_qty)] <- 0
+      position_qty <- as.numeric(state$positions)
       active_positions <- position_qty != 0
       positions_value <- if (any(active_positions)) {
         sum(position_qty[active_positions] * bars_mat$close[active_positions, i])
@@ -178,13 +204,14 @@ ledgr_execute_fold <- function(execution, output_handler) {
       # The pulse context is the only strategy-visible boundary in the fold.
       # Everything below this point must preserve no-lookahead: bars/features are
       # the current pulse view, while fills are resolved against the next bar.
+      positions_snapshot <- ledgr_fold_positions_snapshot(state$positions, instrument_ids)
       ctx <- list(
         run_id = run_id,
         ts_utc = ts_iso,
         universe = instrument_ids,
         bars = bars_current,
         feature_table = features_current,
-        positions = state$positions,
+        positions = positions_snapshot,
         cash = state$cash,
         equity = state$cash + positions_value,
         seed = execution_seed,
@@ -203,7 +230,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           positions = state$positions,
           universe = instrument_ids,
           pulse_idx = i,
-          active_alias_map = active_alias_map
+          active_alias_map = active_alias_map,
+          id_to_idx = id_to_idx
         )
       } else {
         ledgr_update_pulse_context_helpers(
@@ -216,7 +244,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           pulse_idx = i,
           feature_ids = def_ids,
           features_wide = features_wide_current,
-          active_alias_map = active_alias_map
+          active_alias_map = active_alias_map,
+          id_to_idx = id_to_idx
         )
       }
       if (sample_telemetry) {
@@ -274,8 +303,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
 
       target_names <- names(targets)
       desired_vec <- as.numeric(targets)
-      current_qty_vec <- as.numeric(state$positions[target_names])
-      current_qty_vec[is.na(current_qty_vec)] <- 0
+      target_inst_idx <- as.integer(id_to_idx[target_names])
+      current_qty_vec <- as.numeric(state$positions[target_inst_idx])
       delta_vec <- desired_vec - current_qty_vec
       actionable_idx <- which(abs(delta_vec) > sqrt(.Machine$double.eps))
       if (sample_telemetry) {
@@ -289,14 +318,19 @@ ledgr_execute_fold <- function(execution, output_handler) {
       for (target_idx in actionable_idx) {
         if (sample_telemetry) sample_start <- ledgr_time_now()
         instrument_id <- target_names[[target_idx]]
+        inst_idx <- target_inst_idx[[target_idx]]
         delta <- delta_vec[[target_idx]]
         cur_qty <- current_qty_vec[[target_idx]]
 
-        b <- bars_by_id[[instrument_id]]
-        next_bar <- if (!is.null(b) && i < nrow(b)) b[i + 1L, , drop = FALSE] else NULL
         proposal <- ledgr_next_open_fill_proposal(
           desired_qty_delta = delta,
-          next_bar = next_bar
+          next_open_price = if (i < length(pulses_posix)) bars_mat$open[inst_idx, i + 1L] else NULL,
+          instrument_id = instrument_id,
+          ts_utc = if (i < length(pulses_posix)) pulses_posix[[i + 1L]] else NULL,
+          high = if (i < length(pulses_posix)) bars_mat$high[inst_idx, i + 1L] else NA_real_,
+          low = if (i < length(pulses_posix)) bars_mat$low[inst_idx, i + 1L] else NA_real_,
+          close = if (i < length(pulses_posix)) bars_mat$close[inst_idx, i + 1L] else NA_real_,
+          volume = if (i < length(pulses_posix)) bars_mat$volume[inst_idx, i + 1L] else NA_real_
         )
         if (sample_telemetry) {
           sample_now <- ledgr_time_now()
@@ -357,7 +391,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
         } else {
           fill$qty * fill$fill_price - fill$commission_fixed
         }
-        state$positions[[instrument_id]] <- cur_qty + qty
+        state$positions[[inst_idx]] <- cur_qty + qty
         state$cash <- state$cash + cash_delta
         if (sample_telemetry) {
           t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())

@@ -30,6 +30,7 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_true(is.function(ctx$close))
   testthat::expect_true(is.function(ctx$volume))
   testthat::expect_true(is.function(ctx$position))
+  testthat::expect_true(is.function(ctx$idx))
   testthat::expect_true(is.function(ctx$flat))
   testthat::expect_true(is.function(ctx$hold))
   testthat::expect_true(is.function(ctx$targets))
@@ -41,6 +42,16 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_equal(ctx$close("A"), 10.5)
   testthat::expect_equal(ctx$volume("B"), 200)
   testthat::expect_null(names(ctx$close("A")))
+  testthat::expect_identical(ctx$idx("A"), 1L)
+  testthat::expect_identical(ctx$idx("Z", missing = "na"), NA_integer_)
+  testthat::expect_error(ctx$idx("Z"), class = "ledgr_invalid_pulse_context")
+  testthat::expect_identical(ctx$vec$id, universe)
+  testthat::expect_equal(ctx$vec$open, c(10, 20))
+  testthat::expect_equal(ctx$vec$high, c(11, 21))
+  testthat::expect_equal(ctx$vec$low, c(9, 19))
+  testthat::expect_equal(ctx$vec$close, c(10.5, 20.5))
+  testthat::expect_equal(ctx$vec$volume, c(100, 200))
+  testthat::expect_equal(ctx$vec$positions, c(0, 3))
 
   bar_b <- ctx$bar("B")
   testthat::expect_true(is.data.frame(bar_b))
@@ -201,6 +212,7 @@ testthat::test_that("non-fast projection contexts keep schema-only feature table
   testthat::expect_true(is.data.frame(ctx$feature_table))
   testthat::expect_equal(nrow(ctx$feature_table), 0L)
   testthat::expect_equal(ctx$feature("AAA", "signal"), 1)
+  testthat::expect_equal(ctx$vec$feature("signal"), c(1, 2))
   testthat::expect_equal(ctx$features_wide$signal, c(1, 2))
   testthat::expect_equal(nrow(ledgr_pulse_features(ctx)), 2L)
 })
@@ -312,6 +324,7 @@ testthat::test_that("pulse context feature accessor fails loudly on unknown feat
   )
 
   testthat::expect_true(is.na(ctx$feature("AAA", "return_20")))
+  testthat::expect_true(is.na(ctx$vec$feature("return_20")[[1L]]))
   testthat::expect_error(
     ctx$feature("AAA", "returns_20"),
     class = "ledgr_unknown_feature_id"
@@ -320,6 +333,10 @@ testthat::test_that("pulse context feature accessor fails loudly on unknown feat
     ctx$feature("AAA", "returns_20"),
     "Available feature IDs: return_20",
     fixed = TRUE
+  )
+  testthat::expect_error(
+    ctx$vec$feature("returns_20"),
+    class = "ledgr_unknown_feature_id"
   )
 })
 

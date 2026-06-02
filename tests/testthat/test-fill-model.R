@@ -93,6 +93,28 @@ testthat::test_that("next-open proposal and internal cost resolver preserve lega
   testthat::expect_identical(via_boundary, legacy)
 })
 
+testthat::test_that("next-open proposal accepts matrix-backed scalar execution context", {
+  proposal <- ledgr:::ledgr_next_open_fill_proposal(
+    desired_qty_delta = -5,
+    next_open_price = 101,
+    instrument_id = "AAA",
+    ts_utc = "2020-01-02T00:00:00Z",
+    high = 102,
+    low = 99,
+    close = 100.5,
+    volume = 100000
+  )
+
+  testthat::expect_s3_class(proposal, "ledgr_fill_proposal")
+  testthat::expect_identical(proposal$instrument_id, "AAA")
+  testthat::expect_identical(proposal$side, "SELL")
+  testthat::expect_equal(proposal$execution_bar$open, 101)
+  testthat::expect_equal(proposal$execution_bar$high, 102)
+  testthat::expect_equal(proposal$execution_bar$low, 99)
+  testthat::expect_equal(proposal$execution_bar$close, 100.5)
+  testthat::expect_equal(proposal$execution_bar$volume, 100000)
+})
+
 testthat::test_that("BUY/SELL spread adjustment is symmetric and spread=0 yields open", {
   bar <- list(
     instrument_id = "AAA",

@@ -65,7 +65,38 @@ Interpretation:
 
 ## LDG-2519: Matrix-Canonical Substrate And Accessors
 
-Status: pending.
+Status: in review.
+
+Change summary:
+
+- Added an execution-spec `id_to_idx` map and validation for the 1-based
+  universe-index contract.
+- Converted fold-internal `state$positions` to a primitive numeric vector while
+  preserving the public `ctx$positions` named pulse-start snapshot.
+- Added `ctx$idx(id, missing = c("error", "na"))`, `ctx$vec` OHLCV/positions
+  vector views, and `ctx$vec$feature(feature_id)`.
+- Preserved scalar helper contracts and updated `signal_return()` /
+  `target_rebalance()` to consume `ctx$vec` internally when available.
+- Replaced per-fill next-bar data-frame row extraction with matrix-backed
+  scalar lookup while preserving fill-proposal execution-bar context.
+
+Verification:
+
+- `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-execution-spec.R', reporter='summary'); testthat::test_file('tests/testthat/test-pulse-context-accessors.R', reporter='summary'); testthat::test_file('tests/testthat/test-fill-model.R', reporter='summary'); testthat::test_file('tests/testthat/test-strategy-reference.R', reporter='summary')"`
+
+Measurement status:
+
+- Large/xlarge workload-grid reruns are not recorded yet. They remain the
+  post-review attribution gate before `LDG-2519` should be marked completed.
+
+Interpretation:
+
+- This lane lands the matrix-canonical substrate and accepted accessor RFC
+  surface. It should be reviewed as a contract/substrate lane first and a wall
+  recovery lane second.
+- Public strategy compatibility is intentionally preserved: existing scalar
+  helpers remain first-class, and `ctx$positions` remains a named snapshot.
+  The primitive representation is internal plus `ctx$vec$positions`.
 
 ## LDG-2520: Fold-Owned FIFO Accounting And Inline State Capture
 
