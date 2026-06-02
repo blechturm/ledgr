@@ -26,7 +26,7 @@ Exit criteria:
 ## Batch 1 - Ephemeral Subphase Telemetry
 
 Ticket: `LDG-2518`
-Status: Pending
+Status: In Review
 
 Goal: expose `t_engine`, `t_results`, and `t_fills_extract` for ephemeral
 workload-grid rows before substantive ephemeral changes land.
@@ -38,6 +38,11 @@ Exit criteria:
   measured.
 - Telemetry overhead is negligible.
 - Per-lane attribution row is recorded.
+
+Review note:
+
+- Code and targeted verification are staged for Claude review. Large/xlarge
+  ephemeral record measurements remain the post-review attribution gate.
 
 ## Batch 2 - Matrix-Canonical Substrate And Accessors
 

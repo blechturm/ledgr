@@ -916,8 +916,11 @@ ledgr_sweep_run_candidate <- function(exp,
     event_mode = "buffered",
     use_fast_context = TRUE
   )
+  engine_start <- ledgr_time_now()
   ledgr_execute_fold(execution, output_handler)
+  telemetry$t_engine <- ledgr_time_elapsed(engine_start, ledgr_time_now())
 
+  results_start <- ledgr_time_now()
   events <- if (is.function(output_handler$typed_events)) {
     output_handler$typed_events()
   } else {
@@ -932,6 +935,8 @@ ledgr_sweep_run_candidate <- function(exp,
     run_id = run_id,
     metric_kernel = metric_kernel
   )
+  telemetry$t_results <- ledgr_time_elapsed(results_start, ledgr_time_now())
+  telemetry$t_fills_extract <- 0
 
   ledgr_sweep_success_row(
     run_id = run_id,
@@ -950,6 +955,9 @@ ledgr_sweep_run_candidate <- function(exp,
       alias_map_version = candidate_feature_row$alias_map_version[[1]],
       master_seed = master_seed
     ),
+    t_engine = telemetry$t_engine,
+    t_results = telemetry$t_results,
+    t_fills_extract = telemetry$t_fills_extract,
     warnings = list()
   )
 }
@@ -1230,7 +1238,10 @@ ledgr_sweep_success_row <- function(run_id,
                                     metrics,
                                     feature_fingerprints,
                                     provenance,
-                                    warnings) {
+                                    warnings,
+                                    t_engine = NA_real_,
+                                    t_results = NA_real_,
+                                    t_fills_extract = NA_real_) {
   ledgr_sweep_row(
     run_id = run_id,
     status = "DONE",
@@ -1251,7 +1262,10 @@ ledgr_sweep_success_row <- function(run_id,
     feature_params = feature_params,
     warnings = warnings,
     feature_fingerprints = feature_fingerprints,
-    provenance = provenance
+    provenance = provenance,
+    t_engine = t_engine,
+    t_results = t_results,
+    t_fills_extract = t_fills_extract
   )
 }
 
@@ -1284,7 +1298,10 @@ ledgr_sweep_failure_row <- function(run_id,
     feature_params = feature_params,
     warnings = warnings,
     feature_fingerprints = feature_fingerprints,
-    provenance = provenance
+    provenance = provenance,
+    t_engine = NA_real_,
+    t_results = NA_real_,
+    t_fills_extract = NA_real_
   )
 }
 
@@ -1307,7 +1324,10 @@ ledgr_sweep_row <- function(run_id,
                             feature_params,
                             warnings,
                             feature_fingerprints,
-                            provenance) {
+                            provenance,
+                            t_engine = NA_real_,
+                            t_results = NA_real_,
+                            t_fills_extract = NA_real_) {
   tibble::tibble(
     run_id = run_id,
     status = status,
@@ -1328,7 +1348,10 @@ ledgr_sweep_row <- function(run_id,
     feature_params = list(feature_params),
     warnings = list(warnings),
     feature_fingerprints = list(feature_fingerprints),
-    provenance = list(provenance)
+    provenance = list(provenance),
+    t_engine = as.numeric(t_engine),
+    t_results = as.numeric(t_results),
+    t_fills_extract = as.numeric(t_fills_extract)
   )
 }
 
@@ -1366,6 +1389,9 @@ ledgr_sweep_telemetry_env <- function() {
   telemetry$t_pre <- NA_real_
   telemetry$t_post <- NA_real_
   telemetry$t_loop <- NA_real_
+  telemetry$t_engine <- NA_real_
+  telemetry$t_results <- NA_real_
+  telemetry$t_fills_extract <- NA_real_
   telemetry$telemetry_stride <- 0L
   telemetry$telemetry_samples <- 0L
   telemetry$t_pulse <- numeric()

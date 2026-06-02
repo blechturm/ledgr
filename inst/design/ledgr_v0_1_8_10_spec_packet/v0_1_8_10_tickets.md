@@ -122,7 +122,7 @@ scope: v0.1.8.10
 Priority: P0
 Effort: S
 Dependencies: LDG-2517
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -152,6 +152,14 @@ ephemeral attribution has durable-like phase visibility.
 
 Sweep telemetry tests, workload-grid smoke, large/xlarge ephemeral rerun, and
 per-lane attribution review.
+
+### Review Note
+
+Batch 1 code is staged for Claude review before commit. Targeted verification
+currently covers `tests/testthat/test-sweep.R`,
+`tests/testthat/test-sweep-parallel.R`, and a tiny workload-grid sweep probe
+that exercises `engine_sec`, `results_sec`, and `fills_extract_sec`.
+Large/xlarge ephemeral reruns remain the post-review attribution gate.
 
 ### Source Reference
 

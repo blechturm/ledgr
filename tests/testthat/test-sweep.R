@@ -277,13 +277,17 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
-      "feature_params", "warnings", "feature_fingerprints", "provenance"
+      "feature_params", "warnings", "feature_fingerprints", "provenance",
+      "t_engine", "t_results", "t_fills_extract"
     )
   )
   testthat::expect_type(unseeded$execution_seed, "integer")
   testthat::expect_true(all(is.na(unseeded$execution_seed)))
   testthat::expect_type(seeded$execution_seed, "integer")
   testthat::expect_true(all(!is.na(seeded$execution_seed)))
+  testthat::expect_true(all(is.finite(seeded$t_engine)))
+  testthat::expect_true(all(is.finite(seeded$t_results)))
+  testthat::expect_equal(seeded$t_fills_extract, rep(0, 2L))
 
   versions <- vapply(seeded$provenance, `[[`, character(1), "provenance_version")
   testthat::expect_identical(versions, rep("ledgr_provenance_v1", 2L))

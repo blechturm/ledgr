@@ -307,6 +307,17 @@ bench_read_telemetry <- function(run_id) {
   )
 }
 
+bench_phase_sum <- function(x) {
+  if (is.null(x)) {
+    return(NA_real_)
+  }
+  values <- as.numeric(x)
+  if (length(values) == 0L || all(is.na(values))) {
+    return(NA_real_)
+  }
+  sum(values, na.rm = TRUE)
+}
+
 bench_count_rows <- function(bt, what) {
   tryCatch(nrow(ledgr_results(bt, what)), error = function(e) NA_integer_)
 }
@@ -422,6 +433,8 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
     t_pre_sec = as.numeric(t_pre),
     t_residual_sec = as.numeric(t_residual),
     t_loop_sec = as.numeric(t_loop),
+    engine_sec = as.numeric(t_loop),
+    results_sec = as.numeric(t_residual),
     t_wall_sec = as.numeric(elapsed),
     equity_extract_sec = as.numeric(equity_extract$elapsed),
     fills_extract_sec = as.numeric(fills_extract$elapsed),
@@ -501,6 +514,10 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
   failures <- tryCatch(sum(sweep$status != "DONE", na.rm = TRUE), error = function(e) 0L)
   security_bars <- spec$n_inst * spec$n_pulses * spec$candidates
   feature_cells <- if ((spec$n_feat %||% 0L) > 0L) security_bars * spec$n_feat else NA_real_
+  engine_sec <- bench_phase_sum(sweep$t_engine)
+  results_sec <- bench_phase_sum(sweep$t_results)
+  fills_extract_sec <- bench_phase_sum(sweep$t_fills_extract)
+  fill_rows <- tryCatch(sum(sweep$n_trades, na.rm = TRUE), error = function(e) NA_real_)
 
   data.frame(
     scenario = name,
@@ -516,9 +533,11 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
     t_pre_sec = NA_real_,
     t_residual_sec = NA_real_,
     t_loop_sec = NA_real_,
+    engine_sec = as.numeric(engine_sec),
+    results_sec = as.numeric(results_sec),
     t_wall_sec = as.numeric(elapsed),
     equity_extract_sec = NA_real_,
-    fills_extract_sec = NA_real_,
+    fills_extract_sec = as.numeric(fills_extract_sec),
     ledger_extract_sec = NA_real_,
     replay_sec = NA_real_,
     security_bars = security_bars,
@@ -526,11 +545,19 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
     security_bars_sec = security_bars / elapsed,
     feature_cells_sec = if (is.finite(feature_cells)) feature_cells / elapsed else NA_real_,
     events = NA_integer_,
-    fills = tryCatch(sum(sweep$n_trades, na.rm = TRUE), error = function(e) NA_real_),
+    fills = fill_rows,
     fills_count_source = "sweep_n_trades",
     events_sec = NA_real_,
-    mus_per_fill_engine = NA_real_,
-    mus_per_fill_extract = NA_real_,
+    mus_per_fill_engine = if (is.finite(fill_rows) && fill_rows > 0L && is.finite(engine_sec)) {
+      as.numeric(engine_sec) / fill_rows * 1e6
+    } else {
+      NA_real_
+    },
+    mus_per_fill_extract = if (is.finite(fill_rows) && fill_rows > 0L && is.finite(fills_extract_sec)) {
+      as.numeric(fills_extract_sec) / fill_rows * 1e6
+    } else {
+      NA_real_
+    },
     warnings = length(warnings) + result_warnings,
     failures = failures,
     comparability_note = bench_comparability_note(name),
@@ -623,6 +650,8 @@ bench_summarize_results <- function(measured) {
       median_t_pre_sec = bench_median(df$t_pre_sec),
       median_t_residual_sec = bench_median(df$t_residual_sec),
       median_t_loop_sec = bench_median(df$t_loop_sec),
+      median_engine_sec = bench_median(df$engine_sec),
+      median_results_sec = bench_median(df$results_sec),
       median_equity_extract_sec = bench_median(df$equity_extract_sec),
       median_fills_extract_sec = bench_median(df$fills_extract_sec),
       median_ledger_extract_sec = bench_median(df$ledger_extract_sec),
@@ -690,16 +719,17 @@ bench_write_markdown <- function(summary, env, path) {
     "This is a local development benchmark. QuantConnect/LEAN comparisons are",
     "caveated side-by-side throughput references, not parity or speed-ranking claims.",
     "",
-    "| Scenario | Wall s | Bars/sec | Loop s | Fills extract s | us/fill engine | us/fill extract | Notes |",
-    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |"
+    "| Scenario | Wall s | Bars/sec | Engine s | Results s | Fills extract s | us/fill engine | us/fill extract | Notes |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"
   ), con)
   for (i in seq_len(nrow(summary))) {
     writeLines(sprintf(
-      "| `%s` | %.4f | %.1f | %.4f | %.4f | %.1f | %.1f | %s |",
+      "| `%s` | %.4f | %.1f | %.4f | %.4f | %.4f | %.1f | %.1f | %s |",
       summary$scenario[[i]],
       summary$median_t_wall_sec[[i]],
       summary$median_security_bars_sec[[i]],
-      summary$median_t_loop_sec[[i]],
+      summary$median_engine_sec[[i]],
+      summary$median_results_sec[[i]],
       summary$median_fills_extract_sec[[i]],
       summary$median_mus_per_fill_engine[[i]],
       summary$median_mus_per_fill_extract[[i]],

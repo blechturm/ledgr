@@ -20,7 +20,48 @@ Each implementation lane should record:
 
 ## LDG-2518: Ephemeral Subphase Telemetry
 
-Status: pending.
+Status: in review.
+
+Change summary:
+
+- Added sweep telemetry fields `t_engine`, `t_results`, and
+  `t_fills_extract`.
+- Wrapped `ledgr_execute_fold()` and ephemeral event-materialization /
+  reconstruction summary work in `ledgr_sweep_candidate_execute()`.
+- Exposed the sweep subphases through workload-grid `engine_sec`,
+  `results_sec`, and `fills_extract_sec` columns. The existing durable
+  `t_loop_sec` / `t_residual_sec` columns remain intact; durable rows also
+  receive the shared phase-column aliases.
+
+Verification:
+
+- `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-sweep.R', reporter='summary')"`
+- `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-sweep-parallel.R', reporter='summary')"`
+- Tiny workload-grid sweep probe through `bench_run_sweep_once()` confirmed
+  finite `engine_sec`, finite `results_sec`, and `fills_extract_sec = 0`.
+
+Measurement status:
+
+- Large/xlarge ephemeral workload-grid reruns are not recorded yet. They remain
+  the post-review attribution gate before `LDG-2518` should be marked
+  completed.
+
+Interpretation:
+
+- This lane is measurement infrastructure. The code should not be interpreted
+  as a wall-recovery claim; it makes the ephemeral path phase-visible for the
+  subsequent substrate/accounting and compiled-hot-frame decisions.
+- `t_fills_extract = 0` on ephemeral sweep rows means no standalone
+  fills-extraction subphase ran. Fills materialization for ephemeral sweeps is
+  included inside `t_results` through `ledgr_sweep_summary_from_ordered_events()`;
+  closeout language must not frame this as "fills extraction is free."
+- `engine_sec` is not an identical bracket across persistence modes. Durable
+  rows alias the existing internal fold-loop telemetry (`t_loop`) while
+  ephemeral rows use a wall-clock bracket around `ledgr_execute_fold()`.
+  Cross-mode comparisons are useful but should note the boundary difference.
+- The benchmark markdown summary now reports `Engine s` and `Results s` instead
+  of the previous single `Loop s` column. This is internal report churn, but any
+  local parser of the markdown artifact needs the new column shape.
 
 ## LDG-2519: Matrix-Canonical Substrate And Accessors
 

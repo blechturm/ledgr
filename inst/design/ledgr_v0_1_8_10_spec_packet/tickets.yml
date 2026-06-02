@@ -20,7 +20,7 @@ tickets:
 
   - id: "LDG-2518"
     title: "Ephemeral Subphase Telemetry"
-    status: "pending"
+    status: "in_review"
     priority: "P0"
     effort: "S"
     dependencies:
