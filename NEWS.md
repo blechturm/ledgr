@@ -12,6 +12,9 @@
   readback as verifier and fallback paths. Fresh memory-backed sweeps now use
   the handler's inline summary facts when available instead of replaying the
   event stream for equity/fills/metrics.
+- Hoisted fixed yyjsonr read/write option objects out of canonical JSON helper
+  bodies, preserving canonical byte-format v2 while removing avoidable per-call
+  options construction overhead.
 
 # ledgr 0.1.8.9
 

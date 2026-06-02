@@ -2,6 +2,30 @@
 .ledgr_json_cache_max <- 1024L
 .ledgr_json_cache$count <- 0L
 
+# Fixed yyjsonr options are hoisted so hot read/write helpers do not rebuild
+# option objects on every JSON payload.
+.ledgr_json_read_nested_opts <- yyjsonr::opts_read_json(
+  obj_of_arrs_to_df = FALSE,
+  arr_of_objs_to_df = FALSE,
+  arr_of_arrs_to_matrix = FALSE,
+  length1_array_asis = TRUE
+)
+
+.ledgr_json_read_config_opts <- yyjsonr::opts_read_json(
+  obj_of_arrs_to_df = FALSE,
+  arr_of_objs_to_df = FALSE,
+  arr_of_arrs_to_matrix = FALSE,
+  length1_array_asis = FALSE
+)
+
+.ledgr_json_write_canonical_v2_opts <- yyjsonr::opts_write_json(
+  pretty = FALSE,
+  auto_unbox = TRUE,
+  digits = -1L,
+  null = "null",
+  num_specials = "null"
+)
+
 .ledgr_json_cache_get <- function(key) {
   if (!exists(key, envir = .ledgr_json_cache, inherits = FALSE)) return(NULL)
   get(key, envir = .ledgr_json_cache, inherits = FALSE)
@@ -27,37 +51,21 @@
 ledgr_json_read_nested <- function(x) {
   yyjsonr::read_json_str(
     x,
-    opts = yyjsonr::opts_read_json(
-      obj_of_arrs_to_df = FALSE,
-      arr_of_objs_to_df = FALSE,
-      arr_of_arrs_to_matrix = FALSE,
-      length1_array_asis = TRUE
-    )
+    opts = .ledgr_json_read_nested_opts
   )
 }
 
 ledgr_json_read_config <- function(x) {
   yyjsonr::read_json_str(
     x,
-    opts = yyjsonr::opts_read_json(
-      obj_of_arrs_to_df = FALSE,
-      arr_of_objs_to_df = FALSE,
-      arr_of_arrs_to_matrix = FALSE,
-      length1_array_asis = FALSE
-    )
+    opts = .ledgr_json_read_config_opts
   )
 }
 
 ledgr_json_write_canonical_v2 <- function(x) {
   yyjsonr::write_json_str(
     x,
-    opts = yyjsonr::opts_write_json(
-      pretty = FALSE,
-      auto_unbox = TRUE,
-      digits = -1L,
-      null = "null",
-      num_specials = "null"
-    )
+    opts = .ledgr_json_write_canonical_v2_opts
   )
 }
 

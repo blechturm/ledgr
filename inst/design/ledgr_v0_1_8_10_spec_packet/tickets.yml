@@ -80,7 +80,7 @@ tickets:
 
   - id: "LDG-2521"
     title: "yyjsonr Options Hoist"
-    status: "pending"
+    status: "in_review"
     priority: "P1"
     effort: "S"
     dependencies:

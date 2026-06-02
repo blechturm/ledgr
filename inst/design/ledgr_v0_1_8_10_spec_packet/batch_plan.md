@@ -82,7 +82,7 @@ Exit criteria:
 ## Batch 4 - yyjsonr Options Hoist
 
 Ticket: `LDG-2521`
-Status: Pending
+Status: In Review
 
 Goal: hoist fixed yyjsonr option objects out of hot helper bodies.
 

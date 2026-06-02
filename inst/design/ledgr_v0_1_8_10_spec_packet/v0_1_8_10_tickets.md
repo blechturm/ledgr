@@ -337,7 +337,7 @@ scope: event_preserving_fifo_lot_state
 Priority: P1
 Effort: S
 Dependencies: LDG-2520
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -363,6 +363,15 @@ Hoist fixed yyjsonr read/write option construction out of hot helper bodies.
 
 Canonical JSON tests, config tests, fingerprint tests, yyjson helper benchmark,
 package load check, and per-lane attribution review.
+
+### Review Note
+
+Batch 4 code and targeted verification are staged for review. The
+implementation hoists fixed nested-read, config-read, and canonical-v2-write
+yyjsonr option objects out of helper bodies. Canonical byte-format and
+read-shape tests pass unchanged. A 50k metadata-payload helper benchmark
+measured old inline options at 1.10s versus the hoisted helper at 0.12s
+(9.17x speedup).
 
 ### Source Reference
 

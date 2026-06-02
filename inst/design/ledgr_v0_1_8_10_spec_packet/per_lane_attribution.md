@@ -138,7 +138,41 @@ Interpretation:
 
 ## LDG-2521: yyjsonr Options Hoist
 
-Status: pending.
+Status: in review.
+
+Change summary:
+
+- Hoisted fixed `yyjsonr::opts_read_json()` objects for nested and config read
+  helpers.
+- Hoisted the fixed `yyjsonr::opts_write_json()` object for canonical JSON v2
+  writes.
+- Preserved helper signatures, canonical byte-format v2, and read-shape
+  behavior.
+
+Verification:
+
+- `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-canonical-json-byte-format.R', reporter='summary'); testthat::test_file('tests/testthat/test-config.R', reporter='summary'); testthat::test_file('tests/testthat/test-fingerprint-stability.R', reporter='summary'); testthat::test_file('tests/testthat/test-ledger-writer.R', reporter='summary')"`
+
+Helper benchmark:
+
+- Shape: 50k flat event `meta_json` payloads matching the Spike 7 production
+  metadata fixture.
+- Old inline `opts_read_json()` construction: 1.100s median, 22.00 us/payload.
+- New hoisted `ledgr_json_read_nested()` helper: 0.120s median,
+  2.40 us/payload.
+- Recovery: 9.17x.
+
+Measurement status:
+
+- This lane does not claim fresh-fold wall recovery. The measured recovery is
+  for JSON read/reopen/replay helper surfaces that still parse persisted
+  metadata.
+
+Interpretation:
+
+- Batch 4 closes the LDG-2501 yyjsonr read-path caveat by removing avoidable
+  options-construction overhead. The canonical JSON v2 migration remains in
+  place; this is a helper implementation fix, not an identity-format change.
 
 ## LDG-2522: Compiled Hot Frame B2 Gate
 
