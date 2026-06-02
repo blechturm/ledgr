@@ -776,6 +776,10 @@ Local release-gate verification:
 - The local pkgdown build passed.
 - The WSL DuckDB-sensitive gate passed after installing missing WSL-side R
   packages and cleaning stale generated Windows build objects.
+- The first branch CI push exposed a coverage-only `readRDS()` merge failure
+  after Ubuntu R CMD check and pkgdown had passed. `tools/check-coverage.R`
+  now implements the release playbook's three-attempt coverage collection
+  retry policy, with targeted tests in `test-release-coverage-branches.R`.
 
 ### Source Reference
 

@@ -229,3 +229,6 @@ Completion note:
   tests, the full local suite, CI-equivalent warning-strict `rcmdcheck`, the
   local pkgdown build, and the WSL DuckDB-sensitive gate passed. The remaining
   local check caveat is one accepted NOTE for two long design-spike file paths.
+  The first branch CI push exposed a coverage-only `readRDS()` merge failure;
+  `tools/check-coverage.R` now implements the playbook's three-attempt
+  coverage collection retry policy.

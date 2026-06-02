@@ -8,6 +8,43 @@ testthat::test_that("timing helpers handle numeric and difftime paths", {
   testthat::expect_equal(ledgr:::ledgr_time_elapsed(start, end), 2)
 })
 
+testthat::test_that("coverage helper retries transient collection failures", {
+  coverage_script <- file.path("tools", "check-coverage.R")
+  if (!file.exists(coverage_script)) {
+    coverage_script <- file.path("..", "..", "tools", "check-coverage.R")
+  }
+  source(coverage_script)
+
+  attempts <- 0L
+  coverage <- ledgr_collect_coverage(
+    package_coverage = function() {
+      attempts <<- attempts + 1L
+      if (attempts < 3L) stop("temporary coverage shard failure")
+      list(ok = TRUE)
+    },
+    attempts = 3L
+  )
+
+  testthat::expect_equal(attempts, 3L)
+  testthat::expect_equal(coverage, list(ok = TRUE))
+})
+
+testthat::test_that("coverage helper fails after retry budget is exhausted", {
+  coverage_script <- file.path("tools", "check-coverage.R")
+  if (!file.exists(coverage_script)) {
+    coverage_script <- file.path("..", "..", "tools", "check-coverage.R")
+  }
+  source(coverage_script)
+
+  testthat::expect_error(
+    ledgr_collect_coverage(
+      package_coverage = function() stop("permanent coverage failure"),
+      attempts = 2L
+    ),
+    "permanent coverage failure"
+  )
+})
+
 testthat::test_that("fill event row helper covers no-op and validation branches", {
   none <- structure(list(status = "NO_FILL"), class = "ledgr_fill_none")
   out <- ledgr:::ledgr_fill_event_row("run-1", none, 1L)
