@@ -1,6 +1,6 @@
 # ledgr v0.1.8.10 Batch Plan
 
-**Status:** Draft.
+**Status:** Active.
 
 The batch plan preserves attribution while accepting two architectural
 exceptions: fold-owned FIFO accounting ships as substrate/accounting ownership,
@@ -11,7 +11,7 @@ canonical throughout.
 ## Batch 0 - Packet Review And Ticket Alignment
 
 Ticket: `LDG-2517`
-Status: Pending
+Status: Completed
 
 Goal: finalize the packet, tickets, YAML, batch plan, design index, and review
 loop before implementation.

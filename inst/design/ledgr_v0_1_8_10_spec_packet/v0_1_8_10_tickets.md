@@ -57,7 +57,7 @@ LDG-2517 Packet Alignment And v0.1.8.10 Ticket Cut
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -88,6 +88,16 @@ starts.
 
 Manual packet review, stale-scope `rg` checks, YAML review, and peer-review
 response.
+
+### Completion Note (2026-06-02)
+
+Batch 0 completed as packet-alignment work. The spec, ticket markdown, ticket
+YAML, batch plan, and design README now agree on v0.1.8.10 as the active packet.
+The packet explicitly binds event-preserving fold-owned FIFO accounting, keeps
+events canonical, scopes the B2 compiled hot-frame work as a measurement gate
+only, and keeps public compiled promotion / durable compiled integration
+deferred. Stale-scope scans found no old Ticket 5 / pre-B2 non-scope wording
+after the B2 RFC alignment.
 
 ### Source Reference
 
