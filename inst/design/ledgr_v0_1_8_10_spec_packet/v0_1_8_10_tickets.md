@@ -393,7 +393,7 @@ scope: yyjsonr_options_hoist
 Priority: P0
 Effort: XL
 Dependencies: LDG-2521
-Status: In Review
+Status: Completed
 
 ### Description
 
@@ -467,10 +467,10 @@ fail-closed tests, production internal dispatch tests, LDG-2479 xlarge
 ephemeral B2 benchmark, cross-platform parity smoke, and per-lane attribution
 review.
 
-### Review Note
+### Completion Note (2026-06-02)
 
-Batch 5 code and measurement artifacts are staged for review. The implementation
-adds an internal cpp11 spot-FIFO batch kernel behind the closed
+Batch 5 was approved in review and committed. The implementation adds an
+internal cpp11 spot-FIFO batch kernel behind the closed
 `compiled_accounting_model = NULL | "spot_fifo"` execution-spec enum. Default
 and explicit `NULL` remain the canonical R fold; unsupported accounting models
 fail closed. Targeted execution-spec and sweep dispatch tests pass, and the full
@@ -478,7 +478,8 @@ local test suite passed. The LDG-2479 `density_high_xlarge_ephemeral` record
 cell measured 327.02s wall / 293.94s engine on the canonical R path versus
 65.86s wall / 32.92s engine on the Pattern B `"spot_fifo"` path, with zero
 failures and the same 66,280 fills in both passes. The scoped B2 gate is a pass
-by the RFC threshold matrix pending review.
+by the RFC threshold matrix. Local compiled artifacts are ignored and excluded
+from package builds; the committed lane is source-only.
 
 ### Source Reference
 
@@ -506,7 +507,7 @@ scope: pattern_b_production_gate
 Priority: P2
 Effort: M
 Dependencies: LDG-2522
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -532,6 +533,23 @@ only those whose post-main-lane profile justifies implementation.
 
 Post-main-lane profile review, targeted tests if any cleanup lands, and
 attribution/disposition review.
+
+### Completion Note (2026-06-02)
+
+Batch 6 completed as documentation/disposition work. No cleanup landed, so
+targeted tests and fresh measurements are not applicable. The
+post-main-lane disposition table in `per_lane_attribution.md` records:
+
+- Spike 2 split/gsplit reconstruction bucket parked as fallback-only
+  B1/collapse-doctrine cleanup if reconstruction becomes hot again.
+- Spike 4 reusable ctx env parked; future work should profile helper
+  attachment rather than public ctx env reuse.
+- Spike 8 pulse-seed mixer parked below threshold; future implementation would
+  need explicit cross-platform determinism parity.
+- Spike 9 alias-map normalization has no standalone ticket: `ctx$vec$feature()`
+  covers the hot cross-sectional pattern, while legacy `ctx$features()` alias
+  behavior remains supported and alias-map vector interactions remain future
+  feature-engine extension work.
 
 ### Source Reference
 

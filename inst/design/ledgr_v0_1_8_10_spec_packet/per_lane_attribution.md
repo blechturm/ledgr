@@ -176,7 +176,7 @@ Interpretation:
 
 ## LDG-2522: Compiled Hot Frame B2 Gate
 
-Status: in review.
+Status: completed.
 
 Scope guard:
 
@@ -271,4 +271,58 @@ Outcome:
 
 ## LDG-2523: Parked Spike Disposition
 
-Status: pending.
+Status: completed.
+
+Change summary:
+
+- Reviewed the four parked v0.1.8.10 spike outputs after the main lanes landed:
+  split/gsplit reconstruction bucket, reusable pulse-context env, pulse-seed
+  mixer, and alias-map normalization.
+- Landed no code. Each parked item remains below the current implementation
+  threshold, is covered by an already-landed v0.1.8.10 substrate surface, or is
+  routed to a future profile-driven window.
+- Promoted `LDG-2522` to completed after the approved Batch 5 review and commit.
+
+Disposition table:
+
+| Spike | Source evidence | Post-main-lane read | Disposition |
+| --- | --- | --- | --- |
+| Spike 2: split/gsplit reconstruction bucket | Current `which()` bucket loop measured 0.36s at 1000 instruments / 130k synthetic events; `collapse::gsplit()` was 18x faster but recovers only about 0.34s. | `LDG-2520` keeps reconstruction as verifier/fallback and fresh ephemeral summaries use fold-owned inline facts; `LDG-2522` then shifts the dominant fresh xlarge ephemeral recovery into the spot-FIFO hot frame. The bucket loop is not a current release-scale wall lever. | Park as fallback-only cleanup. If a future durable/replay/reconstruction profile shows the reconstruction path hot again, use the Spike 2 `collapse::gsplit()` variant as a small B1/collapse-doctrine cleanup. |
+| Spike 4: reusable pulse-context env | Bare fresh-list allocation measured about 6 us/pulse, under timer floor at the production pulse count. The spike identified helper attachment, not list allocation, as the plausible production cost surface. | `LDG-2519` already landed the accepted public-list / internal-fast-context accessor shape. Replacing the public ctx list with a reusable env would reopen snapshot/class semantics for no measured wall recovery. | Park reusable-env implementation. Route any future work to helper-attachment profiling, not env reuse. The existing horizon ephemeral-attribution entry already names ctx construction with helper attachment as a candidate sub-frame. |
+| Spike 8: pulse-seed mixer | Production SHA-256 + canonical JSON pulse seed derivation measured 0.14s at 1260 pulses and 0.57s at 5000 pulses. Faster mixers need overflow-safe `bit64` or C implementation to preserve cross-platform determinism. | No post-main-lane profile made per-pulse seed derivation material. The `LDG-2522` xlarge ephemeral gain is fill-accounting dominated, not pulse-seed dominated. | Park for v0.1.8.10. Revisit only if a future per-pulse attribution shows seed derivation above threshold; any production mixer needs explicit determinism parity across platforms. |
+| Spike 9: alias-map normalization | Fold entry already normalizes `active_alias_map` once. The expensive shape is legacy `ctx$features()` re-normalizing per accessor call; the synthetic microbench worst case measured 5.43s at 1.26M per-instrument calls. | `LDG-2519` landed `ctx$vec$feature(feature_id)`, which collapses the hot cross-sectional read pattern to one vector read per feature and removes the per-instrument legacy call shape. The landed vector accessor takes engine feature IDs; alias-map vector interactions and bulk multi-feature reads remain future feature-engine extension work. | No standalone alias-normalization cleanup. Treat the hot cross-sectional case as resolved by `ctx$vec$feature(feature_id)`; keep legacy `ctx$features()` behavior for scalar/bundled alias access; route alias-map vector interactions to the existing future feature-engine vector-extension horizon. |
+
+Verification:
+
+- Source review:
+  `dev/spikes/spike-reconstruction-split-bucket.md`,
+  `dev/spikes/spike-pulse-context-env-reuse.md`,
+  `dev/spikes/spike-pulse-seed-mixer.md`, and
+  `dev/spikes/spike-alias-map-normalize.md`.
+- Current code spot-checks:
+  `R/fold-engine.R` normalizes the active alias map once at fold entry;
+  `R/pulse-context.R` attaches `ctx$vec` through the pulse lookup refresh;
+  `R/runtime-projection.R` implements the vector feature accessor over engine
+  feature IDs.
+- Existing horizon routing:
+  the ephemeral wall attribution entry already names ctx helper attachment,
+  feature engine / alias-map resolution, reconstruction residuals, and
+  pulse-seed derivation as candidate future sub-frames; the strategy-helper
+  horizon queue names alias-map vector interactions as a future feature-engine
+  RFC surface.
+
+Measurement status:
+
+- No cleanup landed, so no targeted tests or new benchmark row are required for
+  `LDG-2523`. The verification artifact is this post-main-lane disposition
+  review.
+
+Interpretation:
+
+- Batch 6 is release-hygiene work. It prevents the small v0.1.8.10 spike
+  findings from being lost before closeout, while avoiding sub-threshold code
+  churn after the main lanes materially changed the wall profile.
+- The alias-map disposition should be worded carefully in closeout: vector
+  feature reads cover the hot cross-sectional pattern, but legacy
+  `ctx$features()` alias-bundle semantics remain intentionally supported and
+  are not replaced by this batch.

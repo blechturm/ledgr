@@ -99,7 +99,7 @@ tickets:
 
   - id: "LDG-2522"
     title: "Compiled Hot Frame B2 Gate"
-    status: "in_review"
+    status: "completed"
     priority: "P0"
     effort: "XL"
     dependencies:
@@ -120,7 +120,7 @@ tickets:
 
   - id: "LDG-2523"
     title: "Parked Spike Disposition"
-    status: "pending"
+    status: "completed"
     priority: "P2"
     effort: "M"
     dependencies:

@@ -96,7 +96,7 @@ Exit criteria:
 ## Batch 5 - Compiled Hot Frame B2 Gate
 
 Ticket: `LDG-2522`
-Status: In Review
+Status: Completed
 
 Goal: run the B2-first spot-asset FIFO fill-batch measurement gate without
 authorizing a public compiled execution path or a general compiled accounting
@@ -124,13 +124,20 @@ Review note:
   LDG-2479 xlarge ephemeral Pattern B record pass are staged for review. One
   canonical R record pass measured 327.02s wall / 293.94s engine; one
   `compiled_accounting_model = "spot_fifo"` pass measured 65.86s wall / 32.92s
-  engine with zero failures and the same 66,280 fills. The scoped B2 outcome is
-  pass by the RFC matrix pending review.
+  engine with zero failures and the same 66,280 fills. The scoped B2 outcome
+  passed the RFC matrix.
+
+Completion note:
+
+- Peer review approved the scoped B2 gate. The committed lane is source-only:
+  local compiled artifacts are ignored and excluded from package builds. The
+  lane is a spot-asset FIFO fill-batch accelerator gate, not a public compiled
+  execution path or a general compiled accounting engine.
 
 ## Batch 6 - Parked Spike Disposition
 
 Ticket: `LDG-2523`
-Status: Pending
+Status: Completed
 
 Goal: route or close small spike outputs after the main substrate lanes land.
 
@@ -140,6 +147,13 @@ Exit criteria:
   each have a disposition.
 - Any landed cleanup has targeted tests and measurement.
 - Deferred work is routed to horizon.
+
+Completion note:
+
+- Batch 6 is documentation/disposition only. No cleanup landed. The four parked
+  spike outputs now have explicit post-main-lane dispositions in
+  `per_lane_attribution.md`; targeted tests and fresh measurements are not
+  applicable because no R or C++ code changed.
 
 ## Batch 7 - Measurement Closeout
 
