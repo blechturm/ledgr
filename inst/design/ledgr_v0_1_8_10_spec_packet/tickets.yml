@@ -1,0 +1,185 @@
+version: "0.1.8.10"
+source: "v0_1_8_10_tickets.md"
+generated_from: "v0_1_8_10_spec.md"
+tickets:
+  - id: "LDG-2517"
+    title: "Packet Alignment And v0.1.8.10 Ticket Cut"
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.10"
+    tests:
+      - "manual_packet_review"
+      - "stale_scope_rg_checks"
+      - "yaml_review"
+      - "peer_review_caveats_resolved"
+
+  - id: "LDG-2518"
+    title: "Ephemeral Subphase Telemetry"
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2517"
+    classification:
+      type: "telemetry"
+      surface: "sweep_workload_grid"
+      scope: "ephemeral_subphase_attribution"
+    tests:
+      - "sweep_telemetry_tests"
+      - "workload_grid_smoke"
+      - "large_xlarge_ephemeral_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2519"
+    title: "Matrix-Canonical Substrate And Accessors"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2518"
+    classification:
+      type: "substrate"
+      surface: "fold_engine_and_strategy_context"
+      scope: "matrix_canonical_accessors"
+    tests:
+      - "pulse_context_accessor_tests"
+      - "execution_spec_tests"
+      - "fill_model_contract_tests"
+      - "strategy_contract_tests"
+      - "strategy_helper_tests"
+      - "workload_grid_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2520"
+    title: "Fold-Owned FIFO Accounting And Inline State Capture"
+    status: "pending"
+    priority: "P0"
+    effort: "XL"
+    dependencies:
+      - "LDG-2519"
+    classification:
+      type: "substrate"
+      surface: "fold_core_accounting"
+      scope: "event_preserving_fifo_lot_state"
+    tests:
+      - "event_log_parity"
+      - "equity_time_series_parity"
+      - "fill_table_parity"
+      - "lot_state_parity"
+      - "opening_position_cashflow_fixture"
+      - "invalid_side_fixture"
+      - "durable_readback_tests"
+      - "sweep_parity_tests"
+      - "workload_grid_rerun"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2521"
+    title: "yyjsonr Options Hoist"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2520"
+    classification:
+      type: "optimization"
+      surface: "canonical_json_helpers"
+      scope: "yyjsonr_options_hoist"
+    tests:
+      - "canonical_json_v2_byte_fixture_tests"
+      - "nested_read_shape_tests"
+      - "config_read_shape_tests"
+      - "fingerprint_fixture_stability"
+      - "yyjson_helper_benchmark"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2522"
+    title: "Compiled Hot Frame B2 Gate"
+    status: "pending"
+    priority: "P0"
+    effort: "XL"
+    dependencies:
+      - "LDG-2521"
+    classification:
+      type: "measurement_gate"
+      surface: "compiled_hot_frame_b2"
+      scope: "pattern_b_production_gate"
+    tests:
+      - "ledgrcore_spike_sub_a_review"
+      - "compiled_fill_batch_parity_tests"
+      - "production_internal_switch_tests"
+      - "xlarge_ephemeral_b2_benchmark"
+      - "cross_platform_parity_smoke"
+      - "per_lane_attribution_row"
+
+  - id: "LDG-2523"
+    title: "Parked Spike Disposition"
+    status: "pending"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2522"
+    classification:
+      type: "cleanup_triage"
+      surface: "fold_and_reconstruction"
+      scope: "parked_spike_disposition"
+    tests:
+      - "post_main_lane_profile_review"
+      - "targeted_tests_if_cleanup_lands"
+      - "horizon_routing_review"
+      - "per_lane_attribution_row_if_landed"
+
+  - id: "LDG-2524"
+    title: "Measurement Closeout"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2518"
+      - "LDG-2519"
+      - "LDG-2520"
+      - "LDG-2521"
+      - "LDG-2522"
+      - "LDG-2523"
+    classification:
+      type: "measurement_closeout"
+      surface: "benchmark_suite"
+      scope: "v0.1.8.9_to_v0.1.8.10_comparison"
+    tests:
+      - "per_lane_attribution_review"
+      - "workload_grid_record_rerun"
+      - "peer_benchmark_rerun"
+      - "closeout_artifact_review"
+      - "claim_language_review"
+
+  - id: "LDG-2525"
+    title: "v0.1.8.10 Release Gate"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2517"
+      - "LDG-2518"
+      - "LDG-2519"
+      - "LDG-2520"
+      - "LDG-2521"
+      - "LDG-2522"
+      - "LDG-2523"
+      - "LDG-2524"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.10"
+    tests:
+      - "targeted_tests"
+      - "full_test_suite"
+      - "package_build"
+      - "package_check"
+      - "release_closeout_review"
+      - "news_review"
+      - "design_index_review"
+      - "git_status_review"

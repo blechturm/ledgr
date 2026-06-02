@@ -3,10 +3,11 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.9`.
-**Current active packet:** `v0.1.9`.
-**Current active packet path:** Future packet.
+**Current active packet:** `v0.1.8.10`.
+**Current active packet path:** `inst/design/ledgr_v0_1_8_10_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_8_9_spec_packet/` is an archival release
-record; v0.1.9 has not yet been cut.
+record. The v0.1.8.10 packet is the active implementation packet on the
+`v0.1.8.10` branch.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -150,6 +151,22 @@ peer-benchmark remeasurement.
 - Release closeout: `ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`.
 - Primary synthesis:
   `spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`.
+
+The v0.1.8.10 packet is active. It closes the v0.1.8.x single-core arc with
+ephemeral subphase telemetry, matrix-canonical fold substrate and accepted
+strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr
+options hoisting, and a workload-grid / peer-benchmark measurement closeout.
+Events remain canonical evidence; inline accounting facts are typed derived
+outputs and parity targets, not replacements for the event stream.
+
+- Spec: `ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`.
+- Tickets: `ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_10_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_8_10_spec_packet/batch_plan.md`.
+- Per-lane attribution:
+  `ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`.
+- Primary synthesis:
+  `spikes/ledgr_v0_1_8_10_optimization_round_spike/architecture_synthesis.md`.
 
 ## Core Documents
 

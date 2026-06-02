@@ -1,0 +1,209 @@
+version: "v0.1.8.10-pre-rfc"
+source: "spike_tickets.md"
+generated_from: "README.md"
+note: |
+  Pre-RFC spike round. Not part of any release packet. Tickets do not gate
+  v0.1.8.9 release. Feed v0.1.8.10 spec packet inputs. Numbering continues from
+  v0.1.8.9 (last ticket LDG-2504).
+status_metadata_disclaimer: |
+  Per-ticket status values ("pending") in this file were captured at
+  ticket creation time and are NOT actively maintained. As the spikes
+  run, the architecture synthesis gets written, and peer reviews close,
+  this file is not re-walked at each milestone. Treat the status fields
+  as archival scaffolding rather than governance metadata. The
+  load-bearing artifacts for the round's current state are
+  `architecture_synthesis.md`, the per-spike logs under
+  `dev/spikes/spike-*.md`, and `README.md`.
+tickets:
+  - id: "LDG-2505"
+    title: "Spike 1 - Inline Equity Accumulation In Memory Output Handler"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "memory_output_handler"
+      scope: "inline_equity_accumulation"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "byte_identical_equity_vector_parity_confirmed"
+      - "per_event_and_per_pulse_costs_reported_across_scales"
+      - "wall_translation_against_xlarge_ephemeral"
+      - "regression_test_fails_against_unfixed_implementation"
+      - "variant_compatibility_addressed_in_log"
+
+  - id: "LDG-2506"
+    title: "Spike 2 - collapse::gsplit() / split() Over Per-Instrument which() In Reconstruction"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_reconstruction"
+      scope: "split_bucket_instrument_index"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "byte_identical_positions_matrix_parity_confirmed_across_three_variants"
+      - "scaling_curves_at_30k_68k_130k_events"
+      - "collapse_vs_split_delta_recorded_explicitly"
+      - "wall_translation_notes_subsumption_by_spike_1"
+      - "prior_v0_1_8_7_collapse_vs_split_finding_cross_referenced"
+
+  - id: "LDG-2507"
+    title: "Spike 3 - state$positions Primitive Representation Re-Spike"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_state_mutation"
+      scope: "positions_primitive_representation"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "tracemem_evidence_documented_for_copy_on_write"
+      - "per_write_cost_reported_across_variants_and_scales"
+      - "wall_translation_distinguishes_r_side_recovery_from_substrate_effect"
+      - "snapshot_semantics_risk_addressed"
+      - "output_consumable_as_substrate_emulated_r_baseline_for_spike_12"
+
+  - id: "LDG-2508"
+    title: "Spike 4 - Reusable Pulse-Context Env Across Pulses"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_per_pulse"
+      scope: "pulse_context_env_reuse"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "strategy_observation_parity_confirmed_across_variants"
+      - "allocation_count_diagnostic_confirms_reduction"
+      - "per_pulse_construction_cost_reported_across_variants_and_scales"
+      - "class_attribute_restore_overhead_addressed"
+      - "output_consumable_as_substrate_emulated_r_baseline_for_spike_12"
+
+  - id: "LDG-2509"
+    title: "Spike 5 - Integer-Indexed Strategy Callback Accessors"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "strategy_callback_contract"
+      scope: "integer_indexed_accessors"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "strategy_target_parity_confirmed_across_variants"
+      - "per_pulse_callback_cost_reported_across_variants_and_universe_sizes"
+      - "wall_translation_distinguishes_callback_share_from_engine_share"
+      - "backward_compatibility_addressed_in_log"
+      - "output_consumable_as_substrate_emulated_r_baseline_for_spike_12"
+
+  - id: "LDG-2510"
+    title: "Spike 6 - Next-Bar Matrix Lookup Re-Spike"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_per_fill"
+      scope: "next_bar_matrix_lookup"
+    tests:
+      - "spike_script_runs_reproducibly_or_prior_script_rerun"
+      - "byte_identical_fill_values_confirmed"
+      - "per_fill_speedup_confirmed_at_production_fill_counts"
+      - "fill_proposal_contract_change_scope_documented"
+      - "wall_translation_against_post_v0_1_8_9_baseline"
+      - "decision_rule_clear"
+
+  - id: "LDG-2511"
+    title: "Spike 7 - yyjsonr Read-Path Recovery Investigation"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "canonical_json_read"
+      scope: "yyjsonr_read_recovery"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "structural_parity_confirmed_across_variants"
+      - "per_payload_read_cost_reported_across_variants"
+      - "decision_rule_1_5x_recovery_threshold_evaluated"
+      - "hybrid_read_write_governance_addressed"
+
+  - id: "LDG-2512"
+    title: "Spike 8 - Cheap Deterministic pulse_seed Mixer"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "rng"
+      scope: "pulse_seed_mixer"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "deterministic_replay_parity_confirmed_across_variants"
+      - "per_pulse_cost_reported_across_variants_and_pulse_counts"
+      - "decision_rule_1s_threshold_evaluated"
+      - "cross_platform_determinism_addressed"
+
+  - id: "LDG-2513"
+    title: "Spike 9 - active_alias_map One-Time Normalization"
+    status: "pending"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "fold_engine_per_pulse"
+      scope: "alias_map_normalize"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "alias_resolution_parity_confirmed"
+      - "per_pulse_normalize_cost_reported_across_variants_and_scales"
+      - "decision_rule_0_5s_threshold_evaluated"
+
+  - id: "LDG-2514"
+    title: "Spike 10 - Inline Lot-State In Memory Output Handler"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2505"
+    classification:
+      type: "spike"
+      surface: "memory_output_handler"
+      scope: "inline_lot_state_capture"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "byte_identical_lot_state_vectors_confirmed_across_variants"
+      - "per_event_lot_replay_cost_reported_standalone"
+      - "wall_translation_against_xlarge_ephemeral"
+      - "spike_1_bundling_decision_addressed_in_log"
+
+  - id: "LDG-2515"
+    title: "Spike 11 - Ephemeral Sweep Subphase Telemetry"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "spike"
+      surface: "telemetry"
+      scope: "ephemeral_subphase_exposure"
+    tests:
+      - "spike_script_runs_reproducibly"
+      - "telemetry_hooks_identified_and_prototype_works"
+      - "workload_grid_harness_captures_ephemeral_subphases"
+      - "log_states_infrastructure_alongside_spike_1_implementation"
+

@@ -31,43 +31,40 @@ milestone. Entries not listed are pure direction with no committed home yet
 (e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized
 authoring). When a milestone closes, sweep its entries to `## Resolved`.
 
-- **v0.1.8.6** — DuckDB feature-storage spike; feature payload scale stress;
-  feature projection materialization (5.0/5.1); structured benchmark and
-  attribution closeout.
-- **v0.1.8.7** (optimization round 2) — fold-core primitive contract; hot-path
-  lanes (B0 buffer/emission via collapse, R representation/formatting with a
-  durable-identity fence, C reconstruction read-back); ADR 0004 dependency moves
-  (drop cli/R6, add collapse, keep tibble); legacy cleanup (raw `bars`
-  execution, R6 strategy execution, and run-time `data_hash` identity removed
-  from modern execution); per-lane real-run re-profile + parity gates.
-- **v0.1.8.8** (parallel dispatch + determinism) — public parallel sweep
-  backend; parallel worker setup / Tier-2 packages; mori transport;
-  worker-local read-only DuckDB; parallel interrupt / partial-result
-  semantics; **RNG resume non-determinism**; structured RNG preflight metadata;
-  broader ambient RNG detection.
-- **v0.1.8.9.x** (maintainer manual) - internal maintainer-facing documentation
-  release after the v0.1.8.8 manual skeleton: architecture articles for fold
-  execution, snapshots, features, sweep, determinism, observability, and
-  benchmarking.
+- **v0.1.8.10** (closing single-core round) — sweep-ephemeral mode and
+  read-path optimization; substrate work (typed `state$positions`, reusable
+  pulse-context env, matrix-canonical next-bar); strategy callback contract
+  addendum (`ctx$vec` namespace, `ctx$idx()` resolver, bulk
+  `ctx$vec$feature(feature_id)`); helpers Pass 1 internal optimization
+  (existing exported helpers consume `ctx$vec`, no public surface change);
+  per-pulse micro-optimization residuals; intra-loop profile follow-ups.
 - **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
   typed execution spec, file split, explicit event types); peer-benchmark
   expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
   contextual paradigm row).
-- **v0.1.8.9** — affordability / target-risk (incl. the phased-pulse
-  restructure); primitive internals and collapse.
-- **v0.1.8.9.x** — walk-forward post-direction; cost-model post-direction;
-  randomized/blocked slice diagnostics; promotion-grade sweep artifacts;
-  target-construction helper extensions; broker/exchange cost templates.
+- **v0.1.9** — affordability / target-risk layer (incl. the phased-pulse
+  restructure); primitive internals and collapse planning gates.
+- **v0.1.9.x** — maintainer manual and architecture documentation release
+  (architecture articles for fold execution, snapshots, features, sweep,
+  determinism, observability, benchmarking); walk-forward post-direction;
+  cost-model post-direction; selection-integrity diagnostics; randomized /
+  blocked slice diagnostics; promotion-grade sweep artifacts; target
+  construction helper extensions (Pass 2 per-stage helpers); broker /
+  exchange cost templates; crypto-readiness spike.
 - **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
   review + promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
   explicit accounting-critical event types RFC; liquidity and capacity; OMS
   semantics + snapshot lineage + live data logs; external benchmark / beta
   uses; external reference-data adapter provenance; provider risk-free
-  divergence; reference strategy templates / baseline strategies.
+  divergence; reference strategy templates / baseline strategies; external
+  package adapters (PerformanceAnalytics first).
 - **v0.2.x → v0.3.0** — live bad-data resilience, ragged-universe
   (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
   needs a dedicated RFC).
+- **Post-`ledgrcore-spike`** — compiled fold core (`ledgrcore` sister
+  package). External repo `ledgrcore-spike` runs the K1 measurement against
+  post-v0.1.8.10 production R before any build is authorized.
 
 ### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
 
@@ -338,11 +335,15 @@ measurement spike rather than assumed from the pre-v0.1.8.9 gap.
 
 ### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
 
-v0.1.8.8 may create the `inst/design/manual/` skeleton and clean up stale
-documentation-like surfaces, but it should not author the full internal manual.
-The follow-up home is a v0.1.8.9.x maintainer-facing documentation release: turn
-the skeleton into a coherent internal manual for agents and maintainers while
-keeping governance artifacts separate from prose articles.
+The v0.1.8.8 cycle created the `inst/design/manual/` skeleton and cleaned up
+stale documentation-like surfaces but deliberately did not author the full
+internal manual. The follow-up home is the `v0.1.9.x Maintainer Manual And
+Architecture Documentation` release per the roadmap: turn the skeleton into a
+coherent internal manual for agents and maintainers while keeping governance
+artifacts separate from prose articles. (The window was previously typed as
+`v0.1.8.9.x` because v0.1.8.9 was at one point the maintainer-manual cycle;
+v0.1.8.9 was reassigned to the single-core optimization round and the manual
+moved to v0.1.9.x.)
 
 Boundary:
 
@@ -418,19 +419,22 @@ ecosystem-alignment argument favours C++ (ledgr already depends on duckdb,
 which is bundled C++); the memory-safety argument favours Rust. Decide when
 the build is authorized, not before.
 
-The decision to build is gated on:
+The decision to build was originally gated on:
 
-- v0.1.8.9 single-core optimization round, which is expected to recover
-  ~5-8s of pure-R wall on the TTR-backed peer workload per the Batch 2
-  diagnostic-attribution numbers;
-- the LDG-2476 LEAN-Python parity row, which is the empirical anchor for
-  the compiled-core scoping question.
+- the v0.1.8.9 single-core optimization round (shipped: xlarge wall
+  445.02s → 232.03s, peer engine ratio 1.74x → 1.12x Backtrader);
+- the LDG-2476 LEAN-Python parity row as the empirical anchor for the
+  compiled-core scoping question.
 
-If after v0.1.8.9 ledgr is within ~2x LEAN-Python on a matched workload,
-`ledgrcore` is maintenance overhead with marginal payoff. If the gap is 5x+,
-the compiled story becomes load-bearing. The 2026-05-25 entry's minimum gates
-(target risk stability, walk-forward workloads, cost/liquidity boundaries,
-typed value objects) remain binding alongside this empirical gate.
+Post-v0.1.8.9 ledgr is within ~1.5x Backtrader on the peer-matched
+workload, so by the original "within ~2x → maintenance overhead with
+marginal payoff" rule the build is no longer the automatic next step.
+Subsequent updates below (2026-06-01 measurement-spike gate,
+`ledgrcore-spike` repo-split, R-side substrate framing) replace this
+rule with the substrate-then-measure path. The 2026-05-25 entry's
+minimum gates (target risk stability, walk-forward workloads,
+cost/liquidity boundaries, typed value objects) remain binding alongside
+the new empirical gate.
 
 **Canonical JSON encoder/decoder belongs in `ledgrcore` (2026-05-31 update,
 from v0.1.8.9 round LDG-2493 / LDG-2494 work).** The v0.1.8.9 round investigates
@@ -505,6 +509,18 @@ Decision shape from the spike:
   boundary-cost differential between extendr and cpp11 (not by the
   ecosystem/memory-safety priors the original entry listed).
 
+**ANSWERED 2026-06-01** — K1 measurement spike complete. Verdict at
+`ledgrcore-spike` repo
+(`inst/design/spikes/k1_measurement_spike/verdict.md`). Headline:
+build authorized only for the inline-output design (xlarge inline
+cells: Rust 47-151x, C++ 10-33x); parked for R-handler-per-fill
+designs (xlarge R-handler cells ~1x). Decision-shape rule above is
+SPLIT-MET: ceiling cells exceed 5x by orders of magnitude; realistic
+R-handler-per-fill cells fall under 1.5x. Build authorization is
+narrowly conditional on inline-output architecture; see the 2026-06-01
+[architecture] K1 measurement-spike verdict horizon entry below for
+the full disposition and the gates that remain binding.
+
 **Repo-split decision (2026-06-01 evening update, from v0.1.8.10 spike
 round scoping).** The K1 measurement spike was initially scoped into the
 v0.1.8.10 spike round
@@ -537,6 +553,21 @@ decision-rule thresholds, the C++ vs Rust language comparison) remains
 authoritative. The separate-repo spike implements that spec against
 post-v0.1.8.10 production R and feeds results back to a future ledgr
 horizon update.
+
+**Result fed back 2026-06-01:** the K1 measurement spike completed all
+36 cells in the `ledgrcore-spike` repo. Verdict authored at
+`inst/design/spikes/k1_measurement_spike/verdict.md` (commit
+`7618230`). The repo-split decision is validated by the outcome — the
+spike ran the full Stage 1 spec → Stage 2 R reference → Stage 3 Rust
+extendr → Stage 4 C++ cpp11 → Stage 5 measurement → Stage 6 verdict
+cadence without entangling ledgr's R-side cadence or build surface.
+The repo remains named `ledgrcore-spike` for now; the
+`ledgrcore` rename is conditional on the maintainer accepting the
+verdict's narrow build authorization (inline-output design only) and
+on the additional ledgr-side gates landing (per the 2026-06-01
+Architecture B and ephemeral-attribution entries below). See the
+2026-06-01 [architecture] K1 measurement-spike verdict horizon entry
+below for the full disposition.
 
 This entry records direction, not committed work.
 
@@ -579,27 +610,28 @@ whether K1 follows.
 
 **K1 trigger reframing.** The K1 entry above gates the compiled-core build
 on "if ledgr is within ~2x peer comparator after v0.1.8.9, ledgrcore is
-maintenance overhead with marginal payoff." Post-v0.1.8.9 (Batches 1-6
-landed, Batch 7-9 in flight) ledgr is at ~1.7x Backtrader at the peer
-benchmark shape. By the K1 entry's own gate, the compiled-core build is
-no longer the empirically-supported automatic next step.
+maintenance overhead with marginal payoff." v0.1.8.9 shipped with the
+phase-separated peer benchmark at 1.12x Backtrader on engine time and 1.50x
+on total wall (per the LDG-2476 Batch 8 closeout addendum above). By the
+K1 entry's own gate, the compiled-core build is no longer the
+empirically-supported automatic next step.
 
 A cleaner gating shape going forward:
 
-- v0.1.9 invests in primitive typed data structures as substrate. Expected
-  R-side recovery is bounded (~10-30s additional xlarge wall projected),
-  but the substrate is what makes any future K1 worth its complexity.
-- A strategy callback contract addendum is the public-surface piece that
-  needs RFC-style discussion before v0.1.9 ticket cut. Backward-compatible
-  shape: keep current `ctx$bars$close` accessors as the user-facing API,
-  expose integer-indexed accessors (`ctx$close[idx]` or similar) as the
-  high-throughput path, document both as first-class.
+- v0.1.8.10 invests in the residual single-core lanes (sweep-ephemeral
+  reconstruction, R-side substrate, read-path). The strategy callback
+  contract addendum (`ctx$vec`, `ctx$idx()`, bulk
+  `ctx$vec$feature(feature_id)`) is bound by the 2026-06-01 strategy
+  callback synthesis and lands in this cycle.
+- v0.1.9 invests in target-risk layer plus post-optimization primitive-
+  internals / substrate planning gates per the roadmap.
 - K1 is reframed from "automatic v0.2.x next step" to "ambition-tier
-  choice triggered by either (a) post-v0.1.9 measurement showing R-side
-  has reached its ceiling and the residual gap to Backtrader is still
-  material, or (b) demand for Polars/Rust-class throughput that pure-R
-  cannot reach (Ziplime's 12.4s on M3 vendor reference is the orientation
-  number for that tier)."
+  choice triggered by either (a) post-v0.1.8.10 / post-v0.1.9 measurement
+  via the `ledgrcore-spike` external repo showing R-side has reached its
+  ceiling and the residual gap to Backtrader is still material, or (b)
+  demand for Polars/Rust-class throughput that pure-R cannot reach
+  (Ziplime's 12.4s on M3 vendor reference is the orientation number for
+  that tier)."
 
 The maintainer's stance during v0.1.8.9 closeout: exhaust R-side
 optimizations, especially data structures, before committing to a
@@ -610,6 +642,424 @@ This entry records direction, not committed work. `ledgrcore` remains
 parked behind the gates listed in the 2026-05-30 entry above, plus
 the addition of "R-side substrate must be exhausted first" as a new
 gate informed by the Backtrader analysis.
+
+### 2026-06-01 [architecture] Architecture B: in-place hot-frame compilation as alternative to ledgrcore
+
+The K1 measurement spike in the external `ledgrcore-spike` repo
+measures **Architecture A**: a separate compiled fold core that owns
+the loop and calls back into R for the strategy. Preliminary K1 data
+(15 of 36 cells at the time of writing) surfaces an architectural
+alternative the horizon's K1 framing did not name explicitly:
+**Architecture B — keep the fold loop in R; compile the hot inner
+work; call from R per pulse rather than per fill**.
+
+Architecture B has two distinct sub-paths with very different costs.
+They must not be conflated:
+
+**B1: extend the existing collapse-doctrine pattern (no new language).**
+ledgr's `Imports: collapse` (v0.1.8.7 ADR 0004) gives ledgr access to
+C-level routines via an R-callable API. Examples already in
+production: `collapse::setv()` for event buffer writes (v0.1.8.9 L2/L3);
+`collapse::gsplit()` for per-instrument bucketing (v0.1.8.10 Spike 2's
+re-confirmed doctrine). B1 means writing more ledgr R code to use
+collapse primitives wherever they fit. **Strictly no new compiled
+source in ledgr's tree.** Bounded by what collapse expresses: parallel
+array operations, grouped reductions, in-place writes. Weak at
+serial-state-dependent loops (FIFO lot accounting cannot be expressed
+in collapse primitives directly). Most of the obvious B1 wins are
+already captured by v0.1.8.7 and v0.1.8.9.
+
+**B2: add custom compiled hot frames inside ledgr via cpp11.**
+ledgr today has no `src/` directory and no C++ source. B2 would add
+`LinkingTo: cpp11` to `DESCRIPTION` and write per-pulse hot frames as
+C++ functions called from the R fold loop. **This is new compiled
+source in ledgr's own tree.** Pattern is mature: cpp11 is what
+tidyverse uses (vctrs, readr, dplyr internals); CRAN-distributable
+without additional friction; requires only the standard R-package C++
+toolchain (Rtools on Windows; system compiler elsewhere — what every
+R developer already has if they install any compiled CRAN package).
+
+The architectural cost ladder:
+
+| | New language in ledgr tree | Build toolchain | Distribution |
+|---|---|---|---|
+| B1 (more collapse)        | No  | None new (collapse is an R `Imports`) | None new |
+| B2 (cpp11 hot frames)     | Yes (C++) | Standard R-package C++ build | One package, one CRAN release |
+| A (separate `ledgrcore`)  | Yes (Rust or C++) | Cross-platform compiled package, potentially Rust | Two packages, two release cycles, cross-package version management |
+
+**B2 is genuinely cheaper than A** — same language work in scope, but
+inside the existing ledgr package rather than as a separate sister
+repo with its own cross-platform build and release lifecycle. B2 is
+NOT free: it adds compiled source to ledgr's tree and a build
+requirement for contributors. But it is much less than A.
+
+The key insight from K1's preliminary data motivating B2: the per-fill
+FFI boundary cost is roughly 1 ms per call. K1's `*_handler_R`
+variants pay ~130k × 1ms = ~130s at xlarge — the per-fill R callback
+dominates total wall regardless of whether the surrounding fold loop
+is R, Rust, or C++. **B2 avoids the same trap by batching: don't call
+the compiled function per fill; call it per pulse with a vector of
+fills.** At xlarge that is ~1260 FFI hops per run, not ~130k.
+
+Concrete shape of B2 (the R fold loop calling a cpp11 hot frame per
+pulse):
+
+```r
+for (t in seq_len(n_pulses)) {
+  prices  <- bars[, t]
+  targets <- strategy_callback(ctx)
+  deltas  <- targets - state$positions
+  fill_idx <- which(deltas != 0)
+  if (length(fill_idx) > 0) {
+    # ONE compiled call per pulse; all fills for this pulse batched.
+    # Implemented as a cpp11 function in ledgr/src/.
+    pulse <- ledgr_apply_pulse_fills(
+      state         = state, lots = lots,
+      instrument_idx = fill_idx,
+      deltas        = deltas[fill_idx],
+      prices        = prices[fill_idx],
+      pulse_idx     = t
+    )
+    state <- pulse$state
+    lots  <- pulse$lots
+    # event buffer extended inside the compiled call
+  }
+  equity[t] <- state$cash + sum(state$positions * prices)
+}
+```
+
+Inside the compiled per-pulse call, the serial dependency between
+fills (lot machinery, position mutation, cash mutation, event
+emission) runs at C-speed without crossing the FFI boundary. The R
+fold loop's per-pulse overhead is small (~6 us/pulse per
+`dev/spikes/spike-amdahl-floor.md`); over 1260 pulses that is ~7.5 ms
+total — negligible.
+
+What B2 avoids vs Architecture A:
+
+- No separate package to maintain (ledgrcore is its own
+  cross-platform build target with its own release lifecycle).
+- No Rust toolchain (cpp11 is C++-only; ledgr already requires the
+  standard R-package C++ toolchain for any CRAN-installable
+  compiled-package dependency, including collapse).
+- Smaller blast radius per hot frame; each cpp11 function is
+  independently scopeable and ships in normal ledgr releases.
+- No strategy-FFI boundary at all (strategies stay R-to-R as today;
+  the strategy callback is just an R function call from the R fold
+  loop).
+
+What B2 does not buy vs Architecture A:
+
+- Architecture A's compiled fold loop can do per-pulse work (bars
+  column read, equity sum, ctx construction) in compiled code; B2
+  keeps that in R. Per the Amdahl-floor spike's empty-fold
+  decomposition, the per-pulse machinery share is non-trivial but
+  bounded. Architecture A's ceiling on this slice is higher.
+- Architecture A produces a substrate the eventual production-grade
+  compiled fold could consume across the FFI boundary. B2's compiled
+  hot frames ARE that substrate, just packaged differently.
+
+The K1 spike's four variants do NOT include Architecture B (neither
+B1 nor B2). The closest is `strat_R_handler_inline`, but that is
+Architecture A (compiled fold loop calling R only for the strategy
+callback). It does not measure "R fold loop + compiled per-pulse fill
+batching."
+
+Implications for the K1 verdict and ledgr's compiled-core direction:
+
+- The K1 verdict in `ledgrcore-spike` answers Architecture A's
+  question; Architecture B remains unmeasured.
+- If K1's `strat_R_handler_inline` lands at 5-10x at xlarge
+  (Architecture A's realistic ceiling), B2 may capture 60-90% of the
+  same wall recovery at a fraction of the architectural cost. Build
+  authorization for `ledgrcore` should weigh this against B2's lower
+  cost rather than treating Architecture A's threshold-cross as
+  automatic.
+- The v0.1.8.10 Round-3 substrate decision (fold-owned FIFO
+  accounting per L7 Ticket 2) is no-regret for either architecture.
+  It positions the substrate cleanly for both an external compiled
+  fold core AND for an R fold loop calling compiled per-pulse fill
+  processors.
+
+Promoted roadmap hook: **v0.1.9.x or v0.2.x — Architecture B2
+measurement spike**. Scope: prototype a per-pulse-batched compiled
+fill processor as a single cpp11 function. The simplest first cut:
+implement only the FIFO lot machinery + event buffer extension + cash
+/ position update + per-pulse equity contribution in cpp11; leave
+everything else (ctx build, strategy invocation, target validation)
+in R. Measure wall against the v0.1.8.10 post-substrate R baseline at
+the same LDG-2479 cells the K1 spike uses. Produce a verdict on the
+range "B2 captures most of Architecture A's win" through "Architecture
+A is meaningfully better; build `ledgrcore` despite the cost."
+
+The B2 spike can run either inside ledgr (adding `LinkingTo: cpp11`
+and `src/` as a first commit, which makes the spike itself the
+forcing function for the build-toolchain decision) or as a separate
+small spike repo that prototypes the hot frame in isolation. The
+former is closer to production; the latter is faster to iterate. The
+maintainer chooses at spike-scoping time.
+
+This entry does not authorize Architecture B; it records that the
+architectural option exists, is not measured by K1, and should be
+measured before any `ledgrcore` build is authorized regardless of how
+the K1 verdict lands. The 2026-05-30 ledgrcore entry's "R-side
+substrate must be exhausted first" gate is now joined by an
+"Architecture B2 must be measured before Architecture A is
+authorized" gate.
+
+This entry does not authorize Architecture B; it records that the
+architectural option exists, is not measured by K1, and should be
+measured before any `ledgrcore` build is authorized regardless of how
+the K1 verdict lands. The 2026-05-30 ledgrcore entry's "R-side
+substrate must be exhausted first" gate is now joined by an
+"Architecture B must be measured before Architecture A is
+authorized" gate.
+
+### 2026-06-01 [optimization] Ephemeral-mode xlarge wall attribution as gate for ledgrcore / Architecture B2 commit
+
+**Maintainer goal:** ephemeral mode should be fast. The current xlarge
+ephemeral baseline is ~372.55s per the workload-grid measurement
+(post-v0.1.8.9; cited by Codex in the v0.1.8.10 Round-2 review against
+`v0_1_8_9_release_closeout.md`). Reducing this is the user-facing
+optimization target for v0.1.9-class work.
+
+The K1 measurement spike (Architecture A) and the Architecture B2
+spike (above) both attack the **fold-loop slice** of ledgr's wall:
+FIFO lot accounting + position / cash updates + event emission +
+per-pulse equity. Per the v0.1.8.10 Round-3 Spike 12 measurement,
+the lot-machinery slice at xlarge synthetic was ~30s. Adopting a
+compiled fold core would compress that slice from ~30s to single-
+digit milliseconds — a **~30-50s wall recovery on the ~372s xlarge
+ephemeral cell**, roughly **8-15% wall reduction**. Meaningful but
+not transformative.
+
+The **other ~85% of ledgr's xlarge ephemeral wall is unmeasured.**
+Candidates for where it lives, in order of suspicion based on prior
+spike evidence:
+
+- **Per-pulse ctx construction with helper attachment**
+  (`ledgr_update_fast_pulse_context_helpers` at `R/fold-engine.R:196-221`).
+  v0.1.8.10 Round-3 L6 (Spike 4 disposition) identified this as the
+  actual cost surface — Spike 4 measured only bare `list()` allocation
+  (~7.5ms total at xlarge, invisible), but v0.1.8.8 Batch 2 telemetry
+  attributed ~0.9% of fold-loop time to ctx construction (~1.8s at
+  xlarge), which means the helper attachment is where the cost lives.
+  Direct profiling required.
+
+- **Feature engine per-pulse cost.** Runtime projection lookup,
+  feature-table materialization, alias-map resolution (per accessor
+  call until the v0.1.8.10 accessor RFC bulk-read lands). Unmeasured
+  directly; share could be substantial on feature-heavy strategies.
+
+- **Memory output handler `meta` list column residual** (v0.1.8.9 L8).
+  The setv fix recovered most of the buffer cost but the `meta` list
+  column bounds setv's win. Quantified roughly in v0.1.8.9 (~75s
+  ephemeral-specific recovery from the memory handler fix); residual
+  unclear.
+
+- **Strategy callback per-pulse cost.** Strategy is user code so this
+  is partially uncompressible, but the surrounding R-side invocation
+  machinery (target validation, signature handling, etc.) may be
+  larger than the Amdahl-floor spike's ~6 us/pulse suggests on
+  production strategies.
+
+- **Telemetry collection** when enabled. Per-pulse sampling stride
+  affects this; default-off in production but worth knowing the cost
+  envelope.
+
+- **Reconstruction pass non-lot work.** Per Round-3 L1 the lot machinery
+  is the dominant share (synthesised at ~93%, with Codex's caveat that
+  the decomposition was inferred across two fixtures). The remaining
+  ~5-10% includes cash cumsum, fills tibble materialization, metrics
+  computation. Small but worth quantifying.
+
+- **Pulse-seed RNG derivation.** v0.1.8.10 Spike 8 measured this at
+  0.14s standalone at xlarge — below v0.1.8.10 threshold but
+  non-zero.
+
+What this spike must do:
+
+- Run an attribution spike against the LDG-2479 `density_high_xlarge_ephemeral`
+  cell with Spike 11-shaped subphase telemetry exposing both engine
+  and results phases.
+- Within the engine phase, decompose per-pulse cost into ctx
+  construction (with helper attachment isolated), strategy callback,
+  fill loop, lot machinery (separately attributable post-Ticket 2
+  fold-owned accounting), event emission, and equity computation.
+- Within the results phase (whatever remains after Ticket 1 / Spike 11
+  measurement), attribute to fills materialization, metrics
+  computation, and any other residual.
+- Produce a Pareto attribution: which 3-5 sub-frames account for 80%
+  of xlarge ephemeral wall?
+- Output: `inst/design/spikes/ephemeral_wall_attribution_spike/attribution_synthesis.md`
+  with concrete per-frame us/pulse and us/fill numbers, plus
+  recommended sequencing for v0.1.9 optimization tickets.
+
+This spike is a **gate on both ledgrcore and Architecture B2 commitments.**
+Specifically:
+
+- IF the fold-loop slice is < ~15% of xlarge ephemeral wall: neither
+  Architecture A nor B2 is the highest-leverage v0.1.9 optimization.
+  The maintainer should prioritise whichever sub-frame the attribution
+  spike identifies as dominant. K1 verdict still informs the
+  compiled-core question but does not justify immediate build
+  authorization.
+- IF the fold-loop slice is 30-50%+ of xlarge ephemeral wall:
+  Architecture B2 spike runs next, then A vs B2 decision per the
+  B2 horizon entry above.
+- IF the attribution spike surfaces a clear larger lever (e.g. ctx
+  helper attachment at ~40% of wall): that lever takes v0.1.9
+  precedence; ledgrcore and B2 both defer.
+
+The v0.1.8.10 Round-3 constraints carry forward: this attribution
+spike runs post-v0.1.8.10 (so it measures against the substrate-
+decision shape including fold-owned accounting), uses the same
+LDG-2479 grid cells, follows the same parity / determinism gates,
+and produces a verdict in the same shape as v0.1.8.9's
+architecture_synthesis.
+
+Promoted roadmap hooks:
+
+- **v0.1.9 — Ephemeral xlarge wall attribution spike** (this entry).
+  Pre-requisite for committing to either ledgrcore (A) or Architecture
+  B2. Runs against post-v0.1.8.10 production R.
+- **v0.1.9.x — Highest-leverage attack on dominant attribution
+  finding.** Could be ctx helper attachment refactor, could be feature
+  engine path optimization, could be `meta` list column elimination,
+  could be Architecture B2 if the fold-loop slice is large enough.
+  Scoped from attribution spike findings.
+
+This entry does not authorize the attribution spike scope or the
+follow-on optimization work; it records that ephemeral mode speed is
+a load-bearing v0.1.9 goal, that the K1 / B2 question only addresses
+~15% of xlarge ephemeral wall, and that an attribution spike is the
+appropriate next step before committing to either compiled-core
+architecture. The 2026-05-30 ledgrcore entry's gates and the
+Architecture B2 entry's gates are now joined by an "xlarge ephemeral
+wall attribution must complete before either compiled-core path is
+authorized" gate.
+
+### 2026-06-01 [architecture] K1 measurement-spike verdict: compiled fold core authorized for inline-output design only
+
+The K1 measurement spike in the external `ledgrcore-spike` repo
+completed all 36 cells (4 boundary variants × 3 implementations ×
+3 scales) on 2026-06-01. Verdict authored at
+`ledgrcore-spike` `inst/design/spikes/k1_measurement_spike/verdict.md`
+(commit `7618230`).
+
+**Headline numbers (xlarge cells, ratios of compiled vs R median wall):**
+
+| Boundary variant            | Rust vs R | C++ vs R |
+|:----------------------------|----------:|---------:|
+| `strat_static_handler_inline` (ceiling) | 151.20× | 32.73× |
+| `strat_R_handler_inline` (realistic inline-output) | 47.33× | 10.14× |
+| `strat_static_handler_R` (R handler per fill) | 1.00× | 1.08× |
+| `strat_R_handler_R` (both R callbacks) | 0.97× | 1.02× |
+
+**Decision-rule outcome (split-met):** the horizon's 5× build-authorized
+threshold is exceeded by orders of magnitude on the two inline-output
+cells; the two R-handler-per-fill cells fall under 1.5× (park
+threshold). The K1 verdict is therefore **conditional build
+authorization**: build is justified only for a production ledgrcore
+design that keeps fill-event accumulation inside the compiled loop
+and materializes the event frame once. A production design that calls
+an R output handler per fill is parked by the verdict — the per-fill
+R callback dominates total wall regardless of whether the surrounding
+fold loop is R, Rust, or C++.
+
+**Language verdict (with caveat):** Rust extendr is the measured
+runtime winner on the viable inline-output cells (Rust 4.6× over C++
+on `strat_static_handler_inline` xlarge; Rust 4.7× over C++ on
+`strat_R_handler_inline` xlarge). C++ cpp11 retains lower R-package
+integration friction (cleaner `R CMD INSTALL .` path; the Rust path
+required a custom dev-DLL loader during spike Stage 3).
+
+**Build-flag asymmetry caveat (open).** The Rust crate was built with
+`cargo --release` (opt-level=3 + ThinLTO defaults). The C++ path went
+through `R CMD INSTALL .` which inherits R's Makevars defaults
+(typically -O2, no LTO). The methodology note records the toolchain
+versions but does not equalize the optimization flags. A C++ rebuild
+with `PKG_CXXFLAGS = -O3 -flto` in `src/Makevars` may close most or
+all of the Rust-vs-C++ gap on the inline cells, in which case the
+language verdict compresses to "essentially tied; C++ has lower
+integration friction." The build-flag check is a precondition for any
+production language decision; the verdict's narrow build
+authorization is independent of which language wins.
+
+**What the verdict does NOT authorize:**
+
+- It does not authorize an immediate `ledgrcore` build. The
+  authorization is narrow (inline-output design only) and is gated by
+  two further ledgr-side decisions (Architecture B2 measurement and
+  xlarge ephemeral wall attribution per the 2026-06-01 entries above).
+- It does not authorize the `ledgrcore-spike` → `ledgrcore` repo
+  rename. That happens only if Architecture A is chosen over
+  Architecture B2 AND the attribution spike confirms the fold-loop
+  slice warrants the compiled-core architectural cost.
+- It does not address ~85% of ledgr's xlarge ephemeral wall. The K1
+  spike measured the minimum-viable fold loop (FIFO lot accounting,
+  position/cash updates, event emission, equity computation). The
+  remaining ~85% of ledgr's xlarge ephemeral wall lives in machinery
+  the K1 charter deliberately excluded (cost resolver, feature
+  engine, ctx helper attachment, durable I/O, telemetry, runtime
+  projection). The 2026-06-01 ephemeral attribution entry above is
+  the path to surfacing those.
+
+**Gates that remain binding** (from prior horizon entries):
+
+1. **R-side substrate must be exhausted first** (2026-05-30 ledgrcore
+   entry). v0.1.8.10 substrate decision is in progress; substrate
+   ships when v0.1.8.10 ships.
+2. **Architecture B2 must be measured before Architecture A is
+   authorized** (2026-06-01 Architecture B entry above). The B2
+   spike — R fold loop + compiled per-pulse hot frame via cpp11 — is
+   not yet run. K1 verdict does not substitute for the A-vs-B2
+   comparison.
+3. **Xlarge ephemeral wall attribution must complete before either
+   compiled-core path is authorized** (2026-06-01 attribution entry
+   above). The K1 verdict explicitly anticipates this in its
+   "lower leverage than the dominant ledgr-side residual" caveat.
+
+**Sequencing forward:**
+
+- Next ledgr-side spike: the ephemeral xlarge wall attribution spike
+  per the 2026-06-01 attribution entry. Output decides whether the
+  fold-loop slice (K1's domain) is even the right v0.1.9 optimization
+  target.
+- IF the attribution surfaces the fold-loop slice as a meaningful
+  share of wall: the Architecture B2 spike runs next. K1 verdict +
+  B2 verdict + attribution verdict combine into the A-vs-B2 decision.
+- IF the attribution surfaces a different dominant lever (e.g. ctx
+  helper attachment, feature engine cost, durable I/O): both K1 and
+  B2 defer; the dominant lever takes v0.1.9 precedence.
+- IF the attribution surfaces no single dominant lever (e.g. wall is
+  diffuse across many sub-frames): the maintainer makes a
+  cost/benefit judgment that may include Architecture B2 as one of
+  several v0.1.9.x lanes.
+
+**Other findings from the spike worth preserving:**
+
+- The pure-R fold loop at the v0.1.8.10 substrate shape is genuinely
+  fast on the compiled-ceiling case (R `strat_static_handler_inline`
+  large = 80ms; xlarge = 720ms). The compiled gap is "merely" 30-150×,
+  not 1000×+. R-side substrate work is competitive with compiled
+  cores in absolute terms; the gap remains because compiled fold
+  loops have no R interpreter overhead per pulse.
+- The per-fill R callback boundary cost is roughly 1ms per call (~135s
+  / 130k fills at xlarge). This is the cost ceiling that any compiled
+  architecture pays if it calls R per fill — and it is the same cost
+  Architecture B2 would pay R→compiled per pulse (~1260 hops/run
+  instead of ~130k). The boundary direction is symmetric; the
+  frequency is the decision variable.
+- The K1 spike validated the spec packet → R reference → Rust extendr
+  → C++ cpp11 → measurement → verdict cadence with explicit per-stage
+  hand-offs and parity gates. This cadence is portable to future
+  cross-language measurement work if any is scoped.
+
+This entry does not authorize work; it records that the K1
+measurement spike is complete with a narrow build authorization, that
+two further ledgr-side gates remain binding, and that the ephemeral
+attribution spike is the appropriate next move.
 
 ### 2026-06-01 [documentation] User-facing research-software disclaimer for financial backtesting
 
@@ -637,9 +1087,9 @@ Candidate scope:
 - Optional: a one-line addition to `DESCRIPTION`'s `Description:` field
   noting "research software; not investment advice."
 
-Promotion candidate: v0.1.8.9.x (maintainer manual release) or v0.1.9
-(substrate round) — either fits; maintainer chooses based on release
-scope and timing.
+Promotion candidate: v0.1.9.x (maintainer manual release) or v0.1.9
+(target-risk / substrate round) — either fits; maintainer chooses based on
+release scope and timing.
 
 This is hobby-OSS-grade coverage, not commercial-grade. Escalation
 triggers that would warrant actual legal review:
@@ -671,7 +1121,8 @@ extension (not replacement) of the existing exported pipeline
 value types `ledgr_signal`, `ledgr_selection`, `ledgr_weights`,
 `ledgr_target`) across two passes: Pass 1 internal optimization in
 v0.1.8.10 where existing helpers consume `ctx$vec` with no public surface
-change, Pass 2 per-stage public helper additions in v0.1.9.
+change, Pass 2 per-stage public helper additions in v0.1.9.x (per the
+roadmap's `v0.1.9.x Target Construction Helper Extensions` slot).
 
 Feature-engine vector extensions
 - Bulk multi-feature reads beyond the single-feature
@@ -723,13 +1174,13 @@ Promoted roadmap hooks
   `ctx$vec$feature(feature_id)`); helpers synthesis Pass 1 internal
   optimization (existing exported helpers consume `ctx$vec` where it
   helps, no public surface change).
-- **v0.1.9 Target Construction Helper Extensions** (paired with the
-  2026-05-25 horizon entry; supersedes the older `v0.1.8.9.x` hook):
-  Pass 2 per-stage extensions per the helpers synthesis — rank-weight,
-  inverse-vol, normalization, rebalance bands, target diagnostics.
-- **v0.1.9 or later — Feature-engine vector extensions**: bulk
+- **v0.1.9.x Target Construction Helper Extensions** (canonical roadmap
+  slot; paired with the 2026-05-25 horizon entry): Pass 2 per-stage
+  extensions per the helpers synthesis — rank-weight, inverse-vol,
+  normalization, rebalance bands, target diagnostics.
+- **v0.1.9.x or later — Feature-engine vector extensions**: bulk
   multi-feature reads, lookback vectors, alias-map vector interactions.
-- **v0.1.9+ or v0.2.x — Long-short / hedged / levered authoring
+- **v0.1.9.x+ or v0.2.x — Long-short / hedged / levered authoring
   helpers**: gated on shorting/leverage contract RFC.
 - **Post cost-API GA — Cost-aware sizing read-only estimator**: gated
   on the public cost API landing.
@@ -756,7 +1207,7 @@ Immediate cross-cycle obligations
 This entry does not authorize any of the above; it records the
 direction. The accessor synthesis is binding for v0.1.8.10
 implementation; the helpers synthesis is binding for v0.1.8.10 Pass 1
-implementation and for v0.1.9 Pass 2 design. Tickets cut from either
+implementation and for v0.1.9.x Pass 2 design. Tickets cut from either
 synthesis must respect that binding language and treat the deferrals
 above as separate downstream RFCs.
 
@@ -835,8 +1286,14 @@ a full named target vector.
 This should not replace the core `function(ctx, params)` strategy contract.
 It is only appropriate for strategies that read current pulse data, compute
 row-wise instrument targets, and do not require arbitrary per-instrument
-control flow, order-dependent allocation, or custom state mutation. Keep it
-out of v0.1.8.4; active aliases and grid helpers should stabilize first.
+control flow, order-dependent allocation, or custom state mutation. Active
+aliases and grid helpers have since stabilized (v0.1.8.4); the 2026-06-01
+paired strategy callback contract + authoring helpers synthesis (this file)
+binds a different surface for the same authoring intent: the `ctx$vec`
+universe-aligned vector namespace plus the existing `signal_return` /
+`select_top_n` / `weight_equal` / `target_rebalance` exported pipeline.
+Treat this entry as a superseded earlier sketch of the same direction; the
+two RFC synthesis documents are the binding designs going forward.
 
 ### 2026-05-13 [ux] Research workflow scaffolds and companion templates
 
@@ -1069,7 +1526,7 @@ parked until the research-to-paper arc is stable enough for focused RFCs.
 
 Do not confuse full portfolio optimization with the existing helper pipeline
 (`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()`). The roadmap now
-names `v0.1.8.9.x Target Construction Helper Extensions` for small additions to
+names `v0.1.9.x Target Construction Helper Extensions` for small additions to
 that helper surface. Full solver-style portfolio optimization remains deferred.
 
 ML strategy artifact management depends on stable walk-forward windows,
@@ -1157,7 +1614,7 @@ The accepted first walk-forward design is
 diagnostic work should consume its fold/session/score artifacts rather than
 reopening the v1 wrapper-over-run/sweep architecture.
 
-Promoted roadmap hook: `v0.1.8.9.x Selection Integrity Diagnostics`.
+Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
 
 ### 2026-05-13 [infrastructure] Public parallel sweep backend
 
@@ -1306,7 +1763,7 @@ warnings/errors, metric context, feature-set hashes, execution seeds, ranking or
 selection view, manifest data, and snapshot locator hints. Do not persist full
 ledger, fill, trade, or equity artifacts for every candidate by default.
 
-Promoted roadmap hook: `v0.1.8.9.x Sweep Artifact Persistence`.
+Promoted roadmap hook: `v0.1.9.x Sweep Artifact Persistence`.
 
 ### 2026-05-14 [execution] Structured RNG preflight metadata
 
@@ -1344,11 +1801,11 @@ Potential additions:
 
 Keep this separate from target risk, liquidity/capacity, transaction cost, and
 full portfolio optimization. Promoted roadmap hook:
-`v0.1.9 Target Construction Helper Extensions` (updated from `v0.1.8.9.x`
-per the paired-cycle synthesis in
-`rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md`, which binds the
-per-stage helper extensions to Pass 2 in v0.1.9; see the 2026-06-01
-post-synthesis horizon entry below).
+`v0.1.9.x Target Construction Helper Extensions` (per the canonical roadmap
+entry; the paired-cycle synthesis in
+`rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md` binds Pass 2 per-stage
+helper extensions to that window. See the 2026-06-01 post-synthesis horizon
+entry below.).
 
 ### 2026-05-27 [risk] Affordability belongs in target risk
 
@@ -1358,7 +1815,7 @@ targets can request more exposure than available cash supports; the fold records
 the fill and cash can go negative. That arithmetic is reproducible, but it is
 not a declared margin model.
 
-The v0.1.8.9 target-risk RFC should treat capital discipline as a first-class
+The v0.1.9 target-risk RFC should treat capital discipline as a first-class
 risk adapter, alongside long-only and max-weight constraints. The minimum shape
 should include an explicit capital floor or affordability rule inserted between
 target validation and fill timing, preserving the strategy contract: strategies
@@ -1399,7 +1856,7 @@ feature beta    : after benchmark substrate plus a point-in-time
                   rolling beta at pulse t may use returns ending at t or
                   must use returns strictly before t.
 constraint beta : after benchmark substrate, feature-alignment design, and
-                  the v0.1.8.9 target-risk chain.
+                  the v0.1.9 target-risk chain.
 ```
 
 Do not gate diagnostic beta on the risk chain; the dependency is
@@ -1571,7 +2028,7 @@ uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.8.9, or later
 #### Lookback and portfolio windows
 
 - `ctx$window()` is accepted as the causal lookback primitive, but enters
-  v0.1.8.9 only if target-risk or portfolio-risk work needs covariance windows.
+  v0.1.9 only if target-risk or portfolio-risk work needs covariance windows.
 - First public shape, when cut, is single-feature `n_inst x lookback` matrix
   with leading `NA_real_` warmup columns.
 - Multi-feature/tensor/list window shapes are future API work after the first
@@ -1620,7 +2077,7 @@ uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.8.9, or later
 - v0.1.8.6: post-5.0/post-5.1 remeasurement and instrument x feature sweep.
 - v0.1.8.6, if storage/schema work is explicitly accepted: typed persistent
   `cash_delta` and `position_delta` columns.
-- v0.1.8.9, only if target-risk/portfolio-risk needs it: single-feature
+- v0.1.9, only if target-risk/portfolio-risk needs it: single-feature
   `ctx$window()` matrix API.
 - Later: multi-feature/tensor windows.
 - Later: full-panel long export/training APIs and PIT feature-store
@@ -1629,18 +2086,20 @@ uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.8.9, or later
 
 #### Immediate cross-cycle obligations
 
-- The v0.1.8.6 spec packet must cut 5.0 before 5.1 and remeasure after each.
-- The v0.1.8.6 spec packet must not publish width-invariance or benchmark
-  claims until an instrument x feature sweep runs in read/score and turnover
-  modes.
-- The v0.1.8.6 spec packet must decide whether storage/schema work is in scope
-  before cutting any 5.6 typed persistent column ticket.
-- If 5.6 is deferred, the packet should record it as designed future storage
-  work, not as an incomplete SQL-only patch.
+These obligations were directed at the v0.1.8.6 spec packet (now shipped):
+
+- 5.0 was cut before 5.1 and remeasured after each — landed.
+- Width-invariance and benchmark claims were withheld until the instrument
+  x feature sweep ran in read/score and turnover modes — landed.
+- Typed persistent `cash_delta` and `position_delta` columns (5.6) were
+  evaluated against scope; 5.6 was deferred and recorded as designed future
+  storage work rather than shipped as an incomplete SQL-only patch.
 
 This entry does not authorize any of the above by itself; it records the
 post-synthesis direction and deferrals. Concrete work remains governed by the
-accepted synthesis and the relevant spec packets.
+accepted synthesis and the relevant spec packets. The remaining open items
+in the hooks list above (multi-feature/tensor windows, long export/training
+APIs, broader typed event metadata) carry to later v0.1.x/v0.2.x cycles.
 
 ### 2026-05-28 [optimization] Persistent DB-replay reconstruction via DuckDB SQL
 
@@ -1706,22 +2165,27 @@ Near-term policy:
   to recover the measured pulse-view setup cost;
 - do not add `collapse` as an `Imports` dependency during v0.1.8.3 solely for
   pulse-view construction;
-- preserve the spike results as evidence for v0.1.8.9 planning gates.
+- preserve the spike results as evidence for the v0.1.9 primitive-internals
+  planning gates (canonical roadmap slot
+  `v0.1.9 Primitive Internals Planning Gates`).
 
-Promoted v0.1.8.9 planning direction:
+Promoted v0.1.9 planning direction (status of each item shown):
 
 - write a primitive-internals developer guide before broad implementation
-  work;
-- spike deterministic `collapse` wrapping with scoped `collapse::set_collapse()`
-  state restoration rather than mutating caller sessions at package load;
-- micro-profile the event-boundary output buffer path and spike safe
-  cumulative-reconstruction parity before any production `collapse` dependency
-  decision;
+  work — open;
+- deterministic `collapse` wrapping with scoped `collapse::set_collapse()`
+  state restoration — shipped v0.1.8.7 (commit "Add deterministic collapse
+  wrapper") and bound by ADR 0004;
+- micro-profile event-boundary output buffer path — diagnostics landed in
+  v0.1.8.8 Batch 2 (per-pulse telemetry sampling) and the `setv` rewrite
+  shipped in v0.1.8.9 Batches 5-7;
 - decide whether `collapse` becomes the package's R-side acceleration layer
-  only after a non-Phase-A production surface shows measured value under
-  hostile caller-side settings;
-- keep FIFO redesign, arbitrary strategy callback compilation, and a compiled
-  fold core as separate decisions with their own parity gates.
+  — bound by ADR 0004 (collapse added as `Imports` in v0.1.8.7); future
+  micro-passes follow the deterministic-wrapper rules above;
+- keep FIFO redesign, arbitrary strategy callback compilation, and a
+  compiled fold core as separate decisions with their own parity gates —
+  preserved (compiled core is now the `ledgrcore-spike` external repo per
+  the 2026-05-30 entry).
 
 This direction also supports the longer-term DuckDB and compiled-core horizon
 items. Primitive matrices/lists map more cleanly to DuckDB columns, block
@@ -1755,7 +2219,7 @@ that the port can be contract-following rather than contract-setting.
 Minimum gates before a serious port RFC:
 
 - v0.1.8.4 active parameterized feature aliases have landed or been abandoned;
-- the v0.1.8.9 target-risk chain has stabilized, including second-pass target
+- the v0.1.9 target-risk chain has stabilized, including second-pass target
   validation and risk identity;
 - walk-forward has produced real large-sweep workloads that justify native
   fold speed;
@@ -1858,15 +2322,15 @@ Until those pieces exist, the operations dashboard is a sketch, not a design.
 Record it here so the eventual UI work has a target shape rather than being
 invented under deployment pressure.
 
-### 2026-05-27 [evaluation] Walk-forward post-v0.1.8.9.x direction
+### 2026-05-27 [evaluation] Walk-forward post-v0.1.9.x direction
 
-The accepted v0.1.8.9.x walk-forward synthesis
+The accepted v0.1.9.x walk-forward synthesis
 (`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`) binds the
 first walk-forward implementation: rolling and anchored folds, calendar-time
 boundaries, single sealed snapshot, classed selection rules, scalar score
 matrix, and extraction-for-promotion. The synthesis uses "v1" as shorthand for
 that first implementation; ledgr's roadmap does not have a "walk-forward v2"
-milestone. The post-v0.1.8.9.x direction lives in named follow-up RFCs at their
+milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at their
 own roadmap windows. This entry records the shape of that direction so the
 follow-up work has a target rather than being invented under pressure.
 
@@ -1933,10 +2397,10 @@ Paper/live walk-forward and OMS interaction:
 
 Promoted roadmap hooks (named follow-up RFCs):
 
-- diagnostic retention tiers RFC (v0.1.8.9.x or later);
-- selection-integrity diagnostics RFC (v0.1.8.9.x, after retention tiers
+- diagnostic retention tiers RFC (v0.1.9.x or later);
+- selection-integrity diagnostics RFC (v0.1.9.x, after retention tiers
   stabilize enough to consume);
-- purged and embargoed folds RFC (v0.1.8.9.x or v0.2.x);
+- purged and embargoed folds RFC (v0.1.9.x or v0.2.x);
 - combinatorial purged CV RFC (after purging);
 - trading-time / state-fold RFC (v0.2.x, coordinated with market-calendar
   work);
@@ -1952,9 +2416,9 @@ This horizon entry does not authorize any of the above. It records the
 direction so that when each follow-up cycle opens, the seed author can start
 from a known shape rather than re-deriving the boundary.
 
-### 2026-05-27 [execution] Cost-model post-v0.1.8.9.x direction
+### 2026-05-27 [execution] Cost-model post-v0.1.9.x direction
 
-The accepted v0.1.8.9.x/v0.2.0 public transaction-cost API synthesis
+The accepted v0.1.9.x/v0.2.0 public transaction-cost API synthesis
 (`inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`)
 binds the first public cost API: classed `ledgr_cost_*` objects, ordered
 `ledgr_cost_chain()` composition with two-stage discipline (price transforms
@@ -1964,7 +2428,7 @@ quoted-spread semantics for `spread_bps`, single account currency, one total
 fee per fill, cost identity via `cost_model_hash` + `cost_plan_json`, and
 experiment-level (non-per-candidate) cost in v1. The synthesis explicitly
 defers ~18 cost-adjacent capabilities and records 10 future-RFC obligations.
-This entry groups the post-v0.1.8.9.x direction so each follow-up cycle starts
+This entry groups the post-v0.1.9.x direction so each follow-up cycle starts
 from a known shape.
 
 Cost-model expressiveness extensions:
@@ -2075,9 +2539,9 @@ Promoted roadmap hooks (named follow-up RFCs):
 Immediate cross-cycle obligations recorded by the synthesis (not horizon
 material, just noted for follow-on cycles):
 
-- v0.1.8.9.x walk-forward spec packet must extend `candidate_key` and
+- v0.1.9.x walk-forward spec packet must extend `candidate_key` and
   `session_id` to include `cost_model_hash`;
-- v0.1.8.9.x cost-API spec packet must update
+- v0.1.9.x cost-API spec packet must update
   `vignettes/metrics-and-accounting.Rmd` which currently teaches the legacy
   full-per-leg spread convention.
 
@@ -2183,13 +2647,13 @@ Dependencies on prior cycles
 
 This RFC lands well after the prerequisite work:
 
-- walk-forward (v0.1.8.9.x) so comparisons can be made over OOS fold windows,
+- walk-forward (v0.1.9.x) so comparisons can be made over OOS fold windows,
   not just full snapshots;
-- target risk (v0.1.8.9) so baselines can be risk-adjusted comparable to
+- target risk (v0.1.9) so baselines can be risk-adjusted comparable to
   risk-aware strategies;
-- public cost API (v0.1.8.9.x/v0.2.0) so cost-aware comparisons are honest
+- public cost API (v0.1.9.x/v0.2.0) so cost-aware comparisons are honest
   (baselines have different turnover; comparing without cost can mislead);
-- selection-integrity diagnostics (v0.1.8.9.x) so the comparison can be paired
+- selection-integrity diagnostics (v0.1.9.x) so the comparison can be paired
   with multiplicity-aware significance reporting if the user wants it.
 
 The v0.2.x slot is the right window — after the prerequisites stabilize and
@@ -2342,40 +2806,43 @@ Scope risks
 
 Dependencies on prior cycles
 
-- v0.1.8.5 canonical workflow article (Batch 3 / LDG-2437) surfaces the
-  user-facing need and may already start teaching the convention on the
-  existing `meta` argument as a documentation-only patch;
+- v0.1.8.5 canonical workflow article (Batch 3 / LDG-2437) surfaced the
+  user-facing need and started teaching the convention on the existing
+  `meta` argument as a documentation-only patch — shipped;
 - pre-CRAN compatibility policy (2026-05-25 horizon) authorizes the
   breaking schema change without a deprecation cycle;
-- the v0.1.8.6 DuckDB feature-storage spike runs in the same cycle but
-  is independently scoped; its outcome does not gate the snapshot
-  administration schema.
+- the v0.1.8.6 DuckDB feature-storage spike shipped independently; its
+  outcome does not gate the snapshot administration schema.
+
+Status: the v0.1.8.6 cycle deferred the snapshot administration planning
+(LDG-2451) per the 2026-05-29 "Snapshot administration and research-loop
+helpers deferred" entry. The work is now a v0.2.0-class RFC/spec cycle
+candidate, not a near-term v0.1.x slot. This entry stays the binding
+seed-shape input for whenever that cycle opens.
 
 Promoted roadmap hooks
 
-- snapshot administration and ETL provenance metadata RFC: seed-shape
-  input for the v0.1.8.6 cycle; the RFC must conclude before the
-  v0.1.8.6 spec is cut;
+- snapshot administration and ETL provenance metadata RFC: v0.2.0-class
+  cycle when revived; this entry is its seed-shape input.
 - `ledgr_snapshot_list()` filtering and listing API (coordinated with
-  the metadata schema RFC);
+  the metadata schema RFC).
 - `ledgr_snapshot_deprecate()` and `ledgr_snapshot_supersede()`
   lifecycle API (coordinated with the metadata schema RFC; final scope
-  decided in RFC synthesis);
+  decided in RFC synthesis).
 - audit-log table for administrative edits (coordinated with the
   metadata schema RFC; final scope decided in RFC synthesis).
 
 Cross-cycle note
 
-The v0.1.8.5 workflow article should not teach a not-yet-existing notes
-API. Until the RFC lands and v0.1.8.6 implementation ships, the
-article's teaching path is "your store path is explicit, but the
-discipline of recording ETL provenance belongs in your project README
-or workflow_review.md report next to the store." That documentation-
-only patch sits inside Batch 3 (LDG-2437) scope without expanding it.
+Until the RFC lands and ships, the v0.1.8.5 workflow article's teaching
+path remains "your store path is explicit, but the discipline of
+recording ETL provenance belongs in your project README or
+workflow_review.md report next to the store." That documentation-only
+guidance was landed inside the v0.1.8.5 Batch 3 (LDG-2437) scope.
 
 This horizon entry is the seed-shape input for the snapshot
 administration RFC. It does not replace the RFC cycle, and the RFC
-synthesis (not this entry) is what authorizes the v0.1.8.6 spec scope.
+synthesis (not this entry) is what authorizes any future spec scope.
 
 This horizon entry does not authorize any of the above. It records the
 direction so that when the snapshot administration RFC cycle opens, the
@@ -2500,10 +2967,12 @@ returning a named list or compact tibble would fit.
 
 #### Promoted roadmap hooks
 
-- sweep-review helper: scoped into v0.1.8.6 Workstream C; design folds
-  into the snapshot administration RFC (Workstream A) since both touch
-  "what does it mean to reopen this run?";
-- promotion-recovery-summary helper: same;
+- sweep-review helper: originally scoped into v0.1.8.6 Workstream C but
+  deferred together with the snapshot administration RFC (see the
+  2026-05-29 deferral entry). Revisit as part of the v0.2.0-class
+  snapshot administration / research-loop helpers cycle since both
+  touch "what does it mean to reopen this run?".
+- promotion-recovery-summary helper: same path.
 - when the helpers ship, revise the vignette's "Design note" and
   "API gap" callouts to reference the new functions, or remove them
   if the helper makes the lower-level path unnecessary in the
@@ -2565,7 +3034,7 @@ Every layer above storage assumes EOD shape, however:
   order lifecycle (place / modify / cancel, partial fills). That work is
   v0.2.x with an accepted synthesis at
   `inst/design/rfc/rfc_ledgr_oms_seed_synthesis.md`.
-- **Cost / liquidity policy is not intraday-aware.** The v0.1.8.9.x/v0.2.0
+- **Cost / liquidity policy is not intraday-aware.** The v0.1.9.x/v0.2.0
   cost API works for intraday in principle, but participation, capacity,
   and minimum-ADV policy (also v0.2.x) is what intraday actually needs.
 - **Storage scale changes.** The v0.1.8.6 feature-storage spike measures
@@ -2585,7 +3054,7 @@ First-class intraday is a multi-cycle endeavor:
    `ledger_events` separation.
 2. **Session calendar infrastructure** (new RFC, post-OMS) — exchange
    sessions, holidays, half-days, lunch breaks, pre/post-market handling.
-3. **Intraday fill-timing policy** (extends v0.1.8.9.x cost API arc) —
+3. **Intraday fill-timing policy** (extends v0.1.9.x cost API arc) —
    next-pulse-touch, mid-point, VWAP, session-open / session-close, with
    the same swappable boundary the EOD `next_open_timing` already uses.
 4. **Intraday-aware metric context** (extends v0.1.8.2 metric context
@@ -2602,8 +3071,8 @@ synthesis is the entry point. Calendar infrastructure is the missing RFC.
 
 #### Architectural footguns the v0.1.x cycles must avoid
 
-This is the operative section. The current cycles (v0.1.8.5 through
-v0.1.8.9.x) must not paint the framework into corners that the intraday
+This is the operative section. The in-flight and upcoming cycles (v0.1.8.10
+through v0.1.9.x) must not paint the framework into corners that the intraday
 flip will have to rip out. The list below is the audit checklist.
 
 - **Pulse cadence is a snapshot-derived property, not a global constant.**
@@ -2629,7 +3098,7 @@ flip will have to rip out. The list below is the audit checklist.
 - **Risk-layer affordability check must be net across one pulse's
   proposed fills, not per-instrument sequential.** The fold core's fill
   loop iterates per instrument and updates cash sequentially
-  (`R/fold-core.R:233-287`). When the v0.1.8.9 target-risk layer adds
+  (`R/fold-core.R:233-287`). When the v0.1.9 target-risk layer adds
   affordability adapters, they must check feasibility against the net
   cash delta from all proposed fills at one pulse, not per-instrument:
   a per-instrument check would reject rebalancing strategies depending
@@ -2654,7 +3123,7 @@ flip will have to rip out. The list below is the audit checklist.
   per-decision shape but must not commit to a schema the OMS work will
   have to rip out destructively.
 - **Cost API spread / participation assumptions stay EOD-neutral.** The
-  accepted v0.1.8.9.x cost API synthesis keeps `cost_spread_bps()` as a
+  accepted v0.1.9.x cost API synthesis keeps `cost_spread_bps()` as a
   quoted-spread function over a fill context. Intraday extends the
   context, not the cost API. Preserve that boundary.
 - **Demo data and demo strategies stay EOD-shaped.** That is fine. The
@@ -2812,9 +3281,9 @@ opens; or open a follow-up RFC to extend the existing synthesis.
   amended with an intraday-readiness scope risk;
 - the research-loop ergonomics helpers entry (2026-05-27, this file) —
   helper output shape must be cadence-neutral;
-- the walk-forward post-v0.1.8.9.x direction entry (2026-05-27, this file)
+- the walk-forward post-v0.1.9.x direction entry (2026-05-27, this file)
   — confirm follow-up directions extend cleanly to intraday folds;
-- the cost-model post-v0.1.8.9.x direction entry (2026-05-27, this file)
+- the cost-model post-v0.1.9.x direction entry (2026-05-27, this file)
   — confirm timing/cost extensions accommodate intraday fill policies.
 
 The audit should record, for each RFC above, whether it is **pinned**
@@ -2833,7 +3302,7 @@ planning.
   line; cut after OMS lands;
 - intraday metric context extension — extends v0.1.8.2 metric context
   work; same calendar surface, parameterized cadence;
-- intraday fill timing policy — extends v0.1.8.9.x/v0.2.0 cost API arc;
+- intraday fill timing policy — extends v0.1.9.x/v0.2.0 cost API arc;
 - intraday storage scale evidence — extends v0.1.8.6 feature-storage
   spike with intraday workload comparisons if the spike is rerun;
 - design audit for intraday-readiness footguns — user-initiated, no
@@ -2842,8 +3311,8 @@ planning.
 #### Cross-cycle note
 
 This entry does not authorize new cycles. Its operative effect is on
-the in-progress v0.1.8.5 cycle and the planned v0.1.8.6, v0.1.8.7,
-v0.1.8.9, and v0.1.8.9.x cycles: each must avoid the footguns named above.
+the in-flight v0.1.8.10 cycle and the planned v0.1.9 and v0.1.9.x cycles:
+each must avoid the footguns named above.
 The user-initiated design audit will produce a sharper list of "preserve
 this" and "fix this before it becomes permanent" findings. Until the
 audit lands, treat this entry as a soft constraint on architectural
@@ -3042,8 +3511,8 @@ candidates.
   shape resists portfolio-level risk and net affordability. Target shape: plan
   (targets -> deltas) -> batch proposals -> batch cost -> batch/portfolio risk
   + net affordability -> emit -> apply atomically. This is the structural
-  prerequisite for the v0.1.8.9 affordability check (see the 2026-05-27
-  affordability-in-target-risk entry) and is a v0.1.8.9 target-risk RFC input.
+  prerequisite for the v0.1.9 affordability check (see the 2026-05-27
+  affordability-in-target-risk entry) and is a v0.1.9 target-risk RFC input.
 - **Typed execution spec.** The `execution` list is a large untyped bag; run
   and sweep hand-build equivalent-but-not-identical lists (verified divergences
   in seed derivation, `event_mode`, hardcoded vs config fields, metric-kernel
@@ -3104,7 +3573,7 @@ Adapter ranking (later ones gated on their own readiness):
 
 - PerformanceAnalytics — reporting / tear-sheet; first, output projection only.
 - PortfolioAnalytics — portfolio construction / post-ledger optimization; after
-  the v0.1.8.9 target-risk chain stabilizes.
+  the v0.1.9 target-risk chain stabilizes.
 - tidyfinance — factor / data research; with the v0.2.x PIT / vintage semantics.
 - quantmod — data ingestion; useful but less differentiating.
 - PMwR / quantstrat / blotter / fPortfolio — low priority or skip (accounting /
@@ -3184,3 +3653,55 @@ Resolved without a separate article: the v0.1.8.5 cycle moved the low-level CSV
 bridge to the `?ledgr_snapshot_import_bars_csv` help page (reference boundary)
 and kept experiment-store centered on run management, so the split this entry
 proposed is no longer needed.
+
+### 2026-06-01 [optimization] Feature projection materialization + storage spike + benchmark closeout — shipped v0.1.8.6
+
+The v0.1.8.6 cycle shipped per the feature projection synthesis: 5.0 feature
+cache-key dedup (fingerprint + engine-version), 5.1 schema-only
+`ctx$feature_table` default with non-fast-path rebuild fix, and the
+post-5.0/5.1 remeasurement + instrument x feature sweep. The DuckDB feature
+storage spike ran independently and informed direction. Structured benchmark
++ attribution closeout established the LDG-2476 baseline for v0.1.8.9. Typed
+persistent `cash_delta` / `position_delta` columns (5.6) were deliberately
+deferred to a later storage RFC; LDG-2451 snapshot administration was
+deferred to v0.2.0-class per the 2026-05-29 entry. See the v0.1.8.6 packet
+and `rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`.
+
+### 2026-06-01 [optimization] v0.1.8.7 Optimization Round 2 — shipped v0.1.8.7
+
+The v0.1.8.7 cycle shipped per the optimization-round synthesis: surface-
+preserving event-buffer capacity/write fix (B0), hot-path representation /
+formatting cleanup with durable-identity bytes fenced off (R), read-back
+reconstruction behind a deterministic collapse gate (C), ADR 0004
+dependency moves (drop cli + R6, add collapse, keep tibble), and explicit
+legacy cleanup (raw `bars` execution, R6 strategy execution, run-time
+`data_hash` identity removed from modern execution). Per-lane real-run
+re-profile and parity gates landed alongside. See the v0.1.8.7 packet and
+`rfc_optimization_round_v0_1_8_7_synthesis.md`.
+
+### 2026-06-01 [infrastructure] Parallel sweep dispatch + typed execution spec — shipped v0.1.8.8
+
+The v0.1.8.8 cycle shipped public parallel sweep dispatch, parallel worker
+setup with Tier-2 packages, mori transport, worker-local read-only DuckDB,
+parallel interrupt + measurement contract, typed `ledgr_execution_spec_v1`
+(LDG-2472), deterministic-only RNG with `ctx$pulse_seed` (LDG-2471), and
+the `inst/design/manual/` skeleton (without authoring the full internal
+manual — that work moves to v0.1.9.x per the 2026-05-30 maintainer-manual
+backlog entry). LDG-2479 self-profiling workload grid extension landed as
+the v0.1.8.9 baseline. See the v0.1.8.8 packet.
+
+### 2026-06-01 [optimization] v0.1.8.9 single-core optimization round — shipped v0.1.8.9
+
+The v0.1.8.9 cycle shipped the single-core optimization round per the
+LDG-2476 / LDG-2479 per-pulse complexity finding. Highlights: fills
+extractor `setv` (Batch 5 wins per LDG-2496), durable + memory output
+handler `setv` rewrites, durable handler character-write fix, vectorized
+fold position valuation and target-delta scan, canonical JSON migration to
+yyjsonr (LDG-2493 / LDG-2494). High-density xlarge durable cell moved
+445.02s → 232.03s wall, 413.47s → 199.06s loop, 197.11s → 23.36s fills
+extraction. Per-fill engine cost fell 3107 → 1495 us/fill; per-fill
+extraction cost fell 1481 → 175 us/fill. Phase-separated peer-benchmark
+engine ratio 1.74x → 1.12x Backtrader; total wall ratio 1.50x. See the
+v0.1.8.9 packet and the 2026-05-31 LDG-2476 entry's Batch 8 closeout
+addendum for the substrate / read-path / ephemeral-mode residuals that
+forward into the v0.1.8.10 spike round.
