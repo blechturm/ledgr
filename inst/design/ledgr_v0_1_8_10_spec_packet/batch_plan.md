@@ -158,7 +158,7 @@ Completion note:
 ## Batch 7 - Measurement Closeout
 
 Ticket: `LDG-2524`
-Status: In Review
+Status: Completed
 
 Goal: aggregate attribution and write the v0.1.8.9 to v0.1.8.10 closeout.
 
@@ -172,9 +172,9 @@ Exit criteria:
 - Peer and workload-grid shapes are not mixed.
 - No public speed-claim language appears.
 
-Review note:
+Completion note:
 
-- `v0_1_8_10_release_closeout.md` is staged for review. The canonical workload
+- `v0_1_8_10_release_closeout.md` was reviewed and committed. The canonical workload
   record is `ledgr_bench_record_20260602T155628Z`; the seed-matched B2
   xlarge-ephemeral gate record is `ledgr_bench_record_20260602T162911Z`; the
   peer record is `peer_benchmark_record_20260602T162318Z`.
@@ -182,7 +182,7 @@ Review note:
 ## Batch 8 - B2 Public Opt-In Promotion
 
 Ticket: `LDG-2526`
-Status: In Review
+Status: Completed
 
 Goal: expose the measured B2 spot-FIFO accelerator as an explicit public
 opt-in for memory-backed sweep execution while preserving canonical R as the

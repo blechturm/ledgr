@@ -577,7 +577,7 @@ scope: parked_spike_disposition
 Priority: P0
 Effort: L
 Dependencies: LDG-2518, LDG-2519, LDG-2520, LDG-2521, LDG-2522, LDG-2523
-Status: In Review
+Status: Completed
 
 ### Description
 
@@ -616,9 +616,9 @@ write the v0.1.8.9 to v0.1.8.10 closeout comparison.
 Per-lane ledger review, workload-grid rerun, peer-benchmark rerun, closeout
 review, and claim-language review.
 
-### Review Note
+### Completion Note
 
-Batch 7 is staged for review. `v0_1_8_10_release_closeout.md` cites the
+Batch 7 was reviewed and committed. `v0_1_8_10_release_closeout.md` cites the
 canonical workload-grid record
 `dev/bench/results/ledgr_bench_record_20260602T155628Z_summary.csv`, the
 seed-matched B2 xlarge-ephemeral record
@@ -649,7 +649,7 @@ scope: v0.1.8.9_to_v0.1.8.10_comparison
 Priority: P0
 Effort: M
 Dependencies: LDG-2524
-Status: In Review
+Status: Completed
 
 ### Description
 

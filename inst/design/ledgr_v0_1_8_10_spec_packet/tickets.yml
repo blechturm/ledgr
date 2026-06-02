@@ -137,7 +137,7 @@ tickets:
 
   - id: "LDG-2524"
     title: "Measurement Closeout"
-    status: "in_review"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -160,7 +160,7 @@ tickets:
 
   - id: "LDG-2526"
     title: "B2 Public Opt-In Promotion"
-    status: "in_review"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

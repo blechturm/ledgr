@@ -1,6 +1,6 @@
 # v0.1.8.10 Measurement Closeout
 
-Status: Closeout staged for review
+Status: Completed
 Created: 2026-06-02
 Scope: v0.1.8.9 to v0.1.8.10 local benchmark comparison
 
@@ -61,7 +61,7 @@ records.
 | `LDG-2521` | yyjsonr options hoist | 50k `meta_json` helper benchmark improved 22.00 -> 2.40 us/payload (9.17x) | Delivered; helper/read/replay surface, not fresh-fold wall claim |
 | `LDG-2522` | B2 spot-FIFO fill-batch gate | Seed-matched xlarge ephemeral wall 375.14s -> 67.32s with same 66,419 fills and zero failures; engine 342.25s -> 32.66s | Pass for scoped spot-asset FIFO accelerator gate |
 | `LDG-2523` | Parked spike disposition | Split bucket, reusable ctx env, pulse-seed mixer, and alias-map normalization dispositions recorded | No code lane; small spikes parked, routed, or covered by landed accessors |
-| `LDG-2526` | B2 public opt-in promotion | Public `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")` routes to the scoped memory-backed spot-FIFO path; durable `ledgr_run(..., "spot_fifo")` fails closed | In review; public opt-in only, default remains canonical R |
+| `LDG-2526` | B2 public opt-in promotion | Public `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")` routes to the scoped memory-backed spot-FIFO path; durable `ledgr_run(..., "spot_fifo")` fails closed | Completed; public opt-in only, default remains canonical R |
 
 The final closeout workload run differs from individual per-lane records because
 it was run as a full record preset after the lanes landed. It should be read as

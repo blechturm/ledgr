@@ -277,7 +277,7 @@ Outcome:
 
 ## LDG-2526: B2 Public Opt-In Promotion
 
-Status: in review.
+Status: completed.
 
 Scope guard:
 
