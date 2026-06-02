@@ -3,8 +3,8 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_8_9_spec_packet/`.
-**Active packet:** `v0.1.9`.
+**Latest completed packet:** `inst/design/ledgr_v0_1_8_10_spec_packet/`.
+**Active packet:** `v0.1.8.11` planning.
 **Active packet path:** Future packet.
 
 This roadmap is a directional planning document. Versioned spec packets are the
@@ -103,7 +103,7 @@ versioned packet.
 | v0.1.8.7 | Done | Optimization round 2 and legacy cleanup: removed raw `bars` execution, R6 strategy execution, and run-time `data_hash` identity from modern execution; dropped cli/R6, added collapse, and shipped measured event-buffer, representation/setup, reconstruction, artifact-policy, and benchmark-attribution work. | `inst/design/ledgr_v0_1_8_7_spec_packet/` |
 | v0.1.8.8 | Done | Parallel sweep dispatch and determinism, fold-core diagnostics and containment, repo-local peer benchmark reporting, and self-profiling workload-grid evidence for v0.1.8.9 optimization scoping. Maintainer-manual skeleton cleanup deferred. | `inst/design/ledgr_v0_1_8_8_spec_packet/` |
 | v0.1.8.9 | Done | Single-core optimization round: scale-growing buffer write fixes, per-pulse vectorization, yyjsonr canonical JSON byte-format v2 migration, per-lane attribution, and workload-grid / peer-benchmark closeout. | `inst/design/ledgr_v0_1_8_9_spec_packet/` |
-| v0.1.8.10 | Active | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
+| v0.1.8.10 | Done | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, scoped public memory-backed sweep opt-in, and measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
 | v0.1.8.11 | Planned | Documentation, structure, and cleanup release before v0.1.9 features. RFC synthesis, ADR population, decision-log synthesis, vignette refresh for post-B2 reality, contracts.md structural pass, internal performance-arc narrative, and the maintainer manual backlog. Entropy management cycle for the post-v0.1.8.10 codified-architecture surface. | Future packet |
 | v0.1.9 | Planned | Target risk layer and post-optimization primitive-internals / substrate planning gates. | Future packet |
 | v0.1.9.x | Planned | Internal maintainer manual and architecture article release after the v0.1.8.8 deferral. Foundation absorbed into v0.1.8.11 documentation/cleanup release. | Future packet |

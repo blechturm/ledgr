@@ -279,7 +279,7 @@ the strategy environment.
 
 ``` r
 tier_2_strategy <- function(ctx, params) {
-  jsonlite::toJSON(params, auto_unbox = TRUE)
+  TTR::SMA(c(1, 2, 3), n = 2)
   ctx$flat()
 }
 
@@ -291,14 +291,14 @@ ledgr_strategy_preflight(tier_2_strategy)
 
     Tier:    tier_2
     Allowed: TRUE
-    Reason:  Strategy uses package-qualified dependency outside the active R distribution: jsonlite.
-    Package Dependencies: jsonlite
+    Reason:  Strategy uses package-qualified dependency outside the active R distribution: TTR.
+    Package Dependencies: TTR
 
-The `jsonlite::toJSON()` call is written this way on purpose. Namespace
+The `TTR::SMA()` call is written this way on purpose. Namespace
 qualification tells ledgr which package supplies the function. That
 makes the dependency visible in the preflight result and keeps the
 strategy inspectable. The run can proceed, but ledgr cannot preserve the
-installed `jsonlite` version or its system requirements by itself.
+installed `TTR` version or its system requirements by itself.
 
 #### Captured Values
 

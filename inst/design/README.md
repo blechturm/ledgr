@@ -2,12 +2,12 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.9`.
-**Current active packet:** `v0.1.8.10`.
-**Current active packet path:** `inst/design/ledgr_v0_1_8_10_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_9_spec_packet/` is an archival release
-record. The v0.1.8.10 packet is the active implementation packet on the
-`v0.1.8.10` branch.
+**Latest completed release packet:** `v0.1.8.10`.
+**Current active packet:** none; v0.1.8.11 planning is next.
+**Current active packet path:** future packet.
+The completed `inst/design/ledgr_v0_1_8_10_spec_packet/` is an archival
+release record. Do not treat it as authorization for new implementation work
+after the v0.1.8.10 release gate.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -152,12 +152,15 @@ peer-benchmark remeasurement.
 - Primary synthesis:
   `spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`.
 
-The v0.1.8.10 packet is active. It closes the v0.1.8.x single-core arc with
+The v0.1.8.10 packet is complete. It closed the v0.1.8.x single-core arc with
 ephemeral subphase telemetry, matrix-canonical fold substrate and accepted
 strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr
-options hoisting, and a workload-grid / peer-benchmark measurement closeout.
-Events remain canonical evidence; inline accounting facts are typed derived
-outputs and parity targets, not replacements for the event stream.
+options hoisting, a compiled hot-frame B2 measurement gate, a scoped public
+memory-backed sweep B2 spot-FIFO opt-in, and a workload-grid / peer-benchmark
+measurement closeout. Events remain canonical evidence; inline accounting
+facts are typed derived outputs and parity targets, not replacements for the
+event stream. Default execution remains canonical R, and durable compiled
+integration remains deferred.
 
 - Spec: `ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`.
 - Tickets: `ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`.
@@ -167,6 +170,9 @@ outputs and parity targets, not replacements for the event stream.
   `ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`.
 - Primary synthesis:
   `spikes/ledgr_v0_1_8_10_optimization_round_spike/architecture_synthesis.md`.
+
+The next planning packet is v0.1.8.11. Per the roadmap, it is a documentation,
+structure, and cleanup release before v0.1.9 features.
 
 ## Core Documents
 
@@ -406,6 +412,10 @@ ADRs live under `adr/`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
+- `ledgr_v0_1_8_10_spec_packet/` - v0.1.8.10 release record for
+  ephemeral telemetry, matrix-canonical strategy accessors, fold-owned FIFO
+  accounting, yyjsonr options hoist, the scoped B2 spot-FIFO sweep opt-in, and
+  measurement closeout.
 - `ledgr_v0_1_8_9_spec_packet/` - v0.1.8.9 release record for
   column-buffer `setv` fixes, per-pulse vectorization, yyjsonr consolidation,
   and post-fix measurement gates.

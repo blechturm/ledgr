@@ -30,7 +30,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.8.10 active implementation packet;
+Current planning context (post-v0.1.8.10 release gate; v0.1.8.11 planning next;
 update this block when the next packet opens or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
@@ -101,22 +101,24 @@ update this block when the next packet opens or scope changes materially):
 - v0.1.8.9 shipped the single-core optimization round: scale-growing buffer
   write fixes, per-pulse vectorization, yyjsonr canonical JSON byte-format v2
   migration, per-lane attribution, and workload-grid / peer-benchmark closeout.
-- The v0.1.8.10 packet is the active implementation packet:
+- The completed v0.1.8.10 packet is an archival release record:
   `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`,
   `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`,
   `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, and
-  `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`.
-- v0.1.8.10 closes the v0.1.8.x single-core arc with ephemeral subphase
+  `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`,
+  `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`.
+- v0.1.8.10 closed the v0.1.8.x single-core arc with ephemeral subphase
   telemetry, matrix-canonical fold substrate and accepted strategy accessors,
   event-preserving fold-owned FIFO accounting, yyjsonr options hoisting, a
   compiled hot-frame B2 measurement gate, parked-spike disposition, and
-  measurement closeout. Events remain canonical evidence.
-- Public compiled-core promotion, default compiled execution, durable compiled
-  integration, target risk, walk-forward, cost/liquidity, OMS, split stores,
+  measurement closeout. It also shipped the scoped public memory-backed sweep
+  B2 spot-FIFO opt-in. Events remain canonical evidence.
+- Default compiled execution, durable compiled integration, non-spot compiled
+  accounting, target risk, walk-forward, cost/liquidity, OMS, split stores,
   live data logs, point-in-time regressors, scaffold generation,
   external-provider work, broad collapse adoption, and package-vignette
-  benchmark claims remain deferred unless the active packet explicitly scopes a
+  benchmark claims remain deferred unless the next packet explicitly scopes a
   bounded subset.
 
 ## Active Design Entry Points
@@ -127,7 +129,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.1.8.10 active packet | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md` |
+| v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |
 | v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
 | v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
 | v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |

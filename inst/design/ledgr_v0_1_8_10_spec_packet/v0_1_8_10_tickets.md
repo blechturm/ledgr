@@ -719,7 +719,7 @@ scope: b2_spot_fifo_opt_in
 Priority: P0
 Effort: M
 Dependencies: LDG-2517, LDG-2518, LDG-2519, LDG-2520, LDG-2521, LDG-2522, LDG-2523, LDG-2524, LDG-2526
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -754,6 +754,28 @@ the v0.1.8.10 merge/tag.
 
 Targeted tests, full tests, package build, package check, NEWS review, design
 index review, B2 opt-in scope review, git status review.
+
+### Completion Note
+
+Batch 9 bumped `DESCRIPTION` to `0.1.8.10`, verified that `NEWS.md` frames the
+release as substrate/accounting/telemetry work plus a scoped memory-backed
+sweep B2 spot-FIFO opt-in, closed the packet status in `batch_plan.md`,
+`tickets.yml`, and the design index, and prepared the release branch for the
+documented merge/tag playbook.
+
+Local release-gate verification:
+
+- Targeted tests passed for `test-sweep.R`, `test-sweep-parity.R`,
+  `test-sweep-parallel.R`, `test-backtest-wrapper.R`, and
+  `test-accounting-consistency.R`.
+- Full `testthat::test_local('.', reporter = 'summary')` passed with one
+  expected Yahoo/quantmod missing-package-path skip.
+- The CI-equivalent `rcmdcheck::rcmdcheck(args = c('--no-manual',
+  '--no-build-vignettes'), error_on = 'warning')` passed with 0 errors,
+  0 warnings, and 1 accepted NOTE for two long design-spike file paths.
+- The local pkgdown build passed.
+- The WSL DuckDB-sensitive gate passed after installing missing WSL-side R
+  packages and cleaning stale generated Windows build objects.
 
 ### Source Reference
 

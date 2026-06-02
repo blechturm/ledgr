@@ -180,7 +180,7 @@ tickets:
 
   - id: "LDG-2525"
     title: "v0.1.8.10 Release Gate"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

@@ -1,6 +1,6 @@
 # ledgr v0.1.8.10 Batch Plan
 
-**Status:** Active.
+**Status:** Completed.
 
 The batch plan preserves attribution while accepting two architectural
 exceptions: fold-owned FIFO accounting ships as substrate/accounting ownership,
@@ -206,7 +206,7 @@ Exit criteria:
 ## Batch 9 - Release Gate
 
 Ticket: `LDG-2525`
-Status: Pending
+Status: Completed
 
 Goal: run final checks, update release notes, close the packet, and prepare
 merge/tag.
@@ -219,3 +219,13 @@ Exit criteria:
 - NEWS and design README are updated.
 - B2 public opt-in scope is reviewed and default behavior remains canonical R.
 - Generated local artifacts are excluded.
+
+Completion note:
+
+- Batch 9 bumped package metadata to `0.1.8.10`, closed the packet status in
+  ticket markdown/YAML and the design index, verified release-note language for
+  the scoped memory-backed sweep B2 opt-in, and prepared the branch for the
+  release playbook merge/tag sequence. Targeted sweep/backtest/accounting
+  tests, the full local suite, CI-equivalent warning-strict `rcmdcheck`, the
+  local pkgdown build, and the WSL DuckDB-sensitive gate passed. The remaining
+  local check caveat is one accepted NOTE for two long design-spike file paths.

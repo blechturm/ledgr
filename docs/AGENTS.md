@@ -36,8 +36,9 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.7 release; update this block when
-the next active packet is cut):
+Current planning context (post-v0.1.8.10 release gate; v0.1.8.11
+planning next; update this block when the next packet opens or scope
+changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -80,12 +81,56 @@ the next active packet is cut):
   deterministic `collapse` wrapper, ADR 0004 dependency moves
   (`cli`/`R6` dropped, `collapse` added, `tibble` retained), and the
   sweep fast path / promotion materialization boundary.
-- No next packet is active yet. Keep parallel dispatch, target risk,
-  walk-forward, cost/liquidity, OMS, benchmark, split stores, live data
-  logs, point-in-time regressors, scaffold generation,
-  companion-repository implementation, external-provider work, and broad
-  collapse adoption deferred unless a new packet explicitly scopes a
-  bounded subset.
+- The completed v0.1.8.8 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_spec.md`,
+  `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_tickets.md`,
+  `inst/design/ledgr_v0_1_8_8_spec_packet/tickets.yml`, and
+  `inst/design/ledgr_v0_1_8_8_spec_packet/release_closeout.md`.
+- v0.1.8.8 shipped parallel sweep dispatch and determinism, fold-core
+  diagnostics / containment, repo-local peer benchmark reporting under
+  `dev/bench/`, and a self-profiling workload grid extension for
+  v0.1.8.9 optimization scoping. The maintainer-manual skeleton and
+  stale-doc cleanup ticket was explicitly deferred.
+- Sequential
+  [`ledgr_sweep()`](https://blechturm.github.io/ledgr/reference/ledgr_sweep.md)
+  remains the reference implementation. Parallelism is candidate
+  dispatch over the same fold core, not a second execution engine.
+- v0.1.8.8 binds deterministic-only resume/parallel RNG semantics with
+  `ctx$pulse_seed`, `mirai` as a suggested parallel backend with
+  fail-loud missing-backend behavior, hybrid worker dependency handling,
+  an internal typed execution-spec constructor, and a mechanical
+  fold-core split paired with documentation if behavior-neutral.
+- The completed v0.1.8.9 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/per_lane_attribution.md`,
+  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`,
+  and `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`.
+- v0.1.8.9 shipped the single-core optimization round: scale-growing
+  buffer write fixes, per-pulse vectorization, yyjsonr canonical JSON
+  byte-format v2 migration, per-lane attribution, and workload-grid /
+  peer-benchmark closeout.
+- The completed v0.1.8.10 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`,
+  `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`,
+  `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`,
+  `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`.
+- v0.1.8.10 closed the v0.1.8.x single-core arc with ephemeral subphase
+  telemetry, matrix-canonical fold substrate and accepted strategy
+  accessors, event-preserving fold-owned FIFO accounting, yyjsonr
+  options hoisting, a compiled hot-frame B2 measurement gate,
+  parked-spike disposition, and measurement closeout. It also shipped
+  the scoped public memory-backed sweep B2 spot-FIFO opt-in. Events
+  remain canonical evidence.
+- Default compiled execution, durable compiled integration, non-spot
+  compiled accounting, target risk, walk-forward, cost/liquidity, OMS,
+  split stores, live data logs, point-in-time regressors, scaffold
+  generation, external-provider work, broad collapse adoption, and
+  package-vignette benchmark claims remain deferred unless the next
+  packet explicitly scopes a bounded subset.
 
 ## Active Design Entry Points
 
@@ -96,6 +141,12 @@ work.
 
 | Area | Read |
 |----|----|
+| v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |
+| v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
+| v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
+| v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
+| v0.1.8.8 fold-core documentation | `inst/design/maintainer_review/fold_core_workbook.qmd`, `inst/design/maintainer_review/feature_value_path_workbook.qmd`, `inst/design/horizon.md` |
+| v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
 | v0.1.8.7 release record | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
@@ -107,6 +158,7 @@ work.
 | Research workflow / artifact topology | `inst/design/rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` (accepted for v0.1.8.5 planning) |
 | v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
 | Primitive internals / collapse acceleration | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` (accepted for v0.1.9 planning) |
+| v0.1.9 performance scoping | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `inst/design/horizon.md` |
 
 ## Local Verification
 
