@@ -21,6 +21,7 @@ bench_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     warmup = 1L,
     scenarios = NULL,
     seed = 20260528L,
+    compiled_accounting_model = NULL,
     lean_ref = file.path("dev", "bench", "references", "lean_reference.csv")
   )
   i <- 1L
@@ -45,6 +46,9 @@ bench_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     } else if (identical(key, "--seed")) {
       out$seed <- as.integer(val)
       i <- i + 2L
+    } else if (identical(key, "--compiled-accounting-model")) {
+      out$compiled_accounting_model <- if (identical(val, "NULL")) NULL else val
+      i <- i + 2L
     } else if (identical(key, "--lean-ref")) {
       out$lean_ref <- val
       i <- i + 2L
@@ -59,6 +63,7 @@ bench_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --warmup N",
         "  --scenarios comma,separated,names",
         "  --seed N",
+        "  --compiled-accounting-model NULL|spot_fifo",
         "  --lean-ref PATH",
         sep = "\n"
       ), "\n")
@@ -75,6 +80,10 @@ bench_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
   }
   if (!is.finite(out$warmup) || out$warmup < 0L) {
     stop("`--warmup` must be a non-negative integer.", call. = FALSE)
+  }
+  if (!is.null(out$compiled_accounting_model) &&
+      !identical(out$compiled_accounting_model, "spot_fifo")) {
+    stop("`--compiled-accounting-model` must be NULL or spot_fifo.", call. = FALSE)
   }
   out
 }
@@ -129,6 +138,7 @@ bench_environment <- function(args) {
     preset = args$preset,
     repeats = args$repeats,
     warmup = args$warmup,
+    compiled_accounting_model = args$compiled_accounting_model,
     seed = args$seed
   )
 }
@@ -428,6 +438,7 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
     n_pulses = n_pulses,
     n_feat = spec$n_feat %||% 0L,
     n_candidates = 1L,
+    compiled_accounting_model = "NULL",
     trade = isTRUE(spec$trade),
     snapshot_sec = as.numeric(snapshot_sec),
     t_pre_sec = as.numeric(t_pre),
@@ -465,7 +476,7 @@ bench_run_scenario_once <- function(name, spec, iter, seed, is_warmup) {
   )
 }
 
-bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
+bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup, compiled_accounting_model = NULL) {
   bars <- bench_make_bars(spec$n_inst, spec$n_pulses, seed + iter)
   db_path <- tempfile(pattern = paste0("ledgr_bench_", name, "_"), fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -506,6 +517,9 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
   grid <- do.call(ledgr_param_grid, candidate_list)
   warnings <- character()
   elapsed <- system.time({
+    old_model <- getOption("ledgr.internal.compiled_accounting_model", NULL)
+    options(ledgr.internal.compiled_accounting_model = compiled_accounting_model)
+    on.exit(options(ledgr.internal.compiled_accounting_model = old_model), add = TRUE)
     captured <- bench_capture_warnings(ledgr_sweep(exp, grid, seed = seed + iter))
     sweep <- captured$value
     warnings <- captured$warnings
@@ -528,6 +542,7 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup) {
     n_pulses = spec$n_pulses,
     n_feat = spec$n_feat %||% 0L,
     n_candidates = spec$candidates,
+    compiled_accounting_model = compiled_accounting_model %||% "NULL",
     trade = TRUE,
     snapshot_sec = as.numeric(snapshot_sec),
     t_pre_sec = NA_real_,
@@ -614,7 +629,7 @@ bench_run_suite <- function(args) {
       is_warmup <- iter <= args$warmup
       k <- k + 1L
       rows[[k]] <- if (identical(spec$kind, "sweep")) {
-        bench_run_sweep_once(name, spec, iter, args$seed, is_warmup)
+        bench_run_sweep_once(name, spec, iter, args$seed, is_warmup, args$compiled_accounting_model)
       } else {
         bench_run_scenario_once(name, spec, iter, args$seed, is_warmup)
       }
@@ -645,6 +660,7 @@ bench_summarize_results <- function(measured) {
       n_pulses = first$n_pulses,
       n_feat = first$n_feat,
       n_candidates = first$n_candidates,
+      compiled_accounting_model = first$compiled_accounting_model,
       measured_iterations = nrow(df),
       median_t_wall_sec = bench_median(df$t_wall_sec),
       median_t_pre_sec = bench_median(df$t_pre_sec),
@@ -719,13 +735,14 @@ bench_write_markdown <- function(summary, env, path) {
     "This is a local development benchmark. QuantConnect/LEAN comparisons are",
     "caveated side-by-side throughput references, not parity or speed-ranking claims.",
     "",
-    "| Scenario | Wall s | Bars/sec | Engine s | Results s | Fills extract s | us/fill engine | us/fill extract | Notes |",
-    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"
+    "| Scenario | Compiled model | Wall s | Bars/sec | Engine s | Results s | Fills extract s | us/fill engine | us/fill extract | Notes |",
+    "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"
   ), con)
   for (i in seq_len(nrow(summary))) {
     writeLines(sprintf(
-      "| `%s` | %.4f | %.1f | %.4f | %.4f | %.4f | %.1f | %.1f | %s |",
+      "| `%s` | `%s` | %.4f | %.1f | %.4f | %.4f | %.4f | %.1f | %.1f | %s |",
       summary$scenario[[i]],
+      summary$compiled_accounting_model[[i]],
       summary$median_t_wall_sec[[i]],
       summary$median_security_bars_sec[[i]],
       summary$median_engine_sec[[i]],

@@ -229,6 +229,39 @@ ledgr_fill_row_buffer_add <- function(buffer,
   invisible(buffer)
 }
 
+ledgr_fill_row_buffer_add_many <- function(buffer,
+                                           event_seq,
+                                           ts_utc,
+                                           instrument_id,
+                                           side,
+                                           qty,
+                                           price,
+                                           fee,
+                                           realized_pnl,
+                                           action) {
+  n <- length(event_seq)
+  if (n == 0L) {
+    return(invisible(buffer))
+  }
+  start <- buffer$n + 1L
+  end <- buffer$n + n
+  if (end > buffer$capacity) {
+    ledgr_fill_row_buffer_grow(buffer, end)
+  }
+  idx <- start:end
+  buffer$event_seq[idx] <- as.integer(event_seq)
+  buffer$ts_utc[idx] <- as.POSIXct(as.numeric(ts_utc), origin = "1970-01-01", tz = "UTC")
+  buffer$instrument_id[idx] <- as.character(instrument_id)
+  buffer$side[idx] <- as.character(side)
+  buffer$qty[idx] <- as.numeric(qty)
+  buffer$price[idx] <- as.numeric(price)
+  buffer$fee[idx] <- as.numeric(fee)
+  buffer$realized_pnl[idx] <- as.numeric(realized_pnl)
+  buffer$action[idx] <- as.character(action)
+  buffer$n <- end
+  invisible(buffer)
+}
+
 ledgr_fill_row_buffer_data_frame <- function(buffer) {
   if (buffer$n == 0L) {
     return(as.data.frame(ledgr_empty_fills_table()))

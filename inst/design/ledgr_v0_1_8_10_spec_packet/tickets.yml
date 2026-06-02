@@ -99,7 +99,7 @@ tickets:
 
   - id: "LDG-2522"
     title: "Compiled Hot Frame B2 Gate"
-    status: "pending"
+    status: "in_review"
     priority: "P0"
     effort: "XL"
     dependencies:

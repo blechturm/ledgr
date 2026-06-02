@@ -393,7 +393,7 @@ scope: yyjsonr_options_hoist
 Priority: P0
 Effort: XL
 Dependencies: LDG-2521
-Status: Pending
+Status: In Review
 
 ### Description
 
@@ -466,6 +466,19 @@ Sub-A artifact review, compiled spot-FIFO fill-batch parity tests,
 fail-closed tests, production internal dispatch tests, LDG-2479 xlarge
 ephemeral B2 benchmark, cross-platform parity smoke, and per-lane attribution
 review.
+
+### Review Note
+
+Batch 5 code and measurement artifacts are staged for review. The implementation
+adds an internal cpp11 spot-FIFO batch kernel behind the closed
+`compiled_accounting_model = NULL | "spot_fifo"` execution-spec enum. Default
+and explicit `NULL` remain the canonical R fold; unsupported accounting models
+fail closed. Targeted execution-spec and sweep dispatch tests pass, and the full
+local test suite passed. The LDG-2479 `density_high_xlarge_ephemeral` record
+cell measured 327.02s wall / 293.94s engine on the canonical R path versus
+65.86s wall / 32.92s engine on the Pattern B `"spot_fifo"` path, with zero
+failures and the same 66,280 fills in both passes. The scoped B2 gate is a pass
+by the RFC threshold matrix pending review.
 
 ### Source Reference
 

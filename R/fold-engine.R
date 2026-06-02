@@ -95,6 +95,13 @@ ledgr_execute_fold <- function(execution, output_handler) {
   execution_seed <- execution$seed
   event_mode <- execution$event_mode
   use_fast_context <- isTRUE(execution$use_fast_context)
+  compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(
+    execution$compiled_accounting_model
+  )
+  use_compiled_spot_fifo <- identical(compiled_accounting_model, "spot_fifo")
+  if (use_compiled_spot_fifo) {
+    ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)
+  }
 
   if (!is.null(execution_seed)) {
     set.seed(as.integer(execution_seed))
@@ -327,108 +334,195 @@ ledgr_execute_fold <- function(execution, output_handler) {
 
       # Event emission and state mutation stay adjacent and ordered by the
       # validated target vector so sweep and durable replay see the same stream.
-      for (target_idx in actionable_idx) {
-        if (sample_telemetry) sample_start <- ledgr_time_now()
-        instrument_id <- target_names[[target_idx]]
-        inst_idx <- target_inst_idx[[target_idx]]
-        delta <- delta_vec[[target_idx]]
-        cur_qty <- current_qty_vec[[target_idx]]
+      if (use_compiled_spot_fifo) {
+        compiled_fills <- vector("list", length(actionable_idx))
+        compiled_n <- 0L
+        for (target_idx in actionable_idx) {
+          if (sample_telemetry) sample_start <- ledgr_time_now()
+          instrument_id <- target_names[[target_idx]]
+          inst_idx <- target_inst_idx[[target_idx]]
+          delta <- delta_vec[[target_idx]]
 
-        proposal <- ledgr_next_open_fill_proposal(
-          desired_qty_delta = delta,
-          next_open_price = if (i < length(pulses_posix)) bars_mat$open[inst_idx, i + 1L] else NULL,
-          instrument_id = instrument_id,
-          ts_utc = if (i < length(pulses_posix)) pulses_posix[[i + 1L]] else NULL,
-          high = if (i < length(pulses_posix)) bars_mat$high[inst_idx, i + 1L] else NA_real_,
-          low = if (i < length(pulses_posix)) bars_mat$low[inst_idx, i + 1L] else NA_real_,
-          close = if (i < length(pulses_posix)) bars_mat$close[inst_idx, i + 1L] else NA_real_,
-          volume = if (i < length(pulses_posix)) bars_mat$volume[inst_idx, i + 1L] else NA_real_
-        )
-        if (sample_telemetry) {
-          sample_now <- ledgr_time_now()
-          t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
-          sample_start <- sample_now
-        }
-        fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
+          proposal <- ledgr_next_open_fill_proposal(
+            desired_qty_delta = delta,
+            next_open_price = if (i < length(pulses_posix)) bars_mat$open[inst_idx, i + 1L] else NULL,
+            instrument_id = instrument_id,
+            ts_utc = if (i < length(pulses_posix)) pulses_posix[[i + 1L]] else NULL,
+            high = if (i < length(pulses_posix)) bars_mat$high[inst_idx, i + 1L] else NA_real_,
+            low = if (i < length(pulses_posix)) bars_mat$low[inst_idx, i + 1L] else NA_real_,
+            close = if (i < length(pulses_posix)) bars_mat$close[inst_idx, i + 1L] else NA_real_,
+            volume = if (i < length(pulses_posix)) bars_mat$volume[inst_idx, i + 1L] else NA_real_
+          )
+          if (sample_telemetry) {
+            sample_now <- ledgr_time_now()
+            t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
+            sample_start <- sample_now
+          }
+          fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
 
-        if (inherits(fill, "ledgr_fill_none")) {
+          if (inherits(fill, "ledgr_fill_none")) {
+            if (sample_telemetry) {
+              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
+            }
+            if (is.character(fill$warn_code) &&
+                identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
+              warning(
+                paste(
+                  "LEDGR_LAST_BAR_NO_FILL:",
+                  "target changed on the final available bar, but the next-open fill model requires a following bar.",
+                  "No fill was emitted for this target change.",
+                  "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
+                ),
+                call. = FALSE
+              )
+            }
+            next
+          }
+
+          if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
+            if (sample_telemetry) {
+              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
+            }
+            next
+          }
+
+          fill$instrument_id <- instrument_id
+          fill$ts_signal_utc <- ts_iso
+          fill$inst_idx <- inst_idx
+          compiled_n <- compiled_n + 1L
+          compiled_fills[[compiled_n]] <- fill
           if (sample_telemetry) {
             t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
           }
-          if (is.character(fill$warn_code) &&
-              identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
-            warning(
-              paste(
-                "LEDGR_LAST_BAR_NO_FILL:",
-                "target changed on the final available bar, but the next-open fill model requires a following bar.",
-                "No fill was emitted for this target change.",
-                "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
-              ),
-              call. = FALSE
+        }
+        if (compiled_n > 0L) {
+          compiled_fills <- compiled_fills[seq_len(compiled_n)]
+          if (sample_telemetry) sample_start <- ledgr_time_now()
+          batch <- ledgr_run_compiled_spot_fifo_batch(
+            run_id = run_id,
+            fills = compiled_fills,
+            state = state,
+            instrument_ids = instrument_ids,
+            event_seq_start = event_seq
+          )
+          state$positions <- batch$positions
+          state$cash <- batch$cash
+          state$lot_state <- batch$lot_state
+          event_seq <- batch$next_event_seq
+          if (sample_telemetry) {
+            sample_now <- ledgr_time_now()
+            t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
+            sample_start <- sample_now
+          }
+          output_handler$append_compiled_spot_batch(batch)
+          if (sample_telemetry) {
+            t_event <- t_event + ledgr_time_elapsed(sample_start, ledgr_time_now())
+          }
+        }
+      } else {
+        for (target_idx in actionable_idx) {
+          if (sample_telemetry) sample_start <- ledgr_time_now()
+          instrument_id <- target_names[[target_idx]]
+          inst_idx <- target_inst_idx[[target_idx]]
+          delta <- delta_vec[[target_idx]]
+          cur_qty <- current_qty_vec[[target_idx]]
+
+          proposal <- ledgr_next_open_fill_proposal(
+            desired_qty_delta = delta,
+            next_open_price = if (i < length(pulses_posix)) bars_mat$open[inst_idx, i + 1L] else NULL,
+            instrument_id = instrument_id,
+            ts_utc = if (i < length(pulses_posix)) pulses_posix[[i + 1L]] else NULL,
+            high = if (i < length(pulses_posix)) bars_mat$high[inst_idx, i + 1L] else NA_real_,
+            low = if (i < length(pulses_posix)) bars_mat$low[inst_idx, i + 1L] else NA_real_,
+            close = if (i < length(pulses_posix)) bars_mat$close[inst_idx, i + 1L] else NA_real_,
+            volume = if (i < length(pulses_posix)) bars_mat$volume[inst_idx, i + 1L] else NA_real_
+          )
+          if (sample_telemetry) {
+            sample_now <- ledgr_time_now()
+            t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
+            sample_start <- sample_now
+          }
+          fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
+
+          if (inherits(fill, "ledgr_fill_none")) {
+            if (sample_telemetry) {
+              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
+            }
+            if (is.character(fill$warn_code) &&
+                identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
+              warning(
+                paste(
+                  "LEDGR_LAST_BAR_NO_FILL:",
+                  "target changed on the final available bar, but the next-open fill model requires a following bar.",
+                  "No fill was emitted for this target change.",
+                  "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
+                ),
+                call. = FALSE
+              )
+            }
+            next
+          }
+
+          if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
+            if (sample_telemetry) {
+              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
+            }
+            next
+          }
+
+          fill$instrument_id <- instrument_id
+          fill$ts_signal_utc <- ts_iso
+          if (sample_telemetry) {
+            sample_now <- ledgr_time_now()
+            t_fill <- t_fill + ledgr_time_elapsed(sample_start, sample_now)
+            sample_start <- sample_now
+          }
+
+          lot_res <- ledgr_lot_apply_fill(
+            state$lot_state,
+            instrument_id = instrument_id,
+            side = fill$side,
+            qty = fill$qty,
+            price = fill$fill_price,
+            fee = fill$commission_fixed
+          )
+          state$lot_state <- lot_res$state
+          if (sample_telemetry) {
+            sample_now <- ledgr_time_now()
+            t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
+            sample_start <- sample_now
+          }
+
+          write_res <- output_handler$write_fill_events(
+            fill_intent = fill,
+            event_seq = event_seq,
+            use_transaction = identical(event_mode, "live")
+          )
+          event_seq <- write_res$next_event_seq
+          if (is.function(output_handler$record_accounting_fact)) {
+            output_handler$record_accounting_fact(
+              write_res = write_res,
+              lot_res = lot_res,
+              lot_state = state$lot_state
             )
           }
-          next
-        }
-
-        if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
           if (sample_telemetry) {
-            t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
+            sample_now <- ledgr_time_now()
+            t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
+            sample_start <- sample_now
           }
-          next
-        }
 
-        fill$instrument_id <- instrument_id
-        fill$ts_signal_utc <- ts_iso
-        if (sample_telemetry) {
-          sample_now <- ledgr_time_now()
-          t_fill <- t_fill + ledgr_time_elapsed(sample_start, sample_now)
-          sample_start <- sample_now
-        }
-
-        lot_res <- ledgr_lot_apply_fill(
-          state$lot_state,
-          instrument_id = instrument_id,
-          side = fill$side,
-          qty = fill$qty,
-          price = fill$fill_price,
-          fee = fill$commission_fixed
-        )
-        state$lot_state <- lot_res$state
-        if (sample_telemetry) {
-          sample_now <- ledgr_time_now()
-          t_state <- t_state + ledgr_time_elapsed(sample_start, sample_now)
-          sample_start <- sample_now
-        }
-
-        write_res <- output_handler$write_fill_events(
-          fill_intent = fill,
-          event_seq = event_seq,
-          use_transaction = identical(event_mode, "live")
-        )
-        event_seq <- write_res$next_event_seq
-        if (is.function(output_handler$record_accounting_fact)) {
-          output_handler$record_accounting_fact(
-            write_res = write_res,
-            lot_res = lot_res,
-            lot_state = state$lot_state
-          )
-        }
-        if (sample_telemetry) {
-          sample_now <- ledgr_time_now()
-          t_event <- t_event + ledgr_time_elapsed(sample_start, sample_now)
-          sample_start <- sample_now
-        }
-
-        qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
-        cash_delta <- if (identical(fill$side, "BUY")) {
-          -(fill$qty * fill$fill_price + fill$commission_fixed)
-        } else {
-          fill$qty * fill$fill_price - fill$commission_fixed
-        }
-        state$positions[[inst_idx]] <- cur_qty + qty
-        state$cash <- state$cash + cash_delta
-        if (sample_telemetry) {
-          t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
+          qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
+          cash_delta <- if (identical(fill$side, "BUY")) {
+            -(fill$qty * fill$fill_price + fill$commission_fixed)
+          } else {
+            fill$qty * fill$fill_price - fill$commission_fixed
+          }
+          state$positions[[inst_idx]] <- cur_qty + qty
+          state$cash <- state$cash + cash_delta
+          if (sample_telemetry) {
+            t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
+          }
         }
       }
 

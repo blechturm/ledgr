@@ -18,6 +18,12 @@
 # Output files from R CMD check
 /*.Rcheck/
 
+# Local compiled artifacts
+/src/*.o
+/src/*.dll
+/src/*.so
+/src/*.dylib
+
 # Coverage reports
 /coverage.html
 /lib/

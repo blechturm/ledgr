@@ -68,9 +68,11 @@ ledgr_execution_spec <- function(run_id,
                                  telemetry,
                                  seed = NULL,
                                  event_mode = c("live", "buffered"),
-                                 use_fast_context = FALSE) {
+                                 use_fast_context = FALSE,
+                                 compiled_accounting_model = NULL) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
+  compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
   spec <- list(
     spec_version = ledgr_execution_spec_version(),
     run_id = run_id,
@@ -100,7 +102,8 @@ ledgr_execution_spec <- function(run_id,
     telemetry = telemetry,
     seed = seed,
     event_mode = event_mode,
-    use_fast_context = isTRUE(use_fast_context)
+    use_fast_context = isTRUE(use_fast_context),
+    compiled_accounting_model = compiled_accounting_model
   )
   class(spec) <- c("ledgr_execution_spec", "list")
   ledgr_validate_execution_spec(spec)
@@ -234,6 +237,9 @@ ledgr_validate_execution_spec <- function(spec) {
   ledgr_execution_spec_check(
     ledgr_execution_spec_is_logical_scalar(spec$use_fast_context),
     "`execution$use_fast_context` must be TRUE or FALSE."
+  )
+  ledgr_normalize_compiled_accounting_model(
+    spec$compiled_accounting_model
   )
   invisible(spec)
 }

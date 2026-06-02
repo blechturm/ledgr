@@ -28,6 +28,8 @@ Imports:
     rlang,
     tibble,
     yyjsonr (>= 0.1.22)
+LinkingTo:
+    cpp11
 Suggests: 
     covr,
     dplyr,

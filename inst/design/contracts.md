@@ -69,7 +69,10 @@ the active versioned spec packet, currently
   path. Unsupported accounting-model values must fail closed with a named
   unsupported-accounting-model error before compiled work runs. The spot-FIFO
   accelerator is not a derivatives, margin, options, or general instrument
-  accounting engine.
+  accounting engine. The `ledgr.internal.compiled_accounting_model` option is
+  an internal benchmark/test harness hook for populating this execution-spec
+  field; public callers must not rely on it, and benchmark callers must scope
+  and restore it.
 - Strategy contexts carry decision-time information only. Future cost/fill
   contexts may carry execution-bar data for pricing, but those objects must
   remain separate so next-bar execution data cannot leak into strategy

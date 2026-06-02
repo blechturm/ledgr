@@ -96,7 +96,7 @@ Exit criteria:
 ## Batch 5 - Compiled Hot Frame B2 Gate
 
 Ticket: `LDG-2522`
-Status: Pending
+Status: In Review
 
 Goal: run the B2-first spot-asset FIFO fill-batch measurement gate without
 authorizing a public compiled execution path or a general compiled accounting
@@ -117,6 +117,15 @@ Exit criteria:
 - Per-lane attribution row records build flags, parity, wall recovery, and
   disposition using scoped spot-FIFO language, not general compiled fold-core
   language.
+
+Review note:
+
+- Code, targeted tests, full test suite, smoke benchmark plumbing, and the
+  LDG-2479 xlarge ephemeral Pattern B record pass are staged for review. One
+  canonical R record pass measured 327.02s wall / 293.94s engine; one
+  `compiled_accounting_model = "spot_fifo"` pass measured 65.86s wall / 32.92s
+  engine with zero failures and the same 66,280 fills. The scoped B2 outcome is
+  pass by the RFC matrix pending review.
 
 ## Batch 6 - Parked Spike Disposition
 

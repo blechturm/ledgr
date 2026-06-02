@@ -273,6 +273,53 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
   testthat::expect_equal(inline$fills$qty, c(2, 1))
 })
 
+testthat::test_that("sweep internal compiled accounting option dispatches spot FIFO path", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3
+  bars <- data.frame(
+    ts_utc = pulses,
+    instrument_id = "AAA",
+    open = c(10, 11, 12, 13),
+    high = c(10.5, 11.5, 12.5, 13.5),
+    low = c(9.5, 10.5, 11.5, 12.5),
+    close = c(10, 11, 12, 13),
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  targets_by_day <- stats::setNames(
+    c(2, -1, 1, 1),
+    vapply(pulses, ledgr:::ledgr_normalize_ts_utc, character(1))
+  )
+  strategy <- function(ctx, params) {
+    stats::setNames(targets_by_day[[ctx$ts_utc]], "AAA")
+  }
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    features = list(),
+    opening = ledgr_opening(cash = 1000),
+    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0.25)
+  )
+  grid <- ledgr_param_grid(candidate = list())
+  r_path <- ledgr_sweep(exp, grid, seed = 123L)
+
+  withr::local_options(list(ledgr.internal.compiled_accounting_model = "spot_fifo"))
+  compiled_path <- ledgr_sweep(exp, grid, seed = 123L)
+
+  testthat::expect_identical(as.character(compiled_path$status), as.character(r_path$status))
+  testthat::expect_equal(compiled_path$final_equity, r_path$final_equity)
+  testthat::expect_equal(compiled_path$n_trades, r_path$n_trades)
+
+  withr::local_options(list(ledgr.internal.compiled_accounting_model = NULL))
+  restored_path <- ledgr_sweep(exp, grid, seed = 123L)
+  testthat::expect_null(getOption("ledgr.internal.compiled_accounting_model", NULL))
+  testthat::expect_equal(restored_path$final_equity, r_path$final_equity)
+  testthat::expect_equal(restored_path$n_trades, r_path$n_trades)
+})
+
 testthat::test_that("fills reconstruction is invariant under hostile collapse settings", {
   events <- data.frame(
     event_id = sprintf("event_%02d", 1:4),

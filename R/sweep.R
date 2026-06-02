@@ -647,6 +647,7 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         snapshot_hash,
                                         strategy_hash) {
   exp_payload <- ledgr_sweep_exp_payload(exp)
+  compiled_accounting_model <- ledgr_internal_compiled_accounting_model()
   tasks <- vector("list", length(param_grid$params))
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]
@@ -675,7 +676,8 @@ ledgr_sweep_candidate_tasks <- function(exp,
       runtime_projection = runtime_projection,
       snapshot_hash = snapshot_hash,
       strategy_hash = strategy_hash,
-      master_seed = seed
+      master_seed = seed,
+      compiled_accounting_model = compiled_accounting_model
     )
   }
   tasks
@@ -740,7 +742,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         runtime_projection = task$runtime_projection,
         snapshot_hash = task$snapshot_hash,
         strategy_hash = task$strategy_hash,
-        master_seed = task$master_seed
+        master_seed = task$master_seed,
+        compiled_accounting_model = task$compiled_accounting_model
       ),
       warning = function(w) {
         warnings <<- c(warnings, list(w))
@@ -855,7 +858,8 @@ ledgr_sweep_run_candidate <- function(exp,
                                       runtime_projection,
                                       snapshot_hash,
                                       strategy_hash,
-                                      master_seed) {
+                                      master_seed,
+                                      compiled_accounting_model = NULL) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
   if (is.null(runtime_projection)) {
@@ -919,7 +923,8 @@ ledgr_sweep_run_candidate <- function(exp,
     telemetry = telemetry,
     seed = if (is.na(execution_seed)) NULL else execution_seed,
     event_mode = "buffered",
-    use_fast_context = TRUE
+    use_fast_context = TRUE,
+    compiled_accounting_model = compiled_accounting_model
   )
   engine_start <- ledgr_time_now()
   ledgr_execute_fold(execution, output_handler)
@@ -1092,6 +1097,7 @@ ledgr_memory_output_handler <- function(run_id) {
     meta <- state$event_cols$meta[[i]]
     if (is.null(meta)) {
       meta <- list(
+        commission_fixed = as.numeric(state$event_cols$fee[[i]]),
         cash_delta = as.numeric(state$event_cols$cash_delta[[i]]),
         position_delta = as.numeric(state$event_cols$position_delta[[i]]),
         realized_pnl = NULL
@@ -1182,6 +1188,65 @@ ledgr_memory_output_handler <- function(run_id) {
       }
       state$event_count <- end
     }
+    invisible(TRUE)
+  }
+  handler$append_compiled_spot_batch <- function(batch) {
+    n <- length(batch$event_seq)
+    if (n == 0L) {
+      return(invisible(TRUE))
+    }
+    start <- state$event_count + 1L
+    end <- state$event_count + n
+    ensure_event_capacity(end)
+    idx <- start:end
+    state$event_cols$event_id[idx] <- as.character(batch$event_id)
+    state$event_cols$run_id[idx] <- as.character(batch$event_run_id)
+    state$event_cols$ts_utc[idx] <- as.POSIXct(
+      as.numeric(batch$event_ts_utc),
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+    state$event_cols$event_type[idx] <- as.character(batch$event_type)
+    state$event_cols$instrument_id[idx] <- as.character(batch$event_instrument_id)
+    state$event_cols$side[idx] <- as.character(batch$event_side)
+    state$event_cols$qty[idx] <- as.numeric(batch$event_qty)
+    state$event_cols$price[idx] <- as.numeric(batch$event_price)
+    state$event_cols$fee[idx] <- as.numeric(batch$event_fee)
+    state$event_cols$meta_json[idx] <- rep(NA_character_, n)
+    state$event_cols$event_seq[idx] <- as.integer(batch$event_seq)
+    state$event_cols$cash_delta[idx] <- as.numeric(batch$cash_delta)
+    state$event_cols$position_delta[idx] <- as.numeric(batch$position_delta)
+    state$event_cols$event_realized[idx] <- as.numeric(batch$event_realized)
+    state$event_cols$event_cost_basis[idx] <- as.numeric(batch$event_cost_basis)
+    # Keep field order aligned with ledgr_fill_event_payload(); meta_json
+    # materialization is byte-compared against the canonical R path.
+    state$event_cols$meta[idx] <- Map(
+      function(fee, cash_delta, position_delta) {
+        list(
+          commission_fixed = as.numeric(fee),
+          cash_delta = as.numeric(cash_delta),
+          position_delta = as.numeric(position_delta),
+          realized_pnl = NULL
+        )
+      },
+      as.numeric(batch$event_fee),
+      as.numeric(batch$cash_delta),
+      as.numeric(batch$position_delta)
+    )
+    state$event_count <- end
+
+    ledgr_fill_row_buffer_add_many(
+      state$inline_fills,
+      event_seq = batch$fill_event_seq,
+      ts_utc = batch$fill_ts_utc,
+      instrument_id = batch$fill_instrument_id,
+      side = batch$fill_side,
+      qty = batch$fill_qty,
+      price = batch$fill_price,
+      fee = batch$fill_fee,
+      realized_pnl = batch$fill_realized_pnl,
+      action = batch$fill_action
+    )
     invisible(TRUE)
   }
   handler$buffer_event <- function(write_res) {
