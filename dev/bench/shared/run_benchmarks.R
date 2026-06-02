@@ -517,10 +517,12 @@ bench_run_sweep_once <- function(name, spec, iter, seed, is_warmup, compiled_acc
   grid <- do.call(ledgr_param_grid, candidate_list)
   warnings <- character()
   elapsed <- system.time({
-    old_model <- getOption("ledgr.internal.compiled_accounting_model", NULL)
-    options(ledgr.internal.compiled_accounting_model = compiled_accounting_model)
-    on.exit(options(ledgr.internal.compiled_accounting_model = old_model), add = TRUE)
-    captured <- bench_capture_warnings(ledgr_sweep(exp, grid, seed = seed + iter))
+    captured <- bench_capture_warnings(ledgr_sweep(
+      exp,
+      grid,
+      seed = seed + iter,
+      compiled_accounting_model = compiled_accounting_model
+    ))
     sweep <- captured$value
     warnings <- captured$warnings
   })[["elapsed"]]

@@ -11,7 +11,8 @@ ledgr_sweep(
   seed = NULL,
   stop_on_error = FALSE,
   workers = 1L,
-  worker_packages = NULL
+  worker_packages = NULL,
+  compiled_accounting_model = NULL
 )
 }
 \arguments{
@@ -33,6 +34,10 @@ through the optional \code{mirai} backend.}
 
 \item{worker_packages}{Optional character vector of packages to attach on
 parallel workers for unqualified package calls in strategy code.}
+
+\item{compiled_accounting_model}{Optional accounting accelerator selector.
+\code{NULL} uses the canonical R accounting path. \code{"spot_fifo"} opts into the
+scoped spot-asset FIFO accelerator for memory-backed sweep candidates.}
 }
 \value{
 A \code{ledgr_sweep_results} tibble.

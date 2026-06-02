@@ -95,6 +95,13 @@ shows the strategy only what could have been known at that time. The strategy
 answers with desired holdings. ledgr records the decision, applies the fill
 model, and moves to the next pulse.
 
+Sweep execution can opt into the scoped spot-FIFO accelerator with
+`ledgr_sweep(..., compiled_accounting_model = "spot_fifo")`. This changes the
+memory-backed accounting hot frame only; the strategy still receives the same
+`ctx`, returns the same full named target vector, and `NULL` remains the
+canonical R default. Committed `ledgr_run()` artifacts keep the durable R path
+until a separate durable compiled-integration gate lands.
+
 This matters because leakage is easy. If future information enters a historical
 decision, the backtest can look profitable for the wrong reason. ledgr's
 strategy interface is built to make one common mistake harder: your strategy

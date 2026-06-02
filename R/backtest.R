@@ -287,6 +287,11 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #' @param run_id Optional run identifier.
 #' @param seed Optional integer-like execution seed. When non-`NULL`, ledgr
 #'   applies it at fold entry and stores it in run identity.
+#' @param compiled_accounting_model Optional accounting accelerator selector.
+#'   `NULL` uses the canonical R accounting path. `"spot_fifo"` is a scoped
+#'   spot-asset FIFO accelerator for memory-backed sweep execution; committed
+#'   durable runs currently fail closed because durable compiled integration is
+#'   deferred.
 #' @return A `ledgr_backtest` object.
 #' @section Articles:
 #' Strategy authoring:
@@ -317,7 +322,12 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #' close(bt)
 #' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_run <- function(exp, params = list(), feature_params = list(), run_id = NULL, seed = NULL) {
+ledgr_run <- function(exp,
+                      params = list(),
+                      feature_params = list(),
+                      run_id = NULL,
+                      seed = NULL,
+                      compiled_accounting_model = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -327,12 +337,37 @@ ledgr_run <- function(exp, params = list(), feature_params = list(), run_id = NU
   if (!is.list(feature_params) || is.data.frame(feature_params)) {
     rlang::abort("`feature_params` must be a list. Use `feature_params = list()` when features have no parameters.", class = "ledgr_invalid_args")
   }
-  ledgr_run_experiment(exp = exp, params = params, feature_params = feature_params, run_id = run_id, seed = seed)
+  compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  ledgr_run_experiment(
+    exp = exp,
+    params = params,
+    feature_params = feature_params,
+    run_id = run_id,
+    seed = seed,
+    compiled_accounting_model = compiled_accounting_model
+  )
 }
 
-ledgr_run_experiment <- function(exp, params = list(), feature_params = list(), run_id = NULL, seed = NULL) {
+ledgr_run_experiment <- function(exp,
+                                 params = list(),
+                                 feature_params = list(),
+                                 run_id = NULL,
+                                 seed = NULL,
+                                 compiled_accounting_model = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
+  }
+  compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  if (identical(compiled_accounting_model, "spot_fifo")) {
+    ledgr_compiled_spot_fifo_unavailable_error(
+      paste0(
+        "`ledgr_run(..., compiled_accounting_model = \"spot_fifo\")` is not ",
+        "available for committed durable runs yet. Use `ledgr_sweep(..., ",
+        "compiled_accounting_model = \"spot_fifo\")` for the current public ",
+        "ephemeral opt-in. Default execution (compiled_accounting_model = NULL) ",
+        "uses canonical R and works everywhere."
+      )
+    )
   }
   params_info <- ledgr_strategy_params_info(params)
   feature_params_info <- ledgr_strategy_params_info(feature_params)
@@ -365,7 +400,8 @@ ledgr_run_experiment <- function(exp, params = list(), feature_params = list(), 
     db_path = exp$snapshot$db_path,
     run_id = run_id,
     opening = exp$opening,
-    seed = seed
+    seed = seed,
+    compiled_accounting_model = compiled_accounting_model
   )
 
   result <- ledgr_run_config(config, metric_context = exp$metric_context)
@@ -755,7 +791,8 @@ ledgr_config <- function(snapshot,
                          control = list(),
                          run_id = NULL,
                          opening = NULL,
-                         seed = NULL) {
+                         seed = NULL,
+                         compiled_accounting_model = NULL) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
@@ -793,6 +830,7 @@ ledgr_config <- function(snapshot,
     rlang::abort("`control` must be a list.", class = "ledgr_invalid_args")
   }
   seed <- ledgr_seed_normalize(seed)
+  compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
 
   if (!is.null(control$execution_mode)) {
     execution_mode <- control$execution_mode
@@ -822,15 +860,20 @@ ledgr_config <- function(snapshot,
   strat <- ledgr_strategy_spec(strategy)
   opening <- ledgr_config_normalize_opening(opening, backtest$initial_cash)
 
+  engine <- list(
+    seed = seed,
+    tz = "UTC",
+    execution_mode = execution_mode,
+    checkpoint_every = as.integer(checkpoint_every),
+    control = control
+  )
+  if (!is.null(compiled_accounting_model)) {
+    engine$compiled_accounting_model <- compiled_accounting_model
+  }
+
   config <- list(
     db_path = db_path,
-    engine = list(
-      seed = seed,
-      tz = "UTC",
-      execution_mode = execution_mode,
-      checkpoint_every = as.integer(checkpoint_every),
-      control = control
-    ),
+    engine = engine,
     universe = list(instrument_ids = universe),
     backtest = list(
       start_ts_utc = backtest$start,

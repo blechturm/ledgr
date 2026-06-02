@@ -408,7 +408,7 @@ testthat::test_that("compiled accounting model enum fails closed", {
   handler <- ledgr:::ledgr_memory_output_handler("compiled-spot-fifo-live")
   testthat::expect_error(
     ledgr:::ledgr_execute_fold(spec, handler),
-    class = "ledgr_unsupported_accounting_model"
+    class = "ledgr_compiled_spot_fifo_unavailable"
   )
 
   unavailable_handler <- list()

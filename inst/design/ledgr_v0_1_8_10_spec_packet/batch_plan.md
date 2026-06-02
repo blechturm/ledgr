@@ -5,8 +5,8 @@
 The batch plan preserves attribution while accepting two architectural
 exceptions: fold-owned FIFO accounting ships as substrate/accounting ownership,
 not only as a wall-recovery lane, and the compiled hot-frame B2 path is measured
-directly as a gate before any v0.1.9.x promotion decision. Events remain
-canonical throughout.
+directly as a gate before the scoped LDG-2526 memory-backed sweep opt-in.
+Events remain canonical throughout.
 
 ## Batch 0 - Packet Review And Ticket Alignment
 
@@ -99,13 +99,13 @@ Ticket: `LDG-2522`
 Status: Completed
 
 Goal: run the B2-first spot-asset FIFO fill-batch measurement gate without
-authorizing a public compiled execution path or a general compiled accounting
-engine.
+authorizing default compiled execution, durable compiled integration, or a
+general compiled accounting engine.
 
 Exit criteria:
 
 - Sub-A language/feasibility artifact is recorded in `ledgrcore-spike`.
-- Sub-B production gate uses the real ledgr fold path through an internal,
+- Sub-B production gate uses the real ledgr fold path through a closed,
   disabled-by-default `compiled_accounting_model` enum.
 - `compiled_accounting_model` is closed in this batch: `NULL` means canonical
   R fold, `"spot_fifo"` means the internal spot-asset FIFO accelerator, and
@@ -131,8 +131,8 @@ Completion note:
 
 - Peer review approved the scoped B2 gate. The committed lane is source-only:
   local compiled artifacts are ignored and excluded from package builds. The
-  lane is a spot-asset FIFO fill-batch accelerator gate, not a public compiled
-  execution path or a general compiled accounting engine.
+  lane is a spot-asset FIFO fill-batch accelerator gate; LDG-2526 handles the
+  later memory-backed sweep public opt-in without default or durable promotion.
 
 ## Batch 6 - Parked Spike Disposition
 
@@ -167,8 +167,8 @@ Exit criteria:
 - `v0_1_8_10_release_closeout.md` exists.
 - Per-lane attribution table is complete.
 - Workload grid and peer benchmark are rerun or caveats are accepted.
-- B2 gate outcome is recorded without public promotion language unless a
-  separate v0.1.9.x promotion ticket is cut.
+- B2 gate outcome is recorded and scoped public opt-in promotion is handed to
+  LDG-2526 without default, durable, or general compiled-core claims.
 - Peer and workload-grid shapes are not mixed.
 - No public speed-claim language appears.
 
@@ -179,7 +179,31 @@ Review note:
   xlarge-ephemeral gate record is `ledgr_bench_record_20260602T162911Z`; the
   peer record is `peer_benchmark_record_20260602T162318Z`.
 
-## Batch 8 - Release Gate
+## Batch 8 - B2 Public Opt-In Promotion
+
+Ticket: `LDG-2526`
+Status: In Review
+
+Goal: expose the measured B2 spot-FIFO accelerator as an explicit public
+opt-in for memory-backed sweep execution while preserving canonical R as the
+default and keeping durable compiled integration deferred.
+
+Exit criteria:
+
+- `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")` reaches the
+  scoped spot-FIFO path and matches canonical R on a FIFO fixture.
+- `compiled_accounting_model = NULL` remains the default canonical R path.
+- Unsupported values fail closed with `ledgr_unsupported_accounting_model`.
+- `ledgr_run(..., compiled_accounting_model = "spot_fifo")` fails closed for
+  committed durable runs with a user-facing durable-deferral message.
+- Benchmark harnesses pass the public sweep argument directly instead of
+  setting the internal option.
+- Documentation and closeout language name the memory-backed sweep opt-in
+  without implying default promotion, durable compiled integration, non-spot
+  accounting support, CRAN readiness, or a general compiled fold core.
+- macOS parity is verified or routed to horizon.
+
+## Batch 9 - Release Gate
 
 Ticket: `LDG-2525`
 Status: Pending
@@ -193,4 +217,5 @@ Exit criteria:
 - Full test suite and package check pass or accepted caveats are documented.
 - Release closeout is reviewed.
 - NEWS and design README are updated.
+- B2 public opt-in scope is reviewed and default behavior remains canonical R.
 - Generated local artifacts are excluded.

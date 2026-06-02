@@ -158,6 +158,26 @@ tickets:
       - "closeout_artifact_review"
       - "claim_language_review"
 
+  - id: "LDG-2526"
+    title: "B2 Public Opt-In Promotion"
+    status: "in_review"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2524"
+    classification:
+      type: "public_api"
+      surface: "sweep_execution"
+      scope: "b2_spot_fifo_opt_in"
+    tests:
+      - "sweep_public_compiled_arg_parity"
+      - "run_public_compiled_arg_fail_closed"
+      - "unsupported_accounting_model_failure"
+      - "benchmark_harness_public_arg_review"
+      - "docs_scope_review"
+      - "report_render"
+      - "macos_followup_review"
+
   - id: "LDG-2525"
     title: "v0.1.8.10 Release Gate"
     status: "pending"
@@ -172,6 +192,7 @@ tickets:
       - "LDG-2522"
       - "LDG-2523"
       - "LDG-2524"
+      - "LDG-2526"
     classification:
       type: "release_gate"
       surface: "release_process"
@@ -184,4 +205,5 @@ tickets:
       - "release_closeout_review"
       - "news_review"
       - "design_index_review"
+      - "b2_opt_in_scope_review"
       - "git_status_review"

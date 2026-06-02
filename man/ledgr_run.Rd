@@ -4,7 +4,14 @@
 \alias{ledgr_run}
 \title{Run a ledgr experiment}
 \usage{
-ledgr_run(exp, params = list(), feature_params = list(), run_id = NULL, seed = NULL)
+ledgr_run(
+  exp,
+  params = list(),
+  feature_params = list(),
+  run_id = NULL,
+  seed = NULL,
+  compiled_accounting_model = NULL
+)
 }
 \arguments{
 \item{exp}{A \code{ledgr_experiment} object.}
@@ -18,6 +25,12 @@ declarations before execution.}
 
 \item{seed}{Optional integer-like execution seed. When non-\code{NULL}, ledgr
 applies it at fold entry and stores it in run identity.}
+
+\item{compiled_accounting_model}{Optional accounting accelerator selector.
+\code{NULL} uses the canonical R accounting path. \code{"spot_fifo"} is a scoped
+spot-asset FIFO accelerator for memory-backed sweep execution; committed
+durable runs currently fail closed because durable compiled integration is
+deferred.}
 }
 \value{
 A \code{ledgr_backtest} object.

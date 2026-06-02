@@ -76,6 +76,7 @@ validate_ledgr_config <- function(config) {
       class = "ledgr_invalid_config"
     )
   }
+  ledgr_public_compiled_accounting_model(config$engine$compiled_accounting_model)
 
   tz <- cfg_get(c("engine", "tz"))
   assert_scalar_chr(tz, "engine.tz")

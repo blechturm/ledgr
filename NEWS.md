@@ -15,6 +15,12 @@
 - Hoisted fixed yyjsonr read/write option objects out of canonical JSON helper
   bodies, preserving canonical byte-format v2 while removing avoidable per-call
   options construction overhead.
+- Added a scoped public opt-in for the memory-backed sweep spot-FIFO
+  accelerator with `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")`.
+  The default remains canonical R (`compiled_accounting_model = NULL`);
+  committed durable runs still fail closed for `"spot_fifo"` until a separate
+  durable-integration gate lands. `ledgr_run()` validates the same enum and
+  reports that durable deferral explicitly.
 
 # ledgr 0.1.8.9
 

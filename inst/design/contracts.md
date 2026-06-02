@@ -63,16 +63,18 @@ the active versioned spec packet, currently
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not compute, reinterpret, or rewrite fill prices,
   fees, cash deltas, or cost metadata.
-- Internal compiled accounting dispatch is closed by accounting model. In
-  v0.1.8.10 the only scoped compiled model is
-  `compiled_accounting_model = "spot_fifo"`; `NULL` means the canonical R fold
-  path. Unsupported accounting-model values must fail closed with a named
+- Compiled accounting dispatch is closed by accounting model. In v0.1.8.10 the
+  only scoped public opt-in model is
+  `compiled_accounting_model = "spot_fifo"` for memory-backed sweep execution;
+  `NULL` means the canonical R fold path and remains the default. Unsupported
+  accounting-model values must fail closed with a named
   unsupported-accounting-model error before compiled work runs. The spot-FIFO
   accelerator is not a derivatives, margin, options, or general instrument
-  accounting engine. The `ledgr.internal.compiled_accounting_model` option is
-  an internal benchmark/test harness hook for populating this execution-spec
-  field; public callers must not rely on it, and benchmark callers must scope
-  and restore it.
+  accounting engine. Committed durable `ledgr_run()` execution must fail closed
+  for `"spot_fifo"` until a separate durable compiled-integration gate lands.
+  The `ledgr.internal.compiled_accounting_model` option is an internal legacy
+  hook and must not influence public `compiled_accounting_model = NULL`
+  execution.
 - Strategy contexts carry decision-time information only. Future cost/fill
   contexts may carry execution-bar data for pricing, but those objects must
   remain separate so next-bar execution data cannot leak into strategy

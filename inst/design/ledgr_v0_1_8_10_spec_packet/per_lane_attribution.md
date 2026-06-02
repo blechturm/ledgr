@@ -195,14 +195,14 @@ Scope guard:
   as auto-routed fallbacks.
 - Report wall recovery, parity outcome, build flags, and disposition with
   "spot-asset FIFO" / "spot-FIFO" language. Do not summarize the lane as a
-  general compiled fold core, derivatives-capable engine, or public compiled
-  execution mode.
+  general compiled fold core or derivatives-capable engine. LDG-2522 itself is
+  the measurement gate; LDG-2526 handles the later scoped public opt-in.
 
 Implementation:
 
 - Added `cpp11` as the package-local compiled bridge and registered one
-  internal spot-FIFO batch kernel. The kernel is reached only through the
-  existing fold execution path when the unexported execution spec carries
+  spot-FIFO batch kernel. The kernel is reached only through the existing fold
+  execution path when the closed execution spec carries
   `compiled_accounting_model = "spot_fifo"`.
 - Kept public defaults on the canonical R path: default and explicit `NULL`
   both route through the R fold. Unsupported model values such as
@@ -213,10 +213,9 @@ Implementation:
   strategy execution, ctx construction, target validation, target risk,
   next-open proposal, cost resolution, features, equity facts, metrics, durable
   persistence, and replay.
-- Added a dev-benchmark-only `--compiled-accounting-model NULL|spot_fifo`
-  switch to `dev/bench/shared/run_benchmarks.R`; it sets the internal model
-  option consumed by sweep candidate construction and does not add a public
-  `ledgr_sweep()` argument.
+- Added a `--compiled-accounting-model NULL|spot_fifo` switch to
+  `dev/bench/shared/run_benchmarks.R`; after LDG-2526 the harness passes the
+  public `ledgr_sweep(..., compiled_accounting_model = ...)` argument directly.
 
 Parity and verification:
 
@@ -229,8 +228,8 @@ Parity and verification:
   batch parity so the compiled path is not validated only on a one-instrument
   fixture.
 - `tests/testthat/test-sweep.R` covers production `ledgr_sweep()` dispatch via
-  the internal model option on a small FIFO fixture and confirms scoped option
-  restoration returns the sweep to canonical R semantics.
+  the public argument on a small FIFO fixture and retains the internal option
+  fallback check for benchmark/test compatibility.
 - Targeted tests passed:
   `testthat::test_file('tests/testthat/test-execution-spec.R')` and
   `testthat::test_file('tests/testthat/test-sweep.R')`.
@@ -270,10 +269,44 @@ Outcome:
 - Both record passes report zero failures and the same 66,280 fill count.
 - Local compiled artifacts are ignored by `.gitignore` / `.Rbuildignore` and
   are not part of the commit set; the committed compiled surface is source-only.
-- Disposition: pass for the scoped internal spot-asset FIFO fill-batch
-  accelerator gate. This does not authorize a public compiled execution path,
-  durable compiled integration, derivatives/margin/options accounting, or a
-  general compiled fold core.
+- Disposition: pass for the scoped spot-asset FIFO fill-batch accelerator gate.
+  Maintainer Decision 2 / LDG-2526 authorize only a memory-backed sweep public
+  opt-in; this does not authorize default compiled promotion, durable compiled
+  integration, derivatives/margin/options accounting, or a general compiled
+  fold core.
+
+## LDG-2526: B2 Public Opt-In Promotion
+
+Status: in review.
+
+Scope guard:
+
+- Public opt-in is limited to memory-backed sweep execution via
+  `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")`.
+- `compiled_accounting_model = NULL` remains the canonical R default.
+- Unsupported values fail closed with `ledgr_unsupported_accounting_model`.
+- Committed durable `ledgr_run(..., compiled_accounting_model = "spot_fifo")`
+  fails closed; durable compiled event-log integration remains deferred.
+
+Implementation:
+
+- Added a public `compiled_accounting_model` argument to `ledgr_sweep()` and
+  routed it into sweep candidate tasks without adding a second execution path.
+- Kept the internal option as a legacy internal helper, but public
+  `compiled_accounting_model = NULL` ignores it.
+- Added `compiled_accounting_model` validation to `ledgr_run()` and config
+  validation, with explicit fail-closed durable behavior for `"spot_fifo"`.
+- Updated the workload-grid harness to pass the public sweep argument directly.
+- Updated docs, help pages, NEWS, contracts, peer-report wording, and this spec
+  packet to describe the memory-backed sweep opt-in.
+
+Verification:
+
+- Targeted tests cover public sweep opt-in parity against canonical R, internal
+  option fallback compatibility, unsupported-value failure, explicit `NULL`
+  default behavior, and durable `ledgr_run()` fail-closed behavior.
+- macOS parity cannot be verified on this Windows workspace and is routed to
+  horizon before default-promotion consideration.
 
 ## LDG-2523: Parked Spike Disposition
 

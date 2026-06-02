@@ -2,7 +2,7 @@
 
 Version: v0.1.8.10
 Date: 2026-06-02
-Total Tickets: 9
+Total Tickets: 10
 
 ## Ticket Organization
 
@@ -23,7 +23,8 @@ packet alignment
               -> compiled hot frame B2 gate
                  -> parked spike disposition
                     -> measurement closeout
-                       -> release gate
+                       -> B2 public opt-in promotion
+                          -> release gate
 ```
 
 Ticket IDs start at `LDG-2517` because `LDG-2505` through `LDG-2516` were
@@ -40,7 +41,8 @@ LDG-2517 Packet Alignment And v0.1.8.10 Ticket Cut
                           `-- LDG-2522 Compiled Hot Frame B2 Gate
                                 `-- LDG-2523 Parked Spike Disposition
                                       `-- LDG-2524 Measurement Closeout
-                                            `-- LDG-2525 v0.1.8.10 Release Gate
+                                            `-- LDG-2526 B2 Public Opt-In Promotion
+                                                  `-- LDG-2525 v0.1.8.10 Release Gate
 ```
 
 ## Priority Levels
@@ -72,8 +74,9 @@ starts.
 - Confirm `inst/design/README.md` points to v0.1.8.10 as active.
 - Confirm the packet binds event-preserving fold-owned FIFO accounting and does
   not authorize event-log elision.
-- Confirm the packet binds the B2 measurement gate without authorizing public
-  compiled execution or durable compiled integration.
+- Confirm the packet binds the B2 measurement gate and, after maintainer
+  Decision 2, the scoped memory-backed sweep public opt-in without authorizing
+  default compiled execution or durable compiled integration.
 - Confirm non-scope remains deferred.
 - Submit the ticket cut for review and patch caveats before implementation.
 
@@ -94,10 +97,10 @@ response.
 Batch 0 completed as packet-alignment work. The spec, ticket markdown, ticket
 YAML, batch plan, and design README now agree on v0.1.8.10 as the active packet.
 The packet explicitly binds event-preserving fold-owned FIFO accounting, keeps
-events canonical, scopes the B2 compiled hot-frame work as a measurement gate
-only, and keeps public compiled promotion / durable compiled integration
-deferred. Stale-scope scans found no old Ticket 5 / pre-B2 non-scope wording
-after the B2 RFC alignment.
+events canonical, scopes the B2 compiled hot-frame work as a measurement gate,
+and later accepts the LDG-2526 memory-backed sweep opt-in while keeping default
+promotion and durable compiled integration deferred. Stale-scope scans found no
+old Ticket 5 / pre-B2 non-scope wording after the B2 RFC alignment.
 
 ### Source Reference
 
@@ -397,8 +400,9 @@ Status: Completed
 
 ### Description
 
-Run the accepted B2-first compiled hot-frame measurement gate without
-authorizing public compiled execution. The gate has two sub-artifacts: Sub-A in
+Run the accepted B2-first compiled hot-frame measurement gate. LDG-2522 itself
+does not authorize public compiled execution; LDG-2526 handles the later scoped
+memory-backed sweep opt-in. The gate has two sub-artifacts: Sub-A in
 `ledgrcore-spike` for language/feasibility and Sub-B in ledgr `dev/bench/` for
 the production decision-bearing Pattern B measurement. Sub-B is a spot-asset
 FIFO fill-batch accelerator gate, not a general compiled fold-core or
@@ -454,9 +458,9 @@ derivatives-accounting gate.
 - Pattern B build does not use `-ffast-math` or `-funsafe-math-optimizations`;
   if an optimization profile breaks parity, fall back to the fastest
   parity-preserving build profile per B2 RFC D9.
-- No public compiled execution path, default compiled mode, durable compiled
-  integration, or non-spot-FIFO compiled accounting model is enabled by this
-  ticket.
+- No public compiled execution path is enabled by LDG-2522 itself. Default
+  compiled mode, durable compiled integration, and non-spot-FIFO compiled
+  accounting models remain out of scope.
 - Attribution row is recorded before `LDG-2523` starts.
 
 ### Verification
@@ -587,8 +591,8 @@ write the v0.1.8.9 to v0.1.8.10 closeout comparison.
 - Rerun repo-local peer benchmark.
 - Write `v0_1_8_10_release_closeout.md`.
 - Keep workload-grid and peer-benchmark shape comparisons separate.
-- Record B2 gate outcome without authorizing public compiled execution unless a
-  separate v0.1.9.x promotion ticket is cut.
+- Record B2 gate outcome and hand the scoped public opt-in decision to
+  `LDG-2526`.
 
 ### Acceptance Criteria
 
@@ -600,6 +604,9 @@ write the v0.1.8.9 to v0.1.8.10 closeout comparison.
 - B2 is framed as a spot-asset FIFO fill-batch accelerator; closeout language
   must not describe it as a general compiled fold core or derivatives-capable
   accounting engine.
+- Closeout may describe the scoped memory-backed sweep opt-in after maintainer
+  Decision 2, but must not imply default compiled promotion, durable compiled
+  integration, CRAN readiness, or non-spot accounting support.
 - If B2 disposition is review-band or fail, a horizon entry routes the
   ephemeral wall attribution spike to v0.1.9.x as the next diagnostic path.
 - No generated benchmark artifacts are committed unless explicitly scoped.
@@ -614,12 +621,12 @@ review, and claim-language review.
 Batch 7 is staged for review. `v0_1_8_10_release_closeout.md` cites the
 canonical workload-grid record
 `dev/bench/results/ledgr_bench_record_20260602T155628Z_summary.csv`, the
-seed-matched internal B2 xlarge-ephemeral record
+seed-matched B2 xlarge-ephemeral record
 `dev/bench/results/ledgr_bench_record_20260602T162911Z_summary.csv`, and the
 peer record `dev/bench/results/peer_benchmark_record_20260602T162318Z_*`.
-The closeout keeps canonical R, internal B2 spot-FIFO, and peer benchmark
-shapes separate and keeps B2 language scoped to the internal spot-asset FIFO
-fill-batch accelerator gate.
+The closeout keeps canonical R, B2 spot-FIFO, and peer benchmark shapes
+separate and keeps B2 language scoped to the spot-asset FIFO fill-batch
+accelerator gate.
 
 ### Source Reference
 
@@ -637,11 +644,81 @@ scope: v0.1.8.9_to_v0.1.8.10_comparison
 
 ---
 
+## LDG-2526: B2 Public Opt-In Promotion
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2524
+Status: In Review
+
+### Description
+
+Expose the measured B2 spot-FIFO accelerator as a scoped public opt-in for
+memory-backed sweep execution while preserving canonical R as the default and
+keeping durable compiled integration deferred.
+
+### Tasks
+
+- Add `compiled_accounting_model = NULL` to `ledgr_sweep()`.
+- Route `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")` through
+  the same fold-core / memory-output-handler path measured by `LDG-2522`.
+- Ensure public `compiled_accounting_model = NULL` ignores the legacy internal
+  `ledgr.internal.compiled_accounting_model` option; benchmark harnesses should
+  pass the public argument directly.
+- Add `compiled_accounting_model` validation to `ledgr_run()` so unsupported
+  values fail closed with the same named enum error.
+- Make committed durable `ledgr_run(..., compiled_accounting_model =
+  "spot_fifo")` fail closed with an explicit durable-deferral message; do not
+  add durable compiled event-log integration in this ticket.
+- Update documentation, NEWS, contracts, benchmark reports, and the spec packet
+  to describe the memory-backed sweep opt-in and the default/durable
+  boundaries.
+- Route macOS parity to horizon if it cannot be verified locally.
+
+### Acceptance Criteria
+
+- `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")` matches the
+  canonical R sweep output on a small FIFO fixture.
+- `compiled_accounting_model = NULL` is the default and preserves canonical R
+  behavior.
+- Unsupported accounting-model values fail with
+  `ledgr_unsupported_accounting_model`.
+- `ledgr_run(..., compiled_accounting_model = "spot_fifo")` fails closed before
+  durable compiled work, with a user-facing message that names the current
+  ephemeral/sweep opt-in.
+- Documentation avoids default-promotion, durable-compiled, derivatives,
+  CRAN-readiness, and general compiled-fold-core claims.
+- macOS parity is either verified or recorded as a follow-up gate.
+
+### Verification
+
+Targeted sweep and run tests, benchmark harness review, documentation review,
+report render, package checks as release-gate input, and git status review.
+
+### Source Reference
+
+- `inst/design/rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md`
+- `v0_1_8_10_release_closeout.md`
+- `per_lane_attribution.md`
+- `R/sweep.R`
+- `R/backtest.R`
+- `dev/bench/shared/run_benchmarks.R`
+
+### Classification
+
+```yaml
+type: public_api
+surface: sweep_execution
+scope: b2_spot_fifo_opt_in
+```
+
+---
+
 ## LDG-2525: v0.1.8.10 Release Gate
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2517, LDG-2518, LDG-2519, LDG-2520, LDG-2521, LDG-2522, LDG-2523, LDG-2524
+Dependencies: LDG-2517, LDG-2518, LDG-2519, LDG-2520, LDG-2521, LDG-2522, LDG-2523, LDG-2524, LDG-2526
 Status: Pending
 
 ### Description
@@ -666,15 +743,17 @@ the v0.1.8.10 merge/tag.
 - Full suite and package check pass, or maintainer-accepted caveats are
   documented.
 - Release closeout exists and is reviewed.
-- NEWS accurately frames the release as substrate/accounting/telemetry work.
-- NEWS/closeout do not imply public compiled promotion unless a separate
-  v0.1.9.x promotion ticket is cut.
+- NEWS accurately frames the release as substrate/accounting/telemetry work
+  plus the scoped memory-backed sweep B2 opt-in.
+- NEWS/closeout do not imply default compiled promotion, durable compiled
+  integration, CRAN readiness, non-spot accounting support, or a general
+  compiled fold core.
 - Main branch/tag prep is unambiguous.
 
 ### Verification
 
 Targeted tests, full tests, package build, package check, NEWS review, design
-index review, git status review.
+index review, B2 opt-in scope review, git status review.
 
 ### Source Reference
 

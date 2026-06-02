@@ -20,6 +20,9 @@
 #'   through the optional `mirai` backend.
 #' @param worker_packages Optional character vector of packages to attach on
 #'   parallel workers for unqualified package calls in strategy code.
+#' @param compiled_accounting_model Optional accounting accelerator selector.
+#'   `NULL` uses the canonical R accounting path. `"spot_fifo"` opts into the
+#'   scoped spot-asset FIFO accelerator for memory-backed sweep candidates.
 #' @return A `ledgr_sweep_results` tibble.
 #' @details
 #' For larger grids, precompute shared feature payloads with
@@ -75,7 +78,8 @@ ledgr_sweep <- function(exp,
                         seed = NULL,
                         stop_on_error = FALSE,
                         workers = 1L,
-                        worker_packages = NULL) {
+                        worker_packages = NULL,
+                        compiled_accounting_model = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -87,6 +91,7 @@ ledgr_sweep <- function(exp,
   }
   workers <- ledgr_parallel_workers_normalize(workers)
   seed <- ledgr_seed_normalize(seed)
+  compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
 
   preflight <- ledgr_strategy_preflight(exp$strategy)
   if (!isTRUE(preflight$allowed)) {
@@ -182,7 +187,8 @@ ledgr_sweep <- function(exp,
     precomputed_features = precomputed_features,
     runtime_projection = runtime_projection,
     snapshot_hash = meta$snapshot_hash,
-    strategy_hash = strategy_hash
+    strategy_hash = strategy_hash,
+    compiled_accounting_model = compiled_accounting_model
   )
   results <- if (workers <= 1L) {
     lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
@@ -223,6 +229,7 @@ ledgr_sweep <- function(exp,
     execution_mode = exp$execution_mode,
     fill_model = exp$fill_model,
     opening = exp$opening,
+    compiled_accounting_model = compiled_accounting_model,
     precomputed_features = !is.null(precomputed_features),
     stop_on_error = stop_on_error
   )
@@ -645,9 +652,10 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         precomputed_features,
                                         runtime_projection,
                                         snapshot_hash,
-                                        strategy_hash) {
+                                        strategy_hash,
+                                        compiled_accounting_model = NULL) {
   exp_payload <- ledgr_sweep_exp_payload(exp)
-  compiled_accounting_model <- ledgr_internal_compiled_accounting_model()
+  compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
   tasks <- vector("list", length(param_grid$params))
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]

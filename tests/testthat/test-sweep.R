@@ -273,7 +273,7 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
   testthat::expect_equal(inline$fills$qty, c(2, 1))
 })
 
-testthat::test_that("sweep internal compiled accounting option dispatches spot FIFO path", {
+testthat::test_that("sweep public compiled accounting opt-in dispatches spot FIFO path", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3
@@ -305,19 +305,37 @@ testthat::test_that("sweep internal compiled accounting option dispatches spot F
   )
   grid <- ledgr_param_grid(candidate = list())
   r_path <- ledgr_sweep(exp, grid, seed = 123L)
+  compiled_arg_path <- ledgr_sweep(
+    exp,
+    grid,
+    seed = 123L,
+    compiled_accounting_model = "spot_fifo"
+  )
 
   withr::local_options(list(ledgr.internal.compiled_accounting_model = "spot_fifo"))
-  compiled_path <- ledgr_sweep(exp, grid, seed = 123L)
+  option_ignored_path <- ledgr_sweep(exp, grid, seed = 123L)
 
-  testthat::expect_identical(as.character(compiled_path$status), as.character(r_path$status))
-  testthat::expect_equal(compiled_path$final_equity, r_path$final_equity)
-  testthat::expect_equal(compiled_path$n_trades, r_path$n_trades)
+  testthat::expect_identical(as.character(compiled_arg_path$status), as.character(r_path$status))
+  testthat::expect_equal(compiled_arg_path$final_equity, r_path$final_equity)
+  testthat::expect_equal(compiled_arg_path$n_trades, r_path$n_trades)
+  testthat::expect_identical(
+    attr(compiled_arg_path, "execution_assumptions")$compiled_accounting_model,
+    "spot_fifo"
+  )
+  testthat::expect_identical(as.character(option_ignored_path$status), as.character(r_path$status))
+  testthat::expect_equal(option_ignored_path$final_equity, r_path$final_equity)
+  testthat::expect_equal(option_ignored_path$n_trades, r_path$n_trades)
+  testthat::expect_null(attr(option_ignored_path, "execution_assumptions")$compiled_accounting_model)
 
   withr::local_options(list(ledgr.internal.compiled_accounting_model = NULL))
   restored_path <- ledgr_sweep(exp, grid, seed = 123L)
   testthat::expect_null(getOption("ledgr.internal.compiled_accounting_model", NULL))
   testthat::expect_equal(restored_path$final_equity, r_path$final_equity)
   testthat::expect_equal(restored_path$n_trades, r_path$n_trades)
+  testthat::expect_error(
+    ledgr_sweep(exp, grid, seed = 123L, compiled_accounting_model = "futures_margin"),
+    class = "ledgr_unsupported_accounting_model"
+  )
 })
 
 testthat::test_that("fills reconstruction is invariant under hostile collapse settings", {

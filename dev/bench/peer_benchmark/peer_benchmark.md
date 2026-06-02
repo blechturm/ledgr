@@ -2,12 +2,12 @@
 
 
 On a standard 500-instrument, 5-year daily-bar SMA crossover workload,
-ledgr’s opt-in compiled spot-FIFO accelerator is the fastest completed
-row in this included event-driven comparison, ahead of Backtrader by a
-meaningful margin on end-to-end wall time and by a larger margin on
-engine work alone. Parsed canonical equity, cash, and position outputs
-match canonical R ledgr exactly, so the speedup comes from compilation
-rather than from cutting corners.
+ledgr’s memory-backed opt-in compiled spot-FIFO accelerator is the
+fastest completed row in this included event-driven comparison, ahead of
+Backtrader by a meaningful margin on end-to-end wall time and by a
+larger margin on engine work alone. Parsed canonical equity, cash, and
+position outputs match canonical R ledgr exactly, so the speedup comes
+from the scoped spot-FIFO hot frame rather than from cutting corners.
 
 This report walks the measurement: headline result first, parity check
 second, full peer comparison third, methodology last. Read in order, or
@@ -16,13 +16,17 @@ jump to whichever section answers what you came to verify.
 > **Scope of this report**
 >
 > Internal repo-local benchmark. Same host, same seed, single fixture.
-> Numbers are for maintainer use and release-closeout language, not a
-> public ranking or a universal speed claim.
+> The B2 row is an explicit opt-in
+> (`compiled_accounting_model = "spot_fifo"`) on ledgr’s
+> ephemeral/memory-backed path. Default ledgr execution remains
+> canonical R. Numbers are for maintainer use and release-closeout
+> language, not a public ranking or a universal speed claim.
 
 ## Headline: B2 spot-FIFO vs Backtrader
 
 Same fixture, same seed, same shared bars CSV. The B2 row uses ledgr’s
-opt-in compiled `spot_fifo` hot frame; Backtrader uses its standard
+explicit `compiled_accounting_model = "spot_fifo"` spot-FIFO hot frame
+on the ephemeral benchmark boundary; Backtrader uses its standard
 event-driven loop. Both run the same SMA crossover strategy.
 
 | Surface | B2 seconds | Backtrader seconds | B2 / Backtrader | B2 reduction vs Backtrader |
@@ -217,7 +221,7 @@ parity history JSON under `dev/bench/results/parity_history/`.
 |----|----|
 | ledgr canonical TTR | Required; errors if `TTR` is missing. |
 | ledgr canonical TTR ephemeral | Required; runs the same fold core through an in-memory output handler and must match durable ledgr equity/fills before the run is accepted. |
-| ledgr B2 spot-FIFO ephemeral | Optional; enabled with `--compiled-accounting-model spot_fifo`; uses the same bars/features/strategy surface as ledgr canonical TTR ephemeral and must match canonical ledgr outputs before being interpreted as a peer-comparison row. |
+| ledgr B2 spot-FIFO ephemeral | Optional; enabled with `--compiled-accounting-model spot_fifo`; uses the same bars/features/strategy surface as ledgr canonical TTR ephemeral, uses the same closed enum and memory-handler dispatch as the public `compiled_accounting_model = "spot_fifo"` sweep opt-in, and must match canonical ledgr outputs before being interpreted as a peer-comparison row. |
 | ledgr built-in SMA diagnostic | Required; runs through ledgr built-ins. |
 | quantstrat | Runs when local R packages are installed; otherwise explicit unavailable row. |
 | Backtrader | Managed through `dev/bench/peer_benchmark/python/backtrader/` and run through `python -m uv`. |
@@ -248,7 +252,7 @@ ingestion, run, and extraction are not separable from outside the CLI.
 |----|----|----|----|
 | `ledgr_ttr_canonical` | `read.csv`, timestamp normalization, DuckDB snapshot creation, experiment construction | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
 | `ledgr_ttr_canonical_ephemeral` | `read.csv`, timestamp normalization, in-memory bars/features/projection construction | `ledgr_execute_fold()` with `ledgr_memory_output_handler()` | event-stream equity/fills reconstruction plus canonical materialization |
-| `ledgr_ttr_compiled_spot_fifo_ephemeral` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | `ledgr_execute_fold()` with `compiled_accounting_model = "spot_fifo"` | event-stream equity/fills canonical materialization |
+| `ledgr_ttr_compiled_spot_fifo_ephemeral` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | fold execution with `compiled_accounting_model = "spot_fifo"` on the memory handler | event-stream equity/fills canonical materialization |
 | `ledgr_builtin_sma` | Same durable ledgr boundary with built-in SMA features | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
 | `quantstrat` | `read.csv`, xts/globalenv construction, portfolio/account/orders/strategy setup | `applyStrategy()` plus account updates | account/transaction extraction plus canonical materialization |
 | `backtrader` | `read.csv`, `PandasData` construction, `cerebro.adddata` loop | `cerebro.run()` | CSV writes from in-memory observer/fill rows |

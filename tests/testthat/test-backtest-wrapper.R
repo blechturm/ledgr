@@ -69,6 +69,46 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
   testthat::expect_equal(eq1, eq2, tolerance = 1e-10)
 })
 
+testthat::test_that("ledgr_run validates compiled accounting model without changing default path", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  exp <- ledgr_experiment(
+    snap,
+    test_strategy,
+    universe = c("TEST_A", "TEST_B"),
+    opening = ledgr_opening(cash = 100000)
+  )
+
+  bt_default <- ledgr_run(exp, run_id = "compiled-model-default")
+  eq_default <- ledgr_results(bt_default, "equity")
+  close(bt_default)
+
+  bt_null <- ledgr_run(
+    exp,
+    run_id = "compiled-model-null",
+    compiled_accounting_model = NULL
+  )
+  eq_null <- ledgr_results(bt_null, "equity")
+  close(bt_null)
+
+  testthat::expect_equal(eq_null$equity, eq_default$equity, tolerance = 1e-10)
+  testthat::expect_false("compiled_accounting_model" %in% names(bt_null$config$engine))
+
+  testthat::expect_error(
+    ledgr_run(exp, run_id = "compiled-model-bad", compiled_accounting_model = "futures_margin"),
+    class = "ledgr_unsupported_accounting_model"
+  )
+  testthat::expect_error(
+    ledgr_run(exp, run_id = "compiled-model-spot", compiled_accounting_model = "spot_fifo"),
+    "committed durable runs",
+    class = "ledgr_compiled_spot_fifo_unavailable"
+  )
+})
+
 testthat::test_that("functional strategies must return targets for the full universe", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

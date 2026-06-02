@@ -602,6 +602,9 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   opening_positions <- ledgr_config_opening_positions(cfg)
   opening_cost_basis <- ledgr_config_opening_cost_basis(cfg, opening_positions)
   seed <- cfg$engine$seed
+  compiled_accounting_model <- ledgr_public_compiled_accounting_model(
+    cfg$engine$compiled_accounting_model
+  )
   run_wall_start <- ledgr_time_now()
 
   persist_features <- TRUE
@@ -1268,7 +1271,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     telemetry = telemetry,
     seed = seed,
     event_mode = if (identical(execution_mode, "db_live")) "live" else "buffered",
-    use_fast_context = use_fast_context
+    use_fast_context = use_fast_context,
+    compiled_accounting_model = compiled_accounting_model
   )
 
   fold_result <- tryCatch(

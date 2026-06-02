@@ -32,11 +32,30 @@ ledgr_normalize_compiled_accounting_model <- function(value) {
   ledgr_unsupported_accounting_model_error(value)
 }
 
+ledgr_public_compiled_accounting_model <- function(value) {
+  ledgr_normalize_compiled_accounting_model(value)
+}
+
 ledgr_internal_compiled_accounting_model <- function() {
-  # Internal benchmark/test harness hook only. Public callers should not set
-  # this option; production APIs keep NULL as the canonical R fold path.
+  # Internal benchmark/test harness hook only. Public callers should use the
+  # explicit `compiled_accounting_model` argument on supported entry points.
   ledgr_normalize_compiled_accounting_model(
     getOption("ledgr.internal.compiled_accounting_model", NULL)
+  )
+}
+
+ledgr_compiled_spot_fifo_unavailable_error <- function(message = NULL) {
+  if (is.null(message)) {
+    message <- paste0(
+      "Compiled spot-FIFO accelerator is unavailable on this install. ",
+      "Default execution (compiled_accounting_model = NULL) uses canonical R ",
+      "and works everywhere. To enable compiled execution, install ledgr from ",
+      "source with a C++ toolchain available."
+    )
+  }
+  rlang::abort(
+    message,
+    class = c("ledgr_compiled_spot_fifo_unavailable", "ledgr_invalid_fold_execution")
   )
 }
 
@@ -46,22 +65,27 @@ ledgr_require_compiled_spot_fifo_dispatch <- function(execution, output_handler)
     return(invisible(FALSE))
   }
   if (!identical(execution$event_mode, "buffered")) {
-    ledgr_unsupported_accounting_model_error(
-      model,
-      "`compiled_accounting_model = \"spot_fifo\"` currently supports buffered/ephemeral folds only; durable compiled integration is deferred."
+    ledgr_compiled_spot_fifo_unavailable_error(
+      paste0(
+        "`compiled_accounting_model = \"spot_fifo\"` currently supports ",
+        "buffered ephemeral folds only. Durable compiled integration is ",
+        "deferred. Default execution (compiled_accounting_model = NULL) uses ",
+        "canonical R and works everywhere."
+      )
     )
   }
   if (!is.function(output_handler$append_compiled_spot_batch)) {
-    rlang::abort(
-      "`compiled_accounting_model = \"spot_fifo\"` requires a memory output handler with compiled spot-batch append support.",
-      class = c("ledgr_compiled_spot_fifo_unavailable", "ledgr_invalid_fold_execution")
+    ledgr_compiled_spot_fifo_unavailable_error(
+      paste0(
+        "`compiled_accounting_model = \"spot_fifo\"` requires a memory output ",
+        "handler with compiled spot-batch append support. Default execution ",
+        "(compiled_accounting_model = NULL) uses canonical R and works ",
+        "everywhere."
+      )
     )
   }
   if (!exists("ledgr_cpp_spot_fifo_batch", envir = asNamespace("ledgr"), mode = "function")) {
-    rlang::abort(
-      "`compiled_accounting_model = \"spot_fifo\"` was requested, but the compiled spot-FIFO kernel is unavailable.",
-      class = c("ledgr_compiled_spot_fifo_unavailable", "ledgr_invalid_fold_execution")
-    )
+    ledgr_compiled_spot_fifo_unavailable_error()
   }
   invisible(TRUE)
 }

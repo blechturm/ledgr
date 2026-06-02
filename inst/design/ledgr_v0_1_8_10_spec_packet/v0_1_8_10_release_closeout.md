@@ -16,10 +16,11 @@ The v0.1.8.10 speed story has two different surfaces that must not be mixed:
   Fold-owned FIFO accounting moved work into the fold engine and made the
   fresh ephemeral path phase-visible, but canonical R is not the headline speed
   win.
-- **Internal B2 spot-FIFO gate:** `compiled_accounting_model = "spot_fifo"`
-  is an internal, disabled-by-default, spot-asset FIFO fill-batch accelerator
-  gate. It is not public compiled execution, not durable compiled integration,
-  not derivatives-capable accounting, and not a general compiled fold core.
+- **B2 spot-FIFO public opt-in:** `compiled_accounting_model = "spot_fifo"`
+  is a scoped, explicit opt-in for the memory-backed sweep / ephemeral
+  spot-asset FIFO fill-batch accelerator. It is not default compiled execution,
+  not durable compiled integration, not derivatives-capable accounting, and not
+  a general compiled fold core.
 
 ## Source Records
 
@@ -36,7 +37,7 @@ v0.1.8.10 closeout records:
 
 - Canonical workload grid:
   `dev/bench/results/ledgr_bench_record_20260602T155628Z_summary.csv`
-- Seed-matched internal B2 xlarge ephemeral gate:
+- Seed-matched B2 xlarge ephemeral gate:
   `dev/bench/results/ledgr_bench_record_20260602T162911Z_summary.csv`
 - Peer benchmark:
   `dev/bench/results/peer_benchmark_record_20260602T162318Z_*`
@@ -58,8 +59,9 @@ records.
 | `LDG-2519` | Matrix-canonical substrate and strategy accessors | `ctx$idx()`, `ctx$vec`, primitive internal positions, and matrix-backed next-bar lookup landed with scalar compatibility preserved | Delivered as substrate/contract lane; wall recovery folded into later lanes |
 | `LDG-2520` | Fold-owned FIFO accounting and inline state capture | Fresh ephemeral summaries can bypass reconstruction; canonical R xlarge durable shows FIFO work moved into engine (199.06s -> 319.22s engine on xlarge durable) | Delivered as accounting-ownership substrate; canonical R xlarge durable regression is expected and recorded |
 | `LDG-2521` | yyjsonr options hoist | 50k `meta_json` helper benchmark improved 22.00 -> 2.40 us/payload (9.17x) | Delivered; helper/read/replay surface, not fresh-fold wall claim |
-| `LDG-2522` | Internal B2 spot-FIFO fill-batch gate | Seed-matched xlarge ephemeral wall 375.14s -> 67.32s with same 66,419 fills and zero failures; engine 342.25s -> 32.66s | Pass for scoped internal spot-asset FIFO accelerator gate only |
+| `LDG-2522` | B2 spot-FIFO fill-batch gate | Seed-matched xlarge ephemeral wall 375.14s -> 67.32s with same 66,419 fills and zero failures; engine 342.25s -> 32.66s | Pass for scoped spot-asset FIFO accelerator gate |
 | `LDG-2523` | Parked spike disposition | Split bucket, reusable ctx env, pulse-seed mixer, and alias-map normalization dispositions recorded | No code lane; small spikes parked, routed, or covered by landed accessors |
+| `LDG-2526` | B2 public opt-in promotion | Public `ledgr_sweep(..., compiled_accounting_model = "spot_fifo")` routes to the scoped memory-backed spot-FIFO path; durable `ledgr_run(..., "spot_fifo")` fails closed | In review; public opt-in only, default remains canonical R |
 
 The final closeout workload run differs from individual per-lane records because
 it was run as a full record preset after the lanes landed. It should be read as
@@ -101,11 +103,13 @@ Interpretation:
 - Large and low-density cells remain roughly flat or slightly improved. The
   regression is concentrated in the high-density xlarge durable stress cell.
 
-## Internal B2 Spot-FIFO Gate
+## B2 Spot-FIFO Public Opt-In Gate
 
-The B2 row is not public/default behavior. It is the internal
-`compiled_accounting_model = "spot_fifo"` measurement gate for the
-spot-asset FIFO fill-batch hot frame.
+The B2 row is not default behavior. It is the explicit
+`compiled_accounting_model = "spot_fifo"` opt-in for the memory-backed
+spot-asset FIFO fill-batch hot frame. Committed durable runs still use the
+canonical R path and fail closed for `"spot_fifo"` until a separate durable
+compiled-integration gate lands.
 
 Seed-matched xlarge ephemeral record, `density_high_xlarge_ephemeral`,
 seed `20260531`:
@@ -113,7 +117,7 @@ seed `20260531`:
 | Model | Record | Wall s | Engine s | Results s | Fills | Engine us/fill | Failures |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Canonical R (`NULL`) | `dev/bench/results/ledgr_bench_record_20260602T155628Z_summary.csv` | 375.14 | 342.25 | 0.00 | 66,419 | 5152.89 | 0 |
-| Internal B2 spot-FIFO (`"spot_fifo"`) | `dev/bench/results/ledgr_bench_record_20260602T162911Z_summary.csv` | 67.32 | 32.66 | 0.02 | 66,419 | 491.73 | 0 |
+| B2 spot-FIFO opt-in (`"spot_fifo"`) | `dev/bench/results/ledgr_bench_record_20260602T162911Z_summary.csv` | 67.32 | 32.66 | 0.02 | 66,419 | 491.73 | 0 |
 
 Outcome:
 
@@ -122,10 +126,10 @@ Outcome:
 - Engine fell 342.25s -> 32.66s: B2 engine is 9.5% of canonical R, a 90.5%
   reduction.
 - Fill count and failure count match exactly on the seed-matched record.
-- This is a pass for the scoped internal spot-asset FIFO accelerator gate. It
-  does not authorize a public compiled execution path, durable compiled
-  integration, derivatives/margin/options accounting, or a general compiled fold
-  core.
+- This is a pass for the scoped spot-asset FIFO accelerator gate and supports
+  the LDG-2526 memory-backed sweep opt-in. It does not authorize default
+  compiled promotion, durable compiled integration, derivatives/margin/options
+  accounting, CRAN readiness, or a general compiled fold core.
 
 ## Peer Benchmark Comparison
 
@@ -150,9 +154,11 @@ phase-separated record, ledgr durable engine-only is 1.10x Backtrader; total
 wall is 1.45x Backtrader.
 
 The peer ephemeral ledgr row regressed modestly, 92.61s -> 99.92s total and
-71.62s -> 79.39s engine. This peer harness does not use the internal B2
-`"spot_fifo"` path. Do not mix this peer row with the B2 workload-grid gate:
-they are different shapes and different execution-surface questions.
+71.62s -> 79.39s engine. The separate B2 peer-shaped row in the rewritten peer
+report uses `compiled_accounting_model = "spot_fifo"` and measured 37.09s core
+wall / 15.77s engine with exact canonical ledgr parity on parsed equity, cash,
+and position proxy outputs. Do not mix this peer B2 row with the workload-grid
+B2 gate: they are different shapes and different execution-surface questions.
 
 Quantstrat was materially slower in this rerun while Backtrader and zipline
 were essentially flat. Treat that as local comparator drift for this record,
@@ -192,9 +198,8 @@ large/xlarge durable, ephemeral, and B2 cells.
 
 Future routing:
 
-- B2 promotion, durable compiled integration, and public compiled execution
-  require a separate v0.1.9.x promotion ticket/RFC. v0.1.8.10 only records the
-  internal gate.
+- Default compiled promotion and durable compiled integration require separate
+  future gates. v0.1.8.10 ships only the scoped memory-backed sweep opt-in.
 - Derivatives, margin, options, or non-spot accounting require separate
   accounting-model values, RFC scope, and parity gates. The spot-FIFO kernel
   must not be extended into those models.
@@ -206,20 +211,20 @@ Future routing:
 
 ## Closeout Verdict
 
-v0.1.8.10 succeeds as a substrate/accounting and B2-gate round, not as a
-public default-speed release:
+v0.1.8.10 succeeds as a substrate/accounting and scoped B2 opt-in round, not as
+a public default-speed release:
 
 - The canonical R default path is more honest and more measurable after
   fold-owned FIFO accounting, but high-density xlarge durable regressed because
   R now pays FIFO inside the fold.
 - Fresh ephemeral canonical wall is roughly flat versus v0.1.8.9 and now
   phase-visible.
-- The internal B2 spot-FIFO gate is the major speed result: 375.14s -> 67.32s
-  on seed-matched xlarge ephemeral, with identical fill count and zero failures.
+- The B2 spot-FIFO opt-in is the major speed result: 375.14s -> 67.32s on
+  seed-matched xlarge ephemeral, with identical fill count and zero failures.
 - The peer benchmark remains local-host/current-source only. It confirms ledgr
   durable is roughly flat-to-slightly-faster on the peer shape and stays near
   Backtrader engine time, but it is not a public ranking.
 
 The release gate (`LDG-2525`) should verify this closeout, run the final
-test/check surface, update NEWS with scoped B2 language, and confirm generated
-benchmark/build artifacts are not committed.
+test/check surface, update NEWS with scoped B2 opt-in language, and confirm
+generated benchmark/build artifacts are not committed.

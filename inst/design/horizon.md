@@ -837,6 +837,17 @@ fill-batch accelerator" or equivalent. It should not describe LDG-2522
 as shipping a general compiled fold core, a public compiled execution
 mode, or a derivatives-capable accounting engine.
 
+### 2026-06-02 [verification] macOS parity gate for B2 spot-FIFO opt-in
+
+LDG-2526 can expose the scoped B2 spot-FIFO accelerator as a public
+memory-backed sweep opt-in on the platforms verified in the current workspace,
+but this Windows workspace cannot close Apple hardware parity. Before any
+future default-promotion or CRAN-readiness decision, rerun the small FIFO parity
+suite and the peer/workload-grid smoke with
+`compiled_accounting_model = "spot_fifo"` on macOS, including a source install
+with the local C++ toolchain. Failure UX should also be checked on a macOS
+install where the compiled kernel is unavailable.
+
 ### 2026-06-02 [documentation] Documentation, structure, and cleanup release before v0.1.9 features
 
 The v0.1.8.x optimization arc plus the v0.1.8.10 substrate work plus the B2
