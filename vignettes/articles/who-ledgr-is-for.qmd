@@ -13,6 +13,10 @@ ledgr is not for everyone. This article is the honest version of that
 statement: who the package is built for, who it is not built for, and what to
 use instead if you do not fit.
 
+For financial-use boundaries, see the project
+[disclaimer](../../DISCLAIMER.md): ledgr is research software, not investment
+advice.
+
 ## Intended audience
 
 **People who care not just about finding strategies, but about knowing when they

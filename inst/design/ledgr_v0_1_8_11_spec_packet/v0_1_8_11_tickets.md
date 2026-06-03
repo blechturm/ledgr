@@ -595,7 +595,7 @@ scope: v0.1.8.7_to_v0.1.8.10
 Priority: P1
 Effort: S
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -620,6 +620,15 @@ links from user-facing entry points.
 ### Verification
 
 Manual disclaimer review and link review.
+
+Completion note: Batch 8 completed after Claude review on 2026-06-04. Added root
+`DISCLAIMER.md` and modest links from `README.md`,
+`vignettes/articles/who-ledgr-is-for.qmd`, and `vignettes/research-workflow.qmd`
+plus rendered `research-workflow.md`. The surface covers research-software,
+investment-advice, future-performance, and compliance/regulatory boundaries
+without DESCRIPTION metadata changes. Claude's only required patch was
+reverting incidental live-output drift in `vignettes/research-workflow.md`; the
+recurring render-drift issue is routed to LDG-2536.
 
 ### Source Reference
 
@@ -654,6 +663,8 @@ left behind during the v0.1.8.x arc.
 - Create `generated_docs_audit.md` in this packet.
 - Review man pages and generated installed docs for stale execution, sweep,
   strategy, B2, benchmark, and contract language.
+- Include Claude's Batch 8 finding that rendered vignette Markdown can pick up
+  incidental live-output drift unrelated to the source-doc edit.
 - Classify findings as fix-now, defer-with-reason, no-action, or later RFC.
 - Route any fix-now docs changes through the appropriate documentation ticket.
 

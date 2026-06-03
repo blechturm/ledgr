@@ -1,6 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 7 completed after Claude review.
+**Status:** Active; Batch 8 completed after Claude review.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -247,7 +247,7 @@ after Claude review.
 ## Batch 8 - Research Software Disclaimer Surface
 
 Ticket: `LDG-2535`
-Status: Planned
+Status: Completed
 
 Goal: add a modest, plain-English disclaimer surface for financial research
 software.
@@ -258,6 +258,20 @@ Exit criteria:
 - README and relevant introductory docs link to it modestly.
 - No DESCRIPTION metadata change lands unless explicitly requested.
 - Language is plain, concise, and not commercial legal prose.
+
+Completion note:
+
+Batch 8 completed after Claude review on 2026-06-04. Added root
+`DISCLAIMER.md` with plain-English financial research-software boundaries;
+linked it modestly from `README.md`,
+`vignettes/articles/who-ledgr-is-for.qmd`, and `vignettes/research-workflow.qmd`
+plus rendered `research-workflow.md`. The disclaimer states ledgr is research
+software, not investment advice; backtests do not predict future performance;
+and audit/replay/provenance features are research tools, not compliance or
+regulatory guarantees. No DESCRIPTION metadata change landed. Claude's only
+required patch was reverting incidental live-output drift in
+`vignettes/research-workflow.md`; the recurring render-drift issue is routed to
+Batch 9 / `LDG-2536`.
 
 ## Batch 9 - Generated Docs And Man-Page Audit
 
@@ -270,6 +284,8 @@ Exit criteria:
 
 - `generated_docs_audit.md` exists in the packet.
 - Findings name files, classifications, and consuming tickets.
+- The audit includes the Batch 8 finding that rendered vignette Markdown can
+  pick up incidental live-output drift unrelated to the source-doc edit.
 - Generated artifact churn only follows source-doc changes.
 - Any required doc-render checks are identified.
 

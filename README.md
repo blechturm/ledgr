@@ -16,6 +16,10 @@ sealed snapshot -> experiment -> run -> event ledger -> results
 
 The setup is not overhead. The setup is the audit trail.
 
+ledgr is research software, not investment advice. Backtests and audit trails
+are evidence tools; they do not predict future returns or provide compliance
+guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
+
 ## Install
 
 ``` r

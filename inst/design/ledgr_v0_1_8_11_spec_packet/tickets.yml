@@ -131,7 +131,7 @@ tickets:
 
   - id: "LDG-2535"
     title: "Research Software Disclaimer Surface"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:

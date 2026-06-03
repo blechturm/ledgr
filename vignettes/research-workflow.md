@@ -33,6 +33,10 @@ declare an experiment, run the strategy once, explore a small grid,
 inspect the candidate table, promote one candidate with a note, and
 reopen the stored artifact.
 
+This workflow produces research evidence, not investment advice or a
+guarantee that a strategy will work in the future. See the project
+[disclaimer](../DISCLAIMER.md).
+
 The loop is deliberately short:
 
 <div class="ledgr-diagram ledgr-workflow-diagram">
