@@ -173,8 +173,9 @@ integration remains deferred.
 
 The active planning packet is v0.1.8.11. Per the roadmap, it is a
 documentation, structure, and cleanup release before v0.1.9 features. Tickets
-are cut and Batch 0 packet alignment is complete. The next substantive batch is
-LDG-2528, the `contracts.md` audit report.
+are cut; Batch 0 packet alignment, Batch 1 `contracts.md` audit, and Batch 2
+planning-doc housekeeping are complete. The next substantive batch is LDG-2530,
+the RFC decision index and ADR routing pass.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.

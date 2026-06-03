@@ -203,7 +203,7 @@ scope: stale_contract_review
 Priority: P0
 Effort: S
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -216,8 +216,8 @@ state is internally consistent after v0.1.8.10 and before v0.1.8.11 work.
 - Confirm `inst/design/ledgr_roadmap.md` points to the packet path and narrows
   v0.1.9.x follow-on documentation.
 - Confirm `inst/design/horizon.md` has no stale in-flight v0.1.8.10 language.
-- Confirm `AGENTS.md` points agents at v0.1.8.11 and preserves the no-ticket /
-  no-implementation boundary.
+- Confirm `AGENTS.md` points agents at v0.1.8.11 and preserves the no
+  execution/API/feature-implementation boundary.
 - Keep the resolved v0.1.8.10 horizon closeout visible.
 
 ### Acceptance Criteria
@@ -231,6 +231,13 @@ state is internally consistent after v0.1.8.10 and before v0.1.8.11 work.
 ### Verification
 
 `rg` stale-language checks and manual design-index review.
+
+Completion note: completed on 2026-06-03. The design index, AGENTS.md, roadmap,
+horizon, packet spec, tickets, YAML, and batch plan agree that v0.1.8.11 is the
+active packet and v0.1.8.10 is closed. The resolved v0.1.8.10 horizon closeout
+remains visible, stale LDG-2528-next and pending-B2 active-state wording was
+removed, and no implementation files changed. Verification used stale-language
+`rg` checks, YAML parse review, and `git diff --check`.
 
 ### Source Reference
 

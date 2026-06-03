@@ -36,7 +36,7 @@ tickets:
 
   - id: "LDG-2529"
     title: "Roadmap Horizon And Design Index Housekeeping"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "S"
     dependencies:

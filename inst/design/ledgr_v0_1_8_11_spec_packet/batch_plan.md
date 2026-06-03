@@ -1,6 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 0 completed.
+**Status:** Active; Batch 2 completed.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -61,13 +61,12 @@ Completion note:
 
 `contracts_audit.md` was completed on 2026-06-03 after Claude review. It routes
 five fix-now contract-cleanup findings to `LDG-2531`, records no-action and
-later-RFC boundaries, and leaves `contracts.md` unchanged. Substantive work now
-moves to Batch 2 / `LDG-2529`.
+later-RFC boundaries, and leaves `contracts.md` unchanged.
 
 ## Batch 2 - Roadmap Horizon And Design Index Housekeeping
 
 Ticket: `LDG-2529`
-Status: Planned
+Status: Completed
 
 Goal: finish active/completed packet housekeeping after v0.1.8.10 and before
 substantive v0.1.8.11 documentation work.
@@ -78,6 +77,15 @@ Exit criteria:
 - Closed v0.1.8.10 work is no longer shown as active planning.
 - Future v0.1.9/v0.1.9.x work remains parked with correct boundaries.
 - No implementation files change.
+
+Completion note:
+
+Batch 2 completed on 2026-06-03. The design index, AGENTS.md, roadmap, horizon,
+packet spec, tickets, YAML, and batch plan agree that v0.1.8.11 is active and
+that v0.1.8.10 is closed. Stale active-state wording was removed, the
+post-K1/B2 horizon promotion line now acknowledges the completed scoped B2 gate
+while keeping compiled fold-core commitment deferred, and no implementation
+files changed. Substantive work now moves to Batch 3 / `LDG-2530`.
 
 ## Batch 3 - RFC Decision Index And ADR Routing
 

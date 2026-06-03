@@ -61,9 +61,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
   needs a dedicated RFC).
 - **Post-K1 / B2 gates** — compiled fold core (`ledgrcore` sister package)
-  remains deferred. The K1 measurement spike is complete, but future compiled
-  commitment still waits on the B2 comparison and dominant-attribution gate
-  recorded below.
+  remains deferred. The K1 measurement spike and scoped v0.1.8.10 B2 spot-FIFO
+  gate are complete, but future compiled commitment still waits on the
+  remaining A-vs-B2 product comparison, dominant-attribution gate, and fresh
+  RFC recorded below.
 
 ### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
 
