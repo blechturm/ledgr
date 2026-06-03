@@ -1,0 +1,188 @@
+version: "0.1.8.11"
+source: "v0_1_8_11_tickets.md"
+generated_from: "v0_1_8_11_spec.md"
+tickets:
+  - id: "LDG-2527"
+    title: "Packet Alignment And v0.1.8.11 Ticket Cut"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.11"
+    tests:
+      - "manual_packet_review"
+      - "stale_scope_rg_checks"
+      - "yaml_review"
+      - "peer_review_caveats_resolved"
+
+  - id: "LDG-2528"
+    title: "contracts.md Audit Report"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "audit"
+      surface: "contracts"
+      scope: "stale_contract_review"
+    tests:
+      - "manual_audit_review"
+      - "stale_term_rg_checks"
+      - "source_to_finding_traceability"
+
+  - id: "LDG-2529"
+    title: "Roadmap Horizon And Design Index Housekeeping"
+    status: "planned"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "governance"
+      surface: "design_index_and_horizon"
+      scope: "active_packet_housekeeping"
+    tests:
+      - "stale_language_rg_checks"
+      - "manual_design_index_review"
+
+  - id: "LDG-2530"
+    title: "RFC Decision Index And ADR Routing"
+    status: "planned"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation_synthesis"
+      surface: "rfc_and_adr_index"
+      scope: "decision_discoverability"
+    tests:
+      - "manual_link_review"
+      - "topic_to_source_traceability"
+      - "adr_candidate_review"
+
+  - id: "LDG-2531"
+    title: "contracts.md Structure Pass"
+    status: "planned"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2528"
+    classification:
+      type: "contract_cleanup"
+      surface: "contracts"
+      scope: "structure_and_stale_language"
+    tests:
+      - "diff_to_audit_traceability"
+      - "stale_term_rg_checks"
+      - "manual_contract_review"
+
+  - id: "LDG-2532"
+    title: "Maintainer Manual Foundation"
+    status: "planned"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "architecture_synthesis"
+    tests:
+      - "manual_article_review"
+      - "link_review"
+      - "remainder_disposition_review"
+
+  - id: "LDG-2533"
+    title: "User-Facing Documentation Refresh"
+    status: "planned"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation"
+      surface: "user_facing_docs"
+      scope: "post_b2_refresh"
+    tests:
+      - "doc_render_or_targeted_vignette_checks"
+      - "link_review"
+      - "scope_language_review"
+
+  - id: "LDG-2534"
+    title: "Performance Arc Narrative"
+    status: "planned"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation_synthesis"
+      surface: "performance_narrative"
+      scope: "v0.1.8.7_to_v0.1.8.10"
+    tests:
+      - "manual_narrative_review"
+      - "benchmark_link_review"
+      - "claim_language_review"
+
+  - id: "LDG-2535"
+    title: "Research Software Disclaimer Surface"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation"
+      surface: "disclaimer"
+      scope: "financial_research_software"
+    tests:
+      - "manual_disclaimer_review"
+      - "link_review"
+
+  - id: "LDG-2536"
+    title: "Generated Docs And Man-Page Audit"
+    status: "planned"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "audit"
+      surface: "generated_docs"
+      scope: "stale_help_language"
+    tests:
+      - "manual_audit_review"
+      - "stale_term_rg_checks"
+      - "source_generated_doc_traceability"
+
+  - id: "LDG-2537"
+    title: "v0.1.8.11 Release Gate"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+      - "LDG-2528"
+      - "LDG-2529"
+      - "LDG-2530"
+      - "LDG-2531"
+      - "LDG-2532"
+      - "LDG-2533"
+      - "LDG-2534"
+      - "LDG-2535"
+      - "LDG-2536"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.11"
+    tests:
+      - "targeted_checks"
+      - "doc_render_checks_as_appropriate"
+      - "full_tests_package_checks_as_appropriate"
+      - "release_playbook"
+      - "git_status_review"

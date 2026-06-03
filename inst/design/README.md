@@ -3,8 +3,8 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.10`.
-**Current active packet:** none; v0.1.8.11 planning is next.
-**Current active packet path:** future packet.
+**Current active packet:** `v0.1.8.11` planning.
+**Current active packet path:** `inst/design/ledgr_v0_1_8_11_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_8_10_spec_packet/` is an archival
 release record. Do not treat it as authorization for new implementation work
 after the v0.1.8.10 release gate.
@@ -171,8 +171,15 @@ integration remains deferred.
 - Primary synthesis:
   `spikes/ledgr_v0_1_8_10_optimization_round_spike/architecture_synthesis.md`.
 
-The next planning packet is v0.1.8.11. Per the roadmap, it is a documentation,
-structure, and cleanup release before v0.1.9 features.
+The active planning packet is v0.1.8.11. Per the roadmap, it is a
+documentation, structure, and cleanup release before v0.1.9 features. Tickets
+are cut and Batch 0 packet alignment is complete. The next substantive batch is
+LDG-2528, the `contracts.md` audit report.
+
+- Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
+- Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_11_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_8_11_spec_packet/batch_plan.md`.
 
 ## Core Documents
 

@@ -5,7 +5,7 @@
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_8_10_spec_packet/`.
 **Active packet:** `v0.1.8.11` planning.
-**Active packet path:** Future packet.
+**Active packet path:** `inst/design/ledgr_v0_1_8_11_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -104,7 +104,7 @@ versioned packet.
 | v0.1.8.8 | Done | Parallel sweep dispatch and determinism, fold-core diagnostics and containment, repo-local peer benchmark reporting, and self-profiling workload-grid evidence for v0.1.8.9 optimization scoping. Maintainer-manual skeleton cleanup deferred. | `inst/design/ledgr_v0_1_8_8_spec_packet/` |
 | v0.1.8.9 | Done | Single-core optimization round: scale-growing buffer write fixes, per-pulse vectorization, yyjsonr canonical JSON byte-format v2 migration, per-lane attribution, and workload-grid / peer-benchmark closeout. | `inst/design/ledgr_v0_1_8_9_spec_packet/` |
 | v0.1.8.10 | Done | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, scoped public memory-backed sweep opt-in, and measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
-| v0.1.8.11 | Planned | Documentation, structure, and cleanup release before v0.1.9 features. RFC synthesis, ADR population, decision-log synthesis, vignette refresh for post-B2 reality, contracts.md structural pass, internal performance-arc narrative, and the maintainer manual backlog. Entropy management cycle for the post-v0.1.8.10 codified-architecture surface. | Future packet |
+| v0.1.8.11 | Planning | Documentation, structure, and cleanup release before v0.1.9 features. RFC synthesis, ADR population, decision-log synthesis, vignette refresh for post-B2 reality, `contracts.md` audit / structural pass, user-facing disclaimer, internal performance-arc narrative, and the maintainer manual backlog. Entropy management cycle for the post-v0.1.8.10 codified-architecture surface. | `inst/design/ledgr_v0_1_8_11_spec_packet/` |
 | v0.1.9 | Planned | Target risk layer and post-optimization primitive-internals / substrate planning gates. | Future packet |
 | v0.1.9.x | Planned | Internal maintainer manual and architecture article release after the v0.1.8.8 deferral. Foundation absorbed into v0.1.8.11 documentation/cleanup release. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
@@ -1032,17 +1032,16 @@ Related determinism gap (from the 2026-05-28 fold-core review):
   deterministic-only resume guarantee. See `inst/design/horizon.md` (RNG resume
   entry).
 
-### v0.1.9.x Maintainer Manual And Architecture Documentation
+### v0.1.9.x Follow-On Documentation After v0.1.8.11
 
 Intent:
 
-- grow the `inst/design/manual/` skeleton from v0.1.8.8 into a coherent
-  internal maintainer-facing manual;
-- give agents and maintainers one article tree for load-bearing implementation
-  concepts, while keeping governance artifacts in `inst/design/` and
-  user-facing package documentation in `vignettes/`;
-- make important architecture surfaces discoverable without mining old RFCs,
-  spikes, audits, or stale diagrams.
+- hold only bounded documentation remainder after v0.1.8.11, if review or
+  ticket execution leaves a deliberately deferred article family;
+- keep any follow-on documentation separate from v0.1.9 target-risk
+  implementation and other v0.1.9.x feature packets;
+- avoid reopening governance-record synthesis if v0.1.8.11 has already made
+  the load-bearing decisions discoverable.
 
 Target article families:
 
@@ -1057,16 +1056,16 @@ Target article families:
 
 Readiness gates:
 
-- v0.1.8.8 has either created the manual skeleton and stale-doc cleanup or
-  explicitly deferred that P2 ticket;
-- the fold-core and feature-value-path workbooks have a stable home under the
-  manual tree;
+- v0.1.8.11 has shipped or explicitly deferred a bounded documentation
+  remainder;
+- the fold-core and feature-value-path workbooks have a stable home under
+  `inst/design/manual/` or a clear disposition explaining why not;
 - package vignette build semantics remain intact (`vignettes/` source,
   `inst/doc/` build output).
 
 Implementation constraints:
 
-- this is primarily a documentation release;
+- this is documentation-only follow-on work;
 - no execution semantics, event schemas, durable identity bytes, target-risk
   behavior, OMS policy, or compiled-core architecture changes are authorized by
   the manual work itself;
@@ -1084,7 +1083,7 @@ Source memory:
 
 - `inst/design/horizon.md`, entry
   `2026-05-30 [documentation] Maintainer manual article backlog after
-  v0.1.8.8 skeleton`.
+  v0.1.8.8 skeleton`, now pulled forward into v0.1.8.11.
 
 ### Later v0.1.8.x Sweep Stabilization
 
@@ -1216,10 +1215,20 @@ for v0.1.8.8; it is no longer correct after the v0.1.8.10 / B2 arc.
 
 Authoritative input:
 
+- `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`;
 - `inst/design/horizon.md` entry
   `2026-06-02 [documentation] Documentation, structure, and cleanup release
   before v0.1.9 features`;
-- the existing 2026-05-30 maintainer manual backlog as foundation.
+- the existing 2026-05-30 maintainer manual backlog as foundation;
+- `inst/design/horizon.md` entry
+  `2026-06-01 [documentation] User-facing research-software disclaimer for
+  financial backtesting`;
+- `inst/design/horizon.md` entry
+  `2026-06-01 [strategy] Strategy callback contract + authoring helpers
+  post-v0.1.8.x direction`;
+- `inst/design/horizon.md` entry
+  `2026-06-02 [architecture] B2 spot-FIFO accelerator is not a derivatives
+  accounting model`.
 
 Intent:
 
@@ -1227,10 +1236,15 @@ Intent:
   logs, and spec packets into discoverable, human- and agent-readable form;
 - populate ADRs for stabilized architectural decisions that currently live
   only as RFC bindings;
+- audit `contracts.md` for stale, missing, duplicated, or poorly organized
+  contract language after v0.1.8.10, then restructure only where that preserves
+  or clarifies existing semantics;
 - refresh user-facing vignettes (who-ledgr-is-for, why-r,
   strategy-development, research-workflow) to reflect the post-v0.1.8.10 /
   B2 reality, including ephemeral sweep as a real sweep mode and the
   v0.1.8.x performance arc as evidence that R can be fast;
+- add a plain-English research-software disclaimer surface and modest links
+  from user-facing entry points if review accepts the horizon proposal;
 - author an internal v0.1.8.x performance-arc narrative that names what got
   faster and how to attribute it;
 - structural pass on `inst/design/contracts.md` organized by surface
@@ -1243,7 +1257,10 @@ Intent:
   marks the rest as scaffolding;
 - internal compiled-accounting documentation
   (`compiled_accounting_model` enum scope guard) for future contributors
-  and future-self.
+  and future-self;
+- document the post-v0.1.8.10 strategy accessor surface (`ctx$vec`,
+  `ctx$idx()`, and `ctx$vec$feature(feature_id)`) and keep Pass 2 helper
+  extensions deferred to the v0.1.9.x helper milestone.
 
 Tone target:
 
@@ -1296,6 +1313,8 @@ Non-scope:
 - no rewrite of accepted RFC text into prose articles (the RFCs remain
   authoritative; synthesis points at them, not replaces them);
 - no broad implementation refactor hidden inside documentation work.
+No tickets are cut yet. The first packet artifact is a spec draft for Claude /
+maintainer review.
 
 Source memory:
 
@@ -1303,7 +1322,14 @@ Source memory:
   `2026-06-02 [documentation] Documentation, structure, and cleanup
   release before v0.1.9 features` and
   `2026-05-30 [documentation] Maintainer manual article backlog after
-  v0.1.8.8 skeleton`.
+  v0.1.8.8 skeleton`;
+- `inst/design/horizon.md`, entries
+  `2026-06-01 [documentation] User-facing research-software disclaimer for
+  financial backtesting`,
+  `2026-06-01 [strategy] Strategy callback contract + authoring helpers
+  post-v0.1.8.x direction`, and
+  `2026-06-02 [architecture] B2 spot-FIFO accelerator is not a derivatives
+  accounting model`.
 
 ### v0.1.9 Target Risk Layer
 
