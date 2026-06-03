@@ -83,7 +83,7 @@ tickets:
 
   - id: "LDG-2532"
     title: "Maintainer Manual Foundation"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -183,6 +183,9 @@ tickets:
     tests:
       - "targeted_checks"
       - "doc_render_checks_as_appropriate"
+      - "manual_render_script"
+      - "manual_markdown_drift_check"
+      - "manual_remainder_routing_review"
       - "full_tests_package_checks_as_appropriate"
       - "release_playbook"
       - "git_status_review"

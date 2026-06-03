@@ -389,7 +389,7 @@ scope: structure_and_stale_language
 Priority: P1
 Effort: L
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -421,6 +421,20 @@ remainder is routed to v0.1.9.x follow-on documentation.
 ### Verification
 
 Manual article review, link review, and remainder-disposition review.
+
+Completion note: completed after Claude review on 2026-06-03. The manual
+foundation now lives under `inst/design/manual/` with `README.qmd` and the first
+priority article, `execution_fold_core.qmd`; both render to sibling
+GitHub-flavored Markdown for repository browsing. The manual follows the local
+vignette styleguide shape where applicable, points to binding contracts, RFCs,
+ADRs, architecture notes, workbooks, and packet records, and records bounded
+remainder for observability/determinism, sweep, snapshots/data, features, and
+benchmark methodology. Claude review patches tightened exact target matching,
+callout rendering, strategy-state vocabulary, GitHub Markdown output, and
+release-gate routing of the five deferred families. No execution or API changes
+landed.
+Verification used manual source-link review, remainder-disposition review,
+stale next-batch scans, YAML parse review, and `git diff --check`.
 
 ### Source Reference
 
@@ -509,7 +523,7 @@ under `dev/bench/`.
 
 ### Tasks
 
-- Create `inst/design/manual/performance_arc_v0_1_8_x.md` or confirm a better
+- Create `inst/design/manual/performance_arc_v0_1_8_x.qmd` or confirm a better
   manual path.
 - Cover v0.1.8.7 Optimization Round 2, v0.1.8.8 diagnostics/parallel setup,
   v0.1.8.9 single-core optimization, and v0.1.8.10 substrate / B2 closeout.
@@ -668,6 +682,12 @@ remainder, and prepare the v0.1.8.11 merge/tag.
 - Packet is internally consistent and closed.
 - Release closeout exists if ticket execution warrants it.
 - No generated local artifacts are committed.
+- `Rscript tools/render-maintainer-manual.R` completes, and committed manual
+  Markdown siblings match the `.qmd` sources with no unexpected post-render
+  diff.
+- The five LDG-2532 deferred manual article families are explicitly routed to
+  v0.1.8.12 or v0.1.9.x follow-on tickets: observability/determinism, sweep,
+  snapshots/data, features, and benchmark methodology.
 - CI/release checks pass or accepted caveats are documented.
 
 ### Verification

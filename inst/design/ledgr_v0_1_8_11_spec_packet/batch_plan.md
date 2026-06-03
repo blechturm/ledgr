@@ -1,6 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 4 completed after review.
+**Status:** Active; Batch 5 completed after Claude review.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -147,7 +147,7 @@ contracts were broadened. Substantive work moves to Batch 5 / `LDG-2532`.
 ## Batch 5 - Maintainer Manual Foundation
 
 Ticket: `LDG-2532`
-Status: Planned
+Status: Completed
 
 Goal: author the first reviewed batches of internal maintainer manual prose.
 
@@ -158,6 +158,24 @@ Exit criteria:
 - At least the first prioritized article batch is reviewable.
 - Governance records remain authoritative and are linked.
 - Any incomplete article family has bounded follow-on disposition.
+
+Completion note:
+
+Batch 5 completed after Claude review on 2026-06-03. The `inst/design/manual/`
+foundation now contains `README.qmd` with article order, source map, and
+bounded remainder, plus `execution_fold_core.qmd` as the first priority
+execution/fold core article. The sources render to sibling GitHub-flavored
+Markdown for repository browsing. The article follows the local vignette
+styleguide shape where applicable: outcome first, one article job,
+scan-critical Quarto callouts, Mermaid diagram, shape-only illustrative strategy
+snippet, and a short "Where Next" close. It synthesizes the shared fold core,
+pulse lifecycle, output handlers, sealed-snapshot trust boundary, exact strategy
+target contract, determinism surfaces, and B2 scope guard while linking to
+binding contracts, RFCs, ADRs, architecture notes, workbooks, and packet
+records. Claude review patches tightened exact target matching, callout
+rendering, strategy-state vocabulary, GitHub Markdown output, and release-gate
+routing of the five deferred families. No execution or API changes landed.
+Substantive work moves to Batch 6 / `LDG-2533`.
 
 ## Batch 6 - User-Facing Documentation Refresh
 
@@ -234,6 +252,11 @@ Exit criteria:
 - Completed tickets have artifacts and verification notes.
 - Bounded remainder is routed to v0.1.8.12 or v0.1.9.x follow-on documentation
   if needed.
+- The five deferred manual article families from LDG-2532 are explicitly
+  routed: observability/determinism, sweep, snapshots/data, features, and
+  benchmark methodology.
+- `Rscript tools/render-maintainer-manual.R` completes and the committed
+  Markdown siblings have no unexpected drift from the Quarto sources.
 - NEWS, design index, roadmap, horizon, AGENTS.md, and release notes are updated
   as needed.
 - Relevant doc renders, targeted tests, full tests/package checks, and release

@@ -130,7 +130,8 @@ update this block when the next packet opens or scope changes materially):
   Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2 planning-doc
   housekeeping, and Batch 3 RFC decision-index work are complete after Claude
   review. Batch 4 `contracts.md` structure work is complete after Claude
-  review. Continue with LDG-2532, the maintainer manual foundation.
+  review. Batch 5 maintainer-manual foundation work is complete after Claude
+  review. Continue with LDG-2533, the user-facing documentation refresh.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.

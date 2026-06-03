@@ -84,3 +84,8 @@ inst/extdata/.DS_Store
 /.localappdata/
 /.tmp/
 /vignettes/.quarto/
+
+# Quarto build artifacts and its auto-generated nested .gitignore
+/inst/design/manual/.quarto/
+/inst/design/manual/_files/
+/inst/design/manual/.gitignore

@@ -176,8 +176,9 @@ documentation, structure, and cleanup release before v0.1.9 features. Tickets
 are cut; Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2
 planning-doc housekeeping, and Batch 3 RFC decision-index work are complete
 after Claude review. Batch 4 `contracts.md` structure work is complete after
-Claude review. The next substantive batch is LDG-2532, the maintainer manual
-foundation.
+Claude review. Batch 5 maintainer-manual foundation work is complete after
+Claude review. The next substantive batch is LDG-2533, the user-facing
+documentation refresh.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
@@ -412,6 +413,14 @@ paper/live interaction to later RFCs.
 - `maintainer_review/v0_1_8_7_optimization_round.qmd` - internal narrative
   review of the v0.1.8.7 optimization round. This is a maintainer review aid,
   not a benchmark contract or installed user documentation.
+
+## Maintainer Manual
+
+- `manual/README.qmd` / `manual/README.md` - internal maintainer-manual index
+  and bounded remainder.
+- `manual/execution_fold_core.qmd` - first maintainer-manual article for
+  execution and fold-core architecture. This is synthesis, not a replacement
+  for contracts, RFCs, ADRs, architecture notes, or packet records.
 
 ## ADRs
 

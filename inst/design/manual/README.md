@@ -1,0 +1,86 @@
+# ledgr Maintainer Manual
+
+
+**Status:** Internal maintainer manual.
+
+**Audience:** maintainers and coding agents.
+
+**Authority:** Synthesis only. Binding decisions remain in
+`../contracts.md`, `../rfc/README.md`, ADRs, architecture notes, and
+versioned spec packets.
+
+This directory turns the governance record into readable maintainer
+prose. It does not create new execution contracts, public API, release
+scope, or benchmark claims. When this manual disagrees with a contract,
+ADR, accepted RFC, or versioned packet, the governance artifact wins and
+this manual should be fixed.
+
+## Article Order
+
+The v0.1.8.11 manual foundation follows the priority order recorded in
+`../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`:
+
+1.  execution / fold core;
+2.  observability / determinism;
+3.  sweep;
+4.  snapshots/data;
+5.  features;
+6.  benchmark methodology.
+
+## Articles
+
+| Article | Source | Status | Scope |
+|----|----|----|----|
+| [`execution_fold_core.md`](execution_fold_core.md) | `execution_fold_core.qmd` | Reviewable first batch | Shared fold core, pulse lifecycle, output handlers, trust boundary, B2 guard, and maintainer checklist. |
+
+## Bounded Remainder
+
+The following article families remain planned but incomplete in this
+foundation batch:
+
+- observability / determinism: error wrapping, telemetry, replay
+  invariants, `ctx$pulse_seed`, parallel/resume determinism, and
+  collapse determinism gate;
+- sweep: sweep architecture, promotion/reproduction, parallel dispatch,
+  memory output handler, and B2 memory-backed opt-in boundaries;
+- snapshots/data: snapshot sealing, hash verification, snapshot/run
+  database split, and low-level snapshot adapter boundaries;
+- features: feature value path, cache/projection, indicator contract,
+  `series_fn`, TTR adapter semantics, and feature-map/alias contracts;
+- benchmark methodology: repo-local measurement records, workload-grid
+  interpretation, peer-benchmark caveats, and public-claim boundaries.
+
+If v0.1.8.11 cannot complete all article families, the release gate
+should route the remainder to v0.1.8.12 or a v0.1.9.x documentation
+follow-on rather than widening implementation scope.
+
+## Rendered Output
+
+Manual articles use Quarto source and render to sibling GitHub-flavored
+Markdown. Commit both forms so maintainers and coding agents can read
+the same content in plain text, while GitHub can render `README.md` as
+the browsable directory landing page.
+
+Run this after changing any manual `.qmd` source:
+
+``` powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" tools/render-maintainer-manual.R
+```
+
+The render helper updates article siblings, renders `README.qmd`
+explicitly as the GitHub directory landing page, and normalizes Mermaid
+fences for GitHub.
+
+## Source Map
+
+Start with these binding or source-of-truth documents before revising
+manual articles:
+
+- `../contracts.md`
+- `../rfc/README.md`
+- `../adr/0005-b2-spot-fifo-scope-guard.md`
+- `../architecture/fold_core_trust_boundary.md`
+- `../maintainer_review/fold_core_workbook.qmd`
+- `../maintainer_review/feature_value_path_workbook.qmd`
+- `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`
+- `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`
