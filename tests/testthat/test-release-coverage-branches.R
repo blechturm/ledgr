@@ -8,12 +8,20 @@ testthat::test_that("timing helpers handle numeric and difftime paths", {
   testthat::expect_equal(ledgr:::ledgr_time_elapsed(start, end), 2)
 })
 
-testthat::test_that("coverage helper retries transient collection failures", {
-  coverage_script <- file.path("tools", "check-coverage.R")
-  if (!file.exists(coverage_script)) {
-    coverage_script <- file.path("..", "..", "tools", "check-coverage.R")
+ledgr_test_coverage_script <- function() {
+  candidates <- c(
+    file.path("tools", "check-coverage.R"),
+    file.path(Sys.getenv("GITHUB_WORKSPACE", ""), "tools", "check-coverage.R"),
+    file.path("..", "..", "tools", "check-coverage.R")
+  )
+  for (candidate in candidates) {
+    if (nzchar(candidate) && file.exists(candidate)) return(candidate)
   }
-  source(coverage_script)
+  testthat::skip("coverage helper source unavailable in installed-package test context")
+}
+
+testthat::test_that("coverage helper retries transient collection failures", {
+  source(ledgr_test_coverage_script())
 
   attempts <- 0L
   coverage <- ledgr_collect_coverage(
@@ -30,11 +38,7 @@ testthat::test_that("coverage helper retries transient collection failures", {
 })
 
 testthat::test_that("coverage helper fails after retry budget is exhausted", {
-  coverage_script <- file.path("tools", "check-coverage.R")
-  if (!file.exists(coverage_script)) {
-    coverage_script <- file.path("..", "..", "tools", "check-coverage.R")
-  }
-  source(coverage_script)
+  source(ledgr_test_coverage_script())
 
   testthat::expect_error(
     ledgr_collect_coverage(
