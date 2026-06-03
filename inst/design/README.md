@@ -178,8 +178,9 @@ planning-doc housekeeping, and Batch 3 RFC decision-index work are complete
 after Claude review. Batch 4 `contracts.md` structure work is complete after
 Claude review. Batch 5 maintainer-manual foundation work is complete after
 Claude review. Batch 6 user-facing documentation refresh work is complete after
-Claude review. The next substantive batch is LDG-2534, the performance arc
-narrative.
+Claude review. Batch 7 performance arc narrative work is complete after Claude
+review. The next substantive batch is LDG-2535, the research software
+disclaimer surface.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.

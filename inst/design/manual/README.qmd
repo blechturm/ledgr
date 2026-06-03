@@ -31,6 +31,7 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | Article | Source | Status | Scope |
 | --- | --- | --- | --- |
 | [`execution_fold_core.md`](execution_fold_core.md) | `execution_fold_core.qmd` | Reviewable first batch | Shared fold core, pulse lifecycle, output handlers, trust boundary, B2 guard, and maintainer checklist. |
+| [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
 
 ## Bounded Remainder
 
@@ -45,8 +46,9 @@ batch:
   split, and low-level snapshot adapter boundaries;
 - features: feature value path, cache/projection, indicator contract,
   `series_fn`, TTR adapter semantics, and feature-map/alias contracts;
-- benchmark methodology: repo-local measurement records, workload-grid
-  interpretation, peer-benchmark caveats, and public-claim boundaries.
+- benchmark methodology beyond the v0.1.8.7 to v0.1.8.10 arc: future
+  record-generation workflow, repeatability expectations, and release-gate
+  benchmark checks.
 
 If v0.1.8.11 cannot complete all article families, the release gate should
 route the remainder to v0.1.8.12 or a v0.1.9.x documentation follow-on rather
@@ -79,5 +81,9 @@ articles:
 - `../architecture/fold_core_trust_boundary.md`
 - `../maintainer_review/fold_core_workbook.qmd`
 - `../maintainer_review/feature_value_path_workbook.qmd`
+- `../ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
+- `../ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md`
+- `../ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`
+- `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`
 - `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`

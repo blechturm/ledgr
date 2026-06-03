@@ -132,7 +132,9 @@ update this block when the next packet opens or scope changes materially):
   review. Batch 4 `contracts.md` structure work is complete after Claude
   review. Batch 5 maintainer-manual foundation work is complete after Claude
   review. Batch 6 user-facing documentation refresh work is complete after
-  Claude review. Continue with LDG-2534, the performance arc narrative.
+  Claude review. Batch 7 performance arc narrative work is complete after
+  Claude review. Continue with LDG-2535, the research software disclaimer
+  surface.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.

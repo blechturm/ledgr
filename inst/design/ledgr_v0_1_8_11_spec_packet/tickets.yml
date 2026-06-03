@@ -115,7 +115,7 @@ tickets:
 
   - id: "LDG-2534"
     title: "Performance Arc Narrative"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:

@@ -1,6 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 6 completed after Claude review.
+**Status:** Active; Batch 7 completed after Claude review.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -217,7 +217,7 @@ moves to Batch 7 / `LDG-2534`.
 ## Batch 7 - Performance Arc Narrative
 
 Ticket: `LDG-2534`
-Status: Planned
+Status: Completed
 
 Goal: write an internal teaching narrative for the v0.1.8.7-v0.1.8.10
 performance arc.
@@ -229,6 +229,20 @@ Exit criteria:
 - The article links to packet and benchmark artifacts.
 - Local/current-source/machine-specific caveats are explicit.
 - No public speed-claim marketing language appears.
+
+Completion note:
+
+Batch 7 completed after Claude review on 2026-06-03. Added
+`inst/design/manual/performance_arc_v0_1_8_x.qmd` and rendered sibling
+Markdown. The article explains the v0.1.8.7 to v0.1.8.10 performance arc as an
+internal maintainer synthesis, links to benchmark and packet closeout artifacts
+instead of copying raw local records, separates canonical R, memory-backed,
+durable, peer, and B2 spot-FIFO opt-in surfaces, and preserves
+same-host/current-source/machine-specific caveats. The manual index now includes
+the article and routes remaining benchmark-methodology work to future
+record-generation/release-gate details. No public speed-claim marketing or
+execution/API change landed. Substantive work moves to Batch 8 / `LDG-2535`
+after Claude review.
 
 ## Batch 8 - Research Software Disclaimer Surface
 

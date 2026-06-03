@@ -532,7 +532,7 @@ scope: post_b2_refresh
 Priority: P1
 Effort: M
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -561,6 +561,16 @@ under `dev/bench/`.
 ### Verification
 
 Manual narrative review, benchmark-link review, and claim-language review.
+
+Completion note: completed after Claude review on 2026-06-03. Added
+`inst/design/manual/performance_arc_v0_1_8_x.qmd` and rendered
+`performance_arc_v0_1_8_x.md`. The narrative covers the v0.1.8.7 to v0.1.8.10
+window, links to `dev/bench/` and packet closeout artifacts, separates
+canonical R, memory-backed, durable, peer, and B2 spot-FIFO opt-in surfaces,
+and makes local/current-source/machine-specific caveats explicit. Public
+speed-ranking language is intentionally absent. The manual README now includes
+the article and narrows the remaining benchmark-methodology family to future
+record-generation and release-gate details.
 
 ### Source Reference
 
