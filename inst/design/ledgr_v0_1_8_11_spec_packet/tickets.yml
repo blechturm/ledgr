@@ -67,7 +67,7 @@ tickets:
 
   - id: "LDG-2531"
     title: "contracts.md Structure Pass"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:

@@ -129,10 +129,11 @@ update this block when the next packet opens or scope changes materially):
   narrative, and horizon/roadmap/design-index housekeeping. Tickets are cut;
   Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2 planning-doc
   housekeeping, and Batch 3 RFC decision-index work are complete after Claude
-  review. Continue with LDG-2531, the `contracts.md` structure pass. Preserve
-  the packet's no execution/API, target-risk, OMS, walk-forward, cost/liquidity,
-  durable compiled, non-spot compiled, and public benchmark-claim
-  implementation boundary.
+  review. Batch 4 `contracts.md` structure work is complete after Claude
+  review. Continue with LDG-2532, the maintainer manual foundation.
+  Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
+  cost/liquidity, durable compiled, non-spot compiled, and public
+  benchmark-claim implementation boundary.
 
 ## Active Design Entry Points
 

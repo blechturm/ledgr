@@ -175,8 +175,9 @@ The active planning packet is v0.1.8.11. Per the roadmap, it is a
 documentation, structure, and cleanup release before v0.1.9 features. Tickets
 are cut; Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2
 planning-doc housekeeping, and Batch 3 RFC decision-index work are complete
-after Claude review. The next substantive batch is LDG-2531, the `contracts.md`
-structure pass.
+after Claude review. Batch 4 `contracts.md` structure work is complete after
+Claude review. The next substantive batch is LDG-2532, the maintainer manual
+foundation.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.

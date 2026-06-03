@@ -327,7 +327,7 @@ scope: decision_discoverability
 Priority: P1
 Effort: M
 Dependencies: LDG-2528
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -356,6 +356,18 @@ routes a fix-now contract cleanup or structure pass.
 
 Diff-to-audit traceability review, stale-term `rg` checks, and manual contract
 review.
+
+Completion note: completed after Claude review on 2026-06-03. `contracts.md`
+edits are limited to the five fix-now findings in `contracts_audit.md`:
+C-001 active packet pointer, C-002 fold-entry guard tense, C-003 R6 / legacy
+strategy wording, C-004 removed context helper tense, and C-005 historical CI
+wording. No execution semantics or public APIs changed, and the B2 scope guard,
+durable compiled deferral, one-fold-core rule, and non-scope feature
+boundaries remain intact. Claude review patches restored the committed-run
+recompute/compare and sweep-hash-provenance guard mechanisms, kept R6 in the
+static-analysis caveat, and tightened the lead paragraph's README/spec-packet
+authority wording. Verification used diff-to-audit traceability review,
+stale-term `rg` checks, YAML parse review, and `git diff --check`.
 
 ### Source Reference
 

@@ -1,6 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 3 completed after review.
+**Status:** Active; Batch 4 completed after review.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -120,7 +120,7 @@ was rewritten as replacement authority. Substantive work moves to Batch 4 /
 ## Batch 4 - contracts.md Structure Pass
 
 Ticket: `LDG-2531`
-Status: Planned
+Status: Completed
 
 Goal: consume `contracts_audit.md` and clean / structure `contracts.md` only
 where the audit routes fix-now work.
@@ -131,6 +131,18 @@ Exit criteria:
 - No existing contract is weakened silently.
 - Semantic bugs are routed to later tickets/RFCs, not fixed incidentally.
 - Post-v0.1.8.10 surfaces remain clearly separated.
+
+Completion note:
+
+Batch 4 completed after Claude review on 2026-06-03. `contracts.md` edits trace
+only to C-001 through C-005 in `contracts_audit.md`: active packet pointer,
+fold-entry guard tense, R6 / legacy strategy wording, removed context helper
+tense, and historical CI wording. Claude review patches restored the
+committed-run recompute/compare and sweep-hash-provenance guard mechanisms,
+kept R6 in the static-analysis caveat, and tightened the lead paragraph's
+README/spec-packet authority wording. No execution semantics, public API,
+compiled-accounting scope, target-risk, OMS, walk-forward, or cost/liquidity
+contracts were broadened. Substantive work moves to Batch 5 / `LDG-2532`.
 
 ## Batch 5 - Maintainer Manual Foundation
 
