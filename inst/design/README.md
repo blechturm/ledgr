@@ -180,8 +180,9 @@ Claude review. Batch 5 maintainer-manual foundation work is complete after
 Claude review. Batch 6 user-facing documentation refresh work is complete after
 Claude review. Batch 7 performance arc narrative work is complete after Claude
 review. Batch 8 research software disclaimer surface work is complete after
-Claude review. The next substantive batch is LDG-2536, the generated docs and
-man-page audit.
+Claude review. Batch 9 generated docs and man-page audit work is complete after
+Claude review. LDG-2539 was added to consume the generated-doc audit findings.
+The next substantive batch is LDG-2539, generated docs stale-language cleanup.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.

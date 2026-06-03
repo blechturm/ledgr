@@ -276,7 +276,7 @@ Batch 9 / `LDG-2536`.
 ## Batch 9 - Generated Docs And Man-Page Audit
 
 Ticket: `LDG-2536`
-Status: Planned
+Status: Completed
 
 Goal: audit generated docs and man pages for stale language and route fixes.
 
@@ -289,6 +289,37 @@ Exit criteria:
 - Generated artifact churn only follows source-doc changes.
 - Any required doc-render checks are identified.
 
+Completion note:
+
+Batch 9 completed after Claude review on 2026-06-04. Added
+`generated_docs_audit.md`, covering `man/`, absent `inst/doc/`, and
+`vignettes/`. The audit routes stale version-pinned vignette/Roxygen language,
+Claude's rendered-vignette live-output drift finding, and source/generated
+traceability expectations without changing generated artifacts. Claude approved
+the routing artifact and recommended a separate consuming ticket; LDG-2539 now
+consumes GD-001 through GD-008.
+
+## Batch 9.5 - Generated Docs Stale-Language Cleanup
+
+Ticket: `LDG-2539`
+Status: Planned
+
+Goal: consume the source-doc cleanup and render-drift process findings from
+`generated_docs_audit.md`.
+
+Exit criteria:
+
+- GD-001 through GD-007 are fixed through source docs, not direct generated
+  artifact edits.
+- GD-008 is consumed by a documented render-drift discipline or explicitly
+  routed forward with rationale.
+- Affected `.Rd` and `.md` artifacts are regenerated/rendered only from changed
+  sources.
+- `rg` checks show the stale version-pinned language no longer appears except
+  where intentionally retained as runtime migration diagnostics.
+- Generated artifact diffs match source intent; unrelated live-output drift is
+  reverted or separately routed.
+
 ## Batch 10 - inst/ Subdirectory Audit And Cleanup
 
 Ticket: `LDG-2538`
@@ -297,9 +328,9 @@ Status: Planned
 Goal: inventory `inst/design/architecture/`,
 `inst/design/maintainer_review/`, `inst/diagrams/`, `inst/examples/`,
 `inst/schemas/`, and `inst/testdata/`, and route stale or unreferenced files to
-deletion, gitignore, manual migration, or retention. Runs in parallel with
-Batch 9 / `LDG-2536`; both are audit batches before the release gate. Ordering
-between the two is by convenience.
+deletion, gitignore, manual migration, or retention. Runs after or in parallel
+with Batch 9.5 / `LDG-2539` by convenience; both must close before the release
+gate.
 
 Exit criteria:
 
@@ -330,6 +361,8 @@ Exit criteria:
 - The five deferred manual article families from LDG-2532 are explicitly
   routed: observability/determinism, sweep, snapshots/data, features, and
   benchmark methodology.
+- LDG-2539 generated-doc cleanup findings are consumed or explicitly routed
+  forward with source/generated traceability preserved.
 - LDG-2538 `inst_audit.md` findings are consumed or routed forward with the
   binding-path constraint preserved.
 - `Rscript tools/render-maintainer-manual.R` completes and the committed

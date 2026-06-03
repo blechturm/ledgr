@@ -146,7 +146,7 @@ tickets:
 
   - id: "LDG-2536"
     title: "Generated Docs And Man-Page Audit"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -178,6 +178,23 @@ tickets:
       - "full_tests_after_cleanup"
       - "package_check_after_cleanup"
 
+  - id: "LDG-2539"
+    title: "Generated Docs Stale-Language Cleanup"
+    status: "planned"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2536"
+    classification:
+      type: "documentation_cleanup"
+      surface: "generated_docs_and_vignettes"
+      scope: "stale_language_and_render_drift"
+    tests:
+      - "stale_term_rg_checks"
+      - "source_generated_doc_traceability"
+      - "targeted_doc_render_regeneration_checks"
+      - "live_output_drift_diff_review"
+
   - id: "LDG-2537"
     title: "v0.1.8.11 Release Gate"
     status: "planned"
@@ -195,6 +212,7 @@ tickets:
       - "LDG-2535"
       - "LDG-2536"
       - "LDG-2538"
+      - "LDG-2539"
     classification:
       type: "release_gate"
       surface: "release_process"

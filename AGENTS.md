@@ -134,8 +134,9 @@ update this block when the next packet opens or scope changes materially):
   review. Batch 6 user-facing documentation refresh work is complete after
   Claude review. Batch 7 performance arc narrative work is complete after
   Claude review. Batch 8 research software disclaimer surface work is complete
-  after Claude review. Continue with LDG-2536, the generated docs and man-page
-  audit.
+  after Claude review. Batch 9 generated docs and man-page audit work is
+  complete after Claude review. LDG-2539 was added to consume the generated-doc
+  audit findings. Continue with LDG-2539, generated docs stale-language cleanup.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.

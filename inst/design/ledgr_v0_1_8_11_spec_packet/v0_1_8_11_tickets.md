@@ -2,7 +2,7 @@
 
 Version: v0.1.8.11
 Date: 2026-06-03
-Total Tickets: 12
+Total Tickets: 13
 
 ## Ticket Organization
 
@@ -23,14 +23,17 @@ packet alignment
                  -> user-facing documentation refresh
                     -> performance-arc narrative
                        -> disclaimer surface
-                          -> audits (generated docs / man-page; inst/ subdirs)
-                             -> release gate
+                          -> generated-doc audit
+                             -> generated-doc cleanup
+                                -> inst/ subdir audit
+                                   -> release gate
 ```
 
 Ticket IDs start at `LDG-2527` because `LDG-2517` through `LDG-2526` were used
 by the v0.1.8.10 packet. `LDG-2538` was inserted after the initial ticket cut
 to scope the `inst/` subdirectory cleanup; it runs in parallel with `LDG-2536`
-before the release gate.
+before the release gate. `LDG-2539` was inserted after Batch 9 review to
+consume the generated-doc audit findings without reopening the audit ticket.
 
 ## Dependency DAG
 
@@ -45,6 +48,7 @@ LDG-2527 Packet Alignment And v0.1.8.11 Ticket Cut
   |-- LDG-2534 Performance Arc Narrative
   |-- LDG-2535 Research Software Disclaimer Surface
   |-- LDG-2536 Generated Docs And Man-Page Audit
+  |     `-- LDG-2539 Generated Docs Stale-Language Cleanup
   |-- LDG-2538 inst/ Subdirectory Audit And Cleanup
   `-- LDG-2537 v0.1.8.11 Release Gate
 ```
@@ -651,7 +655,7 @@ scope: financial_research_software
 Priority: P2
 Effort: M
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -679,6 +683,14 @@ left behind during the v0.1.8.x arc.
 Manual audit review, stale-term `rg` checks, and source/generated-doc
 traceability review.
 
+Completion note: Batch 9 completed after Claude review on 2026-06-04. Added
+`generated_docs_audit.md`, covering `man/`, absent `inst/doc/`, and
+`vignettes/`. Findings route stale version-pinned vignette/Roxygen language,
+the rendered-vignette live-output drift process issue, and source/generated
+traceability expectations. No generated documentation artifacts were changed.
+Claude approved the routing artifact and recommended a separate consuming
+ticket; LDG-2539 now consumes GD-001 through GD-008.
+
 ### Source Reference
 
 - `man/`
@@ -691,6 +703,67 @@ traceability review.
 type: audit
 surface: generated_docs
 scope: stale_help_language
+```
+
+---
+
+## LDG-2539: Generated Docs Stale-Language Cleanup
+
+Priority: P2
+Effort: M
+Dependencies: LDG-2536
+Status: Planned
+
+### Description
+
+Consume the source-doc cleanup and render-drift process findings from
+`generated_docs_audit.md` without reopening the audit ticket.
+
+### Tasks
+
+- Fix GD-001 through GD-003 in vignette `.qmd` sources and render the matching
+  tracked `.md` siblings.
+- Fix GD-004 through GD-007 in Roxygen source and regenerate the affected
+  `man/*.Rd` files.
+- Consume GD-008 with a documented render-drift discipline, or explicitly route
+  it forward with rationale if the process fix should wait.
+- Re-run stale-term `rg` checks from `generated_docs_audit.md`.
+- Confirm generated artifact diffs match source intent and revert unrelated
+  live-output drift.
+
+### Acceptance Criteria
+
+- GD-001 through GD-007 no longer appear in stale-term scans except where
+  intentionally retained as runtime migration diagnostics.
+- GD-008 is consumed or explicitly routed forward.
+- `.Rd` changes trace to Roxygen source changes.
+- Rendered `.md` changes trace to `.qmd` source changes.
+- No execution semantics, API, target-risk, OMS, walk-forward, cost/liquidity,
+  durable compiled, non-spot compiled, or public benchmark-claim work lands.
+
+### Verification
+
+Stale-term `rg` checks, source/generated traceability review, targeted doc
+render/regeneration checks, and git diff review for unrelated live-output drift.
+
+### Source Reference
+
+- `generated_docs_audit.md`
+- `R/backtest.R`
+- `R/experiment.R`
+- `R/param-grid.R`
+- `R/sweep.R`
+- `vignettes/research-to-production.qmd`
+- `vignettes/reproducibility.qmd`
+- `vignettes/experiment-store.qmd`
+- `tools/render-vignettes-gfm.R`
+
+### Classification
+
+```yaml
+type: documentation_cleanup
+surface: generated_docs_and_vignettes
+scope: stale_language_and_render_drift
 ```
 
 ---
@@ -711,8 +784,8 @@ into the maintainer manual, or retention as load-bearing source. Produce the
 audit report first; apply deletions and migrations only after the audit is
 reviewed.
 
-Runs in parallel with `LDG-2536`; both are audit batches before the release
-gate. Ordering between the two is by convenience.
+Runs after or in parallel with `LDG-2539` by convenience; both must close before
+the release gate.
 
 ### Tasks
 
@@ -779,7 +852,7 @@ scope: stale_file_cleanup_and_migration
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2527, LDG-2528, LDG-2529, LDG-2530, LDG-2531, LDG-2532, LDG-2533, LDG-2534, LDG-2535, LDG-2536, LDG-2538
+Dependencies: LDG-2527, LDG-2528, LDG-2529, LDG-2530, LDG-2531, LDG-2532, LDG-2533, LDG-2534, LDG-2535, LDG-2536, LDG-2538, LDG-2539
 Status: Planned
 
 ### Description
@@ -808,6 +881,9 @@ remainder, and prepare the v0.1.8.11 merge/tag.
 - The five LDG-2532 deferred manual article families are explicitly routed to
   v0.1.8.12 or v0.1.9.x follow-on tickets: observability/determinism, sweep,
   snapshots/data, features, and benchmark methodology.
+- The LDG-2539 generated-doc cleanup findings are consumed, or the unfinished
+  remainder is explicitly routed to v0.1.8.12 / v0.1.9.x with
+  source/generated traceability preserved.
 - The LDG-2538 `inst_audit.md` findings are consumed: approved deletions,
   gitignores, and migrations have landed, or the unfinished remainder is
   explicitly routed to v0.1.8.12 / v0.1.9.x with the binding-path constraint
