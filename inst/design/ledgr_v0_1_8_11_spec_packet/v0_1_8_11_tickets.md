@@ -461,7 +461,7 @@ scope: architecture_synthesis
 Priority: P1
 Effort: L
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -494,6 +494,21 @@ why R remains credible for ledgr's target workload.
 
 Doc render or targeted vignette checks as appropriate, link review, and
 scope-language review.
+
+Completion note: completed after Claude review on 2026-06-03. Refreshed the required
+first-pass surfaces: `README.md`, strategy development, research workflow,
+sweeps, who-ledgr-is-for, and why R. The strategy article now demonstrates
+`ctx$idx()`, `ctx$vec`, and `ctx$vec$feature(feature_id)`; workflow and sweeps
+now describe memory-backed sweep as compact candidate evidence with durable
+materialization at promotion; sweeps and README name B2 only as explicit
+`compiled_accounting_model = "spot_fifo"` memory-backed spot-FIFO opt-in with
+canonical R as the default; audience / why-R surfaces explain the performance
+arc without public speed-claim marketing. Pass 2 helper extensions remain
+deferred. Claude's blocker on rendered GFM callout drift was resolved with
+`tools/render-vignettes-gfm.R`, which keeps pkgdown-safe source callouts and
+normalizes rendered Markdown callouts to GitHub admonitions. Verification used
+targeted Quarto GFM renders with explicit R library paths, stale-version and
+scope-language scans, rendered-output inspection, and `git diff --check`.
 
 ### Source Reference
 

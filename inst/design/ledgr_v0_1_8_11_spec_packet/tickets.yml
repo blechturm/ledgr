@@ -99,7 +99,7 @@ tickets:
 
   - id: "LDG-2533"
     title: "User-Facing Documentation Refresh"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:

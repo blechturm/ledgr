@@ -131,7 +131,8 @@ update this block when the next packet opens or scope changes materially):
   housekeeping, and Batch 3 RFC decision-index work are complete after Claude
   review. Batch 4 `contracts.md` structure work is complete after Claude
   review. Batch 5 maintainer-manual foundation work is complete after Claude
-  review. Continue with LDG-2533, the user-facing documentation refresh.
+  review. Batch 6 user-facing documentation refresh work is complete after
+  Claude review. Continue with LDG-2534, the performance arc narrative.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.

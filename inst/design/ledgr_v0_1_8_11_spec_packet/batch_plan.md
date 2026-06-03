@@ -1,6 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 5 completed after Claude review.
+**Status:** Active; Batch 6 completed after Claude review.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -180,7 +180,7 @@ Substantive work moves to Batch 6 / `LDG-2533`.
 ## Batch 6 - User-Facing Documentation Refresh
 
 Ticket: `LDG-2533`
-Status: Planned
+Status: Completed
 
 Goal: refresh first-pass user-facing docs for post-v0.1.8.10 strategy accessors,
 sweep economics, and B2 boundaries.
@@ -194,6 +194,25 @@ Exit criteria:
 - Pass 2 strategy helpers remain deferred.
 - B2 is not described as default, durable, non-spot, or general compiled
   execution.
+
+Completion note:
+
+Batch 6 completed after Claude review on 2026-06-03. Refreshed `README.md`,
+`vignettes/strategy-development.qmd`, `vignettes/research-workflow.qmd`,
+`vignettes/sweeps.qmd`, `vignettes/articles/who-ledgr-is-for.qmd`, and
+`vignettes/articles/why-r.qmd`. Rendered tracked GFM siblings for
+`strategy-development`, `research-workflow`, and `sweeps`; article-subdirectory
+renders were used as verification only because those Markdown outputs are not
+tracked. Claude's blocker on GFM callout drift was resolved by adding
+`tools/render-vignettes-gfm.R`, which preserves pkgdown-safe source callouts
+and normalizes rendered Markdown callouts back to GitHub admonitions. The
+refresh teaches `ctx$idx()`, `ctx$vec`, and
+`ctx$vec$feature(feature_id)`, describes memory-backed sweep economics, removes
+stale sweep-helper/version wording, and names B2 only as explicit
+`ledgr_sweep(..., compiled_accounting_model = "spot_fifo")` memory-backed
+spot-FIFO opt-in. No public helper API, execution semantics, durable compiled,
+non-spot compiled, or general compiled fold-core scope landed. Substantive work
+moves to Batch 7 / `LDG-2534`.
 
 ## Batch 7 - Performance Arc Narrative
 

@@ -177,8 +177,9 @@ are cut; Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2
 planning-doc housekeeping, and Batch 3 RFC decision-index work are complete
 after Claude review. Batch 4 `contracts.md` structure work is complete after
 Claude review. Batch 5 maintainer-manual foundation work is complete after
-Claude review. The next substantive batch is LDG-2533, the user-facing
-documentation refresh.
+Claude review. Batch 6 user-facing documentation refresh work is complete after
+Claude review. The next substantive batch is LDG-2534, the performance arc
+narrative.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.

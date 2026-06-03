@@ -50,6 +50,14 @@ ledgr shows the strategy only what could have been known at that time.
 The strategy answers with desired holdings. ledgr records the decision,
 applies the fill model, and moves to the next pulse.
 
+Sweep execution can opt into the scoped spot-FIFO accelerator with
+`ledgr_sweep(..., compiled_accounting_model = "spot_fifo")`. This
+changes the memory-backed accounting hot frame only; the strategy still
+receives the same `ctx`, returns the same full named target vector, and
+`NULL` remains the canonical R default. Committed `ledgr_run()`
+artifacts keep the durable R path until a separate durable
+compiled-integration gate lands.
+
 This matters because leakage is easy. If future information enters a
 historical decision, the backtest can look profitable for the wrong
 reason. ledgr’s strategy interface is built to make one common mistake
@@ -116,6 +124,7 @@ With that boundary in mind, start with the simplest possible strategy.
 > positions, cash, and equity. It is deliberately not the full future
 > dataset.
 
+
 It contains the current timestamp, current bars, current features,
 current positions, cash, equity, and small helper functions for
 accessing those values. It is deliberately not the full dataset.
@@ -124,10 +133,14 @@ accessing those values. It is deliberately not the full dataset.
 |----|----|
 | `ctx$ts_utc` | current decision timestamp |
 | `ctx$universe` | instruments in the run |
+| `ctx$idx(id)` | 1-based universe position for one instrument |
 | `ctx$open(id)`, `ctx$close(id)` | current bar values for one instrument |
+| `ctx$vec$close` | current close values for the full universe |
 | `ctx$feature(id, feature_id)` | current indicator value for one instrument by engine feature ID |
+| `ctx$vec$feature(feature_id)` | current indicator values for the full universe by engine feature ID |
 | `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias, using the supplied feature map |
 | `ctx$position(id)` | current simulated position |
+| `ctx$vec$positions` | current simulated positions aligned to `ctx$universe` |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
 | `ctx$flat()` | target zero positions unless changed |
 | `ctx$hold()` | target current positions unless changed |
@@ -138,7 +151,7 @@ The pulse loop is the contract in motion:
 
 <div class="ledgr-diagram ledgr-pulse-loop">
 
-``` mermaid
+```mermaid
 
 flowchart TB
   state_t["pulse t state<br/>bars through t<br/>positions, cash, equity"]
@@ -215,8 +228,8 @@ produces the full-universe shape with every entry at zero.
 >
 > A target vector is the strategy’s requested holdings for the full
 > universe at one pulse. It is named by instrument ID, numeric, and
-> complete. It is not an order list, a signal table, or a partial
-> update.
+> complete. It is not an order list, a signal table, or a partial update.
+
 
 The deeper mental model is that a strategy is a **policy**, not a
 sequence of orders. At each pulse, it declares a desired state: “I want
@@ -232,10 +245,11 @@ That distinction keeps strategies free from execution-state bookkeeping.
 > Raw target vectors are desired holdings. ledgr does not check
 > affordability before filling them; if a target requires more cash than
 > the simulated portfolio has, the run can fill anyway and cash can go
-> negative. Use `target_rebalance(equity_fraction = ...)` or size
-> directly from `ctx$cash` and `ctx$equity` when you need capital-aware
-> targets. The planned v0.1.9 target-risk layer is the home for
-> chainable long-only, max-weight, and capital-floor constraints.
+> negative. Use `target_rebalance(equity_fraction = ...)` or size directly
+> from `ctx$cash` and `ctx$equity` when you need capital-aware targets.
+> The planned v0.1.9 target-risk layer is the home for chainable
+> long-only, max-weight, and capital-floor constraints.
+
 
 ## A First Trading Rule
 
@@ -282,6 +296,7 @@ once. The later sections make that transition.
 > `ctx$flat()`. Which positions would persist after a down bar, and why
 > does that change the economic meaning of the strategy?
 
+
 ## Why `params` Exists
 
 > [!NOTE]
@@ -291,6 +306,7 @@ once. The later sections make that transition.
 > `params` is the run’s strategy configuration. Put research choices you
 > want to compare, store, or sweep into `params`; do not hide them in
 > globals or inside feature declarations.
+
 
 Hard-coded constants make experiments awkward. Parameters let one
 economic idea run under different assumptions.
@@ -385,6 +401,28 @@ pulse$hold()
 #>       0       0
 ```
 
+The scalar accessors are easiest when you are writing or debugging a
+rule for one instrument. Cross-sectional rules should usually switch to
+the vector accessors once the contract is clear:
+
+``` r
+pulse$idx("DEMO_01")
+#> [1] 1
+pulse$vec$close
+#> [1] 106.50526  68.03192
+pulse$vec$feature("return_5")
+#> [1] 0.085318770 0.004018771
+```
+
+`ctx$idx(id)` gives the instrument’s position in `ctx$universe`. Values
+in `ctx$vec$close`, `ctx$vec$positions`, and
+`ctx$vec$feature(feature_id)` use that same order, so a strategy can
+score the whole universe without repeating scalar lookups. By default,
+`ctx$idx(id)` also fails loudly for an unknown instrument; use its
+`missing` argument only when a deliberate `NA` path is part of the rule.
+The vector feature accessor still uses exact engine feature IDs: warmup
+for a known feature is `NA`, while an unknown feature ID fails loudly.
+
 The same pulse can also be viewed as one wide row. This is useful when
 you want to see prices, portfolio state, and computed features together.
 
@@ -428,7 +466,9 @@ The economic idea:
 
 `signal_return()` is a thin helper around the same feature you inspected
 above: it reads `return_N` for every instrument in the pulse and returns
-one universe-wide signal object.
+one universe-wide signal object. It uses the vector accessor
+`ctx$vec$feature(feature_id)` when available, then falls back to the
+scalar `ctx$feature(id, feature_id)` path for compatibility.
 
 The helper pipeline has four stages:
 
@@ -479,8 +519,9 @@ target
 ```
 
 `target_rebalance()` sizes with current pulse equity and current close
-prices, then floors to whole shares. For the selected `DEMO_01` pulse
-above, 10% of equity is allocated to the one selected instrument:
+prices, using `ctx$vec$close` when available, then floors to whole
+shares. For the selected `DEMO_01` pulse above, 10% of equity is
+allocated to the one selected instrument:
 
 ``` r
 raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
@@ -568,6 +609,13 @@ The examples above keep the exact feature ID contract visible:
 `ctx$feature(id, feature_id)` reads one registered feature for one
 instrument at one pulse. That contract remains the foundation.
 
+For cross-sectional strategies, `ctx$vec$feature(feature_id)` returns
+the same feature at the same pulse for every instrument in
+`ctx$universe`. Warmup for a known feature remains `NA`; an unknown
+feature ID fails loudly. The scalar helper stays the clearest teaching
+surface, while the vector helper is the lower-overhead surface for
+universe-wide scoring.
+
 When a strategy reads several features per instrument, repeating feature
 ID strings can obscure the trading idea. A feature map bundles indicator
 objects with strategy-facing aliases. The same object can be registered
@@ -623,9 +671,9 @@ Plain `features = list(...)` remains valid. Use it when exact IDs are
 clearest. Use a feature map when aliases make a feature-heavy strategy
 easier to read. `ledgr_experiment(features = ...)` accepts indicators,
 lists, named lists, and feature maps. The strategy context then uses
-either the exact-ID scalar accessor `ctx$feature()` or the mapped
-accessor `ctx$features()`. When in doubt, prefer the experiment-first
-workflow.
+either the exact-ID scalar accessor `ctx$feature()`, the exact-ID vector
+accessor `ctx$vec$feature()`, or the mapped accessor `ctx$features()`.
+When in doubt, prefer the experiment-first workflow.
 
 ``` r
 mapped_exp <- ledgr_experiment(
@@ -813,7 +861,7 @@ The helper pipeline is only an authoring layer:
 
 <div class="ledgr-diagram ledgr-helper-pipeline">
 
-``` mermaid
+```mermaid
 
 flowchart LR
   signal["ledgr_signal"]
@@ -896,10 +944,11 @@ function to target quantities. For the full tier model, read
 >
 > ### Definition
 >
-> A preflight tier is ledgr’s static reproducibility classification for
-> a strategy function. Tier 1 is self-contained, Tier 2 is inspectable
-> with user-managed environment parity, and Tier 3 is rejected before
+> A preflight tier is ledgr’s static reproducibility classification for a
+> strategy function. Tier 1 is self-contained, Tier 2 is inspectable with
+> user-managed environment parity, and Tier 3 is rejected before
 > execution.
+
 
 A compact Tier 3 hard-failure example is an unresolved helper reference:
 

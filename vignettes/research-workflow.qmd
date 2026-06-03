@@ -358,6 +358,13 @@ Precomputing features is not a separate research decision. It is an execution
 optimization: the same declared feature grid is computed once and reused across
 candidates.
 
+`ledgr_sweep()` is the memory-backed exploration mode. It evaluates candidate
+rows through the same fold semantics as committed runs, but it keeps compact
+candidate evidence instead of writing a durable ledger and equity curve for
+every row. That is why sweeps can be credible at serious research scale without
+turning every exploratory candidate into a permanent artifact. Promotion is the
+point where one selected candidate pays the durable-materialization cost.
+
 `ledgr_sweep()` gives you candidate evidence. It does not choose a winner for
 you. That choice belongs in the next step, where you inspect the table and make
 the ranking rule visible.
@@ -416,10 +423,9 @@ or produced diagnostics that should change how you read the sweep.
 ::: {.ledgr-callout .ledgr-callout-note}
 **Design note**
 
-This explicit table code keeps the selection rule visible. The v0.1.8.6 cycle
-plans a sweep-review helper that ranks completed candidates, returns a compact
-review table, separates issue rows, and preserves the same explicit selection
-rule.
+This explicit table code keeps the selection rule visible. A future
+sweep-review helper may package this review shape, but it should preserve the
+same explicit selection rule instead of making ranking automatic.
 :::
 
 ::: {.ledgr-callout .ledgr-callout-tip}
@@ -496,10 +502,10 @@ promoted run. Today that recovery uses two public surfaces:
 ::: {.ledgr-callout .ledgr-callout-warning}
 **API gap**
 
-The next few lines are intentionally lower-level. They show what ledgr already
-records today. The v0.1.8.6 cycle plans a helper that summarizes a promoted
-run's "what caused this result?" record without asking users to inspect nested
-promotion-context fields directly.
+The next few lines are intentionally lower-level. They show what ledgr records
+for a promoted run. A future review helper may summarize this "what caused this
+result?" record without asking users to inspect nested promotion-context fields
+directly.
 :::
 
 ```{r}
@@ -639,8 +645,7 @@ is the right starting point. When you ask "does this strategy generalize?",
 walk-forward is the next question you want. That layer is not part of this
 article; the public roadmap places walk-forward evaluation at v0.1.9.x.
 
-This v0.1.8.5 article should not imply that promotion alone validates a
-strategy.
+This article should not imply that promotion alone validates a strategy.
 
 ## Where Next
 
