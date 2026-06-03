@@ -261,7 +261,7 @@ scope: active_packet_housekeeping
 Priority: P1
 Effort: M
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -292,6 +292,19 @@ stable architectural decisions that deserve ADR extraction.
 
 Manual link review, topic-to-source traceability review, and ADR candidate
 review.
+
+Completion note: completed after Claude review on 2026-06-03. The chosen index
+home is evergreen `inst/design/rfc/README.md`. It adds a topic-oriented
+decision map, distinguishes historical/scaffolding RFC artifacts from binding
+syntheses/final reviews, and records ADR routing for B2 spot-FIFO scope guard,
+canonical R default execution, matrix-canonical strategy accessor contract, and
+fold-owned FIFO accounting. Claude review patches re-attributed the parallel
+dispatch row to the sweep architecture note, added the B2 maintainer-decisions
+authority, clarified non-synthesis binding artifacts, added the snapshot
+trust-boundary row, and promoted the B2 spot-FIFO scope guard to ADR-0005. No
+source RFC text was rewritten as replacement authority. Verification used
+manual link/topic traceability review, ADR candidate review, stale-status
+scans, YAML parse review, referenced-path checks, and `git diff --check`.
 
 ### Source Reference
 

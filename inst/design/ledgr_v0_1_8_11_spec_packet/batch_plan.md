@@ -1,6 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 2 completed.
+**Status:** Active; Batch 3 completed after review.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -90,7 +90,7 @@ files changed. Substantive work now moves to Batch 3 / `LDG-2530`.
 ## Batch 3 - RFC Decision Index And ADR Routing
 
 Ticket: `LDG-2530`
-Status: Planned
+Status: Completed
 
 Goal: make accepted decisions discoverable and route stable decisions into ADRs
 where useful.
@@ -103,6 +103,19 @@ Exit criteria:
 - ADR routing is recorded for B2 spot-FIFO scope guard, canonical R default,
   matrix-canonical strategy accessor contract, and fold-owned FIFO accounting.
 - RFCs remain authoritative; synthesis does not replace them.
+
+Completion note:
+
+Batch 3 completed after Claude review on 2026-06-03. The evergreen RFC decision
+index lives at `inst/design/rfc/README.md`, links topic decisions back to RFC
+syntheses, final reviews, ADRs, packet records, and contracts, marks
+historical/scaffolding artifact classes, and records ADR routing for the four
+named candidates. Claude review patches re-attributed the parallel-dispatch row
+to the sweep architecture note, added the B2 maintainer-decisions authority,
+clarified non-synthesis binding artifacts, added the snapshot trust-boundary
+row, and promoted the B2 spot-FIFO scope guard to ADR-0005. No accepted RFC text
+was rewritten as replacement authority. Substantive work moves to Batch 4 /
+`LDG-2531`.
 
 ## Batch 4 - contracts.md Structure Pass
 

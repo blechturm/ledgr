@@ -51,7 +51,7 @@ tickets:
 
   - id: "LDG-2530"
     title: "RFC Decision Index And ADR Routing"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
