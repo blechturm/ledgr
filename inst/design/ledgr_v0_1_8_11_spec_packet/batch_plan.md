@@ -44,7 +44,7 @@ v0.1.8.11. Substantive work now starts with Batch 1 / `LDG-2528`.
 ## Batch 1 - contracts.md Audit Report
 
 Ticket: `LDG-2528`
-Status: Planned
+Status: Completed
 
 Goal: audit `contracts.md` before editing it.
 
@@ -56,6 +56,13 @@ Exit criteria:
 - B2 scope guard, durable compiled deferral, one-fold-core language, canonical
   event evidence, and documentation-discovery contracts are reviewed.
 - No contract edits land in this batch.
+
+Completion note:
+
+`contracts_audit.md` was completed on 2026-06-03 after Claude review. It routes
+five fix-now contract-cleanup findings to `LDG-2531`, records no-action and
+later-RFC boundaries, and leaves `contracts.md` unchanged. Substantive work now
+moves to Batch 2 / `LDG-2529`.
 
 ## Batch 2 - Roadmap Horizon And Design Index Housekeeping
 

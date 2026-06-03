@@ -138,7 +138,7 @@ scope: v0.1.8.11
 Priority: P0
 Effort: M
 Dependencies: LDG-2527
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -173,10 +173,20 @@ v0.1.8.10.
 Manual audit review, stale-term `rg` checks, and source-to-finding traceability
 review.
 
+### Completion Note
+
+Completed on 2026-06-03 after Claude review. The audit artifact exists at
+`contracts_audit.md`, classifies findings without editing `contracts.md`, and
+routes fix-now contract cleanup to `LDG-2531`. Review-approved patches added a
+structural recommendation, an explicit NAMESPACE export cross-check, a
+generated-docs cross-route for `ttr-indicators` policy language, and a direct
+LDG-2531 route for historical CI wording.
+
 ### Source Reference
 
 - `inst/design/contracts.md`
 - `v0_1_8_11_spec.md`
+- `contracts_audit.md`
 
 ### Classification
 
