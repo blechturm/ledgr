@@ -240,7 +240,33 @@ Exit criteria:
 - Generated artifact churn only follows source-doc changes.
 - Any required doc-render checks are identified.
 
-## Batch 10 - Release Gate
+## Batch 10 - inst/ Subdirectory Audit And Cleanup
+
+Ticket: `LDG-2538`
+Status: Planned
+
+Goal: inventory `inst/design/architecture/`,
+`inst/design/maintainer_review/`, `inst/diagrams/`, `inst/examples/`,
+`inst/schemas/`, and `inst/testdata/`, and route stale or unreferenced files to
+deletion, gitignore, manual migration, or retention. Runs in parallel with
+Batch 9 / `LDG-2536`; both are audit batches before the release gate. Ordering
+between the two is by convenience.
+
+Exit criteria:
+
+- `inst_audit.md` exists in the packet and routes every audited file with a
+  disposition.
+- `architecture/fold_core_trust_boundary.md` and
+  `architecture/ledgr_v0_1_8_sweep_architecture.md` remain in place. They are
+  cited as binding authority in 15+ files; any relocation requires a separate
+  ticket.
+- `.Rbuildignore` reflects the audit outcome.
+- Approved deletions, gitignores, and migrations are applied after audit
+  review.
+- Full test suite, `R CMD check`, and manual render pass after cleanup.
+- Tarball size before/after cleanup is recorded in the completion note.
+
+## Batch 11 - Release Gate
 
 Ticket: `LDG-2537`
 Status: Planned
@@ -255,6 +281,8 @@ Exit criteria:
 - The five deferred manual article families from LDG-2532 are explicitly
   routed: observability/determinism, sweep, snapshots/data, features, and
   benchmark methodology.
+- LDG-2538 `inst_audit.md` findings are consumed or routed forward with the
+  binding-path constraint preserved.
 - `Rscript tools/render-maintainer-manual.R` completes and the committed
   Markdown siblings have no unexpected drift from the Quarto sources.
 - NEWS, design index, roadmap, horizon, AGENTS.md, and release notes are updated

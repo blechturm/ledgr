@@ -2,7 +2,7 @@
 
 Version: v0.1.8.11
 Date: 2026-06-03
-Total Tickets: 11
+Total Tickets: 12
 
 ## Ticket Organization
 
@@ -23,12 +23,14 @@ packet alignment
                  -> user-facing documentation refresh
                     -> performance-arc narrative
                        -> disclaimer surface
-                          -> generated docs / man-page audit
+                          -> audits (generated docs / man-page; inst/ subdirs)
                              -> release gate
 ```
 
 Ticket IDs start at `LDG-2527` because `LDG-2517` through `LDG-2526` were used
-by the v0.1.8.10 packet.
+by the v0.1.8.10 packet. `LDG-2538` was inserted after the initial ticket cut
+to scope the `inst/` subdirectory cleanup; it runs in parallel with `LDG-2536`
+before the release gate.
 
 ## Dependency DAG
 
@@ -43,6 +45,7 @@ LDG-2527 Packet Alignment And v0.1.8.11 Ticket Cut
   |-- LDG-2534 Performance Arc Narrative
   |-- LDG-2535 Research Software Disclaimer Surface
   |-- LDG-2536 Generated Docs And Man-Page Audit
+  |-- LDG-2538 inst/ Subdirectory Audit And Cleanup
   `-- LDG-2537 v0.1.8.11 Release Gate
 ```
 
@@ -109,7 +112,8 @@ markdown, ticket YAML, batch plan, design index, roadmap, horizon, and
 AGENTS.md agree on v0.1.8.11 as the active documentation, structure, and cleanup
 packet. Claude review approved the packet seed; review caveats were patched
 into the spec before tickets were cut. Tickets `LDG-2527` through `LDG-2537`
-are cut, `LDG-2527` is complete, and all non-Batch-0 tickets remain planned.
+plus inserted ticket `LDG-2538` are cut, `LDG-2527` is complete, and all
+non-Batch-0 tickets remain planned.
 The packet keeps `DESCRIPTION` at `0.1.8.10`, preserves the no execution / API /
 target-risk / OMS / walk-forward / cost-liquidity / compiled-promotion
 boundary, and makes `LDG-2528` the next substantive batch.
@@ -655,11 +659,91 @@ scope: stale_help_language
 
 ---
 
+## LDG-2538: inst/ Subdirectory Audit And Cleanup
+
+Priority: P2
+Effort: M
+Dependencies: LDG-2527
+Status: Planned
+
+### Description
+
+Audit `inst/design/architecture/`, `inst/design/maintainer_review/`,
+`inst/diagrams/`, `inst/examples/`, `inst/schemas/`, and `inst/testdata/` for
+stale or unreferenced files. Route findings to deletion, gitignore, migration
+into the maintainer manual, or retention as load-bearing source. Produce the
+audit report first; apply deletions and migrations only after the audit is
+reviewed.
+
+Runs in parallel with `LDG-2536`; both are audit batches before the release
+gate. Ordering between the two is by convenience.
+
+### Tasks
+
+- Create `inst_audit.md` in this packet.
+- Inventory each in-scope directory and list every file with reference count,
+  current purpose, and proposed disposition.
+- Classify each file as: keep (load-bearing), gitignore (build artifact),
+  delete (stale or fully superseded), or migrate-to-manual (useful prose that
+  belongs in a manual article).
+- Reference-check every "delete" candidate by grepping `R/`, `tests/`,
+  `vignettes/`, `inst/design/`, `dev/`, and `.github/` before recommending
+  removal.
+- Review `.Rbuildignore` against the audit outcome: confirm development-only
+  subdirectories are excluded from the package build and runtime-required
+  content is included.
+- After audit review, apply approved deletions, gitignores, and manual
+  migrations.
+- Re-run the full test suite, `R CMD check`, and the manual render to
+  confirm no installed-doc, vignette, or runtime reference broke.
+
+### Acceptance Criteria
+
+- `inst_audit.md` exists and routes every audited file with a disposition.
+- No file is deleted, moved, or migrated before the audit is reviewed.
+- `architecture/fold_core_trust_boundary.md` and
+  `architecture/ledgr_v0_1_8_sweep_architecture.md` are not renamed or
+  relocated by this ticket. Both are cited as binding authority in 15+ files;
+  any relocation requires a separate ticket with an explicit rg-sweep-and-patch
+  acceptance criterion.
+- Full test suite and `R CMD check` pass after cleanup.
+- Tarball size and tracked scoped-file size before/after cleanup are recorded
+  in the completion note.
+- No execution semantics, API, target-risk, OMS, walk-forward, cost/liquidity,
+  durable compiled, non-spot compiled, or public benchmark-claim work landed.
+
+### Verification
+
+Manual audit-report review, stale-reference `rg` checks, `.Rbuildignore`
+review, full tests, package check after cleanup, and tarball-size delta
+record.
+
+### Source Reference
+
+- `inst/design/architecture/`
+- `inst/design/maintainer_review/`
+- `inst/diagrams/`
+- `inst/examples/`
+- `inst/schemas/`
+- `inst/testdata/`
+- `.Rbuildignore`
+- `v0_1_8_11_spec.md`
+
+### Classification
+
+```yaml
+type: audit
+surface: installed_subdirectories
+scope: stale_file_cleanup_and_migration
+```
+
+---
+
 ## LDG-2537: v0.1.8.11 Release Gate
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2527, LDG-2528, LDG-2529, LDG-2530, LDG-2531, LDG-2532, LDG-2533, LDG-2534, LDG-2535, LDG-2536
+Dependencies: LDG-2527, LDG-2528, LDG-2529, LDG-2530, LDG-2531, LDG-2532, LDG-2533, LDG-2534, LDG-2535, LDG-2536, LDG-2538
 Status: Planned
 
 ### Description
@@ -688,6 +772,10 @@ remainder, and prepare the v0.1.8.11 merge/tag.
 - The five LDG-2532 deferred manual article families are explicitly routed to
   v0.1.8.12 or v0.1.9.x follow-on tickets: observability/determinism, sweep,
   snapshots/data, features, and benchmark methodology.
+- The LDG-2538 `inst_audit.md` findings are consumed: approved deletions,
+  gitignores, and migrations have landed, or the unfinished remainder is
+  explicitly routed to v0.1.8.12 / v0.1.9.x with the binding-path constraint
+  preserved.
 - CI/release checks pass or accepted caveats are documented.
 
 ### Verification
