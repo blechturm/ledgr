@@ -10,7 +10,7 @@
 - `inst/design/ledgr_roadmap.md` - v0.1.8.x, v0.1.9, and v0.2.x sequencing
 - `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`
 - `inst/design/spikes/ledgr_parallelism_spike/`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ---
 

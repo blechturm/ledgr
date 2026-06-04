@@ -174,7 +174,7 @@ implementation map, not a new contract.
 The current package-level mutable environments are intentionally small, but they
 are the first places to inspect when changing telemetry, caches, or parallel
 execution. This enumeration is adapted from
-`../architecture/sweep_mode_code_review.md`.
+`../manual/sweep.qmd`.
 
 | Environment | Source | Runtime shape | Sweep risk from review |
 | --- | --- | --- | --- |

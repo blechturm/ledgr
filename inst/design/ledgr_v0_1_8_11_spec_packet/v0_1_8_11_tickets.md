@@ -492,7 +492,7 @@ stale next-batch scans, YAML parse review, and `git diff --check`.
 
 - `inst/design/manual/`
 - `inst/design/manual/execution_fold_core.qmd`
-- `inst/design/maintainer_review/feature_value_path_workbook.qmd`
+- `inst/design/manual/features.qmd`
 
 ### Classification
 
@@ -1064,35 +1064,32 @@ scope: snapshots_data_with_adr_and_architecture_migration
 Priority: P1
 Effort: L
 Dependencies: LDG-2532, LDG-2541
-Status: In Review
+Status: Completed
 
 ### Description
 
-Author the `inst/design/manual/sweep.qmd` article. Absorb the binding
-architecture content in `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
-(which serves as the synthesis-equivalent for the parallel-sweep dispatch
-decision) and the UX rationale in
-`inst/design/architecture/ledgr_sweep_mode_ux.md`. Optionally absorb
-`inst/design/architecture/sweep_mode_code_review.md` as appendix or defer to a
-v0.1.9.x cycle. Delete the migrated files and re-point all citation sites
-(~50+ across packets, contracts, RFC index, manual, ledgr_ux_decisions, audits).
+Author the `inst/design/manual/sweep.qmd` article. Absorb the retired sweep
+architecture and sweep UX rationale into the article, preserve the
+parallel-sweep dispatch synthesis-equivalent language, and absorb the retired
+sweep code-review implementation findings rather than routing them to `rfc/`.
+Delete the migrated files and re-point citation sites across packets,
+contracts, RFC index, manual, ledgr_ux_decisions, and audits.
 
 ### Tasks
 
 - Author `sweep.qmd` covering sweep architecture, candidate promotion,
   parallel candidate dispatch, memory output handler, B2 memory-backed opt-in
   boundaries.
-- Migrate `architecture/ledgr_v0_1_8_sweep_architecture.md` content into the
-  article. This is the largest migration in the cycle; preserve the
-  parallel-sweep dispatch synthesis-equivalent language.
-- Migrate `architecture/ledgr_sweep_mode_ux.md` content into the article.
-- Decide disposition of `architecture/sweep_mode_code_review.md`: absorb as
-  appendix, route to `rfc/` as a response-equivalent, or delete with a
-  reference in the architecture README.
+- Migrate the retired sweep architecture content into the article. This is the
+  largest migration in the cycle; preserve the parallel-sweep dispatch
+  synthesis-equivalent language.
+- Migrate the retired sweep UX content into the article.
+- Decide disposition of the retired sweep code-review note: absorb as
+  implementation trace, route to `rfc/` as a response-equivalent, or delete
+  with a reference in the architecture README.
 - Re-point all citation sites. Update `rfc/README.md` Parallel Sweep Dispatch
-  row's Primary authority from
-  `../architecture/ledgr_v0_1_8_sweep_architecture.md` to the new manual
-  article. Update `architecture/README.md` existing-records table.
+  row's Primary authority to the new manual article. Update
+  `architecture/README.md` existing-records table.
 - Delete the migrated source files.
 - Render the GFM sibling and confirm no unexpected drift.
 
@@ -1120,12 +1117,23 @@ Manual article review, architecture migration citation review, RFC index
 Primary authority update review, manual render check, stale-reference `rg`
 check.
 
+Completion note: completed after Claude review on 2026-06-04. Authored
+`inst/design/manual/sweep.qmd` and rendered `sweep.md` with both Synthesis and
+Implementation Trace layers per Section 3.7. Migrated the retired sweep
+architecture and sweep UX records into the article, absorbed the sweep
+code-review findings into the Implementation Trace instead of routing them to
+`rfc/`, deleted the four migrated architecture source files as part of the
+joint Batch 12 cleanup, re-pointed citations, and updated the RFC index primary
+authority to `../manual/sweep.qmd`. Claude spot-checked source anchors and
+approved with no sweep blockers.
+
 ### Source Reference
 
 - `inst/design/manual/`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `inst/design/architecture/ledgr_sweep_mode_ux.md`
-- `inst/design/architecture/sweep_mode_code_review.md`
+- `inst/design/manual/sweep.qmd`
+- retired sweep architecture source note
+- retired sweep UX source note
+- retired sweep code-review source note
 - `inst/design/architecture/README.md`
 - `inst/design/rfc/README.md`
 - `inst/design/contracts.md`
@@ -1149,33 +1157,33 @@ Status: Completed
 
 ### Description
 
-Author the `inst/design/manual/features.qmd` article. Absorb the UX rationale
-in `inst/design/architecture/ledgr_feature_map_ux.md` into the article body.
-Delete the source file and re-point all citation sites.
+Author the `inst/design/manual/features.qmd` article. Absorb the retired
+feature-map UX rationale and feature value path workbook depth into the article
+body. Delete the source files and re-point all citation sites.
 
 ### Tasks
 
 - Author `features.qmd` covering feature value path, cache/projection,
   indicator contract, `series_fn`, TTR adapter semantics, feature-map/alias
   contracts.
-- Migrate `architecture/ledgr_feature_map_ux.md` content into the article.
+- Migrate the retired feature-map UX content into the article.
 - Re-point every citation. Update `architecture/README.md` existing-records
   table.
-- Delete `architecture/ledgr_feature_map_ux.md`.
+- Delete the migrated feature-map UX and feature value path workbook source
+  files.
 - Render the GFM sibling and confirm no unexpected drift.
 
 ### Acceptance Criteria
 
 - Article is reviewable.
 - Article carries both layers per Section 3.7: Synthesis AND Implementation
-  Trace (the depth source is
-  `inst/design/maintainer_review/feature_value_path_workbook.qmd` —
-  absorb its content). Implementation Trace must include: `ctx$feature()`
+  Trace (the depth source is the retired feature value path workbook; absorb
+  its content). Implementation Trace must include: `ctx$feature()`
   resolution chain with file:line anchors, feature cache key shape
   (snapshot_hash + instrument_id + indicator_fingerprint + fingerprint_key),
   features-engine.R structure, TTR adapter mechanism, alias map resolution,
   edge cases, hot/cold path distinction.
-- `feature_value_path_workbook.qmd` content is absorbed into the article
+- Feature value path workbook content is absorbed into the article
   Implementation Trace section.
 - Feature-map UX rationale is present without introducing new public API.
 - No execution semantics or contract changes.
@@ -1187,10 +1195,20 @@ Delete the source file and re-point all citation sites.
 Manual article review, feature_map_ux migration citation review, manual render
 check, stale-reference `rg` check.
 
+Completion note: completed after Claude review on 2026-06-04. Authored
+`inst/design/manual/features.qmd` and rendered `features.md` with both
+Synthesis and Implementation Trace layers per Section 3.7. Migrated the
+retired feature-map UX rationale and absorbed
+`feature_value_path_workbook.qmd` into the article's Implementation Trace,
+deleted the migrated source records, re-pointed citations, and updated the
+architecture and maintainer-review migration ledgers. Claude approved after
+one filename-ledger correction, now applied.
+
 ### Source Reference
 
 - `inst/design/manual/`
-- `inst/design/architecture/ledgr_feature_map_ux.md`
+- retired feature-map UX source note
+- retired feature value path workbook
 - `inst/design/architecture/README.md`
 - `inst/design/contracts.md`
 
@@ -1254,7 +1272,7 @@ Completion note (2026-06-04): Claude review approved the retrofit and
 recommended close. The reviewer spot-checked roughly 50 anchors across both
 retrofitted articles and found the line anchors fresh; the review also confirmed
 `maintainer_review/` contains only `README.md` and
-`feature_value_path_workbook.qmd`, live citation hygiene is clean, no contracts
+`features.qmd`, live citation hygiene is clean, no contracts
 or execution semantics changed, and the three minor polish notes are non-gating.
 
 ### Source Reference
@@ -1370,7 +1388,7 @@ at its migration target.
 - Re-point every citation of the deleted workbook(s) to the relevant
   Implementation Trace section in the corresponding manual article.
 - Confirm `maintainer_review/` contains only `README.md` and the temporarily
-  retained `feature_value_path_workbook.qmd`.
+  retained `features.qmd`.
 - Render the GFM siblings for both retrofitted articles; confirm no
   unexpected drift.
 
@@ -1387,7 +1405,7 @@ at its migration target.
 - Retired fold-core workbook deleted; relevant citations re-pointed.
 - Retired v0.1.8.7 optimization workbook deleted.
 - `maintainer_review/` directory contains only `README.md` and
-  `feature_value_path_workbook.qmd`.
+  `features.qmd`.
 - Manual GFM siblings render cleanly.
 
 ### Verification
@@ -1468,9 +1486,9 @@ remainder, and prepare the v0.1.8.11 merge/tag.
   (LDG-2544). The directory contains only `README.md` or is deleted.
 - The `inst/design/architecture/` directory is wound down:
   the fold trust-boundary note absorbed into snapshots/data article
-  (LDG-2541); `ledgr_v0_1_8_sweep_architecture.md` and `ledgr_sweep_mode_ux.md`
-  absorbed into sweep article (LDG-2542); `ledgr_feature_map_ux.md` absorbed
-  into features article (LDG-2543); `sweep_mode_code_review.md` disposition
+  (LDG-2541); the retired sweep architecture and sweep UX records absorbed
+  into sweep article (LDG-2542); the retired feature-map UX record absorbed
+  into features article (LDG-2543); the sweep code-review disposition
   recorded in LDG-2542. The directory contains only `README.md` or is deleted.
 - The LDG-2539 generated-doc cleanup findings are consumed, or the unfinished
   remainder is explicitly routed to v0.1.9.x with source/generated traceability

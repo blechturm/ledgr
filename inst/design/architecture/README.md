@@ -1,13 +1,11 @@
 # Architecture Notes
 
-**Status:** Wound down as a recurring artifact (2026-06-04). The
-`fold_core_trust_boundary.md` note has been migrated into the snapshots/data
-manual article and deleted. Remaining files are historical records pending
-migration into the appropriate maintainer manual article.
+**Status:** Wound down as a recurring artifact (2026-06-04). All former
+architecture records have now been migrated into maintainer manual articles or
+absorbed as implementation-trace material, and the source notes have been
+deleted.
 
-**Authority:** Architecture notes in this directory are historical. One
-load-bearing sweep architecture note remains pending migration; the other
-remaining files are historical context from cycles that landed. New binding
+**Authority:** Directory policy and migration ledger only. New binding
 constraints land in `../contracts.md` (the WHAT). New architecture teaching
 lives in maintainer manual articles under `../manual/` (the WHY). Decision
 history lives in `../rfc/`. Forward direction lives in `../horizon.md`.
@@ -22,10 +20,10 @@ direction, nor a formal RFC synthesis, so the directory absorbed:
 - pre-RFC architecture teaching, now represented by the migrated
   `fold_core_trust_boundary.md` record;
 - synthesis-equivalents for threads that never produced a formal RFC synthesis,
-  such as `ledgr_v0_1_8_sweep_architecture.md`;
+  such as the retired sweep architecture record;
 - RFC seed-equivalents for UX exploration that fed into landed tickets, such
-  as `ledgr_feature_map_ux.md` and `ledgr_sweep_mode_ux.md`;
-- RFC response-equivalents, such as `sweep_mode_code_review.md`.
+  as the retired feature-map and sweep UX records;
+- RFC response-equivalents, such as the retired sweep code-review record.
 
 Today every one of those shapes has a canonical home elsewhere in the taxonomy.
 The directory does not earn the maintenance cost of being a separate category.
@@ -50,36 +48,30 @@ file here.
 
 ## Existing Records
 
-One file is currently load-bearing pending migration; three are historical
-context. The fold-core trust-boundary note remains listed as a migrated record
-so stale citations can be resolved deliberately.
+The records below remain listed so stale citations can be resolved deliberately.
 
 | File | Current shape | Migration target | References |
 | --- | --- | --- | --- |
 | `fold_core_trust_boundary.md` | Architecture teaching for the snapshot/fold trust boundary. | Migrated and deleted in LDG-2541; see `../manual/snapshots_data.qmd`. | Manual articles, RFC index snapshot-trust-boundary row, and contracts now point at `../manual/snapshots_data.qmd` plus `../contracts.md`. |
-| `ledgr_v0_1_8_sweep_architecture.md` | Synthesis-equivalent for the parallel-sweep dispatch decision. | `../manual/` sweep article OR rename to `../rfc/` with synthesis-equivalent naming. | Heavily cited; load-bearing pending migration. |
-| `ledgr_feature_map_ux.md` | RFC seed-equivalent from the v0.1.7.4 feature-map cycle. | Migrate residual rationale into the features manual article when it lands; delete the file. | Historical context. |
-| `ledgr_sweep_mode_ux.md` | RFC seed-equivalent / UX design input that informed the sweep architecture work. | Migrate into the sweep manual article when it lands; delete. | Historical context but heavily cited. |
-| `sweep_mode_code_review.md` | RFC response-equivalent feeding the sweep planning cycle. | Stay as historical provenance OR migrate into rfc/ with a response-suffix name; defer deletion. | Historical context. |
+| Retired sweep architecture record | Synthesis-equivalent for the parallel-sweep dispatch decision. | Migrated and deleted in LDG-2542; see `../manual/sweep.qmd`. | RFC index, packets, contracts, and manual references now point at `../manual/sweep.qmd`. |
+| Retired feature-map UX record | RFC seed-equivalent from the v0.1.7.4 feature-map cycle. | Migrated and deleted in LDG-2543; see `../manual/features.qmd`. | Feature-map and alias citations now point at `../manual/features.qmd`. |
+| Retired sweep UX record | RFC seed-equivalent / UX design input that informed the sweep architecture work. | Migrated and deleted in LDG-2542; see `../manual/sweep.qmd`. | Sweep UX citations now point at `../manual/sweep.qmd`. |
+| Retired sweep code-review record | RFC response-equivalent feeding the sweep planning cycle. | Absorbed into `../manual/sweep.qmd` under `## Implementation Trace`; deleted in LDG-2542 rather than moved to `../rfc/` because its remaining value was implementation trace, not a standalone decision record. | Code-review findings are carried by the sweep manual implementation trace. |
 
 ## Migration Plan
 
 The migration plan follows the same wind-down discipline as `../adr/README.md`:
 
 - Phase 1 (completed, v0.1.8.11): this README codified the wind-down.
-- Phase 2 (v0.1.8.11 continuing manual batches): when each manual article
-  lands, its corresponding architecture file's content migrates into the manual
-  article, citations are re-pointed, and the architecture file is deleted.
-  Specifically:
-  - sweep manual article -> migrate `ledgr_v0_1_8_sweep_architecture.md` and
-    `ledgr_sweep_mode_ux.md`, optionally fold `sweep_mode_code_review.md` as
-    appendix or rfc/ response;
-  - features manual article -> migrate `ledgr_feature_map_ux.md`.
+- Phase 2 (completed, v0.1.8.11): each architecture source file's content
+  migrated into the corresponding manual article, citations were re-pointed,
+  and the source files were deleted.
 
-LDG-2541 completed the snapshots/data migration of
-`fold_core_trust_boundary.md`.
+LDG-2541 completed the snapshots/data migration. LDG-2542 completed the sweep
+migration, including the code-review disposition. LDG-2543 completed the
+features migration.
 
-When the last file is migrated, this directory is deleted.
+This directory now contains only this migration ledger.
 
 ## Related References
 

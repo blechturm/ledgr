@@ -256,8 +256,8 @@ invariants_at_risk:
 required_context:
   - inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md
   - inst/design/contracts.md
-  - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
-  - inst/design/architecture/sweep_mode_code_review.md
+  - inst/design/manual/sweep.qmd
+  - inst/design/manual/sweep.qmd
   - R/backtest-runner.R
   - R/backtest.R
 tests_required:
@@ -656,8 +656,8 @@ invariants_at_risk:
   - warmup/scoring range separation
   - candidate-specific feature feasibility
 required_context:
-  - inst/design/architecture/ledgr_feature_map_ux.md
-  - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
+  - inst/design/manual/features.qmd
+  - inst/design/manual/sweep.qmd
   - R/experiment.R
   - R/features*.R
 tests_required:
@@ -927,7 +927,7 @@ invariants_at_risk:
   - opening-position FIFO/cost-basis parity
   - feature-consuming strategy parity
 required_context:
-  - inst/design/architecture/ledgr_sweep_mode_ux.md
+  - inst/design/manual/sweep.qmd
   - inst/design/rfc/rfc_sweep_memory_output_handler_v0_1_8.md
   - inst/design/rfc/rfc_sweep_memory_output_handler_v0_1_8_response.md
   - inst/design/contracts.md
@@ -1244,7 +1244,7 @@ invariants_at_risk:
   - warning class preservation
 required_context:
   - inst/design/rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis_response.md
-  - inst/design/architecture/ledgr_sweep_mode_ux.md
+  - inst/design/manual/sweep.qmd
 tests_required:
   - result shape tests
   - print tests
@@ -1638,7 +1638,7 @@ invariants_at_risk:
   - non-goal clarity
   - public API documentation
 required_context:
-  - inst/design/architecture/ledgr_sweep_mode_ux.md
+  - inst/design/manual/sweep.qmd
   - inst/design/contracts.md
   - vignettes
   - README.md

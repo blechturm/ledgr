@@ -134,7 +134,7 @@ deferred.
 - Key inputs:
   `spikes/ledgr_parallelism_spike/summary_report.md`,
   `spikes/ledgr_parallelism_spike/architecture_synthesis.md`,
-  `architecture/ledgr_v0_1_8_sweep_architecture.md`,
+  `manual/sweep.qmd`,
   `manual/execution_fold_core.qmd`, and
   `ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
 
@@ -197,8 +197,11 @@ LDG-2546 covers `execution_fold_core` and `performance_arc` and winds down
 LDG-2541 is complete after Claude review: both new deterministic substrate
 manual articles now carry Synthesis and Implementation Trace layers. Batch 14 /
 LDG-2546 is complete after Claude review: existing manual articles now carry
-Implementation Trace layers and `maintainer_review/` is wound down. The next
-substantive cleanup work is LDG-2542 through LDG-2545, then the release gate.
+Implementation Trace layers and `maintainer_review/` is wound down. Batch 12 /
+LDG-2542 + LDG-2543 is complete after Claude review: sweep and features manual
+articles now carry both layers, the architecture notes were migrated, and
+`architecture/` is wound down to its README. The next substantive cleanup work
+is LDG-2544 and LDG-2545, then the release gate.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
@@ -225,11 +228,11 @@ substantive cleanup work is LDG-2542 through LDG-2545, then the release gate.
 These files are active architecture inputs from the v0.1.8 cycle, still
 load-bearing for future sweep and fold-core work.
 
-- `architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `architecture/ledgr_sweep_mode_ux.md`
-- `architecture/sweep_mode_code_review.md`
-- `architecture/ledgr_feature_map_ux.md`
-- `architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `manual/sweep.qmd`
+- `manual/sweep.qmd`
+- `manual/sweep.qmd`
+- `manual/features.qmd`
+- `manual/sweep.qmd`
 - `collapse_optimization_map.md`
 - `spikes/ledgr_parallelism_spike/summary_report.md`
 - `spikes/ledgr_parallelism_spike/architecture_synthesis.md`
@@ -429,10 +432,9 @@ paper/live interaction to later RFCs.
 - `maintainer_review/README.md` - wind-down policy for the retired workbook
   location. New implementation-depth notes belong in manual article
   `## Implementation Trace` sections.
-- `maintainer_review/feature_value_path_workbook.qmd` - internal notebook for tracing
-  how declared features become `ctx$feature()` values. This is temporarily
-  retained for LDG-2543 and should be migrated into the manual feature article
-  before the directory is fully removed.
+- `manual/features.qmd` - maintainer manual article tracing how declared
+  features become `ctx$feature()` values. It absorbed the retired feature value
+  path workbook in LDG-2543.
 
 ## Maintainer Manual
 
@@ -509,13 +511,13 @@ contract index.
 
 | Task | Read |
 | --- | --- |
-| Runtime/execution change | `contracts.md`, current packet if one exists, relevant architecture note |
-| Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
+| Runtime/execution change | `contracts.md`, current packet if one exists, relevant maintainer manual article |
+| Sweep/fold-core planning | `contracts.md`, `manual/sweep.qmd`, `manual/execution_fold_core.qmd` |
 | Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `contracts.md`, current packet if one exists |
 | Feature projection / materialization | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, current packet |
 | Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, relevant release packet or future packet when cut |
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
-| Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
+| Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
 | Target risk planning | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md`, future packet when cut |
 | Walk-forward planning | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`, `contracts.md`, future v0.1.9.x packet when cut |
@@ -525,7 +527,7 @@ contract index.
 | Vignette or article writing | `vignette_styleguide.md`, active packet, relevant existing article |
 | Audit intake | relevant audit, current packet if one exists, tickets |
 | RFC response | source RFC, related contract section, related roadmap section |
-| Spike execution | spike document, current packet if one exists, architecture note that consumes results |
+| Spike execution | spike document, current packet if one exists, maintainer manual or RFC record that consumes results |
 
 ## Maintenance Rule
 

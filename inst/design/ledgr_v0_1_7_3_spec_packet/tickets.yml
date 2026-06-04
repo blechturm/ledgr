@@ -305,7 +305,7 @@ tickets:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
         - inst/design/contracts.md (Documentation Contract)
-        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/features.qmd
         - _pkgdown.yml
         - vignettes/
         - vignettes/articles/

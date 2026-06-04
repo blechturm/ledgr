@@ -37,7 +37,7 @@ v0.1.7 is derived from:
 
 - `inst/design/ledgr_roadmap.md`, section `v0.1.7 - Core UX Overhaul`;
 - `inst/design/ledgr_ux_decisions.md`;
-- `inst/design/ledgr_sweep_mode_ux.md` for forward compatibility only;
+- `inst/design/sweep.qmd` for forward compatibility only;
 - `inst/design/contracts.md`;
 - `inst/design/model_routing.md`;
 - the implemented v0.1.6 experiment-store, comparison, strategy-extraction,

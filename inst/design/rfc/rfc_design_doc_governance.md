@@ -8,7 +8,7 @@
 - `inst/design/` — current directory (see listing below)
 - `inst/design/ledgr_roadmap.md` — active roadmap
 - `inst/design/contracts.md` — execution contracts
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md` - active architecture input
+- `inst/design/manual/sweep.qmd` - active architecture input
 
 ---
 
@@ -49,17 +49,17 @@ inst/design/
   execution_engine_audit.md
   ledgr_design_document.md
   ledgr_design_philosophy.md
-  ledgr_feature_map_ux.md
+  features.qmd
   ledgr_parallelism_spike/
   ledgr_roadmap.md
-  ledgr_sweep_mode_ux.md
+  sweep.qmd
   ledgr_ux_decisions.md
-  ledgr_v0_1_8_sweep_architecture.md
+  sweep.qmd
   model_routing.md
   release_ci_playbook.md
   rfc_cost_model_architecture.md
   rfc_cost_model_architecture_response.md
-  sweep_mode_code_review.md
+  sweep.qmd
 
   ledgr_v0_1_7_9_spec_packet/
   ledgr_v0_1_7_8_spec_packet/
@@ -94,10 +94,10 @@ inst/design/
     0003-closure-fingerprinting.md
 
   architecture/
-    ledgr_v0_1_8_sweep_architecture.md
-    ledgr_sweep_mode_ux.md         ← companion to architecture note
-    ledgr_feature_map_ux.md        ← feature design spec
-    sweep_mode_code_review.md      ← code review that fed architecture note
+    sweep.qmd
+    sweep.qmd         ← companion to architecture note
+    features.qmd        ← feature design spec
+    sweep.qmd      ← code review that fed architecture note
 
   rfc/
     cost_model_architecture.md
@@ -127,9 +127,9 @@ Proposed README structure:
 - [active spec packet] — current cycle tickets and spec
 
 ## Current architecture inputs
-- architecture/ledgr_v0_1_8_sweep_architecture.md
-- architecture/ledgr_sweep_mode_ux.md
-- architecture/sweep_mode_code_review.md
+- manual/sweep.qmd
+- manual/sweep.qmd
+- manual/sweep.qmd
 - rfc/cost_model_architecture_response.md
 
 ## Parked ideas and future considerations
@@ -251,16 +251,16 @@ directory?
 ### Q2. Directory placement corrections
 
 The original Codex reorganization proposal missed five files:
-`ledgr_design_philosophy.md`, `ledgr_sweep_mode_ux.md`,
-`ledgr_feature_map_ux.md`, `ledgr_ux_decisions.md`, and
+`ledgr_design_philosophy.md`, `sweep.qmd`,
+`features.qmd`, `ledgr_ux_decisions.md`, and
 `release_ci_playbook.md`. The placements proposed here are:
 
 - `ledgr_design_philosophy.md` and `release_ci_playbook.md` → root
-- `ledgr_sweep_mode_ux.md` and `ledgr_feature_map_ux.md` → `architecture/`
+- `sweep.qmd` and `features.qmd` → `architecture/`
 - `ledgr_ux_decisions.md` → root (ADR-like in character but different format)
-- `sweep_mode_code_review.md` → `architecture/` (despite being a code review)
+- `sweep.qmd` → `architecture/` (despite being a code review)
 
-Do you agree with these placements? `sweep_mode_code_review.md` is debatable —
+Do you agree with these placements? `sweep.qmd` is debatable —
 it's a code review that fed the architecture note but is audit-flavored. Should
 it move to `audits/` instead, with the README index listing it under
 architecture inputs by path?

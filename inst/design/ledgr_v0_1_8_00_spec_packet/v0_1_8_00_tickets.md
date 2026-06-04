@@ -258,10 +258,10 @@ not an acceptable intermediate state.
    - `inst/design/spikes/`.
 2. Use `git mv` for all file moves.
 3. Move active architecture inputs:
-   - `ledgr_v0_1_8_sweep_architecture.md`;
-   - `ledgr_sweep_mode_ux.md`;
-   - `ledgr_feature_map_ux.md`;
-   - `sweep_mode_code_review.md`.
+   - `sweep.qmd`;
+   - `sweep.qmd`;
+   - `features.qmd`;
+   - `sweep.qmd`.
 4. Move RFCs and responses:
    - `rfc_cost_model_architecture.md`;
    - `rfc_cost_model_architecture_response.md`;
@@ -426,7 +426,7 @@ required_context:
   - inst/design/ledgr_roadmap.md
   - inst/design/horizon.md
   - inst/design/contracts.md
-  - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
+  - inst/design/manual/sweep.qmd
   - inst/design/rfc/rfc_cost_model_architecture_response.md
 tests_required:
   - manual roadmap review
@@ -744,7 +744,7 @@ no R/ or tests/ files changed
 - `.Rbuildignore` spot check.
 
 **Source Reference:** `inst/design/spikes/ledgr_parallelism_spike/README.md`;
-`inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md` - mirai process
+`inst/design/manual/sweep.qmd` - mirai process
 model constraints section.
 
 **Classification:**
@@ -762,7 +762,7 @@ invariants_at_risk:
   - no production code changes
 required_context:
   - inst/design/spikes/ledgr_parallelism_spike/README.md
-  - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
+  - inst/design/manual/sweep.qmd
   - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
 tests_required:
   - manual review of spike findings

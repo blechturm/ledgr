@@ -17,8 +17,8 @@ constraints for v0.1.8 sweep design.
 It is not itself the authoritative sweep architecture document. It is the
 review buffer before patching:
 
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `inst/design/architecture/ledgr_sweep_mode_ux.md`
+- `inst/design/manual/sweep.qmd`
+- `inst/design/manual/sweep.qmd`
 - `inst/design/ledgr_roadmap.md` where needed
 
 ## Bottom Line
@@ -397,7 +397,7 @@ the transport design should not make future intraday work impossible.
 
 ## Proposed Updates To Sweep Design Docs
 
-### `ledgr_v0_1_8_sweep_architecture.md`
+### `sweep.qmd`
 
 Patch the mirai section to state:
 
@@ -414,7 +414,7 @@ Patch the mirai section to state:
 - helper objects must not be smuggled through `.GlobalEnv`;
 - sequential and parallel sweep must be result-equivalent.
 
-### `ledgr_sweep_mode_ux.md`
+### `sweep.qmd`
 
 Patch the advanced parallelism section:
 

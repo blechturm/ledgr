@@ -5,9 +5,9 @@
 
 **Audience:** maintainers and coding agents.
 
-**Authority:** Synthesis only. Binding decisions remain in
-`../contracts.md`, `../rfc/README.md`, ADRs, architecture notes, and
-versioned spec packets.
+**Authority:** Synthesis plus implementation traces. Binding decisions
+remain in `../contracts.md`, `../rfc/README.md`, ADRs, and versioned
+spec packets.
 
 This directory turns the governance record into readable maintainer
 prose. It does not create new execution contracts, public API, release
@@ -34,6 +34,8 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | [`execution_fold_core.md`](execution_fold_core.md) | `execution_fold_core.qmd` | Reviewable first batch | Shared fold core, pulse lifecycle, output handlers, trust boundary, B2 guard, and maintainer checklist. |
 | [`observability_determinism.md`](observability_determinism.md) | `observability_determinism.qmd` | Reviewable LDG-2540 batch | Fingerprints, closure captures, preflight/RNG determinism, telemetry, replay, and event evidence. |
 | [`snapshots_data.md`](snapshots_data.md) | `snapshots_data.qmd` | Reviewable LDG-2541 batch | Snapshot sealing, split stores, fold-entry guards, hot-path trust boundary, and data provenance. |
+| [`sweep.md`](sweep.md) | `sweep.qmd` | Reviewable LDG-2542 batch | Sweep candidate identity, parallel dispatch, memory output handler, B2 scope guard, and promotion. |
+| [`features.md`](features.md) | `features.qmd` | Reviewable LDG-2543 batch | Feature maps, aliases, cache/projection path, TTR adapters, and runtime `ctx$feature()` lookup. |
 | [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
 
 ## Bounded Remainder
@@ -41,10 +43,6 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 The following article families remain planned but incomplete in this
 foundation batch:
 
-- sweep: sweep architecture, promotion/reproduction, parallel dispatch,
-  memory output handler, and B2 memory-backed opt-in boundaries;
-- features: feature value path, cache/projection, indicator contract,
-  `series_fn`, TTR adapter semantics, and feature-map/alias contracts;
 - benchmark methodology beyond the v0.1.8.7 to v0.1.8.10 arc: future
   record-generation workflow, repeatability expectations, and
   release-gate benchmark checks.
@@ -82,7 +80,8 @@ manual articles:
 - `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md`
   (Decision 2 narrowing)
 - `execution_fold_core.qmd` (`## Implementation Trace`)
-- `../maintainer_review/feature_value_path_workbook.qmd`
+- `features.qmd` (`## Implementation Trace`)
+- `sweep.qmd` (`## Implementation Trace`)
 - `../ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
 - `../ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md`
 - `../ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`

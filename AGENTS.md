@@ -149,9 +149,12 @@ update this block when the next packet opens or scope changes materially):
   Trace sections and winds down `maintainer_review/`. Batch 11 / LDG-2540 +
   LDG-2541 is complete after Claude review: both new deterministic substrate
   manual articles now carry Synthesis and Implementation Trace layers. Batch
-  14 / LDG-2546 is complete after Claude review: existing manual articles now
-  carry Implementation Trace layers and `maintainer_review/` is wound down.
-  Continue with LDG-2542 through LDG-2545, then the release gate.
+  12 / LDG-2542 + LDG-2543 is complete after Claude review: sweep and features
+  manual articles now carry both layers, the architecture notes were migrated,
+  and `architecture/` is wound down to its README. Batch 14 / LDG-2546 is
+  complete after Claude review: existing manual articles now carry
+  Implementation Trace layers and `maintainer_review/` is wound down. Continue
+  with LDG-2544 and LDG-2545, then the release gate.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.
@@ -168,8 +171,8 @@ packets are records, not authorization for new work.
 | v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |
 | v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
 | v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
-| v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
-| Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/maintainer_review/feature_value_path_workbook.qmd`, `inst/design/horizon.md` |
+| v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/manual/sweep.qmd`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
+| Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/manual/features.qmd`, `inst/design/horizon.md` |
 | v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
 | v0.1.8.7 release record | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |

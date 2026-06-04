@@ -234,7 +234,7 @@ tickets:
 
   - id: "LDG-2542"
     title: "Sweep Manual Article"
-    status: "in_review"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:

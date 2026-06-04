@@ -614,7 +614,7 @@ redundant installed `ttr-indicators` teaching path.
 - Documentation scans for shell-style examples where practical.
 
 **Source Reference:** v0.1.7.3 spec sections R9, R10, R11, C2, D2, D3;
-`inst/design/ledgr_feature_map_ux.md` documentation implications.
+`inst/design/features.qmd` documentation implications.
 
 **Classification:**
 ```yaml
@@ -635,7 +635,7 @@ required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_3_spec_packet/v0_1_7_3_spec.md
   - inst/design/contracts.md (Documentation Contract)
-  - inst/design/ledgr_feature_map_ux.md
+  - inst/design/features.qmd
   - _pkgdown.yml
   - vignettes/
   - vignettes/articles/

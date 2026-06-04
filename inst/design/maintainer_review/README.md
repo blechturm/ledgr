@@ -1,6 +1,8 @@
 # Maintainer Review Wind-Down
 
-**Status:** Wound down as an active authoring location on 2026-06-04.
+**Status:** Wound down as an active authoring location on 2026-06-04. The
+feature-value workbook has now been migrated into the features manual article,
+so this directory contains only this migration ledger.
 
 **Authority:** Directory policy only. Binding contracts remain in
 `../contracts.md`, accepted RFCs, ADRs, versioned spec packets, and the
@@ -32,20 +34,19 @@ the manual before closeout.
 | --- | --- |
 | `fold_core_workbook.qmd` | Absorbed into `../manual/execution_fold_core.qmd` under `## Implementation Trace`; deleted in LDG-2546. |
 | `v0_1_8_7_optimization_round.qmd` | Absorbed into `../manual/performance_arc_v0_1_8_x.qmd` under `## Implementation Trace`; deleted in LDG-2546. |
-| `feature_value_path_workbook.qmd` | Temporarily retained as the depth source for LDG-2543. Its content should migrate into the manual feature article before this directory is fully removed. |
+| `feature_value_path_workbook.qmd` | Absorbed into `../manual/features.qmd` under `## Implementation Trace`; deleted in LDG-2543. |
 
 ## Migration Plan
 
-1. Keep only this README and `feature_value_path_workbook.qmd` while LDG-2543
-   remains open.
+1. Keep only this README as the migration ledger.
 2. Do not add generated render artifacts to this directory.
-3. When the feature article receives its implementation trace, migrate or delete
-   `feature_value_path_workbook.qmd`.
-4. Remove this directory entirely if no records remain after LDG-2543.
+3. Remove this directory entirely in a future cleanup if the ledger is no
+   longer useful.
 
 ## Related References
 
 - `../manual/README.qmd`
 - `../manual/execution_fold_core.qmd`
+- `../manual/features.qmd`
 - `../manual/performance_arc_v0_1_8_x.qmd`
 - `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, Section 3.7

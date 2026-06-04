@@ -5,8 +5,8 @@
 **Reviewed artifact:** `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
 **Compared against:**
 
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `inst/design/architecture/ledgr_sweep_mode_ux.md`
+- `inst/design/manual/sweep.qmd`
+- `inst/design/manual/sweep.qmd`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `inst/design/ledgr_roadmap.md`
 - current R code under `R/`
@@ -222,7 +222,7 @@ it.
 
 Evidence:
 
-- UX doc: `inst/design/architecture/ledgr_sweep_mode_ux.md` defers
+- UX doc: `inst/design/manual/sweep.qmd` defers
   `ledgr_tune()`.
 - Spec: non-goals omit `ledgr_tune()`.
 

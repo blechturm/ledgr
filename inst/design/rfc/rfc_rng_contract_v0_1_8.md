@@ -7,7 +7,7 @@
 
 - `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
 - `inst/design/audits/v0_1_8_spec_deep_review.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 
 ## Purpose

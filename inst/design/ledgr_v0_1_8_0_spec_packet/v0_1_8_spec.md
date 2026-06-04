@@ -14,9 +14,9 @@ adapters, intraday semantics.
 
 This spec is based on the accepted sweep and architecture inputs:
 
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `inst/design/architecture/ledgr_sweep_mode_ux.md`
-- `inst/design/architecture/sweep_mode_code_review.md`
+- `inst/design/manual/sweep.qmd`
+- `inst/design/manual/sweep.qmd`
+- `inst/design/manual/sweep.qmd`
 - `inst/design/spikes/ledgr_parallelism_spike/README.md`
 - `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`

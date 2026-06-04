@@ -13,10 +13,11 @@ records reference evidence, and records the reviewed disposition. The initial
 audit phase deleted, moved, migrated, and gitignored nothing before review. The
 cleanup phase then applied only the reviewed deletions listed below.
 
-The binding architecture paths are preserved:
+The binding architecture paths have been migrated:
 
 - Fold trust-boundary architecture note (migrated by LDG-2541)
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
+- `inst/design/manual/features.qmd`
 
 ## Inventory Baseline
 
@@ -48,13 +49,13 @@ metadata where relevant.
 | ID | File | Bytes | Reference evidence | Current purpose | Final disposition |
 | --- | --- | ---: | --- | --- | --- |
 | INST-001 | Fold trust-boundary architecture note | 6,526 | 4 full-path refs; 17 basename refs at audit time | Binding snapshot/fold trust-boundary architecture note. | Migrated and deleted by LDG-2541; rationale now lives in `inst/design/manual/snapshots_data.qmd`. |
-| INST-002 | `inst/design/architecture/ledgr_feature_map_ux.md` | 9,006 | 2 full-path refs; 28 basename refs | Active feature-map UX/design input. | Keep, load-bearing design context. |
-| INST-003 | `inst/design/architecture/ledgr_sweep_mode_ux.md` | 25,644 | 20 full-path refs; 37 basename refs | Active sweep-mode UX/design input cited by sweep architecture and RFCs. | Keep, load-bearing design context. |
-| INST-004 | `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md` | 39,606 | 28 full-path refs; 44 basename refs | Binding sweep architecture note. | Keep, load-bearing. Do not rename or relocate without a separate ticket. |
-| INST-005 | `inst/design/architecture/sweep_mode_code_review.md` | 6,767 | 7 full-path refs; 16 basename refs | Review record used by the sweep architecture note. | Keep as architecture provenance. |
+| INST-002 | Retired feature-map UX architecture note | 9,006 | 2 full-path refs; 28 basename refs at audit time | Feature-map UX/design input. | Migrated and deleted by LDG-2543; rationale now lives in `inst/design/manual/features.qmd`. |
+| INST-003 | Retired sweep UX architecture note | 25,644 | 20 full-path refs; 37 basename refs at audit time | Sweep-mode UX/design input cited by sweep architecture and RFCs. | Migrated and deleted by LDG-2542; rationale now lives in `inst/design/manual/sweep.qmd`. |
+| INST-004 | Retired sweep architecture note | 39,606 | 28 full-path refs; 44 basename refs at audit time | Binding sweep architecture note. | Migrated and deleted by LDG-2542; synthesis-equivalent language now lives in `inst/design/manual/sweep.qmd`. |
+| INST-005 | Retired sweep code-review note | 6,767 | 7 full-path refs; 16 basename refs at audit time | Review record used by the sweep architecture note. | Absorbed into `inst/design/manual/sweep.qmd` implementation trace and deleted by LDG-2542. |
 | INST-006 | `inst/design/maintainer_review/.gitignore` | 31 | Directory-local ignore rules. | Ignored local Quarto render outputs at audit time. | Deleted by LDG-2546 after local artifacts were removed. |
 | INST-007 | `inst/design/maintainer_review/README.md` | 1,300 | Directory index. | Explains maintainer-review workbooks. | Rewritten by LDG-2546 as a wind-down policy. |
-| INST-008 | `inst/design/maintainer_review/feature_value_path_workbook.qmd` | 23,107 | 4 full-path refs; 11 basename refs | Maintainer workbook for feature value path review. | Temporarily retained for LDG-2543; to migrate into the manual feature article. |
+| INST-008 | Retired feature value path workbook | 23,107 | 4 full-path refs; 11 basename refs at audit time | Maintainer workbook for feature value path review. | Absorbed into `inst/design/manual/features.qmd` and deleted by LDG-2543. |
 | INST-009 | Retired fold-core workbook | 12,660 | 7 full-path refs; 22 basename refs | Maintainer workbook backing fold-core manual article. | Absorbed into `inst/design/manual/execution_fold_core.qmd` and deleted by LDG-2546. |
 | INST-010 | Retired v0.1.8.7 optimization workbook | 37,466 | 10 full-path refs; 11 basename refs | Historical optimization-round maintainer review and benchmark provenance. | Absorbed into `inst/design/manual/performance_arc_v0_1_8_x.qmd` and deleted by LDG-2546. |
 | INST-011 | `inst/diagrams/database_erd.mmd` | 1,750 | 0 refs | Old Mermaid ERD; contains stale run-time `data_hash` and old table sketches. | Deleted after review. |
@@ -77,9 +78,9 @@ metadata where relevant.
 - one rendered workbook support directory
 
 LDG-2546 removed these local artifacts and deleted the directory-local
-`.gitignore`. The whole `inst/design/maintainer_review` directory remains
-excluded from package builds by `.Rbuildignore` while the final feature-path
-workbook is still temporarily retained.
+`.gitignore`. LDG-2543 absorbed the final feature-path workbook into
+`inst/design/manual/features.qmd`, leaving only the maintainer-review README as
+a migration ledger.
 
 ## .Rbuildignore Review
 

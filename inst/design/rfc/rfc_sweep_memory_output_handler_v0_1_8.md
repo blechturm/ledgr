@@ -7,8 +7,8 @@
 
 - `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
 - `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_tickets.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `inst/design/architecture/ledgr_sweep_mode_ux.md`
+- `inst/design/manual/sweep.qmd`
+- `inst/design/manual/sweep.qmd`
 - `inst/design/contracts.md`
 - `R/sweep.R`
 - `R/backtest-runner.R`
@@ -32,7 +32,7 @@ A sweep candidate that writes to a throwaway DuckDB and then discards it is
 doing the wrong work for the wrong reason. The ephemeral clone achieves "no
 source mutation" by redirection rather than by elimination.
 
-The architecture note (`ledgr_v0_1_8_sweep_architecture.md`) stated this
+The architecture note (`sweep.qmd`) stated this
 explicitly before LDG-2108 was written:
 
 > "In-memory summary rows for sweep... Sweep may use a cheaper output handler,

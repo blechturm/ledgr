@@ -1750,7 +1750,7 @@ Evidence and design breadcrumbs:
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `inst/design/rfc/rfc_parallelism_spike_architecture_consequences.md`
 - `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 Known spike findings to preserve: mirai is viable on Windows native R and
 Ubuntu/WSL as an optional backend; sequential sweep must not depend on mirai;
@@ -1776,7 +1776,7 @@ Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [infrastructure] mori as transport, not hot lookup
 
@@ -1812,7 +1812,7 @@ Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [infrastructure] Parallel interrupt and partial-result semantics
 
@@ -1825,7 +1825,7 @@ it is a parallel output contract.
 Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [data] Feature payload scale and indicator-width stress
 
@@ -1843,7 +1843,7 @@ Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [cost] Broker and exchange cost templates
 

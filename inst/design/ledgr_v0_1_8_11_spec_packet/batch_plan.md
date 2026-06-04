@@ -1,12 +1,12 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 11 deterministic substrate manual articles complete
-after Claude review. Rescoped 2026-06-04 to
-absorb the manual remainder and complete the `adr/` + `architecture/` +
-`maintainer_review/` wind-downs in this release (Batches 11-14 grouped for
-joint review; release gate becomes Batch 15). Section 3.7 of the spec
-introduces the two-layer manual article standard binding for every Batch
-11-14 article.
+**Status:** Active; Batches 11, 12, and 14 complete after Claude review. Batch
+13 (LDG-2544
+ADR-0004 split + LDG-2545 benchmark methodology residual) follows. Release
+gate becomes Batch 15. Rescoped 2026-06-04 to absorb the manual remainder and
+complete the `adr/` + `architecture/` + `maintainer_review/` wind-downs in
+this release. Section 3.7 of the spec introduces the two-layer manual article
+standard binding for every Batch 11-14 article.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -444,7 +444,7 @@ sections and spot-checked anchor freshness across both articles.
 ## Batch 12 - Research-Surface Manual Articles
 
 Tickets: `LDG-2542`, `LDG-2543`
-Status: In Review
+Status: Completed
 
 Grouped because both articles cover user-facing analytical surfaces built on
 the deterministic substrate (sweep + features), and absorb the three
@@ -452,12 +452,11 @@ architecture/ UX-or-architecture notes. Joint review confirms architecture/
 migration completeness for the heavy citation set and consistent
 sweep/features cross-references.
 
-Goal: author `sweep.qmd` and `features.qmd`; migrate
-`architecture/ledgr_v0_1_8_sweep_architecture.md`,
-`architecture/ledgr_sweep_mode_ux.md`, and
-`architecture/ledgr_feature_map_ux.md` into the respective articles; decide
-`architecture/sweep_mode_code_review.md` disposition; delete the migrated
-source files and re-point all citation sites (~80+ across the repo).
+Goal: author `sweep.qmd` and `features.qmd`; migrate the retired sweep
+architecture, sweep UX, feature-map UX, sweep code-review, and feature value
+path source records into the respective articles; record the sweep code-review
+disposition; delete the migrated source files and re-point all citation sites
+(~80+ across the repo).
 
 Exit criteria:
 
@@ -468,19 +467,18 @@ Exit criteria:
     path, memory output handler shape, B2 dispatch in candidate execution,
     `ledgr_promote()` code flow.
   - Features article Implementation Trace: absorbs
-    `maintainer_review/feature_value_path_workbook.qmd` depth content;
+    the retired feature value path workbook depth content;
     covers `ctx$feature()` resolution chain, feature cache key shape,
     features-engine.R structure, TTR adapter mechanism, alias map
     resolution.
 - Parallel-sweep dispatch synthesis-equivalent language preserved without
   weakening the "candidate dispatch, not a second engine" invariant.
-- `rfc/README.md` Parallel Sweep Dispatch row's Primary authority updated
-  from `architecture/ledgr_v0_1_8_sweep_architecture.md` to the new sweep
-  manual article.
+- `rfc/README.md` Parallel Sweep Dispatch row's Primary authority updated to
+  the new sweep manual article.
 - B2 scope language in the sweep article consistent with the horizon entry +
   maintainer-decisions doc + contracts.md trio.
 - Feature-map UX rationale migrated without introducing new public API.
-- `architecture/sweep_mode_code_review.md` disposition recorded (absorbed,
+- Sweep code-review disposition recorded (absorbed,
   routed to rfc/, or deleted with explicit reasoning).
 - All four architecture/ source files deleted (or the code-review file is
   routed elsewhere); citations re-pointed; `architecture/README.md` existing-
@@ -489,11 +487,13 @@ Exit criteria:
 
 Status note:
 
-Batch 12 is partially complete. LDG-2543 is completed after review. LDG-2542
-remains in review: `inst/design/manual/sweep.qmd` and its rendered sibling are
-not present yet, and the sweep architecture/UX source files remain active until
-the sweep article absorbs them and records `sweep_mode_code_review.md`
-disposition.
+Batch 12 completed after Claude review on 2026-06-04. `sweep.qmd` and
+`features.qmd` carry both Synthesis and Implementation Trace layers. The
+retired architecture and maintainer-review source records were absorbed, the
+sweep code-review note was deleted with its implementation findings carried by
+the sweep article, active citations were re-pointed, and the GFM siblings were
+rendered. Claude approved the joint batch with one filename-ledger fix, now
+applied in `maintainer_review/README.md`.
 
 ## Batch 13 - Wind-Down Completion
 
@@ -545,7 +545,7 @@ Goal: add Implementation Trace sections to `execution_fold_core.qmd` and
 and v0.1.8.7 optimization workbooks; author
 `maintainer_review/README.md` codifying the wind-down; delete absorbed
 workbooks; verify `maintainer_review/` contains only `README.md` and the
-temporarily retained `feature_value_path_workbook.qmd`.
+temporarily retained `features.qmd`.
 
 Exit criteria:
 
@@ -568,7 +568,7 @@ Exit criteria:
 - Retired fold-core workbook deleted; relevant citations re-pointed.
 - Retired v0.1.8.7 optimization workbook deleted.
 - `maintainer_review/` contains only `README.md` and
-  `feature_value_path_workbook.qmd`.
+  `features.qmd`.
 - Both retrofitted manual GFM siblings render cleanly with no unexpected
   drift.
 - No new contracts authored; no existing contract weakened.
@@ -583,8 +583,8 @@ Completion state:
   per-fill costs, event buffers, fill reconstruction, yyjsonr canonical JSON,
   collapse determinism, and B2 dispatch.
 - Rewrote `maintainer_review/README.md` as a wind-down policy, deleted the
-  absorbed workbooks and local render artifacts, and retained only the feature
-  workbook pending LDG-2543.
+  absorbed workbooks and local render artifacts. The remaining feature workbook
+  was absorbed later by LDG-2543.
 - Repointed live manual source links to the new implementation traces.
 - Claude review approved the Batch 14 retrofit and recommended close after
   spot-checking approximately 50 source anchors across both retrofitted
