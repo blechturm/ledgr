@@ -1,0 +1,332 @@
+# Observability And Determinism
+
+
+**Status:** Reviewable maintainer-manual article for LDG-2540.
+
+**Authority:** Synthesis plus implementation trace. Binding execution,
+strategy, telemetry, fingerprint, RNG, and verification contracts remain
+in `../contracts.md`.
+
+You need to explain why a ledgr result can be trusted after the session
+that created it has ended. This article maps the observability and
+determinism surface: what is recorded, what is fingerprinted, what is
+rejected before execution, and which runtime shortcuts are allowed only
+because durable evidence is preserved elsewhere.
+
+By the end, you should know which evidence surface to inspect when a
+run, sweep candidate, strategy, feature, or replay path looks
+suspicious.
+
+> [!WARNING]
+>
+> **Synthesis, not authority**
+>
+> This manual migrates the rationale formerly held in ADR-0002 and
+> ADR-0003. It does not create new execution semantics or public API. If
+> it disagrees with `../contracts.md`, an accepted RFC, or a versioned
+> packet, fix this article.
+
+## The Short Version
+
+ledgr determinism is not one hash. It is a stack of evidence:
+
+- sealed snapshots identify the market-data input;
+- config hashes identify the execution configuration;
+- feature and strategy fingerprints identify executable logic;
+- run metadata records seeds, timing, versions, and terminal metrics;
+- event streams are the canonical accounting evidence;
+- replay and result readers reconstruct derived views from stored
+  evidence.
+
+The stack is deliberately fail-loud. If ledgr cannot fingerprint
+executable logic or deterministic captured values, it should reject the
+setup before run creation rather than produce evidence that cannot be
+trusted later.
+
+## Evidence Surfaces
+
+```mermaid
+flowchart LR
+  DATA[Sealed snapshot] --> CONFIG[Execution config]
+  CODE[Strategy and feature logic] --> FP[Fingerprints]
+  CONFIG --> RUN[Run metadata]
+  FP --> RUN
+  RUN --> EVENTS[Ledger events]
+  EVENTS --> VIEWS[Equity, fills, metrics, summaries]
+```
+
+Each surface answers a different maintainer question.
+
+| Surface | Question it answers | Binding home |
+|----|----|----|
+| Snapshot hash | Did this run use the sealed data it claims? | `../contracts.md` |
+| Config hash | Did execution-relevant configuration change? | `../contracts.md` |
+| Feature fingerprint | Did feature implementation or params change? | `../contracts.md` |
+| Strategy fingerprint | Did strategy implementation, params, defaults, or deterministic captures change? | `../contracts.md` |
+| `execution_seed` | Which candidate/run seed was used? | `../contracts.md` |
+| `ctx$pulse_seed` | What resume/parallel-safe stochastic input was available per pulse? | `../contracts.md` |
+| Event stream | What accounting facts actually happened? | `../contracts.md` |
+
+No single field replaces the rest. A deterministic run is credible
+because the surfaces agree.
+
+## Executable Identity
+
+Registered indicators and functional strategies may live in memory while
+a run is authored. That is ergonomic, but it creates a reproducibility
+hazard: a stored config that names a registry key is not enough if the
+object behind the key later changes.
+
+The migrated ADR-0002 rationale is now this rule:
+
+- registered indicator configs carry fingerprints of executable
+  definitions and parameters;
+- functional strategies are keyed by deterministic fingerprints, not by
+  volatile object addresses;
+- reusing a run identity with changed executable logic must fail loudly;
+- replay must not trust the current in-memory registry if stored
+  provenance says the logic was different.
+
+This is why fingerprint checks belong before committed evidence is
+written. A late warning after events exist is too weak.
+
+## Closure Captures
+
+R strategy functions can capture values from their enclosing
+environment. Hashing only the function body misses meaningful changes
+such as:
+
+``` r
+make_strategy <- function(target_qty) {
+  function(ctx, params) {
+    targets <- ctx$flat()
+    targets[["AAA"]] <- target_qty
+    targets
+  }
+}
+```
+
+The two functions created by `make_strategy(1)` and `make_strategy(2)`
+have the same body, but they do not define the same strategy. The
+migrated ADR-0003 rationale is now this rule: deterministic closure
+captures and default arguments are part of the strategy fingerprint.
+
+Non-deterministic or non-serializable captures are rejected before run
+config creation. Examples include open connections, mutable external
+handles, and ambient timestamp objects whose value cannot be reproduced
+as stable config identity. The goal is not to ban ordinary closures; the
+goal is to keep captured logic explicit enough to verify.
+
+> [!IMPORTANT]
+>
+> **Do not soften fingerprint failures**
+>
+> If executable logic cannot be fingerprinted deterministically, the
+> right result is a pre-run error. Falling back to a body-only hash or a
+> warning creates unreplayable evidence.
+
+## Strategy Preflight And RNG
+
+Strategy preflight classifies ordinary sequential runs differently from
+paths that must prove resume or parallel equivalence. Ambient RNG may be
+tolerated for ordinary sequential execution under the current strategy
+contract, but it is not certified for resume or parallel determinism.
+
+Use `ctx$pulse_seed` when stochastic pulse decisions must be
+reproducible under resume or candidate-parallel execution.
+`ctx$pulse_seed` is derived from the run/candidate `execution_seed` and
+pulse index, not from ambient `.Random.seed`.
+
+This keeps the contract practical:
+
+- simple deterministic strategies remain simple;
+- ordinary sequential stochastic strategies can still be explored when
+  allowed by preflight;
+- certified resume/parallel paths have a stable per-pulse randomness
+  channel.
+
+## Telemetry And Replay
+
+Run telemetry is diagnostic, not accounting truth. It helps maintainers
+inspect where time and memory went, which backend was selected, and
+which execution subphases were material. The event stream remains the
+canonical evidence.
+
+Replay and result readers should reconstruct views from stored events
+and metadata. They should not recompute strategy decisions from the
+current session or rely on mutable in-memory registries. If a view
+disagrees with events, the view is suspect.
+
+## Fast Paths And Durable Evidence
+
+Internal optimization may use primitive runtime shapes, deterministic
+cache keys, or `collapse` helpers where measured and contract-safe.
+Those shortcuts are allowed only at runtime boundaries. They do not
+replace durable fingerprints, snapshot hashes, config hashes, or event
+evidence.
+
+This separation is intentional:
+
+- durable evidence remains stable and reviewable;
+- hot paths can avoid JSON-heavy or data-frame-heavy work;
+- maintainers can optimize internals without weakening replay or
+  provenance.
+
+## Implementation Trace
+
+This section follows the two-layer article standard in
+`../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md` section 3.7. It is an
+implementation map, not a new contract.
+
+### Data Structures
+
+The current package-level mutable environments are intentionally small,
+but they are the first places to inspect when changing telemetry,
+caches, or parallel execution. This enumeration is adapted from
+`../architecture/sweep_mode_code_review.md`.
+
+| Environment | Source | Runtime shape | Sweep risk from review |
+|----|----|----|----|
+| `.ledgr_telemetry_registry` | `R/backtest-runner.R:32`, writes at `R/backtest-runner.R:230` | key `run_id` -\> telemetry object for diagnostic read-back | Highest risk if shared workers write the same process-global registry; keep worker results message-passed or process-local. |
+| `.ledgr_preflight_registry` | `R/backtest-runner.R:33`, slots at `R/backtest-runner.R:129` | single `start` timing slot consumed and removed by `ledgr_take_preflight_start()` | Timing-only, but still process-global. |
+| `.ledgr_feature_cache_registry` | `R/feature-cache.R:1`, clear at `R/feature-cache.R:42` | session cache key -\> feature series | Useful for sequential reuse; unsafe as a shared mutable write target across workers. |
+| `ledgr_strategy_registry` | `R/strategy-fn.R:2`, writes at `R/strategy-fn.R:4` | strategy fingerprint -\> function object | Low risk during execution; registration is before run/sweep use. |
+| `.ledgr_backtest_lifecycle_registry` | `R/backtest.R:415`, writes at `R/backtest.R:491` | `auto_checkpoint_message_emitted` -\> `TRUE` | Console-message rate limiter only. |
+
+The strategy-visible per-pulse object is the fold context. The context
+stores `run_id`, `ts_utc`, `universe`, current `bars`, current
+`feature_table`, positions, cash/equity, `seed`, `pulse_seed`, previous
+strategy state, and `safety_state` at `R/fold-engine.R:223`.
+`ctx$pulse_seed` is assigned at `R/fold-engine.R:237`.
+
+### Code Anchors
+
+| Boundary | Current anchor |
+|----|----|
+| Config hash | `R/config-hash.R:1` calls `digest::digest(canonical_json(config), algo = "sha256")`. |
+| Canonical JSON byte format v2 | `R/config-canonical-json.R:21` fixes yyjsonr write options; `R/config-canonical-json.R:72` canonicalizes and writes. |
+| Closure/function fingerprint | `R/determinism.R:119` builds a function payload; captures use `codetools::findGlobals()` at `R/determinism.R:135`; hashing happens at `R/determinism.R:151`. |
+| Stable capture rejection | `R/determinism.R:63` rejects Date/POSIXt captures; `R/determinism.R:71` rejects environments, external pointers, and connections. |
+| Strategy registry keying | `R/strategy-fn.R:4` registers by `ledgr_function_fingerprint(..., include_captures = TRUE, allow_rng = TRUE)`. |
+| Strategy preflight tiering | `R/strategy-preflight.R:94` starts Tier 3 failure classification; `R/strategy-preflight.R:126` assigns Tier 2; `R/strategy-preflight.R:153` assigns Tier 1. |
+| Ambient RNG detection | `R/strategy-preflight.R:202` calls `codetools::findGlobals()`; ambient RNG symbols are collected at `R/strategy-preflight.R:216`. |
+| Resume RNG enforcement | `R/backtest-runner.R:904` runs preflight; `R/backtest-runner.R:906` aborts ambient-RNG resume. |
+| Parallel RNG enforcement | `R/sweep.R:96` runs preflight; `R/sweep.R:100` aborts ambient-RNG parallel sweeps. |
+| Pulse seed derivation | `R/rng.R:21` derives deterministic seeds; `R/rng.R:33` derives per-pulse seeds. |
+| Strategy state serialization | `R/fold-engine.R:529` serializes `state_update` through `canonical_json()`. |
+
+### Lookup And Dispatch Mechanisms
+
+`config_hash()` hashes the canonical config JSON. `canonical_json()`
+sorts named lists and named atomic vectors, converts POSIXt values to
+UTC strings, rejects non-JSON runtime objects, writes through yyjsonr
+with `pretty = FALSE`, `auto_unbox = TRUE`, `digits = -1L`,
+`null = "null"`, and `num_specials = "null"` at
+`R/config-canonical-json.R:21`, and caches the result in
+`.ledgr_json_cache` at `R/config-canonical-json.R:1`.
+
+The closure/fingerprint path is separate. `ledgr_function_fingerprint()`
+hashes the deparsed function body, stable formals payload, and, when
+requested, deterministic closure captures. The capture names come from
+`codetools::findGlobals()` at `R/determinism.R:135`; each captured value
+is converted with `ledgr_stable_payload()` before `canonical_json()` and
+`sha256`.
+
+Strategy preflight uses the same global-symbol analysis for dispatch
+risk. It marks global assignment, unsupported context mutation,
+forbidden calls, RNG mutation, and unresolved symbols as Tier 3 / not
+allowed; package dependencies, resolved external objects, and ambient
+RNG are Tier 2 / allowed for ordinary sequential execution at
+`R/strategy-preflight.R:126`; self-contained strategies are Tier 1 at
+`R/strategy-preflight.R:153`.
+
+### Edge Cases
+
+Ambient RNG is not a generic hard error. Calls such as `runif`, `rnorm`,
+and `sample` are recognized at `R/strategy-preflight.R:361`; they remain
+allowable for ordinary sequential execution under Tier 2, but fail
+loudly for resume and parallel sweep paths through
+`R/strategy-preflight.R:697` and `R/strategy-preflight.R:717`.
+
+RNG state mutation is stricter. `set.seed` and `RNGkind` are listed at
+`R/strategy-preflight.R:357` and are Tier 3. Non-serializable closure
+captures are also fail-loud through `ledgr_stable_payload()`:
+Date/POSIXt values, environments, external pointers, and connections do
+not become weak hashes.
+
+Telemetry is diagnostic. If telemetry disagrees with stored ledger
+events or derived result reconstruction, the event stream is the
+evidence surface to debug from.
+
+### Hot And Cold Paths
+
+Cold-path identity work includes config canonicalization,
+strategy/function fingerprinting, preflight classification, worker
+dependency setup, and run metadata construction. These operations may
+inspect source, globals, captures, or JSON payloads.
+
+Hot-path execution happens after those checks. The fold builds one
+context per pulse at `R/fold-engine.R:223`, derives `ctx$pulse_seed` at
+`R/fold-engine.R:237`, validates strategy targets, resolves fills,
+updates state, and emits events. It should not repeat config hashing or
+closure fingerprinting inside the per-pulse loop.
+
+### Concrete Examples
+
+The package-level RNG channel is deterministic because the pulse seed is
+a hash-derived child of the execution seed and pulse index:
+
+``` r
+ledgr_derive_seed(
+  execution_seed,
+  list(scope = "pulse", pulse_idx = as.integer(pulse_idx))
+)
+```
+
+A Tier 2 ambient-RNG finding has this runtime shape:
+
+``` r
+list(
+  tier = "tier_2",
+  allowed = TRUE,
+  ambient_rng_symbols = "runif",
+  notes = "Ambient RNG call(s) detected (runif); static preflight allows execution..."
+)
+```
+
+That shape is acceptable for ordinary sequential exploration, but resume
+and parallel sweep entry points reject it before fold execution.
+
+## Maintainer Checklist
+
+Before changing observability or determinism code, answer these
+questions:
+
+- Does the change preserve snapshot, config, feature, and strategy
+  identity as separate evidence surfaces?
+- Does any un-fingerprintable executable logic fail before run creation?
+- Are deterministic closure captures and defaults still included in
+  strategy identity?
+- Does any registry lookup remain protected by stored fingerprint
+  evidence?
+- Does stochastic resume/parallel behavior use `ctx$pulse_seed` rather
+  than ambient RNG?
+- Are event streams still the canonical accounting evidence?
+- Are telemetry and summaries clearly derived or diagnostic views?
+- Does any fast runtime representation stay out of durable provenance
+  unless routed through a contract change?
+
+## Source Links
+
+- `../contracts.md`
+- `../rfc/README.md`
+- `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`
+- `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`
+- `execution_fold_core.qmd` (`## Implementation Trace`)
+
+## Where Next
+
+- For sealed data and fold-entry trust boundaries, see
+  `snapshots_data.md`.
+- For pulse execution and output handlers, see `execution_fold_core.md`.
+- For binding contracts, see `../contracts.md`.

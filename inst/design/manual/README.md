@@ -22,8 +22,8 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 
 1.  execution / fold core;
 2.  observability / determinism;
-3.  sweep;
-4.  snapshots/data;
+3.  snapshots/data;
+4.  sweep;
 5.  features;
 6.  benchmark methodology.
 
@@ -32,6 +32,8 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | Article | Source | Status | Scope |
 |----|----|----|----|
 | [`execution_fold_core.md`](execution_fold_core.md) | `execution_fold_core.qmd` | Reviewable first batch | Shared fold core, pulse lifecycle, output handlers, trust boundary, B2 guard, and maintainer checklist. |
+| [`observability_determinism.md`](observability_determinism.md) | `observability_determinism.qmd` | Reviewable LDG-2540 batch | Fingerprints, closure captures, preflight/RNG determinism, telemetry, replay, and event evidence. |
+| [`snapshots_data.md`](snapshots_data.md) | `snapshots_data.qmd` | Reviewable LDG-2541 batch | Snapshot sealing, split stores, fold-entry guards, hot-path trust boundary, and data provenance. |
 | [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
 
 ## Bounded Remainder
@@ -39,13 +41,8 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 The following article families remain planned but incomplete in this
 foundation batch:
 
-- observability / determinism: error wrapping, telemetry, replay
-  invariants, `ctx$pulse_seed`, parallel/resume determinism, and
-  collapse determinism gate;
 - sweep: sweep architecture, promotion/reproduction, parallel dispatch,
   memory output handler, and B2 memory-backed opt-in boundaries;
-- snapshots/data: snapshot sealing, hash verification, snapshot/run
-  database split, and low-level snapshot adapter boundaries;
 - features: feature value path, cache/projection, indicator contract,
   `series_fn`, TTR adapter semantics, and feature-map/alias contracts;
 - benchmark methodology beyond the v0.1.8.7 to v0.1.8.10 arc: future
@@ -53,8 +50,8 @@ foundation batch:
   release-gate benchmark checks.
 
 If v0.1.8.11 cannot complete all article families, the release gate
-should route the remainder to v0.1.8.12 or a v0.1.9.x documentation
-follow-on rather than widening implementation scope.
+should route the remainder to a v0.1.9.x documentation follow-on rather
+than widening implementation scope.
 
 ## Rendered Output
 
@@ -80,10 +77,11 @@ manual articles:
 
 - `../contracts.md`
 - `../rfc/README.md`
-- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard)
-- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing)
-- `../architecture/fold_core_trust_boundary.md`
-- `../maintainer_review/fold_core_workbook.qmd`
+- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator
+  scope guard)
+- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md`
+  (Decision 2 narrowing)
+- `execution_fold_core.qmd` (`## Implementation Trace`)
 - `../maintainer_review/feature_value_path_workbook.qmd`
 - `../ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
 - `../ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md`

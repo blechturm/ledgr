@@ -1,0 +1,341 @@
+# Snapshots And Data
+
+
+**Status:** Reviewable maintainer-manual article for LDG-2541.
+
+**Authority:** Synthesis plus implementation trace. Binding snapshot,
+persistence, execution, and hot-path trust contracts remain in
+`../contracts.md`.
+
+You need to change snapshot, data-loading, or fold-entry code without
+weakening the guarantee that a run used the data it claims. This article
+maps the sealed snapshot lifecycle, the snapshot/run database split, and
+the trust boundary between expensive ingress validation and the
+per-pulse fold hot path.
+
+By the end, you should know what must be verified before fold
+construction and what the fold core is allowed to trust afterward.
+
+> [!WARNING]
+>
+> **Synthesis, not authority**
+>
+> This manual migrates the rationale formerly held in ADR-0001 and the
+> fold trust-boundary architecture note. It does not create new
+> execution semantics or public API. If it disagrees with
+> `../contracts.md`, an accepted RFC, or a versioned packet, fix this
+> article.
+
+## The Short Version
+
+Snapshots are ledgr’s data trust boundary. A production execution path
+accepts bars through snapshot creation, sealing, loading, and fold-entry
+verification. Only after that boundary may the fold core treat bars,
+pulses, timestamps, instruments, features, and universe membership as
+normalized primitives.
+
+The split-store model is part of that boundary:
+
+- snapshot databases hold sealed market data and snapshot metadata;
+- run databases hold run events, state, features, equity, fills,
+  summaries, and telemetry;
+- committed runs recompute and compare the sealed snapshot hash before
+  fold construction;
+- sweep evaluation validates a sealed snapshot handle and carries the
+  stored snapshot hash through candidate provenance.
+
+That committed-run versus sweep guard asymmetry is intentional and must
+not be weakened silently.
+
+## Snapshot Lifecycle
+
+```mermaid
+flowchart LR
+  RAW[Raw input bars] --> INGEST[Snapshot ingest validation]
+  INGEST --> SEAL[Seal snapshot]
+  SEAL --> HASH[Stored snapshot hash]
+  HASH --> LOAD[Load snapshot]
+  LOAD --> GUARD[Fold-entry guard]
+  GUARD --> FOLD[Fold core]
+```
+
+Snapshot ingest and sealing are where ledgr pays for data validation.
+The boundary should catch malformed timestamps, missing required
+columns, duplicate instrument-time rows, invalid price data where
+currently contracted, and inconsistent snapshot metadata before
+execution.
+
+Once a sealed snapshot has been accepted by the production fold-entry
+guard, the hot path should not repeat those checks per pulse, per
+feature, or per instrument. Repeating ingress validation inside the fold
+makes optimization fragile and does not improve durable evidence.
+
+## Snapshot And Run Stores
+
+The migrated ADR-0001 rationale is now this rule: sealed market data and
+run artifacts have different lifecycles and may live in different DuckDB
+files.
+
+That split supports normal research workflows:
+
+- one sealed snapshot can back many runs or sweep candidates;
+- run artifacts can be discarded, regenerated, or isolated without
+  mutating the data source;
+- a temporary run database can be useful while the snapshot database
+  remains durable;
+- run config records the relevant snapshot and run storage paths so
+  evidence can be reconstructed.
+
+The split is not a bypass. Execution still verifies the sealed snapshot
+before committed fold construction, and run metadata still records the
+snapshot identity that candidate/run evidence depends on.
+
+> [!NOTE]
+>
+> **`:memory:` snapshots and split stores**
+>
+> A memory-only snapshot does not provide a durable source path for
+> later verification. Split-store workflows need a durable snapshot
+> database when the run database is separate.
+
+## Fold-Entry Trust Boundary
+
+The fold core is a hot path. It should receive accepted primitive data
+and focus on execution semantics: decision-time context construction,
+strategy invocation, target validation, next-open fills, costs, events,
+positions, cash, lots, and telemetry.
+
+The trust boundary sits before that fold:
+
+| Path | Guard mechanism | Consequence |
+|----|----|----|
+| Committed `ledgr_run()` | Verify snapshot is sealed, confirm stored snapshot hash exists, recompute `ledgr_snapshot_hash()`, and compare. | Fold construction only begins after the durable data artifact matches its stored hash. |
+| `ledgr_sweep()` evaluation | Validate the snapshot object/handle is sealed and carry the stored `snapshot_hash` through feature precompute and candidate metadata. | Candidate evaluation avoids per-candidate recomputation while preserving candidate provenance and promotion checks. |
+
+Do not collapse those into a vague “snapshot was checked” statement. The
+exact mechanisms differ, and that difference is part of the current
+contract.
+
+## Hot-Path Rule
+
+After the fold-entry guard accepts a sealed snapshot, the fold core may
+trust:
+
+- pulse order;
+- timestamp normalization;
+- instrument membership;
+- required bar columns;
+- feature definitions already accepted by experiment construction;
+- universe membership and target-vector names;
+- primitive internal data shapes produced by the execution setup.
+
+The fold must still enforce execution-time contracts such as
+no-lookahead context construction, full target-vector validation,
+next-open fill timing, cost resolution, final-bar no-fill behavior, and
+event emission. The trust boundary removes repeated data ingress checks;
+it does not remove execution semantics.
+
+## Session Keys Are Not Provenance
+
+Runtime lookup keys and caches may use compact deterministic encodings
+when they are unambiguous and measured. They are session-local
+implementation details. Durable provenance remains snapshot hashes,
+config hashes, fingerprints, event streams, and run metadata.
+
+This keeps two goals compatible:
+
+- optimize the fold and feature hot paths without dragging durable JSON
+  through every lookup;
+- preserve evidence-grade artifacts that remain interpretable outside
+  the current R session.
+
+## Implementation Trace
+
+This section follows the two-layer article standard in
+`../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md` section 3.7. It is an
+implementation map, not a new contract.
+
+### Data Structures
+
+`ledgr_create_schema()` creates both snapshot and run tables from one
+schema initializer. The split-store distinction is runtime topology: the
+snapshot DB and run DB can be different DuckDB files, but each file is
+initialized with the same table definitions as needed.
+
+Snapshot data lives in these tables:
+
+| Table | Source | Key / constraint shape |
+|----|----|----|
+| `snapshots` | `R/db-schema-create.R:232` | `snapshot_id` primary key; `status` constrained to `CREATED`, `SEALED`, or `FAILED`; stores `sealed_at_utc`, `snapshot_hash`, and `meta_json`. |
+| `snapshot_instruments` | `R/db-schema-create.R:244` | primary key `(snapshot_id, instrument_id)`; stores symbol, currency, asset class, multiplier, tick size, and metadata JSON. |
+| `snapshot_bars` | `R/db-schema-create.R:258` | primary key `(snapshot_id, instrument_id, ts_utc)`; OHLC columns are `DOUBLE NOT NULL`; volume is nullable. |
+
+Run artifacts live in these tables:
+
+| Table | Source | Key / constraint shape |
+|----|----|----|
+| `runs` | `R/db-schema-create.R:136` | `run_id` primary key; status constrained to `CREATED`, `RUNNING`, `DONE`, or `FAILED`; stores `config_json`, `config_hash`, `snapshot_id`, metric context fields, and execution mode. |
+| `ledger_events` | `R/db-schema-create.R:193` | `event_id` primary key; `UNIQUE(run_id, event_seq)`; event type constrained to `FILL`, `FEE`, or `CASHFLOW`. |
+| `equity_curve` | `R/db-schema-create.R:210` | primary key `(run_id, ts_utc)`; stores cash, positions value, equity, and realized/unrealized P&L. |
+| `features` | `R/db-schema-create.R:182` | primary key `(run_id, instrument_id, ts_utc, feature_name)`. |
+| `strategy_state` | `R/db-schema-create.R:223` | primary key `(run_id, ts_utc)` with canonical JSON state payload. |
+
+There are no separately named `CREATE INDEX` statements in this schema.
+The current index/constraint surface is the primary keys, the
+`UNIQUE(run_id, event_seq)` ledger order guard, and CHECK constraints.
+DuckDB trigger attempts for sealed snapshot immutability are best effort
+at `R/db-schema-create.R:438`; write paths still have to enforce
+immutability when trigger support is absent.
+
+### Code Anchors
+
+| Boundary | Current anchor |
+|----|----|
+| Data-frame snapshot adapter | `R/snapshot_adapters.R:31` validates input and `R/snapshot_adapters.R:430` seals the snapshot. |
+| CSV adapter | `R/snapshot_adapters.R:475` reads strict UTF-8 CSV and delegates to `ledgr_snapshot_from_df()`. |
+| Yahoo adapter | `R/snapshot_adapters.R:556` fetches with quantmod and delegates to `ledgr_snapshot_from_df()` at `R/snapshot_adapters.R:592`. |
+| Seal transition | `R/snapshots-seal.R:57` begins sealing; `R/snapshots-seal.R:117` validates for seal; `R/snapshots-seal.R:147` computes the hash; `R/snapshots-seal.R:159` writes `SEALED`. |
+| Snapshot hash | `R/snapshots-hash.R:1` computes artifact identity; row format and ordering are at `R/snapshots-hash.R:145`. |
+| Explicit reopen verification | `R/snapshots-list.R:175` loads a snapshot; `R/snapshots-list.R:220` recomputes the hash when `verify = TRUE`. |
+| Committed-run fold guard | `R/backtest-runner.R:784` prepares source tables; `R/backtest-runner.R:803` checks `SEALED`; `R/backtest-runner.R:814` recomputes and compares. |
+| Sweep sealed-handle guard | `R/precompute-features.R:193` validates snapshot metadata and requires a stored hash. |
+| Sweep hash carry | `R/sweep.R:124` reads snapshot metadata; `R/sweep.R:189` passes `snapshot_hash` into tasks; `R/sweep.R:974` writes candidate provenance. |
+| Promotion same-snapshot check | `R/sweep.R:575` requires provenance `snapshot_hash`; `R/sweep.R:588` compares it to the current experiment snapshot. |
+
+### Lookup And Dispatch Mechanisms
+
+Snapshot adapters normalize external input into the sealed snapshot
+tables, then call `ledgr_snapshot_seal()`. `ledgr_snapshot_from_df()`
+checks required bar columns at `R/snapshot_adapters.R:41`, normalizes
+timestamps at `R/snapshot_adapters.R:59`, serializes instrument metadata
+with `canonical_json()` at `R/snapshot_adapters.R:245`, writes snapshot
+metadata at `R/snapshot_adapters.R:424`, and seals at
+`R/snapshot_adapters.R:430`.
+
+`snapshot_hash` is a row-line artifact hash, not the same byte format as
+`canonical_json()` v2. The snapshot hash fetches `snapshot_instruments`
+ordered by `instrument_id` and `snapshot_bars` ordered by
+`instrument_id, ts_utc`, formats timestamps as UTC strings, formats
+numbers to eight decimal places, uses `|`-separated lines ending in
+`\n`, hashes 10,000-row blocks, and returns
+`sha256(concat(block_hashes))`. Metadata in the `snapshots` envelope is
+excluded so identical artifacts can have the same hash across snapshot
+IDs; see `R/snapshots-hash.R:145`.
+
+Canonical JSON byte-format v2 still matters around snapshots because
+metadata, run config, feature keys, and strategy state use it. Its fixed
+yyjsonr writer options are at `R/config-canonical-json.R:21`, and its
+canonicalization entry point is `R/config-canonical-json.R:72`.
+
+Committed runs and sweeps intentionally dispatch differently. Committed
+`ledgr_run()` enters `ledgr_backtest_run_internal()`, prepares source
+tables, requires `SEALED`, requires a stored hash, recomputes
+`ledgr_snapshot_hash()`, and fails the run if the recomputed value
+differs. Sweeps call `ledgr_precompute_snapshot_meta()`, validate the
+sealed snapshot handle and stored hash, then carry that hash through
+candidate tasks, failure rows, success rows, result attributes, and
+promotion checks.
+
+### Edge Cases
+
+`ledgr_snapshot_load(db_path, verify = TRUE)` is an explicit reopen
+check. It rejects `:memory:` paths at `R/snapshots-list.R:179`, missing
+files at `R/snapshots-list.R:182`, non-SEALED snapshots at
+`R/snapshots-list.R:212`, missing stored hashes at
+`R/snapshots-list.R:221`, and hash mismatches at
+`R/snapshots-list.R:225`.
+
+Sealing fails loudly for empty snapshots, referential-integrity
+failures, and OHLC validation failures through the seal validation path.
+If hashing fails, `R/snapshots-seal.R:147` catches the hash error and
+routes through the `seal_failed()` helper at `R/snapshots-seal.R:121`,
+which marks the snapshot `FAILED` before raising
+`LEDGR_SNAPSHOT_SEAL_FAILED`.
+
+The sweep path does not recompute the snapshot hash for each candidate.
+That is not a silent trust downgrade: `ledgr_precompute_snapshot_meta()`
+requires a valid sealed snapshot handle and stored hash, the stored hash
+is carried through candidate provenance, and
+`ledgr_candidate_validate_same_snapshot()` fails when promotion requests
+`require_same_snapshot = TRUE` and the candidate hash does not match the
+target experiment.
+
+### Hot And Cold Paths
+
+Cold paths include adapter validation, schema initialization, seal
+validation, hash computation, explicit `verify = TRUE` reopen checks,
+committed-run fold-entry recompute, and sweep metadata precompute. These
+are allowed to query DuckDB, sort rows, format bytes, and hash.
+
+Hot paths include the per-pulse fold and candidate execution after
+setup. The fold should receive normalized bars, primitive
+timestamp/universe vectors, and accepted feature projections. It still
+enforces execution semantics such as no-lookahead context construction,
+full target vectors, next-open fills, costs, final-bar no-fill behavior,
+and event emission, but it should not repeat raw data ingress validation
+per pulse.
+
+### Concrete Examples
+
+The snapshot bar hash line shape is:
+
+``` text
+instrument_id|ts_utc|open|high|low|close|volume\n
+```
+
+For a toy bar, the formatted line would be:
+
+``` text
+AAA|2024-01-01T00:00:00Z|100.00000000|101.00000000|99.00000000|100.00000000|1000.00000000\n
+```
+
+If volume is missing, the hash token is `NA` in the final field because
+`token_vec()` converts missing values to `NA` at
+`R/snapshots-hash.R:104`.
+
+The compact sweep provenance path carries only the accepted artifact
+identity:
+
+``` r
+list(
+  provenance_version = "ledgr_provenance_v1",
+  snapshot_hash = snapshot_hash,
+  strategy_hash = strategy_hash,
+  feature_set_hash = feature_set_hash,
+  evaluation_scope = "exploratory"
+)
+```
+
+## Maintainer Checklist
+
+Before changing snapshot or data-boundary code, answer these questions:
+
+- Does snapshot creation still validate raw input before sealing?
+- Does committed `ledgr_run()` still recompute and compare the sealed
+  snapshot hash before fold construction?
+- Does sweep still validate a sealed snapshot handle and carry the
+  stored `snapshot_hash` through candidate provenance?
+- Are split snapshot/run database paths recorded deterministically where
+  needed?
+- Are durable snapshot and run artifacts kept conceptually separate?
+- Did any ingress validation accidentally move into per-pulse or
+  per-feature loops?
+- Did any runtime cache key become durable evidence without a contract
+  change?
+- Does the fold still enforce execution semantics after trusting
+  normalized data?
+
+## Source Links
+
+- `../contracts.md`
+- `../rfc/README.md`
+- `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`
+- `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`
+- `execution_fold_core.qmd` (`## Implementation Trace`)
+
+## Where Next
+
+- For executable identity, closure captures, RNG, telemetry, and replay,
+  see `observability_determinism.md`.
+- For pulse execution and output handlers, see `execution_fold_core.md`.
+- For binding contracts, see `../contracts.md`.

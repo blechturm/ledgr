@@ -3,9 +3,9 @@
 
 **Status:** Reviewable maintainer-manual article for LDG-2532.
 
-**Authority:** Synthesis only. The binding execution contract is
-`../contracts.md`; the detailed code trace is
-`../maintainer_review/fold_core_workbook.qmd`.
+**Authority:** Synthesis plus implementation trace. The binding
+execution contract is `../contracts.md`; the trace below replaces the
+retired fold-core workbook as the current code-reading map.
 
 You need to change execution code without creating a second engine,
 weakening snapshot guards, or changing run/sweep semantics by accident.
@@ -73,8 +73,8 @@ flowchart TB
 | Layer | Maintainer question | Primary authority |
 |----|----|----|
 | Public entry point | Does the API preserve one execution path? | `../contracts.md` |
-| Fold trust boundary | Has sealed snapshot input been accepted before fold entry? | `../architecture/fold_core_trust_boundary.md` |
-| Per-pulse fold | Does the pulse produce the same semantic events regardless of output handler? | `../maintainer_review/fold_core_workbook.qmd` |
+| Fold trust boundary | Has sealed snapshot input been accepted before fold entry? | `snapshots_data.md` and `../contracts.md` |
+| Per-pulse fold | Does the pulse produce the same semantic events regardless of output handler? | Implementation Trace below |
 
 Production fold entry must be guarded by the sealed-snapshot trust
 boundary. Committed runs recompute and compare the sealed snapshot hash
@@ -198,6 +198,207 @@ release-packet scope.
 > or expand it beyond `"spot_fifo"` without a fresh RFC and
 > release-packet scope.
 
+## Implementation Trace
+
+This layer is for maintainers and agents changing code. It follows the
+two-layer manual standard in
+`../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, Section 3.7:
+synthesis explains the contract; implementation trace names the concrete
+objects, dispatch points, failure modes, and hot-path boundaries. It is
+an implementation map, not a new contract.
+
+### Data Structures
+
+The fold receives a typed execution list from `ledgr_execution_spec()`
+in `R/execution-spec.R:45`. Its load-bearing slots are assigned in
+`R/execution-spec.R:76`: run and instrument identity, strategy function
+and call signature, pulse vectors, checkpoint and telemetry settings,
+fold state, source bars, matrix-backed bars, feature views, runtime
+projection, `cost_resolver`, `event_seq_start`, `telemetry`,
+`event_mode`, `use_fast_context`, and `compiled_accounting_model`. The
+validator keeps these shapes strict across `R/execution-spec.R:113`,
+`R/execution-spec.R:180`, `R/execution-spec.R:196`,
+`R/execution-spec.R:220`, `R/execution-spec.R:224`, and
+`R/execution-spec.R:241`.
+
+At each pulse, `R/fold-engine.R:227` constructs the strategy context as
+a plain list with class `ledgr_pulse_context` at `R/fold-engine.R:241`.
+The runtime shape is:
+
+| Slot | Type / shape | Source anchor |
+|----|----|----|
+| `run_id` | scalar character | `R/fold-engine.R:228` |
+| `ts_utc` | scalar ISO UTC character | `R/fold-engine.R:229` |
+| `universe` | character vector of instrument ids | `R/fold-engine.R:230` |
+| `bars` | current-pulse bars view, never future bars | `R/fold-engine.R:231` |
+| `feature_table` | current-pulse feature table | `R/fold-engine.R:232` |
+| `positions` | named numeric snapshot before strategy call | `R/fold-engine.R:233` |
+| `cash` / `equity` | numeric scalar fold state | `R/fold-engine.R:234`, `R/fold-engine.R:235` |
+| `seed` | execution seed or `NULL` | `R/fold-engine.R:236` |
+| `pulse_seed` | deterministic per-pulse seed or `NULL` | `R/fold-engine.R:237` |
+| `state_prev` | prior strategy state object, JSON-derived list, or `NULL` | `R/fold-engine.R:238` |
+| `safety_state` | scalar risk-state label | `R/fold-engine.R:239` |
+
+`ctx` helper attachment is deliberately a dispatch choice, not a
+semantic choice. Fast helpers are attached at `R/fold-engine.R:242`;
+regular helpers are attached at `R/fold-engine.R:256`. Both operate over
+the same pulse data.
+
+Strategy state is carried separately from portfolio state. On committed
+resume, the previous strategy state is read before execution at
+`R/backtest-runner.R:1236` and passed into the execution spec at
+`R/backtest-runner.R:1261`. During the fold, a strategy `state_update`
+is canonicalized at `R/fold-engine.R:531`, kept in memory at
+`R/fold-engine.R:532`, and either persisted through
+`output_handler$write_strategy_state()` at `R/fold-engine.R:533` or
+buffered via `output_handler$buffer_strategy_state()` at
+`R/fold-engine.R:535`.
+
+Telemetry is a mutable environment owned by the caller. Committed runs
+allocate the telemetry fields at `R/backtest-runner.R:1021`; sweeps
+allocate the same-style fields at `R/sweep.R:1575`. The common slots
+include `t_pre`, `t_loop`, `t_engine`, `t_results`, `t_fills_extract`,
+the sampled pulse timers, and feature-cache hit/miss counters.
+
+Output handlers are the materialization boundary. Durable execution
+builds a persistent handler at `R/backtest-runner.R:285` with pending
+event and state buffers initialized at `R/backtest-runner.R:290`. Sweep
+execution builds the memory handler at `R/sweep.R:990`; its typed event
+columns are allocated at `R/sweep.R:999` and grown with the shared
+event-buffer capacity function from `R/fold-event-buffer.R:7`.
+
+### Code Anchors
+
+| Boundary | Code anchor |
+|----|----|
+| Committed-run sealed snapshot guard | `R/backtest-runner.R:784` checks the source tables, sealed status, stored hash, and recomputed hash before fold construction. |
+| Committed execution-spec construction | `R/backtest-runner.R:1247` passes state, source bars, runtime projection, telemetry, event mode, fast-context flag, and compiled model into the fold. |
+| Shared fold entry | `R/fold-engine.R:63` validates the execution spec and unpacks the same fields for run and sweep. |
+| B2 dispatch gate | `R/fold-engine.R:101` checks `"spot_fifo"` and calls `ledgr_require_compiled_spot_fifo_dispatch()`. |
+| Context construction | `R/fold-engine.R:223` marks the no-lookahead current-pulse section; `R/fold-engine.R:227` builds `ctx`. |
+| Strategy target validation | `R/fold-engine.R:296` normalizes strategy output; `R/fold-engine.R:312` calls `ledgr_validate_strategy_targets()`. |
+| Next-open fill timing | `R/fold-engine.R:430` builds fill proposals from the next bar; `R/fold-engine.R:451` warns and skips final-bar deltas. |
+| Accounting mutation and event emission | `R/fold-engine.R:481` applies lot accounting; `R/fold-engine.R:496` writes semantic fill events through the handler. |
+| Strategy-state persistence | `R/fold-engine.R:529` handles `state_update`; durable strategy-state writes are implemented by `R/backtest-runner.R:502`. |
+| Checkpoint and final flush | `R/fold-engine.R:562` performs checkpoint flushes; `R/fold-engine.R:580` performs the final flush. |
+| Sweep candidate fold | `R/sweep.R:907` builds the same execution spec with `event_mode = "buffered"` and `use_fast_context = TRUE`. |
+| Sweep summary materialization | `R/sweep.R:941` switches from engine timing to result reconstruction; `R/fold-reconstruction.R:409` derives sweep summaries from ordered events. |
+
+### Lookup And Dispatch Mechanisms
+
+Committed runs dispatch through `ledgr_run()` into the backtest runner,
+which first accepts a sealed snapshot and then calls
+`ledgr_execute_fold()` with a persistent output handler. The important
+separation is visible at `R/backtest-runner.R:784` for the cold guard
+and `R/backtest-runner.R:1278` for fold entry.
+
+Sweeps dispatch through `ledgr_sweep()`. The public
+`compiled_accounting_model` argument is normalized at `R/sweep.R:94`,
+carried into candidate tasks at `R/sweep.R:176`, and passed to each
+candidate execution spec at `R/sweep.R:935`. Candidate evaluation still
+calls `ledgr_execute_fold()` at `R/sweep.R:938`.
+
+The B2 dispatch chain is intentionally short.
+`R/compiled-spot-fifo.R:24` normalizes the model to `NULL` or
+`"spot_fifo"`. `R/compiled-spot-fifo.R:62` requires buffered event mode,
+a memory output handler with `append_compiled_spot_batch`, and an
+available C++ symbol. Unsupported values fail through
+`ledgr_unsupported_accounting_model_error()` at
+`R/compiled-spot-fifo.R:1`; unavailable or wrong-surface requests fail
+through `ledgr_compiled_spot_fifo_unavailable_error()` at
+`R/compiled-spot-fifo.R:47`.
+
+Event emission dispatch is handler-based. Durable runs implement
+`write_fill_events()` at `R/backtest-runner.R:478` and persist rows
+through the pending buffer flush at `R/backtest-runner.R:511`. Sweeps
+implement `write_fill_events()` at `R/sweep.R:1367`, keep typed event
+metadata in memory, and only serialize `meta_json` when callers
+materialize rows at `R/sweep.R:1117`.
+
+### Edge Cases
+
+Fold-entry snapshot failures are loud before execution. A missing source
+row, unsealed snapshot, missing stored hash, or recomputed-hash mismatch
+aborts in the committed-run guard between `R/backtest-runner.R:800` and
+`R/backtest-runner.R:817`.
+
+Strategy return-shape failures are loud inside the fold. Intermediate
+strategy returns abort at `R/fold-engine.R:296`; non-list target
+envelopes abort at `R/fold-engine.R:302`; full target validation runs at
+`R/fold-engine.R:312`. The manual contract is therefore not “missing
+target means zero.” A strategy that wants flat exposure must say so with
+`ctx$flat()`.
+
+Final-bar target changes cannot fill because there is no next execution
+bar. The warning path is `R/fold-engine.R:451`; it preserves
+no-lookahead timing rather than falling back to current close.
+
+B2 rejects unsupported surfaces rather than silently falling back.
+Durable use fails because `R/compiled-spot-fifo.R:67` requires buffered
+event mode, and unsupported accounting models fail at
+`R/compiled-spot-fifo.R:32`.
+
+Resume and parallel equivalence are certified only for the documented
+deterministic surfaces. Ordinary sequential strategies may have broader
+preflight tolerance, but resume/parallel-safe stochastic behavior must
+use `ctx$pulse_seed`; see `observability_determinism.qmd` for the RNG
+trace.
+
+### Hot And Cold Paths
+
+Cold work happens before the pulse loop: snapshot source preparation and
+hash verification (`R/backtest-runner.R:784`), bars and feature
+projection assembly, cost resolver construction, output-handler
+construction, and execution-spec validation (`R/execution-spec.R:113`).
+
+Hot work happens per pulse in `ledgr_execute_fold()`: current bars and
+features, context construction, strategy call, target validation,
+non-zero delta iteration, next-open fill proposal, cost resolution, lot
+mutation, event emission, strategy-state update, and sampled telemetry.
+The fold records subphase timers only when telemetry sampling is
+enabled; the per-sample writes are guarded at `R/fold-engine.R:545`.
+
+Warm materialization work happens after the fold. Durable callers
+reconstruct views from stored events; sweep callers summarize ordered
+in-memory events at `R/sweep.R:941`. The fast path distinction is
+important: optimizing result materialization is not the same as changing
+execution semantics.
+
+### Concrete Examples
+
+A minimal context shape at pulse `i` looks like this:
+
+``` r
+ctx <- list(
+  run_id = "run_001",
+  ts_utc = "2024-01-03T00:00:00Z",
+  universe = c("AAA", "BBB"),
+  bars = data.frame(instrument_id = c("AAA", "BBB"), close = c(101, 52)),
+  feature_table = data.frame(instrument_id = c("AAA", "BBB"), sma_3 = c(100, 51)),
+  positions = c(AAA = 1, BBB = 0),
+  cash = 99890,
+  equity = 99991,
+  seed = 2026L,
+  pulse_seed = 123456789L,
+  state_prev = list(last_signal = "AAA"),
+  safety_state = "GREEN"
+)
+class(ctx) <- "ledgr_pulse_context"
+```
+
+The strategy may return `ctx$hold()` with one changed target, or a list
+with `targets` and `state_update`:
+
+``` r
+list(
+  targets = c(AAA = 1, BBB = 0),
+  state_update = list(last_signal = "AAA", last_ts = ctx$ts_utc)
+)
+```
+
+The state update is canonicalized once the strategy returns; it is not
+part of the target vector and it does not relax target validation.
+
 ## Maintainer Checklist
 
 Before changing execution code, answer these questions:
@@ -222,16 +423,17 @@ Before changing execution code, answer these questions:
 
 - `../contracts.md`
 - `../rfc/README.md`
-- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard)
-- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing)
-- `../architecture/fold_core_trust_boundary.md`
-- `../maintainer_review/fold_core_workbook.qmd`
+- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator
+  scope guard)
+- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md`
+  (Decision 2 narrowing)
+- `snapshots_data.md`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`
 - `../ledgr_v0_1_8_11_spec_packet/contracts_audit.md`
 
 ## Where Next
 
 - For the article order and bounded remainder, see `README.qmd`.
-- For the detailed code trace, see
-  `../maintainer_review/fold_core_workbook.qmd`.
+- For the detailed execution code trace, see the Implementation Trace
+  above.
 - For the binding execution contracts, see `../contracts.md`.
