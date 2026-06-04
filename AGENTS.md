@@ -136,12 +136,22 @@ update this block when the next packet opens or scope changes materially):
   Claude review. Batch 8 research software disclaimer surface work is complete
   after Claude review. Batch 9 generated docs and man-page audit work is
   complete after Claude review. LDG-2539 was added to consume the generated-doc
-  audit findings. Batch 10 `inst/` subdirectory audit and reviewed cleanup work
-  is complete. Rescoped 2026-06-04: LDG-2540 through LDG-2545 added to absorb
-  the manual remainder and complete the `adr/` + `architecture/` wind-downs in
-  v0.1.8.11 (no v0.1.8.12 follow-on). ADR-0005 deleted; ADR + architecture
-  README wind-down policies in place. Continue with LDG-2539, then LDG-2540
-  through LDG-2545, then the release gate.
+  audit findings and is complete after review. Batch 10 `inst/` subdirectory
+  audit and reviewed cleanup work is complete. Rescoped 2026-06-04:
+  LDG-2540 through LDG-2546 added to absorb the manual remainder and complete
+  the `adr/` + `architecture/` +
+  `maintainer_review/` wind-downs in v0.1.8.11 (no v0.1.8.12 follow-on).
+  ADR-0005 deleted; ADR-0001 through ADR-0003 and the fold trust-boundary
+  note migrated into manual articles. Spec Section 3.7 introduces the
+  two-layer manual article standard (Synthesis + Implementation Trace) after
+  a 2026-06-04 review found the first articles too synthesis-heavy; LDG-2546
+  retrofits `execution_fold_core` and `performance_arc` with Implementation
+  Trace sections and winds down `maintainer_review/`. Batch 11 / LDG-2540 +
+  LDG-2541 is complete after Claude review: both new deterministic substrate
+  manual articles now carry Synthesis and Implementation Trace layers. Batch
+  14 / LDG-2546 is complete after Claude review: existing manual articles now
+  carry Implementation Trace layers and `maintainer_review/` is wound down.
+  Continue with LDG-2542 through LDG-2545, then the release gate.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.
@@ -159,12 +169,12 @@ packets are records, not authorization for new work.
 | v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
 | v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
 | v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
-| v0.1.8.8 fold-core documentation | `inst/design/maintainer_review/fold_core_workbook.qmd`, `inst/design/maintainer_review/feature_value_path_workbook.qmd`, `inst/design/horizon.md` |
+| Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/maintainer_review/feature_value_path_workbook.qmd`, `inst/design/horizon.md` |
 | v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
 | v0.1.8.7 release record | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
-| v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/architecture/fold_core_trust_boundary.md`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/adr/0004-dependency-footprint-and-strategy-interface.md` |
+| v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/manual/snapshots_data.qmd`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/adr/0004-dependency-footprint-and-strategy-interface.md` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
 | Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
 | Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |

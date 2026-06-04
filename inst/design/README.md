@@ -110,7 +110,7 @@ wrapper, and fast-sweep versus promotion/materialization artifact boundary.
   `ledgr_v0_1_8_7_spec_packet/cycle_retrospective.md`.
 - Key inputs:
   `audits/fold_path_hotpath_audit.md`,
-  `architecture/fold_core_trust_boundary.md`,
+  `manual/snapshots_data.qmd` (migrated fold trust-boundary rationale),
   `collapse_optimization_map.md`,
   `spikes/ledgr_optimization_round_spike/README.md`, and
   `adr/0004-dependency-footprint-and-strategy-interface.md`.
@@ -135,7 +135,7 @@ deferred.
   `spikes/ledgr_parallelism_spike/summary_report.md`,
   `spikes/ledgr_parallelism_spike/architecture_synthesis.md`,
   `architecture/ledgr_v0_1_8_sweep_architecture.md`,
-  `maintainer_review/fold_core_workbook.qmd`, and
+  `manual/execution_fold_core.qmd`, and
   `ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
 
 The v0.1.8.9 packet is complete. It shipped the single-core optimization round
@@ -181,15 +181,24 @@ Claude review. Batch 6 user-facing documentation refresh work is complete after
 Claude review. Batch 7 performance arc narrative work is complete after Claude
 review. Batch 8 research software disclaimer surface work is complete after
 Claude review. Batch 9 generated docs and man-page audit work is complete after
-Claude review. LDG-2539 was added to consume the generated-doc audit findings.
-Batch 10 `inst/` subdirectory audit and reviewed cleanup work is complete.
-Rescoped 2026-06-04: LDG-2540 through LDG-2545 added to absorb the manual
-remainder and complete the `adr/` + `architecture/` directory wind-downs in
-v0.1.8.11 itself; no v0.1.8.12 follow-on is planned. ADR-0005 was deleted in
-the 2026-06-04 structural review. The next substantive cleanup work is
-LDG-2539, then LDG-2540 (observability/determinism manual article), then
-sequentially through LDG-2545 (benchmark methodology residual), then the
-release gate.
+Claude review. LDG-2539 was added to consume the generated-doc audit findings
+and is complete after review. Batch 10 `inst/` subdirectory audit and reviewed
+cleanup work is complete.
+Rescoped 2026-06-04: LDG-2540 through LDG-2546 added to absorb the manual
+remainder and complete the `adr/` + `architecture/` + `maintainer_review/`
+directory wind-downs in v0.1.8.11 itself; no v0.1.8.12 follow-on is planned.
+ADR-0005 was deleted in the 2026-06-04 structural review. Spec Section 3.7
+introduces the two-layer manual article standard (Synthesis + Implementation
+Trace) after a 2026-06-04 review found the first articles too
+synthesis-heavy; every new manual article in this packet ships both layers,
+while LDG-2546 retrofits the two existing articles.
+LDG-2546 covers `execution_fold_core` and `performance_arc` and winds down
+`maintainer_review/`. Batch 11 / LDG-2540 +
+LDG-2541 is complete after Claude review: both new deterministic substrate
+manual articles now carry Synthesis and Implementation Trace layers. Batch 14 /
+LDG-2546 is complete after Claude review: existing manual articles now carry
+Implementation Trace layers and `maintainer_review/` is wound down. The next
+substantive cleanup work is LDG-2542 through LDG-2545, then the release gate.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
@@ -220,7 +229,6 @@ load-bearing for future sweep and fold-core work.
 - `architecture/ledgr_sweep_mode_ux.md`
 - `architecture/sweep_mode_code_review.md`
 - `architecture/ledgr_feature_map_ux.md`
-- `architecture/fold_core_trust_boundary.md`
 - `architecture/ledgr_v0_1_8_sweep_architecture.md`
 - `collapse_optimization_map.md`
 - `spikes/ledgr_parallelism_spike/summary_report.md`
@@ -418,12 +426,13 @@ paper/live interaction to later RFCs.
 
 ## Maintainer Review
 
+- `maintainer_review/README.md` - wind-down policy for the retired workbook
+  location. New implementation-depth notes belong in manual article
+  `## Implementation Trace` sections.
 - `maintainer_review/feature_value_path_workbook.qmd` - internal notebook for tracing
-  how declared features become `ctx$feature()` values. This is a maintainer
-  code-review aid, not installed user documentation or a contract.
-- `maintainer_review/v0_1_8_7_optimization_round.qmd` - internal narrative
-  review of the v0.1.8.7 optimization round. This is a maintainer review aid,
-  not a benchmark contract or installed user documentation.
+  how declared features become `ctx$feature()` values. This is temporarily
+  retained for LDG-2543 and should be migrated into the manual feature article
+  before the directory is fully removed.
 
 ## Maintainer Manual
 
@@ -432,6 +441,12 @@ paper/live interaction to later RFCs.
 - `manual/execution_fold_core.qmd` - first maintainer-manual article for
   execution and fold-core architecture. This is synthesis, not a replacement
   for contracts, RFCs, ADRs, architecture notes, or packet records.
+- `manual/observability_determinism.qmd` - internal maintainer-manual article
+  for fingerprints, closure captures, RNG determinism, telemetry, replay, and
+  event evidence. This is synthesis, not a replacement for contracts.
+- `manual/snapshots_data.qmd` - internal maintainer-manual article for snapshot
+  sealing, split stores, fold-entry guards, and the data trust boundary. This
+  is synthesis, not a replacement for contracts.
 
 ## ADRs
 
@@ -442,9 +457,9 @@ recurring artifact; the existing files are historical records pending
 migration into manual articles. Do not author new ADRs without confirming
 against the three-condition bar in `adr/README.md`.
 
-- `adr/0001-split-db-semantics.md` - snapshot and run database split.
-- `adr/0002-registry-fingerprint-policy.md` - registry fingerprint policy.
-- `adr/0003-closure-fingerprinting.md` - closure fingerprinting policy.
+- ADR-0001 through ADR-0003 have been migrated into the maintainer manual and
+  deleted. See `manual/snapshots_data.qmd` and
+  `manual/observability_determinism.qmd`.
 - `adr/0004-dependency-footprint-and-strategy-interface.md` - lean dependency
   footprint and function-only strategy interface.
 

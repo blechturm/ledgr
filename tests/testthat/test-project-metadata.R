@@ -30,21 +30,16 @@ testthat::test_that("LDG-509 ticket metadata mirrors markdown ticket IDs", {
   testthat::expect_true(all(all_refs %in% yml_ids))
 })
 
-testthat::test_that("LDG-509 contract index and ADRs are packaged", {
+testthat::test_that("LDG-509 contract index and design rationale are packaged", {
   contracts <- system.file("design", "contracts.md", package = "ledgr")
-  adr_names <- c(
-      "0001-split-db-semantics.md",
-      "0002-registry-fingerprint-policy.md",
-      "0003-closure-fingerprinting.md"
-  )
-  adr_files <- vapply(
-    adr_names,
-    function(name) system.file("design", "adr", name, package = "ledgr"),
-    character(1)
+  rationale_files <- c(
+    system.file("design", "adr", "README.md", package = "ledgr"),
+    system.file("design", "manual", "observability_determinism.md", package = "ledgr"),
+    system.file("design", "manual", "snapshots_data.md", package = "ledgr")
   )
 
   testthat::expect_true(file.exists(contracts))
-  testthat::expect_true(all(file.exists(adr_files)))
+  testthat::expect_true(all(file.exists(rationale_files)))
 
   contracts_text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
   testthat::expect_match(contracts_text, "Execution Contract", fixed = TRUE)

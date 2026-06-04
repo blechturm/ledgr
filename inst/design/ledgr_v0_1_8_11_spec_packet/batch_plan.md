@@ -1,9 +1,12 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 10 reviewed cleanup complete. Rescoped 2026-06-04 to
-absorb the manual remainder and complete the `adr/` + `architecture/`
-wind-downs in this release (Batches 11-13 grouped for joint review; release
-gate becomes Batch 14).
+**Status:** Active; Batch 11 deterministic substrate manual articles complete
+after Claude review. Rescoped 2026-06-04 to
+absorb the manual remainder and complete the `adr/` + `architecture/` +
+`maintainer_review/` wind-downs in this release (Batches 11-14 grouped for
+joint review; release gate becomes Batch 15). Section 3.7 of the spec
+introduces the two-layer manual article standard binding for every Batch
+11-14 article.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -310,7 +313,7 @@ consumes GD-001 through GD-008.
 ## Batch 9.5 - Generated Docs Stale-Language Cleanup
 
 Ticket: `LDG-2539`
-Status: Planned
+Status: Completed
 
 Goal: consume the source-doc cleanup and render-drift process findings from
 `generated_docs_audit.md`.
@@ -328,6 +331,15 @@ Exit criteria:
 - Generated artifact diffs match source intent; unrelated live-output drift is
   reverted or separately routed.
 
+Completion note:
+
+LDG-2539 closed after review on 2026-06-04. The consuming cleanup handled
+GD-001 through GD-008 from `generated_docs_audit.md` through source-owned
+documentation updates, source/generated traceability review, and render-drift
+discipline checks. No execution semantics, public API, target-risk, OMS,
+walk-forward, cost/liquidity, durable compiled, non-spot compiled, or public
+benchmark-claim work landed under this ticket.
+
 ## Batch 10 - inst/ Subdirectory Audit And Cleanup
 
 Ticket: `LDG-2538`
@@ -344,10 +356,8 @@ Exit criteria:
 
 - `inst_audit.md` exists in the packet and routes every audited file with a
   disposition.
-- `architecture/fold_core_trust_boundary.md` and
-  `architecture/ledgr_v0_1_8_sweep_architecture.md` remain in place. They are
-  cited as binding authority in 15+ files; any relocation requires a separate
-  ticket.
+- Load-bearing architecture notes remain in place during the audit batch. Any
+  relocation requires a separate migration ticket.
 - `.Rbuildignore` reflects the audit outcome.
 - Approved deletions, gitignores, and migrations are applied after audit
   review.
@@ -377,36 +387,59 @@ already routed to LDG-2539.
 ## Batch 11 - Deterministic Substrate Manual Articles
 
 Tickets: `LDG-2540`, `LDG-2541`
-Status: Planned
+Status: Completed
 
 Grouped because both articles cover the deterministic-identity substrate
 (observability/determinism + snapshots/data) and absorb the three v0.1.2-era
-identity ADRs (0001/0002/0003) plus `fold_core_trust_boundary.md`. Joint
+identity ADRs (0001/0002/0003) plus the fold trust-boundary note. Joint
 review confirms consistent terminology across the pair and complete ADR
 wind-down for 0001/0002/0003.
 
 Goal: author `observability_determinism.qmd` and `snapshots_data.qmd`; migrate
 ADR-0001 + ADR-0002 + ADR-0003 rationale into the respective articles;
-migrate `architecture/fold_core_trust_boundary.md` into the snapshots article;
-delete the migrated source files and re-point all citation sites.
+migrate the fold trust-boundary note into the snapshots article;
+delete the migrated source files and re-point active citation sites.
 
 Exit criteria:
 
-- Both articles reviewable using the established manual shape (outcome first,
-  Quarto-native callouts, source links, "Where Next" close).
+- Both articles reviewable per the Section 3.7 two-layer standard:
+  - Synthesis layer (outcome first, Quarto-native callouts, source links,
+    "Where Next" close).
+  - Implementation Trace layer with data structures, file:line code anchors,
+    lookup/dispatch mechanisms, edge cases, hot/cold path distinction. For
+    observability/determinism: telemetry/preflight registry shapes,
+    config_hash/closure_hash algorithms, ambient-RNG detection,
+    `ctx$pulse_seed` derivation, parallel-equivalence enforcement. For
+    snapshots/data: snapshot/run DB schemas, snapshot_hash algorithm,
+    verify-true code path, fold-entry guard mechanisms for committed runs
+    vs sweeps.
 - ADR-0001 (split-db), ADR-0002 (registry fingerprint), and ADR-0003 (closure
   fingerprinting) rationale migrated without weakening contract bindings.
-- `fold_core_trust_boundary.md` content migrated into snapshots/data with the
+- Fold trust-boundary content migrated into snapshots/data with the
   binding recompute-and-compare + validate-handle-and-carry-hash mechanism
   language preserved.
-- `adr/0001-...`, `adr/0002-...`, `adr/0003-...` and
-  `architecture/fold_core_trust_boundary.md` deleted; citations re-pointed;
+- ADR-0001, ADR-0002, ADR-0003, and the fold trust-boundary architecture note
+  deleted; active citations re-pointed;
   `adr/README.md` and `architecture/README.md` existing-records tables
   updated.
 - Both manual GFM siblings render cleanly with no unexpected drift.
 - Terminology is consistent across the two articles (no contradictions on
   determinism vs trust boundary).
 - No execution semantics, API, or new contract authorship.
+
+Completion note:
+
+Batch 11 is complete after Claude review. Added
+`observability_determinism.qmd` and `snapshots_data.qmd`, migrated the
+ADR-0001/0002/0003 rationale plus the fold trust-boundary rationale into those
+articles, deleted the migrated source files, re-pointed active design indexes,
+and updated the installed-file metadata test to expect rendered manual
+rationale pages instead of deleted ADRs. After the 2026-06-04 Section 3.7
+rescope, both articles were expanded from synthesis-only orientation into the
+required two-layer standard with Implementation Trace sections covering data
+structures, file:line anchors, lookup/dispatch mechanisms, edge cases,
+hot/cold path distinctions, and concrete examples. Claude approved the updated
+sections and spot-checked anchor freshness across both articles.
 
 ## Batch 12 - Research-Surface Manual Articles
 
@@ -428,7 +461,17 @@ source files and re-point all citation sites (~80+ across the repo).
 
 Exit criteria:
 
-- Both articles reviewable.
+- Both articles reviewable per the Section 3.7 two-layer standard:
+  - Synthesis + Implementation Trace layers, both present.
+  - Sweep article Implementation Trace: candidate_id derivation, worker
+    dispatch mechanism with file:line anchors, discard-all interrupt code
+    path, memory output handler shape, B2 dispatch in candidate execution,
+    `ledgr_promote()` code flow.
+  - Features article Implementation Trace: absorbs
+    `maintainer_review/feature_value_path_workbook.qmd` depth content;
+    covers `ctx$feature()` resolution chain, feature cache key shape,
+    features-engine.R structure, TTR adapter mechanism, alias map
+    resolution.
 - Parallel-sweep dispatch synthesis-equivalent language preserved without
   weakening the "candidate dispatch, not a second engine" invariant.
 - `rfc/README.md` Parallel Sweep Dispatch row's Primary authority updated
@@ -463,7 +506,10 @@ into a performance_arc section if maintainer prefers).
 Exit criteria:
 
 - Both target articles (`execution_fold_core`, `performance_arc`) carry
-  ADR-0004 rationale without weakening contract language.
+  ADR-0004 rationale without weakening contract language. Note: the
+  Implementation Trace retrofit for these two articles is Batch 14's
+  responsibility (LDG-2546), not this batch — Batch 13 only adds the
+  ADR-0004 rationale Synthesis-layer content; Batch 14 does the depth pass.
 - `adr/0004-...` deleted; citations re-pointed; `adr/README.md` reflects the
   wound-down state.
 - `adr/` directory contains only `README.md` or is deleted entirely
@@ -471,11 +517,72 @@ Exit criteria:
 - `architecture/` directory contains only `README.md` or is deleted entirely
   (confirmed at this batch's close since Batches 11+12 land all migrations).
 - Benchmark methodology residual article (or section) is reviewable;
+  Synthesis + Implementation Trace layers both present per Section 3.7;
   public-speed-claim language is absent; links to `dev/bench/README.md` and
   performance_arc.
 - All affected manual GFM siblings render cleanly.
 
-## Batch 14 - Release Gate
+## Batch 14 - Existing-Article Depth Retrofit And maintainer_review/ Wind-Down
+
+Ticket: `LDG-2546`
+Status: Completed
+
+This batch executes the corrective for the 2026-06-04 review finding: the
+two existing manual articles (`execution_fold_core`, `performance_arc`) need
+Implementation Trace sections to meet the Section 3.7 standard, and the
+`maintainer_review/` directory (which holds the depth source) winds down.
+
+Goal: add Implementation Trace sections to `execution_fold_core.qmd` and
+`performance_arc_v0_1_8_x.qmd` by absorbing depth from the retired fold-core
+and v0.1.8.7 optimization workbooks; author
+`maintainer_review/README.md` codifying the wind-down; delete absorbed
+workbooks; verify `maintainer_review/` contains only `README.md` and the
+temporarily retained `feature_value_path_workbook.qmd`.
+
+Exit criteria:
+
+- `execution_fold_core.qmd` has an `## Implementation Trace` section meeting
+  the Section 3.7 standard: per-pulse `ctx` env shape, strategy-state env
+  shape, fold-entry sealed-snapshot guard code path with file:line anchors,
+  `compiled_accounting_model` dispatch (R/sweep.R, R/compiled-spot-fifo.R
+  lines), event emission boundaries, telemetry checkpoint mechanism,
+  hot/cold path distinction.
+- `performance_arc_v0_1_8_x.qmd` has an `## Implementation Trace` section
+  covering lane-attribution mechanism, per-fill cost decomposition,
+  phase-decomposition harness shape, dev/bench/results record layout, and
+  the per-package optimization mechanisms that landed across
+  v0.1.8.7-v0.1.8.10.
+- Code anchors cite specific source files with line numbers; spot-check
+  freshness during review.
+- `maintainer_review/README.md` codifies the wind-down with per-file
+  migration disposition (parallel to `adr/README.md` and
+  `architecture/README.md`).
+- Retired fold-core workbook deleted; relevant citations re-pointed.
+- Retired v0.1.8.7 optimization workbook deleted.
+- `maintainer_review/` contains only `README.md` and
+  `feature_value_path_workbook.qmd`.
+- Both retrofitted manual GFM siblings render cleanly with no unexpected
+  drift.
+- No new contracts authored; no existing contract weakened.
+
+Completion state:
+
+- Added `## Implementation Trace` to `execution_fold_core.qmd` with source-line
+  anchors for the execution spec, pulse context, strategy-state persistence,
+  sealed-snapshot guard, output handlers, telemetry, and B2 dispatch.
+- Added `## Implementation Trace` to `performance_arc_v0_1_8_x.qmd` with
+  source-line anchors for benchmark phase decomposition, record layouts,
+  per-fill costs, event buffers, fill reconstruction, yyjsonr canonical JSON,
+  collapse determinism, and B2 dispatch.
+- Rewrote `maintainer_review/README.md` as a wind-down policy, deleted the
+  absorbed workbooks and local render artifacts, and retained only the feature
+  workbook pending LDG-2543.
+- Repointed live manual source links to the new implementation traces.
+- Claude review approved the Batch 14 retrofit and recommended close after
+  spot-checking approximately 50 source anchors across both retrofitted
+  articles.
+
+## Batch 15 - Release Gate
 
 Ticket: `LDG-2537`
 Status: Planned

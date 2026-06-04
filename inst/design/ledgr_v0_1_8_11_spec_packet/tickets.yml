@@ -180,7 +180,7 @@ tickets:
 
   - id: "LDG-2539"
     title: "Generated Docs Stale-Language Cleanup"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -197,7 +197,7 @@ tickets:
 
   - id: "LDG-2540"
     title: "Observability/Determinism Manual Article"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -208,13 +208,14 @@ tickets:
       scope: "observability_determinism_with_adr_migration"
     tests:
       - "manual_article_review"
+      - "implementation_trace_section_review"
       - "adr_0002_0003_migration_citation_review"
       - "manual_render_check"
       - "stale_reference_rg_check"
 
   - id: "LDG-2541"
     title: "Snapshots/Data Manual Article"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -225,14 +226,15 @@ tickets:
       scope: "snapshots_data_with_adr_and_architecture_migration"
     tests:
       - "manual_article_review"
+      - "implementation_trace_section_review"
       - "adr_0001_migration_citation_review"
-      - "fold_core_trust_boundary_migration_citation_review"
+      - "fold_trust_boundary_migration_citation_review"
       - "manual_render_check"
       - "stale_reference_rg_check"
 
   - id: "LDG-2542"
     title: "Sweep Manual Article"
-    status: "planned"
+    status: "in_review"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -244,6 +246,7 @@ tickets:
       scope: "sweep_with_architecture_migration"
     tests:
       - "manual_article_review"
+      - "implementation_trace_section_review"
       - "sweep_architecture_migration_citation_review"
       - "sweep_mode_ux_migration_citation_review"
       - "rfc_index_primary_authority_update_review"
@@ -252,7 +255,7 @@ tickets:
 
   - id: "LDG-2543"
     title: "Features Manual Article"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -263,7 +266,9 @@ tickets:
       scope: "features_with_architecture_migration"
     tests:
       - "manual_article_review"
+      - "implementation_trace_section_review"
       - "feature_map_ux_migration_citation_review"
+      - "feature_value_path_workbook_absorption_review"
       - "manual_render_check"
       - "stale_reference_rg_check"
 
@@ -300,7 +305,30 @@ tickets:
       scope: "benchmark_methodology_residual"
     tests:
       - "manual_article_review"
+      - "implementation_trace_section_review"
       - "manual_render_check"
+
+  - id: "LDG-2546"
+    title: "Existing-Article Depth Retrofit And maintainer_review/ Wind-Down"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2532"
+      - "LDG-2534"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "depth_retrofit_and_maintainer_review_winddown"
+    tests:
+      - "execution_fold_core_implementation_trace_review"
+      - "performance_arc_implementation_trace_review"
+      - "maintainer_review_winddown_policy_review"
+      - "retired_fold_core_migration_review"
+      - "retired_optimization_workbook_migration_review"
+      - "maintainer_review_directory_empty_or_readme_only_check"
+      - "manual_render_check"
+      - "stale_reference_rg_check"
 
   - id: "LDG-2537"
     title: "v0.1.8.11 Release Gate"
@@ -326,6 +354,7 @@ tickets:
       - "LDG-2543"
       - "LDG-2544"
       - "LDG-2545"
+      - "LDG-2546"
     classification:
       type: "release_gate"
       surface: "release_process"
@@ -336,8 +365,10 @@ tickets:
       - "manual_render_script"
       - "manual_markdown_drift_check"
       - "manual_remainder_authored_check"
+      - "implementation_trace_present_in_every_article_check"
       - "adr_directory_empty_or_readme_only_check"
       - "architecture_directory_empty_or_readme_only_check"
+      - "maintainer_review_directory_empty_or_readme_only_check"
       - "inst_audit_routing_review"
       - "full_tests_package_checks_as_appropriate"
       - "release_playbook"

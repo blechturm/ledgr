@@ -900,11 +900,11 @@ enough to rewrite them out.
 
 Authoritative input:
 
-- Architecture note:
-  `inst/design/architecture/fold_core_trust_boundary.md`. It records the
-  sealed-data trust boundary, the current committed-run versus sweep guard
-  asymmetry, and the session-cache-key stance that durable provenance formats
-  must not leak into hot lookup paths.
+- Maintainer-manual article:
+  `inst/design/manual/snapshots_data.qmd`. It records the migrated sealed-data
+  trust boundary, the current committed-run versus sweep guard asymmetry, and
+  the session-cache-key stance that durable provenance formats must not leak
+  into hot lookup paths.
 - RFC cycle on primitive fold-core contract redesign, using the v0.1.8.6
   benchmark suite, width sweep, LDG-2453 wide-view manifestation work, and
   LDG-2454 cold setup/residual profiling as empirical input. Implementation
