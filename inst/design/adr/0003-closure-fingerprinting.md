@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted for v0.1.2.
+Accepted for v0.1.2. Historical record; rationale slated to migrate into the
+observability/determinism maintainer manual article when that article lands.
+See `README.md` in this directory for the ADR wind-down policy.
 
 ## Context
 

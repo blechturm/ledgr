@@ -191,7 +191,8 @@ Source:
 
 - `../ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`
-- `../adr/0005-b2-spot-fifo-scope-guard.md`
+- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard)
+- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing)
 - `../../../dev/bench/shared/run_benchmarks.R`
 
 ## Peer Comparison Discipline
@@ -282,11 +283,12 @@ Before using a performance number in docs, tickets, or release text:
 - `../ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`
 - `../ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`
-- `../adr/0005-b2-spot-fifo-scope-guard.md`
+- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard)
+- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing)
 
 ## Where Next
 
 - For execution boundaries, see `execution_fold_core.qmd`.
 - For current peer harness details, see
   `../../../dev/bench/peer_benchmark/peer_benchmark.md`.
-- For binding B2 scope, see `../adr/0005-b2-spot-fifo-scope-guard.md`.
+- For binding B2 scope, see `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard) and `../contracts.md`.

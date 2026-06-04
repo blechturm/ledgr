@@ -66,6 +66,20 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   remaining A-vs-B2 product comparison, dominant-attribution gate, and fresh
   RFC recorded below.
 
+### 2026-06-04 [infrastructure] Installed design-tree footprint review
+
+The v0.1.8.11 `inst/` audit kept `inst/design/architecture/` package-included
+as installed design authority and removed only reviewed dead placeholders under
+`inst/diagrams/`, `inst/examples/`, and `inst/schemas/`. A larger question
+remains uncommitted: how much of the full `inst/design/` governance tree should
+ship in installed packages, especially spec packets, RFCs, ADRs, audits, and
+contracts. The current package treats installed design material as part of the
+research-software evidence surface, but that may carry unnecessary install
+footprint for end users. Future work should audit the installed design tree as
+a whole, decide which documents are package authority versus source-repo
+provenance only, and update `.Rbuildignore` only with an explicit contract for
+what installed users can rely on.
+
 ### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
 
 The accepted v0.1.8.7 synthesis

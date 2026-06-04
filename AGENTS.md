@@ -136,7 +136,12 @@ update this block when the next packet opens or scope changes materially):
   Claude review. Batch 8 research software disclaimer surface work is complete
   after Claude review. Batch 9 generated docs and man-page audit work is
   complete after Claude review. LDG-2539 was added to consume the generated-doc
-  audit findings. Continue with LDG-2539, generated docs stale-language cleanup.
+  audit findings. Batch 10 `inst/` subdirectory audit and reviewed cleanup work
+  is complete. Rescoped 2026-06-04: LDG-2540 through LDG-2545 added to absorb
+  the manual remainder and complete the `adr/` + `architecture/` wind-downs in
+  v0.1.8.11 (no v0.1.8.12 follow-on). ADR-0005 deleted; ADR + architecture
+  README wind-down policies in place. Continue with LDG-2539, then LDG-2540
+  through LDG-2545, then the release gate.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.

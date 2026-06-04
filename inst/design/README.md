@@ -182,7 +182,14 @@ Claude review. Batch 7 performance arc narrative work is complete after Claude
 review. Batch 8 research software disclaimer surface work is complete after
 Claude review. Batch 9 generated docs and man-page audit work is complete after
 Claude review. LDG-2539 was added to consume the generated-doc audit findings.
-The next substantive batch is LDG-2539, generated docs stale-language cleanup.
+Batch 10 `inst/` subdirectory audit and reviewed cleanup work is complete.
+Rescoped 2026-06-04: LDG-2540 through LDG-2545 added to absorb the manual
+remainder and complete the `adr/` + `architecture/` directory wind-downs in
+v0.1.8.11 itself; no v0.1.8.12 follow-on is planned. ADR-0005 was deleted in
+the 2026-06-04 structural review. The next substantive cleanup work is
+LDG-2539, then LDG-2540 (observability/determinism manual article), then
+sequentially through LDG-2545 (benchmark methodology residual), then the
+release gate.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
@@ -430,13 +437,16 @@ paper/live interaction to later RFCs.
 
 ADRs live under `adr/`.
 
+See `adr/README.md` for the current ADR pattern. ADRs are wound down as a
+recurring artifact; the existing files are historical records pending
+migration into manual articles. Do not author new ADRs without confirming
+against the three-condition bar in `adr/README.md`.
+
 - `adr/0001-split-db-semantics.md` - snapshot and run database split.
 - `adr/0002-registry-fingerprint-policy.md` - registry fingerprint policy.
 - `adr/0003-closure-fingerprinting.md` - closure fingerprinting policy.
 - `adr/0004-dependency-footprint-and-strategy-interface.md` - lean dependency
   footprint and function-only strategy interface.
-- `adr/0005-b2-spot-fifo-scope-guard.md` - scoped B2 spot-FIFO accelerator
-  boundary.
 
 ## Spec Packets
 

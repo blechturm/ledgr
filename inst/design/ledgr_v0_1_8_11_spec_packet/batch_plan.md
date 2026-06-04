@@ -1,6 +1,9 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batch 8 completed after Claude review.
+**Status:** Active; Batch 10 reviewed cleanup complete. Rescoped 2026-06-04 to
+absorb the manual remainder and complete the `adr/` + `architecture/`
+wind-downs in this release (Batches 11-13 grouped for joint review; release
+gate becomes Batch 14).
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -10,11 +13,16 @@ manual/user-facing work with an explicit split trigger.
 
 ## Split Trigger
 
-If the release grows beyond a bounded cleanup cycle, keep the audit,
-housekeeping, contract, and index work in v0.1.8.11 and defer manual/vignette /
-narrative / disclaimer remainder to v0.1.8.12. The v0.1.9 feature arc should
+The original split trigger reserved a follow-on release for the manual /
+vignette / narrative / disclaimer remainder. On 2026-06-04 the maintainer
+rescoped: the manual remainder is absorbed into v0.1.8.11 via Batches 11-13,
+because a separate doc-only release would consume hours of tag-CI for no
+execution surface change. The current discipline: if any single new manual
+ticket blows its budget, route that ticket's residual to v0.1.9.x follow-on
+documentation, not a new v0.1.8.x version. The v0.1.9 feature arc should
 start only after the codified architecture is discoverable enough for safe
-feature planning.
+feature planning, and the `adr/` and `architecture/` directories are wound
+down.
 
 ## Batch 0 - Packet Review And Ticket Alignment
 
@@ -323,7 +331,7 @@ Exit criteria:
 ## Batch 10 - inst/ Subdirectory Audit And Cleanup
 
 Ticket: `LDG-2538`
-Status: Planned
+Status: Completed
 
 Goal: inventory `inst/design/architecture/`,
 `inst/design/maintainer_review/`, `inst/diagrams/`, `inst/examples/`,
@@ -346,7 +354,128 @@ Exit criteria:
 - Full test suite, `R CMD check`, and manual render pass after cleanup.
 - Tarball size before/after cleanup is recorded in the completion note.
 
-## Batch 11 - Release Gate
+Completion note:
+
+Batch 10 completed on 2026-06-04 after review. Added `inst_audit.md`, covering
+all 19 tracked scoped files plus ignored local Quarto render artifacts under
+`inst/design/maintainer_review/`. The audit preserves the binding architecture
+paths, keeps the maintainer-review workbooks excluded from package builds, and
+keeps `inst/testdata/yahoo_mock.csv` as a load-bearing installed test fixture.
+The reviewed cleanup deleted `INST-011` through `INST-018`: six stale
+unreferenced Mermaid diagrams, the empty schemas placeholder, and the stale
+installed examples README. No files were moved, migrated, or newly gitignored.
+Tracked scoped-file size before cleanup was 167,999 bytes. Package tarball size
+was 3,153,183 bytes before cleanup and 3,151,436 bytes after cleanup, a
+1,747-byte reduction. Verification: `git diff --check` passed; `tickets.yml`
+status graph passed; `R CMD build --no-build-vignettes` succeeded before and
+after cleanup; `R CMD check --no-manual --no-build-vignettes` completed with
+the existing 2 warnings / 2 notes state; manual render passed via RStudio's
+bundled Quarto; full local tests failed only in
+`test-documentation-contracts.R` on stale generated-doc/manual assertions
+already routed to LDG-2539.
+
+## Batch 11 - Deterministic Substrate Manual Articles
+
+Tickets: `LDG-2540`, `LDG-2541`
+Status: Planned
+
+Grouped because both articles cover the deterministic-identity substrate
+(observability/determinism + snapshots/data) and absorb the three v0.1.2-era
+identity ADRs (0001/0002/0003) plus `fold_core_trust_boundary.md`. Joint
+review confirms consistent terminology across the pair and complete ADR
+wind-down for 0001/0002/0003.
+
+Goal: author `observability_determinism.qmd` and `snapshots_data.qmd`; migrate
+ADR-0001 + ADR-0002 + ADR-0003 rationale into the respective articles;
+migrate `architecture/fold_core_trust_boundary.md` into the snapshots article;
+delete the migrated source files and re-point all citation sites.
+
+Exit criteria:
+
+- Both articles reviewable using the established manual shape (outcome first,
+  Quarto-native callouts, source links, "Where Next" close).
+- ADR-0001 (split-db), ADR-0002 (registry fingerprint), and ADR-0003 (closure
+  fingerprinting) rationale migrated without weakening contract bindings.
+- `fold_core_trust_boundary.md` content migrated into snapshots/data with the
+  binding recompute-and-compare + validate-handle-and-carry-hash mechanism
+  language preserved.
+- `adr/0001-...`, `adr/0002-...`, `adr/0003-...` and
+  `architecture/fold_core_trust_boundary.md` deleted; citations re-pointed;
+  `adr/README.md` and `architecture/README.md` existing-records tables
+  updated.
+- Both manual GFM siblings render cleanly with no unexpected drift.
+- Terminology is consistent across the two articles (no contradictions on
+  determinism vs trust boundary).
+- No execution semantics, API, or new contract authorship.
+
+## Batch 12 - Research-Surface Manual Articles
+
+Tickets: `LDG-2542`, `LDG-2543`
+Status: Planned
+
+Grouped because both articles cover user-facing analytical surfaces built on
+the deterministic substrate (sweep + features), and absorb the three
+architecture/ UX-or-architecture notes. Joint review confirms architecture/
+migration completeness for the heavy citation set and consistent
+sweep/features cross-references.
+
+Goal: author `sweep.qmd` and `features.qmd`; migrate
+`architecture/ledgr_v0_1_8_sweep_architecture.md`,
+`architecture/ledgr_sweep_mode_ux.md`, and
+`architecture/ledgr_feature_map_ux.md` into the respective articles; decide
+`architecture/sweep_mode_code_review.md` disposition; delete the migrated
+source files and re-point all citation sites (~80+ across the repo).
+
+Exit criteria:
+
+- Both articles reviewable.
+- Parallel-sweep dispatch synthesis-equivalent language preserved without
+  weakening the "candidate dispatch, not a second engine" invariant.
+- `rfc/README.md` Parallel Sweep Dispatch row's Primary authority updated
+  from `architecture/ledgr_v0_1_8_sweep_architecture.md` to the new sweep
+  manual article.
+- B2 scope language in the sweep article consistent with the horizon entry +
+  maintainer-decisions doc + contracts.md trio.
+- Feature-map UX rationale migrated without introducing new public API.
+- `architecture/sweep_mode_code_review.md` disposition recorded (absorbed,
+  routed to rfc/, or deleted with explicit reasoning).
+- All four architecture/ source files deleted (or the code-review file is
+  routed elsewhere); citations re-pointed; `architecture/README.md` existing-
+  records table updated.
+- Both manual GFM siblings render cleanly.
+
+## Batch 13 - Wind-Down Completion
+
+Tickets: `LDG-2544`, `LDG-2545`
+Status: Planned
+
+Grouped because both are small cleanup work that closes out the v0.1.8.11
+discoverability arc: LDG-2544 finishes the `adr/` wind-down; LDG-2545
+finishes the benchmark methodology family. Joint review confirms both legacy
+directories (`adr/` and `architecture/`) are in their final wound-down state
+(`README.md` only or deleted) and the manual surface is complete.
+
+Goal: split ADR-0004 rationale across `execution_fold_core.qmd` (function-only
+strategy interface) and `performance_arc_v0_1_8_x.qmd` (dependency posture);
+delete `adr/0004`; author the benchmark methodology residual article (or fold
+into a performance_arc section if maintainer prefers).
+
+Exit criteria:
+
+- Both target articles (`execution_fold_core`, `performance_arc`) carry
+  ADR-0004 rationale without weakening contract language.
+- `adr/0004-...` deleted; citations re-pointed; `adr/README.md` reflects the
+  wound-down state.
+- `adr/` directory contains only `README.md` or is deleted entirely
+  (maintainer call at close-out time).
+- `architecture/` directory contains only `README.md` or is deleted entirely
+  (confirmed at this batch's close since Batches 11+12 land all migrations).
+- Benchmark methodology residual article (or section) is reviewable;
+  public-speed-claim language is absent; links to `dev/bench/README.md` and
+  performance_arc.
+- All affected manual GFM siblings render cleanly.
+
+## Batch 14 - Release Gate
 
 Ticket: `LDG-2537`
 Status: Planned
@@ -356,11 +485,15 @@ Goal: close the documentation/cleanup cycle and prepare merge/tag.
 Exit criteria:
 
 - Completed tickets have artifacts and verification notes.
-- Bounded remainder is routed to v0.1.8.12 or v0.1.9.x follow-on documentation
-  if needed.
-- The five deferred manual article families from LDG-2532 are explicitly
-  routed: observability/determinism, sweep, snapshots/data, features, and
-  benchmark methodology.
+- Any unfinished manual article residual is routed to v0.1.9.x follow-on
+  documentation (no v0.1.8.12 follow-on is cut).
+- The five deferred manual article families from LDG-2532 are authored:
+  observability/determinism (LDG-2540), snapshots/data (LDG-2541), sweep
+  (LDG-2542), features (LDG-2543), benchmark methodology (LDG-2545).
+- The `adr/` directory contains only `README.md` or is deleted (LDG-2530 +
+  LDG-2540 + LDG-2541 + LDG-2544 wind-down complete).
+- The `architecture/` directory contains only `README.md` or is deleted
+  (LDG-2541 + LDG-2542 + LDG-2543 migrations complete).
 - LDG-2539 generated-doc cleanup findings are consumed or explicitly routed
   forward with source/generated traceability preserved.
 - LDG-2538 `inst_audit.md` findings are consumed or routed forward with the

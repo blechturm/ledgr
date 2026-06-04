@@ -80,7 +80,8 @@ manual articles:
 
 - `../contracts.md`
 - `../rfc/README.md`
-- `../adr/0005-b2-spot-fifo-scope-guard.md`
+- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard)
+- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing)
 - `../architecture/fold_core_trust_boundary.md`
 - `../maintainer_review/fold_core_workbook.qmd`
 - `../maintainer_review/feature_value_path_workbook.qmd`

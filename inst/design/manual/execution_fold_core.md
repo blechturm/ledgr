@@ -173,7 +173,10 @@ pulse decisions in those paths should derive them from `ctx$pulse_seed`.
 
 The v0.1.8.10 B2 path is a scoped spot-asset FIFO fill-batch accelerator
 for memory-backed sweeps. It is not a general compiled fold core and it
-is not the default. See `../adr/0005-b2-spot-fifo-scope-guard.md`.
+is not the default. See the horizon scope-guard entry (`../horizon.md`,
+2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard) and
+the maintainer-decisions narrowing in
+`../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md`.
 
 The public opt-in is:
 
@@ -219,7 +222,8 @@ Before changing execution code, answer these questions:
 
 - `../contracts.md`
 - `../rfc/README.md`
-- `../adr/0005-b2-spot-fifo-scope-guard.md`
+- `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard)
+- `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing)
 - `../architecture/fold_core_trust_boundary.md`
 - `../maintainer_review/fold_core_workbook.qmd`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`

@@ -4,7 +4,11 @@
 
 Accepted for v0.1.8.7. Decision recorded during v0.1.8.6 closeout; implementation
 is v0.1.8.7 and does not touch the v0.1.8.6 packet. Amends the v0.1.9
-collapse-adoption gate in `ledgr_roadmap.md`.
+collapse-adoption gate in `ledgr_roadmap.md`. Historical record; rationale
+slated to migrate across `execution_fold_core` (function-only strategy
+interface) and `performance_arc_v0_1_8_x` (cli/R6/tibble/collapse dependency
+posture) maintainer manual articles. See `README.md` in this directory for the
+ADR wind-down policy.
 
 ## Context
 
