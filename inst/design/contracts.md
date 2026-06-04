@@ -5,6 +5,8 @@ coding agents must preserve. The active design index
 (`inst/design/README.md`) names the current authoritative spec packet; the
 authoritative narrative remains in the active versioned spec packet, currently
 `inst/design/ledgr_v0_1_8_11_spec_packet/`.
+The strategy preflight boundary originated in
+`inst/design/ledgr_v0_1_8_spec_packet/` and remains binding.
 
 ## Execution Contract
 

@@ -378,6 +378,8 @@ For independent candidates, `workers` can dispatch sweep rows in parallel when
 the required backend and worker package dependencies are available. Parallelism
 changes candidate dispatch, not strategy semantics; interrupted parallel sweeps
 discard the partial table instead of returning partially promotable rows.
+That means parallel sweep execution is a dispatch choice over independent
+candidate rows, not a second execution engine.
 
 ## Inspect Before Promotion
 
@@ -453,6 +455,10 @@ The more candidates you try, the more opportunity you create for sample-specific
 luck to look like skill. If the question is generalization rather than artifact
 reproducibility, use walk-forward evaluation when that layer lands in
 v0.1.9.x.
+
+This is the same selection-bias boundary that the v0.1.8.6 cycle documented
+when it separated structured benchmark evidence from future walk-forward
+validation.
 
 ## Failure Rows And Contract Errors
 

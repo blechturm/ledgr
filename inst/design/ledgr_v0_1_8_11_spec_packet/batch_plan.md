@@ -1,10 +1,11 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batches 11 through 14 complete after Claude review. Release
-gate becomes Batch 15. Rescoped 2026-06-04 to absorb the manual remainder and
-complete the `adr/` + `architecture/` + `maintainer_review/` wind-downs in
-this release. Section 3.7 of the spec introduces the two-layer manual article
-standard binding for every Batch 11-14 article.
+**Status:** Completed; Batch 15 / LDG-2537 closed the v0.1.8.11
+documentation, structure, and cleanup packet on 2026-06-04. Rescoped
+2026-06-04 to absorb the manual remainder and complete the `adr/` +
+`architecture/` + `maintainer_review/` wind-downs in this release. Section 3.7
+of the spec introduces the two-layer manual article standard binding for every
+Batch 11-14 article.
 
 v0.1.8.11 is a documentation, structure, and cleanup cycle. It is deliberately
 not a feature cycle. The core risk is scope bloat: documentation synthesis can
@@ -597,7 +598,7 @@ Completion state:
 ## Batch 15 - Release Gate
 
 Ticket: `LDG-2537`
-Status: Planned
+Status: Completed
 
 Goal: close the documentation/cleanup cycle and prepare merge/tag.
 
@@ -624,3 +625,16 @@ Exit criteria:
 - Relevant doc renders, targeted tests, full tests/package checks, and release
   playbook steps pass or accepted caveats are documented.
 - No generated local artifacts are committed.
+
+Completion note:
+
+Batch 15 completed on 2026-06-04. The packet is internally closed, every
+ticket is complete, and `v0_1_8_11_release_closeout.md` records the release
+gate verification. The five deferred manual article families were authored in
+v0.1.8.11, all seven manual articles carry Synthesis and Implementation Trace
+layers per Section 3.7 of the spec, and `adr/`, `architecture/`, and
+`maintainer_review/` are wound down to README ledgers. `DESCRIPTION`, `NEWS`,
+the design index, roadmap, horizon, AGENTS.md, and release notes were updated
+for v0.1.8.11. Accepted release-gate caveats are limited to the documented
+`--no-build-vignettes` check warnings and existing long-path notes; generated
+build/check artifacts were removed before commit.

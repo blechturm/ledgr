@@ -1,4 +1,4 @@
-# Research Workflow
+﻿# Research Workflow
 
 
 <style>
@@ -41,7 +41,7 @@ The loop is deliberately short:
 
 <div class="ledgr-diagram ledgr-workflow-diagram">
 
-```mermaid
+``` mermaid
 %%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b", "clusterBkg": "#ffffff", "clusterBorder": "#cbd5e1"}}}%%
 
 flowchart TB
@@ -95,25 +95,27 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-> [!NOTE]
->
-> ### Running this yourself
->
-> This article is evaluated when it is rendered. To keep package builds
-> and local previews disposable, the code writes to a temporary DuckDB
-> store. In a real project, replace `store_path` with a durable path such
-> as `artifacts/ledgr_store.duckdb`.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Running this yourself**
 
-> [!NOTE]
->
-> ### About the demo data
->
-> `DEMO_01` and `DEMO_02` are package-owned demo instruments. Real
-> research should use a sealed snapshot of the market data you intend to
-> study. The point here is the shape of the workflow, not the realism of
-> the data.
+This article is evaluated when it is rendered. To keep package builds
+and local previews disposable, the code writes to a temporary DuckDB
+store. In a real project, replace `store_path` with a durable path such
+as `artifacts/ledgr_store.duckdb`.
 
+</div>
+
+<div class="ledgr-callout ledgr-callout-note">
+
+**About the demo data**
+
+`DEMO_01` and `DEMO_02` are package-owned demo instruments. Real
+research should use a sealed snapshot of the market data you intend to
+study. The point here is the shape of the workflow, not the realism of
+the data.
+
+</div>
 
 ## Project Topology
 
@@ -170,7 +172,7 @@ bars |>
   slice_head(n = 4)
 ```
 
-    # A tibble: 4 × 7
+    # A tibble: 4 Ã— 7
       ts_utc              instrument_id  open  high   low close volume
       <dttm>              <chr>         <dbl> <dbl> <dbl> <dbl>  <dbl>
     1 2019-01-01 00:00:00 DEMO_01        89.7  91.8  89.7  91.5 468600
@@ -308,7 +310,7 @@ summary(single_run)
 ledgr_results(single_run, what = "trades")
 ```
 
-    # A tibble: 2 × 9
+    # A tibble: 2 Ã— 9
       event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
           <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
     1         3 2019-04-23 DEMO_01       SELL     10 102.      0         27.4 CLOSE
@@ -318,7 +320,7 @@ ledgr_results(single_run, what = "trades")
 head(ledgr_results(single_run, what = "equity"), 3)
 ```
 
-    # A tibble: 3 × 6
+    # A tibble: 3 Ã— 6
       ts_utc     equity  cash positions_value running_max drawdown
       <date>      <dbl> <dbl>           <dbl>       <dbl>    <dbl>
     1 2019-01-01  10000 10000               0       10000        0
@@ -378,13 +380,14 @@ candidate pays the durable-materialization cost.
 winner for you. That choice belongs in the next step, where you inspect
 the table and make the ranking rule visible.
 
-> [!TIP]
->
-> ### Try it
->
-> Add a third value to `fast_n` and `slow_n`. How many candidates does the
-> `.filter` keep? How many would exist without the filter?
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Add a third value to `fast_n` and `slow_n`. How many candidates does the
+`.filter` keep? How many would exist without the filter?
+
+</div>
 
 ## Inspect Before You Promote
 
@@ -414,7 +417,7 @@ glimpse(top_n)
 
     Rows: 5
     Columns: 7
-    $ run_id         <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae…
+    $ run_id         <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31daeâ€¦
     $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
     $ final_equity   <dbl> 10225.14, 10112.57, 10164.67, 10082.34, 10141.20
     $ total_return   <dbl> 0.022514428, 0.011257214, 0.016467259, 0.008233629, 0.014119827
@@ -432,8 +435,8 @@ issues <- sweep |>
 issues
 ```
 
-    # A tibble: 0 × 5
-    # ℹ 5 variables: run_id <chr>, status <chr>, error_class <chr>, error_msg <chr>,
+    # A tibble: 0 Ã— 5
+    # â„¹ 5 variables: run_id <chr>, status <chr>, error_class <chr>, error_msg <chr>,
     #   warnings <list>
 
 ``` r
@@ -448,24 +451,26 @@ ranking choice. The `issues` table tells you whether any candidates
 failed, warned, or produced diagnostics that should change how you read
 the sweep.
 
-> [!NOTE]
->
-> ### Design note
->
-> This explicit table code keeps the selection rule visible. A future
-> sweep-review helper may package this review shape, but it should
-> preserve the same explicit selection rule instead of making ranking
-> automatic.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Design note**
 
-> [!TIP]
->
-> ### Try it
->
-> Sort by `total_return` instead of `sharpe_ratio`. Does the first
-> candidate change? If it does, your “best” candidate depends on the
-> metric, not only on the strategy.
+This explicit table code keeps the selection rule visible. A future
+sweep-review helper may package this review shape, but it should
+preserve the same explicit selection rule instead of making ranking
+automatic.
 
+</div>
+
+<div class="ledgr-callout ledgr-callout-tip">
+
+**Try it**
+
+Sort by `total_return` instead of `sharpe_ratio`. Does the first
+candidate change? If it does, your â€œbestâ€ candidate depends on the
+metric, not only on the strategy.
+
+</div>
 
 ## Commit The Selection With A Note
 
@@ -534,11 +539,11 @@ ledgr_run_list(snapshot)
 ```
 
     # ledgr run list
-    # A tibble: 2 × 8
+    # A tibble: 2 Ã— 8
       run_id label tags  status final_equity total_return execution_mode reproducibility_level
       <chr>  <chr> <lgl> <chr>         <dbl> <chr>        <chr>          <chr>
-    1 workf… <NA>  NA    DONE         10107. +1.1%        audit_log      tier_1
-    2 workf… <NA>  NA    DONE         10225. +2.3%        audit_log      tier_1
+    1 workfâ€¦ <NA>  NA    DONE         10107. +1.1%        audit_log      tier_1
+    2 workfâ€¦ <NA>  NA    DONE         10225. +2.3%        audit_log      tier_1
 
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -558,12 +563,12 @@ info
     Tags:            NA
     Snapshot:        demo_2019_h1
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Config Hash:     766733d1b6272cddedd1672687e842feb6bc667decf94a8c58afafd5b88fb624
+    Config Hash:     c4b75a476e3b5f40a6b97496e88494cef24f4f1512c58f1904ffc683caa1c13e
     Strategy Hash:   ca593cc1c3490b0ee6e80ef46b1daa2ebffc75eb73a4cc27c37dd05f9f6c5832
     Params Hash:     dc6315936028dd9d68e2f38075e2fca32b85edfe083b671d9c9feadbd2b0255f
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.39
+    Elapsed Sec:     0.779999999999999
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    4
@@ -605,15 +610,20 @@ behind the promoted run. Today that recovery uses two public surfaces:
 - `ledgr_extract_strategy()` for strategy source and parameter
   provenance.
 
-> [!WARNING]
->
-> ### API gap
->
-> The next few lines are intentionally lower-level. They show what ledgr
-> records for a promoted run. A future review helper may summarize this
-> “what caused this result?” record without asking users to inspect nested
-> promotion-context fields directly.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**API gap**
+
+The next few lines are intentionally lower-level. They show what ledgr
+records for a promoted run. A future review helper may summarize this
+â€œwhat caused this result?â€ record without asking users to inspect nested
+promotion-context fields directly.
+
+This API gap was carried forward from the v0.1.8.6 cycle: promotion can
+recover the chosen candidate and provenance today, while higher-level
+review helpers remain future workflow polish.
+
+</div>
 
 ``` r
 promotion <- info$promotion_context
@@ -670,17 +680,18 @@ candidate was selected, which strategy parameters and feature parameters
 produced it, what note justified the promotion, and which strategy
 source metadata was captured.
 
-> [!NOTE]
->
-> ### What recovery means
->
-> Recovery is provenance, not magic. Tier 1 strategy source can usually be
-> inspected, hash-checked, and optionally evaluated with `trust = TRUE`.
-> Tier 2 strategies may depend on external functions or package state, so
-> ledgr records the source text, hashes, parameters, dependency metadata,
-> and warnings that explain what was captured and what remains outside the
-> run artifact.
+<div class="ledgr-callout ledgr-callout-note">
 
+**What recovery means**
+
+Recovery is provenance, not magic. Tier 1 strategy source can usually be
+inspected, hash-checked, and optionally evaluated with `trust = TRUE`.
+Tier 2 strategies may depend on external functions or package state, so
+ledgr records the source text, hashes, parameters, dependency metadata,
+and warnings that explain what was captured and what remains outside the
+run artifact.
+
+</div>
 
 ## What Promotion Does Not Prove
 
@@ -701,7 +712,7 @@ sample-specific luck to look like skill.
 
 <div class="ledgr-diagram ledgr-validation-diagram">
 
-```mermaid
+``` mermaid
 %%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "secondaryColor": "#eef2ff", "secondaryTextColor": "#1f2937", "secondaryBorderColor": "#64748b", "tertiaryColor": "#fff7ed", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#fb923c"}}}%%
 
 flowchart TB
@@ -718,15 +729,16 @@ Use the promotion note to record the human choice. Treat walk-forward
 and out-of-sample evaluation as the next conceptual layer when the
 question becomes selection quality rather than artifact reproducibility.
 
-> [!TIP]
->
-> ### Try it
->
-> Write one sentence explaining why you promoted the candidate and one
-> sentence explaining why that promotion is not validation. If the second
-> sentence feels hard to write, the selection rule probably needs more
-> work.
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Write one sentence explaining why you promoted the candidate and one
+sentence explaining why that promotion is not validation. If the second
+sentence feels hard to write, the selection rule probably needs more
+work.
+
+</div>
 
 ## Write The Human Research Note
 
@@ -772,9 +784,9 @@ The workflow above teaches the single-window foundation. Walk-forward
 and out-of-sample evaluation are the planned next conceptual layer for
 separating candidate selection from held-out evidence.
 
-When you ask “is this candidate’s evidence reproducible?”, the workflow
-above is the right starting point. When you ask “does this strategy
-generalize?”, walk-forward is the next question you want. That layer is
+When you ask â€œis this candidateâ€™s evidence reproducible?â€, the workflow
+above is the right starting point. When you ask â€œdoes this strategy
+generalize?â€, walk-forward is the next question you want. That layer is
 not part of this article; the public roadmap places walk-forward
 evaluation at v0.1.9.x.
 

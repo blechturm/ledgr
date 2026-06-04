@@ -1,3 +1,19 @@
+# ledgr 0.1.8.11
+
+- Added the maintainer manual under `inst/design/manual/`, with two-layer
+  Synthesis and Implementation Trace articles for execution fold core,
+  observability/determinism, snapshots/data, sweep, features, the v0.1.8.x
+  performance arc, and benchmark methodology.
+- Audited and reorganized the design surface: `contracts.md`, the design index,
+  RFC index, roadmap, horizon, generated documentation, `inst/` contents, and
+  release-gate context were refreshed for the post-v0.1.8.10 architecture.
+- Wound down legacy `adr/`, `architecture/`, and `maintainer_review/`
+  source-note directories to README-only ledgers after migrating their
+  load-bearing content into the maintainer manual.
+- Refreshed user-facing documentation for the scoped B2 spot-FIFO sweep opt-in,
+  strategy accessor substrate, and research-software disclaimer posture. This
+  release adds no execution semantics, public API, or benchmark speed claims.
+
 # ledgr 0.1.8.10
 
 - Added the matrix-canonical strategy context substrate: `ctx$idx()`,

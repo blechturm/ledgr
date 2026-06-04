@@ -46,27 +46,29 @@ ledgr’s job.
 
 ## Sweep Is Exploration
 
-> [!NOTE]
->
-> ### Definition
->
-> A sweep is an evaluated candidate table over a declared grid. It is
-> exploratory: it returns candidate summaries, does not choose a winner,
-> and does not write candidate runs to the experiment store.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+A sweep is an evaluated candidate table over a declared grid. It is
+exploratory: it returns candidate summaries, does not choose a winner,
+and does not write candidate runs to the experiment store.
+
+</div>
 
 `ledgr_sweep()` evaluates a grid against a `ledgr_experiment()`. It
 tells you what each declared candidate did. It does not decide which
 candidate matters.
 
-> [!NOTE]
->
-> ### Definition
->
-> A sweep usually contains many candidates. Each candidate is one row of
-> the sweep: resolved feature parameters, strategy parameters, execution
-> seed, status, metrics, warnings or errors, and provenance.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+A sweep usually contains many candidates. Each candidate is one row of
+the sweep: resolved feature parameters, strategy parameters, execution
+seed, status, metrics, warnings or errors, and provenance.
+
+</div>
 
 That separation is the workflow boundary:
 
@@ -76,14 +78,15 @@ ledgr_candidate()             select one row deliberately
 ledgr_promote() / ledgr_run() commit an auditable run
 ```
 
-> [!WARNING]
->
-> ### Selection is not validation
->
-> A sweep table records what was run. It does not prove that the selected
-> parameters were evaluated on held-out data. Promotion records a choice;
-> it does not make that choice out-of-sample.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**Selection is not validation**
+
+A sweep table records what was run. It does not prove that the selected
+parameters were evaluated on held-out data. Promotion records a choice;
+it does not make that choice out-of-sample.
+
+</div>
 
 ## Declare Parameterized Features
 
@@ -161,15 +164,16 @@ indicators resolved for that candidate. `params$threshold` and
 `params$qty` come from the strategy grid. For the full strategy
 contract, read `vignette("strategy-development", package = "ledgr")`.
 
-> [!NOTE]
->
-> ### Definition
->
-> An active alias is a stable strategy-facing feature name whose concrete
-> indicator can vary by candidate. The strategy reads aliases such as
-> `fast` and `slow`; ledgr resolves the concrete SMA windows for each
-> candidate before execution.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+An active alias is a stable strategy-facing feature name whose concrete
+indicator can vary by candidate. The strategy reads aliases such as
+`fast` and `slow`; ledgr resolves the concrete SMA windows for each
+candidate before execution.
+
+</div>
 
 The strategy can keep reading `values[["fast"]]` and `values[["slow"]]`
 even when one candidate uses SMA(5) and SMA(20) and another candidate
@@ -191,7 +195,7 @@ for each candidate.
 
 <div class="ledgr-diagram ledgr-alias-diagram">
 
-```mermaid
+``` mermaid
 
 flowchart TB
   params["feature params<br/>fast_n = 5<br/>slow_n = 20"]
@@ -211,15 +215,16 @@ across candidates.
 
 ## Build The Candidate Grid
 
-> [!NOTE]
->
-> ### Definition
->
-> Feature parameters materialize indicators before execution. Strategy
-> parameters are passed to `strategy(ctx, params)` during execution.
-> Keeping those namespaces separate is what lets a strategy read stable
-> aliases while the sweep varies indicator windows.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+Feature parameters materialize indicators before execution. Strategy
+parameters are passed to `strategy(ctx, params)` during execution.
+Keeping those namespaces separate is what lets a strategy read stable
+aliases while the sweep varies indicator windows.
+
+</div>
 
 Use `ledgr_feature_grid()` for the feature knobs you decided to vary and
 `ledgr_strategy_grid()` for the knobs in your own strategy code. Then
@@ -254,21 +259,22 @@ the fast moving average must be shorter than the slow moving average.
 Filter expressions are evaluated against grid columns; they do not read
 run state, feature data, or caller globals.
 
-> [!WARNING]
->
-> ### Mind the combinatorial explosion
->
-> `ledgr_grid_cross()` multiplies grid dimensions. Four parameters with
-> five values each produce 625 candidates before you add another axis.
-> Keep early sweeps deliberately small, then expand only after the
-> candidate table is readable and the feature payload cost is understood.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**Mind the combinatorial explosion**
+
+`ledgr_grid_cross()` multiplies grid dimensions. Four parameters with
+five values each produce 625 candidates before you add another axis.
+Keep early sweeps deliberately small, then expand only after the
+candidate table is readable and the feature payload cost is understood.
+
+</div>
 
 The cross product is explicit:
 
 <div class="ledgr-diagram ledgr-grid-diagram">
 
-```mermaid
+``` mermaid
 
 flowchart TB
   fg["feature_grid<br/>fast_n, slow_n"]
@@ -283,14 +289,15 @@ flowchart TB
 
 </div>
 
-> [!TIP]
->
-> ### Try it
->
-> Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The strategy
-> code does not change. How many candidates appear after `.filter`, and
-> which candidate rows still use the same `fast` and `slow` aliases?
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The strategy
+code does not change. How many candidates appear after `.filter`, and
+which candidate rows still use the same `fast` and `slow` aliases?
+
+</div>
 
 ## Precompute Shared Features
 
@@ -333,7 +340,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_728517316102c268
+    # ledgr sweep -- sweep_1f9f3826239ae270
     # A tibble: 16 x 7
        run_id            status sharpe_ratio total_return max_drawdown n_trades execution_seed
        <chr>             <chr>         <dbl> <chr>        <chr>           <int>          <int>
@@ -390,7 +397,9 @@ For independent candidates, `workers` can dispatch sweep rows in
 parallel when the required backend and worker package dependencies are
 available. Parallelism changes candidate dispatch, not strategy
 semantics; interrupted parallel sweeps discard the partial table instead
-of returning partially promotable rows.
+of returning partially promotable rows. That means parallel sweep
+execution is a dispatch choice over independent candidate rows, not a
+second execution engine.
 
 ## Inspect Before Promotion
 
@@ -442,15 +451,16 @@ Some columns are list columns. `glimpse()` keeps the table readable
 while still showing that params, feature params, warnings, and
 provenance remain attached to the rows.
 
-> [!NOTE]
->
-> ### Design note
->
-> This explicit table code keeps the selection rule visible. A future
-> sweep-review helper may package this review shape, but it should
-> preserve the same explicit selection rule instead of making ranking
-> automatic.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Design note**
+
+This explicit table code keeps the selection rule visible. A future
+sweep-review helper may package this review shape, but it should
+preserve the same explicit selection rule instead of making ranking
+automatic.
+
+</div>
 
 ## Promote One Candidate
 
@@ -505,6 +515,10 @@ sample-specific luck to look like skill. If the question is
 generalization rather than artifact reproducibility, use walk-forward
 evaluation when that layer lands in v0.1.9.x.
 
+This is the same selection-bias boundary that the v0.1.8.6 cycle
+documented when it separated structured benchmark evidence from future
+walk-forward validation.
+
 ## Failure Rows And Contract Errors
 
 By default, candidate-level failures become rows with
@@ -537,7 +551,7 @@ failed_sweep |>
   select(run_id, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_4b7c846ef65ca514
+    # ledgr sweep -- sweep_f84fc179c8650687
     # A tibble: 2 x 2
       run_id                status
       <chr>                 <chr>

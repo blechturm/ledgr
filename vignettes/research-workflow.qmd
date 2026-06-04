@@ -510,6 +510,10 @@ The next few lines are intentionally lower-level. They show what ledgr records
 for a promoted run. A future review helper may summarize this "what caused this
 result?" record without asking users to inspect nested promotion-context fields
 directly.
+
+This API gap was carried forward from the v0.1.8.6 cycle: promotion can recover
+the chosen candidate and provenance today, while higher-level review helpers
+remain future workflow polish.
 :::
 
 ```{r}

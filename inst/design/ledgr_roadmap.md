@@ -3,9 +3,9 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_8_10_spec_packet/`.
-**Active packet:** `v0.1.8.11` planning.
-**Active packet path:** `inst/design/ledgr_v0_1_8_11_spec_packet/`.
+**Latest completed packet:** `inst/design/ledgr_v0_1_8_11_spec_packet/`.
+**Active packet:** none; v0.1.9 planning is next.
+**Active packet path:** not cut.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -104,7 +104,7 @@ versioned packet.
 | v0.1.8.8 | Done | Parallel sweep dispatch and determinism, fold-core diagnostics and containment, repo-local peer benchmark reporting, and self-profiling workload-grid evidence for v0.1.8.9 optimization scoping. Maintainer-manual skeleton cleanup deferred. | `inst/design/ledgr_v0_1_8_8_spec_packet/` |
 | v0.1.8.9 | Done | Single-core optimization round: scale-growing buffer write fixes, per-pulse vectorization, yyjsonr canonical JSON byte-format v2 migration, per-lane attribution, and workload-grid / peer-benchmark closeout. | `inst/design/ledgr_v0_1_8_9_spec_packet/` |
 | v0.1.8.10 | Done | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, scoped public memory-backed sweep opt-in, and measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
-| v0.1.8.11 | Planning | Documentation, structure, and cleanup release before v0.1.9 features. RFC synthesis, ADR population, decision-log synthesis, vignette refresh for post-B2 reality, `contracts.md` audit / structural pass, user-facing disclaimer, internal performance-arc narrative, and the maintainer manual backlog. Entropy management cycle for the post-v0.1.8.10 codified-architecture surface. | `inst/design/ledgr_v0_1_8_11_spec_packet/` |
+| v0.1.8.11 | Done | Documentation, structure, and cleanup release before v0.1.9 features: contract/design-index audit, RFC decision index, user-facing disclaimer and vignette refresh, internal performance-arc narrative, maintainer manual, benchmark methodology article, and `adr/` + `architecture/` + `maintainer_review/` wind-down. | `inst/design/ledgr_v0_1_8_11_spec_packet/` |
 | v0.1.9 | Planned | Target risk layer and post-optimization primitive-internals / substrate planning gates. | Future packet |
 | v0.1.9.x | Planned | Internal maintainer manual and architecture article release after the v0.1.8.8 deferral. Foundation absorbed into v0.1.8.11 documentation/cleanup release. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |

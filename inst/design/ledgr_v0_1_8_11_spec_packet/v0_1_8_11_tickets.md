@@ -1446,7 +1446,7 @@ scope: depth_retrofit_and_maintainer_review_winddown
 Priority: P0
 Effort: M
 Dependencies: LDG-2527, LDG-2528, LDG-2529, LDG-2530, LDG-2531, LDG-2532, LDG-2533, LDG-2534, LDG-2535, LDG-2536, LDG-2538, LDG-2539, LDG-2540, LDG-2541, LDG-2542, LDG-2543, LDG-2544, LDG-2545, LDG-2546
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1509,6 +1509,18 @@ remainder, and prepare the v0.1.8.11 merge/tag.
 
 Targeted checks, full tests/package checks as appropriate, doc render checks as
 appropriate, release playbook, and git status review.
+
+Completion note: completed on 2026-06-04. The release gate closed the
+documentation, structure, and cleanup packet; `v0_1_8_11_release_closeout.md`
+records the verification and accepted caveats. All prior tickets are complete,
+the deferred manual article families were authored in v0.1.8.11, every manual
+article carries both Section 3.7 layers, and `adr/`, `architecture/`, and
+`maintainer_review/` are wound down to README ledgers. `DESCRIPTION`, `NEWS`,
+the design index, roadmap, horizon, AGENTS.md, and release notes were updated.
+Verification covered manual and vignette renders, targeted documentation
+contract tests, full local tests, package build/check with documented
+`--no-build-vignettes` caveats, pkgdown build, `git diff --check`, and generated
+artifact cleanup before commit.
 
 ### Source Reference
 

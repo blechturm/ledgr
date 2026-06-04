@@ -30,7 +30,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (active v0.1.8.11 planning packet;
+Current planning context (post-v0.1.8.11 release gate; v0.1.9 planning next;
 update this block when the next packet opens or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
@@ -120,10 +120,10 @@ update this block when the next packet opens or scope changes materially):
   external-provider work, broad collapse adoption, and package-vignette
   benchmark claims remain deferred unless the next packet explicitly scopes a
   bounded subset.
-- The active v0.1.8.11 planning packet is:
+- The completed v0.1.8.11 packet is an archival release record:
   `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
-  It is a documentation, structure, and cleanup release before v0.1.9
-  features. Current scope is RFC / decision synthesis, ADR population,
+  It was a documentation, structure, and cleanup release before v0.1.9
+  features. Scope was RFC / decision synthesis, ADR population,
   `contracts.md` audit and structural pass, maintainer manual, post-B2
   vignette refresh, user-facing research-software disclaimer, performance-arc
   narrative, and horizon/roadmap/design-index housekeeping. Tickets are cut;
@@ -156,7 +156,8 @@ update this block when the next packet opens or scope changes materially):
   Implementation Trace layers and `maintainer_review/` is wound down. Batch
   13 / LDG-2544 + LDG-2545 is complete after Claude review: ADR-0004 rationale
   is split into the manual, `adr/` is wound down to its README, and the
-  benchmark methodology article is in place. Continue with the release gate.
+  benchmark methodology article is in place. Batch 15 / LDG-2537 closed the
+  packet on 2026-06-04 and prepared the branch for merge/tag.
   Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
   cost/liquidity, durable compiled, non-spot compiled, and public
   benchmark-claim implementation boundary.
@@ -169,7 +170,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.1.8.11 active planning packet | `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_11_spec_packet/batch_plan.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md`, `inst/design/contracts.md` |
+| v0.1.8.11 release record | `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_11_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_release_closeout.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md`, `inst/design/contracts.md` |
 | v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |
 | v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
 | v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |

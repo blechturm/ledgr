@@ -26,6 +26,7 @@
 ^\.tmp$
 ^\.tmp/
 ^vignettes/\.quarto$
+^inst/design/manual/\.quarto$
 ^lib$
 ^lib-wsl$
 ^Rprof\.out$

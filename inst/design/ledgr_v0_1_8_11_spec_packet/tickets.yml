@@ -332,7 +332,7 @@ tickets:
 
   - id: "LDG-2537"
     title: "v0.1.8.11 Release Gate"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
