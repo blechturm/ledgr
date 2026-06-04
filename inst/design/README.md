@@ -2,12 +2,12 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.10`.
-**Current active packet:** `v0.1.8.11` planning.
-**Current active packet path:** `inst/design/ledgr_v0_1_8_11_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_10_spec_packet/` is an archival
+**Latest completed release packet:** `v0.1.8.11`.
+**Current active packet:** none; v0.1.9 planning is next.
+**Current active packet path:** not cut.
+The completed `inst/design/ledgr_v0_1_8_11_spec_packet/` is an archival
 release record. Do not treat it as authorization for new implementation work
-after the v0.1.8.10 release gate.
+after the v0.1.8.11 release gate.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -172,9 +172,9 @@ integration remains deferred.
 - Primary synthesis:
   `spikes/ledgr_v0_1_8_10_optimization_round_spike/architecture_synthesis.md`.
 
-The active planning packet is v0.1.8.11. Per the roadmap, it is a
+The latest completed packet is v0.1.8.11. Per the roadmap, it was a
 documentation, structure, and cleanup release before v0.1.9 features. Tickets
-are cut; Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2
+are closed; Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2
 planning-doc housekeeping, and Batch 3 RFC decision-index work are complete
 after Claude review. Batch 4 `contracts.md` structure work is complete after
 Claude review. Batch 5 maintainer-manual foundation work is complete after
@@ -204,7 +204,8 @@ articles now carry both layers, the architecture notes were migrated, and
 `architecture/` is wound down to its README. Batch 13 / LDG-2544 + LDG-2545 is
 complete after Claude review: ADR-0004 rationale is split into the manual,
 `adr/` is wound down to its README, and the benchmark methodology article is in
-place. The release gate is next.
+place. Batch 15 / LDG-2537 closed the packet on 2026-06-04 and updated the
+branch for merge/tag.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
@@ -231,11 +232,13 @@ place. The release gate is next.
 These files are active architecture inputs from the v0.1.8 cycle, still
 load-bearing for future sweep and fold-core work.
 
-- `manual/sweep.qmd`
-- `manual/sweep.qmd`
-- `manual/sweep.qmd`
+- `manual/execution_fold_core.qmd`
+- `manual/performance_arc_v0_1_8_x.qmd`
+- `manual/observability_determinism.qmd`
+- `manual/snapshots_data.qmd`
 - `manual/features.qmd`
 - `manual/sweep.qmd`
+- `manual/benchmark_methodology.qmd`
 - `collapse_optimization_map.md`
 - `spikes/ledgr_parallelism_spike/summary_report.md`
 - `spikes/ledgr_parallelism_spike/architecture_synthesis.md`
@@ -263,7 +266,7 @@ or versioned packet records.
 | Research workflow and artifact topology | `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` | v0.1.8.5 canonical workflow and teachability planning | Accepted |
 | Feature projection shape, materialization policy, and lookback access | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` | v0.1.8.6 feature-projection materialization; later lookback/export/storage gates | Accepted |
 | Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
-| Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` | v0.1.9.x walk-forward ticket-cut planning after target risk | Accepted |
+| Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (Amendment 1 + Amendment 2 + Section 17 ticket-cut gates, all 2026-06-04) | v0.1.9.x walk-forward ticket-cut planning after target risk; final review closed the cycle, Amendment 2 strengthened four procedural routings into substantive defaults, Section 17 binds packet-open and release-gate enforcement | Accepted |
 | OMS semantics and order lifecycle | `rfc/rfc_ledgr_oms_seed_synthesis.md` | v0.2.x OMS data-model and lifecycle planning; paper/live deferred | Accepted |
 
 ## RFCs
@@ -329,6 +332,7 @@ or versioned packet records.
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed_v2.md`
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_response.md`
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+- `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -421,7 +425,28 @@ walk-forward is a wrapper over the existing `ledgr_sweep()` and `ledgr_run()`
 paths, uses one sealed snapshot with calendar-time folds, records durable fold
 and scalar score artifacts, preserves the strategy contract, and defers
 selection-integrity diagnostics, purging/embargo, richer retention, and
-paper/live interaction to later RFCs.
+paper/live interaction to later RFCs. Amendment 1 (2026-06-04) closed the
+cycle by correcting the Section 3 train-fold scoring binding
+(`scoring_start = train_start_utc`), binding procedural constraints on
+Section 11 Open Questions 1, 5, 7, and 10, augmenting Section 10 with a
+survivorship disclosure obligation and two test items, and recording a
+Section 12 compute-scaling caveat. The amendment is authorized by synthesis
+Section 13 and does not open a new RFC chain; the final-review artifact
+carries the underlying reviewer text. Amendment 2 (2026-06-04) strengthened
+four of Amendment 1's procedural routings into substantive defaults: v1
+`opening_state_policy = carry_test_state` with a warned `flat_test_state`
+opt-in (Section 16.2); fail-closed selection-rule behavior for level metrics
+via metric-registry classification (Section 16.3); no-default extraction
+with required `selection_rationale` when `"latest"` is used (Section 16.4);
+an operational per-fold degradation table data contract for the default
+print method (Section 16.5); and a path-dependency obligation in Section 12
+(per-fold test metrics under `carry_test_state` are not statistically
+independent). Section 17 (Ticket-Cut Gates) binds a two-gate matrix
+(packet-open and release-gate enforcement) over every Amendment 1 and
+Amendment 2 obligation. The closure rule recorded in
+`inst/design/rfc_cycle.md` is now: a post-synthesis amendment that routes
+only procedural constraints is insufficient closure; either substantive
+defaults or named ticket-cut gates or both must land.
 
 ## Audits And Spikes
 
@@ -523,7 +548,7 @@ contract index.
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
 | Target risk planning | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md`, future packet when cut |
-| Walk-forward planning | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`, `contracts.md`, future v0.1.9.x packet when cut |
+| Walk-forward planning | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (with Amendment 1 in Section 14, Amendment 2 in Section 16, ticket-cut gates in Section 17), `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section), `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`, `contracts.md`, future v0.1.9.x packet when cut |
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |
 | Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, `rfc/rfc_design_doc_governance.md`, `rfc/rfc_design_doc_governance_response.md` |
 | Release operation | `release_ci_playbook.md`, active release/closeout ticket if one exists |

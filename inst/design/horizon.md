@@ -31,12 +31,6 @@ milestone. Entries not listed are pure direction with no committed home yet
 (e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized
 authoring). When a milestone closes, sweep its entries to `## Resolved`.
 
-- **v0.1.8.11** — documentation, structure, and cleanup before v0.1.9:
-  maintainer manual foundation; RFC / decision index; ADR population;
-  `contracts.md` audit and structural pass; post-B2 vignette refresh;
-  strategy-accessor documentation; B2 spot-FIFO scope guard documentation;
-  user-facing research-software disclaimer; internal v0.1.8.x performance
-  arc narrative; roadmap / horizon / design-index housekeeping.
 - **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
   typed execution spec, file split, explicit event types); peer-benchmark
   expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
@@ -1730,9 +1724,24 @@ parallel dispatch, slice-aware feature validation, and a clear explanation that
 provenance records what happened but does not prove selection integrity.
 
 The accepted first walk-forward design is
-`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`; future
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+(with Amendment 1 dated 2026-06-04 in Section 14, Amendment 2 dated 2026-06-04
+in Section 16, and Section 17 ticket-cut gates; final-review artifact and
+closure update at
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`).
+Amendment 2 strengthens four Amendment 1 routings from procedural constraints
+on open spec-cut questions to substantive defaults: opening-state policy
+defaults to `carry_test_state` with a warned `flat_test_state` opt-in;
+selection rules fail closed for level metrics with metric-registry
+classification; extraction has no implicit fold default and requires a
+`selection_rationale` when `"latest"` is used; and default print method's data
+contract is an operational per-fold degradation table with named fields and a
+render-order contract. Section 17 binds a two-gate ticket-cut matrix
+(packet-open and release-gate enforcement) over Amendments 1 and 2. Future
 diagnostic work should consume its fold/session/score artifacts rather than
-reopening the v1 wrapper-over-run/sweep architecture.
+reopening the v1 wrapper-over-run/sweep architecture, and must not assume
+per-fold independence under the `carry_test_state` default (see synthesis
+Section 16.6 path-dependency obligation).
 
 Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
 
@@ -2445,13 +2454,41 @@ invented under deployment pressure.
 ### 2026-05-27 [evaluation] Walk-forward post-v0.1.9.x direction
 
 The accepted v0.1.9.x walk-forward synthesis
-(`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`) binds the
-first walk-forward implementation: rolling and anchored folds, calendar-time
-boundaries, single sealed snapshot, classed selection rules, scalar score
-matrix, and extraction-for-promotion. The synthesis uses "v1" as shorthand for
-that first implementation; ledgr's roadmap does not have a "walk-forward v2"
-milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at their
-own roadmap windows. This entry records the shape of that direction so the
+(`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, with
+Amendment 1 dated 2026-06-04 in Section 14, Amendment 2 dated 2026-06-04 in
+Section 16, Section 17 ticket-cut gates, and the final-review artifact and
+closure update at
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`) binds
+the first walk-forward implementation: rolling and anchored folds,
+calendar-time boundaries, single sealed snapshot, classed selection rules,
+scalar score matrix, and extraction-for-promotion. Amendment 1 corrected the
+Section 3 train-fold scoring binding (now `scoring_start = train_start_utc`,
+scoring the full fold window with overlap accepted across folds for rolling)
+and bound procedural constraints on Section 11 Open Questions Q1/Q5/Q7/Q10
+(opening-state cold-start distortion, rate/annualized selection metrics,
+extract_candidate default discipline, train-vs-test degradation as primary
+print signal), plus a survivorship disclosure obligation, two additional
+tests, and a compute-scaling caveat. Amendment 2 strengthened four of those
+routings into substantive defaults and operational contracts: v1 default
+`opening_state_policy = carry_test_state` with warned `flat_test_state` opt-in
+(Section 16.2); fail-closed selection-rule behavior for level metrics via a
+metric-classification registry field (Section 16.3); no-default
+`fold_seq` on `ledgr_walk_forward_extract_candidate()` with a required
+`selection_rationale` when `"latest"` is used (Section 16.4); an operational
+per-fold degradation table data contract for the default print method
+(Section 16.5); and a path-dependency obligation for the
+`carry_test_state` default (Section 16.6 -- diagnostic RFCs must not assume
+per-fold statistical independence). Section 17 added a two-gate ticket-cut
+matrix (packet-open and release-gate enforcement) binding the v0.1.9.x
+ticket packet's acceptance criteria for every Amendment 1 and Amendment 2
+obligation. The closure rule recorded in `rfc_cycle.md` is now: a
+post-synthesis amendment that routes only procedural constraints is
+insufficient closure; either substantive defaults or ticket-cut gates or
+both must land. The synthesis uses "v1" as shorthand
+for that first implementation; ledgr's roadmap does not have a "walk-forward
+v2" milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at
+their own roadmap windows. This entry records the shape of that direction so
+the
 follow-up work has a target rather than being invented under pressure.
 
 Diagnostic retention and selection-integrity diagnostics:
@@ -3733,6 +3770,16 @@ This entry records direction, not committed work.
 Entries move here when their idea has shipped or been answered. Each records
 what resolved it. Sweep an idea here when its milestone closes — do not leave
 shipped work in "Open."
+
+### 2026-06-04 [documentation] Documentation, structure, and cleanup release shipped v0.1.8.11
+
+v0.1.8.11 shipped the planned documentation and cleanup pass before v0.1.9:
+maintainer manual, RFC decision index, contract audit and structure pass,
+post-B2 documentation refresh, user-facing disclaimer, internal performance arc,
+benchmark methodology, roadmap / horizon / design-index housekeeping, and the
+`adr/` + `architecture/` + `maintainer_review/` wind-down. No v0.1.8.12
+documentation follow-on is planned; future bounded documentation belongs in
+v0.1.9.x only if a later packet cuts it explicitly.
 
 ### 2026-05-15 [adapters] Multi-output indicator authoring bundles — shipped v0.1.8.1
 
