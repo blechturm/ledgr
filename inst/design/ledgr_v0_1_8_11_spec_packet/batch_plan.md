@@ -444,7 +444,7 @@ sections and spot-checked anchor freshness across both articles.
 ## Batch 12 - Research-Surface Manual Articles
 
 Tickets: `LDG-2542`, `LDG-2543`
-Status: Planned
+Status: In Review
 
 Grouped because both articles cover user-facing analytical surfaces built on
 the deterministic substrate (sweep + features), and absorb the three
@@ -486,6 +486,14 @@ Exit criteria:
   routed elsewhere); citations re-pointed; `architecture/README.md` existing-
   records table updated.
 - Both manual GFM siblings render cleanly.
+
+Status note:
+
+Batch 12 is partially complete. LDG-2543 is completed after review. LDG-2542
+remains in review: `inst/design/manual/sweep.qmd` and its rendered sibling are
+not present yet, and the sweep architecture/UX source files remain active until
+the sweep article absorbs them and records `sweep_mode_code_review.md`
+disposition.
 
 ## Batch 13 - Wind-Down Completion
 
