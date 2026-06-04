@@ -16,6 +16,10 @@ sealed snapshot -> experiment -> run -> event ledger -> results
 
 The setup is not overhead. The setup is the audit trail.
 
+ledgr is research software, not investment advice. Backtests and audit trails
+are evidence tools; they do not predict future returns or provide compliance
+guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
+
 ## Install
 
 ``` r
@@ -200,12 +204,17 @@ ledgr when you want the audit trail and adapter boundary to be explicit.
 
 ## Scope
 
-The current ledgr research API is experiment-first and includes
-sequential exploratory sweep support. It does not ship automatic
-ranking, `ledgr_tune()`, parallel sweep, walk-forward/PBO/CSCV helpers,
-full sweep artifact persistence, broker adapters, paper trading, live
-trading, or short-selling semantics. Those are separate roadmap items
-with different state and safety requirements.
+The current ledgr research API is experiment-first. It includes memory-backed
+exploratory sweep support, optional parallel candidate dispatch, and a scoped
+`compiled_accounting_model = "spot_fifo"` opt-in for memory-backed spot-asset
+FIFO sweeps. Canonical R execution remains the default.
+
+The compiled opt-in is not durable `ledgr_run()` integration, not a non-spot
+accounting model, and not a general compiled fold core. ledgr does not ship
+automatic ranking, `ledgr_tune()`, walk-forward/PBO/CSCV helpers, full sweep
+artifact persistence, broker adapters, paper trading, live trading, or
+short-selling semantics. Those are separate roadmap items with different state
+and safety requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes

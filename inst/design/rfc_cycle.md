@@ -1,6 +1,6 @@
 # ledgr RFC Cycle
 
-**Status:** Current as of three completed cycles (OMS, walk-forward, public transaction-cost API). Revise after the next cycle if the pattern shifts. Not a binding methodology — a reference card.
+**Status:** Current as of three completed cycles (OMS, walk-forward, public transaction-cost API). Revise after the next cycle if the pattern shifts. Not a binding methodology -- a reference card.
 
 **Audience:** the maintainer and any LLM agent (Codex, Claude, future) about to start or continue an RFC cycle.
 
@@ -32,7 +32,7 @@ Each RFC cycle produces a sequence of artifacts. Not every cycle needs every sta
 Examples from completed cycles:
 
 - **OMS RFC** had stages 2, 3, 5 (in-place), 5 (in-place again), 7. Stages 4 and 8 were missed; we paid for both.
-- **Walk-forward RFC** had stages 1, 2, 3, 4, 5, 7, 9. Clean.
+- **Walk-forward RFC** had stages 1, 2, 3, 4, 5, 7, 8, 9. Stage 8 final-review plus Amendment 1 added 2026-06-04 after the synthesis was accepted; Amendment 2 and Section 17 ticket-cut gates added 2026-06-04 after a post-Amendment-1 review identified that four of the seven Amendment 1 routings were procedural rather than substantive. See `rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section) and synthesis Sections 14, 16, 17.
 - **Cost-API RFC** had stages 1, 2, 3, 4, 5, 6, 7, 8, 9. Cleanest of the three.
 
 The walk-forward and cost-API shapes are the model.
@@ -59,7 +59,7 @@ Patch the same file in place only for:
 
 - typos, formatting, citation fixes;
 - post-synthesis bug fixes caught during final review (with a clear revision note);
-- resolving in-line maintainer decisions where the file itself asked for the resolution (e.g., cost-API v2 §17 open questions Q1 and Q2 were resolved in v2 in-place because v2 escalated them).
+- resolving in-line maintainer decisions where the file itself asked for the resolution (e.g., cost-API v2 Section 17 open questions Q1 and Q2 were resolved in v2 in-place because v2 escalated them).
 
 Otherwise: new file.
 
@@ -197,6 +197,8 @@ The final review does not:
 
 When the final review finds bugs, the patches go in-place on the synthesis (or v2 if the bug is there), with the revision note updated. If a final review finds something that genuinely requires a new design round, escalate to maintainer rather than silently expanding scope.
 
+**Amendment discipline (added 2026-06-04 after walk-forward closure).** When a final review's findings route to maintainer amendments on open spec-cut questions rather than corrections of bound text, the amendment must bind either (a) a substantive default, operational contract, or forbidden-list that forecloses the original concern; or (b) a ticket-cut gate matrix that names the packet-open and release-gate acceptance criteria for the procedural constraint; or both. Procedural constraints alone ("the spec-cut writer must justify X", "the design must address Y") are insufficient closure because they hand the substantive decision back to the moment the amendment was meant to constrain. The walk-forward cycle's Amendments 1 and 2 with Section 17 ticket-cut gates are the reference implementation of this discipline.
+
 The cost-API final review found three real patch requests (fold-core touchpoint
 mislabeled "no changes"; fill_model rename touchpoint list incomplete; v2
 section 0 superseded text still in present tense) and one informational item
@@ -254,4 +256,6 @@ Deviations should be visible. If a cycle deviates from this pattern, the synthes
 
 ## Revision history
 
-- **2026-05-27** — initial version. Three completed cycles informed the patterns: OMS RFC (seed/response/synthesis), walk-forward RFC (seed/response/review/v2/synthesis), public transaction-cost API RFC (seed/response/review/v2/maintainer-decisions/synthesis/final-review). Revise after the next cycle.
+- **2026-05-27** -- initial version. Three completed cycles informed the patterns: OMS RFC (seed/response/synthesis), walk-forward RFC (seed/response/review/v2/synthesis), public transaction-cost API RFC (seed/response/review/v2/maintainer-decisions/synthesis/final-review). Revise after the next cycle.
+- **2026-06-04** -- walk-forward RFC closed the cycle with a final-review artifact (`rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`) and Amendment 1 to the synthesis (Section 14). Walk-forward stage list updated above to 1, 2, 3, 4, 5, 7, 8, 9. Pattern: post-synthesis findings route via final_review + maintainer amendment (authorized by synthesis Section 13) when they correct bound text, constrain open spec-cut questions, or augment Minimum Scope / Future Obligations; new RFC chains are reserved for findings that re-deliberate architecture.
+- **2026-06-04 (same day)** -- walk-forward RFC closure strengthened with Amendment 2 (synthesis Section 16) and Section 17 ticket-cut gates after a post-Amendment-1 review (Claude online, then Codex) identified that Amendment 1's Sections 14.2 and 14.3 bound procedural constraints ("must justify", "must address", "visually unavoidable") rather than substantive defaults, and that no ticket-cut enforcement mechanism gated the obligations. Amendment 2 replaced the four procedural routings with substantive defaults (carry_test_state, fail-closed metric classification, no-default extraction with rationale arg, operational print data contract). Section 17 added a two-gate enforcement matrix (packet-open and release-gate). Pattern refined: an amendment that routes findings to procedural constraints alone is insufficient closure. A post-synthesis amendment must either (a) bind a substantive default, operational contract, or forbidden-list; or (b) name a ticket-cut gate matrix that enforces the procedural constraint at named lifecycle points; or both. Procedural-only routings ("the spec-cut writer must justify X") fail closed at the cycle-discipline level because they delegate the substantive decision back to the moment the amendment was meant to constrain. The walk-forward closure is the first cycle to apply this refinement; future cycles' final-review patches should follow it.

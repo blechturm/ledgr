@@ -1,0 +1,323 @@
+---
+title: "Sweep, Candidates, And Promotion"
+---
+
+**Status:** Reviewable maintainer-manual article for LDG-2542.
+
+**Authority:** Synthesis plus implementation trace. Binding execution
+contracts remain in `../contracts.md`, accepted RFC rows in `../rfc/README.md`,
+and the active packet in
+`../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, Section 3.7.
+
+This article teaches the current sweep surface and implementation path. It does
+not create new sweep contracts, public API, benchmark claims, or B2 scope. If it
+disagrees with the contracts, accepted RFC index, or active packet, those
+artifacts win and this article should be fixed.
+
+::: callout-warning
+## Synthesis, Not New Authority
+
+`ledgr_sweep()` is still exploratory. Promotable, durable evidence still comes
+from `ledgr_run()` or from `ledgr_promote()` materializing a selected candidate
+as a committed run. The sweep path shares the fold core; it is not a second
+execution engine.
+:::
+
+## The Short Version
+
+A sweep evaluates a labeled grid of candidate parameter sets against the same
+snapshot-backed fold semantics used by committed runs. The candidate result is
+intentionally lightweight: it is enough to rank, inspect, and promote, but it is
+not a durable run record.
+
+The surface has four user-facing phases:
+
+1. Build a parameter grid with `ledgr_param_grid()`.
+2. Optionally precompute shared feature artifacts with
+   `ledgr_precompute_features()`.
+3. Evaluate candidates with `ledgr_sweep()`, sequentially or through the
+   parallel dispatcher.
+4. Select a candidate with `ledgr_candidate()` and promote it with
+   `ledgr_promote()` when durable run evidence is needed.
+
+The implementation keeps three boundaries explicit:
+
+- **Candidate execution shares the fold core.** Sweep builds an execution spec
+  and calls `ledgr_execute_fold()` with a memory output handler.
+- **Parallelism is candidate dispatch.** Workers evaluate complete candidates.
+  They do not change pulse order or introduce a second accounting path.
+- **Promotion re-runs, it does not replay candidate buffers.** A selected
+  candidate carries compact provenance and execution seed. Promotion calls
+  `ledgr_run()` against the experiment and selected params.
+
+## Sweep As Research Surface
+
+Sweep is for exploration. It can scan many candidates and return enough
+candidate-level evidence to compare objective metrics, diagnostics, warnings,
+preflight tier, feature fingerprints, and compact provenance. It does not write
+the full event stream of every candidate to persistent run tables.
+
+The committed-run surface stays separate. `ledgr_run()` writes durable events,
+results, run metadata, snapshot references, hashes, and replay evidence.
+`ledgr_promote()` bridges the two surfaces by taking a candidate row and
+re-running it through the committed-run path with the candidate's params and
+execution seed.
+
+That separation keeps the research workflow cheap while preserving the audit
+boundary:
+
+- **Sweep result:** useful for ranking and candidate selection.
+- **Promoted run:** useful for durable evidence, replay, and user-facing
+  reporting.
+
+## Candidate Identity
+
+Candidate labels come from `ledgr_param_grid()`. If the user supplies names,
+those labels are used. If not, the package derives deterministic labels from a
+canonical JSON representation of the candidate params. The label is not a run
+ID; it is a candidate ID inside a sweep result.
+
+Each candidate also gets an execution seed when the sweep has a master seed.
+The seed derivation includes the candidate label and raw params, so changing the
+label or params changes the candidate seed. This makes same-input sweeps
+repeatable without tying candidate identity to ambient RNG state.
+
+The sweep result keeps compact provenance for promotion and comparison:
+
+- `snapshot_hash`
+- `strategy_hash`
+- `feature_set_hash`
+- alias-map JSON, hash, and version where active aliases are used
+- master seed and candidate `execution_seed`
+- evaluation scope and feature fingerprints
+- warnings and error class/message for failed candidates
+
+## Feature And Precompute Boundary
+
+Sweeps can run directly from experiment features or from a
+`ledgr_precomputed_features` object. The precomputed path is a validation and
+reuse boundary, not a semantic shortcut. The object is accepted only when it
+matches the snapshot hash, universe, scoring range, grid labels, feature engine
+version, candidate parameter hashes, and required feature fingerprints.
+
+When a candidate's feature materialization fails, sweep can either return a
+failure row or abort, depending on `stop_on_error`. That failure remains
+candidate-local unless the caller asks for fail-fast behavior.
+
+## Parallel Dispatch
+
+Sequential sweep is the reference implementation. Parallel sweep dispatches
+whole candidate tasks to workers. Each task carries the experiment payload,
+candidate params, feature row, projection handles, snapshot hash, strategy hash,
+master seed, and optional compiled-accounting model selector.
+
+Parallel interruption is intentionally conservative. If the parallel sweep is
+interrupted before all candidates complete, partial worker results are
+discarded and no promotable sweep result is returned. This avoids presenting a
+partial candidate table as if it were a complete grid evaluation.
+
+## B2 Scope Guard
+
+B2 spot-FIFO acceleration remains a narrow accounting lane. In sweep, B2 is
+available only through the same execution spec and fold-entry guards used by
+committed runs. The current implementation allows B2 only for the supported
+spot-FIFO accounting model and memory-backed output handler shape. Unsupported
+models fail closed.
+
+B2 does not widen sweep semantics. It changes the accounting subroutine for the
+supported lane; candidate dispatch, no-lookahead pulse order, seed derivation,
+feature lookup, promotion, and durability boundaries stay the same.
+
+## Promotion
+
+Promotion validates the candidate row, checks candidate status, optionally
+requires the same snapshot hash, extracts params and feature params, and calls
+`ledgr_run()` with the candidate execution seed. The promoted run is a normal
+committed run. A small promotion context records the bridge from sweep result to
+run, but the durable evidence is the committed run's own event stream and run
+metadata.
+
+## Implementation Trace
+
+This section follows the two-layer manual standard in the active v0.1.8.11
+spec, Section 3.7. It describes the current implementation and its code
+anchors; it does not authorize new behavior.
+
+### Data Structures
+
+| Runtime object | Shape | Key fields |
+| --- | --- | --- |
+| `ledgr_param_grid` | list with labels and candidate param lists | `labels`, `params` |
+| sweep task | per-candidate list built before dispatch | `run_id`, `params`, `feature_params`, `execution_seed`, `candidate`, `candidate_feature_row`, bars/projection payload |
+| sweep result row | one-row tibble per candidate | `run_id`, `status`, `params`, `feature_params`, `execution_seed`, metrics, provenance, timings, warnings |
+| compact provenance | list stored in candidate result | `snapshot_hash`, `strategy_hash`, `feature_set_hash`, `alias_map_json`, `alias_map_hash`, `alias_map_version`, `master_seed`, `seed_contract`, `evaluation_scope` |
+| memory output handler | closure-backed environment | event buffers, inline summaries, no persistent table writes |
+| execution spec | typed fold input | strategy, params, bars/projection, active alias map, cost resolver, seed, output mode, optional compiled model |
+| promoted run | ordinary committed backtest object | durable events, results, run info, promotion context |
+
+The memory output handler's internal environment carries buffer metadata and
+status slots rather than DuckDB table handles. Its event columns include
+`event_id`, `run_id`, `ts_utc`, `event_type`, `instrument_id`, `side`, `qty`,
+`price`, `fee`, cash/position deltas, realized P&L, cost basis, and metadata.
+
+### Code Anchors
+
+| Boundary | Anchor |
+| --- | --- |
+| Parameter-grid validation and label handling | `R/param-grid.R:35-78` |
+| Auto candidate label hash from canonical JSON | `R/param-grid.R:80-82` |
+| Sweep entry, preflight, worker setup, feature validation, dispatch | `R/sweep.R:75-238` |
+| Sweep ID derivation | `R/sweep.R:632-640` |
+| Candidate task creation and execution-seed derivation | `R/sweep.R:642-691` |
+| Candidate-local failure row vs fail-fast handling | `R/sweep.R:703-788` |
+| Parallel worker dispatch and interrupt discard-all path | `R/sweep.R:790-845` |
+| Candidate execution spec and fold call | `R/sweep.R:852-988` |
+| Memory output handler and inline summaries | `R/sweep.R:990-1385` |
+| Sweep result row and compact provenance fields | `R/sweep.R:1421-1565` |
+| Candidate selection and promotion | `R/sweep.R:431-479` |
+| Fold entry and B2 dispatch gate | `R/fold-engine.R:63-110` |
+| B2 spot-FIFO batch accounting path | `R/fold-engine.R:337-422` |
+| B2 model selector and fail-closed support guard | `R/compiled-spot-fifo.R:1-90` |
+| C++ spot-FIFO batch bridge | `R/compiled-spot-fifo.R:139-210` |
+
+### Candidate IDs And Seeds
+
+`ledgr_param_grid()` validates that each grid entry is a named list and that
+labels are unique. Named grid entries preserve the user label. Unnamed entries
+receive an auto label with the prefix `grid_` plus the first 12 hex characters
+of a SHA-256 digest over the candidate's canonical JSON payload.
+
+`ledgr_sweep_candidate_tasks()` derives the candidate execution seed from the
+master seed and a payload containing the candidate label plus raw params. A
+candidate with no master seed carries `NA` at the result surface and passes
+`NULL` into the fold.
+
+Small repr:
+
+```r
+list(
+  run_id = "fast_sma_20",
+  params = list(window = 20),
+  execution_seed = 184238921L,
+  provenance = list(
+    snapshot_hash = "...",
+    strategy_hash = "...",
+    feature_set_hash = "...",
+    seed_contract = "candidate-derived"
+  )
+)
+```
+
+### Dispatch And Output Handler
+
+`ledgr_sweep()` builds candidate tasks once, then chooses sequential or
+parallel evaluation. Sequential dispatch maps the task evaluator over the task
+list in process. Parallel dispatch submits whole tasks to `mirai` workers and
+waits for each worker result.
+
+The interrupt path is intentionally all-or-nothing. On `interrupt`,
+`ledgr_sweep_eval_candidate_tasks_parallel()` calls the cleanup hook and then
+`ledgr_abort_parallel_sweep_interrupted()`, whose message states that partial
+worker results are discarded and no promotable sweep result is returned.
+
+Candidate execution uses `ledgr_memory_output_handler()`. The handler appends
+events to in-memory typed buffers, supports a compiled spot-FIFO batch append
+method when the B2 lane is active, and can compute inline summaries without
+round-tripping through persistent run tables.
+
+### B2 Dispatch In Candidate Execution
+
+Sweep candidate execution constructs `ledgr_execution_spec()` with
+`event_mode = "buffered"`, `use_fast_context = TRUE`, the candidate's active
+alias map, and the optional `compiled_accounting_model`. That spec enters
+`ledgr_execute_fold()`.
+
+At fold entry, `ledgr_execute_fold()` normalizes the compiled-accounting model
+and calls `ledgr_require_compiled_spot_fifo_dispatch()` when B2 is requested.
+The guard rejects unsupported output handlers and unsupported accounting models.
+Inside the pulse loop, the spot-FIFO batch path packs actionable target deltas
+and next-open fill proposals, calls the compiled bridge, updates state, and
+emits a compiled batch through the memory handler.
+
+### Promotion Flow
+
+`ledgr_promote()` validates:
+
+- the experiment is a `ledgr_experiment`;
+- the candidate has candidate shape and did not fail;
+- `run_id`, `note`, and `require_same_snapshot` are scalar values;
+- the candidate snapshot hash matches the experiment snapshot when
+  `require_same_snapshot = TRUE`.
+
+It then extracts `candidate$params`, `candidate$feature_params`, and
+`candidate$execution_seed`, converts an `NA` seed to `NULL`, and calls
+`ledgr_run()`. The promoted object is therefore a regular committed run, not a
+materialized copy of the sweep memory buffer.
+
+### Edge Cases
+
+Fail-loud cases:
+
+- invalid grid entries or duplicate labels;
+- invalid experiment or worker configuration;
+- precomputed feature snapshot, universe, range, grid, engine, params, or
+  feature-fingerprint mismatch;
+- parallel worker failure before returning a candidate result;
+- parallel interrupt before all candidates finish;
+- promotion of a failed candidate;
+- same-snapshot promotion mismatch when `require_same_snapshot = TRUE`;
+- unsupported B2 model or output-handler shape.
+
+Candidate-local failure cases:
+
+- candidate feature materialization failure when `stop_on_error = FALSE`;
+- candidate run failure when `stop_on_error = FALSE`.
+
+Not certified by this article:
+
+- automatic walk-forward orchestration;
+- PBO or statistical overfitting diagnostics;
+- live OMS behavior;
+- B2 expansion beyond spot-FIFO memory-backed candidate execution.
+
+### Hot And Cold Paths
+
+Cold/setup path:
+
+- grid normalization;
+- preflight tier classification;
+- feature-grid resolution;
+- precomputed feature validation;
+- bars/projection assembly;
+- task creation.
+
+Hot/evaluation path:
+
+- candidate fold execution;
+- pulse context updates;
+- feature lookup against projection-backed accessors where available;
+- event buffering through the memory handler;
+- inline summary extraction.
+
+Parallel dispatch sits around the hot path. It moves whole candidate tasks to
+workers but does not change the pulse-level fold order.
+
+### Migrated Code-Review Disposition
+
+The former sweep code-review note was not routed into `rfc/` because its
+remaining value was implementation trace rather than a decision record. Its
+findings are absorbed here: package-level mutable-state risk, parallel
+equivalence, interrupt discard-all behavior, memory output handler shape, B2
+guarding, and promotion boundaries. The source review note is deleted with the
+other migrated architecture records.
+
+## Where Next
+
+- Use `features.qmd` for feature maps, alias maps, projections, TTR adapters,
+  and `ctx$feature()` lookup.
+- Use `execution_fold_core.qmd` for pulse lifecycle, fold entry, output
+  handlers, and B2 trust boundaries.
+- Use `observability_determinism.qmd` for hashes, preflight tiers, RNG
+  detection, and parallel equivalence evidence.
+- Use `snapshots_data.qmd` for snapshot hashes, split stores, and fold-entry
+  snapshot guards.

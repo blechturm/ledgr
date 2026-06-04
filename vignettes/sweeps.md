@@ -1,4 +1,4 @@
-﻿# Exploratory Sweeps And Candidate Promotion
+# Exploratory Sweeps And Candidate Promotion
 
 
 <style>
@@ -42,29 +42,33 @@ data("ledgr_demo_bars", package = "ledgr")
 ```
 
 This article uses `dplyr` for tabular inspection. The sweep itself is
-ledgrâ€™s job.
+ledgr’s job.
 
 ## Sweep Is Exploration
 
-> [!NOTE]
->
-> ### Definition
->
-> A sweep is an evaluated candidate table over a declared grid. It is
-> exploratory: it returns candidate summaries, does not choose a winner,
-> and does not write candidate runs to the experiment store.
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+A sweep is an evaluated candidate table over a declared grid. It is
+exploratory: it returns candidate summaries, does not choose a winner,
+and does not write candidate runs to the experiment store.
+
+</div>
 
 `ledgr_sweep()` evaluates a grid against a `ledgr_experiment()`. It
 tells you what each declared candidate did. It does not decide which
 candidate matters.
 
-> [!NOTE]
->
-> ### Definition
->
-> A sweep usually contains many candidates. Each candidate is one row of
-> the sweep: resolved feature parameters, strategy parameters, execution
-> seed, status, metrics, warnings or errors, and provenance.
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+A sweep usually contains many candidates. Each candidate is one row of
+the sweep: resolved feature parameters, strategy parameters, execution
+seed, status, metrics, warnings or errors, and provenance.
+
+</div>
 
 That separation is the workflow boundary:
 
@@ -74,13 +78,15 @@ ledgr_candidate()             select one row deliberately
 ledgr_promote() / ledgr_run() commit an auditable run
 ```
 
-> [!WARNING]
->
-> ### Selection is not validation
->
-> A sweep table records what was run. It does not prove that the
-> selected parameters were evaluated on held-out data. Promotion records
-> a choice; it does not make that choice out-of-sample.
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Selection is not validation**
+
+A sweep table records what was run. It does not prove that the selected
+parameters were evaluated on held-out data. Promotion records a choice;
+it does not make that choice out-of-sample.
+
+</div>
 
 ## Declare Parameterized Features
 
@@ -158,14 +164,16 @@ indicators resolved for that candidate. `params$threshold` and
 `params$qty` come from the strategy grid. For the full strategy
 contract, read `vignette("strategy-development", package = "ledgr")`.
 
-> [!NOTE]
->
-> ### Definition
->
-> An active alias is a stable strategy-facing feature name whose
-> concrete indicator can vary by candidate. The strategy reads aliases
-> such as `fast` and `slow`; ledgr resolves the concrete SMA windows for
-> each candidate before execution.
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+An active alias is a stable strategy-facing feature name whose concrete
+indicator can vary by candidate. The strategy reads aliases such as
+`fast` and `slow`; ledgr resolves the concrete SMA windows for each
+candidate before execution.
+
+</div>
 
 The strategy can keep reading `values[["fast"]]` and `values[["slow"]]`
 even when one candidate uses SMA(5) and SMA(20) and another candidate
@@ -207,14 +215,16 @@ across candidates.
 
 ## Build The Candidate Grid
 
-> [!NOTE]
->
-> ### Definition
->
-> Feature parameters materialize indicators before execution. Strategy
-> parameters are passed to `strategy(ctx, params)` during execution.
-> Keeping those namespaces separate is what lets a strategy read stable
-> aliases while the sweep varies indicator windows.
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+Feature parameters materialize indicators before execution. Strategy
+parameters are passed to `strategy(ctx, params)` during execution.
+Keeping those namespaces separate is what lets a strategy read stable
+aliases while the sweep varies indicator windows.
+
+</div>
 
 Use `ledgr_feature_grid()` for the feature knobs you decided to vary and
 `ledgr_strategy_grid()` for the knobs in your own strategy code. Then
@@ -239,7 +249,7 @@ grid
     ledgr_param_grid
     ================
     Combinations: 16
-    Labels:       feature_403538546350/strategy_26bee9909056, feature_403538546350/strategy_0aa75c3004e3, feature_403538546350/strategy_b2317c0ea414, feature_403538546350/strategy_50fe1adcd9c5, feature_363d9fed8e92/strategy_26bee9909056, feature_363d9fed8e92/strategy_0aa75c3004e3
+    Labels:       feature_9a29b31dae19/strategy_86be010cf688, feature_9a29b31dae19/strategy_7ccbbefd14d1, feature_9a29b31dae19/strategy_ab759ad88623, feature_9a29b31dae19/strategy_dc6315936028, feature_af0f94c90243/strategy_86be010cf688, feature_af0f94c90243/strategy_7ccbbefd14d1
                   ... 10 more
 
     Grid labels identify sweep candidates; they are not committed run IDs.
@@ -249,15 +259,16 @@ the fast moving average must be shorter than the slow moving average.
 Filter expressions are evaluated against grid columns; they do not read
 run state, feature data, or caller globals.
 
-> [!WARNING]
->
-> ### Mind the combinatorial explosion
->
-> `ledgr_grid_cross()` multiplies grid dimensions. Four parameters with
-> five values each produce 625 candidates before you add another axis.
-> Keep early sweeps deliberately small, then expand only after the
-> candidate table is readable and the feature payload cost is
-> understood.
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Mind the combinatorial explosion**
+
+`ledgr_grid_cross()` multiplies grid dimensions. Four parameters with
+five values each produce 625 candidates before you add another axis.
+Keep early sweeps deliberately small, then expand only after the
+candidate table is readable and the feature payload cost is understood.
+
+</div>
 
 The cross product is explicit:
 
@@ -278,14 +289,15 @@ flowchart TB
 
 </div>
 
-> [!TIP]
->
-> ### Try it
->
-> Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The
-> strategy code does not change. How many candidates appear after
-> `.filter`, and which candidate rows still use the same `fast` and
-> `slow` aliases?
+<div class="ledgr-callout ledgr-callout-tip">
+
+**Try it**
+
+Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The strategy
+code does not change. How many candidates appear after `.filter`, and
+which candidate rows still use the same `fast` and `slow` aliases?
+
+</div>
 
 ## Precompute Shared Features
 
@@ -328,30 +340,30 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_58d9aaa2ed2b3e3f
+    # ledgr sweep -- sweep_1f9f3826239ae270
     # A tibble: 16 x 7
        run_id            status sharpe_ratio total_return max_drawdown n_trades execution_seed
        <chr>             <chr>         <dbl> <chr>        <chr>           <int>          <int>
-     1 feature_40353854~ DONE          0.541 +0.0%        -0.1%               6     1052907656
-     2 feature_40353854~ DONE          3.07  +0.1%        -0.0%               3      947421329
-     3 feature_40353854~ DONE          0.541 +0.0%        -0.1%               6     2134127254
-     4 feature_40353854~ DONE          3.08  +0.2%        -0.1%               3     2051697679
-     5 feature_363d9fed~ DONE          1.80  +0.1%        -0.0%               5     1310819559
-     6 feature_363d9fed~ DONE          2.05  +0.1%        -0.0%               3      646378071
-     7 feature_363d9fed~ DONE          1.80  +0.2%        -0.1%               5      659701663
-     8 feature_363d9fed~ DONE          2.05  +0.1%        -0.1%               3       87492416
-     9 feature_056fef29~ DONE          1.38  +0.1%        -0.0%               3      745595795
-    10 feature_056fef29~ DONE          2.12  +0.1%        -0.0%               2      399616899
-    11 feature_056fef29~ DONE          1.38  +0.1%        -0.1%               3     2131100969
-    12 feature_056fef29~ DONE          2.12  +0.2%        -0.1%               2     2098648481
-    13 feature_616262e3~ DONE          1.34  +0.1%        -0.0%               2     1050313246
-    14 feature_616262e3~ DONE          1.30  +0.0%        -0.0%               2     1598413647
-    15 feature_616262e3~ DONE          1.34  +0.1%        -0.1%               2     1060032084
-    16 feature_616262e3~ DONE          1.30  +0.1%        -0.1%               2       36882923
+     1 feature_9a29b31d~ DONE          0.541 +0.0%        -0.1%               6     1431699333
+     2 feature_9a29b31d~ DONE          3.07  +0.1%        -0.0%               3      189084572
+     3 feature_9a29b31d~ DONE          0.541 +0.0%        -0.1%               6     1738642673
+     4 feature_9a29b31d~ DONE          3.08  +0.2%        -0.1%               3      576288649
+     5 feature_af0f94c9~ DONE          1.80  +0.1%        -0.0%               5     1257566549
+     6 feature_af0f94c9~ DONE          2.05  +0.1%        -0.0%               3      985876383
+     7 feature_af0f94c9~ DONE          1.80  +0.2%        -0.1%               5      564643782
+     8 feature_af0f94c9~ DONE          2.05  +0.1%        -0.1%               3      319026249
+     9 feature_6ff6fe3a~ DONE          1.38  +0.1%        -0.0%               3     1976633811
+    10 feature_6ff6fe3a~ DONE          2.12  +0.1%        -0.0%               2     1415197276
+    11 feature_6ff6fe3a~ DONE          1.38  +0.1%        -0.1%               3      354704372
+    12 feature_6ff6fe3a~ DONE          2.12  +0.2%        -0.1%               2      972927993
+    13 feature_fa560ccb~ DONE          1.34  +0.1%        -0.0%               2     1947110290
+    14 feature_fa560ccb~ DONE          1.30  +0.0%        -0.0%               2      319893641
+    15 feature_fa560ccb~ DONE          1.34  +0.1%        -0.1%               2     2090330625
+    16 feature_fa560ccb~ DONE          1.30  +0.1%        -0.1%               2     1531442031
 
     # i 16 combinations: 16 done, 0 failed.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
-    # i Hidden columns (13): final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, provenance
+    # i Hidden columns (16): final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, provenance, t_engine, t_results, t_fills_extract
 
 The table contains candidate summaries. It is not a full artifact store
 and it does not write durable candidate ledgers, equity curves, feature
@@ -359,8 +371,35 @@ panels, or telemetry rows. Each row keeps the compact reproduction key
 needed for later materialization: snapshot identity, selector, strategy
 identity, feature fingerprints, seed metadata, and candidate params. Use
 `ledgr_candidate_reproduction_key()` when you want to inspect that key
-directly. Full equity, fills, trades, and ledger rows are created only by
-committed runs.
+directly. Full equity, fills, trades, and ledger rows are created only
+by committed runs.
+
+The default sweep path is memory-backed and uses the canonical R
+accounting fold. When your workload is spot-asset FIFO and you want the
+scoped B2 accelerator, opt in explicitly:
+
+``` r
+sweep <- ledgr_sweep(
+  exp,
+  grid,
+  precomputed_features = precomputed,
+  seed = 2026L,
+  compiled_accounting_model = "spot_fifo"
+)
+```
+
+`compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is
+a memory-backed sweep accelerator only: it is not a general compiled
+fold core, not the durable `ledgr_run()` path, not a non-spot accounting
+model, and not enabled by default.
+
+For independent candidates, `workers` can dispatch sweep rows in
+parallel when the required backend and worker package dependencies are
+available. Parallelism changes candidate dispatch, not strategy
+semantics; interrupted parallel sweeps discard the partial table instead
+of returning partially promotable rows. That means parallel sweep
+execution is a dispatch choice over independent candidate rows, not a
+second execution engine.
 
 ## Inspect Before Promotion
 
@@ -386,14 +425,14 @@ glimpse(top_n)
 
     Rows: 5
     Columns: 8
-    $ run_id         <chr> "feature_403538546350/strategy_50fe1adcd9c5", "feature_4035385463~
+    $ run_id         <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae~
     $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
     $ final_equity   <dbl> 100225.1, 100112.6, 100164.7, 100082.3, 100141.2
     $ total_return   <dbl> 0.0022514428, 0.0011257214, 0.0016467258, 0.0008233629, 0.0014119~
     $ sharpe_ratio   <dbl> 3.075261, 3.074747, 2.123134, 2.122646, 2.053065
     $ params         <list> [0.01, 10], [0.01, 5], [0.01, 10], [0.01, 5], [0.01, 10]
     $ feature_params <list> [5, 20], [5, 20], [5, 40], [5, 40], [10, 20]
-    $ execution_seed <int> 2051697679, 947421329, 2098648481, 399616899, 87492416
+    $ execution_seed <int> 576288649, 189084572, 972927993, 1415197276, 319026249
 
 ``` r
 issues <- sweep |>
@@ -412,22 +451,24 @@ Some columns are list columns. `glimpse()` keeps the table readable
 while still showing that params, feature params, warnings, and
 provenance remain attached to the rows.
 
-> [!NOTE]
->
-> ### Design note
->
-> This explicit table code keeps the selection rule visible. The
-> v0.1.8.6 cycle plans a sweep-review helper that ranks completed
-> candidates, returns a compact review table, separates issue rows, and
-> preserves the same explicit selection rule.
+<div class="ledgr-callout ledgr-callout-note">
+
+**Design note**
+
+This explicit table code keeps the selection rule visible. A future
+sweep-review helper may package this review shape, but it should
+preserve the same explicit selection rule instead of making ranking
+automatic.
+
+</div>
 
 ## Promote One Candidate
 
 Promotion replays one selected candidate as a committed run. This is the
 slow path that explicitly pays to materialize durable ledger and equity
 artifacts. For the full research loop around promotion notes, reopen,
-and human review, read `vignette("research-workflow", package =
-"ledgr")`.
+and human review, read
+`vignette("research-workflow", package = "ledgr")`.
 
 ``` r
 candidate <- ledgr_candidate(ranked, 1)
@@ -474,6 +515,10 @@ sample-specific luck to look like skill. If the question is
 generalization rather than artifact reproducibility, use walk-forward
 evaluation when that layer lands in v0.1.9.x.
 
+This is the same selection-bias boundary that the v0.1.8.6 cycle
+documented when it separated structured benchmark evidence from future
+walk-forward validation.
+
 ## Failure Rows And Contract Errors
 
 By default, candidate-level failures become rows with
@@ -506,12 +551,12 @@ failed_sweep |>
   select(run_id, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_7f1bb6893a628703
+    # ledgr sweep -- sweep_f84fc179c8650687
     # A tibble: 2 x 2
       run_id                status
       <chr>                 <chr>
-    1 strategy_f1bc254d9d19 DONE
-    2 strategy_88823aa43318 FAILED
+    1 strategy_69e7ad01d1e8 DONE
+    2 strategy_8d5f90d900e7 FAILED
 
     # i 2 combinations: 1 done, 1 failed.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
@@ -535,11 +580,10 @@ failed candidates.
 
 ## Explicit Non-Goals
 
-Current sweep mode intentionally stays small. It does not currently
-ship:
+Sweep mode intentionally leaves some decisions outside the API. It does
+not ship:
 
 - automatic ranking, objective functions, or `ledgr_tune()`;
-- parallel sweep execution;
 - walk-forward, PBO, or CSCV helpers;
 - risk-layer insertion;
 - public cost-model factories;

@@ -447,6 +447,26 @@ pulse$feature("DEMO_01", "return_5")
 pulse$hold()
 ```
 
+The scalar accessors are easiest when you are writing or debugging a rule for
+one instrument. Cross-sectional rules should usually switch to the vector
+accessors once the contract is clear:
+
+```{r}
+#| label: pulse-vector-accessors
+
+pulse$idx("DEMO_01")
+pulse$vec$close
+pulse$vec$feature("return_5")
+```
+
+`ctx$idx(id)` gives the instrument's position in `ctx$universe`. Values in
+`ctx$vec$close`, `ctx$vec$positions`, and `ctx$vec$feature(feature_id)` use that
+same order, so a strategy can score the whole universe without repeating scalar
+lookups. By default, `ctx$idx(id)` also fails loudly for an unknown instrument;
+use its `missing` argument only when a deliberate `NA` path is part of the rule.
+The vector feature accessor still uses exact engine feature IDs: warmup for a
+known feature is `NA`, while an unknown feature ID fails loudly.
+
 The same pulse can also be viewed as one wide row. This is useful when you want
 to see prices, portfolio state, and computed features together.
 
@@ -474,9 +494,9 @@ The economic idea:
 
 `signal_return()` is a thin helper around the same feature you inspected above:
 it reads `return_N` for every instrument in the pulse and returns one
-universe-wide signal object. In current ledgr builds it uses the vector
-accessor `ctx$vec$feature(feature_id)` when available, then falls back to the
-scalar `ctx$feature(id, feature_id)` path for compatibility.
+universe-wide signal object. It uses the vector accessor
+`ctx$vec$feature(feature_id)` when available, then falls back to the scalar
+`ctx$feature(id, feature_id)` path for compatibility.
 
 The helper pipeline has four stages:
 

@@ -66,7 +66,7 @@ findings, and prepares contracts/NEWS scaffolding without implementing the API.
 
 **Tasks:**
 1. Review `v0_1_7_4_spec.md`, `ledgr_triage_report.md`,
-   `cycle_retrospective.md`, and `ledgr_feature_map_ux.md` for consistency.
+   `cycle_retrospective.md`, and `features.qmd` for consistency.
 2. Add a draft `NEWS.md` v0.1.7.4 section with planned bullets for feature maps,
    auditr documentation fixes, CSV workflow verification, and installed-doc
    hygiene.
@@ -113,7 +113,7 @@ required_context:
   - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
   - inst/design/ledgr_v0_1_7_4_spec_packet/ledgr_triage_report.md
   - inst/design/ledgr_v0_1_7_4_spec_packet/cycle_retrospective.md
-  - inst/design/ledgr_feature_map_ux.md
+  - inst/design/features.qmd
   - inst/design/contracts.md
   - inst/design/release_ci_playbook.md
   - NEWS.md
@@ -203,7 +203,7 @@ invariants_at_risk:
 required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-  - inst/design/ledgr_feature_map_ux.md
+  - inst/design/features.qmd
   - inst/design/contracts.md (Strategy Contract, Context Contract, Canonical JSON Contract)
   - R/experiment.R
   - R/indicator.R
@@ -293,7 +293,7 @@ invariants_at_risk:
 required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-  - inst/design/ledgr_feature_map_ux.md
+  - inst/design/features.qmd
   - inst/design/contracts.md (Strategy Contract, Context Contract)
   - R/pulse-context.R
   - R/backtest-runner.R
@@ -362,7 +362,7 @@ covers configuration and links to the strategy section.
 - Vignette scans for feature-map teaching order.
 - Existing documentation contract tests.
 
-**Source Reference:** v0.1.7.4 spec sections A5, B2; `ledgr_feature_map_ux.md`.
+**Source Reference:** v0.1.7.4 spec sections A5, B2; `features.qmd`.
 
 **Classification:**
 ```yaml
@@ -381,7 +381,7 @@ invariants_at_risk:
 required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-  - inst/design/ledgr_feature_map_ux.md
+  - inst/design/features.qmd
   - inst/design/contracts.md (Documentation Contract, Strategy Contract)
   - R/strategy-helpers.R
   - R/strategy-types.R
@@ -729,7 +729,7 @@ semantics.
 - Documentation contract tests.
 - Vignette render.
 
-**Source Reference:** v0.1.7.4 spec section A6; `ledgr_feature_map_ux.md`.
+**Source Reference:** v0.1.7.4 spec section A6; `features.qmd`.
 
 **Classification:**
 ```yaml
@@ -750,7 +750,7 @@ invariants_at_risk:
 required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-  - inst/design/ledgr_feature_map_ux.md
+  - inst/design/features.qmd
   - inst/design/contracts.md (Context Contract, Documentation Contract)
   - R/pulse-context.R
   - R/feature-map.R

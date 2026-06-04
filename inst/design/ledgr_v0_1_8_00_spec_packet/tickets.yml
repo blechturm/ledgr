@@ -139,7 +139,7 @@ tickets:
         - inst/design/ledgr_roadmap.md
         - inst/design/horizon.md
         - inst/design/contracts.md
-        - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
+        - inst/design/manual/sweep.qmd
         - inst/design/rfc/rfc_cost_model_architecture_response.md
       tests_required:
         - manual roadmap review
@@ -250,7 +250,7 @@ tickets:
         - no production code changes
       required_context:
         - inst/design/spikes/ledgr_parallelism_spike/README.md
-        - inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md
+        - inst/design/manual/sweep.qmd
         - inst/design/ledgr_v0_1_8_00_spec_packet/v0_1_8_00_spec.md
       context_note: >
         Context paths use post-LDG-2003 locations under inst/design/architecture/

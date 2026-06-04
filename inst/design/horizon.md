@@ -31,26 +31,18 @@ milestone. Entries not listed are pure direction with no committed home yet
 (e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized
 authoring). When a milestone closes, sweep its entries to `## Resolved`.
 
-- **v0.1.8.10** (closing single-core round) — sweep-ephemeral mode and
-  read-path optimization; substrate work (typed `state$positions`, reusable
-  pulse-context env, matrix-canonical next-bar); strategy callback contract
-  addendum (`ctx$vec` namespace, `ctx$idx()` resolver, bulk
-  `ctx$vec$feature(feature_id)`); helpers Pass 1 internal optimization
-  (existing exported helpers consume `ctx$vec`, no public surface change);
-  per-pulse micro-optimization residuals; intra-loop profile follow-ups.
 - **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
   typed execution spec, file split, explicit event types); peer-benchmark
   expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
   contextual paradigm row).
 - **v0.1.9** — affordability / target-risk layer (incl. the phased-pulse
   restructure); primitive internals and collapse planning gates.
-- **v0.1.9.x** — maintainer manual and architecture documentation release
-  (architecture articles for fold execution, snapshots, features, sweep,
-  determinism, observability, benchmarking); walk-forward post-direction;
-  cost-model post-direction; selection-integrity diagnostics; randomized /
-  blocked slice diagnostics; promotion-grade sweep artifacts; target
-  construction helper extensions (Pass 2 per-stage helpers); broker /
-  exchange cost templates; crypto-readiness spike.
+- **v0.1.9.x** — follow-on documentation only if v0.1.8.11 leaves a bounded
+  remainder; walk-forward post-direction; cost-model post-direction;
+  selection-integrity diagnostics; randomized / blocked slice diagnostics;
+  promotion-grade sweep artifacts; target construction helper extensions
+  (Pass 2 per-stage helpers); broker / exchange cost templates;
+  crypto-readiness spike.
 - **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
   review + promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
@@ -62,9 +54,25 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.2.x → v0.3.0** — live bad-data resilience, ragged-universe
   (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
   needs a dedicated RFC).
-- **Post-`ledgrcore-spike`** — compiled fold core (`ledgrcore` sister
-  package). External repo `ledgrcore-spike` runs the K1 measurement against
-  post-v0.1.8.10 production R before any build is authorized.
+- **Post-K1 / B2 gates** — compiled fold core (`ledgrcore` sister package)
+  remains deferred. The K1 measurement spike and scoped v0.1.8.10 B2 spot-FIFO
+  gate are complete, but future compiled commitment still waits on the
+  remaining A-vs-B2 product comparison, dominant-attribution gate, and fresh
+  RFC recorded below.
+
+### 2026-06-04 [infrastructure] Installed design-tree footprint review
+
+The v0.1.8.11 `inst/` audit kept `inst/design/architecture/` package-included
+as installed design authority and removed only reviewed dead placeholders under
+`inst/diagrams/`, `inst/examples/`, and `inst/schemas/`. A larger question
+remains uncommitted: how much of the full `inst/design/` governance tree should
+ship in installed packages, especially spec packets, RFCs, ADRs, audits, and
+contracts. The current package treats installed design material as part of the
+research-software evidence surface, but that may carry unnecessary install
+footprint for end users. Future work should audit the installed design tree as
+a whole, decide which documents are package authority versus source-repo
+provenance only, and update `.Rbuildignore` only with an explicit contract for
+what installed users can rely on.
 
 ### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
 
@@ -337,13 +345,12 @@ measurement spike rather than assumed from the pre-v0.1.8.9 gap.
 
 The v0.1.8.8 cycle created the `inst/design/manual/` skeleton and cleaned up
 stale documentation-like surfaces but deliberately did not author the full
-internal manual. The follow-up home is the `v0.1.9.x Maintainer Manual And
-Architecture Documentation` release per the roadmap: turn the skeleton into a
-coherent internal manual for agents and maintainers while keeping governance
-artifacts separate from prose articles. (The window was previously typed as
-`v0.1.8.9.x` because v0.1.8.9 was at one point the maintainer-manual cycle;
-v0.1.8.9 was reassigned to the single-core optimization round and the manual
-moved to v0.1.9.x.)
+internal manual. The follow-up home is now the v0.1.8.11 Documentation,
+Structure, And Cleanup packet: turn the skeleton into a coherent internal
+manual for agents and maintainers while keeping governance artifacts separate
+from prose articles. (The window was previously typed as `v0.1.8.9.x` and then
+`v0.1.9.x`; v0.1.8.11 pulls the foundation forward because the post-v0.1.8.10
+B2/substrate arc made discoverability urgent before v0.1.9 feature work.)
 
 Boundary:
 
@@ -372,8 +379,8 @@ release to reopen execution semantics, durable identity bytes, event schemas,
 target risk, OMS, or compiled-core architecture.
 
 This entry records the backlog and rationale. The roadmap schedules the release;
-the v0.1.8.8 cleanup ticket only creates the skeleton and removes confusing
-stale surfaces.
+the v0.1.8.8 cleanup ticket created the skeleton and removed confusing stale
+surfaces, while v0.1.8.11 is the active planning home for authoring the manual.
 
 ### 2026-05-30 [architecture] Compiled fold core as `ledgrcore` sister package
 
@@ -888,12 +895,16 @@ Scope additions over the 2026-05-30 maintainer manual entry:
   B2 reality. Ephemeral sweep is now a real sweep mode at scale; the
   parameter-exploration economics shifted from "expensive but possible" to
   "feasible at serious-research scale." The articles should say so.
+- User-facing financial research-software disclaimer: add a plain-English
+  disclaimer surface and modest links from README / introductory docs if the
+  review accepts the 2026-06-01 disclaimer entry.
 - Performance-arc narrative: a coherent v0.1.8.x story that names what got
   faster and how to attribute it. Internal-facing first; external
   publication (R/Finance talk, blog post) is a follow-on decision.
-- contracts.md structural pass: organized by surface (execution-spec,
+- `contracts.md` audit and structural pass: first check whether the contract
+  file is stale after v0.1.8.10, then organize by surface (execution-spec,
   fold-engine, output-handler, lot-accounting, ctx, etc.) rather than
-  chronologically.
+  chronologically if that preserves or clarifies current semantics.
 - Internal compiled-accounting documentation
   (`compiled_accounting_model` enum scope guard) for future contributors
   and future-self.
@@ -912,9 +923,9 @@ exactly the failure mode the RFC discipline was built to prevent. v0.1.9
 target risk, v0.1.9.x crypto-readiness, walk-forward, and other planned
 feature work sit behind this release.
 
-Proposed name: v0.1.8.11, modeled on v0.1.8.00 as a prep-release that
-precedes the next feature cycle. The roadmap entry expands and re-sequences
-the existing v0.1.9.x maintainer manual milestone.
+Active planning packet: v0.1.8.11, modeled on v0.1.8.00 as a prep-release
+that precedes the next feature cycle. The roadmap entry expands and
+re-sequences the existing v0.1.9.x maintainer manual milestone.
 
 ### 2026-06-01 [optimization] Ephemeral-mode xlarge wall attribution as gate for ledgrcore / Architecture B2 commit
 
@@ -1109,12 +1120,13 @@ authorization is independent of which language wins.
 **Gates that remain binding** (from prior horizon entries):
 
 1. **R-side substrate must be exhausted first** (2026-05-30 ledgrcore
-   entry). v0.1.8.10 substrate decision is in progress; substrate
-   ships when v0.1.8.10 ships.
+   entry). v0.1.8.10 shipped the substrate closeout and the scoped B2
+   spot-FIFO opt-in; this gate is no longer pending.
 2. **Architecture B2 must be measured before Architecture A is
    authorized** (2026-06-01 Architecture B entry above). The B2
-   spike — R fold loop + compiled per-pulse hot frame via cpp11 — is
-   not yet run. K1 verdict does not substitute for the A-vs-B2
+   spot-FIFO gate ran in v0.1.8.10 for memory-backed sweeps, but that does
+   not authorize a general compiled fold core or durable compiled integration.
+   K1 verdict does not substitute for the remaining A-vs-B2 product
    comparison.
 3. **Xlarge ephemeral wall attribution must complete before either
    compiled-core path is authorized** (2026-06-01 attribution entry
@@ -1188,9 +1200,9 @@ Candidate scope:
 - Optional: a one-line addition to `DESCRIPTION`'s `Description:` field
   noting "research software; not investment advice."
 
-Promotion candidate: v0.1.9.x (maintainer manual release) or v0.1.9
-(target-risk / substrate round) — either fits; maintainer chooses based on
-release scope and timing.
+Promotion target: v0.1.8.11 documentation, structure, and cleanup release.
+This belongs with the user-facing documentation refresh rather than v0.1.9
+target-risk implementation.
 
 This is hobby-OSS-grade coverage, not commercial-grade. Escalation
 triggers that would warrant actual legal review:
@@ -1294,16 +1306,17 @@ Promoted roadmap hooks
 
 Immediate cross-cycle obligations
 
-- The v0.1.8.10 spec packet must list both synthesis artifacts as
-  binding design inputs at ticket-cut time, not as background reading.
+- The v0.1.8.10 spec packet listed both synthesis artifacts as binding design
+  inputs and shipped the accessor / Pass 1 scope. v0.1.8.11 should now make
+  the resulting strategy-author surface discoverable in docs without promoting
+  Pass 2 helpers early.
 - The negative/levered weights rejection block in `target_rebalance()`
   lives at `R/strategy-helpers.R:226-231` (precision over the helpers
   synthesis's `:226-230` citation); future RFCs and tickets citing
   this gate should use the corrected range.
-- The v0.1.8.10 release closeout should re-check that any horizon
-  entries created during that cycle's RFC closeouts land in one
-  documentation pass, the same way this entry pairs the accessor and
-  helpers cycles.
+- The v0.1.8.11 documentation pass should collect horizon entries created
+  during the v0.1.8.10 RFC closeouts, the same way this entry pairs the
+  accessor and helpers cycles.
 
 This entry does not authorize any of the above; it records the
 direction. The accessor synthesis is binding for v0.1.8.10
@@ -1711,9 +1724,24 @@ parallel dispatch, slice-aware feature validation, and a clear explanation that
 provenance records what happened but does not prove selection integrity.
 
 The accepted first walk-forward design is
-`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`; future
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+(with Amendment 1 dated 2026-06-04 in Section 14, Amendment 2 dated 2026-06-04
+in Section 16, and Section 17 ticket-cut gates; final-review artifact and
+closure update at
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`).
+Amendment 2 strengthens four Amendment 1 routings from procedural constraints
+on open spec-cut questions to substantive defaults: opening-state policy
+defaults to `carry_test_state` with a warned `flat_test_state` opt-in;
+selection rules fail closed for level metrics with metric-registry
+classification; extraction has no implicit fold default and requires a
+`selection_rationale` when `"latest"` is used; and default print method's data
+contract is an operational per-fold degradation table with named fields and a
+render-order contract. Section 17 binds a two-gate ticket-cut matrix
+(packet-open and release-gate enforcement) over Amendments 1 and 2. Future
 diagnostic work should consume its fold/session/score artifacts rather than
-reopening the v1 wrapper-over-run/sweep architecture.
+reopening the v1 wrapper-over-run/sweep architecture, and must not assume
+per-fold independence under the `carry_test_state` default (see synthesis
+Section 16.6 path-dependency obligation).
 
 Promoted roadmap hook: `v0.1.9.x Selection Integrity Diagnostics`.
 
@@ -1731,7 +1759,7 @@ Evidence and design breadcrumbs:
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `inst/design/rfc/rfc_parallelism_spike_architecture_consequences.md`
 - `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 Known spike findings to preserve: mirai is viable on Windows native R and
 Ubuntu/WSL as an optional backend; sequential sweep must not depend on mirai;
@@ -1757,7 +1785,7 @@ Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [infrastructure] mori as transport, not hot lookup
 
@@ -1793,7 +1821,7 @@ Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [infrastructure] Parallel interrupt and partial-result semantics
 
@@ -1806,7 +1834,7 @@ it is a parallel output contract.
 Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [data] Feature payload scale and indicator-width stress
 
@@ -1824,7 +1852,7 @@ Evidence:
 
 - `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 ### 2026-05-13 [cost] Broker and exchange cost templates
 
@@ -2426,13 +2454,41 @@ invented under deployment pressure.
 ### 2026-05-27 [evaluation] Walk-forward post-v0.1.9.x direction
 
 The accepted v0.1.9.x walk-forward synthesis
-(`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`) binds the
-first walk-forward implementation: rolling and anchored folds, calendar-time
-boundaries, single sealed snapshot, classed selection rules, scalar score
-matrix, and extraction-for-promotion. The synthesis uses "v1" as shorthand for
-that first implementation; ledgr's roadmap does not have a "walk-forward v2"
-milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at their
-own roadmap windows. This entry records the shape of that direction so the
+(`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, with
+Amendment 1 dated 2026-06-04 in Section 14, Amendment 2 dated 2026-06-04 in
+Section 16, Section 17 ticket-cut gates, and the final-review artifact and
+closure update at
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`) binds
+the first walk-forward implementation: rolling and anchored folds,
+calendar-time boundaries, single sealed snapshot, classed selection rules,
+scalar score matrix, and extraction-for-promotion. Amendment 1 corrected the
+Section 3 train-fold scoring binding (now `scoring_start = train_start_utc`,
+scoring the full fold window with overlap accepted across folds for rolling)
+and bound procedural constraints on Section 11 Open Questions Q1/Q5/Q7/Q10
+(opening-state cold-start distortion, rate/annualized selection metrics,
+extract_candidate default discipline, train-vs-test degradation as primary
+print signal), plus a survivorship disclosure obligation, two additional
+tests, and a compute-scaling caveat. Amendment 2 strengthened four of those
+routings into substantive defaults and operational contracts: v1 default
+`opening_state_policy = carry_test_state` with warned `flat_test_state` opt-in
+(Section 16.2); fail-closed selection-rule behavior for level metrics via a
+metric-classification registry field (Section 16.3); no-default
+`fold_seq` on `ledgr_walk_forward_extract_candidate()` with a required
+`selection_rationale` when `"latest"` is used (Section 16.4); an operational
+per-fold degradation table data contract for the default print method
+(Section 16.5); and a path-dependency obligation for the
+`carry_test_state` default (Section 16.6 -- diagnostic RFCs must not assume
+per-fold statistical independence). Section 17 added a two-gate ticket-cut
+matrix (packet-open and release-gate enforcement) binding the v0.1.9.x
+ticket packet's acceptance criteria for every Amendment 1 and Amendment 2
+obligation. The closure rule recorded in `rfc_cycle.md` is now: a
+post-synthesis amendment that routes only procedural constraints is
+insufficient closure; either substantive defaults or ticket-cut gates or
+both must land. The synthesis uses "v1" as shorthand
+for that first implementation; ledgr's roadmap does not have a "walk-forward
+v2" milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at
+their own roadmap windows. This entry records the shape of that direction so
+the
 follow-up work has a target rather than being invented under pressure.
 
 Diagnostic retention and selection-integrity diagnostics:
@@ -3172,9 +3228,10 @@ synthesis is the entry point. Calendar infrastructure is the missing RFC.
 
 #### Architectural footguns the v0.1.x cycles must avoid
 
-This is the operative section. The in-flight and upcoming cycles (v0.1.8.10
-through v0.1.9.x) must not paint the framework into corners that the intraday
-flip will have to rip out. The list below is the audit checklist.
+This is the operative section. The completed v0.1.8.10 cycle, the active
+v0.1.8.11 documentation/cleanup cycle, and the planned v0.1.9/v0.1.9.x cycles
+must not paint the framework into corners that the intraday flip will have to
+rip out. The list below is the audit checklist.
 
 - **Pulse cadence is a snapshot-derived property, not a global constant.**
   Any code path that hardcodes "trading day" semantics in the fold core,
@@ -3411,9 +3468,10 @@ planning.
 
 #### Cross-cycle note
 
-This entry does not authorize new cycles. Its operative effect is on
-the in-flight v0.1.8.10 cycle and the planned v0.1.9 and v0.1.9.x cycles:
-each must avoid the footguns named above.
+This entry does not authorize new cycles. Its operative effect is on the
+completed v0.1.8.10 cycle, the active v0.1.8.11 documentation/cleanup cycle,
+and the planned v0.1.9 and v0.1.9.x cycles: each must avoid the footguns named
+above.
 The user-initiated design audit will produce a sharper list of "preserve
 this" and "fix this before it becomes permanent" findings. Until the
 audit lands, treat this entry as a soft constraint on architectural
@@ -3713,6 +3771,16 @@ Entries move here when their idea has shipped or been answered. Each records
 what resolved it. Sweep an idea here when its milestone closes — do not leave
 shipped work in "Open."
 
+### 2026-06-04 [documentation] Documentation, structure, and cleanup release shipped v0.1.8.11
+
+v0.1.8.11 shipped the planned documentation and cleanup pass before v0.1.9:
+maintainer manual, RFC decision index, contract audit and structure pass,
+post-B2 documentation refresh, user-facing disclaimer, internal performance arc,
+benchmark methodology, roadmap / horizon / design-index housekeeping, and the
+`adr/` + `architecture/` + `maintainer_review/` wind-down. No v0.1.8.12
+documentation follow-on is planned; future bounded documentation belongs in
+v0.1.9.x only if a later packet cuts it explicitly.
+
 ### 2026-05-15 [adapters] Multi-output indicator authoring bundles — shipped v0.1.8.1
 
 `ledgr_indicator_bundle` / `ledgr_ind_ttr_outputs()` shipped in v0.1.8.1 with
@@ -3787,7 +3855,7 @@ setup with Tier-2 packages, mori transport, worker-local read-only DuckDB,
 parallel interrupt + measurement contract, typed `ledgr_execution_spec_v1`
 (LDG-2472), deterministic-only RNG with `ctx$pulse_seed` (LDG-2471), and
 the `inst/design/manual/` skeleton (without authoring the full internal
-manual — that work moves to v0.1.9.x per the 2026-05-30 maintainer-manual
+manual - that work moves to v0.1.8.11 per the 2026-05-30 maintainer-manual
 backlog entry). LDG-2479 self-profiling workload grid extension landed as
 the v0.1.8.9 baseline. See the v0.1.8.8 packet.
 
@@ -3806,3 +3874,14 @@ engine ratio 1.74x → 1.12x Backtrader; total wall ratio 1.50x. See the
 v0.1.8.9 packet and the 2026-05-31 LDG-2476 entry's Batch 8 closeout
 addendum for the substrate / read-path / ephemeral-mode residuals that
 forward into the v0.1.8.10 spike round.
+
+### 2026-06-03 [optimization] v0.1.8.10 single-core substrate and B2 closeout - shipped v0.1.8.10
+
+The v0.1.8.10 cycle closed the v0.1.8.x single-core arc with ephemeral
+subphase telemetry, matrix-canonical fold substrate and strategy accessors,
+event-preserving fold-owned FIFO accounting, yyjsonr options hoisting, a B2
+compiled spot-FIFO measurement gate, scoped public memory-backed sweep opt-in,
+per-lane attribution, and workload-grid / peer-benchmark measurement closeout.
+Default execution remains canonical R. Durable compiled integration,
+non-spot compiled accounting, target risk, walk-forward, cost/liquidity, OMS,
+and public benchmark claims remain deferred. See the v0.1.8.10 packet.

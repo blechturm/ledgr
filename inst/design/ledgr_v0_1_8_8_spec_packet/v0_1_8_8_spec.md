@@ -31,7 +31,7 @@ Authoritative inputs:
 v0.1.8.8 planning inputs:
 
 - `inst/design/maintainer_review/fold_core_workbook.qmd`
-- `inst/design/maintainer_review/feature_value_path_workbook.qmd`
+- `inst/design/manual/features.qmd`
 - `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
 - `dev/bench/README.md`
 - `dev/bench/peer_three_way.R`
@@ -44,7 +44,7 @@ Parallelism inputs:
 - `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `inst/design/rfc/rfc_parallelism_spike_architecture_consequences.md`
 - `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `inst/design/manual/sweep.qmd`
 
 Horizon entries promoted or partially promoted:
 
@@ -328,7 +328,7 @@ Required properties:
 - update the workbook freshness statement and verification date as part of the
   release.
 
-The workbook may reference `feature_value_path_workbook.qmd` where feature
+The workbook may reference `features.qmd` where feature
 projection and pulse-context data flow interact with the fold.
 
 ### 5.2 Inline Comments

@@ -392,7 +392,7 @@ Review focus:
 - `inst/design/manual/` becomes the documented internal maintainer article
   tree.
 - `inst/design/` governance artifacts remain separate from manual articles.
-- Current `fold_core_workbook.qmd` and `feature_value_path_workbook.qmd` are
+- Current `fold_core_workbook.qmd` and `features.qmd` are
   preserved under the new manual tree.
 - Stale `inst/diagrams/` files are moved, inlined, rewritten, or deleted.
 - Any diagram that still documents removed `data_hash` execution identity is

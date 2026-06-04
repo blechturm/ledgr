@@ -1,4 +1,4 @@
-# Single-Core Optimization Inventory
+﻿# Single-Core Optimization Inventory
 
 Created: 2026-05-31
 Scope: All single-core ledgr engine optimizations identified across LDG-2476
@@ -14,11 +14,10 @@ records:
 - **Mechanism hypothesis** (the load-bearing assumption being tested).
 - **Suggested verification** (the minimum experiment that confirms or rejects).
 
-The discipline mirrors the v0.1.8.7 optimization round captured in
-`inst/design/maintainer_review/v0_1_8_7_optimization_round.qmd`: every
-candidate goes through spike-or-simulation to establish mechanism, then
-real-run re-profile on a fixed workload to confirm wall-time impact, before
-any production code changes land.
+The discipline mirrors the v0.1.8.7 optimization round now summarized in
+`inst/design/manual/performance_arc_v0_1_8_x.qmd`: every candidate goes through
+spike-or-simulation to establish mechanism, then real-run re-profile on a fixed
+workload to confirm wall-time impact, before any production code changes land.
 
 ## Status Legend
 
@@ -130,12 +129,12 @@ the top-10 self-time, drop them from the v0.1.8.9 candidate stack.
 
 | ID | Optimization | Code location | Evidence | Sim status | Expected impact (xlarge) |
 | --- | --- | --- | --- | --- | --- |
-| B1 | Batch DuckDB `write_fill_events` — chunked inserts of 100-1000 fills | `R/fold-engine.R:336-340` + handler | MEASURED (gap) | SIM-CONFIRMABLE | 30-80s estimated |
+| B1 | Batch DuckDB `write_fill_events` - chunked inserts of 100-1000 fills | `R/fold-engine.R:336-340` + handler | MEASURED (gap) | SIM-CONFIRMABLE | 30-80s estimated |
 | B2 | Replace `b[i+1L, , drop=FALSE]` per fill with pre-extracted next-open price matrix | `R/fold-engine.R:290` | INFERRED | SIM-CONFIRMABLE | Unknown, mechanical |
 | B3 | Inline `ledgr_next_open_fill_proposal()` if profile shows per-fill function-call dominance | `R/fold-engine.R:291-294` | HYPOTHESIZED | PROFILE-NEEDED | Unknown |
 | B4 | Inline cost_resolver if profile shows per-fill dispatch dominance | `R/fold-engine.R:300` | HYPOTHESIZED | PROFILE-NEEDED | Unknown |
 | B5 | Pre-build integer-indexed bars structure (subsumed by B2) | `R/fold-engine.R:289` | INFERRED | SIM-CONFIRMABLE | Subsumed |
-| B6 | Lot-map update per fill (FIFO accounting) — depends on opening-position bug fix first | downstream | HYPOTHESIZED | PROFILE-NEEDED | Unknown |
+| B6 | Lot-map update per fill (FIFO accounting) - depends on opening-position bug fix first | downstream | HYPOTHESIZED | PROFILE-NEEDED | Unknown |
 | B7 | `event_seq` increment + flush bookkeeping per fill | `R/fold-engine.R:336-346` | HYPOTHESIZED | PROFILE-NEEDED | Likely low |
 
 ### B1 simulation plan (the next-largest lane after A1-A3)
@@ -368,8 +367,8 @@ revisit. Until then, parked.
 | ID | Optimization | Code location | Evidence | Sim status | Expected impact |
 | --- | --- | --- | --- | --- | --- |
 | G1 | `ledgr_call_strategy_fn` signature dispatch per pulse | `R/fold-engine.R:230-238` | INFERRED | PROFILE-NEEDED | Small |
-| G2 | `ledgr_validate_strategy_targets` per pulse — input validation | `R/fold-engine.R:263-266` | INFERRED | PROFILE-NEEDED | Small |
-| G3 | `ledgr_apply_target_risk_noop` per pulse — currently a no-op layer | `R/fold-engine.R:267` | INFERRED | PROFILE-NEEDED | Very small |
+| G2 | `ledgr_validate_strategy_targets` per pulse - input validation | `R/fold-engine.R:263-266` | INFERRED | PROFILE-NEEDED | Small |
+| G3 | `ledgr_apply_target_risk_noop` per pulse - currently a no-op layer | `R/fold-engine.R:267` | INFERRED | PROFILE-NEEDED | Very small |
 | G4 | Strategy preflight analysis growth | `R/strategy-preflight.R` | MEASURED (small) | N/A | Sub-second one-time |
 
 All G-class items require Rprof confirmation before scoping. Profile pass
@@ -447,9 +446,9 @@ headroom. If it's > 2x, K1 is the next conversation.
 
 ## Measurement and Simulation Methodology
 
-Lifted verbatim from the v0.1.8.7 cycle (see
-`inst/design/maintainer_review/v0_1_8_7_optimization_round.qmd`,
-section "Lessons learned"). Three principles are load-bearing:
+Lifted verbatim from the v0.1.8.7 cycle and now summarized in
+`inst/design/manual/performance_arc_v0_1_8_x.qmd`. Three principles are
+load-bearing:
 
 ### Principle 1: Spike to confirm mechanism, real-run to confirm magnitude
 
@@ -520,7 +519,7 @@ v0.1.8.9 candidates.
 Most of the candidates in this inventory would be impossibly expensive
 with users in the field. The named-list `state$positions` representation,
 the canonical_json encoding for `state_update`, the cost_resolver dispatch
-contract — each would require deprecation cycles, dual-path support, and
+contract - each would require deprecation cycles, dual-path support, and
 migration tooling under a stable public API.
 
 Pre-CRAN status means we can change these directly. Aggressive cleanup of
@@ -578,15 +577,15 @@ mechanism numbers.
 
 ## Source Evidence
 
-- `dev/bench/results/ledgr_bench_record_20260531T132910Z_summary.csv` —
+- `dev/bench/results/ledgr_bench_record_20260531T132910Z_summary.csv` -
   LDG-2479 workload grid baseline record.
-- `dev/bench/notes/workload_grid_baseline_closeout.md` — grid closeout.
-- `dev/bench/notes/per_pulse_complexity_findings.md` — diagnosis of A1-A3.
+- `dev/bench/notes/workload_grid_baseline_closeout.md` - grid closeout.
+- `dev/bench/notes/per_pulse_complexity_findings.md` - diagnosis of A1-A3.
 - `dev/bench/peer_benchmark/notes/three_phase_decomposition_results.md`
 - `dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md`
 - `inst/design/horizon.md`, `2026-05-31 [optimization] LDG-2476
   peer-benchmark turnover cost decomposition` entry.
-- `inst/design/maintainer_review/v0_1_8_7_optimization_round.qmd` — prior
+- `inst/design/manual/performance_arc_v0_1_8_x.qmd` - prior
   cycle methodology and B0 reference fix.
 - `R/fold-engine.R` per-pulse loop body.
 - `R/fold-reconstruction.R` durable results path.

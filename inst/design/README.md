@@ -2,12 +2,12 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.10`.
-**Current active packet:** none; v0.1.8.11 planning is next.
-**Current active packet path:** future packet.
-The completed `inst/design/ledgr_v0_1_8_10_spec_packet/` is an archival
+**Latest completed release packet:** `v0.1.8.11`.
+**Current active packet:** none; v0.1.9 planning is next.
+**Current active packet path:** not cut.
+The completed `inst/design/ledgr_v0_1_8_11_spec_packet/` is an archival
 release record. Do not treat it as authorization for new implementation work
-after the v0.1.8.10 release gate.
+after the v0.1.8.11 release gate.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -110,10 +110,11 @@ wrapper, and fast-sweep versus promotion/materialization artifact boundary.
   `ledgr_v0_1_8_7_spec_packet/cycle_retrospective.md`.
 - Key inputs:
   `audits/fold_path_hotpath_audit.md`,
-  `architecture/fold_core_trust_boundary.md`,
+  `manual/snapshots_data.qmd` (migrated fold trust-boundary rationale),
   `collapse_optimization_map.md`,
   `spikes/ledgr_optimization_round_spike/README.md`, and
-  `adr/0004-dependency-footprint-and-strategy-interface.md`.
+  `manual/execution_fold_core.qmd` plus
+  `manual/performance_arc_v0_1_8_x.qmd` (migrated ADR-0004 rationale).
 
 The v0.1.8.8 packet is complete. It shipped parallel sweep dispatch and
 determinism, fold-core diagnostics / containment, a repo-local reproducible
@@ -134,8 +135,8 @@ deferred.
 - Key inputs:
   `spikes/ledgr_parallelism_spike/summary_report.md`,
   `spikes/ledgr_parallelism_spike/architecture_synthesis.md`,
-  `architecture/ledgr_v0_1_8_sweep_architecture.md`,
-  `maintainer_review/fold_core_workbook.qmd`, and
+  `manual/sweep.qmd`,
+  `manual/execution_fold_core.qmd`, and
   `ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
 
 The v0.1.8.9 packet is complete. It shipped the single-core optimization round
@@ -171,8 +172,45 @@ integration remains deferred.
 - Primary synthesis:
   `spikes/ledgr_v0_1_8_10_optimization_round_spike/architecture_synthesis.md`.
 
-The next planning packet is v0.1.8.11. Per the roadmap, it is a documentation,
-structure, and cleanup release before v0.1.9 features.
+The latest completed packet is v0.1.8.11. Per the roadmap, it was a
+documentation, structure, and cleanup release before v0.1.9 features. Tickets
+are closed; Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2
+planning-doc housekeeping, and Batch 3 RFC decision-index work are complete
+after Claude review. Batch 4 `contracts.md` structure work is complete after
+Claude review. Batch 5 maintainer-manual foundation work is complete after
+Claude review. Batch 6 user-facing documentation refresh work is complete after
+Claude review. Batch 7 performance arc narrative work is complete after Claude
+review. Batch 8 research software disclaimer surface work is complete after
+Claude review. Batch 9 generated docs and man-page audit work is complete after
+Claude review. LDG-2539 was added to consume the generated-doc audit findings
+and is complete after review. Batch 10 `inst/` subdirectory audit and reviewed
+cleanup work is complete.
+Rescoped 2026-06-04: LDG-2540 through LDG-2546 added to absorb the manual
+remainder and complete the `adr/` + `architecture/` + `maintainer_review/`
+directory wind-downs in v0.1.8.11 itself; no v0.1.8.12 follow-on is planned.
+ADR-0005 was deleted in the 2026-06-04 structural review. Spec Section 3.7
+introduces the two-layer manual article standard (Synthesis + Implementation
+Trace) after a 2026-06-04 review found the first articles too
+synthesis-heavy; every new manual article in this packet ships both layers,
+while LDG-2546 retrofits the two existing articles.
+LDG-2546 covers `execution_fold_core` and `performance_arc` and winds down
+`maintainer_review/`. Batch 11 / LDG-2540 +
+LDG-2541 is complete after Claude review: both new deterministic substrate
+manual articles now carry Synthesis and Implementation Trace layers. Batch 14 /
+LDG-2546 is complete after Claude review: existing manual articles now carry
+Implementation Trace layers and `maintainer_review/` is wound down. Batch 12 /
+LDG-2542 + LDG-2543 is complete after Claude review: sweep and features manual
+articles now carry both layers, the architecture notes were migrated, and
+`architecture/` is wound down to its README. Batch 13 / LDG-2544 + LDG-2545 is
+complete after Claude review: ADR-0004 rationale is split into the manual,
+`adr/` is wound down to its README, and the benchmark methodology article is in
+place. Batch 15 / LDG-2537 closed the packet on 2026-06-04 and updated the
+branch for merge/tag.
+
+- Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
+- Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_8_11_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_8_11_spec_packet/batch_plan.md`.
 
 ## Core Documents
 
@@ -194,12 +232,13 @@ structure, and cleanup release before v0.1.9 features.
 These files are active architecture inputs from the v0.1.8 cycle, still
 load-bearing for future sweep and fold-core work.
 
-- `architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `architecture/ledgr_sweep_mode_ux.md`
-- `architecture/sweep_mode_code_review.md`
-- `architecture/ledgr_feature_map_ux.md`
-- `architecture/fold_core_trust_boundary.md`
-- `architecture/ledgr_v0_1_8_sweep_architecture.md`
+- `manual/execution_fold_core.qmd`
+- `manual/performance_arc_v0_1_8_x.qmd`
+- `manual/observability_determinism.qmd`
+- `manual/snapshots_data.qmd`
+- `manual/features.qmd`
+- `manual/sweep.qmd`
+- `manual/benchmark_methodology.qmd`
 - `collapse_optimization_map.md`
 - `spikes/ledgr_parallelism_spike/summary_report.md`
 - `spikes/ledgr_parallelism_spike/architecture_synthesis.md`
@@ -212,6 +251,10 @@ cut and implementation planning within their stated scope. They live in `rfc/`
 as the end of their RFC thread. When a decision stabilises further it may be
 extracted into a standalone architecture note in `architecture/`.
 
+For topic-oriented lookup and ADR routing, start with `rfc/README.md`; it is an
+index only and does not replace the source RFCs, final reviews, ADRs, contracts,
+or versioned packet records.
+
 | Area | Document | Scope | Status |
 | --- | --- | --- | --- |
 | Sweep single-core optimization arc | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md` | v0.1.8.3 optimization sequence | Accepted |
@@ -223,7 +266,7 @@ extracted into a standalone architecture note in `architecture/`.
 | Research workflow and artifact topology | `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` | v0.1.8.5 canonical workflow and teachability planning | Accepted |
 | Feature projection shape, materialization policy, and lookback access | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` | v0.1.8.6 feature-projection materialization; later lookback/export/storage gates | Accepted |
 | Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
-| Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` | v0.1.9.x walk-forward ticket-cut planning after target risk | Accepted |
+| Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (Amendment 1 + Amendment 2 + Section 17 ticket-cut gates, all 2026-06-04) | v0.1.9.x walk-forward ticket-cut planning after target risk; final review closed the cycle, Amendment 2 strengthened four procedural routings into substantive defaults, Section 17 binds packet-open and release-gate enforcement | Accepted |
 | OMS semantics and order lifecycle | `rfc/rfc_ledgr_oms_seed_synthesis.md` | v0.2.x OMS data-model and lifecycle planning; paper/live deferred | Accepted |
 
 ## RFCs
@@ -289,6 +332,7 @@ extracted into a standalone architecture note in `architecture/`.
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed_v2.md`
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_response.md`
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+- `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
@@ -381,7 +425,28 @@ walk-forward is a wrapper over the existing `ledgr_sweep()` and `ledgr_run()`
 paths, uses one sealed snapshot with calendar-time folds, records durable fold
 and scalar score artifacts, preserves the strategy contract, and defers
 selection-integrity diagnostics, purging/embargo, richer retention, and
-paper/live interaction to later RFCs.
+paper/live interaction to later RFCs. Amendment 1 (2026-06-04) closed the
+cycle by correcting the Section 3 train-fold scoring binding
+(`scoring_start = train_start_utc`), binding procedural constraints on
+Section 11 Open Questions 1, 5, 7, and 10, augmenting Section 10 with a
+survivorship disclosure obligation and two test items, and recording a
+Section 12 compute-scaling caveat. The amendment is authorized by synthesis
+Section 13 and does not open a new RFC chain; the final-review artifact
+carries the underlying reviewer text. Amendment 2 (2026-06-04) strengthened
+four of Amendment 1's procedural routings into substantive defaults: v1
+`opening_state_policy = carry_test_state` with a warned `flat_test_state`
+opt-in (Section 16.2); fail-closed selection-rule behavior for level metrics
+via metric-registry classification (Section 16.3); no-default extraction
+with required `selection_rationale` when `"latest"` is used (Section 16.4);
+an operational per-fold degradation table data contract for the default
+print method (Section 16.5); and a path-dependency obligation in Section 12
+(per-fold test metrics under `carry_test_state` are not statistically
+independent). Section 17 (Ticket-Cut Gates) binds a two-gate matrix
+(packet-open and release-gate enforcement) over every Amendment 1 and
+Amendment 2 obligation. The closure rule recorded in
+`inst/design/rfc_cycle.md` is now: a post-synthesis amendment that routes
+only procedural constraints is insufficient closure; either substantive
+defaults or named ticket-cut gates or both must land.
 
 ## Audits And Spikes
 
@@ -392,20 +457,41 @@ paper/live interaction to later RFCs.
 
 ## Maintainer Review
 
-- `maintainer_review/feature_value_path_workbook.qmd` - internal notebook for tracing
-  how declared features become `ctx$feature()` values. This is a maintainer
-  code-review aid, not installed user documentation or a contract.
-- `maintainer_review/v0_1_8_7_optimization_round.qmd` - internal narrative
-  review of the v0.1.8.7 optimization round. This is a maintainer review aid,
-  not a benchmark contract or installed user documentation.
+- `maintainer_review/README.md` - wind-down policy for the retired workbook
+  location. New implementation-depth notes belong in manual article
+  `## Implementation Trace` sections.
+- `manual/features.qmd` - maintainer manual article tracing how declared
+  features become `ctx$feature()` values. It absorbed the retired feature value
+  path workbook in LDG-2543.
+
+## Maintainer Manual
+
+- `manual/README.qmd` / `manual/README.md` - internal maintainer-manual index
+  and bounded remainder.
+- `manual/execution_fold_core.qmd` - first maintainer-manual article for
+  execution and fold-core architecture. This is synthesis, not a replacement
+  for contracts, RFCs, ADRs, architecture notes, or packet records.
+- `manual/observability_determinism.qmd` - internal maintainer-manual article
+  for fingerprints, closure captures, RNG determinism, telemetry, replay, and
+  event evidence. This is synthesis, not a replacement for contracts.
+- `manual/snapshots_data.qmd` - internal maintainer-manual article for snapshot
+  sealing, split stores, fold-entry guards, and the data trust boundary. This
+  is synthesis, not a replacement for contracts.
 
 ## ADRs
 
 ADRs live under `adr/`.
 
-- `adr/0001-split-db-semantics.md` - snapshot and run database split.
-- `adr/0002-registry-fingerprint-policy.md` - registry fingerprint policy.
-- `adr/0003-closure-fingerprinting.md` - closure fingerprinting policy.
+See `adr/README.md` for the current ADR pattern. ADRs are wound down as a
+recurring artifact; the existing files are historical records pending
+migration into manual articles. Do not author new ADRs without confirming
+against the three-condition bar in `adr/README.md`.
+
+- ADR-0001 through ADR-0004 have been migrated into the maintainer manual and
+  deleted. See `manual/snapshots_data.qmd`,
+  `manual/observability_determinism.qmd`,
+  `manual/execution_fold_core.qmd`, and
+  `manual/performance_arc_v0_1_8_x.qmd`.
 
 ## Spec Packets
 
@@ -453,23 +539,23 @@ contract index.
 
 | Task | Read |
 | --- | --- |
-| Runtime/execution change | `contracts.md`, current packet if one exists, relevant architecture note |
-| Sweep/fold-core planning | `contracts.md`, `architecture/ledgr_v0_1_8_sweep_architecture.md`, `architecture/ledgr_sweep_mode_ux.md` |
+| Runtime/execution change | `contracts.md`, current packet if one exists, relevant maintainer manual article |
+| Sweep/fold-core planning | `contracts.md`, `manual/sweep.qmd`, `manual/execution_fold_core.qmd` |
 | Sweep performance / optimization | `rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `contracts.md`, current packet if one exists |
 | Feature projection / materialization | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, current packet |
 | Multi-output indicator authoring | `rfc/rfc_multi_output_indicator_ux_synthesis.md`, relevant release packet or future packet when cut |
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
-| Maintainer feature-path review | `maintainer_review/feature_value_path_workbook.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-core.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
+| Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
 | Target risk planning | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md`, future packet when cut |
-| Walk-forward planning | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`, `contracts.md`, future v0.1.9.x packet when cut |
+| Walk-forward planning | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (with Amendment 1 in Section 14, Amendment 2 in Section 16, ticket-cut gates in Section 17), `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section), `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`, `contracts.md`, future v0.1.9.x packet when cut |
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |
 | Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, `rfc/rfc_design_doc_governance.md`, `rfc/rfc_design_doc_governance_response.md` |
 | Release operation | `release_ci_playbook.md`, active release/closeout ticket if one exists |
 | Vignette or article writing | `vignette_styleguide.md`, active packet, relevant existing article |
 | Audit intake | relevant audit, current packet if one exists, tickets |
 | RFC response | source RFC, related contract section, related roadmap section |
-| Spike execution | spike document, current packet if one exists, architecture note that consumes results |
+| Spike execution | spike document, current packet if one exists, maintainer manual or RFC record that consumes results |
 
 ## Maintenance Rule
 

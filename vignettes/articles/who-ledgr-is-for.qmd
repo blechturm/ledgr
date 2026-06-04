@@ -13,6 +13,10 @@ ledgr is not for everyone. This article is the honest version of that
 statement: who the package is built for, who it is not built for, and what to
 use instead if you do not fit.
 
+For financial-use boundaries, see the project
+[disclaimer](../../DISCLAIMER.md): ledgr is research software, not investment
+advice.
+
 ## Intended audience
 
 **People who care not just about finding strategies, but about knowing when they
@@ -88,11 +92,12 @@ institutional platforms are better fits.
 
 **Quants who need to scan thousands of parameter combinations in seconds.**
 VectorBT is purpose-built for this. It packs configurations into arrays and
-processes them with optimized numerical kernels. ledgr will support parameter
-sweeps with parity to single runs, but it will not try to beat VectorBT on raw
-throughput. If you are optimizing for "test 10,000 parameter combinations in 30
-seconds," use VectorBT. If you are optimizing for "test 100 hypotheses with full
-provenance and replay any of them in three years," use ledgr.
+processes them with optimized numerical kernels. ledgr supports memory-backed
+sweeps and a scoped spot-FIFO accelerator for that path, but it still optimizes
+for replayable evidence rather than raw array throughput. If you are optimizing
+for "test 10,000 parameter combinations in 30 seconds," use VectorBT. If you are
+optimizing for "test 100 hypotheses with full provenance and replay any of them
+in three years," use ledgr.
 
 **Teams that need a managed institutional platform.** ledgr is a research
 framework, not a hosted product. There is no UI, dashboard, support team, or
@@ -116,11 +121,10 @@ ergonomics, deterministic replay, and a clear path toward paper and live
 trading.
 
 **vs. VectorBT (Python):** Different categories. VectorBT is a vectorized
-parameter-sweep engine optimized for raw throughput. ledgr is an event-driven,
-single-strategy-per-run engine optimized for path-dependent strategies,
-reproducibility, and edge deployment. Choose VectorBT if you are scanning huge
-parameter spaces. Choose ledgr if you care about why a specific result is what
-it is.
+parameter-sweep engine optimized for raw throughput. ledgr is an event-driven
+engine with memory-backed exploratory sweeps, durable promotion, and provenance.
+Choose VectorBT if you are scanning huge parameter spaces. Choose ledgr if you
+care about why a specific result is what it is.
 
 **vs. NautilusTrader (Python/Rust):** NautilusTrader is closest in design
 philosophy: event-driven, deterministic, and built around backtest-to-live

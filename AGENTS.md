@@ -30,7 +30,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.8.10 release gate; v0.1.8.11 planning next;
+Current planning context (post-v0.1.8.11 release gate; v0.1.9 planning next;
 update this block when the next packet opens or scope changes materially):
 
 - The completed v0.1.8.2 packet is an archival release record.
@@ -120,6 +120,47 @@ update this block when the next packet opens or scope changes materially):
   external-provider work, broad collapse adoption, and package-vignette
   benchmark claims remain deferred unless the next packet explicitly scopes a
   bounded subset.
+- The completed v0.1.8.11 packet is an archival release record:
+  `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
+  It was a documentation, structure, and cleanup release before v0.1.9
+  features. Scope was RFC / decision synthesis, ADR population,
+  `contracts.md` audit and structural pass, maintainer manual, post-B2
+  vignette refresh, user-facing research-software disclaimer, performance-arc
+  narrative, and horizon/roadmap/design-index housekeeping. Tickets are cut;
+  Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2 planning-doc
+  housekeeping, and Batch 3 RFC decision-index work are complete after Claude
+  review. Batch 4 `contracts.md` structure work is complete after Claude
+  review. Batch 5 maintainer-manual foundation work is complete after Claude
+  review. Batch 6 user-facing documentation refresh work is complete after
+  Claude review. Batch 7 performance arc narrative work is complete after
+  Claude review. Batch 8 research software disclaimer surface work is complete
+  after Claude review. Batch 9 generated docs and man-page audit work is
+  complete after Claude review. LDG-2539 was added to consume the generated-doc
+  audit findings and is complete after review. Batch 10 `inst/` subdirectory
+  audit and reviewed cleanup work is complete. Rescoped 2026-06-04:
+  LDG-2540 through LDG-2546 added to absorb the manual remainder and complete
+  the `adr/` + `architecture/` +
+  `maintainer_review/` wind-downs in v0.1.8.11 (no v0.1.8.12 follow-on).
+  ADR-0005 deleted; ADR-0001 through ADR-0003 and the fold trust-boundary
+  note migrated into manual articles. Spec Section 3.7 introduces the
+  two-layer manual article standard (Synthesis + Implementation Trace) after
+  a 2026-06-04 review found the first articles too synthesis-heavy; LDG-2546
+  retrofits `execution_fold_core` and `performance_arc` with Implementation
+  Trace sections and winds down `maintainer_review/`. Batch 11 / LDG-2540 +
+  LDG-2541 is complete after Claude review: both new deterministic substrate
+  manual articles now carry Synthesis and Implementation Trace layers. Batch
+  12 / LDG-2542 + LDG-2543 is complete after Claude review: sweep and features
+  manual articles now carry both layers, the architecture notes were migrated,
+  and `architecture/` is wound down to its README. Batch 14 / LDG-2546 is
+  complete after Claude review: existing manual articles now carry
+  Implementation Trace layers and `maintainer_review/` is wound down. Batch
+  13 / LDG-2544 + LDG-2545 is complete after Claude review: ADR-0004 rationale
+  is split into the manual, `adr/` is wound down to its README, and the
+  benchmark methodology article is in place. Batch 15 / LDG-2537 closed the
+  packet on 2026-06-04 and prepared the branch for merge/tag.
+  Preserve the packet's no execution/API, target-risk, OMS, walk-forward,
+  cost/liquidity, durable compiled, non-spot compiled, and public
+  benchmark-claim implementation boundary.
 
 ## Active Design Entry Points
 
@@ -129,16 +170,17 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
+| v0.1.8.11 release record | `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_11_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_release_closeout.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md`, `inst/design/contracts.md` |
 | v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |
 | v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
 | v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
-| v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
-| v0.1.8.8 fold-core documentation | `inst/design/maintainer_review/fold_core_workbook.qmd`, `inst/design/maintainer_review/feature_value_path_workbook.qmd`, `inst/design/horizon.md` |
+| v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/manual/sweep.qmd`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
+| Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/manual/features.qmd`, `inst/design/horizon.md` |
 | v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
 | v0.1.8.7 release record | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
-| v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/architecture/fold_core_trust_boundary.md`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/adr/0004-dependency-footprint-and-strategy-interface.md` |
+| v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/manual/snapshots_data.qmd`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
 | Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
 | Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |

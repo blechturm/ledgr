@@ -59,6 +59,15 @@ That helper pipeline is not a second execution path. It is authoring structure
 for the same pulse contract: code should describe the research idea in the
 order you would explain it to a colleague.
 
+The same readability argument carries into sweep work. ledgr's exploration path
+is still ordinary R strategy code evaluated through the same fold semantics,
+with memory-backed candidate summaries and an explicit
+`compiled_accounting_model = "spot_fifo"` opt-in for the scoped spot-FIFO
+accounting accelerator. R remains credible here because the package keeps the
+contract narrow: readable strategy code first, targeted low-level acceleration
+where measurement justified it, and durable artifacts only when a candidate is
+promoted.
+
 ## R deploys on hardware you own
 
 ledgr's vision is the full research-to-production arc, including deployment to

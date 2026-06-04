@@ -1,0 +1,289 @@
+# Benchmark Methodology
+
+
+**Status:** Reviewable maintainer-manual article for LDG-2545.
+
+**Authority:** Synthesis plus implementation trace. Binding release
+scope remains in versioned spec packets and release-gate tickets. Public
+benchmark claims require explicit future scope; this article does not
+create them.
+
+This article explains how ledgr’s local benchmark records are generated,
+checked, and used for release decisions. It complements
+`performance_arc_v0_1_8_x.qmd`: that article explains what the v0.1.8.7
+to v0.1.8.10 performance arc found; this article explains how future
+records should be produced and read.
+
+> [!WARNING]
+>
+> **Internal methodology, not marketing**
+>
+> `dev/bench/` records are local maintainer evidence. They support
+> attribution, regression checks, and release-gate review. They are not
+> hosted package benchmarks and they do not authorize public speed
+> rankings.
+
+## The Short Version
+
+ledgr has two benchmark families:
+
+- **Self-profiling workload grid:** `dev/bench/shared/run_benchmarks.R`
+  measures package-owned scenarios and splits durable run and sweep rows
+  into setup, engine, results, fill-extraction, and per-fill surfaces.
+- **Peer benchmark:** `dev/bench/peer_benchmark/peer_benchmark.R` runs a
+  shared SMA crossover fixture across ledgr surfaces and optional peers,
+  then writes parity, performance, status, divergence, and environment
+  artifacts.
+
+Both families write generated records under `dev/bench/results/`, which
+is local-only and ignored by git. Tracked reports and closeouts cite
+record prefixes, not a constantly committed result directory.
+
+Release-gate benchmark review asks:
+
+1.  Did the relevant smoke command run?
+2.  If a record run was required, does the closeout name the record
+    prefix?
+3.  Are phase boundaries explicit?
+4.  Is parity checked before performance is interpreted?
+5.  Are public speed claims absent unless explicitly scoped?
+
+## Record Generation Workflow
+
+Use smoke rows while editing. Use record rows only when a ticket or
+release gate needs stable evidence.
+
+These examples use plain `Rscript`; substitute your full R path on
+Windows if your shell does not resolve it.
+
+Self-profiling smoke:
+
+``` powershell
+Rscript dev/bench/shared/run_benchmarks.R --preset smoke --repeats 1 --warmup 1
+```
+
+Self-profiling record:
+
+``` powershell
+Rscript dev/bench/shared/run_benchmarks.R --preset record --repeats 3 --warmup 1
+```
+
+Peer smoke:
+
+``` powershell
+Rscript dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
+```
+
+Peer record:
+
+``` powershell
+Rscript dev/bench/peer_benchmark/peer_benchmark.R --preset record
+```
+
+B2 peer sidecar, when explicitly scoped:
+
+``` powershell
+Rscript dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
+```
+
+Generated files stay local. Closeout documents should name the record
+prefix and summarize the relevant rows, not commit raw results by
+default.
+
+## Repeatability Expectations
+
+Benchmark repeatability is not byte-identical wall time. The
+reproducibility standard is:
+
+- the command, preset, seed, and source version are recorded;
+- environment metadata is written beside the result files;
+- phase columns reconcile to the declared boundary;
+- parity status is explicit for peer rows;
+- unavailable peers are reported as unavailable, not substituted;
+- the closeout links the exact record prefix used for conclusions.
+
+The benchmark harnesses guard against stale source where possible. They
+are still local records: hardware, operating system, loaded package
+versions, Python peer environments, and thermal state can change the
+timing rows.
+
+## Release-Gate Checks
+
+The release gate should use benchmark evidence only for the scope that
+the cycle touched.
+
+Use the self-profiling workload grid when a ticket changes execution,
+output handlers, fill reconstruction, feature projection, or B2
+accounting lanes. Use the peer benchmark when a ticket changes
+peer-comparison claims, parity surfaces, or reports that already cite
+peer rows.
+
+If the cycle is documentation-only, rendering the manual and preserving
+existing benchmark caveats is often enough. Do not create a new
+benchmark claim just because the release gate mentions benchmarks.
+
+## Implementation Trace
+
+This trace follows the Section 3.7 two-layer standard. It maps the
+methodology to concrete harness files, record shapes, and release-gate
+failure modes.
+
+### Data Structures
+
+Self-profiling records:
+
+| Artifact | Shape |
+|----|----|
+| `_raw.csv` | one row per scenario/repeat with phase and count columns |
+| `_summary.csv` | grouped summaries by scenario and persistence surface |
+| `_environment.json` | package, source, host, and argument metadata |
+| `_results.json` | machine-readable result bundle |
+| `_summary.md` | local human-readable closeout scaffold |
+
+Peer records:
+
+| Artifact | Shape |
+|----|----|
+| per-engine equity/fill/trade CSVs | canonical comparison surfaces |
+| `*_status.csv` | engine availability and failure reasons |
+| `*_parity.csv` | tiered parity checks against canonical ledgr |
+| `*_performance.csv` | phase-separated timing rows |
+| `*_divergence_summary.csv` | first divergence and attribution detail |
+| `*_environment.json` | source, package, Python peer, and input hash metadata |
+| `parity_history/*.json` | historical parity snapshots by run |
+
+### Code Anchors
+
+| Boundary | Anchor |
+|----|----|
+| Self-profiling argument shape and default output dir | `dev/bench/shared/run_benchmarks.R:16` |
+| Source-version guard | `dev/bench/shared/run_benchmarks.R:91` |
+| Durable result extraction timing helper | `dev/bench/shared/run_benchmarks.R:335` |
+| Durable scenario execution | `dev/bench/shared/run_benchmarks.R:355` |
+| Durable row phase and per-fill fields | `dev/bench/shared/run_benchmarks.R:432` |
+| Sweep scenario execution | `dev/bench/shared/run_benchmarks.R:479` |
+| Sweep phase extraction | `dev/bench/shared/run_benchmarks.R:533` |
+| Self-profiling record writes | `dev/bench/shared/run_benchmarks.R:695` |
+| Peer argument shape | `dev/bench/peer_benchmark/peer_benchmark.R:12` |
+| Peer status and unavailable handling | `dev/bench/peer_benchmark/peer_benchmark.R:708` |
+| Peer phase-boundary labels | `dev/bench/peer_benchmark/peer_benchmark.R:783` |
+| Peer performance rows | `dev/bench/peer_benchmark/peer_benchmark.R:798` |
+| Peer parity rows | `dev/bench/peer_benchmark/peer_benchmark.R:827` |
+| Peer divergence attribution | `dev/bench/peer_benchmark/peer_benchmark.R:1038` |
+| Peer output writes | `dev/bench/peer_benchmark/peer_benchmark.R:1071` |
+| Peer main dispatch | `dev/bench/peer_benchmark/peer_benchmark.R:1237` |
+
+### Lookup And Dispatch Mechanisms
+
+`run_benchmarks.R` dispatches package-owned workload-grid scenarios. The
+command line parser selects smoke or record, repeat count, warmup count,
+scenario filters, seed, output directory, and optional
+`compiled_accounting_model`. Durable rows call `ledgr_run()` and time
+result extraction separately. Sweep rows call `ledgr_sweep()` and read
+candidate telemetry columns for engine and result phases.
+
+`peer_benchmark.R` dispatches a shared bars CSV through ledgr durable,
+ledgr memory-backed, optional B2 memory-backed, ledgr built-in SMA,
+quantstrat, Backtrader, zipline-reloaded, and LEAN surfaces. It compares
+every peer row to canonical ledgr before performance interpretation.
+
+### Edge Cases
+
+Fail-loud or fail-visible cases:
+
+- invalid preset or non-positive repeat/warmup values in the
+  self-profiling harness;
+- stale installed ledgr version relative to source `DESCRIPTION`;
+- unsupported `compiled_accounting_model`;
+- peer surface unavailable because optional local Python/R dependencies
+  are missing;
+- ledgr durable vs memory-backed parity failure before peer rows are
+  accepted.
+
+Non-failing cases:
+
+- unavailable peer rows remain status rows with reasons;
+- raw generated files are ignored by git;
+- record timing drift is expected across host state and should be
+  interpreted through phase columns and closeout context.
+
+### Hot And Cold Paths
+
+Cold benchmark work includes bars generation, CSV reads, snapshot
+construction, experiment setup, feature setup, peer environment
+initialization, metadata writes, and markdown rendering. These costs
+belong in setup or ingestion columns, not in fold-engine claims.
+
+Hot benchmark work is the measured execution surface: ledgr fold loop,
+peer engine run, or B2 spot-FIFO batch path when explicitly requested.
+Result materialization is warm work and gets a separate results phase
+when the harness can separate it.
+
+The release gate should read hot, warm, and cold phases separately. A
+result extraction regression should not be described as an engine
+regression, and a B2 engine win should not be described as a durable-run
+speed claim.
+
+### Concrete Examples
+
+Closeout wording should be record-specific:
+
+``` text
+Smoke benchmark completed with:
+  dev/bench/shared/run_benchmarks.R --preset smoke --repeats 1 --warmup 1
+
+Record prefix used for release-gate comparison:
+  dev/bench/results/ledgr_bench_record_YYYYMMDDTHHMMSSZ
+
+Interpretation:
+  Compare engine_sec and results_sec separately. Do not quote a public speed
+  claim from this row.
+```
+
+Peer closeout wording should include parity:
+
+``` text
+Peer benchmark completed with:
+  dev/bench/peer_benchmark/peer_benchmark.R --preset record
+
+Parity:
+  canonical ledgr vs memory-backed ledgr must pass before peer performance
+  rows are interpreted.
+
+Interpretation:
+  Compare only under the report's declared same-host fixture and phase
+  boundaries.
+```
+
+## Maintainer Checklist
+
+Before closing a benchmark-sensitive ticket:
+
+- Run the scoped smoke command or explain why the ticket is
+  documentation-only.
+- Record command, preset, repeats, warmup, seed, and source state.
+- Link the result prefix when a record run was required.
+- Confirm phase columns reconcile.
+- Confirm parity before interpreting peer performance.
+- Keep raw results local unless the packet explicitly asks to track a
+  report.
+- Avoid public-speed-claim language.
+
+## Source Links
+
+- `../../../dev/bench/README.md`
+- `../../../dev/bench/shared/run_benchmarks.R`
+- `../../../dev/bench/peer_benchmark/peer_benchmark.R`
+- `performance_arc_v0_1_8_x.qmd`
+- `../ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
+- `../ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md`
+- `../ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`
+- `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`
+
+## Where Next
+
+- Use `performance_arc_v0_1_8_x.qmd` for the performance history and
+  caveated interpretation of v0.1.8.7 to v0.1.8.10.
+- Use `sweep.qmd` for memory-backed sweep and B2 candidate execution
+  boundaries.
+- Use `execution_fold_core.qmd` for the fold hot path.

@@ -27,7 +27,7 @@ tickets:
         - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
         - inst/design/ledgr_v0_1_7_4_spec_packet/ledgr_triage_report.md
         - inst/design/ledgr_v0_1_7_4_spec_packet/cycle_retrospective.md
-        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/features.qmd
         - inst/design/contracts.md
         - inst/design/release_ci_playbook.md
         - NEWS.md
@@ -74,7 +74,7 @@ tickets:
       required_context:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/features.qmd
         - inst/design/contracts.md (Strategy Contract, Context Contract, Canonical JSON Contract)
         - R/experiment.R
         - R/indicator.R
@@ -128,7 +128,7 @@ tickets:
       required_context:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/features.qmd
         - inst/design/contracts.md (Strategy Contract, Context Contract)
         - R/pulse-context.R
         - R/backtest-runner.R
@@ -178,7 +178,7 @@ tickets:
       required_context:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/features.qmd
         - inst/design/contracts.md (Documentation Contract, Strategy Contract)
         - R/strategy-helpers.R
         - R/strategy-types.R
@@ -375,7 +375,7 @@ tickets:
       required_context:
         - inst/design/model_routing.md
         - inst/design/ledgr_v0_1_7_4_spec_packet/v0_1_7_4_spec.md
-        - inst/design/ledgr_feature_map_ux.md
+        - inst/design/features.qmd
         - inst/design/contracts.md (Context Contract, Documentation Contract)
         - R/pulse-context.R
         - R/feature-map.R

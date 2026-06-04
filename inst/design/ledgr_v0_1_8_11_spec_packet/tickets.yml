@@ -1,0 +1,375 @@
+version: "0.1.8.11"
+source: "v0_1_8_11_tickets.md"
+generated_from: "v0_1_8_11_spec.md"
+tickets:
+  - id: "LDG-2527"
+    title: "Packet Alignment And v0.1.8.11 Ticket Cut"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.8.11"
+    tests:
+      - "manual_packet_review"
+      - "stale_scope_rg_checks"
+      - "yaml_review"
+      - "peer_review_caveats_resolved"
+
+  - id: "LDG-2528"
+    title: "contracts.md Audit Report"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "audit"
+      surface: "contracts"
+      scope: "stale_contract_review"
+    tests:
+      - "manual_audit_review"
+      - "stale_term_rg_checks"
+      - "source_to_finding_traceability"
+
+  - id: "LDG-2529"
+    title: "Roadmap Horizon And Design Index Housekeeping"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "governance"
+      surface: "design_index_and_horizon"
+      scope: "active_packet_housekeeping"
+    tests:
+      - "stale_language_rg_checks"
+      - "manual_design_index_review"
+
+  - id: "LDG-2530"
+    title: "RFC Decision Index And ADR Routing"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation_synthesis"
+      surface: "rfc_and_adr_index"
+      scope: "decision_discoverability"
+    tests:
+      - "manual_link_review"
+      - "topic_to_source_traceability"
+      - "adr_candidate_review"
+
+  - id: "LDG-2531"
+    title: "contracts.md Structure Pass"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2528"
+    classification:
+      type: "contract_cleanup"
+      surface: "contracts"
+      scope: "structure_and_stale_language"
+    tests:
+      - "diff_to_audit_traceability"
+      - "stale_term_rg_checks"
+      - "manual_contract_review"
+
+  - id: "LDG-2532"
+    title: "Maintainer Manual Foundation"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "architecture_synthesis"
+    tests:
+      - "manual_article_review"
+      - "link_review"
+      - "remainder_disposition_review"
+
+  - id: "LDG-2533"
+    title: "User-Facing Documentation Refresh"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation"
+      surface: "user_facing_docs"
+      scope: "post_b2_refresh"
+    tests:
+      - "doc_render_or_targeted_vignette_checks"
+      - "link_review"
+      - "scope_language_review"
+
+  - id: "LDG-2534"
+    title: "Performance Arc Narrative"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation_synthesis"
+      surface: "performance_narrative"
+      scope: "v0.1.8.7_to_v0.1.8.10"
+    tests:
+      - "manual_narrative_review"
+      - "benchmark_link_review"
+      - "claim_language_review"
+
+  - id: "LDG-2535"
+    title: "Research Software Disclaimer Surface"
+    status: "completed"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "documentation"
+      surface: "disclaimer"
+      scope: "financial_research_software"
+    tests:
+      - "manual_disclaimer_review"
+      - "link_review"
+
+  - id: "LDG-2536"
+    title: "Generated Docs And Man-Page Audit"
+    status: "completed"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "audit"
+      surface: "generated_docs"
+      scope: "stale_help_language"
+    tests:
+      - "manual_audit_review"
+      - "stale_term_rg_checks"
+      - "source_generated_doc_traceability"
+
+  - id: "LDG-2538"
+    title: "inst/ Subdirectory Audit And Cleanup"
+    status: "completed"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+    classification:
+      type: "audit"
+      surface: "installed_subdirectories"
+      scope: "stale_file_cleanup_and_migration"
+    tests:
+      - "inst_audit_report_review"
+      - "stale_reference_rg_checks"
+      - "rbuildignore_review"
+      - "full_tests_after_cleanup"
+      - "package_check_after_cleanup"
+
+  - id: "LDG-2539"
+    title: "Generated Docs Stale-Language Cleanup"
+    status: "completed"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2536"
+    classification:
+      type: "documentation_cleanup"
+      surface: "generated_docs_and_vignettes"
+      scope: "stale_language_and_render_drift"
+    tests:
+      - "stale_term_rg_checks"
+      - "source_generated_doc_traceability"
+      - "targeted_doc_render_regeneration_checks"
+      - "live_output_drift_diff_review"
+
+  - id: "LDG-2540"
+    title: "Observability/Determinism Manual Article"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2532"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "observability_determinism_with_adr_migration"
+    tests:
+      - "manual_article_review"
+      - "implementation_trace_section_review"
+      - "adr_0002_0003_migration_citation_review"
+      - "manual_render_check"
+      - "stale_reference_rg_check"
+
+  - id: "LDG-2541"
+    title: "Snapshots/Data Manual Article"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2532"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "snapshots_data_with_adr_and_architecture_migration"
+    tests:
+      - "manual_article_review"
+      - "implementation_trace_section_review"
+      - "adr_0001_migration_citation_review"
+      - "fold_trust_boundary_migration_citation_review"
+      - "manual_render_check"
+      - "stale_reference_rg_check"
+
+  - id: "LDG-2542"
+    title: "Sweep Manual Article"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2532"
+      - "LDG-2541"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "sweep_with_architecture_migration"
+    tests:
+      - "manual_article_review"
+      - "implementation_trace_section_review"
+      - "sweep_architecture_migration_citation_review"
+      - "sweep_mode_ux_migration_citation_review"
+      - "rfc_index_primary_authority_update_review"
+      - "manual_render_check"
+      - "stale_reference_rg_check"
+
+  - id: "LDG-2543"
+    title: "Features Manual Article"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2532"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "features_with_architecture_migration"
+    tests:
+      - "manual_article_review"
+      - "implementation_trace_section_review"
+      - "feature_map_ux_migration_citation_review"
+      - "feature_value_path_workbook_absorption_review"
+      - "manual_render_check"
+      - "stale_reference_rg_check"
+
+  - id: "LDG-2544"
+    title: "ADR-0004 Rationale Split And Directory Wind-Down"
+    status: "completed"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2532"
+      - "LDG-2534"
+      - "LDG-2540"
+      - "LDG-2541"
+    classification:
+      type: "documentation"
+      surface: "adr_winddown"
+      scope: "adr_0004_split_and_directory_completion"
+    tests:
+      - "execution_fold_core_function_only_section_review"
+      - "performance_arc_dependency_posture_section_review"
+      - "adr_directory_empty_or_readme_only_check"
+      - "stale_reference_rg_check"
+
+  - id: "LDG-2545"
+    title: "Benchmark Methodology Residual Article"
+    status: "completed"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2534"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "benchmark_methodology_residual"
+    tests:
+      - "manual_article_review"
+      - "implementation_trace_section_review"
+      - "manual_render_check"
+
+  - id: "LDG-2546"
+    title: "Existing-Article Depth Retrofit And maintainer_review/ Wind-Down"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2532"
+      - "LDG-2534"
+    classification:
+      type: "documentation"
+      surface: "maintainer_manual"
+      scope: "depth_retrofit_and_maintainer_review_winddown"
+    tests:
+      - "execution_fold_core_implementation_trace_review"
+      - "performance_arc_implementation_trace_review"
+      - "maintainer_review_winddown_policy_review"
+      - "retired_fold_core_migration_review"
+      - "retired_optimization_workbook_migration_review"
+      - "maintainer_review_directory_empty_or_readme_only_check"
+      - "manual_render_check"
+      - "stale_reference_rg_check"
+
+  - id: "LDG-2537"
+    title: "v0.1.8.11 Release Gate"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2527"
+      - "LDG-2528"
+      - "LDG-2529"
+      - "LDG-2530"
+      - "LDG-2531"
+      - "LDG-2532"
+      - "LDG-2533"
+      - "LDG-2534"
+      - "LDG-2535"
+      - "LDG-2536"
+      - "LDG-2538"
+      - "LDG-2539"
+      - "LDG-2540"
+      - "LDG-2541"
+      - "LDG-2542"
+      - "LDG-2543"
+      - "LDG-2544"
+      - "LDG-2545"
+      - "LDG-2546"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.8.11"
+    tests:
+      - "targeted_checks"
+      - "doc_render_checks_as_appropriate"
+      - "manual_render_script"
+      - "manual_markdown_drift_check"
+      - "manual_remainder_authored_check"
+      - "implementation_trace_present_in_every_article_check"
+      - "adr_directory_empty_or_readme_only_check"
+      - "architecture_directory_empty_or_readme_only_check"
+      - "maintainer_review_directory_empty_or_readme_only_check"
+      - "inst_audit_routing_review"
+      - "full_tests_package_checks_as_appropriate"
+      - "release_playbook"
+      - "git_status_review"

@@ -1,9 +1,12 @@
 # ledgr Contract Index
 
 This file is a compact index of the contracts that future contributors and
-coding agents must preserve. The authoritative narrative remains in
-the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_8_spec_packet/`.
+coding agents must preserve. The active design index
+(`inst/design/README.md`) names the current authoritative spec packet; the
+authoritative narrative remains in the active versioned spec packet, currently
+`inst/design/ledgr_v0_1_8_11_spec_packet/`.
+The strategy preflight boundary originated in
+`inst/design/ledgr_v0_1_8_spec_packet/` and remains binding.
 
 ## Execution Contract
 
@@ -54,12 +57,12 @@ the active versioned spec packet, currently
   table or partially promotable candidate result; partial-result recovery
   requires a future explicit contract.
 - Production entry into the fold core must be guarded by the Snapshot Contract
-  trust boundary. Committed runs currently recompute and compare the sealed
-  snapshot hash before fold construction; sweep evaluation currently validates
-  a sealed snapshot handle and carries the stored snapshot hash through compact
-  candidate provenance. v0.1.8.7 must make this guard policy explicit before
-  any primitive fold-core redesign relies on a stronger no-unguarded-entry
-  invariant.
+  trust boundary. Production run and sweep setup must enforce the accepted
+  sealed-snapshot guard before fold construction: committed runs recompute and
+  compare the sealed snapshot hash, and sweep evaluation validates a sealed
+  snapshot handle and carries the stored snapshot hash through compact
+  candidate provenance. Primitive fold hot paths may then rely on trusted
+  normalized snapshot inputs.
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not compute, reinterpret, or rewrite fill prices,
   fees, cash deltas, or cost metadata.
@@ -297,7 +300,9 @@ the active versioned spec packet, currently
 - Raw signal strings such as `"LONG"` and `"FLAT"` are invalid core outputs.
   `ledgr_signal_strategy()` is an explicit convenience wrapper that maps signals
   to normal targets before validation.
-- Functional strategies and R6 strategies use the same target validator.
+- Functional strategies and configured strategy-list compatibility surfaces use
+  the same target validator. Legacy R6 strategy objects are not reauthorized by
+  this contract.
 - v0.1.7 public experiment workflows accept only functional strategies with
   signature `function(ctx, params)`. `params` defaults to `list()` and is passed
   as the second argument. `ctx$params` is not part of the public contract.
@@ -363,10 +368,12 @@ the active versioned spec packet, currently
 - Sweep mode inherits the public preflight semantics. Sweep may accept Tier 1
   and Tier 2 strategies, but Tier 3 strategies must be rejected before
   execution.
-- v0.1.5 run provenance stores `strategy_source_hash`,
+- v0.1.5+ run provenance stores `strategy_source_hash`,
   `strategy_params_hash`, captured strategy source where available,
-  dependency versions, R version, and reproducibility tier. R6 strategies are
-  Tier 2 by default unless a future explicit metadata contract upgrades them.
+  dependency versions, R version, and reproducibility tier. Legacy strategy
+  metadata may be tolerated for historical run inspection, but modern
+  experiment execution must not treat R6 strategy objects as supported Tier 2
+  strategies.
 - `strategy_source_hash` is R-version-sensitive and should be compared directly
   only between runs created under the same `R_version`.
 - `ledgr_extract_strategy(trust = FALSE)` is inspection-only: it returns stored
@@ -477,8 +484,8 @@ the active versioned spec packet, currently
   initialized from current holdings. It is appropriate for hold-unless-signal
   strategies and rebalance throttling.
 - `ctx$targets()` and `ctx$current_targets()` are removed from the v0.1.7
-  public workflow and should fail loudly with migration guidance once the
-  context reset ticket is implemented.
+  public workflow and fail loudly with migration guidance to `ctx$flat()` and
+  `ctx$hold()`.
 - Interactive pulse and indicator tools are read-only against persistent ledgr
   tables.
 
@@ -646,8 +653,9 @@ the active versioned spec packet, currently
 - Package check target:
   `R CMD check --no-manual --no-build-vignettes ledgr_*.tar.gz`.
 - Coverage gate target: at least 80% total coverage via `tools/check-coverage.R`.
-- CI must run acceptance tests before the full package check and include a
-  Windows runner before v0.1.2 release.
+- CI must run acceptance tests before the full package check and include at
+  least Ubuntu and Windows R CMD check coverage appropriate to the release,
+  with coverage-threshold enforcement where configured.
 - For tickets that touch executable R code, package metadata, vignettes,
   pkgdown, DuckDB persistence, snapshots, file paths, time zones, encodings, or
   other OS-sensitive behavior, a local WSL/Ubuntu gate should run before push.

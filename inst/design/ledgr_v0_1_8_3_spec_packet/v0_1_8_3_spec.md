@@ -38,8 +38,8 @@ Supporting context:
 
 - `inst/design/horizon.md`
 - `inst/design/release_ci_playbook.md`
-- `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`
-- `inst/design/architecture/ledgr_sweep_mode_ux.md`
+- `inst/design/manual/sweep.qmd`
+- `inst/design/manual/sweep.qmd`
 - `inst/design/audits/sweep_performance_measurement.md`
 - `inst/design/audits/sweep_hot_path_profile.md`
 - `dev/spikes/ledgr_sweep_performance/run_benchmark.R`

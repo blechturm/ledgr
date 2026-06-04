@@ -7,7 +7,7 @@
 
 - `inst/design/ledgr_v0_1_7_4_spec_packet/ledgr_triage_report.md`
 - `inst/design/ledgr_v0_1_7_4_spec_packet/cycle_retrospective.md`
-- `inst/design/ledgr_feature_map_ux.md`
+- `inst/design/features.qmd`
 - `inst/design/contracts.md`
 - `inst/design/release_ci_playbook.md`
 - `inst/design/ledgr_design_philosophy.md`
@@ -27,7 +27,7 @@ were found. The next improvement is to make correct strategy authoring easier
 to discover and harder to write in a stringly typed style.
 
 This release promotes the feature-map design from
-`inst/design/ledgr_feature_map_ux.md` into a narrow public authoring surface:
+`inst/design/features.qmd` into a narrow public authoring surface:
 
 ```text
 indicator objects -> feature map -> pulse-time feature bundle -> target vector

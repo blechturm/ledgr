@@ -102,7 +102,7 @@ required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
   - inst/design/ledgr_ux_decisions.md
-  - inst/design/ledgr_sweep_mode_ux.md
+  - inst/design/sweep.qmd
   - inst/design/contracts.md
   - NEWS.md
 tests_required:
@@ -561,7 +561,7 @@ invariants_at_risk:
 required_context:
   - inst/design/model_routing.md
   - inst/design/ledgr_v0_1_7_spec_packet/v0_1_7_spec.md
-  - inst/design/ledgr_sweep_mode_ux.md
+  - inst/design/sweep.qmd
   - inst/design/contracts.md (Canonical JSON Contract, Run Identity Contract)
   - R/config-canonical-json.R
 tests_required:

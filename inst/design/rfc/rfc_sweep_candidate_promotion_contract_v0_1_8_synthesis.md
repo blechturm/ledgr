@@ -9,7 +9,7 @@
 - `inst/design/rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_response.md`
 - `inst/design/rfc/rfc_rng_contract_v0_1_8.md`
 - `inst/design/rfc/rfc_rng_contract_v0_1_8_response.md`
-- `inst/design/architecture/ledgr_sweep_mode_ux.md`
+- `inst/design/manual/sweep.qmd`
 - `inst/design/ledgr_v0_1_8_spec_packet/v0_1_8_spec.md`
 
 ## Purpose

@@ -1,0 +1,8 @@
+project:
+  type: default
+  render:
+    - "*.qmd"
+
+format:
+  gfm:
+    output-ext: md

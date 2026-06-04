@@ -91,8 +91,8 @@ Current release: v0.1.7.9 (shipped)
 Current prep target: v0.1.8
 Active packet: inst/design/ledgr_v0_1_7_9_spec_packet/
 Next architecture inputs:
-- architecture/ledgr_v0_1_8_sweep_architecture.md
-- architecture/ledgr_sweep_mode_ux.md
+- manual/sweep.qmd
+- manual/sweep.qmd
 ```
 
 Fourth, include task-specific entry points:
@@ -146,14 +146,14 @@ Specific placements:
 | --- | --- | --- |
 | `ledgr_design_philosophy.md` | root | Foundational orientation, not implementation-specific. |
 | `release_ci_playbook.md` | root | Operational entry point; should be easy to find during release. |
-| `ledgr_sweep_mode_ux.md` | `architecture/` | Active v0.1.8 design input, despite UX title. |
-| `ledgr_feature_map_ux.md` | `architecture/` | Feature-map design input; active architecture surface. |
+| `sweep.qmd` | `architecture/` | Active v0.1.8 design input, despite UX title. |
+| `features.qmd` | `architecture/` | Feature-map design input; active architecture surface. |
 | `ledgr_ux_decisions.md` | root | Cross-cutting decision log; ADR-like but not ADR format. |
 | `execution_engine_audit.md` | `audits/` | Formal audit findings and routing. |
 | `ledgr_parallelism_spike/` | `spikes/ledgr_parallelism_spike/README.md` | Technical research episode, not binding contract. |
 | RFCs and responses | `rfc/` | Proposal/response pairs belong together. |
 
-`sweep_mode_code_review.md` is the only debatable file. Put it in
+`sweep.qmd` is the only debatable file. Put it in
 `architecture/` for now because it is an active v0.1.8 architecture input. The
 README can list it under "Current architecture inputs" while noting that it is
 review-derived. If a later spec fully absorbs it, move or relabel it as
@@ -249,7 +249,7 @@ if the default cost resolver only uses open.
 ## Resolved
 
 - 2026-05-20 [cost] Fill context should reserve OHLCV -> promoted to
-  `inst/design/architecture/ledgr_v0_1_8_sweep_architecture.md`.
+  `inst/design/manual/sweep.qmd`.
 ```
 
 Required fields:
