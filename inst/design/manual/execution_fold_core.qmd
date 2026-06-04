@@ -145,6 +145,45 @@ Legacy strategy objects are not reauthorized by this manual. Historical
 metadata may remain inspectable, but modern experiment execution uses the
 function strategy contract.
 
+## Function-Only Strategy Interface Rationale
+
+The retired ADR-0004 decision paired dependency cleanup with a strategy
+interface cleanup. The load-bearing strategy choice was simple: modern ledgr
+execution uses plain functions, not R6 strategy objects, because the fold needs
+one deterministic callback shape across original runs, replay, resume, and
+sweep promotion.
+
+The accepted function shape is still:
+
+```r
+strategy <- function(ctx, params) {
+  targets <- ctx$hold()
+  targets[["AAA"]] <- 1
+  targets
+}
+```
+
+That shape carries three maintenance advantages:
+
+- the original run and replay can execute the same bare function instead of
+  splitting across object and function paths;
+- closure and config provenance can reason about one strategy callback
+  contract;
+- target validation remains fold-owned and identical across run and sweep.
+
+Removing the historical R6 strategy surface also removes a latent divergence:
+mutation-detection and replay behavior had applied inconsistently across the
+old object path and direct function execution. The modern rule is more
+boring and easier to audit. A strategy may close over helpers, return a
+`ledgr_target`, or return a list with `targets` and `state_update`, but the
+fold still normalizes that output into a full named numeric target vector and
+validates it before accounting.
+
+This rationale does not weaken the public strategy contract. It explains why
+the old R6 surface stays retired and why new strategy-helper work should wrap
+or produce the functional callback shape rather than adding a second execution
+interface.
+
 ## Determinism
 
 Determinism is split across several surfaces:

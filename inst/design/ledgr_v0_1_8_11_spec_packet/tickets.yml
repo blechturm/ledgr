@@ -274,7 +274,7 @@ tickets:
 
   - id: "LDG-2544"
     title: "ADR-0004 Rationale Split And Directory Wind-Down"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "S"
     dependencies:
@@ -294,7 +294,7 @@ tickets:
 
   - id: "LDG-2545"
     title: "Benchmark Methodology Residual Article"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "S"
     dependencies:

@@ -99,6 +99,43 @@ one-workload, same-host, and timing-boundary caveats.
 Source:
 `../ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`.
 
+## Dependency Posture
+
+The retired ADR-0004 decision also explains why the v0.1.8.7
+optimization round treated dependency shape as part of performance
+posture rather than as cosmetic package minimalism.
+
+The dependency decisions were:
+
+- **Drop `cli`.** The package had a stale import but no active `cli_*`
+  call surface. Removing it reduced dependency noise without changing
+  behavior.
+- **Drop `R6`.** The old object-strategy experiment survived mainly as a
+  legacy strategy surface. Removing it supported the function-only
+  strategy interface described in `execution_fold_core.qmd` and removed
+  an original-vs- replay divergence risk.
+- **Keep `tibble`.** Results remain tibble-classed deliberately. That
+  public shape is part of ledgr’s R-native quant audience fit and should
+  not be removed just to minimize Imports.
+- **Add `collapse` behind deterministic gates.** The measured hot path
+  needed in-place buffer writes and reconstruction help. `collapse` has
+  no transitive dependencies, but ledgr uses it only through
+  deterministic wrappers so caller `collapse` option state cannot alter
+  ledgr outputs.
+
+The important performance lesson is not “few dependencies are always
+better.” It is that dependency changes must map to a measured production
+surface or to a clear interface simplification. `cli` and `R6` were
+removed because they no longer served the modern execution surface.
+`tibble` stayed because it serves the public result surface. `collapse`
+was added because it targeted measured buffer and reconstruction lanes,
+with determinism guards.
+
+This is why later performance discussions should separate dependency
+posture from benchmark headlines. A dependency can be worth keeping for
+public shape, or worth adding for a narrow measured lane, as long as the
+release packet and contracts preserve determinism and scope.
+
 ## v0.1.8.8: Make The Measurement Shape Honest
 
 v0.1.8.8 did not mainly chase a new wall-time headline. It made future

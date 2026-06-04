@@ -1,8 +1,6 @@
 # ledgr v0.1.8.11 Batch Plan
 
-**Status:** Active; Batches 11, 12, and 14 complete after Claude review. Batch
-13 (LDG-2544
-ADR-0004 split + LDG-2545 benchmark methodology residual) follows. Release
+**Status:** Active; Batches 11 through 14 complete after Claude review. Release
 gate becomes Batch 15. Rescoped 2026-06-04 to absorb the manual remainder and
 complete the `adr/` + `architecture/` + `maintainer_review/` wind-downs in
 this release. Section 3.7 of the spec introduces the two-layer manual article
@@ -498,7 +496,7 @@ applied in `maintainer_review/README.md`.
 ## Batch 13 - Wind-Down Completion
 
 Tickets: `LDG-2544`, `LDG-2545`
-Status: Planned
+Status: Completed
 
 Grouped because both are small cleanup work that closes out the v0.1.8.11
 discoverability arc: LDG-2544 finishes the `adr/` wind-down; LDG-2545
@@ -508,8 +506,8 @@ directories (`adr/` and `architecture/`) are in their final wound-down state
 
 Goal: split ADR-0004 rationale across `execution_fold_core.qmd` (function-only
 strategy interface) and `performance_arc_v0_1_8_x.qmd` (dependency posture);
-delete `adr/0004`; author the benchmark methodology residual article (or fold
-into a performance_arc section if maintainer prefers).
+delete the retired ADR-0004 file; author the benchmark methodology residual
+article (or fold into a performance_arc section if maintainer prefers).
 
 Exit criteria:
 
@@ -518,8 +516,8 @@ Exit criteria:
   Implementation Trace retrofit for these two articles is Batch 14's
   responsibility (LDG-2546), not this batch — Batch 13 only adds the
   ADR-0004 rationale Synthesis-layer content; Batch 14 does the depth pass.
-- `adr/0004-...` deleted; citations re-pointed; `adr/README.md` reflects the
-  wound-down state.
+- Retired ADR-0004 file deleted; citations re-pointed; `adr/README.md`
+  reflects the wound-down state.
 - `adr/` directory contains only `README.md` or is deleted entirely
   (maintainer call at close-out time).
 - `architecture/` directory contains only `README.md` or is deleted entirely
@@ -529,6 +527,12 @@ Exit criteria:
   public-speed-claim language is absent; links to `dev/bench/README.md` and
   performance_arc.
 - All affected manual GFM siblings render cleanly.
+
+Completion note (2026-06-04): Claude approved with one maintainership call and
+one tiny polish. Historical packet citations were kept historically accurate,
+with `adr/README.md` serving as the redirect ledger to the migrated manual
+rationale. Benchmark methodology command examples now use portable `Rscript`
+forms. `adr/`, `architecture/`, and `maintainer_review/` are README-only.
 
 ## Batch 14 - Existing-Article Depth Retrofit And maintainer_review/ Wind-Down
 

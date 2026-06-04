@@ -113,7 +113,8 @@ wrapper, and fast-sweep versus promotion/materialization artifact boundary.
   `manual/snapshots_data.qmd` (migrated fold trust-boundary rationale),
   `collapse_optimization_map.md`,
   `spikes/ledgr_optimization_round_spike/README.md`, and
-  `adr/0004-dependency-footprint-and-strategy-interface.md`.
+  `manual/execution_fold_core.qmd` plus
+  `manual/performance_arc_v0_1_8_x.qmd` (migrated ADR-0004 rationale).
 
 The v0.1.8.8 packet is complete. It shipped parallel sweep dispatch and
 determinism, fold-core diagnostics / containment, a repo-local reproducible
@@ -200,8 +201,10 @@ LDG-2546 is complete after Claude review: existing manual articles now carry
 Implementation Trace layers and `maintainer_review/` is wound down. Batch 12 /
 LDG-2542 + LDG-2543 is complete after Claude review: sweep and features manual
 articles now carry both layers, the architecture notes were migrated, and
-`architecture/` is wound down to its README. The next substantive cleanup work
-is LDG-2544 and LDG-2545, then the release gate.
+`architecture/` is wound down to its README. Batch 13 / LDG-2544 + LDG-2545 is
+complete after Claude review: ADR-0004 rationale is split into the manual,
+`adr/` is wound down to its README, and the benchmark methodology article is in
+place. The release gate is next.
 
 - Spec: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`.
 - Tickets: `ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`.
@@ -459,11 +462,11 @@ recurring artifact; the existing files are historical records pending
 migration into manual articles. Do not author new ADRs without confirming
 against the three-condition bar in `adr/README.md`.
 
-- ADR-0001 through ADR-0003 have been migrated into the maintainer manual and
-  deleted. See `manual/snapshots_data.qmd` and
-  `manual/observability_determinism.qmd`.
-- `adr/0004-dependency-footprint-and-strategy-interface.md` - lean dependency
-  footprint and function-only strategy interface.
+- ADR-0001 through ADR-0004 have been migrated into the maintainer manual and
+  deleted. See `manual/snapshots_data.qmd`,
+  `manual/observability_determinism.qmd`,
+  `manual/execution_fold_core.qmd`, and
+  `manual/performance_arc_v0_1_8_x.qmd`.
 
 ## Spec Packets
 

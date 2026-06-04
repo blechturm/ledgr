@@ -24,7 +24,8 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 3. snapshots/data;
 4. sweep;
 5. features;
-6. benchmark methodology.
+6. performance arc;
+7. benchmark methodology.
 
 ## Articles
 
@@ -36,19 +37,7 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | [`sweep.md`](sweep.md) | `sweep.qmd` | Reviewable LDG-2542 batch | Sweep candidate identity, parallel dispatch, memory output handler, B2 scope guard, and promotion. |
 | [`features.md`](features.md) | `features.qmd` | Reviewable LDG-2543 batch | Feature maps, aliases, cache/projection path, TTR adapters, and runtime `ctx$feature()` lookup. |
 | [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
-
-## Bounded Remainder
-
-The following article families remain planned but incomplete in this foundation
-batch:
-
-- benchmark methodology beyond the v0.1.8.7 to v0.1.8.10 arc: future
-  record-generation workflow, repeatability expectations, and release-gate
-  benchmark checks.
-
-If v0.1.8.11 cannot complete all article families, the release gate should
-route the remainder to a v0.1.9.x documentation follow-on rather than widening
-implementation scope.
+| [`benchmark_methodology.md`](benchmark_methodology.md) | `benchmark_methodology.qmd` | Reviewable LDG-2545 batch | Local benchmark record generation, repeatability expectations, release-gate checks, and public-claim boundaries. |
 
 ## Rendered Output
 
@@ -78,6 +67,7 @@ articles:
 - `execution_fold_core.qmd` (`## Implementation Trace`)
 - `features.qmd` (`## Implementation Trace`)
 - `sweep.qmd` (`## Implementation Trace`)
+- `benchmark_methodology.qmd` (`## Implementation Trace`)
 - `../ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
 - `../ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md`
 - `../ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`

@@ -1427,7 +1427,7 @@ scoped `set_collapse()`, hostile-settings-safe) still applies. Alongside it,
 `cli` (verified unused) and `R6` (legacy strategy interface) are dropped and
 `collapse` added — a net 9 -> 8 Imports move. `tibble` is retained deliberately
 as a tidyverse-compatibility signal. See
-`inst/design/adr/0004-dependency-footprint-and-strategy-interface.md`.
+`inst/design/manual/performance_arc_v0_1_8_x.qmd`.
 
 ### v0.1.9.x Crypto-Readiness Spike And Doc Disposition
 

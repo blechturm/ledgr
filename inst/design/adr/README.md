@@ -1,9 +1,7 @@
 # Architecture Decision Records
 
 **Status:** Wound down as a recurring artifact (2026-06-04). ADR-0001 through
-ADR-0003 have been migrated into maintainer manual articles and deleted.
-ADR-0004 remains temporarily until LDG-2544 splits its residual rationale into
-the manual.
+ADR-0004 have been migrated into maintainer manual articles and deleted.
 
 **Authority:** ADRs in this directory are historical. New binding constraints
 land in `../contracts.md` (the WHAT) and accepted RFC syntheses (the decision
@@ -42,15 +40,14 @@ ADR-0005 was deprecated on 2026-06-04. The constraint it carried is bound by:
 
 ADRs 0001 through 0004 had genuine ADR shape (forces in tension, explicit
 decision in imperative voice, consequences with named tradeoffs). ADR-0001
-through ADR-0003 have now been migrated and deleted:
+through ADR-0004 have now been migrated and deleted:
 
 - ADR-0001 split DB semantics -> `../manual/snapshots_data.qmd`.
 - ADR-0002 registry fingerprint policy -> `../manual/observability_determinism.qmd`.
 - ADR-0003 closure fingerprinting -> `../manual/observability_determinism.qmd`.
-- ADR-0004 dependency footprint and function-only strategy interface remains
-  temporarily pending LDG-2544, then splits into `execution_fold_core`
-  (function-only strategy contract) and `performance_arc_v0_1_8_x`
-  (dependency posture, collapse adoption).
+- ADR-0004 dependency footprint and function-only strategy interface ->
+  `../manual/execution_fold_core.qmd` and
+  `../manual/performance_arc_v0_1_8_x.qmd`.
 
 ## When To Author A New ADR
 
@@ -80,7 +77,7 @@ entries + RFC syntheses, not new ADRs.
 | `0001-split-db-semantics.md` | Snapshot/run database split | Migrated and deleted in LDG-2541 | `../manual/snapshots_data.qmd` |
 | `0002-registry-fingerprint-policy.md` | Registry fingerprint policy | Migrated and deleted in LDG-2540 | `../manual/observability_determinism.qmd` |
 | `0003-closure-fingerprinting.md` | Functional strategy closure fingerprinting | Migrated and deleted in LDG-2540 | `../manual/observability_determinism.qmd` |
-| `0004-dependency-footprint-and-strategy-interface.md` | Lean deps and function-only strategy interface | Historical; pending LDG-2544 migration | `execution_fold_core` + `performance_arc_v0_1_8_x` manual articles |
+| `0004-dependency-footprint-and-strategy-interface.md` | Lean deps and function-only strategy interface | Migrated and deleted in LDG-2544 | `../manual/execution_fold_core.qmd` + `../manual/performance_arc_v0_1_8_x.qmd` |
 | `0005-b2-spot-fifo-scope-guard.md` | B2 spot-FIFO scope guard | Deprecated 2026-06-04; file removed | n/a; content was horizon-shaped and is bound by horizon entry + maintainer-decisions + contracts |
 
 ## Related References

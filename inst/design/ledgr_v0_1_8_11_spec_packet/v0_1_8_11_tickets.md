@@ -1227,7 +1227,7 @@ scope: features_with_architecture_migration
 Priority: P2
 Effort: S
 Dependencies: LDG-2532, LDG-2534, LDG-2540, LDG-2541
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1235,8 +1235,8 @@ Split ADR-0004 (lean dependency footprint and function-only strategy
 interface) rationale across the two existing manual articles that already
 carry the surrounding context: `execution_fold_core.qmd` for the function-only
 strategy interface, and `performance_arc_v0_1_8_x.qmd` for the cli/R6/tibble/
-collapse dependency posture. Delete `adr/0004-dependency-footprint-and-strategy-interface.md`
-and complete the `adr/` directory wind-down.
+collapse dependency posture. Delete the retired ADR-0004 file and complete the
+`adr/` directory wind-down.
 
 ### Tasks
 
@@ -1246,9 +1246,10 @@ and complete the `adr/` directory wind-down.
 - Add a "Dependency Posture" section in `performance_arc_v0_1_8_x.qmd` that
   captures ADR-0004's rationale for dropping `cli` and `R6`, keeping `tibble`,
   and adopting `collapse` behind the determinism wrapper.
-- Re-point every citation of `adr/0004-...` to the appropriate split target.
+- Re-point every citation of the retired ADR-0004 file to the appropriate
+  split target.
 - Update `adr/README.md` existing-records table to mark ADR-0004 deleted.
-- Delete `adr/0004-dependency-footprint-and-strategy-interface.md`.
+- Delete the retired ADR-0004 file.
 - Verify `adr/` contains only `README.md` (or is empty if the maintainer
   chooses to delete the directory entirely).
 - Render the GFM siblings for both target articles.
@@ -1268,18 +1269,19 @@ execution_fold_core function-only section review, performance_arc dependency
 posture section review, ADR directory empty-or-readme-only check,
 stale-reference `rg` check.
 
-Completion note (2026-06-04): Claude review approved the retrofit and
-recommended close. The reviewer spot-checked roughly 50 anchors across both
-retrofitted articles and found the line anchors fresh; the review also confirmed
-`maintainer_review/` contains only `README.md` and
-`features.qmd`, live citation hygiene is clean, no contracts
-or execution semantics changed, and the three minor polish notes are non-gating.
+Completion note (2026-06-04): Claude approved the ADR-0004 split with a
+maintainership call on archival citations. Historical packet citations were
+kept historically accurate, with `adr/README.md` serving as the redirect ledger
+to the migrated manual rationale. The retired ADR-0004 file is deleted and
+`adr/` contains only `README.md`.
 
 ### Source Reference
 
 - `inst/design/manual/execution_fold_core.qmd`
 - `inst/design/manual/performance_arc_v0_1_8_x.qmd`
-- `inst/design/adr/0004-dependency-footprint-and-strategy-interface.md`
+- retired ADR-0004 rationale, now split across
+  `inst/design/manual/execution_fold_core.qmd` and
+  `inst/design/manual/performance_arc_v0_1_8_x.qmd`
 - `inst/design/adr/README.md`
 
 ### Classification
@@ -1297,7 +1299,7 @@ scope: adr_0004_split_and_directory_completion
 Priority: P2
 Effort: S
 Dependencies: LDG-2534
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1328,7 +1330,12 @@ already cover. This is the smallest of the deferred article families.
 
 ### Verification
 
-Manual article review, manual render check.
+Manual article review, implementation trace section review, manual render
+check, stale-reference check.
+
+Completion note (2026-06-04): Claude approved the article as meeting Section
+3.7 with no marketing-speed-claim language. Command examples were polished to
+use portable `Rscript` forms with a Windows-path substitution note.
 
 ### Source Reference
 
