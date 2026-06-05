@@ -16,7 +16,8 @@ testthat::test_that("close.ledgr_backtest checkpoints and is idempotent", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "close-idempotent"
+    run_id = "close-idempotent",
+  cost_model = ledgr_cost_zero()
   )
 
   testthat::expect_error(close(bt), NA)
@@ -44,7 +45,8 @@ testthat::test_that("durable backtest safety net checkpoints and messages", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "gc-checkpoint"
+    run_id = "gc-checkpoint",
+  cost_model = ledgr_cost_zero()
   )
   ledgr:::ledgr_backtest_open(bt)
   state <- bt$.state
@@ -77,7 +79,8 @@ testthat::test_that("ordinary result access does not keep durable run files lock
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
-    opening = ledgr_opening(cash = 10000)
+    opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
   )
   ledgr_snapshot_close(snapshot)
 

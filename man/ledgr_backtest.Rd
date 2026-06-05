@@ -13,6 +13,8 @@ ledgr_backtest(
   initial_cash = 1e+05,
   strategy_params = list(),
   features = list(),
+  timing_model = ledgr_timing_next_open(),
+  cost_model,
   fill_model = NULL,
   execution_mode = "audit_log",
   checkpoint_every = 10000L,
@@ -45,12 +47,15 @@ strategies and stored as part of run provenance.}
 \item{features}{List of ledgr indicator or indicator-bundle definitions
 (optional). Bundles flatten into ordinary indicators before runtime.}
 
-\item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
-model with zero spread and zero fixed commission. For
-\code{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
-buys fill at \code{open * (1 + spread_bps / 10000)} and sells fill at
-\code{open * (1 - spread_bps / 10000)}. A buy/sell round trip therefore costs
-approximately \code{2 * spread_bps} basis points before commissions.}
+\item{timing_model}{Timing model object. Defaults to
+\code{ledgr_timing_next_open()}.}
+
+\item{cost_model}{Required ledgr cost model object. Use \code{ledgr_cost_zero()}
+for explicit zero-cost execution.}
+
+\item{fill_model}{Legacy v0.1.8 fill model argument. Supplying it now fails
+with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus
+\code{cost_model}.}
 
 \item{execution_mode}{Execution mode ("db_live" or "audit_log").}
 
@@ -78,16 +83,16 @@ v0.1.7 introduces the experiment-first public workflow:
 \code{ledgr_experiment()} plus \code{ledgr_run()}. \code{ledgr_backtest()} remains available
 as a compatibility wrapper around the same canonical runner path.
 
-Strategies return target holdings. The default fill model is \code{next_open}: a
+Strategies return target holdings. The default timing model is \code{next_open}: a
 target decided at pulse \code{t} is filled at the next available bar. Targets on
 the final pulse therefore cannot be filled unless another bar exists after
 \code{end}.
 
-\code{spread_bps} is a per-leg execution adjustment, not a quoted bid/ask spread
-split across the buy and sell legs. With \code{spread_bps = 5}, a buy fills five
-basis points above the next open and a sell fills five basis points below the
-next open, for an approximate ten basis-point round-trip cost before fixed
-commissions.
+Cost models are explicit. Use \code{ledgr_cost_zero()} for no-cost execution.
+\code{ledgr_cost_spread_bps()} treats \code{spread_bps} as a quoted bid/ask
+spread: buys cross half the spread above the reference price and sells cross
+half the spread below it, so a round trip crosses approximately
+\code{spread_bps} basis points before explicit fees.
 
 v0.1.x does not provide a supported broker-style short-selling contract.
 Strategy authors should treat negative target quantities as outside the
@@ -119,7 +124,12 @@ strategy <- function(ctx, params) {
   targets["AAA"] <- if (ctx$close("AAA") > 100) 1 else 0
   targets
 }
-bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+bt <- ledgr_backtest(
+  data = bars,
+  strategy = strategy,
+  initial_cash = 1000,
+  cost_model = ledgr_cost_zero()
+)
 print(bt)
 close(bt)
 }

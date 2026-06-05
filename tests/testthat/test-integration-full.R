@@ -60,7 +60,8 @@ testthat::test_that("LDG-507 full v0.1.2 workflow completes without warnings", {
     end = as.character(dates[[length(dates) - 1L]]),
     initial_cash = 10000,
     features = features,
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   ))
   on.exit(close(bt), add = TRUE)
 

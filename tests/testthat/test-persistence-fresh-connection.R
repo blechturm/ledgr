@@ -14,7 +14,8 @@ testthat::test_that("completed run artifacts are visible from a fresh connection
     snapshot = snapshot,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
-    universe = c("TEST_A", "TEST_B")
+    universe = c("TEST_A", "TEST_B"),
+  cost_model = ledgr_cost_zero()
   )
 
   bt <- ledgr_run(exp, params = list(), run_id = "fresh-run")
@@ -55,7 +56,8 @@ testthat::test_that("run metadata mutations are visible from fresh connections",
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
-    opening = ledgr_opening(cash = 10000)
+    opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, params = list(), run_id = "fresh-metadata")
   on.exit(close(bt), add = TRUE)
@@ -148,7 +150,8 @@ testthat::test_that("low-level CSV snapshot workflow survives close, load, and r
     snapshot = loaded,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
-    universe = c("AAA", "BBB")
+    universe = c("AAA", "BBB"),
+  cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, params = list(), run_id = "fresh-csv-run")
   on.exit(close(bt), add = TRUE)

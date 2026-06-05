@@ -207,7 +207,7 @@ ledgr_default_cost_resolve <- function(proposal,
       side = side,
       qty = qty,
       fill_price = fill_price,
-      commission_fixed = as.numeric(commission_fixed),
+      fee = as.numeric(commission_fixed),
       ts_exec_utc = ts_exec_utc
     ),
     class = "ledgr_fill_intent"

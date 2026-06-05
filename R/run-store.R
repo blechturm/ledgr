@@ -964,12 +964,18 @@ ledgr_run_open <- function(snapshot, run_id) {
   if (is.list(cfg$alias_map_order) && length(cfg$alias_map_order) == 0L) {
     cfg$alias_map_order <- character()
   }
-  required_config_fields <- c("db_path", "engine", "universe", "backtest", "fill_model", "strategy")
+  if (!is.null(cfg$fill_model)) {
+    rlang::abort(
+      sprintf("Run '%s' has legacy `fill_model` config_json and cannot be reopened. Recreate the experiment under v0.1.9.1.", run_id),
+      class = "ledgr_legacy_config_shape"
+    )
+  }
+  required_config_fields <- c("db_path", "engine", "universe", "backtest", "timing_model", "cost_model", "strategy")
   missing_config_fields <- setdiff(required_config_fields, names(cfg))
   if (length(missing_config_fields) > 0L) {
     rlang::abort(
       sprintf(
-        "Run '%s' has legacy or incomplete config_json and cannot be reopened. Use ledgr_run_info() to inspect available metadata.",
+        "Run '%s' has incomplete config_json and cannot be reopened. Use ledgr_run_info() to inspect available metadata.",
         run_id
       ),
       class = "ledgr_invalid_run"

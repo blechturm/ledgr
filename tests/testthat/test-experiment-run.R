@@ -18,7 +18,8 @@ testthat::test_that("ledgr_run executes an experiment with fixed features", {
     strategy = strategy,
     features = list(ledgr_ind_sma(2)),
     opening = ledgr_opening(cash = 10000),
-    universe = "AAA"
+    universe = "AAA",
+    cost_model = ledgr_cost_zero()
   )
 
   bt <- ledgr_run(exp, params = list(qty = 1), run_id = "experiment-run")
@@ -45,7 +46,12 @@ testthat::test_that("ledgr_run evaluates feature functions once per run", {
     list(ledgr_ind_sma(params$n))
   }
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    features = features,
+    cost_model = ledgr_cost_zero()
+  )
 
   bt <- ledgr_run(exp, params = list(n = 2), run_id = "feature-fn-run")
   on.exit(close(bt), add = TRUE)
@@ -69,7 +75,11 @@ testthat::test_that("ledgr_run accepts execution seeds and stores them in config
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy)
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    cost_model = ledgr_cost_zero()
+  )
 
   bt_seeded <- ledgr_run(exp, seed = 123L, run_id = "seeded-run")
   on.exit(close(bt_seeded), add = TRUE)
@@ -99,7 +109,11 @@ testthat::test_that("ledgr_run with seed NULL uses ambient strategy RNG without 
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy)
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    cost_model = ledgr_cost_zero()
+  )
 
   set.seed(9876)
   expected_qty <- floor(stats::runif(1) * 10) + 1
@@ -126,7 +140,11 @@ testthat::test_that("pulse_seed is exposed as a stable per-pulse strategy input"
     observed$pulse_seed <- c(observed$pulse_seed, ctx$pulse_seed)
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy)
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    cost_model = ledgr_cost_zero()
+  )
 
   bt <- ledgr_run(exp, run_id = "pulse-seed-context", seed = 2026L)
   on.exit(close(bt), add = TRUE)
@@ -169,7 +187,9 @@ testthat::test_that("pulse_seed strategies reproduce across continuous and resum
       initial_cash = 10000
     ),
     db_path = db_clean,
-    seed = 2026L
+    seed = 2026L,
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
   )
   cfg_resume <- ledgr_config(
     snapshot = snap_resume,
@@ -182,7 +202,9 @@ testthat::test_that("pulse_seed strategies reproduce across continuous and resum
       initial_cash = 10000
     ),
     db_path = db_resume,
-    seed = 2026L
+    seed = 2026L,
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
   )
 
   suppressWarnings(ledgr_backtest_run(cfg_clean, run_id = "pulse-seed-clean"))
@@ -236,7 +258,9 @@ testthat::test_that("ambient RNG strategies fail loudly on resume", {
       initial_cash = 10000
     ),
     db_path = db_path,
-    seed = 2026L
+    seed = 2026L,
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
   )
 
   ledgr:::ledgr_backtest_run_internal(
@@ -274,7 +298,8 @@ testthat::test_that("ledgr_run matches equivalent ledgr_backtest output", {
     snapshot = snapshot_exp,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
-    universe = "AAA"
+    universe = "AAA",
+    cost_model = ledgr_cost_zero()
   )
 
   bt_exp <- ledgr_run(exp, params = params, run_id = "exp-parity")
@@ -287,7 +312,8 @@ testthat::test_that("ledgr_run matches equivalent ledgr_backtest output", {
     end = snapshot_legacy$metadata$end_date,
     initial_cash = 10000,
     db_path = db_path_legacy,
-    run_id = "legacy-parity"
+    run_id = "legacy-parity",
+    cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_exp), add = TRUE)
   on.exit(close(bt_legacy), add = TRUE)
@@ -310,7 +336,8 @@ testthat::test_that("ledgr_run records opening positions as ledger events", {
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
-    opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 100))
+    opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 100)),
+    cost_model = ledgr_cost_zero()
   )
 
   bt <- ledgr_run(exp, run_id = "opening-position-run")
@@ -353,7 +380,8 @@ testthat::test_that("opening position cost basis seeds FIFO accounting", {
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
-    opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 50))
+    opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 50)),
+    cost_model = ledgr_cost_zero()
   )
 
   bt <- ledgr_run(exp, run_id = run_id)
@@ -411,7 +439,11 @@ testthat::test_that("ledgr_run accepts params = list()", {
     testthat::expect_identical(params, list())
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy)
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    cost_model = ledgr_cost_zero()
+  )
 
   bt <- ledgr_run(exp, run_id = "empty-params-experiment")
   on.exit(close(bt), add = TRUE)
@@ -425,7 +457,11 @@ testthat::test_that("ledgr_run validates run_id", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = function(ctx, params) ctx$flat())
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = function(ctx, params) ctx$flat(),
+    cost_model = ledgr_cost_zero()
+  )
 
   testthat::expect_error(
     ledgr_run(exp, run_id = ""),
@@ -440,7 +476,11 @@ testthat::test_that("ledgr_run validates params before execution", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = function(ctx, params) ctx$flat())
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = function(ctx, params) ctx$flat(),
+    cost_model = ledgr_cost_zero()
+  )
 
   testthat::expect_error(
     ledgr_run(exp, params = "bad", run_id = "bad-params-run"),

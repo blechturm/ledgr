@@ -229,7 +229,7 @@ ledgr_sweep <- function(exp,
   attr(out, "cost_plan_json") <- exp$cost_plan_json %||% NULL
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
-    fill_model = exp$fill_model,
+    timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash %||% NULL,
     opening = exp$opening,
     compiled_accounting_model = compiled_accounting_model,
@@ -703,7 +703,7 @@ ledgr_sweep_exp_payload <- function(exp) {
     strategy = exp$strategy,
     universe = exp$universe,
     opening = exp$opening,
-    fill_model = exp$fill_model,
+    timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash %||% NULL,
     cost_plan_json = exp$cost_plan_json %||% NULL
   )
@@ -912,10 +912,7 @@ ledgr_sweep_run_candidate <- function(exp,
     cost_basis = opening_cost_basis
   )
   telemetry <- ledgr_sweep_telemetry_env()
-  cost_resolver <- ledgr_cost_spread_commission_internal(
-    spread_bps = exp$fill_model$spread_bps,
-    commission_fixed = exp$fill_model$commission_fixed
-  )
+  cost_resolver <- ledgr_cost_resolver_from_plan_json(exp$cost_plan_json)
   signature <- ledgr_strategy_signature(exp$strategy)
   execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -1120,7 +1117,7 @@ ledgr_memory_output_handler <- function(run_id) {
     meta <- state$event_cols$meta[[i]]
     if (is.null(meta)) {
       meta <- list(
-        commission_fixed = as.numeric(state$event_cols$fee[[i]]),
+        fee = as.numeric(state$event_cols$fee[[i]]),
         cash_delta = as.numeric(state$event_cols$cash_delta[[i]]),
         position_delta = as.numeric(state$event_cols$position_delta[[i]]),
         realized_pnl = NULL
@@ -1246,7 +1243,7 @@ ledgr_memory_output_handler <- function(run_id) {
     state$event_cols$meta[idx] <- Map(
       function(fee, cash_delta, position_delta) {
         list(
-          commission_fixed = as.numeric(fee),
+          fee = as.numeric(fee),
           cash_delta = as.numeric(cash_delta),
           position_delta = as.numeric(position_delta),
           realized_pnl = NULL

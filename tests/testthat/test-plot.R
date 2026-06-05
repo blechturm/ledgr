@@ -9,7 +9,8 @@ testthat::test_that("plot.ledgr_backtest dispatches and returns a plot object", 
     strategy = test_strategy,
     start = "2020-01-01",
     end = "2020-01-15",
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
 
   out <- testthat::expect_error(suppressMessages(plot(bt)), NA)
@@ -27,7 +28,8 @@ testthat::test_that("plot.ledgr_backtest has dependency fallbacks", {
     strategy = test_strategy,
     start = "2020-01-01",
     end = "2020-01-15",
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
 
   testthat::local_mocked_bindings(

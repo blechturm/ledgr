@@ -15,12 +15,13 @@
 #' @param initial_cash Starting capital. Must be a finite numeric scalar > 0.
 #' @param features List of ledgr indicator or indicator-bundle definitions
 #'   (optional). Bundles flatten into ordinary indicators before runtime.
-#' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
-#'   model with zero spread and zero fixed commission. For
-#'   `fill_model$spread_bps`, ledgr applies the full value on each fill leg:
-#'   buys fill at `open * (1 + spread_bps / 10000)` and sells fill at
-#'   `open * (1 - spread_bps / 10000)`. A buy/sell round trip therefore costs
-#'   approximately `2 * spread_bps` basis points before commissions.
+#' @param timing_model Timing model object. Defaults to
+#'   `ledgr_timing_next_open()`.
+#' @param cost_model Required ledgr cost model object. Use `ledgr_cost_zero()`
+#'   for explicit zero-cost execution.
+#' @param fill_model Legacy v0.1.8 fill model argument. Supplying it now fails
+#'   with `ledgr_legacy_fill_model_shape`; use `timing_model` plus
+#'   `cost_model`.
 #' @param execution_mode Execution mode ("db_live" or "audit_log").
 #' @param checkpoint_every Flush interval for audit_log mode.
 #' @param db_path Database path for the run ledger (NULL = snapshot DB).
@@ -35,16 +36,16 @@
 #' `ledgr_experiment()` plus `ledgr_run()`. `ledgr_backtest()` remains available
 #' as a compatibility wrapper around the same canonical runner path.
 #'
-#' Strategies return target holdings. The default fill model is `next_open`: a
+#' Strategies return target holdings. The default timing model is `next_open`: a
 #' target decided at pulse `t` is filled at the next available bar. Targets on
 #' the final pulse therefore cannot be filled unless another bar exists after
 #' `end`.
 #'
-#' `spread_bps` is a per-leg execution adjustment, not a quoted bid/ask spread
-#' split across the buy and sell legs. With `spread_bps = 5`, a buy fills five
-#' basis points above the next open and a sell fills five basis points below the
-#' next open, for an approximate ten basis-point round-trip cost before fixed
-#' commissions.
+#' Cost models are explicit. Use `ledgr_cost_zero()` for no-cost execution.
+#' `ledgr_cost_spread_bps()` treats `spread_bps` as a quoted bid/ask spread:
+#' buys cross half the spread above the reference price and sells cross half the
+#' spread below it, so a round trip crosses approximately `spread_bps` basis
+#' points before explicit fees.
 #'
 #' v0.1.x does not provide a supported broker-style short-selling contract.
 #' Strategy authors should treat negative target quantities as outside the
@@ -73,7 +74,12 @@
 #'   targets["AAA"] <- if (ctx$close("AAA") > 100) 1 else 0
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(
+#'   data = bars,
+#'   strategy = strategy,
+#'   initial_cash = 1000,
+#'   cost_model = ledgr_cost_zero()
+#' )
 #' print(bt)
 #' close(bt)
 #' @export
@@ -85,6 +91,8 @@ ledgr_backtest <- function(snapshot = NULL,
                            initial_cash = 100000,
                            strategy_params = list(),
                            features = list(),
+                           timing_model = ledgr_timing_next_open(),
+                           cost_model,
                            fill_model = NULL,
                            execution_mode = "audit_log",
                            checkpoint_every = 10000L,
@@ -178,6 +186,17 @@ ledgr_backtest <- function(snapshot = NULL,
     }
   }
 
+  if (!is.null(fill_model)) {
+    ledgr_legacy_fill_model_abort()
+  }
+  if (missing(cost_model) || is.null(cost_model)) {
+    ledgr_cost_model_unspecified()
+  }
+  timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
+  cost_model <- ledgr_experiment_normalize_cost_model(cost_model)
+  cost_model_hash <- ledgr_cost_model_hash(cost_model)
+  cost_plan_json <- ledgr_cost_plan_json(cost_model)
+
   features <- ledgr_flatten_feature_list(features, context = "`features`")
 
   if (is.null(start)) start <- snapshot$metadata$start_date
@@ -218,7 +237,9 @@ ledgr_backtest <- function(snapshot = NULL,
     persist_features = persist_features,
     execution_mode = execution_mode,
     checkpoint_every = checkpoint_every,
-    fill_model = fill_model,
+    timing_model = timing_model,
+    cost_model_hash = cost_model_hash,
+    cost_plan_json = cost_plan_json,
     db_path = db_path,
     control = control,
     run_id = run_id
@@ -396,7 +417,7 @@ ledgr_run_experiment <- function(exp,
     alias_map = feature_result$alias_map,
     persist_features = exp$persist_features,
     execution_mode = exp$execution_mode,
-    fill_model = exp$fill_model,
+    timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash,
     cost_plan_json = exp$cost_plan_json,
     db_path = exp$snapshot$db_path,
@@ -727,10 +748,6 @@ ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
   list(start = start_iso, end = end_iso, initial_cash = as.numeric(initial_cash))
 }
 
-ledgr_fill_model_instant <- function() {
-  list(type = "next_open", spread_bps = 0, commission_fixed = 0)
-}
-
 ledgr_strategy_spec <- function(strategy) {
   if (is.function(strategy)) {
     signature <- ledgr_strategy_signature(strategy)
@@ -788,7 +805,7 @@ ledgr_config <- function(snapshot,
                          persist_features = TRUE,
                          execution_mode = "audit_log",
                          checkpoint_every = 10000L,
-                         fill_model = NULL,
+                         timing_model = ledgr_timing_next_open(),
                          cost_model_hash = NULL,
                          cost_plan_json = NULL,
                          db_path = NULL,
@@ -853,10 +870,7 @@ ledgr_config <- function(snapshot,
     }
   }
 
-  if (is.null(fill_model)) fill_model <- ledgr_fill_model_instant()
-  if (!is.list(fill_model)) {
-    rlang::abort("`fill_model` must be a list.", class = "ledgr_invalid_args")
-  }
+  timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
   cost_identity <- ledgr_config_cost_identity(cost_model_hash, cost_plan_json)
 
   strategy_params_info <- ledgr_strategy_params_info(strategy_params)
@@ -886,10 +900,15 @@ ledgr_config <- function(snapshot,
       pulse = "EOD",
       initial_cash = backtest$initial_cash
     ),
-    fill_model = list(
-      type = fill_model$type,
-      spread_bps = fill_model$spread_bps,
-      commission_fixed = fill_model$commission_fixed
+    timing_model = list(
+      timing_schema_version = timing_model$timing_schema_version,
+      type_id = timing_model$type_id,
+      version = timing_model$version,
+      args = timing_model$args
+    ),
+    cost_model = list(
+      cost_model_hash = cost_identity$cost_model_hash,
+      cost_plan_json = cost_identity$cost_plan_json
     ),
     features = if (length(features) > 0) {
       defs <- lapply(features, function(feat) {
@@ -932,7 +951,6 @@ ledgr_config <- function(snapshot,
     )
   )
 
-  if (!is.null(cost_identity)) config$cost_model <- cost_identity
   if (!is.null(run_id)) config$run_id <- run_id
 
   class(config) <- c("ledgr_config", class(config))
@@ -941,8 +959,8 @@ ledgr_config <- function(snapshot,
 }
 
 ledgr_config_cost_identity <- function(cost_model_hash = NULL, cost_plan_json = NULL) {
-  if (is.null(cost_model_hash) && is.null(cost_plan_json)) {
-    return(NULL)
+  if (is.null(cost_model_hash) || is.null(cost_plan_json)) {
+    rlang::abort("`cost_model_hash` and `cost_plan_json` are required.", class = "ledgr_invalid_args")
   }
   if (!is.character(cost_model_hash) || length(cost_model_hash) != 1L ||
       is.na(cost_model_hash) || !grepl("^[0-9a-f]{64}$", cost_model_hash)) {
@@ -1010,7 +1028,7 @@ print.ledgr_config <- function(x, ...) {
   cat("Universe:    ", paste(x$universe$instrument_ids, collapse = ", "), "\n", sep = "")
   cat("Backtest:    ", x$backtest$start_ts_utc, " to ", x$backtest$end_ts_utc, "\n", sep = "")
   cat("Initial Cash:", x$backtest$initial_cash, "\n")
-  cat("Fill Model:  ", x$fill_model$type, "\n", sep = "")
+  cat("Timing Model:", x$timing_model$type_id, "\n")
   cat("Strategy:    ", x$strategy$id, "\n", sep = "")
   invisible(x)
 }

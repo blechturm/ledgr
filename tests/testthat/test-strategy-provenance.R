@@ -20,7 +20,8 @@ testthat::test_that("function(ctx, params) strategies receive strategy_params an
     end = "2020-01-05",
     initial_cash = 10000,
     db_path = db_path,
-    run_id = "params-run"
+    run_id = "params-run",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 
@@ -80,7 +81,8 @@ testthat::test_that("function(ctx, params) with empty default strategy_params is
     end = "2020-01-05",
     initial_cash = 10000,
     db_path = db_path,
-    run_id = "empty-params-run"
+    run_id = "empty-params-run",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 
@@ -100,7 +102,8 @@ testthat::test_that("function(ctx) strategies fail with migration guidance", {
       strategy = strategy,
       start = "2020-01-01",
       end = "2020-01-05",
-      db_path = db_path
+      db_path = db_path,
+    cost_model = ledgr_cost_zero()
     ),
     class = "ledgr_invalid_strategy_signature"
   )
@@ -110,7 +113,8 @@ testthat::test_that("function(ctx) strategies fail with migration guidance", {
       strategy = strategy,
       start = "2020-01-01",
       end = "2020-01-05",
-      db_path = db_path
+      db_path = db_path,
+    cost_model = ledgr_cost_zero()
     ),
     "function(ctx, params)",
     fixed = TRUE
@@ -128,7 +132,8 @@ testthat::test_that("strategy signature and params validation fail clearly", {
       strategy = bad_signature,
       start = "2020-01-01",
       end = "2020-01-05",
-      db_path = db_path
+      db_path = db_path,
+    cost_model = ledgr_cost_zero()
     ),
     class = "ledgr_invalid_strategy_signature"
   )
@@ -141,7 +146,8 @@ testthat::test_that("strategy signature and params validation fail clearly", {
       strategy_params = list(fn = function() 1),
       start = "2020-01-01",
       end = "2020-01-05",
-      db_path = tempfile(fileext = ".duckdb")
+      db_path = tempfile(fileext = ".duckdb"),
+    cost_model = ledgr_cost_zero()
     ),
     class = "ledgr_invalid_strategy_params"
   )
@@ -169,7 +175,8 @@ testthat::test_that("strategy params and source changes alter provenance hashes"
       start = "2020-01-01",
       end = "2020-01-05",
       db_path = db_path,
-      run_id = run_id
+      run_id = run_id,
+    cost_model = ledgr_cost_zero()
     )
     on.exit(close(bt), add = TRUE)
     close(bt)
@@ -216,7 +223,8 @@ testthat::test_that("legacy strategy objects are rejected instead of stored as R
       end = "2020-01-05",
       initial_cash = 10000,
       db_path = db_path,
-      run_id = "legacy-strategy-run"
+      run_id = "legacy-strategy-run",
+    cost_model = ledgr_cost_zero()
     ),
     "`strategy` must be a function or configured strategy list.",
     fixed = TRUE,

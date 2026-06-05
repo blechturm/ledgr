@@ -46,7 +46,8 @@ testthat::test_that("session feature cache reuses series by snapshot hash", {
     initial_cash = 1000,
     run_id = "cache-run-a",
     features = list(ind),
-    db_path = db_path_a
+    db_path = db_path_a,
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
 
@@ -64,7 +65,8 @@ testthat::test_that("session feature cache reuses series by snapshot hash", {
     initial_cash = 1000,
     run_id = "cache-run-b",
     features = list(ind),
-    db_path = db_path_b
+    db_path = db_path_b,
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_b), add = TRUE)
 

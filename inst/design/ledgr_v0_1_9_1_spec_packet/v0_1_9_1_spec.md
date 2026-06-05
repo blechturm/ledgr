@@ -540,7 +540,9 @@ Codex review of this spec. The planned workstreams are:
     `ledgr_cost_model_unspecified`, `ledgr_invalid_cost_chain_order`,
     `ledgr_invalid_cost_model` (input-shape validation introduced by
     Batch 1 LDG-2548), and `ledgr_invalid_timing_model` (timing-model
-    validation introduced by Batch 1 LDG-2550).
+    validation introduced by Batch 1 LDG-2550), plus
+    `ledgr_invalid_fill_proposal` and `ledgr_invalid_fill_context`
+    (resolver guard classes introduced by Batch 2 LDG-2558).
     Each topic includes a minimal fail-closed example and an
     actionable message contract.
 

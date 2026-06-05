@@ -32,7 +32,7 @@ Completion note:
 ## Batch 1 - Public Cost Object Surface
 
 Tickets: `LDG-2548`, `LDG-2549`, `LDG-2550`, `LDG-2551`, `LDG-2552`
-Status: Planned
+Status: Completed
 
 Goal: land public cost primitives, chain composition, timing constructor, cost
 identity, and inspection helpers before execution wiring.
@@ -56,7 +56,7 @@ Review focus:
 ## Batch 2 - Execution And Migration Wiring
 
 Tickets: `LDG-2553`, `LDG-2554`, `LDG-2555`, `LDG-2556`, `LDG-2557`, `LDG-2558`
-Status: Planned
+Status: Completed
 
 Goal: wire cost plans through the existing resolver seam, rename legacy fields,
 reject legacy config shapes, and make both public entry points require explicit
@@ -77,6 +77,42 @@ Review focus:
 - No second execution engine.
 - Sequential run and sweep candidate execution share the same fold core.
 - Pre-CRAN no-translation posture is applied consistently.
+
+## Batch 2.5 - Cost Resolver Measurement Spike
+
+Ticket: `LDG-2575`
+Status: Planned
+
+Goal: measure the per-fill cost-resolver overhead introduced by Batch 2
+against the v0.1.8.11 peer benchmark baseline. The spike output decides
+whether v0.1.9.1 ships with an acknowledged perf delta, whether parked
+optimization options from the 2026-06-05 post-LDG-2522 horizon entry
+should be reopened, and produces the with-costs peer-benchmark row for
+the v0.1.9.1 release bundle.
+
+Exit criteria:
+
+- Spike synthesis records three measurements: `ledgr_cost_zero()` floor,
+  realistic `ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))`,
+  and equivalent v0.1.8.11 legacy `fill_model` baseline.
+- Verdict recorded: `ship-as-is`, `ship-with-known-overhead`, or
+  `horizon-signal`.
+- Peer benchmark record bundle archived under
+  `dev/bench/results/v0.1.9.1_record/` with the new with-costs row.
+- Horizon status update applied if the verdict is `horizon-signal`.
+
+Review focus:
+
+- Same fixture as the v0.1.8.10 / v0.1.8.11 peer benchmark bundle
+  (500-instrument SMA crossover, 5-year daily bars, same seed, same
+  shared bars CSV).
+- The spike informs release NEWS language and surfaces a horizon perf
+  signal if material; it does not gate release on the measured delta
+  unless the maintainer routes a severe regression to a follow-on
+  optimization packet.
+- Spike synthesis lives under
+  `inst/design/spikes/cost_resolver_measurement_spike/`; raw bundle
+  artifacts live under `dev/bench/results/`.
 
 ## Batch 3 - Identity Hardening
 

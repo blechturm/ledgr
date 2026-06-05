@@ -11,7 +11,7 @@ ledgr_experiment(
   opening = ledgr_opening(cash = 1e+05),
   universe = NULL,
   timing_model = ledgr_timing_next_open(),
-  cost_model = NULL,
+  cost_model,
   fill_model = NULL,
   persist_features = TRUE,
   execution_mode = "audit_log",
@@ -40,16 +40,15 @@ instruments in the snapshot.}
 \code{ledgr_timing_next_open()}. The timing model proposes fills; cost models
 resolve fill prices and explicit fees.}
 
-\item{cost_model}{Optional ledgr cost model object. In v0.1.9.1 Batch 1 this
-is accepted and stored for identity inspection; Batch 2 makes it required
-and wires it into execution.}
+\item{cost_model}{Required ledgr cost model object. Use \code{ledgr_cost_zero()}
+for explicit zero-cost execution. \code{ledgr_cost_spread_bps()} treats
+\code{spread_bps} as a quoted bid/ask spread: buys cross half the spread above
+the reference price and sells cross half the spread below it, so a round trip
+crosses approximately \code{spread_bps} basis points before explicit fees.}
 
-\item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
-model with zero spread and zero fixed commission. For
-\code{fill_model$spread_bps}, ledgr applies the full value on each fill leg:
-buys fill at \code{open * (1 + spread_bps / 10000)} and sells fill at
-\code{open * (1 - spread_bps / 10000)}. A buy/sell round trip therefore costs
-approximately \code{2 * spread_bps} basis points before commissions.}
+\item{fill_model}{Legacy v0.1.8 fill model argument. Supplying it now fails
+with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus
+\code{cost_model}.}
 
 \item{persist_features}{Logical scalar.}
 
@@ -99,7 +98,7 @@ snapshot <- ledgr_snapshot_from_df(bars)
 strategy <- function(ctx, params) {
   stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
 }
-exp <- ledgr_experiment(snapshot, strategy)
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 inherits(exp, "ledgr_experiment")
 ledgr_snapshot_close(snapshot)
 }

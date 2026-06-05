@@ -14,7 +14,8 @@ testthat::test_that("raw signal strings are not valid functional strategy result
       universe = "AAA",
       start = "2020-01-01",
       end = "2020-01-02",
-      db_path = db_path
+      db_path = db_path,
+    cost_model = ledgr_cost_zero()
     ),
     class = "ledgr_invalid_strategy_result"
   )
@@ -111,7 +112,8 @@ testthat::test_that("ledgr_signal_strategy runs through the data-first backtest 
     strategy = wrapped,
     start = "2020-01-01",
     end = "2020-01-03",
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
 
   fills <- ledgr_extract_fills(bt)

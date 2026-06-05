@@ -2,7 +2,7 @@
 
 Version: v0.1.9.1
 Date: 2026-06-05
-Total Tickets: 28
+Total Tickets: 29
 
 ## Ticket Organization
 
@@ -23,11 +23,12 @@ packet alignment
      -> timing and identity surface
         -> fold resolver wiring
            -> internal migration
-              -> identity hardening
-                 -> identity documentation
-                    -> auditr remainder docs
-                       -> release surfaces
-                          -> release gate
+              -> cost resolver measurement spike
+                 -> identity hardening
+                    -> identity documentation
+                       -> auditr remainder docs
+                          -> release surfaces
+                             -> release gate
 ```
 
 ## Dependency DAG
@@ -39,6 +40,7 @@ LDG-2547 Packet Alignment And v0.1.9.1 Ticket Cut
   |           |-- LDG-2551 Cost Identity Surface
   |           |     |-- LDG-2552 Cost Inspection Helpers
   |           |     |-- LDG-2553 Cost Resolver Wiring
+  |           |     |     `-- LDG-2575 Cost Resolver Measurement Spike
   |           |     |-- LDG-2557 ledgr_backtest Public Surface Migration
   |           |     `-- LDG-2558 Required Cost Model On Experiment
   |           `-- LDG-2550 Timing Constructor And Experiment Surface
@@ -140,7 +142,7 @@ scope: v0.1.9.1
 Priority: P0
 Effort: M
 Dependencies: LDG-2547
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -191,7 +193,7 @@ scope: cost_primitives
 Priority: P0
 Effort: M
 Dependencies: LDG-2548
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -238,7 +240,7 @@ scope: cost_chain_validation
 Priority: P0
 Effort: M
 Dependencies: LDG-2548
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -286,7 +288,7 @@ scope: next_open_constructor
 Priority: P0
 Effort: L
 Dependencies: LDG-2549
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -338,7 +340,7 @@ scope: cost_model_hash_and_plan_json
 Priority: P1
 Effort: S
 Dependencies: LDG-2551
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -384,7 +386,7 @@ scope: inspection_helpers
 Priority: P0
 Effort: L
 Dependencies: LDG-2550, LDG-2551
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -434,7 +436,7 @@ scope: cost_plan_application
 Priority: P0
 Effort: M
 Dependencies: LDG-2547
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -482,7 +484,7 @@ scope: fee_field_rename
 Priority: P0
 Effort: L
 Dependencies: LDG-2550, LDG-2554
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -534,7 +536,7 @@ scope: timing_model_rename
 Priority: P0
 Effort: M
 Dependencies: LDG-2555
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -580,7 +582,7 @@ scope: legacy_fill_model_rejection
 Priority: P0
 Effort: L
 Dependencies: LDG-2550, LDG-2551, LDG-2558
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -632,7 +634,7 @@ scope: cost_timing_contract
 Priority: P0
 Effort: M
 Dependencies: LDG-2550, LDG-2551
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -670,6 +672,85 @@ examples.
 type: public_api
 surface: ledgr_experiment
 scope: required_cost_model
+```
+
+---
+
+## LDG-2575: Cost Resolver Measurement Spike
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558
+Status: Planned
+
+### Description
+
+Measure the per-fill cost-resolver overhead introduced by Batch 2 against
+the v0.1.8.11 peer benchmark baseline. Produces a spike synthesis that
+informs whether v0.1.9.1 ships with an acknowledged perf delta and
+whether the parked engine-residual optimization slice from the
+2026-06-05 post-LDG-2522 horizon entry should be reopened. Also produces
+the with-costs peer-benchmark row for the v0.1.9.1 release bundle.
+
+### Tasks
+
+- Run the peer benchmark with explicit `ledgr_cost_zero()` to measure the
+  cost-resolver floor cost (dispatch overhead with an identity model).
+- Run with a realistic chain
+  `ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))`
+  to measure user-facing impact.
+- Compare against the v0.1.8.11 baseline using the equivalent legacy
+  `fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1)`
+  configuration captured before Batch 2's migration.
+- Use the same fixture as the v0.1.8.10 / v0.1.8.11 peer benchmark
+  bundle: 500-instrument SMA crossover, 5-year daily bars, same seed,
+  same shared bars CSV.
+- If the realistic-chain delta exceeds approximately 10% of engine-phase
+  wall, decompose the cost-resolver sub-frame: dispatch cost, per-step
+  arithmetic, fee summation, FFI / R-call boundaries, and any per-pulse
+  allocation residual.
+- Add a `ledgr_ttr_canonical_ephemeral_with_costs` row to the peer
+  benchmark `--preset record` bundle for the v0.1.9.1 release.
+
+### Acceptance Criteria
+
+- Spike synthesis exists at
+  `inst/design/spikes/cost_resolver_measurement_spike/measurement_synthesis.md`
+  with three numbered measurements: `cost_zero` floor, realistic chain,
+  and equivalent v0.1.8.11 legacy `fill_model` baseline.
+- Verdict recorded: `ship-as-is` (no material overhead), `ship-with-known-overhead`
+  (acknowledged in NEWS), or `horizon-signal` (reopens a parked optimization
+  slice from the 2026-06-05 post-LDG-2522 entry).
+- Peer benchmark record bundle archived under
+  `dev/bench/results/v0.1.9.1_record/` with the new with-costs row.
+- If verdict is `horizon-signal`, the 2026-06-05 post-LDG-2522 horizon
+  entry receives a status update naming which parked optimization slice
+  the measurement reopens and why.
+- If verdict is `ship-with-known-overhead` or `horizon-signal`, the NEWS
+  entry (LDG-2570) names the measured delta.
+
+### Verification
+
+Peer benchmark record run completes; spike synthesis is reviewed for
+methodology and numbers; horizon entry status update applied if the
+verdict requires it.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/horizon.md` (2026-06-05 post-LDG-2522 ephemeral wall
+  picture and Architecture A status entry; parked optimization options)
+- `dev/bench/peer_benchmark/peer_benchmark.md` (v0.1.8.10 / v0.1.8.11
+  baseline bundle)
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+  (synthesis Section 9 worker-safe plan constraints)
+
+### Classification
+
+```yaml
+type: measurement_spike
+surface: cost_resolver
+scope: cost_per_fill_overhead
 ```
 
 ---
@@ -996,6 +1077,8 @@ Document new v0.1.9.1 cost and legacy-shape condition classes.
 - Add help topic for `ledgr_invalid_cost_chain_order`.
 - Add help topic for `ledgr_invalid_cost_model`.
 - Add help topic for `ledgr_invalid_timing_model`.
+- Add help topic for `ledgr_invalid_fill_proposal`.
+- Add help topic for `ledgr_invalid_fill_context`.
 - Include minimal fail-closed examples and actionable message contracts.
 
 ### Acceptance Criteria
@@ -1225,7 +1308,7 @@ scope: cost_non_participation
 
 Priority: P1
 Effort: S
-Dependencies: LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2564, LDG-2569
+Dependencies: LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2564, LDG-2569, LDG-2575
 Status: Planned
 
 ### Description
@@ -1401,7 +1484,7 @@ scope: v0.1.9.1_cost_api
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2547, LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2552, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2563, LDG-2564, LDG-2565, LDG-2566, LDG-2567, LDG-2568, LDG-2569, LDG-2570, LDG-2571, LDG-2572, LDG-2573
+Dependencies: LDG-2547, LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2552, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2563, LDG-2564, LDG-2565, LDG-2566, LDG-2567, LDG-2568, LDG-2569, LDG-2570, LDG-2571, LDG-2572, LDG-2573, LDG-2575
 Status: Planned
 
 ### Description

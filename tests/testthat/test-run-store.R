@@ -22,7 +22,8 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "list-a"
+    run_id = "list-a",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
 
@@ -32,7 +33,8 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "list-b"
+    run_id = "list-b",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_b), add = TRUE)
 
@@ -88,7 +90,8 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "info-run"
+    run_id = "info-run",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
@@ -145,7 +148,8 @@ testthat::test_that("ledgr_run_open returns a handle without recomputation or mu
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "open-run"
+    run_id = "open-run",
+  cost_model = ledgr_cost_zero()
   )
   original_calls <- calls$n
   close(bt)
@@ -205,7 +209,8 @@ testthat::test_that("ledgr_run_open rejects incomplete runs and archived complet
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "status-run"
+    run_id = "status-run",
+  cost_model = ledgr_cost_zero()
   )
   close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)

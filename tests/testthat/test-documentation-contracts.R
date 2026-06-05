@@ -736,11 +736,10 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
   testthat::expect_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
 
-  testthat::expect_match(backtest_help, "full value on each fill leg", fixed = TRUE)
-  testthat::expect_match(backtest_help, "approximately \\code{2 * spread_bps} basis points before commissions", fixed = TRUE)
-  testthat::expect_match(backtest_help, "not a quoted bid/ask spread", fixed = TRUE)
-  testthat::expect_match(experiment_help, "full value on each fill leg", fixed = TRUE)
-  testthat::expect_match(experiment_help, "approximately \\code{2 * spread_bps} basis points before commissions", fixed = TRUE)
+  testthat::expect_match(backtest_help, "quoted bid/ask\\s+spread")
+  testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\} basis points before explicit fees")
+  testthat::expect_match(experiment_help, "quoted bid/ask\\s+spread")
+  testthat::expect_match(experiment_help, "crosses approximately \\\\code\\{spread_bps\\} basis points before explicit fees")
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)

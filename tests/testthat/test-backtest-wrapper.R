@@ -18,6 +18,8 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
     universe = universe,
     strategy = test_strategy,
     backtest = ledgr:::ledgr_backtest_config(start = "2020-01-01", end = "2020-12-31", initial_cash = 100000),
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
     db_path = db_path_direct
   )
   result_direct <- ledgr:::ledgr_run_config(config)
@@ -29,6 +31,7 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
     start = "2020-01-01",
     end = "2020-12-31",
     initial_cash = 100000,
+    cost_model = ledgr_cost_zero(),
     db_path = db_path_wrapper
   )
 
@@ -80,7 +83,8 @@ testthat::test_that("ledgr_run validates compiled accounting model without chang
     snap,
     test_strategy,
     universe = c("TEST_A", "TEST_B"),
-    opening = ledgr_opening(cash = 100000)
+    opening = ledgr_opening(cash = 100000),
+    cost_model = ledgr_cost_zero()
   )
 
   bt_default <- ledgr_run(exp, run_id = "compiled-model-default")
@@ -128,6 +132,7 @@ testthat::test_that("functional strategies must return targets for the full univ
       start = "2020-01-01",
       end = "2020-12-31",
       initial_cash = 100000,
+      cost_model = ledgr_cost_zero(),
       db_path = db_path
     ),
     "a named numeric target vector, or ledgr_target, with names matching ctx$universe",
@@ -147,6 +152,7 @@ testthat::test_that("functional strategies must return targets for the full univ
       start = "2020-01-01",
       end = "2020-12-31",
       initial_cash = 100000,
+      cost_model = ledgr_cost_zero(),
       db_path = db_path
     ),
     "a named numeric target vector, or ledgr_target, with names matching ctx$universe",
@@ -167,6 +173,7 @@ testthat::test_that("ledgr_backtest data-first path matches explicit snapshot wo
     start = "2020-01-01",
     end = "2020-12-31",
     initial_cash = 100000,
+    cost_model = ledgr_cost_zero(),
     db_path = db_path_data
   )
 
@@ -179,6 +186,7 @@ testthat::test_that("ledgr_backtest data-first path matches explicit snapshot wo
     start = "2020-01-01",
     end = "2020-12-31",
     initial_cash = 100000,
+    cost_model = ledgr_cost_zero(),
     db_path = db_path_explicit
   )
 
@@ -207,7 +215,7 @@ testthat::test_that("ledgr_backtest source validation and inference are clear", 
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   testthat::expect_error(
-    ledgr_backtest(snapshot = snap, data = test_bars, strategy = test_strategy),
+    ledgr_backtest(snapshot = snap, data = test_bars, strategy = test_strategy, cost_model = ledgr_cost_zero()),
     "exactly one data source",
     class = "ledgr_invalid_args"
   )
@@ -217,6 +225,7 @@ testthat::test_that("ledgr_backtest source validation and inference are clear", 
     strategy = test_strategy,
     start = "2020-01-01",
     end = "2020-12-31",
+    cost_model = ledgr_cost_zero(),
     db_path = db_path
   )
   testthat::expect_identical(bt$config$universe$instrument_ids, sort(unique(test_bars$instrument_id)))
@@ -224,7 +233,7 @@ testthat::test_that("ledgr_backtest source validation and inference are clear", 
   bad_data <- test_bars
   bad_data$instrument_id <- NULL
   testthat::expect_error(
-    ledgr_backtest(data = bad_data, strategy = test_strategy, start = "2020-01-01", end = "2020-12-31"),
+    ledgr_backtest(data = bad_data, strategy = test_strategy, start = "2020-01-01", end = "2020-12-31", cost_model = ledgr_cost_zero()),
     "instrument_id",
     class = "ledgr_invalid_args"
   )
@@ -305,6 +314,7 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
       start = "2020-01-01",
       end = "2020-01-15",
       features = list(ledgr_ind_sma(2)),
+      cost_model = ledgr_cost_zero(),
       db_path = db_path
     ),
     NA
@@ -345,6 +355,7 @@ testthat::test_that("backtest feature hydration uses indicator series_fn", {
     end = "2020-01-10",
     initial_cash = 1000,
     features = list(ind),
+    cost_model = ledgr_cost_zero(),
     db_path = db_path
   )
   on.exit(close(bt), add = TRUE)
@@ -371,6 +382,7 @@ testthat::test_that("runtime feature typos fail loudly instead of running as no-
       features = list(ledgr_ind_returns(2)),
       start = "2020-01-01",
       end = "2020-01-05",
+      cost_model = ledgr_cost_zero(),
       run_id = "feature-typo-run"
     ),
     class = "ledgr_unknown_feature_id"
@@ -389,6 +401,7 @@ testthat::test_that("strategy evaluation errors include pulse context and preser
       features = list(ledgr_ind_returns(2)),
       start = "2020-01-01",
       end = "2020-01-05",
+      cost_model = ledgr_cost_zero(),
       run_id = "strategy-context-error"
     ),
     error = function(e) e
@@ -436,6 +449,7 @@ testthat::test_that("backtest rejects non-positive initial cash", {
     ledgr_backtest(
       data = test_bars,
       strategy = strategy,
+      cost_model = ledgr_cost_zero(),
       initial_cash = 0
     ),
     "`initial_cash` must be > 0",
@@ -446,6 +460,7 @@ testthat::test_that("backtest rejects non-positive initial cash", {
     ledgr_backtest(
       data = test_bars,
       strategy = strategy,
+      cost_model = ledgr_cost_zero(),
       initial_cash = -1
     ),
     "`initial_cash` must be > 0",
@@ -462,7 +477,9 @@ testthat::test_that("backtest rejects non-positive initial cash", {
         start = "2020-01-01T00:00:00Z",
         end = "2020-01-10T00:00:00Z",
         initial_cash = 0
-      )
+      ),
+      cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+      cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
     ),
     "backtest.initial_cash must be > 0",
     fixed = TRUE,
@@ -477,7 +494,9 @@ testthat::test_that("backtest rejects non-positive initial cash", {
         start = "2020-01-01T00:00:00Z",
         end = "2020-01-10T00:00:00Z",
         initial_cash = -1
-      )
+      ),
+      cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+      cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
     ),
     "backtest.initial_cash must be > 0",
     fixed = TRUE,
@@ -496,6 +515,7 @@ testthat::test_that("duplicate feature IDs fail before DuckDB feature writes", {
       strategy = strategy,
       features = list(ledgr_ind_sma(2), ledgr_ind_sma(2)),
       db_path = db_path,
+      cost_model = ledgr_cost_zero(),
       initial_cash = 1000
     ),
     "Duplicate feature IDs are not allowed: sma_2",
@@ -536,6 +556,7 @@ testthat::test_that("final-bar target changes emit LEDGR_LAST_BAR_NO_FILL", {
       data = bars,
       strategy = strategy,
       initial_cash = 1000,
+      cost_model = ledgr_cost_zero(),
       run_id = "last-bar-warning"
     ),
     warning = function(w) {

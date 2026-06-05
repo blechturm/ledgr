@@ -65,7 +65,7 @@ testthat::test_that("fill event row helper covers no-op and validation branches"
       side = "BUY",
       qty = 2,
       fill_price = 10,
-      commission_fixed = 1,
+      fee = 1,
       ts_exec_utc = "2020-01-02T00:00:00Z"
     ),
     class = "ledgr_fill_intent"

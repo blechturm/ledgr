@@ -53,7 +53,8 @@ testthat::test_that("ledgr_extract_strategy returns Tier 1 source metadata witho
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "extract-tier-1"
+    run_id = "extract-tier-1",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
@@ -90,7 +91,8 @@ testthat::test_that("ledgr_extract_strategy trust TRUE verifies hash and returns
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "extract-trusted"
+    run_id = "extract-trusted",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
@@ -121,7 +123,8 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "extract-mismatch"
+    run_id = "extract-mismatch",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
@@ -160,7 +163,8 @@ testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evalua
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "extract-no-eval"
+    run_id = "extract-no-eval",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
@@ -197,7 +201,8 @@ testthat::test_that("ledgr_extract_strategy trust TRUE reports parse failures", 
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "extract-parse-failed"
+    run_id = "extract-parse-failed",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
@@ -236,7 +241,8 @@ testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "extract-tier-2"
+    run_id = "extract-tier-2",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)

@@ -49,7 +49,7 @@ testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
 
   reference <- ledgr_sweep(exp, grid, seed = 123L)
@@ -75,7 +75,7 @@ testthat::test_that("parallel sweep matches sequential deterministic candidate r
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_param_grid(
     a = list(qty = 1, modulus = 2L),
     b = list(qty = 2, modulus = 3L),
@@ -114,7 +114,7 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_param_grid(
     ok = list(id = "ok", qty = 1, warn = FALSE, fail = FALSE),
     noisy = list(id = "noisy", qty = 1, warn = TRUE, fail = FALSE),
@@ -142,7 +142,7 @@ testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep i
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_param_grid(candidate = list(qty = 1))
 
   sequential <- ledgr_sweep(exp, grid, seed = 123L)
@@ -166,7 +166,7 @@ testthat::test_that("parallel sweep workers do not write persistent artifacts", 
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
 
   before <- ledgr_parallel_sweep_artifact_counts(snapshot)
@@ -189,7 +189,7 @@ testthat::test_that("parallel sweep rejects ambient RNG strategies", {
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
   grid <- ledgr_param_grid(candidate = list())
 
   err <- testthat::capture_error(ledgr_sweep(exp, grid, workers = 2L))

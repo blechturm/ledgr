@@ -143,7 +143,8 @@ test_that("create/import/seal CSV snapshots infer runnable metadata", {
     snapshot = loaded,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
-    universe = c("AAA", "BBB")
+    universe = c("AAA", "BBB"),
+  cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, params = list(), run_id = "manual-csv-run")
   on.exit(close(bt), add = TRUE)

@@ -21,7 +21,7 @@ tickets:
 
   - id: "LDG-2548"
     title: "Cost Primitive Constructors"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -38,7 +38,7 @@ tickets:
 
   - id: "LDG-2549"
     title: "Cost Composition And Validation"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -55,7 +55,7 @@ tickets:
 
   - id: "LDG-2550"
     title: "Timing Constructor And Experiment Surface"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -72,7 +72,7 @@ tickets:
 
   - id: "LDG-2551"
     title: "Cost Identity Surface"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -90,7 +90,7 @@ tickets:
 
   - id: "LDG-2552"
     title: "Cost Inspection Helpers"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:
@@ -107,7 +107,7 @@ tickets:
 
   - id: "LDG-2553"
     title: "Cost Resolver Wiring"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -126,7 +126,7 @@ tickets:
 
   - id: "LDG-2554"
     title: "Internal Fee Field Rename"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -144,7 +144,7 @@ tickets:
 
   - id: "LDG-2555"
     title: "Timing Model Internal Migration"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -163,7 +163,7 @@ tickets:
 
   - id: "LDG-2556"
     title: "Reopen Path Legacy Config Rejection"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -180,7 +180,7 @@ tickets:
 
   - id: "LDG-2557"
     title: "ledgr_backtest Public Surface Migration"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -200,7 +200,7 @@ tickets:
 
   - id: "LDG-2558"
     title: "Required Cost Model On Experiment"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -436,6 +436,7 @@ tickets:
       - "LDG-2562"
       - "LDG-2564"
       - "LDG-2569"
+      - "LDG-2575"
     classification:
       type: "release_notes"
       surface: "NEWS"
@@ -525,6 +526,7 @@ tickets:
       - "LDG-2571"
       - "LDG-2572"
       - "LDG-2573"
+      - "LDG-2575"
     classification:
       type: "release_gate"
       surface: "release_process"
@@ -538,3 +540,25 @@ tickets:
       - "metadata_review"
       - "release_closeout_review"
       - "clean_git_status_review"
+
+  - id: "LDG-2575"
+    title: "Cost Resolver Measurement Spike"
+    status: "planned"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2553"
+      - "LDG-2554"
+      - "LDG-2555"
+      - "LDG-2556"
+      - "LDG-2557"
+      - "LDG-2558"
+    classification:
+      type: "measurement_spike"
+      surface: "cost_resolver"
+      scope: "cost_per_fill_overhead"
+    tests:
+      - "peer_benchmark_record_run"
+      - "spike_synthesis_review"
+      - "with_costs_row_archival"
+      - "horizon_status_update_if_signal"

@@ -15,7 +15,7 @@ testthat::test_that("ledgr_run resolves active aliases from feature_params", {
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
 
   bt <- ledgr_run(
     exp,
@@ -43,7 +43,7 @@ testthat::test_that("ctx features without active aliases fails loudly", {
     ctx$features("AAA")
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = list(ledgr_ind_sma(2)))
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = list(ledgr_ind_sma(2)), cost_model = ledgr_cost_zero())
 
   testthat::expect_error(
     ledgr_run(exp, run_id = "missing-active-alias-map"),
@@ -65,7 +65,7 @@ testthat::test_that("sweeps keep feature params separate from strategy params", 
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(n = c(2L, 3L)),
     strategy = ledgr_strategy_grid(qty = c(1, 2))
@@ -107,7 +107,7 @@ testthat::test_that("parameterized active-alias bundle sweeps resolve concrete o
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(bb_n = c(5L, 8L)),
     strategy = ledgr_strategy_grid(qty = 1)
@@ -133,7 +133,7 @@ testthat::test_that("legacy feature factories reject executable feature grids", 
 
   features <- function(params) list(ledgr_ind_sma(params$n))
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   executable_grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(n = c(2L, 3L)),
     strategy = ledgr_strategy_grid(qty = 1)
@@ -165,7 +165,7 @@ testthat::test_that("promotion replays active alias feature params", {
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(n = 2L),
     strategy = ledgr_strategy_grid(qty = 1)
@@ -196,7 +196,12 @@ testthat::test_that("alias maps affect config identity independently of feature 
   strategy <- function(ctx, params) ctx$flat()
 
   build_config <- function(features) {
-    exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+    exp <- ledgr_experiment(
+      snapshot = snapshot,
+      strategy = strategy,
+      features = features,
+      cost_model = ledgr_cost_zero()
+    )
     feature_result <- ledgr:::ledgr_experiment_materialize_feature_result(exp, list(), feature_params = list())
     ledgr:::ledgr_config(
       snapshot = snapshot,
@@ -213,7 +218,9 @@ testthat::test_that("alias maps affect config identity independently of feature 
       alias_map = feature_result$alias_map,
       persist_features = exp$persist_features,
       execution_mode = exp$execution_mode,
-      fill_model = exp$fill_model,
+      timing_model = exp$timing_model,
+      cost_model_hash = exp$cost_model_hash,
+      cost_plan_json = exp$cost_plan_json,
       db_path = snapshot$db_path,
       opening = exp$opening,
       seed = NULL

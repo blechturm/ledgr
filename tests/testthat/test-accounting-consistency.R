@@ -20,7 +20,8 @@ testthat::test_that("equity curve state is reconstructed from ledger fills", {
       data = bars,
       strategy = strategy,
       initial_cash = 1000,
-      execution_mode = mode
+      execution_mode = mode,
+    cost_model = ledgr_cost_zero()
     )
     on.exit(close(bt))
 

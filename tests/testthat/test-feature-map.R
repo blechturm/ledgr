@@ -83,8 +83,18 @@ testthat::test_that("ledgr_experiment accepts feature maps and preserves list be
   feature_list <- list(sma, ret)
   feature_map <- ledgr_feature_map(sma_alias = sma, ret_alias = ret)
 
-  exp_list <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_list)
-  exp_map <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_map)
+  exp_list <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    features = feature_list,
+    cost_model = ledgr_cost_zero()
+  )
+  exp_map <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    features = feature_map,
+    cost_model = ledgr_cost_zero()
+  )
 
   testthat::expect_identical(exp_list$features_mode, "list")
   testthat::expect_identical(exp_map$features_mode, "feature_map")
@@ -109,7 +119,7 @@ testthat::test_that("feature maps returned by feature functions materialize to i
     ledgr_feature_map(ret = ledgr_ind_returns(params$lookback))
   }
 
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_fn)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_fn, cost_model = ledgr_cost_zero())
   features <- ledgr_experiment_materialize_features(exp, list(lookback = 3))
 
   testthat::expect_identical(exp$features_mode, "function")
@@ -141,7 +151,7 @@ testthat::test_that("parameterized feature maps resolve with concrete feature pa
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   materialized <- ledgr:::ledgr_experiment_materialize_features(exp, list(fast_n = 10L))
   testthat::expect_identical(ledgr_feature_id(materialized), c("sma_10", "sma_20"))
   testthat::expect_error(
@@ -186,7 +196,7 @@ testthat::test_that("feature maps are copied into experiments at construction", 
   }
   features <- ledgr_feature_map(signal = ledgr_ind_sma(2))
 
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   features$indicators[[1]] <- ledgr_ind_returns(3)
   features$feature_ids[["signal"]] <- "return_3"
 
@@ -207,8 +217,8 @@ testthat::test_that("feature maps preserve concrete feature-set identity while a
   feature_list <- list(sma, ret)
   feature_map <- ledgr_feature_map(sma_alias = sma, ret_alias = ret)
 
-  exp_list <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_list)
-  exp_map <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_map)
+  exp_list <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_list, cost_model = ledgr_cost_zero())
+  exp_map <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = feature_map, cost_model = ledgr_cost_zero())
 
   cfg_list <- ledgr_config(
     snapshot = snapshot,
@@ -222,7 +232,9 @@ testthat::test_that("feature maps preserve concrete feature-set identity while a
     features = ledgr_experiment_materialize_features(exp_list, list()),
     persist_features = exp_list$persist_features,
     execution_mode = exp_list$execution_mode,
-    fill_model = exp_list$fill_model,
+    timing_model = exp_list$timing_model,
+    cost_model_hash = exp_list$cost_model_hash,
+    cost_plan_json = exp_list$cost_plan_json,
     db_path = snapshot$db_path,
     opening = exp_list$opening,
     seed = NULL
@@ -241,7 +253,9 @@ testthat::test_that("feature maps preserve concrete feature-set identity while a
     alias_map = feature_map_result$alias_map,
     persist_features = exp_map$persist_features,
     execution_mode = exp_map$execution_mode,
-    fill_model = exp_map$fill_model,
+    timing_model = exp_map$timing_model,
+    cost_model_hash = exp_map$cost_model_hash,
+    cost_plan_json = exp_map$cost_plan_json,
     db_path = snapshot$db_path,
     opening = exp_map$opening,
     seed = NULL
