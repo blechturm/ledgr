@@ -772,7 +772,7 @@ scope: cost_per_fill_overhead
 Priority: P0
 Effort: M
 Dependencies: LDG-2547
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -801,6 +801,16 @@ cover the auditr episode 043 store-path delta.
 Config-hash fixture tests, cross-path regression test, run-info checks, and
 identity-contract documentation review.
 
+### Closeout
+
+- `config_hash()` now hashes `config_hash_payload()` rather than the full stored
+  config object.
+- The normalized hash payload excludes `db_path`, `data$snapshot_db_path`, and
+  `run_id`; `snapshot_id` remains in the payload as data identity.
+- Regression coverage in `tests/testthat/test-config.R` proves path and
+  run-local diagnostic changes leave `config_hash` stable while snapshot
+  identity still changes it.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -824,7 +834,7 @@ scope: store_path_independence
 Priority: P0
 Effort: M
 Dependencies: LDG-2559
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -850,6 +860,17 @@ preserving intentional feature identity.
 Alias-order regression tests, config-hash fixtures, feature identity tests, and
 identity-contract documentation review.
 
+### Closeout
+
+- `alias_map_order` remains stored as diagnostic metadata but is excluded from
+  `config_hash`.
+- `config_hash_payload()` orders feature definitions by feature ID before
+  hashing, removing declaration-order-only drift from resolved feature maps.
+- Regression coverage in `tests/testthat/test-active-alias-runtime.R` proves
+  semantically identical alias maps in different declaration orders produce the
+  same `alias_map_hash` and `config_hash` while preserving different
+  `alias_map_order` diagnostics.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -873,7 +894,7 @@ scope: alias_order_independence
 Priority: P0
 Effort: M
 Dependencies: LDG-2547
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -899,6 +920,18 @@ feature identity belongs in `feature_set_hash`.
 
 Alias hash tests, feature-set hash tests, auditr regression fixture, and
 identity-contract documentation review.
+
+### Closeout
+
+- Feature-map materialization now records a separate alias identity map before
+  concrete feature-parameter resolution.
+- `ledgr_alias_map_storage()` keeps the concrete alias map in
+  `alias_map_json` for runtime/reopen lookup, but hashes the parameter-stable
+  alias identity payload for `alias_map_hash`.
+- Regression coverage in `tests/testthat/test-active-alias-runtime.R` proves
+  `ledgr_ind_sma(ledgr_param("n"))` has stable `alias_map_hash` for `n = 5`
+  and `n = 10`, while the concrete `feature_set_hash` remains
+  parameter-sensitive.
 
 ### Source Reference
 
@@ -1514,6 +1547,11 @@ ticket has closed.
 - Build the package.
 - Run R CMD check.
 - Verify NEWS, roadmap, horizon, design index, RFC index, and ticket metadata.
+- Update `vignettes/research-to-production.qmd` (and the rendered
+  `vignettes/research-to-production.md`) for the v0.1.9.1 cost-API surface:
+  required `cost_model` argument, `ledgr_cost_zero()` as the explicit
+  zero-cost route, `timing_model` replacing legacy `fill_model`, and the
+  quoted-spread convention. No new strategy material; surface migration only.
 - Confirm no generated local artifacts are staged.
 - Prepare release closeout notes.
 
@@ -1524,12 +1562,16 @@ ticket has closed.
   disposition.
 - Cost API synthesis obligations are satisfied.
 - THEME-004 and HIGH disclaimer auditr findings are closed.
+- `vignettes/research-to-production.qmd` teaches the v0.1.9.1 cost-API
+  surface and contains no remaining references to the legacy `fill_model`
+  parameter or `commission_fixed` field.
 - v0.1.9.2 can begin from a stable cost-identity surface.
 
 ### Verification
 
 Targeted tests, full test suite, package build, R CMD check, documentation
-render checks, metadata review, release closeout review, and clean git-status
+render checks, research-to-production vignette render and example
+execution, metadata review, release closeout review, and clean git-status
 review.
 
 ### Source Reference

@@ -132,7 +132,7 @@ Review focus:
 ## Batch 3 - Identity Hardening
 
 Tickets: `LDG-2559`, `LDG-2560`, `LDG-2561`
-Status: Planned
+Status: Completed
 
 Goal: close the three THEME-004 hash hardening bugs from the auditr cycle.
 
@@ -150,6 +150,22 @@ Review focus:
   kept distinct.
 - Concrete feature identity remains in `feature_set_hash`.
 - Any intentionally retained identity field has a written rationale.
+
+Closeout:
+
+- `config_hash()` now hashes a normalized payload that excludes `db_path`,
+  `data$snapshot_db_path`, `run_id`, and diagnostic `alias_map_order` while
+  preserving `data$snapshot_id` and other execution identity.
+- Feature definitions are ordered by feature ID inside the config-hash payload,
+  so feature-map declaration order no longer contaminates config identity.
+- Active feature-map alias storage now separates the concrete runtime lookup
+  map from the alias identity payload used for `alias_map_hash`; concrete
+  parameter values remain represented by feature fingerprints /
+  `feature_set_hash`.
+- Focused verification: `test-config.R`, `test-active-alias-runtime.R`,
+  `test-feature-map.R`, `test-precompute-features.R`,
+  `test-feature-inspection.R`, `test-metric-context-storage.R`, and
+  `test-sweep-parity.R`.
 
 ## Batch 4 - Identity Surface And Contract Reference
 
@@ -256,5 +272,10 @@ Exit criteria:
   `cost_model` is required, legacy `fill_model` shapes are rejected, legacy
   stored configs are rejected, and `ledgr_backtest()` has the same
   `timing_model` plus `cost_model` contract as `ledgr_experiment()`.
+- `vignettes/research-to-production.qmd` (and the rendered `.md`) reflect
+  the v0.1.9.1 cost-API surface: required `cost_model`, `ledgr_cost_zero()`
+  zero-cost route, `timing_model` replacing `fill_model`, and the
+  quoted-spread convention. No remaining `fill_model` or
+  `commission_fixed` references.
 - Release closeout records the result and v0.1.9.2 can start from a stable
   cost-identity surface.

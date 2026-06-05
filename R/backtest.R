@@ -415,6 +415,7 @@ ledgr_run_experiment <- function(exp,
     backtest = ledgr_backtest_config(start = start, end = end, initial_cash = exp$opening$cash),
     features = feature_result$features,
     alias_map = feature_result$alias_map,
+    alias_identity_map = feature_result$alias_identity_map,
     persist_features = exp$persist_features,
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
@@ -802,6 +803,7 @@ ledgr_config <- function(snapshot,
                          features = list(),
                          feature_params = list(),
                          alias_map = NULL,
+                         alias_identity_map = NULL,
                          persist_features = TRUE,
                          execution_mode = "audit_log",
                          checkpoint_every = 10000L,
@@ -875,7 +877,7 @@ ledgr_config <- function(snapshot,
 
   strategy_params_info <- ledgr_strategy_params_info(strategy_params)
   feature_params_info <- ledgr_strategy_params_info(feature_params)
-  alias_map_info <- ledgr_alias_map_storage(alias_map)
+  alias_map_info <- ledgr_alias_map_storage(alias_map, identity_map = alias_identity_map)
   strat <- ledgr_strategy_spec(strategy)
   opening <- ledgr_config_normalize_opening(opening, backtest$initial_cash)
 

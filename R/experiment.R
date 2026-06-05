@@ -418,8 +418,12 @@ ledgr_experiment_materialize_feature_result <- function(exp, params, feature_par
   mode <- ledgr_experiment_validate_features(features)
   if (identical(mode, "feature_map")) {
     ledgr_validate_feature_params_for_declarations(features, feature_params)
+    alias_identity_map <- ledgr_alias_identity_map_from_feature_map(features)
     features <- ledgr_resolve_feature_map(features, feature_params = feature_params)
-    alias_storage <- ledgr_alias_map_storage(ledgr_alias_map_from_feature_map(features))
+    alias_storage <- ledgr_alias_map_storage(
+      ledgr_alias_map_from_feature_map(features),
+      identity_map = alias_identity_map
+    )
     return(c(
       list(features = ledgr_feature_map_indicators(features)),
       alias_storage

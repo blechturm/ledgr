@@ -218,7 +218,7 @@ tickets:
 
   - id: "LDG-2559"
     title: "config_hash Store-Path Independence"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -235,7 +235,7 @@ tickets:
 
   - id: "LDG-2560"
     title: "config_hash Alias Declaration-Order Independence"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -252,7 +252,7 @@ tickets:
 
   - id: "LDG-2561"
     title: "alias_map_hash Parameter Independence"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -537,6 +537,7 @@ tickets:
       - "package_build"
       - "r_cmd_check"
       - "documentation_render_checks"
+      - "research_to_production_vignette_render"
       - "metadata_review"
       - "release_closeout_review"
       - "clean_git_status_review"
