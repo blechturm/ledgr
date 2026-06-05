@@ -82,9 +82,26 @@ The strategy preflight boundary originated in
   contexts may carry execution-bar data for pricing, but those objects must
   remain separate so next-bar execution data cannot leak into strategy
   decisions.
-- The v0.1.8 private fill-timing/cost-resolution boundary must preserve the
-  existing scalar `fill_model` config identity. A behavior-preserving internal
-  refactor must not change `config_hash` for the same canonical config.
+- Fill timing and cost application are separate execution-contract layers.
+  v0.1.9.1 exposes `timing_model = ledgr_timing_next_open()` and requires an
+  explicit classed `cost_model`, such as `ledgr_cost_zero()` when the caller
+  wants zero transaction costs. Legacy `fill_model`, `spread_bps`, and
+  `commission_fixed` config shapes must fail closed with classed migration
+  errors instead of being silently interpreted.
+- Cost-model identity is part of execution identity. `cost_plan_json` is the
+  canonical serialized cost plan, and `cost_model_hash` is the SHA-256 hash of
+  that plan. Later sweep persistence and walk-forward candidate identity may
+  consume these fields, but v0.1.9.1 does not implement cost-grid sweep
+  composition or walk-forward.
+- Config and feature identity fields must keep their layers distinct.
+  `config_hash` identifies the logical execution config after removing
+  store-local and run-local fields such as DuckDB paths, `run_id`, and
+  declaration-order diagnostics. `feature_set_hash` identifies resolved
+  concrete feature definitions by feature fingerprints. `feature_params_hash`
+  identifies user-supplied feature parameter values. `alias_map_hash`
+  identifies alias declarations and must not change solely because a
+  parameterized feature declaration resolves to a different concrete parameter
+  value; that concrete identity belongs in `feature_set_hash`.
 - Strategy preflight runs before entering the fold core. Sweep mode inherits
   the public preflight semantics: Tier 1 and Tier 2 strategies may execute, and
   Tier 3 strategies must stop before any fold execution or output handler side

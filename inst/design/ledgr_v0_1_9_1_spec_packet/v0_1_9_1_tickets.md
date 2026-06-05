@@ -955,7 +955,7 @@ scope: parameter_independence
 Priority: P0
 Effort: M
 Dependencies: LDG-2559, LDG-2560, LDG-2561
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -982,6 +982,19 @@ Expose `feature_set_hash` on documented run surfaces to close auditr episode
 Run-info tests, run-list tests, reopened-run tests, documentation examples, and
 auditr regression review.
 
+### Closeout
+
+- `ledgr_config()` stores `features$feature_set_hash` using the existing
+  `ledgr_feature_set_hash()` helper over resolved feature fingerprints.
+- `config_hash_payload()` excludes this derived surface; the underlying
+  feature definitions remain hash-sensitive.
+- `ledgr_run_store_fetch()` projects `feature_set_hash` from stored
+  `config_json`, so `ledgr_run_info()` and `ledgr_run_list()` expose the field
+  without a new DuckDB schema column.
+- Regression coverage in `tests/testthat/test-run-store.R` verifies
+  in-session config exposure, `ledgr_run_info()`, `ledgr_run_list()`, and
+  `ledgr_run_open()` preservation.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1004,7 +1017,7 @@ scope: feature_set_hash_exposure
 Priority: P0
 Effort: L
 Dependencies: LDG-2551, LDG-2562
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1036,6 +1049,20 @@ identity fields.
 
 Documentation render, help topic examples, link checks, contracts.md review,
 and identity regression test review.
+
+### Closeout
+
+- Added `?ledgr_identity_fields` documenting `feature_set_hash`,
+  `feature_params_hash`, `alias_map_hash`, `alias_map_json`,
+  `alias_map_order`, `config_hash`, `cost_model_hash`, and
+  `cost_plan_json`.
+- Added `inst/design/manual/identity_contract.{qmd,md}` and indexed it from
+  `inst/design/manual/README.{qmd,md}`.
+- Cross-referenced the identity help topic from `?ledgr_run`,
+  `?ledgr_run_info`, `?ledgr_run_list`, `?ledgr_sweep`, `?ledgr_promote`,
+  and the cost constructor help topic.
+- Updated `inst/design/contracts.md` narrowly for v0.1.9.1 timing/cost and
+  identity contracts, without broad restructuring.
 
 ### Source Reference
 

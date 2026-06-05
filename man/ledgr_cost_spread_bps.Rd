@@ -33,6 +33,9 @@ These constructors create deterministic, classed cost model objects for
 ledgr execution. Cost models are experiment-level objects: strategies do not
 receive cost state and cost models may not change fill side, quantity,
 instrument, or execution timestamp.
+Cost identity is stored as \code{cost_plan_json} plus \code{cost_model_hash}; see
+\link{ledgr_identity_fields} for how those fields relate to run and candidate
+identity.
 }
 \examples{
 ledgr_cost_spread_bps(5)

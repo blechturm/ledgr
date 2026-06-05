@@ -25,7 +25,8 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 4. sweep;
 5. features;
 6. performance arc;
-7. benchmark methodology.
+7. benchmark methodology;
+8. identity contract.
 
 ## Articles
 
@@ -38,6 +39,7 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | [`features.md`](features.md) | `features.qmd` | Reviewable LDG-2543 batch | Feature maps, aliases, cache/projection path, TTR adapters, and runtime `ctx$feature()` lookup. |
 | [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
 | [`benchmark_methodology.md`](benchmark_methodology.md) | `benchmark_methodology.qmd` | Reviewable LDG-2545 batch | Local benchmark record generation, repeatability expectations, release-gate checks, and public-claim boundaries. |
+| [`identity_contract.md`](identity_contract.md) | `identity_contract.qmd` | Reviewable v0.1.9.1 LDG-2563 batch | Config, feature, alias, and cost identity fields after the public cost API and identity hardening work. |
 
 ## Rendered Output
 

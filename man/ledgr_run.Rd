@@ -40,6 +40,13 @@ A \code{ledgr_backtest} object.
 experiment-first workflow. It evaluates run-time feature definitions,
 builds the canonical backtest config, and delegates to the shared runner.
 }
+\section{Identity}{
+
+Run identity fields, including \code{config_hash}, \code{feature_set_hash},
+\code{cost_model_hash}, and \code{cost_plan_json}, are summarized in
+\link{ledgr_identity_fields}.
+}
+
 \section{Articles}{
 
 Strategy authoring:

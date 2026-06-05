@@ -170,7 +170,7 @@ Closeout:
 ## Batch 4 - Identity Surface And Contract Reference
 
 Tickets: `LDG-2562`, `LDG-2563`
-Status: Planned
+Status: Completed
 
 Goal: expose `feature_set_hash` on documented surfaces and author the identity
 contract reference, including the bounded `contracts.md` update.
@@ -189,6 +189,25 @@ Review focus:
 - Documentation agrees with the regression tests from Batch 3.
 - `cost_model_hash` and `cost_plan_json` are explained as forward dependencies
   for walk-forward without implementing walk-forward.
+
+Closeout:
+
+- `bt$config$features$feature_set_hash` is populated from resolved feature
+  fingerprints for committed runs, including empty feature sets. This derived
+  surface is excluded from `config_hash`; the underlying feature definitions
+  remain hash-sensitive.
+- `ledgr_run_info()` and `ledgr_run_list()` expose `feature_set_hash` by
+  projecting it from stored `config_json`; no DuckDB schema column or migration
+  was added.
+- Added `?ledgr_identity_fields` plus
+  `inst/design/manual/identity_contract.{qmd,md}` documenting config, feature,
+  alias, and cost identity layering.
+- `contracts.md` now names the v0.1.9.1 public timing/cost contract,
+  required `cost_model`, cost identity, legacy config rejection, and identity
+  field layering.
+- Focused verification: `test-run-store.R`, `test-config.R`,
+  `test-active-alias-runtime.R`, `test-sweep-parity.R`, and
+  `test-documentation-contracts.R`.
 
 ## Batch 5 - High Auditr And Condition Documentation
 

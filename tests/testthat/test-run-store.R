@@ -43,7 +43,7 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
   testthat::expect_true(all(c("list-a", "list-b") %in% runs$run_id))
   testthat::expect_true(all(c(
     "run_id", "snapshot_hash", "status", "reproducibility_level",
-    "strategy_source_hash", "strategy_params_hash", "config_hash",
+    "strategy_source_hash", "strategy_params_hash", "feature_set_hash", "config_hash",
     "final_equity", "total_return", "max_drawdown", "n_trades"
   ) %in% names(runs)))
   testthat::expect_false("config_json" %in% names(runs))
@@ -127,6 +127,50 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
   testthat::expect_identical(failed_info$status, "FAILED")
   failed_print <- utils::capture.output(print(failed_info))
   testthat::expect_true(any(grepl("simulated failure", failed_print, fixed = TRUE)))
+})
+
+testthat::test_that("feature_set_hash is exposed on run config, info, list, and reopened handles", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    signal <- ctx$features("TEST_A")[["fast"]]
+    if (!is.na(signal)) targets["TEST_A"] <- 1
+    targets
+  }
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    features = ledgr_feature_map(fast = ledgr_ind_sma(2)),
+    cost_model = ledgr_cost_zero()
+  )
+
+  bt <- ledgr_run(exp, params = list(), run_id = "feature-hash-run")
+  on.exit(close(bt), add = TRUE)
+  hash <- bt$config$features$feature_set_hash
+  fingerprints <- vapply(bt$config$features$defs, `[[`, character(1), "fingerprint")
+
+  testthat::expect_match(hash, "^[0-9a-f]{64}$")
+  testthat::expect_identical(hash, ledgr:::ledgr_feature_set_hash(fingerprints))
+
+  info <- ledgr_run_info(snapshot, "feature-hash-run")
+  testthat::expect_identical(info$feature_set_hash, hash)
+
+  runs <- ledgr_run_list(snapshot)
+  testthat::expect_true("feature_set_hash" %in% names(runs))
+  testthat::expect_identical(
+    runs$feature_set_hash[runs$run_id == "feature-hash-run"][[1]],
+    hash
+  )
+
+  close(bt)
+  reopened <- ledgr_run_open(snapshot, "feature-hash-run")
+  on.exit(close(reopened), add = TRUE)
+  testthat::expect_identical(reopened$config$features$feature_set_hash, hash)
 })
 
 testthat::test_that("ledgr_run_open returns a handle without recomputation or mutation", {

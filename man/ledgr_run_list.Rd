@@ -15,8 +15,9 @@ DuckDB file in a new R session.}
 }
 \value{
 A \code{ledgr_run_list} object, which is a classed tibble with run
-identity, provenance, status, telemetry summary, and basic result summary
-columns.
+identity, including \code{feature_set_hash}, provenance, status, telemetry
+summary, and basic result summary columns. See \link{ledgr_identity_fields}
+for hash-field semantics.
 }
 \description{
 Discovers stored runs in a DuckDB experiment-store file without recomputing

@@ -269,7 +269,7 @@ tickets:
 
   - id: "LDG-2562"
     title: "feature_set_hash Run Surface Exposure"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -289,7 +289,7 @@ tickets:
 
   - id: "LDG-2563"
     title: "Identity Contract Reference And contracts.md Update"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:

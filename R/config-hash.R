@@ -10,6 +10,9 @@ config_hash_payload <- function(config) {
   if (is.list(payload$data)) {
     payload$data$snapshot_db_path <- NULL
   }
+  if (is.list(payload$features)) {
+    payload$features$feature_set_hash <- NULL
+  }
   if (is.list(payload$features) && is.list(payload$features$defs) && length(payload$features$defs) > 0L) {
     feature_ids <- vapply(payload$features$defs, function(def) {
       if (is.list(def) && is.character(def$id) && length(def$id) == 1L && !is.na(def$id)) {

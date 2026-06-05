@@ -7,6 +7,9 @@ ledgr_timing_schema_version <- 1L
 #' ledgr execution. Cost models are experiment-level objects: strategies do not
 #' receive cost state and cost models may not change fill side, quantity,
 #' instrument, or execution timestamp.
+#' Cost identity is stored as `cost_plan_json` plus `cost_model_hash`; see
+#' [ledgr_identity_fields] for how those fields relate to run and candidate
+#' identity.
 #'
 #' @param bps Finite non-negative basis-point value.
 #' @param amount Finite non-negative fixed fee per fill.

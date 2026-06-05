@@ -15,12 +15,16 @@ DuckDB file in a new R session.}
 }
 \value{
 A \code{ledgr_run_info} object. Important fields include \code{run_id},
-\code{status}, \code{snapshot_id}, \code{snapshot_hash},
-\code{strategy_source_hash}, \code{strategy_params_hash}, \code{config_hash},
-\code{reproducibility_level}, \code{execution_mode}, \code{elapsed_sec},
-\code{pulse_count}, \code{persist_features}, feature-cache counts,
-\code{promotion_context} for runs created with \code{\link[=ledgr_promote]{ledgr_promote()}}, and
-\code{error_msg} for failed runs.
+\code{status}, \code{snapshot_id}, \code{snapshot_hash}, \code{strategy_source_hash},
+\code{strategy_params_hash}, \code{feature_set_hash}, \code{config_hash},
+\code{reproducibility_level}, \code{execution_mode}, \code{elapsed_sec}, \code{pulse_count},
+\code{persist_features}, feature-cache counts, \code{promotion_context} for runs
+created with \code{\link[=ledgr_promote]{ledgr_promote()}}, and \code{error_msg} for failed runs. See
+\link{ledgr_identity_fields} for hash-field semantics.
+}
+\description{
+Returns a structured \code{ledgr_run_info} object for a stored run. This function
+reads run metadata and diagnostics only; it does not execute strategy code.
 }
 \section{Articles}{
 
@@ -29,10 +33,6 @@ Exploratory sweeps and promotion:
 \code{system.file("doc", "sweeps.html", package = "ledgr")}
 }
 
-\description{
-Returns a structured \code{ledgr_run_info} object for a stored run. This function
-reads run metadata and diagnostics only; it does not execute strategy code.
-}
 \examples{
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))

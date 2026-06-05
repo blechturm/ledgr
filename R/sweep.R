@@ -45,6 +45,8 @@
 #' Candidate warnings, including `LEDGR_LAST_BAR_NO_FILL`, are row-level
 #' diagnostics. Inspect them before promotion; committed runs expose their own
 #' result tables and promotion context.
+#' Hash fields in sweep provenance and reproduction keys are summarized in
+#' [ledgr_identity_fields].
 #'
 #' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
 #' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
@@ -425,6 +427,8 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' cost to create durable ledger, equity, telemetry, and promotion-context
 #' artifacts. Runs created this way store durable promotion context that can be read with
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
+#' Hash fields carried from the candidate into promotion evidence are
+#' summarized in [ledgr_identity_fields].
 #'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a

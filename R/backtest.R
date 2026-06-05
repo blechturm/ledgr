@@ -314,6 +314,10 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #'   durable runs currently fail closed because durable compiled integration is
 #'   deferred.
 #' @return A `ledgr_backtest` object.
+#' @section Identity:
+#' Run identity fields, including `config_hash`, `feature_set_hash`,
+#' `cost_model_hash`, and `cost_plan_json`, are summarized in
+#' [ledgr_identity_fields].
 #' @section Articles:
 #' Strategy authoring:
 #' `vignette("strategy-development", package = "ledgr")`
@@ -926,9 +930,20 @@ ledgr_config <- function(snapshot,
         }
         feat
       })
-      list(enabled = TRUE, defs = defs, persist = isTRUE(persist_features))
+      fingerprints <- vapply(defs, function(def) def$fingerprint, character(1))
+      list(
+        enabled = TRUE,
+        defs = defs,
+        feature_set_hash = ledgr_feature_set_hash(fingerprints),
+        persist = isTRUE(persist_features)
+      )
     } else {
-      list(enabled = FALSE, defs = list(), persist = isTRUE(persist_features))
+      list(
+        enabled = FALSE,
+        defs = list(),
+        feature_set_hash = ledgr_feature_set_hash(character()),
+        persist = isTRUE(persist_features)
+      )
     },
     strategy = list(
       id = strat$id,
