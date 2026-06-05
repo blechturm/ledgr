@@ -1331,7 +1331,40 @@ Source memory:
   `2026-06-02 [architecture] B2 spot-FIFO accelerator is not a derivatives
   accounting model`.
 
+### v0.1.9.x Line Sequencing
+
+Sequencing decision recorded 2026-06-05. The v0.1.9.x line is a four-tick
+arc culminating in walk-forward. Each tick produces identity or
+infrastructure that walk-forward consumes when it ticket-cuts at v0.1.9.4:
+
+- **v0.1.9.1** -- public transaction-cost API
+  (`inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`,
+  accepted, spec-cut ready).
+- **v0.1.9.2** -- sweep artifact persistence (RFC cycle scheduled;
+  no prior RFC artifacts; seed v1 pending).
+- **v0.1.9.3** -- target-risk layer + per-pulse fill-loop restructure
+  (section immediately below; previously framed as the v0.1.9
+  headline before the arc was sequenced).
+- **v0.1.9.4** -- walk-forward evaluation
+  (`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+  with Amendments 1 + 2 + Section 17 ticket-cut gate matrix).
+
+Rationale, cross-cycle identity handoffs, and scope-discipline
+acknowledgment: see the 2026-06-05 horizon entry "v0.1.9.x line
+sequencing -- four-tick arc culminating in walk-forward" in
+`inst/design/horizon.md`.
+
+Other v0.1.9.x roadmap candidates listed in sections below
+(crypto-readiness spike, target-construction-helper extensions, etc.)
+are not yet sequenced into this arc. They slot in as separate scoping
+decisions when their windows open -- either as small parallel releases
+between the four named ticks or absorbed into one of them at scoping
+time.
+
 ### v0.1.9 Target Risk Layer
+
+Sequenced as **v0.1.9.3** in the v0.1.9.x arc above. Section retained
+in original form below; window remains v0.1.9.
 
 Authoritative input:
 
@@ -1520,6 +1553,12 @@ Exit decisions:
   until the work lands.
 
 ### v0.1.9.x Walk-Forward Evaluation
+
+Sequenced as **v0.1.9.4** in the v0.1.9.x arc (see v0.1.9.x Line
+Sequencing section above). Ticket-cut consumes cost-identity from
+v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain
+identity from v0.1.9.3; Section 17 gate matrix from the synthesis fires
+at this packet.
 
 Accepted design input:
 

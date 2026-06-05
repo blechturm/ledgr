@@ -1,0 +1,540 @@
+version: "0.1.9.1"
+source: "v0_1_9_1_tickets.md"
+generated_from: "v0_1_9_1_spec.md"
+tickets:
+  - id: "LDG-2547"
+    title: "Packet Alignment And v0.1.9.1 Ticket Cut"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.9.1"
+    tests:
+      - "manual_packet_review"
+      - "yaml_review"
+      - "ascii_check"
+      - "git_diff_check"
+      - "review_response_audit"
+
+  - id: "LDG-2548"
+    title: "Cost Primitive Constructors"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2547"
+    classification:
+      type: "public_api"
+      surface: "transaction_cost_model"
+      scope: "cost_primitives"
+    tests:
+      - "cost_constructor_tests"
+      - "invalid_input_tests"
+      - "quoted_spread_arithmetic_oracle"
+      - "roxygen_examples"
+
+  - id: "LDG-2549"
+    title: "Cost Composition And Validation"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2548"
+    classification:
+      type: "public_api"
+      surface: "transaction_cost_model"
+      scope: "cost_chain_validation"
+    tests:
+      - "composition_tests"
+      - "classed_error_tests"
+      - "deterministic_identity_fixture"
+      - "roxygen_examples"
+
+  - id: "LDG-2550"
+    title: "Timing Constructor And Experiment Surface"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2548"
+    classification:
+      type: "public_api"
+      surface: "timing_model"
+      scope: "next_open_constructor"
+    tests:
+      - "experiment_constructor_tests"
+      - "legacy_shape_rejection_tests"
+      - "next_open_timing_tests"
+      - "documentation_render"
+
+  - id: "LDG-2551"
+    title: "Cost Identity Surface"
+    status: "planned"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2549"
+    classification:
+      type: "identity"
+      surface: "transaction_cost_model"
+      scope: "cost_model_hash_and_plan_json"
+    tests:
+      - "hash_fixture_tests"
+      - "cross_session_tests"
+      - "plan_reconstruction_tests"
+      - "promotion_provenance_tests"
+      - "sweep_candidate_identity_tests"
+
+  - id: "LDG-2552"
+    title: "Cost Inspection Helpers"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2551"
+    classification:
+      type: "public_api"
+      surface: "transaction_cost_model"
+      scope: "inspection_helpers"
+    tests:
+      - "inspection_helper_tests"
+      - "expected_output_tests"
+      - "invalid_input_tests"
+      - "roxygen_examples"
+
+  - id: "LDG-2553"
+    title: "Cost Resolver Wiring"
+    status: "planned"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2550"
+      - "LDG-2551"
+    classification:
+      type: "execution"
+      surface: "fold_resolver"
+      scope: "cost_plan_application"
+    tests:
+      - "run_parity_tests"
+      - "sweep_parity_tests"
+      - "promotion_parity_tests"
+      - "hand_checkable_cost_arithmetic"
+      - "no_lookahead_timing_tests"
+
+  - id: "LDG-2554"
+    title: "Internal Fee Field Rename"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2547"
+    classification:
+      type: "internal_migration"
+      surface: "fills_and_accounting"
+      scope: "fee_field_rename"
+    tests:
+      - "fill_payload_tests"
+      - "cash_identity_tests"
+      - "round_trip_pnl_tests"
+      - "sweep_parity_tests"
+      - "durable_readback_tests"
+
+  - id: "LDG-2555"
+    title: "Timing Model Internal Migration"
+    status: "planned"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2550"
+      - "LDG-2554"
+    classification:
+      type: "internal_migration"
+      surface: "config_and_run_store"
+      scope: "timing_model_rename"
+    tests:
+      - "config_validation_tests"
+      - "runner_tests"
+      - "run_store_tests"
+      - "stale_scope_rg_checks"
+      - "documentation_render"
+
+  - id: "LDG-2556"
+    title: "Reopen Path Legacy Config Rejection"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2555"
+    classification:
+      type: "compatibility_boundary"
+      surface: "run_reopen"
+      scope: "legacy_fill_model_rejection"
+    tests:
+      - "run_open_tests"
+      - "legacy_config_fixture"
+      - "classed_error_test"
+      - "news_review"
+
+  - id: "LDG-2557"
+    title: "ledgr_backtest Public Surface Migration"
+    status: "planned"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2550"
+      - "LDG-2551"
+      - "LDG-2558"
+    classification:
+      type: "public_api"
+      surface: "ledgr_backtest"
+      scope: "cost_timing_contract"
+    tests:
+      - "backtest_wrapper_tests"
+      - "public_api_examples"
+      - "identity_parity_tests"
+      - "legacy_input_error_tests"
+      - "roxygen_render"
+
+  - id: "LDG-2558"
+    title: "Required Cost Model On Experiment"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2550"
+      - "LDG-2551"
+    classification:
+      type: "public_api"
+      surface: "ledgr_experiment"
+      scope: "required_cost_model"
+    tests:
+      - "experiment_constructor_tests"
+      - "classed_error_tests"
+      - "identity_field_tests"
+      - "examples"
+
+  - id: "LDG-2559"
+    title: "config_hash Store-Path Independence"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2547"
+    classification:
+      type: "identity"
+      surface: "config_hash"
+      scope: "store_path_independence"
+    tests:
+      - "config_hash_fixture_tests"
+      - "cross_path_regression_test"
+      - "run_info_checks"
+      - "identity_contract_documentation_review"
+
+  - id: "LDG-2560"
+    title: "config_hash Alias Declaration-Order Independence"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2559"
+    classification:
+      type: "identity"
+      surface: "config_hash"
+      scope: "alias_order_independence"
+    tests:
+      - "alias_order_regression_tests"
+      - "config_hash_fixtures"
+      - "feature_identity_tests"
+      - "identity_contract_documentation_review"
+
+  - id: "LDG-2561"
+    title: "alias_map_hash Parameter Independence"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2547"
+    classification:
+      type: "identity"
+      surface: "alias_map_hash"
+      scope: "parameter_independence"
+    tests:
+      - "alias_hash_tests"
+      - "feature_set_hash_tests"
+      - "auditr_regression_fixture"
+      - "identity_contract_documentation_review"
+
+  - id: "LDG-2562"
+    title: "feature_set_hash Run Surface Exposure"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2559"
+      - "LDG-2560"
+      - "LDG-2561"
+    classification:
+      type: "identity"
+      surface: "run_metadata"
+      scope: "feature_set_hash_exposure"
+    tests:
+      - "run_info_tests"
+      - "run_list_tests"
+      - "reopened_run_tests"
+      - "documentation_examples"
+      - "auditr_regression_review"
+
+  - id: "LDG-2563"
+    title: "Identity Contract Reference And contracts.md Update"
+    status: "planned"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2551"
+      - "LDG-2562"
+    classification:
+      type: "documentation"
+      surface: "identity_contract"
+      scope: "hash_reference_and_contracts_update"
+    tests:
+      - "documentation_render"
+      - "help_topic_examples"
+      - "link_checks"
+      - "contracts_md_review"
+      - "identity_regression_test_review"
+
+  - id: "LDG-2564"
+    title: "DISCLAIMER.md Install Path Fix"
+    status: "planned"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2547"
+    classification:
+      type: "documentation"
+      surface: "disclaimer"
+      scope: "installed_link_fix"
+    tests:
+      - "installed_path_check"
+      - "vignette_link_check"
+      - "package_build_install_smoke"
+      - "auditr_episode_046_reproduction"
+
+  - id: "LDG-2565"
+    title: "Cost Condition Class Documentation"
+    status: "planned"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2549"
+      - "LDG-2556"
+      - "LDG-2558"
+    classification:
+      type: "documentation"
+      surface: "condition_classes"
+      scope: "cost_api_errors"
+    tests:
+      - "condition_documentation_tests"
+      - "roxygen_render"
+      - "example_checks"
+      - "error_class_tests"
+
+  - id: "LDG-2566"
+    title: "LEDGR_LAST_BAR_NO_FILL Help Topic"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2547"
+    classification:
+      type: "documentation"
+      surface: "execution_warnings"
+      scope: "final_bar_no_fill"
+    tests:
+      - "roxygen_render"
+      - "help_topic_link_check"
+      - "final_bar_warning_tests"
+      - "vignette_cross_reference_review"
+
+  - id: "LDG-2567"
+    title: "Metrics And Accounting Vignette Cost Rewrite"
+    status: "planned"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2553"
+      - "LDG-2565"
+    classification:
+      type: "documentation"
+      surface: "vignette"
+      scope: "metrics_accounting_cost_api"
+    tests:
+      - "vignette_render"
+      - "example_smoke_tests"
+      - "accounting_test_review"
+      - "styleguide_review"
+
+  - id: "LDG-2568"
+    title: "Cost API Runnable Examples"
+    status: "planned"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2548"
+      - "LDG-2549"
+      - "LDG-2550"
+      - "LDG-2551"
+      - "LDG-2552"
+    classification:
+      type: "documentation"
+      surface: "examples"
+      scope: "cost_api_reference_examples"
+    tests:
+      - "example_checks"
+      - "roxygen_render"
+      - "targeted_documentation_tests"
+      - "r_cmd_check_examples"
+
+  - id: "LDG-2569"
+    title: "Sweep Vignette Cost Non-Participation Note"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2553"
+    classification:
+      type: "documentation"
+      surface: "sweep_vignette"
+      scope: "cost_non_participation"
+    tests:
+      - "vignette_render"
+      - "stale_scope_review"
+      - "documentation_review"
+
+  - id: "LDG-2570"
+    title: "NEWS Entry"
+    status: "planned"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2548"
+      - "LDG-2549"
+      - "LDG-2550"
+      - "LDG-2551"
+      - "LDG-2553"
+      - "LDG-2554"
+      - "LDG-2555"
+      - "LDG-2556"
+      - "LDG-2557"
+      - "LDG-2558"
+      - "LDG-2559"
+      - "LDG-2560"
+      - "LDG-2561"
+      - "LDG-2562"
+      - "LDG-2564"
+      - "LDG-2569"
+    classification:
+      type: "release_notes"
+      surface: "NEWS"
+      scope: "v0.1.9.1"
+    tests:
+      - "news_review"
+      - "stale_claim_rg_checks"
+      - "release_gate_review"
+
+  - id: "LDG-2571"
+    title: "Roadmap Update"
+    status: "planned"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2570"
+    classification:
+      type: "planning_docs"
+      surface: "roadmap"
+      scope: "v0.1.9.1_status"
+    tests:
+      - "roadmap_review"
+      - "stale_state_rg_checks"
+
+  - id: "LDG-2572"
+    title: "Horizon Housekeeping"
+    status: "planned"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2570"
+    classification:
+      type: "planning_docs"
+      surface: "horizon"
+      scope: "cost_api_resolution_state"
+    tests:
+      - "horizon_review"
+      - "targeted_2026_06_05_entry_rg_checks"
+
+  - id: "LDG-2573"
+    title: "Design And RFC Index Update"
+    status: "planned"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2570"
+    classification:
+      type: "planning_docs"
+      surface: "design_index"
+      scope: "v0.1.9.1_cost_api"
+    tests:
+      - "design_index_review"
+      - "rfc_index_review"
+      - "link_checks"
+      - "stale_state_rg"
+
+  - id: "LDG-2574"
+    title: "v0.1.9.1 Release Gate"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2547"
+      - "LDG-2548"
+      - "LDG-2549"
+      - "LDG-2550"
+      - "LDG-2551"
+      - "LDG-2552"
+      - "LDG-2553"
+      - "LDG-2554"
+      - "LDG-2555"
+      - "LDG-2556"
+      - "LDG-2557"
+      - "LDG-2558"
+      - "LDG-2559"
+      - "LDG-2560"
+      - "LDG-2561"
+      - "LDG-2562"
+      - "LDG-2563"
+      - "LDG-2564"
+      - "LDG-2565"
+      - "LDG-2566"
+      - "LDG-2567"
+      - "LDG-2568"
+      - "LDG-2569"
+      - "LDG-2570"
+      - "LDG-2571"
+      - "LDG-2572"
+      - "LDG-2573"
+    classification:
+      type: "release_gate"
+      surface: "release_process"
+      scope: "v0.1.9.1"
+    tests:
+      - "targeted_tests"
+      - "full_test_suite"
+      - "package_build"
+      - "r_cmd_check"
+      - "documentation_render_checks"
+      - "metadata_review"
+      - "release_closeout_review"
+      - "clean_git_status_review"
