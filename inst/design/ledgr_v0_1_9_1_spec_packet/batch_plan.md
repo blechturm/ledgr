@@ -284,7 +284,7 @@ Closeout:
 ## Batch 7 - Release Surfaces
 
 Tickets: `LDG-2570`, `LDG-2571`, `LDG-2572`, `LDG-2573`
-Status: Planned
+Status: Completed
 
 Goal: update release notes and planning indexes after implementation tickets
 close.
@@ -301,6 +301,22 @@ Review focus:
 
 - No future packet is marked shipped prematurely.
 - Cost identity forward obligation for v0.1.9.4 remains visible.
+
+Closeout:
+
+- `NEWS.md` now names the v0.1.9.1 public cost-API headline, breaking
+  pre-CRAN changes, THEME-004 identity fixes, bounded auditr documentation
+  fixes, and explicit v0.1.9.2+ non-claims.
+- `ledgr_roadmap.md` and `inst/design/README.md` reflect that v0.1.9.1
+  implementation / documentation / release-surface tickets are closed while the
+  release gate remains pending.
+- `inst/design/horizon.md` moves only the v0.1.9.1 cost-API spec-cut decision
+  entry to `## Resolved`; sequencing, sweep persistence, and walk-forward
+  forward-obligation entries remain open.
+- `inst/design/rfc/README.md` records the cost-API synthesis as implemented by
+  v0.1.9.1 and points at the identity contract reference.
+- Focused verification: release-surface documentation contract tests and
+  targeted `rg` checks for v0.1.9.1 / future-packet state.
 
 ## Batch 8 - Release Gate
 

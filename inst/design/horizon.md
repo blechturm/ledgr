@@ -1499,108 +1499,6 @@ identity handoffs. Future tickets in v0.1.9.x should respect the arc
 shape; deviations require explicit maintainer override (e.g., a
 parallel small release for target-helper Pass 2 between named ticks).
 
-### 2026-06-05 [planning] v0.1.9.1 cost-API spec-cut decisions on synthesis Section 13 open questions
-
-The accepted cost-API synthesis
-(`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`)
-leaves five questions to the spec-cut writer in Section 13. These
-decisions are bound here ahead of v0.1.9.1 spec-cut so the packet
-author has them in hand. All five are answered with the aggressive
-pre-CRAN-no-users posture: reject legacy shapes, no transitional
-auto-translation, no silent defaults.
-
-**Decision 1: legacy `fill_model = list(...)` shape.** Reject with
-classed error.
-
-Rationale: the API restructures (`fill_model` splits into
-`timing_model` + `cost_model`) AND the spread semantics shift from
-full-bps-per-leg to quoted-spread (half-bps-per-leg). Auto-translation
-would silently halve `spread_bps` values -- a numeric footgun.
-Forcing users to re-author surfaces the semantic shift explicitly.
-Pre-CRAN policy makes this affordable.
-
-Implementation shape:
-
-- `ledgr_experiment(... fill_model = list(...))` raises
-  `ledgr_legacy_fill_model_shape` at construction.
-- Error message points at `timing_model = ledgr_timing_next_open()`
-  and `cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(...),
-  ledgr_cost_fixed_fee(...))`.
-- Error message explicitly names the quoted-spread convention shift:
-  "spread_bps in the new API is quoted-spread (half per leg); divide
-  your old value by 2".
-
-**Decision 2: cost plan execution shape.** Confirm "implementer's
-choice with stable outputs and identity."
-
-Rationale: synthesis already notes "likely defer to implementer."
-Spec-cut just confirms. Implementation gated on:
-
-- identity stability tests pass;
-- `cost_plan_json` reconstruction parity tests pass;
-- no per-pulse DB writes in cost resolution (already in synthesis
-  Section 9).
-
-Row-wise resolver, vectorized per-pulse, or hybrid is the
-implementer's call subject to those gates.
-
-**Decision 3: cost component diagnostic retention.** `meta_json` only
-in v1.
-
-Rationale: reserving a future diagnostic table shape pre-commits to
-schema without binding text -- the exact pattern the closed
-`compiled_accounting_model` enum scope-guard discipline rejects.
-`meta_json` is the flexible v1 surface. Structured diagnostic
-tables, if needed, get their own RFC (alongside the diagnostic-
-retention RFC that walk-forward already defers to in its
-Section 12 Future Obligations).
-
-**Decision 4: reopen-path compatibility for stored configs.** Reject
-with classed error.
-
-Rationale: matches the pre-CRAN policy in horizon's 2026-05-25
-entry: "users should expect to rerun experiments after upgrading
-when the cycle changes storage/hashing/execution contracts." No
-translation logic for zero current users.
-
-Implementation shape:
-
-- `ledgr_run_open()` reading a stored `config_json` containing
-  `fill_model` raises `ledgr_legacy_config_shape`.
-- Error message points at recreating the experiment with the new
-  API surface.
-
-**Decision 5: `cost_model = NULL` default.** Require explicit
-argument; no implicit default.
-
-Rationale: cost is part of run identity, not an afterthought. Three
-lenses converge:
-
-- Walk-forward synthesis Section 3 binding for
-  `opening_state_policy`: "no hidden hardcoded behavior is allowed."
-  Same principle for cost.
-- An implicit `ledgr_cost_zero()` default is a real footgun: user
-  runs backtest, sees great Sharpe, does not realize the experiment
-  had zero costs.
-- ledgr's broader pattern is explicit-at-construction for identity-
-  participating arguments.
-
-Implementation shape:
-
-- `ledgr_experiment()` without explicit `cost_model` raises
-  `ledgr_cost_model_unspecified` at construction.
-- Error message hints at `ledgr_cost_zero()` for users who genuinely
-  want zero-cost (must be explicit).
-
-**Forward to v0.1.9.1 spec packet:** these five decisions resolve
-the Section 13 open questions. The spec-cut writer should treat them
-as bound and proceed with ticket-cut. Any deviation requires a
-maintainer override note in the spec packet log, consistent with
-the synthesis Section 15 binding-decision-change discipline.
-
-This entry records the maintainer decisions ahead of spec-cut so
-the binding is durable outside the spec packet workflow.
-
 ### 2026-06-05 [planning] v0.1.9.4 walk-forward Section 17 gate-row obligations from the v0.1.9.x arc
 
 The v0.1.9.x arc sequencing (see 2026-06-05 sequencing entry above)
@@ -4322,6 +4220,97 @@ This entry records direction, not committed work.
 Entries move here when their idea has shipped or been answered. Each records
 what resolved it. Sweep an idea here when its milestone closes — do not leave
 shipped work in "Open."
+
+### 2026-06-05 [planning] v0.1.9.1 cost-API spec-cut decisions on synthesis Section 13 open questions -- resolved by v0.1.9.1
+
+The accepted cost-API synthesis
+(`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`)
+left five questions to the spec-cut writer in Section 13. The v0.1.9.1 packet
+bound and implemented them with the aggressive pre-CRAN-no-users posture:
+reject legacy shapes, no transitional auto-translation, no silent defaults.
+
+**Decision 1: legacy `fill_model = list(...)` shape.** Reject with classed
+error.
+
+Rationale: the API restructures (`fill_model` splits into `timing_model` +
+`cost_model`) AND the spread semantics shift from full-bps-per-leg to
+quoted-spread (half-bps-per-leg). Auto-translation would silently halve
+`spread_bps` values -- a numeric footgun. Forcing users to re-author surfaces
+the semantic shift explicitly. Pre-CRAN policy makes this affordable.
+
+Implementation shape:
+
+- `ledgr_experiment(... fill_model = list(...))` raises
+  `ledgr_legacy_fill_model_shape` at construction.
+- Error message points at `timing_model = ledgr_timing_next_open()` and
+  `cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(...),
+  ledgr_cost_fixed_fee(...))`.
+- Error message explicitly names the quoted-spread convention shift:
+  "spread_bps in the new API is quoted-spread (half per leg); divide your old
+  value by 2".
+
+**Decision 2: cost plan execution shape.** Confirm "implementer's choice with
+stable outputs and identity."
+
+Rationale: synthesis already notes "likely defer to implementer." Spec-cut just
+confirms. Implementation gated on:
+
+- identity stability tests pass;
+- `cost_plan_json` reconstruction parity tests pass;
+- no per-pulse DB writes in cost resolution (already in synthesis Section 9).
+
+Row-wise resolver, vectorized per-pulse, or hybrid is the implementer's call
+subject to those gates.
+
+**Decision 3: cost component diagnostic retention.** `meta_json` only in v1.
+
+Rationale: reserving a future diagnostic table shape pre-commits to schema
+without binding text -- the exact pattern the closed `compiled_accounting_model`
+enum scope-guard discipline rejects. `meta_json` is the flexible v1 surface.
+Structured diagnostic tables, if needed, get their own RFC (alongside the
+diagnostic-retention RFC that walk-forward already defers to in its Section 12
+Future Obligations).
+
+**Decision 4: reopen-path compatibility for stored configs.** Reject with
+classed error.
+
+Rationale: matches the pre-CRAN policy in horizon's 2026-05-25 entry:
+"users should expect to rerun experiments after upgrading when the cycle
+changes storage/hashing/execution contracts." No translation logic for zero
+current users.
+
+Implementation shape:
+
+- `ledgr_run_open()` reading a stored `config_json` containing `fill_model`
+  raises `ledgr_legacy_config_shape`.
+- Error message points at recreating the experiment with the new API surface.
+
+**Decision 5: `cost_model = NULL` default.** Require explicit argument; no
+implicit default.
+
+Rationale: cost is part of run identity, not an afterthought. Three lenses
+converge:
+
+- Walk-forward synthesis Section 3 binding for `opening_state_policy`:
+  "no hidden hardcoded behavior is allowed." Same principle for cost.
+- An implicit `ledgr_cost_zero()` default is a real footgun: user runs backtest,
+  sees great Sharpe, does not realize the experiment had zero costs.
+- ledgr's broader pattern is explicit-at-construction for
+  identity-participating arguments.
+
+Implementation shape:
+
+- `ledgr_experiment()` without explicit `cost_model` raises
+  `ledgr_cost_model_unspecified` at construction.
+- Error message hints at `ledgr_cost_zero()` for users who genuinely want
+  zero-cost (must be explicit).
+
+**Resolution:** v0.1.9.1 implemented the five decisions through the public
+cost API, explicit timing / required cost model surface, classed legacy-shape
+rejections, cost identity (`cost_model_hash`, `cost_plan_json`), and
+documentation / NEWS closeout. The v0.1.9.x sequencing entry, v0.1.9.2 sweep
+RFC schedule, and v0.1.9.4 walk-forward gate-row obligations remain open
+because they are forward dependencies, not v0.1.9.1 implementation claims.
 
 ### 2026-06-04 [documentation] Documentation, structure, and cleanup release shipped v0.1.8.11
 

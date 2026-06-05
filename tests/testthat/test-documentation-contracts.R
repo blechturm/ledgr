@@ -398,6 +398,79 @@ testthat::test_that("pkgdown reference lists v0.1.7.4 helper exports", {
   }
 })
 
+testthat::test_that("v0.1.9.1 release surfaces record cost API state without future claims", {
+  root <- testthat::test_path("..", "..")
+  news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
+  roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
+  design_index <- paste(readLines(file.path(root, "inst", "design", "README.md"), warn = FALSE), collapse = "\n")
+  rfc_index <- paste(readLines(file.path(root, "inst", "design", "rfc", "README.md"), warn = FALSE), collapse = "\n")
+  horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
+  batch_plan <- paste(readLines(file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "batch_plan.md"), warn = FALSE), collapse = "\n")
+  tickets <- paste(readLines(file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "v0_1_9_1_tickets.md"), warn = FALSE), collapse = "\n")
+  tickets_yml <- paste(readLines(file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "tickets.yml"), warn = FALSE), collapse = "\n")
+
+  start <- regexpr("# ledgr 0[.]1[.]9[.]1", news)
+  end <- regexpr("# ledgr 0[.]1[.]8[.]11", news)
+  testthat::expect_true(start > 0L)
+  testthat::expect_true(end > start)
+  section <- substr(news, start, end - 1L)
+
+  for (term in c(
+    "public transaction-cost API",
+    "ledgr_cost_chain()",
+    "ledgr_timing_next_open()",
+    "cost_model_hash",
+    "cost_plan_json",
+    "fill_model",
+    "timing_model",
+    "required `cost_model`",
+    "ledgr_cost_zero()",
+    "commission_fixed",
+    "fee",
+    "THEME-004",
+    "feature_set_hash",
+    "fixed experiment inputs in v1"
+  )) {
+    testthat::expect_match(section, term, fixed = TRUE)
+  }
+  testthat::expect_match(section, "Sweep artifact persistence, target risk, and\\s+walk-forward remain future v0.1.9.x packets")
+
+  testthat::expect_match(roadmap, "implementation and documentation tickets closed; release gate pending", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.1 | Active | Cost-API implementation complete; release gate pending.", fixed = TRUE)
+  testthat::expect_match(roadmap, "v0.1.9.2 | Planned", fixed = TRUE)
+  testthat::expect_match(roadmap, "v0.1.9.3 | Planned", fixed = TRUE)
+  testthat::expect_match(roadmap, "v0.1.9.4 | Planned", fixed = TRUE)
+
+  testthat::expect_match(design_index, "Current active packet:** `v0.1.9.1` cost-API packet", fixed = TRUE)
+  testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
+  testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
+  testthat::expect_match(design_index, "release gate remains\\s+pending")
+
+  testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
+  testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
+  testthat::expect_match(rfc_index, "Liquidity, quantity mutation, broker templates, and function-valued user models remain downstream", fixed = TRUE)
+
+  resolved_pos <- regexpr("\n## Resolved\n", horizon, fixed = TRUE)[[1]]
+  cost_pos <- regexpr("v0.1.9.1 cost-API spec-cut decisions", horizon, fixed = TRUE)[[1]]
+  sweep_pos <- regexpr("v0.1.9.2 sweep artifact persistence RFC cycle scheduled", horizon, fixed = TRUE)[[1]]
+  wf_pos <- regexpr("v0.1.9.4 walk-forward Section 17 gate-row obligations", horizon, fixed = TRUE)[[1]]
+  testthat::expect_gt(cost_pos, resolved_pos)
+  testthat::expect_gt(sweep_pos, 0L)
+  testthat::expect_lt(sweep_pos, resolved_pos)
+  testthat::expect_gt(wf_pos, 0L)
+  testthat::expect_lt(wf_pos, resolved_pos)
+
+  testthat::expect_match(batch_plan, "## Batch 7 - Release Surfaces", fixed = TRUE)
+  testthat::expect_match(batch_plan, "Status: Completed", fixed = TRUE)
+  for (id in c("LDG-2570", "LDG-2571", "LDG-2572", "LDG-2573")) {
+    ticket_start <- regexpr(paste0("## ", id), tickets, fixed = TRUE)
+    testthat::expect_true(ticket_start > 0L)
+    ticket_section <- substr(tickets, ticket_start, min(nchar(tickets), ticket_start + 1200L))
+    testthat::expect_match(ticket_section, "Status: Completed", fixed = TRUE)
+    testthat::expect_match(tickets_yml, paste0("id: \"", id, "\""), fixed = TRUE)
+  }
+})
+
 testthat::test_that("NEWS summarizes delivered v0.1.7.4 scope", {
   root <- testthat::test_path("..", "..")
   news <- file.path(root, "NEWS.md")

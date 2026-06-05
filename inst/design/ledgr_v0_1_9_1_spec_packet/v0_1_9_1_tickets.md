@@ -1442,7 +1442,7 @@ scope: cost_non_participation
 Priority: P1
 Effort: S
 Dependencies: LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2564, LDG-2569, LDG-2575
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1466,6 +1466,14 @@ Add the v0.1.9.1 NEWS entry.
 
 NEWS review, stale-claim `rg` checks, and release-gate review.
 
+### Closeout
+
+- Added the v0.1.9.1 NEWS entry for the public cost-API surface, cost identity,
+  breaking pre-CRAN changes, THEME-004 identity fixes, and bounded auditr
+  documentation fixes.
+- Explicitly names v0.1.9.2+ sweep persistence, target risk, and walk-forward
+  as future packets rather than shipped work.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1486,7 +1494,7 @@ scope: v0.1.9.1
 Priority: P2
 Effort: S
 Dependencies: LDG-2570
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1509,6 +1517,14 @@ Update the roadmap to reflect v0.1.9.1 progress and cost-API ship state.
 
 Roadmap review and stale-state `rg` checks.
 
+### Closeout
+
+- Updated the roadmap active-packet header and milestone row to record that
+  v0.1.9.1 implementation, documentation, and release-surface tickets are
+  closed while the release gate remains pending.
+- Added a v0.1.9.1 status note naming `cost_model_hash` and `cost_plan_json` as
+  concrete forward-dependency surfaces for later v0.1.9.x packets.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1529,7 +1545,7 @@ scope: v0.1.9.1_status
 Priority: P2
 Effort: S
 Dependencies: LDG-2570
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1553,6 +1569,14 @@ Update horizon entries as v0.1.9.1 implementation closes.
 
 Horizon review and targeted `rg` checks for 2026-06-05 entries.
 
+### Closeout
+
+- Moved the v0.1.9.1 cost-API spec-cut decisions entry from `## Open` to
+  `## Resolved` and recorded its v0.1.9.1 implementation resolution.
+- Left the v0.1.9.x sequencing, v0.1.9.2 sweep RFC schedule, and v0.1.9.4
+  walk-forward gate-row obligations open so forward dependencies remain
+  visible.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1573,7 +1597,7 @@ scope: cost_api_resolution_state
 Priority: P2
 Effort: S
 Dependencies: LDG-2570
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1596,6 +1620,15 @@ Update design and RFC indexes for the v0.1.9.1 cost-API ship state.
 ### Verification
 
 Design index review, RFC index review, link checks, and stale-state `rg`.
+
+### Closeout
+
+- Updated `inst/design/README.md` to point at the active v0.1.9.1 packet,
+  ticket records, batch plan, cost-API synthesis, and identity contract
+  reference.
+- Updated `inst/design/rfc/README.md` so the public transaction-cost model row
+  records v0.1.9.1 implementation state while preserving downstream
+  liquidity/template/function-valued-model boundaries.
 
 ### Source Reference
 

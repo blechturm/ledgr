@@ -3,8 +3,10 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.8.11`.
-**Current active packet:** none; v0.1.9 planning is next.
-**Current active packet path:** not cut.
+**Current active packet:** `v0.1.9.1` cost-API packet on branch
+`v0.1.9.1` (implementation and documentation tickets closed; release gate
+pending).
+**Current active packet path:** `inst/design/ledgr_v0_1_9_1_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_8_11_spec_packet/` is an archival
 release record. Do not treat it as authorization for new implementation work
 after the v0.1.8.11 release gate.
@@ -61,6 +63,28 @@ for current-version trust and agent containment. Once ledgr reaches CRAN, the
 project must define an explicit compatibility and deprecation policy.
 
 ## Current Planning State
+
+The v0.1.9.1 packet is active. It ships the first public transaction-cost API
+and the cost-identity surface required by later v0.1.9.x packets:
+`cost_model_hash`, `cost_plan_json`, explicit `timing_model`, required
+`cost_model`, cost model inspection helpers, legacy shape rejection, and
+bounded auditr identity / disclaimer documentation fixes. Implementation,
+documentation, and release-surface tickets are closed; the release gate remains
+pending.
+
+- Spec: `ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`.
+- Tickets: `ledgr_v0_1_9_1_spec_packet/v0_1_9_1_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_9_1_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_9_1_spec_packet/batch_plan.md`.
+- Identity reference:
+  `manual/identity_contract.qmd` and `manual/identity_contract.md`.
+- Primary synthesis:
+  `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`.
+
+v0.1.9.2 sweep artifact persistence, v0.1.9.3 target risk, and v0.1.9.4
+walk-forward remain future packets. The cost identity fields from v0.1.9.1 are
+forward dependencies for those packets; their presence here does not mark those
+future layers implemented.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
 artifact-topology guidance, Quarto installed-vignette migration, README and

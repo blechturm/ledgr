@@ -416,7 +416,7 @@ tickets:
 
   - id: "LDG-2570"
     title: "NEWS Entry"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:
@@ -448,7 +448,7 @@ tickets:
 
   - id: "LDG-2571"
     title: "Roadmap Update"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "S"
     dependencies:
@@ -463,7 +463,7 @@ tickets:
 
   - id: "LDG-2572"
     title: "Horizon Housekeeping"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "S"
     dependencies:
@@ -478,7 +478,7 @@ tickets:
 
   - id: "LDG-2573"
     title: "Design And RFC Index Update"
-    status: "planned"
+    status: "completed"
     priority: "P2"
     effort: "S"
     dependencies:
