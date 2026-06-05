@@ -1,0 +1,20 @@
+{
+  "created_at": "2026-06-05T13:01:47Z",
+  "release": "v0.1.9.1",
+  "preset": "record",
+  "engine_set": "ledgr-cost",
+  "R": "R version 4.5.2 (2025-10-31 ucrt)",
+  "platform": "x86_64-w64-mingw32",
+  "git_sha": "f3196e24ce6d4120d2ddf933a0fcf4ffedf84749",
+  "git_branch": "v0.1.9.1",
+  "ledgr_version": "0.1.8.11",
+  "input_hash": "0b183457b3fe720d63b02a90fe552e1202fdb31b4e967a75e91304f9d3e416fc",
+  "packages": {
+    "TTR": "0.24.4",
+    "quantstrat": "0.25",
+    "backtrader_uv": true,
+    "zipline_uv": true,
+    "lean_uv": true
+  },
+  "claim_policy": "internal same-host parity sanity check; not a public speed ranking"
+}

@@ -1,8 +1,8 @@
-﻿# On Reproducibility: Provenance and Strategy Tiers
+# On Reproducibility: Provenance and Strategy Tiers
 
 
 ledgr treats a backtest result as an experiment artifact. The question
-is not only â€œwhat was the return?â€ The question is:
+is not only “what was the return?” The question is:
 
 ``` text
 which sealed data, which strategy, which parameters, which features,
@@ -13,14 +13,16 @@ This article explains the reproducibility model behind that question. It
 is about provenance and replay boundaries, not whether a strategy has
 predictive edge.
 
-> [!WARNING]
->
-> ### Evidence is not validation
->
-> Provenance records what ran. It does not prove that a selected
-> strategy will generalize. A promoted candidate, a verified strategy
-> hash, and a sealed snapshot are evidence-capture tools, not
-> statistical validation of the selection rule.
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Evidence is not validation**
+
+Provenance records what ran. It does not prove that a selected strategy
+will generalize. A promoted candidate, a verified strategy hash, and a
+sealed snapshot are evidence-capture tools, not statistical validation
+of the selection rule.
+
+</div>
 
 ## Setup
 
@@ -107,7 +109,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 bt <- ledgr_run(
@@ -145,12 +148,13 @@ ledgr_run_info(snapshot, "qty_10")
     Tags:            NA
     Snapshot:        research_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Config Hash:     c86009a2837956d5dd0e54a3d4ae91b95912ab751376c6c33910de9238557dcf
+    Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
+    Config Hash:     721bcde02cc7916bb1fd40cb6b136887533332dea1587f4b5b8bfd6817cf5b1d
     Strategy Hash:   f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
-    Params Hash:     6786f8cb997d23583467dc5ccd46a877431e9b4cacc7b9dda3f1ba50c5657060
+    Params Hash:     3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.92
+    Elapsed Sec:     0.94
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -171,7 +175,7 @@ stored
     Run ID:          qty_10
     Reproducibility: tier_1
     Source Hash:     f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
-    Params Hash:     6786f8cb997d23583467dc5ccd46a877431e9b4cacc7b9dda3f1ba50c5657060
+    Params Hash:     3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Hash Verified:   TRUE
     Trust:           FALSE
     Source Available:TRUE
@@ -218,24 +222,26 @@ function cannot be recovered from provenance alone.
 Stored source is a strong audit artifact, but it is only one part of
 reproducibility. A strategy may call external packages. It may close
 over data objects. It may rely on package versions, system libraries, or
-runtime state outside ledgrâ€™s database. That is why ledgr classifies
+runtime state outside ledgr’s database. That is why ledgr classifies
 strategies before execution.
 
 ## Reproducibility Tiers
 
 ### Tier 1: Self-Contained
 
-> [!NOTE]
->
-> ### Definition
->
-> Tier 1 means ledgr can inspect the strategy from stored source and
-> explicit parameters under its static preflight rules. The strategy
-> depends only on ledgr, base/recommended R, and declared run inputs.
+<div class="ledgr-callout ledgr-callout-note">
 
-Tier 1 is self-contained under ledgrâ€™s static preflight rules. The
+**Definition**
+
+Tier 1 means ledgr can inspect the strategy from stored source and
+explicit parameters under its static preflight rules. The strategy
+depends only on ledgr, base/recommended R, and declared run inputs.
+
+</div>
+
+Tier 1 is self-contained under ledgr’s static preflight rules. The
 strategy can be understood from stored source and explicit parameters,
-using base/recommended R references and ledgrâ€™s exported public
+using base/recommended R references and ledgr’s exported public
 namespace.
 
 ``` r
@@ -261,14 +267,16 @@ ledgr_strategy_preflight(tier_1_strategy)
 
 ### Tier 2: Inspectable With User-Managed Environment
 
-> [!WARNING]
->
-> ### Definition
->
-> Tier 2 means ledgr can inspect and run the strategy, but full replay
-> also depends on environment details outside ledgrâ€™s store, such as
-> package installation, package versions, system libraries, or immutable
-> captured values.
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Definition**
+
+Tier 2 means ledgr can inspect and run the strategy, but full replay
+also depends on environment details outside ledgr’s store, such as
+package installation, package versions, system libraries, or immutable
+captured values.
+
+</div>
 
 Tier 2 is inspectable but needs environment management outside ledgr.
 Examples include package-qualified calls outside the active R
@@ -291,7 +299,7 @@ ledgr_strategy_preflight(tier_2_strategy)
 
     Tier:    tier_2
     Allowed: TRUE
-    Reason:  Strategy uses package-qualified dependency outside the active R distribution: TTR.
+    Reason:  Strategy uses package dependency outside the active R distribution: TTR.
     Package Dependencies: TTR
 
 The `TTR::SMA()` call is written this way on purpose. Namespace
@@ -329,13 +337,15 @@ must preserve the surrounding environment.
 
 ### Tier 3: Rejected External State
 
-> [!IMPORTANT]
->
-> ### Definition
->
-> Tier 3 means the strategy depends on external state ledgr cannot
-> recover or execute safely. The run is rejected before execution; there
-> is no `force = TRUE` override.
+<div class="ledgr-callout ledgr-callout-important">
+
+**Definition**
+
+Tier 3 means the strategy depends on external state ledgr cannot recover
+or execute safely. The run is rejected before execution; there is no
+`force = TRUE` override.
+
+</div>
 
 Tier 3 is external state ledgr cannot recover or execute safely. Common
 examples are unqualified helper functions from the interactive session,
@@ -362,7 +372,7 @@ ledgr_strategy_preflight(tier_3_strategy)
 
 Tier 3 strategies fail before execution. There is no `force = TRUE`
 override on `ledgr_run()` or `ledgr_sweep()`; move external values into
-`params`, qualify package calls, or use ledgrâ€™s exported helpers
+`params`, qualify package calls, or use ledgr’s exported helpers
 instead.
 
 Preflight rejection is the first boundary. A covered Tier 3 strategy
@@ -379,16 +389,16 @@ The most common hard rejections are:
 | process environment | `Sys.getenv("TOKEN")` | external process state is not stored run input |
 | dynamic evaluation | `get("x")`, `eval(expr)`, `assign("x", 1)` | preflight cannot recover the value path as stored metadata |
 | global assignment | `x <<- 1` | strategy mutates state outside the run artifact |
-| context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgrâ€™s execution context |
+| context mutation | `attr(ctx, "secret") <- 1` | strategy mutates ledgr’s execution context |
 | unresolved helper | `my_helper(ctx)` | helper source is not stored as part of the strategy |
 
 Recommended-R functions such as `stats::median()` remain Tier
-1-compatible when called explicitly or resolved through Râ€™s
+1-compatible when called explicitly or resolved through R’s
 base/recommended namespace. They are not package dependencies outside
 the active R distribution.
 
 Ambient strategy RNG calls such as `runif(1)` are a separate case. They
-are allowed as Tier 2 for ordinary sequential runs because ledgrâ€™s
+are allowed as Tier 2 for ordinary sequential runs because ledgr’s
 execution seed contract can make a continuous strategy run repeatable,
 but they are not certified for resume or parallel equivalence. A resumed
 run reconstructs positions and cash from events; it does not restore
@@ -396,12 +406,12 @@ run reconstructs positions and cash from events; it does not restore
 before the next pulse.
 
 Strategies that need pulse-specific stochastic inputs in resume-safe or
-parallel-safe paths should derive those inputs from `ctx$pulse_seed`. The
-field is a stable integer derived from the execution seed and the 1-based
-pulse position in the runâ€™s pulse sequence, so it does not depend on
-worker order, timestamps, event sequence numbers, or ambient RNG state.
-`ctx$seed` remains the per-execution seed; `ctx$pulse_seed` is the
-per-pulse derivative.
+parallel-safe paths should derive those inputs from `ctx$pulse_seed`.
+The field is a stable integer derived from the execution seed and the
+1-based pulse position in the run’s pulse sequence, so it does not
+depend on worker order, timestamps, event sequence numbers, or ambient
+RNG state. `ctx$seed` remains the per-execution seed; `ctx$pulse_seed`
+is the per-pulse derivative.
 
 This is different from custom-indicator RNG restrictions: feature
 generation must be deterministic for a given snapshot and feature
@@ -447,13 +457,15 @@ Tier 1 is the cleanest path. Tier 2 is allowed but requires user-managed
 environment parity. Tier 3 fails because ledgr cannot recover what the
 strategy depended on.
 
-> [!TIP]
->
-> ### Try it
->
-> Write a strategy that calls `Sys.time()` and run
-> `ledgr_strategy_preflight()`. What tier does ledgr assign, and what
-> dependency did the preflight reject?
+<div class="ledgr-callout ledgr-callout-tip">
+
+**Try it**
+
+Write a strategy that calls `Sys.time()` and run
+`ledgr_strategy_preflight()`. What tier does ledgr assign, and what
+dependency did the preflight reject?
+
+</div>
 
 ## Where Next
 

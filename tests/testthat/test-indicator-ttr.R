@@ -553,13 +553,14 @@ testthat::test_that("TTR output bundles flatten at feature boundaries", {
   snapshot <- ledgr_snapshot_from_df(ledgr_test_ttr_bars(45L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
-  exp_static <- ledgr_experiment(snapshot, strategy, features = list(bundle))
+  exp_static <- ledgr_experiment(snapshot, strategy, features = list(bundle), cost_model = ledgr_cost_zero())
   exp_factory <- ledgr_experiment(
     snapshot,
     strategy,
     features = function(params) {
       ledgr_ind_ttr_outputs("BBands", input = "close", outputs = params$outputs, n = 20)
-    }
+    },
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(short = list(outputs = c("dn", "up")))
 
@@ -648,7 +649,8 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
     start = "2020-01-01",
     end = "2020-01-10",
     features = list(ind),
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 

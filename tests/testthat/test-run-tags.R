@@ -14,7 +14,8 @@ testthat::test_that("run tags are mutable metadata and do not alter identity", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "tagged-run"
+    run_id = "tagged-run",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
@@ -96,7 +97,8 @@ testthat::test_that("run tag validation and missing runs fail clearly", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "tag-validation"
+    run_id = "tag-validation",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)

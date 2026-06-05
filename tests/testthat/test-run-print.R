@@ -16,7 +16,8 @@ testthat::test_that("ledgr_run_list prints curated view while preserving tibble 
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "print-list"
+    run_id = "print-list",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 
@@ -53,7 +54,8 @@ testthat::test_that("ledgr_compare_runs prints curated view while preserving num
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "print-cmp-a"
+    run_id = "print-cmp-a",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
   bt_b <- ledgr_backtest(
@@ -63,7 +65,8 @@ testthat::test_that("ledgr_compare_runs prints curated view while preserving num
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "print-cmp-b"
+    run_id = "print-cmp-b",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_b), add = TRUE)
 

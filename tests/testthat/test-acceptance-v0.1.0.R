@@ -28,6 +28,7 @@ testthat::test_that("AT2: run registration stores hashes and reaches DONE", {
     features = list(enabled = TRUE, defs = list(list(id = "return_1"))),
     strategy = list(id = "hold_zero", params = list())
   )
+  cfg <- ledgr_test_modernize_config(cfg)
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at2_snapshot")
 
   run_id <- "at2-run-1"
@@ -72,6 +73,10 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
     fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1),
     features = list(enabled = TRUE, defs = list(list(id = "return_1"), list(id = "sma_2"))),
     strategy = list(id = "echo", params = list(targets = c(AAA = 1, BBB = 2)))
+  )
+  cfg <- ledgr_test_modernize_config(
+    cfg,
+    ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))
   )
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at3_snapshot")
 
@@ -236,6 +241,7 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "echo", params = list(targets = c(AAA = 1)))
   )
+  cfg <- ledgr_test_modernize_config(cfg)
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at567_snapshot")
 
   run_id <- "at6-run-1"
@@ -302,6 +308,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
     features = list(enabled = TRUE, defs = list(list(id = "sma_2"))),
     strategy = list(id = "state_prev", params = list())
   )
+  cfg <- ledgr_test_modernize_config(cfg)
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at8_snapshot")
 
   run_id <- "at8-run-1"
@@ -382,6 +389,7 @@ testthat::test_that("last-bar policy warns and produces no fill event", {
       )
     )
   )
+  cfg <- ledgr_test_modernize_config(cfg)
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "lastbar_snapshot")
 
   run_id <- "lastbar-1"
@@ -421,6 +429,7 @@ testthat::test_that("AT12: raw bars configs fail before fold and OHLC violations
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "hold_zero", params = list())
   )
+  raw_cfg <- ledgr_test_modernize_config(raw_cfg)
 
   testthat::expect_error(
     ledgr_backtest_run(raw_cfg, run_id = "at12-raw-bars"),

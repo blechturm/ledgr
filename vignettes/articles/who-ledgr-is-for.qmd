@@ -14,8 +14,8 @@ statement: who the package is built for, who it is not built for, and what to
 use instead if you do not fit.
 
 For financial-use boundaries, see the project
-[disclaimer](../../DISCLAIMER.md): ledgr is research software, not investment
-advice.
+[disclaimer](https://github.com/blechturm/ledgr/blob/main/DISCLAIMER.md):
+ledgr is research software, not investment advice.
 
 ## Intended audience
 

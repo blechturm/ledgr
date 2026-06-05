@@ -45,6 +45,8 @@
 #' Candidate warnings, including `LEDGR_LAST_BAR_NO_FILL`, are row-level
 #' diagnostics. Inspect them before promotion; committed runs expose their own
 #' result tables and promotion context.
+#' Hash fields in sweep provenance and reproduction keys are summarized in
+#' [ledgr_identity_fields].
 #'
 #' Failed candidates are retained as rows when `stop_on_error = FALSE`. Contract
 #' errors such as invalid grids, invalid precomputed feature payloads, and Tier 3
@@ -225,9 +227,12 @@ ledgr_sweep <- function(exp,
   attr(out, "metric_context") <- metric_context
   attr(out, "metric_context_hash") <- ledgr_metric_context_hash(metric_context)
   attr(out, "metric_context_version") <- as.integer(metric_context$metric_context_version)
+  attr(out, "cost_model_hash") <- exp$cost_model_hash %||% NULL
+  attr(out, "cost_plan_json") <- exp$cost_plan_json %||% NULL
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
-    fill_model = exp$fill_model,
+    timing_model = exp$timing_model,
+    cost_model_hash = exp$cost_model_hash %||% NULL,
     opening = exp$opening,
     compiled_accounting_model = compiled_accounting_model,
     precomputed_features = !is.null(precomputed_features),
@@ -377,6 +382,10 @@ ledgr_candidate_reproduction_key <- function(candidate) {
         alias_map_hash = provenance$alias_map_hash %||% NULL,
         alias_map_version = provenance$alias_map_version %||% NULL
       ),
+      cost = list(
+        cost_model_hash = provenance$cost_model_hash %||% meta$cost_model_hash %||% NULL,
+        cost_plan_json = provenance$cost_plan_json %||% meta$cost_plan_json %||% NULL
+      ),
       engine = list(
         feature_engine_version = meta$feature_engine_version %||% ledgr_feature_engine_version(),
         provenance_version = provenance$provenance_version %||% NULL
@@ -418,6 +427,8 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' cost to create durable ledger, equity, telemetry, and promotion-context
 #' artifacts. Runs created this way store durable promotion context that can be read with
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
+#' Hash fields carried from the candidate into promotion evidence are
+#' summarized in [ledgr_identity_fields].
 #'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a
@@ -696,7 +707,9 @@ ledgr_sweep_exp_payload <- function(exp) {
     strategy = exp$strategy,
     universe = exp$universe,
     opening = exp$opening,
-    fill_model = exp$fill_model
+    timing_model = exp$timing_model,
+    cost_model_hash = exp$cost_model_hash %||% NULL,
+    cost_plan_json = exp$cost_plan_json %||% NULL
   )
 }
 
@@ -721,6 +734,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         alias_map_json = feature_row$alias_map_json[[1]],
         alias_map_hash = feature_row$alias_map_hash[[1]],
         alias_map_version = feature_row$alias_map_version[[1]],
+        cost_model_hash = task$exp$cost_model_hash %||% NULL,
+        cost_plan_json = task$exp$cost_plan_json %||% NULL,
         master_seed = task$master_seed
       ),
       warnings = list()
@@ -777,6 +792,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
           alias_map_json = feature_row$alias_map_json[[1]],
           alias_map_hash = feature_row$alias_map_hash[[1]],
           alias_map_version = feature_row$alias_map_version[[1]],
+          cost_model_hash = task$exp$cost_model_hash %||% NULL,
+          cost_plan_json = task$exp$cost_plan_json %||% NULL,
           master_seed = task$master_seed
         ),
         warnings = warnings
@@ -899,10 +916,7 @@ ledgr_sweep_run_candidate <- function(exp,
     cost_basis = opening_cost_basis
   )
   telemetry <- ledgr_sweep_telemetry_env()
-  cost_resolver <- ledgr_cost_spread_commission_internal(
-    spread_bps = exp$fill_model$spread_bps,
-    commission_fixed = exp$fill_model$commission_fixed
-  )
+  cost_resolver <- ledgr_cost_resolver_from_plan_json(exp$cost_plan_json)
   signature <- ledgr_strategy_signature(exp$strategy)
   execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -978,6 +992,8 @@ ledgr_sweep_run_candidate <- function(exp,
       alias_map_json = candidate_feature_row$alias_map_json[[1]],
       alias_map_hash = candidate_feature_row$alias_map_hash[[1]],
       alias_map_version = candidate_feature_row$alias_map_version[[1]],
+      cost_model_hash = exp$cost_model_hash %||% NULL,
+      cost_plan_json = exp$cost_plan_json %||% NULL,
       master_seed = master_seed
     ),
     t_engine = telemetry$t_engine,
@@ -1105,7 +1121,7 @@ ledgr_memory_output_handler <- function(run_id) {
     meta <- state$event_cols$meta[[i]]
     if (is.null(meta)) {
       meta <- list(
-        commission_fixed = as.numeric(state$event_cols$fee[[i]]),
+        fee = as.numeric(state$event_cols$fee[[i]]),
         cash_delta = as.numeric(state$event_cols$cash_delta[[i]]),
         position_delta = as.numeric(state$event_cols$position_delta[[i]]),
         realized_pnl = NULL
@@ -1231,7 +1247,7 @@ ledgr_memory_output_handler <- function(run_id) {
     state$event_cols$meta[idx] <- Map(
       function(fee, cash_delta, position_delta) {
         list(
-          commission_fixed = as.numeric(fee),
+          fee = as.numeric(fee),
           cash_delta = as.numeric(cash_delta),
           position_delta = as.numeric(position_delta),
           realized_pnl = NULL
@@ -1549,8 +1565,10 @@ ledgr_sweep_provenance <- function(snapshot_hash,
                                    alias_map_json = NA_character_,
                                    alias_map_hash = NA_character_,
                                    alias_map_version = NA_integer_,
+                                   cost_model_hash = NULL,
+                                   cost_plan_json = NULL,
                                    master_seed) {
-  list(
+  out <- list(
     provenance_version = "ledgr_provenance_v1",
     snapshot_hash = snapshot_hash,
     strategy_hash = strategy_hash,
@@ -1562,6 +1580,9 @@ ledgr_sweep_provenance <- function(snapshot_hash,
     seed_contract = "ledgr_seed_v1",
     evaluation_scope = "exploratory"
   )
+  if (!is.null(cost_model_hash)) out$cost_model_hash <- cost_model_hash
+  if (!is.null(cost_plan_json)) out$cost_plan_json <- cost_plan_json
+  out
 }
 
 ledgr_sweep_feature_union <- function(candidate_features) {

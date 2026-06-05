@@ -1,0 +1,5 @@
+"engine","status","wall_sec","ingestion_sec","engine_sec","results_sec","reason"
+"ledgr_ttr_canonical","DONE",116.85,20.47,86.69,9.69,NA
+"ledgr_ttr_canonical_ephemeral","DONE",107.38,16.25,81.13,10,NA
+"ledgr_ttr_canonical_ephemeral_with_costs","DONE",106.98,11.32,86.39,9.27000000000004,NA
+"ledgr_ttr_canonical_ephemeral_legacy_costs","DONE",106.37,9.98000000000002,87.39,9,NA

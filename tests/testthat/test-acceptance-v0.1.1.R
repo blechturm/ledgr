@@ -15,7 +15,7 @@ v011_make_csv <- function(lines, bom = FALSE) {
 }
 
 v011_make_runner_cfg <- function(db_path, snapshot_id, universe_ids, start_ts_utc, end_ts_utc) {
-  list(
+  ledgr_test_modernize_config(list(
     db_path = db_path,
     engine = list(seed = 1L, tz = "UTC"),
     data = list(source = "snapshot", snapshot_id = snapshot_id),
@@ -29,7 +29,7 @@ v011_make_runner_cfg <- function(db_path, snapshot_id, universe_ids, start_ts_ut
     fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "hold_zero", params = list())
-  )
+  ))
 }
 
 testthat::test_that("AT1: Snapshot create", {

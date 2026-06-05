@@ -38,6 +38,7 @@ testthat::test_that("ledgr_state_reconstruct() returns derived artifacts and reb
     fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
     strategy = list(id = "hold_zero")
   )
+  cfg <- ledgr_test_modernize_config(cfg)
 
   DBI::dbExecute(
     con,
@@ -88,7 +89,13 @@ testthat::test_that("ledgr_state_reconstruct() fails clearly for unsupported obj
     stringsAsFactors = FALSE
   )
   strategy <- function(ctx, params) ctx$flat()
-  bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, db_path = db_path)
+  bt <- ledgr_backtest(
+    data = bars,
+    strategy = strategy,
+    initial_cash = 1000,
+    db_path = db_path,
+    cost_model = ledgr_cost_zero()
+  )
   on.exit(close(bt), add = TRUE)
 
   testthat::expect_error(
@@ -135,7 +142,8 @@ testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed
     start = "2020-01-01",
     end = "2020-01-03",
     initial_cash = 1000,
-    db_path = run_path
+    db_path = run_path,
+    cost_model = ledgr_cost_zero()
   ))
   gc()
   Sys.sleep(0.05)
@@ -189,7 +197,8 @@ testthat::test_that("ledgr_state_reconstruct() rejects tampered snapshot sources
     start = "2020-01-01",
     end = "2020-01-03",
     initial_cash = 1000,
-    db_path = run_path
+    db_path = run_path,
+    cost_model = ledgr_cost_zero()
   ))
   gc()
   Sys.sleep(0.05)

@@ -1,0 +1,4 @@
+"peer","status","tier1_equity_cor","tier1_max_single_bar_divergence_pct","tier1_daily_return_cor","tier1_cash_match","tier1_position_match","tier2_total_return_diff","tier2_sharpe_diff","tier2_max_drawdown_diff","tier3_trade_count_diff","attribution"
+"ledgr_ttr_canonical_ephemeral","DONE",1,1.97096005401582e-14,1,TRUE,TRUE,-6.66133814775094e-16,3.63264973657351e-13,1.60852234309949e-15,0,"passes Tier 1 tolerance"
+"ledgr_ttr_canonical_ephemeral_with_costs","DONE",0.999735765610857,0.00995172985634114,0.999971688731324,FALSE,TRUE,-0.0106822616768769,-0.534268777359337,-0.000745317906415112,0,"passes Tier 1 tolerance"
+"ledgr_ttr_canonical_ephemeral_legacy_costs","DONE",0.999535764539031,0.0135497684398534,0.999931750117465,FALSE,TRUE,-0.0145444233540337,-0.725971505566001,-0.00107325551623106,0,"indicator initialization, fill timing, cost/margin defaults, position-sizing rounding, timestamp alignment, or float ordering"

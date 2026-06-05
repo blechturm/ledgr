@@ -119,7 +119,8 @@ bt <- ledgr_backtest(
   data = bars,
   strategy = hold_then_flat,
   initial_cash = 10000,
-  run_id = "execution_target_holdings"
+  run_id = "execution_target_holdings",
+  cost_model = ledgr_cost_zero()
 )
 
 ledgr_results(bt, what = "fills") |>
@@ -173,7 +174,11 @@ cost_bt <- ledgr_backtest(
   strategy = hold_then_flat,
   initial_cash = 10000,
   run_id = "execution_cost_example",
-  fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1)
+  timing_model = ledgr_timing_next_open(),
+  cost_model = ledgr_cost_chain(
+    ledgr_cost_spread_bps(5),
+    ledgr_cost_fixed_fee(1)
+  )
 )
 
 ledgr_results(cost_bt, what = "fills") |>
@@ -184,7 +189,8 @@ ledgr_results(cost_bt, what = "fills") |>
 
 A target change on the final pulse is valid strategy output, but there is no
 later bar where ledgr can simulate the next-open fill. ledgr warns and leaves
-the ledger unchanged for that final target change.
+the ledger unchanged for that final target change. See
+`?LEDGR_LAST_BAR_NO_FILL` for the stable warning-code contract.
 
 ```{r}
 #| label: final-bar-no-fill
@@ -203,7 +209,8 @@ final_bar_bt <- withCallingHandlers(
     data = bars,
     strategy = final_bar_strategy,
     initial_cash = 10000,
-    run_id = "execution_final_bar_warning"
+    run_id = "execution_final_bar_warning",
+    cost_model = ledgr_cost_zero()
   ),
   warning = function(w) {
     if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {

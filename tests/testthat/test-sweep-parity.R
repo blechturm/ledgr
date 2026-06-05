@@ -227,7 +227,7 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
     snapshot = snapshot,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
-    fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1),
+    cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1)),
     universe = c("AAA", "BBB")
   )
   grid <- ledgr_param_grid(
@@ -314,7 +314,7 @@ testthat::test_that("sweep parity covers opening-position lots and non-default m
     snapshot = snapshot,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000, positions = c(AAA = 5), cost_basis = c(AAA = 99)),
-    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+    cost_model = ledgr_cost_zero(),
     universe = c("AAA", "BBB"),
     metric_context = context
   )
@@ -370,7 +370,8 @@ testthat::test_that("seeded stochastic sweep promotion reproduces the selected c
     snapshot = snapshot,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
-    universe = "AAA"
+    universe = "AAA",
+    cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(candidate = list(qty = 3, threshold = 0.35))
 
@@ -414,7 +415,8 @@ testthat::test_that("pulse_seed sweep promotion reproduces the selected candidat
     snapshot = snapshot,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000),
-    universe = "AAA"
+    universe = "AAA",
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(candidate = list(qty = 3, modulus = 3L))
 
@@ -459,7 +461,8 @@ testthat::test_that("feature-factory sweep parity covers candidate-varying featu
     strategy = strategy,
     features = features,
     opening = ledgr_opening(cash = 10000),
-    universe = "AAA"
+    universe = "AAA",
+    cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(short = list(n = 2, qty = 1), longer = list(n = 3, qty = 2))
 
@@ -505,12 +508,20 @@ testthat::test_that("scalar execution config hash remains pinned across sweep pa
       pulse = "EOD",
       initial_cash = 1000
     ),
-    fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1.25),
+    timing_model = ledgr_timing_next_open(),
+    cost_model = list(
+      cost_model_hash = ledgr:::ledgr_cost_model_hash(
+        ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1.25))
+      ),
+      cost_plan_json = ledgr:::ledgr_cost_plan_json(
+        ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1.25))
+      )
+    ),
     strategy = list(id = "x", params = list())
   )
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "a9e6419d121ff6197c617b5b18f7fab9f74f896f3c2108d806909f92ba6a5304"
+    "23838c7297b9ec8a09b422f9f4a29933fb61b7cdbd8b030789ff4b2f441ae57b"
   )
 })

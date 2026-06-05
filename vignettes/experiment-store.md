@@ -1,4 +1,4 @@
-﻿# Experiment Store
+# Experiment Store
 
 
 The experiment store is the DuckDB file that keeps sealed market data,
@@ -18,24 +18,27 @@ compare stored runs, and write a review from the same evidence file.
 This article is about durable storage and later inspection, not strategy
 design or statistical validation.
 
-> [!NOTE]
->
-> ### Running this yourself
->
-> This article is evaluated when rendered. It writes to temporary DuckDB
-> stores so package builds and local previews do not leave project
-> artifacts behind. In real work, use a project-local path such as
-> `artifacts/ledgr_store.duckdb`.
+<div class="ledgr-callout ledgr-callout-note">
 
-> [!WARNING]
->
-> ### Pre-CRAN compatibility
->
-> ledgr is pre-CRAN. Store schemas, config hashes, provenance formats,
-> and experimental APIs may change before the first CRAN release. Treat
-> stores created with pre-CRAN ledgr as research artifacts for the
-> version that produced them, and expect to rerun experiments after
-> upgrading.
+**Running this yourself**
+
+This article is evaluated when rendered. It writes to temporary DuckDB
+stores so package builds and local previews do not leave project
+artifacts behind. In real work, use a project-local path such as
+`artifacts/ledgr_store.duckdb`.
+
+</div>
+
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Pre-CRAN compatibility**
+
+ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
+experimental APIs may change before the first CRAN release. Treat stores
+created with pre-CRAN ledgr as research artifacts for the version that
+produced them, and expect to rerun experiments after upgrading.
+
+</div>
 
 The examples use `dplyr` for data preparation and compact display. It is
 a suggested package used by the vignettes, not part of the
@@ -150,20 +153,22 @@ step: on a snapshot handle it returns an invisible structured list with
 metadata; snapshot identity comes from normalized bars and instruments,
 not from human descriptions.
 
-> [!WARNING]
->
-> ### Yahoo data boundary
->
-> Yahoo support is a convenience adapter, not a data-vendor guarantee.
-> It uses `quantmod::getSymbols()` and therefore requires the suggested
-> `quantmod` package and network access. Package startup or S3
-> method-overwrite messages printed while quantmod loads are not ledgr
-> snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`,
-> `.Low`, `.Close`, and `.Volume` columns as returned by quantmod; it
-> does not rewrite OHLC values from Yahooâ€™s adjusted-close column. If
-> your research requires split/dividend-adjusted OHLC bars, prepare
-> those bars explicitly and seal them with `ledgr_snapshot_from_df()` or
-> `ledgr_snapshot_from_csv()`.
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Yahoo data boundary**
+
+Yahoo support is a convenience adapter, not a data-vendor guarantee. It
+uses `quantmod::getSymbols()` and therefore requires the suggested
+`quantmod` package and network access. Package startup or S3
+method-overwrite messages printed while quantmod loads are not ledgr
+snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
+`.Close`, and `.Volume` columns as returned by quantmod; it does not
+rewrite OHLC values from Yahoo’s adjusted-close column. If your research
+requires split/dividend-adjusted OHLC bars, prepare those bars
+explicitly and seal them with `ledgr_snapshot_from_df()` or
+`ledgr_snapshot_from_csv()`.
+
+</div>
 
 ``` r
 yahoo_info <- ledgr_snapshot_info(snapshot)
@@ -193,25 +198,27 @@ code.
 The store is an ordinary DuckDB file. Back it up when no ledgr process
 has it open.
 
-> [!WARNING]
->
-> ### Back up closed stores
->
-> Close run and snapshot handles, then copy or sync the closed store
-> file. A simple project pattern is:
->
-> ``` r
-> dir.create("backups", showWarnings = FALSE)
-> file.copy(
->   "artifacts/ledgr_store.duckdb",
->   file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
->   overwrite = TRUE
-> )
-> ```
->
-> For larger projects, use the same closed-file rule with your normal
-> backup or sync tool. Do not rely on the phrase â€œordinary backup
-> disciplineâ€ without a specific copy/sync pattern for the store file.
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Back up closed stores**
+
+Close run and snapshot handles, then copy or sync the closed store file.
+A simple project pattern is:
+
+``` r
+dir.create("backups", showWarnings = FALSE)
+file.copy(
+  "artifacts/ledgr_store.duckdb",
+  file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
+  overwrite = TRUE
+)
+```
+
+For larger projects, use the same closed-file rule with your normal
+backup or sync tool. Do not rely on the phrase “ordinary backup
+discipline” without a specific copy/sync pattern for the store file.
+
+</div>
 
 ## Record Two Variants For Comparison
 
@@ -233,7 +240,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = trend_strategy,
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 bt_small <- exp |>
@@ -317,12 +325,13 @@ info
     Tags:            baseline, trend
     Snapshot:        store_demo_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Config Hash:     843e364a4ba307690fc41d99ea87eba1edb81e5e5732bcf62180aa18aba83669
+    Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
+    Config Hash:     157130fab9526ee87b750b8ac9814afa7da54ede4b86010f61b8d754d4f25972
     Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
-    Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
+    Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.86
+    Elapsed Sec:     0.91
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -365,7 +374,7 @@ fills but no closed trades yet, in which case win rate is not defined.
 
 `ledgr_compare_runs()` starts from the durable snapshot handle because
 it reads stored run artifacts. When you want the comparison to use an
-experimentâ€™s metric assumptions, pass that context explicitly:
+experiment’s metric assumptions, pass that context explicitly:
 
 ``` r
 comparison <- ledgr_compare_runs(
@@ -458,7 +467,7 @@ stored_strategy
     Run ID:          trend_qty_5
     Reproducibility: tier_1
     Source Hash:     c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
-    Params Hash:     f1bc254d9d195c0cff7056644ba06c2ba5968db959e689837a76853dd47990ae
+    Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Hash Verified:   TRUE
     Trust:           FALSE
     Source Available:TRUE
@@ -505,7 +514,8 @@ rerun_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = recovered$strategy_function,
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 ledgr_run(
@@ -639,10 +649,10 @@ Use this map when you know the task but not the function name:
 | Compare durable runs | `ledgr_compare_runs()` |
 
 Yahoo data is a convenience source. The sealed snapshot is the ledgr
-artifact; the remote Yahoo endpoint remains outside ledgrâ€™s
+artifact; the remote Yahoo endpoint remains outside ledgr’s
 reproducibility boundary.
 
-## Whatâ€™s Next?
+## What’s Next?
 
 For fills, trades, equity rows, and metric definitions, read
 `vignette("metrics-and-accounting", package = "ledgr")`. For strategy

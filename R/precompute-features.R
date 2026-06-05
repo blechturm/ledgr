@@ -32,7 +32,7 @@
 #' )
 #' snapshot <- ledgr_snapshot_from_df(bars)
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, features = list(ledgr_ind_sma(2)))
+#' exp <- ledgr_experiment(snapshot, strategy, features = list(ledgr_ind_sma(2)), cost_model = ledgr_cost_zero())
 #' grid <- ledgr_param_grid(list(qty = 1), list(qty = 2))
 #' features <- ledgr_precompute_features(exp, grid)
 #' print(features)

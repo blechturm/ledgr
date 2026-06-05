@@ -383,7 +383,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 run_id <- paste0("indicators-demo-", Sys.getpid())
@@ -481,7 +482,7 @@ features <- ledgr_feature_map(
 )
 
 strategy <- ledgr_demo_sma_crossover_strategy()
-exp <- ledgr_experiment(snapshot, strategy, features = features)
+exp <- ledgr_experiment(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
 
 grid <- ledgr_grid_cross(
   features = ledgr_feature_grid(
@@ -618,7 +619,8 @@ rsi_exp <- ledgr_experiment(
   snapshot = rsi_snapshot,
   strategy = rsi_strategy,
   features = rsi_features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 rsi_bt <- ledgr_run(

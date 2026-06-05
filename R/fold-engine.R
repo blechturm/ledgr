@@ -484,7 +484,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
             side = fill$side,
             qty = fill$qty,
             price = fill$fill_price,
-            fee = fill$commission_fixed
+            fee = fill$fee
           )
           state$lot_state <- lot_res$state
           if (sample_telemetry) {
@@ -514,9 +514,9 @@ ledgr_execute_fold <- function(execution, output_handler) {
 
           qty <- if (identical(fill$side, "BUY")) fill$qty else -fill$qty
           cash_delta <- if (identical(fill$side, "BUY")) {
-            -(fill$qty * fill$fill_price + fill$commission_fixed)
+            -(fill$qty * fill$fill_price + fill$fee)
           } else {
-            fill$qty * fill$fill_price - fill$commission_fixed
+            fill$qty * fill$fill_price - fill$fee
           }
           state$positions[[inst_idx]] <- cur_qty + qty
           state$cash <- state$cash + cash_delta

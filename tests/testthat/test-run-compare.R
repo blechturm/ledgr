@@ -31,7 +31,8 @@ testthat::test_that("ledgr_compare_runs compares stored completed runs without r
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "compare-qty-1"
+    run_id = "compare-qty-1",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
   bt_b <- ledgr_backtest(
@@ -41,7 +42,8 @@ testthat::test_that("ledgr_compare_runs compares stored completed runs without r
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "compare-qty-2"
+    run_id = "compare-qty-2",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_b), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt_a)
@@ -100,7 +102,8 @@ testthat::test_that("ledgr_compare_runs compares different stored strategies", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "compare-strategy-a"
+    run_id = "compare-strategy-a",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_a), add = TRUE)
   bt_b <- ledgr_backtest(
@@ -109,7 +112,8 @@ testthat::test_that("ledgr_compare_runs compares different stored strategies", {
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "compare-strategy-b"
+    run_id = "compare-strategy-b",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_b), add = TRUE)
   cmp <- ledgr_compare_runs(snapshot, run_ids = c("compare-strategy-a", "compare-strategy-b"))
@@ -144,7 +148,8 @@ testthat::test_that("ledgr_compare_runs counts only closing trades for win rate"
     strategy = strategy,
     initial_cash = 2000,
     db_path = db_path,
-    run_id = "compare-roundtrip"
+    run_id = "compare-roundtrip",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
@@ -192,7 +197,8 @@ testthat::test_that("open-only fills are not counted as closed trades", {
     strategy = strategy,
     initial_cash = 2000,
     db_path = db_path,
-    run_id = "compare-open-only"
+    run_id = "compare-open-only",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
@@ -245,7 +251,8 @@ testthat::test_that("multi-fill runs count each closing fill as a trade", {
     strategy = strategy,
     initial_cash = 2000,
     db_path = db_path,
-    run_id = "compare-multi-fill"
+    run_id = "compare-multi-fill",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
@@ -272,7 +279,8 @@ testthat::test_that("ledgr_compare_runs respects archive and incomplete-run rule
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "compare-archived"
+    run_id = "compare-archived",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
@@ -293,7 +301,8 @@ testthat::test_that("ledgr_compare_runs respects archive and incomplete-run rule
       start = "2020-01-01",
       end = "2020-01-05",
       db_path = db_path,
-      run_id = "compare-failed"
+      run_id = "compare-failed",
+    cost_model = ledgr_cost_zero()
     ),
     "compare failure",
     fixed = TRUE

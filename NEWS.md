@@ -1,3 +1,29 @@
+# ledgr 0.1.9.1
+
+- Added the public transaction-cost API: classed `ledgr_cost_*()` model
+  constructors, ordered `ledgr_cost_chain()` composition, `ledgr_cost_steps()`
+  / `ledgr_cost_describe()` inspection helpers, explicit
+  `ledgr_timing_next_open()` timing, and deterministic cost identity through
+  `cost_model_hash` plus `cost_plan_json`.
+- Breaking pre-CRAN changes: legacy `fill_model` inputs are replaced by
+  `timing_model` plus required `cost_model`; zero-cost execution must be
+  explicit with `ledgr_cost_zero()`; new fill rows use `fee` instead of the
+  legacy `commission_fixed` field; and legacy stored configs with `fill_model`
+  are rejected with classed errors rather than translated.
+- Fixed the v0.1.8.11 auditr THEME-004 identity findings: `config_hash` is now
+  independent of DuckDB store path and alias declaration order, and
+  `alias_map_hash` is independent of concrete feature parameter values.
+  Concrete feature identity is captured by `feature_set_hash`, which is exposed
+  alongside `cost_model_hash` and `cost_plan_json` on documented run and
+  promotion surfaces. These identity fixes intentionally change stored-run
+  hashes for affected experiments.
+- Refreshed bounded documentation surfaces for the cost API and related auditr
+  findings: installed disclaimer resolution, stable cost/timing/legacy
+  condition-class help, `LEDGR_LAST_BAR_NO_FILL` help, quoted-spread cost
+  teaching, runnable cost examples, and sweep documentation that cost models are
+  fixed experiment inputs in v1. Sweep artifact persistence, target risk, and
+  walk-forward remain future v0.1.9.x packets.
+
 # ledgr 0.1.8.11
 
 - Added the maintainer manual under `inst/design/manual/`, with two-layer

@@ -31,18 +31,20 @@ milestone. Entries not listed are pure direction with no committed home yet
 (e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized
 authoring). When a milestone closes, sweep its entries to `## Resolved`.
 
-- **v0.1.8.x (pre-OMS/risk)** — fold-core structural debt (one replay kernel,
-  typed execution spec, file split, explicit event types); peer-benchmark
-  expansion (same-host zipline-reloaded, LEAN, NautilusTrader; VectorBT as a
-  contextual paradigm row).
+- **v0.1.8.x (closed 2026-06-05).** Fold-core structural debt,
+  peer-benchmark expansion, parallel dispatch, substrate / optimization
+  arc, B2 spot-FIFO accelerator, and the v0.1.8.11 documentation / cleanup
+  release all shipped across v0.1.8.1 through v0.1.8.11. See `## Resolved`
+  for entry-by-entry closeouts.
 - **v0.1.9** — affordability / target-risk layer (incl. the phased-pulse
   restructure); primitive internals and collapse planning gates.
-- **v0.1.9.x** — follow-on documentation only if v0.1.8.11 leaves a bounded
-  remainder; walk-forward post-direction; cost-model post-direction;
+- **v0.1.9.x** -- walk-forward (RFC accepted 2026-06-04 with Amendment 1 +
+  Amendment 2 + Section 17 ticket-cut gates); cost-model post-direction;
   selection-integrity diagnostics; randomized / blocked slice diagnostics;
   promotion-grade sweep artifacts; target construction helper extensions
   (Pass 2 per-stage helpers); broker / exchange cost templates;
-  crypto-readiness spike.
+  crypto-readiness spike; spot-FIFO as default for ephemeral spot
+  workloads (candidate; see 2026-06-05 entry).
 - **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
   review + promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
@@ -50,15 +52,65 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   semantics + snapshot lineage + live data logs; external benchmark / beta
   uses; external reference-data adapter provenance; provider risk-free
   divergence; reference strategy templates / baseline strategies; external
-  package adapters (PerformanceAnalytics first).
-- **v0.2.x → v0.3.0** — live bad-data resilience, ragged-universe
+  package adapters (PerformanceAnalytics first); non-spot accounting
+  models (futures / margin / options / FX) once derivatives architecture
+  work begins.
+- **v0.2.x to v0.3.0** -- live bad-data resilience, ragged-universe
   (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
   needs a dedicated RFC).
-- **Post-K1 / B2 gates** — compiled fold core (`ledgrcore` sister package)
-  remains deferred. The K1 measurement spike and scoped v0.1.8.10 B2 spot-FIFO
-  gate are complete, but future compiled commitment still waits on the
-  remaining A-vs-B2 product comparison, dominant-attribution gate, and fresh
-  RFC recorded below.
+- **Post-K1 / B2 gates** -- compiled fold core (`ledgrcore` sister
+  package) functionally parked. The K1 measurement spike completed and
+  the scoped v0.1.8.10 B2 spot-FIFO accelerator shipped with
+  peer-validated 5x engine speedup (see
+  `dev/bench/peer_benchmark/peer_benchmark.md` and the 2026-06-05
+  post-LDG-2522 entry). Architecture A authorization now requires a
+  workload where engine dominates more than 42% of B2-row wall AND
+  results / ingestion phases approach their floors; neither condition
+  currently holds. Incremental B2 expansion (per-pulse equity, durable
+  path, non-spot accounting models) remains available as a v0.1.9.x+
+  forward direction.
+
+### 2026-06-05 [infrastructure] Release-gate harness around playbook checks
+
+The v0.1.9.1 release gate exposed a process gap: the release CI playbook
+contained the right shape of guidance, but the final gate still depended on
+the agent remembering which CI-equivalent local commands mattered. In
+particular, the README cold-start check
+(`Rscript --vanilla tools/check-readme-example.R`) was not run locally before
+the first branch push, even though CI treats it as its own gate and it caught
+installed-package example drift that full tests, package check, vignette
+renders, and pkgdown did not catch.
+
+Future release work needs a lightweight harness around release-gate evidence,
+not just prose instructions. Possible shape: a repo-local script or R helper
+that reads the active release-gate ticket / packet, verifies that the playbook
+is referenced, prints the exact local gate checklist, runs or records the
+README cold-start check, full tests, package check, coverage, pkgdown, and
+WSL/Ubuntu gates as applicable, and emits a compact closeout block for the
+ticket. This should remain a release-process aid, not a new execution or
+package-runtime surface.
+
+The important design point is automatic context loading and inspectable
+evidence. Future agents should not need to remember the playbook from prior
+turns; the harness should make the required gates visible before work starts
+and make omissions obvious in review.
+
+### 2026-06-05 [infrastructure] Release-gate tickets must not absorb executable doc/example migration
+
+The v0.1.9.1 Batch 8 release-gate commit absorbed a broad executable
+documentation and example migration for the required `cost_model` contract.
+That migration belonged in an earlier reviewed docs/example batch alongside
+the public API change, not in the final release-gate commit. The release gate
+should verify readiness with the smallest possible closeout / metadata change;
+it should not become the place where required-argument migrations are first
+landed across README, vignettes, examples, rendered docs, and reference pages.
+
+Defense: every release-gate ticket should point at
+`inst/design/release_ci_playbook.md`, include the explicit local-gate
+checklist, and treat executable-doc drift as a signal to cut a new pre-release
+batch instead of expanding the gate. If a release gate uncovers broad
+example/API migration work, pause the release sequence, split the work, and
+review that migration on its own surface before merge/tag resumes.
 
 ### 2026-06-04 [infrastructure] Installed design-tree footprint review
 
@@ -340,47 +392,6 @@ is not another per-row buffer-write patch; it is R-side substrate work
 structures), better ephemeral phase telemetry, and a yyjsonr read-path
 investigation. Any future `ledgrcore` build should be gated by a post-substrate
 measurement spike rather than assumed from the pre-v0.1.8.9 gap.
-
-### 2026-05-30 [documentation] Maintainer manual article backlog after v0.1.8.8 skeleton
-
-The v0.1.8.8 cycle created the `inst/design/manual/` skeleton and cleaned up
-stale documentation-like surfaces but deliberately did not author the full
-internal manual. The follow-up home is now the v0.1.8.11 Documentation,
-Structure, And Cleanup packet: turn the skeleton into a coherent internal
-manual for agents and maintainers while keeping governance artifacts separate
-from prose articles. (The window was previously typed as `v0.1.8.9.x` and then
-`v0.1.9.x`; v0.1.8.11 pulls the foundation forward because the post-v0.1.8.10
-B2/substrate arc made discoverability urgent before v0.1.9 feature work.)
-
-Boundary:
-
-- `inst/design/` remains the governance home for contracts, roadmap, horizon,
-  ADRs, RFCs, audits, spikes, and spec packets.
-- `inst/design/manual/` is the internal maintainer manual.
-- `vignettes/` remains user-facing package documentation.
-- `inst/doc/` remains the installed-vignette build output location; do not treat
-  it as stale source trash.
-
-Target article backlog:
-
-- execution: fold core, pulse lifecycle, strategy contract, output handlers,
-  execution spec, RNG/determinism, and whole-second time contract;
-- data: snapshot spine, storage schema, snapshot adapters;
-- features: feature value path, cache/projection, indicator contract and
-  `series_fn` / TTR adapter semantics;
-- sweep: sweep architecture, promotion/reproduction, parallel dispatch;
-- observability: error hierarchy, telemetry, replay invariants, collapse
-  determinism gate, benchmark methodology.
-
-The release should be mostly documentation. Implementation changes should be
-limited to stale-reference cleanup, diagram correction, link repair, and small
-test/documentation guards discovered while writing. Do not use the manual
-release to reopen execution semantics, durable identity bytes, event schemas,
-target risk, OMS, or compiled-core architecture.
-
-This entry records the backlog and rationale. The roadmap schedules the release;
-the v0.1.8.8 cleanup ticket created the skeleton and removed confusing stale
-surfaces, while v0.1.8.11 is the active planning home for authoring the manual.
 
 ### 2026-05-30 [architecture] Compiled fold core as `ledgrcore` sister package
 
@@ -788,39 +799,51 @@ Implications for the K1 verdict and ledgr's compiled-core direction:
   fold core AND for an R fold loop calling compiled per-pulse fill
   processors.
 
-Promoted roadmap hook: **v0.1.9.x or v0.2.x — Architecture B2
-measurement spike**. Scope: prototype a per-pulse-batched compiled
-fill processor as a single cpp11 function. The simplest first cut:
-implement only the FIFO lot machinery + event buffer extension + cash
-/ position update + per-pulse equity contribution in cpp11; leave
-everything else (ctx build, strategy invocation, target validation)
-in R. Measure wall against the v0.1.8.10 post-substrate R baseline at
-the same LDG-2479 cells the K1 spike uses. Produce a verdict on the
-range "B2 captures most of Architecture A's win" through "Architecture
-A is meaningfully better; build `ledgrcore` despite the cost."
+> **Status update 2026-06-05.** The B2 "simplest first cut" has
+> partially shipped: LDG-2522 in v0.1.8.10 implemented FIFO lot
+> machinery + event buffer extension + cash / position update in cpp11
+> for spot-asset accounting on the ephemeral / memory-backed boundary.
+> The peer benchmark at `dev/bench/peer_benchmark/peer_benchmark.md`
+> records the result: 5x engine speedup vs canonical R, 0.20x of
+> Backtrader engine time, parity validated against canonical ledgr at
+> zero diff across equity, cash, and position proxy on the
+> 500-instrument SMA-crossover fixture. The "B2 measurement spike"
+> promoted hook below is stale: B2 was measured AND shipped for
+> spot-FIFO scope, not pending measurement. The forward B2 scope is
+> incremental expansion -- per-pulse equity compilation, fully compiled
+> event buffer extension at remaining write sites, bars column read in
+> compiled code, non-spot accounting models when derivatives / FX /
+> margin work begins, and durable-path integration -- all scoped
+> against the closed `compiled_accounting_model` enum (2026-06-02
+> scope-guard entry). See the 2026-06-05 post-LDG-2522 entry for the
+> current optimization picture and the Architecture A status update.
 
-The B2 spike can run either inside ledgr (adding `LinkingTo: cpp11`
-and `src/` as a first commit, which makes the spike itself the
-forcing function for the build-toolchain decision) or as a separate
-small spike repo that prototypes the hot frame in isolation. The
-former is closer to production; the latter is faster to iterate. The
-maintainer chooses at spike-scoping time.
+Promoted roadmap hook (superseded 2026-06-05): the original
+"v0.1.9.x or v0.2.x -- Architecture B2 measurement spike" hook has been
+replaced by two forward items:
 
-This entry does not authorize Architecture B; it records that the
-architectural option exists, is not measured by K1, and should be
-measured before any `ledgrcore` build is authorized regardless of how
-the K1 verdict lands. The 2026-05-30 ledgrcore entry's "R-side
-substrate must be exhausted first" gate is now joined by an
-"Architecture B2 must be measured before Architecture A is
-authorized" gate.
+- **Shipped (v0.1.8.10).** B2 spot-FIFO accelerator (LDG-2522). See the
+  peer benchmark for measurement.
+- **v0.1.9.x or later -- Incremental B2 expansion.** Per-pulse equity
+  compilation, fully compiled event buffer extension, bars column
+  read, durable-path integration, additional
+  `compiled_accounting_model` values for non-spot asset classes (each
+  requiring its own RFC, parity suite, and closeout per 2026-06-02
+  scope-guard entry).
 
-This entry does not authorize Architecture B; it records that the
-architectural option exists, is not measured by K1, and should be
-measured before any `ledgrcore` build is authorized regardless of how
-the K1 verdict lands. The 2026-05-30 ledgrcore entry's "R-side
-substrate must be exhausted first" gate is now joined by an
-"Architecture B must be measured before Architecture A is
-authorized" gate.
+The B2 spike scoping question (inside ledgr vs separate spike repo)
+was answered by LDG-2522 in favor of "inside ledgr": `LinkingTo: cpp11`
+and `src/` are now part of the package build. Incremental B2 expansion
+follows the same production-grade approach.
+
+This entry does not authorize Architecture B beyond what LDG-2522 has
+already shipped; it records the architectural option, the
+post-LDG-2522 status, and the incremental forward scope. The
+2026-05-30 ledgrcore entry's "R-side substrate must be exhausted
+first" gate (closed by v0.1.8.10) was joined by an "Architecture B2
+must be measured before Architecture A is authorized" gate, which is
+itself closed for spot-FIFO scope by LDG-2522 (see K1 verdict gate 2
+status update).
 
 ### 2026-06-02 [architecture] B2 spot-FIFO accelerator is not a derivatives accounting model
 
@@ -1030,26 +1053,48 @@ LDG-2479 grid cells, follows the same parity / determinism gates,
 and produces a verdict in the same shape as v0.1.8.9's
 architecture_synthesis.
 
-Promoted roadmap hooks:
+> **Status update 2026-06-05.** This entry's "gate on both ledgrcore and
+> Architecture B2 commitments" framing is stale. LDG-2522 shipped the
+> B2 spot-FIFO accelerator in v0.1.8.10 with peer-validated 5x engine
+> speedup; the B2 commitment is no longer pending. The engine-dominance
+> assumption that justified the gate framing (engine ~85% of wall) is
+> also wrong: post-LDG-2522 measurement shows engine is 42.5% of B2-row
+> wall, with results (26.6%) and ingestion (30.8%) larger combined. The
+> "v0.1.9 promoted hook" below is demoted: this attribution spike is now
+> reference forensic work, available when a real perf push needs sub-
+> frame decomposition (e.g. results-phase decomposition before attacking
+> the 9.89s reconstruction lever). It is not a v0.1.9 release headline,
+> not a calendar milestone, and the gate cited in the K1 verdict entry
+> below has been reframed accordingly. See the 2026-06-05 post-LDG-2522
+> entry for the current optimization picture and the Architecture A
+> status.
 
-- **v0.1.9 — Ephemeral xlarge wall attribution spike** (this entry).
-  Pre-requisite for committing to either ledgrcore (A) or Architecture
-  B2. Runs against post-v0.1.8.10 production R.
-- **v0.1.9.x — Highest-leverage attack on dominant attribution
-  finding.** Could be ctx helper attachment refactor, could be feature
-  engine path optimization, could be `meta` list column elimination,
-  could be Architecture B2 if the fold-loop slice is large enough.
-  Scoped from attribution spike findings.
+Promoted roadmap hooks (superseded 2026-06-05):
+
+- **Reference forensic work, no scheduled trigger.** Run an attribution
+  spike when a specific perf push needs sub-frame decomposition (e.g.
+  before attacking the results-phase 9.89s reconstruction lever or the
+  ingestion-phase `read.csv` lever). The original v0.1.9 promotion has
+  been demoted: this spike's findings inform but do not gate any
+  specific release.
+- **v0.1.9.x or later -- Highest-leverage attack on dominant
+  attribution finding.** Per the 2026-06-05 post-LDG-2522 entry, the
+  top candidates by absolute wall saving are: results phase canonical
+  materialization (9.89s), ingestion phase (11.43s with
+  `data.table::fread` or arrow), and engine remaining R machinery
+  (15.77s via R-side substrate). Scoping a v0.1.9.x perf packet
+  against any of these may or may not require this attribution spike
+  as input.
 
 This entry does not authorize the attribution spike scope or the
-follow-on optimization work; it records that ephemeral mode speed is
-a load-bearing v0.1.9 goal, that the K1 / B2 question only addresses
-~15% of xlarge ephemeral wall, and that an attribution spike is the
-appropriate next step before committing to either compiled-core
-architecture. The 2026-05-30 ledgrcore entry's gates and the
+follow-on optimization work; it records the original (now reframed)
+gate framing and preserves the analysis of where post-LDG-2522 wall
+likely lives. The 2026-05-30 ledgrcore entry's gates and the
 Architecture B2 entry's gates are now joined by an "xlarge ephemeral
-wall attribution must complete before either compiled-core path is
-authorized" gate.
+wall attribution should be run when an actual compiled-core
+authorization decision is on the table" cue -- a conditional cue, not
+a v0.1.9 calendar gate (see K1 verdict gate 3 status update for the
+current framing).
 
 ### 2026-06-01 [architecture] K1 measurement-spike verdict: compiled fold core authorized for inline-output design only
 
@@ -1122,16 +1167,29 @@ authorization is independent of which language wins.
 1. **R-side substrate must be exhausted first** (2026-05-30 ledgrcore
    entry). v0.1.8.10 shipped the substrate closeout and the scoped B2
    spot-FIFO opt-in; this gate is no longer pending.
+   *Status: closed.*
 2. **Architecture B2 must be measured before Architecture A is
    authorized** (2026-06-01 Architecture B entry above). The B2
    spot-FIFO gate ran in v0.1.8.10 for memory-backed sweeps, but that does
    not authorize a general compiled fold core or durable compiled integration.
    K1 verdict does not substitute for the remaining A-vs-B2 product
    comparison.
+   *Status update 2026-06-05: closed for spot-FIFO scope by LDG-2522
+   (peer-validated 5x engine speedup; see 2026-06-05 post-LDG-2522
+   entry). Remaining B2 surface scope -- per-pulse equity compilation,
+   non-spot accounting models (futures / margin / FX), full durable-path
+   integration -- requires its own measurement when those decisions are
+   on the table.*
 3. **Xlarge ephemeral wall attribution must complete before either
    compiled-core path is authorized** (2026-06-01 attribution entry
    above). The K1 verdict explicitly anticipates this in its
    "lower leverage than the dominant ledgr-side residual" caveat.
+   *Status update 2026-06-05: reframed as conditional-on-Architecture-A-
+   decision. Architecture A is functionally parked (see 2026-06-05
+   post-LDG-2522 entry) because engine is now 42.5% of B2-row wall, not
+   the ~85% the original gate framing assumed. This gate is not a
+   v0.1.9 calendar obligation; it fires only when an A authorization is
+   actually being considered, which is not currently scoped.*
 
 **Sequencing forward:**
 
@@ -1174,50 +1232,483 @@ measurement spike is complete with a narrow build authorization, that
 two further ledgr-side gates remain binding, and that the ephemeral
 attribution spike is the appropriate next move.
 
-### 2026-06-01 [documentation] User-facing research-software disclaimer for financial backtesting
+### 2026-06-05 [optimization] Post-LDG-2522 ephemeral wall picture and Architecture A status
 
-ledgr touches users' financial decisions when backtest results inform live
-trading. The MIT license in `LICENSE` handles the legal baseline for
-warranty disclaimer and liability, but does not make the financial-software
-context explicit to users who may not read `LICENSE` before writing
-strategies that go on to be deployed with real capital. Worth adding a
-user-facing disclaimer layer in a next release.
+The v0.1.8.10 B2 spot-FIFO accelerator (LDG-2522) shipped with
+peer-validated engine speedup. Numbers from
+`dev/bench/peer_benchmark/peer_benchmark.md` v0.1.8.10 record bundle,
+same fixture, same seed, 500-instrument 5-year SMA crossover:
 
-Candidate scope:
+```text
+B2 spot-FIFO ephemeral:
+  Ingestion:  11.43s  (30.8%)
+  Engine:     15.77s  (42.5%)
+  Results:     9.89s  (26.6%)
+  Total:      37.13s
 
-- A standalone `DISCLAIMER.md` at repo root carrying the financial-software
-  disclaimer. Plain English, no fake-lawyer language. Coverage: not
-  investment advice; backtests do not predict future performance; no
-  professional credentials; use in live/paper trading at user's own risk;
-  audit/replay features are research tools, not regulatory or compliance
-  frameworks; user is responsible for independent validation if deploying
-  any strategy with real money.
-- README addition: a short pointer near the top, not a prominent block.
-  Links to `DISCLAIMER.md` for the full text. Mirrors how `CODE_OF_CONDUCT.md`
-  and `CONTRIBUTING.md` are typically linked from README rather than inlined.
-- Optional: a one-line reminder at the top of the introductory vignette and
-  the strategy-authoring vignette, pointing at `DISCLAIMER.md`.
-- Optional: a one-line addition to `DESCRIPTION`'s `Description:` field
-  noting "research software; not investment advice."
+Canonical ephemeral baseline:
+  Engine:     79.39s  (B2 cut to 15.77s -- 5.0x engine speedup)
 
-Promotion target: v0.1.8.11 documentation, structure, and cleanup release.
-This belongs with the user-facing documentation refresh rather than v0.1.9
-target-risk implementation.
+Backtrader same fixture:
+  Engine:     78.54s  (B2 is 5.0x faster)
+  Results:     0.15s  (B2 is 66x slower here)
+  Ingestion:   0.67s  (B2 is 17x slower here)
+```
 
-This is hobby-OSS-grade coverage, not commercial-grade. Escalation
-triggers that would warrant actual legal review:
+The wall composition has flipped: engine is no longer the dominant
+share. Results plus ingestion together are 21.32s -- larger than
+engine. That reframes the post-LDG-2522 optimization picture and the
+Architecture A business case.
 
-- ledgr goes commercial (paid version, hosted service, SaaS);
-- a user requests indemnity, support contracts, or compliance attestations;
-- ledgr reaches CRAN and starts having paying users in jurisdictions with
-  strong consumer-protection law (Germany, EU broadly);
-- a formal contributor agreement (CLA/DCO) becomes useful as the
-  contributor base grows.
+**Realistic optimization options after the FIFO compilation:**
 
-None of those triggers are current. This entry records direction for the
-disclaimer addition only. The current MIT license provides the legal
-baseline; the disclaimer additions are clarity/discoverability layers on
-top.
+1. Results phase canonical materialization (9.89s). Event-stream to
+   equity / fills / trades reconstruction in R. Backtrader does its
+   results phase in 0.15s (66x gap), reflecting that ledgr materializes
+   canonical tibbles while Backtrader writes raw CSV -- but the ratio is
+   far beyond that justification alone. Fills read-back super-linearity
+   at xlarge (flagged in prior horizon entries) lives here. Compiled
+   materialization or vectorized event-stream collapse looks like the
+   biggest absolute lever in the stack.
+
+2. Ingestion phase (11.43s). `read.csv` plus timestamp normalization
+   plus in-memory bars / features / projection. Backtrader does the
+   equivalent in 0.67s. `data.table::fread` or arrow CSV would cut the
+   `read.csv` chunk by roughly 10x. Cheap fix, large absolute payoff.
+
+3. Engine remaining R machinery (15.77s). Per-pulse ctx construction
+   with helper attachment, feature engine alias / vector reads,
+   per-pulse equity, target validation. R-side substrate work (integer
+   cursors, matrix-canonical access, ephemeral inline equity
+   accumulation) named in prior horizon as no-regret addresses most of
+   this without needing more cpp11.
+
+4. Compiled spot-FIFO on the durable path. Currently ephemeral-only.
+   Canonical durable runs at 115.12s; durable users see none of the B2
+   win. Extending the accelerator to durable is a real product gap.
+
+5. Incremental B2 surfaces. Per-pulse equity computation in compiled,
+   fully compiled event buffer extension, bars column read. Smaller
+   incremental wins; each shaves seconds off the 15.77s engine slice.
+
+The top two (results plus ingestion) together represent ~21s of the 37s
+total. There is a credible path to a ~15s total wall (~2.5x further
+speedup) without needing Architecture A at all.
+
+**Architecture A status: parked.** Marginal ROI after B2: K1's
+realistic-case R-handler-inline numbers suggest 10-47x R on the
+inline-output cells; B2 is already 5x R on engine. A's marginal speedup
+over B2 is maybe 2-10x on the engine slice (15.77s to 2-5s), cutting
+~10-13s off total wall, taking 37s to 24-27s -- a 1.4-1.5x total-wall
+reduction. The fixed cost of A (separate Rust / C++ package, two release
+cycles, Rust toolchain on users, version coordination, blast radius
+across both packages) is unchanged. A also does not touch results phase
+(9.89s) or ingestion phase (11.43s), which are larger absolute slices
+than what A could improve. Reconsider only when a workload surfaces
+where engine dominates more than 42% of B2-row wall AND results /
+ingestion phases approach their floors. Neither condition holds today.
+
+**Attribution spike reframed.** Earlier horizon entries promoted the
+ephemeral xlarge wall attribution spike as a v0.1.9 gate. That framing
+assumed engine was ~85% of wall; reality after LDG-2522 is 42.5%. The
+spike is reference forensic work -- useful when a real perf push needs
+sub-frame decomposition (e.g. results phase decomposition before
+attacking the 9.89s reconstruction lever) -- not a release headline and
+not a calendar gate. See the 2026-06-01 attribution entry's status
+update for the demoted hook framing.
+
+**Distribution argument retracted.** Earlier framings of the opt-in
+spot-FIFO design listed "users need a C++ toolchain" as a reason to
+keep the compiled path opt-in. CRAN and R-universe ship pre-built
+Windows / Mac binaries that include compiled `.dll` / `.so` artifacts;
+GitHub source installs require the standard R-package C++ toolchain
+(Rtools on Windows) regardless of whether spot-FIFO is the runtime
+default, because the cpp11 code is in the build either way.
+Distribution is independent of the runtime default. See the 2026-06-05
+spot-FIFO-default candidate entry for the remaining load-bearing
+reasons.
+
+**Park status (2026-06-05).** All five optimization options above are
+parked as forward direction: available when a real perf push needs
+scope, no scheduled trigger. None are promoted to v0.1.9.x candidates
+in this pass. The v0.1.9 window is target-risk per roadmap; the
+v0.1.9.x slate already carries walk-forward (RFC accepted), the
+spot-FIFO-default candidate (see 2026-06-05 entry below),
+crypto-readiness, target-helper Pass 2, sweep artifact persistence,
+and cost-model API direction. The v0.1.8.x single-core perf arc closed
+with LDG-2522; re-opening it is a maintainer decision against the menu
+above, not a default sequencing assumption. Promoting one or more of
+these options into a v0.1.9.x or later packet is appropriate when (a)
+a specific user-facing wall-time target is named, or (b) a workload
+surfaces that exposes one of the named slices (results / ingestion /
+engine residual / durable / incremental B2) as a binding bottleneck.
+Same park vocabulary as Architecture A: available, no scheduled
+trigger, reconsider on named conditions.
+
+This entry does not authorize any of the five optimization options. It
+records direction so the next perf-tick scopes against accurate
+numbers. The peer benchmark file at
+`dev/bench/peer_benchmark/peer_benchmark.md` is the validation
+reference for further work.
+
+### 2026-06-05 [execution] Spot-FIFO as default for ephemeral spot workloads (v0.1.9.x candidate)
+
+The compiled spot-FIFO accelerator (LDG-2522, v0.1.8.10) ships today as
+an explicit opt-in: `compiled_accounting_model = "spot_fifo"` on the
+ephemeral / memory-backed sweep boundary. Default ledgr execution
+remains canonical R. The peer benchmark established that the compiled
+path matches canonical R outputs exactly on the SMA-crossover fixture
+(zero diff on equity, cash, and position proxy across 1260 bars).
+Reading the benchmark result alongside the cpp11 build maturity (one
+release cycle, internal parity infrastructure in place), the question
+"should this be the default for ephemeral spot workloads in v0.1.9.x"
+is worth surfacing as a candidate.
+
+**Why this is a v0.1.9.x candidate, not a decision:**
+
+The opt-in design was deliberate. Three of the original reasons are
+still load-bearing:
+
+1. Scope guard. `compiled_accounting_model` is a closed enum;
+   `"spot_fifo"` is the one valid value v0.1.8.10 ships. Default-on
+   would silently apply spot-FIFO semantics to non-spot users when
+   other asset classes land. The 2026-06-02 scope-guard entry binds
+   this explicitly: "Spot-FIFO kernel must not be extended into
+   futures, options, derivatives, margin by accretion."
+2. Parity coverage. The peer benchmark validated parity on ONE fixture
+   (500 instruments, 5y daily, SMA crossover, high-turnover). That is
+   not the same as parity across all strategy shapes, instrument
+   counts, and corner cases (sparse trading, fractional positions,
+   tiny lots, exact-zero fills, ties at fill prices).
+3. Audit-trail intermediate differences. Even with identical final
+   outputs (which the benchmark validates), intermediate diagnostics
+   or event ordering inside the compiled hot frame may differ from
+   the R path. Until those are documented, "different audit shape" is
+   a real reason to keep R canonical for users who introspect
+   intermediate state.
+
+One previously-cited reason is no longer load-bearing: **distribution**.
+CRAN and R-universe ship pre-built Windows / Mac binaries; GitHub source
+installs already require the standard R-package C++ toolchain (Rtools
+on Windows) regardless of whether spot-FIFO is the runtime default,
+because the cpp11 code is in the build. Distribution is independent of
+the runtime default. See the 2026-06-05 post-LDG-2522 entry above for
+the retraction in context.
+
+**Asset-class expansion context (load-bearing):**
+
+The ledgr engine currently supports spot assets only. The long-term
+design intends to support other asset classes: derivatives (futures,
+options, perpetuals), foreign exchange, and potentially margin-traded
+spot products. Each of these requires its own accounting model
+(futures mark-to-market with margin, options valuation with Greeks, FX
+with cross-currency cash management). The closed-enum design of
+`compiled_accounting_model` is the architectural anchor that keeps
+this expansion path clean. The 2026-06-02 entry already names this:
+"Future non-spot accounting models need own model value, RFC, parity
+suite, closeout language."
+
+Making spot-FIFO the default must not erode this architectural anchor.
+Specifically, the default semantics must be:
+
+- **Default = `"spot_fifo"` when the instrument set is spot-only**,
+  where "spot-only" is determined by an asset-class metadata field on
+  instruments (or by the absence of any non-spot instrument) rather
+  than by user opt-in.
+- **Fail closed with named error when the instrument set contains any
+  non-spot asset**, with the error pointing the user at the explicit
+  `compiled_accounting_model` argument once the relevant non-spot
+  model ships.
+- **Never silent fallback or accretion** -- the closed enum stays
+  closed, and silently broadening spot-FIFO semantics to cover
+  derivatives by accident is the failure mode this design prevents.
+
+This means the "default = spot_fifo" decision is not a single
+configuration flip. It is: (a) an asset-class detection mechanism on
+instruments; (b) a default-resolution path that consults that
+mechanism; (c) a fail-closed error path for non-spot detection; (d)
+documentation that names the asset-class expansion intent so future
+maintainers do not treat the default-on behavior as license to extend
+spot semantics to other classes. (a) and (b) are v0.1.9.x scope; (c)
+and (d) are pure design.
+
+**Prerequisites before flipping the default in v0.1.9.x:**
+
+- Broader parity sweep across strategy shapes (mean-reversion,
+  momentum, rebalanced index, pair-trading), instrument counts (10 /
+  100 / 500 / 2000), and corner cases (sparse trading, fractional
+  positions, tiny lots, ties at fill prices, exact-zero quantity
+  fills).
+- Audit-trail documentation comparing intermediate event ordering and
+  diagnostic shape between the R and compiled paths.
+- Asset-class metadata mechanism on instruments plus default-resolution
+  path consulting it.
+- Named-error failure path for non-spot detection
+  (`ledgr_compiled_accounting_model_unsupported` or similar).
+- An ADR or RFC binding the default-resolution semantics so the
+  closed-enum architectural anchor is documented in the same place as
+  the default-on flip.
+- A deliberate version tick (v0.1.9.x packet) flipping the default
+  with release notes naming the prerequisites above.
+
+This is a v0.1.9.x candidate, not a committed milestone. It belongs in
+the v0.1.9.x slate alongside walk-forward and the other candidate
+slots; promotion depends on maintainer scoping.
+
+This entry does not authorize the work. It records the candidate and
+the load-bearing asset-class expansion context that must be preserved
+through any default-on decision.
+
+### 2026-06-05 [planning] v0.1.9.x line sequencing -- four-tick arc culminating in walk-forward
+
+Following the maintainer decision to scope each v0.1.9.x feature into
+its own sub-tick rather than bundle into a single packet, the v0.1.9.x
+line is a four-tick arc culminating in walk-forward:
+
+- **v0.1.9.1** -- public transaction-cost API
+  (`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`,
+  accepted, no amendments, spec-cut ready).
+- **v0.1.9.2** -- sweep artifact persistence (RFC cycle scheduled; see
+  2026-06-05 sweep RFC entry below).
+- **v0.1.9.3** -- target-risk layer + per-pulse fill-loop restructure
+  (`rfc_chainable_risk_oms_policy_boundary_synthesis.md` plus the
+  per-pulse restructure prereq named in the v0.1.9 roadmap section).
+- **v0.1.9.4** -- walk-forward evaluation (culmination;
+  `rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` with
+  Amendments 1 + 2 + Section 17 ticket-cut gates).
+
+**Arc rationale: forward-dependency discipline.** Each tick produces
+identity or infrastructure that walk-forward consumes when it
+ticket-cuts at v0.1.9.4:
+
+- v0.1.9.1 cost-API binds `cost_model_hash` and `cost_plan_json` on
+  run config (synthesis Section 6.1). Walk-forward must include
+  `cost_model_hash` in `candidate_key` and `session_id` per cost-API
+  synthesis Section 6.4 + 14:560 future obligation.
+- v0.1.9.2 sweep persistence ships candidate-level retention
+  infrastructure; sweep persistence also records `cost_model_hash`
+  and `cost_plan_json` per candidate (carries v0.1.9.1 identity).
+- v0.1.9.3 target-risk produces the risk-chain identity that
+  walk-forward synthesis Section 3 + Amendment 2 binds as required
+  for fold / session / candidate provenance.
+- v0.1.9.4 walk-forward ticket-cuts with every identity surface and
+  infrastructure prereq already real in code. No stubbed identity
+  slots, no schema migrations, no late-binding obligations to absorb.
+
+**What this reshapes.** The previous roadmap framing had target-risk
+as the v0.1.9 headline and walk-forward as a v0.1.9.x candidate. The
+arc puts target-risk at v0.1.9.3 (still v0.1.9, sequenced within the
+line rather than as the .0 headline) and walk-forward at v0.1.9.4
+with all prereqs satisfied. Target-risk is not pushed to v0.2.x; it
+remains v0.1.9 work.
+
+**Scope-discipline acknowledgment.** Walk-forward could ship earlier
+with stubbed risk-chain and cost-identity slots (one or two schema
+migrations later as target-risk and costs land). The maintainer
+declined the early-ship option in favor of clean sequencing -- each
+tick ships a complete forward dependency before walk-forward
+consumes it. No rebends, no retroactive Section 17 gate additions,
+no v1 schema that needs to be re-migrated pre-CRAN.
+
+**Other v0.1.9.x roadmap candidates** (crypto-readiness spike,
+target-construction-helper Pass 2 extensions, spot-FIFO-default
+candidate per 2026-06-05 entry above, selection-integrity
+diagnostics) are not yet sequenced into this arc. They slot in as
+either small parallel releases between the four named ticks or get
+absorbed into one of them at scoping time. Each is its own scoping
+decision when its window opens.
+
+**Cross-cycle obligations recorded by this sequencing:**
+
+- v0.1.9.2 sweep RFC seed v1 must consume v0.1.9.1 cost-identity
+  bindings (already captured in the 2026-06-05 sweep RFC schedule
+  entry below).
+- v0.1.9.3 target-risk spec packet must produce risk-chain identity
+  that walk-forward's Section 17 gate matrix already references in
+  its current bindings (matrix is set up, needs target-risk to
+  deliver the identity surface it gates).
+- v0.1.9.4 walk-forward ticket-cut packet picks up both cost-identity
+  (from .1, currently a cost-API synthesis Section 14:560 future
+  obligation) and risk-chain identity (from .3) as concrete
+  acceptance criteria on Section 17 gate rows. The current
+  Section 17 gate matrix does not yet name `cost_model_hash`; this
+  must be added at walk-forward packet-cut time, either by amending
+  the walk-forward synthesis or by the spec-cut writer treating the
+  cost-API synthesis Section 14:560 as authoritative.
+
+This entry records the sequencing decision and the cross-cycle
+identity handoffs. Future tickets in v0.1.9.x should respect the arc
+shape; deviations require explicit maintainer override (e.g., a
+parallel small release for target-helper Pass 2 between named ticks).
+
+### 2026-06-05 [planning] v0.1.9.4 walk-forward Section 17 gate-row obligations from the v0.1.9.x arc
+
+The v0.1.9.x arc sequencing (see 2026-06-05 sequencing entry above)
+puts walk-forward at v0.1.9.4 as the culmination, consuming forward
+dependencies from each earlier tick. Two identity-surface
+dependencies are not yet named in walk-forward's Section 17
+ticket-cut gate matrix. They must be added at v0.1.9.4 ticket-cut
+time, either via amendment to the walk-forward synthesis or via the
+spec-cut writer treating the obligations recorded here as
+authoritative per Section 17.1's two-gate mechanism.
+
+**Gate row 1: cost-identity in walk-forward identity recipes.**
+
+The v0.1.9.1 cost-API binds `cost_model_hash` and `cost_plan_json`
+on run config (cost-API synthesis Section 6.1). Walk-forward must
+include `cost_model_hash` in `walk_forward_candidate_key` and
+`walk_forward_session_id` per cost-API synthesis Section 6.4 and
+the explicit future obligation at Section 14:560:
+
+> "the v0.1.9.x walk-forward spec packet must extend candidate_key
+> to include cost_model_hash"
+
+Section 17 gate row to add at v0.1.9.4 packet-cut:
+
+| Amendment item | Packet-open criterion | Release-gate criterion | Owner |
+| --- | --- | --- | --- |
+| Cost-identity in walk-forward identity recipes (from cost-API synthesis Section 6.4 + 14:560) | Spec packet names `cost_model_hash` as a component of both `walk_forward_candidate_key` and `walk_forward_session_id` identity recipes; identity-stability test exists | Identity-stability test passes; hash composition includes `cost_model_hash`; reconstruction parity passes | maintainer-signed-off |
+
+**Gate row 2: risk-chain identity in walk-forward identity recipes.**
+
+The v0.1.9.3 target-risk packet produces the risk-chain identity
+surface that walk-forward synthesis Section 3 and Amendment 2 bind
+as required for fold / session / candidate provenance. The current
+Section 17 gate matrix does not name risk-chain identity explicitly;
+the obligation lives in the synthesis Section 3 binding text but
+has no enforcement gate.
+
+Section 17 gate row to add at v0.1.9.4 packet-cut:
+
+| Amendment item | Packet-open criterion | Release-gate criterion | Owner |
+| --- | --- | --- | --- |
+| Risk-chain identity in walk-forward identity recipes (from walk-forward synthesis Section 3 + Amendment 2; produced by v0.1.9.3 target-risk) | Spec packet names risk-chain identity component(s) in both `walk_forward_candidate_key` and `walk_forward_session_id` identity recipes; identity-stability test exists | Identity-stability test passes; hash composition includes the risk-chain identity surface delivered by v0.1.9.3; reconstruction parity passes | maintainer-signed-off |
+
+**Mechanism options at v0.1.9.4 packet-cut time:**
+
+(a) Amend walk-forward synthesis with Amendment 3 adding these two
+rows to the Section 17 matrix. Same authority pattern as
+Amendments 1 and 2 (maintainer amendment per Section 13). Cleanest
+audit trail because the matrix is canonical.
+
+(b) Spec-cut writer treats this horizon entry plus cost-API
+synthesis Section 14:560 as authoritative and adds the rows to the
+v0.1.9.4 packet's `tickets.yml` (or equivalent acceptance-criteria
+record) without amending the synthesis. Section 17.1 two-gate
+mechanism applies: packet-open gate fails if rows are absent;
+release-gate fails if criteria are not met or carried forward.
+
+Both mechanisms preserve the Section 17 enforcement discipline. (a)
+is durable in the canonical artifact; (b) is lighter-weight and
+treats this horizon entry as the cross-cycle record. Maintainer
+chooses at v0.1.9.4 spec-cut start.
+
+**Cross-references:**
+
+- cost-API synthesis Sections 6.1, 6.4, 14:560
+- walk-forward synthesis Section 3, Amendment 2 (Section 16.2), and
+  Section 17.1 gate matrix
+- 2026-06-05 v0.1.9.x sequencing entry above
+
+This entry records the cross-cycle gate-row obligations so the
+v0.1.9.4 spec-cut writer has them in hand and the obligations are
+visible from outside the cost-API and walk-forward synthesis
+artifacts.
+
+### 2026-06-05 [research] v0.1.9.2 sweep artifact persistence RFC cycle scheduled
+
+Following the maintainer decision on v0.1.9 line sequencing (see
+2026-06-05 sequencing entry above), v0.1.9.2 will start with a full
+RFC cycle per `inst/design/rfc_cycle.md`. The sweep artifact
+persistence work has roadmap direction (roadmap v0.1.9.x slot) but
+no prior RFC artifacts; the cycle starts from a fresh seed v1.
+
+**Trigger and dependency:**
+
+Seed v1 can begin as soon as maintainer bandwidth allows. The cycle
+has no blocking dependency on cost-API spec-cut finalization because
+the cost-API synthesis
+(`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`) is
+already accepted with no amendments and binds the two cost-identity
+fields (`cost_model_hash`, `cost_plan_json`) on run config. Sweep
+persistence consumes those bound fields directly; the remaining
+synthesis Section 13 open questions for the cost-API spec-cut (legacy
+shape handling, NULL default, etc.) do not affect what sweep
+persistence stores per candidate.
+
+**Cycle stages (planned, per `rfc_cycle.md`):**
+
+1. research input -- skip unless prior art beyond the roadmap entry
+   surfaces.
+2. seed v1 -- fresh draft scoping persistence shape, identity, ranking
+   view surface, separation from `ledgr_promote()` and selection
+   rules.
+3. response -- adversarial review by the rotation partner.
+4. response review -- maintainer.
+5. seed v2 -- incorporates findings if non-trivial.
+6. maintainer decisions -- only if escalated product choices surface.
+7. synthesis -- different author from seed v2.
+8. final review -- different author from synthesis.
+9. horizon entry -- post-acceptance direction record.
+
+**Role rotation (planned, maintainer overrides at start):** the
+cost-API and walk-forward cycles both had Codex authoring seeds and
+Claude authoring synthesis. Sweep persistence rotates: Claude authors
+seed v1 + seed v2; Codex authors synthesis; Claude authors final
+review. This matches the "v2 and synthesis are different authors"
+discipline from `rfc_cycle.md`. Maintainer overrides at scoping time
+if context-window or coherence requires.
+
+**Sequencing windows (indicative, not binding):**
+
+- Seed v1 kickoff: when maintainer bandwidth allows, after v0.1.9.1
+  cost-API spec-cut is started so the cost-identity surface is locked
+  for the seed.
+- Response, seed v2 if needed, synthesis, final review: standard cycle
+  cadence per prior three completed cycles (OMS, walk-forward, cost
+  API).
+- Synthesis acceptance target: before v0.1.9.1 cost-API ships, so
+  v0.1.9.2 ticket-cut can begin immediately on top of a shipped
+  cost-API. If synthesis slips, v0.1.9.2 ticket-cut waits; v0.1.9.1
+  release is not blocked.
+
+**Scope inputs for the seed v1:**
+
+- Roadmap entry under v0.1.9.x sweep artifact persistence: persist
+  grid definitions, candidate summaries, warnings / errors, metric
+  context, feature-set hashes, execution seeds, selection / ranking
+  views, manifest data, snapshot locator hints.
+- Explicit non-scope per roadmap: full ledger, fill, trade, equity
+  artifacts per candidate (deferred to a future diagnostic-retention
+  RFC).
+- Forward obligation from v0.1.9.1 cost-API
+  (synthesis Sections 6.1 and 14:560): store `cost_model_hash` and
+  `cost_plan_json` per persisted candidate's run config record.
+- Forward obligation from walk-forward
+  (`rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` Amendment 1 and
+  Amendment 2): walk-forward's per-fold scoring produces
+  candidate-level rows with bound identity recipes. Sweep persistence
+  RFC must not redefine candidate identity; walk-forward bindings are
+  authoritative when both surfaces touch the same candidate.
+- Separation from automatic winner selection: persistence is the
+  artifact, selection is downstream. Do not weaken `ledgr_promote()`
+  or `run_promotion_context`.
+- Pre-CRAN posture: artifact schema may break across cycles; no
+  backward-compatibility burden.
+
+**Asset-class expansion context (load-bearing):**
+
+The ledgr engine currently supports spot assets only; future asset
+classes (derivatives, FX) will introduce additional accounting models
+through the closed `compiled_accounting_model` enum (see 2026-06-02
+scope-guard entry and 2026-06-05 spot-FIFO-default candidate entry).
+The sweep persistence RFC should design the candidate identity surface
+to admit future asset-class metadata without schema break -- e.g., do
+not hardcode spot-asset assumptions into the persisted ranking view or
+selection rule surface.
+
+This entry records the schedule. The actual seed v1 prompt and any
+scope adjustments live in the cycle's own artifacts when authored.
 
 ### 2026-06-01 [strategy] Strategy callback contract + authoring helpers post-v0.1.8.x direction
 
@@ -1307,16 +1798,17 @@ Promoted roadmap hooks
 Immediate cross-cycle obligations
 
 - The v0.1.8.10 spec packet listed both synthesis artifacts as binding design
-  inputs and shipped the accessor / Pass 1 scope. v0.1.8.11 should now make
-  the resulting strategy-author surface discoverable in docs without promoting
-  Pass 2 helpers early.
+  inputs and shipped the accessor / Pass 1 scope. v0.1.8.11 (shipped
+  2026-06-04) made the resulting strategy-author surface discoverable in
+  docs via the maintainer manual articles without promoting Pass 2
+  helpers early; this obligation is closed.
 - The negative/levered weights rejection block in `target_rebalance()`
   lives at `R/strategy-helpers.R:226-231` (precision over the helpers
   synthesis's `:226-230` citation); future RFCs and tickets citing
   this gate should use the corrected range.
-- The v0.1.8.11 documentation pass should collect horizon entries created
+- The v0.1.8.11 documentation pass collected horizon entries created
   during the v0.1.8.10 RFC closeouts, the same way this entry pairs the
-  accessor and helpers cycles.
+  accessor and helpers cycles; this obligation is closed.
 
 This entry does not authorize any of the above; it records the
 direction. The accessor synthesis is binding for v0.1.8.10
@@ -3770,6 +4262,97 @@ This entry records direction, not committed work.
 Entries move here when their idea has shipped or been answered. Each records
 what resolved it. Sweep an idea here when its milestone closes — do not leave
 shipped work in "Open."
+
+### 2026-06-05 [planning] v0.1.9.1 cost-API spec-cut decisions on synthesis Section 13 open questions -- resolved by v0.1.9.1
+
+The accepted cost-API synthesis
+(`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`)
+left five questions to the spec-cut writer in Section 13. The v0.1.9.1 packet
+bound and implemented them with the aggressive pre-CRAN-no-users posture:
+reject legacy shapes, no transitional auto-translation, no silent defaults.
+
+**Decision 1: legacy `fill_model = list(...)` shape.** Reject with classed
+error.
+
+Rationale: the API restructures (`fill_model` splits into `timing_model` +
+`cost_model`) AND the spread semantics shift from full-bps-per-leg to
+quoted-spread (half-bps-per-leg). Auto-translation would silently halve
+`spread_bps` values -- a numeric footgun. Forcing users to re-author surfaces
+the semantic shift explicitly. Pre-CRAN policy makes this affordable.
+
+Implementation shape:
+
+- `ledgr_experiment(... fill_model = list(...))` raises
+  `ledgr_legacy_fill_model_shape` at construction.
+- Error message points at `timing_model = ledgr_timing_next_open()` and
+  `cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(...),
+  ledgr_cost_fixed_fee(...))`.
+- Error message explicitly names the quoted-spread convention shift:
+  "spread_bps in the new API is quoted-spread (half per leg); divide your old
+  value by 2".
+
+**Decision 2: cost plan execution shape.** Confirm "implementer's choice with
+stable outputs and identity."
+
+Rationale: synthesis already notes "likely defer to implementer." Spec-cut just
+confirms. Implementation gated on:
+
+- identity stability tests pass;
+- `cost_plan_json` reconstruction parity tests pass;
+- no per-pulse DB writes in cost resolution (already in synthesis Section 9).
+
+Row-wise resolver, vectorized per-pulse, or hybrid is the implementer's call
+subject to those gates.
+
+**Decision 3: cost component diagnostic retention.** `meta_json` only in v1.
+
+Rationale: reserving a future diagnostic table shape pre-commits to schema
+without binding text -- the exact pattern the closed `compiled_accounting_model`
+enum scope-guard discipline rejects. `meta_json` is the flexible v1 surface.
+Structured diagnostic tables, if needed, get their own RFC (alongside the
+diagnostic-retention RFC that walk-forward already defers to in its Section 12
+Future Obligations).
+
+**Decision 4: reopen-path compatibility for stored configs.** Reject with
+classed error.
+
+Rationale: matches the pre-CRAN policy in horizon's 2026-05-25 entry:
+"users should expect to rerun experiments after upgrading when the cycle
+changes storage/hashing/execution contracts." No translation logic for zero
+current users.
+
+Implementation shape:
+
+- `ledgr_run_open()` reading a stored `config_json` containing `fill_model`
+  raises `ledgr_legacy_config_shape`.
+- Error message points at recreating the experiment with the new API surface.
+
+**Decision 5: `cost_model = NULL` default.** Require explicit argument; no
+implicit default.
+
+Rationale: cost is part of run identity, not an afterthought. Three lenses
+converge:
+
+- Walk-forward synthesis Section 3 binding for `opening_state_policy`:
+  "no hidden hardcoded behavior is allowed." Same principle for cost.
+- An implicit `ledgr_cost_zero()` default is a real footgun: user runs backtest,
+  sees great Sharpe, does not realize the experiment had zero costs.
+- ledgr's broader pattern is explicit-at-construction for
+  identity-participating arguments.
+
+Implementation shape:
+
+- `ledgr_experiment()` without explicit `cost_model` raises
+  `ledgr_cost_model_unspecified` at construction.
+- Error message hints at `ledgr_cost_zero()` for users who genuinely want
+  zero-cost (must be explicit).
+
+**Resolution:** v0.1.9.1 implemented the five decisions through the public
+cost API, explicit timing / required cost model surface, classed legacy-shape
+rejections, cost identity (`cost_model_hash`, `cost_plan_json`), and
+documentation / NEWS closeout. The v0.1.9.x sequencing entry, v0.1.9.2 sweep
+RFC schedule, and v0.1.9.4 walk-forward gate-row obligations remain open
+because they are forward dependencies, not v0.1.9.1 implementation claims.
 
 ### 2026-06-04 [documentation] Documentation, structure, and cleanup release shipped v0.1.8.11
 

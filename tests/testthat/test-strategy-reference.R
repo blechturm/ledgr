@@ -214,7 +214,8 @@ testthat::test_that("reference helper pipeline runs through ledgr_run", {
     snapshot = snapshot,
     strategy = strategy,
     features = list(ledgr_ind_returns(2)),
-    opening = ledgr_opening(cash = 1000)
+    opening = ledgr_opening(cash = 1000),
+  cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, params = list(lookback = 2, n = 1, equity_fraction = 0.5), run_id = "helper-reference")
   on.exit(close(bt), add = TRUE)

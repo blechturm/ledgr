@@ -167,6 +167,37 @@ ledgr supports less constrained strategies too, but the reproducibility
 tier is always visible in run provenance. The trust boundary is
 explicit, not hidden.
 
+## Cost And Timing Are Explicit
+
+Production-shaped research needs execution assumptions that are visible
+at the run boundary. In v0.1.9.1, ledgr makes timing and transaction
+costs explicit parts of experiment construction:
+
+``` r
+experiment <- ledgr_experiment(
+  snapshot,
+  strategy = sma_strategy,
+  params = list(window = 20, quantity = 10),
+  timing_model = ledgr_timing_next_open(),
+  cost_model = ledgr_cost_chain(
+    ledgr_cost_spread_bps(5),
+    ledgr_cost_fixed_fee(1)
+  )
+)
+```
+
+Use `ledgr_cost_zero()` when a zero-cost baseline is intentional. That
+choice is still recorded as a cost model, with its own `cost_model_hash`
+and `cost_plan_json`, so a no-cost run is not confused with an
+omitted-cost run.
+
+`ledgr_cost_spread_bps()` uses a quoted-spread convention: the
+configured basis points describe the full quoted spread, and ledgr
+applies half of that spread to each side of the trade. A buy pays above
+the execution-bar open; a sell receives below it. Fixed and notional
+fees add explicit costs without changing quantity, side, instrument, or
+execution timestamp.
+
 ## What v0.1.x Delivers Today
 
 v0.1.x is the correctness-first research layer. It already covers:
@@ -185,25 +216,22 @@ v0.1.x is the correctness-first research layer. It already covers:
   aliases;
 - feature and strategy grids, sweep execution, candidate rows, promotion
   context, and explicit selection-is-not-validation framing;
-- reproducibility tiers, strategy preflight, stored strategy source, and
-  a deterministic demo dataset for documentation and examples.
+- public cost-model constructors, timing-model identity, required
+  explicit costs, reproducibility tiers, strategy preflight, stored
+  strategy source, and a deterministic demo dataset for documentation
+  and examples.
 
 The rest of the v0.1.x arc is still research-layer work:
 
-- v0.1.8.6 is a measurement and decision cycle for DuckDB-backed feature
-  storage and out-of-core projection;
-- v0.1.8.7 is the planned parallel sweep-dispatch cycle, after the
-  storage decision is clearer;
-- v0.1.8.8 is a crypto-readiness spike for fractional positions, 24/7
-  calendar assumptions, and maker/taker cost shape;
-- v0.1.9 introduces the target-risk layer and primitive-internals
-  planning gates;
-- v0.1.9.x adds walk-forward evaluation, selection-integrity
-  diagnostics, sweep artifact persistence, and target-construction
-  helper extensions;
-- the stable public transaction-cost model API is planned for the
-  v0.1.9.x / v0.2.0 boundary, after target risk and execution-cost
-  identity are stable.
+- v0.1.9.2 plans compact sweep artifact persistence so expensive
+  exploratory work can be retained without committing every candidate as
+  a durable run;
+- v0.1.9.3 plans the target-risk layer and the per-pulse restructure
+  needed for portfolio-level feasibility decisions;
+- v0.1.9.4 plans walk-forward evaluation over the existing sweep and run
+  surfaces;
+- later v0.1.9.x work may add selection-integrity diagnostics,
+  crypto-readiness evidence, and target-construction helper extensions.
 
 Paper and live trading adapters, OMS state machine semantics, and
 observability tooling follow in the v0.2.x and v0.3.x range.

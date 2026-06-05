@@ -15,7 +15,7 @@ testthat::test_that("ledgr_run resolves active aliases from feature_params", {
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
 
   bt <- ledgr_run(
     exp,
@@ -43,7 +43,7 @@ testthat::test_that("ctx features without active aliases fails loudly", {
     ctx$features("AAA")
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = list(ledgr_ind_sma(2)))
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = list(ledgr_ind_sma(2)), cost_model = ledgr_cost_zero())
 
   testthat::expect_error(
     ledgr_run(exp, run_id = "missing-active-alias-map"),
@@ -65,7 +65,7 @@ testthat::test_that("sweeps keep feature params separate from strategy params", 
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(n = c(2L, 3L)),
     strategy = ledgr_strategy_grid(qty = c(1, 2))
@@ -107,7 +107,7 @@ testthat::test_that("parameterized active-alias bundle sweeps resolve concrete o
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(bb_n = c(5L, 8L)),
     strategy = ledgr_strategy_grid(qty = 1)
@@ -133,7 +133,7 @@ testthat::test_that("legacy feature factories reject executable feature grids", 
 
   features <- function(params) list(ledgr_ind_sma(params$n))
   strategy <- function(ctx, params) ctx$flat()
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   executable_grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(n = c(2L, 3L)),
     strategy = ledgr_strategy_grid(qty = 1)
@@ -165,7 +165,7 @@ testthat::test_that("promotion replays active alias feature params", {
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(n = 2L),
     strategy = ledgr_strategy_grid(qty = 1)
@@ -196,7 +196,12 @@ testthat::test_that("alias maps affect config identity independently of feature 
   strategy <- function(ctx, params) ctx$flat()
 
   build_config <- function(features) {
-    exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+    exp <- ledgr_experiment(
+      snapshot = snapshot,
+      strategy = strategy,
+      features = features,
+      cost_model = ledgr_cost_zero()
+    )
     feature_result <- ledgr:::ledgr_experiment_materialize_feature_result(exp, list(), feature_params = list())
     ledgr:::ledgr_config(
       snapshot = snapshot,
@@ -211,9 +216,12 @@ testthat::test_that("alias maps affect config identity independently of feature 
       ),
       features = feature_result$features,
       alias_map = feature_result$alias_map,
+      alias_identity_map = feature_result$alias_identity_map,
       persist_features = exp$persist_features,
       execution_mode = exp$execution_mode,
-      fill_model = exp$fill_model,
+      timing_model = exp$timing_model,
+      cost_model_hash = exp$cost_model_hash,
+      cost_plan_json = exp$cost_plan_json,
       db_path = snapshot$db_path,
       opening = exp$opening,
       seed = NULL
@@ -231,4 +239,78 @@ testthat::test_that("alias maps affect config identity independently of feature 
   )
   testthat::expect_false(identical(cfg_fast$alias_map_hash, cfg_trend$alias_map_hash))
   testthat::expect_false(identical(ledgr:::config_hash(cfg_fast), ledgr:::config_hash(cfg_trend)))
+})
+
+testthat::test_that("active alias identity is order- and parameter-stable at the right layers", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:9)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) ctx$flat()
+
+  build_config <- function(features, feature_params = list()) {
+    exp <- ledgr_experiment(
+      snapshot = snapshot,
+      strategy = strategy,
+      features = features,
+      cost_model = ledgr_cost_zero()
+    )
+    feature_result <- ledgr:::ledgr_experiment_materialize_feature_result(
+      exp,
+      list(),
+      feature_params = feature_params
+    )
+    ledgr:::ledgr_config(
+      snapshot = snapshot,
+      universe = exp$universe,
+      strategy = exp$strategy,
+      strategy_params = list(),
+      feature_params = feature_params,
+      backtest = ledgr:::ledgr_backtest_config(
+        start = snapshot$metadata$start_date,
+        end = snapshot$metadata$end_date,
+        initial_cash = exp$opening$cash
+      ),
+      features = feature_result$features,
+      alias_map = feature_result$alias_map,
+      alias_identity_map = feature_result$alias_identity_map,
+      persist_features = exp$persist_features,
+      execution_mode = exp$execution_mode,
+      timing_model = exp$timing_model,
+      cost_model_hash = exp$cost_model_hash,
+      cost_plan_json = exp$cost_plan_json,
+      db_path = snapshot$db_path,
+      opening = exp$opening,
+      seed = NULL
+    )
+  }
+
+  cfg_declared <- build_config(ledgr_feature_map(
+    slow = ledgr_ind_ema(3),
+    fast = ledgr_ind_sma(2)
+  ))
+  cfg_alpha <- build_config(ledgr_feature_map(
+    fast = ledgr_ind_sma(2),
+    slow = ledgr_ind_ema(3)
+  ))
+
+  testthat::expect_identical(cfg_declared$alias_map_hash, cfg_alpha$alias_map_hash)
+  testthat::expect_identical(ledgr:::config_hash(cfg_declared), ledgr:::config_hash(cfg_alpha))
+  testthat::expect_false(identical(cfg_declared$alias_map_order, cfg_alpha$alias_map_order))
+
+  cfg_n5 <- build_config(
+    ledgr_feature_map(fast = ledgr_ind_sma(ledgr_param("n"))),
+    feature_params = list(n = 5L)
+  )
+  cfg_n10 <- build_config(
+    ledgr_feature_map(fast = ledgr_ind_sma(ledgr_param("n"))),
+    feature_params = list(n = 10L)
+  )
+  fingerprints_n5 <- vapply(cfg_n5$features$defs, `[[`, character(1), "fingerprint")
+  fingerprints_n10 <- vapply(cfg_n10$features$defs, `[[`, character(1), "fingerprint")
+
+  testthat::expect_identical(cfg_n5$alias_map_hash, cfg_n10$alias_map_hash)
+  testthat::expect_false(identical(
+    ledgr:::ledgr_feature_set_hash(fingerprints_n5),
+    ledgr:::ledgr_feature_set_hash(fingerprints_n10)
+  ))
 })

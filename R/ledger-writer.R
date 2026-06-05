@@ -28,7 +28,7 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
   side <- fill_intent$side
   qty <- fill_intent$qty
   fill_price <- fill_intent$fill_price
-  commission_fixed <- fill_intent$commission_fixed
+  fee <- fill_intent$fee
   ts_exec_utc <- fill_intent$ts_exec_utc
 
   if (!is.character(instrument_id) || length(instrument_id) != 1 || is.na(instrument_id) || !nzchar(instrument_id)) {
@@ -43,8 +43,8 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
   if (!is.numeric(fill_price) || length(fill_price) != 1 || is.na(fill_price) || !is.finite(fill_price) || fill_price <= 0) {
     rlang::abort("`fill_intent$fill_price` must be a finite numeric scalar > 0.", class = "ledgr_invalid_fill_intent")
   }
-  if (!is.numeric(commission_fixed) || length(commission_fixed) != 1 || is.na(commission_fixed) || !is.finite(commission_fixed) || commission_fixed < 0) {
-    rlang::abort("`fill_intent$commission_fixed` must be a finite numeric scalar >= 0.", class = "ledgr_invalid_fill_intent")
+  if (!is.numeric(fee) || length(fee) != 1 || is.na(fee) || !is.finite(fee) || fee < 0) {
+    rlang::abort("`fill_intent$fee` must be a finite numeric scalar >= 0.", class = "ledgr_invalid_fill_intent")
   }
   if (is.null(ts_exec_utc)) {
     rlang::abort("`fill_intent$ts_exec_utc` is required.", class = "ledgr_invalid_fill_intent")
@@ -65,9 +65,9 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
 
   signed_qty <- if (side == "BUY") as.numeric(qty) else -as.numeric(qty)
   cash_delta <- if (side == "BUY") {
-    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(commission_fixed))
+    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(fee))
   } else {
-    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(commission_fixed))
+    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(fee))
   }
 
   ts_exec_posix <- ledgr_ts_utc_posix(
@@ -78,7 +78,7 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
 
   meta_json <- canonical_json(
     list(
-      commission_fixed = as.numeric(commission_fixed),
+      fee = as.numeric(fee),
       cash_delta = as.numeric(cash_delta),
       position_delta = as.numeric(signed_qty),
       realized_pnl = NULL
@@ -124,7 +124,7 @@ ledgr_write_fill_events <- function(con, run_id, fill_intent, event_seq_start = 
         side,
         as.numeric(qty),
         as.numeric(fill_price),
-        as.numeric(commission_fixed),
+        as.numeric(fee),
         meta_json,
         as.integer(event_seq)
       )

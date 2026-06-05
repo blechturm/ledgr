@@ -555,7 +555,8 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
       universe = c("TEST_A", "TEST_B"),
       start = "2020-01-01",
       end = "2020-01-15",
-      db_path = db_path
+      db_path = db_path,
+    cost_model = ledgr_cost_zero()
     ),
     NA
   )
@@ -590,7 +591,8 @@ testthat::test_that("feature-map strategies match across execution modes", {
         strategy = strategy,
         features = features,
         opening = ledgr_opening(cash = 1000),
-        execution_mode = mode
+        execution_mode = mode,
+      cost_model = ledgr_cost_zero()
       )
       bt <- ledgr_run(exp, params = list(), run_id = paste0("feature-map-", mode))
       on.exit(close(bt), add = TRUE)

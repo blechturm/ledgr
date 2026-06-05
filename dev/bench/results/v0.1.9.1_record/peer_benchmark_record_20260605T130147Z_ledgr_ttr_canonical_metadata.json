@@ -1,0 +1,12 @@
+{
+  "engine": "ledgr_ttr_canonical",
+  "status": "DONE",
+  "wall_sec": 116.85,
+  "phase_sec": {
+    "ingestion_sec": 20.47,
+    "engine_sec": 86.69,
+    "results_sec": 9.69
+  },
+  "cost_model": "cost_zero",
+  "boundary_check": ["bars_csv_read", "snapshot_create", "engine_run", "canonical_equity_write", "fills_write"]
+}

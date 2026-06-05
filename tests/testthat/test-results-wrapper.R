@@ -14,7 +14,8 @@ testthat::test_that("ledgr_results delegates to tibble::as_tibble for supported 
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "results-wrapper-run"
+    run_id = "results-wrapper-run",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 

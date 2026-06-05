@@ -69,7 +69,7 @@ strategy <- function(ctx, params) {
   targets["AAA"] <- 1
   targets
 }
-bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 ledgr_results(bt, what = "trades")
 close(bt)
 }

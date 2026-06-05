@@ -15,6 +15,8 @@ testthat::test_that("ledgr_config is a validated internal S3 object", {
       end = "2020-01-05",
       initial_cash = 1000
     ),
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
     db_path = db_path
   )
 
@@ -23,5 +25,5 @@ testthat::test_that("ledgr_config is a validated internal S3 object", {
 
   printed <- utils::capture.output(print(config))
   testthat::expect_true(any(grepl("ledgr_config", printed, fixed = TRUE)))
-  testthat::expect_true(any(grepl("Fill Model:", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Timing Model:", printed, fixed = TRUE)))
 })

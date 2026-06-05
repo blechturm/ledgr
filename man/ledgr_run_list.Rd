@@ -15,8 +15,9 @@ DuckDB file in a new R session.}
 }
 \value{
 A \code{ledgr_run_list} object, which is a classed tibble with run
-identity, provenance, status, telemetry summary, and basic result summary
-columns.
+identity, including \code{feature_set_hash}, provenance, status, telemetry
+summary, and basic result summary columns. See \link{ledgr_identity_fields}
+for hash-field semantics.
 }
 \description{
 Discovers stored runs in a DuckDB experiment-store file without recomputing
@@ -26,7 +27,7 @@ or mutating runs. Archived runs are hidden by default.
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 strategy <- function(ctx, params) ctx$flat()
-exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 bt <- ledgr_run(exp, params = list(), run_id = "flat")
 ledgr_run_list(snapshot)
 close(bt)

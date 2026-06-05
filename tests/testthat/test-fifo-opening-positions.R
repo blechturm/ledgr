@@ -30,7 +30,7 @@ fifo_opening_setup <- function(prices_by_instrument) {
 fifo_opening_config <- function(snapshot,
                                 strategy,
                                 opening,
-                                fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+                                cost_model = ledgr_cost_zero(),
                                 execution_mode = "audit_log") {
   universe <- ledgr:::ledgr_infer_universe_from_snapshot(snapshot)
   ledgr_config(
@@ -46,7 +46,9 @@ fifo_opening_config <- function(snapshot,
     features = list(),
     persist_features = TRUE,
     execution_mode = execution_mode,
-    fill_model = fill_model,
+    timing_model = ledgr_timing_next_open(),
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(cost_model),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(cost_model),
     db_path = snapshot$db_path,
     opening = opening,
     seed = NULL
@@ -57,13 +59,13 @@ fifo_opening_run <- function(snapshot,
                              strategy,
                              opening,
                              run_id,
-                             fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+                             cost_model = ledgr_cost_zero(),
                              execution_mode = "audit_log") {
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
     opening = opening,
-    fill_model = fill_model,
+    cost_model = cost_model,
     execution_mode = execution_mode
   )
   ledgr_run(exp, run_id = run_id)
@@ -216,7 +218,7 @@ testthat::test_that("opening-position fills keep gross fill P&L separate from ne
     setup$snapshot,
     strategy = strategy,
     opening = ledgr_opening(cash = 10000, positions = c(AAA = 100), cost_basis = c(AAA = 50)),
-    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 5),
+    cost_model = ledgr_cost_fixed_fee(5),
     run_id = "fifo-opening-fee"
   )
   on.exit(close(bt), add = TRUE)

@@ -145,7 +145,8 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
     start = "2020-01-01",
     end = "2020-01-31",
     features = list(ind),
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
 
   features <- DBI::dbGetQuery(
@@ -185,7 +186,8 @@ testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
     start = "2020-01-01",
     end = "2020-01-10",
     features = list(ind),
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
 
   persisted <- DBI::dbGetQuery(

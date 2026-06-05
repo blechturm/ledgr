@@ -15,7 +15,8 @@ testthat::test_that("metrics handle zero-trade backtests", {
     universe = c("TEST_A", "TEST_B"),
     start = "2020-01-01",
     end = "2020-01-10",
-    initial_cash = 1000
+    initial_cash = 1000,
+  cost_model = ledgr_cost_zero()
   )
 
   fills <- ledgr:::ledgr_extract_fills(bt)

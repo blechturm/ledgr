@@ -11,7 +11,8 @@ testthat::test_that("successful runs persist compact telemetry and print executi
     end = "2020-01-05",
     db_path = db_path,
     run_id = "telemetry-success",
-    persist_features = FALSE
+    persist_features = FALSE,
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
@@ -54,7 +55,8 @@ testthat::test_that("diagnostic fold-loop telemetry records sampled buckets", {
     db_path = db_path,
     run_id = "telemetry-buckets",
     persist_features = FALSE,
-    control = list(telemetry_stride = 1L)
+    control = list(telemetry_stride = 1L),
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 
@@ -98,7 +100,8 @@ testthat::test_that("failed runs persist minimum telemetry diagnostics", {
       start = "2020-01-01",
       end = "2020-01-05",
       db_path = db_path,
-      run_id = "telemetry-failed"
+      run_id = "telemetry-failed",
+    cost_model = ledgr_cost_zero()
     ),
     "strategy boom"
   )

@@ -155,7 +155,7 @@ testthat::test_that("BUY/SELL spread adjustment is symmetric and spread=0 yields
   testthat::expect_equal(sell0$fill_price, 100)
 })
 
-testthat::test_that("commission is included and must be non-negative", {
+testthat::test_that("fee is included and must be non-negative", {
   bar <- list(
     instrument_id = "AAA",
     ts_utc = "2020-01-02T00:00:00Z",
@@ -168,7 +168,7 @@ testthat::test_that("commission is included and must be non-negative", {
     spread_bps = 0,
     commission_fixed = 2.5
   )
-  testthat::expect_equal(fill$commission_fixed, 2.5)
+  testthat::expect_equal(fill$fee, 2.5)
 
   testthat::expect_error(
     ledgr:::ledgr_fill_next_open(

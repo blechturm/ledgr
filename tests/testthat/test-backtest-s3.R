@@ -13,7 +13,8 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
     universe = "TEST_A",
     start = "2020-01-01",
     end = "2020-01-15",
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
 
   out_print <- capture.output(print(bt))
@@ -56,7 +57,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
     class = "ledgr_invalid_backtest"
   )
   testthat::expect_error(
-    ledgr:::close.ledgr_backtest(list()),
+    ledgr:::close.ledgr_backtest(list(), cost_model = ledgr_cost_zero()),
     class = "ledgr_invalid_backtest"
   )
 
@@ -70,7 +71,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   testthat::expect_s3_class(feature_err, "ledgr_invalid_result_table")
   testthat::expect_match(conditionMessage(feature_err), "ledgr_pulse_snapshot", fixed = TRUE)
   testthat::expect_match(conditionMessage(feature_err), "ledgr_pulse_features", fixed = TRUE)
-  testthat::expect_error(ledgr:::summary.ledgr_backtest(list()), class = "ledgr_invalid_backtest")
+  testthat::expect_error(ledgr:::summary.ledgr_backtest(list(), cost_model = ledgr_cost_zero()), class = "ledgr_invalid_backtest")
 
   testthat::expect_error(close(bt), NA)
 })
@@ -105,7 +106,8 @@ testthat::test_that("summary surfaces impossible warmup diagnostics without chan
     strategy = strategy,
     features = features,
     db_path = db_path,
-    run_id = "warmup-diagnostic-run"
+    run_id = "warmup-diagnostic-run",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 

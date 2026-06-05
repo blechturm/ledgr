@@ -317,7 +317,7 @@ testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
   strategy <- function(ctx, params) {
     my_helper(ctx)
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 
   err <- testthat::capture_error(
     ledgr_run(exp, params = list(), run_id = "tier-3-run"),
@@ -349,7 +349,7 @@ testthat::test_that("ledgr_run rejects forbidden calls before fingerprinting or 
     Sys.time()
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 
   err <- testthat::capture_error(
     ledgr_run(exp, params = list(), run_id = "sys-time-tier-3-run")
@@ -379,7 +379,7 @@ testthat::test_that("ledgr_run rejects do.call indirection and context mutation 
     do.call("Sys.time", list())
     ctx$flat()
   }
-  do_call_exp <- ledgr_experiment(snapshot, do_call_strategy)
+  do_call_exp <- ledgr_experiment(snapshot, do_call_strategy, cost_model = ledgr_cost_zero())
   do_call_err <- testthat::capture_error(
     ledgr_run(do_call_exp, params = list(), run_id = "do-call-tier-3-run")
   )
@@ -393,7 +393,7 @@ testthat::test_that("ledgr_run rejects do.call indirection and context mutation 
     attr(ctx, "secret") <- 1
     ctx$flat()
   }
-  attr_exp <- ledgr_experiment(snapshot, attr_strategy)
+  attr_exp <- ledgr_experiment(snapshot, attr_strategy, cost_model = ledgr_cost_zero())
   attr_err <- testthat::capture_error(
     ledgr_run(attr_exp, params = list(), run_id = "attr-ctx-tier-3-run")
   )
@@ -422,7 +422,7 @@ testthat::test_that("ledgr_run rejects global assignment before strategy executi
     counter <<- counter + 1L
     ctx$flat()
   }
-  exp <- ledgr_experiment(snapshot, strategy)
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 
   err <- testthat::capture_error(
     ledgr_run(exp, params = list(), run_id = "global-assign-tier-3-run")

@@ -164,14 +164,14 @@ ledgr_fill_event_payload <- function(run_id,
   side <- fill_intent$side
   qty <- fill_intent$qty
   fill_price <- fill_intent$fill_price
-  commission_fixed <- fill_intent$commission_fixed
+  fee <- fill_intent$fee
   ts_exec_utc <- fill_intent$ts_exec_utc
 
   signed_qty <- if (side == "BUY") as.numeric(qty) else -as.numeric(qty)
   cash_delta <- if (side == "BUY") {
-    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(commission_fixed))
+    -(as.numeric(qty) * as.numeric(fill_price) + as.numeric(fee))
   } else {
-    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(commission_fixed))
+    +(as.numeric(qty) * as.numeric(fill_price) - as.numeric(fee))
   }
 
   ts_exec_posix <- ledgr_ts_utc_posix(
@@ -181,7 +181,7 @@ ledgr_fill_event_payload <- function(run_id,
   )
 
   meta <- list(
-    commission_fixed = as.numeric(commission_fixed),
+    fee = as.numeric(fee),
     cash_delta = as.numeric(cash_delta),
     position_delta = as.numeric(signed_qty),
     realized_pnl = NULL
@@ -198,7 +198,7 @@ ledgr_fill_event_payload <- function(run_id,
     side = side,
     qty = as.numeric(qty),
     price = as.numeric(fill_price),
-    fee = as.numeric(commission_fixed),
+    fee = as.numeric(fee),
     meta_json = meta_json,
     event_seq = as.integer(event_seq)
   )
@@ -993,10 +993,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
 
   max_pulses <- control$max_pulses
   if (is.null(max_pulses)) max_pulses <- Inf
-  cost_resolver <- ledgr_cost_spread_commission_internal(
-    spread_bps = cfg$fill_model$spread_bps,
-    commission_fixed = cfg$fill_model$commission_fixed
-  )
+  cost_resolver <- ledgr_cost_resolver_from_plan_json(cfg$cost_model$cost_plan_json)
 
   output_handler$record_run_status("RUNNING", NA_character_)
 

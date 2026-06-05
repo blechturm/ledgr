@@ -33,7 +33,8 @@ testthat::test_that("audit_log matches db_live results", {
     universe = "BTC",
     end = end_ts,
     execution_mode = "audit_log",
-    persist_features = FALSE
+    persist_features = FALSE,
+  cost_model = ledgr_cost_zero()
   ))
   bt_db <- suppressWarnings(ledgr_backtest(
     snapshot = snap,
@@ -41,7 +42,8 @@ testthat::test_that("audit_log matches db_live results", {
     universe = "BTC",
     end = end_ts,
     execution_mode = "db_live",
-    persist_features = FALSE
+    persist_features = FALSE,
+  cost_model = ledgr_cost_zero()
   ))
 
   fills_a <- ledgr_extract_fills(bt_audit)

@@ -337,7 +337,8 @@ testthat::test_that("feature inspection views match across execution modes", {
         strategy = strategy,
         features = features,
         opening = ledgr_opening(cash = 1000),
-        execution_mode = mode
+        execution_mode = mode,
+      cost_model = ledgr_cost_zero()
       )
       bt <- ledgr_run(exp, params = list(), run_id = paste0("inspection-", mode))
       on.exit(close(bt), add = TRUE)

@@ -150,7 +150,7 @@ testthat::test_that("executable grids feed feature params to feature resolution"
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
   features <- ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("fast_n")))
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features)
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, features = features, cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(fast_n = c(2L, 3L)),
     strategy = ledgr_strategy_grid(qty = 100L)

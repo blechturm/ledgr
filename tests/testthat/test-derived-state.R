@@ -78,6 +78,7 @@ testthat::test_that("derived state reconstructs positions, cash, and equity_curv
     fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 1),
     strategy = list(id = "hold_zero")
   )
+  cfg <- ledgr_test_modernize_config(cfg, ledgr_cost_fixed_fee(1))
   insert_test_run_ds(con, run_id, cfg)
 
   DBI::dbAppendTable(con, "instruments", data.frame(instrument_id = "AAA"))
@@ -146,6 +147,7 @@ testthat::test_that("empty ledger produces empty equity_curve and preserves init
     fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
     strategy = list(id = "hold_zero")
   )
+  cfg <- ledgr_test_modernize_config(cfg)
   insert_test_run_ds(con, run_id, cfg)
 
   DBI::dbExecute(con, "INSERT INTO instruments (instrument_id) VALUES ('AAA'), ('BBB')")
@@ -185,6 +187,7 @@ testthat::test_that("rebuild failure does not delete existing equity_curve rows"
     fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
     strategy = list(id = "hold_zero")
   )
+  cfg <- ledgr_test_modernize_config(cfg)
   insert_test_run_ds(con, run_id, cfg)
 
   DBI::dbAppendTable(con, "instruments", data.frame(instrument_id = "AAA"))

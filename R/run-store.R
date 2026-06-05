@@ -116,6 +116,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     "strategy_source_capture_method", "strategy_params_json",
     "strategy_params_hash", "ledgr_version", "R_version",
     "dependency_versions_json", "config_hash", "execution_mode",
+    "feature_set_hash",
     "elapsed_sec", "pulse_count", "persist_features", "feature_cache_hits",
     "feature_cache_misses", "error_msg", "final_equity", "max_drawdown",
     "total_return", "n_trades", "config_json", "schema_version"
@@ -123,6 +124,13 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
 
   for (col in setdiff(canonical_cols, names(out))) {
     ensure_col(col, NA)
+  }
+  if ("config_json" %in% names(out) && nrow(out) > 0L) {
+    out$feature_set_hash <- vapply(
+      out$config_json,
+      ledgr_run_store_config_feature_set_hash,
+      character(1)
+    )
   }
   out$archived[is.na(out$archived)] <- FALSE
   out$reproducibility_level[is.na(out$reproducibility_level)] <- "legacy"
@@ -278,6 +286,23 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
   }
   out <- out[, canonical_cols, drop = FALSE]
   tibble::as_tibble(out)
+}
+
+ledgr_run_store_config_feature_set_hash <- function(config_json) {
+  # Read-time projection from stored config_json; no DB column in v0.1.9.1.
+  # If this becomes a hot filter dimension, promote it through a schema change.
+  if (is.null(config_json) || length(config_json) != 1L || is.na(config_json) || !nzchar(config_json)) {
+    return(NA_character_)
+  }
+  cfg <- tryCatch(
+    ledgr_json_read_config(config_json),
+    error = function(e) NULL
+  )
+  value <- cfg$features$feature_set_hash
+  if (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(value)) {
+    return(value)
+  }
+  NA_character_
 }
 
 ledgr_run_store_format_ts <- function(x) {
@@ -640,7 +665,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   targets["DEMO_01"] <- params$qty
 #'   targets
 #' }
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
 #' on.exit(close(bt_a), add = TRUE)
 #' bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "qty-2")
@@ -758,13 +783,14 @@ print.ledgr_comparison <- function(x, ...) {
 #'   DuckDB file in a new R session.
 #' @param include_archived Logical scalar. If `TRUE`, include archived runs.
 #' @return A `ledgr_run_list` object, which is a classed tibble with run
-#'   identity, provenance, status, telemetry summary, and basic result summary
-#'   columns.
+#'   identity, including `feature_set_hash`, provenance, status, telemetry
+#'   summary, and basic result summary columns. See [ledgr_identity_fields]
+#'   for hash-field semantics.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_list(snapshot)
 #' close(bt)
@@ -820,10 +846,11 @@ print.ledgr_run_list <- function(x, ...) {
 #' @param run_id Run identifier.
 #' @return A `ledgr_run_info` object. Important fields include `run_id`,
 #'   `status`, `snapshot_id`, `snapshot_hash`, `strategy_source_hash`,
-#'   `strategy_params_hash`, `config_hash`, `reproducibility_level`,
-#'   `execution_mode`, `elapsed_sec`, `pulse_count`, `persist_features`,
-#'   feature-cache counts, `promotion_context` for runs created with
-#'   [ledgr_promote()], and `error_msg` for failed runs.
+#'   `strategy_params_hash`, `feature_set_hash`, `config_hash`,
+#'   `reproducibility_level`, `execution_mode`, `elapsed_sec`, `pulse_count`,
+#'   `persist_features`, feature-cache counts, `promotion_context` for runs
+#'   created with [ledgr_promote()], and `error_msg` for failed runs. See
+#'   [ledgr_identity_fields] for hash-field semantics.
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
@@ -832,7 +859,7 @@ print.ledgr_run_list <- function(x, ...) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_info(snapshot, bt$run_id)
 #' close(bt)
@@ -883,6 +910,7 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Tags:            ", value("tags"), "\n", sep = "")
   cat("Snapshot:        ", value("snapshot_id"), "\n", sep = "")
   cat("Snapshot Hash:   ", value("snapshot_hash"), "\n", sep = "")
+  cat("Feature Set Hash: ", value("feature_set_hash"), "\n", sep = "")
   cat("Config Hash:     ", value("config_hash"), "\n", sep = "")
   cat("Strategy Hash:   ", value("strategy_source_hash"), "\n", sep = "")
   cat("Params Hash:     ", value("strategy_params_hash"), "\n", sep = "")
@@ -915,7 +943,7 @@ print.ledgr_run_info <- function(x, ...) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' run_id <- bt$run_id
 #' close(bt)
@@ -964,12 +992,18 @@ ledgr_run_open <- function(snapshot, run_id) {
   if (is.list(cfg$alias_map_order) && length(cfg$alias_map_order) == 0L) {
     cfg$alias_map_order <- character()
   }
-  required_config_fields <- c("db_path", "engine", "universe", "backtest", "fill_model", "strategy")
+  if (!is.null(cfg$fill_model)) {
+    rlang::abort(
+      sprintf("Run '%s' has legacy `fill_model` config_json and cannot be reopened. Recreate the experiment under v0.1.9.1.", run_id),
+      class = "ledgr_legacy_config_shape"
+    )
+  }
+  required_config_fields <- c("db_path", "engine", "universe", "backtest", "timing_model", "cost_model", "strategy")
   missing_config_fields <- setdiff(required_config_fields, names(cfg))
   if (length(missing_config_fields) > 0L) {
     rlang::abort(
       sprintf(
-        "Run '%s' has legacy or incomplete config_json and cannot be reopened. Use ledgr_run_info() to inspect available metadata.",
+        "Run '%s' has incomplete config_json and cannot be reopened. Use ledgr_run_info() to inspect available metadata.",
         run_id
       ),
       class = "ledgr_invalid_run"
@@ -1000,7 +1034,7 @@ ledgr_run_open <- function(snapshot, run_id) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_label(snapshot, bt$run_id, "baseline")
 #' close(bt)
@@ -1044,7 +1078,7 @@ ledgr_run_label <- function(snapshot, run_id, label = NULL) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_archive(snapshot, bt$run_id, reason = "example cleanup")
 #' close(bt)

@@ -1,0 +1,2026 @@
+# ledgr v0.1.9.1 Tickets
+
+Version: v0.1.9.1
+Date: 2026-06-05
+Total Tickets: 34
+
+## Ticket Organization
+
+This packet implements the scoped v0.1.9.1 plan from
+`v0_1_9_1_spec.md`: public transaction-cost objects, explicit timing
+models, cost identity, migration away from legacy `fill_model`, THEME-004
+identity hardening, bounded auditr documentation fixes, and release-surface
+housekeeping.
+
+Ticket IDs start at `LDG-2547` because `LDG-2527` through `LDG-2546` were used
+by the v0.1.8.11 packet.
+
+The release spine is:
+
+```text
+packet alignment
+  -> cost object surface
+     -> timing and identity surface
+        -> fold resolver wiring
+           -> internal migration
+              -> cost resolver measurement spike
+                 -> identity hardening
+                    -> identity documentation
+                       -> auditr remainder docs
+                          -> release surfaces
+                             -> release gate
+                                -> release recovery / commit split
+                                   -> reviewed local gates
+                                      -> release resume decision
+```
+
+## Dependency DAG
+
+```text
+LDG-2547 Packet Alignment And v0.1.9.1 Ticket Cut
+  |-- LDG-2548 Cost Primitive Constructors
+  |     `-- LDG-2549 Cost Composition And Validation
+  |           |-- LDG-2551 Cost Identity Surface
+  |           |     |-- LDG-2552 Cost Inspection Helpers
+  |           |     |-- LDG-2553 Cost Resolver Wiring
+  |           |     |     `-- LDG-2575 Cost Resolver Measurement Spike
+  |           |     |-- LDG-2557 ledgr_backtest Public Surface Migration
+  |           |     `-- LDG-2558 Required Cost Model On Experiment
+  |           `-- LDG-2550 Timing Constructor And Experiment Surface
+  |                 |-- LDG-2555 Timing Model Internal Migration
+  |                 |     `-- LDG-2556 Reopen Path Legacy Config Rejection
+  |                 `-- LDG-2557 ledgr_backtest Public Surface Migration
+  |-- LDG-2554 Internal Fee Field Rename
+  |-- LDG-2559 config_hash Store-Path Independence
+  |     `-- LDG-2560 config_hash Alias Declaration-Order Independence
+  |-- LDG-2561 alias_map_hash Parameter Independence
+  |-- LDG-2564 DISCLAIMER.md Install Path Fix
+  |-- LDG-2566 LEDGR_LAST_BAR_NO_FILL Help Topic
+  |-- LDG-2569 Sweep Vignette Cost Non-Participation Note
+  |-- LDG-2562 feature_set_hash Run Surface Exposure
+  |     `-- LDG-2563 Identity Contract Reference And contracts.md Update
+  |-- LDG-2565 Cost Condition Class Documentation
+  |-- LDG-2567 Metrics And Accounting Vignette Cost Rewrite
+  |-- LDG-2568 Cost API Runnable Examples
+  |-- LDG-2570 NEWS Entry
+  |     |-- LDG-2571 Roadmap Update
+  |     |-- LDG-2572 Horizon Housekeeping
+  |     `-- LDG-2573 Design And RFC Index Update
+  `-- LDG-2574 v0.1.9.1 Release Gate
+        `-- LDG-2576 Release Recovery Freeze And CI Evidence Capture
+              |-- LDG-2577 Split Oversized Batch 8 Commit
+              |-- LDG-2578 Focused Review Of Docs Example Cost Migration
+              |-- LDG-2579 Release Gate Harness And Local Gate Rerun
+              `-- LDG-2580 Release Resume Decision And Remote Gate Closeout
+```
+
+`LDG-2574` depends on every prior implementation and release-surface ticket in
+this packet. `LDG-2576` through `LDG-2580` are release-recovery tickets cut
+after the v0.1.9.1 branch push exposed an oversized Batch 8 commit and a
+missing README cold-start local gate.
+
+## Priority Levels
+
+- P0: packet alignment, public cost API, identity correctness, release gate,
+  or HIGH-severity auditr finding.
+- P1: required internal migration, identity documentation, or bounded
+  medium-severity auditr follow-up.
+- P2: release-surface housekeeping or small documentation polish.
+
+---
+
+## LDG-2547: Packet Alignment And v0.1.9.1 Ticket Cut
+
+Priority: P0
+Effort: S
+Dependencies: none
+Status: Completed
+
+### Description
+
+Finalize the v0.1.9.1 planning packet after Codex spec review and cut the
+ticket markdown, machine-readable ticket YAML, and batch plan before
+implementation starts.
+
+### Tasks
+
+- Patch accepted Codex review findings into `v0_1_9_1_spec.md`.
+- Keep `v0_1_9_1_spec.md`, `v0_1_9_1_tickets.md`, `tickets.yml`, and
+  `batch_plan.md` synchronized.
+- Confirm the packet preserves cost-API synthesis authority and does not
+  authorize target-risk, walk-forward, or sweep artifact persistence work.
+- Confirm the contracts.md question is resolved as a bounded identity-contract
+  update, not a broad contract rewrite.
+- Submit the ticket cut for review before Batch 1 starts.
+
+### Acceptance Criteria
+
+- Spec, tickets, YAML, and batch plan agree on IDs, dependencies, priorities,
+  statuses, and scope.
+- No implementation ticket is missing an acceptance or verification path.
+- All previous Codex blocker findings are patched or explicitly accepted.
+
+### Verification
+
+Manual packet review, YAML review, ASCII check, `git diff --check`, and
+review-response audit.
+
+### Completion Note (2026-06-05)
+
+Codex rechecked the patched v0.1.9.1 spec, resolved the remaining contracts.md
+review question as bounded scope under LDG-2563, and cut `LDG-2547` through
+`LDG-2574` plus `tickets.yml` and `batch_plan.md`.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `codex_spec_review.md`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+- `inst/design/horizon.md`
+
+### Classification
+
+```yaml
+type: governance
+surface: design_packet
+scope: v0.1.9.1
+```
+
+---
+
+## LDG-2548: Cost Primitive Constructors
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2547
+Status: Completed
+
+### Description
+
+Implement the public cost primitive constructors accepted by the transaction
+cost API synthesis.
+
+### Tasks
+
+- Implement `ledgr_cost_spread_bps(bps)`.
+- Implement `ledgr_cost_fixed_fee(amount)`.
+- Implement `ledgr_cost_notional_bps_fee(bps)`.
+- Implement `ledgr_cost_zero()`.
+- Validate scalar numeric arguments with classed, actionable errors.
+- Bind quoted-spread semantics for `ledgr_cost_spread_bps()`:
+  BUY uses `open * (1 + spread_bps / 20000)` and SELL uses
+  `open * (1 - spread_bps / 20000)`.
+
+### Acceptance Criteria
+
+- Each constructor returns a classed ledgr cost object with stable type id,
+  schema version, and fixed arguments.
+- Invalid inputs fail loudly before fold entry.
+- Quoted-spread semantics are covered by unit tests.
+- No user-supplied cost functions are accepted.
+
+### Verification
+
+Cost constructor tests, invalid-input tests, quoted-spread arithmetic oracle,
+and roxygen examples.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: public_api
+surface: transaction_cost_model
+scope: cost_primitives
+```
+
+---
+
+## LDG-2549: Cost Composition And Validation
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2548
+Status: Completed
+
+### Description
+
+Implement `ledgr_cost_chain(...)` and construction-time order validation for
+cost model composition.
+
+### Tasks
+
+- Implement `ledgr_cost_chain(...)` for ordered ledgr cost objects.
+- Validate that price transforms precede fee adders.
+- Raise `ledgr_invalid_cost_chain_order` when fee adders precede price
+  transforms.
+- Preserve child step order in the model object and canonical identity payload.
+
+### Acceptance Criteria
+
+- Valid cost chains preserve user-specified step order.
+- Invalid chains fail at construction time, not during execution.
+- Validation rejects non-ledgr cost objects.
+- Chain identity is deterministic across sessions.
+
+### Verification
+
+Composition tests, classed error tests, deterministic identity fixture, and
+roxygen examples.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: public_api
+surface: transaction_cost_model
+scope: cost_chain_validation
+```
+
+---
+
+## LDG-2550: Timing Constructor And Experiment Surface
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2548
+Status: Completed
+
+### Description
+
+Implement `ledgr_timing_next_open()` and add the public `timing_model` argument
+to `ledgr_experiment()`.
+
+### Tasks
+
+- Implement `ledgr_timing_next_open()`.
+- Add `timing_model` to `ledgr_experiment()`.
+- Make `timing_model` default to `ledgr_timing_next_open()`.
+- Reject legacy `fill_model = list(...)` input with
+  `ledgr_legacy_fill_model_shape`.
+- Update roxygen and examples to teach timing-vs-cost separation.
+
+### Acceptance Criteria
+
+- `ledgr_experiment()` accepts the new timing constructor.
+- Legacy `fill_model` input fails loudly with the bound condition class.
+- Existing next-open execution semantics are unchanged.
+- Tests prove no same-bar fill regression.
+
+### Verification
+
+Experiment-constructor tests, legacy-shape rejection tests, next-open timing
+tests, and documentation render.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: public_api
+surface: timing_model
+scope: next_open_constructor
+```
+
+---
+
+## LDG-2551: Cost Identity Surface
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2549
+Status: Completed
+
+### Description
+
+Implement deterministic cost identity and canonical cost-plan serialization.
+
+### Tasks
+
+- Implement `cost_model_hash` per synthesis Section 6.2.
+- Implement `cost_plan_json` as canonical worker-safe plan JSON.
+- Ensure hash composition includes schema version, type id, fixed arguments,
+  ordered child steps, child type ids, and child versions.
+- Forbid memory addresses, R environment serialization, object print output,
+  and package load order from the hash payload.
+- Persist `cost_model_hash` and `cost_plan_json` on run config and promotion
+  provenance.
+- Keep cost identity orthogonal to `metric_context_hash`.
+
+### Acceptance Criteria
+
+- Two identical cost models produce identical hashes across sessions.
+- Different cost model content produces different hashes.
+- `cost_plan_json` reconstructs the execution plan without closures or
+  environment serialization.
+- Run config, run info, sweep candidate, and promotion provenance expose the
+  bound fields where applicable.
+
+### Verification
+
+Hash fixture tests, cross-session tests, plan reconstruction tests,
+promotion-provenance tests, and sweep candidate identity tests.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: identity
+surface: transaction_cost_model
+scope: cost_model_hash_and_plan_json
+```
+
+---
+
+## LDG-2552: Cost Inspection Helpers
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2551
+Status: Completed
+
+### Description
+
+Implement public inspection helpers for cost model objects.
+
+### Tasks
+
+- Implement `ledgr_cost_steps(cost_model)`.
+- Implement `ledgr_cost_describe(cost_model)`.
+- Ensure helpers expose stable, user-readable structure without leaking
+  private implementation details.
+- Document examples for primitive and chained models.
+
+### Acceptance Criteria
+
+- Helpers return deterministic output for identical cost models.
+- Helpers work for primitives, zero-cost, and chains.
+- Invalid inputs fail clearly.
+- Examples are runnable.
+
+### Verification
+
+Inspection helper tests, snapshot-style expected-output tests, invalid-input
+tests, and roxygen examples.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: public_api
+surface: transaction_cost_model
+scope: inspection_helpers
+```
+
+---
+
+## LDG-2553: Cost Resolver Wiring
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2550, LDG-2551
+Status: Completed
+
+### Description
+
+Wire compiled cost plans into the existing proposal / resolver seam without
+creating a second execution path or changing fold control flow.
+
+### Tasks
+
+- Compile cost models into worker-safe plans consumed by
+  `ledgr_resolve_fill_proposal()`.
+- Apply price transforms and explicit fee adders at the existing fill proposal
+  boundary.
+- Preserve quantity, side, instrument, and execution timestamp.
+- Keep sequential run and sweep execution on the same fold core.
+- Add parity tests for direct run, sweep candidate execution, and promotion.
+
+### Acceptance Criteria
+
+- Cost application changes only fill price and fee fields.
+- No fold-control-flow branch or second execution engine is introduced.
+- Sweep candidate execution and direct runs agree for the same cost model.
+- Promotion preserves and materializes cost identity.
+
+### Verification
+
+Run parity tests, sweep parity tests, promotion parity tests, hand-checkable
+cost arithmetic fixtures, and no-lookahead timing tests.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/contracts.md`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: execution
+surface: fold_resolver
+scope: cost_plan_application
+```
+
+---
+
+## LDG-2554: Internal Fee Field Rename
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2547
+Status: Completed
+
+### Description
+
+Rename the internal and emitted fixed commission field from
+`commission_fixed` to `fee` at the fill payload and accounting surfaces.
+
+### Tasks
+
+- Update `ledgr_fill_event_payload()` cash-delta computation to consume and
+  emit `fee`.
+- Update fill-model machinery, output handlers, and lot accounting.
+- Remove `commission_fixed` from new config and event payload paths.
+- Keep the ledger schema's existing `fee` field as canonical.
+- Update tests that assert fill row shape, cash delta, and meta payloads.
+
+### Acceptance Criteria
+
+- Fill rows expose `fee`, not `commission_fixed`, as the public field.
+- Cash-delta math is unchanged except for the field rename.
+- Existing accounting identities continue to pass.
+- Legacy stored shapes are handled only by the explicit reopen rejection ticket.
+
+### Verification
+
+Fill payload tests, cash identity tests, round-trip P&L tests, sweep parity
+tests, and durable readback tests.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `R/backtest-runner.R`
+
+### Classification
+
+```yaml
+type: internal_migration
+surface: fills_and_accounting
+scope: fee_field_rename
+```
+
+---
+
+## LDG-2555: Timing Model Internal Migration
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2550, LDG-2554
+Status: Completed
+
+### Description
+
+Migrate internal config, validation, runner, store, and documentation paths
+from `fill_model` to `timing_model`.
+
+### Tasks
+
+- Update `R/experiment.R`, `R/config-validate.R`, `R/backtest.R`,
+  `R/backtest-runner.R`, and `R/run-store.R`.
+- Rename required config fields and reopen config readers.
+- Update internal helpers and tests.
+- Update roxygen and package documentation references.
+- Remove stale "fill_model" language except where documenting legacy rejection.
+
+### Acceptance Criteria
+
+- New runs persist `timing_model`, not `fill_model`.
+- New configs validate without legacy field names.
+- Search confirms only legacy-rejection documentation mentions `fill_model`.
+- Existing next-open execution behavior remains unchanged.
+
+### Verification
+
+Config validation tests, runner tests, run-store tests, stale-scope `rg`
+checks, and documentation render.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `R/experiment.R`
+- `R/config-validate.R`
+- `R/backtest.R`
+- `R/backtest-runner.R`
+- `R/run-store.R`
+
+### Classification
+
+```yaml
+type: internal_migration
+surface: config_and_run_store
+scope: timing_model_rename
+```
+
+---
+
+## LDG-2556: Reopen Path Legacy Config Rejection
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2555
+Status: Completed
+
+### Description
+
+Make `ledgr_run_open()` reject stored legacy `fill_model` configs with the
+bound classed condition.
+
+### Tasks
+
+- Detect stored `config_json` containing legacy `fill_model`.
+- Raise `ledgr_legacy_config_shape`.
+- Message users to recreate the experiment under v0.1.9.1.
+- Avoid translation, warning-only behavior, or silent compatibility.
+- Add a stored-config fixture covering the legacy shape.
+
+### Acceptance Criteria
+
+- Legacy config reopen fails before replay or result access.
+- Error class is stable and documented.
+- New v0.1.9.1 configs reopen normally.
+- Stored-artifact breakage is named in NEWS.
+
+### Verification
+
+Run-open tests, legacy config fixture, classed error test, and NEWS review.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `R/run-store.R`
+
+### Classification
+
+```yaml
+type: compatibility_boundary
+surface: run_reopen
+scope: legacy_fill_model_rejection
+```
+
+---
+
+## LDG-2557: ledgr_backtest Public Surface Migration
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2550, LDG-2551, LDG-2558
+Status: Completed
+
+### Description
+
+Migrate exported `ledgr_backtest()` to the same `timing_model` and
+`cost_model` argument contract as `ledgr_experiment()`.
+
+### Tasks
+
+- Replace `fill_model = NULL` with `timing_model` and required `cost_model`.
+- Remove `ledgr_fill_model_instant()` from the exported surface.
+- Replace internal use with explicit `ledgr_timing_next_open()`.
+- Reject legacy `fill_model = ...` with `ledgr_legacy_fill_model_shape`.
+- Reject missing `cost_model` with `ledgr_cost_model_unspecified`.
+- Update roxygen, print methods, examples, and tests.
+
+### Acceptance Criteria
+
+- `ledgr_backtest()` and `ledgr_experiment()` have symmetric public cost/timing
+  behavior.
+- Legacy input fails loudly with the same condition class as experiment
+  construction.
+- Missing `cost_model` fails loudly.
+- Identity parity with equivalent `ledgr_experiment()` + `ledgr_run()` is
+  proven.
+
+### Verification
+
+Backtest wrapper tests, public API examples, identity parity tests, legacy
+input error tests, and roxygen render.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `R/backtest.R`
+- `tests/testthat/test-backtest-wrapper.R`
+
+### Classification
+
+```yaml
+type: public_api
+surface: ledgr_backtest
+scope: cost_timing_contract
+```
+
+---
+
+## LDG-2558: Required Cost Model On Experiment
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2550, LDG-2551
+Status: Completed
+
+### Description
+
+Require explicit `cost_model` on `ledgr_experiment()` and fail loudly when it
+is omitted.
+
+### Tasks
+
+- Add required `cost_model` to `ledgr_experiment()`.
+- Raise `ledgr_cost_model_unspecified` when omitted or NULL.
+- Point users at `ledgr_cost_zero()` for explicit zero-cost behavior.
+- Ensure config identity includes cost fields only after a valid cost model is
+  supplied.
+
+### Acceptance Criteria
+
+- No implicit zero-cost default exists.
+- `ledgr_cost_zero()` is the documented explicit zero-cost route.
+- Missing cost model fails at construction time.
+- Error class is documented by LDG-2565.
+
+### Verification
+
+Experiment-constructor tests, classed error tests, identity field tests, and
+examples.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `R/experiment.R`
+
+### Classification
+
+```yaml
+type: public_api
+surface: ledgr_experiment
+scope: required_cost_model
+```
+
+---
+
+## LDG-2575: Cost Resolver Measurement Spike
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558
+Status: Completed
+
+### Description
+
+Measure the per-fill cost-resolver overhead introduced by Batch 2 against
+the v0.1.8.11 peer benchmark baseline. Produces a spike synthesis that
+informs whether v0.1.9.1 ships with an acknowledged perf delta and
+whether the parked engine-residual optimization slice from the
+2026-06-05 post-LDG-2522 horizon entry should be reopened. Also produces
+the with-costs peer-benchmark row for the v0.1.9.1 release bundle.
+
+### Tasks
+
+- Run the peer benchmark with explicit `ledgr_cost_zero()` to measure the
+  cost-resolver floor cost (dispatch overhead with an identity model).
+- Run with a realistic chain
+  `ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))`
+  to measure user-facing impact.
+- Compare against the v0.1.8.11 baseline using the equivalent legacy
+  `fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1)`
+  configuration captured before Batch 2's migration.
+- Use the same fixture as the v0.1.8.10 / v0.1.8.11 peer benchmark
+  bundle: 500-instrument SMA crossover, 5-year daily bars, same seed,
+  same shared bars CSV.
+- If the realistic-chain delta exceeds approximately 10% of engine-phase
+  wall, decompose the cost-resolver sub-frame: dispatch cost, per-step
+  arithmetic, fee summation, FFI / R-call boundaries, and any per-pulse
+  allocation residual.
+- Add a `ledgr_ttr_canonical_ephemeral_with_costs` row to the peer
+  benchmark `--preset record` bundle for the v0.1.9.1 release.
+
+### Acceptance Criteria
+
+- Spike synthesis exists at
+  `inst/design/spikes/cost_resolver_measurement_spike/measurement_synthesis.md`
+  with three numbered measurements: `cost_zero` floor, realistic chain,
+  and equivalent v0.1.8.11 legacy `fill_model` baseline.
+- Verdict recorded: `ship-as-is` (no material overhead), `ship-with-known-overhead`
+  (acknowledged in NEWS), or `horizon-signal` (reopens a parked optimization
+  slice from the 2026-06-05 post-LDG-2522 entry).
+- Peer benchmark record bundle archived under
+  `dev/bench/results/v0.1.9.1_record/` with the new with-costs row.
+- If verdict is `horizon-signal`, the 2026-06-05 post-LDG-2522 horizon
+  entry receives a status update naming which parked optimization slice
+  the measurement reopens and why.
+- If verdict is `ship-with-known-overhead` or `horizon-signal`, the NEWS
+  entry (LDG-2570) names the measured delta.
+
+### Verification
+
+Peer benchmark record run completes; spike synthesis is reviewed for
+methodology and numbers; horizon entry status update applied if the
+verdict requires it.
+
+Closeout:
+
+- Record bundle: `dev/bench/results/v0.1.9.1_record/`.
+- Synthesis:
+  `inst/design/spikes/cost_resolver_measurement_spike/measurement_synthesis.md`.
+- Verdict: `ship-with-known-overhead`.
+- LDG-2570 NEWS should name the observed xlarge 5.26s / 6.5%
+  engine-phase row delta with the caveat that the focused resolver-only
+  loop measured only 0.26s total public-chain resolver delta over 68,201
+  fills.
+- No horizon update required.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/horizon.md` (2026-06-05 post-LDG-2522 ephemeral wall
+  picture and Architecture A status entry; parked optimization options)
+- `dev/bench/peer_benchmark/peer_benchmark.md` (v0.1.8.10 / v0.1.8.11
+  baseline bundle)
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+  (synthesis Section 9 worker-safe plan constraints)
+
+### Classification
+
+```yaml
+type: measurement_spike
+surface: cost_resolver
+scope: cost_per_fill_overhead
+```
+
+---
+
+## LDG-2559: config_hash Store-Path Independence
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2547
+Status: Completed
+
+### Description
+
+Remove storage-location fields from the `config_hash` canonical payload and
+cover the auditr episode 043 store-path delta.
+
+### Tasks
+
+- Remove `db_path` from the canonical config-hash payload.
+- Remove `snapshot_db_path` from the canonical config-hash payload.
+- Evaluate explicit `run_id` exclusion as a precautionary scope item and
+  document the rationale.
+- Add regression coverage matching auditr episode 043 FB-002.
+- Preserve intentional identity fields.
+
+### Acceptance Criteria
+
+- Identical logical configs with different DuckDB paths produce identical
+  `config_hash`.
+- Snapshot identity and data identity remain part of the hash where intended.
+- Auto-generated fallback `run_id` remains outside the hash.
+- Any explicit `run_id` handling is documented in the identity contract.
+
+### Verification
+
+Config-hash fixture tests, cross-path regression test, run-info checks, and
+identity-contract documentation review.
+
+### Closeout
+
+- `config_hash()` now hashes `config_hash_payload()` rather than the full stored
+  config object.
+- The normalized hash payload excludes `db_path`, `data$snapshot_db_path`, and
+  `run_id`; `snapshot_id` remains in the payload as data identity.
+- Regression coverage in `tests/testthat/test-config.R` proves path and
+  run-local diagnostic changes leave `config_hash` stable while snapshot
+  identity still changes it.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `R/config-hash.R`
+- `R/backtest.R`
+- `R/run-store.R`
+
+### Classification
+
+```yaml
+type: identity
+surface: config_hash
+scope: store_path_independence
+```
+
+---
+
+## LDG-2560: config_hash Alias Declaration-Order Independence
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2559
+Status: Completed
+
+### Description
+
+Make `config_hash` invariant to alias declaration-order permutations while
+preserving intentional feature identity.
+
+### Tasks
+
+- Identify where alias declaration order enters the config canonical payload.
+- Normalize or omit order-only fields that should not affect `config_hash`.
+- Preserve order where it is an explicit user-facing diagnostic, not identity.
+- Add regression coverage for auditr episode 037 FB-003.
+
+### Acceptance Criteria
+
+- Alias maps with the same semantic aliases in different declaration order
+  produce identical `config_hash`.
+- `alias_map_order` can still be exposed as diagnostic metadata if needed.
+- `alias_map_hash` and `feature_set_hash` semantics remain documented.
+
+### Verification
+
+Alias-order regression tests, config-hash fixtures, feature identity tests, and
+identity-contract documentation review.
+
+### Closeout
+
+- `alias_map_order` remains stored as diagnostic metadata but is excluded from
+  `config_hash`.
+- `config_hash_payload()` orders feature definitions by feature ID before
+  hashing, removing declaration-order-only drift from resolved feature maps.
+- Regression coverage in `tests/testthat/test-active-alias-runtime.R` proves
+  semantically identical alias maps in different declaration orders produce the
+  same `alias_map_hash` and `config_hash` while preserving different
+  `alias_map_order` diagnostics.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `R/feature-alias-map.R`
+- `R/config-canonical-json.R`
+- `R/config-hash.R`
+
+### Classification
+
+```yaml
+type: identity
+surface: config_hash
+scope: alias_order_independence
+```
+
+---
+
+## LDG-2561: alias_map_hash Parameter Independence
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2547
+Status: Completed
+
+### Description
+
+Remove concrete feature parameter values from `alias_map_hash`; concrete
+feature identity belongs in `feature_set_hash`.
+
+### Tasks
+
+- Inspect current alias map canonicalization.
+- Remove concrete parameter values from `alias_map_hash` payload.
+- Ensure `feature_set_hash` still changes when concrete feature parameters
+  change.
+- Add regression coverage for auditr episode 037 FB-004.
+
+### Acceptance Criteria
+
+- The same alias declaration with different concrete feature parameter values
+  has stable `alias_map_hash`.
+- `feature_set_hash` remains parameter-sensitive.
+- Documentation explains the layering distinction.
+
+### Verification
+
+Alias hash tests, feature-set hash tests, auditr regression fixture, and
+identity-contract documentation review.
+
+### Closeout
+
+- Feature-map materialization now records a separate alias identity map before
+  concrete feature-parameter resolution.
+- `ledgr_alias_map_storage()` keeps the concrete alias map in
+  `alias_map_json` for runtime/reopen lookup, but hashes the parameter-stable
+  alias identity payload for `alias_map_hash`.
+- Regression coverage in `tests/testthat/test-active-alias-runtime.R` proves
+  `ledgr_ind_sma(ledgr_param("n"))` has stable `alias_map_hash` for `n = 5`
+  and `n = 10`, while the concrete `feature_set_hash` remains
+  parameter-sensitive.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `R/feature-alias-map.R`
+- `R/precompute-features.R`
+
+### Classification
+
+```yaml
+type: identity
+surface: alias_map_hash
+scope: parameter_independence
+```
+
+---
+
+## LDG-2562: feature_set_hash Run Surface Exposure
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2559, LDG-2560, LDG-2561
+Status: Completed
+
+### Description
+
+Expose `feature_set_hash` on documented run surfaces to close auditr episode
+037 FB-001.
+
+### Tasks
+
+- Add `feature_set_hash` to `bt$config$features` or an equivalent accessor.
+- Add `feature_set_hash` to `ledgr_run_info()`.
+- Add `feature_set_hash` to `ledgr_run_list()`.
+- Update help pages explaining the field.
+- Add tests for in-session and reopened runs.
+
+### Acceptance Criteria
+
+- Users can inspect `feature_set_hash` without private object traversal.
+- Run info and run list expose the same value for the same run.
+- Reopen path preserves the value.
+- Documentation distinguishes it from `feature_params_hash` and alias fields.
+
+### Verification
+
+Run-info tests, run-list tests, reopened-run tests, documentation examples, and
+auditr regression review.
+
+### Closeout
+
+- `ledgr_config()` stores `features$feature_set_hash` using the existing
+  `ledgr_feature_set_hash()` helper over resolved feature fingerprints.
+- `config_hash_payload()` excludes this derived surface; the underlying
+  feature definitions remain hash-sensitive.
+- `ledgr_run_store_fetch()` projects `feature_set_hash` from stored
+  `config_json`, so `ledgr_run_info()` and `ledgr_run_list()` expose the field
+  without a new DuckDB schema column.
+- Regression coverage in `tests/testthat/test-run-store.R` verifies
+  in-session config exposure, `ledgr_run_info()`, `ledgr_run_list()`, and
+  `ledgr_run_open()` preservation.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `R/run-store.R`
+- `R/results.R`
+
+### Classification
+
+```yaml
+type: identity
+surface: run_metadata
+scope: feature_set_hash_exposure
+```
+
+---
+
+## LDG-2563: Identity Contract Reference And contracts.md Update
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2551, LDG-2562
+Status: Completed
+
+### Description
+
+Author the user-facing and maintainer-facing identity contract reference,
+including a bounded `contracts.md` update for the new public cost API and
+identity fields.
+
+### Tasks
+
+- Document `feature_set_hash`, `feature_params_hash`, `alias_map_hash`,
+  `alias_map_json`, `alias_map_order`, `config_hash`, `cost_model_hash`, and
+  `cost_plan_json`.
+- For each field, document purpose, canonical-payload recipe, source surface,
+  and related-field distinction.
+- Cross-reference from `?ledgr_run`, `?ledgr_run_info`, `?ledgr_sweep`,
+  `?ledgr_promote`, cost constructor help, and relevant vignettes.
+- Add a bounded `inst/design/contracts.md` update for `timing_model`,
+  required `cost_model`, cost identity, and legacy config rejection.
+- Avoid a broad contracts.md structure pass.
+
+### Acceptance Criteria
+
+- Identity reference exists as a help topic and design/manual reference.
+- Public help pages link to the reference.
+- `contracts.md` names the new public contract without unrelated rewrites.
+- Hash field semantics are aligned with tests from LDG-2559 through LDG-2562.
+
+### Verification
+
+Documentation render, help topic examples, link checks, contracts.md review,
+and identity regression test review.
+
+### Closeout
+
+- Added `?ledgr_identity_fields` documenting `feature_set_hash`,
+  `feature_params_hash`, `alias_map_hash`, `alias_map_json`,
+  `alias_map_order`, `config_hash`, `cost_model_hash`, and
+  `cost_plan_json`.
+- Added `inst/design/manual/identity_contract.{qmd,md}` and indexed it from
+  `inst/design/manual/README.{qmd,md}`.
+- Cross-referenced the identity help topic from `?ledgr_run`,
+  `?ledgr_run_info`, `?ledgr_run_list`, `?ledgr_sweep`, `?ledgr_promote`,
+  and the cost constructor help topic.
+- Updated `inst/design/contracts.md` narrowly for v0.1.9.1 timing/cost and
+  identity contracts, without broad restructuring.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/contracts.md`
+- `inst/design/manual/`
+- `man/`
+
+### Classification
+
+```yaml
+type: documentation
+surface: identity_contract
+scope: hash_reference_and_contracts_update
+```
+
+---
+
+## LDG-2564: DISCLAIMER.md Install Path Fix
+
+Priority: P0
+Effort: S
+Dependencies: LDG-2547
+Status: Completed
+
+### Description
+
+Fix the HIGH-severity installed disclaimer link breakage from auditr episode
+046 FB-001.
+
+### Tasks
+
+- Either install `DISCLAIMER.md` at the package path used by the vignette or
+  update the vignette to point at an installed help/article surface carrying
+  the same formal disclaimer.
+- Re-run the failing auditr episode workflow or an equivalent local check.
+- Keep FB-002 through FB-004 optional unless the chosen fix naturally covers
+  them.
+
+### Acceptance Criteria
+
+- The installed package exposes the formal disclaimer at the documented link.
+- The research-workflow vignette no longer points at a missing file.
+- The fix works from an installed package, not only from the source checkout.
+
+### Verification
+
+Installed-path check, vignette link check, package build/install smoke, and
+auditr episode 046 reproduction or equivalent.
+
+### Closeout
+
+- Added `inst/DISCLAIMER.md` with the same formal disclaimer text as the
+  repository-root `DISCLAIMER.md`.
+- Kept the research-workflow link shape unchanged; `../DISCLAIMER.md` now
+  resolves from installed vignette HTML to the installed package root.
+- Verified the no-vignette package tarball contains `ledgr/DISCLAIMER.md` and
+  a temporary-library install resolves `system.file("DISCLAIMER.md",
+  package = "ledgr")`.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `DISCLAIMER.md`
+- `vignettes/articles/research-workflow.qmd`
+
+### Classification
+
+```yaml
+type: documentation
+surface: disclaimer
+scope: installed_link_fix
+```
+
+---
+
+## LDG-2565: Cost Condition Class Documentation
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2549, LDG-2556, LDG-2558
+Status: Completed
+
+### Description
+
+Document new v0.1.9.1 cost and legacy-shape condition classes.
+
+### Tasks
+
+- Add help topics for `ledgr_legacy_fill_model_shape`.
+- Add help topic for `ledgr_legacy_config_shape`.
+- Add help topic for `ledgr_cost_model_unspecified`.
+- Add help topic for `ledgr_invalid_cost_chain_order`.
+- Add help topic for `ledgr_invalid_cost_model`.
+- Add help topic for `ledgr_invalid_timing_model`.
+- Add help topic for `ledgr_invalid_fill_proposal`.
+- Add help topic for `ledgr_invalid_fill_context`.
+- Include minimal fail-closed examples and actionable message contracts.
+
+### Acceptance Criteria
+
+- Each new condition class has a discoverable help topic.
+- Users can assert on top-level stable classes in tests.
+- Examples run and fail in the documented way.
+- Messages do not suggest legacy translation or deprecation behavior.
+
+### Verification
+
+Condition documentation tests where practical, roxygen render, example checks,
+and error-class tests from implementation tickets.
+
+### Closeout
+
+- Added `?ledgr_condition_classes` with aliases for
+  `ledgr_legacy_fill_model_shape`, `ledgr_legacy_config_shape`,
+  `ledgr_cost_model_unspecified`, `ledgr_invalid_cost_chain_order`,
+  `ledgr_invalid_cost_model`, `ledgr_invalid_timing_model`,
+  `ledgr_invalid_fill_proposal`, and `ledgr_invalid_fill_context`.
+- Included the bounded existing `ledgr_run_not_found` and
+  `ledgr_unresolved_feature_id` classes in the same reference topic.
+- Documented fail-closed legacy behavior and stable top-level class assertions
+  without deprecation or translation language.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `man/`
+
+### Classification
+
+```yaml
+type: documentation
+surface: condition_classes
+scope: cost_api_errors
+```
+
+---
+
+## LDG-2566: LEDGR_LAST_BAR_NO_FILL Help Topic
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2547
+Status: Completed
+
+### Description
+
+Add a help topic for the existing `LEDGR_LAST_BAR_NO_FILL` warning code.
+
+### Tasks
+
+- Document when final-bar deltas cannot fill.
+- Document the warning code and expected behavior.
+- Cross-reference from the execution-semantics vignette.
+- Include a minimal example or test fixture reference.
+
+### Acceptance Criteria
+
+- `LEDGR_LAST_BAR_NO_FILL` is discoverable in help.
+- Documentation states that no fill is emitted when there is no next bar.
+- Existing final-bar no-fill tests remain aligned with the docs.
+
+### Verification
+
+Roxygen render, help-topic link check, final-bar warning tests, and vignette
+cross-reference review.
+
+### Closeout
+
+- Added `?LEDGR_LAST_BAR_NO_FILL` with aliases for the warning code and
+  lower-case helper names.
+- Documented that no fill is emitted and the ledger remains unchanged when a
+  next-open final-pulse target change has no next executable bar.
+- Cross-referenced the help topic from `vignettes/execution-semantics.qmd` and
+  the rendered `.md`.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `dev/audit/verification_audit.R`
+
+### Classification
+
+```yaml
+type: documentation
+surface: execution_warnings
+scope: final_bar_no_fill
+```
+
+---
+
+## LDG-2567: Metrics And Accounting Vignette Cost Rewrite
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2553, LDG-2565
+Status: Completed
+
+### Description
+
+Rewrite `vignettes/metrics-and-accounting.qmd` to teach the new cost API,
+quoted-spread convention, and fail-closed accounting behavior.
+
+### Tasks
+
+- Explain quoted-spread convention and round-trip cost intuition.
+- Teach timing-vs-cost separation.
+- Teach price-transform-vs-explicit-fee separation.
+- Add non-scope bullets for liquidity, financing, TCA, taxes, OMS, and broker
+  reconciliation.
+- Add a worked round-trip example confirming approximately `spread_bps` total
+  round-trip cost.
+- Document `compiled_accounting_model` fail-closed behavior and stable
+  condition classes.
+- Follow `inst/design/vignette_styleguide.md`.
+
+### Acceptance Criteria
+
+- The vignette is accurate for the v0.1.9.1 cost API.
+- Examples run or are explicitly non-evaluated for a documented reason.
+- Quoted-spread arithmetic is not presented as per-side full spread.
+- Fail-closed compiled-accounting behavior is documented without expanding B2
+  scope.
+
+### Verification
+
+Vignette render, example smoke tests, accounting test review, and styleguide
+review.
+
+### Closeout
+
+- Rewrote the cost section in `vignettes/metrics-and-accounting.qmd` around
+  timing-vs-cost separation, quoted spread arithmetic, price-transform versus
+  explicit-fee behavior, and explicit non-scope boundaries.
+- Added a worked round-trip example showing that buy/sell half-spread crossing
+  is approximately `spread_bps` bps before explicit fees.
+- Documented fail-closed `compiled_accounting_model` behavior and the stable
+  unsupported/unavailable accounting condition classes without broadening B2
+  scope.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `categorized_feedback.yml`
+- `inst/design/vignette_styleguide.md`
+- `vignettes/metrics-and-accounting.qmd`
+
+### Classification
+
+```yaml
+type: documentation
+surface: vignette
+scope: metrics_accounting_cost_api
+```
+
+---
+
+## LDG-2568: Cost API Runnable Examples
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2552
+Status: Completed
+
+### Description
+
+Add runnable examples to cost API help pages.
+
+### Tasks
+
+- Add examples for `?ledgr_cost_chain`.
+- Add examples for each cost primitive constructor.
+- Add examples for `?ledgr_timing_next_open`.
+- Add examples for `?ledgr_cost_steps` and `?ledgr_cost_describe`.
+- Include construction, chain composition, identity inspection, and the
+  `ledgr_cost_model_unspecified` error path.
+
+### Acceptance Criteria
+
+- Cost help pages have runnable examples.
+- Examples teach explicit `ledgr_cost_zero()` for zero-cost behavior.
+- Examples do not require network, external data, or long-running fixtures.
+- Example output is deterministic.
+
+### Verification
+
+Example checks, roxygen render, targeted documentation tests, and R CMD check
+examples where applicable.
+
+### Closeout
+
+- Added runnable examples for `ledgr_cost_chain()`, the cost primitive
+  constructors, `ledgr_cost_steps()`, `ledgr_cost_describe()`, and
+  `ledgr_timing_next_open()`.
+- Included explicit `ledgr_cost_zero()` use and a missing-cost-model
+  `try(ledgr_backtest(...), silent = TRUE)` example for the
+  `ledgr_cost_model_unspecified` error path.
+- Updated the directly affected `ledgr_run()` example to pass an explicit
+  `cost_model`.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `man/`
+- `R/`
+
+### Classification
+
+```yaml
+type: documentation
+surface: examples
+scope: cost_api_reference_examples
+```
+
+---
+
+## LDG-2569: Sweep Vignette Cost Non-Participation Note
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2553
+Status: Completed
+
+### Description
+
+Document that cost API parameters do not participate in sweep grid composition
+in v0.1.9.1.
+
+### Tasks
+
+- Add a paragraph to the sweep vignette.
+- State that cost models are fixed experiment inputs in v1, not sweep-grid
+  dimensions.
+- Reference future `ledgr_cost_grid()` as deferred work.
+- Avoid adding sweep artifact persistence or cost-grid API scope.
+
+### Acceptance Criteria
+
+- Sweep docs accurately describe v0.1.9.1 cost behavior.
+- Users are not led to expect `ledgr_cost_grid()` in this packet.
+- The note cross-references cost identity where helpful.
+
+### Verification
+
+Vignette render, stale-scope review for `ledgr_cost_grid()` claims, and
+documentation review.
+
+### Closeout
+
+- Added a `Cost Models Are Fixed Inputs` section to `vignettes/sweeps.qmd`.
+- Documented that v0.1.9.1 sweep grids vary feature and strategy parameters,
+  while cost models remain fixed experiment inputs.
+- Replaced the stale non-goal wording about public cost-model factories with
+  explicit deferral of cost-grid composition such as `ledgr_cost_grid()`.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `vignettes/sweeps.qmd`
+- `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: documentation
+surface: sweep_vignette
+scope: cost_non_participation
+```
+
+---
+
+## LDG-2570: NEWS Entry
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2564, LDG-2569, LDG-2575
+Status: Completed
+
+### Description
+
+Add the v0.1.9.1 NEWS entry.
+
+### Tasks
+
+- Document the public transaction-cost API headline.
+- Document breaking changes: `fill_model` to `timing_model`,
+  `commission_fixed` to `fee`, and required `cost_model`.
+- Document THEME-004 hash fixes and stored-run hash breakage.
+- Document disclaimer-link and bounded auditr documentation fixes.
+
+### Acceptance Criteria
+
+- NEWS clearly separates user-facing changes from internal fixes.
+- Breaking changes are explicit.
+- No v0.1.9.2+ work is claimed as shipped.
+
+### Verification
+
+NEWS review, stale-claim `rg` checks, and release-gate review.
+
+### Closeout
+
+- Added the v0.1.9.1 NEWS entry for the public cost-API surface, cost identity,
+  breaking pre-CRAN changes, THEME-004 identity fixes, and bounded auditr
+  documentation fixes.
+- Explicitly names v0.1.9.2+ sweep persistence, target risk, and walk-forward
+  as future packets rather than shipped work.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `NEWS.md`
+
+### Classification
+
+```yaml
+type: release_notes
+surface: NEWS
+scope: v0.1.9.1
+```
+
+---
+
+## LDG-2571: Roadmap Update
+
+Priority: P2
+Effort: S
+Dependencies: LDG-2570
+Status: Completed
+
+### Description
+
+Update the roadmap to reflect v0.1.9.1 progress and cost-API ship state.
+
+### Tasks
+
+- Mark v0.1.9.1 as active while implementation is ongoing.
+- At close, mark the cost-API spec-cut completed.
+- Preserve v0.1.9.2 through v0.1.9.4 sequencing.
+- Avoid implying walk-forward, target-risk, or sweep persistence has shipped.
+
+### Acceptance Criteria
+
+- Roadmap state matches ticket status.
+- Forward packet sequencing remains intact.
+- No stale v0.1.8.11 active-state language remains.
+
+### Verification
+
+Roadmap review and stale-state `rg` checks.
+
+### Closeout
+
+- Updated the roadmap active-packet header and milestone row to record that
+  v0.1.9.1 implementation, documentation, and release-surface tickets are
+  closed while the release gate remains pending.
+- Added a v0.1.9.1 status note naming `cost_model_hash` and `cost_plan_json` as
+  concrete forward-dependency surfaces for later v0.1.9.x packets.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/ledgr_roadmap.md`
+
+### Classification
+
+```yaml
+type: planning_docs
+surface: roadmap
+scope: v0.1.9.1_status
+```
+
+---
+
+## LDG-2572: Horizon Housekeeping
+
+Priority: P2
+Effort: S
+Dependencies: LDG-2570
+Status: Completed
+
+### Description
+
+Update horizon entries as v0.1.9.1 implementation closes.
+
+### Tasks
+
+- Move the 2026-06-05 cost-API spec-cut decisions entry to `## Resolved` when
+  v0.1.9.1 ships.
+- Keep sequencing, walk-forward gate-row obligations, and sweep RFC schedule in
+  `## Open`.
+- Preserve forward dependency wording for v0.1.9.2 through v0.1.9.4.
+
+### Acceptance Criteria
+
+- Resolved/open horizon state matches actual release state.
+- Forward obligations remain visible.
+- No v0.1.9.1 ticket claims leak into future packets.
+
+### Verification
+
+Horizon review and targeted `rg` checks for 2026-06-05 entries.
+
+### Closeout
+
+- Moved the v0.1.9.1 cost-API spec-cut decisions entry from `## Open` to
+  `## Resolved` and recorded its v0.1.9.1 implementation resolution.
+- Left the v0.1.9.x sequencing, v0.1.9.2 sweep RFC schedule, and v0.1.9.4
+  walk-forward gate-row obligations open so forward dependencies remain
+  visible.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/horizon.md`
+
+### Classification
+
+```yaml
+type: planning_docs
+surface: horizon
+scope: cost_api_resolution_state
+```
+
+---
+
+## LDG-2573: Design And RFC Index Update
+
+Priority: P2
+Effort: S
+Dependencies: LDG-2570
+Status: Completed
+
+### Description
+
+Update design and RFC indexes for the v0.1.9.1 cost-API ship state.
+
+### Tasks
+
+- Update `inst/design/README.md` to reflect v0.1.9.1 status.
+- Add the identity contract reference to the design index.
+- Update `inst/design/rfc/README.md` to mark the cost-API synthesis as
+  implemented in v0.1.9.1 after release.
+- Keep RFC authority and forward dependencies clear.
+
+### Acceptance Criteria
+
+- Design index points to the current packet and new identity reference.
+- RFC index records implementation state after release.
+- No forward RFC is marked implemented prematurely.
+
+### Verification
+
+Design index review, RFC index review, link checks, and stale-state `rg`.
+
+### Closeout
+
+- Updated `inst/design/README.md` to point at the active v0.1.9.1 packet,
+  ticket records, batch plan, cost-API synthesis, and identity contract
+  reference.
+- Updated `inst/design/rfc/README.md` so the public transaction-cost model row
+  records v0.1.9.1 implementation state while preserving downstream
+  liquidity/template/function-valued-model boundaries.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `inst/design/README.md`
+- `inst/design/rfc/README.md`
+
+### Classification
+
+```yaml
+type: planning_docs
+surface: design_index
+scope: v0.1.9.1_cost_api
+```
+
+---
+
+## LDG-2574: v0.1.9.1 Release Gate
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2547, LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2552, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2563, LDG-2564, LDG-2565, LDG-2566, LDG-2567, LDG-2568, LDG-2569, LDG-2570, LDG-2571, LDG-2572, LDG-2573, LDG-2575
+Status: Completed
+
+### Description
+
+Run the v0.1.9.1 release gate after every implementation and documentation
+ticket has closed.
+
+### Tasks
+
+- Confirm all tickets are completed or explicitly deferred with maintainer
+  approval.
+- Run targeted tests for cost API, timing migration, identity hardening,
+  run-store reopen behavior, sweep parity, and documentation examples.
+- Run the full test suite.
+- Build the package.
+- Run R CMD check.
+- Verify NEWS, roadmap, horizon, design index, RFC index, and ticket metadata.
+- Update `vignettes/research-to-production.qmd` (and the rendered
+  `vignettes/research-to-production.md`) for the v0.1.9.1 cost-API surface:
+  required `cost_model` argument, `ledgr_cost_zero()` as the explicit
+  zero-cost route, `timing_model` replacing legacy `fill_model`, and the
+  quoted-spread convention. No new strategy material; surface migration only.
+- Confirm no generated local artifacts are staged.
+- Prepare release closeout notes.
+
+### Acceptance Criteria
+
+- All v0.1.9.1 tickets are closed or explicitly re-routed.
+- Full tests and package check pass, or any failure has accepted release-gate
+  disposition.
+- Cost API synthesis obligations are satisfied.
+- THEME-004 and HIGH disclaimer auditr findings are closed.
+- `vignettes/research-to-production.qmd` teaches the v0.1.9.1 cost-API
+  surface and contains no remaining references to the legacy `fill_model`
+  parameter or `commission_fixed` field.
+- v0.1.9.2 can begin from a stable cost-identity surface.
+
+### Verification
+
+Targeted tests, full test suite, package build, R CMD check, documentation
+render checks, research-to-production vignette render and example
+execution, metadata review, release closeout review, and clean git-status
+review.
+
+Completion note (2026-06-05):
+
+- All prior v0.1.9.1 tickets are completed.
+- Targeted cost, timing, identity, run-store, sweep, and
+  documentation-contract checks passed.
+- Full Windows source tests passed with one expected Yahoo optional-package
+  skip.
+- The focused WSL schema/persistence gate passed after removing stale compiled
+  objects from the Windows/WSL toolchain switch.
+- Edited vignettes rendered through the local Quarto executable.
+- Plain `R CMD build .` still hits the established Quarto multi-format product
+  issue. The accepted release build path,
+  `R CMD build --no-build-vignettes .`, passed with existing long-path
+  warnings.
+- `R CMD check --no-manual --no-build-vignettes ledgr_0.1.9.1.tar.gz` passed
+  with expected no-vignettes warnings and the existing long-path note.
+- `tools/check-coverage.R` passed at 85.55% coverage.
+- `pkgdown::build_site()` passed after adding the v0.1.9.1 cost API reference
+  topics to `_pkgdown.yml`.
+
+### Source Reference
+
+- `v0_1_9_1_spec.md`
+- `v0_1_9_1_tickets.md`
+- `tickets.yml`
+- `inst/design/release_ci_playbook.md`
+
+### Classification
+
+```yaml
+type: release_gate
+surface: release_process
+scope: v0.1.9.1
+```
+
+---
+
+## LDG-2576: Release Recovery Freeze And CI Evidence Capture
+
+Priority: P0
+Effort: S
+Dependencies: LDG-2574
+Status: Planned
+
+### Description
+
+Freeze the v0.1.9.1 release flow after the Batch 8 branch push and record the
+actual remote CI evidence before any merge, tag, or release entry is created.
+
+### Tasks
+
+- Confirm no merge to `main`, release tag, or GitHub Release is created from
+  the current paused branch state.
+- Record the current branch commit, branch CI run id, attempt count, and job
+  outcomes.
+- If a run is rerun from failed, record both the original run evidence and the
+  rerun attempt evidence so the original failure log remains discoverable.
+- Record the first README cold-start failure, its owner (`README.Rmd`), and the
+  local reproduction / fix evidence.
+- Record the Ubuntu coverage attempt outcome and whether it is a package
+  failure, coverage-instrumentation failure, or still pending.
+- Keep pre-existing local worktree changes separate from recovery evidence.
+
+### Acceptance Criteria
+
+- Release state is explicitly paused.
+- CI evidence is recorded before commit splitting or further release work.
+- No unexplained remote failure is treated as green release evidence.
+
+### Verification
+
+`gh run view` evidence, git status review, and release closeout review.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- `v0_1_9_1_release_closeout.md`
+- GitHub Actions run `27030865954` and any rerun attempt ids/evidence
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: ci_evidence
+scope: v0.1.9.1_branch_push
+```
+
+---
+
+## LDG-2577: Split Oversized Batch 8 Commit
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2576
+Status: Planned
+
+### Description
+
+Recover reviewable commit boundaries from the oversized Batch 8 release-gate
+commit before the branch is eligible for merge or tag work.
+
+### Tasks
+
+- Unpack the current release-gate commit locally without losing work.
+- Preserve unrelated pre-existing local changes separately.
+- Split the branch work into coherent commits:
+  - executable docs / examples / README migration for required `cost_model`;
+  - release metadata and closeout;
+  - release-process hardening (`release_ci_playbook.md` and horizon harness
+    note), if retained in this packet.
+- Avoid staging generated local artifacts.
+- Force-with-lease push only after review disposition and maintainer approval.
+
+### Acceptance Criteria
+
+- The docs/example migration is not hidden inside release-playbook cleanup.
+- Release metadata changes can be reviewed separately from executable-doc
+  migration.
+- Process hardening is separable from v0.1.9.1 runtime/docs release evidence.
+- Git history is coherent enough for rollback and review.
+
+### Verification
+
+Git diff/stat review, staged diff review, clean generated-artifact check, and
+maintainer approval before any force-with-lease push.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- Current branch commit `ae7bf66`
+- `batch_plan.md`
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: git_history
+scope: batch_8_commit_split
+```
+
+---
+
+## LDG-2578: Focused Review Of Docs Example Cost Migration
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2577
+Status: Planned
+
+### Description
+
+Run focused code review on the broad executable documentation and example
+migration required by the v0.1.9.1 `cost_model` contract.
+
+### Tasks
+
+- Prepare a review prompt scoped to the docs/example migration commit.
+- Ask review to verify every changed example either:
+  - was a pre-Batch-2 example that now requires `cost_model = ledgr_cost_zero()`
+    for cold-start / installed-package execution; or
+  - is a new example specifically teaching cost-API behavior with a non-zero
+    cost model.
+  Examples outside those two buckets should be flagged and routed.
+- Ask review to inspect README cold-start semantics, cleanup guards, rendered
+  vignette churn, roxygen/Rd example changes, and pkgdown index changes.
+- Apply review patches only after they are agreed.
+- Do not restart release merge/tag flow until review is resolved.
+
+### Acceptance Criteria
+
+- The docs/example migration has an explicit review disposition.
+- No legacy `fill_model` / `commission_fixed` public example remains where the
+  v0.1.9.1 public API requires `timing_model` plus `cost_model`.
+- README cold-start remains installed-package safe.
+- Rendered `.md` and pkgdown changes are either accepted or trimmed.
+
+### Verification
+
+Claude/code-review notes, targeted documentation-contract tests,
+`tools/check-readme-example.R`, affected vignette renders, and stale-term `rg`
+checks.
+
+### Source Reference
+
+- `README.Rmd`
+- `vignettes/`
+- `R/`
+- `man/`
+- `_pkgdown.yml`
+- `tests/testthat/test-documentation-contracts.R`
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: executable_docs
+scope: required_cost_model_examples
+```
+
+---
+
+## LDG-2579: Release Gate Harness And Local Gate Rerun
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2577, LDG-2578
+Status: Planned
+
+### Description
+
+Apply the release-gate process hardening discovered during the Batch 8 stop and
+rerun local gates with the README cold-start checker included explicitly.
+
+### Tasks
+
+- Keep `inst/design/release_ci_playbook.md` explicit about
+  `Rscript --vanilla tools/check-readme-example.R`.
+- Keep the horizon release-gate harness entry parked as non-binding future
+  infrastructure.
+- Verify the one-attempt coverage default lands in `tools/check-coverage.R` and
+  is locked by `tests/testthat/test-release-coverage-branches.R`.
+- Audit `.github/workflows/*.yml` for coverage-attempt environment variables or
+  job-level retries that override the one-attempt policy.
+- Rerun the exact local gates named by the hardened playbook:
+  - README cold-start;
+  - targeted documentation-contract tests;
+  - full source tests;
+  - `R CMD check --no-manual --no-build-vignettes`;
+  - coverage;
+  - pkgdown when docs/pkgdown changed;
+  - local WSL/Ubuntu gate for executable docs/pkgdown/native path exposure.
+- Record skipped gates and accepted caveats explicitly.
+
+### Acceptance Criteria
+
+- The playbook no longer relies on memory for README cold-start.
+- Coverage defaults to one attempt unless explicitly overridden.
+- Local release evidence includes the exact CI-equivalent docs gate that failed
+  remotely.
+- The release closeout records the final gate set and any accepted caveats.
+
+### Verification
+
+`test-release-coverage-branches.R`, `tools/check-readme-example.R`,
+documentation-contract tests, full tests, package check, coverage, pkgdown, WSL
+gate, and release closeout review.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- `inst/design/horizon.md`
+- `tools/check-coverage.R`
+- `tests/testthat/test-release-coverage-branches.R`
+- `v0_1_9_1_release_closeout.md`
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: release_gate_harness
+scope: local_gate_parity
+```
+
+---
+
+## LDG-2580: Release Resume Decision And Remote Gate Closeout
+
+Priority: P0
+Effort: S
+Dependencies: LDG-2576, LDG-2577, LDG-2578, LDG-2579
+Status: Planned
+
+### Description
+
+Resume or abort the v0.1.9.1 release sequence only after recovery tickets close
+and the branch has reviewable commits plus clean local and remote evidence.
+
+### Tasks
+
+- Confirm maintainer approval to resume release flow.
+- Push the cleaned branch with `--force-with-lease` only if commit splitting
+  rewrites the remote branch.
+- Wait for branch CI to pass.
+- Merge to `main` only after branch CI is green.
+- Wait for main `R-CMD-check` and pkgdown workflows.
+- Tag `v0.1.9.1` only after main is green.
+- Wait for tag CI.
+- If tag CI fails after the tag is pushed, delete the failed tag locally and
+  remotely, fix on the branch, and retag only after branch CI is green again.
+  Do not move an existing tag to a new SHA.
+- Create or update the GitHub Release only after tag CI is green.
+- Record final CI run ids and release disposition.
+
+### Acceptance Criteria
+
+- No merge/tag/release happens from the paused oversized-commit state.
+- Branch, main, and tag gates are green or the release is explicitly blocked.
+- The final release closeout records all remote evidence and accepted old
+  failure explanations.
+
+### Verification
+
+Branch CI, main CI, tag CI, GitHub Release review, and final clean-status /
+closeout review.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- `v0_1_9_1_release_closeout.md`
+- GitHub Actions run ids recorded during closeout
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: release_sequence
+scope: merge_tag_release
+```

@@ -115,15 +115,16 @@ With that boundary in mind, start with the simplest possible strategy.
 
 ## What Is `ctx`?
 
-> [!NOTE]
->
-> ### Definition
->
-> `ctx` is the pulse context: the information packet ledgr gives your
-> strategy at one decision time. It contains pulse-known bars, features,
-> positions, cash, and equity. It is deliberately not the full future
-> dataset.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+`ctx` is the pulse context: the information packet ledgr gives your
+strategy at one decision time. It contains pulse-known bars, features,
+positions, cash, and equity. It is deliberately not the full future
+dataset.
+
+</div>
 
 It contains the current timestamp, current bars, current features,
 current positions, cash, equity, and small helper functions for
@@ -151,7 +152,7 @@ The pulse loop is the contract in motion:
 
 <div class="ledgr-diagram ledgr-pulse-loop">
 
-```mermaid
+``` mermaid
 
 flowchart TB
   state_t["pulse t state<br/>bars through t<br/>positions, cash, equity"]
@@ -222,14 +223,15 @@ The return value is a named numeric vector. Names are instrument IDs
 from `ctx$universe`, values are desired quantities. `ctx$flat()`
 produces the full-universe shape with every entry at zero.
 
-> [!NOTE]
->
-> ### Definition
->
-> A target vector is the strategy’s requested holdings for the full
-> universe at one pulse. It is named by instrument ID, numeric, and
-> complete. It is not an order list, a signal table, or a partial update.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+A target vector is the strategy’s requested holdings for the full
+universe at one pulse. It is named by instrument ID, numeric, and
+complete. It is not an order list, a signal table, or a partial update.
+
+</div>
 
 The deeper mental model is that a strategy is a **policy**, not a
 sequence of orders. At each pulse, it declares a desired state: “I want
@@ -238,18 +240,19 @@ against current holdings and fills the gap.
 
 That distinction keeps strategies free from execution-state bookkeeping.
 
-> [!WARNING]
->
-> ### Affordability is not automatic
->
-> Raw target vectors are desired holdings. ledgr does not check
-> affordability before filling them; if a target requires more cash than
-> the simulated portfolio has, the run can fill anyway and cash can go
-> negative. Use `target_rebalance(equity_fraction = ...)` or size directly
-> from `ctx$cash` and `ctx$equity` when you need capital-aware targets.
-> The planned v0.1.9 target-risk layer is the home for chainable
-> long-only, max-weight, and capital-floor constraints.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**Affordability is not automatic**
+
+Raw target vectors are desired holdings. ledgr does not check
+affordability before filling them; if a target requires more cash than
+the simulated portfolio has, the run can fill anyway and cash can go
+negative. Use `target_rebalance(equity_fraction = ...)` or size directly
+from `ctx$cash` and `ctx$equity` when you need capital-aware targets.
+The planned v0.1.9 target-risk layer is the home for chainable
+long-only, max-weight, and capital-floor constraints.
+
+</div>
 
 ## A First Trading Rule
 
@@ -288,25 +291,27 @@ the economic idea is clear, ledgr strategies are usually easier to read
 when they use helper functions that operate on the whole universe at
 once. The later sections make that transition.
 
-> [!TIP]
->
-> ### Try it
->
-> Change `buy_if_up()` so it starts from `ctx$hold()` instead of
-> `ctx$flat()`. Which positions would persist after a down bar, and why
-> does that change the economic meaning of the strategy?
+<div class="ledgr-callout ledgr-callout-tip">
 
+**Try it**
+
+Change `buy_if_up()` so it starts from `ctx$hold()` instead of
+`ctx$flat()`. Which positions would persist after a down bar, and why
+does that change the economic meaning of the strategy?
+
+</div>
 
 ## Why `params` Exists
 
-> [!NOTE]
->
-> ### Definition
->
-> `params` is the run’s strategy configuration. Put research choices you
-> want to compare, store, or sweep into `params`; do not hide them in
-> globals or inside feature declarations.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+`params` is the run’s strategy configuration. Put research choices you
+want to compare, store, or sweep into `params`; do not hide them in
+globals or inside feature declarations.
+
+</div>
 
 Hard-coded constants make experiments awkward. Parameters let one
 economic idea run under different assumptions.
@@ -599,7 +604,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = top_return_strategy,
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 ```
 
@@ -680,7 +686,8 @@ mapped_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = mapped_return_strategy,
   features = mapped_features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 ```
 
@@ -861,7 +868,7 @@ The helper pipeline is only an authoring layer:
 
 <div class="ledgr-diagram ledgr-helper-pipeline">
 
-```mermaid
+``` mermaid
 
 flowchart LR
   signal["ledgr_signal"]
@@ -940,15 +947,16 @@ tutorial-style signal functions. It explicitly maps an inner signal
 function to target quantities. For the full tier model, read
 `vignette("reproducibility", package = "ledgr")`.
 
-> [!NOTE]
->
-> ### Definition
->
-> A preflight tier is ledgr’s static reproducibility classification for a
-> strategy function. Tier 1 is self-contained, Tier 2 is inspectable with
-> user-managed environment parity, and Tier 3 is rejected before
-> execution.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Definition**
+
+A preflight tier is ledgr’s static reproducibility classification for a
+strategy function. Tier 1 is self-contained, Tier 2 is inspectable with
+user-managed environment parity, and Tier 3 is rejected before
+execution.
+
+</div>
 
 A compact Tier 3 hard-failure example is an unresolved helper reference:
 

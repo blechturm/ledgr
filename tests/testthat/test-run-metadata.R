@@ -14,7 +14,8 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "label-run"
+    run_id = "label-run",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
   close(bt)
@@ -55,7 +56,8 @@ testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "status-metadata-run"
+    run_id = "status-metadata-run",
+  cost_model = ledgr_cost_zero()
   )
   close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
@@ -92,7 +94,8 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
     start = "2020-01-01",
     end = "2020-01-05",
     db_path = db_path,
-    run_id = "archive-run"
+    run_id = "archive-run",
+  cost_model = ledgr_cost_zero()
   )
   close(bt)
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)

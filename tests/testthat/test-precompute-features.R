@@ -11,7 +11,8 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
     snapshot = snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
-    features = list(ledgr_ind_sma(3), ledgr_ind_returns(2))
+    features = list(ledgr_ind_sma(3), ledgr_ind_returns(2)),
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
 
@@ -80,7 +81,8 @@ testthat::test_that("feature factories resolve per candidate and dedupe by finge
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
-    features = feature_factory
+    features = feature_factory,
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(a = list(n = 2), b = list(n = 2), c = list(n = 4))
 
@@ -120,7 +122,8 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
-    features = list(ledgr_ind_sma(6))
+    features = list(ledgr_ind_sma(6)),
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(a = list(qty = 1))
 
@@ -154,7 +157,8 @@ testthat::test_that("runtime projection flattens bundle outputs to concrete feat
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
-    features = list(bundle)
+    features = list(bundle),
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(a = list(qty = 1))
 
@@ -179,7 +183,8 @@ testthat::test_that("precompute aborts on static scoring coverage gaps", {
     snapshot = snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
-    features = list(ledgr_ind_returns(1))
+    features = list(ledgr_ind_returns(1)),
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(a = list(qty = 1))
 
@@ -203,7 +208,8 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     snapshot = snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
-    features = feature_factory
+    features = feature_factory,
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(a = list(n = 2), b = list(n = 3))
   precomputed <- ledgr_precompute_features(exp, grid)
@@ -221,7 +227,8 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     snapshot = other_snapshot,
     strategy = strategy,
     universe = c("AAA", "BBB"),
-    features = feature_factory
+    features = feature_factory,
+  cost_model = ledgr_cost_zero()
   )
   testthat::expect_error(
     ledgr:::ledgr_validate_precomputed_features(precomputed, other_exp, grid),
@@ -232,7 +239,8 @@ testthat::test_that("precomputed feature validation binds snapshot, universe, ra
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
-    features = feature_factory
+    features = feature_factory,
+  cost_model = ledgr_cost_zero()
   )
   testthat::expect_error(
     ledgr:::ledgr_validate_precomputed_features(precomputed, one_universe_exp, grid),
@@ -292,7 +300,8 @@ testthat::test_that("candidate feature resolution captures candidate-specific fa
     snapshot = snapshot,
     strategy = strategy,
     universe = "AAA",
-    features = function(params) list(ledgr_ind_sma(params$n))
+    features = function(params) list(ledgr_ind_sma(params$n)),
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(good = list(n = 2), bad = list(n = 0), also_good = list(n = 4))
 
@@ -326,7 +335,8 @@ testthat::test_that("structural feature-factory invalidity aborts before candida
       snapshot = snapshot,
       strategy = strategy,
       universe = "AAA",
-      features = function() list(ledgr_ind_sma(2))
+      features = function() list(ledgr_ind_sma(2)),
+    cost_model = ledgr_cost_zero()
     ),
     class = "ledgr_invalid_experiment_features"
   )

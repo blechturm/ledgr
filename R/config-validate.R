@@ -153,22 +153,44 @@ validate_ledgr_config <- function(config) {
     rlang::abort("Config field backtest.initial_cash must be > 0.", class = c("ledgr_invalid_args", "ledgr_invalid_config"))
   }
 
-  fill_type <- cfg_get(c("fill_model", "type"))
-  assert_scalar_chr(fill_type, "fill_model.type")
-  if (!identical(fill_type, "next_open")) {
-    rlang::abort("Config field fill_model.type must be 'next_open'.", class = "ledgr_invalid_config")
+  if (!is.null(config$fill_model)) {
+    rlang::abort(
+      "Stored config uses legacy `fill_model`; recreate the experiment with `timing_model` and `cost_model`.",
+      class = "ledgr_legacy_config_shape"
+    )
   }
 
-  spread_bps <- cfg_get(c("fill_model", "spread_bps"))
-  commission_fixed <- cfg_get(c("fill_model", "commission_fixed"))
-  assert_scalar_num(spread_bps, "fill_model.spread_bps")
-  assert_scalar_num(commission_fixed, "fill_model.commission_fixed")
-  if (spread_bps < 0) {
-    rlang::abort("Config field fill_model.spread_bps must be >= 0.", class = "ledgr_invalid_config")
+  timing_type <- cfg_get(c("timing_model", "type_id"))
+  assert_scalar_chr(timing_type, "timing_model.type_id")
+  if (!identical(timing_type, "next_open")) {
+    rlang::abort("Config field timing_model.type_id must be 'next_open'.", class = "ledgr_invalid_config")
   }
-  if (commission_fixed < 0) {
-    rlang::abort("Config field fill_model.commission_fixed must be >= 0.", class = "ledgr_invalid_config")
+  timing_version <- cfg_get(c("timing_model", "version"))
+  assert_scalar_num(timing_version, "timing_model.version")
+  if (as.integer(timing_version) != 1L) {
+    rlang::abort("Config field timing_model.version must be 1.", class = "ledgr_invalid_config")
   }
+
+  cost_model_hash <- cfg_get(c("cost_model", "cost_model_hash"))
+  cost_plan_json <- cfg_get(c("cost_model", "cost_plan_json"))
+  assert_scalar_chr(cost_model_hash, "cost_model.cost_model_hash")
+  assert_scalar_chr(cost_plan_json, "cost_model.cost_plan_json")
+  if (!grepl("^[0-9a-f]{64}$", cost_model_hash)) {
+    rlang::abort("Config field cost_model.cost_model_hash must be a 64-character lowercase hex string.", class = "ledgr_invalid_config")
+  }
+  reconstructed_hash <- tryCatch(
+    digest::digest(cost_plan_json, algo = "sha256"),
+    error = function(e) NA_character_
+  )
+  if (!identical(reconstructed_hash, cost_model_hash)) {
+    rlang::abort("Config field cost_model.cost_model_hash must match cost_model.cost_plan_json.", class = "ledgr_invalid_config")
+  }
+  tryCatch(
+    ledgr_cost_plan_reconstruct(cost_plan_json),
+    error = function(e) {
+      rlang::abort("Config field cost_model.cost_plan_json is not a valid ledgr cost plan.", class = "ledgr_invalid_config", parent = e)
+    }
+  )
 
   strategy_id <- cfg_get(c("strategy", "id"))
   assert_scalar_chr(strategy_id, "strategy.id")

@@ -124,6 +124,16 @@ ledgr_test_snapshot_backed_config <- function(cfg, bars_df, snapshot_id = NULL) 
   cfg
 }
 
+ledgr_test_modernize_config <- function(cfg, cost_model = ledgr_cost_zero()) {
+  cfg$fill_model <- NULL
+  cfg$timing_model <- ledgr_timing_next_open()
+  cfg$cost_model <- list(
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(cost_model),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(cost_model)
+  )
+  cfg
+}
+
 ledgr_test_norm_ts <- function(x) {
   format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 }

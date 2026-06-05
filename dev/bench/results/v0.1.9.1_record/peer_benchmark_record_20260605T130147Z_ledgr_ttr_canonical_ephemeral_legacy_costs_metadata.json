@@ -1,0 +1,13 @@
+{
+  "engine": "ledgr_ttr_canonical_ephemeral_legacy_costs",
+  "status": "DONE",
+  "wall_sec": 106.37,
+  "phase_sec": {
+    "ingestion_sec": 9.98,
+    "engine_sec": 87.39,
+    "results_sec": 9
+  },
+  "cost_model": "legacy_fill_model_spread_5_fixed_1",
+  "compiled_accounting_model": {},
+  "boundary_check": ["bars_csv_read", "in_memory_projection", "engine_run", "canonical_equity_write", "fills_write"]
+}

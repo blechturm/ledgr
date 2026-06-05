@@ -26,6 +26,7 @@ make_runner_fixture_db <- function() {
 }
 
 base_runner_config <- function(db_path) {
+  cost <- ledgr_cost_zero()
   list(
     db_path = db_path,
     engine = list(seed = 1L, tz = "UTC"),
@@ -36,7 +37,19 @@ base_runner_config <- function(db_path) {
       pulse = "EOD",
       initial_cash = 1000
     ),
-    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+    timing_model = {
+      timing <- ledgr_timing_next_open()
+      list(
+        timing_schema_version = timing$timing_schema_version,
+        type_id = timing$type_id,
+        version = timing$version,
+        args = timing$args
+      )
+    },
+    cost_model = list(
+      cost_model_hash = ledgr:::ledgr_cost_model_hash(cost),
+      cost_plan_json = ledgr:::ledgr_cost_plan_json(cost)
+    ),
     features = list(enabled = TRUE, defs = list(list(id = "return_1"))),
     strategy = list(id = "echo", params = list(targets = c(AAA = 1)))
   )
@@ -140,7 +153,11 @@ testthat::test_that("runner refuses to resume on config hash mismatch", {
   Sys.sleep(0.05)
 
   cfg2 <- cfg
-  cfg2$fill_model$spread_bps <- 1
+  changed_cost <- ledgr_cost_spread_bps(1)
+  cfg2$cost_model <- list(
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(changed_cost),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(changed_cost)
+  )
 
   testthat::expect_error(
     ledgr_backtest_run(cfg2, run_id = run_id),
@@ -175,6 +192,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   DBI::dbDisconnect(con, shutdown = TRUE)
   duckdb::duckdb_shutdown(drv)
 
+  cost <- ledgr_cost_zero()
   cfg <- list(
     db_path = path,
     engine = list(seed = 1L, tz = "UTC"),
@@ -185,7 +203,19 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
       pulse = "EOD",
       initial_cash = 1000
     ),
-    fill_model = list(type = "next_open", spread_bps = 0, commission_fixed = 0),
+    timing_model = {
+      timing <- ledgr_timing_next_open()
+      list(
+        timing_schema_version = timing$timing_schema_version,
+        type_id = timing$type_id,
+        version = timing$version,
+        args = timing$args
+      )
+    },
+    cost_model = list(
+      cost_model_hash = ledgr:::ledgr_cost_model_hash(cost),
+      cost_plan_json = ledgr:::ledgr_cost_plan_json(cost)
+    ),
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "state_prev", params = list())
   )

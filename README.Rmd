@@ -92,7 +92,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = ledgr_demo_sma_crossover_strategy(),
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 bt <- ledgr_run(
@@ -186,8 +187,8 @@ connection; explicit `close(bt)` is resource cleanup for long sessions,
 explicit opens, and lazy result cursors.
 
 ```{r cleanup, include=FALSE}
-close(bt)
-ledgr_snapshot_close(snapshot)
+if (exists("bt")) close(bt)
+if (exists("snapshot")) ledgr_snapshot_close(snapshot)
 ```
 
 ## Pre-CRAN Compatibility

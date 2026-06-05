@@ -40,6 +40,13 @@ A \code{ledgr_backtest} object.
 experiment-first workflow. It evaluates run-time feature definitions,
 builds the canonical backtest config, and delegates to the shared runner.
 }
+\section{Identity}{
+
+Run identity fields, including \code{config_hash}, \code{feature_set_hash},
+\code{cost_model_hash}, and \code{cost_plan_json}, are summarized in
+\link{ledgr_identity_fields}.
+}
+
 \section{Articles}{
 
 Strategy authoring:
@@ -67,7 +74,7 @@ strategy <- function(ctx, params) {
   targets["AAA"] <- params$qty
   targets
 }
-exp <- ledgr_experiment(snapshot, strategy)
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 bt <- ledgr_run(exp, params = list(qty = 1), run_id = "example-run")
 close(bt)
 ledgr_snapshot_close(snapshot)

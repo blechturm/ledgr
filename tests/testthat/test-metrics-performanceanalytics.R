@@ -27,7 +27,8 @@ testthat::test_that("optional PerformanceAnalytics parity matches aligned ledgr 
     strategy = strategy,
     initial_cash = 1000,
     db_path = db_path,
-    run_id = "pa-parity"
+    run_id = "pa-parity",
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 

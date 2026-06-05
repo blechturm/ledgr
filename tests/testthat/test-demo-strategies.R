@@ -48,7 +48,8 @@ testthat::test_that("demo SMA crossover strategy runs and keeps qty zero baselin
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = ledgr_demo_sma_crossover_strategy(),
-    features = features
+    features = features,
+  cost_model = ledgr_cost_zero()
   )
 
   active <- ledgr_run(
@@ -83,7 +84,8 @@ testthat::test_that("demo SMA crossover strategy sweeps feature and strategy gri
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = ledgr_demo_sma_crossover_strategy(),
-    features = features
+    features = features,
+  cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_grid_cross(
     features = ledgr_feature_grid(fast_n = 2L, slow_n = 4L),
@@ -106,7 +108,8 @@ testthat::test_that("demo SMA crossover strategy fails through active alias clas
   no_alias_exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = ledgr_demo_sma_crossover_strategy(),
-    features = list(ledgr_ind_sma(2))
+    features = list(ledgr_ind_sma(2)),
+  cost_model = ledgr_cost_zero()
   )
   testthat::expect_error(
     ledgr_run(no_alias_exp, params = list(qty = 1, threshold = 0), run_id = "demo_no_alias"),
@@ -119,7 +122,8 @@ testthat::test_that("demo SMA crossover strategy fails through active alias clas
     features = ledgr_feature_map(
       quick = ledgr_ind_sma(ledgr_param("fast_n")),
       slow = ledgr_ind_sma(ledgr_param("slow_n"))
-    )
+    ),
+  cost_model = ledgr_cost_zero()
   )
   testthat::expect_error(
     ledgr_run(

@@ -1,0 +1,13 @@
+{
+  "engine": "ledgr_ttr_canonical_ephemeral",
+  "status": "DONE",
+  "wall_sec": 107.38,
+  "phase_sec": {
+    "ingestion_sec": 16.25,
+    "engine_sec": 81.13,
+    "results_sec": 10
+  },
+  "cost_model": "cost_zero",
+  "compiled_accounting_model": {},
+  "boundary_check": ["bars_csv_read", "in_memory_projection", "engine_run", "canonical_equity_write", "fills_write"]
+}

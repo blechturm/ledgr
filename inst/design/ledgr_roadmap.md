@@ -3,9 +3,10 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_8_11_spec_packet/`.
-**Active packet:** none; v0.1.9 planning is next.
-**Active packet path:** not cut.
+**Latest completed packet:** `inst/design/ledgr_v0_1_9_1_spec_packet/`.
+**Active packet:** None. Next planned packet is v0.1.9.2 sweep artifact
+persistence; RFC seed pending.
+**Active packet path:** None.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -105,15 +106,14 @@ versioned packet.
 | v0.1.8.9 | Done | Single-core optimization round: scale-growing buffer write fixes, per-pulse vectorization, yyjsonr canonical JSON byte-format v2 migration, per-lane attribution, and workload-grid / peer-benchmark closeout. | `inst/design/ledgr_v0_1_8_9_spec_packet/` |
 | v0.1.8.10 | Done | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, scoped public memory-backed sweep opt-in, and measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
 | v0.1.8.11 | Done | Documentation, structure, and cleanup release before v0.1.9 features: contract/design-index audit, RFC decision index, user-facing disclaimer and vignette refresh, internal performance-arc narrative, maintainer manual, benchmark methodology article, and `adr/` + `architecture/` + `maintainer_review/` wind-down. | `inst/design/ledgr_v0_1_8_11_spec_packet/` |
-| v0.1.9 | Planned | Target risk layer and post-optimization primitive-internals / substrate planning gates. | Future packet |
-| v0.1.9.x | Planned | Internal maintainer manual and architecture article release after the v0.1.8.8 deferral. Foundation absorbed into v0.1.8.11 documentation/cleanup release. | Future packet |
-| v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
-| v0.1.9.x | Planned | Walk-forward evaluation before OMS and paper-trading work. | Future packet; accepted RFC synthesis |
+| v0.1.9.1 | Done | Public transaction-cost model API, explicit timing-model surface, cost identity (`cost_model_hash`, `cost_plan_json`), and bounded auditr identity/disclaimer fixes. | `inst/design/ledgr_v0_1_9_1_spec_packet/` |
+| v0.1.9.2 | Planned | Sweep artifact persistence: scheduled RFC cycle and compact sweep-result retention/promotion audit infrastructure for later walk-forward. | Future packet; RFC seed pending |
+| v0.1.9.3 | Planned | Target-risk: per-pulse restructure plus chainable risk layer, including risk-chain identity for walk-forward. | Future packet; accepted risk/OMS boundary synthesis |
+| v0.1.9.4 | Planned | Walk-forward culmination: consumes cost identity from v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain identity from v0.1.9.3; Section 17 gates fire here. | Future packet; accepted walk-forward synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
 | v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
-| v0.1.9.x | Planned | Sweep artifact persistence for compact search-space audit. | Future packet |
+| v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
-| v0.1.9.x / v0.2.0 | Planned | Public transaction-cost model API after internal boundary stabilizes. | Future packet |
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
 | v0.2.x | Planned | Point-in-time data tables for external observations and reference data. | Future packet |
 | v0.2.x | Planned | Corporate actions and instrument master for serious equity data. | Future packet |
@@ -1331,7 +1331,43 @@ Source memory:
   `2026-06-02 [architecture] B2 spot-FIFO accelerator is not a derivatives
   accounting model`.
 
-### v0.1.9 Target Risk Layer
+### v0.1.9.x Line Sequencing
+
+Sequencing decision recorded 2026-06-05. The v0.1.9.x line is a four-tick
+arc culminating in walk-forward. Each tick produces identity or
+infrastructure that walk-forward consumes when it ticket-cuts at v0.1.9.4:
+
+- **v0.1.9.1** -- cost-API
+  (`inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`,
+  accepted; active packet).
+- **v0.1.9.2** -- sweep artifact persistence (RFC cycle scheduled;
+  no prior RFC artifacts; seed v1 pending).
+- **v0.1.9.3** -- target-risk: per-pulse restructure plus chainable
+  risk layer
+  (section immediately below; previously framed as the v0.1.9
+  headline before the arc was sequenced).
+- **v0.1.9.4** -- walk-forward culmination
+  (`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+  with Amendments 1 + 2 + Section 17 ticket-cut gate matrix). It gets
+  cost identity from v0.1.9.1, sweep retention infrastructure from
+  v0.1.9.2, and risk-chain identity from v0.1.9.3.
+
+Rationale, cross-cycle identity handoffs, and scope-discipline
+acknowledgment: see the 2026-06-05 horizon entry "v0.1.9.x line
+sequencing -- four-tick arc culminating in walk-forward" in
+`inst/design/horizon.md`.
+
+Other v0.1.9.x roadmap candidates listed in sections below
+(crypto-readiness spike, target-construction-helper extensions, etc.)
+are not yet sequenced into this arc. They slot in as separate scoping
+decisions when their windows open -- either as small parallel releases
+between the four named ticks or absorbed into one of them at scoping
+time.
+
+### v0.1.9.3 Target Risk Layer
+
+Sequenced as **v0.1.9.3** in the v0.1.9.x arc above. This remains the
+target-risk packet in the four-tick sequence.
 
 Authoritative input:
 
@@ -1519,7 +1555,13 @@ Exit decisions:
   follow-up or later packet, and defer the user-facing crypto support claim
   until the work lands.
 
-### v0.1.9.x Walk-Forward Evaluation
+### v0.1.9.4 Walk-Forward Evaluation
+
+Sequenced as **v0.1.9.4** in the v0.1.9.x arc (see v0.1.9.x Line
+Sequencing section above). Ticket-cut consumes cost-identity from
+v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain
+identity from v0.1.9.3; Section 17 gate matrix from the synthesis fires
+at this packet.
 
 Accepted design input:
 
@@ -1578,7 +1620,10 @@ Constraints:
 - keep the first `ledgr_walk_forward()` release narrower than this diagnostic
   layer.
 
-### v0.1.9.x Sweep Artifact Persistence
+### v0.1.9.2 Sweep Artifact Persistence
+
+Sequenced as **v0.1.9.2** in the v0.1.9.x arc. The RFC cycle is scheduled
+from the 2026-06-05 planning update; the seed draft is still pending.
 
 Intent:
 
@@ -1619,18 +1664,30 @@ Constraints:
 - helpers must preserve the public strategy contract: strategies return full
   named numeric target quantities or an explicit wrapper maps to those targets.
 
-### v0.1.9.x / v0.2.0 Public Transaction-Cost Model API
+### v0.1.9.1 Public Transaction-Cost Model API
+
+Sequenced as **v0.1.9.1** in the v0.1.9.x arc. This is the first dependency
+that the later walk-forward packet consumes.
+
+Status note:
+
+- v0.1.9.1 is complete. It shipped the public cost API, explicit
+  `timing_model` plus required `cost_model` construction contract, legacy
+  shape rejection, and release-gate documentation closeout.
+- `cost_model_hash` and `cost_plan_json` are now the concrete cost-identity
+  handoff that v0.1.9.2 sweep persistence and v0.1.9.4 walk-forward must
+  consume.
 
 Intent:
 
-- expose cost-model factories only after the internal v0.1.8 boundary and
-  v0.1.9 risk identity model are stable;
+- expose the accepted cost-model factories in v0.1.9.1 as the first
+  dependency in the four-tick v0.1.9.x arc;
 - keep broker/exchange-specific templates out of core unless clearly labelled
   approximations;
 - preserve the distinction between cost application and quantity-changing
   execution/liquidity policy;
-- require fingerprinting/source/identity treatment for function-valued cost
-  models before public exposure.
+- keep arbitrary function-valued cost models deferred until a later identity
+  RFC resolves fingerprinting and source-treatment rules.
 
 ### v0.2.x Liquidity And Capacity Policy
 

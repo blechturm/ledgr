@@ -155,12 +155,17 @@ print.ledgr_opening <- function(x, ...) {
 #' @param opening A `ledgr_opening` object.
 #' @param universe Character vector of instrument IDs, or `NULL` for all
 #'   instruments in the snapshot.
-#' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
-#'   model with zero spread and zero fixed commission. For
-#'   `fill_model$spread_bps`, ledgr applies the full value on each fill leg:
-#'   buys fill at `open * (1 + spread_bps / 10000)` and sells fill at
-#'   `open * (1 - spread_bps / 10000)`. A buy/sell round trip therefore costs
-#'   approximately `2 * spread_bps` basis points before commissions.
+#' @param timing_model Timing model object. Defaults to
+#'   `ledgr_timing_next_open()`. The timing model proposes fills; cost models
+#'   resolve fill prices and explicit fees.
+#' @param cost_model Required ledgr cost model object. Use `ledgr_cost_zero()`
+#'   for explicit zero-cost execution. `ledgr_cost_spread_bps()` treats
+#'   `spread_bps` as a quoted bid/ask spread: buys cross half the spread above
+#'   the reference price and sells cross half the spread below it, so a round
+#'   trip crosses approximately `spread_bps` basis points before explicit fees.
+#' @param fill_model Legacy v0.1.8 fill model argument. Supplying it now fails
+#'   with `ledgr_legacy_fill_model_shape`; use `timing_model` plus
+#'   `cost_model`.
 #' @param persist_features Logical scalar.
 #' @param execution_mode Execution mode (`"audit_log"` or `"db_live"`).
 #' @param metric_context Optional `ledgr_metric_context` object or scalar
@@ -194,7 +199,7 @@ print.ledgr_opening <- function(x, ...) {
 #' strategy <- function(ctx, params) {
 #'   stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
 #' }
-#' exp <- ledgr_experiment(snapshot, strategy)
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 #' inherits(exp, "ledgr_experiment")
 #' ledgr_snapshot_close(snapshot)
 #' @export
@@ -203,6 +208,8 @@ ledgr_experiment <- function(snapshot,
                              features = list(),
                              opening = ledgr_opening(cash = 100000),
                              universe = NULL,
+                             timing_model = ledgr_timing_next_open(),
+                             cost_model,
                              fill_model = NULL,
                              persist_features = TRUE,
                              execution_mode = "audit_log",
@@ -230,12 +237,23 @@ ledgr_experiment <- function(snapshot,
   features_mode <- ledgr_experiment_validate_features(features)
   features <- ledgr_experiment_copy_features(features, features_mode)
 
+  if (!is.null(fill_model)) {
+    ledgr_legacy_fill_model_abort()
+  }
+  if (missing(cost_model) || is.null(cost_model)) {
+    ledgr_cost_model_unspecified()
+  }
   if (!inherits(opening, "ledgr_opening")) {
     rlang::abort("`opening` must be a ledgr_opening object.", class = "ledgr_invalid_experiment")
   }
   ledgr_experiment_validate_opening(opening, universe)
 
-  fill_model <- ledgr_experiment_normalize_fill_model(fill_model)
+  timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
+  cost_model <- ledgr_experiment_normalize_cost_model(cost_model)
+  cost_identity <- list(
+    cost_model_hash = ledgr_cost_model_hash(cost_model),
+    cost_plan_json = ledgr_cost_plan_json(cost_model)
+  )
 
   if (!is.logical(persist_features) || length(persist_features) != 1L || is.na(persist_features)) {
     rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_experiment")
@@ -255,7 +273,10 @@ ledgr_experiment <- function(snapshot,
       features_mode = features_mode,
       opening = opening,
       universe = universe,
-      fill_model = fill_model,
+      timing_model = timing_model,
+      cost_model = cost_model,
+      cost_model_hash = cost_identity$cost_model_hash,
+      cost_plan_json = cost_identity$cost_plan_json,
       persist_features = isTRUE(persist_features),
       execution_mode = execution_mode,
       metric_context = metric_context
@@ -397,8 +418,12 @@ ledgr_experiment_materialize_feature_result <- function(exp, params, feature_par
   mode <- ledgr_experiment_validate_features(features)
   if (identical(mode, "feature_map")) {
     ledgr_validate_feature_params_for_declarations(features, feature_params)
+    alias_identity_map <- ledgr_alias_identity_map_from_feature_map(features)
     features <- ledgr_resolve_feature_map(features, feature_params = feature_params)
-    alias_storage <- ledgr_alias_map_storage(ledgr_alias_map_from_feature_map(features))
+    alias_storage <- ledgr_alias_map_storage(
+      ledgr_alias_map_from_feature_map(features),
+      identity_map = alias_identity_map
+    )
     return(c(
       list(features = ledgr_feature_map_indicators(features)),
       alias_storage
@@ -474,40 +499,6 @@ ledgr_experiment_validate_opening <- function(opening, universe) {
     }
   }
   invisible(TRUE)
-}
-
-ledgr_experiment_normalize_fill_model <- function(fill_model) {
-  if (is.null(fill_model)) {
-    fill_model <- ledgr_fill_model_instant()
-  }
-  if (!is.list(fill_model)) {
-    rlang::abort("`fill_model` must be a list.", class = "ledgr_invalid_experiment")
-  }
-  required <- c("type", "spread_bps", "commission_fixed")
-  missing <- setdiff(required, names(fill_model))
-  if (length(missing) > 0L) {
-    rlang::abort(
-      sprintf("`fill_model` missing required field(s): %s.", paste(missing, collapse = ", ")),
-      class = "ledgr_invalid_experiment"
-    )
-  }
-  if (!identical(fill_model$type, "next_open")) {
-    rlang::abort("`fill_model$type` must be \"next_open\".", class = "ledgr_invalid_experiment")
-  }
-  for (field in c("spread_bps", "commission_fixed")) {
-    value <- fill_model[[field]]
-    if (!is.numeric(value) || length(value) != 1L || is.na(value) || !is.finite(value) || value < 0) {
-      rlang::abort(
-        sprintf("`fill_model$%s` must be a finite numeric scalar >= 0.", field),
-        class = "ledgr_invalid_experiment"
-      )
-    }
-  }
-  list(
-    type = "next_open",
-    spread_bps = as.numeric(fill_model$spread_bps),
-    commission_fixed = as.numeric(fill_model$commission_fixed)
-  )
 }
 
 #' Print a ledgr experiment

@@ -117,7 +117,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
   features = features,
-  opening = ledgr_opening(cash = 100000)
+  opening = ledgr_opening(cash = 100000),
+  cost_model = ledgr_cost_zero()
 )
 
 exp
@@ -340,7 +341,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_1f9f3826239ae270
+    # ledgr sweep -- sweep_946be1f8eb91a69a
     # A tibble: 16 x 7
        run_id            status sharpe_ratio total_return max_drawdown n_trades execution_seed
        <chr>             <chr>         <dbl> <chr>        <chr>           <int>          <int>
@@ -540,7 +541,8 @@ debug_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = debug_strategy,
   features = list(),
-  opening = ledgr_opening(cash = 100000)
+  opening = ledgr_opening(cash = 100000),
+  cost_model = ledgr_cost_zero()
 )
 
 debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
@@ -551,7 +553,7 @@ failed_sweep |>
   select(run_id, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_f84fc179c8650687
+    # ledgr sweep -- sweep_5fab6626ff284a59
     # A tibble: 2 x 2
       run_id                status
       <chr>                 <chr>
@@ -578,6 +580,20 @@ incomparable rows.
 extracting a failed row for diagnostics; `ledgr_promote()` still rejects
 failed candidates.
 
+## Cost Models Are Fixed Inputs
+
+Cost models are part of the experiment identity in this release. A sweep
+varies feature parameters and strategy parameters across the declared
+grid; it does not compose cost models as another grid dimension. If you
+want to compare different cost assumptions, run separate experiments or
+separate sweeps with explicit `cost_model` values and compare the
+resulting evidence.
+
+A future `ledgr_cost_grid()` may make cost assumptions participate in
+candidate identity deliberately. That API is not part of the v1 cost
+surface, so do not expect `ledgr_grid_cross()` to accept cost-model
+dimensions.
+
 ## Explicit Non-Goals
 
 Sweep mode intentionally leaves some decisions outside the API. It does
@@ -586,7 +602,7 @@ not ship:
 - automatic ranking, objective functions, or `ledgr_tune()`;
 - walk-forward, PBO, or CSCV helpers;
 - risk-layer insertion;
-- public cost-model factories;
+- cost-grid composition such as `ledgr_cost_grid()`;
 - paper/live trading adapters;
 - intraday-specific support;
 - `ledgr_save_sweep()` or full sweep artifact persistence.

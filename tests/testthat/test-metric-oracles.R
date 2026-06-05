@@ -191,7 +191,8 @@ ledgr_run_metric_fixture <- function(name) {
     strategy = fixture$strategy,
     initial_cash = fixture$initial_cash,
     db_path = db_path,
-    run_id = paste0("metric-", name)
+    run_id = paste0("metric-", name),
+  cost_model = ledgr_cost_zero()
   ))
   bt <- if (isTRUE(fixture$expect_warning)) {
     warned <- FALSE

@@ -398,6 +398,123 @@ testthat::test_that("pkgdown reference lists v0.1.7.4 helper exports", {
   }
 })
 
+testthat::test_that("v0.1.9.1 release surfaces record cost API state without future claims", {
+  root <- testthat::test_path("..", "..")
+  doc_paths <- list(
+    news = file.path(root, "NEWS.md"),
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    rfc_index = file.path(root, "inst", "design", "rfc", "README.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md"),
+    batch_plan = file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "batch_plan.md"),
+    tickets = file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "v0_1_9_1_tickets.md"),
+    tickets_yml = file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "tickets.yml")
+  )
+  testthat::skip_if_not(all(file.exists(unlist(doc_paths))), "source release-surface docs not available during installed-package tests")
+
+  news <- paste(readLines(doc_paths$news, warn = FALSE), collapse = "\n")
+  roadmap <- paste(readLines(doc_paths$roadmap, warn = FALSE), collapse = "\n")
+  design_index <- paste(readLines(doc_paths$design_index, warn = FALSE), collapse = "\n")
+  rfc_index <- paste(readLines(doc_paths$rfc_index, warn = FALSE), collapse = "\n")
+  horizon <- paste(readLines(doc_paths$horizon, warn = FALSE), collapse = "\n")
+  batch_plan <- paste(readLines(doc_paths$batch_plan, warn = FALSE), collapse = "\n")
+  tickets <- paste(readLines(doc_paths$tickets, warn = FALSE), collapse = "\n")
+  tickets_yml <- paste(readLines(doc_paths$tickets_yml, warn = FALSE), collapse = "\n")
+
+  start <- regexpr("# ledgr 0[.]1[.]9[.]1", news)
+  end <- regexpr("# ledgr 0[.]1[.]8[.]11", news)
+  testthat::expect_true(start > 0L)
+  testthat::expect_true(end > start)
+  section <- substr(news, start, end - 1L)
+
+  for (term in c(
+    "public transaction-cost API",
+    "ledgr_cost_chain()",
+    "ledgr_timing_next_open()",
+    "cost_model_hash",
+    "cost_plan_json",
+    "fill_model",
+    "timing_model",
+    "required `cost_model`",
+    "ledgr_cost_zero()",
+    "commission_fixed",
+    "fee",
+    "THEME-004",
+    "feature_set_hash",
+    "fixed experiment inputs in v1"
+  )) {
+    testthat::expect_match(section, term, fixed = TRUE)
+  }
+  testthat::expect_match(section, "Sweep artifact persistence, target risk, and\\s+walk-forward remain future v0.1.9.x packets")
+
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_1_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
+  testthat::expect_match(roadmap, "v0.1.9.2 | Planned", fixed = TRUE)
+  testthat::expect_match(roadmap, "v0.1.9.3 | Planned", fixed = TRUE)
+  testthat::expect_match(roadmap, "v0.1.9.4 | Planned", fixed = TRUE)
+
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.1`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** None", fixed = TRUE)
+  testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
+  testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
+  testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
+
+  testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
+  testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
+  testthat::expect_match(rfc_index, "Liquidity, quantity mutation, broker templates, and function-valued user models remain downstream", fixed = TRUE)
+
+  resolved_pos <- regexpr("\n## Resolved\n", horizon, fixed = TRUE)[[1]]
+  cost_pos <- regexpr("v0.1.9.1 cost-API spec-cut decisions", horizon, fixed = TRUE)[[1]]
+  sweep_pos <- regexpr("v0.1.9.2 sweep artifact persistence RFC cycle scheduled", horizon, fixed = TRUE)[[1]]
+  wf_pos <- regexpr("v0.1.9.4 walk-forward Section 17 gate-row obligations", horizon, fixed = TRUE)[[1]]
+  testthat::expect_gt(cost_pos, resolved_pos)
+  testthat::expect_gt(sweep_pos, 0L)
+  testthat::expect_lt(sweep_pos, resolved_pos)
+  testthat::expect_gt(wf_pos, 0L)
+  testthat::expect_lt(wf_pos, resolved_pos)
+
+  testthat::expect_match(batch_plan, "## Batch 7 - Release Surfaces", fixed = TRUE)
+  testthat::expect_match(batch_plan, "Status: Completed", fixed = TRUE)
+  for (id in c("LDG-2570", "LDG-2571", "LDG-2572", "LDG-2573")) {
+    ticket_start <- regexpr(paste0("## ", id), tickets, fixed = TRUE)
+    testthat::expect_true(ticket_start > 0L)
+    ticket_section <- substr(tickets, ticket_start, min(nchar(tickets), ticket_start + 1200L))
+    testthat::expect_match(ticket_section, "Status: Completed", fixed = TRUE)
+    testthat::expect_match(tickets_yml, paste0("id: \"", id, "\""), fixed = TRUE)
+  }
+
+  testthat::expect_match(batch_plan, "## Batch 8 - Release Gate", fixed = TRUE)
+  batch8_start <- regexpr("## Batch 8 - Release Gate", batch_plan, fixed = TRUE)
+  testthat::expect_true(batch8_start > 0L)
+  batch8_section <- substr(batch_plan, batch8_start, min(nchar(batch_plan), batch8_start + 2000L))
+  testthat::expect_match(batch8_section, "Status: Completed", fixed = TRUE)
+  testthat::expect_match(batch8_section, "R CMD check --no-manual --no-build-vignettes ledgr_0.1.9.1.tar.gz", fixed = TRUE)
+
+  release_gate_start <- regexpr("## LDG-2574: v0.1.9.1 Release Gate", tickets, fixed = TRUE)
+  testthat::expect_true(release_gate_start > 0L)
+  release_gate_section <- substr(tickets, release_gate_start, min(nchar(tickets), release_gate_start + 2500L))
+  testthat::expect_match(release_gate_section, "Status: Completed", fixed = TRUE)
+  testthat::expect_match(release_gate_section, "Completion note (2026-06-05):", fixed = TRUE)
+  testthat::expect_match(tickets_yml, "id: \"LDG-2574\"", fixed = TRUE)
+  testthat::expect_match(tickets_yml, "status: \"completed\"", fixed = TRUE)
+
+  testthat::expect_match(batch_plan, "## Batch 9 - Release Recovery And Gate Harness Hardening", fixed = TRUE)
+  recovery_batch_start <- regexpr("## Batch 9 - Release Recovery And Gate Harness Hardening", batch_plan, fixed = TRUE)
+  testthat::expect_true(recovery_batch_start > 0L)
+  recovery_batch <- substr(batch_plan, recovery_batch_start, min(nchar(batch_plan), recovery_batch_start + 2500L))
+  testthat::expect_match(recovery_batch, "Status: Planned", fixed = TRUE)
+  testthat::expect_match(recovery_batch, "LDG-2576", fixed = TRUE)
+  testthat::expect_match(recovery_batch, "LDG-2580", fixed = TRUE)
+
+  for (id in paste0("LDG-", 2576:2580)) {
+    recovery_start <- regexpr(paste0("## ", id), tickets, fixed = TRUE)
+    testthat::expect_true(recovery_start > 0L)
+    recovery_section <- substr(tickets, recovery_start, min(nchar(tickets), recovery_start + 2000L))
+    testthat::expect_match(recovery_section, "Status: Planned", fixed = TRUE)
+    testthat::expect_match(tickets_yml, paste0("id: \"", id, "\""), fixed = TRUE)
+  }
+})
+
 testthat::test_that("NEWS summarizes delivered v0.1.7.4 scope", {
   root <- testthat::test_path("..", "..")
   news <- file.path(root, "NEWS.md")
@@ -733,14 +850,27 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Metric assumptions now live in a `metric_context`", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
-  testthat::expect_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
+  testthat::expect_match(metrics_doc, "Timing, Spread, And Fees", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Timing and cost are separate execution steps", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "open \\* \\(1 \\+ spread_bps / 20000\\)")
+  testthat::expect_match(metrics_doc, "open \\* \\(1 - spread_bps / 20000\\)")
+  testthat::expect_match(metrics_doc, "approximately `spread_bps` basis points before\\s+explicit fees")
+  testthat::expect_match(metrics_doc, "Price transforms and explicit fees are different", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "What costs do not model", fixed = TRUE)
+  for (term in c("liquidity", "financing", "taxes", "OMS", "broker reconciliation")) {
+    testthat::expect_match(metrics_doc, term, fixed = TRUE)
+  }
+  testthat::expect_match(metrics_doc, "transaction-cost\\s+analysis")
+  testthat::expect_match(metrics_doc, "Compiled Accounting Fails Closed", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "ledgr_unsupported_accounting_model", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "ledgr_compiled_spot_fifo_unavailable", fixed = TRUE)
+  testthat::expect_no_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
+  testthat::expect_no_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
 
-  testthat::expect_match(backtest_help, "full value on each fill leg", fixed = TRUE)
-  testthat::expect_match(backtest_help, "approximately \\code{2 * spread_bps} basis points before commissions", fixed = TRUE)
-  testthat::expect_match(backtest_help, "not a quoted bid/ask spread", fixed = TRUE)
-  testthat::expect_match(experiment_help, "full value on each fill leg", fixed = TRUE)
-  testthat::expect_match(experiment_help, "approximately \\code{2 * spread_bps} basis points before commissions", fixed = TRUE)
+  testthat::expect_match(backtest_help, "quoted bid/ask\\s+spread")
+  testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\} basis points before explicit fees")
+  testthat::expect_match(experiment_help, "quoted bid/ask\\s+spread")
+  testthat::expect_match(experiment_help, "crosses approximately \\\\code\\{spread_bps\\} basis points before explicit fees")
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)
@@ -781,6 +911,46 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "required fill fields", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Use `ledgr_compute_metrics\\(\\)` for scripted")
   testthat::expect_match(metrics_doc, "`ledgr_compare_runs()` is also programmatic", fixed = TRUE)
+})
+
+testthat::test_that("cost API help pages contain runnable reference examples", {
+  root <- testthat::test_path("..", "..")
+  help_paths <- file.path(
+    root,
+    "man",
+    c(
+      "ledgr_cost_spread_bps.Rd",
+      "ledgr_cost_steps.Rd",
+      "ledgr_timing_next_open.Rd",
+      "ledgr_run.Rd"
+    )
+  )
+  testthat::skip_if_not(all(file.exists(help_paths)), "source help pages not available during installed-package tests")
+
+  cost_help <- paste(readLines(help_paths[[1]], warn = FALSE), collapse = "\n")
+  steps_help <- paste(readLines(help_paths[[2]], warn = FALSE), collapse = "\n")
+  timing_help <- paste(readLines(help_paths[[3]], warn = FALSE), collapse = "\n")
+  run_help <- paste(readLines(help_paths[[4]], warn = FALSE), collapse = "\n")
+
+  for (term in c(
+    "ledgr_cost_spread_bps(5)",
+    "ledgr_cost_fixed_fee(1)",
+    "ledgr_cost_notional_bps_fee(2)",
+    "ledgr_cost_zero()",
+    "ledgr_cost_chain",
+    "ledgr_cost_steps(cost)",
+    "ledgr_cost_describe(cost)",
+    "try(ledgr_backtest(data = bars, strategy = strategy), silent = TRUE)",
+    "cost_model = zero"
+  )) {
+    testthat::expect_match(cost_help, term, fixed = TRUE)
+  }
+  testthat::expect_match(steps_help, "ledgr_cost_notional_bps_fee(2)", fixed = TRUE)
+  testthat::expect_match(steps_help, "ledgr_cost_steps(cost)", fixed = TRUE)
+  testthat::expect_match(steps_help, "ledgr_cost_describe(cost)", fixed = TRUE)
+  testthat::expect_match(timing_help, "timing <- ledgr_timing_next_open()", fixed = TRUE)
+  testthat::expect_match(timing_help, "timing$type_id", fixed = TRUE)
+  testthat::expect_match(run_help, "cost_model = ledgr_cost_zero()", fixed = TRUE)
 })
 
 testthat::test_that("public site polish avoids stale public artifacts", {
@@ -1008,6 +1178,12 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "full sweep artifact persistence", fixed = TRUE)
   testthat::expect_no_match(doc, "ledgr_snapshot_split\\(")
   testthat::expect_match(doc, "ledgr_save_sweep()", fixed = TRUE)
+  testthat::expect_match(doc, "Cost Models Are Fixed Inputs", fixed = TRUE)
+  testthat::expect_match(doc, "does not\\s+compose cost models as another grid dimension")
+  testthat::expect_match(doc, "A future `ledgr_cost_grid()`", fixed = TRUE)
+  testthat::expect_match(doc, "not part of the v1 cost surface", fixed = TRUE)
+  testthat::expect_match(doc, "cost-grid composition such as `ledgr_cost_grid()`", fixed = TRUE)
+  testthat::expect_no_match(doc, "public cost-model factories;", fixed = TRUE)
 
   testthat::expect_match(readme, "I want the full research loop: snapshot, sweep, promotion, reopen.", fixed = TRUE)
   testthat::expect_match(readme, "Research Workflow", fixed = TRUE)
@@ -1438,4 +1614,100 @@ testthat::test_that("help-page article links target installed vignettes only", {
   testthat::expect_false("ttr-indicators" %in% installed_articles)
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)
+})
+
+testthat::test_that("formal disclaimer is available at the installed vignette link target", {
+  root <- testthat::test_path("..", "..")
+  source_disclaimer_path <- file.path(root, "DISCLAIMER.md")
+  installed_disclaimer_path <- file.path(root, "inst", "DISCLAIMER.md")
+  workflow_path <- ledgr_test_source_vignette("research-workflow.qmd")
+  pkgdown_audience_path <- file.path(root, "vignettes", "articles", "who-ledgr-is-for.qmd")
+  testthat::skip_if_not(
+    file.exists(source_disclaimer_path) && file.exists(workflow_path) && file.exists(pkgdown_audience_path),
+    "source disclaimer files not available during installed-package tests"
+  )
+
+  source_disclaimer <- paste(readLines(source_disclaimer_path, warn = FALSE), collapse = "\n")
+  installed_disclaimer <- paste(readLines(installed_disclaimer_path, warn = FALSE), collapse = "\n")
+  workflow <- paste(readLines(workflow_path, warn = FALSE), collapse = "\n")
+  pkgdown_audience <- paste(readLines(pkgdown_audience_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_true(file.exists(installed_disclaimer_path))
+  testthat::expect_identical(installed_disclaimer, source_disclaimer)
+  testthat::expect_match(workflow, "[disclaimer](../DISCLAIMER.md)", fixed = TRUE)
+  testthat::expect_match(pkgdown_audience, "https://github.com/blechturm/ledgr/blob/main/DISCLAIMER.md", fixed = TRUE)
+  testthat::expect_no_match(pkgdown_audience, "[disclaimer](../../DISCLAIMER.md)", fixed = TRUE)
+  testthat::expect_match(source_disclaimer, "not\\s+investment advice")
+})
+
+testthat::test_that("v0.1.9.1 condition classes have discoverable help aliases", {
+  root <- testthat::test_path("..", "..")
+  condition_path <- file.path(root, "man", "ledgr_condition_classes.Rd")
+  testthat::skip_if_not(file.exists(condition_path), "condition help topic not available during installed-package tests")
+  doc <- paste(readLines(condition_path, warn = FALSE), collapse = "\n")
+
+  classes <- c(
+    "ledgr_legacy_fill_model_shape",
+    "ledgr_legacy_config_shape",
+    "ledgr_cost_model_unspecified",
+    "ledgr_invalid_cost_chain_order",
+    "ledgr_invalid_cost_model",
+    "ledgr_invalid_timing_model",
+    "ledgr_invalid_fill_proposal",
+    "ledgr_invalid_fill_context",
+    "ledgr_run_not_found",
+    "ledgr_unresolved_feature_id"
+  )
+  for (class in classes) {
+    testthat::expect_match(doc, paste0("\\alias{", class, "}"), fixed = TRUE)
+    testthat::expect_match(doc, class, fixed = TRUE)
+  }
+
+  testthat::expect_match(doc, "stable top-level condition classes", fixed = TRUE)
+  testthat::expect_match(doc, "assert on these", fixed = TRUE)
+  testthat::expect_match(doc, "does not translate the legacy shape", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_cost_zero", fixed = TRUE)
+  testthat::expect_match(doc, "price-transform steps before explicit-fee steps", fixed = TRUE)
+  testthat::expect_no_match(doc, "deprecat", ignore.case = TRUE)
+})
+
+testthat::test_that("LEDGR_LAST_BAR_NO_FILL help topic documents final-bar behavior", {
+  root <- testthat::test_path("..", "..")
+  warning_path <- file.path(root, "man", "LEDGR_LAST_BAR_NO_FILL.Rd")
+  execution_path <- ledgr_test_source_vignette("execution-semantics.qmd")
+  testthat::skip_if_not(file.exists(warning_path), "final-bar warning help topic not available during installed-package tests")
+
+  warning_doc <- paste(readLines(warning_path, warn = FALSE), collapse = "\n")
+  execution_doc <- paste(readLines(execution_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(warning_doc, "\\alias{LEDGR_LAST_BAR_NO_FILL}", fixed = TRUE)
+  testthat::expect_match(warning_doc, "No fill is emitted", fixed = TRUE)
+  testthat::expect_match(warning_doc, "ledger is left", fixed = TRUE)
+  testthat::expect_match(warning_doc, "candidate-row warning", fixed = TRUE)
+  testthat::expect_match(warning_doc, "execution-semantics", fixed = TRUE)
+  testthat::expect_match(execution_doc, "?LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+})
+
+testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API surface", {
+  qmd_path <- ledgr_test_source_vignette("research-to-production.qmd")
+  md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "research-to-production.md")
+  testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "research-to-production docs not available")
+
+  docs <- vapply(
+    c(qmd = qmd_path, md = md_path),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+
+  for (doc in docs) {
+    testthat::expect_match(doc, "timing_model", fixed = TRUE)
+    testthat::expect_match(doc, "cost_model", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_zero", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_spread_bps", fixed = TRUE)
+    testthat::expect_match(doc, "quoted-spread convention", fixed = TRUE)
+    testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
+    testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
+    testthat::expect_no_match(doc, "fill_model", fixed = TRUE)
+    testthat::expect_no_match(doc, "commission_fixed", fixed = TRUE)
+  }
 })

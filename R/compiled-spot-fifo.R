@@ -151,7 +151,7 @@ ledgr_run_compiled_spot_fifo_batch <- function(run_id,
   fill_side <- vapply(fills, function(fill) fill$side, character(1))
   fill_qty <- vapply(fills, function(fill) as.numeric(fill$qty), numeric(1))
   fill_price <- vapply(fills, function(fill) as.numeric(fill$fill_price), numeric(1))
-  fill_fee <- vapply(fills, function(fill) as.numeric(fill$commission_fixed), numeric(1))
+  fill_fee <- vapply(fills, function(fill) as.numeric(fill$fee), numeric(1))
   fill_ts_utc <- vapply(
     fills,
     function(fill) {

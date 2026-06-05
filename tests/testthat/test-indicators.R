@@ -254,7 +254,8 @@ testthat::test_that("indicator deregistration does not mutate persisted feature 
     end = "2020-01-10",
     initial_cash = 1000,
     features = list(ind),
-    db_path = db_path
+    db_path = db_path,
+  cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt), add = TRUE)
 

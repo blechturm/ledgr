@@ -95,7 +95,7 @@ testthat::test_that("BUY fill writes a correct FILL ledger event", {
   testthat::expect_equal(row$fee[[1]], 1.25)
 
   meta <- parse_meta(row$meta_json[[1]])
-  testthat::expect_equal(meta$commission_fixed, 1.25)
+  testthat::expect_equal(meta$fee, 1.25)
   testthat::expect_equal(meta$position_delta, 2)
   testthat::expect_equal(meta$cash_delta, -(2 * row$price[[1]] + 1.25))
 })

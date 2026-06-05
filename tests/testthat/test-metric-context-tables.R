@@ -27,7 +27,8 @@ testthat::test_that("comparison tables carry exactly one metric context", {
     strategy = strategy,
     universe = "AAA",
     opening = ledgr_opening(cash = 1000),
-    metric_context = ledgr_metric_context(risk_free_rate = 0.04)
+    metric_context = ledgr_metric_context(risk_free_rate = 0.04),
+  cost_model = ledgr_cost_zero()
   )
   bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "compare-context-a")
   on.exit(close(bt_a), add = TRUE)
@@ -62,7 +63,7 @@ testthat::test_that("comparison tables fail loudly for mixed observed cadences",
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, universe = "AAA")
+  exp <- ledgr_experiment(snapshot = snapshot, strategy = strategy, universe = "AAA", cost_model = ledgr_cost_zero())
   bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "mixed-daily")
   on.exit(close(bt_a), add = TRUE)
   bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "mixed-hourly")
@@ -113,7 +114,8 @@ testthat::test_that("sweep and promotion disclose source sweep metric context se
     opening = ledgr_opening(cash = 1000),
     metric_context = ledgr_metric_context(
       risk_free_rate = ledgr_risk_free_rate(0.04, label = "source sweep")
-    )
+    ),
+  cost_model = ledgr_cost_zero()
   )
   run_exp <- ledgr_experiment(
     snapshot = snapshot,
@@ -122,7 +124,8 @@ testthat::test_that("sweep and promotion disclose source sweep metric context se
     opening = ledgr_opening(cash = 1000),
     metric_context = ledgr_metric_context(
       risk_free_rate = ledgr_risk_free_rate(0.01, label = "committed run")
-    )
+    ),
+  cost_model = ledgr_cost_zero()
   )
 
   results <- ledgr_sweep(sweep_exp, ledgr_param_grid(a = list(qty = 1), b = list(qty = 2)), seed = 123L)

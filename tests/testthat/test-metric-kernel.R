@@ -73,7 +73,8 @@ testthat::test_that("single-run metrics use stored context by default and suppor
     strategy = strategy,
     universe = "AAA",
     opening = ledgr_opening(cash = 1000),
-    metric_context = stored_context
+    metric_context = stored_context,
+  cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, run_id = "metric-context-run")
   on.exit(close(bt), add = TRUE)
@@ -134,7 +135,8 @@ testthat::test_that("summary discloses risk-free rate and annualization assumpti
     universe = "AAA",
     metric_context = ledgr_metric_context(
       risk_free_rate = ledgr_risk_free_rate(0.04, label = "stored policy")
-    )
+    ),
+  cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, run_id = "metric-summary-context")
   on.exit(close(bt), add = TRUE)
