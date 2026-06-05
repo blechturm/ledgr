@@ -400,14 +400,26 @@ testthat::test_that("pkgdown reference lists v0.1.7.4 helper exports", {
 
 testthat::test_that("v0.1.9.1 release surfaces record cost API state without future claims", {
   root <- testthat::test_path("..", "..")
-  news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
-  roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
-  design_index <- paste(readLines(file.path(root, "inst", "design", "README.md"), warn = FALSE), collapse = "\n")
-  rfc_index <- paste(readLines(file.path(root, "inst", "design", "rfc", "README.md"), warn = FALSE), collapse = "\n")
-  horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
-  batch_plan <- paste(readLines(file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "batch_plan.md"), warn = FALSE), collapse = "\n")
-  tickets <- paste(readLines(file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "v0_1_9_1_tickets.md"), warn = FALSE), collapse = "\n")
-  tickets_yml <- paste(readLines(file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "tickets.yml"), warn = FALSE), collapse = "\n")
+  doc_paths <- list(
+    news = file.path(root, "NEWS.md"),
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    rfc_index = file.path(root, "inst", "design", "rfc", "README.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md"),
+    batch_plan = file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "batch_plan.md"),
+    tickets = file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "v0_1_9_1_tickets.md"),
+    tickets_yml = file.path(root, "inst", "design", "ledgr_v0_1_9_1_spec_packet", "tickets.yml")
+  )
+  testthat::skip_if_not(all(file.exists(unlist(doc_paths))), "source release-surface docs not available during installed-package tests")
+
+  news <- paste(readLines(doc_paths$news, warn = FALSE), collapse = "\n")
+  roadmap <- paste(readLines(doc_paths$roadmap, warn = FALSE), collapse = "\n")
+  design_index <- paste(readLines(doc_paths$design_index, warn = FALSE), collapse = "\n")
+  rfc_index <- paste(readLines(doc_paths$rfc_index, warn = FALSE), collapse = "\n")
+  horizon <- paste(readLines(doc_paths$horizon, warn = FALSE), collapse = "\n")
+  batch_plan <- paste(readLines(doc_paths$batch_plan, warn = FALSE), collapse = "\n")
+  tickets <- paste(readLines(doc_paths$tickets, warn = FALSE), collapse = "\n")
+  tickets_yml <- paste(readLines(doc_paths$tickets_yml, warn = FALSE), collapse = "\n")
 
   start <- regexpr("# ledgr 0[.]1[.]9[.]1", news)
   end <- regexpr("# ledgr 0[.]1[.]8[.]11", news)
@@ -435,16 +447,17 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "Sweep artifact persistence, target risk, and\\s+walk-forward remain future v0.1.9.x packets")
 
-  testthat::expect_match(roadmap, "implementation and documentation tickets closed; release gate pending", fixed = TRUE)
-  testthat::expect_match(roadmap, "| v0.1.9.1 | Active | Cost-API implementation complete; release gate pending.", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_1_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "v0.1.9.2 | Planned", fixed = TRUE)
   testthat::expect_match(roadmap, "v0.1.9.3 | Planned", fixed = TRUE)
   testthat::expect_match(roadmap, "v0.1.9.4 | Planned", fixed = TRUE)
 
-  testthat::expect_match(design_index, "Current active packet:** `v0.1.9.1` cost-API packet", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.1`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** None", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
-  testthat::expect_match(design_index, "release gate remains\\s+pending")
+  testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -469,6 +482,21 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
     testthat::expect_match(ticket_section, "Status: Completed", fixed = TRUE)
     testthat::expect_match(tickets_yml, paste0("id: \"", id, "\""), fixed = TRUE)
   }
+
+  testthat::expect_match(batch_plan, "## Batch 8 - Release Gate", fixed = TRUE)
+  batch8_start <- regexpr("## Batch 8 - Release Gate", batch_plan, fixed = TRUE)
+  testthat::expect_true(batch8_start > 0L)
+  batch8_section <- substr(batch_plan, batch8_start, min(nchar(batch_plan), batch8_start + 2000L))
+  testthat::expect_match(batch8_section, "Status: Completed", fixed = TRUE)
+  testthat::expect_match(batch8_section, "R CMD check --no-manual --no-build-vignettes ledgr_0.1.9.1.tar.gz", fixed = TRUE)
+
+  release_gate_start <- regexpr("## LDG-2574: v0.1.9.1 Release Gate", tickets, fixed = TRUE)
+  testthat::expect_true(release_gate_start > 0L)
+  release_gate_section <- substr(tickets, release_gate_start, min(nchar(tickets), release_gate_start + 2500L))
+  testthat::expect_match(release_gate_section, "Status: Completed", fixed = TRUE)
+  testthat::expect_match(release_gate_section, "Completion note (2026-06-05):", fixed = TRUE)
+  testthat::expect_match(tickets_yml, "id: \"LDG-2574\"", fixed = TRUE)
+  testthat::expect_match(tickets_yml, "status: \"completed\"", fixed = TRUE)
 })
 
 testthat::test_that("NEWS summarizes delivered v0.1.7.4 scope", {
@@ -871,10 +899,22 @@ testthat::test_that("metrics and accounting docs define public result semantics"
 
 testthat::test_that("cost API help pages contain runnable reference examples", {
   root <- testthat::test_path("..", "..")
-  cost_help <- paste(readLines(file.path(root, "man", "ledgr_cost_spread_bps.Rd"), warn = FALSE), collapse = "\n")
-  steps_help <- paste(readLines(file.path(root, "man", "ledgr_cost_steps.Rd"), warn = FALSE), collapse = "\n")
-  timing_help <- paste(readLines(file.path(root, "man", "ledgr_timing_next_open.Rd"), warn = FALSE), collapse = "\n")
-  run_help <- paste(readLines(file.path(root, "man", "ledgr_run.Rd"), warn = FALSE), collapse = "\n")
+  help_paths <- file.path(
+    root,
+    "man",
+    c(
+      "ledgr_cost_spread_bps.Rd",
+      "ledgr_cost_steps.Rd",
+      "ledgr_timing_next_open.Rd",
+      "ledgr_run.Rd"
+    )
+  )
+  testthat::skip_if_not(all(file.exists(help_paths)), "source help pages not available during installed-package tests")
+
+  cost_help <- paste(readLines(help_paths[[1]], warn = FALSE), collapse = "\n")
+  steps_help <- paste(readLines(help_paths[[2]], warn = FALSE), collapse = "\n")
+  timing_help <- paste(readLines(help_paths[[3]], warn = FALSE), collapse = "\n")
+  run_help <- paste(readLines(help_paths[[4]], warn = FALSE), collapse = "\n")
 
   for (term in c(
     "ledgr_cost_spread_bps(5)",
@@ -1630,4 +1670,28 @@ testthat::test_that("LEDGR_LAST_BAR_NO_FILL help topic documents final-bar behav
   testthat::expect_match(warning_doc, "candidate-row warning", fixed = TRUE)
   testthat::expect_match(warning_doc, "execution-semantics", fixed = TRUE)
   testthat::expect_match(execution_doc, "?LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+})
+
+testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API surface", {
+  qmd_path <- ledgr_test_source_vignette("research-to-production.qmd")
+  md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "research-to-production.md")
+  testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "research-to-production docs not available")
+
+  docs <- vapply(
+    c(qmd = qmd_path, md = md_path),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+
+  for (doc in docs) {
+    testthat::expect_match(doc, "timing_model", fixed = TRUE)
+    testthat::expect_match(doc, "cost_model", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_zero", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_spread_bps", fixed = TRUE)
+    testthat::expect_match(doc, "quoted-spread convention", fixed = TRUE)
+    testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
+    testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
+    testthat::expect_no_match(doc, "fill_model", fixed = TRUE)
+    testthat::expect_no_match(doc, "commission_fixed", fixed = TRUE)
+  }
 })

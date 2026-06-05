@@ -2,14 +2,13 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.8.11`.
-**Current active packet:** `v0.1.9.1` cost-API packet on branch
-`v0.1.9.1` (implementation and documentation tickets closed; release gate
-pending).
-**Current active packet path:** `inst/design/ledgr_v0_1_9_1_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_8_11_spec_packet/` is an archival
-release record. Do not treat it as authorization for new implementation work
-after the v0.1.8.11 release gate.
+**Latest completed release packet:** `v0.1.9.1`.
+**Current active packet:** None. The next planned packet is v0.1.9.2 sweep
+artifact persistence; RFC seed pending.
+**Current active packet path:** None.
+The completed `inst/design/ledgr_v0_1_9_1_spec_packet/` is an archival release
+record. Do not treat it as authorization for new implementation work after the
+v0.1.9.1 release gate.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -64,13 +63,11 @@ project must define an explicit compatibility and deprecation policy.
 
 ## Current Planning State
 
-The v0.1.9.1 packet is active. It ships the first public transaction-cost API
-and the cost-identity surface required by later v0.1.9.x packets:
+The v0.1.9.1 packet is complete. It shipped the first public transaction-cost
+API and the cost-identity surface required by later v0.1.9.x packets:
 `cost_model_hash`, `cost_plan_json`, explicit `timing_model`, required
 `cost_model`, cost model inspection helpers, legacy shape rejection, and
-bounded auditr identity / disclaimer documentation fixes. Implementation,
-documentation, and release-surface tickets are closed; the release gate remains
-pending.
+bounded auditr identity / disclaimer documentation fixes.
 
 - Spec: `ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`.
 - Tickets: `ledgr_v0_1_9_1_spec_packet/v0_1_9_1_tickets.md`.

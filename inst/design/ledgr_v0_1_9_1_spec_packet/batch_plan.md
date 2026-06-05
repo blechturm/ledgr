@@ -1,6 +1,6 @@
 # ledgr v0.1.9.1 Batch Plan
 
-**Status:** Planned; Batch 0 / LDG-2547 completed on 2026-06-05.
+**Status:** Completed on 2026-06-05; all batches closed.
 
 This batch plan sequences the v0.1.9.1 cost-API and auditr-hardening packet
 without expanding scope beyond `v0_1_9_1_spec.md`. The public cost model,
@@ -321,7 +321,7 @@ Closeout:
 ## Batch 8 - Release Gate
 
 Ticket: `LDG-2574`
-Status: Planned
+Status: Completed
 
 Goal: verify and close v0.1.9.1 after all implementation, documentation, and
 release-surface tickets are done.
@@ -343,3 +343,23 @@ Exit criteria:
   `commission_fixed` references.
 - Release closeout records the result and v0.1.9.2 can start from a stable
   cost-identity surface.
+
+Closeout:
+
+- All v0.1.9.1 implementation, documentation, metadata, and release-surface
+  tickets are completed.
+- Targeted cost, timing, identity, run-store, sweep, and documentation-contract
+  checks passed.
+- Full Windows source tests passed with one expected Yahoo optional-package
+  skip.
+- A focused WSL schema/persistence gate passed after removing stale compiled
+  objects left by the Windows/WSL toolchain switch.
+- `vignettes/research-to-production.qmd` and every edited vignette rendered
+  through the local Quarto executable.
+- Plain `R CMD build .` still hits the established Quarto multi-format product
+  issue; the accepted release build path, `R CMD build --no-build-vignettes .`,
+  passed with the existing long-path warnings.
+- `R CMD check --no-manual --no-build-vignettes ledgr_0.1.9.1.tar.gz` passed
+  with the expected no-vignettes warnings and existing long-path note.
+- `tools/check-coverage.R` passed at 85.55% coverage.
+- `pkgdown::build_site()` passed after the cost API reference index was updated.

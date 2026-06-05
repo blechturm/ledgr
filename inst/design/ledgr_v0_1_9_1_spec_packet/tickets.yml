@@ -495,7 +495,7 @@ tickets:
 
   - id: "LDG-2574"
     title: "v0.1.9.1 Release Gate"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

@@ -1651,7 +1651,7 @@ scope: v0.1.9.1_cost_api
 Priority: P0
 Effort: M
 Dependencies: LDG-2547, LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2552, LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558, LDG-2559, LDG-2560, LDG-2561, LDG-2562, LDG-2563, LDG-2564, LDG-2565, LDG-2566, LDG-2567, LDG-2568, LDG-2569, LDG-2570, LDG-2571, LDG-2572, LDG-2573, LDG-2575
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1694,6 +1694,26 @@ Targeted tests, full test suite, package build, R CMD check, documentation
 render checks, research-to-production vignette render and example
 execution, metadata review, release closeout review, and clean git-status
 review.
+
+Completion note (2026-06-05):
+
+- All prior v0.1.9.1 tickets are completed.
+- Targeted cost, timing, identity, run-store, sweep, and
+  documentation-contract checks passed.
+- Full Windows source tests passed with one expected Yahoo optional-package
+  skip.
+- The focused WSL schema/persistence gate passed after removing stale compiled
+  objects from the Windows/WSL toolchain switch.
+- Edited vignettes rendered through the local Quarto executable.
+- Plain `R CMD build .` still hits the established Quarto multi-format product
+  issue. The accepted release build path,
+  `R CMD build --no-build-vignettes .`, passed with existing long-path
+  warnings.
+- `R CMD check --no-manual --no-build-vignettes ledgr_0.1.9.1.tar.gz` passed
+  with expected no-vignettes warnings and the existing long-path note.
+- `tools/check-coverage.R` passed at 85.55% coverage.
+- `pkgdown::build_site()` passed after adding the v0.1.9.1 cost API reference
+  topics to `_pkgdown.yml`.
 
 ### Source Reference
 
