@@ -1438,3 +1438,75 @@ testthat::test_that("help-page article links target installed vignettes only", {
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)
 })
+
+testthat::test_that("formal disclaimer is available at the installed vignette link target", {
+  root <- testthat::test_path("..", "..")
+  source_disclaimer_path <- file.path(root, "DISCLAIMER.md")
+  installed_disclaimer_path <- file.path(root, "inst", "DISCLAIMER.md")
+  workflow_path <- ledgr_test_source_vignette("research-workflow.qmd")
+  pkgdown_audience_path <- file.path(root, "vignettes", "articles", "who-ledgr-is-for.qmd")
+  testthat::skip_if_not(
+    file.exists(source_disclaimer_path) && file.exists(workflow_path) && file.exists(pkgdown_audience_path),
+    "source disclaimer files not available during installed-package tests"
+  )
+
+  source_disclaimer <- paste(readLines(source_disclaimer_path, warn = FALSE), collapse = "\n")
+  installed_disclaimer <- paste(readLines(installed_disclaimer_path, warn = FALSE), collapse = "\n")
+  workflow <- paste(readLines(workflow_path, warn = FALSE), collapse = "\n")
+  pkgdown_audience <- paste(readLines(pkgdown_audience_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_true(file.exists(installed_disclaimer_path))
+  testthat::expect_identical(installed_disclaimer, source_disclaimer)
+  testthat::expect_match(workflow, "[disclaimer](../DISCLAIMER.md)", fixed = TRUE)
+  testthat::expect_match(pkgdown_audience, "https://github.com/blechturm/ledgr/blob/main/DISCLAIMER.md", fixed = TRUE)
+  testthat::expect_no_match(pkgdown_audience, "[disclaimer](../../DISCLAIMER.md)", fixed = TRUE)
+  testthat::expect_match(source_disclaimer, "not\\s+investment advice")
+})
+
+testthat::test_that("v0.1.9.1 condition classes have discoverable help aliases", {
+  root <- testthat::test_path("..", "..")
+  condition_path <- file.path(root, "man", "ledgr_condition_classes.Rd")
+  testthat::skip_if_not(file.exists(condition_path), "condition help topic not available during installed-package tests")
+  doc <- paste(readLines(condition_path, warn = FALSE), collapse = "\n")
+
+  classes <- c(
+    "ledgr_legacy_fill_model_shape",
+    "ledgr_legacy_config_shape",
+    "ledgr_cost_model_unspecified",
+    "ledgr_invalid_cost_chain_order",
+    "ledgr_invalid_cost_model",
+    "ledgr_invalid_timing_model",
+    "ledgr_invalid_fill_proposal",
+    "ledgr_invalid_fill_context",
+    "ledgr_run_not_found",
+    "ledgr_unresolved_feature_id"
+  )
+  for (class in classes) {
+    testthat::expect_match(doc, paste0("\\alias{", class, "}"), fixed = TRUE)
+    testthat::expect_match(doc, class, fixed = TRUE)
+  }
+
+  testthat::expect_match(doc, "stable top-level condition classes", fixed = TRUE)
+  testthat::expect_match(doc, "assert on these", fixed = TRUE)
+  testthat::expect_match(doc, "does not translate the legacy shape", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_cost_zero", fixed = TRUE)
+  testthat::expect_match(doc, "price-transform steps before explicit-fee steps", fixed = TRUE)
+  testthat::expect_no_match(doc, "deprecat", ignore.case = TRUE)
+})
+
+testthat::test_that("LEDGR_LAST_BAR_NO_FILL help topic documents final-bar behavior", {
+  root <- testthat::test_path("..", "..")
+  warning_path <- file.path(root, "man", "LEDGR_LAST_BAR_NO_FILL.Rd")
+  execution_path <- ledgr_test_source_vignette("execution-semantics.qmd")
+  testthat::skip_if_not(file.exists(warning_path), "final-bar warning help topic not available during installed-package tests")
+
+  warning_doc <- paste(readLines(warning_path, warn = FALSE), collapse = "\n")
+  execution_doc <- paste(readLines(execution_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(warning_doc, "\\alias{LEDGR_LAST_BAR_NO_FILL}", fixed = TRUE)
+  testthat::expect_match(warning_doc, "No fill is emitted", fixed = TRUE)
+  testthat::expect_match(warning_doc, "ledger is left", fixed = TRUE)
+  testthat::expect_match(warning_doc, "candidate-row warning", fixed = TRUE)
+  testthat::expect_match(warning_doc, "execution-semantics", fixed = TRUE)
+  testthat::expect_match(execution_doc, "?LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+})

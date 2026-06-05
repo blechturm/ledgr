@@ -1086,7 +1086,7 @@ scope: hash_reference_and_contracts_update
 Priority: P0
 Effort: S
 Dependencies: LDG-2547
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1113,6 +1113,16 @@ Fix the HIGH-severity installed disclaimer link breakage from auditr episode
 Installed-path check, vignette link check, package build/install smoke, and
 auditr episode 046 reproduction or equivalent.
 
+### Closeout
+
+- Added `inst/DISCLAIMER.md` with the same formal disclaimer text as the
+  repository-root `DISCLAIMER.md`.
+- Kept the research-workflow link shape unchanged; `../DISCLAIMER.md` now
+  resolves from installed vignette HTML to the installed package root.
+- Verified the no-vignette package tarball contains `ledgr/DISCLAIMER.md` and
+  a temporary-library install resolves `system.file("DISCLAIMER.md",
+  package = "ledgr")`.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1135,7 +1145,7 @@ scope: installed_link_fix
 Priority: P1
 Effort: M
 Dependencies: LDG-2549, LDG-2556, LDG-2558
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1165,6 +1175,18 @@ Document new v0.1.9.1 cost and legacy-shape condition classes.
 Condition documentation tests where practical, roxygen render, example checks,
 and error-class tests from implementation tickets.
 
+### Closeout
+
+- Added `?ledgr_condition_classes` with aliases for
+  `ledgr_legacy_fill_model_shape`, `ledgr_legacy_config_shape`,
+  `ledgr_cost_model_unspecified`, `ledgr_invalid_cost_chain_order`,
+  `ledgr_invalid_cost_model`, `ledgr_invalid_timing_model`,
+  `ledgr_invalid_fill_proposal`, and `ledgr_invalid_fill_context`.
+- Included the bounded existing `ledgr_run_not_found` and
+  `ledgr_unresolved_feature_id` classes in the same reference topic.
+- Documented fail-closed legacy behavior and stable top-level class assertions
+  without deprecation or translation language.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1186,7 +1208,7 @@ scope: cost_api_errors
 Priority: P1
 Effort: S
 Dependencies: LDG-2547
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1209,6 +1231,15 @@ Add a help topic for the existing `LEDGR_LAST_BAR_NO_FILL` warning code.
 
 Roxygen render, help-topic link check, final-bar warning tests, and vignette
 cross-reference review.
+
+### Closeout
+
+- Added `?LEDGR_LAST_BAR_NO_FILL` with aliases for the warning code and
+  lower-case helper names.
+- Documented that no fill is emitted and the ledger remains unchanged when a
+  next-open final-pulse target change has no next executable bar.
+- Cross-referenced the help topic from `vignettes/execution-semantics.qmd` and
+  the rendered `.md`.
 
 ### Source Reference
 

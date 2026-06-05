@@ -308,7 +308,7 @@ tickets:
 
   - id: "LDG-2564"
     title: "DISCLAIMER.md Install Path Fix"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "S"
     dependencies:
@@ -325,7 +325,7 @@ tickets:
 
   - id: "LDG-2565"
     title: "Cost Condition Class Documentation"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -344,7 +344,7 @@ tickets:
 
   - id: "LDG-2566"
     title: "LEDGR_LAST_BAR_NO_FILL Help Topic"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:

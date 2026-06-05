@@ -212,7 +212,7 @@ Closeout:
 ## Batch 5 - High Auditr And Condition Documentation
 
 Tickets: `LDG-2564`, `LDG-2565`, `LDG-2566`
-Status: Planned
+Status: Completed
 
 Goal: close the installed disclaimer link breakage and document new / existing
 condition classes that are in this packet's bounded scope.
@@ -229,6 +229,20 @@ Review focus:
 - The disclaimer fix is tested from an installed package, not only from a
   source checkout.
 - Condition docs teach stable top-level classes users can assert on.
+
+Closeout:
+
+- `inst/DISCLAIMER.md` now installs the formal disclaimer at package root, so
+  the existing research-workflow `../DISCLAIMER.md` link resolves from an
+  installed package.
+- `?ledgr_condition_classes` aliases the new v0.1.9.1 cost/timing/legacy
+  classes plus the bounded existing `ledgr_run_not_found` and
+  `ledgr_unresolved_feature_id` classes.
+- `?LEDGR_LAST_BAR_NO_FILL` documents the final-bar warning contract and is
+  cross-referenced from the execution-semantics vignette.
+- Focused verification: `test-documentation-contracts.R`, `test-cost-model.R`,
+  `test-backtest-wrapper.R`, no-vignette package build tar listing, and
+  temporary-library install smoke resolving `system.file("DISCLAIMER.md")`.
 
 ## Batch 6 - Cost Documentation Surfaces
 

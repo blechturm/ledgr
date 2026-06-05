@@ -177,7 +177,8 @@ ledgr_results(cost_bt, what = "fills") |>
 
 A target change on the final pulse is valid strategy output, but there
 is no later bar where ledgr can simulate the next-open fill. ledgr warns
-and leaves the ledger unchanged for that final target change.
+and leaves the ledger unchanged for that final target change. See
+`?LEDGR_LAST_BAR_NO_FILL` for the stable warning-code contract.
 
 ``` r
 final_bar_strategy <- function(ctx, params) {
