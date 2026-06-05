@@ -994,6 +994,8 @@ Document new v0.1.9.1 cost and legacy-shape condition classes.
 - Add help topic for `ledgr_legacy_config_shape`.
 - Add help topic for `ledgr_cost_model_unspecified`.
 - Add help topic for `ledgr_invalid_cost_chain_order`.
+- Add help topic for `ledgr_invalid_cost_model`.
+- Add help topic for `ledgr_invalid_timing_model`.
 - Include minimal fail-closed examples and actionable message contracts.
 
 ### Acceptance Criteria

@@ -397,6 +397,8 @@ ledgr_run_experiment <- function(exp,
     persist_features = exp$persist_features,
     execution_mode = exp$execution_mode,
     fill_model = exp$fill_model,
+    cost_model_hash = exp$cost_model_hash,
+    cost_plan_json = exp$cost_plan_json,
     db_path = exp$snapshot$db_path,
     run_id = run_id,
     opening = exp$opening,
@@ -787,6 +789,8 @@ ledgr_config <- function(snapshot,
                          execution_mode = "audit_log",
                          checkpoint_every = 10000L,
                          fill_model = NULL,
+                         cost_model_hash = NULL,
+                         cost_plan_json = NULL,
                          db_path = NULL,
                          control = list(),
                          run_id = NULL,
@@ -853,6 +857,7 @@ ledgr_config <- function(snapshot,
   if (!is.list(fill_model)) {
     rlang::abort("`fill_model` must be a list.", class = "ledgr_invalid_args")
   }
+  cost_identity <- ledgr_config_cost_identity(cost_model_hash, cost_plan_json)
 
   strategy_params_info <- ledgr_strategy_params_info(strategy_params)
   feature_params_info <- ledgr_strategy_params_info(feature_params)
@@ -927,11 +932,30 @@ ledgr_config <- function(snapshot,
     )
   )
 
+  if (!is.null(cost_identity)) config$cost_model <- cost_identity
   if (!is.null(run_id)) config$run_id <- run_id
 
   class(config) <- c("ledgr_config", class(config))
   validate_ledgr_config(config)
   config
+}
+
+ledgr_config_cost_identity <- function(cost_model_hash = NULL, cost_plan_json = NULL) {
+  if (is.null(cost_model_hash) && is.null(cost_plan_json)) {
+    return(NULL)
+  }
+  if (!is.character(cost_model_hash) || length(cost_model_hash) != 1L ||
+      is.na(cost_model_hash) || !grepl("^[0-9a-f]{64}$", cost_model_hash)) {
+    rlang::abort("`cost_model_hash` must be NULL or a 64-character lowercase hex string.", class = "ledgr_invalid_args")
+  }
+  if (!is.character(cost_plan_json) || length(cost_plan_json) != 1L ||
+      is.na(cost_plan_json) || !nzchar(cost_plan_json)) {
+    rlang::abort("`cost_plan_json` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  list(
+    cost_model_hash = cost_model_hash,
+    cost_plan_json = cost_plan_json
+  )
 }
 
 ledgr_config_normalize_opening <- function(opening, initial_cash) {

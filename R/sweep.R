@@ -225,9 +225,12 @@ ledgr_sweep <- function(exp,
   attr(out, "metric_context") <- metric_context
   attr(out, "metric_context_hash") <- ledgr_metric_context_hash(metric_context)
   attr(out, "metric_context_version") <- as.integer(metric_context$metric_context_version)
+  attr(out, "cost_model_hash") <- exp$cost_model_hash %||% NULL
+  attr(out, "cost_plan_json") <- exp$cost_plan_json %||% NULL
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
     fill_model = exp$fill_model,
+    cost_model_hash = exp$cost_model_hash %||% NULL,
     opening = exp$opening,
     compiled_accounting_model = compiled_accounting_model,
     precomputed_features = !is.null(precomputed_features),
@@ -376,6 +379,10 @@ ledgr_candidate_reproduction_key <- function(candidate) {
         feature_fingerprints = candidate$feature_fingerprints %||% NULL,
         alias_map_hash = provenance$alias_map_hash %||% NULL,
         alias_map_version = provenance$alias_map_version %||% NULL
+      ),
+      cost = list(
+        cost_model_hash = provenance$cost_model_hash %||% meta$cost_model_hash %||% NULL,
+        cost_plan_json = provenance$cost_plan_json %||% meta$cost_plan_json %||% NULL
       ),
       engine = list(
         feature_engine_version = meta$feature_engine_version %||% ledgr_feature_engine_version(),
@@ -696,7 +703,9 @@ ledgr_sweep_exp_payload <- function(exp) {
     strategy = exp$strategy,
     universe = exp$universe,
     opening = exp$opening,
-    fill_model = exp$fill_model
+    fill_model = exp$fill_model,
+    cost_model_hash = exp$cost_model_hash %||% NULL,
+    cost_plan_json = exp$cost_plan_json %||% NULL
   )
 }
 
@@ -721,6 +730,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         alias_map_json = feature_row$alias_map_json[[1]],
         alias_map_hash = feature_row$alias_map_hash[[1]],
         alias_map_version = feature_row$alias_map_version[[1]],
+        cost_model_hash = task$exp$cost_model_hash %||% NULL,
+        cost_plan_json = task$exp$cost_plan_json %||% NULL,
         master_seed = task$master_seed
       ),
       warnings = list()
@@ -777,6 +788,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
           alias_map_json = feature_row$alias_map_json[[1]],
           alias_map_hash = feature_row$alias_map_hash[[1]],
           alias_map_version = feature_row$alias_map_version[[1]],
+          cost_model_hash = task$exp$cost_model_hash %||% NULL,
+          cost_plan_json = task$exp$cost_plan_json %||% NULL,
           master_seed = task$master_seed
         ),
         warnings = warnings
@@ -978,6 +991,8 @@ ledgr_sweep_run_candidate <- function(exp,
       alias_map_json = candidate_feature_row$alias_map_json[[1]],
       alias_map_hash = candidate_feature_row$alias_map_hash[[1]],
       alias_map_version = candidate_feature_row$alias_map_version[[1]],
+      cost_model_hash = exp$cost_model_hash %||% NULL,
+      cost_plan_json = exp$cost_plan_json %||% NULL,
       master_seed = master_seed
     ),
     t_engine = telemetry$t_engine,
@@ -1549,8 +1564,10 @@ ledgr_sweep_provenance <- function(snapshot_hash,
                                    alias_map_json = NA_character_,
                                    alias_map_hash = NA_character_,
                                    alias_map_version = NA_integer_,
+                                   cost_model_hash = NULL,
+                                   cost_plan_json = NULL,
                                    master_seed) {
-  list(
+  out <- list(
     provenance_version = "ledgr_provenance_v1",
     snapshot_hash = snapshot_hash,
     strategy_hash = strategy_hash,
@@ -1562,6 +1579,9 @@ ledgr_sweep_provenance <- function(snapshot_hash,
     seed_contract = "ledgr_seed_v1",
     evaluation_scope = "exploratory"
   )
+  if (!is.null(cost_model_hash)) out$cost_model_hash <- cost_model_hash
+  if (!is.null(cost_plan_json)) out$cost_plan_json <- cost_plan_json
+  out
 }
 
 ledgr_sweep_feature_union <- function(candidate_features) {

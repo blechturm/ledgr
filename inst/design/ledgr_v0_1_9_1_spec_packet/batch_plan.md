@@ -201,5 +201,9 @@ Exit criteria:
 - Targeted cost, timing, identity, run-store, sweep, and docs checks pass.
 - Full tests, package build, and R CMD check pass or have accepted gate
   disposition.
+- Batch 2 migration semantics have shipped before any v0.1.9.1 tag:
+  `cost_model` is required, legacy `fill_model` shapes are rejected, legacy
+  stored configs are rejected, and `ledgr_backtest()` has the same
+  `timing_model` plus `cost_model` contract as `ledgr_experiment()`.
 - Release closeout records the result and v0.1.9.2 can start from a stable
   cost-identity surface.

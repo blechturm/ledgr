@@ -155,6 +155,12 @@ print.ledgr_opening <- function(x, ...) {
 #' @param opening A `ledgr_opening` object.
 #' @param universe Character vector of instrument IDs, or `NULL` for all
 #'   instruments in the snapshot.
+#' @param timing_model Timing model object. Defaults to
+#'   `ledgr_timing_next_open()`. The timing model proposes fills; cost models
+#'   resolve fill prices and explicit fees.
+#' @param cost_model Optional ledgr cost model object. In v0.1.9.1 Batch 1 this
+#'   is accepted and stored for identity inspection; Batch 2 makes it required
+#'   and wires it into execution.
 #' @param fill_model Fill model config. `NULL` uses ledgr's default next-open
 #'   model with zero spread and zero fixed commission. For
 #'   `fill_model$spread_bps`, ledgr applies the full value on each fill leg:
@@ -203,6 +209,8 @@ ledgr_experiment <- function(snapshot,
                              features = list(),
                              opening = ledgr_opening(cash = 100000),
                              universe = NULL,
+                             timing_model = ledgr_timing_next_open(),
+                             cost_model = NULL,
                              fill_model = NULL,
                              persist_features = TRUE,
                              execution_mode = "audit_log",
@@ -236,6 +244,16 @@ ledgr_experiment <- function(snapshot,
   ledgr_experiment_validate_opening(opening, universe)
 
   fill_model <- ledgr_experiment_normalize_fill_model(fill_model)
+  timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
+  cost_model <- ledgr_experiment_normalize_cost_model(cost_model)
+  cost_identity <- if (is.null(cost_model)) {
+    list(cost_model_hash = NULL, cost_plan_json = NULL)
+  } else {
+    list(
+      cost_model_hash = ledgr_cost_model_hash(cost_model),
+      cost_plan_json = ledgr_cost_plan_json(cost_model)
+    )
+  }
 
   if (!is.logical(persist_features) || length(persist_features) != 1L || is.na(persist_features)) {
     rlang::abort("`persist_features` must be TRUE or FALSE.", class = "ledgr_invalid_experiment")
@@ -255,6 +273,10 @@ ledgr_experiment <- function(snapshot,
       features_mode = features_mode,
       opening = opening,
       universe = universe,
+      timing_model = timing_model,
+      cost_model = cost_model,
+      cost_model_hash = cost_identity$cost_model_hash,
+      cost_plan_json = cost_identity$cost_plan_json,
       fill_model = fill_model,
       persist_features = isTRUE(persist_features),
       execution_mode = execution_mode,

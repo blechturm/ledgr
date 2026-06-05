@@ -10,6 +10,8 @@ ledgr_experiment(
   features = list(),
   opening = ledgr_opening(cash = 1e+05),
   universe = NULL,
+  timing_model = ledgr_timing_next_open(),
+  cost_model = NULL,
   fill_model = NULL,
   persist_features = TRUE,
   execution_mode = "audit_log",
@@ -33,6 +35,14 @@ advanced exact-ID workflows, but new parameterized feature sweeps should use
 
 \item{universe}{Character vector of instrument IDs, or \code{NULL} for all
 instruments in the snapshot.}
+
+\item{timing_model}{Timing model object. Defaults to
+\code{ledgr_timing_next_open()}. The timing model proposes fills; cost models
+resolve fill prices and explicit fees.}
+
+\item{cost_model}{Optional ledgr cost model object. In v0.1.9.1 Batch 1 this
+is accepted and stored for identity inspection; Batch 2 makes it required
+and wires it into execution.}
 
 \item{fill_model}{Fill model config. \code{NULL} uses ledgr's default next-open
 model with zero spread and zero fixed commission. For

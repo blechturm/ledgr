@@ -537,7 +537,10 @@ Codex review of this spec. The planned workstreams are:
 17. **Condition class documentation (THEME-005).** Add `?class`
     help topics for every new v0.1.9.1 condition class:
     `ledgr_legacy_fill_model_shape`, `ledgr_legacy_config_shape`,
-    `ledgr_cost_model_unspecified`, `ledgr_invalid_cost_chain_order`.
+    `ledgr_cost_model_unspecified`, `ledgr_invalid_cost_chain_order`,
+    `ledgr_invalid_cost_model` (input-shape validation introduced by
+    Batch 1 LDG-2548), and `ledgr_invalid_timing_model` (timing-model
+    validation introduced by Batch 1 LDG-2550).
     Each topic includes a minimal fail-closed example and an
     actionable message contract.
 
