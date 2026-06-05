@@ -52,3 +52,39 @@ Local release-gate verification completed on 2026-06-05:
 After the local release-gate commit, push `v0.1.9.1`, wait for branch CI, merge
 to `main`, wait for main CI, tag `v0.1.9.1`, wait for tag CI, and create or
 update the GitHub Release according to `inst/design/release_ci_playbook.md`.
+
+## Paused Branch-CI Evidence
+
+The release sequence is paused before merge to `main`, tag creation, or GitHub
+Release creation.
+
+Branch push evidence:
+
+- Branch: `v0.1.9.1`.
+- Original oversized commit pushed: `ae7bf66`.
+- Branch CI run: GitHub Actions run `27030865954`.
+- Attempt 1:
+  - Windows job failed in README cold-start because `README.Rmd` did not create
+    `bt`.
+  - Ubuntu job failed in README cold-start with the same owner.
+  - First package owner: `README.Rmd`; cleanup called `close(bt)` after the
+    quick-run example failed before creating `bt`.
+- README fix evidence:
+  - Added explicit `cost_model = ledgr_cost_zero()` to the README quick-run
+    example.
+  - Guarded hidden cleanup with `exists("bt")` and `exists("snapshot")`.
+  - Local `Rscript --vanilla tools/check-readme-example.R` passed.
+- Attempt 2:
+  - Windows job passed.
+  - Ubuntu job passed README cold-start, acceptance tests, `R CMD check`, and
+    pkgdown.
+  - Ubuntu failed only in coverage with `readRDS(f): error reading from
+    connection` after the old three-attempt coverage retry behavior.
+  - Local WSL `Rscript tools/check-coverage.R` passed at 85.09%.
+
+Recovery disposition:
+
+- The oversized commit is not release-valid as a merge/tag candidate.
+- Batch 9 recovery tickets `LDG-2576` through `LDG-2580` own commit splitting,
+  focused docs/example review, local-gate rerun with README cold-start, and
+  the final release-resume decision.

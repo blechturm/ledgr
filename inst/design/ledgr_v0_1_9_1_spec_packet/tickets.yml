@@ -563,3 +563,98 @@ tickets:
       - "spike_synthesis_review"
       - "with_costs_row_archival"
       - "horizon_status_update_if_signal"
+
+  - id: "LDG-2576"
+    title: "Release Recovery Freeze And CI Evidence Capture"
+    status: "planned"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2574"
+    classification:
+      type: "release_recovery"
+      surface: "ci_evidence"
+      scope: "v0.1.9.1_branch_push"
+    tests:
+      - "gh_run_view_evidence"
+      - "git_status_review"
+      - "release_closeout_review"
+
+  - id: "LDG-2577"
+    title: "Split Oversized Batch 8 Commit"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2576"
+    classification:
+      type: "release_recovery"
+      surface: "git_history"
+      scope: "batch_8_commit_split"
+    tests:
+      - "git_diff_stat_review"
+      - "staged_diff_review"
+      - "generated_artifact_check"
+      - "maintainer_approval_before_force_push"
+
+  - id: "LDG-2578"
+    title: "Focused Review Of Docs Example Cost Migration"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2577"
+    classification:
+      type: "release_recovery"
+      surface: "executable_docs"
+      scope: "required_cost_model_examples"
+    tests:
+      - "code_review_notes"
+      - "documentation_contract_tests"
+      - "readme_cold_start"
+      - "affected_vignette_renders"
+      - "stale_term_rg_checks"
+
+  - id: "LDG-2579"
+    title: "Release Gate Harness And Local Gate Rerun"
+    status: "planned"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2577"
+      - "LDG-2578"
+    classification:
+      type: "release_recovery"
+      surface: "release_gate_harness"
+      scope: "local_gate_parity"
+    tests:
+      - "test-release-coverage-branches.R"
+      - "tools/check-readme-example.R"
+      - "documentation_contract_tests"
+      - "full_test_suite"
+      - "r_cmd_check"
+      - "coverage"
+      - "pkgdown"
+      - "wsl_gate"
+      - "release_closeout_review"
+
+  - id: "LDG-2580"
+    title: "Release Resume Decision And Remote Gate Closeout"
+    status: "planned"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2576"
+      - "LDG-2577"
+      - "LDG-2578"
+      - "LDG-2579"
+    classification:
+      type: "release_recovery"
+      surface: "release_sequence"
+      scope: "merge_tag_release"
+    tests:
+      - "branch_ci"
+      - "main_ci"
+      - "tag_ci"
+      - "github_release_review"
+      - "final_clean_status_review"

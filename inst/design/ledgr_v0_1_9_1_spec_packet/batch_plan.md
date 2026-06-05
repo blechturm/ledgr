@@ -1,6 +1,6 @@
 # ledgr v0.1.9.1 Batch Plan
 
-**Status:** Completed on 2026-06-05; all batches closed.
+**Status:** Release recovery planned after Batch 8 branch-push scope overrun.
 
 This batch plan sequences the v0.1.9.1 cost-API and auditr-hardening packet
 without expanding scope beyond `v0_1_9_1_spec.md`. The public cost model,
@@ -363,3 +363,44 @@ Closeout:
   with the expected no-vignettes warnings and existing long-path note.
 - `tools/check-coverage.R` passed at 85.55% coverage.
 - `pkgdown::build_site()` passed after the cost API reference index was updated.
+
+## Batch 9 - Release Recovery And Gate Harness Hardening
+
+Tickets: `LDG-2576`, `LDG-2577`, `LDG-2578`, `LDG-2579`, `LDG-2580`
+Status: Planned
+
+Goal: pause the v0.1.9.1 release flow after the oversized Batch 8 commit,
+recover reviewable commit boundaries, and resume the release only after the
+branch has reviewed evidence and green CI.
+
+Context:
+
+- Batch 8 expanded from release-gate closeout into a broad executable
+  documentation/example migration for the required `cost_model` contract.
+- The first branch push failed README cold-start because `README.Rmd` still
+  lacked `cost_model` and the cleanup chunk assumed `bt` existed.
+- The README fix passed the exact local cold-start checker and was amended into
+  the pushed branch, but the resulting release-gate commit remains too broad
+  for unreviewed merge/tag work.
+- The release flow is paused before merge to `main`, tag, or GitHub Release.
+
+Exit criteria:
+
+- Current branch CI evidence is recorded, including the Ubuntu coverage outcome
+  or accepted blocker status.
+- The oversized release-gate commit is split or otherwise reviewed into
+  coherent commit boundaries before merge.
+- The broad docs/example `cost_model` migration receives focused code review.
+- The release CI playbook and horizon process-hardening notes are kept as
+  separate process work, not buried in runtime/docs migration.
+- Hardened local gates include the README cold-start checker before any new
+  branch push.
+- Release resumes only after review disposition, clean local gates, clean branch
+  CI, and explicit maintainer approval.
+
+Review focus:
+
+- Do not hide broad executable-doc migration inside release-playbook cleanup.
+- Do not merge or tag from the paused branch state.
+- Keep recovery changes scoped to commit hygiene, evidence capture, and gate
+  hardening unless a reviewed failure log proves a package bug.

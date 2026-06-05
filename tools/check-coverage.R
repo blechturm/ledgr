@@ -1,5 +1,5 @@
 ledgr_coverage_attempts <- function() {
-  attempts <- as.integer(Sys.getenv("LEDGR_COVERAGE_ATTEMPTS", "3"))
+  attempts <- as.integer(Sys.getenv("LEDGR_COVERAGE_ATTEMPTS", "1"))
   if (!is.finite(attempts) || attempts < 1L) {
     stop("LEDGR_COVERAGE_ATTEMPTS must be a positive integer.", call. = FALSE)
   }

@@ -37,6 +37,23 @@ testthat::test_that("coverage helper retries transient collection failures", {
   testthat::expect_equal(coverage, list(ok = TRUE))
 })
 
+testthat::test_that("coverage helper defaults to one collection attempt", {
+  source(ledgr_test_coverage_script())
+
+  old <- Sys.getenv("LEDGR_COVERAGE_ATTEMPTS", unset = NA_character_)
+  on.exit({
+    if (is.na(old)) {
+      Sys.unsetenv("LEDGR_COVERAGE_ATTEMPTS")
+    } else {
+      Sys.setenv(LEDGR_COVERAGE_ATTEMPTS = old)
+    }
+  }, add = TRUE)
+
+  Sys.unsetenv("LEDGR_COVERAGE_ATTEMPTS")
+
+  testthat::expect_identical(ledgr_coverage_attempts(), 1L)
+})
+
 testthat::test_that("coverage helper fails after retry budget is exhausted", {
   source(ledgr_test_coverage_script())
 

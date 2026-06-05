@@ -2,7 +2,7 @@
 
 Version: v0.1.9.1
 Date: 2026-06-05
-Total Tickets: 29
+Total Tickets: 34
 
 ## Ticket Organization
 
@@ -29,6 +29,9 @@ packet alignment
                        -> auditr remainder docs
                           -> release surfaces
                              -> release gate
+                                -> release recovery / commit split
+                                   -> reviewed local gates
+                                      -> release resume decision
 ```
 
 ## Dependency DAG
@@ -64,9 +67,17 @@ LDG-2547 Packet Alignment And v0.1.9.1 Ticket Cut
   |     |-- LDG-2572 Horizon Housekeeping
   |     `-- LDG-2573 Design And RFC Index Update
   `-- LDG-2574 v0.1.9.1 Release Gate
+        `-- LDG-2576 Release Recovery Freeze And CI Evidence Capture
+              |-- LDG-2577 Split Oversized Batch 8 Commit
+              |-- LDG-2578 Focused Review Of Docs Example Cost Migration
+              |-- LDG-2579 Release Gate Harness And Local Gate Rerun
+              `-- LDG-2580 Release Resume Decision And Remote Gate Closeout
 ```
 
-`LDG-2574` depends on every prior ticket in this packet.
+`LDG-2574` depends on every prior implementation and release-surface ticket in
+this packet. `LDG-2576` through `LDG-2580` are release-recovery tickets cut
+after the v0.1.9.1 branch push exposed an oversized Batch 8 commit and a
+missing README cold-start local gate.
 
 ## Priority Levels
 
@@ -1728,4 +1739,288 @@ Completion note (2026-06-05):
 type: release_gate
 surface: release_process
 scope: v0.1.9.1
+```
+
+---
+
+## LDG-2576: Release Recovery Freeze And CI Evidence Capture
+
+Priority: P0
+Effort: S
+Dependencies: LDG-2574
+Status: Planned
+
+### Description
+
+Freeze the v0.1.9.1 release flow after the Batch 8 branch push and record the
+actual remote CI evidence before any merge, tag, or release entry is created.
+
+### Tasks
+
+- Confirm no merge to `main`, release tag, or GitHub Release is created from
+  the current paused branch state.
+- Record the current branch commit, branch CI run id, attempt count, and job
+  outcomes.
+- If a run is rerun from failed, record both the original run evidence and the
+  rerun attempt evidence so the original failure log remains discoverable.
+- Record the first README cold-start failure, its owner (`README.Rmd`), and the
+  local reproduction / fix evidence.
+- Record the Ubuntu coverage attempt outcome and whether it is a package
+  failure, coverage-instrumentation failure, or still pending.
+- Keep pre-existing local worktree changes separate from recovery evidence.
+
+### Acceptance Criteria
+
+- Release state is explicitly paused.
+- CI evidence is recorded before commit splitting or further release work.
+- No unexplained remote failure is treated as green release evidence.
+
+### Verification
+
+`gh run view` evidence, git status review, and release closeout review.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- `v0_1_9_1_release_closeout.md`
+- GitHub Actions run `27030865954` and any rerun attempt ids/evidence
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: ci_evidence
+scope: v0.1.9.1_branch_push
+```
+
+---
+
+## LDG-2577: Split Oversized Batch 8 Commit
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2576
+Status: Planned
+
+### Description
+
+Recover reviewable commit boundaries from the oversized Batch 8 release-gate
+commit before the branch is eligible for merge or tag work.
+
+### Tasks
+
+- Unpack the current release-gate commit locally without losing work.
+- Preserve unrelated pre-existing local changes separately.
+- Split the branch work into coherent commits:
+  - executable docs / examples / README migration for required `cost_model`;
+  - release metadata and closeout;
+  - release-process hardening (`release_ci_playbook.md` and horizon harness
+    note), if retained in this packet.
+- Avoid staging generated local artifacts.
+- Force-with-lease push only after review disposition and maintainer approval.
+
+### Acceptance Criteria
+
+- The docs/example migration is not hidden inside release-playbook cleanup.
+- Release metadata changes can be reviewed separately from executable-doc
+  migration.
+- Process hardening is separable from v0.1.9.1 runtime/docs release evidence.
+- Git history is coherent enough for rollback and review.
+
+### Verification
+
+Git diff/stat review, staged diff review, clean generated-artifact check, and
+maintainer approval before any force-with-lease push.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- Current branch commit `ae7bf66`
+- `batch_plan.md`
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: git_history
+scope: batch_8_commit_split
+```
+
+---
+
+## LDG-2578: Focused Review Of Docs Example Cost Migration
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2577
+Status: Planned
+
+### Description
+
+Run focused code review on the broad executable documentation and example
+migration required by the v0.1.9.1 `cost_model` contract.
+
+### Tasks
+
+- Prepare a review prompt scoped to the docs/example migration commit.
+- Ask review to verify every changed example either:
+  - was a pre-Batch-2 example that now requires `cost_model = ledgr_cost_zero()`
+    for cold-start / installed-package execution; or
+  - is a new example specifically teaching cost-API behavior with a non-zero
+    cost model.
+  Examples outside those two buckets should be flagged and routed.
+- Ask review to inspect README cold-start semantics, cleanup guards, rendered
+  vignette churn, roxygen/Rd example changes, and pkgdown index changes.
+- Apply review patches only after they are agreed.
+- Do not restart release merge/tag flow until review is resolved.
+
+### Acceptance Criteria
+
+- The docs/example migration has an explicit review disposition.
+- No legacy `fill_model` / `commission_fixed` public example remains where the
+  v0.1.9.1 public API requires `timing_model` plus `cost_model`.
+- README cold-start remains installed-package safe.
+- Rendered `.md` and pkgdown changes are either accepted or trimmed.
+
+### Verification
+
+Claude/code-review notes, targeted documentation-contract tests,
+`tools/check-readme-example.R`, affected vignette renders, and stale-term `rg`
+checks.
+
+### Source Reference
+
+- `README.Rmd`
+- `vignettes/`
+- `R/`
+- `man/`
+- `_pkgdown.yml`
+- `tests/testthat/test-documentation-contracts.R`
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: executable_docs
+scope: required_cost_model_examples
+```
+
+---
+
+## LDG-2579: Release Gate Harness And Local Gate Rerun
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2577, LDG-2578
+Status: Planned
+
+### Description
+
+Apply the release-gate process hardening discovered during the Batch 8 stop and
+rerun local gates with the README cold-start checker included explicitly.
+
+### Tasks
+
+- Keep `inst/design/release_ci_playbook.md` explicit about
+  `Rscript --vanilla tools/check-readme-example.R`.
+- Keep the horizon release-gate harness entry parked as non-binding future
+  infrastructure.
+- Verify the one-attempt coverage default lands in `tools/check-coverage.R` and
+  is locked by `tests/testthat/test-release-coverage-branches.R`.
+- Audit `.github/workflows/*.yml` for coverage-attempt environment variables or
+  job-level retries that override the one-attempt policy.
+- Rerun the exact local gates named by the hardened playbook:
+  - README cold-start;
+  - targeted documentation-contract tests;
+  - full source tests;
+  - `R CMD check --no-manual --no-build-vignettes`;
+  - coverage;
+  - pkgdown when docs/pkgdown changed;
+  - local WSL/Ubuntu gate for executable docs/pkgdown/native path exposure.
+- Record skipped gates and accepted caveats explicitly.
+
+### Acceptance Criteria
+
+- The playbook no longer relies on memory for README cold-start.
+- Coverage defaults to one attempt unless explicitly overridden.
+- Local release evidence includes the exact CI-equivalent docs gate that failed
+  remotely.
+- The release closeout records the final gate set and any accepted caveats.
+
+### Verification
+
+`test-release-coverage-branches.R`, `tools/check-readme-example.R`,
+documentation-contract tests, full tests, package check, coverage, pkgdown, WSL
+gate, and release closeout review.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- `inst/design/horizon.md`
+- `tools/check-coverage.R`
+- `tests/testthat/test-release-coverage-branches.R`
+- `v0_1_9_1_release_closeout.md`
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: release_gate_harness
+scope: local_gate_parity
+```
+
+---
+
+## LDG-2580: Release Resume Decision And Remote Gate Closeout
+
+Priority: P0
+Effort: S
+Dependencies: LDG-2576, LDG-2577, LDG-2578, LDG-2579
+Status: Planned
+
+### Description
+
+Resume or abort the v0.1.9.1 release sequence only after recovery tickets close
+and the branch has reviewable commits plus clean local and remote evidence.
+
+### Tasks
+
+- Confirm maintainer approval to resume release flow.
+- Push the cleaned branch with `--force-with-lease` only if commit splitting
+  rewrites the remote branch.
+- Wait for branch CI to pass.
+- Merge to `main` only after branch CI is green.
+- Wait for main `R-CMD-check` and pkgdown workflows.
+- Tag `v0.1.9.1` only after main is green.
+- Wait for tag CI.
+- If tag CI fails after the tag is pushed, delete the failed tag locally and
+  remotely, fix on the branch, and retag only after branch CI is green again.
+  Do not move an existing tag to a new SHA.
+- Create or update the GitHub Release only after tag CI is green.
+- Record final CI run ids and release disposition.
+
+### Acceptance Criteria
+
+- No merge/tag/release happens from the paused oversized-commit state.
+- Branch, main, and tag gates are green or the release is explicitly blocked.
+- The final release closeout records all remote evidence and accepted old
+  failure explanations.
+
+### Verification
+
+Branch CI, main CI, tag CI, GitHub Release review, and final clean-status /
+closeout review.
+
+### Source Reference
+
+- `inst/design/release_ci_playbook.md`
+- `v0_1_9_1_release_closeout.md`
+- GitHub Actions run ids recorded during closeout
+
+### Classification
+
+```yaml
+type: release_recovery
+surface: release_sequence
+scope: merge_tag_release
 ```

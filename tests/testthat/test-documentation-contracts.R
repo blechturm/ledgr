@@ -497,6 +497,22 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(release_gate_section, "Completion note (2026-06-05):", fixed = TRUE)
   testthat::expect_match(tickets_yml, "id: \"LDG-2574\"", fixed = TRUE)
   testthat::expect_match(tickets_yml, "status: \"completed\"", fixed = TRUE)
+
+  testthat::expect_match(batch_plan, "## Batch 9 - Release Recovery And Gate Harness Hardening", fixed = TRUE)
+  recovery_batch_start <- regexpr("## Batch 9 - Release Recovery And Gate Harness Hardening", batch_plan, fixed = TRUE)
+  testthat::expect_true(recovery_batch_start > 0L)
+  recovery_batch <- substr(batch_plan, recovery_batch_start, min(nchar(batch_plan), recovery_batch_start + 2500L))
+  testthat::expect_match(recovery_batch, "Status: Planned", fixed = TRUE)
+  testthat::expect_match(recovery_batch, "LDG-2576", fixed = TRUE)
+  testthat::expect_match(recovery_batch, "LDG-2580", fixed = TRUE)
+
+  for (id in paste0("LDG-", 2576:2580)) {
+    recovery_start <- regexpr(paste0("## ", id), tickets, fixed = TRUE)
+    testthat::expect_true(recovery_start > 0L)
+    recovery_section <- substr(tickets, recovery_start, min(nchar(tickets), recovery_start + 2000L))
+    testthat::expect_match(recovery_section, "Status: Planned", fixed = TRUE)
+    testthat::expect_match(tickets_yml, paste0("id: \"", id, "\""), fixed = TRUE)
+  }
 })
 
 testthat::test_that("NEWS summarizes delivered v0.1.7.4 scope", {

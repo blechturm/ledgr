@@ -36,6 +36,8 @@ release ready because a similar run passed elsewhere.
 1. Finish the release ticket on the release branch.
 2. Run the local gates before merge:
    - full package tests;
+   - README cold-start under installed-package semantics:
+     `Rscript --vanilla tools/check-readme-example.R`;
    - `R CMD check --no-manual --no-build-vignettes`;
    - `tools/check-coverage.R` when coverage behavior changed;
    - pkgdown build when documentation, vignettes, or pkgdown changed.
@@ -48,6 +50,11 @@ release ready because a similar run passed elsewhere.
    normal passing progress, rerun it once with the release-gate timeout before
    treating the result as a failure. Record both the timeout and the successful
    rerun in the release-ticket closeout notes.
+   The README cold-start check is cheap relative to the rest of the release
+   gate and catches installed-package example drift that ordinary source tests,
+   vignette renders, and `R CMD check --no-build-vignettes` can miss. Run it
+   unconditionally during the final release gate, and rerun it after any README,
+   public quick-start, required-argument, or installed-package-semantics change.
 3. Verify agent-facing release context:
    - `AGENTS.md` names the current active spec packet and tickets;
    - `AGENTS.md` does not point agents at a completed packet as the active
@@ -89,6 +96,31 @@ When adding, moving, renaming, or retiring any cross-cycle design document:
 
 Versioned spec packet internals do not need every file listed individually, but
 the active packet directory itself should be discoverable from the design index.
+
+## Release-Gate Ticket Requirements
+
+Every final release-gate ticket must point future maintainers and agents at
+this playbook before local verification starts. The ticket should include:
+
+- `inst/design/release_ci_playbook.md` in its source references;
+- a task to read this playbook before running or updating release gates;
+- an explicit local-gate checklist naming:
+  - full package tests;
+  - `Rscript --vanilla tools/check-readme-example.R`;
+  - `R CMD check --no-manual --no-build-vignettes`;
+  - `tools/check-coverage.R` when coverage behavior changed or coverage is part
+    of the release evidence;
+  - pkgdown build when documentation, vignettes, README, examples, or pkgdown
+    references changed;
+  - the local WSL/Ubuntu gate when executable R code, persistence, snapshots,
+    vignettes, pkgdown, file paths, time zones, or CI changed;
+- a closeout note recording which exact gates ran, which gates were skipped,
+  and the accepted reason for every skipped or failed-then-rerun gate.
+
+Do not leave this as an implicit convention. If a release-gate ticket does not
+name the playbook and the exact local gates, update the ticket before starting
+the gate. This makes the process inspectable in code review and keeps agent
+context from depending on memory.
 
 ## Tag Handling
 
@@ -295,12 +327,15 @@ this coverage run even when:
 - pkgdown passed;
 - local Ubuntu coverage passed.
 
-The CI coverage step therefore retries up to three attempts. This is acceptable
-only for coverage-run native aborts. It is not a substitute for fixing package
-test failures or `R CMD check` failures.
+The CI coverage step should run one coverage collection attempt per workflow
+job. If a coverage-only native abort or instrumentation read failure happens
+after README, acceptance tests, `R CMD check`, and pkgdown have passed, rerun
+the failed job once and record the evidence. Do not hide three expensive
+coverage attempts inside one CI job by default; that makes failures slower and
+less legible.
 
-If all coverage attempts fail, treat it as a release blocker and inspect the
-failed log. Do not lower the coverage threshold to pass a release.
+If the rerun fails too, treat it as a release blocker and inspect the failed
+log. Do not lower the coverage threshold to pass a release.
 
 ## What Counts as Green
 

@@ -70,6 +70,48 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-06-05 [infrastructure] Release-gate harness around playbook checks
+
+The v0.1.9.1 release gate exposed a process gap: the release CI playbook
+contained the right shape of guidance, but the final gate still depended on
+the agent remembering which CI-equivalent local commands mattered. In
+particular, the README cold-start check
+(`Rscript --vanilla tools/check-readme-example.R`) was not run locally before
+the first branch push, even though CI treats it as its own gate and it caught
+installed-package example drift that full tests, package check, vignette
+renders, and pkgdown did not catch.
+
+Future release work needs a lightweight harness around release-gate evidence,
+not just prose instructions. Possible shape: a repo-local script or R helper
+that reads the active release-gate ticket / packet, verifies that the playbook
+is referenced, prints the exact local gate checklist, runs or records the
+README cold-start check, full tests, package check, coverage, pkgdown, and
+WSL/Ubuntu gates as applicable, and emits a compact closeout block for the
+ticket. This should remain a release-process aid, not a new execution or
+package-runtime surface.
+
+The important design point is automatic context loading and inspectable
+evidence. Future agents should not need to remember the playbook from prior
+turns; the harness should make the required gates visible before work starts
+and make omissions obvious in review.
+
+### 2026-06-05 [infrastructure] Release-gate tickets must not absorb executable doc/example migration
+
+The v0.1.9.1 Batch 8 release-gate commit absorbed a broad executable
+documentation and example migration for the required `cost_model` contract.
+That migration belonged in an earlier reviewed docs/example batch alongside
+the public API change, not in the final release-gate commit. The release gate
+should verify readiness with the smallest possible closeout / metadata change;
+it should not become the place where required-argument migrations are first
+landed across README, vignettes, examples, rendered docs, and reference pages.
+
+Defense: every release-gate ticket should point at
+`inst/design/release_ci_playbook.md`, include the explicit local-gate
+checklist, and treat executable-doc drift as a signal to cut a new pre-release
+batch instead of expanding the gate. If a release gate uncovers broad
+example/API migration work, pause the release sequence, split the work, and
+review that migration on its own surface before merge/tag resumes.
+
 ### 2026-06-04 [infrastructure] Installed design-tree footprint review
 
 The v0.1.8.11 `inst/` audit kept `inst/design/architecture/` package-included
