@@ -665,7 +665,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   targets["DEMO_01"] <- params$qty
 #'   targets
 #' }
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt_a <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
 #' on.exit(close(bt_a), add = TRUE)
 #' bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "qty-2")
@@ -790,7 +790,7 @@ print.ledgr_comparison <- function(x, ...) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_list(snapshot)
 #' close(bt)
@@ -859,7 +859,7 @@ print.ledgr_run_list <- function(x, ...) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_info(snapshot, bt$run_id)
 #' close(bt)
@@ -943,7 +943,7 @@ print.ledgr_run_info <- function(x, ...) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' run_id <- bt$run_id
 #' close(bt)
@@ -1034,7 +1034,7 @@ ledgr_run_open <- function(snapshot, run_id) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_label(snapshot, bt$run_id, "baseline")
 #' close(bt)
@@ -1078,7 +1078,7 @@ ledgr_run_label <- function(snapshot, run_id, label = NULL) {
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 #' strategy <- function(ctx, params) ctx$flat()
-#' exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(), run_id = "flat")
 #' ledgr_run_archive(snapshot, bt$run_id, reason = "example cleanup")
 #' close(bt)

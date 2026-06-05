@@ -1,4 +1,4 @@
-﻿# Custom Indicators And External Features
+# Custom Indicators And External Features
 
 
 ``` r
@@ -7,7 +7,7 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-Custom indicators are ledgrâ€™s extension point for derived market data.
+Custom indicators are ledgr’s extension point for derived market data.
 They are useful when the built-in indicators and TTR-backed indicators
 do not express the feature you want.
 
@@ -16,23 +16,27 @@ keep a strategy pulse-safe, or it can hide future information in an
 ordinary-looking feature value. This article explains the authoring
 contract.
 
-> [!WARNING]
->
-> ### Custom features are a leakage boundary
->
-> ledgr can validate shape, warmup, fingerprints, and registration. It
-> cannot prove that externally authored feature logic avoided future
-> information.
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Custom features are a leakage boundary**
+
+ledgr can validate shape, warmup, fingerprints, and registration. It
+cannot prove that externally authored feature logic avoided future
+information.
+
+</div>
 
 ## The Indicator Object
 
-> [!NOTE]
->
-> ### Definition
->
-> A custom indicator is a declared feature computation with a stable
-> feature ID, deterministic params, warmup rules, and one or two
-> functions that produce pulse-known values.
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+A custom indicator is a declared feature computation with a stable
+feature ID, deterministic params, warmup rules, and one or two functions
+that produce pulse-known values.
+
+</div>
 
 `ledgr_indicator()` creates a feature definition. The important fields
 are:
@@ -41,7 +45,7 @@ are:
 |----|----|
 | `id` | Stable feature ID used in `ctx$feature(instrument_id, feature_id)`. |
 | `fn` | Scalar function for one bounded historical window. |
-| `series_fn` | Optional vectorized function for one instrumentâ€™s full bar series. |
+| `series_fn` | Optional vectorized function for one instrument’s full bar series. |
 | `requires_bars` | Minimum lookback requirement for the indicator definition. |
 | `stable_after` | First row where the output is considered usable. |
 | `params` | Named deterministic parameter list included in the fingerprint. |
@@ -121,7 +125,7 @@ sma_3_custom <- ledgr_indicator(
 
 The `series_fn(bars, params)` contract is strict:
 
-- `bars` contains one instrumentâ€™s bars in ascending timestamp order;
+- `bars` contains one instrument’s bars in ascending timestamp order;
 - the return value must be an atomic numeric vector;
 - the return length must equal `nrow(bars)`;
 - output position `i` belongs to input row `i`;
@@ -168,7 +172,7 @@ function when present, `requires_bars`, `stable_after`, and
 deterministic `params`.
 
 Fingerprints are an identity check, not a semantic proof. They help
-ledgr answer â€œis this the same feature definition?â€ They do not prove
+ledgr answer “is this the same feature definition?” They do not prove
 that a custom `series_fn` avoided lookahead or that an external data
 source was historically available at the simulated decision time.
 
@@ -265,7 +269,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 ledgr_feature_id(features)
@@ -310,14 +315,14 @@ summary(custom_bt)
 #> Exposure:
 #>   Time in Market:      93.02%
 ledgr_results(custom_bt, what = "fills")
-#> # A tibble: 2 Ã— 9
+#> # A tibble: 2 × 9
 #>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
 #>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
 #> 1         1 2019-01-04 DEMO_01       BUY      10  90.7     0            0 OPEN
 #> 2         2 2019-01-04 DEMO_02       BUY      10  74.7     0            0 OPEN
 ledgr_results(custom_bt, what = "trades")
-#> # A tibble: 0 Ã— 9
-#> # â„¹ 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
+#> # A tibble: 0 × 9
+#> # ℹ 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
 #> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
 ```
 
@@ -325,16 +330,18 @@ The custom feature only changes how pulse-known values are computed. It
 does not change the strategy return contract, fill model, ledger, result
 tables, or metric workflow.
 
-> [!TIP]
->
-> ### Try it
->
-> Change `max_range` from `5` to `2` in the run params. Which fills
-> disappear, and why does the custom indicator ID stay the same?
+<div class="ledgr-callout ledgr-callout-tip">
+
+**Try it**
+
+Change `max_range` from `5` to `2` in the run params. Which fills
+disappear, and why does the custom indicator ID stay the same?
+
+</div>
 
 ## What To Remember
 
-Custom indicators let external feature logic enter ledgrâ€™s deterministic
+Custom indicators let external feature logic enter ledgr’s deterministic
 pulse engine. Keep the boundary explicit:
 
 - prefer scalar `fn` until the logic is stable;

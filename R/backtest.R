@@ -665,7 +665,7 @@ ledgr_backtest_read_connection <- function(bt) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' close(bt)
 #' @export
 close.ledgr_backtest <- function(con, ...) {
@@ -1032,7 +1032,7 @@ ledgr_config_normalize_opening <- function(opening, initial_cash) {
 #'   volume = 1000
 #' )
 #' strategy <- function(ctx, params) ctx$flat()
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' if (interactive()) print(bt$config)
 #' close(bt)
 #' @export
@@ -1112,7 +1112,7 @@ ledgr_empty_equity_curve <- function() {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' ledgr_extract_fills(bt)
 #' close(bt)
 #' @export
@@ -1651,7 +1651,7 @@ ledgr_compute_metrics_internal <- function(bt,
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' ledgr_compute_equity_curve(bt)
 #' close(bt)
 #' @export
@@ -1703,7 +1703,7 @@ ledgr_compute_equity_curve_impl <- function(bt, con = NULL) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' ledgr_backtest_bench(bt)
 #' close(bt)
 #' @export
@@ -1803,7 +1803,7 @@ ledgr_backtest_bench <- function(bt) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' ledgr_compute_metrics(bt)
 #' close(bt)
 #' @export
@@ -1839,7 +1839,7 @@ ledgr_compute_metrics <- function(bt,
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' print(bt)
 #' close(bt)
 #' @export
@@ -1952,7 +1952,7 @@ print.ledgr_backtest <- function(x, ...) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' summary(bt)
 #' close(bt)
 #' @export
@@ -2242,7 +2242,7 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' tibble::as_tibble(bt, what = "trades")
 #' tibble::as_tibble(bt, what = "equity")
 #' close(bt)
@@ -2336,7 +2336,7 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' ledgr_results(bt, what = "trades")
 #' close(bt)
 #' @export

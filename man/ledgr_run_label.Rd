@@ -26,7 +26,7 @@ Updates only the mutable label metadata for a stored run. The immutable
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 strategy <- function(ctx, params) ctx$flat()
-exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 bt <- ledgr_run(exp, params = list(), run_id = "flat")
 ledgr_run_label(snapshot, bt$run_id, "baseline")
 close(bt)

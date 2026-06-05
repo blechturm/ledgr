@@ -151,7 +151,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
   features = features,
-  opening = ledgr_opening(cash = 100000)
+  opening = ledgr_opening(cash = 100000),
+  cost_model = ledgr_cost_zero()
 )
 
 exp
@@ -483,7 +484,8 @@ debug_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = debug_strategy,
   features = list(),
-  opening = ledgr_opening(cash = 100000)
+  opening = ledgr_opening(cash = 100000),
+  cost_model = ledgr_cost_zero()
 )
 
 debug_grid <- ledgr_strategy_grid(qty = c(5, -1))

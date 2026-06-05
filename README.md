@@ -75,7 +75,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = ledgr_demo_sma_crossover_strategy(),
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 bt <- ledgr_run(

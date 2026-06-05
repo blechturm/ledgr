@@ -1,4 +1,4 @@
-﻿# Research Workflow
+# Research Workflow
 
 
 <style>
@@ -172,7 +172,7 @@ bars |>
   slice_head(n = 4)
 ```
 
-    # A tibble: 4 Ã— 7
+    # A tibble: 4 × 7
       ts_utc              instrument_id  open  high   low close volume
       <dttm>              <chr>         <dbl> <dbl> <dbl> <dbl>  <dbl>
     1 2019-01-01 00:00:00 DEMO_01        89.7  91.8  89.7  91.5 468600
@@ -270,7 +270,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
   features = features,
-  opening = ledgr_opening(cash = 10000)
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
 )
 
 single_run <- ledgr_run(
@@ -310,7 +311,7 @@ summary(single_run)
 ledgr_results(single_run, what = "trades")
 ```
 
-    # A tibble: 2 Ã— 9
+    # A tibble: 2 × 9
       event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
           <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
     1         3 2019-04-23 DEMO_01       SELL     10 102.      0         27.4 CLOSE
@@ -320,7 +321,7 @@ ledgr_results(single_run, what = "trades")
 head(ledgr_results(single_run, what = "equity"), 3)
 ```
 
-    # A tibble: 3 Ã— 6
+    # A tibble: 3 × 6
       ts_utc     equity  cash positions_value running_max drawdown
       <date>      <dbl> <dbl>           <dbl>       <dbl>    <dbl>
     1 2019-01-01  10000 10000               0       10000        0
@@ -417,7 +418,7 @@ glimpse(top_n)
 
     Rows: 5
     Columns: 7
-    $ run_id         <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31daeâ€¦
+    $ run_id         <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae…
     $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
     $ final_equity   <dbl> 10225.14, 10112.57, 10164.67, 10082.34, 10141.20
     $ total_return   <dbl> 0.022514428, 0.011257214, 0.016467259, 0.008233629, 0.014119827
@@ -435,8 +436,8 @@ issues <- sweep |>
 issues
 ```
 
-    # A tibble: 0 Ã— 5
-    # â„¹ 5 variables: run_id <chr>, status <chr>, error_class <chr>, error_msg <chr>,
+    # A tibble: 0 × 5
+    # ℹ 5 variables: run_id <chr>, status <chr>, error_class <chr>, error_msg <chr>,
     #   warnings <list>
 
 ``` r
@@ -467,7 +468,7 @@ automatic.
 **Try it**
 
 Sort by `total_return` instead of `sharpe_ratio`. Does the first
-candidate change? If it does, your â€œbestâ€ candidate depends on the
+candidate change? If it does, your “best” candidate depends on the
 metric, not only on the strategy.
 
 </div>
@@ -539,11 +540,11 @@ ledgr_run_list(snapshot)
 ```
 
     # ledgr run list
-    # A tibble: 2 Ã— 8
+    # A tibble: 2 × 8
       run_id label tags  status final_equity total_return execution_mode reproducibility_level
       <chr>  <chr> <lgl> <chr>         <dbl> <chr>        <chr>          <chr>
-    1 workfâ€¦ <NA>  NA    DONE         10107. +1.1%        audit_log      tier_1
-    2 workfâ€¦ <NA>  NA    DONE         10225. +2.3%        audit_log      tier_1
+    1 workf… <NA>  NA    DONE         10107. +1.1%        audit_log      tier_1
+    2 workf… <NA>  NA    DONE         10225. +2.3%        audit_log      tier_1
 
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -563,12 +564,13 @@ info
     Tags:            NA
     Snapshot:        demo_2019_h1
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
-    Config Hash:     c4b75a476e3b5f40a6b97496e88494cef24f4f1512c58f1904ffc683caa1c13e
+    Feature Set Hash: 523c01fdf7e56d6ac24271057fd702deb70c0618d6c1533f97ed6798fe377f31
+    Config Hash:     0e8ae7ef8d422ba7a378c8247da0d24e08f208ed254a6c08a39f234b45aaaf97
     Strategy Hash:   ca593cc1c3490b0ee6e80ef46b1daa2ebffc75eb73a4cc27c37dd05f9f6c5832
     Params Hash:     dc6315936028dd9d68e2f38075e2fca32b85edfe083b671d9c9feadbd2b0255f
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     0.779999999999999
+    Elapsed Sec:     0.69
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    4
@@ -616,7 +618,7 @@ behind the promoted run. Today that recovery uses two public surfaces:
 
 The next few lines are intentionally lower-level. They show what ledgr
 records for a promoted run. A future review helper may summarize this
-â€œwhat caused this result?â€ record without asking users to inspect nested
+“what caused this result?” record without asking users to inspect nested
 promotion-context fields directly.
 
 This API gap was carried forward from the v0.1.8.6 cycle: promotion can
@@ -784,9 +786,9 @@ The workflow above teaches the single-window foundation. Walk-forward
 and out-of-sample evaluation are the planned next conceptual layer for
 separating candidate selection from held-out evidence.
 
-When you ask â€œis this candidateâ€™s evidence reproducible?â€, the workflow
-above is the right starting point. When you ask â€œdoes this strategy
-generalize?â€, walk-forward is the next question you want. That layer is
+When you ask “is this candidate’s evidence reproducible?”, the workflow
+above is the right starting point. When you ask “does this strategy
+generalize?”, walk-forward is the next question you want. That layer is
 not part of this article; the public roadmap places walk-forward
 evaluation at v0.1.9.x.
 

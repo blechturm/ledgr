@@ -54,6 +54,16 @@ reference:
       - ledgr_promote
       - ledgr_promotion_context
       - ledgr_run_promotion_context
+  - title: Cost And Timing
+    contents:
+      - ledgr_cost_spread_bps
+      - ledgr_cost_steps
+      - ledgr_timing_next_open
+  - title: Identity And Diagnostics
+    contents:
+      - ledgr_identity_fields
+      - ledgr_condition_classes
+      - LEDGR_LAST_BAR_NO_FILL
   - title: Backtests
     contents:
       - ledgr_backtest

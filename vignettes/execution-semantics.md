@@ -88,7 +88,8 @@ bt <- ledgr_backtest(
   data = bars,
   strategy = hold_then_flat,
   initial_cash = 10000,
-  run_id = "execution_target_holdings"
+  run_id = "execution_target_holdings",
+  cost_model = ledgr_cost_zero()
 )
 
 ledgr_results(bt, what = "fills") |>
@@ -142,14 +143,16 @@ feature values as pulse-known information, not as executable prices.
 
 ## Costs Are Part Of The Fill
 
-> [!IMPORTANT]
->
-> ### Public cost API
->
-> The stable public transaction-cost model API is planned for v0.1.9.x /
-> v0.2.0. The example below documents fill behavior for readers
-> inspecting execution results. Do not treat this list interface as the
-> stable public cost API.
+<div class="ledgr-callout ledgr-callout-important">
+
+**Public cost API**
+
+The stable public transaction-cost model API is planned for v0.1.9.x /
+v0.2.0. The example below documents fill behavior for readers inspecting
+execution results. Do not treat this list interface as the stable public
+cost API.
+
+</div>
 
 The fill model shown here is the next-open model with spread and fixed
 commission fields.
@@ -160,7 +163,11 @@ cost_bt <- ledgr_backtest(
   strategy = hold_then_flat,
   initial_cash = 10000,
   run_id = "execution_cost_example",
-  fill_model = list(type = "next_open", spread_bps = 5, commission_fixed = 1)
+  timing_model = ledgr_timing_next_open(),
+  cost_model = ledgr_cost_chain(
+    ledgr_cost_spread_bps(5),
+    ledgr_cost_fixed_fee(1)
+  )
 )
 
 ledgr_results(cost_bt, what = "fills") |>
@@ -195,7 +202,8 @@ final_bar_bt <- withCallingHandlers(
     data = bars,
     strategy = final_bar_strategy,
     initial_cash = 10000,
-    run_id = "execution_final_bar_warning"
+    run_id = "execution_final_bar_warning",
+    cost_model = ledgr_cost_zero()
   ),
   warning = function(w) {
     if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
@@ -224,13 +232,15 @@ a completed trade.
 
 ## Warmup Gates Belong In The Strategy
 
-> [!NOTE]
->
-> ### Definition
->
-> Warmup is the early part of a feature series where an indicator has
-> not yet seen enough history to produce a usable value. For example, a
-> 20-bar moving average is not usable on the first bar of a snapshot.
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+Warmup is the early part of a feature series where an indicator has not
+yet seen enough history to produce a usable value. For example, a 20-bar
+moving average is not usable on the first bar of a snapshot.
+
+</div>
 
 Feature warmup is not an execution rule. The strategy decides whether a
 feature vector is usable. Different strategies may want different warmup

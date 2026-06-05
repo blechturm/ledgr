@@ -117,7 +117,8 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = strategy,
   features = features,
-  opening = ledgr_opening(cash = 100000)
+  opening = ledgr_opening(cash = 100000),
+  cost_model = ledgr_cost_zero()
 )
 
 exp
@@ -340,7 +341,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_1f9f3826239ae270
+    # ledgr sweep -- sweep_946be1f8eb91a69a
     # A tibble: 16 x 7
        run_id            status sharpe_ratio total_return max_drawdown n_trades execution_seed
        <chr>             <chr>         <dbl> <chr>        <chr>           <int>          <int>
@@ -540,7 +541,8 @@ debug_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = debug_strategy,
   features = list(),
-  opening = ledgr_opening(cash = 100000)
+  opening = ledgr_opening(cash = 100000),
+  cost_model = ledgr_cost_zero()
 )
 
 debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
@@ -551,7 +553,7 @@ failed_sweep |>
   select(run_id, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_f84fc179c8650687
+    # ledgr sweep -- sweep_5fab6626ff284a59
     # A tibble: 2 x 2
       run_id                status
       <chr>                 <chr>

@@ -99,7 +99,7 @@ ledgr_db_init <- function(db_path) {
 #'   targets["AAA"] <- 1
 #'   targets
 #' }
-#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' tibble::as_tibble(bt, what = "equity")
 #'
 #' # Low-level reconstruction requires an explicit DBI connection.

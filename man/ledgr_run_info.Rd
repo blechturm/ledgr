@@ -37,7 +37,7 @@ Exploratory sweeps and promotion:
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 strategy <- function(ctx, params) ctx$flat()
-exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 bt <- ledgr_run(exp, params = list(), run_id = "flat")
 ledgr_run_info(snapshot, bt$run_id)
 close(bt)

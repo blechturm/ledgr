@@ -81,7 +81,7 @@ strategy <- function(ctx, params) {
   targets["DEMO_01"] <- params$qty
   targets
 }
-exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 bt <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
 ledgr_extract_strategy(snapshot, bt$run_id, trust = FALSE)
 close(bt)

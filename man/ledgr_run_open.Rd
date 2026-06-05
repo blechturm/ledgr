@@ -24,7 +24,7 @@ The run is not recomputed and strategy code is not executed.
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
 strategy <- function(ctx, params) ctx$flat()
-exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000))
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 bt <- ledgr_run(exp, params = list(), run_id = "flat")
 run_id <- bt$run_id
 close(bt)
