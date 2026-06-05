@@ -733,8 +733,22 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Metric assumptions now live in a `metric_context`", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
-  testthat::expect_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
+  testthat::expect_match(metrics_doc, "Timing, Spread, And Fees", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Timing and cost are separate execution steps", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "open \\* \\(1 \\+ spread_bps / 20000\\)")
+  testthat::expect_match(metrics_doc, "open \\* \\(1 - spread_bps / 20000\\)")
+  testthat::expect_match(metrics_doc, "approximately `spread_bps` basis points before\\s+explicit fees")
+  testthat::expect_match(metrics_doc, "Price transforms and explicit fees are different", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "What costs do not model", fixed = TRUE)
+  for (term in c("liquidity", "financing", "taxes", "OMS", "broker reconciliation")) {
+    testthat::expect_match(metrics_doc, term, fixed = TRUE)
+  }
+  testthat::expect_match(metrics_doc, "transaction-cost\\s+analysis")
+  testthat::expect_match(metrics_doc, "Compiled Accounting Fails Closed", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "ledgr_unsupported_accounting_model", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "ledgr_compiled_spot_fifo_unavailable", fixed = TRUE)
+  testthat::expect_no_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
+  testthat::expect_no_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
 
   testthat::expect_match(backtest_help, "quoted bid/ask\\s+spread")
   testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\} basis points before explicit fees")
@@ -780,6 +794,34 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "required fill fields", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Use `ledgr_compute_metrics\\(\\)` for scripted")
   testthat::expect_match(metrics_doc, "`ledgr_compare_runs()` is also programmatic", fixed = TRUE)
+})
+
+testthat::test_that("cost API help pages contain runnable reference examples", {
+  root <- testthat::test_path("..", "..")
+  cost_help <- paste(readLines(file.path(root, "man", "ledgr_cost_spread_bps.Rd"), warn = FALSE), collapse = "\n")
+  steps_help <- paste(readLines(file.path(root, "man", "ledgr_cost_steps.Rd"), warn = FALSE), collapse = "\n")
+  timing_help <- paste(readLines(file.path(root, "man", "ledgr_timing_next_open.Rd"), warn = FALSE), collapse = "\n")
+  run_help <- paste(readLines(file.path(root, "man", "ledgr_run.Rd"), warn = FALSE), collapse = "\n")
+
+  for (term in c(
+    "ledgr_cost_spread_bps(5)",
+    "ledgr_cost_fixed_fee(1)",
+    "ledgr_cost_notional_bps_fee(2)",
+    "ledgr_cost_zero()",
+    "ledgr_cost_chain",
+    "ledgr_cost_steps(cost)",
+    "ledgr_cost_describe(cost)",
+    "try(ledgr_backtest(data = bars, strategy = strategy), silent = TRUE)",
+    "cost_model = zero"
+  )) {
+    testthat::expect_match(cost_help, term, fixed = TRUE)
+  }
+  testthat::expect_match(steps_help, "ledgr_cost_notional_bps_fee(2)", fixed = TRUE)
+  testthat::expect_match(steps_help, "ledgr_cost_steps(cost)", fixed = TRUE)
+  testthat::expect_match(steps_help, "ledgr_cost_describe(cost)", fixed = TRUE)
+  testthat::expect_match(timing_help, "timing <- ledgr_timing_next_open()", fixed = TRUE)
+  testthat::expect_match(timing_help, "timing$type_id", fixed = TRUE)
+  testthat::expect_match(run_help, "cost_model = ledgr_cost_zero()", fixed = TRUE)
 })
 
 testthat::test_that("public site polish avoids stale public artifacts", {
@@ -1007,6 +1049,12 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "full sweep artifact persistence", fixed = TRUE)
   testthat::expect_no_match(doc, "ledgr_snapshot_split\\(")
   testthat::expect_match(doc, "ledgr_save_sweep()", fixed = TRUE)
+  testthat::expect_match(doc, "Cost Models Are Fixed Inputs", fixed = TRUE)
+  testthat::expect_match(doc, "does not\\s+compose cost models as another grid dimension")
+  testthat::expect_match(doc, "A future `ledgr_cost_grid()`", fixed = TRUE)
+  testthat::expect_match(doc, "not part of the v1 cost surface", fixed = TRUE)
+  testthat::expect_match(doc, "cost-grid composition such as `ledgr_cost_grid()`", fixed = TRUE)
+  testthat::expect_no_match(doc, "public cost-model factories;", fixed = TRUE)
 
   testthat::expect_match(readme, "I want the full research loop: snapshot, sweep, promotion, reopen.", fixed = TRUE)
   testthat::expect_match(readme, "Research Workflow", fixed = TRUE)

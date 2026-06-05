@@ -1262,7 +1262,7 @@ scope: final_bar_no_fill
 Priority: P1
 Effort: L
 Dependencies: LDG-2553, LDG-2565
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1295,6 +1295,17 @@ quoted-spread convention, and fail-closed accounting behavior.
 Vignette render, example smoke tests, accounting test review, and styleguide
 review.
 
+### Closeout
+
+- Rewrote the cost section in `vignettes/metrics-and-accounting.qmd` around
+  timing-vs-cost separation, quoted spread arithmetic, price-transform versus
+  explicit-fee behavior, and explicit non-scope boundaries.
+- Added a worked round-trip example showing that buy/sell half-spread crossing
+  is approximately `spread_bps` bps before explicit fees.
+- Documented fail-closed `compiled_accounting_model` behavior and the stable
+  unsupported/unavailable accounting condition classes without broadening B2
+  scope.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1317,7 +1328,7 @@ scope: metrics_accounting_cost_api
 Priority: P1
 Effort: M
 Dependencies: LDG-2548, LDG-2549, LDG-2550, LDG-2551, LDG-2552
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1344,6 +1355,17 @@ Add runnable examples to cost API help pages.
 Example checks, roxygen render, targeted documentation tests, and R CMD check
 examples where applicable.
 
+### Closeout
+
+- Added runnable examples for `ledgr_cost_chain()`, the cost primitive
+  constructors, `ledgr_cost_steps()`, `ledgr_cost_describe()`, and
+  `ledgr_timing_next_open()`.
+- Included explicit `ledgr_cost_zero()` use and a missing-cost-model
+  `try(ledgr_backtest(...), silent = TRUE)` example for the
+  `ledgr_cost_model_unspecified` error path.
+- Updated the directly affected `ledgr_run()` example to pass an explicit
+  `cost_model`.
+
 ### Source Reference
 
 - `v0_1_9_1_spec.md`
@@ -1365,7 +1387,7 @@ scope: cost_api_reference_examples
 Priority: P1
 Effort: S
 Dependencies: LDG-2553
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -1390,6 +1412,14 @@ in v0.1.9.1.
 
 Vignette render, stale-scope review for `ledgr_cost_grid()` claims, and
 documentation review.
+
+### Closeout
+
+- Added a `Cost Models Are Fixed Inputs` section to `vignettes/sweeps.qmd`.
+- Documented that v0.1.9.1 sweep grids vary feature and strategy parameters,
+  while cost models remain fixed experiment inputs.
+- Replaced the stale non-goal wording about public cost-model factories with
+  explicit deferral of cost-grid composition such as `ledgr_cost_grid()`.
 
 ### Source Reference
 

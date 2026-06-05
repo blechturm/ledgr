@@ -342,7 +342,7 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #'   targets["AAA"] <- params$qty
 #'   targets
 #' }
-#' exp <- ledgr_experiment(snapshot, strategy)
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 #' bt <- ledgr_run(exp, params = list(qty = 1), run_id = "example-run")
 #' close(bt)
 #' ledgr_snapshot_close(snapshot)

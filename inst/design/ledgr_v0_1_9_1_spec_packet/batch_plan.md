@@ -247,7 +247,7 @@ Closeout:
 ## Batch 6 - Cost Documentation Surfaces
 
 Tickets: `LDG-2567`, `LDG-2568`, `LDG-2569`
-Status: Planned
+Status: Completed
 
 Goal: refresh cost-facing vignettes and examples without opening sweep cost-grid
 or broader docs-pass scope.
@@ -265,6 +265,21 @@ Review focus:
 - Articles follow `inst/design/vignette_styleguide.md`.
 - No liquidity, OMS, TCA, financing, taxes, or broker reconciliation features
   are implied.
+
+Closeout:
+
+- `metrics-and-accounting` now teaches the quoted-spread convention,
+  timing-vs-cost separation, price-transform-vs-explicit-fee separation, and
+  fail-closed compiled-accounting behavior without expanding liquidity, OMS,
+  TCA, financing, tax, or broker-reconciliation scope.
+- Cost API help pages include runnable construction, chain-composition,
+  identity-inspection, explicit zero-cost, timing-model, and missing-cost-model
+  examples.
+- Sweep docs now state that cost models are fixed experiment inputs in v1 and
+  route cost-grid composition such as `ledgr_cost_grid()` to future work.
+- Focused verification: `test-documentation-contracts.R`, `test-cost-model.R`,
+  `test-backtest-wrapper.R`, and direct Rd example smoke checks for the cost
+  and timing help pages.
 
 ## Batch 7 - Release Surfaces
 

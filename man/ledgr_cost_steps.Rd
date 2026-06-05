@@ -21,7 +21,11 @@ a character scalar.
 model. \code{ledgr_cost_describe()} returns a compact human-readable summary.
 }
 \examples{
-cost <- ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))
+cost <- ledgr_cost_chain(
+  ledgr_cost_spread_bps(5),
+  ledgr_cost_fixed_fee(1),
+  ledgr_cost_notional_bps_fee(2)
+)
 ledgr_cost_steps(cost)
 ledgr_cost_describe(cost)
 }

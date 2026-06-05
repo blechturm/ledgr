@@ -578,6 +578,20 @@ incomparable rows.
 extracting a failed row for diagnostics; `ledgr_promote()` still rejects
 failed candidates.
 
+## Cost Models Are Fixed Inputs
+
+Cost models are part of the experiment identity in this release. A sweep
+varies feature parameters and strategy parameters across the declared
+grid; it does not compose cost models as another grid dimension. If you
+want to compare different cost assumptions, run separate experiments or
+separate sweeps with explicit `cost_model` values and compare the
+resulting evidence.
+
+A future `ledgr_cost_grid()` may make cost assumptions participate in
+candidate identity deliberately. That API is not part of the v1 cost
+surface, so do not expect `ledgr_grid_cross()` to accept cost-model
+dimensions.
+
 ## Explicit Non-Goals
 
 Sweep mode intentionally leaves some decisions outside the API. It does
@@ -586,7 +600,7 @@ not ship:
 - automatic ranking, objective functions, or `ledgr_tune()`;
 - walk-forward, PBO, or CSCV helpers;
 - risk-layer insertion;
-- public cost-model factories;
+- cost-grid composition such as `ledgr_cost_grid()`;
 - paper/live trading adapters;
 - intraday-specific support;
 - `ledgr_save_sweep()` or full sweep artifact persistence.

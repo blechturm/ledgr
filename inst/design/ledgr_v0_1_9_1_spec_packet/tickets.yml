@@ -361,7 +361,7 @@ tickets:
 
   - id: "LDG-2567"
     title: "Metrics And Accounting Vignette Cost Rewrite"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -379,7 +379,7 @@ tickets:
 
   - id: "LDG-2568"
     title: "Cost API Runnable Examples"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -400,7 +400,7 @@ tickets:
 
   - id: "LDG-2569"
     title: "Sweep Vignette Cost Non-Participation Note"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "S"
     dependencies:

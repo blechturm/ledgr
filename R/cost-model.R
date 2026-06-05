@@ -16,10 +16,29 @@ ledgr_timing_schema_version <- 1L
 #' @param ... Cost model objects to compose in order.
 #' @return A `ledgr_cost_model` object.
 #' @examples
-#' ledgr_cost_spread_bps(5)
-#' ledgr_cost_fixed_fee(1)
-#' ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))
-#' ledgr_cost_zero()
+#' spread <- ledgr_cost_spread_bps(5)
+#' fixed <- ledgr_cost_fixed_fee(1)
+#' notional <- ledgr_cost_notional_bps_fee(2)
+#' zero <- ledgr_cost_zero()
+#'
+#' cost <- ledgr_cost_chain(spread, fixed, notional)
+#' ledgr_cost_steps(cost)
+#' ledgr_cost_describe(cost)
+#'
+#' bars <- data.frame(
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+#'   instrument_id = "AAA",
+#'   open = c(100, 101, 102),
+#'   high = c(100, 101, 102),
+#'   low = c(100, 101, 102),
+#'   close = c(100, 101, 102),
+#'   volume = 1000
+#' )
+#' strategy <- function(ctx, params) ctx$flat()
+#' # raises ledgr_cost_model_unspecified: cost_model is required.
+#' try(ledgr_backtest(data = bars, strategy = strategy), silent = TRUE)
+#' bt <- ledgr_backtest(data = bars, strategy = strategy, cost_model = zero)
+#' close(bt)
 #' @export
 ledgr_cost_spread_bps <- function(bps) {
   ledgr_cost_model(
@@ -88,7 +107,11 @@ ledgr_cost_chain <- function(...) {
 #' @return `ledgr_cost_steps()` returns a list; `ledgr_cost_describe()` returns
 #'   a character scalar.
 #' @examples
-#' cost <- ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))
+#' cost <- ledgr_cost_chain(
+#'   ledgr_cost_spread_bps(5),
+#'   ledgr_cost_fixed_fee(1),
+#'   ledgr_cost_notional_bps_fee(2)
+#' )
 #' ledgr_cost_steps(cost)
 #' ledgr_cost_describe(cost)
 #' @export
@@ -143,7 +166,8 @@ ledgr_cost_describe <- function(cost_model) {
 #'
 #' @return A `ledgr_timing_model` object.
 #' @examples
-#' ledgr_timing_next_open()
+#' timing <- ledgr_timing_next_open()
+#' timing$type_id
 #' @export
 ledgr_timing_next_open <- function() {
   structure(

@@ -14,5 +14,6 @@ A \code{ledgr_timing_model} object.
 timing model proposes fills; cost models resolve prices and explicit fees.
 }
 \examples{
-ledgr_timing_next_open()
+timing <- ledgr_timing_next_open()
+timing$type_id
 }
