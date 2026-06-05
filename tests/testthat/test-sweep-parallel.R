@@ -40,6 +40,16 @@ ledgr_parallel_sweep_reproduction_key_comparable <- function(key) {
   key
 }
 
+ledgr_skip_parallel_sweep_under_covr <- function() {
+  testthat::skip_if(
+    requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
+    paste(
+      "mirai-backed parallel sweep is covered by ordinary CI;",
+      "covr subprocess tracing can corrupt coverage shard readback."
+    )
+  )
+}
+
 testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -63,6 +73,7 @@ testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
 
 testthat::test_that("parallel sweep matches sequential deterministic candidate rows", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -100,6 +111,7 @@ testthat::test_that("parallel sweep matches sequential deterministic candidate r
 
 testthat::test_that("parallel sweep preserves warning and failure row association", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -134,6 +146,7 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
 
 testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep id", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -158,6 +171,7 @@ testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep i
 
 testthat::test_that("parallel sweep workers do not write persistent artifacts", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -179,6 +193,7 @@ testthat::test_that("parallel sweep workers do not write persistent artifacts", 
 
 testthat::test_that("parallel sweep rejects ambient RNG strategies", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
