@@ -681,7 +681,7 @@ scope: required_cost_model
 Priority: P1
 Effort: M
 Dependencies: LDG-2553, LDG-2554, LDG-2555, LDG-2556, LDG-2557, LDG-2558
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -734,6 +734,18 @@ the with-costs peer-benchmark row for the v0.1.9.1 release bundle.
 Peer benchmark record run completes; spike synthesis is reviewed for
 methodology and numbers; horizon entry status update applied if the
 verdict requires it.
+
+Closeout:
+
+- Record bundle: `dev/bench/results/v0.1.9.1_record/`.
+- Synthesis:
+  `inst/design/spikes/cost_resolver_measurement_spike/measurement_synthesis.md`.
+- Verdict: `ship-with-known-overhead`.
+- LDG-2570 NEWS should name the observed xlarge 5.26s / 6.5%
+  engine-phase row delta with the caveat that the focused resolver-only
+  loop measured only 0.26s total public-chain resolver delta over 68,201
+  fills.
+- No horizon update required.
 
 ### Source Reference
 

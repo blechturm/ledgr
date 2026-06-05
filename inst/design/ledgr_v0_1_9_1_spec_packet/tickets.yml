@@ -543,7 +543,7 @@ tickets:
 
   - id: "LDG-2575"
     title: "Cost Resolver Measurement Spike"
-    status: "planned"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:

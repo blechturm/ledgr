@@ -19,7 +19,8 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     fast = 5L,
     slow = 10L,
     seed = 20260530L,
-    compiled_accounting_model = NULL
+    compiled_accounting_model = NULL,
+    engine_set = "all"
   )
   i <- 1L
   while (i <= length(args)) {
@@ -52,6 +53,9 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     } else if (identical(key, "--compiled-accounting-model")) {
       out$compiled_accounting_model <- if (identical(val, "NULL")) NULL else val
       i <- i + 2L
+    } else if (identical(key, "--engine-set")) {
+      out$engine_set <- val
+      i <- i + 2L
     } else if (key %in% c("--help", "-h")) {
       cat(paste(
         "Usage: Rscript dev/bench/peer_benchmark/peer_benchmark.R [options]",
@@ -66,6 +70,7 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --slow N",
         "  --seed N",
         "  --compiled-accounting-model NULL|spot_fifo",
+        "  --engine-set all|ledgr-cost",
         sep = "\n"
       ), "\n")
       quit(status = 0L)
@@ -79,6 +84,9 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
   if (!is.null(out$compiled_accounting_model) &&
       !identical(out$compiled_accounting_model, "spot_fifo")) {
     stop("`--compiled-accounting-model` must be NULL or spot_fifo.", call. = FALSE)
+  }
+  if (!out$engine_set %in% c("all", "ledgr-cost")) {
+    stop("`--engine-set` must be `all` or `ledgr-cost`.", call. = FALSE)
   }
   if (is.null(out$n_inst)) {
     out$n_inst <- if (identical(out$preset, "record")) 100L else 5L
@@ -234,7 +242,27 @@ peer_canonical_equity <- function(engine, equity) {
   )
 }
 
-peer_run_ledgr <- function(engine, bars_path, features, strategy, seed) {
+peer_cost_zero_model <- function() {
+  ledgr_cost_zero()
+}
+
+peer_cost_realistic_model <- function() {
+  ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))
+}
+
+peer_cost_label <- function(cost_model, legacy = FALSE) {
+  if (isTRUE(legacy)) {
+    return("legacy_fill_model_spread_5_fixed_1")
+  }
+  steps <- ledgr_cost_steps(cost_model)
+  if (!length(steps)) {
+    return("cost_zero")
+  }
+  paste(vapply(steps, `[[`, character(1L), "type_id"), collapse = "+")
+}
+
+peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
+                           cost_model = peer_cost_zero_model()) {
   t0 <- proc.time()[["elapsed"]]
   bars <- utils::read.csv(bars_path, stringsAsFactors = FALSE)
   bars$ts_utc <- as.POSIXct(bars$ts_utc, tz = "UTC")
@@ -249,6 +277,7 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed) {
     strategy = strategy,
     features = features,
     opening = ledgr_opening(cash = 1e7),
+    cost_model = cost_model,
     persist_features = FALSE
   )
   run_id <- paste0("peer_", engine, "_", paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
@@ -276,6 +305,7 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed) {
       status = "DONE",
       wall_sec = as.numeric(elapsed),
       phase_sec = phase_sec,
+      cost_model = peer_cost_label(cost_model),
       boundary_check = c("bars_csv_read", "snapshot_create", "engine_run", "canonical_equity_write", "fills_write")
     ),
     reason = NA_character_
@@ -330,7 +360,10 @@ peer_ledgr_ephemeral_prepare <- function(bars_path, features) {
 }
 
 peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed,
-                                     compiled_accounting_model = NULL) {
+                                     compiled_accounting_model = NULL,
+                                     cost_model = peer_cost_zero_model(),
+                                     cost_resolver = NULL,
+                                     legacy_cost = FALSE) {
   t0 <- proc.time()[["elapsed"]]
   prep <- peer_ledgr_ephemeral_prepare(bars_path, features)
   t1 <- proc.time()[["elapsed"]]
@@ -338,7 +371,9 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
   output_handler <- ledgr:::ledgr_memory_output_handler(run_id)
   initial_positions <- stats::setNames(rep(0, length(prep$universe)), prep$universe)
   telemetry <- ledgr:::ledgr_sweep_telemetry_env()
-  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0)
+  if (is.null(cost_resolver)) {
+    cost_resolver <- ledgr:::ledgr_cost_resolver_from_model(cost_model)
+  }
   execution <- ledgr:::ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = prep$universe,
@@ -399,6 +434,7 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
       status = "DONE",
       wall_sec = as.numeric(elapsed),
       phase_sec = phase_sec,
+      cost_model = peer_cost_label(cost_model, legacy = legacy_cost),
       compiled_accounting_model = compiled_accounting_model,
       boundary_check = c("bars_csv_read", "in_memory_projection", "engine_run", "canonical_equity_write", "fills_write")
     ),
@@ -785,6 +821,8 @@ peer_performance_boundary <- function(engine) {
     engine,
     ledgr_ttr_canonical = "durable ledgr: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
     ledgr_ttr_canonical_ephemeral = "ephemeral ledgr: ingestion=bars CSV read plus in-memory bars/features/projection; engine=ledgr_execute_fold with memory output handler; results=event-stream equity/fills reconstruction plus canonical materialization",
+    ledgr_ttr_canonical_ephemeral_with_costs = "ephemeral ledgr with realistic public cost chain: same bars/projection/strategy surface as canonical ephemeral; engine uses ledgr_cost_chain(spread_bps=5, fixed_fee=1)",
+    ledgr_ttr_canonical_ephemeral_legacy_costs = "ephemeral ledgr with legacy internal fill-model resolver: same bars/projection/strategy surface as canonical ephemeral; engine uses spread_bps=5 and commission_fixed=1 baseline resolver",
     ledgr_ttr_compiled_spot_fifo_ephemeral = "ephemeral ledgr with compiled_accounting_model=spot_fifo: same bars/projection/strategy surface as ledgr_ttr_canonical_ephemeral; engine uses compiled spot-FIFO fill/accounting batch; results=event-stream equity/fills canonical materialization",
     ledgr_builtin_sma = "durable ledgr built-in SMA: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
     quantstrat = "ingestion=bars CSV read, xts/globalenv setup, initPortf/initAcct/initOrders/strategy setup; engine=applyStrategy plus account updates; results=equity/transaction extraction plus canonical writes",
@@ -1141,6 +1179,7 @@ peer_environment <- function(args, input_hash) {
     created_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     release = args$release,
     preset = args$preset,
+    engine_set = args$engine_set,
     R = R.version.string,
     platform = R.version$platform,
     git_sha = git_sha,
@@ -1258,49 +1297,82 @@ peer_main <- function(args = peer_parse_args()) {
     slow = peer_sma_ttr("slow", args$slow)
   )
   canonical_strategy <- peer_strategy("fast", "slow")
+  zero_cost <- peer_cost_zero_model()
+  realistic_cost <- peer_cost_realistic_model()
   canonical <- peer_timed(peer_run_ledgr(
     engine = "ledgr_ttr_canonical",
     bars_path = bars_path,
     features = canonical_features,
     strategy = canonical_strategy,
-    seed = args$seed
+    seed = args$seed,
+    cost_model = zero_cost
   ))
   canonical_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
     engine = "ledgr_ttr_canonical_ephemeral",
     bars_path = bars_path,
     features = canonical_features,
     strategy = canonical_strategy,
-    seed = args$seed
+    seed = args$seed,
+    cost_model = zero_cost
   ))
   peer_compare_ledgr_surfaces(canonical, canonical_ephemeral)
+  with_costs_ephemeral <- NULL
+  legacy_costs_ephemeral <- NULL
+  if (identical(args$engine_set, "ledgr-cost")) {
+    with_costs_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
+      engine = "ledgr_ttr_canonical_ephemeral_with_costs",
+      bars_path = bars_path,
+      features = canonical_features,
+      strategy = canonical_strategy,
+      seed = args$seed,
+      cost_model = realistic_cost
+    ))
+    legacy_costs_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
+      engine = "ledgr_ttr_canonical_ephemeral_legacy_costs",
+      bars_path = bars_path,
+      features = canonical_features,
+      strategy = canonical_strategy,
+      seed = args$seed,
+      cost_model = realistic_cost,
+      cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 5, commission_fixed = 1),
+      legacy_cost = TRUE
+    ))
+  }
   compiled_ephemeral <- NULL
-  if (!is.null(args$compiled_accounting_model)) {
+  if (!is.null(args$compiled_accounting_model) && identical(args$engine_set, "all")) {
     compiled_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
       engine = "ledgr_ttr_compiled_spot_fifo_ephemeral",
       bars_path = bars_path,
       features = canonical_features,
       strategy = canonical_strategy,
       seed = args$seed,
+      cost_model = zero_cost,
       compiled_accounting_model = args$compiled_accounting_model
     ))
     peer_compare_ledgr_surfaces(canonical, compiled_ephemeral)
   }
-  builtin <- peer_timed(peer_run_ledgr(
-    engine = "ledgr_builtin_sma",
-    bars_path = bars_path,
-    features = ledgr_feature_map(fast = ledgr_ind_sma(args$fast), slow = ledgr_ind_sma(args$slow)),
-    strategy = peer_strategy(sprintf("sma_%d", args$fast), sprintf("sma_%d", args$slow)),
-    seed = args$seed
-  ))
-  quantstrat <- peer_timed(peer_run_quantstrat(bars_path, args$fast, args$slow))
-  backtrader <- peer_timed(peer_run_backtrader(bars_path, args$fast, args$slow))
-  zipline_full <- peer_timed(peer_run_zipline_full(bars_path, args$fast, args$slow))
-  lean <- peer_timed(peer_run_lean(bars_path, args$fast, args$slow))
   results <- list(canonical, canonical_ephemeral)
+  if (!is.null(with_costs_ephemeral)) {
+    results <- c(results, list(with_costs_ephemeral, legacy_costs_ephemeral))
+  }
   if (!is.null(compiled_ephemeral)) {
     results <- c(results, list(compiled_ephemeral))
   }
-  results <- c(results, list(builtin, quantstrat, backtrader, zipline_full, lean))
+  if (identical(args$engine_set, "all")) {
+    builtin <- peer_timed(peer_run_ledgr(
+      engine = "ledgr_builtin_sma",
+      bars_path = bars_path,
+      features = ledgr_feature_map(fast = ledgr_ind_sma(args$fast), slow = ledgr_ind_sma(args$slow)),
+      strategy = peer_strategy(sprintf("sma_%d", args$fast), sprintf("sma_%d", args$slow)),
+      seed = args$seed,
+      cost_model = zero_cost
+    ))
+    quantstrat <- peer_timed(peer_run_quantstrat(bars_path, args$fast, args$slow))
+    backtrader <- peer_timed(peer_run_backtrader(bars_path, args$fast, args$slow))
+    zipline_full <- peer_timed(peer_run_zipline_full(bars_path, args$fast, args$slow))
+    lean <- peer_timed(peer_run_lean(bars_path, args$fast, args$slow))
+    results <- c(results, list(builtin, quantstrat, backtrader, zipline_full, lean))
+  }
   parity <- do.call(rbind, lapply(results[-1L], peer_parity, reference = canonical))
   statuses <- lapply(results, peer_surface_status)
   performance <- peer_performance_rows(results, args)

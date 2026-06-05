@@ -1,0 +1,4 @@
+"peer","total_abs_divergence","n_bars_diverging","first_divergence_ts","pct_attributable_indicator_warmup","pct_attributable_fill_timing","pct_attributable_calendar","pct_attributable_position_size","pct_attributable_float_rounding","pct_attributable_other"
+"ledgr_ttr_canonical_ephemeral",4.47612255811691e-05,1221,"2018-01-15T00:00:00Z",0,0,0,0,1,0
+"ledgr_ttr_canonical_ephemeral_with_costs",62771283.0108041,1250,"2018-01-15T00:00:00Z",0,1,0,0,0,0
+"ledgr_ttr_canonical_ephemeral_legacy_costs",82951562.0231846,1250,"2018-01-15T00:00:00Z",0,1,0,0,0,0

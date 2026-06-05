@@ -1,0 +1,66 @@
+{
+  "environment": {
+    "created_at": "2026-06-05T13:01:47Z",
+    "release": "v0.1.9.1",
+    "preset": "record",
+    "engine_set": "ledgr-cost",
+    "R": "R version 4.5.2 (2025-10-31 ucrt)",
+    "platform": "x86_64-w64-mingw32",
+    "git_sha": "f3196e24ce6d4120d2ddf933a0fcf4ffedf84749",
+    "git_branch": "v0.1.9.1",
+    "ledgr_version": "0.1.8.11",
+    "input_hash": "0b183457b3fe720d63b02a90fe552e1202fdb31b4e967a75e91304f9d3e416fc",
+    "packages": {
+      "TTR": "0.24.4",
+      "quantstrat": "0.25",
+      "backtrader_uv": true,
+      "zipline_uv": true,
+      "lean_uv": true
+    },
+    "claim_policy": "internal same-host parity sanity check; not a public speed ranking"
+  },
+  "parity": [
+    {
+      "peer": "ledgr_ttr_canonical_ephemeral",
+      "status": "DONE",
+      "tier1_equity_cor": 1,
+      "tier1_max_single_bar_divergence_pct": 1.971e-14,
+      "tier1_daily_return_cor": 1,
+      "tier1_cash_match": true,
+      "tier1_position_match": true,
+      "tier2_total_return_diff": -6.6613e-16,
+      "tier2_sharpe_diff": 3.6326e-13,
+      "tier2_max_drawdown_diff": 1.6085e-15,
+      "tier3_trade_count_diff": 0,
+      "attribution": "passes Tier 1 tolerance"
+    },
+    {
+      "peer": "ledgr_ttr_canonical_ephemeral_with_costs",
+      "status": "DONE",
+      "tier1_equity_cor": 0.9997,
+      "tier1_max_single_bar_divergence_pct": 0.01,
+      "tier1_daily_return_cor": 1,
+      "tier1_cash_match": false,
+      "tier1_position_match": true,
+      "tier2_total_return_diff": -0.0107,
+      "tier2_sharpe_diff": -0.5343,
+      "tier2_max_drawdown_diff": -0.0007,
+      "tier3_trade_count_diff": 0,
+      "attribution": "passes Tier 1 tolerance"
+    },
+    {
+      "peer": "ledgr_ttr_canonical_ephemeral_legacy_costs",
+      "status": "DONE",
+      "tier1_equity_cor": 0.9995,
+      "tier1_max_single_bar_divergence_pct": 0.0135,
+      "tier1_daily_return_cor": 0.9999,
+      "tier1_cash_match": false,
+      "tier1_position_match": true,
+      "tier2_total_return_diff": -0.0145,
+      "tier2_sharpe_diff": -0.726,
+      "tier2_max_drawdown_diff": -0.0011,
+      "tier3_trade_count_diff": 0,
+      "attribution": "indicator initialization, fill timing, cost/margin defaults, position-sizing rounding, timestamp alignment, or float ordering"
+    }
+  ]
+}

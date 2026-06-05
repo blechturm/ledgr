@@ -81,7 +81,7 @@ Review focus:
 ## Batch 2.5 - Cost Resolver Measurement Spike
 
 Ticket: `LDG-2575`
-Status: Planned
+Status: Completed
 
 Goal: measure the per-fill cost-resolver overhead introduced by Batch 2
 against the v0.1.8.11 peer benchmark baseline. The spike output decides
@@ -100,6 +100,21 @@ Exit criteria:
 - Peer benchmark record bundle archived under
   `dev/bench/results/v0.1.9.1_record/` with the new with-costs row.
 - Horizon status update applied if the verdict is `horizon-signal`.
+
+Closeout:
+
+- Record command completed on 2026-06-05 with `--engine-set ledgr-cost`,
+  `--n-inst 500`, and `--n-days 1260`.
+- Record bundle archived at `dev/bench/results/v0.1.9.1_record/`.
+- Synthesis written to
+  `inst/design/spikes/cost_resolver_measurement_spike/measurement_synthesis.md`.
+- Verdict: `ship-with-known-overhead`; the single record row showed a
+  5.26s / 6.5%
+  engine-phase delta versus `ledgr_cost_zero()`, but a focused resolver-only
+  loop over the same 68,201 fill count measured 0.26s total public-chain
+  resolver delta, about 3.8 microseconds per fill. LDG-2570 NEWS should name
+  the observed xlarge row delta with that attribution caveat.
+- No horizon status update required.
 
 Review focus:
 
