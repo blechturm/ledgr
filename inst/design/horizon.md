@@ -1468,14 +1468,22 @@ line is a four-tick arc culminating in walk-forward:
 - **v0.1.9.1** -- public transaction-cost API
   (`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`,
   accepted, no amendments, spec-cut ready).
-- **v0.1.9.2** -- sweep artifact persistence (RFC cycle scheduled; see
-  2026-06-05 sweep RFC entry below).
+- **v0.1.9.2** -- sweep artifact persistence (RFC cycle accepted
+  2026-06-07; see accepted sweep RFC entry below).
 - **v0.1.9.3** -- target-risk layer + per-pulse fill-loop restructure
   (`rfc_chainable_risk_oms_policy_boundary_synthesis.md` plus the
   per-pulse restructure prereq named in the v0.1.9 roadmap section).
 - **v0.1.9.4** -- walk-forward evaluation (culmination;
   `rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` with
   Amendments 1 + 2 + Section 17 ticket-cut gates).
+
+**Status update 2026-06-07:** the v0.1.9.2 sweep persistence RFC cycle
+is accepted and the spec packet has opened from
+`inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
+The cost-identity consumption obligation from v0.1.9.1 is satisfied by
+the accepted synthesis: retention remains non-identity in Section 4, and
+`cost_model_hash` / `cost_plan_json` are persisted on saved sweep
+artifacts in Section 6.
 
 **Arc rationale: forward-dependency discipline.** Each tick produces
 identity or infrastructure that walk-forward consumes when it
@@ -1520,9 +1528,10 @@ decision when its window opens.
 
 **Cross-cycle obligations recorded by this sequencing:**
 
-- v0.1.9.2 sweep RFC seed v1 must consume v0.1.9.1 cost-identity
-  bindings (already captured in the 2026-06-05 sweep RFC schedule
-  entry below).
+- v0.1.9.2 sweep persistence consumed v0.1.9.1 cost-identity bindings
+  in the accepted synthesis: retention is non-identity, while
+  `cost_model_hash` and `cost_plan_json` are persisted on saved sweep
+  artifacts.
 - v0.1.9.3 target-risk spec packet must produce risk-chain identity
   that walk-forward's Section 17 gate matrix already references in
   its current bindings (matrix is set up, needs target-risk to
@@ -1615,100 +1624,197 @@ v0.1.9.4 spec-cut writer has them in hand and the obligations are
 visible from outside the cost-API and walk-forward synthesis
 artifacts.
 
-### 2026-06-05 [research] v0.1.9.2 sweep artifact persistence RFC cycle scheduled
+### 2026-06-05 [research] v0.1.9.2 sweep artifact persistence RFC cycle accepted
 
-Following the maintainer decision on v0.1.9 line sequencing (see
-2026-06-05 sequencing entry above), v0.1.9.2 will start with a full
-RFC cycle per `inst/design/rfc_cycle.md`. The sweep artifact
-persistence work has roadmap direction (roadmap v0.1.9.x slot) but
-no prior RFC artifacts; the cycle starts from a fresh seed v1.
+**Status update 2026-06-07:** the scheduled RFC cycle is complete.
+Maintainer accepted the synthesis and closed the cycle after final review.
+The accepted cycle artifacts are:
 
-**Trigger and dependency:**
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_seed.md`;
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_response.md`;
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_seed_v2.md`;
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
 
-Seed v1 can begin as soon as maintainer bandwidth allows. The cycle
-has no blocking dependency on cost-API spec-cut finalization because
-the cost-API synthesis
-(`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`) is
-already accepted with no amendments and binds the two cost-identity
-fields (`cost_model_hash`, `cost_plan_json`) on run config. Sweep
-persistence consumes those bound fields directly; the remaining
-synthesis Section 13 open questions for the cost-API spec-cut (legacy
-shape handling, NULL default, etc.) do not affect what sweep
-persistence stores per candidate.
+The v0.1.9.2 spec packet opens from the synthesis. Bound scope is durable
+sweep artifact persistence plus optional retained net portfolio equity/return
+series for completed candidates. The accepted surface includes
+`ledgr_sweep_retention()`, `retain = ledgr_sweep_retention()` on
+`ledgr_sweep()`, save/open/list/info helpers, long and wide retained-series
+accessors, cost identity persistence, reopened-sweep candidate compatibility,
+and a compact DuckDB schema over `sweeps`, `sweep_candidates`, and
+`sweep_returns`.
 
-**Cycle stages (planned, per `rfc_cycle.md`):**
+Explicit non-scope remains load-bearing: no ranking helpers, named selection
+views, winner-picking, automatic promotion, full ledger/fill/trade retention
+for every candidate, benchmark-relative diagnostics, signal decay tooling,
+implementation/cost decay tooling, gross-vs-net cost attribution, or
+walk-forward integration in v0.1.9.2. Promotion from reopened sweeps still
+re-executes the selected candidate from its reproduction key instead of
+committing stored scalar or retained-return rows as a full run.
 
-1. research input -- skip unless prior art beyond the roadmap entry
-   surfaces.
-2. seed v1 -- fresh draft scoping persistence shape, identity, ranking
-   view surface, separation from `ledgr_promote()` and selection
-   rules.
-3. response -- adversarial review by the rotation partner.
-4. response review -- maintainer.
-5. seed v2 -- incorporates findings if non-trivial.
-6. maintainer decisions -- only if escalated product choices surface.
-7. synthesis -- different author from seed v2.
-8. final review -- different author from synthesis.
-9. horizon entry -- post-acceptance direction record.
+The cycle also preserves the forward dependency shape from the 2026-06-05
+v0.1.9.x sequencing entry: v0.1.9.4 walk-forward may consume the v0.1.9.2
+sweep-retention substrate, but walk-forward owns fold/window semantics,
+selected-candidate test execution, per-fold provenance, and any per-fold
+retention dimensions.
 
-**Role rotation (planned, maintainer overrides at start):** the
-cost-API and walk-forward cycles both had Codex authoring seeds and
-Claude authoring synthesis. Sweep persistence rotates: Claude authors
-seed v1 + seed v2; Codex authors synthesis; Claude authors final
-review. This matches the "v2 and synthesis are different authors"
-discipline from `rfc_cycle.md`. Maintainer overrides at scoping time
-if context-window or coherence requires.
+This entry records acceptance and closure. The synthesis is authoritative for
+ticket-cut gates; this horizon entry does not authorize implementation beyond
+the v0.1.9.2 spec packet.
 
-**Sequencing windows (indicative, not binding):**
+### 2026-06-07 [research] Post-synthesis sweep persistence future obligations
 
-- Seed v1 kickoff: when maintainer bandwidth allows, after v0.1.9.1
-  cost-API spec-cut is started so the cost-identity surface is locked
-  for the seed.
-- Response, seed v2 if needed, synthesis, final review: standard cycle
-  cadence per prior three completed cycles (OMS, walk-forward, cost
-  API).
-- Synthesis acceptance target: before v0.1.9.1 cost-API ships, so
-  v0.1.9.2 ticket-cut can begin immediately on top of a shipped
-  cost-API. If synthesis slips, v0.1.9.2 ticket-cut waits; v0.1.9.1
-  release is not blocked.
+The accepted v0.1.9.2 sweep persistence synthesis deliberately leaves several
+directions out of the first packet. These are future obligations, not active
+scope:
 
-**Scope inputs for the seed v1:**
+- walk-forward per-fold/per-candidate return-series retention;
+- signal decay substrate;
+- implementation/cost-decay substrate and gross-vs-net definition;
+- selection-integrity diagnostic helpers over retained returns;
+- PerformanceAnalytics adapter;
+- per-instrument and per-trade retention;
+- cross-sweep comparison helpers;
+- sweep extension/append semantics;
+- structured sweep notes;
+- `persist =` narrower than `retain =`;
+- benchmark-relative return decay;
+- snapshot-decoupled sweep reopening;
+- saved-sweep schema migration;
+- pushed-down or lazy wide-return pivots for very large saved sweeps.
 
-- Roadmap entry under v0.1.9.x sweep artifact persistence: persist
-  grid definitions, candidate summaries, warnings / errors, metric
-  context, feature-set hashes, execution seeds, selection / ranking
-  views, manifest data, snapshot locator hints.
-- Explicit non-scope per roadmap: full ledger, fill, trade, equity
-  artifacts per candidate (deferred to a future diagnostic-retention
-  RFC).
-- Forward obligation from v0.1.9.1 cost-API
-  (synthesis Sections 6.1 and 14:560): store `cost_model_hash` and
-  `cost_plan_json` per persisted candidate's run config record.
-- Forward obligation from walk-forward
-  (`rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` Amendment 1 and
-  Amendment 2): walk-forward's per-fold scoring produces
-  candidate-level rows with bound identity recipes. Sweep persistence
-  RFC must not redefine candidate identity; walk-forward bindings are
-  authoritative when both surfaces touch the same candidate.
-- Separation from automatic winner selection: persistence is the
-  artifact, selection is downstream. Do not weaken `ledgr_promote()`
-  or `run_promotion_context`.
-- Pre-CRAN posture: artifact schema may break across cycles; no
-  backward-compatibility burden.
+The benchmark-relative return-decay item belongs with the v0.2.x benchmark
+context and active-metrics substrate. It should not be implemented in v0.1.9.2,
+because v0.1.9.2 stores net strategy equity/returns only and does not define
+aligned benchmark/reference returns.
 
-**Asset-class expansion context (load-bearing):**
+This entry is non-authorizing. It keeps the post-synthesis obligations visible
+for later RFC/spec windows without expanding the active sweep persistence
+packet.
 
-The ledgr engine currently supports spot assets only; future asset
-classes (derivatives, FX) will introduce additional accounting models
-through the closed `compiled_accounting_model` enum (see 2026-06-02
-scope-guard entry and 2026-06-05 spot-FIFO-default candidate entry).
-The sweep persistence RFC should design the candidate identity surface
-to admit future asset-class metadata without schema break -- e.g., do
-not hardcode spot-asset assumptions into the persisted ranking view or
-selection rule surface.
+### 2026-06-05 [planning] v0.1.9.5 documentation, teaching, and contracts release after v0.1.9.x arc
 
-This entry records the schedule. The actual seed v1 prompt and any
-scope adjustments live in the cycle's own artifacts when authored.
+After v0.1.9.4 walk-forward closes the v0.1.9.x arc, ledgr will have
+shipped: public cost-API and identity surfaces (v0.1.9.1), sweep
+artifact persistence (v0.1.9.2), target-risk plus per-pulse restructure
+(v0.1.9.3), and walk-forward evaluation (v0.1.9.4). The codified-
+architecture surface will have grown to roughly the same scale as
+v0.1.8.7-10 did before v0.1.8.11, with the same discoverability-decay
+risk. v0.1.9.5 should mirror the v0.1.8.11 pattern: entropy-management
+release before v0.2.x feature work begins.
+
+**Authoritative inputs at spec-cut time (indicative):**
+
+- The four completed v0.1.9.x packets and their release closeouts.
+- `rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`.
+- `rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` with Amendments
+  1 + 2 and Section 17 ticket-cut gates.
+- `rfc_chainable_risk_oms_policy_boundary_synthesis.md`.
+- The v0.1.9.2 sweep persistence synthesis (when it lands).
+- Accumulated horizon entries from the v0.1.9.x arc.
+
+**Workstreams (indicative; spec packet binds final shape):**
+
+- **Workstream A -- Contracts audit and structural pass.**
+  `contracts.md` needs target-risk layer language, walk-forward
+  identity language, and sweep persistence shape. Same
+  "audit first, route findings, edit only after routing" discipline
+  as v0.1.8.11.
+
+- **Workstream B -- User-facing vignette refresh.**
+  - `strategy-development.qmd`: simplified to target authoring; remove
+    what migrates to the new risk-and-cost vignette.
+  - `metrics-and-accounting.qmd`: cost-aware metric-interpretation
+    touch (the substantive cost rewrite shipped in v0.1.9.1 Batch 6).
+  - `research-workflow.qmd`: walk-forward integration.
+  - `research-to-production.qmd`: depth pass beyond the v0.1.9.1
+    release-gate surface migration.
+
+- **Workstream C -- New vignettes.**
+  - **Walk-forward research arc** (headline). Anchors the v0.1.9.4
+    evaluation surface: snapshot to folds to train sweep to
+    selection rule to test execution to candidate extraction to
+    promotion.
+  - **Risk-and-cost execution policy**. Teaches the v0.1.9.1 cost-API
+    plus v0.1.9.3 target-risk layers as the strategy-to-fill
+    in-between. Diagram and narrative of the pipeline
+    (targets -> risk -> timing -> cost -> fill), why each layer
+    exists, what each does not do. Worked examples for cost
+    composition (quoted-spread convention, chain order rule) and
+    classed risk-step authoring. Explicit non-goals named to bound
+    teaching scope: pre-trade alpha-vs-cost filtering, liquidity,
+    OMS, broker reconciliation, financing, taxes, TCA.
+
+- **Workstream D -- Maintainer manual articles with Implementation
+  Trace.** Cost resolver, target-risk layer, walk-forward fold
+  machinery. Each gets both Synthesis and Implementation Trace per
+  the v0.1.8.11 Section 3.7 two-layer standard.
+
+- **Workstream E -- Identity contract reference v2.** Extend the
+  Batch 4 `?ledgr_identity_fields` substrate to cover risk-chain
+  identity and walk-forward `candidate_key` / `session_id`
+  composition. Pull the cost-API forward-obligation rows
+  (synthesis Section 14:560) and the walk-forward Section 17
+  gate-row obligations (2026-06-05 horizon entry above) into the
+  canonical reference.
+
+- **Workstream F -- v0.1.9.x performance and decisions internal
+  arc.** Narrative covering target-risk's per-pulse restructure,
+  walk-forward's wrapper-not-engine choice, the cost-API spec-cut
+  discipline, and the LDG-2575 measurement-spike methodology
+  refinement (row-total measurement + focused-loop attribution).
+  Same internal-first-not-marketing posture v0.1.8.11 used.
+
+- **Workstream G -- Release surfaces.** NEWS, roadmap, horizon
+  housekeeping, design index, RFC index, performance-arc index
+  update.
+
+**Naming rationale (risk-and-cost vs execution-policy):**
+
+The v0.2.x roadmap has an `Execution Policy Pipeline` north-star RFC
+planned (broader scope: OMS, liquidity, order policy, paper / live).
+The v0.1.9.5 vignette is bounded to risk plus cost as the
+in-between layer between strategy targets and fills; timing stays in
+`execution-semantics.qmd` with a forward-reference. The
+`risk-and-cost` name avoids collision with the future v0.2.x
+execution-policy work.
+
+**Sequencing:**
+
+- Spec scoping starts during v0.1.9.4 ticket-cut so target-risk
+  decisions (v0.1.9.3 shipped earlier) and walk-forward decisions
+  (Section 17 gates) are absorbed as they bind. Lead time analogous
+  to the v0.1.8.10 to v0.1.8.11 transition.
+- Implementation starts after v0.1.9.4 ships.
+- Auditr cycle runs against the refreshed v0.1.9.5 surface; findings
+  absorb into v0.1.9.6 or v0.2.x feature packets. Same auditr-after
+  pattern the v0.1.8.11 to v0.1.9.1 flow established.
+
+**Non-scope:**
+
+- Marketing or external benchmark claims.
+- New public APIs (the docs cycle surfaces what shipped; if a doc
+  surfaces a real contract bug, route to a follow-on ticket).
+- Execution-semantics changes.
+- v0.2.x feature work (liquidity, OMS, snapshot lineage, paper /
+  live).
+- Walk-forward Section 17 gate-row additions to the synthesis
+  (those bind at v0.1.9.4 ticket-cut, not in the docs cycle).
+
+**Relationship to the existing roadmap placeholder:**
+
+The roadmap currently carries a `v0.1.9.x Follow-On Documentation
+After v0.1.8.11` entry, which was the bounded-remainder placeholder
+in case v0.1.8.11 left documentation work undone. v0.1.9.5
+supersedes that placeholder: it is the substantive teaching-and-
+entropy cycle for the v0.1.9.x arc, not a remainder cleanup. The
+roadmap entry should be updated when v0.1.9.5 reaches active
+planning (per the roadmap discipline that next-planned milestones
+carry detail and later ones carry intent bullets only).
+
+This entry records the intent. The actual spec packet binds the
+workstream details when v0.1.9.4 closes; the auditr cycle that
+follows v0.1.9.5 will produce the next round of THEME-style findings.
 
 ### 2026-06-01 [strategy] Strategy callback contract + authoring helpers post-v0.1.8.x direction
 
