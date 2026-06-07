@@ -39,17 +39,20 @@ testthat::test_that("promoted runs write and read durable promotion context", {
   testthat::expect_identical(context$promotion_context_version, "ledgr_promotion_v1")
   testthat::expect_identical(context$source, "ledgr_promote")
   testthat::expect_identical(context$note, "selected from reordered view")
-  testthat::expect_identical(context$selected_candidate$run_id, "b")
+  testthat::expect_identical(context$selected_candidate$candidate_id, "b")
+  testthat::expect_identical(context$selected_candidate$candidate_row, 2)
   testthat::expect_identical(context$selected_candidate$params_json, as.character(canonical_json(list(qty = 2))))
   testthat::expect_identical(context$source_sweep$sweep_id, attr(results, "sweep_id"))
 
-  summary_ids <- vapply(context$candidate_summary, `[[`, character(1), "run_id")
+  summary_ids <- vapply(context$candidate_summary, `[[`, character(1), "candidate_id")
   testthat::expect_identical(summary_ids, c("b", "a"))
+  summary_rows <- vapply(context$candidate_summary, `[[`, numeric(1), "candidate_row")
+  testthat::expect_identical(summary_rows, c(2, 1))
   testthat::expect_identical(context$candidate_summary[[1]]$params_json, as.character(canonical_json(list(qty = 2))))
   testthat::expect_identical(context$candidate_summary[[2]]$params_json, as.character(canonical_json(list(qty = 1))))
 
   by_store <- ledgr_run_promotion_context(exp, "promoted-context-run")
-  testthat::expect_identical(by_store$selected_candidate$run_id, "b")
+  testthat::expect_identical(by_store$selected_candidate$candidate_id, "b")
 
   bt_no_note <- ledgr_promote(exp, candidate, run_id = "promoted-context-no-note")
   on.exit(close(bt_no_note), add = TRUE)

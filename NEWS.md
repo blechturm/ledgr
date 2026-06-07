@@ -1,3 +1,10 @@
+# ledgr 0.1.9.2
+
+- Pre-CRAN sweep candidate rows now expose `candidate_id` plus
+  one-indexed `candidate_row` instead of overloading `run_id`. Committed
+  runs still use `run_id`; sweep promotion context records the source
+  `candidate_id` / `candidate_row` separately from the promoted run ID.
+
 # ledgr 0.1.9.1
 
 - Added the public transaction-cost API: classed `ledgr_cost_*()` model

@@ -1,6 +1,6 @@
 # ledgr v0.1.9.2 Batch Plan
 
-**Status:** Batch 1 implementation ready for Claude review.
+**Status:** Batch 2 implementation ready for Claude review.
 
 This batch plan sequences the v0.1.9.2 sweep artifact persistence packet
 without expanding scope beyond `v0_1_9_2_spec.md` and the accepted
@@ -63,7 +63,7 @@ Review note:
 ## Batch 1 - Retention Surface And Identity Floor
 
 Tickets: `LDG-2582`, `LDG-2583`
-Status: Review Pending
+Status: Completed
 
 Goal: add the public retention constructor and `ledgr_sweep()` argument while
 proving that retention is non-identity before any retained rows or saved-sweep
@@ -99,11 +99,12 @@ Implementation note:
   are unchanged modulo sweep id for `returns = "none"` versus
   `returns = "completed"`.
 - No retained return/equity series capture and no persistence API were added.
+- Batch 1 was committed in `75d80f5` after positive Claude review.
 
 ## Batch 2 - Candidate Identity Rename And Row Key
 
 Ticket: `LDG-2586`
-Status: Planned
+Status: Review Pending
 
 Goal: rename public sweep candidate identifiers from candidate-row `run_id` to
 `candidate_id` and bind `candidate_row` before persistence schema work depends
@@ -124,6 +125,17 @@ Review focus:
 - The pre-CRAN rename is limited to sweep candidate rows.
 - Committed-run identity and existing run-store APIs do not drift.
 - dplyr survivability is preserved for candidate extraction.
+
+Implementation note:
+
+- Renamed public sweep result rows from `run_id` to `candidate_id`.
+- Added `candidate_row` as the 1-indexed original grid row carried through
+  candidate extraction, reproduction keys, and promotion context.
+- Kept committed-run `run_id` semantics and internal event/run handlers
+  unchanged.
+- Updated focused tests, sweep-facing examples, NEWS, and candidate help text.
+- Verified `test-sweep.R`, `test-sweep-retention.R`,
+  `test-promotion-context.R`, and `test-sweep-parallel.R`.
 
 ## Batch 3 - In-Memory Retained Series And Accessors
 

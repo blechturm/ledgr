@@ -399,7 +399,7 @@ ranked <- sweep |>
 top_n <- ranked |>
   slice_head(n = 5) |>
   select(
-    run_id, status, final_equity, total_return, sharpe_ratio,
+    candidate_id, candidate_row, status, final_equity, total_return, sharpe_ratio,
     params, feature_params, execution_seed
   )
 
@@ -407,7 +407,7 @@ glimpse(top_n)
 
 issues <- sweep |>
   filter(status != "DONE") |>
-  select(any_of(c("run_id", "status", "error_class", "error_msg", "warnings"))) |>
+  select(any_of(c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings"))) |>
   as_tibble()
 
 issues
@@ -493,7 +493,7 @@ debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
 failed_sweep <- ledgr_sweep(debug_exp, debug_grid)
 
 failed_sweep |>
-  select(run_id, status, error_class, error_msg, params)
+  select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
 Use the failed row as an interactive debugging handle: inspect `error_class`,

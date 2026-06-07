@@ -391,7 +391,8 @@ testthat::test_that("ledgr_sweep returns ordered summary rows without store writ
   after_telemetry <- ls(ledgr:::.ledgr_telemetry_registry, all.names = TRUE)
 
   testthat::expect_s3_class(out, "ledgr_sweep_results")
-  testthat::expect_identical(out$run_id, c("a", "b"))
+  testthat::expect_identical(out$candidate_id, c("a", "b"))
+  testthat::expect_identical(out$candidate_row, 1:2)
   testthat::expect_identical(out$status, c("DONE", "DONE"))
   testthat::expect_true(all(is.finite(out$final_equity)))
   testthat::expect_true(all(is.finite(out$total_return)))
@@ -419,7 +420,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
   testthat::expect_identical(
     names(seeded),
     c(
-      "run_id", "status", "final_equity", "total_return",
+      "candidate_id", "candidate_row", "status", "final_equity", "total_return",
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
@@ -544,14 +545,17 @@ testthat::test_that("ledgr_candidate selects by label or position and handles fa
   by_label <- ledgr_candidate(out, "b")
   by_position <- ledgr_candidate(out, 1)
   testthat::expect_s3_class(by_label, "ledgr_sweep_candidate")
-  testthat::expect_identical(by_label$run_id, "b")
+  testthat::expect_identical(by_label$candidate_id, "b")
+  testthat::expect_identical(by_label$candidate_row, 2L)
   testthat::expect_identical(by_label$params, list(qty = 2))
-  testthat::expect_identical(by_position$run_id, "a")
+  testthat::expect_identical(by_position$candidate_id, "a")
+  testthat::expect_identical(by_position$candidate_row, 1L)
   testthat::expect_identical(by_position$params, list(qty = 1))
   testthat::expect_identical(by_label$sweep_meta$sweep_id, attr(out, "sweep_id"))
   testthat::expect_s3_class(by_label$selection_view, "tbl_df")
   testthat::expect_identical(nrow(by_label$selection_view), 2L)
-  testthat::expect_identical(by_label$selection_view$run_id, c("a", "b"))
+  testthat::expect_identical(by_label$selection_view$candidate_id, c("a", "b"))
+  testthat::expect_identical(by_label$selection_view$candidate_row, 1:2)
 
   features <- function(params) {
     if (params$n < 1) {
@@ -622,6 +626,8 @@ testthat::test_that("sweep candidate key supports later durable materialization"
   testthat::expect_s3_class(key, "ledgr_candidate_reproduction_key")
   testthat::expect_identical(key$reproduction_key_version, "ledgr_candidate_reproduction_key_v1")
   testthat::expect_identical(key$source_sweep$sweep_id, attr(results, "sweep_id"))
+  testthat::expect_identical(key$candidate$candidate_id, "candidate")
+  testthat::expect_identical(key$candidate$candidate_row, 1L)
   testthat::expect_identical(key$candidate$params, list(qty = 1, threshold = 102))
   testthat::expect_identical(key$candidate$feature_params, candidate$feature_params)
   testthat::expect_identical(key$snapshot$snapshot_id, snapshot$snapshot_id)

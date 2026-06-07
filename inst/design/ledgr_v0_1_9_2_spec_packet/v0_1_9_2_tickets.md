@@ -126,7 +126,7 @@ scope: v0.1.9.2
 Priority: P0
 Effort: M
 Dependencies: LDG-2581
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -175,7 +175,7 @@ scope: retention_constructor_and_argument
 Priority: P0
 Effort: M
 Dependencies: LDG-2582
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -334,7 +334,7 @@ scope: long_and_wide_accessors
 Priority: P0
 Effort: M
 Dependencies: LDG-2581
-Status: Planned
+Status: Review Pending
 
 ### Description
 

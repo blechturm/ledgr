@@ -22,7 +22,7 @@ tickets:
 
   - id: "LDG-2582"
     title: "Sweep Retention Constructor And Argument"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -39,7 +39,7 @@ tickets:
 
   - id: "LDG-2583"
     title: "Retention Identity Exclusion"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -95,7 +95,7 @@ tickets:
 
   - id: "LDG-2586"
     title: "Candidate ID Rename And Row Identity"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:

@@ -342,25 +342,19 @@ sweep
 ```
 
     # ledgr sweep -- sweep_946be1f8eb91a69a
-    # A tibble: 16 x 7
-       run_id            status sharpe_ratio total_return max_drawdown n_trades execution_seed
-       <chr>             <chr>         <dbl> <chr>        <chr>           <int>          <int>
-     1 feature_9a29b31d~ DONE          0.541 +0.0%        -0.1%               6     1431699333
-     2 feature_9a29b31d~ DONE          3.07  +0.1%        -0.0%               3      189084572
-     3 feature_9a29b31d~ DONE          0.541 +0.0%        -0.1%               6     1738642673
-     4 feature_9a29b31d~ DONE          3.08  +0.2%        -0.1%               3      576288649
-     5 feature_af0f94c9~ DONE          1.80  +0.1%        -0.0%               5     1257566549
-     6 feature_af0f94c9~ DONE          2.05  +0.1%        -0.0%               3      985876383
-     7 feature_af0f94c9~ DONE          1.80  +0.2%        -0.1%               5      564643782
-     8 feature_af0f94c9~ DONE          2.05  +0.1%        -0.1%               3      319026249
-     9 feature_6ff6fe3a~ DONE          1.38  +0.1%        -0.0%               3     1976633811
-    10 feature_6ff6fe3a~ DONE          2.12  +0.1%        -0.0%               2     1415197276
-    11 feature_6ff6fe3a~ DONE          1.38  +0.1%        -0.1%               3      354704372
-    12 feature_6ff6fe3a~ DONE          2.12  +0.2%        -0.1%               2      972927993
-    13 feature_fa560ccb~ DONE          1.34  +0.1%        -0.0%               2     1947110290
-    14 feature_fa560ccb~ DONE          1.30  +0.0%        -0.0%               2      319893641
-    15 feature_fa560ccb~ DONE          1.34  +0.1%        -0.1%               2     2090330625
-    16 feature_fa560ccb~ DONE          1.30  +0.1%        -0.1%               2     1531442031
+    # A tibble: 16 x 8
+       candidate_id      candidate_row status sharpe_ratio total_return max_drawdown n_trades execution_seed
+       <chr>                     <int> <chr>         <dbl> <chr>        <chr>           <int>          <int>
+     1 feature_9a29b31d~             1 DONE          0.541 +0.0%        -0.1%               6     1431699333
+     2 feature_9a29b31d~             2 DONE          3.07  +0.1%        -0.0%               3      189084572
+     3 feature_9a29b31d~             3 DONE          0.541 +0.0%        -0.1%               6     1738642673
+     4 feature_9a29b31d~             4 DONE          3.08  +0.2%        -0.1%               3      576288649
+     5 feature_af0f94c9~             5 DONE          1.80  +0.1%        -0.0%               5     1257566549
+     6 feature_af0f94c9~             6 DONE          2.05  +0.1%        -0.0%               3      985876383
+     7 feature_af0f94c9~             7 DONE          1.80  +0.2%        -0.1%               5      564643782
+     8 feature_af0f94c9~             8 DONE          2.05  +0.1%        -0.1%               3      319026249
+     9 feature_6ff6fe3a~             9 DONE          1.38  +0.1%        -0.0%               3     1976633811
+    10 feature_6ff6fe3a~            10 DONE          2.12  +0.1%        -0.0%               2     1415197276
 
     # i 16 combinations: 16 done, 0 failed.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
@@ -417,7 +411,7 @@ ranked <- sweep |>
 top_n <- ranked |>
   slice_head(n = 5) |>
   select(
-    run_id, status, final_equity, total_return, sharpe_ratio,
+    candidate_id, candidate_row, status, final_equity, total_return, sharpe_ratio,
     params, feature_params, execution_seed
   )
 
@@ -425,8 +419,9 @@ glimpse(top_n)
 ```
 
     Rows: 5
-    Columns: 8
-    $ run_id         <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae~
+    Columns: 9
+    $ candidate_id   <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae~
+    $ candidate_row  <int> 4, 2, 12, 10, 8
     $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
     $ final_equity   <dbl> 100225.1, 100112.6, 100164.7, 100082.3, 100141.2
     $ total_return   <dbl> 0.0022514428, 0.0011257214, 0.0016467258, 0.0008233629, 0.0014119~
@@ -438,15 +433,15 @@ glimpse(top_n)
 ``` r
 issues <- sweep |>
   filter(status != "DONE") |>
-  select(any_of(c("run_id", "status", "error_class", "error_msg", "warnings"))) |>
+  select(any_of(c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings"))) |>
   as_tibble()
 
 issues
 ```
 
-    # A tibble: 0 x 5
-    # i 5 variables: run_id <chr>, status <chr>, error_class <chr>, error_msg <chr>,
-    #   warnings <list>
+    # A tibble: 0 x 6
+    # i 6 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
+    #   error_class <chr>, error_msg <chr>, warnings <list>
 
 Some columns are list columns. `glimpse()` keeps the table readable
 while still showing that params, feature params, warnings, and
@@ -550,15 +545,15 @@ debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
 failed_sweep <- ledgr_sweep(debug_exp, debug_grid)
 
 failed_sweep |>
-  select(run_id, status, error_class, error_msg, params)
+  select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
     # ledgr sweep -- sweep_5fab6626ff284a59
-    # A tibble: 2 x 2
-      run_id                status
-      <chr>                 <chr>
-    1 strategy_69e7ad01d1e8 DONE
-    2 strategy_8d5f90d900e7 FAILED
+    # A tibble: 2 x 3
+      candidate_id          candidate_row status
+      <chr>                         <int> <chr>
+    1 strategy_69e7ad01d1e8             1 DONE
+    2 strategy_8d5f90d900e7             2 FAILED
 
     # i 2 combinations: 1 done, 1 failed.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.

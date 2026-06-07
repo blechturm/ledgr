@@ -82,7 +82,7 @@ testthat::test_that("ledgr_sweep attaches retention metadata without changing de
   testthat::expect_identical(
     names(out),
     c(
-      "run_id", "status", "final_equity", "total_return",
+      "candidate_id", "candidate_row", "status", "final_equity", "total_return",
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",

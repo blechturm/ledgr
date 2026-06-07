@@ -105,8 +105,10 @@ testthat::test_that("parallel sweep matches sequential deterministic candidate r
     ledgr_parallel_sweep_comparable(parallel_three),
     ledgr_parallel_sweep_comparable(sequential)
   )
-  testthat::expect_identical(parallel_two$run_id, c("a", "b", "c"))
-  testthat::expect_identical(parallel_three$run_id, c("a", "b", "c"))
+  testthat::expect_identical(parallel_two$candidate_id, c("a", "b", "c"))
+  testthat::expect_identical(parallel_three$candidate_id, c("a", "b", "c"))
+  testthat::expect_identical(parallel_two$candidate_row, 1:3)
+  testthat::expect_identical(parallel_three$candidate_row, 1:3)
 })
 
 testthat::test_that("parallel sweep preserves warning and failure row association", {
@@ -136,7 +138,8 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
 
   out <- ledgr_sweep(exp, grid, seed = 123L, workers = 2L)
 
-  testthat::expect_identical(out$run_id, c("ok", "noisy", "bad", "tail"))
+  testthat::expect_identical(out$candidate_id, c("ok", "noisy", "bad", "tail"))
+  testthat::expect_identical(out$candidate_row, 1:4)
   testthat::expect_identical(out$status, c("DONE", "DONE", "FAILED", "DONE"))
   testthat::expect_true(length(out$warnings[[1]]) == 0L)
   testthat::expect_true(any(grepl("warn-noisy", vapply(out$warnings[[2]], conditionMessage, character(1)), fixed = TRUE)))

@@ -1,6 +1,6 @@
 # v0.1.9.2 Spec Packet
 
-**Status:** Opened after accepted RFC synthesis; Batch 1 implementation is
+**Status:** Opened after accepted RFC synthesis; Batch 2 implementation is
 ready for review.
 **Opened:** 2026-06-07.
 **Scope source:** `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
