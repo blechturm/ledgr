@@ -3,9 +3,9 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_9_1_spec_packet/`.
-**Active packet:** v0.1.9.2 sweep artifact persistence.
-**Active packet path:** `inst/design/ledgr_v0_1_9_2_spec_packet/`.
+**Latest completed packet:** `inst/design/ledgr_v0_1_9_2_spec_packet/`.
+**Active packet:** None; v0.1.9.3 target-risk planning is next.
+**Active packet path:** None.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -106,7 +106,7 @@ versioned packet.
 | v0.1.8.10 | Done | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, scoped public memory-backed sweep opt-in, and measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
 | v0.1.8.11 | Done | Documentation, structure, and cleanup release before v0.1.9 features: contract/design-index audit, RFC decision index, user-facing disclaimer and vignette refresh, internal performance-arc narrative, maintainer manual, benchmark methodology article, and `adr/` + `architecture/` + `maintainer_review/` wind-down. | `inst/design/ledgr_v0_1_8_11_spec_packet/` |
 | v0.1.9.1 | Done | Public transaction-cost model API, explicit timing-model surface, cost identity (`cost_model_hash`, `cost_plan_json`), and bounded auditr identity/disclaimer fixes. | `inst/design/ledgr_v0_1_9_1_spec_packet/` |
-| v0.1.9.2 | Active | Sweep artifact persistence: durable saved-sweep artifacts, optional retained net equity/return series for completed candidates, reopened-sweep candidate compatibility, and compact retention infrastructure for later walk-forward. | `inst/design/ledgr_v0_1_9_2_spec_packet/` |
+| v0.1.9.2 | Done | Sweep artifact persistence: durable saved-sweep artifacts, optional retained net equity/return series for completed candidates, reopened-sweep candidate compatibility, and compact retention infrastructure for later walk-forward. | `inst/design/ledgr_v0_1_9_2_spec_packet/` |
 | v0.1.9.3 | Planned | Target-risk: per-pulse restructure plus chainable risk layer, including risk-chain identity for walk-forward. | Future packet; accepted risk/OMS boundary synthesis |
 | v0.1.9.4 | Planned | Walk-forward culmination: consumes cost identity from v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain identity from v0.1.9.3; Section 17 gates fire here. | Future packet; accepted walk-forward synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |

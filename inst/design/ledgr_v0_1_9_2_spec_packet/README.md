@@ -1,7 +1,7 @@
 # v0.1.9.2 Spec Packet
 
-**Status:** Opened after accepted RFC synthesis; Batch 5 saved-sweep API
-implementation is ready for Claude review.
+**Status:** Complete; v0.1.9.2 release gate passed locally and branch is ready
+for merge/tag.
 **Opened:** 2026-06-07.
 **Scope source:** `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
 
@@ -14,8 +14,8 @@ Packet artifacts:
 - `v0_1_9_2_tickets.md`;
 - `tickets.yml`;
 - `batch_plan.md`;
-- release-gate evidence required by the accepted synthesis, to be added during
-  implementation and closeout.
+- `sweep_retention_storage_smoke.md`;
+- `v0_1_9_2_release_closeout.md`.
 
 This scaffold does not authorize runtime changes by itself. The synthesis and
 reviewed spec/ticket files define implementation scope.

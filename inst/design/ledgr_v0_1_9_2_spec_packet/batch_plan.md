@@ -340,7 +340,7 @@ Implementation note:
 ## Batch 7 - Retained-Series Parity And Storage Evidence
 
 Tickets: `LDG-2591`, `LDG-2592`
-Status: Review Pending
+Status: Completed
 
 Goal: complete the retained-series release-gate matrix and record the accepted
 storage smoke measurement before documentation and release surfaces describe
@@ -381,11 +381,12 @@ Implementation note:
 - Added `sweep_retention_storage_smoke.md`; the storage sanity gate passes
   with `ratio = 0.609524` on the synthesis-bound fixture.
 - Verified `test-sweep-persistence-parity.R`.
+- Completed after positive review before Batch 9 release-gate execution.
 
 ## Batch 8 - Documentation And Release Surfaces
 
 Tickets: `LDG-2594`, `LDG-2595`
-Status: Review Pending
+Status: Completed
 
 Goal: document the saved-sweep workflow and update release/planning surfaces
 after implementation and test evidence exists.
@@ -425,11 +426,12 @@ Implementation note:
   successfully with the generated HTML removed afterward. Tracked generated
   `vignettes/sweeps.md` remains a release-gate build artifact per the accepted
   synthesis.
+- Completed after positive review before Batch 9 release-gate execution.
 
 ## Batch 9 - Release Gate
 
 Ticket: `LDG-2596`
-Status: Planned
+Status: Completed
 
 Goal: verify and close v0.1.9.2 after all implementation, documentation,
 measurement, and release-surface tickets are complete.
@@ -459,3 +461,28 @@ Review focus:
 - The release gate verifies shipped behavior; it does not become a hidden
   implementation batch.
 - The release playbook is read into context before package-gate work begins.
+
+Implementation note:
+
+- Read `inst/design/release_ci_playbook.md` before running package gates.
+- Bumped `DESCRIPTION` to `0.1.9.2`.
+- Ran targeted saved-sweep, retained-series, schema, validation, candidate,
+  promotion, documentation, and API tests.
+- Ran full `testthat::test_local('.', reporter = 'summary')`; passed with one
+  optional Yahoo-path skip.
+- Ran README cold-start through `tools/check-readme-example.R`; passed.
+- Built `ledgr_0.1.9.2.tar.gz`; build passed with known long archival design
+  path warnings.
+- Ran `R CMD check --no-manual --no-build-vignettes`; passed with the accepted
+  no-`inst/doc` vignette warnings and long archival design path NOTE.
+- Ran `tools/check-coverage.R`; generated `coverage.html` with 85.46% coverage,
+  above the 80% gate.
+- Ran pkgdown build after adding the new sweep persistence help topics to
+  `_pkgdown.yml`; passed.
+- Ran WSL/Ubuntu schema and persistence smoke tests after cleaning local
+  compiled artifacts; passed.
+- Regenerated `vignettes/sweeps.md` from `vignettes/sweeps.qmd` after stale
+  generated text was found.
+- Reran anchored stale-claim searches; remaining hits are explicit non-scope
+  statements, existing strategy-helper documentation, or historical NEWS.
+- Release evidence is recorded in `v0_1_9_2_release_closeout.md`.

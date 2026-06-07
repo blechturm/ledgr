@@ -911,7 +911,7 @@ scope: news_and_design_memory
 Priority: P0
 Effort: L
 Dependencies: LDG-2581, LDG-2582, LDG-2583, LDG-2584, LDG-2585, LDG-2586, LDG-2587, LDG-2588, LDG-2589, LDG-2590, LDG-2591, LDG-2592, LDG-2593, LDG-2594, LDG-2595
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -919,10 +919,20 @@ Run the v0.1.9.2 release gate, collect evidence, and prepare release closeout.
 
 ### Tasks
 
+- Read `inst/design/release_ci_playbook.md` before running local release gates.
 - Run targeted saved-sweep, retained-series, schema, validation, candidate,
   and documentation tests.
 - Run full testthat suite.
+- Run README cold-start under installed-package semantics:
+  `Rscript --vanilla tools/check-readme-example.R`.
 - Run package build/check per `release_ci_playbook.md`.
+- Run `tools/check-coverage.R` when coverage behavior changed or coverage is
+  part of release evidence.
+- Run pkgdown build because documentation, vignettes, examples, and NEWS
+  changed.
+- Run the local WSL/Ubuntu gate when available because the packet touched
+  DuckDB persistence, executable vignettes, file paths, and release-sensitive
+  examples.
 - Run storage smoke measurement and record result.
 - Review generated docs and NEWS.
 - Run stale-claim searches for non-scope leakage.
@@ -943,11 +953,41 @@ Run the v0.1.9.2 release gate, collect evidence, and prepare release closeout.
 - Docs and generated artifacts are consistent with the release surface.
 - Release closeout cites the accepted synthesis, this spec packet, and gate
   evidence.
+- Release closeout records which exact gates ran, which gates were skipped,
+  and the accepted reason for every skipped or failed-then-rerun gate.
 
 ### Verification
 
-Targeted tests, full tests, R CMD build/check, storage smoke document,
-documentation render, release playbook checklist, and closeout review.
+Targeted tests, full tests, README cold-start, R CMD build/check, coverage
+where applicable, pkgdown build, WSL/Ubuntu gate where available, storage smoke
+document, documentation render, release playbook checklist, stale-claim
+searches, and closeout review.
+
+Completion note (2026-06-08):
+
+- Read `inst/design/release_ci_playbook.md` before running gates.
+- Targeted saved-sweep, retained-series, schema, validation, candidate,
+  promotion, documentation, and API tests passed.
+- Full `testthat::test_local('.', reporter = 'summary')` passed with one
+  optional Yahoo-path skip.
+- README cold-start passed through `tools/check-readme-example.R`.
+- `R CMD build --no-build-vignettes .` produced `ledgr_0.1.9.2.tar.gz`; build
+  emitted known long archival design path warnings.
+- `R CMD check --no-manual --no-build-vignettes ledgr_0.1.9.2.tar.gz` passed
+  with accepted no-`inst/doc` vignette warnings and the known long archival
+  design path NOTE.
+- `tools/check-coverage.R` generated `coverage.html` at 85.46%, above the 80%
+  gate.
+- pkgdown build passed after adding new sweep persistence reference topics to
+  `_pkgdown.yml`.
+- WSL/Ubuntu schema and persistence smoke tests passed after cleaning local
+  compiled artifacts.
+- `vignettes/sweeps.md` was regenerated from `vignettes/sweeps.qmd` after the
+  stale-claim scan found old generated text.
+- Anchored stale-claim search found only explicit non-scope statements,
+  existing strategy-helper documentation, or historical NEWS.
+- Storage smoke result remains accepted with `ratio = 0.609524`.
+- Release closeout is recorded in `v0_1_9_2_release_closeout.md`.
 
 ### Source Reference
 

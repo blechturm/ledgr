@@ -2,12 +2,12 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.9.1`.
-**Current active packet:** v0.1.9.2 sweep artifact persistence.
-**Current active packet path:** `inst/design/ledgr_v0_1_9_2_spec_packet/`.
-The completed `inst/design/ledgr_v0_1_9_1_spec_packet/` is an archival release
+**Latest completed release packet:** `v0.1.9.2`.
+**Current active packet:** None; v0.1.9.3 target-risk planning is next.
+**Current active packet path:** None.
+The completed `inst/design/ledgr_v0_1_9_2_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the
-v0.1.9.1 release gate.
+v0.1.9.2 release gate.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -77,13 +77,23 @@ bounded auditr identity / disclaimer documentation fixes.
 - Primary synthesis:
   `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`.
 
-v0.1.9.2 sweep artifact persistence is the active packet. It opens from the
-accepted synthesis
-`rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` and is scoped to
-durable saved-sweep artifacts, optional retained net equity/return series for
-completed candidates, reopened-sweep compatibility, and compact retention
-infrastructure for later walk-forward. v0.1.9.3 target risk and v0.1.9.4
-walk-forward remain future packets.
+The v0.1.9.2 packet is complete. It shipped durable saved-sweep artifacts,
+optional retained net equity/return series for completed candidates,
+reopened-sweep compatibility, `candidate_id` / `candidate_row` sweep identity,
+and compact retention infrastructure for later walk-forward.
+
+- Spec: `ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`.
+- Tickets: `ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_9_2_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_9_2_spec_packet/batch_plan.md`.
+- Release closeout:
+  `ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`.
+- Primary synthesis:
+  `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
+
+v0.1.9.3 target risk is the next planned packet. It has not opened; use the
+roadmap and accepted risk/OMS boundary synthesis for planning context only.
+v0.1.9.4 walk-forward remains downstream.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
 artifact-topology guidance, Quarto installed-vignette migration, README and

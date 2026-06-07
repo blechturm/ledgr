@@ -139,7 +139,7 @@ tickets:
 
   - id: "LDG-2588"
     title: "Save Open List Info APIs"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -183,7 +183,7 @@ tickets:
 
   - id: "LDG-2590"
     title: "Saved Sweep Validation And Conditions"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -205,7 +205,7 @@ tickets:
 
   - id: "LDG-2591"
     title: "Retained-Series Parity Matrix"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -227,7 +227,7 @@ tickets:
 
   - id: "LDG-2592"
     title: "Storage Smoke Measurement"
-    status: "review_pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -270,7 +270,7 @@ tickets:
 
   - id: "LDG-2594"
     title: "Documentation And Examples"
-    status: "review_pending"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -294,7 +294,7 @@ tickets:
 
   - id: "LDG-2595"
     title: "Release Surfaces And Planning Docs"
-    status: "review_pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -326,7 +326,7 @@ tickets:
 
   - id: "LDG-2596"
     title: "v0.1.9.2 Release Gate"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -349,12 +349,18 @@ tickets:
       type: "release_gate"
       surface: "package_release"
       scope: "v0.1.9.2"
-    tests:
-      - "targeted_tests"
-      - "full_testthat_suite"
-      - "r_cmd_build_check"
-      - "storage_smoke_document"
-      - "documentation_render"
-      - "anchored_stale_claim_searches"
-      - "release_playbook_checklist"
-      - "closeout_review"
+      tests:
+        - "targeted_tests"
+        - "full_testthat_suite"
+        - "readme_cold_start"
+        - "r_cmd_build_check"
+        - "coverage_gate"
+        - "storage_smoke_document"
+        - "pkgdown_build"
+        - "wsl_ubuntu_gate"
+        - "documentation_render"
+        - "anchored_stale_claim_searches"
+        - "release_playbook_checklist"
+        - "closeout_review"
+      notes:
+        - "Release gate must read inst/design/release_ci_playbook.md before verification and record every run, skip, timeout, rerun, and accepted disposition in closeout."
