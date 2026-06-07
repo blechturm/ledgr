@@ -60,7 +60,8 @@ ledgr_sweep_open <- function(snapshot, sweep_id) {
 
   candidates <- ledgr_sweep_fetch_candidates(opened$con, sweep_id)
   returns <- ledgr_sweep_fetch_returns(opened$con, sweep_id, candidates)
-  out <- ledgr_sweep_reconstruct(parent, candidates, returns)
+  universe <- ledgr_sweep_fetch_universe(opened$con, as.character(parent$snapshot_id[[1]]))
+  out <- ledgr_sweep_reconstruct(parent, candidates, returns, universe = universe)
   out
 }
 
@@ -413,7 +414,16 @@ ledgr_sweep_fetch_returns <- function(con, sweep_id, candidates) {
   )
 }
 
-ledgr_sweep_reconstruct <- function(parent, candidates, returns) {
+ledgr_sweep_fetch_universe <- function(con, snapshot_id) {
+  rows <- DBI::dbGetQuery(
+    con,
+    "SELECT instrument_id FROM snapshot_instruments WHERE snapshot_id = ? ORDER BY instrument_id",
+    params = list(snapshot_id)
+  )
+  as.character(rows$instrument_id)
+}
+
+ledgr_sweep_reconstruct <- function(parent, candidates, returns, universe = character()) {
   parent <- parent[1, , drop = FALSE]
   out <- tibble::tibble(
     candidate_id = as.character(candidates$candidate_id),
@@ -439,15 +449,23 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns) {
     provenance = lapply(candidates$provenance_json, ledgr_json_read_nested)
   )
   ledgr_sweep_validate_reconstructed_identity(parent, candidates, out)
+  first_provenance <- ledgr_sweep_first_reconstructed_provenance(out)
 
   attr(out, "sweep_id") <- as.character(parent$sweep_id[[1]])
   attr(out, "snapshot_id") <- as.character(parent$snapshot_id[[1]])
   attr(out, "snapshot_hash") <- as.character(parent$snapshot_hash[[1]])
+  attr(out, "scoring_range") <- ledgr_sweep_reconstructed_scoring_range(returns)
+  attr(out, "universe") <- as.character(universe)
+  attr(out, "master_seed") <- first_provenance$master_seed
+  attr(out, "seed_contract") <- first_provenance$seed_contract
   attr(out, "metric_context") <- ledgr_json_read_nested(parent$metric_context_json[[1]])
   attr(out, "metric_context_hash") <- as.character(parent$metric_context_hash[[1]])
   attr(out, "metric_context_version") <- as.integer(parent$metric_context_version[[1]])
   attr(out, "cost_model_hash") <- as.character(parent$cost_model_hash[[1]])
   attr(out, "cost_plan_json") <- as.character(parent$cost_plan_json[[1]])
+  attr(out, "strategy_hash") <- first_provenance$strategy_hash
+  attr(out, "strategy_source_capture_method") <- NULL
+  attr(out, "strategy_preflight") <- NULL
   attr(out, "feature_union_hash") <- as.character(parent$feature_union_hash[[1]])
   attr(out, "feature_engine_version") <- as.character(parent$feature_engine_version[[1]])
   attr(out, "candidate_features") <- ledgr_sweep_records_tibble(
@@ -466,6 +484,26 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns) {
   )
   class(out) <- c("ledgr_saved_sweep_results", "ledgr_sweep_results", class(out))
   out
+}
+
+ledgr_sweep_first_reconstructed_provenance <- function(out) {
+  for (provenance in out$provenance) {
+    if (is.list(provenance)) {
+      return(provenance)
+    }
+  }
+  list()
+}
+
+ledgr_sweep_reconstructed_scoring_range <- function(returns) {
+  if (!is.data.frame(returns) || nrow(returns) == 0L || !"ts_utc" %in% names(returns)) {
+    return(NULL)
+  }
+  ts_utc <- as.POSIXct(returns$ts_utc, tz = "UTC")
+  list(
+    start = format(min(ts_utc, na.rm = TRUE), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    end = format(max(ts_utc, na.rm = TRUE), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  )
 }
 
 ledgr_sweep_validate_reconstructed_identity <- function(parent, candidates, out) {

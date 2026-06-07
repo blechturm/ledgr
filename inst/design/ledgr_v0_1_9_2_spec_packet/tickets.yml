@@ -162,7 +162,7 @@ tickets:
 
   - id: "LDG-2589"
     title: "Reopened Sweep Candidate Compatibility"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -177,6 +177,9 @@ tickets:
       - "reopened_promotion_tests"
       - "selection_view_tests"
       - "promotion_provenance_inspection"
+    notes:
+      - "Batch 6 restores reopened candidate metadata and covers promotion from reopened sweeps as re-execution."
+      - "Claude review approved Batch 6; minor scoring_range, in-memory base-subset, and metadata fallback follow-ups were applied before commit."
 
   - id: "LDG-2590"
     title: "Saved Sweep Validation And Conditions"
@@ -239,7 +242,7 @@ tickets:
 
   - id: "LDG-2593"
     title: "Round-Trip Persistence And dplyr Survivability"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -256,6 +259,9 @@ tickets:
       - "dplyr_survivability_tests"
       - "candidate_row_order_tests"
       - "metadata_inspection"
+    notes:
+      - "Batch 6 adds round-trip, dplyr/base survivability, retained-series access, info inspection, and reopened promotion tests."
+      - "Claude review approved Batch 6; minor scoring_range, in-memory base-subset, and metadata fallback follow-ups were applied before commit."
 
   - id: "LDG-2594"
     title: "Documentation And Examples"

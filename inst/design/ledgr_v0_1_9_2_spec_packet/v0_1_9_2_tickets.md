@@ -504,7 +504,7 @@ scope: save_open_list_info
 Priority: P0
 Effort: M
 Dependencies: LDG-2586, LDG-2588
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -533,6 +533,15 @@ artifacts.
 
 Candidate extraction tests, reopened promotion tests, selection-view tests, and
 promotion provenance inspection.
+
+Batch 6 implementation note: reopened sweeps now carry persisted
+reproduction metadata needed by `ledgr_candidate()` and promotion, retained
+return accessors scope to the current candidate view after dplyr/base row
+operations, and promotion from reopened candidates is covered as a
+re-execution path that leaves saved-sweep candidate rows unchanged.
+Claude review approved the implementation; minor review follow-ups for
+`scoring_range` shape, in-memory base-subset coverage, and no-op metadata
+fallback cleanup were applied before commit.
 
 ### Source Reference
 
@@ -709,7 +718,7 @@ scope: retained_returns_table_size
 Priority: P0
 Effort: L
 Dependencies: LDG-2587, LDG-2588, LDG-2589, LDG-2590
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -741,6 +750,15 @@ and dplyr/base subsetting survivability.
 
 `tests/testthat/test-sweep-persistence-roundtrip.R`, dplyr survivability tests,
 and metadata inspection.
+
+Batch 6 implementation note: `test-sweep-persistence-roundtrip.R` covers
+scalar row, list-column, identity-field, retained return/equity, reopened
+audit-metadata, dplyr `filter()`/`arrange()`/`slice()`, supported base
+row-subsetting, candidate extraction, info inspection, and reopened promotion
+survivability.
+Claude review approved the implementation; minor review follow-ups for
+`scoring_range` shape, in-memory base-subset coverage, and no-op metadata
+fallback cleanup were applied before commit.
 
 ### Source Reference
 

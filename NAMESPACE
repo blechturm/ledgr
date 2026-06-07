@@ -2,6 +2,7 @@
 
 useDynLib(ledgr, .registration = TRUE)
 
+S3method("[",ledgr_sweep_results)
 S3method(as_tibble,ledgr_backtest)
 S3method(as_tibble,ledgr_result_table)
 S3method(close,ledgr_backtest)

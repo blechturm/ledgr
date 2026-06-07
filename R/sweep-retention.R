@@ -166,14 +166,24 @@ ledgr_sweep_returns_resolve <- function(x, candidates = NULL) {
     )
   }
   candidates <- ledgr_sweep_returns_normalize_candidates(candidates)
-  if (!is.null(candidates)) {
+  if (is.null(candidates)) {
+    candidates_scope <- unique(as.character(x$candidate_id))
+    returns <- ledgr_sweep_returns_filter_and_order(returns, candidates_scope)
+  } else {
     ledgr_sweep_returns_validate_candidates(x, returns, candidates)
-    returns <- returns[as.character(returns$candidate_id) %in% candidates, , drop = FALSE]
-    id_order <- match(as.character(returns$candidate_id), candidates)
-    ts_order <- order(id_order, as.POSIXct(returns$ts_utc, tz = "UTC"))
-    returns <- returns[ts_order, , drop = FALSE]
+    returns <- ledgr_sweep_returns_filter_and_order(returns, candidates)
   }
   ledgr_sweep_returns_public_columns(returns)
+}
+
+ledgr_sweep_returns_filter_and_order <- function(returns, candidates) {
+  if (length(candidates) == 0L) {
+    return(returns[FALSE, , drop = FALSE])
+  }
+  returns <- returns[as.character(returns$candidate_id) %in% candidates, , drop = FALSE]
+  id_order <- match(as.character(returns$candidate_id), candidates)
+  ts_order <- order(id_order, as.POSIXct(returns$ts_utc, tz = "UTC"))
+  returns[ts_order, , drop = FALSE]
 }
 
 ledgr_sweep_returns_public_columns <- function(returns) {
@@ -224,4 +234,44 @@ ledgr_sweep_returns_validate_candidates <- function(x, returns, candidates) {
     )
   }
   invisible(TRUE)
+}
+
+#' @export
+`[.ledgr_sweep_results` <- function(x, i, j, drop = FALSE) {
+  out <- NextMethod("[")
+  if (!is.data.frame(out) || isTRUE(drop)) {
+    return(out)
+  }
+  ledgr_sweep_results_restore(out, x)
+}
+
+ledgr_sweep_results_restore <- function(out, template) {
+  attr_names <- c(
+    "sweep_id", "snapshot_id", "snapshot_hash", "scoring_range", "universe",
+    "master_seed", "seed_contract", "evaluation_scope", "strategy_hash",
+    "strategy_name", "strategy_source_capture_method", "strategy_preflight",
+    "feature_union", "feature_union_hash", "feature_engine_version",
+    "candidate_features", "metric_context", "metric_context_hash",
+    "metric_context_version", "cost_model_hash", "cost_plan_json",
+    "sweep_retention", "execution_assumptions", "saved_sweep"
+  )
+  for (name in attr_names) {
+    attr(out, name) <- attr(template, name, exact = TRUE)
+  }
+  attr(out, "sweep_returns") <- ledgr_sweep_returns_filter_to_result(
+    attr(template, "sweep_returns", exact = TRUE),
+    out
+  )
+  class(out) <- unique(c(
+    intersect(c("ledgr_saved_sweep_results", "ledgr_sweep_results"), class(template)),
+    class(out)
+  ))
+  out
+}
+
+ledgr_sweep_returns_filter_to_result <- function(returns, out) {
+  if (!is.data.frame(returns) || !"candidate_id" %in% names(out)) {
+    return(returns)
+  }
+  ledgr_sweep_returns_filter_and_order(returns, unique(as.character(out$candidate_id)))
 }

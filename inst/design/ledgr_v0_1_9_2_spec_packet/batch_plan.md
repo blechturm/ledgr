@@ -1,6 +1,6 @@
 # ledgr v0.1.9.2 Batch Plan
 
-**Status:** Batch 5 implementation ready for Claude review.
+**Status:** Batch 6 complete after Claude review.
 
 This batch plan sequences the v0.1.9.2 sweep artifact persistence packet
 without expanding scope beyond `v0_1_9_2_spec.md` and the accepted
@@ -239,7 +239,7 @@ Implementation note:
 ## Batch 5 - Save/Open/List/Info APIs And Validation
 
 Tickets: `LDG-2588`, `LDG-2590`
-Status: Review Pending
+Status: Completed
 
 Goal: add public saved-sweep APIs and validation rules on top of the bound
 schema, including reopened object metadata and classed failure modes.
@@ -281,11 +281,12 @@ Implementation note:
 - Verified `test-sweep-persistence-api.R`, `test-api-exports.R`,
   `test-sweep-retention.R`, `test-sweep-persistence-schema.R`, and
   `test-schema.R`.
+- Batch 5 was committed in `f82a8e3` after positive Claude review.
 
 ## Batch 6 - Reopened Sweep Compatibility And Round-Trip Survivability
 
 Tickets: `LDG-2589`, `LDG-2593`
-Status: Planned
+Status: Completed
 
 Goal: make reopened saved sweeps behave like eager
 `ledgr_sweep_results`-compatible objects for candidate extraction, promotion
@@ -312,6 +313,29 @@ Review focus:
 - dplyr survivability covers candidate extraction, returns, and info
   inspection.
 - Promotion semantics remain reproduction-key based.
+
+Implementation note:
+
+- Restored sweep-level metadata through supported base row subsetting.
+- Scoped retained return accessors to the current candidate view for reopened,
+  dplyr-filtered, arranged, sliced, and base-subset sweep results.
+- Reconstructed reopened promotion metadata from persisted parent rows and
+  candidate provenance, including seed contract, master seed, strategy hash,
+  feature/cost/metric identity, retention metadata, universe, and scoring range
+  where retained returns exist.
+- Added round-trip tests for scalar rows, list columns, identity fields,
+  retained returns/equity, reopened-only audit metadata, dplyr/base
+  survivability, and promotion from reopened candidates.
+- Verified `test-sweep-persistence-roundtrip.R`,
+  `test-sweep-persistence-api.R`, `test-sweep-retention.R`, and
+  `test-promotion-context.R`.
+- Claude review approved Batch 6. Minor follow-ups applied in this commit:
+  reopened `scoring_range` now matches the in-memory ISO-string shape,
+  in-memory base-subset survivability is covered, and no-op `%||% NULL`
+  assignments in reopened metadata restoration were removed. Universe-order
+  parity for multi-instrument user-specified order and scalar-only
+  `scoring_range` persistence remain future design questions rather than
+  hidden Batch 6 scope.
 
 ## Batch 7 - Retained-Series Parity And Storage Evidence
 
