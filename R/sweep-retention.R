@@ -8,8 +8,11 @@ ledgr_sweep_retention_schema_version <- 1L
 #'
 #' @param returns Character scalar. `"none"` keeps the current scalar-only sweep
 #'   output. `"completed"` requests retained net equity/return series for
-#'   completed candidates once retained-series capture is available.
+#'   completed candidates.
 #' @return A `ledgr_sweep_retention` object.
+#' @examples
+#' ledgr_sweep_retention()
+#' ledgr_sweep_retention("completed")
 #' @export
 ledgr_sweep_retention <- function(returns = c("none", "completed")) {
   if (missing(returns)) {
@@ -106,27 +109,52 @@ ledgr_sweep_collect_retained_returns <- function(results, sweep_id) {
 #' Retained sweep return series
 #'
 #' `ledgr_sweep_returns()` returns the retained long net portfolio equity and
-#' adjacent-period return series for completed sweep candidates.
+#' adjacent-period return series for completed sweep candidates. Retained
+#' returns are net strategy returns only; they are not benchmark-relative
+#' returns and they do not include gross-vs-net attribution.
 #'
 #' @param x A `ledgr_sweep_results` object.
 #' @param candidates Optional character vector of `candidate_id` values.
-#' @return A tibble with `sweep_id`, `candidate_id`, `ts_utc`, `equity`, and
-#'   `period_return`.
+#' @return `ledgr_sweep_returns()` returns a tibble with `sweep_id`,
+#'   `candidate_id`, `ts_utc`, `equity`, and `period_return`.
+#'   `ledgr_sweep_returns_wide()` returns a tibble with `ts_utc` followed by
+#'   one column per candidate.
+#' @examples
+#' bars <- data.frame(
+#'   instrument_id = "AAA",
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+#'   open = c(10, 11, 12, 11, 13),
+#'   high = c(11, 12, 13, 12, 14),
+#'   low = c(9, 10, 11, 10, 12),
+#'   close = c(10, 11, 12, 11, 13),
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
+#'   targets["AAA"] <- params$qty
+#'   targets
+#' }
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+#' grid <- ledgr_param_grid(flat = list(qty = 0), long = list(qty = 1))
+#' sweep <- ledgr_sweep(exp, grid, retain = ledgr_sweep_retention("completed"))
+#'
+#' long <- ledgr_sweep_returns(sweep)
+#' long[!is.na(long$period_return), ]
+#' ledgr_sweep_returns_wide(sweep, value = "equity")
+#'
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_sweep_returns <- function(x, candidates = NULL) {
   ledgr_sweep_returns_resolve(x, candidates = candidates)
 }
 
-#' Retained sweep return or equity matrix
-#'
-#' `ledgr_sweep_returns_wide()` returns one wide tibble per call using retained
-#' sweep return series.
-#'
-#' @param x A `ledgr_sweep_results` object.
-#' @param candidates Optional character vector of `candidate_id` values.
+#' @describeIn ledgr_sweep_returns Return retained sweep return or equity
+#'   series in wide form. Use the long form when you want candidate metadata
+#'   beside each row; use the wide form when an external metric package expects
+#'   one return/equity column per candidate.
 #' @param value Value to widen. `"returns"` uses `period_return`; `"equity"`
 #'   uses `equity`.
-#' @return A tibble with `ts_utc` followed by one column per candidate.
 #' @export
 ledgr_sweep_returns_wide <- function(x,
                                      candidates = NULL,

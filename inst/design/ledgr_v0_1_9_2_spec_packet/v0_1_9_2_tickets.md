@@ -619,7 +619,7 @@ scope: classed_conditions
 Priority: P0
 Effort: L
 Dependencies: LDG-2584, LDG-2585, LDG-2587
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -647,7 +647,15 @@ compiled spot FIFO, inline summary, and ordered-event reconstruction paths.
 ### Verification
 
 `tests/testthat/test-sweep-persistence-parity.R` and retained-series tests from
-`tests/testthat/test-sweep-persistence-returns.R`.
+`tests/testthat/test-sweep-retention.R`.
+
+Batch 7 implementation note: `test-sweep-persistence-parity.R` adds the four
+synthesis-named retained-series parity tests. R and compiled spot-FIFO retained
+series are checked against inline summary output and ordered-event
+reconstruction from the selected candidate reproduction key. The compiled
+ordered-event fixture keeps durable compiled `ledgr_run()` out of scope.
+Final-bar no-fill and failed-candidate retained-series edges are covered in
+the new parity file and remain covered in `test-sweep-retention.R`.
 
 ### Source Reference
 
@@ -670,7 +678,7 @@ scope: parity_matrix
 Priority: P1
 Effort: M
 Dependencies: LDG-2584, LDG-2587, LDG-2588
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -698,6 +706,12 @@ candidate-return storage.
 
 Storage smoke script/output review, smoke document review, and release-gate
 ratio check.
+
+Batch 7 implementation note: `sweep_retention_storage_smoke.md` records the
+Section 7 fixture measurement. `retained_db_delta_bytes` is scoped to
+`sweep_returns` table blocks using DuckDB `storage_info()` because this DuckDB
+build does not expose per-segment byte counts. The measured ratio is
+`0.609524`, so the storage smoke gate passes.
 
 ### Source Reference
 
@@ -779,7 +793,7 @@ scope: roundtrip_and_dplyr_survivability
 Priority: P1
 Effort: L
 Dependencies: LDG-2582, LDG-2585, LDG-2588, LDG-2590, LDG-2591
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -811,6 +825,16 @@ selection, benchmark, attribution, or walk-forward features.
 Roxygen example checks, vignette render/build, stale-claim `rg` checks, and
 manual docs review against `inst/design/vignette_styleguide.md`.
 
+Batch 8 implementation note: `vignettes/sweeps.qmd` now teaches scalar-only
+screening, in-session retained returns, durable saved sweeps, retained-series
+access, the three evidence tiers, validation limits, and
+PerformanceAnalytics-style metric caveats. Roxygen and generated help pages
+cover `ledgr_sweep_retention()`, retained return accessors, saved sweep APIs,
+`ledgr_sweep(..., retain = )`, and saved-sweep / retained-series condition
+classes. The new help examples run, and the source vignette renders
+successfully; tracked generated vignette output remains a release-gate build
+artifact per the accepted synthesis.
+
 ### Source Reference
 
 - Synthesis Sections 13 and 14
@@ -831,7 +855,7 @@ scope: saved_sweeps_and_retained_returns
 Priority: P1
 Effort: M
 Dependencies: LDG-2582, LDG-2583, LDG-2584, LDG-2585, LDG-2586, LDG-2587, LDG-2588, LDG-2589, LDG-2590, LDG-2591, LDG-2592, LDG-2593, LDG-2594
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -859,6 +883,12 @@ scope and future-obligation routing.
 
 Planning-doc diff review, stale-reference searches, NEWS review, RFC index
 review, and release-closeout review.
+
+Batch 8 implementation note: NEWS now names compact saved sweeps, retained net
+return series, `candidate_id`, and non-scope. The RFC decision index no longer
+describes sweep artifact persistence as wholly future work; it points to the
+v0.1.9.2 compact saved-sweep and retained-return scope while preserving the
+per-candidate committed-run non-scope.
 
 ### Source Reference
 

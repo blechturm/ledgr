@@ -1,14 +1,21 @@
 # ledgr 0.1.9.2
 
-- Added in-memory retained sweep return series with
-  `ledgr_sweep_retention("completed")`, `ledgr_sweep_returns()`, and
-  `ledgr_sweep_returns_wide()`. Retained rows are net portfolio
-  equity/returns for completed candidates only; failed candidates keep scalar
-  summary rows but no retained return rows.
+- `ledgr_sweep()` can now retain and persist compact sweep artifacts. The new
+  `retain = ledgr_sweep_retention()` argument defaults to today's scalar-only
+  sweep behavior; opting into `returns = "completed"` keeps net portfolio
+  equity and pulse-aligned returns for completed candidates. Saved sweeps can
+  be eagerly reopened from the experiment store as sweep-like result objects
+  and queried through `ledgr_sweep_returns()` or
+  `ledgr_sweep_returns_wide()`. Failed candidates keep scalar summary rows but
+  no retained return rows.
 - Pre-CRAN sweep candidate rows now expose `candidate_id` plus
   one-indexed `candidate_row` instead of overloading `run_id`. Committed
   runs still use `run_id`; sweep promotion context records the source
   `candidate_id` / `candidate_row` separately from the promoted run ID.
+- This release does not add ranking helpers, automatic selection,
+  benchmark-relative alpha/beta diagnostics, signal-decay tooling, or
+  gross-vs-net cost attribution; those remain routed to later benchmark-context,
+  feature-analysis, and execution-attribution RFCs.
 
 # ledgr 0.1.9.1
 

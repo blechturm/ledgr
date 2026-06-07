@@ -68,9 +68,10 @@
 #' result is returned. Partial-result recovery is intentionally deferred.
 #'
 #' Current sweep mode intentionally does not ship automatic ranking,
-#' `ledgr_tune()`, walk-forward/PBO/CSCV helpers, risk-layer insertion, public
-#' cost-model factories, paper/live adapters, intraday-specific support, or
-#' full sweep artifact persistence.
+#' `ledgr_tune()`, walk-forward/PBO/CSCV helpers, risk-layer insertion,
+#' cost-grid composition, paper/live adapters, intraday-specific support, or
+#' full per-candidate committed-run artifacts. Saved sweeps are compact
+#' candidate evidence, not batches of committed runs.
 #'
 #' @section Articles:
 #' Exploratory sweeps and promotion:

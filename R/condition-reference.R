@@ -1,8 +1,8 @@
 #' ledgr condition classes
 #'
 #' ledgr uses stable top-level condition classes for public cost-model,
-#' timing-model, and legacy-shape failures. User tests should assert on these
-#' classes instead of parsing message text.
+#' timing-model, saved-sweep, retained-series, and legacy-shape failures. User
+#' tests should assert on these classes instead of parsing message text.
 #'
 #' @section Legacy shape classes:
 #' `ledgr_legacy_fill_model_shape` is raised when callers pass the v0.1.8
@@ -40,8 +40,9 @@
 #' `ledgr_sweep_id_exists` is raised when `ledgr_sweep_save()` would overwrite
 #' an existing saved sweep id.
 #'
-#' `ledgr_sweep_not_found` is raised when a structurally valid saved sweep id
-#' does not exist in the snapshot's experiment store.
+#' `ledgr_sweep_not_found` is raised when `ledgr_sweep_open()` is called with
+#' a structurally valid saved sweep id that is not present in the experiment
+#' store.
 #'
 #' `ledgr_sweep_snapshot_not_found` is raised when a saved sweep's snapshot is
 #' not present in the provided experiment store.
@@ -52,6 +53,19 @@
 #' `ledgr_sweep_schema_incompatible` is raised when saved sweep tables,
 #' columns, or artifact schema versions are not compatible with the current
 #' ledgr version.
+#'
+#' `ledgr_invalid_sweep_retention` is raised when `ledgr_sweep_retention()` or
+#' `ledgr_sweep(..., retain = )` receives an invalid retention policy.
+#'
+#' `ledgr_sweep_returns_unretained` is raised when callers ask for retained
+#' return rows from a scalar-only sweep.
+#'
+#' `ledgr_sweep_returns_candidate_not_found` is raised when retained returns are
+#' requested for an unknown `candidate_id`.
+#'
+#' `ledgr_sweep_returns_candidate_not_completed` is raised when retained
+#' returns are requested for a failed candidate or for a completed candidate
+#' whose retained rows are missing.
 #'
 #' @section Related existing classes:
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
@@ -80,6 +94,9 @@
 #' @aliases ledgr_sweep_not_found
 #' @aliases ledgr_sweep_snapshot_not_found ledgr_sweep_snapshot_hash_mismatch
 #' @aliases ledgr_sweep_schema_incompatible
+#' @aliases ledgr_invalid_sweep_retention ledgr_sweep_returns_unretained
+#' @aliases ledgr_sweep_returns_candidate_not_found
+#' @aliases ledgr_sweep_returns_candidate_not_completed
 NULL
 
 #' LEDGR_LAST_BAR_NO_FILL warning code

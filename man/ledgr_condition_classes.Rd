@@ -18,11 +18,15 @@
 \alias{ledgr_sweep_snapshot_not_found}
 \alias{ledgr_sweep_snapshot_hash_mismatch}
 \alias{ledgr_sweep_schema_incompatible}
+\alias{ledgr_invalid_sweep_retention}
+\alias{ledgr_sweep_returns_unretained}
+\alias{ledgr_sweep_returns_candidate_not_found}
+\alias{ledgr_sweep_returns_candidate_not_completed}
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
-timing-model, and legacy-shape failures. User tests should assert on these
-classes instead of parsing message text.
+timing-model, saved-sweep, retained-series, and legacy-shape failures. User
+tests should assert on these classes instead of parsing message text.
 }
 \section{Legacy shape classes}{
 
@@ -37,7 +41,7 @@ execution shape still contains legacy fill/cost fields.
 \section{Cost and timing classes}{
 
 \code{ledgr_cost_model_unspecified} is raised when a public execution entry point
-omits \code{cost_model} or supplies \code{NULL}. Use \code{\link[=ledgr_cost_spread_bps]{ledgr_cost_zero()}} for explicit
+omits \code{cost_model} or supplies \code{NULL}. Use \code{\link[=ledgr_cost_zero]{ledgr_cost_zero()}} for explicit
 zero-cost execution.
 
 \code{ledgr_invalid_cost_model} is raised for invalid cost-model objects,
@@ -67,8 +71,9 @@ non-whitespace ASCII character scalar of at most 256 bytes.
 \code{ledgr_sweep_id_exists} is raised when \code{ledgr_sweep_save()} would overwrite
 an existing saved sweep id.
 
-\code{ledgr_sweep_not_found} is raised when a structurally valid saved sweep id
-does not exist in the snapshot's experiment store.
+\code{ledgr_sweep_not_found} is raised when \code{ledgr_sweep_open()} is called with
+a structurally valid saved sweep id that is not present in the experiment
+store.
 
 \code{ledgr_sweep_snapshot_not_found} is raised when a saved sweep's snapshot is
 not present in the provided experiment store.
@@ -79,6 +84,19 @@ but its hash differs from the hash stored on the saved sweep.
 \code{ledgr_sweep_schema_incompatible} is raised when saved sweep tables,
 columns, or artifact schema versions are not compatible with the current
 ledgr version.
+
+\code{ledgr_invalid_sweep_retention} is raised when \code{ledgr_sweep_retention()} or
+\code{ledgr_sweep(..., retain = )} receives an invalid retention policy.
+
+\code{ledgr_sweep_returns_unretained} is raised when callers ask for retained
+return rows from a scalar-only sweep.
+
+\code{ledgr_sweep_returns_candidate_not_found} is raised when retained returns are
+requested for an unknown \code{candidate_id}.
+
+\code{ledgr_sweep_returns_candidate_not_completed} is raised when retained
+returns are requested for a failed candidate or for a completed candidate
+whose retained rows are missing.
 }
 
 \section{Related existing classes}{
@@ -98,4 +116,5 @@ err <- try(
   silent = TRUE
 )
 inherits(attr(err, "condition"), "ledgr_invalid_cost_chain_order")
+
 }

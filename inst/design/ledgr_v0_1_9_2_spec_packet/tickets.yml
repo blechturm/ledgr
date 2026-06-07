@@ -205,7 +205,7 @@ tickets:
 
   - id: "LDG-2591"
     title: "Retained-Series Parity Matrix"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -221,10 +221,13 @@ tickets:
       - "final_bar_no_fill_tests"
       - "failed_candidate_tests"
       - "compiled_spot_fifo_guarded_tests"
+    notes:
+      - "Batch 7 adds the synthesis-named retained-series parity matrix and edge coverage."
+      - "The compiled ordered-event fixture keeps durable compiled ledgr_run() out of scope."
 
   - id: "LDG-2592"
     title: "Storage Smoke Measurement"
-    status: "planned"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -239,6 +242,8 @@ tickets:
       - "storage_smoke_output_review"
       - "smoke_document_review"
       - "release_gate_ratio_check"
+    notes:
+      - "Batch 7 records sweep_retention_storage_smoke.md with ratio 0.609524 on the synthesis-bound fixture using sweep_returns table-block accounting."
 
   - id: "LDG-2593"
     title: "Round-Trip Persistence And dplyr Survivability"
@@ -265,7 +270,7 @@ tickets:
 
   - id: "LDG-2594"
     title: "Documentation And Examples"
-    status: "planned"
+    status: "review_pending"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -283,10 +288,13 @@ tickets:
       - "vignette_render"
       - "stale_claim_rg_checks"
       - "vignette_styleguide_review"
+    notes:
+      - "Batch 8 updates sweeps.qmd, roxygen/generated help pages, condition-class docs, and examples for saved sweeps and retained returns."
+      - "Help-page examples run; source sweeps.qmd renders successfully. Tracked generated vignette output remains a release-gate build artifact."
 
   - id: "LDG-2595"
     title: "Release Surfaces And Planning Docs"
-    status: "planned"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -313,6 +321,8 @@ tickets:
       - "news_review"
       - "rfc_index_review"
       - "release_closeout_review"
+    notes:
+      - "Batch 8 updates NEWS and the RFC decision index for compact saved sweeps, retained returns, candidate_id naming, and explicit non-scope."
 
   - id: "LDG-2596"
     title: "v0.1.9.2 Release Gate"

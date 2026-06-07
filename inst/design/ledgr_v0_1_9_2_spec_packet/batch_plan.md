@@ -1,6 +1,6 @@
 # ledgr v0.1.9.2 Batch Plan
 
-**Status:** Batch 6 complete after Claude review.
+**Status:** Batch 8 implementation ready for Claude review.
 
 This batch plan sequences the v0.1.9.2 sweep artifact persistence packet
 without expanding scope beyond `v0_1_9_2_spec.md` and the accepted
@@ -340,7 +340,7 @@ Implementation note:
 ## Batch 7 - Retained-Series Parity And Storage Evidence
 
 Tickets: `LDG-2591`, `LDG-2592`
-Status: Planned
+Status: Review Pending
 
 Goal: complete the retained-series release-gate matrix and record the accepted
 storage smoke measurement before documentation and release surfaces describe
@@ -365,10 +365,27 @@ Review focus:
 - Compiled spot-FIFO tests use the existing availability guard.
 - The storage smoke measurement is a sanity gate, not a public benchmark.
 
+Implementation note:
+
+- Added `tests/testthat/test-sweep-persistence-parity.R` with the four
+  synthesis-named retained-series parity tests.
+- R and compiled spot-FIFO retained series are checked against the inline
+  memory summary path.
+- R and compiled spot-FIFO retained series are checked against ordered-event
+  reconstruction from the selected candidate reproduction key. Durable
+  compiled `ledgr_run()` remains intentionally unavailable, so the compiled
+  ordered-event fixture compares the compiled sweep's retained series to the
+  canonical ordered-event reconstruction produced from the same candidate key.
+- Final-bar no-fill and failed-candidate retained-series edges are covered in
+  the parity file and remain covered in `test-sweep-retention.R`.
+- Added `sweep_retention_storage_smoke.md`; the storage sanity gate passes
+  with `ratio = 0.609524` on the synthesis-bound fixture.
+- Verified `test-sweep-persistence-parity.R`.
+
 ## Batch 8 - Documentation And Release Surfaces
 
 Tickets: `LDG-2594`, `LDG-2595`
-Status: Planned
+Status: Review Pending
 
 Goal: document the saved-sweep workflow and update release/planning surfaces
 after implementation and test evidence exists.
@@ -393,6 +410,21 @@ Review focus:
   PerformanceAnalytics adapter, or walk-forward integration.
 - Future obligations remain parked and non-authorizing.
 - Documentation follows `inst/design/vignette_styleguide.md`.
+
+Implementation note:
+
+- Updated `vignettes/sweeps.qmd` to teach scalar-only screening, retained
+  in-session return series, saved/reopened sweep artifacts, the three evidence
+  tiers, validation limits, and PerformanceAnalytics-style metric caveats.
+- Updated roxygen and generated help for retained return accessors,
+  `ledgr_sweep_retention()`, saved sweep APIs, `ledgr_sweep(..., retain = )`,
+  and saved-sweep / retained-series condition classes.
+- Updated NEWS and the RFC decision index to name saved sweeps, retained
+  returns, `candidate_id`, and explicit non-scope.
+- Verified the new help-page examples and rendered `vignettes/sweeps.qmd`
+  successfully with the generated HTML removed afterward. Tracked generated
+  `vignettes/sweeps.md` remains a release-gate build artifact per the accepted
+  synthesis.
 
 ## Batch 9 - Release Gate
 

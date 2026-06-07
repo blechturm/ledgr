@@ -7,32 +7,59 @@
 \usage{
 ledgr_sweep_returns(x, candidates = NULL)
 
-ledgr_sweep_returns_wide(
-  x,
-  candidates = NULL,
-  value = c("returns", "equity")
-)
+ledgr_sweep_returns_wide(x, candidates = NULL, value = c("returns", "equity"))
 }
 \arguments{
 \item{x}{A \code{ledgr_sweep_results} object.}
 
 \item{candidates}{Optional character vector of \code{candidate_id} values.}
 
-\item{value}{Value to widen. \code{"returns"} uses \code{period_return};
-\code{"equity"} uses \code{equity}.}
+\item{value}{Value to widen. \code{"returns"} uses \code{period_return}; \code{"equity"}
+uses \code{equity}.}
 }
 \value{
 \code{ledgr_sweep_returns()} returns a tibble with \code{sweep_id},
-\code{candidate_id}, \code{ts_utc}, \code{equity}, and
-\code{period_return}. \code{ledgr_sweep_returns_wide()} returns a tibble with
-\code{ts_utc} followed by one column per candidate.
+\code{candidate_id}, \code{ts_utc}, \code{equity}, and \code{period_return}.
+\code{ledgr_sweep_returns_wide()} returns a tibble with \code{ts_utc} followed by
+one column per candidate.
 }
 \description{
 \code{ledgr_sweep_returns()} returns the retained long net portfolio equity and
-adjacent-period return series for completed sweep candidates.
+adjacent-period return series for completed sweep candidates. Retained
+returns are net strategy returns only; they are not benchmark-relative
+returns and they do not include gross-vs-net attribution.
 }
-\details{
-Retained return series are available only when the sweep was run with
-\code{retain = ledgr_sweep_retention("completed")}. Failed candidates keep
-their scalar summary rows but do not have retained return rows.
+\section{Functions}{
+\itemize{
+\item \code{ledgr_sweep_returns_wide()}: Return retained sweep return or equity
+series in wide form. Use the long form when you want candidate metadata
+beside each row; use the wide form when an external metric package expects
+one return/equity column per candidate.
+
+}}
+\examples{
+bars <- data.frame(
+  instrument_id = "AAA",
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+  open = c(10, 11, 12, 11, 13),
+  high = c(11, 12, 13, 12, 14),
+  low = c(9, 10, 11, 10, 12),
+  close = c(10, 11, 12, 11, 13),
+  volume = 1000
+)
+snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  targets["AAA"] <- params$qty
+  targets
+}
+exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+grid <- ledgr_param_grid(flat = list(qty = 0), long = list(qty = 1))
+sweep <- ledgr_sweep(exp, grid, retain = ledgr_sweep_retention("completed"))
+
+long <- ledgr_sweep_returns(sweep)
+long[!is.na(long$period_return), ]
+ledgr_sweep_returns_wide(sweep, value = "equity")
+
+ledgr_snapshot_close(snapshot)
 }

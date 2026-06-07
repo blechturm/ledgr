@@ -4,6 +4,8 @@
 #' snapshot's experiment store. Saved sweeps are candidate evidence, not
 #' committed runs: they store scalar candidate rows and retained return rows
 #' when present, but not ledgers, fills, trades, or per-instrument artifacts.
+#' Promotion from a reopened saved sweep re-executes the selected candidate from
+#' its reproduction key against the sealed snapshot.
 #'
 #' @param sweep A `ledgr_sweep_results` object.
 #' @param snapshot A sealed `ledgr_snapshot` object locating the experiment
@@ -11,6 +13,33 @@
 #' @param sweep_id Optional saved sweep id. `NULL` uses the in-session sweep id.
 #' @param note Optional length-one character note.
 #' @return The saved `sweep_id`, invisibly.
+#' @examples
+#' bars <- data.frame(
+#'   instrument_id = "AAA",
+#'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+#'   open = c(10, 11, 12, 11, 13),
+#'   high = c(11, 12, 13, 12, 14),
+#'   low = c(9, 10, 11, 10, 12),
+#'   close = c(10, 11, 12, 11, 13),
+#'   volume = 1000
+#' )
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
+#'   targets["AAA"] <- params$qty
+#'   targets
+#' }
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+#' grid <- ledgr_param_grid(flat = list(qty = 0), long = list(qty = 1))
+#' sweep <- ledgr_sweep(exp, grid, retain = ledgr_sweep_retention("completed"))
+#'
+#' saved_id <- ledgr_sweep_save(sweep, snapshot, sweep_id = "example_sweep")
+#' ledgr_sweep_list(snapshot)
+#' reopened <- ledgr_sweep_open(snapshot, saved_id)
+#' ledgr_sweep_info(reopened)
+#' ledgr_sweep_returns(reopened)
+#'
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_sweep_save <- function(sweep, snapshot, sweep_id = NULL, note = NULL) {
   ledgr_sweep_storage_assert_sweep(sweep)
