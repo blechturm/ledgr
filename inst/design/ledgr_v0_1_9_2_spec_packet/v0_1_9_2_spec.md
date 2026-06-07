@@ -1,7 +1,7 @@
 # ledgr v0.1.9.2 Spec
 
-**Status:** Planning packet drafted 2026-06-07; pending Claude review before
-implementation batches start.
+**Status:** Planning packet drafted 2026-06-07; Batch 0 alignment work ready
+for Claude review before implementation batches start.
 **Target Branch:** `v0.1.9.2`.
 **Scope:** Second packet in the v0.1.9.x four-tick arc. Ship durable sweep
 artifact persistence plus optional retained net portfolio equity/return series
@@ -9,7 +9,8 @@ for completed sweep candidates. Preserve `ledgr_sweep()` as an execution
 surface over the shared fold core; saved sweeps are compact evidence objects,
 not committed runs.
 **Ticket state:** Draft tickets are cut in `v0_1_9_2_tickets.md` and
-`tickets.yml`. All tickets are planned until review closes the packet cut.
+`tickets.yml`. `LDG-2581` is review pending; all implementation tickets remain
+planned until review closes the packet cut.
 **Non-scope for this pass:** Ranking helpers, named selection views,
 winner-picking, automatic promotion, full ledger/fill/trade/per-instrument
 artifacts for every candidate, benchmark-relative diagnostics, signal decay,

@@ -4,7 +4,7 @@ generated_from: "v0_1_9_2_spec.md"
 tickets:
   - id: "LDG-2581"
     title: "Packet Alignment And v0.1.9.2 Ticket Cut"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: []

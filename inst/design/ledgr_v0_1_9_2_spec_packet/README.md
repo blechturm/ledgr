@@ -1,14 +1,14 @@
 # v0.1.9.2 Spec Packet
 
-**Status:** Opened after accepted RFC synthesis; spec and tickets drafted for
-review.
+**Status:** Opened after accepted RFC synthesis; Batch 0 packet alignment work
+is ready for review before implementation begins.
 **Opened:** 2026-06-07.
 **Scope source:** `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
 
 This packet will bind the v0.1.9.2 sweep artifact persistence implementation
 scope, tickets, release gates, and closeout records.
 
-Draft packet artifacts:
+Packet artifacts:
 
 - `v0_1_9_2_spec.md`;
 - `v0_1_9_2_tickets.md`;

@@ -71,7 +71,7 @@ release-surface ticket in this packet.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -88,6 +88,7 @@ starts.
 - Confirm roadmap, horizon, design index, and AGENTS all mark v0.1.9.2 as the
   active packet.
 - Submit the packet cut for Claude review before Batch 1 starts.
+- Apply Claude's minor packet-cut observations before Batch 1 starts.
 
 ### Acceptance Criteria
 
