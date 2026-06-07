@@ -4,7 +4,7 @@ generated_from: "v0_1_9_2_spec.md"
 tickets:
   - id: "LDG-2581"
     title: "Packet Alignment And v0.1.9.2 Ticket Cut"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -22,7 +22,7 @@ tickets:
 
   - id: "LDG-2582"
     title: "Sweep Retention Constructor And Argument"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -39,7 +39,7 @@ tickets:
 
   - id: "LDG-2583"
     title: "Retention Identity Exclusion"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:

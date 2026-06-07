@@ -1,7 +1,6 @@
 # ledgr v0.1.9.2 Batch Plan
 
-**Status:** Batch 0 alignment work ready for Claude review before
-implementation begins.
+**Status:** Batch 1 implementation ready for Claude review.
 
 This batch plan sequences the v0.1.9.2 sweep artifact persistence packet
 without expanding scope beyond `v0_1_9_2_spec.md` and the accepted
@@ -24,7 +23,7 @@ criteria.
 ## Batch 0 - Packet Review And Batch Plan Alignment
 
 Ticket: `LDG-2581`
-Status: Review Pending
+Status: Completed
 
 Goal: finalize the packet cut after RFC acceptance and review
 `v0_1_9_2_spec.md`, `v0_1_9_2_tickets.md`, `tickets.yml`, `README.md`, and
@@ -59,12 +58,12 @@ Review note:
   dependency in the ticket-map diagrams.
 - Minor observation 2 was already satisfied: `tickets.yml` includes
   `batch_plan_review` for `LDG-2581`.
-- No implementation tickets have started.
+- Batch 0 was committed in `5d7663b` after positive review.
 
 ## Batch 1 - Retention Surface And Identity Floor
 
 Tickets: `LDG-2582`, `LDG-2583`
-Status: Planned
+Status: Review Pending
 
 Goal: add the public retention constructor and `ledgr_sweep()` argument while
 proving that retention is non-identity before any retained rows or saved-sweep
@@ -89,6 +88,17 @@ Review focus:
   derivation, or candidate scoring.
 - Invalid retention values fail before candidate dispatch.
 - No persistence API is introduced in this batch.
+
+Implementation note:
+
+- Added `ledgr_sweep_retention()` and `retain = ledgr_sweep_retention()` on
+  `ledgr_sweep()`.
+- Attached `attr(out, "sweep_retention")` to sweep results.
+- Defensively excluded sweep retention metadata from `config_hash_payload()`.
+- Verified scalar rows, execution assumptions, and candidate reproduction keys
+  are unchanged modulo sweep id for `returns = "none"` versus
+  `returns = "completed"`.
+- No retained return/equity series capture and no persistence API were added.
 
 ## Batch 2 - Candidate Identity Rename And Row Key
 

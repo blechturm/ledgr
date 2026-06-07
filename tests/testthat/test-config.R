@@ -154,6 +154,37 @@ testthat::test_that("config hash excludes derived feature-set hash surface", {
   testthat::expect_false(identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg3)))
 })
 
+testthat::test_that("config hash excludes sweep retention policy", {
+  cost_cfg <- ledgr_test_cost_config(ledgr_cost_spread_bps(1))
+  cfg <- list(
+    db_path = "db.duckdb",
+    engine = list(seed = 1L, tz = "UTC"),
+    universe = list(instrument_ids = c("A")),
+    backtest = list(
+      start_ts_utc = "2020-01-01T00:00:00Z",
+      end_ts_utc = "2020-01-01T00:00:00Z",
+      pulse = "EOD",
+      initial_cash = 1000
+    ),
+    timing_model = ledgr_test_timing_model(),
+    cost_model = cost_cfg,
+    strategy = list(id = "x")
+  )
+
+  cfg_top_level <- cfg
+  cfg_top_level$sweep_retention <- ledgr_sweep_retention("completed")
+
+  cfg_nested <- cfg
+  cfg_nested$sweep <- list(retention = ledgr_sweep_retention("completed"))
+
+  testthat::expect_identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg_top_level))
+  testthat::expect_identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg_nested))
+
+  cfg_identity_change <- cfg
+  cfg_identity_change$engine$seed <- 2L
+  testthat::expect_false(identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg_identity_change)))
+})
+
 testthat::test_that("cost-model config hash is stable across internal cost-boundary refactors", {
   cost_cfg <- ledgr_test_cost_config(
     ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1.25))

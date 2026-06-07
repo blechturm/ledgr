@@ -71,7 +71,7 @@ release-surface ticket in this packet.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -126,7 +126,7 @@ scope: v0.1.9.2
 Priority: P0
 Effort: M
 Dependencies: LDG-2581
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -175,7 +175,7 @@ scope: retention_constructor_and_argument
 Priority: P0
 Effort: M
 Dependencies: LDG-2582
-Status: Planned
+Status: Review Pending
 
 ### Description
 

@@ -7,8 +7,16 @@ config_hash_payload <- function(config) {
   payload$db_path <- NULL
   payload$run_id <- NULL
   payload$alias_map_order <- NULL
+  payload$sweep_retention <- NULL
   if (is.list(payload$data)) {
     payload$data$snapshot_db_path <- NULL
+  }
+  if (is.list(payload$sweep)) {
+    payload$sweep$sweep_retention <- NULL
+    payload$sweep$retention <- NULL
+    if (length(payload$sweep) == 0L) {
+      payload$sweep <- NULL
+    }
   }
   if (is.list(payload$features)) {
     payload$features$feature_set_hash <- NULL

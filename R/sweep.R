@@ -11,6 +11,9 @@
 #' @param exp A `ledgr_experiment`.
 #' @param param_grid A `ledgr_param_grid`.
 #' @param precomputed_features Optional `ledgr_precomputed_features` object.
+#' @param retain A `ledgr_sweep_retention` object. The default keeps the
+#'   current scalar-only sweep output. Retention metadata is not execution
+#'   identity.
 #' @param seed Optional integer-like master seed. When supplied, each candidate
 #'   receives a deterministic derived execution seed.
 #' @param stop_on_error Logical. When `FALSE`, candidate-level execution errors
@@ -77,6 +80,7 @@
 ledgr_sweep <- function(exp,
                         param_grid,
                         precomputed_features = NULL,
+                        retain = ledgr_sweep_retention(),
                         seed = NULL,
                         stop_on_error = FALSE,
                         workers = 1L,
@@ -91,6 +95,7 @@ ledgr_sweep <- function(exp,
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
     rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  retain <- ledgr_sweep_retention_normalize(retain)
   workers <- ledgr_parallel_workers_normalize(workers)
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
@@ -229,6 +234,7 @@ ledgr_sweep <- function(exp,
   attr(out, "metric_context_version") <- as.integer(metric_context$metric_context_version)
   attr(out, "cost_model_hash") <- exp$cost_model_hash %||% NULL
   attr(out, "cost_plan_json") <- exp$cost_plan_json %||% NULL
+  attr(out, "sweep_retention") <- retain
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
