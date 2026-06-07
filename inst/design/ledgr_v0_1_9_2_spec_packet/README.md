@@ -1,7 +1,7 @@
 # v0.1.9.2 Spec Packet
 
-**Status:** Opened after accepted RFC synthesis; Batch 3 in-memory retained
-series implementation is ready for review.
+**Status:** Opened after accepted RFC synthesis; Batch 4 saved-sweep schema
+implementation is complete after Claude review.
 **Opened:** 2026-06-07.
 **Scope source:** `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
 

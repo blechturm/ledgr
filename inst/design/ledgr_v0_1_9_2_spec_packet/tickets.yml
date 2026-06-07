@@ -56,7 +56,7 @@ tickets:
 
   - id: "LDG-2584"
     title: "Retained Series Capture"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -76,7 +76,7 @@ tickets:
 
   - id: "LDG-2585"
     title: "Retained Return Accessors"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -115,7 +115,7 @@ tickets:
 
   - id: "LDG-2587"
     title: "Saved Sweep Schema And Canonical JSON"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -132,6 +132,10 @@ tickets:
       - "db_roundtrip_tests"
       - "nullability_tests"
       - "manual_schema_inspection"
+    notes:
+      - "Batch 4 implements schema creation/validation and internal canonical JSON storage projections."
+      - "Public save/open/list/info APIs remain gated by LDG-2588."
+      - "Completed after positive Claude review; non-blocking observations were routed to later save/open and round-trip batches."
 
   - id: "LDG-2588"
     title: "Save Open List Info APIs"

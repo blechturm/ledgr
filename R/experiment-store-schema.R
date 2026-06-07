@@ -1,4 +1,5 @@
-ledgr_experiment_store_schema_version <- 108L
+ledgr_experiment_store_schema_version <- 109L
+ledgr_saved_sweep_schema_version <- 1L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -40,6 +41,9 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "run_telemetry",
     "run_tags",
     "run_promotion_context",
+    "sweeps",
+    "sweep_candidates",
+    "sweep_returns",
     "ledgr_schema_metadata"
   )
   any(vapply(known_tables, function(table_name) ledgr_experiment_store_table_exists(con, table_name), logical(1)))
@@ -80,6 +84,91 @@ ledgr_experiment_store_ensure_run_telemetry_columns <- function(con) {
     return(invisible(FALSE))
   }
   ledgr_experiment_store_add_column(con, "run_telemetry", "persist_features", "BOOLEAN")
+  invisible(TRUE)
+}
+
+ledgr_experiment_store_ensure_sweep_tables <- function(con) {
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS sweeps (
+      sweep_id TEXT NOT NULL PRIMARY KEY,
+      snapshot_id TEXT NOT NULL,
+      snapshot_hash TEXT NOT NULL,
+      created_at_utc TIMESTAMP NOT NULL,
+      engine_version TEXT NOT NULL,
+      sweep_schema_version INTEGER NOT NULL,
+      note TEXT,
+      retention_json TEXT NOT NULL,
+      metric_context_json TEXT NOT NULL,
+      metric_context_hash TEXT NOT NULL,
+      metric_context_version INTEGER NOT NULL,
+      cost_model_hash TEXT NOT NULL,
+      cost_plan_json TEXT NOT NULL,
+      execution_assumptions_json TEXT NOT NULL,
+      feature_union_hash TEXT NOT NULL,
+      feature_engine_version TEXT NOT NULL,
+      candidate_features_json TEXT NOT NULL,
+      grid_json TEXT NOT NULL
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS sweep_candidates (
+      sweep_id TEXT NOT NULL,
+      candidate_id TEXT NOT NULL,
+      candidate_row INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('DONE','FAILED')),
+      final_equity DOUBLE,
+      metrics_json TEXT NOT NULL,
+      total_return DOUBLE,
+      annualized_return DOUBLE,
+      volatility DOUBLE,
+      sharpe_ratio DOUBLE,
+      max_drawdown DOUBLE,
+      n_trades INTEGER,
+      win_rate DOUBLE,
+      avg_trade DOUBLE,
+      time_in_market DOUBLE,
+      execution_seed INTEGER,
+      error_class TEXT,
+      error_msg TEXT,
+      params_json TEXT NOT NULL,
+      feature_params_json TEXT NOT NULL,
+      warnings_json TEXT NOT NULL,
+      feature_set_hash TEXT NOT NULL,
+      feature_fingerprints_json TEXT NOT NULL,
+      provenance_json TEXT NOT NULL,
+      cost_model_hash TEXT NOT NULL,
+      metric_context_hash TEXT NOT NULL,
+      PRIMARY KEY (sweep_id, candidate_row),
+      UNIQUE (sweep_id, candidate_id)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS sweep_returns (
+      sweep_id TEXT NOT NULL,
+      candidate_row INTEGER NOT NULL,
+      pulse_index INTEGER NOT NULL,
+      ts_utc TIMESTAMP NOT NULL,
+      equity DOUBLE NOT NULL,
+      period_return DOUBLE,
+      PRIMARY KEY (sweep_id, candidate_row, pulse_index)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE INDEX IF NOT EXISTS idx_sweep_returns_timestamp
+    ON sweep_returns (sweep_id, candidate_row, ts_utc)
+    "
+  )
   invisible(TRUE)
 }
 
@@ -135,6 +224,7 @@ ledgr_experiment_store_check_schema <- function(con, write = FALSE, inform = FAL
     ledgr_experiment_store_migrate(con, from_version = version, inform = inform)
   }
   ledgr_experiment_store_ensure_run_telemetry_columns(con)
+  ledgr_experiment_store_ensure_sweep_tables(con)
   invisible(list(schema_version = ledgr_experiment_store_schema_version, is_legacy = FALSE))
 }
 
@@ -249,6 +339,8 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
       )
       "
     )
+
+    ledgr_experiment_store_ensure_sweep_tables(con)
 
     if (ledgr_experiment_store_table_exists(con, "runs")) {
       DBI::dbExecute(

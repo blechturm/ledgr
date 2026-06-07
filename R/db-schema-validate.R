@@ -110,6 +110,87 @@ ledgr_validate_schema <- function(con) {
         "source_sweep_json", "candidate_summary_json"
       )
     ),
+    sweeps = list(
+      columns = c(
+        sweep_id = "TEXT",
+        snapshot_id = "TEXT",
+        snapshot_hash = "TEXT",
+        created_at_utc = "TIMESTAMP",
+        engine_version = "TEXT",
+        sweep_schema_version = "INTEGER",
+        note = "TEXT",
+        retention_json = "TEXT",
+        metric_context_json = "TEXT",
+        metric_context_hash = "TEXT",
+        metric_context_version = "INTEGER",
+        cost_model_hash = "TEXT",
+        cost_plan_json = "TEXT",
+        execution_assumptions_json = "TEXT",
+        feature_union_hash = "TEXT",
+        feature_engine_version = "TEXT",
+        candidate_features_json = "TEXT",
+        grid_json = "TEXT"
+      ),
+      pk = c("sweep_id"),
+      not_null = c(
+        "sweep_id", "snapshot_id", "snapshot_hash", "created_at_utc",
+        "engine_version", "sweep_schema_version", "retention_json",
+        "metric_context_json", "metric_context_hash",
+        "metric_context_version", "cost_model_hash", "cost_plan_json",
+        "execution_assumptions_json", "feature_union_hash",
+        "feature_engine_version", "candidate_features_json", "grid_json"
+      )
+    ),
+    sweep_candidates = list(
+      columns = c(
+        sweep_id = "TEXT",
+        candidate_id = "TEXT",
+        candidate_row = "INTEGER",
+        status = "TEXT",
+        final_equity = "DOUBLE",
+        metrics_json = "TEXT",
+        total_return = "DOUBLE",
+        annualized_return = "DOUBLE",
+        volatility = "DOUBLE",
+        sharpe_ratio = "DOUBLE",
+        max_drawdown = "DOUBLE",
+        n_trades = "INTEGER",
+        win_rate = "DOUBLE",
+        avg_trade = "DOUBLE",
+        time_in_market = "DOUBLE",
+        execution_seed = "INTEGER",
+        error_class = "TEXT",
+        error_msg = "TEXT",
+        params_json = "TEXT",
+        feature_params_json = "TEXT",
+        warnings_json = "TEXT",
+        feature_set_hash = "TEXT",
+        feature_fingerprints_json = "TEXT",
+        provenance_json = "TEXT",
+        cost_model_hash = "TEXT",
+        metric_context_hash = "TEXT"
+      ),
+      pk = c("sweep_id", "candidate_row"),
+      unique = list(c("sweep_id", "candidate_id")),
+      not_null = c(
+        "sweep_id", "candidate_id", "candidate_row", "status",
+        "metrics_json", "params_json", "feature_params_json",
+        "warnings_json", "feature_set_hash", "feature_fingerprints_json",
+        "provenance_json", "cost_model_hash", "metric_context_hash"
+      )
+    ),
+    sweep_returns = list(
+      columns = c(
+        sweep_id = "TEXT",
+        candidate_row = "INTEGER",
+        pulse_index = "INTEGER",
+        ts_utc = "TIMESTAMP",
+        equity = "DOUBLE",
+        period_return = "DOUBLE"
+      ),
+      pk = c("sweep_id", "candidate_row", "pulse_index"),
+      not_null = c("sweep_id", "candidate_row", "pulse_index", "ts_utc", "equity")
+    ),
     instruments = list(
       columns = c(
         instrument_id = "TEXT",
@@ -352,6 +433,15 @@ ledgr_validate_schema <- function(con) {
     invisible(TRUE)
   }
 
+  check_sweep_candidates_status_constraint <- function() {
+    check_status_constraint_metadata(
+      "sweep_candidates",
+      c("DONE", "FAILED"),
+      "sweep_candidates.status"
+    )
+    invisible(TRUE)
+  }
+
   for (table_name in names(required)) {
     if (!table_exists(table_name)) {
       stop(sprintf("Missing table: %s", table_name), call. = FALSE)
@@ -445,6 +535,7 @@ ledgr_validate_schema <- function(con) {
 
   check_runs_status_constraint()
   check_snapshots_status_constraint()
+  check_sweep_candidates_status_constraint()
 
   invisible(TRUE)
 }

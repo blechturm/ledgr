@@ -224,7 +224,7 @@ scope: non_identity_retention_policy
 Priority: P0
 Effort: L
 Dependencies: LDG-2582, LDG-2583, LDG-2586
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -280,7 +280,7 @@ scope: retained_equity_return_series
 Priority: P0
 Effort: M
 Dependencies: LDG-2584
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -387,7 +387,7 @@ scope: candidate_id_rename
 Priority: P0
 Effort: L
 Dependencies: LDG-2581, LDG-2583, LDG-2586
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -418,6 +418,11 @@ for compact sweep artifacts.
 
 Schema tests, canonical JSON tests, DB round-trip tests, nullability tests, and
 manual schema inspection.
+
+Batch 4 implementation note: schema creation/validation and internal canonical
+JSON storage projections are complete after Claude review. Public
+save/open/list/info APIs remain gated by `LDG-2588` and later round-trip
+tickets.
 
 ### Source Reference
 

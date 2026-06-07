@@ -1,6 +1,6 @@
 # ledgr v0.1.9.2 Batch Plan
 
-**Status:** Batch 3 implementation ready for Claude review.
+**Status:** Batch 4 implementation complete after Claude review.
 
 This batch plan sequences the v0.1.9.2 sweep artifact persistence packet
 without expanding scope beyond `v0_1_9_2_spec.md` and the accepted
@@ -141,7 +141,7 @@ Implementation note:
 ## Batch 3 - In-Memory Retained Series And Accessors
 
 Tickets: `LDG-2584`, `LDG-2585`
-Status: Review Pending
+Status: Completed
 
 Goal: capture pulse-aligned net portfolio equity and adjacent-period returns
 for completed in-memory sweep candidates, then expose long and wide accessors
@@ -186,11 +186,12 @@ Implementation note:
   Batch 3 reviews the in-memory accessor surface only.
 - Verified `test-sweep-retention.R`, `test-sweep.R`,
   `test-sweep-parallel.R`, and `test-api-exports.R`.
+- Batch 3 was committed in `15bbcc5` after positive Claude review.
 
 ## Batch 4 - Saved Sweep Schema And Canonical JSON
 
 Ticket: `LDG-2587`
-Status: Planned
+Status: Completed
 
 Goal: add the compact saved-sweep DuckDB schema and canonical JSON storage
 contract before public save/open APIs depend on it.
@@ -216,6 +217,24 @@ Review focus:
 - Whole-second UTC timestamp semantics match the existing POSIXct / DuckDB
   TIMESTAMP convention.
 - Schema versioning is fail-closed; no migration machinery is introduced.
+
+Implementation note:
+
+- Added `sweeps`, `sweep_candidates`, and `sweep_returns` to the
+  experiment-store schema and bumped the experiment-store schema version to
+  109.
+- Added compact saved-sweep storage projection helpers that produce canonical
+  JSON for bound `*_json` fields without adding public save/open APIs.
+- Validated denormalized candidate feature, cost, and metric identity before
+  producing storage candidate rows.
+- Bound `sweep_returns` to `(sweep_id, candidate_row, pulse_index)` and added
+  the timestamp scan index.
+- Kept public `candidate_id` separate from committed-run `run_id`; the saved
+  candidate schema has no `run_id` column.
+- Verified `test-sweep-persistence-schema.R`, `test-schema.R`,
+  `test-experiment-store-schema.R`, and `test-sweep-retention.R`.
+- Batch 4 was committed after positive Claude review; non-blocking follow-up
+  observations were routed to the save/open and round-trip batches.
 
 ## Batch 5 - Save/Open/List/Info APIs And Validation
 
