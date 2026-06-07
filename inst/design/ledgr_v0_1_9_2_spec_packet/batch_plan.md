@@ -1,6 +1,6 @@
 # ledgr v0.1.9.2 Batch Plan
 
-**Status:** Batch 2 implementation ready for Claude review.
+**Status:** Batch 3 implementation ready for Claude review.
 
 This batch plan sequences the v0.1.9.2 sweep artifact persistence packet
 without expanding scope beyond `v0_1_9_2_spec.md` and the accepted
@@ -104,7 +104,7 @@ Implementation note:
 ## Batch 2 - Candidate Identity Rename And Row Key
 
 Ticket: `LDG-2586`
-Status: Review Pending
+Status: Completed
 
 Goal: rename public sweep candidate identifiers from candidate-row `run_id` to
 `candidate_id` and bind `candidate_row` before persistence schema work depends
@@ -136,11 +136,12 @@ Implementation note:
 - Updated focused tests, sweep-facing examples, NEWS, and candidate help text.
 - Verified `test-sweep.R`, `test-sweep-retention.R`,
   `test-promotion-context.R`, and `test-sweep-parallel.R`.
+- Batch 2 was committed in `ca780cf` after positive Claude review.
 
 ## Batch 3 - In-Memory Retained Series And Accessors
 
 Tickets: `LDG-2584`, `LDG-2585`
-Status: Planned
+Status: Review Pending
 
 Goal: capture pulse-aligned net portfolio equity and adjacent-period returns
 for completed in-memory sweep candidates, then expose long and wide accessors
@@ -168,6 +169,23 @@ Review focus:
   path and does not introduce a second execution engine.
 - Wide accessors materialize in memory only; no lazy or pushed-down pivot is
   introduced.
+
+Implementation note:
+
+- Captured retained net equity and adjacent-period return rows for completed
+  candidates when `retain = ledgr_sweep_retention("completed")`.
+- Stored retained rows as sweep metadata and kept scalar candidate rows
+  unchanged.
+- Added `ledgr_sweep_returns()` and `ledgr_sweep_returns_wide()`.
+- Added classed errors for unretained sweeps, missing candidates, and failed
+  candidates.
+- Verified leading `NA_real_` returns, final-bar no-fill final equity row
+  retention, failed-candidate absence from retained rows, and R versus compiled
+  spot-FIFO retained-series parity on the focused fixture.
+- Reopened-sweep accessor parity remains gated by the saved-sweep API batches;
+  Batch 3 reviews the in-memory accessor surface only.
+- Verified `test-sweep-retention.R`, `test-sweep.R`,
+  `test-sweep-parallel.R`, and `test-api-exports.R`.
 
 ## Batch 4 - Saved Sweep Schema And Canonical JSON
 

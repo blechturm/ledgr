@@ -98,6 +98,8 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_strategy_preflight",
     "ledgr_strategy_grid",
     "ledgr_sweep_retention",
+    "ledgr_sweep_returns",
+    "ledgr_sweep_returns_wide",
     "ledgr_target",
     "ledgr_timing_next_open",
     "ledgr_ttr_warmup_rules",

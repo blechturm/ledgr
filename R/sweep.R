@@ -191,6 +191,7 @@ ledgr_sweep <- function(exp,
     pulses_posix = pulses_posix,
     pulses_iso = pulses_iso,
     metric_kernel = metric_kernel,
+    retain = retain,
     precomputed_features = precomputed_features,
     runtime_projection = runtime_projection,
     snapshot_hash = meta$snapshot_hash,
@@ -235,6 +236,9 @@ ledgr_sweep <- function(exp,
   attr(out, "cost_model_hash") <- exp$cost_model_hash %||% NULL
   attr(out, "cost_plan_json") <- exp$cost_plan_json %||% NULL
   attr(out, "sweep_retention") <- retain
+  if (identical(retain$returns, "completed")) {
+    attr(out, "sweep_returns") <- ledgr_sweep_collect_retained_returns(results, sweep_id)
+  }
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
@@ -668,6 +672,7 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         pulses_posix,
                                         pulses_iso,
                                         metric_kernel,
+                                        retain,
                                         precomputed_features,
                                         runtime_projection,
                                         snapshot_hash,
@@ -699,6 +704,7 @@ ledgr_sweep_candidate_tasks <- function(exp,
       pulses_posix = pulses_posix,
       pulses_iso = pulses_iso,
       metric_kernel = metric_kernel,
+      retain = retain,
       candidate = resolved$candidates[[i]],
       candidate_feature_row = resolved$candidate_features[i, , drop = FALSE],
       precomputed_features = precomputed_features,
@@ -751,12 +757,12 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
       ),
       warnings = list()
     )
-    return(list(row = row, warnings = list(), error = task$candidate$error))
+    return(list(row = row, warnings = list(), error = task$candidate$error, retained_returns = NULL))
   }
 
   warnings <- list()
   err <- NULL
-  row <- tryCatch(
+  candidate_result <- tryCatch(
     withCallingHandlers(
       ledgr_sweep_run_candidate(
         exp = task$exp,
@@ -779,6 +785,7 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         snapshot_hash = task$snapshot_hash,
         strategy_hash = task$strategy_hash,
         master_seed = task$master_seed,
+        retain = task$retain,
         compiled_accounting_model = task$compiled_accounting_model
       ),
       warning = function(w) {
@@ -791,31 +798,35 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
       if (isTRUE(stop_on_error)) {
         stop(e)
       }
-      ledgr_sweep_failure_row(
-        candidate_id = task$candidate_id,
-        candidate_row = task$candidate_row,
-        params = task$raw_params,
-        execution_seed = task$execution_seed,
-        error_class = ledgr_condition_class(e),
-        error_msg = conditionMessage(e),
-        feature_fingerprints = feature_row$feature_fingerprints[[1]],
-        provenance = ledgr_sweep_provenance(
-          snapshot_hash = task$snapshot_hash,
-          strategy_hash = task$strategy_hash,
-          feature_set_hash = feature_row$feature_set_hash[[1]],
-          alias_map_json = feature_row$alias_map_json[[1]],
-          alias_map_hash = feature_row$alias_map_hash[[1]],
-          alias_map_version = feature_row$alias_map_version[[1]],
-          cost_model_hash = task$exp$cost_model_hash %||% NULL,
-          cost_plan_json = task$exp$cost_plan_json %||% NULL,
-          master_seed = task$master_seed
+      list(
+        row = ledgr_sweep_failure_row(
+          candidate_id = task$candidate_id,
+          candidate_row = task$candidate_row,
+          params = task$raw_params,
+          execution_seed = task$execution_seed,
+          error_class = ledgr_condition_class(e),
+          error_msg = conditionMessage(e),
+          feature_fingerprints = feature_row$feature_fingerprints[[1]],
+          provenance = ledgr_sweep_provenance(
+            snapshot_hash = task$snapshot_hash,
+            strategy_hash = task$strategy_hash,
+            feature_set_hash = feature_row$feature_set_hash[[1]],
+            alias_map_json = feature_row$alias_map_json[[1]],
+            alias_map_hash = feature_row$alias_map_hash[[1]],
+            alias_map_version = feature_row$alias_map_version[[1]],
+            cost_model_hash = task$exp$cost_model_hash %||% NULL,
+            cost_plan_json = task$exp$cost_plan_json %||% NULL,
+            master_seed = task$master_seed
+          ),
+          warnings = warnings
         ),
-        warnings = warnings
+        retained_returns = NULL
       )
     }
   )
+  row <- candidate_result$row
   row$warnings[[1]] <- warnings
-  list(row = row, warnings = warnings, error = err)
+  list(row = row, warnings = warnings, error = err, retained_returns = candidate_result$retained_returns)
 }
 
 ledgr_sweep_eval_candidate_tasks_parallel <- function(tasks,
@@ -900,6 +911,7 @@ ledgr_sweep_run_candidate <- function(exp,
                                       master_seed,
                                       candidate_id,
                                       candidate_row,
+                                      retain,
                                       compiled_accounting_model = NULL) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
@@ -993,7 +1005,7 @@ ledgr_sweep_run_candidate <- function(exp,
   telemetry$t_results <- ledgr_time_elapsed(results_start, ledgr_time_now())
   telemetry$t_fills_extract <- 0
 
-  ledgr_sweep_success_row(
+  row <- ledgr_sweep_success_row(
     candidate_id = candidate_id,
     candidate_row = candidate_row,
     params = params,
@@ -1018,6 +1030,16 @@ ledgr_sweep_run_candidate <- function(exp,
     t_fills_extract = telemetry$t_fills_extract,
     warnings = list()
   )
+  retained_returns <- if (identical(retain$returns, "completed")) {
+    ledgr_sweep_retained_returns_from_equity(
+      summary$equity,
+      candidate_id = candidate_id,
+      candidate_row = candidate_row
+    )
+  } else {
+    NULL
+  }
+  list(row = row, retained_returns = retained_returns)
 }
 
 ledgr_memory_output_handler <- function(run_id) {

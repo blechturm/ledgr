@@ -224,7 +224,7 @@ scope: non_identity_retention_policy
 Priority: P0
 Effort: L
 Dependencies: LDG-2582, LDG-2583, LDG-2586
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -280,7 +280,7 @@ scope: retained_equity_return_series
 Priority: P0
 Effort: M
 Dependencies: LDG-2584
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -315,6 +315,10 @@ in-memory and reopened sweeps.
 Accessor tests, wide-shape tests, classed-condition tests, and reopened-sweep
 accessor parity tests.
 
+Batch 3 implementation note: the in-memory accessor surface is ready for
+review. Reopened-sweep accessor parity remains gated by `LDG-2588` and
+`LDG-2593`, because no saved-sweep open path exists yet.
+
 ### Source Reference
 
 - Synthesis Section 3
@@ -334,7 +338,7 @@ scope: long_and_wide_accessors
 Priority: P0
 Effort: M
 Dependencies: LDG-2581
-Status: Review Pending
+Status: Completed
 
 ### Description
 

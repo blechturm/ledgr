@@ -56,7 +56,7 @@ tickets:
 
   - id: "LDG-2584"
     title: "Retained Series Capture"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -76,7 +76,7 @@ tickets:
 
   - id: "LDG-2585"
     title: "Retained Return Accessors"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -92,10 +92,13 @@ tickets:
       - "in_memory_sweep_id_accessor_tests"
       - "reopened_sweep_id_accessor_tests"
       - "reopened_accessor_parity_tests"
+    notes:
+      - "Batch 3 implements and reviews the in-memory accessor surface."
+      - "Reopened-sweep accessor parity remains gated by LDG-2588 and LDG-2593."
 
   - id: "LDG-2586"
     title: "Candidate ID Rename And Row Identity"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

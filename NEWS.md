@@ -1,5 +1,10 @@
 # ledgr 0.1.9.2
 
+- Added in-memory retained sweep return series with
+  `ledgr_sweep_retention("completed")`, `ledgr_sweep_returns()`, and
+  `ledgr_sweep_returns_wide()`. Retained rows are net portfolio
+  equity/returns for completed candidates only; failed candidates keep scalar
+  summary rows but no retained return rows.
 - Pre-CRAN sweep candidate rows now expose `candidate_id` plus
   one-indexed `candidate_row` instead of overloading `run_id`. Committed
   runs still use `run_id`; sweep promotion context records the source
