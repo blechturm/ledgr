@@ -1,7 +1,7 @@
 # ledgr v0.1.9.2 Spec
 
-**Status:** Planning packet drafted 2026-06-07; Batch 4 saved-sweep schema
-implementation complete after Claude review.
+**Status:** Planning packet drafted 2026-06-07; Batch 5 saved-sweep API
+implementation ready for Claude review.
 **Target Branch:** `v0.1.9.2`.
 **Scope:** Second packet in the v0.1.9.x four-tick arc. Ship durable sweep
 artifact persistence plus optional retained net portfolio equity/return series
@@ -10,9 +10,10 @@ surface over the shared fold core; saved sweeps are compact evidence objects,
 not committed runs.
 **Ticket state:** Tickets are cut in `v0_1_9_2_tickets.md` and `tickets.yml`.
 `LDG-2581`, `LDG-2582`, `LDG-2583`, `LDG-2584`, `LDG-2585`, and
-`LDG-2586`, and `LDG-2587` are completed. Reopened-sweep accessor parity
-remains gated by the saved-sweep API and round-trip batches. Later
-implementation tickets remain planned.
+`LDG-2586`, and `LDG-2587` are completed. `LDG-2588` and `LDG-2590` are
+review pending. Reopened-sweep candidate/promotion parity and dplyr
+survivability remain gated by the round-trip batches. Later implementation
+tickets remain planned.
 **Non-scope for this pass:** Ranking helpers, named selection views,
 winner-picking, automatic promotion, full ledger/fill/trade/per-instrument
 artifacts for every candidate, benchmark-relative diagnostics, signal decay,

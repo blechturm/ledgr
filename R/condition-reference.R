@@ -33,6 +33,26 @@
 #' object shape. They are stable top-level classes for tests that exercise that
 #' seam directly.
 #'
+#' @section Saved sweep classes:
+#' `ledgr_invalid_sweep_id` is raised when a saved sweep id is not a non-empty,
+#' non-whitespace ASCII character scalar of at most 256 bytes.
+#'
+#' `ledgr_sweep_id_exists` is raised when `ledgr_sweep_save()` would overwrite
+#' an existing saved sweep id.
+#'
+#' `ledgr_sweep_not_found` is raised when a structurally valid saved sweep id
+#' does not exist in the snapshot's experiment store.
+#'
+#' `ledgr_sweep_snapshot_not_found` is raised when a saved sweep's snapshot is
+#' not present in the provided experiment store.
+#'
+#' `ledgr_sweep_snapshot_hash_mismatch` is raised when the snapshot id exists
+#' but its hash differs from the hash stored on the saved sweep.
+#'
+#' `ledgr_sweep_schema_incompatible` is raised when saved sweep tables,
+#' columns, or artifact schema versions are not compatible with the current
+#' ledgr version.
+#'
 #' @section Related existing classes:
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers
@@ -56,6 +76,10 @@
 #' @aliases ledgr_invalid_timing_model ledgr_invalid_fill_proposal
 #' @aliases ledgr_invalid_fill_context ledgr_run_not_found
 #' @aliases ledgr_unresolved_feature_id
+#' @aliases ledgr_invalid_sweep_id ledgr_sweep_id_exists
+#' @aliases ledgr_sweep_not_found
+#' @aliases ledgr_sweep_snapshot_not_found ledgr_sweep_snapshot_hash_mismatch
+#' @aliases ledgr_sweep_schema_incompatible
 NULL
 
 #' LEDGR_LAST_BAR_NO_FILL warning code

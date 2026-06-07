@@ -139,7 +139,7 @@ tickets:
 
   - id: "LDG-2588"
     title: "Save Open List Info APIs"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -156,6 +156,9 @@ tickets:
       - "reopened_print_method_tests"
       - "note_validation_tests"
       - "manual_print_review"
+    notes:
+      - "Batch 5 implements public save/open/list/info APIs."
+      - "Reopened candidate extraction, promotion, and dplyr survivability remain gated by LDG-2589 and LDG-2593."
 
   - id: "LDG-2589"
     title: "Reopened Sweep Candidate Compatibility"
@@ -177,7 +180,7 @@ tickets:
 
   - id: "LDG-2590"
     title: "Saved Sweep Validation And Conditions"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -193,6 +196,9 @@ tickets:
       - "snapshot_mismatch_tests"
       - "incompatible_schema_fixtures"
       - "condition_help_page_checks"
+    notes:
+      - "Batch 5 implements and documents saved-sweep validation classes."
+      - "Broader reopened-object survivability remains gated by LDG-2593."
 
   - id: "LDG-2591"
     title: "Retained-Series Parity Matrix"

@@ -444,7 +444,7 @@ scope: duckdb_tables_and_json
 Priority: P0
 Effort: L
 Dependencies: LDG-2585, LDG-2587
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -479,6 +479,10 @@ Implement the public saved-sweep APIs: save, open, list, and info.
 
 Save/open/list/info tests, non-mutating explicit-id tests, ordering tests, and
 manual print review.
+
+Batch 5 implementation note: public save/open/list/info APIs and saved-sweep
+validation classes are ready for review. Reopened candidate extraction,
+promotion, and dplyr survivability remain gated by `LDG-2589` and `LDG-2593`.
 
 ### Source Reference
 
@@ -551,7 +555,7 @@ scope: candidate_and_promotion_compatibility
 Priority: P0
 Effort: M
 Dependencies: LDG-2587, LDG-2588
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -581,6 +585,11 @@ Implement saved-sweep validation rules and classed conditions.
 
 Invalid-id tests, duplicate-id tests, snapshot mismatch tests, incompatible
 schema fixtures, and classed condition help-page checks.
+
+Batch 5 implementation note: invalid id, duplicate id, snapshot absence,
+snapshot hash mismatch, and incompatible schema classes are implemented and
+documented in the condition reference. Broader reopened-object survivability
+tests remain gated by the round-trip batch.
 
 ### Source Reference
 

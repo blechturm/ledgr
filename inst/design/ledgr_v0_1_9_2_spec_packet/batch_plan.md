@@ -1,6 +1,6 @@
 # ledgr v0.1.9.2 Batch Plan
 
-**Status:** Batch 4 implementation complete after Claude review.
+**Status:** Batch 5 implementation ready for Claude review.
 
 This batch plan sequences the v0.1.9.2 sweep artifact persistence packet
 without expanding scope beyond `v0_1_9_2_spec.md` and the accepted
@@ -239,7 +239,7 @@ Implementation note:
 ## Batch 5 - Save/Open/List/Info APIs And Validation
 
 Tickets: `LDG-2588`, `LDG-2590`
-Status: Planned
+Status: Review Pending
 
 Goal: add public saved-sweep APIs and validation rules on top of the bound
 schema, including reopened object metadata and classed failure modes.
@@ -263,6 +263,24 @@ Review focus:
 - Save/open/list/info APIs operate on saved sweeps, not committed runs.
 - `ledgr_sweep_info()` accepts objects and rejects bare ids.
 - Validation fails before partial writes where applicable.
+
+Implementation note:
+
+- Added `ledgr_sweep_save()`, `ledgr_sweep_open()`, `ledgr_sweep_list()`,
+  and `ledgr_sweep_info()`.
+- Saved sweeps write compact scalar candidate rows and retained returns when
+  present; no ledgers, fills, trades, or committed-run artifacts are written.
+- Reopened saved sweeps materialize eagerly as `ledgr_sweep_results`-
+  compatible objects and carry saved-artifact metadata.
+- Added classed validation for invalid ids, duplicate ids, snapshot absence,
+  snapshot hash mismatch, and incompatible saved-sweep schemas.
+- `ledgr_sweep_info()` accepts in-memory/reopened sweep objects and rejects
+  bare ids.
+- Reopened candidate extraction, promotion, and dplyr survivability remain
+  gated by Batch 6.
+- Verified `test-sweep-persistence-api.R`, `test-api-exports.R`,
+  `test-sweep-retention.R`, `test-sweep-persistence-schema.R`, and
+  `test-schema.R`.
 
 ## Batch 6 - Reopened Sweep Compatibility And Round-Trip Survivability
 

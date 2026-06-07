@@ -12,6 +12,12 @@
 \alias{ledgr_invalid_fill_context}
 \alias{ledgr_run_not_found}
 \alias{ledgr_unresolved_feature_id}
+\alias{ledgr_invalid_sweep_id}
+\alias{ledgr_sweep_id_exists}
+\alias{ledgr_sweep_not_found}
+\alias{ledgr_sweep_snapshot_not_found}
+\alias{ledgr_sweep_snapshot_hash_mismatch}
+\alias{ledgr_sweep_schema_incompatible}
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
@@ -51,6 +57,28 @@ malformed ledgr timing-model payloads.
 the internal proposal/resolver seam when a cost resolver receives the wrong
 object shape. They are stable top-level classes for tests that exercise that
 seam directly.
+}
+
+\section{Saved sweep classes}{
+
+\code{ledgr_invalid_sweep_id} is raised when a saved sweep id is not a non-empty,
+non-whitespace ASCII character scalar of at most 256 bytes.
+
+\code{ledgr_sweep_id_exists} is raised when \code{ledgr_sweep_save()} would overwrite
+an existing saved sweep id.
+
+\code{ledgr_sweep_not_found} is raised when a structurally valid saved sweep id
+does not exist in the snapshot's experiment store.
+
+\code{ledgr_sweep_snapshot_not_found} is raised when a saved sweep's snapshot is
+not present in the provided experiment store.
+
+\code{ledgr_sweep_snapshot_hash_mismatch} is raised when the snapshot id exists
+but its hash differs from the hash stored on the saved sweep.
+
+\code{ledgr_sweep_schema_incompatible} is raised when saved sweep tables,
+columns, or artifact schema versions are not compatible with the current
+ledgr version.
 }
 
 \section{Related existing classes}{

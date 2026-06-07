@@ -541,6 +541,18 @@ print.ledgr_sweep_results <- function(x, ...) {
   status <- as.character(x$status)
   n_done <- sum(status == "DONE", na.rm = TRUE)
   n_failed <- sum(status == "FAILED", na.rm = TRUE)
+  retention <- attr(x, "sweep_retention", exact = TRUE)
+  retention_returns <- if (inherits(retention, "ledgr_sweep_retention")) retention$returns else "unknown"
+  saved <- attr(x, "saved_sweep", exact = TRUE)
+  saved_line <- if (is.list(saved) && isTRUE(saved$saved)) {
+    sprintf(
+      "Saved artifact: schema v%s, engine %s.",
+      as.character(saved$sweep_schema_version %||% NA_integer_),
+      as.character(saved$engine_version %||% NA_character_)
+    )
+  } else {
+    "Saved artifact: not saved."
+  }
   visible <- c(
     "candidate_id", "candidate_row", "status", "sharpe_ratio", "total_return",
     "max_drawdown", "n_trades", "execution_seed"
@@ -552,6 +564,11 @@ print.ledgr_sweep_results <- function(x, ...) {
     cols = visible,
     footer = c(
       sprintf("%d combinations: %d done, %d failed.", nrow(x), n_done, n_failed),
+      sprintf("Retention returns: %s.", retention_returns),
+      sprintf("Snapshot hash: %s.", attr(x, "snapshot_hash") %||% "<unknown>"),
+      sprintf("Cost model hash: %s.", attr(x, "cost_model_hash") %||% "<unknown>"),
+      sprintf("Metric context hash: %s.", attr(x, "metric_context_hash") %||% "<unknown>"),
+      saved_line,
       "Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.",
       sprintf("Hidden columns (%d): %s", length(hidden), paste(hidden, collapse = ", "))
     ),
