@@ -2,13 +2,12 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.9.1`.
-**Current active packet:** None. The next planned packet is v0.1.9.2 sweep
-artifact persistence; RFC seed pending.
+**Latest completed release packet:** `v0.1.9.2`.
+**Current active packet:** None; v0.1.9.3 target-risk planning is next.
 **Current active packet path:** None.
-The completed `inst/design/ledgr_v0_1_9_1_spec_packet/` is an archival release
+The completed `inst/design/ledgr_v0_1_9_2_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the
-v0.1.9.1 release gate.
+v0.1.9.2 release gate.
 
 This directory is the design memory for ledgr. Files here do not all have the
 same authority. Use this README to decide what to read first and how much weight
@@ -78,10 +77,23 @@ bounded auditr identity / disclaimer documentation fixes.
 - Primary synthesis:
   `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`.
 
-v0.1.9.2 sweep artifact persistence, v0.1.9.3 target risk, and v0.1.9.4
-walk-forward remain future packets. The cost identity fields from v0.1.9.1 are
-forward dependencies for those packets; their presence here does not mark those
-future layers implemented.
+The v0.1.9.2 packet is complete. It shipped durable saved-sweep artifacts,
+optional retained net equity/return series for completed candidates,
+reopened-sweep compatibility, `candidate_id` / `candidate_row` sweep identity,
+and compact retention infrastructure for later walk-forward.
+
+- Spec: `ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`.
+- Tickets: `ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_9_2_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_9_2_spec_packet/batch_plan.md`.
+- Release closeout:
+  `ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`.
+- Primary synthesis:
+  `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
+
+v0.1.9.3 target risk is the next planned packet. It has not opened; use the
+roadmap and accepted risk/OMS boundary synthesis for planning context only.
+v0.1.9.4 walk-forward remains downstream.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
 artifact-topology guidance, Quarto installed-vignette migration, README and
@@ -288,6 +300,7 @@ or versioned packet records.
 | Feature projection shape, materialization policy, and lookback access | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` | v0.1.8.6 feature-projection materialization; later lookback/export/storage gates | Accepted |
 | Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
 | Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (Amendment 1 + Amendment 2 + Section 17 ticket-cut gates, all 2026-06-04) | v0.1.9.x walk-forward ticket-cut planning after target risk; final review closed the cycle, Amendment 2 strengthened four procedural routings into substantive defaults, Section 17 binds packet-open and release-gate enforcement | Accepted |
+| Sweep artifact persistence | `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` | v0.1.9.2 saved-sweep artifacts, optional retained net equity/return series, reopened-sweep compatibility, and compact retention substrate; ranking helpers, benchmark diagnostics, signal decay, and walk-forward integration remain non-scope | Accepted |
 | OMS semantics and order lifecycle | `rfc/rfc_ledgr_oms_seed_synthesis.md` | v0.2.x OMS data-model and lifecycle planning; paper/live deferred | Accepted |
 
 ## RFCs

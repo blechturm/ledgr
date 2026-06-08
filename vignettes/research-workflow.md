@@ -406,7 +406,7 @@ ranked <- sweep |>
   arrange(desc(sharpe_ratio))
 
 candidate_columns <- c(
-  "run_id", "status", "final_equity", "total_return",
+  "candidate_id", "candidate_row", "status", "final_equity", "total_return",
   "sharpe_ratio", "params", "feature_params"
 )
 
@@ -417,8 +417,9 @@ glimpse(top_n)
 ```
 
     Rows: 5
-    Columns: 7
-    $ run_id         <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae…
+    Columns: 8
+    $ candidate_id   <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae…
+    $ candidate_row  <int> 4, 2, 12, 10, 8
     $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
     $ final_equity   <dbl> 10225.14, 10112.57, 10164.67, 10082.34, 10141.20
     $ total_return   <dbl> 0.022514428, 0.011257214, 0.016467259, 0.008233629, 0.014119827
@@ -427,7 +428,7 @@ glimpse(top_n)
     $ feature_params <list> [5, 20], [5, 20], [5, 40], [5, 40], [10, 20]
 
 ``` r
-issue_columns <- c("run_id", "status", "error_class", "error_msg", "warnings")
+issue_columns <- c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings")
 
 issues <- sweep |>
   filter(status != "DONE") |>
@@ -436,9 +437,9 @@ issues <- sweep |>
 issues
 ```
 
-    # A tibble: 0 × 5
-    # ℹ 5 variables: run_id <chr>, status <chr>, error_class <chr>, error_msg <chr>,
-    #   warnings <list>
+    # A tibble: 0 × 6
+    # ℹ 6 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
+    #   error_class <chr>, error_msg <chr>, warnings <list>
 
 ``` r
 candidate <- ledgr_candidate(ranked, 1)
@@ -631,7 +632,8 @@ review helpers remain future workflow polish.
 promotion <- info$promotion_context
 list(
   source = promotion$source,
-  selected_candidate = promotion$selected_candidate$run_id,
+  selected_candidate = promotion$selected_candidate$candidate_id,
+  selected_candidate_row = promotion$selected_candidate$candidate_row,
   strategy_params_json = promotion$selected_candidate$params_json,
   feature_params_json = promotion$selected_candidate$feature_params_json
 )
@@ -642,6 +644,9 @@ list(
 
     $selected_candidate
     [1] "feature_9a29b31dae19/strategy_dc6315936028"
+
+    $selected_candidate_row
+    [1] 4
 
     $strategy_params_json
     [1] "{\"qty\":10.0,\"threshold\":0.01}"

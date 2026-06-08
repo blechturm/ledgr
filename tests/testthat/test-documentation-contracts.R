@@ -447,17 +447,19 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "Sweep artifact persistence, target risk, and\\s+walk-forward remain future v0.1.9.x packets")
 
-  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_1_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_2_spec_packet/`", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
-  testthat::expect_match(roadmap, "v0.1.9.2 | Planned", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "v0.1.9.3 | Planned", fixed = TRUE)
   testthat::expect_match(roadmap, "v0.1.9.4 | Planned", fixed = TRUE)
 
-  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.1`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** None", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.2`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** None; v0.1.9.3 target-risk planning is next", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
+  testthat::expect_match(design_index, "v0.1.9.2 packet is complete", fixed = TRUE)
+  testthat::expect_match(design_index, "v0_1_9_2_release_closeout.md", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -465,7 +467,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
 
   resolved_pos <- regexpr("\n## Resolved\n", horizon, fixed = TRUE)[[1]]
   cost_pos <- regexpr("v0.1.9.1 cost-API spec-cut decisions", horizon, fixed = TRUE)[[1]]
-  sweep_pos <- regexpr("v0.1.9.2 sweep artifact persistence RFC cycle scheduled", horizon, fixed = TRUE)[[1]]
+  sweep_pos <- regexpr("v0.1.9.2 sweep artifact persistence RFC cycle accepted", horizon, fixed = TRUE)[[1]]
   wf_pos <- regexpr("v0.1.9.4 walk-forward Section 17 gate-row obligations", horizon, fixed = TRUE)[[1]]
   testthat::expect_gt(cost_pos, resolved_pos)
   testthat::expect_gt(sweep_pos, 0L)
@@ -1175,9 +1177,9 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "ledgr_tune()", fixed = TRUE)
   testthat::expect_match(doc, "parallel sweep execution", fixed = TRUE)
   testthat::expect_match(doc, "walk-forward, PBO, or CSCV", fixed = TRUE)
-  testthat::expect_match(doc, "full sweep artifact persistence", fixed = TRUE)
+  testthat::expect_match(doc, "Save And Reopen Sweep Artifacts", fixed = TRUE)
   testthat::expect_no_match(doc, "ledgr_snapshot_split\\(")
-  testthat::expect_match(doc, "ledgr_save_sweep()", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_sweep_save(", fixed = TRUE)
   testthat::expect_match(doc, "Cost Models Are Fixed Inputs", fixed = TRUE)
   testthat::expect_match(doc, "does not\\s+compose cost models as another grid dimension")
   testthat::expect_match(doc, "A future `ledgr_cost_grid()`", fixed = TRUE)

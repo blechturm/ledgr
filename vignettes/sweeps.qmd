@@ -330,10 +330,12 @@ ledgr warns because feature computation may be repeated per candidate.
 ## Run The Sweep
 
 Give the sweep a master seed when reproducible stochastic strategy behavior
-matters. Each row receives its own derived `execution_seed`.
+matters. Each row receives its own derived `execution_seed`. The default sweep
+is scalar-only: it keeps candidate summary rows but not per-pulse return
+series.
 
 ```{r}
-#| label: run-sweep
+#| label: run-scalar-sweep
 
 sweep <- ledgr_sweep(
   exp,
@@ -352,6 +354,153 @@ materialization: snapshot identity, selector, strategy identity, feature
 fingerprints, seed metadata, and candidate params. Use
 `ledgr_candidate_reproduction_key()` when you want to inspect that key directly.
 Full equity, fills, trades, and ledger rows are created only by committed runs.
+
+## Retain Candidate Return Series
+
+When you need per-pulse net portfolio equity or adjacent-period returns for
+completed candidates, opt in explicitly with `ledgr_sweep_retention()`.
+
+```{r}
+#| label: retain-candidate-returns
+
+retained_sweep <- ledgr_sweep(
+  exp,
+  grid,
+  precomputed_features = precomputed,
+  seed = 2026L,
+  retain = ledgr_sweep_retention("completed")
+)
+
+retained_long <- ledgr_sweep_returns(retained_sweep)
+
+retained_long |>
+  select(sweep_id, candidate_id, ts_utc, equity, period_return) |>
+  slice_head(n = 8)
+```
+
+`period_return` is `NA_real_` on the first retained row for each candidate
+because there is no prior equity value to compare against. Drop that first
+return before handing the series to an external metric package:
+
+```{r}
+#| label: retained-returns-for-external-metrics
+
+external_metric_input <- retained_long |>
+  filter(!is.na(period_return)) |>
+  select(ts_utc, candidate_id, period_return)
+
+external_metric_input |>
+  slice_head(n = 8)
+```
+
+The retained series are net strategy returns. They include the execution costs
+resolved by the experiment's cost model, but they are not benchmark-relative
+returns and they do not contain gross-vs-net attribution. Failed candidates
+remain in the sweep summary table but have no retained return rows.
+
+Final-bar no-fill warnings are row-level warnings on the candidate summary. They
+do not remove the final equity row from retained return series.
+
+Use the wide accessor when a downstream tool expects one return or equity
+column per candidate:
+
+```{r}
+#| label: retained-returns-wide
+
+ledgr_sweep_returns_wide(
+  retained_sweep,
+  candidates = retained_sweep$candidate_id[1:3],
+  value = "returns"
+) |>
+  slice_head(n = 5)
+```
+
+## Save And Reopen Sweep Artifacts
+
+A saved sweep is a compact artifact. It stores candidate summary evidence and,
+when requested, retained net equity/return series. It is not a batch of
+committed runs: full ledgers, fills, trades, and per-instrument artifacts remain
+available only after explicit promotion.
+
+```{r}
+#| label: save-and-reopen-sweep
+
+saved_id <- ledgr_sweep_save(
+  retained_sweep,
+  snapshot,
+  sweep_id = "sma_retained_sweep",
+  note = "Exploratory SMA sweep with retained return series."
+)
+
+ledgr_sweep_list(snapshot)
+
+reopened_sweep <- ledgr_sweep_open(snapshot, saved_id)
+
+ledgr_sweep_info(reopened_sweep)
+```
+
+Reopened sweeps behave like sweep result objects for candidate extraction,
+ordinary dplyr inspection, retained return access, and promotion. Promotion from
+a reopened saved sweep re-executes the selected candidate from its reproduction
+key against the sealed snapshot; it does not replay precomputed retained return
+rows as if they were a committed ledger.
+
+```{r}
+#| label: reopened-retained-returns
+
+ledgr_sweep_returns(reopened_sweep) |>
+  filter(candidate_id == reopened_sweep$candidate_id[[1]]) |>
+  slice_head(n = 5)
+```
+
+## Three Evidence Tiers
+
+Sweeps now give you three different levels of evidence. Use the cheapest level
+that answers the question in front of you, then promote only the candidate that
+needs committed-run artifacts.
+
+| Tier | What it keeps | Typical use |
+| --- | --- | --- |
+| Scalar row | Candidate params, status, scalar metrics, warnings, and reproduction key | Screen and debug a declared grid |
+| Retained series | Scalar row plus net portfolio equity and period returns for completed candidates | Inspect return shape, rolling behavior, or external metric-package inputs |
+| Promoted run | Full committed run artifacts: ledger, fills, trades, equity, metrics, and promotion context | Audit and reopen the selected candidate as a durable run |
+
+Retention does not change execution identity. It changes which derived evidence
+is kept after the same candidate execution.
+
+## What Retained Returns Can And Cannot Validate
+
+Retained returns make triage better because they let you inspect the path of a
+candidate, not just its final scalar score. They can help you notice unstable
+return profiles, drawdown concentration, missing warmup behavior, and candidates
+whose scalar score hides a bad path.
+
+They do not make the sweep statistically valid. If you selected the candidate
+from the same sample, the retained path is still in-sample evidence. Generalized
+validation belongs to a held-out evaluation, walk-forward analysis, or later
+selection-integrity diagnostics.
+
+::: {.ledgr-callout .ledgr-callout-warning}
+**Return paths are not validation by themselves**
+
+Retained series preserve more evidence from a sweep. They do not prove that the
+candidate-selection process was sound.
+:::
+
+## Why ledgr And PerformanceAnalytics Metrics May Differ
+
+Retained return series can be shaped for packages such as PerformanceAnalytics,
+but ledgr metrics and external package metrics may differ. Annualization,
+calendar assumptions, treatment of the leading missing return, and return-shape
+conventions are package contracts, not universal truths.
+
+Keep ledgr's scalar metric rows as the canonical ledgr evidence. Use external
+metric packages as additional analysis over an explicit return series, and label
+any overlapping headline metric when it comes from a different convention.
+
+The rest of this article uses the reopened sweep for candidate inspection and
+promotion. That demonstrates that a saved sweep reopens to the same
+dplyr-friendly surface as the in-session result.
 
 The default sweep path is memory-backed and uses the canonical R accounting
 fold. When your workload is spot-asset FIFO and you want the scoped B2
@@ -392,22 +541,22 @@ the selection rule visible.
 ```{r}
 #| label: inspect-candidates
 
-ranked <- sweep |>
+ranked <- reopened_sweep |>
   filter(status == "DONE") |>
   arrange(desc(sharpe_ratio))
 
 top_n <- ranked |>
   slice_head(n = 5) |>
   select(
-    run_id, status, final_equity, total_return, sharpe_ratio,
+    candidate_id, candidate_row, status, final_equity, total_return, sharpe_ratio,
     params, feature_params, execution_seed
   )
 
 glimpse(top_n)
 
-issues <- sweep |>
+issues <- reopened_sweep |>
   filter(status != "DONE") |>
-  select(any_of(c("run_id", "status", "error_class", "error_msg", "warnings"))) |>
+  select(any_of(c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings"))) |>
   as_tibble()
 
 issues
@@ -493,7 +642,7 @@ debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
 failed_sweep <- ledgr_sweep(debug_exp, debug_grid)
 
 failed_sweep |>
-  select(run_id, status, error_class, error_msg, params)
+  select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
 Use the failed row as an interactive debugging handle: inspect `error_class`,
@@ -533,7 +682,7 @@ ship:
 - cost-grid composition such as `ledgr_cost_grid()`;
 - paper/live trading adapters;
 - intraday-specific support;
-- `ledgr_save_sweep()` or full sweep artifact persistence.
+- full per-candidate committed-run artifacts.
 
 ## Where Next
 

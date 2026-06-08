@@ -399,7 +399,7 @@ ranked <- sweep |>
   arrange(desc(sharpe_ratio))
 
 candidate_columns <- c(
-  "run_id", "status", "final_equity", "total_return",
+  "candidate_id", "candidate_row", "status", "final_equity", "total_return",
   "sharpe_ratio", "params", "feature_params"
 )
 
@@ -408,7 +408,7 @@ top_n <- ranked |>
   select(all_of(candidate_columns))
 glimpse(top_n)
 
-issue_columns <- c("run_id", "status", "error_class", "error_msg", "warnings")
+issue_columns <- c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings")
 
 issues <- sweep |>
   filter(status != "DONE") |>
@@ -523,7 +523,8 @@ remain future workflow polish.
 promotion <- info$promotion_context
 list(
   source = promotion$source,
-  selected_candidate = promotion$selected_candidate$run_id,
+  selected_candidate = promotion$selected_candidate$candidate_id,
+  selected_candidate_row = promotion$selected_candidate$candidate_row,
   strategy_params_json = promotion$selected_candidate$params_json,
   feature_params_json = promotion$selected_candidate$feature_params_json
 )

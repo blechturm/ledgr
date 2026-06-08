@@ -36,9 +36,8 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (post-v0.1.9.1 release gate; v0.1.9.2 planning
-next; update this block when the next packet opens or scope changes
-materially):
+Current planning context (v0.1.9.2 sweep artifact persistence active
+packet):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -185,8 +184,15 @@ materially):
   `timing_model`, required `cost_model`, cost model inspection helpers,
   legacy-shape rejection, cost identity (`cost_model_hash` and
   `cost_plan_json`), and bounded auditr identity / disclaimer fixes.
-  v0.1.9.2 sweep artifact persistence remains the next planned packet;
-  no v0.1.9.2 implementation is active until its RFC/spec packet is cut.
+- The active v0.1.9.2 packet is sweep artifact persistence:
+  `inst/design/ledgr_v0_1_9_2_spec_packet/README.md` and
+  `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
+  It is scoped to durable saved-sweep artifacts, optional retained net
+  equity/return series for completed candidates, reopened-sweep
+  compatibility, and compact retention infrastructure for later
+  walk-forward. Ranking helpers, named selection views, benchmark
+  diagnostics, signal decay, implementation/ cost decay, gross-vs-net
+  attribution, and walk-forward integration are explicit non-scope.
 
 ## Active Design Entry Points
 
@@ -197,6 +203,7 @@ work.
 
 | Area | Read |
 |----|----|
+| v0.1.9.2 active packet | `inst/design/ledgr_v0_1_9_2_spec_packet/README.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
 | v0.1.9.1 release record | `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_tickets.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_1_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_release_closeout.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `inst/design/manual/identity_contract.qmd` |
 | v0.1.8.11 release record | `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_11_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_release_closeout.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md`, `inst/design/contracts.md` |
 | v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |

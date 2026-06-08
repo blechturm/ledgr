@@ -111,7 +111,8 @@ ledgr_candidate_summary_records <- function(selection_view) {
 
 ledgr_candidate_summary_record <- function(row) {
   list(list(
-    run_id = ledgr_summary_scalar(row, "run_id", NULL),
+    candidate_id = ledgr_summary_scalar(row, "candidate_id", NULL),
+    candidate_row = ledgr_summary_scalar(row, "candidate_row", NULL),
     status = ledgr_summary_scalar(row, "status", NULL),
     final_equity = ledgr_summary_scalar(row, "final_equity", NULL),
     total_return = ledgr_summary_scalar(row, "total_return", NULL),

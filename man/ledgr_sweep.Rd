@@ -8,6 +8,7 @@ ledgr_sweep(
   exp,
   param_grid,
   precomputed_features = NULL,
+  retain = ledgr_sweep_retention(),
   seed = NULL,
   stop_on_error = FALSE,
   workers = 1L,
@@ -21,6 +22,10 @@ ledgr_sweep(
 \item{param_grid}{A \code{ledgr_param_grid}.}
 
 \item{precomputed_features}{Optional \code{ledgr_precomputed_features} object.}
+
+\item{retain}{A \code{ledgr_sweep_retention} object. The default keeps the
+current scalar-only sweep output. Retention metadata is not execution
+identity.}
 
 \item{seed}{Optional integer-like master seed. When supplied, each candidate
 receives a deterministic derived execution seed.}
@@ -89,9 +94,10 @@ throws \code{ledgr_parallel_sweep_interrupted}; no partially promotable sweep
 result is returned. Partial-result recovery is intentionally deferred.
 
 Current sweep mode intentionally does not ship automatic ranking,
-\code{ledgr_tune()}, walk-forward/PBO/CSCV helpers, risk-layer insertion, public
-cost-model factories, paper/live adapters, intraday-specific support, or
-full sweep artifact persistence.
+\code{ledgr_tune()}, walk-forward/PBO/CSCV helpers, risk-layer insertion,
+cost-grid composition, paper/live adapters, intraday-specific support, or
+full per-candidate committed-run artifacts. Saved sweeps are compact
+candidate evidence, not batches of committed runs.
 }
 \section{Articles}{
 

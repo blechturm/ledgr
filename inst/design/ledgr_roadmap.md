@@ -3,9 +3,8 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_9_1_spec_packet/`.
-**Active packet:** None. Next planned packet is v0.1.9.2 sweep artifact
-persistence; RFC seed pending.
+**Latest completed packet:** `inst/design/ledgr_v0_1_9_2_spec_packet/`.
+**Active packet:** None; v0.1.9.3 target-risk planning is next.
 **Active packet path:** None.
 
 This roadmap is a directional planning document. Versioned spec packets are the
@@ -107,7 +106,7 @@ versioned packet.
 | v0.1.8.10 | Done | Ephemeral subphase telemetry, matrix-canonical substrate and strategy accessors, event-preserving fold-owned FIFO accounting, yyjsonr options hoist, B2 compiled spot-FIFO accelerator gate, scoped public memory-backed sweep opt-in, and measurement closeout. | `inst/design/ledgr_v0_1_8_10_spec_packet/` |
 | v0.1.8.11 | Done | Documentation, structure, and cleanup release before v0.1.9 features: contract/design-index audit, RFC decision index, user-facing disclaimer and vignette refresh, internal performance-arc narrative, maintainer manual, benchmark methodology article, and `adr/` + `architecture/` + `maintainer_review/` wind-down. | `inst/design/ledgr_v0_1_8_11_spec_packet/` |
 | v0.1.9.1 | Done | Public transaction-cost model API, explicit timing-model surface, cost identity (`cost_model_hash`, `cost_plan_json`), and bounded auditr identity/disclaimer fixes. | `inst/design/ledgr_v0_1_9_1_spec_packet/` |
-| v0.1.9.2 | Planned | Sweep artifact persistence: scheduled RFC cycle and compact sweep-result retention/promotion audit infrastructure for later walk-forward. | Future packet; RFC seed pending |
+| v0.1.9.2 | Done | Sweep artifact persistence: durable saved-sweep artifacts, optional retained net equity/return series for completed candidates, reopened-sweep candidate compatibility, and compact retention infrastructure for later walk-forward. | `inst/design/ledgr_v0_1_9_2_spec_packet/` |
 | v0.1.9.3 | Planned | Target-risk: per-pulse restructure plus chainable risk layer, including risk-chain identity for walk-forward. | Future packet; accepted risk/OMS boundary synthesis |
 | v0.1.9.4 | Planned | Walk-forward culmination: consumes cost identity from v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain identity from v0.1.9.3; Section 17 gates fire here. | Future packet; accepted walk-forward synthesis |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
@@ -1339,9 +1338,10 @@ infrastructure that walk-forward consumes when it ticket-cuts at v0.1.9.4:
 
 - **v0.1.9.1** -- cost-API
   (`inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`,
+  accepted; completed packet).
+- **v0.1.9.2** -- sweep artifact persistence
+  (`inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`,
   accepted; active packet).
-- **v0.1.9.2** -- sweep artifact persistence (RFC cycle scheduled;
-  no prior RFC artifacts; seed v1 pending).
 - **v0.1.9.3** -- target-risk: per-pulse restructure plus chainable
   risk layer
   (section immediately below; previously framed as the v0.1.9
@@ -1622,25 +1622,40 @@ Constraints:
 
 ### v0.1.9.2 Sweep Artifact Persistence
 
-Sequenced as **v0.1.9.2** in the v0.1.9.x arc. The RFC cycle is scheduled
-from the 2026-06-05 planning update; the seed draft is still pending.
+Sequenced as **v0.1.9.2** in the v0.1.9.x arc. The RFC cycle is accepted and
+closed. The active packet opens from
+`inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
 
 Intent:
 
 - persist compact sweep result bundles for audit and expensive exploratory
   work;
-- store grid definitions, candidate summaries, warnings/errors, metric context,
-  feature-set hashes, execution seeds, selection/ranking views, manifest data,
-  and snapshot locator hints;
-- let promoted runs reference or copy enough sweep artifact metadata to answer
-  "why this candidate?" without committing every candidate as a durable run.
+- add `ledgr_sweep_retention()` and a `retain` argument on `ledgr_sweep()`,
+  defaulting to today's scalar-only sweep behavior;
+- optionally retain net portfolio equity/return series for completed
+  candidates only;
+- save, reopen, list, and inspect saved sweeps in the experiment store;
+- expose long and wide retained-series accessors over reopened and in-memory
+  sweeps;
+- persist cost identity from v0.1.9.1 (`cost_model_hash`, `cost_plan_json`);
+- preserve reopened-sweep candidate extraction and promotion readiness without
+  treating stored scalar rows or retained return rows as committed-run
+  artifacts.
 
 Constraints:
 
-- do not store full ledger, fill, trade, or equity artifacts for every
-  candidate by default;
+- no ranking helpers, named selection views, winner-picking, or automatic
+  promotion;
+- no full ledger, fill, trade, or per-instrument artifacts for every candidate
+  by default;
+- no benchmark-relative diagnostics, signal-decay tooling,
+  implementation/cost-decay tooling, gross-vs-net cost attribution, liquidity,
+  TCA, OMS, taxes, financing, or broker reconciliation;
+- no walk-forward integration or per-fold retention dimensions in v0.1.9.2;
 - do not weaken `ledgr_promote()` or `run_promotion_context`;
-- keep artifact persistence separate from automatic winner selection.
+- keep artifact persistence separate from automatic winner selection;
+- promotion from a reopened saved sweep re-executes the selected candidate from
+  its reproduction key against the sealed snapshot.
 
 ### v0.1.9.x Target Construction Helper Extensions
 

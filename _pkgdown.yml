@@ -47,6 +47,9 @@ reference:
       - ledgr_precompute_features
       - print.ledgr_precomputed_features
       - ledgr_sweep
+      - ledgr_sweep_retention
+      - ledgr_sweep_returns
+      - ledgr_sweep_save
       - print.ledgr_sweep_results
       - ledgr_candidate
       - ledgr_candidate_reproduction_key

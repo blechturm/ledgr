@@ -240,24 +240,25 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
   testthat::expect_identical(
     names(results),
     c(
-      "run_id", "status", "final_equity", "total_return", "annualized_return",
-      "volatility", "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
-      "avg_trade", "time_in_market", "execution_seed", "error_class",
-      "error_msg", "params", "feature_params", "warnings", "feature_fingerprints",
-      "provenance", "t_engine", "t_results", "t_fills_extract"
+      "candidate_id", "candidate_row", "status", "final_equity",
+      "total_return", "annualized_return", "volatility", "sharpe_ratio",
+      "max_drawdown", "n_trades", "win_rate", "avg_trade", "time_in_market",
+      "execution_seed", "error_class", "error_msg", "params",
+      "feature_params", "warnings", "feature_fingerprints", "provenance",
+      "t_engine", "t_results", "t_fills_extract"
     )
   )
   testthat::expect_true(all(results$status == "DONE"))
 
-  partial_row <- results[results$run_id == "partial", , drop = FALSE]
+  partial_row <- results[results$candidate_id == "partial", , drop = FALSE]
   testthat::expect_true(any(vapply(
     partial_row$warnings[[1]],
     function(w) grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE),
     logical(1)
   )))
-  testthat::expect_length(results$warnings[[which(results$run_id == "zero")]], 0L)
+  testthat::expect_length(results$warnings[[which(results$candidate_id == "zero")]], 0L)
 
-  for (label in results$run_id) {
+  for (label in results$candidate_id) {
     candidate <- ledgr_candidate(results, label)
     promoted <- suppressWarnings(ledgr_promote(exp, candidate, run_id = paste0("parity-", label, "-promoted")))
     direct <- suppressWarnings(ledgr_run(
@@ -267,7 +268,7 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
       seed = candidate$execution_seed
     ))
 
-    row <- results[results$run_id == label, , drop = FALSE]
+    row <- results[results$candidate_id == label, , drop = FALSE]
     ledgr_expect_sweep_row_matches_run(row, promoted)
     ledgr_expect_run_artifacts_identical(promoted, direct)
     ledgr_expect_memory_reconstruction_matches_run(direct, bars, initial_cash = 10000, universe = c("AAA", "BBB"))
@@ -391,7 +392,7 @@ testthat::test_that("seeded stochastic sweep promotion reproduces the selected c
   ledgr_expect_run_artifacts_identical(promoted, direct)
 
   context <- ledgr_promotion_context(promoted)
-  testthat::expect_identical(context$selected_candidate$run_id, "candidate")
+  testthat::expect_identical(context$selected_candidate$candidate_id, "candidate")
   testthat::expect_identical(context$selected_candidate$execution_seed, candidate$execution_seed)
   testthat::expect_identical(context$source_sweep$sweep_id, attr(results, "sweep_id"))
   testthat::expect_identical(context$source_sweep$master_seed, 123L)
@@ -471,7 +472,7 @@ testthat::test_that("feature-factory sweep parity covers candidate-varying featu
   testthat::expect_false(identical(feature_hashes[[1]], feature_hashes[[2]]))
   testthat::expect_true(all(results$status == "DONE"))
 
-  for (label in results$run_id) {
+  for (label in results$candidate_id) {
     candidate <- ledgr_candidate(results, label)
     promoted <- suppressWarnings(ledgr_promote(exp, candidate, run_id = paste0("factory-", label, "-promoted")))
     direct <- suppressWarnings(ledgr_run(
@@ -483,7 +484,10 @@ testthat::test_that("feature-factory sweep parity covers candidate-varying featu
     on.exit(close(promoted), add = TRUE)
     on.exit(close(direct), add = TRUE)
 
-    ledgr_expect_sweep_row_matches_run(results[results$run_id == label, , drop = FALSE], promoted)
+    ledgr_expect_sweep_row_matches_run(
+      results[results$candidate_id == label, , drop = FALSE],
+      promoted
+    )
     ledgr_expect_run_artifacts_identical(promoted, direct)
     testthat::expect_equal(
       observed[[label]],

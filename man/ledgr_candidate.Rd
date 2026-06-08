@@ -8,9 +8,9 @@ ledgr_candidate(results, which = 1L, allow_failed = FALSE)
 }
 \arguments{
 \item{results}{A \code{ledgr_sweep_results} object or tibble-like object with
-\code{run_id}, \code{params}, \code{execution_seed}, and \code{provenance} columns.}
+\code{candidate_id}, \code{params}, \code{execution_seed}, and \code{provenance} columns.}
 
-\item{which}{Candidate selector. A character scalar selects by \code{run_id}; an
+\item{which}{Candidate selector. A character scalar selects by \code{candidate_id}; an
 integer-like scalar selects by row position.}
 
 \item{allow_failed}{Logical. Failed candidates error by default.}
