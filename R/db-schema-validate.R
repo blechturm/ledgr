@@ -125,6 +125,8 @@ ledgr_validate_schema <- function(con) {
         metric_context_version = "INTEGER",
         cost_model_hash = "TEXT",
         cost_plan_json = "TEXT",
+        risk_chain_hash = "TEXT",
+        risk_plan_json = "TEXT",
         execution_assumptions_json = "TEXT",
         feature_union_hash = "TEXT",
         feature_engine_version = "TEXT",
@@ -168,7 +170,9 @@ ledgr_validate_schema <- function(con) {
         feature_fingerprints_json = "TEXT",
         provenance_json = "TEXT",
         cost_model_hash = "TEXT",
-        metric_context_hash = "TEXT"
+        metric_context_hash = "TEXT",
+        risk_chain_hash = "TEXT",
+        risk_plan_json = "TEXT"
       ),
       pk = c("sweep_id", "candidate_row"),
       unique = list(c("sweep_id", "candidate_id")),

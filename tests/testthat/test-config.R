@@ -206,7 +206,7 @@ testthat::test_that("cost-model config hash is stable across internal cost-bound
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "23838c7297b9ec8a09b422f9f4a29933fb61b7cdbd8b030789ff4b2f441ae57b"
+    "9e29021ba11784777f4adc93d5569e49eb1d90d49bd48bb04a030a6b0a2300cc"
   )
 })
 

@@ -1,5 +1,5 @@
-ledgr_experiment_store_schema_version <- 109L
-ledgr_saved_sweep_schema_version <- 1L
+ledgr_experiment_store_schema_version <- 110L
+ledgr_saved_sweep_schema_version <- 2L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -105,6 +105,8 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
       metric_context_version INTEGER NOT NULL,
       cost_model_hash TEXT NOT NULL,
       cost_plan_json TEXT NOT NULL,
+      risk_chain_hash TEXT,
+      risk_plan_json TEXT,
       execution_assumptions_json TEXT NOT NULL,
       feature_union_hash TEXT NOT NULL,
       feature_engine_version TEXT NOT NULL,
@@ -143,6 +145,8 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
       provenance_json TEXT NOT NULL,
       cost_model_hash TEXT NOT NULL,
       metric_context_hash TEXT NOT NULL,
+      risk_chain_hash TEXT,
+      risk_plan_json TEXT,
       PRIMARY KEY (sweep_id, candidate_row),
       UNIQUE (sweep_id, candidate_id)
     )
@@ -162,6 +166,10 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
     )
     "
   )
+  ledgr_experiment_store_add_column(con, "sweeps", "risk_chain_hash", "TEXT")
+  ledgr_experiment_store_add_column(con, "sweeps", "risk_plan_json", "TEXT")
+  ledgr_experiment_store_add_column(con, "sweep_candidates", "risk_chain_hash", "TEXT")
+  ledgr_experiment_store_add_column(con, "sweep_candidates", "risk_plan_json", "TEXT")
   DBI::dbExecute(
     con,
     "

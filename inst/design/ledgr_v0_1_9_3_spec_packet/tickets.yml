@@ -1,0 +1,306 @@
+version: "0.1.9.3"
+source: "v0_1_9_3_tickets.md"
+generated_from: "v0_1_9_3_spec.md"
+tickets:
+  - id: "LDG-2597"
+    title: "Packet Alignment And v0.1.9.3 Ticket Cut"
+    status: "completed"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "governance"
+      surface: "design_packet"
+      scope: "v0.1.9.3"
+    tests:
+      - "manual_packet_review"
+      - "yaml_review"
+      - "batch_plan_review"
+      - "ascii_check"
+      - "stale_reference_rg_checks"
+      - "claude_packet_cut_review"
+
+  - id: "LDG-2598"
+    title: "Risk Object Constructors And Validation"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2597"
+    classification:
+      type: "public_api"
+      surface: "target_risk"
+      scope: "risk_constructors"
+    tests:
+      - "constructor_tests"
+      - "invalid_input_tests"
+      - "export_tests"
+      - "print_str_smoke_tests"
+      - "classed_condition_tests"
+
+  - id: "LDG-2599"
+    title: "Risk Plan Compilation And Identity"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2598"
+    classification:
+      type: "identity"
+      surface: "target_risk"
+      scope: "risk_plan_hash_and_json"
+    tests:
+      - "canonical_json_tests"
+      - "hash_stability_tests"
+      - "noop_normalization_tests"
+      - "parameter_reference_tests"
+      - "reconstruction_parity_tests"
+      - "serialization_structure_tests"
+
+  - id: "LDG-2600"
+    title: "Experiment Config And Reopen Compatibility"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2599"
+    classification:
+      type: "identity"
+      surface: "experiment_config"
+      scope: "risk_identity_reopen_compatibility"
+    tests:
+      - "config_hash_tests"
+      - "experiment_constructor_tests"
+      - "stored_run_reopen_tests"
+      - "legacy_no_risk_compatibility_tests"
+      - "identity_orthogonality_tests"
+
+  - id: "LDG-2601"
+    title: "Phased-Pulse No-Op Parity Substrate"
+    status: "completed"
+    priority: "P0"
+    effort: "XL"
+    dependencies:
+      - "LDG-2599"
+    classification:
+      type: "execution"
+      surface: "fold_core"
+      scope: "phased_pulse_noop_parity"
+    tests:
+      - "reference_parity_tests"
+      - "event_stream_tests"
+      - "run_sweep_parity_tests"
+      - "final_bar_no_fill_tests"
+      - "retained_return_parity_tests"
+      - "same_pulse_rebalancing_order_independence_tests"
+
+  - id: "LDG-2602"
+    title: "Risk-Chain Fold Integration And Post-Risk Validation"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2600"
+      - "LDG-2601"
+    classification:
+      type: "execution"
+      surface: "fold_core"
+      scope: "risk_chain_slot_and_validation"
+    tests:
+      - "fold_integration_tests"
+      - "post_risk_validation_tests"
+      - "no_lookahead_tests"
+      - "final_bar_tests"
+      - "run_sweep_parity_tests"
+
+  - id: "LDG-2603"
+    title: "Long-Only Risk Step"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2602"
+    classification:
+      type: "execution"
+      surface: "target_risk"
+      scope: "long_only_step"
+    tests:
+      - "risk_step_behavior_tests"
+      - "post_risk_validation_tests"
+      - "identity_tests"
+      - "run_sweep_tests"
+      - "documentation_examples"
+
+  - id: "LDG-2604"
+    title: "Max-Weight Risk Step"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2602"
+    classification:
+      type: "execution"
+      surface: "target_risk"
+      scope: "max_weight_step"
+    tests:
+      - "decision_time_surface_tests"
+      - "cap_behavior_tests"
+      - "parameterized_risk_tests"
+      - "identity_tests"
+      - "no_lookahead_tests"
+      - "run_sweep_parity_tests"
+
+  - id: "LDG-2605"
+    title: "Sweep Risk Identity And Candidate Failures"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2602"
+      - "LDG-2603"
+      - "LDG-2604"
+    classification:
+      type: "sweep"
+      surface: "sweep_candidate_identity"
+      scope: "risk_identity_and_failures"
+    tests:
+      - "sweep_identity_tests"
+      - "stop_on_error_tests"
+      - "classed_condition_tests"
+      - "warning_error_association_tests"
+      - "seed_determinism_tests"
+      - "failure_type_stale_schema_searches"
+
+  - id: "LDG-2606"
+    title: "Saved Sweep Schema v2 Risk Fields"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2605"
+    classification:
+      type: "persistence"
+      surface: "saved_sweep_schema"
+      scope: "risk_identity_schema_v2"
+    tests:
+      - "schema_tests"
+      - "canonical_json_tests"
+      - "schema_version_tests"
+      - "v0_1_9_2_fixture_reopen_tests"
+      - "db_roundtrip_tests"
+      - "fail_closed_incompatibility_tests"
+
+  - id: "LDG-2607"
+    title: "Promotion And Reopened-Candidate Risk Provenance"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2606"
+    classification:
+      type: "promotion"
+      surface: "ledgr_promote"
+      scope: "risk_provenance"
+    tests:
+      - "promotion_tests"
+      - "reopened_sweep_promotion_tests"
+      - "provenance_json_roundtrip_tests"
+      - "risk_identity_comparison_tests"
+      - "candidate_extraction_tests"
+
+  - id: "LDG-2608"
+    title: "Parallel And Compiled-Path Risk Safety"
+    status: "completed"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2605"
+    classification:
+      type: "execution"
+      surface: "parallel_and_compiled_sweep"
+      scope: "risk_plan_safety"
+    tests:
+      - "parallel_sweep_tests"
+      - "serialization_tests"
+      - "worker_safe_plan_tests"
+      - "compiled_spot_fifo_parity_or_fail_closed_tests"
+      - "seed_order_determinism_tests"
+
+  - id: "LDG-2609"
+    title: "Documentation, Examples, And NEWS"
+    status: "completed"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2598"
+      - "LDG-2599"
+      - "LDG-2603"
+      - "LDG-2604"
+      - "LDG-2605"
+      - "LDG-2606"
+      - "LDG-2607"
+    classification:
+      type: "documentation"
+      surface: "user_docs"
+      scope: "target_risk_docs"
+    tests:
+      - "documentation_review"
+      - "roxygen_examples"
+      - "readme_cold_start_check_if_affected"
+      - "pkgdown_build_if_affected"
+      - "stale_claim_searches"
+
+  - id: "LDG-2610"
+    title: "Release Surfaces And Planning Docs"
+    status: "completed"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2597"
+      - "LDG-2609"
+    classification:
+      type: "governance"
+      surface: "release_surfaces"
+      scope: "planning_and_metadata"
+    tests:
+      - "planning_doc_review"
+      - "contracts_md_update_review"
+      - "stale_reference_searches"
+      - "metadata_review"
+      - "pkgdown_build_if_affected"
+      - "claude_review_before_release_gate"
+
+  - id: "LDG-2611"
+    title: "v0.1.9.3 Release Gate"
+    status: "completed"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2597"
+      - "LDG-2598"
+      - "LDG-2599"
+      - "LDG-2600"
+      - "LDG-2601"
+      - "LDG-2602"
+      - "LDG-2603"
+      - "LDG-2604"
+      - "LDG-2605"
+      - "LDG-2606"
+      - "LDG-2607"
+      - "LDG-2608"
+      - "LDG-2609"
+      - "LDG-2610"
+    classification:
+      type: "release"
+      surface: "release_gate"
+      scope: "v0.1.9.3"
+    tests:
+      - "release_ci_playbook_checklist"
+      - "targeted_risk_tests"
+      - "full_testthat"
+      - "readme_cold_start_check"
+      - "coverage_check"
+      - "r_cmd_check"
+      - "pkgdown_build_if_affected"
+      - "github_ci_checks"
+      - "release_closeout"

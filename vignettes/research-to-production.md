@@ -214,24 +214,26 @@ v0.1.x is the correctness-first research layer. It already covers:
 - built-in indicators, TTR-backed indicators, multi-output bundles,
   feature maps, warmup diagnostics, pulse inspection, and active
   aliases;
-- feature and strategy grids, sweep execution, candidate rows, promotion
-  context, and explicit selection-is-not-validation framing;
-- public cost-model constructors, timing-model identity, required
-  explicit costs, reproducibility tiers, strategy preflight, stored
-  strategy source, and a deterministic demo dataset for documentation
-  and examples.
+- feature and strategy grids, sweep execution, candidate rows, compact
+  saved sweeps, retained return series, promotion context, and explicit
+  selection-is-not-validation framing;
+- public cost-model constructors, classed target-risk transforms,
+  timing-model identity, required explicit costs, reproducibility tiers,
+  strategy preflight, stored strategy source, and a deterministic demo
+  dataset for documentation and examples.
 
 The rest of the v0.1.x arc is still research-layer work:
 
-- v0.1.9.2 plans compact sweep artifact persistence so expensive
-  exploratory work can be retained without committing every candidate as
-  a durable run;
-- v0.1.9.3 plans the target-risk layer and the per-pulse restructure
-  needed for portfolio-level feasibility decisions;
 - v0.1.9.4 plans walk-forward evaluation over the existing sweep and run
-  surfaces;
+  surfaces, now consuming cost identity, saved-sweep retention
+  infrastructure, and risk-chain identity;
 - later v0.1.9.x work may add selection-integrity diagnostics,
   crypto-readiness evidence, and target-construction helper extensions.
+
+The target-risk layer is intentionally narrow: it transforms target
+quantities before timing and cost. It does not implement affordability
+enforcement, liquidity/capacity policy, margin, shorting or borrow
+policy, OMS lifecycle behavior, or broker-grade controls.
 
 Paper and live trading adapters, OMS state machine semantics, and
 observability tooling follow in the v0.2.x and v0.3.x range.

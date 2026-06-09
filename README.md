@@ -196,7 +196,7 @@ those things well.
 |----|----|
 | sealed snapshots and hashes | market-data acquisition |
 | pulse construction and no-lookahead contexts | indicator calculations through adapters |
-| target validation, fills, and ledger events | charting and visualization |
+| target validation, target-risk transforms, fills, and ledger events | charting and visualization |
 | run identity, provenance, and result reconstruction | downstream analytics and reporting |
 
 This posture is deliberate. If you want an all-in-one charting or
@@ -206,16 +206,19 @@ ledgr when you want the audit trail and adapter boundary to be explicit.
 ## Scope
 
 The current ledgr research API is experiment-first. It includes memory-backed
-exploratory sweep support, optional parallel candidate dispatch, and a scoped
-`compiled_accounting_model = "spot_fifo"` opt-in for memory-backed spot-asset
-FIFO sweeps. Canonical R execution remains the default.
+exploratory sweep support, compact saved sweeps with optional retained return
+series, classed target-risk transforms, optional parallel candidate dispatch,
+and a scoped `compiled_accounting_model = "spot_fifo"` opt-in for memory-backed
+spot-asset FIFO sweeps. Canonical R execution remains the default.
 
 The compiled opt-in is not durable `ledgr_run()` integration, not a non-spot
-accounting model, and not a general compiled fold core. ledgr does not ship
-automatic ranking, `ledgr_tune()`, walk-forward/PBO/CSCV helpers, full sweep
-artifact persistence, broker adapters, paper trading, live trading, or
-short-selling semantics. Those are separate roadmap items with different state
-and safety requirements.
+accounting model, and not a general compiled fold core. The target-risk layer
+is a target-vector transformation layer; it is not affordability enforcement,
+portfolio optimization, margin, shorting or borrow policy, liquidity/capacity
+modeling, OMS lifecycle behavior, or broker-grade risk control. ledgr does not
+ship automatic ranking, `ledgr_tune()`, walk-forward/PBO/CSCV helpers, broker
+adapters, paper trading, or live trading. Those are separate roadmap items with
+different state and safety requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes

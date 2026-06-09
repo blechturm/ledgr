@@ -236,6 +236,8 @@ ledgr_sweep <- function(exp,
   attr(out, "metric_context_version") <- as.integer(metric_context$metric_context_version)
   attr(out, "cost_model_hash") <- exp$cost_model_hash %||% NULL
   attr(out, "cost_plan_json") <- exp$cost_plan_json %||% NULL
+  attr(out, "risk_chain_hash") <- exp$risk_chain_hash %||% ledgr_risk_chain_hash(exp$risk_chain %||% ledgr_risk_none())
+  attr(out, "risk_plan_json") <- exp$risk_plan_json %||% ledgr_risk_plan_json(exp$risk_chain %||% ledgr_risk_none())
   attr(out, "sweep_retention") <- retain
   if (identical(retain$returns, "completed")) {
     attr(out, "sweep_returns") <- ledgr_sweep_collect_retained_returns(results, sweep_id)
@@ -399,6 +401,10 @@ ledgr_candidate_reproduction_key <- function(candidate) {
         cost_model_hash = provenance$cost_model_hash %||% meta$cost_model_hash %||% NULL,
         cost_plan_json = provenance$cost_plan_json %||% meta$cost_plan_json %||% NULL
       ),
+      risk = list(
+        risk_chain_hash = provenance$risk_chain_hash %||% meta$risk_chain_hash %||% NULL,
+        risk_plan_json = provenance$risk_plan_json %||% meta$risk_plan_json %||% NULL
+      ),
       engine = list(
         feature_engine_version = meta$feature_engine_version %||% ledgr_feature_engine_version(),
         provenance_version = provenance$provenance_version %||% NULL
@@ -442,6 +448,8 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
 #' Hash fields carried from the candidate into promotion evidence are
 #' summarized in [ledgr_identity_fields].
+#' Promotion replays the selected candidate's risk chain even when `exp` was
+#' configured with a different `risk_chain`.
 #'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a
@@ -485,6 +493,7 @@ ledgr_promote <- function(exp,
   if (isTRUE(require_same_snapshot)) {
     ledgr_candidate_validate_same_snapshot(exp, candidate)
   }
+  exp <- ledgr_promote_experiment_with_candidate_risk(exp, candidate)
 
   seed <- candidate$execution_seed
   if (length(seed) != 1L || is.na(seed)) {
@@ -608,9 +617,80 @@ ledgr_candidate_sweep_meta <- function(results, is_sweep_results) {
     "master_seed", "seed_contract", "evaluation_scope", "strategy_hash",
     "strategy_name", "strategy_source_capture_method", "strategy_preflight",
     "feature_union", "feature_union_hash", "feature_engine_version", "metric_context",
-    "metric_context_hash", "metric_context_version", "execution_assumptions"
+    "metric_context_hash", "metric_context_version", "risk_chain_hash", "risk_plan_json",
+    "execution_assumptions"
   )
   stats::setNames(lapply(keys, function(key) attr(results, key, exact = TRUE)), keys)
+}
+
+ledgr_promote_experiment_with_candidate_risk <- function(exp, candidate) {
+  risk_identity <- ledgr_candidate_risk_identity(candidate)
+  exp$risk_chain <- risk_identity$risk_chain
+  exp$risk_chain_hash <- risk_identity$risk_chain_hash
+  exp$risk_plan_json <- risk_identity$risk_plan_json
+  exp
+}
+
+ledgr_candidate_risk_identity <- function(candidate) {
+  provenance <- candidate$provenance
+  if (!is.list(provenance)) {
+    provenance <- list()
+  }
+  meta <- candidate$sweep_meta
+  if (!is.list(meta)) {
+    meta <- list()
+  }
+  row <- candidate$row
+  risk_chain_hash <- provenance$risk_chain_hash %||% meta$risk_chain_hash %||% NULL
+  risk_plan_json <- provenance$risk_plan_json %||% meta$risk_plan_json %||% NULL
+  if (is.null(risk_chain_hash) && is.data.frame(row) && "risk_chain_hash" %in% names(row)) {
+    risk_chain_hash <- as.character(row$risk_chain_hash[[1]])
+  }
+  if (is.null(risk_chain_hash) && is.null(risk_plan_json)) {
+    risk_chain <- ledgr_risk_none()
+    return(list(
+      risk_chain = risk_chain,
+      risk_chain_hash = ledgr_risk_chain_hash(risk_chain),
+      risk_plan_json = ledgr_risk_plan_json(risk_chain)
+    ))
+  }
+  if (!is.character(risk_chain_hash) || length(risk_chain_hash) != 1L ||
+      is.na(risk_chain_hash) || !grepl("^[0-9a-f]{64}$", risk_chain_hash)) {
+    rlang::abort(
+      "Candidate risk_chain_hash is missing or invalid.",
+      class = c("ledgr_candidate_risk_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  if (!is.character(risk_plan_json) || length(risk_plan_json) != 1L ||
+      is.na(risk_plan_json) || !nzchar(risk_plan_json)) {
+    rlang::abort(
+      "Candidate risk_plan_json is missing or invalid.",
+      class = c("ledgr_candidate_risk_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  risk_chain <- tryCatch(
+    ledgr_risk_plan_reconstruct(risk_plan_json),
+    error = function(e) {
+      rlang::abort(
+        "Candidate risk_plan_json cannot be reconstructed.",
+        class = c("ledgr_candidate_risk_identity_mismatch", "ledgr_invalid_args"),
+        parent = e
+      )
+    }
+  )
+  canonical_plan <- ledgr_risk_plan_json(risk_chain)
+  if (!identical(canonical_plan, as.character(canonical_json(risk_plan_json))) ||
+      !identical(ledgr_risk_chain_hash(risk_chain), risk_chain_hash)) {
+    rlang::abort(
+      "Candidate risk_chain_hash does not match risk_plan_json.",
+      class = c("ledgr_candidate_risk_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  list(
+    risk_chain = risk_chain,
+    risk_chain_hash = risk_chain_hash,
+    risk_plan_json = canonical_plan
+  )
 }
 
 ledgr_candidate_validate_same_snapshot <- function(exp, candidate) {
@@ -737,13 +817,17 @@ ledgr_sweep_candidate_tasks <- function(exp,
 }
 
 ledgr_sweep_exp_payload <- function(exp) {
+  risk_chain <- exp$risk_chain %||% ledgr_risk_none()
   list(
     strategy = exp$strategy,
     universe = exp$universe,
     opening = exp$opening,
     timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash %||% NULL,
-    cost_plan_json = exp$cost_plan_json %||% NULL
+    cost_plan_json = exp$cost_plan_json %||% NULL,
+    risk_chain = risk_chain,
+    risk_chain_hash = exp$risk_chain_hash %||% ledgr_risk_chain_hash(risk_chain),
+    risk_plan_json = exp$risk_plan_json %||% ledgr_risk_plan_json(risk_chain)
   )
 }
 
@@ -762,6 +846,7 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
       error_class = feature_row$error_class[[1]],
       error_msg = feature_row$error_msg[[1]],
       feature_fingerprints = feature_row$feature_fingerprints[[1]],
+      risk_chain_hash = task$exp$risk_chain_hash,
       provenance = ledgr_sweep_provenance(
         snapshot_hash = task$snapshot_hash,
         strategy_hash = task$strategy_hash,
@@ -771,6 +856,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         alias_map_version = feature_row$alias_map_version[[1]],
         cost_model_hash = task$exp$cost_model_hash %||% NULL,
         cost_plan_json = task$exp$cost_plan_json %||% NULL,
+        risk_chain_hash = task$exp$risk_chain_hash,
+        risk_plan_json = task$exp$risk_plan_json,
         master_seed = task$master_seed
       ),
       warnings = list()
@@ -825,6 +912,7 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
           error_class = ledgr_condition_class(e),
           error_msg = conditionMessage(e),
           feature_fingerprints = feature_row$feature_fingerprints[[1]],
+          risk_chain_hash = task$exp$risk_chain_hash,
           provenance = ledgr_sweep_provenance(
             snapshot_hash = task$snapshot_hash,
             strategy_hash = task$strategy_hash,
@@ -834,6 +922,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
             alias_map_version = feature_row$alias_map_version[[1]],
             cost_model_hash = task$exp$cost_model_hash %||% NULL,
             cost_plan_json = task$exp$cost_plan_json %||% NULL,
+            risk_chain_hash = task$exp$risk_chain_hash,
+            risk_plan_json = task$exp$risk_plan_json,
             master_seed = task$master_seed
           ),
           warnings = warnings
@@ -963,6 +1053,7 @@ ledgr_sweep_run_candidate <- function(exp,
   )
   telemetry <- ledgr_sweep_telemetry_env()
   cost_resolver <- ledgr_cost_resolver_from_plan_json(exp$cost_plan_json)
+  risk_plan <- ledgr_risk_plan_compile(exp$risk_chain, params = params)
   signature <- ledgr_strategy_signature(exp$strategy)
   execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -986,6 +1077,7 @@ ledgr_sweep_run_candidate <- function(exp,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = candidate$alias_map,
+    risk_plan = risk_plan,
     cost_resolver = cost_resolver,
     event_seq_start = as.integer(nrow(opening_rows)) + 1L,
     telemetry = telemetry,
@@ -1032,6 +1124,7 @@ ledgr_sweep_run_candidate <- function(exp,
     final_equity = summary$final_equity,
     metrics = summary$metrics,
     feature_fingerprints = feature_fingerprints,
+    risk_chain_hash = exp$risk_chain_hash,
     provenance = ledgr_sweep_provenance(
       snapshot_hash = snapshot_hash,
       strategy_hash = strategy_hash,
@@ -1041,6 +1134,8 @@ ledgr_sweep_run_candidate <- function(exp,
       alias_map_version = candidate_feature_row$alias_map_version[[1]],
       cost_model_hash = exp$cost_model_hash %||% NULL,
       cost_plan_json = exp$cost_plan_json %||% NULL,
+      risk_chain_hash = exp$risk_chain_hash,
+      risk_plan_json = exp$risk_plan_json,
       master_seed = master_seed
     ),
     t_engine = telemetry$t_engine,
@@ -1499,6 +1594,7 @@ ledgr_sweep_success_row <- function(candidate_id,
                                     final_equity,
                                     metrics,
                                     feature_fingerprints,
+                                    risk_chain_hash,
                                     provenance,
                                     warnings,
                                     t_engine = NA_real_,
@@ -1525,6 +1621,7 @@ ledgr_sweep_success_row <- function(candidate_id,
     feature_params = feature_params,
     warnings = warnings,
     feature_fingerprints = feature_fingerprints,
+    risk_chain_hash = risk_chain_hash,
     provenance = provenance,
     t_engine = t_engine,
     t_results = t_results,
@@ -1540,6 +1637,7 @@ ledgr_sweep_failure_row <- function(candidate_id,
                                     error_class,
                                     error_msg,
                                     feature_fingerprints,
+                                    risk_chain_hash,
                                     provenance,
                                     warnings) {
   ledgr_sweep_row(
@@ -1563,6 +1661,7 @@ ledgr_sweep_failure_row <- function(candidate_id,
     feature_params = feature_params,
     warnings = warnings,
     feature_fingerprints = feature_fingerprints,
+    risk_chain_hash = risk_chain_hash,
     provenance = provenance,
     t_engine = NA_real_,
     t_results = NA_real_,
@@ -1590,6 +1689,7 @@ ledgr_sweep_row <- function(candidate_id,
                             feature_params,
                             warnings,
                             feature_fingerprints,
+                            risk_chain_hash,
                             provenance,
                             t_engine = NA_real_,
                             t_results = NA_real_,
@@ -1615,6 +1715,7 @@ ledgr_sweep_row <- function(candidate_id,
     feature_params = list(feature_params),
     warnings = list(warnings),
     feature_fingerprints = list(feature_fingerprints),
+    risk_chain_hash = as.character(risk_chain_hash),
     provenance = list(provenance),
     t_engine = as.numeric(t_engine),
     t_results = as.numeric(t_results),
@@ -1630,6 +1731,8 @@ ledgr_sweep_provenance <- function(snapshot_hash,
                                    alias_map_version = NA_integer_,
                                    cost_model_hash = NULL,
                                    cost_plan_json = NULL,
+                                   risk_chain_hash = NULL,
+                                   risk_plan_json = NULL,
                                    master_seed) {
   out <- list(
     provenance_version = "ledgr_provenance_v1",
@@ -1645,6 +1748,8 @@ ledgr_sweep_provenance <- function(snapshot_hash,
   )
   if (!is.null(cost_model_hash)) out$cost_model_hash <- cost_model_hash
   if (!is.null(cost_plan_json)) out$cost_plan_json <- cost_plan_json
+  if (!is.null(risk_chain_hash)) out$risk_chain_hash <- risk_chain_hash
+  if (!is.null(risk_plan_json)) out$risk_plan_json <- risk_plan_json
   out
 }
 

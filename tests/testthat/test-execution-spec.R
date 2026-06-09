@@ -62,6 +62,7 @@ ledgr_test_execution_spec <- function(...) {
         pulses_posix = pulses_posix
       ),
       active_alias_map = NULL,
+      risk_plan = NULL,
       cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(
         spread_bps = 0,
         commission_fixed = 0
@@ -168,6 +169,7 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
       pulses_posix = pulses_posix
     ),
     active_alias_map = NULL,
+    risk_plan = NULL,
     cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(
       spread_bps = 0,
       commission_fixed = 0.25
@@ -295,6 +297,7 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
       pulses_posix = pulses_posix
     ),
     active_alias_map = NULL,
+    risk_plan = NULL,
     cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(
       spread_bps = 0,
       commission_fixed = 0.25
@@ -359,6 +362,7 @@ testthat::test_that("execution spec constructor preserves the former list payloa
       "feature_defs",
       "runtime_projection",
       "active_alias_map",
+      "risk_plan",
       "cost_resolver",
       "event_seq_start",
       "telemetry",
@@ -369,6 +373,8 @@ testthat::test_that("execution spec constructor preserves the former list payloa
     )
   )
   testthat::expect_identical(spec$id_to_idx, stats::setNames(as.integer(1:2), c("AAA", "BBB")))
+  testthat::expect_s3_class(spec$risk_plan, "ledgr_compiled_risk_plan")
+  testthat::expect_identical(length(spec$risk_plan$steps), 0L)
   testthat::expect_null(spec$compiled_accounting_model)
 })
 
@@ -386,6 +392,21 @@ testthat::test_that("execution specs validate before fold entry", {
   testthat::expect_error(
     ledgr:::ledgr_validate_execution_spec(bad_projection),
     class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(risk_plan = list()),
+    class = "ledgr_invalid_risk_plan"
+  )
+  malformed_step_plan <- structure(
+    list(
+      risk_schema_version = ledgr:::ledgr_risk_schema_version,
+      steps = list(list(type_id = "long_only", schema_version = ledgr:::ledgr_risk_schema_version, args = list()))
+    ),
+    class = c("ledgr_compiled_risk_plan", "list")
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(risk_plan = malformed_step_plan),
+    class = "ledgr_invalid_risk_plan"
   )
 })
 

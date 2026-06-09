@@ -170,6 +170,12 @@ Price transforms and explicit fees are different.
 `ledgr_cost_fixed_fee()` and `ledgr_cost_notional_bps_fee()` add values
 to the fill `fee` column after any price transforms have resolved.
 
+Target risk, timing, and cost are separate layers. A `risk_chain` can
+transform validated strategy target quantities before fill proposals
+exist. The timing model decides which bar is used for execution. The
+cost model then adjusts price and fee on the accepted fill proposal; it
+does not decide whether a target is affordable or liquid.
+
 ``` r
 example_cost_model <- ledgr_cost_chain(
   ledgr_cost_spread_bps(25),

@@ -62,6 +62,9 @@ reference:
       - ledgr_cost_spread_bps
       - ledgr_cost_steps
       - ledgr_timing_next_open
+  - title: Target Risk
+    contents:
+      - ledgr_risk_chain
   - title: Identity And Diagnostics
     contents:
       - ledgr_identity_fields

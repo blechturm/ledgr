@@ -3,8 +3,8 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.9.2`.
-**Current active packet:** None; v0.1.9.3 target-risk planning is next.
-**Current active packet path:** None.
+**Current active packet:** v0.1.9.3 target-risk packet.
+**Current active packet path:** `inst/design/ledgr_v0_1_9_3_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_9_2_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the
 v0.1.9.2 release gate.
@@ -91,8 +91,22 @@ and compact retention infrastructure for later walk-forward.
 - Primary synthesis:
   `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
 
-v0.1.9.3 target risk is the next planned packet. It has not opened; use the
-roadmap and accepted risk/OMS boundary synthesis for planning context only.
+The v0.1.9.3 target-risk packet is active. It introduces classed target-risk
+steps, risk-chain identity, behavior-preserving phased-pulse substrate work,
+and bounded public documentation. Arbitrary risk callbacks, affordability
+enforcement, liquidity/capacity policy, OMS behavior, walk-forward
+implementation, failure-schema columns, target-helper expansion, and
+compiled-core architecture work remain non-scope.
+
+- Spec: `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`.
+- Tickets: `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_9_3_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_9_3_spec_packet/batch_plan.md`.
+- Primary synthesis:
+  `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`.
+- Downstream walk-forward context:
+  `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`.
+
 v0.1.9.4 walk-forward remains downstream.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
@@ -120,11 +134,12 @@ deferred to the horizon for a later RFC/spec cycle.
 - Primary synthesis:
   `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`.
 
-Target risk, walk-forward, public cost/liquidity APIs, OMS work, live data
-logs, point-in-time regressors, public benchmark dashboards, and broad collapse
+Walk-forward, public cost/liquidity APIs, OMS work, live data logs,
+point-in-time regressors, public benchmark dashboards, and broad collapse
 adoption remain deferred unless a later active packet explicitly scopes a
-bounded subset. Auditr-report bugfix intake is also deferred until a future
-packet routes it.
+bounded subset. The active v0.1.9.3 packet scopes only the narrow target-risk
+layer described above. Auditr-report bugfix intake is also deferred until a
+future packet routes it.
 
 The v0.1.8.7 packet is complete. It shipped Optimization Round 2 and explicit
 legacy execution cleanup: modern execution is snapshot-backed and
@@ -532,6 +547,14 @@ against the three-condition bar in `adr/README.md`.
 Versioned spec packets include archival release records and, when cut, the
 active implementation packet. Keep them in place.
 
+- `ledgr_v0_1_9_3_spec_packet/` - active v0.1.9.3 target-risk packet for
+  classed risk objects, risk-chain identity, phased-pulse substrate parity,
+  risk application, sweep/promotion/reopen integration, and bounded docs.
+- `ledgr_v0_1_9_2_spec_packet/` - v0.1.9.2 release record for durable
+  saved-sweep artifacts, retained net equity/return series, reopened-sweep
+  compatibility, and compact retention infrastructure for later walk-forward.
+- `ledgr_v0_1_9_1_spec_packet/` - v0.1.9.1 release record for the public
+  transaction-cost API and cost identity surface.
 - `ledgr_v0_1_8_10_spec_packet/` - v0.1.8.10 release record for
   ephemeral telemetry, matrix-canonical strategy accessors, fold-owned FIFO
   accounting, yyjsonr options hoist, the scoped B2 spot-FIFO sweep opt-in, and
@@ -581,7 +604,7 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
-| Target risk planning | `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md`, future packet when cut |
+| Target risk implementation | `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md` |
 | Walk-forward planning | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (with Amendment 1 in Section 14, Amendment 2 in Section 16, ticket-cut gates in Section 17), `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section), `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md`, `contracts.md`, future v0.1.9.x packet when cut |
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |
 | Design-doc governance | `ledgr_v0_1_8_00_spec_packet/`, `rfc/rfc_design_doc_governance.md`, `rfc/rfc_design_doc_governance_response.md` |

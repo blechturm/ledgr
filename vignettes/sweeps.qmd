@@ -355,6 +355,14 @@ fingerprints, seed metadata, and candidate params. Use
 `ledgr_candidate_reproduction_key()` when you want to inspect that key directly.
 Full equity, fills, trades, and ledger rows are created only by committed runs.
 
+If the experiment declares a `risk_chain`, sweep candidates also carry
+`risk_chain_hash` and row-level provenance carries `risk_plan_json`. These fields
+are execution identity: they say which target-risk plan transformed the
+validated strategy targets before fill timing and cost resolution. They do not
+rank candidates, select winners, estimate liquidity, enforce broker policy, or
+turn risk settings into a separate grid-composition surface. Parameterized risk
+arguments use ordinary candidate params through `ledgr_param()`.
+
 ## Retain Candidate Return Series
 
 When you need per-pulse net portfolio equity or adjacent-period returns for
@@ -467,6 +475,12 @@ needs committed-run artifacts.
 
 Retention does not change execution identity. It changes which derived evidence
 is kept after the same candidate execution.
+
+Saved sweeps persist the same risk identity fields on the parent sweep row and
+candidate rows. The first `ledgr_sweep_save()` against a v0.1.9.2 store performs
+an additive saved-sweep schema migration for `risk_chain_hash` and
+`risk_plan_json`; it does not rewrite candidate results or create committed run
+artifacts.
 
 ## What Retained Returns Can And Cannot Validate
 

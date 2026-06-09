@@ -175,7 +175,8 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(strategy_doc, "floor\\(equity_fraction \\* ctx\\$equity / ctx\\$close\\(instrument_id\\)\\)")
   testthat::expect_match(strategy_doc, "Affordability is not automatic", fixed = TRUE)
   testthat::expect_match(strategy_doc, "does not check affordability", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "target-risk layer is the home", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "`risk_chain` can transform", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "not a cash-affordability", fixed = TRUE)
   testthat::expect_match(strategy_doc, "classed empty selection", fixed = TRUE)
   testthat::expect_match(strategy_doc, "No warning suppression is needed", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Troubleshoot Helper Pipelines", fixed = TRUE)
@@ -445,21 +446,22 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   )) {
     testthat::expect_match(section, term, fixed = TRUE)
   }
-  testthat::expect_match(section, "Sweep artifact persistence, target risk, and\\s+walk-forward remain future v0.1.9.x packets")
+  testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
   testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_2_spec_packet/`", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
-  testthat::expect_match(roadmap, "v0.1.9.3 | Planned", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.3 | Active | Target-risk", fixed = TRUE)
   testthat::expect_match(roadmap, "v0.1.9.4 | Planned", fixed = TRUE)
 
   testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.2`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** None; v0.1.9.3 target-risk planning is next", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** v0.1.9.3 target-risk packet", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.2 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0_1_9_2_release_closeout.md", fixed = TRUE)
+  testthat::expect_match(design_index, "v0.1.9.3 target-risk packet is active", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)

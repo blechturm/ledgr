@@ -91,7 +91,9 @@ ledgr_source_sweep_json <- function(candidate) {
     feature_union_hash = meta$feature_union_hash,
     metric_context = metric_context_record,
     metric_context_hash = meta$metric_context_hash,
-    metric_context_version = meta$metric_context_version
+    metric_context_version = meta$metric_context_version,
+    risk_chain_hash = meta$risk_chain_hash %||% candidate$provenance$risk_chain_hash,
+    risk_plan_json = meta$risk_plan_json %||% candidate$provenance$risk_plan_json
   ))
 }
 
@@ -125,6 +127,8 @@ ledgr_candidate_summary_record <- function(row) {
     avg_trade = ledgr_summary_scalar(row, "avg_trade", NULL),
     time_in_market = ledgr_summary_scalar(row, "time_in_market", NULL),
     execution_seed = ledgr_summary_scalar(row, "execution_seed", NULL),
+    risk_chain_hash = ledgr_summary_scalar(row, "risk_chain_hash", NULL),
+    risk_plan_json = ledgr_summary_provenance_scalar(row, "risk_plan_json", NULL),
     params_json = canonical_json(row$params[[1]]),
     feature_params_json = if ("feature_params" %in% names(row)) canonical_json(row$feature_params[[1]]) else canonical_json(list()),
     provenance_json = canonical_json(row$provenance[[1]]),
@@ -141,6 +145,21 @@ ledgr_summary_scalar <- function(row, column, default) {
   }
   value <- row[[column]][[1]]
   if (length(value) == 0L) {
+    return(default)
+  }
+  ledgr_json_safe_scalar(value, default)
+}
+
+ledgr_summary_provenance_scalar <- function(row, name, default) {
+  if (!"provenance" %in% names(row)) {
+    return(default)
+  }
+  provenance <- row$provenance[[1]]
+  if (!is.list(provenance)) {
+    return(default)
+  }
+  value <- provenance[[name]]
+  if (is.null(value)) {
     return(default)
   }
   ledgr_json_safe_scalar(value, default)

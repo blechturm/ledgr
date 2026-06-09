@@ -293,9 +293,11 @@ Raw target vectors are desired holdings. ledgr does not check affordability
 before filling them; if a target requires more cash than the simulated portfolio
 has, the run can fill anyway and cash can go negative. Use
 `target_rebalance(equity_fraction = ...)` or size directly from `ctx$cash` and
-`ctx$equity` when you need capital-aware targets. The planned v0.1.9
-target-risk layer is the home for chainable long-only, max-weight, and
-capital-floor constraints.
+`ctx$equity` when you need capital-aware targets. A `risk_chain` can transform
+validated targets before fill timing and cost resolution -- for example
+`ledgr_risk_long_only()` can clip short targets and `ledgr_risk_max_weight()`
+can cap per-instrument target exposure. It is not a cash-affordability,
+margin, liquidity, or broker-risk engine.
 :::
 
 ## A First Trading Rule

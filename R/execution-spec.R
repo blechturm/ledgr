@@ -63,6 +63,7 @@ ledgr_execution_spec <- function(run_id,
                                  feature_defs,
                                  runtime_projection,
                                  active_alias_map = NULL,
+                                 risk_plan = NULL,
                                  cost_resolver,
                                  event_seq_start,
                                  telemetry,
@@ -97,6 +98,7 @@ ledgr_execution_spec <- function(run_id,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = active_alias_map,
+    risk_plan = ledgr_risk_validate_compiled_plan(risk_plan),
     cost_resolver = cost_resolver,
     event_seq_start = as.integer(event_seq_start),
     telemetry = telemetry,
@@ -213,6 +215,7 @@ ledgr_validate_execution_spec <- function(spec) {
     inherits(spec$runtime_projection, "ledgr_runtime_projection"),
     "`execution$runtime_projection` must be a ledgr_runtime_projection object."
   )
+  ledgr_risk_validate_compiled_plan(spec$risk_plan)
   ledgr_execution_spec_check(
     is.function(spec$cost_resolver),
     "`execution$cost_resolver` must be a function."

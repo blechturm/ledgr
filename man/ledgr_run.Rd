@@ -43,7 +43,8 @@ builds the canonical backtest config, and delegates to the shared runner.
 \section{Identity}{
 
 Run identity fields, including \code{config_hash}, \code{feature_set_hash},
-\code{cost_model_hash}, and \code{cost_plan_json}, are summarized in
+\code{cost_model_hash}, \code{cost_plan_json}, \code{risk_chain_hash}, and
+\code{risk_plan_json}, are summarized in
 \link{ledgr_identity_fields}.
 }
 

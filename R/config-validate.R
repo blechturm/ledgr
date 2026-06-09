@@ -30,6 +30,7 @@ validate_ledgr_config <- function(config) {
   if (!is.list(config)) {
     rlang::abort("`config` must be a list (or parsed JSON list).", class = "ledgr_invalid_config")
   }
+  config <- ledgr_config_normalize_risk_identity(config)
 
   cfg_get <- function(path) {
     cur <- config
@@ -192,6 +193,27 @@ validate_ledgr_config <- function(config) {
     }
   )
 
+  risk_chain_hash <- cfg_get(c("risk_chain", "risk_chain_hash"))
+  risk_plan_json <- cfg_get(c("risk_chain", "risk_plan_json"))
+  assert_scalar_chr(risk_chain_hash, "risk_chain.risk_chain_hash")
+  assert_scalar_chr(risk_plan_json, "risk_chain.risk_plan_json")
+  if (!grepl("^[0-9a-f]{64}$", risk_chain_hash)) {
+    rlang::abort("Config field risk_chain.risk_chain_hash must be a 64-character lowercase hex string.", class = "ledgr_invalid_config")
+  }
+  reconstructed_risk_hash <- tryCatch(
+    digest::digest(risk_plan_json, algo = "sha256"),
+    error = function(e) NA_character_
+  )
+  if (!identical(reconstructed_risk_hash, risk_chain_hash)) {
+    rlang::abort("Config field risk_chain.risk_chain_hash must match risk_chain.risk_plan_json.", class = "ledgr_invalid_config")
+  }
+  tryCatch(
+    ledgr_risk_plan_reconstruct(risk_plan_json),
+    error = function(e) {
+      rlang::abort("Config field risk_chain.risk_plan_json is not a valid ledgr risk plan.", class = "ledgr_invalid_config", parent = e)
+    }
+  )
+
   strategy_id <- cfg_get(c("strategy", "id"))
   assert_scalar_chr(strategy_id, "strategy.id")
   if (!is.null(config$strategy$params$call_signature)) {
@@ -287,4 +309,21 @@ validate_ledgr_config <- function(config) {
 ledgr_validate_config <- function(config) {
   validate_ledgr_config(config)
   invisible(TRUE)
+}
+
+ledgr_config_noop_risk_identity <- function() {
+  list(
+    risk_chain_hash = ledgr_risk_chain_hash(ledgr_risk_none()),
+    risk_plan_json = ledgr_risk_plan_json(ledgr_risk_none())
+  )
+}
+
+ledgr_config_normalize_risk_identity <- function(config) {
+  if (!is.list(config)) {
+    return(config)
+  }
+  if (is.null(config$risk_chain)) {
+    config$risk_chain <- ledgr_config_noop_risk_identity()
+  }
+  config
 }

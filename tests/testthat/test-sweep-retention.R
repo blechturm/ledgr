@@ -87,8 +87,8 @@ testthat::test_that("ledgr_sweep attaches retention metadata without changing de
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
-      "feature_params", "warnings", "feature_fingerprints", "provenance",
-      "t_engine", "t_results", "t_fills_extract"
+      "feature_params", "warnings", "feature_fingerprints", "risk_chain_hash",
+      "provenance", "t_engine", "t_results", "t_fills_extract"
     )
   )
   testthat::expect_identical(attr(out, "sweep_retention"), ledgr_sweep_retention())

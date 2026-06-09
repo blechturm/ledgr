@@ -244,8 +244,8 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
       "total_return", "annualized_return", "volatility", "sharpe_ratio",
       "max_drawdown", "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
-      "feature_params", "warnings", "feature_fingerprints", "provenance",
-      "t_engine", "t_results", "t_fills_extract"
+      "feature_params", "warnings", "feature_fingerprints", "risk_chain_hash",
+      "provenance", "t_engine", "t_results", "t_fills_extract"
     )
   )
   testthat::expect_true(all(results$status == "DONE"))
@@ -526,6 +526,6 @@ testthat::test_that("scalar execution config hash remains pinned across sweep pa
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "23838c7297b9ec8a09b422f9f4a29933fb61b7cdbd8b030789ff4b2f441ae57b"
+    "9e29021ba11784777f4adc93d5569e49eb1d90d49bd48bb04a030a6b0a2300cc"
   )
 })

@@ -38,11 +38,24 @@
 #' walk-forward candidate identity; they do not implement walk-forward by
 #' themselves.
 #'
+#' @section Target-risk identity:
+#' `risk_plan_json` is the canonical serializable target-risk plan stored in the
+#' execution config. `risk_chain_hash` is the SHA-256 hash of that plan. These
+#' fields are execution identity and participate in `config_hash`.
+#'
+#' Sweeps expose `risk_chain_hash` on candidate rows and carry
+#' `risk_plan_json` in row-level provenance and reproduction keys. Saved sweeps
+#' store both fields on the parent sweep row and candidate rows; the first
+#' `ledgr_sweep_save()` against a v0.1.9.2 store performs an additive schema
+#' migration for these risk identity columns. Missing pre-v0.1.9.3 risk fields
+#' reopen as the no-op risk plan in memory; stored historical config JSON is not
+#' rewritten by the compatibility normalizer.
+#'
 #' @section Where to inspect:
 #' In-session runs expose `feature_set_hash` at
 #' `bt$config$features$feature_set_hash`. Durable stores expose it through
 #' [ledgr_run_info()] and [ledgr_run_list()]. Sweep candidates expose
-#' candidate-level feature identity in their row-level provenance and
+#' candidate-level feature and risk identity in their row-level provenance and
 #' reproduction keys.
 #'
 #' @name ledgr_identity_fields

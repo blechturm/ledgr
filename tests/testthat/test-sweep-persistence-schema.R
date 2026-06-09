@@ -74,6 +74,8 @@ testthat::test_that("saved sweep schema is created and validated", {
   )$column_name
   testthat::expect_true("candidate_id" %in% sweep_candidate_cols)
   testthat::expect_true("candidate_row" %in% sweep_candidate_cols)
+  testthat::expect_true("risk_chain_hash" %in% sweep_candidate_cols)
+  testthat::expect_true("risk_plan_json" %in% sweep_candidate_cols)
   testthat::expect_false("run_id" %in% sweep_candidate_cols)
 
   version <- DBI::dbGetQuery(
@@ -153,6 +155,11 @@ testthat::test_that("saved sweep storage projections use canonical JSON and vali
   testthat::expect_identical(candidates$candidate_row, c(1L, 2L))
   testthat::expect_identical(candidates$cost_model_hash, rep(attr(sweep, "cost_model_hash"), 2L))
   testthat::expect_identical(candidates$metric_context_hash, rep(attr(sweep, "metric_context_hash"), 2L))
+  testthat::expect_identical(parent$sweep_schema_version[[1]], ledgr:::ledgr_saved_sweep_schema_version)
+  testthat::expect_identical(parent$risk_chain_hash[[1]], attr(sweep, "risk_chain_hash", exact = TRUE))
+  testthat::expect_identical(parent$risk_plan_json[[1]], attr(sweep, "risk_plan_json", exact = TRUE))
+  testthat::expect_identical(candidates$risk_chain_hash, rep(attr(sweep, "risk_chain_hash", exact = TRUE), 2L))
+  testthat::expect_identical(candidates$risk_plan_json, rep(attr(sweep, "risk_plan_json", exact = TRUE), 2L))
   testthat::expect_identical(
     candidates$params_json[[1]],
     as.character(ledgr:::canonical_json(list(qty = 1)))
@@ -168,6 +175,20 @@ testthat::test_that("saved sweep storage projections use canonical JSON and vali
   attr(corrupted, "candidate_features") <- candidate_features
   testthat::expect_error(
     ledgr:::ledgr_sweep_storage_candidate_rows(corrupted),
+    class = "ledgr_sweep_storage_identity_mismatch"
+  )
+
+  corrupted_risk <- sweep
+  corrupted_risk$risk_chain_hash[[1]] <- ledgr:::ledgr_risk_chain_hash(ledgr_risk_long_only())
+  testthat::expect_error(
+    ledgr:::ledgr_sweep_storage_candidate_rows(corrupted_risk),
+    class = "ledgr_sweep_storage_identity_mismatch"
+  )
+
+  corrupted_plan <- sweep
+  corrupted_plan$provenance[[1]]$risk_plan_json <- ledgr:::ledgr_risk_plan_json(ledgr_risk_long_only())
+  testthat::expect_error(
+    ledgr:::ledgr_sweep_storage_candidate_rows(corrupted_plan),
     class = "ledgr_sweep_storage_identity_mismatch"
   )
 })

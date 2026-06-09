@@ -539,10 +539,6 @@ ledgr_persistent_output_handler <- function(con,
   structure(handler, class = "ledgr_persistent_output_handler")
 }
 
-ledgr_apply_target_risk_noop <- function(targets, ctx, params) {
-  targets
-}
-
 ledgr_config_opening_positions <- function(cfg) {
   positions <- ledgr_config_named_numeric(cfg$opening$positions)
   positions[positions != 0]
@@ -593,6 +589,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   if (!is.list(cfg)) {
     rlang::abort("`config` must be a list (or JSON string).", class = "ledgr_invalid_config")
   }
+  cfg <- ledgr_config_normalize_risk_identity(cfg)
 
   db_path <- cfg$db_path
   instrument_ids <- cfg$universe$instrument_ids
@@ -1240,6 +1237,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     full_positions[matched_positions] <- as.numeric(current_positions[matched_positions])
   }
   state_env$current$positions <- full_positions
+  risk_chain <- ledgr_risk_plan_reconstruct(cfg$risk_chain$risk_plan_json)
+  risk_plan <- ledgr_risk_plan_compile(risk_chain, params = strategy_params)
 
   fold_execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -1263,6 +1262,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = active_alias_map,
+    risk_plan = risk_plan,
     cost_resolver = cost_resolver,
     event_seq_start = next_event_seq,
     telemetry = telemetry,
