@@ -40,6 +40,19 @@ ledgr_parallel_sweep_reproduction_key_comparable <- function(key) {
   key
 }
 
+ledgr_parallel_contains_runtime_handle <- function(x) {
+  if (is.function(x) ||
+      is.environment(x) ||
+      typeof(x) == "externalptr" ||
+      inherits(x, "connection")) {
+    return(TRUE)
+  }
+  if (is.list(x)) {
+    return(any(vapply(unclass(x), ledgr_parallel_contains_runtime_handle, logical(1))))
+  }
+  FALSE
+}
+
 ledgr_skip_parallel_sweep_under_covr <- function() {
   testthat::skip_if(
     requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
@@ -69,6 +82,41 @@ testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
     ledgr_parallel_sweep_comparable(explicit_one),
     ledgr_parallel_sweep_comparable(reference)
   )
+})
+
+testthat::test_that("risk plans in sweep payloads are PSOCK-safe value objects", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  risk <- ledgr_risk_chain(
+    ledgr_risk_long_only(),
+    ledgr_risk_max_weight(ledgr_param("cap"))
+  )
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = risk,
+    cost_model = ledgr_cost_zero()
+  )
+
+  payload <- ledgr:::ledgr_sweep_exp_payload(exp)
+  risk_copy <- unserialize(serialize(payload$risk_chain, NULL))
+  reconstructed <- ledgr:::ledgr_risk_plan_reconstruct(payload$risk_plan_json)
+  compiled <- ledgr:::ledgr_risk_plan_compile(reconstructed, params = list(cap = 0.25))
+  parent_compiled <- ledgr:::ledgr_risk_plan_compile(risk, params = list(cap = 0.25))
+
+  testthat::expect_false(ledgr_parallel_contains_runtime_handle(payload$risk_chain))
+  testthat::expect_false(ledgr_parallel_contains_runtime_handle(reconstructed))
+  testthat::expect_s3_class(risk_copy, "ledgr_risk_model")
+  testthat::expect_identical(ledgr:::ledgr_risk_chain_hash(risk_copy), payload$risk_chain_hash)
+  testthat::expect_identical(ledgr:::ledgr_risk_plan_json(reconstructed), payload$risk_plan_json)
+  testthat::expect_s3_class(compiled, "ledgr_compiled_risk_plan")
+  testthat::expect_identical(compiled, parent_compiled)
 })
 
 testthat::test_that("parallel sweep matches sequential deterministic candidate rows", {
@@ -111,6 +159,51 @@ testthat::test_that("parallel sweep matches sequential deterministic candidate r
   testthat::expect_identical(parallel_three$candidate_row, 1:3)
 })
 
+testthat::test_that("parallel sweep preserves parameterized risk identity and row order", {
+  testthat::skip_if_not_installed("mirai")
+  ledgr_skip_parallel_sweep_under_covr()
+  snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2020-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- 1000
+      return(targets)
+    }
+    ctx$hold()
+  }
+  risk <- ledgr_risk_max_weight(ledgr_param("cap"))
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = risk,
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(
+    low = list(cap = 0.10),
+    high = list(cap = 0.20)
+  )
+
+  sequential <- ledgr_sweep(exp, grid, seed = 123L)
+  parallel <- ledgr_sweep(exp, grid, seed = 123L, workers = 2L)
+  seq_key <- ledgr_candidate_reproduction_key(ledgr_candidate(sequential, "high"))
+  par_key <- ledgr_candidate_reproduction_key(ledgr_candidate(parallel, "high"))
+
+  testthat::expect_equal(
+    ledgr_parallel_sweep_comparable(parallel),
+    ledgr_parallel_sweep_comparable(sequential)
+  )
+  testthat::expect_identical(parallel$candidate_id, c("low", "high"))
+  testthat::expect_identical(parallel$candidate_row, 1:2)
+  testthat::expect_identical(parallel$risk_chain_hash, rep(ledgr:::ledgr_risk_chain_hash(risk), 2L))
+  testthat::expect_gt(sequential$final_equity[[2]], sequential$final_equity[[1]])
+  testthat::expect_identical(
+    ledgr_parallel_sweep_reproduction_key_comparable(par_key),
+    ledgr_parallel_sweep_reproduction_key_comparable(seq_key)
+  )
+})
+
 testthat::test_that("parallel sweep preserves warning and failure row association", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()
@@ -128,7 +221,12 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
     targets["AAA"] <- params$qty
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = ledgr_risk_max_weight(0.50),
+    cost_model = ledgr_cost_zero()
+  )
   grid <- ledgr_param_grid(
     ok = list(id = "ok", qty = 1, warn = FALSE, fail = FALSE),
     noisy = list(id = "noisy", qty = 1, warn = TRUE, fail = FALSE),

@@ -355,7 +355,7 @@ Implementation notes:
 ## Batch 8 - Parallel And Compiled Safety
 
 Ticket: `LDG-2608`
-Status: Pending
+Status: Review Pending
 
 Goal: verify risk plans are safe for parallel candidate dispatch and compiled /
 memory-backed sweep paths either preserve parity or fail closed.
@@ -375,6 +375,14 @@ Review focus:
 - Worker setup reconstructs plans from package code, candidate params, and plan
   JSON only.
 - Compiled paths never silently skip risk.
+
+Implementation notes:
+
+- Added PSOCK-safe risk value-object coverage over the sweep experiment payload.
+- Added parallel sweep parity coverage for parameterized risk identity,
+  deterministic row order, and reproduction keys.
+- Added compiled spot-FIFO parity coverage for risk-enabled sweeps and retained
+  the unsupported-model fail-closed assertion.
 
 ## Batch 9 - Documentation And Release Surfaces
 

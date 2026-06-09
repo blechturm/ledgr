@@ -338,6 +338,70 @@ testthat::test_that("sweep public compiled accounting opt-in dispatches spot FIF
   )
 })
 
+testthat::test_that("sweep public compiled accounting preserves risk parity", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2020-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- 1000
+      return(targets)
+    }
+    ctx$hold()
+  }
+  risk <- ledgr_risk_max_weight(ledgr_param("cap"))
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = risk,
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(
+    low = list(cap = 0.10),
+    high = list(cap = 0.20)
+  )
+
+  r_path <- ledgr_sweep(exp, grid, seed = 123L)
+  compiled_path <- ledgr_sweep(
+    exp,
+    grid,
+    seed = 123L,
+    compiled_accounting_model = "spot_fifo"
+  )
+
+  testthat::expect_identical(as.character(compiled_path$status), as.character(r_path$status))
+  testthat::expect_equal(compiled_path$final_equity, r_path$final_equity, tolerance = 1e-12)
+  testthat::expect_equal(compiled_path$n_trades, r_path$n_trades)
+  testthat::expect_identical(compiled_path$risk_chain_hash, r_path$risk_chain_hash)
+  testthat::expect_true(all(vapply(compiled_path$provenance, function(provenance) {
+    identical(provenance$risk_plan_json, ledgr:::ledgr_risk_plan_json(risk))
+  }, logical(1))))
+  testthat::expect_identical(
+    attr(compiled_path, "execution_assumptions")$compiled_accounting_model,
+    "spot_fifo"
+  )
+  testthat::expect_gt(compiled_path$final_equity[[2]], compiled_path$final_equity[[1]])
+  testthat::expect_error(
+    ledgr_sweep(exp, grid, seed = 123L, compiled_accounting_model = "futures_margin"),
+    class = "ledgr_unsupported_accounting_model"
+  )
+
+  failure_grid <- ledgr_param_grid(
+    ok = list(cap = 0.10),
+    bad = list(cap = 2)
+  )
+  failure_path <- ledgr_sweep(
+    exp,
+    failure_grid,
+    seed = 123L,
+    stop_on_error = FALSE,
+    compiled_accounting_model = "spot_fifo"
+  )
+  testthat::expect_identical(as.character(failure_path$status), c("DONE", "FAILED"))
+  testthat::expect_identical(failure_path$error_class[[2]], "ledgr_invalid_risk_model")
+})
+
 testthat::test_that("fills reconstruction is invariant under hostile collapse settings", {
   events <- data.frame(
     event_id = sprintf("event_%02d", 1:4),

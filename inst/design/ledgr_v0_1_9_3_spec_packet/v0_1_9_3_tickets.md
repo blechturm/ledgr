@@ -728,7 +728,7 @@ scope: risk_provenance
 Priority: P0
 Effort: L
 Dependencies: LDG-2605
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -753,6 +753,15 @@ preserve risk parity or fail closed for risk-enabled sweeps.
   risk.
 - Unsupported compiled/accounting combinations fail before producing misleading
   candidate rows.
+
+Implementation Notes:
+
+- Risk plan objects are covered as serializable value objects without closures,
+  environments, connections, or external pointers.
+- Parameterized risk sweeps now have sequential-vs-parallel parity coverage,
+  including row order and reproduction keys.
+- Compiled spot-FIFO sweep coverage now includes risk-enabled parity and the
+  unsupported-accounting-model fail-closed path.
 
 ### Verification
 

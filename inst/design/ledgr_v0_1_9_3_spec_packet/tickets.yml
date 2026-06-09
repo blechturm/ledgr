@@ -210,7 +210,7 @@ tickets:
 
   - id: "LDG-2608"
     title: "Parallel And Compiled-Path Risk Safety"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:
