@@ -70,6 +70,46 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-06-09 [research] Selection-session archive / evaluation registry is parked, not committed
+
+Discussion around a snapshot-scoped "candidate graveyard" surfaced a real
+future substrate idea but not a current product commitment. The strong version
+is not a generic auto-persisted table of every evaluation keyed only by
+`snapshot_hash`; it is a selection-session archive that records which
+candidates were considered together, under which scoring / validation protocol,
+on which snapshot, slice, fold, metric context, cost model, risk chain, and
+seed surface.
+
+Possible future use:
+
+- reopen the research decision that produced a promoted run;
+- support selection-integrity diagnostics that need the candidate family and
+  validation protocol, not just the winning candidate;
+- connect walk-forward sessions, retained sweep evidence, and promotion
+  lineage into one inspectable audit trail;
+- preserve enough trial-count evidence for later PBO / CSCV / DSR style
+  diagnostics without pretending provenance itself proves statistical validity.
+
+Reasons not to promote now:
+
+- user demand for an explicit evaluation registry is speculative;
+- v0.1.9.2 already provides explicit sweep persistence for saved exploratory
+  evidence;
+- v0.1.9.4 walk-forward should first establish the operational session shape;
+- auto-persisting scalar evaluation rows by default would change ledgr's
+  side-effect model and create cleanup, schema, privacy, migration, and
+  parallel-write obligations;
+- snapshot-level row accumulation can overstate selection families by mixing
+  unrelated research sessions against the same data.
+
+If this comes back, the entry point should be a dedicated RFC after the
+walk-forward MVP and first selection-diagnostics scoping work. The RFC should
+start from session identity rather than snapshot identity, make persistence
+defaults explicit, and decide whether the feature is an index over existing
+sweep / walk-forward artifacts or a new always-on write path. Until then,
+existing packets should only preserve identities and promotion lineage that keep
+such an archive possible later.
+
 ### 2026-06-05 [infrastructure] Release-gate harness around playbook checks
 
 The v0.1.9.1 release gate exposed a process gap: the release CI playbook
@@ -1691,6 +1731,651 @@ aligned benchmark/reference returns.
 This entry is non-authorizing. It keeps the post-synthesis obligations visible
 for later RFC/spec windows without expanding the active sweep persistence
 packet.
+
+### 2026-06-07 [research] Peterson (2017) methodology reference added
+
+Added an external methodology reference at
+`inst/design/methodology_references.md` covering Brian Peterson's
+*Developing & Backtesting Systematic Trading Strategies* (2017). Peterson
+is the maintainer of the load-bearing R quantitative-finance ecosystem
+(`quantstrat`, `blotter`, `PerformanceAnalytics`, `PortfolioAnalytics`);
+the paper is his methodological doctrine for systematic strategy
+development.
+
+The reference file maps Peterson's framework to ledgr surfaces, identifies
+strong / partial / non-alignments, and names specific sections that future
+RFC cycles should cite as priors. Three citation targets are most
+load-bearing:
+
+- the **selection-integrity diagnostics RFC seed** (v0.1.9.x slot) should
+  anchor in Peterson's "Probability of Overfitting" section and its cited
+  Bailey / Lopez de Prado, Bailey / Borwein / Lopez de Prado / Zhu,
+  Sullivan / Timmermann / White, Hansen, and Harvey / Liu papers;
+- the **benchmark context RFC seed** (v0.2.x) should anchor in
+  "Choosing a benchmark" -- archetypal / alternative indices /
+  custom tracking portfolios / market observables;
+- the **portfolio optimization scaffolding** future obligation (see entry
+  below) should anchor in "Rebalancing and asset allocation" -- Kelly,
+  optimal-f, LSPM (Vince 2009) -- and the implicit `constrained_objective()`
+  FIXME from quantstrat that Peterson flags on page 4.
+
+The reference document is not user-facing and does not promote to pkgdown;
+it is a maintainer-level methodology prior cited from RFC seeds.
+
+This entry is non-authorizing. It records the methodology lineage so the
+next adjacent RFC cycle has a known citation anchor.
+
+### 2026-06-07 [research] Hypothesis recording as a first-class identity artifact
+
+Peterson (2017) treats the testable hypothesis as the load-bearing
+artifact of strategy development: declarative conjecture, predictive
+content, expected outcome, verification test. ledgr today has no
+structured equivalent. Strategy code expresses *how* a strategy acts;
+nothing records *why* the strategy was hypothesized, what its expected
+direction or magnitude was, or how the result will be tested.
+
+The closest existing surface is the v0.1.9.2 sweep `note` argument
+(synthesis Q4 binding: free-text character scalar). The sweep persistence
+synthesis already routes "structured sweep notes" to its F9 future
+obligation. That F9 obligation should expand to cover hypothesis-shaped
+structured notes specifically:
+
+- declared dependent variable (the predicted measurable outcome);
+- declared independent variables (the inputs to the prediction);
+- expected direction / range of the outcome;
+- verification test the maintainer plans to apply;
+- optional links to upstream literature.
+
+A hypothesis recorded this way could travel with the sweep (and any
+promoted run derived from it) as a non-identity attribute. It is
+audit-only: the framework does not act on the hypothesis or verify it
+automatically; it preserves the maintainer's a-priori intent so post-hoc
+HARKing is detectable on review.
+
+Recommended path: defer until v0.2.x and bundle into the structured sweep
+notes RFC; do not pull into v0.1.9.2 scope.
+
+Adjacent surface: a structured hypothesis is related to but distinct from
+a structured *business objective* (which would constrain optimization
+ranges for return, risk, leverage, drawdown). The business-objective
+constructor is named separately in the portfolio optimization scaffolding
+entry below; the two surfaces should land together if and when they ship.
+
+This entry is non-authorizing.
+
+### 2026-06-07 [research] MAE / MFE per-trade excursion analytics
+
+Peterson (2017) treats Maximum Adverse Excursion and Maximum Favorable
+Excursion as core per-trade analytics: empirical-risk-stop calibration,
+trailing-take-profit identification, and per-trade-quantile diagnostics.
+The substrate already exists on ledgr promoted runs (lots + fills
+retained, durable equity curve recorded); no public helper computes the
+excursions today.
+
+A future `ledgr_run_excursions()` helper would consume the existing fills
+and per-pulse OHLC (or higher-frequency data when available) and emit a
+per-trade tibble with MAE / MFE / time-to-MAE / time-to-MFE columns. The
+flat-to-flat trade definition is the natural groupwork; multi-asset and
+non-spot accounting would extend the helper once the trade-definition RFC
+(flat-to-reduced vs increased-to-reduced) opens.
+
+This is a small future helper, not a major architectural addition. It
+fits naturally inside the v0.2.x diagnostic-retention surface or as a
+standalone parallel release between named ticks. The promotion-context
+surface (v0.1.8.x) already exposes the trade-extraction interface
+`ledgr_closed_trade_rows()`; MAE / MFE would compose on top of it.
+
+Defer until the spot-FIFO multi-asset accounting question is settled --
+otherwise the trade-definition contract is in flux and the excursion
+semantics would shift.
+
+This entry is non-authorizing.
+
+### 2026-06-07 [planning] Portfolio optimization scaffolding -- four-level decomposition and architectural footguns
+
+The maintainer plans to build portfolio optimization scaffolding later in
+the roadmap, after the multi-asset / non-spot accounting work and
+intraday support land. This entry records the four-level framing,
+substrate prerequisites, and architectural footguns so the eventual RFC
+cycle starts with a clean foundation.
+
+Peterson's "portfolio optimization" covers at least four distinct problems
+with different substrate requirements:
+
+**Level 1 -- within-strategy weight construction.** Rank-weighting,
+inverse-vol weighting, normalization, rebalance bands. Already on the
+roadmap as v0.1.9.x Target Construction Helper Extensions (Pass 2 of the
+`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()` pipeline).
+Not really "optimization" in Peterson's sense; deterministic weight
+construction inside a single strategy. No new architecture.
+
+**Level 2 -- single-strategy multi-asset per-pulse optimization.**
+Mean-variance, minimum-variance, max-Sharpe, risk-parity solved inside
+the strategy function for the current asset universe per pulse. Fits
+inside the existing strategy contract (return full named numeric target
+quantities); the optimizer is a deterministic transform from features to
+targets. Needs care on solver determinism (seeded initialization for
+`DEoptim`, `GenSA`, `pso`) and on identity surface (solver choice and
+tolerance enter identity).
+
+**Level 3 -- multi-strategy capital allocation post-hoc.** Take N
+committed runs (or N retained sweep candidates), solve for capital
+weights across them. Kelly, optimal-f, LSPM (Vince 2009), mean-variance
+over strategy return streams. This is meta-level: the optimization input
+is the *output* of ledgr execution, not part of it. Needs substantial
+new substrate (see below).
+
+**Level 4 -- per-strategy position sizing / Kelly-style leverage.** Given
+a strategy with Sharpe X and drawdown distribution Y, what is the right
+Kelly fraction or LSPM allocation? Closest existing analogue is the
+v0.1.9.3 chainable risk layer (target-risk pre-strategy hook), which is
+structurally similar to optimal-f rescaling. The accepted
+`rfc_chainable_risk_oms_policy_boundary_synthesis.md` is the substrate
+prior; Level 4 would extend it with stats-driven sizing rules.
+
+#### Substrate prerequisites
+
+Most prerequisites are already on the roadmap or in flight:
+
+- v0.1.9.1 cost identity (`cost_model_hash`, `cost_plan_json`) -- done.
+  Net returns are well-defined; cost-model swaps do not drift identity.
+- v0.1.9.2 retained net returns -- the input series for any
+  returns-based optimizer.
+- v0.1.9.3 chainable risk layer -- Level 4 substrate and a pre-strategy
+  hook other optimizers can reuse.
+- v0.1.9.4 walk-forward -- rolling estimation window for Level 2 and
+  Level 3 optimizers.
+- v0.1.9.x selection-integrity diagnostics -- the *hard prerequisite*.
+  Peterson's strongest warning is that optimization on overfit inputs is
+  worse than no optimization. CSCV / PBO / DSR confirm the optimizer
+  inputs are not noise.
+- v0.2.x benchmark context -- active-portfolio constraints
+  (tracking-error budgets, IR-maximization objectives).
+- v0.2.x point-in-time data -- factor-model / risk-model inputs without
+  look-ahead.
+- v0.2.x corporate actions and instrument master -- equity-data
+  substrate for serious multi-asset optimization.
+- v0.2.x explicit accounting-critical event types -- needed for capital
+  flow events (deposit, withdraw, rebalance trade) at the portfolio
+  layer.
+- v0.2.x multi-asset / non-spot accounting (futures, margin, FX) -- the
+  flat-to-reduced or increased-to-reduced trade-definition RFC must
+  precede Level 3.
+- Intraday support (sub-daily-pulse, still whole-second) -- for
+  higher-frequency optimization use cases.
+
+Genuinely new substrate that is *not* yet on the roadmap:
+
+- **Multi-snapshot return-stream alignment.** Each ledgr snapshot has
+  its own time base. Multi-strategy allocation over committed runs
+  needs aligned return series across snapshots -- different inception
+  dates, possibly different session calendars if instruments differ,
+  different scoring pulses if strategies disagree on rebalance
+  frequency. Identity-bearing substrate; deserves its own RFC.
+- **Joint return distribution modeling.** Mean / covariance estimation,
+  shrinkage (Ledoit-Wolf), factor-model decomposition (Fama-French,
+  Barra-style), Factor Model Monte Carlo (Jiang 2007, Zivot 2011/2012
+  per Peterson). PortfolioAnalytics has `momentFUN` hooks; ledgr would
+  need either an adapter or its own helpers.
+- **Constrained-objective constructor as a first-class identity
+  artifact.** Peterson is explicit: business objectives should be
+  specified as ranges with min / target / max for return, risk,
+  leverage, drawdown. ledgr has no `ledgr_business_objective()`
+  constructor today. Related to but distinct from the structured
+  hypothesis-recording surface (entry above): business objectives
+  constrain the optimizer; hypotheses describe the predicted outcome.
+- **Capital flow event types.** Deposit / withdraw / rebalance-trade
+  events that change account equity outside the strategy's own fill
+  stream. v0.2.x "explicit accounting-critical event types" likely
+  covers some of this; the portfolio-level aggregation layer is its
+  own surface.
+- **Portfolio-level identity surface.** A new hash
+  (`portfolio_composition_hash` or similar) capturing which strategies
+  are included, at what weights, with what rebalance rule, against
+  what objective. Same identity discipline as `cost_model_hash` and
+  `candidate_key`.
+- **Rebalance scheduling.** Calendar-period / cash-flow-triggered /
+  threshold-triggered rebalancing. Peterson explicitly cautions against
+  continuous-rebalancing assumptions. The schedule becomes an
+  identity-bound artifact.
+
+#### Architectural constraints to preserve
+
+The same load-bearing invariants the rest of ledgr observes, plus a few
+specific to portfolio optimization:
+
+- **No second execution engine.** The optimizer outputs weights /
+  targets; execution still goes through the fold core. For Level 2 this
+  is natural (optimizer is a deterministic transform inside the
+  strategy). For Level 3 the multi-strategy execution is closer to
+  "scenario analysis on saved retained-return series" than "run a new
+  backtest" -- the fold core is not invoked at the portfolio layer.
+- **Identity-bound.** Every optimization output hashes deterministically
+  from its inputs. Solver choice, solver tolerance, random seeds (if
+  any), shrinkage parameters, and constrained-objective parameters all
+  enter identity.
+- **Snapshot-sealed inputs.** Returns going into the optimizer come from
+  sealed snapshots (or sealed saved sweeps); the optimizer cannot reach
+  back into the input data.
+- **Deterministic solvers.** Random-init solvers (`DEoptim`, `GenSA`,
+  `pso`) get explicit seeds derived from the optimization's master
+  seed. PortfolioAnalytics has a precedent here.
+- **Whole-second timestamps.** Rebalance schedules are whole-second; no
+  sub-second portfolio rebalancing.
+- **Adapter over reimplementation.** `PortfolioAnalytics` and
+  `PerformanceAnalytics` already solve the core optimization and
+  risk-statistics problems competently. ledgr should ship the
+  *substrate* (aligned return streams, business-objective constructor,
+  capital-flow accounting, portfolio identity) and adapt to PortA /
+  `pbo` / custom optimizers rather than reimplementing them. This
+  matches the v0.1.9.2 sweep persistence synthesis F5 obligation
+  (PerformanceAnalytics adapter) extended to the optimizer surface.
+
+#### Architectural footguns to avoid
+
+- **Putting portfolio optimization in the fold core.** Levels 3 and 4
+  are meta-level. Smuggling multi-strategy semantics into single-strategy
+  run identity breaks the "one snapshot -> one run -> one identity"
+  contract. Multi-strategy allocation must compose committed runs; it
+  must not extend them.
+- **Shipping the optimizer before selection-integrity diagnostics
+  land.** Optimization on overfit inputs is worse than no optimization.
+  CSCV / PBO / DSR / White's Reality Check are the safety pin on the
+  portfolio-optimization grenade. They must ship first.
+- **Continuous-rebalancing assumptions.** Most academic literature
+  assumes continuous rebalancing; production reality is discrete and
+  expensive. The rebalance schedule must be a first-class
+  identity-bearing artifact.
+- **Reimplementing PortfolioAnalytics or FRAPO.** Peterson and Bernhard
+  Pfaff have spent two decades on these solvers. ledgr does not need to
+  compete; the adapter pattern is the right architectural posture.
+- **Hand-crafting joint-return models inside the strategy function.**
+  Joint-return distribution modeling belongs at the portfolio layer or
+  in a feature-engine extension, not inside individual strategy
+  callables. Strategies remain deterministic functions of features and
+  state.
+- **Treating Level 1 as Level 3.** Within-strategy weight construction
+  (`signal_*()` -> `weight_*()`) is not portfolio optimization. The
+  v0.1.9.x Target Construction Helper Extensions deliberately do not
+  cross into Level 2-4 territory.
+- **Skipping the business-objective constructor.** Optimization without
+  ranges of acceptable / target / maximum return, risk, leverage, and
+  drawdown produces unstable parameter choices. Without an
+  identity-bound `ledgr_business_objective()` the optimizer has nothing
+  to constrain against.
+
+#### Sequencing
+
+```text
+v0.1.9.2  Retained net returns         [Tier 2 substrate]
+v0.1.9.3  Chainable risk layer         [Level 4 substrate]
+v0.1.9.4  Walk-forward                 [rolling-window substrate]
+v0.1.9.x  Selection-integrity diag.    [hard prerequisite for optimization]
+v0.2.x    Benchmark context            [active-portfolio prerequisite]
+v0.2.x    Point-in-time data           [factor-model prerequisite]
+v0.2.x    Multi-asset / non-spot acct  [accounting prerequisite]
+v0.2.x    Corporate actions / IM       [equity-data prerequisite]
+v0.2.x    Intraday support             [optional frequency prerequisite]
+v0.2.x    PA / PortA adapter           [returns-analytics surface]
+v0.2.x+   Portfolio optimization       [Levels 3 / 4 ship after prerequisites]
+v0.3.0    Paper trading                [production calibration]
+v1.0.0    Small-scale live trading
+```
+
+Levels 1 and 2 can ship earlier (Level 1 already roadmapped; Level 2
+could compose into the strategy contract via helpers without new
+identity surface). Levels 3 and 4 are deferred behind the prerequisite
+substrate.
+
+#### Permanent non-goals
+
+- Sub-second / HFT portfolio rebalancing: out per the whole-second
+  timestamp contract.
+- Replacing `PortfolioAnalytics` / `FRAPO` solvers: not the right scope.
+- Live multi-strategy order management before v0.3.0+ paper trading.
+
+#### Citations
+
+- Peterson (2017), "Rebalancing and asset allocation" section -- Kelly,
+  optimal-f, LSPM (Vince 2009), layered objectives, rebalance frequency.
+- Peterson's implicit `constrained_objective()` FIXME from quantstrat
+  (page 4 footnote).
+- Bailey / Lopez de Prado for drawdown-based stop-outs and the "Triple
+  Penance" rule (cited in Peterson's risk-rules section).
+- Vince (2009), *The Leverage Space Trading Model*.
+
+See `inst/design/methodology_references.md` for the full Peterson
+reference.
+
+This entry is non-authorizing. It records the architectural shape so the
+eventual RFC cycle opens with a clean foundation. It does not authorize
+implementation, does not commit to a specific version slot, and does not
+pre-bind any of the substrate prerequisites. The intent is to make the
+architectural footguns visible now so they do not surface as last-minute
+surprises once the product arc completes.
+
+### 2026-06-07 [planning] Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture
+
+This entry rescopes the v0.1.9.x "selection integrity diagnostics"
+roadmap slot (currently `ledgr_roadmap.md:113`) into a single validation
+toolkit packet that lands after v0.1.9.4 walk-forward closes. The toolkit
+bundles two literatures that share substrate and target the same
+"should this candidate be promoted?" question from complementary angles:
+
+- **Selection-bias correction (Bailey / Borwein / Lopez de Prado / Zhu
+  2014-):** Deflated Sharpe Ratio, Probability of Backtest Overfitting,
+  Combinatorially Symmetric Cross Validation, Triple Penance drawdown
+  rule. The methodology priors are recorded in
+  `inst/design/methodology_references.md`.
+- **Robust strategy evaluation (Pardo 2008):** the nine-characteristic
+  robust-strategy checklist (even trade distribution over time, even
+  profit distribution, long/short balance, stable parameter regions,
+  multi-regime acceptable performance, acceptable risk, stable streak
+  distributions, sufficient n_trades, positive equity trajectory).
+
+#### Adapter-first posture
+
+The toolkit's design stance is *connect to the R ecosystem rather than
+replace it*. Peterson, Lopez de Prado, Pfaff, and Hyndman have spent
+decades building the R substrate for trading strategy evaluation;
+ledgr ships substrate plus orchestration and adapts to existing packages
+for the canonical compute.
+
+The split (subject to verification during the research-input stage):
+
+**Adapter targets:**
+
+- `PerformanceAnalytics` (Peterson, Carl, et al.) -- canonical R
+  performance metrics. Sharpe, Sortino, Calmar, drawdown statistics,
+  VaR, ES, rolling performance, rolling regression. The v0.1.9.2 sweep
+  persistence synthesis Section 11 F5 obligation (PerformanceAnalytics
+  adapter) is pulled forward from generic v0.2.x to land alongside the
+  validation toolkit, since the toolkit depends on PA as a substrate.
+- `pbo` (Matt Barry) for PBO + CSCV computation, if current. The
+  algorithm is also well-specified in the Bailey / Borwein / Lopez de
+  Prado / Zhu *Notices of the AMS* paper, so a native fallback is
+  feasible if the package has decayed.
+- `RPESE` (Chen / Martin et al.) for serial-dependence-aware confidence
+  intervals on performance metrics.
+- `changepoint` (Killick) and `MSwM` for regime-detection adapters if
+  the regime work (currently unscheduled per the regime-detection
+  research slot) is ever promoted to scope.
+
+**Native implementation (no adapter exists or adaptation is wrong-shape):**
+
+- Deflated Sharpe Ratio orchestration (PA may provide precursors but the
+  full deflation step is small).
+- K-Ratio (Kestner via Pardo).
+- Triple Penance drawdown-based stop-out rule.
+- Pardo trade-distribution criteria (1, 2, 3, 7) computed from ledgr
+  fills directly, since `blotter::tradeStats()` consumes blotter's
+  account / portfolio state model and adapting that to ledgr fills
+  would conflict with ledgr's deterministic event-sourced invariants.
+- Stable-region parameter analysis (criterion 4); no R package, small
+  native algorithm.
+- `ledgr_business_objective()` constructor; must be ledgr-native
+  because it is identity-bound and orchestrates the nine criterion
+  checks against ledgr's substrate.
+
+**Deliberately deferred or skipped:**
+
+- Purged k-fold cross validation and embargo (Lopez de Prado 2018,
+  *Advances in Financial Machine Learning*). No R port at production
+  quality; not load-bearing for v0.1.9.x scope since PBO/CSCV plus
+  ledgr's native walk-forward cover the substantive territory.
+- Hierarchical Risk Parity (Lopez de Prado 2016). Routed to the
+  portfolio optimization scaffolding entry above as a Level 3
+  adapter target, not to the validation toolkit.
+
+#### Why bundle selection-integrity and business-objective
+
+The two layers answer the same question from complementary angles:
+Bailey / Lopez de Prado ask "is this candidate's reported Sharpe corrected
+for selection bias?" and Pardo asks "even with bias correction, does the
+underlying structure hold up?" Shipping the business-objective constructor
+without the bias-correction layer is exactly the *Pseudo-Mathematics*
+warning case (Bailey / Borwein / Lopez de Prado / Zhu 2014). Shipping
+selection-integrity without the structural checks leaves the maintainer
+with corrected metrics but no canonical way to threshold them. Bundling
+enforces both at once.
+
+The same Pardo nine-criterion checklist that informs the business-objective
+constructor is also the natural source for the named-constraint taxonomy
+in any future portfolio optimization scaffolding (per the
+2026-06-07 portfolio optimization entry above). The validation toolkit
+is therefore not just a v0.1.9.x deliverable; it is the substrate prior
+that later v0.2.x+ scaffolding consumes.
+
+#### Substrate completion timeline
+
+Walking through the nine Pardo criteria against substrate availability:
+criteria 1, 2, 3, 6, 7, 8 are computable today from promoted-run fills
+and metric kernel outputs; criteria 4 and 9 complete when v0.1.9.2 sweep
+persistence closes; criterion 5 (multi-regime acceptable performance)
+requires v0.1.9.4 walk-forward. The validation toolkit therefore floors
+at v0.1.9.4 close, which aligns with the existing v0.1.9.x slot's
+"after the walk-forward window model stabilizes" framing.
+
+#### Sequencing
+
+```text
+v0.1.9.1  cost-API                  [DONE]
+v0.1.9.2  sweep persistence         [in flight]
+v0.1.9.3  target-risk               [planned]
+v0.1.9.4  walk-forward              [planned; substrate completion]
+v0.1.9.x  validation toolkit        [bundle: Bailey + Pardo; adapter-first]
+v0.1.9.5  docs / teaching cycle     [teaches the full v0.1.9.x arc]
+```
+
+The v0.1.9.5 documentation cycle's coverage expands accordingly. The
+existing 2026-06-05 v0.1.9.5 horizon entry frames it as documenting the
+v0.1.9.x arc; adding validation toolkit to that arc means v0.1.9.5
+teaches strategy validation as a coherent workflow alongside cost-API,
+sweep persistence, target-risk, and walk-forward.
+
+#### Ecosystem citizenship
+
+The adapter-first posture is a deliberate social choice in addition to
+a technical one. ledgr is a citizen of the R quantitative-finance
+ecosystem, not a replacement for it. Peterson maintains
+`PerformanceAnalytics`, `PortfolioAnalytics`, `quantstrat`, `blotter`;
+Pfaff maintains `FRAPO` and the Rmetrics suite; Hyndman maintains
+`forecast`. ledgr's value-add is the deterministic event-sourced
+substrate that makes those packages' analytical layers tractable, not a
+re-implementation of analytics they already ship at production quality.
+Adapter-first signals coalition rather than competition and avoids the
+maintenance debt of duplicating mature code.
+
+#### Research input completed
+
+The deep-research input for the validation toolkit cycle landed at
+`inst/design/research/Validation-Toolkit.md` (2026-06-07). Five
+load-bearing findings move the eventual RFC seed's design space:
+
+1. **`PerformanceAnalytics` 2.1.0 + `RPESE` 1.2.7 are the canonical
+   adapter pairing.** Both maintained, current under Peterson / Carl /
+   Martin stewardship, and the pairing is the natural ecosystem-
+   citizenship choice. RPESE's influence-function methods are
+   deterministic by construction; bootstrap modes are opt-in and
+   seedable, which fits ledgr's determinism invariants.
+2. **DSR and Harvey-Liu haircut already exist in `quantstrat`, not
+   `PerformanceAnalytics`.** Surface names `SharpeRatio.deflated` and
+   `SharpeRatio.haircut`. But `quantstrat` depends transitively on
+   `FinancialInstrument`, which was removed from CRAN on 2025-06-12.
+   Right architectural posture: treat quantstrat code as a *formula
+   donor* (inspect the implementation, write native helpers against
+   ledgr's canonical retained returns) rather than as a dependency.
+3. **`pbo`'s input shape is incompatible with fold-level scalar scores.**
+   It expects a T x N panel of raw returns and performs CSCV internally.
+   The architectural choice is binary: either preserve per-period return
+   vectors per candidate (and feed `pbo` directly as an optional
+   adapter), or accept that walk-forward produces fold-level summaries
+   (and implement PBO/CSCV over scores natively). Cannot coerce.
+4. **Purged K-fold, embargo, and CPCV have no production-grade R
+   adapter.** `PortfolioTesteR` has a helper inside a broader framework
+   but is too narrow to use as canonical. Algorithms are deterministic
+   index construction and leakage exclusion -- fits ledgr's invariants
+   well; native implementation is the right call. AGPL-licensed
+   `pypbo` is the only verified Python comparator and should be avoided
+   entirely.
+5. **HRP via `HierPortfolios` is a clean adapter route** if HRP is ever
+   in scope (per the portfolio optimization scaffolding entry above
+   Level 3 substrate). `PortfolioAnalytics` doesn't expose HRP directly
+   in current CRAN docs.
+
+The research also confirmed that a single `Validation-Toolkit.md`
+research file is the right shape at this stage; the seed and synthesis
+may split selection-integrity and business-objective concerns later at
+implementation-spec time once interfaces stabilize.
+
+#### Open questions for the RFC seed
+
+The research-input stage answered the questions previously listed here
+about package maintenance status (PA 2.1.0 2026-04-11, RPESE 1.2.7
+2026-01-08, `pbo` 1.3.5 May 2022 quiet), PA's lack of direct DSR (it
+lives in quantstrat instead), and `pbo`'s input-shape compatibility
+(incompatible with fold-level scores). Remaining items for the seed
+author:
+
+- Triple Penance original-paper specification (the research did not
+  source-verify the formula; paper-first verification needed before
+  engineering sizing).
+- License posture for ledgr's downstream: if ledgr core must remain
+  outside the GPL family, keep small native formulas (DSR, K-Ratio,
+  Triple Penance) in core and place GPL adapters in optional
+  boundaries; if ledgr is already GPL-compatible, the PA + RPESE
+  adapters are technically and politically the cleanest path. Bind at
+  seed time.
+- Whether ledgr's walk-forward should preserve per-period candidate
+  return vectors (to feed `pbo` directly as an optional adapter) or
+  collapse to fold-level scalar scores (requiring native PBO/CSCV over
+  scores). Substrate question that touches the v0.1.9.4 walk-forward
+  packet's output shape.
+- Stable-region parameter analysis: which detector (2D Gaussian
+  smoothing / local-mean stability / neighborhood SD); the research
+  notes the gap but doesn't propose a methodology.
+- Verification of Hudson & Thames `mlfinlab` successor landscape (the
+  research covered `skfolio` and `pypbo` directionally, not
+  exhaustively); useful for the seed's Python comparison appendix.
+
+#### Non-authorizing closure
+
+This entry rescopes a roadmap slot, records the adapter-first posture,
+and anchors the research input so the eventual RFC cycle opens with a
+clean foundation. It does not authorize implementation, does not commit
+to a specific batch count, and does not pre-bind which packages will be
+adapted (subject to current maintenance verification at seed-cut time).
+When the RFC cycle opens, the roadmap line at `ledgr_roadmap.md:113`
+should be re-scoped from "selection integrity diagnostics" to
+"validation toolkit" at packet-open time per the roadmap-maintenance
+discipline.
+
+### 2026-06-07 [planning] Walk-forward fold output -- preserve per-period candidate return vectors for validation-toolkit PBO adapter optionality
+
+This entry records a substrate observation for the v0.1.9.4 walk-forward
+spec-cut writer, surfaced by the 2026-06-07 validation toolkit entry's
+Finding 3 (the deep-research review found that `pbo`'s CSCV
+implementation requires a T x N panel of raw returns, not fold-level
+scalar scores; see
+`inst/design/research/Validation-Toolkit.md`).
+
+The accepted walk-forward synthesis
+(`rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, Amendments 1 + 2
+and Section 17 ticket-cut gates) binds the operational degradation
+table data contract at Section 16.5 -- per-fold scalar metric values
+for the default print method. That contract is correct as-is for the
+operational reporting surface. The question this entry records is
+whether the v0.1.9.4 spec-cut writer should additionally preserve
+per-period candidate return vectors per fold as a separate retention
+surface.
+
+#### The two options
+
+**Option A -- preserve per-period candidate return vectors per fold.**
+The fold-level scalar metrics from Amendment 2 Section 16.5 remain the
+operational surface; per-period return vectors are an additional
+retention artifact, naturally implemented as an extension of the
+v0.1.9.2 retained-net-returns substrate with `fold_seq` added as the
+new dimension. The validation toolkit's `pbo` adapter route is
+preserved -- ledgr can feed `pbo` directly via the T x N panel
+`pbo()` expects.
+
+**Option B -- collapse to fold-level scalar scores.** Operational
+surface only; no per-period return vectors per fold. The validation
+toolkit must implement PBO and CSCV natively over fold-level scalar
+scores. The algorithm is well-specified but moves entirely onto
+ledgr's plate; no `pbo` adapter is available because the input shape
+mismatch is conceptual, not just type-level.
+
+#### Why this matters
+
+Both options are defensible. The choice has practical consequences:
+
+- **Storage cost.** Option A increases the v0.1.9.4 retention surface
+  roughly proportionally to `(n_candidates x n_folds x n_pulses_per_fold)`.
+  For realistic walk-forward configurations (say 10 candidates x 20
+  folds x 252 pulses), that is on the order of 50K doubles per metric
+  -- not free but well within the v0.1.9.2 storage smoke ratio scale.
+- **Adapter vs native scope.** Option A reduces the validation
+  toolkit's native scope (one fewer algorithm to own); Option B
+  expands it (native PBO / CSCV over scores becomes a v0.1.9.x
+  deliverable).
+- **Future flexibility.** Option A enables future research-stage
+  analyses that want per-fold per-candidate return distributions
+  (signal decay over time, regime decomposition per fold, per-fold
+  attribution). Option B forecloses these without later substrate
+  expansion.
+
+The v0.1.9.2 sweep persistence synthesis Section 11 future obligations
+list already includes "walk-forward per-fold / per-candidate
+return-series retention" (F1 in the post-synthesis direction entry
+above). Option A is the natural implementation of that obligation;
+Option B is the natural avoidance. The validation toolkit research
+surfaces this trade-off earlier than it would otherwise have surfaced,
+while the walk-forward packet is still pre-cut.
+
+#### Recommendation
+
+Lean toward Option A -- preserve per-period candidate return vectors
+per fold as a separate retention surface. Reasons:
+
+- Aligns with the v0.1.9.2 sweep persistence synthesis's three-tier
+  evidence framing (scalar / return-series / promoted run) and extends
+  it naturally with a `fold_seq` dimension.
+- Reduces the validation toolkit's native-implementation scope by
+  preserving the `pbo` adapter route, consistent with the adapter-first
+  posture bound in the 2026-06-07 validation toolkit entry above.
+- Enables future signal-decay, regime-decomposition, and per-fold
+  attribution work without later substrate expansion.
+- Storage cost is bounded and within the v0.1.9.2 storage smoke ratio
+  scale.
+
+Option A's main cost is the additional retention surface on v0.1.9.4;
+if walk-forward retention complexity is already substantial at the
+v0.1.9.4 spec packet, Option B remains defensible. The choice is for
+the v0.1.9.4 spec-cut writer to make at packet-open time with the
+trade-off visible.
+
+#### Process note
+
+This entry is NOT a walk-forward synthesis amendment. The accepted
+synthesis Amendment 2 Section 16.5 is correct as-is; the operational
+degradation table contract stands. This entry is a substrate
+observation that informs the spec-cut writer's choice on whether the
+v0.1.9.4 packet additively preserves per-period vectors as a separate
+retention surface. If the spec-cut writer chooses Option A, the
+additive retention is an additive packet scope decision; if the writer
+chooses Option B, the validation toolkit picks up native PBO and CSCV
+over scores. Either path is consistent with the accepted synthesis.
+
+If the spec-cut writer reads this entry, decides Option B is correct,
+and ships v0.1.9.4 without per-period vectors per fold, the validation
+toolkit retains the option to implement native PBO / CSCV over scores
+as the canonical path. Nothing here forecloses that.
+
+This entry is non-authorizing. It records the substrate trade-off so
+it does not surface as a last-minute decision at validation-toolkit
+seed time after v0.1.9.4 has already shipped.
 
 ### 2026-06-05 [planning] v0.1.9.5 documentation, teaching, and contracts release after v0.1.9.x arc
 

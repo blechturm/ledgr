@@ -109,6 +109,7 @@ versioned packet.
 | v0.1.9.2 | Done | Sweep artifact persistence: durable saved-sweep artifacts, optional retained net equity/return series for completed candidates, reopened-sweep candidate compatibility, and compact retention infrastructure for later walk-forward. | `inst/design/ledgr_v0_1_9_2_spec_packet/` |
 | v0.1.9.3 | Active | Target-risk: per-pulse restructure plus chainable risk layer, including risk-chain identity for walk-forward. | `inst/design/ledgr_v0_1_9_3_spec_packet/` |
 | v0.1.9.4 | Planned | Walk-forward culmination: consumes cost identity from v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain identity from v0.1.9.3; Section 17 gates fire here. | Future packet; accepted walk-forward synthesis |
+| v0.1.9.5 | Planned | Documentation, teaching, contracts audit, and entropy management release after the v0.1.9.x feature arc closes; mirrors the v0.1.8.11 pattern; gates remaining v0.1.9.x feature work and v0.2.x. | Future packet; horizon 2026-06-05 v0.1.9.5 entry |
 | v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
 | v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
@@ -1031,58 +1032,114 @@ Related determinism gap (from the 2026-05-28 fold-core review):
   deterministic-only resume guarantee. See `inst/design/horizon.md` (RNG resume
   entry).
 
-### v0.1.9.x Follow-On Documentation After v0.1.8.11
+### v0.1.9.5 Documentation, Teaching, And Contracts Release
 
-Intent:
+v0.1.9.5 is an entropy-management release after the v0.1.9.x feature arc
+closes. It mirrors the v0.1.8.11 pattern: a focused documentation, teaching,
+and contracts cycle that consolidates the codified-architecture surface
+before v0.2.x feature work begins. This supersedes the prior
+`v0.1.9.x Follow-On Documentation After v0.1.8.11` placeholder, which was a
+bounded-remainder slot in case v0.1.8.11 left undone work. v0.1.9.5 is the
+substantive next teaching-and-entropy cycle, not a remainder cleanup.
 
-- hold only bounded documentation remainder after v0.1.8.11, if review or
-  ticket execution leaves a deliberately deferred article family;
-- keep any follow-on documentation separate from v0.1.9 target-risk
-  implementation and other v0.1.9.x feature packets;
-- avoid reopening governance-record synthesis if v0.1.8.11 has already made
-  the load-bearing decisions discoverable.
+Authoritative input:
 
-Target article families:
+- `inst/design/horizon.md`, entry `2026-06-05 [planning] v0.1.9.5
+  documentation, teaching, and contracts release after v0.1.9.x arc`;
+- the four completed v0.1.9.x packets and their release closeouts
+  (v0.1.9.1 cost API, v0.1.9.2 sweep persistence, v0.1.9.3 target risk,
+  v0.1.9.4 walk-forward);
+- accepted syntheses for the cost API, walk-forward (with Amendments 1 + 2
+  and Section 17 gate matrix), chainable risk, and sweep persistence;
+- accumulated horizon entries from the v0.1.9.x arc.
 
-- **Execution:** fold core, pulse lifecycle, strategy contract, output
-  handlers, execution spec, RNG/determinism, and whole-second time contract;
-- **Data:** snapshot spine, storage schema, and snapshot adapters;
-- **Features:** feature value path, cache/projection, indicator contract, and
-  `series_fn` / TTR adapter semantics;
-- **Sweep:** sweep architecture, promotion/reproduction, and parallel dispatch;
-- **Observability:** error hierarchy, telemetry, replay invariants, collapse
-  determinism gate, and benchmark methodology.
+Indicative workstreams (the spec packet binds final shape):
 
-Readiness gates:
+- **Workstream A -- Contracts audit and structural pass.**
+  `inst/design/contracts.md` second structural pass adding target-risk layer
+  language, walk-forward identity language, sweep persistence shape, and
+  cost-API surface. Same "audit first, route findings, edit only after
+  routing" discipline as v0.1.8.11.
+- **Workstream B -- User-facing vignette refresh.**
+  `strategy-development.qmd`, `metrics-and-accounting.qmd`,
+  `research-workflow.qmd`, and `research-to-production.qmd` get scoped
+  passes against the post-arc surface.
+- **Workstream C -- New vignettes.** Walk-forward research arc (headline)
+  and risk-and-cost execution policy. Both teach the in-between layer
+  between strategy targets and fills without spilling into v0.2.x
+  execution-policy scope. The `risk-and-cost` name avoids collision with
+  the future v0.2.x execution-policy north-star RFC.
+- **Workstream D -- Maintainer manual articles with Implementation Trace.**
+  Cost resolver, target-risk layer, walk-forward fold machinery. Each gets
+  both Synthesis and Implementation Trace per the v0.1.8.11 Section 3.7
+  two-layer standard.
+- **Workstream E -- Identity contract reference v2.** Extend the
+  `?ledgr_identity_fields` substrate to cover risk-chain identity and
+  walk-forward `candidate_key` / `session_id` composition. Pull cost-API
+  forward-obligation rows and walk-forward Section 17 gate-row obligations
+  into the canonical reference.
+- **Workstream F -- v0.1.9.x performance and decisions internal arc.**
+  Narrative covering target-risk's per-pulse restructure, walk-forward's
+  wrapper-not-engine choice, the cost-API spec-cut discipline, and
+  measurement-spike methodology refinement. Same internal-first,
+  not-marketing posture v0.1.8.11 used.
+- **Workstream G -- Release surfaces and roadmap audit.** NEWS, design
+  index, RFC index, performance-arc index update, horizon housekeeping,
+  AGENTS planning context, and a full roadmap audit walking every
+  "Planned" row in the milestone table against shipped work, moving
+  consumed rows to a "Resolved" / "Consumed" section. The conditional
+  primitive-internals row is the first candidate for audit closure given
+  v0.1.8.7 / v0.1.8.9 / v0.1.8.10 likely consumed it.
 
-- v0.1.8.11 has shipped or explicitly deferred a bounded documentation
-  remainder;
-- the fold-core and feature-value-path workbooks have a stable home under
-  `inst/design/manual/` or a clear disposition explaining why not;
-- package vignette build semantics remain intact (`vignettes/` source,
-  `inst/doc/` build output).
+Sequencing:
+
+- Spec scoping starts during v0.1.9.4 ticket-cut so target-risk and
+  walk-forward decisions are absorbed as they bind. Lead time analogous to
+  the v0.1.8.10 to v0.1.8.11 transition.
+- Implementation starts after v0.1.9.4 ships.
+- v0.1.9.5 lands before any other v0.1.9.x planned work
+  (crypto-readiness spike, selection-integrity diagnostics,
+  target-construction helper extensions). The entropy gate closes before
+  the next feature surface opens.
+- Auditr cycle runs against the refreshed v0.1.9.5 surface; findings
+  absorb into v0.1.9.6 or v0.2.x feature packets. Same auditr-after pattern
+  the v0.1.8.11 to v0.1.9.1 flow established.
 
 Implementation constraints:
 
-- this is documentation-only follow-on work;
-- no execution semantics, event schemas, durable identity bytes, target-risk
-  behavior, OMS policy, or compiled-core architecture changes are authorized by
-  the manual work itself;
-- small fixes are allowed only when the article work uncovers stale links,
-  stale diagrams, broken generated-doc references, or missing doc guards.
+- this is a documentation, structure, contracts, and cleanup release;
+- no execution semantics, event schemas, durable identity bytes,
+  target-risk behavior, walk-forward behavior, OMS policy, or compiled-core
+  architecture changes are authorized by this release;
+- small fixes are allowed only when the article or contracts work uncovers
+  stale links, stale diagrams, broken generated-doc references, or missing
+  doc guards;
+- if a doc pass uncovers an actual contract bug rather than a doc bug, it
+  gets its own ticket in a later cycle; do not fix architecture bugs as
+  side effects of documentation work.
 
 Non-scope:
 
-- no package-vignette benchmark marketing;
-- no public hosted benchmark dashboard;
-- no rewrite of RFC/ADR/spec-packet governance records into articles;
-- no broad implementation refactor hidden inside documentation work.
+- marketing or external benchmark claims;
+- new public APIs;
+- execution-semantics changes;
+- v0.2.x feature work (liquidity, OMS, snapshot lineage, paper/live,
+  benchmark context, external-package adapters);
+- walk-forward Section 17 gate-row additions to the synthesis (those bind
+  at v0.1.9.4 ticket-cut, not in the docs cycle);
+- public hosted benchmark dashboard;
+- rewrite of RFC/ADR/spec-packet governance records into articles (the
+  RFCs remain authoritative; synthesis points at them, not replaces them);
+- broad implementation refactor hidden inside documentation work.
 
 Source memory:
 
-- `inst/design/horizon.md`, entry
-  `2026-05-30 [documentation] Maintainer manual article backlog after
-  v0.1.8.8 skeleton`, now pulled forward into v0.1.8.11.
+- `inst/design/horizon.md`, entry `2026-06-05 [planning] v0.1.9.5
+  documentation, teaching, and contracts release after v0.1.9.x arc`,
+  which carries the seed-shape for the workstreams above;
+- `inst/design/horizon.md`, entry `2026-05-30 [documentation] Maintainer
+  manual article backlog after v0.1.8.8 skeleton`, originally pulled
+  forward into v0.1.8.11 and now informing Workstream D.
 
 ### Later v0.1.8.x Sweep Stabilization
 

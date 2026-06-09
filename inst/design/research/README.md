@@ -31,8 +31,49 @@ For any claim that becomes load-bearing in a synthesis, look up the primary sour
 |---|---|---|
 | `Walk-Forward.md` | `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` |
 | `Transaction-Cost-Models.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
+| `Validation-Toolkit.md` | Anticipated validation-toolkit RFC seed (selection-integrity diagnostics + business-objective constructor; bundling rationale recorded in the 2026-06-07 horizon entry "Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture"). Seed has not been authored yet. | Pending (RFC cycle expected to open after v0.1.9.4 walk-forward closes). |
 
 When the next deep-research-informed RFC cycle opens, add a new file here and a new row to the table.
+
+## Future research slots
+
+The following filenames are reserved for future RFC cycles that are
+anticipated by the roadmap or by recorded horizon entries. Listing them
+here is a discoverability convention, not authorization to do the
+research now. When a slot's RFC cycle opens, the seed author writes the
+research file under the matching filename, runs the deep-research pass at
+stage 1 of the cycle, and adds a row to the Current files table.
+
+| Anticipated filename | Anticipated RFC cycle | Roadmap window |
+|---|---|---|
+| `Benchmark-Methodology.md` | Benchmark context RFC (archetypal / alternative indices / tracking portfolios / market observables) | v0.2.x |
+| `Trade-Accounting-Definitions.md` | Multi-asset trade-definition RFC (flat-to-reduced vs increased-to-reduced for non-spot accounting) | v0.2.x |
+| `Intraday-Pulse-Architecture.md` | Intraday-frequency RFC (sub-daily pulse, whole-second-preserved per the timestamp contract) | v0.2.x |
+| `Hypothesis-Recording.md` | Structured sweep notes RFC (hypothesis identity surface per the 2026-06-07 horizon entry) | v0.2.x |
+| `Portfolio-Optimization.md` | Portfolio optimization scaffolding RFC, Levels 3 / 4 per the 2026-06-07 horizon entry. Consumes the business-objective constructor from `Validation-Toolkit.md`. | v0.2.x+ |
+| `Regime-Detection.md` | Regime detection RFC (Markov-switching / change-point models), if and when the topic is promoted from horizon to active scope | unscheduled |
+
+When the deep-research pass for a slot is conducted, the prompt should
+include an explicit "ecosystem citizenship" section: identify candidate
+R adapter packages, verify current CRAN / GitHub maintenance status,
+note licensing, and surface where adapter-first is preferable to
+native implementation. The Validation-Toolkit slot is the explicit
+exemplar of this convention -- its 2026-06-07 horizon entry binds the
+adapter-first posture as a design stance, not just an implementation
+shortcut.
+
+Microstructure / L2 / HFT research slots are deliberately not reserved.
+These topics are permanent non-goals per the whole-second timestamp
+contract. If a future cycle needs market-microstructure context for a
+non-execution purpose, write the file ad hoc rather than reserving a slot
+here.
+
+Slot reservation does not imply the RFC cycle will open at a specific
+date or that the maintainer has committed to authoring it. The
+methodology priors in `inst/design/methodology_references.md` already
+cover several of these anticipated cycles' foundational citation needs;
+the per-cycle research file picks up the front of the literature at the
+time the cycle actually opens.
 
 ## Process placement
 
