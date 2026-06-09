@@ -283,7 +283,7 @@ Implementation notes:
 ## Batch 6 - Sweep Risk Identity And Candidate Failures
 
 Ticket: `LDG-2605`
-Status: Pending
+Status: Review Pending
 
 Goal: thread risk identity into in-memory sweep candidates and represent risk
 failures through condition classes and existing failure fields.
@@ -302,6 +302,19 @@ Review focus:
 - Risk identity is candidate evidence, not a ranking or selection surface.
 - Failure handling stays compatible with the existing sweep row contract.
 - Condition classes are precise enough for users and tests.
+
+Implementation notes:
+
+- Added visible in-memory `risk_chain_hash` to sweep candidate rows.
+- Added `risk_chain_hash` and `risk_plan_json` to row-level sweep provenance
+  for success rows, feature-resolution failure rows, and execution/risk
+  failure rows.
+- Risk construction/application failures now flow through existing
+  `error_class` / `error_msg` candidate fields under `stop_on_error = FALSE`;
+  `stop_on_error = TRUE` still rethrows the original classed condition.
+- Preserved grid row order, seed derivation, and warning/error association.
+- No `failure_type` column, saved-sweep schema v2, promotion provenance,
+  persistence-layer risk columns, or compiled-path changes are included.
 
 ## Batch 7 - Saved Sweep Schema v2 And Promotion Provenance
 

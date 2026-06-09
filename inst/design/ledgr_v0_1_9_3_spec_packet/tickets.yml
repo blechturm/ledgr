@@ -152,7 +152,7 @@ tickets:
 
   - id: "LDG-2605"
     title: "Sweep Risk Identity And Candidate Failures"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

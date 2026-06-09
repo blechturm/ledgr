@@ -554,7 +554,7 @@ scope: max_weight_step
 Priority: P0
 Effort: L
 Dependencies: LDG-2602, LDG-2603, LDG-2604
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -585,6 +585,15 @@ fields.
 Sweep identity tests, stop-on-error tests, classed-condition tests,
 warning/error association tests, seed determinism tests, and stale-schema
 searches for `failure_type`.
+
+Implementation note: In-memory sweep rows now include visible
+`risk_chain_hash`, and sweep provenance now carries `risk_chain_hash` plus
+`risk_plan_json` on success, feature-failure, and execution/risk-failure rows.
+Risk failures are represented through existing candidate `error_class` /
+`error_msg` fields, while `stop_on_error = TRUE` rethrows the classed risk
+condition. No schema-level `failure_type`, saved-sweep schema v2, promotion
+provenance, persistence-layer risk columns, or compiled-path changes are in
+scope for this batch.
 
 ### Source Reference
 

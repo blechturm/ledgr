@@ -409,6 +409,7 @@ testthat::test_that("public sweep applies parameterized max-weight risk step", {
     risk_chain = ledgr_risk_max_weight(ledgr_param("cap")),
     cost_model = ledgr_cost_zero()
   )
+  expected_risk <- ledgr_risk_max_weight(ledgr_param("cap"))
   grid <- ledgr_param_grid(
     low = list(cap = 0.1),
     high = list(cap = 0.2)
@@ -418,6 +419,60 @@ testthat::test_that("public sweep applies parameterized max-weight risk step", {
 
   testthat::expect_identical(as.character(out$status), c("DONE", "DONE"))
   testthat::expect_gt(out$final_equity[[2]], out$final_equity[[1]])
+  testthat::expect_false("failure_type" %in% names(out))
+  testthat::expect_identical(
+    out$risk_chain_hash,
+    rep(ledgr:::ledgr_risk_chain_hash(expected_risk), 2L)
+  )
+  risk_plan_json <- ledgr:::ledgr_risk_plan_json(expected_risk)
+  testthat::expect_true(all(vapply(out$provenance, function(provenance) {
+    identical(provenance$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(expected_risk)) &&
+      identical(provenance$risk_plan_json, risk_plan_json)
+  }, logical(1))))
+})
+
+testthat::test_that("risk failures are captured as sweep candidate failures", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2024-01-01") + 0:3)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- 1
+      return(targets)
+    }
+    ctx$hold()
+  }
+  risk <- ledgr_risk_max_weight(ledgr_param("cap"))
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    risk_chain = risk,
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(
+    ok = list(cap = 0.1),
+    bad = list(cap = 2)
+  )
+
+  out <- ledgr_sweep(exp, grid, seed = 123L, stop_on_error = FALSE)
+
+  testthat::expect_identical(as.character(out$candidate_id), c("ok", "bad"))
+  testthat::expect_identical(as.character(out$status), c("DONE", "FAILED"))
+  testthat::expect_identical(out$error_class[[2]], "ledgr_invalid_risk_model")
+  testthat::expect_match(out$error_msg[[2]], "`max_weight`", fixed = TRUE)
+  testthat::expect_false("failure_type" %in% names(out))
+  testthat::expect_identical(
+    out$risk_chain_hash,
+    rep(ledgr:::ledgr_risk_chain_hash(risk), 2L)
+  )
+  testthat::expect_true(all(vapply(out$provenance, function(provenance) {
+    identical(provenance$risk_plan_json, ledgr:::ledgr_risk_plan_json(risk))
+  }, logical(1))))
+  testthat::expect_error(
+    ledgr_sweep(exp, grid, seed = 123L, stop_on_error = TRUE),
+    class = "ledgr_invalid_risk_model"
+  )
 })
 
 testthat::test_that("post-risk target validation has a distinct condition class", {
