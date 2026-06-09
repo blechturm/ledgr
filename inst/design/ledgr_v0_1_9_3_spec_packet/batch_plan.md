@@ -203,7 +203,7 @@ Implementation notes:
 ## Batch 4 - Risk-Chain Fold Integration
 
 Ticket: `LDG-2602`
-Status: Pending
+Status: Review Pending
 
 Goal: insert compiled risk plans at the reserved fold-core target-risk slot and
 validate post-risk targets before timing and cost resolution.
@@ -224,6 +224,20 @@ Review focus:
 - Risk steps cannot inspect execution-bar data, cost outputs, retained returns,
   rankings, or future folds.
 - The net-feasibility hook remains no-op.
+
+Implementation notes:
+
+- Compiled risk plans are built once at run / sweep candidate setup and passed
+  through the shared `ledgr_execution_spec()` into the fold core.
+- The fold now applies the compiled risk plan after strategy target validation
+  and before timing proposals, cost resolution, or event writes.
+- Batch 4 keeps non-no-op risk steps fail-closed with
+  `ledgr_risk_step_not_implemented`; Batch 5 owns the actual long-only and
+  max-weight target transforms.
+- Added `ledgr_invalid_post_risk_targets` so post-risk target failures are
+  distinguishable from raw strategy target-validation failures.
+- Deep compiled-plan validation rejects malformed worker/spec payloads before
+  fold entry.
 
 ## Batch 5 - Built-In Risk Steps
 

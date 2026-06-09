@@ -252,6 +252,151 @@ ledgr_risk_plan_reconstruct <- function(risk_plan_json) {
   ledgr_risk_model_from_payload(payload)
 }
 
+ledgr_risk_plan_compile <- function(risk_chain = NULL, params = list()) {
+  risk_chain <- ledgr_risk_normalize(risk_chain)
+  if (!is.list(params)) {
+    rlang::abort(
+      "`strategy_params` must be a list when compiling a risk plan.",
+      class = c("ledgr_invalid_risk_plan", "ledgr_invalid_args")
+    )
+  }
+  steps <- lapply(ledgr_risk_flat_steps(risk_chain), ledgr_risk_compile_step, params = params)
+  structure(
+    list(
+      risk_schema_version = ledgr_risk_schema_version,
+      steps = steps
+    ),
+    class = c("ledgr_compiled_risk_plan", "list")
+  )
+}
+
+ledgr_risk_validate_compiled_plan <- function(risk_plan) {
+  if (is.null(risk_plan)) {
+    return(ledgr_risk_plan_compile(NULL, params = list()))
+  }
+  if (!inherits(risk_plan, "ledgr_compiled_risk_plan") ||
+      !is.list(risk_plan) ||
+      !identical(as.integer(risk_plan$risk_schema_version), ledgr_risk_schema_version) ||
+      is.null(risk_plan$steps) ||
+      !is.list(risk_plan$steps)) {
+    rlang::abort(
+      "`risk_plan` must be a compiled ledgr risk plan.",
+      class = c("ledgr_invalid_risk_plan", "ledgr_invalid_execution_spec")
+    )
+  }
+  lapply(risk_plan$steps, ledgr_risk_validate_compiled_step)
+  invisible(risk_plan)
+}
+
+ledgr_risk_validate_compiled_step <- function(step) {
+  if (!inherits(step, "ledgr_compiled_risk_step") ||
+      !is.list(step) ||
+      !is.character(step$type_id) || length(step$type_id) != 1L ||
+      !(step$type_id %in% c("long_only", "max_weight")) ||
+      !identical(as.integer(step$schema_version), ledgr_risk_schema_version) ||
+      is.null(step$args) ||
+      !is.list(step$args)) {
+    rlang::abort(
+      "`risk_plan` contains an invalid compiled risk step.",
+      class = c("ledgr_invalid_risk_plan", "ledgr_invalid_execution_spec")
+    )
+  }
+  if (identical(step$type_id, "long_only") && length(step$args) != 0L) {
+    rlang::abort(
+      "`risk_plan` contains an invalid long-only compiled risk step.",
+      class = c("ledgr_invalid_risk_plan", "ledgr_invalid_execution_spec")
+    )
+  }
+  if (identical(step$type_id, "max_weight")) {
+    if (!identical(names(step$args), "max_weight")) {
+      rlang::abort(
+        "`risk_plan` contains an invalid max-weight compiled risk step.",
+        class = c("ledgr_invalid_risk_plan", "ledgr_invalid_execution_spec")
+      )
+    }
+    step$args$max_weight <- ledgr_risk_validate_max_weight(step$args$max_weight)
+  }
+  invisible(step)
+}
+
+ledgr_risk_compile_step <- function(step, params) {
+  step <- ledgr_risk_validate_model(step)
+  args <- ledgr_risk_compile_args(step$args, params = params)
+  structure(
+    list(
+      type_id = step$type_id,
+      schema_version = step$risk_schema_version,
+      args = args
+    ),
+    class = c(paste0("ledgr_compiled_risk_step_", step$type_id), "ledgr_compiled_risk_step", "list")
+  )
+}
+
+ledgr_risk_compile_args <- function(args, params) {
+  if (length(args) == 0L) {
+    return(list())
+  }
+  stats::setNames(
+    lapply(names(args), function(arg) ledgr_risk_compile_arg(args[[arg]], arg, params = params)),
+    names(args)
+  )
+}
+
+ledgr_risk_compile_arg <- function(value, arg, params) {
+  if (!ledgr_is_param_ref(value)) {
+    return(value)
+  }
+  name <- ledgr_param_name(value)
+  if (is.null(params[[name]])) {
+    rlang::abort(
+      sprintf("Risk parameter `%s` is missing from strategy params.", name),
+      class = c("ledgr_risk_plan_parameter_missing", "ledgr_invalid_risk_plan")
+    )
+  }
+  resolved <- params[[name]]
+  if (identical(arg, "max_weight")) {
+    return(ledgr_risk_validate_max_weight(resolved))
+  }
+  resolved
+}
+
+ledgr_apply_risk_plan <- function(targets, risk_plan, ctx) {
+  risk_plan <- ledgr_risk_validate_compiled_plan(risk_plan)
+  if (length(risk_plan$steps) == 0L) {
+    return(targets)
+  }
+  out <- targets
+  for (step in risk_plan$steps) {
+    out <- ledgr_apply_risk_step(out, step, ctx)
+  }
+  out
+}
+
+ledgr_apply_risk_step <- function(targets, step, ctx) {
+  force(ctx)
+  type_id <- step$type_id
+  rlang::abort(
+    sprintf(
+      "Risk step `%s` is not active until its behavior ticket is implemented.",
+      type_id
+    ),
+    class = c("ledgr_risk_step_not_implemented", "ledgr_risk_application_error")
+  )
+}
+
+ledgr_validate_post_risk_targets <- function(targets, universe) {
+  tryCatch(
+    ledgr_validate_strategy_targets(targets, universe),
+    error = function(e) {
+      rlang::abort(
+        conditionMessage(e),
+        class = c("ledgr_invalid_post_risk_targets", "ledgr_risk_application_error"),
+        parent = e
+      )
+    }
+  )
+}
+
 ledgr_risk_model_from_payload <- function(payload) {
   if (!is.list(payload) ||
       !identical(as.integer(payload$risk_schema_version), ledgr_risk_schema_version) ||

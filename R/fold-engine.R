@@ -185,6 +185,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
     rlang::abort("Fold execution requires `runtime_projection`.", class = "ledgr_invalid_fold_execution")
   }
   active_alias_map <- ledgr_normalize_alias_map(execution$active_alias_map)
+  risk_plan <- ledgr_risk_validate_compiled_plan(execution$risk_plan)
   cost_resolver <- execution$cost_resolver
   event_seq <- execution$event_seq_start
   telemetry <- execution$telemetry
@@ -409,7 +410,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
         result$targets,
         instrument_ids
       )
-      targets <- ledgr_apply_target_risk_noop(targets, ctx, strategy_params)
+      targets <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
+      targets <- ledgr_validate_post_risk_targets(targets, instrument_ids)
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
         t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)

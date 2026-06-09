@@ -1,5 +1,6 @@
 ledgr_risk_fold_test_execution <- function(strategy,
                                            cost_resolver,
+                                           risk_plan = NULL,
                                            run_id = "risk-fold-test",
                                            instrument_ids = c("AAA", "BBB"),
                                            cash = 1000,
@@ -65,6 +66,7 @@ ledgr_risk_fold_test_execution <- function(strategy,
       pulses_posix = pulses_posix
     ),
     active_alias_map = NULL,
+    risk_plan = risk_plan,
     cost_resolver = cost_resolver,
     event_seq_start = 1L,
     telemetry = ledgr:::ledgr_sweep_telemetry_env(),
@@ -155,6 +157,78 @@ testthat::test_that("no-op feasibility hook does not sequentially reject same-pu
   position_delta <- attr(events, "ledgr_event_position_delta")
   final_position <- tapply(position_delta, events$instrument_id, sum)
   testthat::expect_equal(as.numeric(final_position[c("BBB", "AAA")]), c(1, 0))
+})
+
+testthat::test_that("compiled risk plan is applied before timing cost and event writes", {
+  resolver_calls <- 0L
+  cost_resolver <- function(proposal, fill_context) {
+    resolver_calls <<- resolver_calls + 1L
+    ledgr:::ledgr_default_cost_resolve(
+      proposal = proposal,
+      fill_context = fill_context,
+      spread_bps = 0,
+      commission_fixed = 0
+    )
+  }
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- 1
+      return(targets)
+    }
+    ctx$hold()
+  }
+  risk_plan <- ledgr:::ledgr_risk_plan_compile(
+    ledgr_risk_long_only(),
+    params = list()
+  )
+  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-risk-before-cost")
+  execution <- ledgr_risk_fold_test_execution(
+    strategy = strategy,
+    cost_resolver = cost_resolver,
+    risk_plan = risk_plan,
+    run_id = "risk-fold-risk-before-cost"
+  )
+
+  testthat::expect_error(
+    ledgr:::ledgr_execute_fold(execution, handler),
+    class = "ledgr_risk_step_not_implemented"
+  )
+  testthat::expect_identical(resolver_calls, 0L)
+  testthat::expect_identical(nrow(handler$events()), 0L)
+})
+
+testthat::test_that("post-risk target validation has a distinct condition class", {
+  testthat::expect_error(
+    ledgr:::ledgr_validate_strategy_targets(c(AAA = 1), c("AAA", "BBB")),
+    class = "ledgr_invalid_strategy_result"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_validate_post_risk_targets(c(AAA = 1), c("AAA", "BBB")),
+    class = "ledgr_invalid_post_risk_targets"
+  )
+  error <- testthat::capture_error(
+    ledgr:::ledgr_validate_post_risk_targets(c(AAA = 1), c("AAA", "BBB"))
+  )
+  testthat::expect_s3_class(error$parent, "ledgr_invalid_strategy_result")
+})
+
+testthat::test_that("risk plan parameter references resolve once before fold execution", {
+  risk_plan <- ledgr:::ledgr_risk_plan_compile(
+    ledgr_risk_max_weight(ledgr_param("cap")),
+    params = list(cap = 0.4)
+  )
+
+  testthat::expect_s3_class(risk_plan, "ledgr_compiled_risk_plan")
+  testthat::expect_identical(length(risk_plan$steps), 1L)
+  testthat::expect_identical(risk_plan$steps[[1L]]$args$max_weight, 0.4)
+  testthat::expect_error(
+    ledgr:::ledgr_risk_plan_compile(
+      ledgr_risk_max_weight(ledgr_param("missing_cap")),
+      params = list()
+    ),
+    class = "ledgr_risk_plan_parameter_missing"
+  )
 })
 
 testthat::test_that("private pulse-plan helpers are not exported", {

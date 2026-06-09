@@ -963,6 +963,7 @@ ledgr_sweep_run_candidate <- function(exp,
   )
   telemetry <- ledgr_sweep_telemetry_env()
   cost_resolver <- ledgr_cost_resolver_from_plan_json(exp$cost_plan_json)
+  risk_plan <- ledgr_risk_plan_compile(exp$risk_chain, params = params)
   signature <- ledgr_strategy_signature(exp$strategy)
   execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -986,6 +987,7 @@ ledgr_sweep_run_candidate <- function(exp,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = candidate$alias_map,
+    risk_plan = risk_plan,
     cost_resolver = cost_resolver,
     event_seq_start = as.integer(nrow(opening_rows)) + 1L,
     telemetry = telemetry,

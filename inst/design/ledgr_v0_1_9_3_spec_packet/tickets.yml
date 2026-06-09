@@ -96,7 +96,7 @@ tickets:
 
   - id: "LDG-2602"
     title: "Risk-Chain Fold Integration And Post-Risk Validation"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

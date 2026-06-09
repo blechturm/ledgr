@@ -380,7 +380,7 @@ scope: phased_pulse_noop_parity
 Priority: P0
 Effort: L
 Dependencies: LDG-2600, LDG-2601
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -410,6 +410,15 @@ or events are produced.
 
 Fold-integration tests, post-risk-validation tests, no-lookahead tests,
 final-bar tests, and run/sweep parity tests.
+
+Implementation note: Compiled risk plans are now built once at run / sweep
+candidate setup, carried through `ledgr_execution_spec()`, and applied in the
+shared fold core after strategy target validation and before fill timing, cost
+resolution, and event writes. Batch 4 deliberately keeps non-no-op risk steps
+fail-closed with `ledgr_risk_step_not_implemented`; Batch 5 owns long-only and
+max-weight behavior. Post-risk validation now uses
+`ledgr_invalid_post_risk_targets`, and compiled-plan validation rejects
+malformed step payloads before fold entry.
 
 ### Source Reference
 
