@@ -135,7 +135,7 @@ scope: v0.1.9.3
 Priority: P0
 Effort: M
 Dependencies: LDG-2597
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -166,6 +166,12 @@ execution yet.
 Constructor tests, invalid-input tests, export tests, print/str smoke tests, and
 classed-condition tests.
 
+Implementation note: Added inert classed risk constructors, export lock
+updates, print/str smoke coverage, and classed validation errors. The
+constructors do not access execution data or mutate fold behavior.
+Claude review found no blockers after the identity-byte recommendation below
+was applied.
+
 ### Source Reference
 
 - `v0_1_9_3_spec.md` Sections 3 and 4
@@ -186,7 +192,7 @@ scope: risk_constructors
 Priority: P0
 Effort: L
 Dependencies: LDG-2598
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -218,6 +224,15 @@ Compile public risk objects into worker-safe plans and derive deterministic
 Canonical JSON tests, hash stability tests, no-op normalization tests,
 parameter-reference tests, reconstruction parity tests, and serialization
 structure tests.
+
+Implementation note: Added internal compiled plan payloads,
+`risk_plan_json`, `risk_chain_hash`, no-op normalization for omitted/`NULL`/
+explicit none, parameter-reference payload encoding, reconstruction parity
+coverage, and serialization shape tests. Experiment config and fold wiring
+remain deferred to later tickets.
+Claude's M-1 identity recommendation was applied: compiled step payloads omit
+the in-memory `version` field and a regression test locks the exact payload
+keys to `type_id`, `schema_version`, and `args`.
 
 ### Source Reference
 

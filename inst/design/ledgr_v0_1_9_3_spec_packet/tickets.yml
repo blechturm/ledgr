@@ -22,7 +22,7 @@ tickets:
 
   - id: "LDG-2598"
     title: "Risk Object Constructors And Validation"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -40,7 +40,7 @@ tickets:
 
   - id: "LDG-2599"
     title: "Risk Plan Compilation And Identity"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:

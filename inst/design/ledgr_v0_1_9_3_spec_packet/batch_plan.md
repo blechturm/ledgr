@@ -1,6 +1,6 @@
 # ledgr v0.1.9.3 Batch Plan
 
-**Status:** Batch 0 complete; Batch 1 ready for implementation.
+**Status:** Batch 1 complete; Batch 2 ready for implementation.
 
 This batch plan sequences the v0.1.9.3 target-risk packet without expanding
 scope beyond `v0_1_9_3_spec.md` and the accepted
@@ -73,7 +73,7 @@ Closeout notes:
 ## Batch 1 - Risk Object Surface And Identity Floor
 
 Tickets: `LDG-2598`, `LDG-2599`
-Status: Pending
+Status: Completed
 
 Goal: add classed risk constructors, risk-plan compilation, and stable risk
 identity before any fold execution behavior changes.
@@ -96,6 +96,22 @@ Review focus:
   semantics.
 - Durable identity contains no closures, mutable environments, DB handles,
   external pointers, or active bindings.
+
+Implementation notes:
+
+- Added inert classed risk objects for `none`, `long_only`, `max_weight`, and
+  ordered chains, plus a print method, Rd page, and export lock updates.
+- Added internal plan compilation, canonical `risk_plan_json`,
+  `risk_chain_hash`, no-op normalization, and plan reconstruction helpers.
+- `ledgr_param()` references in `max_weight` compile to JSON-safe
+  `{kind: "param_ref", name: ...}` records; fixed scalar values compile to
+  `{kind: "value", value: ...}`.
+- Batch 1 deliberately does not wire risk identity into experiment config,
+  fold execution, sweep persistence, or promotion context; those remain for
+  later batches.
+- Claude review found no blockers. The recommended identity-byte patch was
+  applied before commit: compiled step payloads now omit the in-memory
+  `version` field so durable hash bytes match the spec's listed components.
 
 ## Batch 2 - Experiment Config And Reopen Compatibility
 
