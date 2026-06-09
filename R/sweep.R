@@ -743,7 +743,8 @@ ledgr_sweep_exp_payload <- function(exp) {
     opening = exp$opening,
     timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash %||% NULL,
-    cost_plan_json = exp$cost_plan_json %||% NULL
+    cost_plan_json = exp$cost_plan_json %||% NULL,
+    risk_chain = exp$risk_chain
   )
 }
 

@@ -290,8 +290,8 @@ where:
 - `decision_equity` is the decision-time equity surface already exposed to
   strategy helpers;
 - `max_weight` is a finite scalar in `(0, 1]`;
-- quantities are reduced toward the current position only as needed to satisfy
-  the cap;
+- quantities are capped by reducing absolute target quantity only as needed to
+  satisfy the cap, preserving the strategy's intended target direction;
 - the step must not introduce negative quantities when combined with
   `ledgr_risk_long_only()`.
 

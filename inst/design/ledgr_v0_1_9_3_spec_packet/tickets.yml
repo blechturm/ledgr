@@ -115,7 +115,7 @@ tickets:
 
   - id: "LDG-2603"
     title: "Long-Only Risk Step"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -133,7 +133,7 @@ tickets:
 
   - id: "LDG-2604"
     title: "Max-Weight Risk Step"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

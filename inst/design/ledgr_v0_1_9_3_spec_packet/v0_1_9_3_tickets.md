@@ -440,7 +440,7 @@ scope: risk_chain_slot_and_validation
 Priority: P0
 Effort: M
 Dependencies: LDG-2602
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -468,6 +468,12 @@ Implement `ledgr_risk_long_only()` as the first built-in target-risk step.
 Risk-step behavior tests, post-risk-validation tests, identity tests, run/sweep
 tests, and documentation examples.
 
+Implementation note: `ledgr_risk_long_only()` now applies in the shared
+fold-core risk slot by mapping negative target quantities to zero while
+preserving names, universe order, and the complete target vector. Public run
+coverage verifies that a negative target produces no fill after risk
+application.
+
 ### Source Reference
 
 - `v0_1_9_3_spec.md` Section 4
@@ -488,7 +494,7 @@ scope: long_only_step
 Priority: P0
 Effort: L
 Dependencies: LDG-2602
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -517,6 +523,16 @@ defer the adapter rather than inventing a public risk-specific context.
 
 Decision-time-surface tests, cap behavior tests, parameterized-risk tests,
 identity tests, no-lookahead tests, and run/sweep parity tests.
+
+Implementation note: `ledgr_risk_max_weight()` now caps absolute target
+exposure with
+`abs(target_quantity * decision_price) <= max_weight * decision_equity`, using
+only decision-time `ctx$equity` and decision-time close prices from
+`ctx$vec$close` or `ctx$close(id)`. It supports fixed and `ledgr_param()`
+values through the existing candidate-parameter path, including in-memory sweep
+candidate execution, fails closed when a nonzero target needs an invalid
+decision price, and does not add affordability, liquidity, OMS, risk identity
+metadata, persistence, or a risk-specific public context.
 
 ### Source Reference
 

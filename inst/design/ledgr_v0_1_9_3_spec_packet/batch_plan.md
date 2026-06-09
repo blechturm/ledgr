@@ -242,7 +242,7 @@ Implementation notes:
 ## Batch 5 - Built-In Risk Steps
 
 Tickets: `LDG-2603`, `LDG-2604`
-Status: Pending
+Status: Review Pending
 
 Goal: implement the minimum public adapter set: long-only and max-weight.
 
@@ -262,6 +262,23 @@ Review focus:
 - Long-only does not imply broker-grade shorting or margin semantics.
 - Max-weight is a target transform, not portfolio optimization.
 - Built-in steps do not introduce liquidity, costs, ranking, or order policy.
+
+Implementation notes:
+
+- Added built-in risk-step application for `long_only` and `max_weight` in the
+  Batch 4 fold slot.
+- `long_only` maps negative target quantities to zero and preserves the full
+  named target vector.
+- `max_weight` caps absolute target exposure using decision-time equity and
+  decision-time close prices from `ctx$vec$close` or `ctx$close(id)`.
+- `max_weight` fails closed only when a nonzero target requires a missing,
+  non-finite, or non-positive decision price; zero targets do not require a
+  price.
+- In-memory sweep candidate execution now carries the experiment risk chain so
+  parameterized risk steps affect candidate outputs; sweep risk identity and
+  candidate failure metadata remain Batch 6 scope.
+- No affordability, liquidity, OMS, risk-specific public context, failure
+  schema, persistence, promotion, or compiled-path changes are included.
 
 ## Batch 6 - Sweep Risk Identity And Candidate Failures
 

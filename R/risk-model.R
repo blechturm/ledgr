@@ -373,15 +373,82 @@ ledgr_apply_risk_plan <- function(targets, risk_plan, ctx) {
 }
 
 ledgr_apply_risk_step <- function(targets, step, ctx) {
-  force(ctx)
-  type_id <- step$type_id
-  rlang::abort(
-    sprintf(
-      "Risk step `%s` is not active until its behavior ticket is implemented.",
-      type_id
-    ),
-    class = c("ledgr_risk_step_not_implemented", "ledgr_risk_application_error")
+  switch(
+    step$type_id,
+    long_only = ledgr_apply_risk_step_long_only(targets, step, ctx),
+    max_weight = ledgr_apply_risk_step_max_weight(targets, step, ctx),
+    rlang::abort(
+      sprintf(
+        "Risk step `%s` is not supported by this ledgr version.",
+        step$type_id
+      ),
+      class = c("ledgr_unsupported_risk_step", "ledgr_risk_application_error")
+    )
   )
+}
+
+ledgr_apply_risk_step_long_only <- function(targets, step, ctx) {
+  force(step)
+  force(ctx)
+  out <- as.numeric(targets)
+  out[out < 0] <- 0
+  stats::setNames(out, names(targets))
+}
+
+ledgr_apply_risk_step_max_weight <- function(targets, step, ctx) {
+  max_weight <- ledgr_risk_validate_max_weight(step$args$max_weight)
+  equity <- ledgr_risk_context_equity(ctx)
+  prices <- ledgr_risk_context_prices(ctx, names(targets))
+  out <- as.numeric(targets)
+  nonzero <- abs(out) > sqrt(.Machine$double.eps)
+  invalid_price <- nonzero & (!is.finite(prices) | is.na(prices) | prices <= 0)
+  if (any(invalid_price)) {
+    rlang::abort(
+      sprintf(
+        "Cannot apply `ledgr_risk_max_weight()`: decision-time close price is missing, non-finite, or non-positive for: %s.",
+        paste(names(targets)[invalid_price], collapse = ", ")
+      ),
+      class = c("ledgr_invalid_risk_context", "ledgr_risk_application_error")
+    )
+  }
+  if (!any(nonzero) || equity == 0) {
+    out[nonzero] <- 0
+    return(stats::setNames(out, names(targets)))
+  }
+  max_abs_qty <- (as.numeric(max_weight) * equity) / prices[nonzero]
+  out[nonzero] <- sign(out[nonzero]) * pmin(abs(out[nonzero]), max_abs_qty)
+  stats::setNames(out, names(targets))
+}
+
+ledgr_risk_context_equity <- function(ctx) {
+  equity <- ctx$equity
+  if (!is.numeric(equity) || length(equity) != 1L ||
+      is.na(equity) || !is.finite(equity) || equity < 0) {
+    rlang::abort(
+      "`ctx$equity` must be a finite non-negative numeric scalar for risk application.",
+      class = c("ledgr_invalid_risk_context", "ledgr_risk_application_error")
+    )
+  }
+  as.numeric(equity)
+}
+
+ledgr_risk_context_prices <- function(ctx, universe) {
+  close_vec <- NULL
+  if (is.list(ctx$vec) &&
+      is.numeric(ctx$vec$close) &&
+      length(ctx$vec$close) == length(universe)) {
+    close_vec <- as.numeric(ctx$vec$close)
+  }
+  if (is.null(close_vec)) {
+    if (!is.function(ctx$close)) {
+      rlang::abort(
+        "Risk application requires decision-time close prices from `ctx$vec$close` or `ctx$close(id)`.",
+        class = c("ledgr_invalid_risk_context", "ledgr_risk_application_error")
+      )
+    }
+    close_vec <- vapply(universe, function(id) as.numeric(ctx$close(id)), numeric(1))
+  }
+  stats::setNames(as.numeric(close_vec), universe)
 }
 
 ledgr_validate_post_risk_targets <- function(targets, universe) {

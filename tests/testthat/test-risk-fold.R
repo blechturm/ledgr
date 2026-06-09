@@ -4,16 +4,19 @@ ledgr_risk_fold_test_execution <- function(strategy,
                                            run_id = "risk-fold-test",
                                            instrument_ids = c("AAA", "BBB"),
                                            cash = 1000,
-                                           positions = stats::setNames(c(0, 0), c("AAA", "BBB"))) {
+                                           positions = stats::setNames(c(0, 0), c("AAA", "BBB")),
+                                           price = NULL) {
   pulses_posix <- as.POSIXct(
     c("2024-01-01 00:00:00", "2024-01-02 00:00:00", "2024-01-03 00:00:00"),
     tz = "UTC"
   )
   pulses_iso <- vapply(pulses_posix, ledgr:::ledgr_normalize_ts_utc, character(1))
-  price <- rbind(
-    AAA = c(10, 11, 12),
-    BBB = c(20, 21, 22)
-  )
+  if (is.null(price)) {
+    price <- rbind(
+      AAA = c(10, 11, 12),
+      BBB = c(20, 21, 22)
+    )
+  }
   price <- price[instrument_ids, , drop = FALSE]
   dimnames(price) <- list(instrument_ids, pulses_iso)
   bars_mat <- list(
@@ -159,10 +162,12 @@ testthat::test_that("no-op feasibility hook does not sequentially reject same-pu
   testthat::expect_equal(as.numeric(final_position[c("BBB", "AAA")]), c(1, 0))
 })
 
-testthat::test_that("compiled risk plan is applied before timing cost and event writes", {
+testthat::test_that("compiled risk plan transforms targets before timing cost and event writes", {
   resolver_calls <- 0L
+  resolver_qty <- numeric()
   cost_resolver <- function(proposal, fill_context) {
     resolver_calls <<- resolver_calls + 1L
+    resolver_qty <<- c(resolver_qty, proposal$qty)
     ledgr:::ledgr_default_cost_resolve(
       proposal = proposal,
       fill_context = fill_context,
@@ -173,7 +178,45 @@ testthat::test_that("compiled risk plan is applied before timing cost and event 
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
       targets <- ctx$flat()
-      targets["AAA"] <- 1
+      targets["AAA"] <- 50
+      return(targets)
+    }
+    ctx$hold()
+  }
+  risk_plan <- ledgr:::ledgr_risk_plan_compile(
+    ledgr_risk_max_weight(0.1),
+    params = list()
+  )
+  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-risk-before-cost")
+  execution <- ledgr_risk_fold_test_execution(
+    strategy = strategy,
+    cost_resolver = cost_resolver,
+    risk_plan = risk_plan,
+    run_id = "risk-fold-risk-before-cost",
+    price = rbind(
+      AAA = c(10, 10, 10),
+      BBB = c(20, 20, 20)
+    )
+  )
+
+  ledgr:::ledgr_execute_fold(execution, handler)
+  events <- handler$events()
+
+  testthat::expect_identical(resolver_calls, 1L)
+  testthat::expect_equal(resolver_qty, 10)
+  testthat::expect_equal(events$qty, 10)
+})
+
+testthat::test_that("long-only risk step maps negative targets to zero", {
+  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+    spread_bps = 0,
+    commission_fixed = 0
+  )
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- -5
+      targets["BBB"] <- 1
       return(targets)
     }
     ctx$hold()
@@ -182,20 +225,199 @@ testthat::test_that("compiled risk plan is applied before timing cost and event 
     ledgr_risk_long_only(),
     params = list()
   )
-  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-risk-before-cost")
+  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-long-only")
   execution <- ledgr_risk_fold_test_execution(
     strategy = strategy,
     cost_resolver = cost_resolver,
     risk_plan = risk_plan,
-    run_id = "risk-fold-risk-before-cost"
+    run_id = "risk-fold-long-only"
+  )
+
+  ledgr:::ledgr_execute_fold(execution, handler)
+  events <- handler$events()
+
+  testthat::expect_identical(as.character(events$instrument_id), "BBB")
+  testthat::expect_equal(events$qty, 1)
+})
+
+testthat::test_that("long-only risk step leaves compliant targets unchanged", {
+  out <- ledgr:::ledgr_apply_risk_step_long_only(
+    c(AAA = 5, BBB = 0),
+    list(),
+    list()
+  )
+
+  testthat::expect_equal(out, c(AAA = 5, BBB = 0))
+})
+
+testthat::test_that("max-weight risk step caps absolute target exposure", {
+  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+    spread_bps = 0,
+    commission_fixed = 0
+  )
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- 50
+      targets["BBB"] <- 20
+      return(targets)
+    }
+    ctx$hold()
+  }
+  risk_plan <- ledgr:::ledgr_risk_plan_compile(
+    ledgr_risk_max_weight(0.1),
+    params = list()
+  )
+  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-max-weight")
+  execution <- ledgr_risk_fold_test_execution(
+    strategy = strategy,
+    cost_resolver = cost_resolver,
+    risk_plan = risk_plan,
+    run_id = "risk-fold-max-weight",
+    price = rbind(
+      AAA = c(10, 10, 10),
+      BBB = c(20, 20, 20)
+    )
+  )
+
+  ledgr:::ledgr_execute_fold(execution, handler)
+  events <- handler$events()
+
+  testthat::expect_identical(as.character(events$instrument_id), c("AAA", "BBB"))
+  testthat::expect_equal(events$qty, c(10, 5))
+})
+
+testthat::test_that("max-weight preserves negative target direction", {
+  out <- ledgr:::ledgr_apply_risk_step_max_weight(
+    c(AAA = -50),
+    list(args = list(max_weight = 0.1)),
+    list(equity = 1000, vec = list(close = c(AAA = 10)))
+  )
+
+  testthat::expect_equal(out, c(AAA = -10))
+})
+
+testthat::test_that("max-weight zeros nonzero targets when equity is zero", {
+  out <- ledgr:::ledgr_apply_risk_step_max_weight(
+    c(AAA = 50, BBB = 0),
+    list(args = list(max_weight = 0.1)),
+    list(equity = 0, vec = list(close = c(AAA = 10, BBB = NA_real_)))
+  )
+
+  testthat::expect_equal(out, c(AAA = 0, BBB = 0))
+})
+
+testthat::test_that("risk chains apply built-in steps in order", {
+  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+    spread_bps = 0,
+    commission_fixed = 0
+  )
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- -50
+      targets["BBB"] <- 20
+      return(targets)
+    }
+    ctx$hold()
+  }
+  risk_plan <- ledgr:::ledgr_risk_plan_compile(
+    ledgr_risk_chain(
+      ledgr_risk_long_only(),
+      ledgr_risk_max_weight(0.1)
+    ),
+    params = list()
+  )
+  handler <- ledgr:::ledgr_memory_output_handler("risk-fold-chain")
+  execution <- ledgr_risk_fold_test_execution(
+    strategy = strategy,
+    cost_resolver = cost_resolver,
+    risk_plan = risk_plan,
+    run_id = "risk-fold-chain",
+    price = rbind(
+      AAA = c(10, 10, 10),
+      BBB = c(20, 20, 20)
+    )
+  )
+
+  ledgr:::ledgr_execute_fold(execution, handler)
+  events <- handler$events()
+
+  testthat::expect_identical(as.character(events$instrument_id), "BBB")
+  testthat::expect_equal(events$qty, 5)
+})
+
+testthat::test_that("max-weight fails closed when nonzero targets need invalid decision prices", {
+  targets <- c(AAA = 1, BBB = 0)
+  ctx <- list(
+    universe = c("AAA", "BBB"),
+    equity = 1000,
+    vec = list(close = c(NA_real_, NA_real_))
+  )
+  risk_plan <- ledgr:::ledgr_risk_plan_compile(
+    ledgr_risk_max_weight(0.1),
+    params = list()
   )
 
   testthat::expect_error(
-    ledgr:::ledgr_execute_fold(execution, handler),
-    class = "ledgr_risk_step_not_implemented"
+    ledgr:::ledgr_apply_risk_plan(targets, risk_plan, ctx),
+    class = "ledgr_invalid_risk_context"
   )
-  testthat::expect_identical(resolver_calls, 0L)
-  testthat::expect_identical(nrow(handler$events()), 0L)
+})
+
+testthat::test_that("public run applies long-only risk step", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2024-01-01") + 0:3)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- -10
+      return(targets)
+    }
+    ctx$hold()
+  }
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    risk_chain = ledgr_risk_long_only(),
+    cost_model = ledgr_cost_zero()
+  )
+
+  bt <- ledgr_run(exp, run_id = "risk-long-only-run")
+  on.exit(close(bt), add = TRUE)
+  ledger <- ledgr_results(bt, "ledger")
+
+  testthat::expect_identical(nrow(ledger), 0L)
+})
+
+testthat::test_that("public sweep applies parameterized max-weight risk step", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2024-01-01") + 0:3)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets["AAA"] <- 1000
+      return(targets)
+    }
+    ctx$hold()
+  }
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    risk_chain = ledgr_risk_max_weight(ledgr_param("cap")),
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(
+    low = list(cap = 0.1),
+    high = list(cap = 0.2)
+  )
+
+  out <- ledgr_sweep(exp, grid, seed = 123L)
+
+  testthat::expect_identical(as.character(out$status), c("DONE", "DONE"))
+  testthat::expect_gt(out$final_equity[[2]], out$final_equity[[1]])
 })
 
 testthat::test_that("post-risk target validation has a distinct condition class", {
