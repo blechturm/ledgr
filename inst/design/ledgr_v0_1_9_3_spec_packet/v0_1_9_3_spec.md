@@ -592,15 +592,21 @@ candidate `error_class` / `error_msg` fields. It does not add a schema-level
 failure-schema RFC so it can align with later walk-forward classification
 surfaces instead of creating a second ad hoc taxonomy.
 
-Error classes should include:
+The v0.1.9.3 implementation uses the existing ledgr condition style rather
+than a separate risk-only taxonomy. The binding class surface is:
 
-- `ledgr_invalid_risk_chain`
-- `ledgr_invalid_risk_step`
-- `ledgr_invalid_risk_param`
-- `ledgr_risk_step_error`
-- `ledgr_risk_validation_error`
-- `ledgr_risk_plan_reconstruction_error`
-- `ledgr_risk_identity_mismatch`
+- `ledgr_invalid_risk_model` for malformed public risk objects, invalid risk
+  constructor arguments, unsupported risk payloads, risk-plan reconstruction
+  failures, and post-risk target validation failures;
+- `ledgr_invalid_risk_plan` for malformed compiled risk plans and unsupported
+  compiled risk steps;
+- `ledgr_risk_plan_parameter_missing` for unresolved `ledgr_param()` references
+  while compiling parameterized risk plans.
+
+Persistence and promotion identity mismatches continue to use the relevant
+store/config/sweep schema classes already owned by those surfaces, usually with
+`risk_chain_hash` or `risk_plan_json` in the message. v0.1.9.3 does not add a
+new schema-level `failure_type` column or a parallel enum taxonomy.
 
 The post-risk validation error class must be distinguishable from the original
 strategy-output validation error. Risk-chain condition classes must survive

@@ -228,7 +228,7 @@ tickets:
 
   - id: "LDG-2609"
     title: "Documentation, Examples, And NEWS"
-    status: "pending"
+    status: "review_pending"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -252,7 +252,7 @@ tickets:
 
   - id: "LDG-2610"
     title: "Release Surfaces And Planning Docs"
-    status: "pending"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:

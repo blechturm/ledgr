@@ -789,7 +789,7 @@ scope: risk_plan_safety
 Priority: P1
 Effort: L
 Dependencies: LDG-2598, LDG-2599, LDG-2603, LDG-2604, LDG-2605, LDG-2606, LDG-2607
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -823,6 +823,17 @@ OMS, margin, or broker-grade risk controls.
 Documentation review, roxygen examples, README/example cold-start checks where
 affected, pkgdown build where affected, and stale-claim searches.
 
+### Implementation Notes
+
+- Expanded risk constructor help to document target-risk as a target-vector
+  transformation layer, including the exact max-weight exposure formula.
+- Updated strategy, sweep, metrics/accounting, and research-to-production
+  articles for risk/timing/cost boundaries, saved-sweep risk identity,
+  affordability deferral, and explicit non-scope.
+- Added v0.1.9.3 NEWS language for public risk API, risk identity,
+  saved-sweep schema v2 migration, phased-pulse telemetry attribution, and
+  deferred capabilities.
+
 ### Source Reference
 
 - `v0_1_9_3_spec.md` Section 11
@@ -843,7 +854,7 @@ scope: target_risk_docs
 Priority: P1
 Effort: M
 Dependencies: LDG-2597, LDG-2609
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -872,6 +883,14 @@ Keep planning surfaces and release metadata aligned with v0.1.9.3 scope.
 
 Planning-doc review, stale-reference searches, metadata review, pkgdown build
 where affected, and Claude review before release gate.
+
+### Implementation Notes
+
+- Bumped `DESCRIPTION` to `0.1.9.3`.
+- Updated `contracts.md` for target-risk API, risk identity, saved-sweep schema
+  v2 risk placement, promotion behavior, and affordability deferral.
+- Updated AGENTS planning context through Batch 8 and marked Batch 9 review
+  pending. Roadmap and design index already identified v0.1.9.3 as active.
 
 ### Source Reference
 

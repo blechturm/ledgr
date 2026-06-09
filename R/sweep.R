@@ -448,6 +448,8 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
 #' Hash fields carried from the candidate into promotion evidence are
 #' summarized in [ledgr_identity_fields].
+#' Promotion replays the selected candidate's risk chain even when `exp` was
+#' configured with a different `risk_chain`.
 #'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a

@@ -134,11 +134,12 @@ deferred to the horizon for a later RFC/spec cycle.
 - Primary synthesis:
   `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`.
 
-Target risk, walk-forward, public cost/liquidity APIs, OMS work, live data
-logs, point-in-time regressors, public benchmark dashboards, and broad collapse
+Walk-forward, public cost/liquidity APIs, OMS work, live data logs,
+point-in-time regressors, public benchmark dashboards, and broad collapse
 adoption remain deferred unless a later active packet explicitly scopes a
-bounded subset. Auditr-report bugfix intake is also deferred until a future
-packet routes it.
+bounded subset. The active v0.1.9.3 packet scopes only the narrow target-risk
+layer described above. Auditr-report bugfix intake is also deferred until a
+future packet routes it.
 
 The v0.1.8.7 packet is complete. It shipped Optimization Round 2 and explicit
 legacy execution cleanup: modern execution is snapshot-backed and

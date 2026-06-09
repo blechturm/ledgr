@@ -1,3 +1,34 @@
+# ledgr 0.1.9.3
+
+- Added the first public target-risk API: classed
+  `ledgr_risk_chain()`, `ledgr_risk_none()`, `ledgr_risk_long_only()`, and
+  `ledgr_risk_max_weight()` objects. Risk chains transform full validated
+  strategy target vectors before fill timing and cost resolution; they do not
+  construct targets, rank candidates, estimate costs, model liquidity, or own
+  order lifecycle behavior.
+- Added target-risk execution identity. Modern configs, runs, sweep candidates,
+  promotion context, and saved sweeps carry `risk_chain_hash` plus
+  `risk_plan_json` alongside existing strategy, feature, metric, and cost
+  identity. Omitted risk, `risk_chain = NULL`, and `ledgr_risk_none()` normalize
+  to the same no-op risk plan.
+- Target-risk transforms apply uniformly across canonical R, parallel, and
+  compiled spot-FIFO sweep paths with the same risk identity and parity
+  requirements.
+- Saved sweeps now use schema v2 for risk identity. The first
+  `ledgr_sweep_save()` against a v0.1.9.2 store performs an additive migration
+  for `risk_chain_hash` and `risk_plan_json`; older saved sweeps with no risk
+  fields reopen as the no-op risk plan when unambiguous.
+- Refactored the fold pulse into plan, risk, timing/cost, emit, and apply
+  phases so risk transforms happen once per pulse before fills are proposed.
+  This preserves the canonical fold path and changes internal telemetry
+  attribution by moving proposal-build work into pulse planning / `t_fill`;
+  it is not a behavior change apart from the requested risk transforms.
+- This release does not add arbitrary risk callbacks, affordability
+  enforcement, cash-floor checks, portfolio optimization, margin, shorting or
+  borrow policy, liquidity/capacity modeling, OMS behavior, broker-grade risk
+  controls, `failure_type` schema columns, walk-forward, or automatic candidate
+  selection.
+
 # ledgr 0.1.9.2
 
 - `ledgr_sweep()` can now retain and persist compact sweep artifacts. The new
@@ -40,8 +71,9 @@
   findings: installed disclaimer resolution, stable cost/timing/legacy
   condition-class help, `LEDGR_LAST_BAR_NO_FILL` help, quoted-spread cost
   teaching, runnable cost examples, and sweep documentation that cost models are
-  fixed experiment inputs in v1. Sweep artifact persistence, target risk, and
-  walk-forward remain future v0.1.9.x packets.
+  fixed experiment inputs in v1. At the time of v0.1.9.1, sweep artifact
+  persistence, target risk, and walk-forward were still future v0.1.9.x
+  packets.
 
 # ledgr 0.1.8.11
 

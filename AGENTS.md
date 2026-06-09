@@ -190,11 +190,16 @@ Current planning context (active v0.1.9.3 target-risk packet):
   `inst/design/ledgr_v0_1_9_3_spec_packet/README.md`.
   It implements classed target-risk steps, risk-chain identity, a
   behavior-preserving phased-pulse substrate, bounded risk application, and
-  integration with sweep/promotion/reopen identity. Batch 0 packet alignment is
-  complete after Claude review. Arbitrary risk callbacks, affordability
-  enforcement, liquidity/capacity policy, OMS behavior, walk-forward
-  implementation, failure-schema columns, target-helper expansion, and
-  compiled-core architecture work remain non-scope.
+  integration with sweep/promotion/reopen identity. Batch 0 packet alignment,
+  Batch 1 public risk constructors and identity, Batch 2 config/run identity,
+  Batch 3 phased-pulse substrate, Batch 4 fold risk application, Batch 5
+  built-in risk steps, Batch 6 sweep row identity, Batch 7 saved-sweep and
+  promotion identity, and Batch 8 parallel / compiled sweep safety are complete
+  after Claude review. Batch 9 documentation and release surfaces are review
+  pending. Arbitrary risk callbacks, affordability enforcement,
+  liquidity/capacity policy, OMS behavior, walk-forward implementation,
+  failure-schema columns, target-helper expansion, and compiled-core
+  architecture work remain non-scope.
 
 ## Active Design Entry Points
 

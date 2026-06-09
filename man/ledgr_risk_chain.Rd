@@ -18,7 +18,7 @@ ledgr_risk_max_weight(max_weight)
 \arguments{
 \item{...}{Risk step objects to compose in order.}
 
-\item{max_weight}{Finite scalar in \code{(0, 1]}, or \code{ledgr_param("name")}.}
+\item{max_weight}{Finite scalar in \verb{(0, 1]}, or \code{ledgr_param("name")}.}
 }
 \value{
 A \code{ledgr_risk_model} object.
@@ -28,6 +28,25 @@ These constructors create deterministic, classed target-risk objects for
 ledgr execution. Risk steps transform complete strategy target vectors before
 fill timing and cost resolution. They do not perform execution, persistence,
 ranking, cost estimation, liquidity checks, OMS behavior, or data access.
+}
+\details{
+Target risk is not target construction. Strategies still return full named
+numeric target quantities. A risk chain receives those validated targets and
+may transform the requested quantities before ledgr builds fill proposals.
+\code{ledgr_risk_long_only()} clips negative target quantities to zero.
+\code{ledgr_risk_max_weight()} caps absolute target exposure per instrument using
+decision-time equity and prices:
+\code{abs(target_quantity * decision_price) <= max_weight * decision_equity}.
+
+Risk chains are execution identity. Equivalent no-op inputs, including an
+omitted risk chain, \code{NULL}, and \code{ledgr_risk_none()}, normalize to the same
+\code{risk_chain_hash} and \code{risk_plan_json}. Parameterized risk arguments use
+\code{ledgr_param()} and are resolved from ordinary candidate parameters during
+sweep execution.
+
+Target risk does not implement cash affordability, margin, shorting or borrow
+policy, liquidity or capacity checks, order lifecycle behavior, broker-grade
+risk controls, portfolio optimization, or automatic candidate selection.
 }
 \examples{
 risk <- ledgr_risk_chain(

@@ -4,7 +4,7 @@ This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The active design index
 (`inst/design/README.md`) names the current authoritative spec packet; the
 authoritative narrative remains in the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_8_11_spec_packet/`.
+`inst/design/ledgr_v0_1_9_3_spec_packet/`.
 The strategy preflight boundary originated in
 `inst/design/ledgr_v0_1_8_spec_packet/` and remains binding.
 
@@ -27,7 +27,7 @@ The strategy preflight boundary originated in
 - The v0.1.8 fold-core/output-handler boundary is a required architecture
   contract before sweep mode. The fold core is the deterministic per-pulse
   execution engine: pulse calendar order, context construction, feature lookup,
-  strategy invocation, target validation, the reserved future target-risk slot,
+  strategy invocation, target validation, target-risk transformation,
   fill timing, cost resolution, final-bar no-fill behavior,
   cash/position/state transitions, and the canonical in-memory event stream.
   The output handler is the persistence or accumulation layer that materializes
@@ -93,6 +93,33 @@ The strategy preflight boundary originated in
   that plan. Later sweep persistence and walk-forward candidate identity may
   consume these fields, but v0.1.9.1 does not implement cost-grid sweep
   composition or walk-forward.
+- Target risk is a target-vector transformation layer. Strategies still return
+  full named numeric target quantities. The fold applies the normalized
+  `risk_chain` after strategy target validation and before fill timing, cost
+  resolution, and event emission. v0.1.9.3 exposes only classed ledgr risk
+  objects: `ledgr_risk_none()`, `ledgr_risk_chain()`,
+  `ledgr_risk_long_only()`, and `ledgr_risk_max_weight()`. Arbitrary
+  user-supplied risk callbacks are not part of the public contract.
+- Target-risk identity is part of execution identity. `risk_plan_json` is the
+  canonical serialized risk plan, and `risk_chain_hash` is the SHA-256 hash of
+  that plan. Omitted `risk_chain`, `risk_chain = NULL`, and
+  `risk_chain = ledgr_risk_none()` normalize to the same no-op risk plan for
+  new configs. Parameterized risk arguments use `ledgr_param()` and resolve
+  through ordinary candidate params; there is no separate risk-parameter grid.
+- Target risk does not implement affordability enforcement, cash-floor checks,
+  silent buy scaling, portfolio optimization, margin, shorting or borrow
+  policy, liquidity/capacity modeling, OMS lifecycle behavior, broker-grade
+  risk controls, cost estimation, or automatic candidate selection. Those
+  remain separate future layers or RFC topics.
+- Risk-enabled sweep rows expose `risk_chain_hash`, and row-level provenance
+  carries `risk_plan_json`. Saved sweep schema v2 stores `risk_chain_hash` and
+  `risk_plan_json` on `sweeps` and `sweep_candidates`; the first
+  `ledgr_sweep_save()` against a v0.1.9.2 store performs an additive schema
+  migration for those risk identity columns. A v0.1.9.2 saved sweep with
+  unambiguous missing risk fields reopens as the no-op risk plan in memory.
+  Promotion must preserve the selected candidate's risk identity and re-execute
+  through `ledgr_run()`; retained return rows are not replayed as committed
+  evidence.
 - Config and feature identity fields must keep their layers distinct.
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and

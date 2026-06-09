@@ -7,6 +7,24 @@ ledgr_risk_schema_version <- 1L
 #' fill timing and cost resolution. They do not perform execution, persistence,
 #' ranking, cost estimation, liquidity checks, OMS behavior, or data access.
 #'
+#' Target risk is not target construction. Strategies still return full named
+#' numeric target quantities. A risk chain receives those validated targets and
+#' may transform the requested quantities before ledgr builds fill proposals.
+#' `ledgr_risk_long_only()` clips negative target quantities to zero.
+#' `ledgr_risk_max_weight()` caps absolute target exposure per instrument using
+#' decision-time equity and prices:
+#' `abs(target_quantity * decision_price) <= max_weight * decision_equity`.
+#'
+#' Risk chains are execution identity. Equivalent no-op inputs, including an
+#' omitted risk chain, `NULL`, and `ledgr_risk_none()`, normalize to the same
+#' `risk_chain_hash` and `risk_plan_json`. Parameterized risk arguments use
+#' `ledgr_param()` and are resolved from ordinary candidate parameters during
+#' sweep execution.
+#'
+#' Target risk does not implement cash affordability, margin, shorting or borrow
+#' policy, liquidity or capacity checks, order lifecycle behavior, broker-grade
+#' risk controls, portfolio optimization, or automatic candidate selection.
+#'
 #' @param ... Risk step objects to compose in order.
 #' @param max_weight Finite scalar in `(0, 1]`, or `ledgr_param("name")`.
 #' @return A `ledgr_risk_model` object.

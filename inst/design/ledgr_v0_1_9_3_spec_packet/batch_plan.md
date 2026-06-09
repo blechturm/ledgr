@@ -387,7 +387,7 @@ Implementation notes:
 ## Batch 9 - Documentation And Release Surfaces
 
 Tickets: `LDG-2609`, `LDG-2610`
-Status: Pending
+Status: Review Pending
 
 Goal: update user-facing documentation, examples, NEWS, and planning surfaces
 after the implementation surface is stable.
@@ -414,6 +414,17 @@ Review focus:
 - The release surface reflects the narrowed spec, especially affordability
   deferral and no `failure_type` column.
 - Horizon entries remain parked unless explicitly promoted.
+
+Implementation notes:
+
+- Expanded risk constructor and identity documentation for the public risk
+  boundary, `risk_chain_hash`, and `risk_plan_json`.
+- Updated README, strategy, sweep, metrics/accounting, and
+  research-to-production articles for target-risk scope, saved-sweep risk
+  identity, affordability deferral, and non-scope language.
+- Added v0.1.9.3 NEWS and bumped package metadata to `0.1.9.3`.
+- Updated `contracts.md` and AGENTS planning context for target-risk identity,
+  saved-sweep schema v2 risk placement, and Batch 9 review state.
 
 ## Batch 10 - Release Gate
 
