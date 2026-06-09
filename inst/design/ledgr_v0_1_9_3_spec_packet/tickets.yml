@@ -77,7 +77,7 @@ tickets:
 
   - id: "LDG-2601"
     title: "Phased-Pulse No-Op Parity Substrate"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "XL"
     dependencies:

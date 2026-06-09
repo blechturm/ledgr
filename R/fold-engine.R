@@ -60,6 +60,102 @@ ledgr_fold_positions_snapshot <- function(position_vec, instrument_ids) {
   stats::setNames(as.numeric(position_vec), instrument_ids)
 }
 
+ledgr_fold_warn_final_bar_no_fill <- function(fill) {
+  if (is.character(fill$warn_code) &&
+      identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
+    warning(
+      paste(
+        "LEDGR_LAST_BAR_NO_FILL:",
+        "target changed on the final available bar, but the next-open fill model requires a following bar.",
+        "No fill was emitted for this target change.",
+        "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
+ledgr_fold_build_pulse_plan <- function(targets,
+                                        target_names,
+                                        target_inst_idx,
+                                        current_qty_vec,
+                                        delta_vec,
+                                        actionable_idx,
+                                        pulse_idx,
+                                        pulses_posix,
+                                        bars_mat,
+                                        cost_resolver,
+                                        ts_signal_utc) {
+  fills <- vector("list", length(actionable_idx))
+  fill_n <- 0L
+  has_next_pulse <- pulse_idx < length(pulses_posix)
+
+  for (target_idx in actionable_idx) {
+    instrument_id <- target_names[[target_idx]]
+    inst_idx <- target_inst_idx[[target_idx]]
+    delta <- delta_vec[[target_idx]]
+
+    proposal <- ledgr_next_open_fill_proposal(
+      desired_qty_delta = delta,
+      next_open_price = if (has_next_pulse) bars_mat$open[inst_idx, pulse_idx + 1L] else NULL,
+      instrument_id = instrument_id,
+      ts_utc = if (has_next_pulse) pulses_posix[[pulse_idx + 1L]] else NULL,
+      high = if (has_next_pulse) bars_mat$high[inst_idx, pulse_idx + 1L] else NA_real_,
+      low = if (has_next_pulse) bars_mat$low[inst_idx, pulse_idx + 1L] else NA_real_,
+      close = if (has_next_pulse) bars_mat$close[inst_idx, pulse_idx + 1L] else NA_real_,
+      volume = if (has_next_pulse) bars_mat$volume[inst_idx, pulse_idx + 1L] else NA_real_
+    )
+    fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
+
+    if (inherits(fill, "ledgr_fill_none")) {
+      ledgr_fold_warn_final_bar_no_fill(fill)
+      next
+    }
+    if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
+      next
+    }
+
+    fill$instrument_id <- instrument_id
+    fill$ts_signal_utc <- ts_signal_utc
+    fill$inst_idx <- inst_idx
+
+    fill_n <- fill_n + 1L
+    fills[[fill_n]] <- list(
+      target_idx = as.integer(target_idx),
+      instrument_id = instrument_id,
+      inst_idx = as.integer(inst_idx),
+      current_qty = as.numeric(current_qty_vec[[target_idx]]),
+      delta = as.numeric(delta),
+      fill = fill
+    )
+  }
+
+  if (fill_n == 0L) {
+    fills <- list()
+  } else {
+    fills <- fills[seq_len(fill_n)]
+  }
+
+  structure(
+    list(
+      targets = targets,
+      actionable_idx = as.integer(actionable_idx),
+      fills = fills
+    ),
+    class = c("ledgr_pulse_plan", "list")
+  )
+}
+
+ledgr_fold_apply_net_feasibility_noop <- function(pulse_plan, state) {
+  force(state)
+  pulse_plan
+}
+
+ledgr_fold_pulse_plan_fill_intents <- function(pulse_plan) {
+  lapply(pulse_plan$fills, function(entry) entry$fill)
+}
+
 ledgr_execute_fold <- function(execution, output_handler) {
   execution <- ledgr_validate_execution_spec(execution)
   run_id <- execution$run_id
@@ -332,71 +428,33 @@ ledgr_execute_fold <- function(execution, output_handler) {
         sample_start <- sample_now
       }
 
-      # Event emission and state mutation stay adjacent and ordered by the
-      # validated target vector so sweep and durable replay see the same stream.
+      if (sample_telemetry) sample_start <- ledgr_time_now()
+      pulse_plan <- ledgr_fold_build_pulse_plan(
+        targets = targets,
+        target_names = target_names,
+        target_inst_idx = target_inst_idx,
+        current_qty_vec = current_qty_vec,
+        delta_vec = delta_vec,
+        actionable_idx = actionable_idx,
+        pulse_idx = i,
+        pulses_posix = pulses_posix,
+        bars_mat = bars_mat,
+        cost_resolver = cost_resolver,
+        ts_signal_utc = ts_iso
+      )
+      pulse_plan <- ledgr_fold_apply_net_feasibility_noop(pulse_plan, state)
+      if (sample_telemetry) {
+        sample_now <- ledgr_time_now()
+        t_fill <- t_fill + ledgr_time_elapsed(sample_start, sample_now)
+        sample_start <- sample_now
+      }
+
+      # Event emission and state mutation happen only after the private pulse
+      # plan is complete. Event order still follows the validated target vector
+      # so sweep and durable replay see the same canonical stream.
       if (use_compiled_spot_fifo) {
-        compiled_fills <- vector("list", length(actionable_idx))
-        compiled_n <- 0L
-        for (target_idx in actionable_idx) {
-          if (sample_telemetry) sample_start <- ledgr_time_now()
-          instrument_id <- target_names[[target_idx]]
-          inst_idx <- target_inst_idx[[target_idx]]
-          delta <- delta_vec[[target_idx]]
-
-          proposal <- ledgr_next_open_fill_proposal(
-            desired_qty_delta = delta,
-            next_open_price = if (i < length(pulses_posix)) bars_mat$open[inst_idx, i + 1L] else NULL,
-            instrument_id = instrument_id,
-            ts_utc = if (i < length(pulses_posix)) pulses_posix[[i + 1L]] else NULL,
-            high = if (i < length(pulses_posix)) bars_mat$high[inst_idx, i + 1L] else NA_real_,
-            low = if (i < length(pulses_posix)) bars_mat$low[inst_idx, i + 1L] else NA_real_,
-            close = if (i < length(pulses_posix)) bars_mat$close[inst_idx, i + 1L] else NA_real_,
-            volume = if (i < length(pulses_posix)) bars_mat$volume[inst_idx, i + 1L] else NA_real_
-          )
-          if (sample_telemetry) {
-            sample_now <- ledgr_time_now()
-            t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
-            sample_start <- sample_now
-          }
-          fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
-
-          if (inherits(fill, "ledgr_fill_none")) {
-            if (sample_telemetry) {
-              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
-            }
-            if (is.character(fill$warn_code) &&
-                identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
-              warning(
-                paste(
-                  "LEDGR_LAST_BAR_NO_FILL:",
-                  "target changed on the final available bar, but the next-open fill model requires a following bar.",
-                  "No fill was emitted for this target change.",
-                  "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
-                ),
-                call. = FALSE
-              )
-            }
-            next
-          }
-
-          if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
-            if (sample_telemetry) {
-              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
-            }
-            next
-          }
-
-          fill$instrument_id <- instrument_id
-          fill$ts_signal_utc <- ts_iso
-          fill$inst_idx <- inst_idx
-          compiled_n <- compiled_n + 1L
-          compiled_fills[[compiled_n]] <- fill
-          if (sample_telemetry) {
-            t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
-          }
-        }
-        if (compiled_n > 0L) {
-          compiled_fills <- compiled_fills[seq_len(compiled_n)]
+        compiled_fills <- ledgr_fold_pulse_plan_fill_intents(pulse_plan)
+        if (length(compiled_fills) > 0L) {
           if (sample_telemetry) sample_start <- ledgr_time_now()
           batch <- ledgr_run_compiled_spot_fifo_batch(
             run_id = run_id,
@@ -420,63 +478,12 @@ ledgr_execute_fold <- function(execution, output_handler) {
           }
         }
       } else {
-        for (target_idx in actionable_idx) {
+        for (entry in pulse_plan$fills) {
           if (sample_telemetry) sample_start <- ledgr_time_now()
-          instrument_id <- target_names[[target_idx]]
-          inst_idx <- target_inst_idx[[target_idx]]
-          delta <- delta_vec[[target_idx]]
-          cur_qty <- current_qty_vec[[target_idx]]
-
-          proposal <- ledgr_next_open_fill_proposal(
-            desired_qty_delta = delta,
-            next_open_price = if (i < length(pulses_posix)) bars_mat$open[inst_idx, i + 1L] else NULL,
-            instrument_id = instrument_id,
-            ts_utc = if (i < length(pulses_posix)) pulses_posix[[i + 1L]] else NULL,
-            high = if (i < length(pulses_posix)) bars_mat$high[inst_idx, i + 1L] else NA_real_,
-            low = if (i < length(pulses_posix)) bars_mat$low[inst_idx, i + 1L] else NA_real_,
-            close = if (i < length(pulses_posix)) bars_mat$close[inst_idx, i + 1L] else NA_real_,
-            volume = if (i < length(pulses_posix)) bars_mat$volume[inst_idx, i + 1L] else NA_real_
-          )
-          if (sample_telemetry) {
-            sample_now <- ledgr_time_now()
-            t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
-            sample_start <- sample_now
-          }
-          fill <- ledgr_resolve_fill_proposal(proposal, cost_resolver)
-
-          if (inherits(fill, "ledgr_fill_none")) {
-            if (sample_telemetry) {
-              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
-            }
-            if (is.character(fill$warn_code) &&
-                identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
-              warning(
-                paste(
-                  "LEDGR_LAST_BAR_NO_FILL:",
-                  "target changed on the final available bar, but the next-open fill model requires a following bar.",
-                  "No fill was emitted for this target change.",
-                  "Check the strategy's final-pulse behavior or extend the snapshot if this trade should be fillable."
-                ),
-                call. = FALSE
-              )
-            }
-            next
-          }
-
-          if (!is.finite(fill$fill_price) || fill$fill_price <= 0) {
-            if (sample_telemetry) {
-              t_fill <- t_fill + ledgr_time_elapsed(sample_start, ledgr_time_now())
-            }
-            next
-          }
-
-          fill$instrument_id <- instrument_id
-          fill$ts_signal_utc <- ts_iso
-          if (sample_telemetry) {
-            sample_now <- ledgr_time_now()
-            t_fill <- t_fill + ledgr_time_elapsed(sample_start, sample_now)
-            sample_start <- sample_now
-          }
+          fill <- entry$fill
+          instrument_id <- entry$instrument_id
+          inst_idx <- entry$inst_idx
+          cur_qty <- entry$current_qty
 
           lot_res <- ledgr_lot_apply_fill(
             state$lot_state,

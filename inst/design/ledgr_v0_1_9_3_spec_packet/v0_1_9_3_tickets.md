@@ -314,7 +314,7 @@ scope: risk_identity_reopen_compatibility
 Priority: P0
 Effort: XL
 Dependencies: LDG-2599
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -346,6 +346,19 @@ risk steps change targets.
 Reference parity tests, event-stream tests, run/sweep parity tests, final-bar
 no-fill tests, retained-return parity tests, and same-pulse rebalancing
 order-independence tests.
+
+Implementation note: Added a private `ledgr_pulse_plan` substrate in
+`R/fold-engine.R` that builds cost-resolved fill intents before event emission
+or state mutation. The reserved net-feasibility hook is a private pass-through;
+no affordability enforcement, quantity mutation, liquidity policy, or OMS
+behavior is active. The canonical R and compiled spot-FIFO paths consume the
+same planned fill intents after planning completes. Added
+`tests/testthat/test-risk-fold.R` to prove same-pulse fill resolution happens
+before any fill event write. Claude Batch 3 review had no blockers; follow-up
+confirmed the v1 `fill_context` carries only `execution_bar`, not mid-pulse
+cash, positions, or equity. The review noted the telemetry attribution shift
+from per-instrument proposal-build time toward `t_fill`; document that in
+Batch 9 rather than preserving the old attribution artifact.
 
 ### Source Reference
 
@@ -734,6 +747,9 @@ OMS, margin, or broker-grade risk controls.
   cost versus liquidity.
 - Update identity docs for `risk_chain_hash` and `risk_plan_json`.
 - Add NEWS entry.
+- Document that the phased-pulse restructure changed internal telemetry
+  attribution by moving proposal-build work into the pulse planning / `t_fill`
+  bucket; this is attribution-only, not an execution-behavior change.
 - Keep examples small, deterministic, and snapshot-backed.
 
 ### Acceptance Criteria

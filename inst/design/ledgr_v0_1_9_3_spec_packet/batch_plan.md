@@ -157,7 +157,7 @@ Implementation notes:
 ## Batch 3 - Phased-Pulse No-Op Parity Substrate
 
 Ticket: `LDG-2601`
-Status: Pending
+Status: Completed
 
 Goal: restructure the per-pulse fill path into a private pulse plan while
 `ledgr_risk_none()` is the only behavior, proving parity before target-changing
@@ -180,6 +180,25 @@ Review focus:
 - No public risk-step behavior is activated here.
 - No affordability enforcement, buy scaling, warning-only feasibility feature,
   liquidity policy, or OMS behavior slips in.
+
+Implementation notes:
+
+- Added a private `ledgr_pulse_plan` substrate in `R/fold-engine.R` that builds
+  cost-resolved fill intents for a pulse before event emission or state
+  mutation.
+- Added the reserved `ledgr_fold_apply_net_feasibility_noop()` hook as a
+  private pass-through; no affordability enforcement or quantity mutation is
+  active in this batch.
+- The canonical R and compiled spot-FIFO paths now consume the same private
+  pulse-plan fill intents after planning completes.
+- Added `tests/testthat/test-risk-fold.R` with a resolver/write-order
+  regression proving same-pulse fill resolution happens before any fill event
+  write.
+- Claude Batch 3 review had no blockers. Follow-up confirmed the v1
+  `fill_context` carries only `execution_bar`, not mid-pulse cash, positions,
+  or equity. The review noted the telemetry attribution shift from
+  per-instrument proposal-build time toward `t_fill`; document that in
+  Batch 9 rather than preserving the old attribution artifact.
 
 ## Batch 4 - Risk-Chain Fold Integration
 
