@@ -36,8 +36,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (v0.1.9.2 sweep artifact persistence active
-packet):
+Current planning context (active v0.1.9.3 target-risk packet):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -184,15 +183,37 @@ packet):
   `timing_model`, required `cost_model`, cost model inspection helpers,
   legacy-shape rejection, cost identity (`cost_model_hash` and
   `cost_plan_json`), and bounded auditr identity / disclaimer fixes.
-- The active v0.1.9.2 packet is sweep artifact persistence:
-  `inst/design/ledgr_v0_1_9_2_spec_packet/README.md` and
-  `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
-  It is scoped to durable saved-sweep artifacts, optional retained net
+- The completed v0.1.9.2 packet is an archival release record:
+  `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`,
+  `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`,
+  `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`.
+  It shipped durable saved-sweep artifacts, optional retained net
   equity/return series for completed candidates, reopened-sweep
-  compatibility, and compact retention infrastructure for later
-  walk-forward. Ranking helpers, named selection views, benchmark
-  diagnostics, signal decay, implementation/ cost decay, gross-vs-net
-  attribution, and walk-forward integration are explicit non-scope.
+  compatibility, `candidate_id` / `candidate_row` sweep identity, and
+  compact retention infrastructure for later walk-forward. Ranking
+  helpers, named selection views, benchmark diagnostics, signal decay,
+  implementation/cost decay, gross-vs-net attribution, and walk-forward
+  integration remain non-scope.
+- The active v0.1.9.3 packet is the target-risk packet:
+  `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`,
+  `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`,
+  `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_9_3_spec_packet/README.md`. It implements
+  classed target-risk steps, risk-chain identity, a behavior-preserving
+  phased-pulse substrate, bounded risk application, and integration with
+  sweep/promotion/reopen identity. Batch 0 packet alignment, Batch 1
+  public risk constructors and identity, Batch 2 config/run identity,
+  Batch 3 phased-pulse substrate, Batch 4 fold risk application, Batch 5
+  built-in risk steps, Batch 6 sweep row identity, Batch 7 saved-sweep
+  and promotion identity, and Batch 8 parallel / compiled sweep safety
+  are complete after Claude review. Batch 9 documentation and release
+  surfaces are complete after Claude review. Arbitrary risk callbacks, affordability
+  enforcement, liquidity/capacity policy, OMS behavior, walk-forward
+  implementation, failure-schema columns, target-helper expansion, and
+  compiled-core architecture work remain non-scope.
 
 ## Active Design Entry Points
 
@@ -203,7 +224,8 @@ work.
 
 | Area | Read |
 |----|----|
-| v0.1.9.2 active packet | `inst/design/ledgr_v0_1_9_2_spec_packet/README.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
+| active v0.1.9.3 target-risk packet | `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
+| v0.1.9.2 release record | `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` |
 | v0.1.9.1 release record | `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_tickets.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_1_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_release_closeout.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `inst/design/manual/identity_contract.qmd` |
 | v0.1.8.11 release record | `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_11_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_release_closeout.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md`, `inst/design/contracts.md` |
 | v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |

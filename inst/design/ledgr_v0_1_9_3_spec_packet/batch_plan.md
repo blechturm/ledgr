@@ -203,7 +203,7 @@ Implementation notes:
 ## Batch 4 - Risk-Chain Fold Integration
 
 Ticket: `LDG-2602`
-Status: Review Pending
+Status: Completed
 
 Goal: insert compiled risk plans at the reserved fold-core target-risk slot and
 validate post-risk targets before timing and cost resolution.
@@ -242,7 +242,7 @@ Implementation notes:
 ## Batch 5 - Built-In Risk Steps
 
 Tickets: `LDG-2603`, `LDG-2604`
-Status: Review Pending
+Status: Completed
 
 Goal: implement the minimum public adapter set: long-only and max-weight.
 
@@ -283,7 +283,7 @@ Implementation notes:
 ## Batch 6 - Sweep Risk Identity And Candidate Failures
 
 Ticket: `LDG-2605`
-Status: Review Pending
+Status: Completed
 
 Goal: thread risk identity into in-memory sweep candidates and represent risk
 failures through condition classes and existing failure fields.
@@ -319,7 +319,7 @@ Implementation notes:
 ## Batch 7 - Saved Sweep Schema v2 And Promotion Provenance
 
 Tickets: `LDG-2606`, `LDG-2607`
-Status: Review Pending
+Status: Completed
 
 Goal: persist risk identity in saved sweeps and promotion context while
 preserving v0.1.9.2 schema-1 reopen compatibility.
@@ -355,7 +355,7 @@ Implementation notes:
 ## Batch 8 - Parallel And Compiled Safety
 
 Ticket: `LDG-2608`
-Status: Review Pending
+Status: Completed
 
 Goal: verify risk plans are safe for parallel candidate dispatch and compiled /
 memory-backed sweep paths either preserve parity or fail closed.
@@ -387,7 +387,7 @@ Implementation notes:
 ## Batch 9 - Documentation And Release Surfaces
 
 Tickets: `LDG-2609`, `LDG-2610`
-Status: Review Pending
+Status: Completed
 
 Goal: update user-facing documentation, examples, NEWS, and planning surfaces
 after the implementation surface is stable.
@@ -429,7 +429,7 @@ Implementation notes:
 ## Batch 10 - Release Gate
 
 Ticket: `LDG-2611`
-Status: Pending
+Status: Completed
 
 Goal: run the full release gate from the release CI playbook and prepare the
 branch for merge/tag.

@@ -195,8 +195,8 @@ Current planning context (active v0.1.9.3 target-risk packet):
   Batch 3 phased-pulse substrate, Batch 4 fold risk application, Batch 5
   built-in risk steps, Batch 6 sweep row identity, Batch 7 saved-sweep and
   promotion identity, and Batch 8 parallel / compiled sweep safety are complete
-  after Claude review. Batch 9 documentation and release surfaces are review
-  pending. Arbitrary risk callbacks, affordability enforcement,
+  after Claude review. Batch 9 documentation and release surfaces are complete
+  after Claude review. Arbitrary risk callbacks, affordability enforcement,
   liquidity/capacity policy, OMS behavior, walk-forward implementation,
   failure-schema columns, target-helper expansion, and compiled-core
   architecture work remain non-scope.

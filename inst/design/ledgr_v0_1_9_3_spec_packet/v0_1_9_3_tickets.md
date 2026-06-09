@@ -380,7 +380,7 @@ scope: phased_pulse_noop_parity
 Priority: P0
 Effort: L
 Dependencies: LDG-2600, LDG-2601
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -440,7 +440,7 @@ scope: risk_chain_slot_and_validation
 Priority: P0
 Effort: M
 Dependencies: LDG-2602
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -494,7 +494,7 @@ scope: long_only_step
 Priority: P0
 Effort: L
 Dependencies: LDG-2602
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -554,7 +554,7 @@ scope: max_weight_step
 Priority: P0
 Effort: L
 Dependencies: LDG-2602, LDG-2603, LDG-2604
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -615,7 +615,7 @@ scope: risk_identity_and_failures
 Priority: P0
 Effort: L
 Dependencies: LDG-2605
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -674,7 +674,7 @@ scope: risk_identity_schema_v2
 Priority: P0
 Effort: M
 Dependencies: LDG-2606
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -728,7 +728,7 @@ scope: risk_provenance
 Priority: P0
 Effort: L
 Dependencies: LDG-2605
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -789,7 +789,7 @@ scope: risk_plan_safety
 Priority: P1
 Effort: L
 Dependencies: LDG-2598, LDG-2599, LDG-2603, LDG-2604, LDG-2605, LDG-2606, LDG-2607
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -854,7 +854,7 @@ scope: target_risk_docs
 Priority: P1
 Effort: M
 Dependencies: LDG-2597, LDG-2609
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -913,7 +913,7 @@ scope: planning_and_metadata
 Priority: P0
 Effort: M
 Dependencies: LDG-2597, LDG-2598, LDG-2599, LDG-2600, LDG-2601, LDG-2602, LDG-2603, LDG-2604, LDG-2605, LDG-2606, LDG-2607, LDG-2608, LDG-2609, LDG-2610
-Status: Pending
+Status: Completed
 
 ### Description
 

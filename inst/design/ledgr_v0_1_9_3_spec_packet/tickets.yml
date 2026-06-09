@@ -96,7 +96,7 @@ tickets:
 
   - id: "LDG-2602"
     title: "Risk-Chain Fold Integration And Post-Risk Validation"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -115,7 +115,7 @@ tickets:
 
   - id: "LDG-2603"
     title: "Long-Only Risk Step"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -133,7 +133,7 @@ tickets:
 
   - id: "LDG-2604"
     title: "Max-Weight Risk Step"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -152,7 +152,7 @@ tickets:
 
   - id: "LDG-2605"
     title: "Sweep Risk Identity And Candidate Failures"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -173,7 +173,7 @@ tickets:
 
   - id: "LDG-2606"
     title: "Saved Sweep Schema v2 Risk Fields"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -192,7 +192,7 @@ tickets:
 
   - id: "LDG-2607"
     title: "Promotion And Reopened-Candidate Risk Provenance"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -210,7 +210,7 @@ tickets:
 
   - id: "LDG-2608"
     title: "Parallel And Compiled-Path Risk Safety"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -228,7 +228,7 @@ tickets:
 
   - id: "LDG-2609"
     title: "Documentation, Examples, And NEWS"
-    status: "review_pending"
+    status: "completed"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -252,7 +252,7 @@ tickets:
 
   - id: "LDG-2610"
     title: "Release Surfaces And Planning Docs"
-    status: "review_pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -272,7 +272,7 @@ tickets:
 
   - id: "LDG-2611"
     title: "v0.1.9.3 Release Gate"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:
