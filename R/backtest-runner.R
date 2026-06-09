@@ -593,6 +593,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   if (!is.list(cfg)) {
     rlang::abort("`config` must be a list (or JSON string).", class = "ledgr_invalid_config")
   }
+  cfg <- ledgr_config_normalize_risk_identity(cfg)
 
   db_path <- cfg$db_path
   instrument_ids <- cfg$universe$instrument_ids

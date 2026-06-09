@@ -254,7 +254,7 @@ scope: risk_plan_hash_and_json
 Priority: P0
 Effort: M
 Dependencies: LDG-2599
-Status: Pending
+Status: Completed
 
 ### Description
 
@@ -284,6 +284,15 @@ stored-run reopen compatibility without rewriting historical rows.
 
 Config hash tests, experiment constructor tests, stored-run reopen tests,
 legacy/no-risk compatibility tests, and identity orthogonality tests.
+
+Implementation note: Added no-op risk identity to experiment/backtest config
+construction, modern config hashes, validation, and in-memory run-open
+compatibility. Missing pre-v0.1.9.3 risk fields normalize to no-op risk before
+hashing/validation/reopen without rewriting stored historical `config_json`.
+Malformed or mismatched `risk_chain_hash` / `risk_plan_json` fails closed.
+Claude Batch 2 review had no blockers. The optional identity orthogonality
+recommendation was added before commit: cost-only and risk-only changes each
+move `config_hash`.
 
 ### Source Reference
 

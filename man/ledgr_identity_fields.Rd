@@ -48,6 +48,13 @@ fields are execution identity and are forward dependencies for
 walk-forward candidate identity; they do not implement walk-forward by
 themselves.
 }
+\section{Target-risk identity}{
+
+\code{risk_plan_json} is the canonical serializable target-risk plan stored in the
+execution config. \code{risk_chain_hash} is the SHA-256 hash of that plan. Missing
+pre-v0.1.9.3 risk fields reopen as the no-op risk plan in memory; stored
+historical config JSON is not rewritten by the compatibility normalizer.
+}
 
 \section{Where to inspect}{
 

@@ -59,7 +59,7 @@ tickets:
 
   - id: "LDG-2600"
     title: "Experiment Config And Reopen Compatibility"
-    status: "pending"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

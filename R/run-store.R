@@ -992,6 +992,7 @@ ledgr_run_open <- function(snapshot, run_id) {
   if (is.list(cfg$alias_map_order) && length(cfg$alias_map_order) == 0L) {
     cfg$alias_map_order <- character()
   }
+  cfg <- ledgr_config_normalize_risk_identity(cfg)
   if (!is.null(cfg$fill_model)) {
     rlang::abort(
       sprintf("Run '%s' has legacy `fill_model` config_json and cannot be reopened. Recreate the experiment under v0.1.9.1.", run_id),

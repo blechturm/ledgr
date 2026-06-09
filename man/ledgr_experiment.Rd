@@ -12,6 +12,7 @@ ledgr_experiment(
   universe = NULL,
   timing_model = ledgr_timing_next_open(),
   cost_model,
+  risk_chain = ledgr_risk_none(),
   fill_model = NULL,
   persist_features = TRUE,
   execution_mode = "audit_log",
@@ -45,6 +46,9 @@ for explicit zero-cost execution. \code{ledgr_cost_spread_bps()} treats
 \code{spread_bps} as a quoted bid/ask spread: buys cross half the spread above
 the reference price and sells cross half the spread below it, so a round trip
 crosses approximately \code{spread_bps} basis points before explicit fees.}
+
+\item{risk_chain}{Target-risk chain object. Defaults to
+\code{ledgr_risk_none()} for explicit no-risk execution.}
 
 \item{fill_model}{Legacy v0.1.8 fill model argument. Supplying it now fails
 with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus

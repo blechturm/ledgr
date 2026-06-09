@@ -163,6 +163,8 @@ print.ledgr_opening <- function(x, ...) {
 #'   `spread_bps` as a quoted bid/ask spread: buys cross half the spread above
 #'   the reference price and sells cross half the spread below it, so a round
 #'   trip crosses approximately `spread_bps` basis points before explicit fees.
+#' @param risk_chain Target-risk chain object. Defaults to
+#'   `ledgr_risk_none()` for explicit no-risk execution.
 #' @param fill_model Legacy v0.1.8 fill model argument. Supplying it now fails
 #'   with `ledgr_legacy_fill_model_shape`; use `timing_model` plus
 #'   `cost_model`.
@@ -210,6 +212,7 @@ ledgr_experiment <- function(snapshot,
                              universe = NULL,
                              timing_model = ledgr_timing_next_open(),
                              cost_model,
+                             risk_chain = ledgr_risk_none(),
                              fill_model = NULL,
                              persist_features = TRUE,
                              execution_mode = "audit_log",
@@ -250,9 +253,14 @@ ledgr_experiment <- function(snapshot,
 
   timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
   cost_model <- ledgr_experiment_normalize_cost_model(cost_model)
+  risk_chain <- ledgr_experiment_normalize_risk_chain(risk_chain)
   cost_identity <- list(
     cost_model_hash = ledgr_cost_model_hash(cost_model),
     cost_plan_json = ledgr_cost_plan_json(cost_model)
+  )
+  risk_identity <- ledgr_config_risk_identity(
+    risk_chain_hash = ledgr_risk_chain_hash(risk_chain),
+    risk_plan_json = ledgr_risk_plan_json(risk_chain)
   )
 
   if (!is.logical(persist_features) || length(persist_features) != 1L || is.na(persist_features)) {
@@ -277,6 +285,9 @@ ledgr_experiment <- function(snapshot,
       cost_model = cost_model,
       cost_model_hash = cost_identity$cost_model_hash,
       cost_plan_json = cost_identity$cost_plan_json,
+      risk_chain = risk_chain,
+      risk_chain_hash = risk_identity$risk_chain_hash,
+      risk_plan_json = risk_identity$risk_plan_json,
       persist_features = isTRUE(persist_features),
       execution_mode = execution_mode,
       metric_context = metric_context

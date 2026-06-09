@@ -1,6 +1,6 @@
 # ledgr v0.1.9.3 Batch Plan
 
-**Status:** Batch 1 complete; Batch 2 ready for implementation.
+**Status:** Batch 2 implementation ready for Claude review.
 
 This batch plan sequences the v0.1.9.3 target-risk packet without expanding
 scope beyond `v0_1_9_3_spec.md` and the accepted
@@ -116,7 +116,7 @@ Implementation notes:
 ## Batch 2 - Experiment Config And Reopen Compatibility
 
 Ticket: `LDG-2600`
-Status: Pending
+Status: Completed
 
 Goal: thread no-op-normalized risk identity through experiment config,
 `config_hash`, and stored-run reopen compatibility.
@@ -136,6 +136,23 @@ Review focus:
 - Reopen compatibility is reopen-time/compare-time normalization, not a hidden
   migration.
 - No legacy risk shape is introduced.
+
+Implementation notes:
+
+- Added `risk_chain = ledgr_risk_none()` to `ledgr_experiment()` and
+  `ledgr_backtest()`, with no-op normalization through the Batch 1 risk
+  helpers.
+- Added `risk_chain_hash` and `risk_plan_json` to modern `ledgr_config()`
+  payloads under `config$risk_chain`, mirroring the cost identity placement.
+- `config_hash()` normalizes missing risk identity to the no-op plan before
+  hashing, so pre-v0.1.9.3 no-risk configs compare as modern no-op risk
+  configs without rewriting stored historical JSON.
+- `ledgr_run_open()` normalizes missing risk fields in memory after reading
+  stored `config_json`; the stored bytes remain unchanged.
+- Validation now fail-closes on malformed or mismatched risk identity.
+- Claude Batch 2 review had no blockers. The optional identity orthogonality
+  recommendation was added before commit: cost-only and risk-only changes each
+  move `config_hash`.
 
 ## Batch 3 - Phased-Pulse No-Op Parity Substrate
 

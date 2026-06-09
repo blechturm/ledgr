@@ -19,6 +19,8 @@
 #'   `ledgr_timing_next_open()`.
 #' @param cost_model Required ledgr cost model object. Use `ledgr_cost_zero()`
 #'   for explicit zero-cost execution.
+#' @param risk_chain Target-risk chain object. Defaults to
+#'   `ledgr_risk_none()` for explicit no-risk execution.
 #' @param fill_model Legacy v0.1.8 fill model argument. Supplying it now fails
 #'   with `ledgr_legacy_fill_model_shape`; use `timing_model` plus
 #'   `cost_model`.
@@ -93,6 +95,7 @@ ledgr_backtest <- function(snapshot = NULL,
                            features = list(),
                            timing_model = ledgr_timing_next_open(),
                            cost_model,
+                           risk_chain = ledgr_risk_none(),
                            fill_model = NULL,
                            execution_mode = "audit_log",
                            checkpoint_every = 10000L,
@@ -194,8 +197,11 @@ ledgr_backtest <- function(snapshot = NULL,
   }
   timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
   cost_model <- ledgr_experiment_normalize_cost_model(cost_model)
+  risk_chain <- ledgr_experiment_normalize_risk_chain(risk_chain)
   cost_model_hash <- ledgr_cost_model_hash(cost_model)
   cost_plan_json <- ledgr_cost_plan_json(cost_model)
+  risk_chain_hash <- ledgr_risk_chain_hash(risk_chain)
+  risk_plan_json <- ledgr_risk_plan_json(risk_chain)
 
   features <- ledgr_flatten_feature_list(features, context = "`features`")
 
@@ -240,6 +246,8 @@ ledgr_backtest <- function(snapshot = NULL,
     timing_model = timing_model,
     cost_model_hash = cost_model_hash,
     cost_plan_json = cost_plan_json,
+    risk_chain_hash = risk_chain_hash,
+    risk_plan_json = risk_plan_json,
     db_path = db_path,
     control = control,
     run_id = run_id
@@ -316,7 +324,8 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #' @return A `ledgr_backtest` object.
 #' @section Identity:
 #' Run identity fields, including `config_hash`, `feature_set_hash`,
-#' `cost_model_hash`, and `cost_plan_json`, are summarized in
+#' `cost_model_hash`, `cost_plan_json`, `risk_chain_hash`, and
+#' `risk_plan_json`, are summarized in
 #' [ledgr_identity_fields].
 #' @section Articles:
 #' Strategy authoring:
@@ -425,6 +434,8 @@ ledgr_run_experiment <- function(exp,
     timing_model = exp$timing_model,
     cost_model_hash = exp$cost_model_hash,
     cost_plan_json = exp$cost_plan_json,
+    risk_chain_hash = exp$risk_chain_hash,
+    risk_plan_json = exp$risk_plan_json,
     db_path = exp$snapshot$db_path,
     run_id = run_id,
     opening = exp$opening,
@@ -814,6 +825,8 @@ ledgr_config <- function(snapshot,
                          timing_model = ledgr_timing_next_open(),
                          cost_model_hash = NULL,
                          cost_plan_json = NULL,
+                         risk_chain_hash = NULL,
+                         risk_plan_json = NULL,
                          db_path = NULL,
                          control = list(),
                          run_id = NULL,
@@ -878,6 +891,7 @@ ledgr_config <- function(snapshot,
 
   timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
   cost_identity <- ledgr_config_cost_identity(cost_model_hash, cost_plan_json)
+  risk_identity <- ledgr_config_risk_identity(risk_chain_hash, risk_plan_json)
 
   strategy_params_info <- ledgr_strategy_params_info(strategy_params)
   feature_params_info <- ledgr_strategy_params_info(feature_params)
@@ -915,6 +929,10 @@ ledgr_config <- function(snapshot,
     cost_model = list(
       cost_model_hash = cost_identity$cost_model_hash,
       cost_plan_json = cost_identity$cost_plan_json
+    ),
+    risk_chain = list(
+      risk_chain_hash = risk_identity$risk_chain_hash,
+      risk_plan_json = risk_identity$risk_plan_json
     ),
     features = if (length(features) > 0) {
       defs <- lapply(features, function(feat) {
@@ -990,6 +1008,28 @@ ledgr_config_cost_identity <- function(cost_model_hash = NULL, cost_plan_json = 
   list(
     cost_model_hash = cost_model_hash,
     cost_plan_json = cost_plan_json
+  )
+}
+
+ledgr_config_risk_identity <- function(risk_chain_hash = NULL, risk_plan_json = NULL) {
+  if (is.null(risk_chain_hash) && is.null(risk_plan_json)) {
+    risk_chain_hash <- ledgr_risk_chain_hash(ledgr_risk_none())
+    risk_plan_json <- ledgr_risk_plan_json(ledgr_risk_none())
+  }
+  if (is.null(risk_chain_hash) || is.null(risk_plan_json)) {
+    rlang::abort("`risk_chain_hash` and `risk_plan_json` must be supplied together.", class = "ledgr_invalid_args")
+  }
+  if (!is.character(risk_chain_hash) || length(risk_chain_hash) != 1L ||
+      is.na(risk_chain_hash) || !grepl("^[0-9a-f]{64}$", risk_chain_hash)) {
+    rlang::abort("`risk_chain_hash` must be a 64-character lowercase hex string.", class = "ledgr_invalid_args")
+  }
+  if (!is.character(risk_plan_json) || length(risk_plan_json) != 1L ||
+      is.na(risk_plan_json) || !nzchar(risk_plan_json)) {
+    rlang::abort("`risk_plan_json` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+  list(
+    risk_chain_hash = risk_chain_hash,
+    risk_plan_json = risk_plan_json
   )
 }
 

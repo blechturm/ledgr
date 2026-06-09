@@ -15,6 +15,7 @@ ledgr_backtest(
   features = list(),
   timing_model = ledgr_timing_next_open(),
   cost_model,
+  risk_chain = ledgr_risk_none(),
   fill_model = NULL,
   execution_mode = "audit_log",
   checkpoint_every = 10000L,
@@ -52,6 +53,9 @@ strategies and stored as part of run provenance.}
 
 \item{cost_model}{Required ledgr cost model object. Use \code{ledgr_cost_zero()}
 for explicit zero-cost execution.}
+
+\item{risk_chain}{Target-risk chain object. Defaults to
+\code{ledgr_risk_none()} for explicit no-risk execution.}
 
 \item{fill_model}{Legacy v0.1.8 fill model argument. Supplying it now fails
 with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus

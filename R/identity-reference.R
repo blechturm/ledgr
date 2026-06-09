@@ -38,6 +38,12 @@
 #' walk-forward candidate identity; they do not implement walk-forward by
 #' themselves.
 #'
+#' @section Target-risk identity:
+#' `risk_plan_json` is the canonical serializable target-risk plan stored in the
+#' execution config. `risk_chain_hash` is the SHA-256 hash of that plan. Missing
+#' pre-v0.1.9.3 risk fields reopen as the no-op risk plan in memory; stored
+#' historical config JSON is not rewritten by the compatibility normalizer.
+#'
 #' @section Where to inspect:
 #' In-session runs expose `feature_set_hash` at
 #' `bt$config$features$feature_set_hash`. Durable stores expose it through

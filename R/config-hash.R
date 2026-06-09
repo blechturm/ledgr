@@ -4,6 +4,7 @@ config_hash <- function(config) {
 
 config_hash_payload <- function(config) {
   payload <- unclass(config)
+  payload <- ledgr_config_normalize_risk_identity(payload)
   payload$db_path <- NULL
   payload$run_id <- NULL
   payload$alias_map_order <- NULL
