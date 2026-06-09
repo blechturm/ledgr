@@ -5,6 +5,7 @@ ledgr_sweep_storage_json_columns <- c(
   "candidate_features_json",
   "grid_json",
   "cost_plan_json",
+  "risk_plan_json",
   "metrics_json",
   "params_json",
   "feature_params_json",
@@ -34,6 +35,7 @@ ledgr_sweep_storage_parent_row <- function(sweep,
       class = c("ledgr_sweep_storage_invalid_identity", "ledgr_invalid_args")
     )
   }
+  risk_identity <- ledgr_sweep_storage_sweep_risk_identity(sweep)
   metric_context <- attr(sweep, "metric_context", exact = TRUE)
   metric_context_record <- if (inherits(metric_context, "ledgr_metric_context")) {
     ledgr_metric_context_record(metric_context)
@@ -56,6 +58,8 @@ ledgr_sweep_storage_parent_row <- function(sweep,
     metric_context_version = as.integer(attr(sweep, "metric_context_version", exact = TRUE)),
     cost_model_hash = as.character(cost_model_hash),
     cost_plan_json = ledgr_sweep_storage_json(cost_plan_json),
+    risk_chain_hash = risk_identity$risk_chain_hash,
+    risk_plan_json = ledgr_sweep_storage_json(risk_identity$risk_plan_json),
     execution_assumptions_json = ledgr_sweep_storage_json(attr(sweep, "execution_assumptions", exact = TRUE)),
     feature_union_hash = as.character(attr(sweep, "feature_union_hash", exact = TRUE)),
     feature_engine_version = as.character(attr(sweep, "feature_engine_version", exact = TRUE)),
@@ -72,6 +76,7 @@ ledgr_sweep_storage_candidate_rows <- function(sweep,
   candidate_features <- tibble::as_tibble(attr(sweep, "candidate_features", exact = TRUE))
   cost_model_hash <- attr(sweep, "cost_model_hash", exact = TRUE)
   metric_context_hash <- attr(sweep, "metric_context_hash", exact = TRUE)
+  sweep_risk_identity <- ledgr_sweep_storage_sweep_risk_identity(sweep)
   rows <- lapply(seq_len(nrow(sweep)), function(i) {
     row <- sweep[i, , drop = FALSE]
     candidate_row <- as.integer(row$candidate_row[[1]])
@@ -92,8 +97,10 @@ ledgr_sweep_storage_candidate_rows <- function(sweep,
       feature_row = feature_row,
       provenance = provenance,
       cost_model_hash = cost_model_hash,
-      metric_context_hash = metric_context_hash
+      metric_context_hash = metric_context_hash,
+      sweep_risk_identity = sweep_risk_identity
     )
+    risk_identity <- ledgr_sweep_storage_candidate_risk_identity(row, provenance)
     list(
       sweep_id = as.character(sweep_id),
       candidate_id = as.character(row$candidate_id[[1]]),
@@ -120,7 +127,9 @@ ledgr_sweep_storage_candidate_rows <- function(sweep,
       feature_fingerprints_json = ledgr_sweep_storage_json(row$feature_fingerprints[[1]]),
       provenance_json = ledgr_sweep_storage_json(provenance),
       cost_model_hash = as.character(cost_model_hash),
-      metric_context_hash = as.character(metric_context_hash)
+      metric_context_hash = as.character(metric_context_hash),
+      risk_chain_hash = risk_identity$risk_chain_hash,
+      risk_plan_json = ledgr_sweep_storage_json(risk_identity$risk_plan_json)
     )
   })
   tibble::as_tibble(do.call(rbind.data.frame, c(rows, stringsAsFactors = FALSE)))
@@ -221,7 +230,8 @@ ledgr_sweep_storage_validate_candidate_identity <- function(row,
                                                             feature_row,
                                                             provenance,
                                                             cost_model_hash,
-                                                            metric_context_hash) {
+                                                            metric_context_hash,
+                                                            sweep_risk_identity) {
   candidate_id <- if ("candidate_id" %in% names(row) &&
     length(row$candidate_id) == 1L &&
     !is.na(row$candidate_id[[1]])) {
@@ -266,7 +276,93 @@ ledgr_sweep_storage_validate_candidate_identity <- function(row,
       class = c("ledgr_sweep_storage_invalid_identity", "ledgr_invalid_args")
     )
   }
+  risk_identity <- ledgr_sweep_storage_candidate_risk_identity(row, provenance)
+  if (!identical(risk_identity$risk_chain_hash, sweep_risk_identity$risk_chain_hash)) {
+    rlang::abort(
+      paste0(
+        "Sweep candidate '", candidate_id,
+        "' risk_chain_hash does not match sweep risk_chain_hash."
+      ),
+      class = c("ledgr_sweep_storage_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  if (!identical(risk_identity$risk_plan_json, sweep_risk_identity$risk_plan_json)) {
+    rlang::abort(
+      paste0(
+        "Sweep candidate '", candidate_id,
+        "' risk_plan_json does not match sweep risk_plan_json."
+      ),
+      class = c("ledgr_sweep_storage_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
   invisible(TRUE)
+}
+
+ledgr_sweep_storage_sweep_risk_identity <- function(sweep) {
+  risk_chain_hash <- attr(sweep, "risk_chain_hash", exact = TRUE)
+  risk_plan_json <- attr(sweep, "risk_plan_json", exact = TRUE)
+  if (is.null(risk_chain_hash) && "risk_chain_hash" %in% names(sweep)) {
+    risk_chain_hash <- unique(as.character(sweep$risk_chain_hash))
+    risk_chain_hash <- risk_chain_hash[!is.na(risk_chain_hash)]
+    if (length(risk_chain_hash) == 1L) {
+      risk_chain_hash <- risk_chain_hash[[1]]
+    }
+  }
+  if (is.null(risk_plan_json)) {
+    plans <- vapply(
+      sweep$provenance,
+      function(provenance) if (is.list(provenance)) as.character(provenance$risk_plan_json %||% NA_character_) else NA_character_,
+      character(1)
+    )
+    plans <- unique(plans[!is.na(plans) & nzchar(plans)])
+    if (length(plans) == 1L) {
+      risk_plan_json <- plans[[1]]
+    }
+  }
+  ledgr_sweep_storage_validate_risk_identity(risk_chain_hash, risk_plan_json)
+}
+
+ledgr_sweep_storage_candidate_risk_identity <- function(row, provenance) {
+  row_hash <- if ("risk_chain_hash" %in% names(row)) as.character(row$risk_chain_hash[[1]]) else NULL
+  provenance_hash <- provenance$risk_chain_hash %||% NULL
+  risk_chain_hash <- row_hash %||% provenance_hash
+  risk_plan_json <- provenance$risk_plan_json %||% NULL
+  out <- ledgr_sweep_storage_validate_risk_identity(risk_chain_hash, risk_plan_json)
+  if (!is.null(row_hash) && !is.null(provenance_hash) &&
+      !identical(as.character(row_hash), as.character(provenance_hash))) {
+    rlang::abort(
+      "Sweep candidate risk_chain_hash does not match provenance risk_chain_hash.",
+      class = c("ledgr_sweep_storage_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  out
+}
+
+ledgr_sweep_storage_validate_risk_identity <- function(risk_chain_hash, risk_plan_json) {
+  if (!ledgr_sweep_storage_scalar_chr(risk_chain_hash) ||
+      !grepl("^[0-9a-f]{64}$", risk_chain_hash)) {
+    rlang::abort(
+      "Saved sweeps require a valid risk_chain_hash.",
+      class = c("ledgr_sweep_storage_invalid_identity", "ledgr_invalid_args")
+    )
+  }
+  if (!ledgr_sweep_storage_scalar_chr(risk_plan_json)) {
+    rlang::abort(
+      "Saved sweeps require non-empty risk_plan_json metadata.",
+      class = c("ledgr_sweep_storage_invalid_identity", "ledgr_invalid_args")
+    )
+  }
+  canonical_plan <- as.character(canonical_json(risk_plan_json))
+  if (!identical(digest::digest(canonical_plan, algo = "sha256"), as.character(risk_chain_hash))) {
+    rlang::abort(
+      "Saved sweep risk_chain_hash must match risk_plan_json.",
+      class = c("ledgr_sweep_storage_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  list(
+    risk_chain_hash = as.character(risk_chain_hash),
+    risk_plan_json = canonical_plan
+  )
 }
 
 ledgr_sweep_storage_scalar_chr <- function(x) {

@@ -319,7 +319,7 @@ Implementation notes:
 ## Batch 7 - Saved Sweep Schema v2 And Promotion Provenance
 
 Tickets: `LDG-2606`, `LDG-2607`
-Status: Pending
+Status: Review Pending
 
 Goal: persist risk identity in saved sweeps and promotion context while
 preserving v0.1.9.2 schema-1 reopen compatibility.
@@ -342,6 +342,15 @@ Review focus:
   fills, trades, or per-instrument artifacts.
 - Promotion still re-executes from reproduction identity.
 - Saved-sweep risk fields satisfy the v0.1.9.4 walk-forward handoff.
+
+Implementation notes:
+
+- Bumped saved-sweep schema version to 2 and added compact parent/candidate
+  risk identity columns.
+- Reopen normalizes schema-1 saved sweeps to no-op risk identity while schema-2
+  artifacts fail closed on missing or mismatched risk bytes.
+- Promotion reconstructs the selected candidate risk plan before re-executing
+  and records risk identity in promotion-context JSON.
 
 ## Batch 8 - Parallel And Compiled Safety
 
@@ -381,6 +390,8 @@ Exit criteria:
 - Docs explain target risk versus target construction, timing, cost,
   liquidity, and OMS.
 - Docs name `risk_chain_hash` and `risk_plan_json` as execution identity.
+- Docs explain that the first `ledgr_sweep_save()` against a v0.1.9.2 store
+  performs an additive saved-sweep schema migration for risk identity columns.
 - Docs explicitly avoid portfolio optimization, broker-grade risk, margin,
   shorting, liquidity/capacity, OMS, and automatic selection claims.
 - `inst/design/contracts.md` records the new public risk API surface, risk

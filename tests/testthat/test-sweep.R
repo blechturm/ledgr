@@ -637,6 +637,8 @@ testthat::test_that("sweep candidate key supports later durable materialization"
   testthat::expect_identical(key$features$feature_set_hash, candidate$provenance$feature_set_hash)
   testthat::expect_identical(key$features$feature_union_hash, attr(results, "feature_union_hash"))
   testthat::expect_identical(key$features$feature_fingerprints, candidate$feature_fingerprints)
+  testthat::expect_identical(key$risk$risk_chain_hash, candidate$provenance$risk_chain_hash)
+  testthat::expect_identical(key$risk$risk_plan_json, candidate$provenance$risk_plan_json)
   testthat::expect_true(nzchar(key$engine$feature_engine_version))
   testthat::expect_identical(key$seed$execution_seed, candidate$execution_seed)
   testthat::expect_identical(key$seed$master_seed, 123L)

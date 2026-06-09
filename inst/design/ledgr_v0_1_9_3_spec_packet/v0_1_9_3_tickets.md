@@ -615,7 +615,7 @@ scope: risk_identity_and_failures
 Priority: P0
 Effort: L
 Dependencies: LDG-2605
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -640,6 +640,14 @@ Extend saved-sweep persistence to schema version 2 with risk identity on
   the existing schema-incompatibility path.
 - Saved sweeps do not store full ledgers, fills, trades, or per-instrument
   artifacts for every candidate.
+
+Implementation Notes:
+
+- Saved-sweep schema version is now 2.
+- `sweeps` and `sweep_candidates` persist `risk_chain_hash` and
+  `risk_plan_json`.
+- Schema-1 reopen injects no-op risk identity; schema-2 missing or mismatched
+  risk fields use the existing schema-incompatibility failure path.
 
 ### Verification
 
@@ -666,7 +674,7 @@ scope: risk_identity_schema_v2
 Priority: P0
 Effort: M
 Dependencies: LDG-2606
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -687,6 +695,13 @@ and records risk provenance, including reopened-sweep candidates.
   identity.
 - Reopened saved sweeps can promote risk-enabled candidates.
 - Promotion does not treat scalar rows or retained returns as committed runs.
+
+Implementation Notes:
+
+- `ledgr_promote()` reconstructs candidate risk identity and re-executes with
+  that chain.
+- Promotion context selected-candidate, source-sweep, and summary JSON records
+  include risk identity fields.
 
 ### Verification
 
