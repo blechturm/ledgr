@@ -103,7 +103,7 @@ tickets:
 
   - id: "LDG-2617"
     title: "Walk-Forward Candidate, Session, And Seed Identity"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -125,7 +125,7 @@ tickets:
 
   - id: "LDG-2618"
     title: "Walk-Forward Persistence Schema"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

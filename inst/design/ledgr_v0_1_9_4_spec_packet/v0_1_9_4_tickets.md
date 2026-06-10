@@ -405,7 +405,7 @@ scope: scalar_selection_rules
 Priority: P0
 Effort: L
 Dependencies: LDG-2613, LDG-2616
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -473,7 +473,7 @@ scope: candidate_session_seed_identity
 Priority: P0
 Effort: L
 Dependencies: LDG-2617
-Status: Planned
+Status: Review Pending
 
 ### Description
 

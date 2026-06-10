@@ -187,7 +187,7 @@ Verification:
 ## Batch 3 - Identity And Persistence Foundation
 
 Tickets: `LDG-2617`, `LDG-2618`
-Status: Planned
+Status: Review Pending
 
 Goal: add walk-forward candidate/session identity, deterministic per-row seeds,
 and compact persistence tables before orchestration writes real sessions.
