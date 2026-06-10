@@ -67,6 +67,19 @@
 #' returns are requested for a failed candidate or for a completed candidate
 #' whose retained rows are missing.
 #'
+#' @section Walk-forward classes:
+#' `ledgr_walk_forward_metric_missing` is raised when a selection rule requests
+#' a metric column that is absent from the train-window score rows.
+#'
+#' `ledgr_walk_forward_metric_class_invalid` is raised when a selection metric
+#' is not classified as valid for v1 scalar selection.
+#'
+#' `ledgr_walk_forward_no_selection` is raised when all candidate values for the
+#' requested selection metric are missing, `NA`, `NaN`, or infinite.
+#'
+#' `ledgr_walk_forward_candidate_key_missing` is raised when the train-window
+#' score rows passed to a selection rule do not include a `candidate_key` column.
+#'
 #' @section Related existing classes:
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers
@@ -97,6 +110,10 @@
 #' @aliases ledgr_invalid_sweep_retention ledgr_sweep_returns_unretained
 #' @aliases ledgr_sweep_returns_candidate_not_found
 #' @aliases ledgr_sweep_returns_candidate_not_completed
+#' @aliases ledgr_walk_forward_metric_missing
+#' @aliases ledgr_walk_forward_metric_class_invalid
+#' @aliases ledgr_walk_forward_no_selection
+#' @aliases ledgr_walk_forward_candidate_key_missing
 NULL
 
 #' LEDGR_LAST_BAR_NO_FILL warning code

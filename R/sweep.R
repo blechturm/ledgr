@@ -175,6 +175,7 @@ ledgr_sweep_impl <- function(exp,
       precomputed = precomputed_features,
       exp = exp,
       param_grid = param_grid,
+      window = window,
       resolve_features = FALSE
     )
   }
@@ -223,6 +224,9 @@ ledgr_sweep_impl <- function(exp,
   } else {
     resolved <- ledgr_sweep_resolved_from_precomputed(precomputed_features, param_grid)
     runtime_projection <- precomputed_features$projection
+    if (!is.null(runtime_projection)) {
+      runtime_projection <- ledgr_projection_slice(runtime_projection, pulses_posix)
+    }
     if (is.null(runtime_projection)) {
       runtime_projection <- ledgr_projection_from_payload(
         payload = precomputed_features$payload,

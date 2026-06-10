@@ -140,7 +140,7 @@ scope: v0.1.9.4
 Priority: P0
 Effort: L
 Dependencies: LDG-2612
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -205,7 +205,7 @@ scope: fold_constructors_and_identity
 Priority: P0
 Effort: XL
 Dependencies: LDG-2613
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -270,7 +270,7 @@ scope: walk_forward_window_parity
 Priority: P0
 Effort: L
 Dependencies: LDG-2614
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -304,6 +304,14 @@ Precomputed-feature validation tests, missing-coverage tests, hydration/scoring
 range tests, feature-windowing determinism tests, cross-fold train-score
 stability tests, and direct window parity tests.
 
+Implementation note:
+
+Batch 2 extended internal precomputed-feature validation with fold-window
+metadata, retained exact range checks for ordinary sweeps, added fold-window
+coverage checks for scoring and hydration ranges, and slices broader
+precomputed runtime projections onto the requested fold pulses before
+execution.
+
 ### Source Reference
 
 - `v0_1_9_4_spec.md` Sections 5, 12, and 13
@@ -324,7 +332,7 @@ scope: fold_window_validation
 Priority: P0
 Effort: L
 Dependencies: LDG-2612
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -366,6 +374,16 @@ Constructor tests, selection-rule hash tests, missing-metric tests,
 invalid-class tests, no-selection tests, tie-break tests, finite-filter tests,
 export tests, and metric-classification substrate disposition note in ticket
 closeout.
+
+Implementation note:
+
+Batch 2 added `ledgr_select_argmax()` and `ledgr_select_argmin()` as public
+selection-rule value-object constructors with deterministic
+`selection_rule_hash`. The metric-classification substrate is a minimal
+internal registry for v1 because ledgr does not yet expose a general
+metric-definition metadata substrate. It classifies `sharpe_ratio` as
+selectable and fails closed on `total_return`, `n_trades`, missing metrics, and
+non-finite candidate values.
 
 ### Source Reference
 

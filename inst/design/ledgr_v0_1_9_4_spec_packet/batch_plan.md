@@ -1,6 +1,6 @@
 # ledgr v0.1.9.4 Batch Plan
 
-**Status:** Batch 1 ready for Claude review.
+**Status:** Batch 2 ready for Claude review.
 
 This batch plan sequences the v0.1.9.4 walk-forward packet without expanding
 scope beyond `v0_1_9_4_spec.md` and the accepted
@@ -82,7 +82,7 @@ Closeout notes:
 ## Batch 1 - Fold Objects And Window Parity Substrate
 
 Tickets: `LDG-2613`, `LDG-2614`
-Status: Review Pending
+Status: Completed
 
 Goal: add fold constructors, fold-list identity, and the internal window
 contract that lets run and sweep execute the same scoring windows.
@@ -132,7 +132,7 @@ Verification:
 ## Batch 2 - Feature Windows And Selection Rules
 
 Tickets: `LDG-2615`, `LDG-2616`
-Status: Planned
+Status: Review Pending
 
 Goal: make fold windows safe for precomputed features and add ledgr-owned
 scalar selection rules with fail-closed metric classification.
@@ -159,6 +159,30 @@ Review focus:
 - Selection rules see train-window score rows only.
 - Composite selection, override selection, top-N selection, and arbitrary
   function selectors remain deferred.
+
+Implementation notes:
+
+- Extended internal precomputed-feature validation to accept fold-window
+  metadata and distinguish exact ordinary sweep ranges from fold-window
+  coverage checks.
+- Added projection slicing so a broader precomputed feature payload can be
+  reused safely against a narrower fold scoring window.
+- Added public `ledgr_select_argmax()` and `ledgr_select_argmin()` selection
+  rule constructors with deterministic `selection_rule_hash`.
+- Added a minimal internal metric-classification registry for v1 selection.
+  The registry is intentionally internal in this batch because ledgr does not
+  yet expose a general metric-definition metadata substrate.
+- Selection rules fail closed on missing metrics, no finite eligible values,
+  and invalid metric classes such as `total_return` and `n_trades`.
+
+Verification:
+
+- `testthat::test_file("tests/testthat/test-walk-forward-selection.R")`
+- `testthat::test_file("tests/testthat/test-precompute-features.R")`
+- `testthat::test_file("tests/testthat/test-api-exports.R")`
+- `testthat::test_file("tests/testthat/test-sweep.R")`
+- `testthat::test_file("tests/testthat/test-sweep-parity.R")`
+- `testthat::test_file("tests/testthat/test-walk-forward-folds.R")`
 
 ## Batch 3 - Identity And Persistence Foundation
 

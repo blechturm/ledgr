@@ -23,7 +23,7 @@ tickets:
 
   - id: "LDG-2613"
     title: "Fold Constructors And Fold-List Identity"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -42,7 +42,7 @@ tickets:
 
   - id: "LDG-2614"
     title: "Experiment Window Contract And Run/Sweep Parity"
-    status: "review_pending"
+    status: "completed"
     priority: "P0"
     effort: "XL"
     dependencies:
@@ -62,7 +62,7 @@ tickets:
 
   - id: "LDG-2615"
     title: "Window-Aware Feature Precompute Validation"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -81,7 +81,7 @@ tickets:
 
   - id: "LDG-2616"
     title: "Selection Rules And Metric Classification"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

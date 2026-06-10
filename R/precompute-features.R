@@ -109,6 +109,7 @@ ledgr_validate_precomputed_features <- function(precomputed,
                                                 param_grid,
                                                 start = NULL,
                                                 end = NULL,
+                                                window = NULL,
                                                 resolve_features = TRUE) {
   if (!inherits(precomputed, "ledgr_precomputed_features")) {
     rlang::abort("`precomputed_features` must be a ledgr_precomputed_features object.", class = "ledgr_invalid_precomputed_features")
@@ -120,18 +121,24 @@ ledgr_validate_precomputed_features <- function(precomputed,
     rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
   }
 
+  window <- ledgr_experiment_window_resolve(exp, window)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
-  range <- ledgr_precompute_scoring_range(meta, start = start, end = end)
+  range <- if (is.null(window)) {
+    ledgr_precompute_scoring_range(meta, start = start, end = end)
+  } else {
+    ledgr_precompute_scoring_range(
+      meta,
+      start = window$scoring_start_utc,
+      end = window$scoring_end_utc
+    )
+  }
   if (!identical(precomputed$snapshot_hash, meta$snapshot_hash)) {
     rlang::abort("`precomputed_features` was built for a different snapshot hash.", class = "ledgr_precomputed_snapshot_mismatch")
   }
   if (!identical(precomputed$universe, exp$universe)) {
     rlang::abort("`precomputed_features` universe does not match the experiment universe.", class = "ledgr_precomputed_universe_mismatch")
   }
-  if (!identical(precomputed$scoring_range$start, range$scoring_start) ||
-      !identical(precomputed$scoring_range$end, range$scoring_end)) {
-    rlang::abort("`precomputed_features` scoring range does not match the requested sweep range.", class = "ledgr_precomputed_range_mismatch")
-  }
+  ledgr_precompute_validate_window_coverage(precomputed, range, window)
   if (!identical(precomputed$grid_labels, param_grid$labels)) {
     rlang::abort("`precomputed_features` candidate labels do not match `param_grid`.", class = "ledgr_precomputed_grid_mismatch")
   }
@@ -171,6 +178,48 @@ ledgr_validate_precomputed_features <- function(precomputed,
   }
 
   invisible(TRUE)
+}
+
+ledgr_precompute_validate_window_coverage <- function(precomputed, range, window = NULL) {
+  if (is.null(window)) {
+    if (!identical(precomputed$scoring_range$start, range$scoring_start) ||
+        !identical(precomputed$scoring_range$end, range$scoring_end)) {
+      rlang::abort("`precomputed_features` scoring range does not match the requested sweep range.", class = "ledgr_precomputed_range_mismatch")
+    }
+    return(invisible(TRUE))
+  }
+
+  pre_scoring_start <- ledgr_precompute_posix(precomputed$scoring_range$start)
+  pre_scoring_end <- ledgr_precompute_posix(precomputed$scoring_range$end)
+  req_scoring_start <- ledgr_precompute_posix(range$scoring_start)
+  req_scoring_end <- ledgr_precompute_posix(range$scoring_end)
+  if (req_scoring_start < pre_scoring_start || req_scoring_end > pre_scoring_end) {
+    rlang::abort(
+      "`precomputed_features` scoring range does not cover the requested fold scoring window.",
+      class = "ledgr_precomputed_range_mismatch"
+    )
+  }
+
+  warmup_start <- precomputed$warmup_range$start
+  if (!is.character(warmup_start) || length(warmup_start) != 1L || is.na(warmup_start)) {
+    rlang::abort(
+      "`precomputed_features` does not record hydration range coverage.",
+      class = "ledgr_precomputed_hydration_mismatch"
+    )
+  }
+  pre_warmup_start <- ledgr_precompute_posix(warmup_start)
+  req_hydration_start <- as.POSIXct(window$hydration_start_utc, tz = "UTC")
+  if (req_hydration_start < pre_warmup_start) {
+    rlang::abort(
+      "`precomputed_features` hydration range does not cover the requested fold hydration window.",
+      class = "ledgr_precomputed_hydration_mismatch"
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_precompute_posix <- function(x) {
+  as.POSIXct(iso_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
 }
 
 ledgr_warn_large_grid_without_precomputed_features <- function(param_grid, precomputed_features, threshold = 20L) {
