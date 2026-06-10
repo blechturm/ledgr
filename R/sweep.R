@@ -87,6 +87,55 @@ ledgr_sweep <- function(exp,
                         workers = 1L,
                         worker_packages = NULL,
                         compiled_accounting_model = NULL) {
+  ledgr_sweep_impl(
+    exp = exp,
+    param_grid = param_grid,
+    precomputed_features = precomputed_features,
+    retain = retain,
+    seed = seed,
+    stop_on_error = stop_on_error,
+    workers = workers,
+    worker_packages = worker_packages,
+    compiled_accounting_model = compiled_accounting_model,
+    window = NULL
+  )
+}
+
+ledgr_sweep_window <- function(exp,
+                               param_grid,
+                               window,
+                               precomputed_features = NULL,
+                               retain = ledgr_sweep_retention(),
+                               seed = NULL,
+                               stop_on_error = FALSE,
+                               workers = 1L,
+                               worker_packages = NULL,
+                               compiled_accounting_model = NULL) {
+  window <- ledgr_experiment_window_resolve(exp, window)
+  ledgr_sweep_impl(
+    exp = exp,
+    param_grid = param_grid,
+    precomputed_features = precomputed_features,
+    retain = retain,
+    seed = seed,
+    stop_on_error = stop_on_error,
+    workers = workers,
+    worker_packages = worker_packages,
+    compiled_accounting_model = compiled_accounting_model,
+    window = window
+  )
+}
+
+ledgr_sweep_impl <- function(exp,
+                             param_grid,
+                             precomputed_features = NULL,
+                             retain = ledgr_sweep_retention(),
+                             seed = NULL,
+                             stop_on_error = FALSE,
+                             workers = 1L,
+                             worker_packages = NULL,
+                             compiled_accounting_model = NULL,
+                             window = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -96,6 +145,7 @@ ledgr_sweep <- function(exp,
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
     rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  window <- ledgr_experiment_window_resolve(exp, window)
   retain <- ledgr_sweep_retention_normalize(retain)
   workers <- ledgr_parallel_workers_normalize(workers)
   seed <- ledgr_seed_normalize(seed)
@@ -130,7 +180,15 @@ ledgr_sweep <- function(exp,
   }
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
-  range <- ledgr_precompute_scoring_range(meta)
+  range <- if (is.null(window)) {
+    ledgr_precompute_scoring_range(meta)
+  } else {
+    ledgr_precompute_scoring_range(
+      meta,
+      start = window$scoring_start_utc,
+      end = window$scoring_end_utc
+    )
+  }
   bars_by_id <- ledgr_precompute_fetch_bars(
     exp$snapshot,
     exp$universe,

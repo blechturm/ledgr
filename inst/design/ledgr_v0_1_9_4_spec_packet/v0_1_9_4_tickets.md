@@ -140,7 +140,7 @@ scope: v0.1.9.4
 Priority: P0
 Effort: L
 Dependencies: LDG-2612
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -178,6 +178,13 @@ constructors, deterministic `fold_id`, and deterministic `fold_list_hash`.
 Constructor tests, invalid-input tests, deterministic hash tests,
 round-trip reconstruction tests, export tests, and ASCII documentation checks.
 
+Implementation note:
+
+Batch 1 added `ledgr_fold()`, `ledgr_folds_rolling()`,
+`ledgr_folds_anchored()`, deterministic `fold_id`, deterministic
+`fold_list_hash`, public exports, Rd coverage, and fold identity tests.
+`gap = NULL` is the only accepted v1 gap shape; non-NULL gaps fail closed.
+
 ### Source Reference
 
 - `v0_1_9_4_spec.md` Sections 4, 5, and 7
@@ -198,7 +205,7 @@ scope: fold_constructors_and_identity
 Priority: P0
 Effort: XL
 Dependencies: LDG-2613
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -234,6 +241,14 @@ semantics.
 Rolling parity tests, anchored parity tests, selected test-run parity tests,
 final-bar no-fill tests, config identity tests, structural code-search guard,
 and run/sweep parity tests.
+
+Implementation note:
+
+Batch 1 added the internal `ledgr_experiment_window()` contract and internal
+run/sweep window entry points. Public `ledgr_run()` and `ledgr_sweep()` do not
+gain public window arguments. Tests cover rolling and anchored full train-window
+scoring, selected windowed run/sweep parity, unchanged final-bar no-fill
+behavior at `scoring_end`, and the fold-core structural guard.
 
 ### Source Reference
 

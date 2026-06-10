@@ -387,7 +387,8 @@ ledgr_run_experiment <- function(exp,
                                  feature_params = list(),
                                  run_id = NULL,
                                  seed = NULL,
-                                 compiled_accounting_model = NULL) {
+                                 compiled_accounting_model = NULL,
+                                 window = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -413,8 +414,16 @@ ledgr_run_experiment <- function(exp,
     params = params_info$value,
     feature_params = feature_params_info$value
   )
-  start <- if (!is.null(exp$opening$date)) exp$opening$date else exp$snapshot$metadata$start_date
-  end <- exp$snapshot$metadata$end_date
+  window <- ledgr_experiment_window_resolve(exp, window)
+  if (is.null(window)) {
+    start <- if (!is.null(exp$opening$date)) exp$opening$date else exp$snapshot$metadata$start_date
+    end <- exp$snapshot$metadata$end_date
+  } else {
+    # Window-driven bar fetch uses scoring_start_utc here. Hydration-range bar
+    # fetch and slice-aware feature precompute validation land in LDG-2615.
+    start <- window$scoring_start_utc
+    end <- window$scoring_end_utc
+  }
   if (is.null(start) || is.null(end) || anyNA(c(start, end))) {
     rlang::abort("Experiment snapshot must provide start/end metadata, or opening$date must provide start.", class = "ledgr_invalid_experiment")
   }

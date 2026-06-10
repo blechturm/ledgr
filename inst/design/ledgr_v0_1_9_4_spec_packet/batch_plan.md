@@ -1,6 +1,6 @@
 # ledgr v0.1.9.4 Batch Plan
 
-**Status:** Batch 1 ready to start.
+**Status:** Batch 1 ready for Claude review.
 
 This batch plan sequences the v0.1.9.4 walk-forward packet without expanding
 scope beyond `v0_1_9_4_spec.md` and the accepted
@@ -82,7 +82,7 @@ Closeout notes:
 ## Batch 1 - Fold Objects And Window Parity Substrate
 
 Tickets: `LDG-2613`, `LDG-2614`
-Status: Planned
+Status: Review Pending
 
 Goal: add fold constructors, fold-list identity, and the internal window
 contract that lets run and sweep execute the same scoring windows.
@@ -109,6 +109,25 @@ Review focus:
   semantics.
 - No market-calendar, purged, embargoed, randomized, blocked, state-aware, or
   cross-snapshot fold behavior is introduced.
+
+Implementation notes:
+
+- Added public fold constructors and deterministic fold-list identity in
+  `R/walk-forward-folds.R`, with `gap = NULL` as the only accepted v1 shape.
+- Added an internal experiment-window contract plus internal run/sweep window
+  entry points without exposing public `window` arguments on `ledgr_run()` or
+  `ledgr_sweep()`.
+- Added tests for fold identity, rolling/anchored full-train-window semantics,
+  selected windowed run/sweep parity, final-bar no-fill behavior at
+  `scoring_end`, export locking, and the fold-core structural guard.
+
+Verification:
+
+- `testthat::test_file("tests/testthat/test-walk-forward-folds.R")`
+- `testthat::test_file("tests/testthat/test-api-exports.R")`
+- `testthat::test_file("tests/testthat/test-sweep.R")`
+- `testthat::test_file("tests/testthat/test-sweep-parity.R")`
+- `testthat::test_file("tests/testthat/test-experiment-run.R")`
 
 ## Batch 2 - Feature Windows And Selection Rules
 
