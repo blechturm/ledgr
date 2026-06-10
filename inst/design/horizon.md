@@ -110,6 +110,741 @@ sweep / walk-forward artifacts or a new always-on write path. Until then,
 existing packets should only preserve identities and promotion lineage that keep
 such an archive possible later.
 
+### 2026-06-09 [research] ML-first capability shape for v0.2.x
+
+A 2026-06-09 review of whether ledgr is usable with ML models concluded the
+existing strategy contract, walk-forward windowing, sweep candidate identity,
+and feature path are sufficient for a useful class of ML strategies today:
+pre-trained model loaded into closure, `predict()` called per pulse,
+hyperparameter sweeps under future PBO / CSCV / DSR correction. That is enough
+to honestly describe ledgr as ML-compatible. It is not enough to describe ledgr
+as ML-first.
+
+Closing the gap needs four pieces named explicitly so a v0.2.x packet can scope
+them as one coherent cycle rather than discovering the need ad hoc:
+
+1. **Model artifact identity (`model_artifact_hash`).** `strategy_hash`
+   captures source bytes, not the bytes of a pre-trained model loaded from
+   disk. Two runs with the same strategy code but different trained models
+   currently produce the same `strategy_hash`. Honest ML reproducibility wants
+   a first-class `model_artifact_hash` that threads into `config_hash` the
+   way `cost_model_hash` does. Constructor sketch:
+   `ledgr_strategy_artifact(model)` wraps a model with its serialized-bytes
+   hash; the hash flows into identity composition as a sibling of cost / risk
+   / metric-context hashes.
+
+2. **Train hook distinct from inference loop.** ML workflows fit on a train
+   window and predict on a test window. Today training has to happen inside
+   the strategy callback on the first pulse, which misattributes telemetry
+   and conflates contracts. A `ledgr_strategy_ml(train = , predict = )`
+   constructor would let walk-forward call `train()` once per fold's test
+   window and cache the trained model under the fold's `candidate_key`. Fold
+   core unchanged; only the strategy-contract wrapper.
+
+3. **Prediction-table provenance with PIT semantics.** A common ML pattern is
+   generating predictions ahead of time and storing them as a table; the
+   strategy then queries `predictions_at(ts_utc, instrument_id)` rather than
+   running inference per pulse. Requires the v0.2.x PIT data tables RFC plus
+   a prediction-store with hash-bound provenance back to (model artifact +
+   feature set + training window). Also unlocks heavy-compute / Python-GPU
+   models via precompute-and-query rather than per-pulse roundtrips.
+
+4. **Label-leakage instrumentation.** ML backtests systematically have labels
+   accidentally derived from future data. The feature-level no-lookahead
+   checks do not catch this because labels are a different surface from
+   features. A label-PIT contract would bind that labels are visible during
+   training only, not during the pulse loop, and would name a classed
+   condition for the runtime-visible-label case.
+
+Sequencing dependencies:
+
+- Selection-integrity diagnostics (PBO / CSCV / DSR / CPCV) should ship before
+  ML-first capability. The hyperparameter-sweep selection-bias problem is the
+  hardest part of honest ML backtesting; solving it first makes ledgr's ML
+  story differentiating rather than "another backtester with `predict()`."
+- v0.2.x PIT data tables are a hard predecessor for items 3 and 4.
+- Item 2's `ledgr_strategy_ml()` constructor sits cleanly on top of the
+  existing strategy helper layer; it does not require its own helper-layer
+  cycle.
+
+Indicative minimum-viable v0.2.x cycle:
+
+```text
+v0.2.x PIT data tables RFC
+  -> model_artifact_hash + ledgr_strategy_artifact() helper
+  -> ledgr_strategy_ml(train, predict) constructor
+  -> prediction-store with PIT-bound provenance
+  -> label-PIT contract + classed leakage condition
+```
+
+Total scope is roughly comparable to the v0.1.9.1 cost-API arc if the four
+pieces are scoped together.
+
+The earlier inline note in this file ("ML strategy artifact management
+depends on stable walk-forward windows, point-in-time feature tables, model
+artifact identity, prediction-table provenance, and selection diagnostics.
+Do not bolt it on as 'call `predict()` inside a strategy.'") stands; this
+entry names the concrete pieces that would operationalize it. The roadmap
+"Deferred Strategy And Integration Families" row for ML strategy artifact
+management already records the deferral; this entry stays in horizon until a
+v0.2.x packet promotes it.
+
+Non-commitments:
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- naming sketches are illustrative, not contractual;
+- if v0.2.x sequencing pulls PIT data tables later than expected, the ML-first
+  capability cycle slides with it.
+
+### 2026-06-09 [research] Post-sweep candidate clustering as selection-integrity input
+
+A 2026-06-09 conversation about cross-sectional features surfaced a low-risk
+immediate-value capability worth naming separately from the harder
+cross-sectional indicator design: clustering sweep candidates by return-stream
+similarity AFTER a sweep completes, as a diagnostic over the candidate space.
+
+The proposition is simple. Sweep candidates carry retained return series
+under the v0.1.9.2 retention contract. Clustering those return streams
+identifies which candidates are effectively running the same bet wearing
+different parameter clothes. A 240-candidate sweep that clusters into 12
+groups has 12 effective independent trials, not 240, which directly informs
+PBO / CSCV / DSR multiplicity-correction methodology when the
+validation-toolkit cycle opens.
+
+This capability is risk-free because it lives entirely on the analysis side:
+
+- does not affect trading decisions, so no leakage path back into the
+  backtest;
+- consumes already-stored sweep artifacts, no new precomputation surface
+  needed;
+- does not enter the fold core, the strategy callback, the risk chain, the
+  cost model, or the persistence schema;
+- composes with selection-integrity diagnostics as the natural
+  effective-trial-count input, but does not pre-empt their design.
+
+Indicative public shape (illustrative, not contractual):
+
+```r
+clusters <- ledgr_sweep_cluster(
+  sweep_results,
+  method = "kmeans",
+  k = 12L,
+  signal = "period_return"
+)
+# returns a tibble mapping candidate_id to cluster_id with cluster centroids
+# and effective-independent-trial-count summary
+```
+
+Sequencing dependencies:
+
+- v0.1.9.2 sweep retention infrastructure must be present (it is);
+- selection-integrity diagnostics RFC scoping should reference this capability
+  as the effective-trial-count input rather than redefining it;
+- this is independent of the cross-sectional indicators question (see paired
+  entry below); it is a pure post-hoc analyzer over sweep return matrices and
+  reuses no fit machinery.
+
+Indicative slot: v0.1.9.x post-walk-forward, or rolled into the
+selection-integrity diagnostics packet when that lands. Could ship earlier
+if a focused doc-and-helper packet has bandwidth.
+
+Non-commitments:
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the constructor sketch is illustrative;
+- clustering method selection (kmeans vs hierarchical vs Gaussian mixture)
+  is a v0.2.x design choice, not a horizon commitment.
+
+### 2026-06-09 [research] Cross-sectional indicators are a v0.2.x capability cluster
+
+A 2026-06-09 conversation about clustering as a strategy feature surfaced
+that ledgr's feature engine is instrument-local: one instrument's series in,
+one series out. Cross-sectional features (clustering by trailing
+characteristics, factor exposures, ranks within universe, beta against
+universe mean, cross-sectional residuals) need whole-universe-at-t in, one
+value per instrument out. ledgr has no native surface for this. This is a
+real architectural gap.
+
+But cross-sectional indicators are not a standalone feature-engine
+extension. They sit at the intersection of four pieces, three of which are
+already on the roadmap or in horizon:
+
+- feature engine architecture (current instrument-local shape);
+- PIT data tables (v0.2.x roadmap: `known_at`, `available_at`,
+  `effective_at`, alignment policy);
+- ML strategy artifact management (the 2026-06-09 ML-first capability shape
+  entry above);
+- walk-forward (v0.1.9.4) with its `hydration_start` / `scoring_start` /
+  `execution_start` / `opening_state_policy` window semantics.
+
+Cross-sectional fitted indicators are functionally "ML strategy artifact
+management applied to a model that produces per-instrument output." Same
+machinery, same identity discipline.
+
+Hard design problems this surface raises that need RFC-level attention before
+any public API is bound:
+
+- **Fit schedule semantics.** "Refit monthly" is gestural. Precise binding
+  needs: does the refit fire at the start of the test window or mid-window?
+  Does it trigger warmup hydration? Does the fit at time t use data through
+  t-1 (strict) or through t (inclusive)? How does the schedule interact with
+  walk-forward fold boundaries?
+- **Identity composition.** The feature value at time t depends on (fit window
+  + fit method + fit params + input feature set + universe + fit schedule).
+  Needs a `fit_artifact_hash` analogous to the `model_artifact_hash` in the
+  ML-first entry. Without it, two runs with identical strategy / features /
+  params / risk / cost can produce different feature values if the underlying
+  fits drift, and `config_hash` will not catch it.
+- **Dependency graph among features.** Cross-sectional indicators commonly
+  consume per-instrument scalar indicators (k-means on rolling volatility,
+  ranks within universe by momentum, PCA on returns correlation matrix).
+  This is a layered feature engine, not the current flat shape. Needs:
+  declared input dependencies on cross-sectional constructors; topological
+  sort for precompute order; identity composition where cross-sectional hash
+  includes input indicator hashes; cache invalidation across layers when an
+  upstream indicator changes.
+- **Seed management for stochastic fits.** k-means initialization, SGD
+  embeddings, random projections, RANSAC-like procedures all introduce
+  non-determinism. Needs: per-fit seed derivation from `master_seed`; seed
+  isolation across candidates (a `k = 4` fit must not leak entropy into a
+  `k = 8` fit); possible multi-seed averaging for robust fits; integration
+  with the existing `execution_seed` machinery.
+- **Precomputation and fit-artifact storage.** Pulse-time refitting is
+  prohibitive. Realistic workflows refit sparsely (monthly / quarterly) and
+  look up cached fitted artifacts per pulse. Needs a fit-artifact store with
+  PIT lookup semantics, same shape as the prediction-store named in the
+  ML-first entry.
+
+Related but worth noting separately: cross-sectional features could be
+consumed by the risk chain, not just the strategy callback. A
+`ledgr_risk_one_per_cluster(cluster_feature_id, n_per_cluster)` step that
+reads cluster_id and zeros targets exceeding a per-cluster cap fits the
+chainable risk architecture naturally. Cluster-id-as-portfolio-constraint is
+structurally cleaner than cluster-id-as-alpha and avoids the methodology
+question of whether clusters predict returns. Same observation applies to
+factor exposures, sector caps, and beta-neutrality.
+
+Sequencing dependencies:
+
+- PIT data tables (v0.2.x) are a hard predecessor;
+- ML-first capability shape (v0.2.x, see 2026-06-09 ML-first entry) shares
+  most of the load-bearing machinery; cross-sectional indicators should be a
+  named workstream inside that packet, not a separate cycle;
+- walk-forward (v0.1.9.4) must be stable so fold-boundary semantics for refit
+  scheduling are bound;
+- a layered feature engine architecture is a predecessor for any
+  cross-sectional surface that consumes other indicators.
+
+Indicative slot: v0.2.x ML-first capability packet as a named workstream.
+Not earlier, not standalone.
+
+Non-commitments:
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the `ledgr_xs_indicator()` and `ledgr_ind_cluster()` constructor sketches
+  discussed are illustrative, not contractual;
+- the cluster-as-risk-step note is a downstream application, not a separate
+  cycle.
+
+### 2026-06-09 [risk] Risk-chain constraint expansion RFC family (Palomar-anchored)
+
+A 2026-06-09 review of Palomar (2024) Chapter 6 against ledgr's current
+risk-chain step set found that ledgr ships 1.5 of 10 canonical portfolio
+constraints: long-only fully via `ledgr_risk_long_only()`, and the upper
+half of a symmetric box via `ledgr_risk_max_weight()`. The remaining 8 are
+intentionally deferred per the v0.1.9.3 chainable-risk synthesis Section 2
+minimum-adapter-set scope. See `inst/design/methodology_references.md`
+Palomar entry for the full coverage table and citation anchors.
+
+The gap is strategic, not accidental. But it will define ledgr's positioning
+ceiling as the package moves toward CRAN and beyond: serious quantitative
+portfolio research expects at minimum long-only, capital budget, asymmetric
+box, turnover, and some form of risk constraint (sector cap, beta, or
+tracking error). That is 5 of 10. Until ledgr covers most of those, the
+honest framing is "research framework for simple strategies," not "research
+framework for portfolio research."
+
+Closing the gap is not one RFC. Different constraints need different
+machinery and predecessors:
+
+- **Long-only / asymmetric box / max-weight refinements.** In-place
+  additions to the current risk-step model, no new context fields, no
+  solver dispatch. Could open as a focused v0.1.9.x or v0.2.x cycle once
+  v0.1.9.5 docs land.
+- **Cardinality `||w||_0 <= K`.** Non-convex constraint. Either
+  select-top-k-style heuristic (cheap, in the risk chain) or solver
+  dispatch (out-of-fold, in portfolio optimization scaffolding). First
+  design fork future RFCs will hit.
+- **Turnover `||w - w_0||_1 <= u`.** Needs current-position state exposed
+  to the risk context. The v0.1.9.3 spec §14 standing future-context
+  obligation must land first.
+- **Market-neutral / beta / tracking error.** Needs v0.2.x benchmark
+  context plus the beta substrate (see the 2026-05-24 beta-as-three-uses
+  horizon entry). Far downstream.
+- **Dollar-neutral / leverage `||w||_1 <= u`.** Needs long-short authoring
+  support (gated on the shorting / leverage contract RFC per the
+  2026-06-01 horizon entry).
+- **Margin.** v0.2.x derivatives arc territory; permanently out of scope
+  for v0.1.x per the whole-second / spot-only contract bindings.
+
+This implies the constraint expansion is a multi-cycle family of RFCs at
+different points in the roadmap, not a single packet. Trying to scope them
+all together would mix near-term (asymmetric box, cardinality heuristic)
+with far-future (margin, dollar-neutral) and produce a packet that cannot
+ship.
+
+Cross-cutting decisions any expansion RFC in this family must bind:
+
+- **Quantity-space vs weight-space translation.** Palomar writes
+  constraints in weight-space (`w` summing to 1 or zero). ledgr's risk
+  chain operates in quantity-space. The translation
+  `quantity = weight * decision_equity / decision_price` is mechanical for
+  long-only fractional workflows and is what `ledgr_risk_max_weight()`
+  already does internally. Any expansion RFC must bind the translation
+  explicitly so "max weight 0.20" interpreted on `|w|` versus on
+  `|w * P / E|` does not silently drift.
+- **Convex vs non-convex partition.** Most Palomar constraints are convex
+  (long-only, box, turnover via L1, market-neutral, dollar-neutral,
+  leverage via L1) and can live as chainable risk-step adapters.
+  Cardinality is non-convex; future risk-step extensions must decide
+  between heuristic in-chain implementation and solver dispatch out-of-
+  fold. This decision also tells future portfolio-optimization-scaffolding
+  work which Palomar constraints become risk-step adapters versus
+  PortfolioAnalytics / CVXR adapter targets.
+- **Vocabulary stability.** Future risk-step names should follow Palomar's
+  labels where they fit naturally. `ledgr_risk_box_weight()`,
+  `ledgr_risk_cardinality()`, `ledgr_risk_turnover()`,
+  `ledgr_risk_market_neutral()` are the anchored names. Do not coin
+  alternatives.
+
+Sequencing dependencies:
+
+- the asymmetric box and minimum-weight cycle has no hard predecessor
+  beyond the v0.1.9.3 risk-chain architecture (shipped);
+- turnover needs the v0.1.9.3 spec §14 future-context obligation bound;
+- cardinality needs an explicit heuristic-vs-solver decision; if heuristic
+  is chosen, it can ship near-term, if solver is chosen, it sits in
+  portfolio optimization scaffolding;
+- market-neutral / tracking error sit behind the v0.2.x benchmark
+  substrate; not earlier;
+- dollar-neutral / leverage sit behind the long-short contract RFC; not
+  earlier;
+- margin / leverage with derivatives sits in the v0.2.x derivatives arc.
+
+Indicative slot for the first member of the family: an
+asymmetric-box-plus-cardinality-heuristic cycle could open as a focused
+v0.2.x packet once the v0.1.9.x arc closes and v0.1.9.5 docs land. Later
+members slot in as their predecessors come online.
+
+Related horizon entries that share the same v0.2.x cluster and should
+coordinate at scoping time:
+
+- 2026-06-07 portfolio optimization scaffolding (four-level decomposition
+  and architectural footguns);
+- 2026-05-24 beta as three distinct uses;
+- 2026-06-01 strategy callback contract + authoring helpers
+  (long-short / hedged / levered authoring helpers gating);
+- 2026-06-09 ML-first capability shape (model artifact identity + PIT
+  data tables that this family shares predecessors with);
+- 2026-06-09 cross-sectional indicators are a v0.2.x capability cluster
+  (cluster-as-risk-step is a downstream application of this family).
+
+Non-commitments:
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the `ledgr_risk_box_weight()` / `ledgr_risk_cardinality()` /
+  `ledgr_risk_turnover()` / `ledgr_risk_market_neutral()` constructor
+  sketches are illustrative, not contractual;
+- the cardinality heuristic-vs-solver decision is named here as the first
+  design fork; it is not resolved here;
+- which constraint cycle opens first is a v0.2.x scoping decision, not a
+  horizon commitment.
+
+### 2026-06-09 [research] Business-objective constructor RFC (Pardo-anchored)
+
+Paired with the 2026-06-09 Palomar constraint expansion family entry above:
+Pardo (2008) Chapter 11's nine-criterion robust-strategy checklist deserves
+operationalization as a `ledgr_business_objective()` constructor that filters
+sweep candidates by intrinsic strategy quality before selection. Already
+recorded in `inst/design/methodology_references.md` as a deferred citation
+anchor; this entry promotes it to a planning seed.
+
+Pardo's nine criteria:
+
+1. relatively even distribution of trades over time;
+2. relatively even distribution of trading profit;
+3. relative balance between long and short profit;
+4. a large group of contiguous, profitable strategy parameters;
+5. acceptable trading performance across a wide range of markets;
+6. acceptable risk;
+7. relatively stable winning and losing runs;
+8. a large and statistically valid number of trades;
+9. a positive performance trajectory.
+
+This is a different kind of taxonomy from Palomar's constraints. Palomar
+names what a portfolio is allowed to do at decision time. Pardo names what
+makes a strategy worth keeping after a sweep. They are complementary: a
+strategy passes Palomar's constraints at every pulse, then is judged against
+Pardo's checklist on its full run-history evidence. Both should anchor on
+their respective vocabularies.
+
+The Pardo checklist is also distinct from selection-integrity diagnostics
+(Bailey / Lopez de Prado). Selection-integrity asks "did I pick the wrong
+winner because of multiple testing?" -- DSR / PBO / CSCV adjust the
+selected candidate's metrics after the fact. Pardo's checklist asks "is
+THIS strategy worth promoting on its own merits?" -- it filters candidates
+by intrinsic quality before selection. Both surfaces apply at the
+sweep-result level and answer different questions. The combination is
+stronger than either alone.
+
+### Computability against existing ledgr artifacts
+
+Seven of nine criteria are computable from v0.1.9.2+ retained artifacts
+today:
+
+- **Even trade distribution over time** -- from trade timestamps in
+  retained results; needs a temporal-uniformity metric (Gini, Herfindahl,
+  or Kolmogorov-Smirnov against uniform).
+- **Even profit distribution** -- from retained returns; needs a
+  concentration metric over per-period profits.
+- **Stable parameter region** -- from sweep results; needs parameter-grid
+  topology awareness. Pardo's strongest single methodology contribution
+  per the existing methodology_references.md entry.
+- **Acceptable risk** -- broad; could map to drawdown, vol, VaR, or
+  composite. The exact metric choice needs an RFC decision.
+- **Stable winning / losing runs** -- from trade outcomes; streak
+  analysis.
+- **Statistically valid number of trades** -- minimum sample-size check.
+- **Positive performance trajectory** -- from equity curve; trend slope
+  or the K-Ratio from Kestner cited by Pardo.
+
+Two criteria are deferred:
+
+- **Long-short balance** -- gated on the shorting / leverage contract
+  RFC (2026-06-01 horizon entry). Until long-short authoring lands this
+  criterion is structurally inapplicable.
+- **Acceptable performance across markets** -- requires multi-snapshot
+  evaluation. A single-snapshot proxy across non-overlapping time slices
+  of one snapshot could ship earlier; full cross-snapshot evaluation
+  needs v0.2.x snapshot lineage.
+
+### Indicative public shape (illustrative, not contractual)
+
+```r
+business_objective <- ledgr_business_objective(
+  ledgr_pardo_even_trade_distribution(max_concentration = 0.3),
+  ledgr_pardo_even_profit_distribution(max_concentration = 0.4),
+  ledgr_pardo_stable_region(min_neighbors = 5),
+  ledgr_pardo_acceptable_risk(max_drawdown = 0.20),
+  ledgr_pardo_stable_runs(max_streak = 10),
+  ledgr_pardo_min_trades(n = 30),
+  ledgr_pardo_positive_trajectory(slope_min = 0)
+)
+
+filtered <- ledgr_sweep_filter(sweep_results, business_objective)
+```
+
+Each criterion is a classed step that consumes sweep candidate evidence
+(metrics, trade list, equity curve, retained return series) and returns a
+boolean or graded score per candidate. The chain composes them into a
+single filter. The constructor produces a serializable plan with a
+`business_objective_hash` that participates in selection identity
+alongside the walk-forward `selection_rule_hash`.
+
+### Sequencing dependencies
+
+- v0.1.9.2 retained returns and sweep artifact persistence (shipped) --
+  needed for criteria 2, 7, 9;
+- v0.1.9.4 walk-forward (planned) -- not strictly required, but the
+  business objective should compose cleanly with walk-forward selection
+  rules. The selection rule picks the winner from the eligible pool; the
+  business objective narrows the eligible pool;
+- selection-integrity diagnostics RFC (planned v0.2.x) -- natural
+  companion; both apply at the sweep-result level for different purposes;
+- long-short contract RFC (2026-06-01 horizon entry) -- predecessor for
+  criterion 3;
+- snapshot lineage (v0.2.x roadmap) -- predecessor for the full version
+  of criterion 5.
+
+### Indicative slot
+
+A focused v0.2.x cycle, plausibly paired with the selection-integrity
+diagnostics RFC since both operate on sweep results and serve
+complementary purposes. The seven computable-today criteria could ship in
+a single packet; the two deferred criteria slot in as their predecessors
+come online.
+
+Earlier than the Palomar constraint expansion family because:
+
+- no architectural predecessors beyond v0.1.9.2 (shipped);
+- no fold-core touch;
+- no quantity-space vs weight-space translation work;
+- the criteria are mostly metric calculations over existing artifacts.
+
+### Non-commitments
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the `ledgr_pardo_*()` constructor sketches are illustrative, not
+  contractual;
+- which v0.2.x packet this cycle joins (selection-integrity standalone,
+  paired with portfolio optimization scaffolding, or its own cycle) is a
+  scoping decision, not a horizon commitment;
+- the specific composition rule (all criteria must pass vs scored
+  composite vs threshold majority) is left to the RFC;
+- the `business_objective_hash` participation in selection identity is
+  named here as a coordination requirement, not bound semantics.
+
+### 2026-06-09 [ux] Weight-strategy wrapper as alternative authoring surface
+
+A 2026-06-09 conversation about strategy contract space (weights vs
+quantities) concluded ledgr should not flip its quantity-space strategy
+contract, but should add a `ledgr_weight_strategy()` wrapper constructor as
+an alternative authoring surface for users who prefer to think in weights.
+
+### The question
+
+Today's strategy contract is `function(ctx, params) -> named numeric target
+quantities`. Textbook portfolio construction (Palomar, Markowitz, Lopez de
+Prado) operates in weight-space (`w` summing to 1 or zero). The chainable
+risk layer (v0.1.9.3) operates in quantity-space with internal weight
+translation -- `ledgr_risk_max_weight()` does
+`abs(qty * decision_price) <= max_weight * decision_equity`. The question
+raised was whether to flip the strategy contract to weight-space to align
+with the literature.
+
+### Decision: do not flip the contract
+
+Keep quantity-space as the canonical execution contract:
+
+- **Substrate uniformity.** Fills, ledger events, opening positions,
+  snapshots, and the fold core are in quantity-space. The strategy contract
+  matching them 1:1 means no translation lives in the middle of the
+  execution path.
+- **Internal translation already works.** Every Palomar weight-space
+  constraint can be expressed in the existing quantity-space chainable
+  risk-step pattern (see the 2026-06-09 Palomar constraint expansion family
+  entry above for the convention). The math IS in weight-space at the
+  constraint level; only the user-facing contract is quantity-space. The
+  pattern is established and scales to the rest of the Palomar taxonomy
+  without contract changes.
+- **Quantity-space is execution-honest.** Crypto fractional quantities,
+  equity round-lot semantics, opening positions, and multi-currency
+  accounting are all natural in quantity-space and would need a translation
+  boundary if the strategy contract were weight-space.
+- **Migration cost would be substantial.** Vignettes, examples, tests,
+  helpers, demo strategies, and the v0.1.9.3 chainable risk layer all assume
+  quantity-space. Pre-CRAN posture authorizes the break but the
+  artifact-rewriting cost is real and would set up a second migration
+  immediately after the v0.1.9.3 target-risk migration.
+
+### Add a wrapper constructor instead
+
+The cleaner answer is a `ledgr_weight_strategy()` constructor that wraps a
+weight-space strategy and translates to quantities at the boundary:
+
+```r
+my_strategy <- ledgr_weight_strategy(function(ctx, params) {
+  weights <- c(AAA = 0.30, BBB = 0.20, CCC = 0.10, CASH = 0.40)
+  weights
+})
+```
+
+The wrapper handles `quantity = weight * decision_equity / decision_price`
+and emits a normal quantity-space target vector. The fold core never sees
+weights. Strategy preflight, identity hashing, and the chainable risk layer
+all see a normal quantity-space strategy.
+
+Users who want weight-space write weight-space; users who want quantity-
+space (especially crypto fractional or explicit-share workflows) write
+quantities. Strategy helpers like `target_rebalance(equity_fraction = ...)`
+already do something like this implicitly; making the pattern a first-class
+wrapper constructor surfaces it.
+
+### Why this is better than flipping
+
+- **Substrate identity preserved.** Quantity-space stays the canonical
+  contract; nothing else needs to know about the wrapper.
+- **Palomar risk-chain expansion stays clean.** Each new constraint
+  (`ledgr_risk_box_weight`, `ledgr_risk_turnover`, etc.) does its own
+  weight-to-quantity translation at constructor time. That is already the
+  established pattern from `max_weight`. The Palomar entry from 2026-06-09
+  explicitly bound this translation as a load-bearing convention; this
+  approach honors it.
+- **Multi-strategy meta-allocation gets a natural home later.** When the
+  portfolio optimization scaffolding lands (2026-06-07 horizon entry), it
+  consumes weight-strategy artifacts. The wrapper makes that surface
+  composable from day one without retrofitting the strategy contract.
+- **Existing artifacts unaffected.** Vignettes, examples, and demo
+  strategies all continue to work. The wrapper is additive.
+
+### Indicative constructor sketch (illustrative, not contractual)
+
+```r
+ledgr_weight_strategy(
+  fn,
+  cash_target_id = "CASH",
+  normalize = c("none", "to_one", "to_one_with_cash"),
+  ...
+)
+```
+
+Design questions an eventual RFC must bind:
+
+- whether the wrapper validates that weights sum to a constant or trusts
+  the user;
+- how a cash weight is represented (reserved name, attribute, return-value
+  contract);
+- whether negative weights are accepted (gated on long-short authoring per
+  the 2026-06-01 horizon entry);
+- whether the wrapper produces a fully-named target vector or only the
+  non-zero weights with the engine completing the rest;
+- how decision-time price normalization handles instruments with NA or
+  zero prices, consistent with the risk-chain context discipline from
+  v0.1.9.3 Batch 5.
+
+### Sequencing dependencies
+
+- v0.1.9.3 chainable risk layer (shipped) -- the established
+  weight-to-quantity translation convention this wrapper extends;
+- v0.1.9.x decision-time `ctx$equity` and `ctx$vec$close` surfaces
+  (shipped) -- the context the wrapper consumes;
+- portfolio optimization scaffolding (v0.2.x, 2026-06-07 horizon entry) --
+  the future surface that benefits most from this wrapper;
+- strategy callback + authoring helpers (2026-06-01 horizon entry) -- this
+  wrapper is naturally a member of that helper family;
+- Palomar constraint expansion family (2026-06-09 horizon entry above) --
+  every constraint added there benefits from a weight-space strategy
+  authoring surface that does not require contract changes.
+
+### Indicative slot
+
+A focused v0.2.x cycle, plausibly bundled with either the portfolio
+optimization scaffolding or the strategy authoring helpers Pass 2 work.
+Small surface (one constructor + tests + docs), no fold-core touch, no
+identity-bytes change.
+
+### Non-commitments
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the `ledgr_weight_strategy()` constructor name and signature are
+  illustrative, not contractual;
+- whether the wrapper validates weight-sum semantics is left to the RFC;
+- the cash-weight representation question is left to the RFC;
+- which packet this lands in (helpers, scaffolding, or its own cycle) is a
+  v0.2.x scoping decision.
+
+### 2026-06-09 [adapters] Palomar adapter family for portfolio optimization scaffolding
+
+A 2026-06-09 review of Palomar's GitHub package family at the `convexfi`
+organization identified three R packages as coordinated adapter targets
+for the v0.2.x portfolio optimization scaffolding (2026-06-07 horizon
+entry) and the Palomar constraint expansion family (2026-06-09 horizon
+entry above). All three share Palomar's notation conventions and accept
+the same Chapter 6 constraint vocabulary, so adapting one de-risks
+adapting the other two.
+
+### Adapter targets
+
+- **`riskParityPortfolio`** -- equal-risk-contribution portfolio
+  construction. Maps to portfolio optimization scaffolding's risk-parity
+  objective (Level 2 of the four-level decomposition per the 2026-06-07
+  horizon entry).
+- **`highOrderPortfolios`** -- mean-variance-skewness-kurtosis
+  optimization. Maps to scaffolding's higher-moment objective. Useful for
+  workflows that want to consider beyond second-moment risk.
+- **`sparseIndexTracking`** -- index tracking with cardinality constraint
+  `||w||_0 <= K`. Direct implementation by Palomar of the cardinality
+  constraint defined in his own Chapter 6.2; the reference solver when
+  the Palomar risk-chain expansion family opens cardinality. The
+  cardinality heuristic-vs-solver decision named in that horizon entry
+  could be answered by "adapt sparseIndexTracking" for the solver branch.
+
+All three are convex-optimization-backed (consistent with the `convexfi`
+organization name) and follow Palomar's textbook notation:
+
+- adapting one teaches the patterns needed for the other two (shared
+  argument naming, shared constraint specification format, shared output
+  shape);
+- the adapter pattern matches the v0.2.x External Package Adapters
+  roadmap entry's "thin, optional, output-only" discipline;
+- vocabulary stays anchored on Palomar's terminology, honoring the
+  Palomar constraint expansion family entry's "Do not coin alternatives"
+  binding.
+
+### Comparison point, not adapter
+
+- **`portfolioBacktest`** -- automated portfolio backtesting over
+  multiple datasets. Closest peer in the R portfolio research ecosystem.
+  Portfolio-optimization-first where ledgr is identity-and-determinism-
+  first. Worth a focused comparison read for the v0.1.9.5 positioning
+  narrative or the eventual scaffolding RFC seed; the canonical
+  alternative ledgr should understand the way it understands Backtrader
+  and quantstrat. Not an adapter target -- adapting it would create a
+  second backtester surface inside ledgr, violating the no-second-
+  execution-engine invariant.
+
+### Coordination with existing planning artifacts
+
+The v0.2.x External Package Adapters roadmap entry already names
+PerformanceAnalytics, PortfolioAnalytics, tidyfinance, and quantmod as
+adapter targets. The Palomar adapter family extends that list with three
+portfolio-optimization-specific adapters that sit alongside
+PortfolioAnalytics. Indicative ranking when the cycle opens:
+
+```text
+v0.2.x External Package Adapters (existing roadmap entry)
+  -> PerformanceAnalytics (reporting; ranked first)
+  -> Palomar family (portfolio construction; this entry)
+       riskParityPortfolio + highOrderPortfolios + sparseIndexTracking
+  -> PortfolioAnalytics (portfolio construction; alternative to Palomar)
+  -> tidyfinance (factor / data research)
+  -> quantmod (data ingestion)
+```
+
+Palomar family vs PortfolioAnalytics is not either-or. PortfolioAnalytics
+is more established and has broader objective coverage; Palomar packages
+are newer, more focused, and share notation with the canonical textbook.
+Both are adapter candidates; sequencing depends on user demand when the
+scaffolding cycle opens.
+
+### Sequencing dependencies
+
+- portfolio optimization scaffolding (v0.2.x, 2026-06-07 horizon entry)
+  must be scoped before any adapter target is selected;
+- Palomar constraint expansion family (2026-06-09 horizon entry above)
+  should be coordinated with the cardinality adapter decision since
+  `sparseIndexTracking` covers the solver branch of cardinality;
+- v0.2.x External Package Adapters roadmap entry's "thin, optional,
+  output-only" discipline applies to each adapter;
+- adapter ranking depends on user demand at v0.2.x scoping time; this
+  entry records the candidates, not the order.
+
+### Indicative slot
+
+Inside the v0.2.x portfolio optimization scaffolding packet or the
+v0.2.x External Package Adapters packet, depending on whether the
+scaffolding ships with its own adapters or routes adapters to the
+dedicated adapter packet. Either is defensible; the entry stays in
+horizon until that scoping decision lands.
+
+### Non-commitments
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the adapter selection order among the three Palomar packages is left
+  to v0.2.x scoping;
+- the Palomar-vs-PortfolioAnalytics adapter ranking is left to user-
+  demand evidence at scoping time, not pre-decided here;
+- `portfolioBacktest`'s role as comparison-only-not-adapter is bound
+  here, but the depth of the comparison study is a v0.1.9.5 or v0.2.x
+  packet scoping decision.
+
 ### 2026-06-05 [infrastructure] Release-gate harness around playbook checks
 
 The v0.1.9.1 release gate exposed a process gap: the release CI playbook

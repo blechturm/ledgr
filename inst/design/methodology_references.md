@@ -385,3 +385,235 @@ look for stable regions manually. A future `ledgr_sweep_stability()` or
 diagnostic. Worth horizon-noting if it doesn't already have a slot;
 otherwise the v0.1.9.x selection-integrity diagnostics RFC seed should
 treat it as a candidate addition alongside DSR / PBO / CSCV.
+
+---
+
+## Palomar (2024-) -- Portfolio Optimization
+
+**Author:** Daniel P. Palomar (HKUST).
+
+**Title:** *Portfolio Optimization*.
+
+**Format:** Open-access textbook hosted at
+`https://portfoliooptimizationbook.com/`. Cite by chapter and section
+heading (e.g., "Palomar, ch. 6 sec. 6.2, Portfolio Constraints"). The
+book's own URL structure (`/book/6.2-portfolio-constraints.html`) is the
+canonical citation anchor.
+
+**Maintenance lineage:** Palomar is the author of the long-running R
+`portfolioBacktest` family and decades of convex-optimization work
+applied to finance. The book sits in the lineage of Markowitz (1952),
+Sharpe (1963), Black-Litterman (1992), Lopez de Prado's HRP (2016), and
+the modern robust-optimization literature, but its strongest
+contribution is the systematic, taxonomy-first treatment of constraints
+and objectives. Where Peterson is doctrine and Bailey/Lopez de Prado is
+selection-integrity correction, Palomar is the canonical *vocabulary* for
+specifying what a portfolio is allowed to do.
+
+### Why ledgr cites Palomar
+
+ledgr's chainable target-risk layer (v0.1.9.3) and the deferred portfolio
+optimization scaffolding (2026-06-07 horizon entry) both need a stable
+taxonomy of constraints to ground future RFCs. Palomar's Chapter 6 (and
+particularly Section 6.2, Portfolio Constraints) is the cleanest existing
+treatment of that taxonomy in the open literature. Future ledgr RFCs that
+extend the risk-chain adapter set, scaffold portfolio optimization, or add
+benchmark-aware risk constraints should anchor their named-constraint
+vocabulary on Palomar's classification rather than invent ad-hoc names.
+
+The book has three load-bearing properties for ledgr:
+
+1. **Canonical constraint taxonomy.** Section 6.2 enumerates long-only,
+   capital budget, box (holding) bounds, cardinality, turnover,
+   market-neutral, dollar-neutral, diversification (Herfindahl),
+   leverage, and margin constraints with consistent mathematical
+   notation. Names are stable; formulas are precise; convex vs
+   non-convex status is named where it matters for solver choice.
+2. **Weight-space versus quantity-space distinction is explicit.**
+   Palomar writes constraints in weight-space (`w` summing to 1 or zero).
+   ledgr's risk chain currently operates in quantity-space (target
+   quantities). The translation is mechanical (`quantity = weight *
+   equity / price`), but the distinction must be bound explicitly in any
+   future ledgr extension RFC to avoid silent semantic drift between
+   "max weight 0.20" interpreted on `\|w\|` versus on `\|w * P / E\|`.
+   ledgr's `ledgr_risk_max_weight()` already does this translation
+   internally; future steps should follow the same pattern.
+3. **Convexity guidance for future solver-backed constraints.** Most
+   Palomar constraints are convex (long-only, capital budget, box,
+   turnover via L1, market-neutral, dollar-neutral, leverage via L1) and
+   admit standard QP / SOCP solvers. Cardinality (`\|w\|_0 <= K`) is
+   non-convex and requires MIP or heuristic approximation. This matters
+   because the v0.2.x portfolio optimization scaffolding will need to
+   choose adapter targets (PortfolioAnalytics, CVXR, Rsolnp); Palomar's
+   convex/non-convex labeling tells future RFCs which adapter is
+   appropriate for which constraint family.
+
+### Framework outline mapped to ledgr surfaces
+
+| Palomar constraint (sec. 6.2) | ledgr surface |
+| --- | --- |
+| Long-only `w >= 0` | **Shipped:** `ledgr_risk_long_only()` (v0.1.9.3) |
+| Holding box `l <= w <= u` | **Partial:** `ledgr_risk_max_weight()` caps absolute exposure symmetrically; asymmetric and per-instrument bounds deferred to future risk-step extensions |
+| Capital budget `1^T w <= 1` | **Deferred:** future affordability / cash-floor RFC; v0.1.9.3 spec §4 explicitly defers public or private cash-floor enforcement |
+| Cardinality `\|\|w\|\|_0 <= K` | **Deferred:** future risk-step extension or strategy-helper-pipeline `select_top_k()`; non-convex constraint, needs solver-class decision |
+| Turnover `\|\|w - w_0\|\|_1 <= u` | **Deferred:** future risk step that consults current position; needs the v0.1.9.3 spec §14 standing future-context obligation to land first |
+| Market-neutral `beta^T w = 0` | **Deferred:** v0.2.x benchmark context + beta substrate; covariance/beta constraints explicit non-scope per v0.1.9.3 spec §14 |
+| Dollar-neutral `1^T w = 0` | **Deferred:** requires long-short authoring support (gated on shorting/leverage contract RFC per the 2026-06-01 horizon entry) |
+| Diversification (Herfindahl) `\|\|w\|\|_2^2 <= D` | **Deferred:** portfolio optimization scaffolding (2026-06-07 horizon entry) |
+| Leverage `\|\|w\|\|_1 <= u` | **Deferred:** margin / leverage explicit non-goal for v0.1.x; portfolio optimization scaffolding Level 2 territory |
+| Margin requirements | **Permanently deferred** for v0.1.x; v0.2.x non-spot accounting + derivatives arc when that opens |
+
+### Strong alignments
+
+- The chainable risk-step architecture (v0.1.9.3) is structurally the
+  right place to host Palomar's convex weight-space constraints. The
+  existing pattern (classed step objects, identity hashes, fold-time
+  application after target validation and before fill timing) generalizes
+  cleanly to any of the additional constraint types.
+- ledgr's preserved strategy contract (`function(ctx, params) -> targets`)
+  is consistent with Palomar's separation of objective (in the strategy)
+  from constraint (in the risk chain). Many backtesting frameworks blur
+  these; Palomar's taxonomy reinforces that the separation is the right
+  one.
+
+### Partial alignments
+
+- `ledgr_risk_max_weight()` implements the upper half of a symmetric box
+  constraint. Palomar's general `l <= w <= u` form is asymmetric and
+  per-instrument; ledgr would need an asymmetric variant for that case.
+- Convexity-aware adapter selection is implicit in ledgr's "no second
+  execution engine" invariant: solver-backed constraints would live in
+  the portfolio optimization scaffolding (outside the fold core), not
+  inside the risk-chain step set. Palomar's convex/non-convex labeling
+  reinforces the structural choice.
+
+### Deliberate non-alignments
+
+- ledgr operates in quantity-space; Palomar operates in weight-space.
+  This is not a misalignment, but it is a translation that any future
+  ledgr extension RFC must name explicitly. The translation
+  `quantity = weight * equity / price` is mechanical for long-only
+  fractional-quantity workflows, but margins, lots, and round-lot
+  enforcement complicate it. The chainable-risk synthesis already defers
+  round-lot / minimum trade value, so the simple translation suffices
+  for the near term.
+- Margin and leverage are permanently out of scope for v0.1.x per the
+  whole-second / spot-only contract bindings. Palomar's leverage and
+  margin constraints become relevant only when the v0.2.x derivatives
+  arc opens.
+
+### Citation anchors future RFCs should use
+
+- **Risk-chain expansion RFC (post-v0.1.9.3, deferred):** Palomar
+  Section 6.2 as the canonical taxonomy. Specifically, name the asymmetric
+  box, cardinality, turnover, and market-neutral constraints in the seed
+  with their Palomar formulations so the named-constraint vocabulary is
+  stable from day one.
+- **Portfolio optimization scaffolding (v0.2.x, see 2026-06-07 horizon
+  entry):** Palomar Chapter 6 (constraints) plus the chapters on robust
+  portfolio optimization (handling estimation error in expected returns
+  and covariances) and the Black-Litterman framework. Adapter targets
+  (PortfolioAnalytics, CVXR, Rsolnp) should be chosen against Palomar's
+  convex / non-convex partition.
+- **Benchmark context / beta substrate (v0.2.x):** Palomar's treatment of
+  market-neutral and tracking-error constraints as the convex-optimization
+  formulation that the v0.2.x benchmark-relative-metrics work will
+  eventually consume.
+- **Long-short authoring helpers (gated on shorting/leverage RFC per
+  the 2026-06-01 horizon entry):** Palomar's dollar-neutral and 130/30
+  formulations as the canonical constraint shapes long-short ledgr
+  workflows will need to express.
+- **Future asymmetric box / minimum holding step:** Palomar's
+  `l <= w <= u` formulation. Citation anchors the asymmetric semantics
+  in the canonical reference rather than inventing notation.
+
+### Implementation references
+
+Palomar maintains an active R package family at the `convexfi` GitHub
+organization (Convex Finance) that implements much of the methodology
+the book describes. These are candidate adapter targets when v0.2.x
+portfolio optimization scaffolding or the Palomar risk-chain expansion
+family work opens. See the 2026-06-09 horizon entry "Palomar adapter
+family for portfolio optimization scaffolding" for adapter sequencing.
+
+Adapter targets aligned with v0.2.x portfolio optimization scaffolding:
+
+- **`riskParityPortfolio`** -- equal-risk-contribution portfolio
+  construction. Adapter target for scaffolding's risk-parity objective
+  (Level 2 of the four-level decomposition per the 2026-06-07 portfolio
+  optimization scaffolding horizon entry).
+- **`highOrderPortfolios`** -- mean-variance-skewness-kurtosis
+  optimization. Adapter target for scaffolding's higher-moment objective.
+- **`sparseIndexTracking`** -- index tracking with cardinality constraint
+  `||w||_0 <= K`. Direct implementation by Palomar of the cardinality
+  constraint defined in his own Chapter 6.2; literally the reference
+  solver when the Palomar risk-chain expansion family eventually opens
+  cardinality. The cardinality heuristic-vs-solver decision named in
+  that horizon entry could be answered by "adapt sparseIndexTracking"
+  for the solver branch.
+
+Methodology priors (lower priority as adapter targets, useful as RFC
+citation anchors):
+
+- **`fitHeavyTail`** -- heavy-tailed mean and covariance matrix
+  estimation. Underpins any future covariance-aware risk constraint
+  (market-neutral, tracking error, sector cap with covariance) and the
+  v0.2.x benchmark / beta substrate.
+- **`spectralGraphTopology` / `sparseGraph` / `fingraph` / `finbipartite`**
+  -- graph structure learning for financial networks. Methodology priors
+  for Hierarchical Risk Parity (Lopez de Prado 2016) and graph-based
+  portfolio construction adapters.
+
+Comparison point, not adapter target:
+
+- **`portfolioBacktest`** -- automated portfolio backtesting over multiple
+  datasets. Closest peer in the R portfolio research ecosystem.
+  Portfolio-optimization-first where ledgr is identity-and-determinism-
+  first. Worth a focused comparison read for the v0.1.9.5 positioning
+  narrative or the eventual portfolio optimization scaffolding RFC seed;
+  the canonical alternative ledgr should understand the way it
+  understands Backtrader and quantstrat. Not an adapter target -- adapting
+  it would create a second backtester surface inside ledgr, violating the
+  no-second-execution-engine invariant.
+
+Companion data:
+
+- **`dppalomar/pob`** -- stock and crypto data used in the book's sample
+  code. Lower priority but worth knowing if an adapter vignette ever
+  wants demo data adjacent to Palomar's examples.
+
+Lower-priority packages (less direct ledgr relevance):
+
+- **`intradayModel`** -- intraday financial signal modeling. Conflicts
+  with ledgr's whole-second timestamp contract (permanent non-goal).
+- **`imputeFin`** -- financial time series imputation. Useful for ETL
+  workflows but not core to ledgr's adapter pattern.
+- **`sparseEigen` / `TRexSelector` / `tlars`** -- sparse PCA and variable
+  selection. Methodology-adjacent but not direct adapter targets.
+
+### One specific lesson worth surfacing now
+
+Palomar's chapter is a reminder of how SHALLOW ledgr's current risk-step
+set is relative to the canonical constraint vocabulary. That is not a
+criticism: the v0.1.9.3 minimum-adapter-set decision (long-only + max-
+weight) was deliberate per the chainable-risk synthesis Section 2, and
+the deferral list in spec §14 is comprehensive. But methodology-reference
+honesty matters: Palomar's ten constraint types are the floor of what a
+serious portfolio constraint surface looks like in 2024, and ledgr ships
+1.5 of them.
+
+The right response is not to rush an expansion RFC. The right response is
+to name Palomar's vocabulary in the deferred horizon entries so when the
+risk-chain expansion cycle eventually opens, the seed starts from
+established notation rather than re-inventing it. This is the same
+discipline Peterson supplies for the bias-prevention taxonomy and
+Bailey/Lopez de Prado supplies for selection-integrity diagnostics:
+adopt the standard vocabulary; do not coin terminology where the field
+already has it.
+
+One concrete implication: future risk-chain step naming should follow
+Palomar's labels where they fit naturally. `ledgr_risk_long_only()`
+already does. A future `ledgr_risk_box_weight(lower, upper)` or
+`ledgr_risk_cardinality(max_k)` would extend that convention. A future
+`ledgr_risk_market_neutral(beta_source = ...)` belongs in the v0.2.x
+benchmark substrate, but the name is anchored.
