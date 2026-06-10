@@ -30,7 +30,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (active v0.1.9.3 target-risk packet):
+Current planning context (active v0.1.9.4 walk-forward packet):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -182,13 +182,15 @@ Current planning context (active v0.1.9.3 target-risk packet):
   infrastructure for later walk-forward. Ranking helpers, named selection
   views, benchmark diagnostics, signal decay, implementation/cost decay,
   gross-vs-net attribution, and walk-forward integration remain non-scope.
-- The active v0.1.9.3 packet is the target-risk packet:
+- The completed v0.1.9.3 packet is an archival release record:
   `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`,
   `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`,
   `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`,
+  `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_release_closeout.md`,
+  and
   `inst/design/ledgr_v0_1_9_3_spec_packet/README.md`.
-  It implements classed target-risk steps, risk-chain identity, a
+  It shipped classed target-risk steps, risk-chain identity, a
   behavior-preserving phased-pulse substrate, bounded risk application, and
   integration with sweep/promotion/reopen identity. Batch 0 packet alignment,
   Batch 1 public risk constructors and identity, Batch 2 config/run identity,
@@ -200,6 +202,26 @@ Current planning context (active v0.1.9.3 target-risk packet):
   liquidity/capacity policy, OMS behavior, walk-forward implementation,
   failure-schema columns, target-helper expansion, and compiled-core
   architecture work remain non-scope.
+- The active v0.1.9.4 packet is the walk-forward packet:
+  `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`,
+  `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`,
+  `inst/design/ledgr_v0_1_9_4_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_9_4_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_9_4_spec_packet/README.md`.
+  It implements the first walk-forward evaluation surface as a wrapper over
+  `ledgr_sweep()` and `ledgr_run()`: calendar-time fold definitions, the
+  internal window contract, train-window scalar selection, selected-candidate
+  test runs, walk-forward session identity, compact persistence, inspection
+  helpers, and promotion-ready candidate extraction. Batch 0 packet alignment
+  is review pending after the roadmap, horizon, design index, and AGENTS
+  active-packet update. Selection-integrity diagnostics, PBO/CSCV/CPCV, DSR,
+  purging/embargo, randomized or blocked slice protocols, cross-snapshot
+  walk-forward, evaluation registry, ML-first tooling, candidate clustering,
+  benchmark-relative metrics, top-N/all-candidate test retention,
+  gross-vs-net attribution, signal decay, implementation/cost decay,
+  liquidity/capacity policy, OMS behavior, paper/live walk-forward,
+  target-construction helper expansion, risk-chain constraint expansion, and
+  compiled-core architecture work remain non-scope.
 
 ## Active Design Entry Points
 
@@ -209,7 +231,8 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| active v0.1.9.3 target-risk packet | `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
+| active v0.1.9.4 walk-forward packet | `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
+| v0.1.9.3 release record | `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_release_closeout.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` |
 | v0.1.9.2 release record | `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` |
 | v0.1.9.1 release record | `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_tickets.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_1_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_release_closeout.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `inst/design/manual/identity_contract.qmd` |
 | v0.1.8.11 release record | `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_11_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_release_closeout.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md`, `inst/design/contracts.md` |

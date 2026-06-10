@@ -1,6 +1,6 @@
 # ledgr v0.1.9.4 Batch Plan
 
-**Status:** Draft for Claude / maintainer review.
+**Status:** Batch 1 ready to start.
 
 This batch plan sequences the v0.1.9.4 walk-forward packet without expanding
 scope beyond `v0_1_9_4_spec.md` and the accepted
@@ -36,7 +36,7 @@ changes.
 ## Batch 0 - Packet Review And Batch Plan Alignment
 
 Ticket: `LDG-2612`
-Status: Review Pending
+Status: Completed
 
 Goal: finalize the packet cut and review `v0_1_9_4_spec.md`,
 `v0_1_9_4_tickets.md`, `tickets.yml`, `README.md`, and this batch plan as one
@@ -69,6 +69,15 @@ Review focus:
 - Section 17 gates are concrete enough for release-gate review.
 - The packet does not smuggle in validation diagnostics, evaluation registry,
   candidate clustering, ML-first work, or OMS/paper-live behavior.
+
+Closeout notes:
+
+- Claude packet-alignment review found no blockers and approved committing
+  Batch 0.
+- `LDG-2612` is completed in both ticket records.
+- Roadmap, design index, horizon, and `AGENTS.md` now identify v0.1.9.4 as
+  the active packet and v0.1.9.3 as the latest completed packet.
+- No runtime implementation started before Claude review closed.
 
 ## Batch 1 - Fold Objects And Window Parity Substrate
 

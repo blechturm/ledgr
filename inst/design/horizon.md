@@ -26,6 +26,11 @@ an architecture note, or a spec packet.
 
 ## Open
 
+**Current packet note (2026-06-10):** v0.1.9.4 walk-forward is the active
+packet at `inst/design/ledgr_v0_1_9_4_spec_packet/`. Horizon entries below
+remain non-binding unless the active packet, roadmap, contracts, or an accepted
+RFC promotes them.
+
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet
 (e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized

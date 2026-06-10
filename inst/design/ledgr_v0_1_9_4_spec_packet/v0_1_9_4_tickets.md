@@ -75,7 +75,7 @@ release-surface ticket.
 Priority: P0
 Effort: S
 Dependencies: none
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -112,6 +112,11 @@ starts.
 Manual packet review, YAML review, batch-plan review, ASCII check,
 Section 17 trace check, stale reference `rg` checks, and Claude packet-cut
 review.
+
+Batch 0 closeout note: Claude packet-alignment review found no blockers. The
+packet cut is aligned with the roadmap, design index, horizon, and `AGENTS.md`
+as the active v0.1.9.4 packet. No runtime implementation started before this
+review closed.
 
 ### Source Reference
 
