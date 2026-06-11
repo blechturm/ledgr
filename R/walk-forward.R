@@ -109,6 +109,7 @@ ledgr_walk_forward <- function(exp,
     master_seed = seed,
     opening_state_policy = opening_state_policy,
     cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
+    selection_metric = selection_rule$metric,
     status = terminal_status
   )
   ledgr_walk_forward_write_session(exp, session_row, fold_table, score_table)
@@ -138,6 +139,7 @@ print.ledgr_walk_forward_results <- function(x, ...) {
   cat("ledgr walk-forward\n")
   cat("==================\n")
   cat("Session: ", x$session_id %||% "<unknown>", "\n", sep = "")
+  cat("Status: ", x$status %||% "<unknown>", "\n", sep = "")
   cat("Opening state: ", x$opening_state_policy %||% "<unknown>", "\n", sep = "")
   if (isTRUE(x$cold_start_distorted)) {
     cat("Cold-start distorted: TRUE\n")
@@ -483,7 +485,8 @@ ledgr_walk_forward_eval_fold <- function(exp,
     score_rows = rbind(train_score_rows, test_score_rows),
     selected = tibble::as_tibble(cbind(
       fold_seq = fold$fold_seq,
-      selected[, c("candidate_key", "candidate_id", selection_rule$metric), drop = FALSE]
+      selected[, c("candidate_key", "candidate_id", selection_rule$metric), drop = FALSE],
+      test_run_id = test_run_id
     )),
     test_run = test_run,
     carried_opening = next_opening
@@ -677,6 +680,7 @@ ledgr_walk_forward_session_row <- function(identity,
                                            master_seed,
                                            opening_state_policy,
                                            cold_start_distorted,
+                                           selection_metric = NULL,
                                            status = "DONE") {
   data.frame(
     session_id = identity$session_id,
@@ -695,6 +699,7 @@ ledgr_walk_forward_session_row <- function(identity,
     meta_json = as.character(canonical_json(list(
       status = status,
       cold_start_distorted = isTRUE(cold_start_distorted),
+      selection_metric = selection_metric %||% NULL,
       walk_forward_schema_version = ledgr_walk_forward_schema_version
     ))),
     stringsAsFactors = FALSE

@@ -287,18 +287,21 @@ ledgr_walk_forward(
   opening_state_policy = c("carry_test_state", "flat_test_state"),
   ...
 )
-ledgr_walk_forward_results(session_id)
-ledgr_walk_forward_scores(session_id)
-ledgr_walk_forward_folds(session_id)
+ledgr_walk_forward_results(snapshot, session_id)
+ledgr_walk_forward_scores(snapshot, session_id)
+ledgr_walk_forward_folds(snapshot, session_id)
 ledgr_walk_forward_extract_candidate(
+  snapshot,
   session_id,
   fold_seq,
   selection_rationale = NULL
 )
 ```
 
-Ticket cutting may refine argument names for fold constructors, but the public
-names above and the logical fields in Sections 5 and 6 are bound.
+`snapshot` locates the experiment store and binds reopen identity through
+snapshot-hash verification. Ticket cutting may refine argument names for fold
+constructors, but the public names above and the logical fields in Sections 5
+and 6 are bound.
 
 Inspection helpers are read-only. They do not mutate, recompute, or re-execute.
 
@@ -319,8 +322,9 @@ wf <- ledgr_walk_forward(
   seed = 42L
 )
 
-scores <- ledgr_walk_forward_scores(wf$session_id)
+scores <- ledgr_walk_forward_scores(snapshot, wf$session_id)
 candidate <- ledgr_walk_forward_extract_candidate(
+  snapshot,
   wf$session_id,
   fold_seq = "latest",
   selection_rationale = "Use the latest OOS-selected parameterization for a manual holdout check."

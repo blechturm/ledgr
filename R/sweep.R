@@ -526,8 +526,9 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
 #' Hash fields carried from the candidate into promotion evidence are
 #' summarized in [ledgr_identity_fields].
-#' Promotion replays the selected candidate's risk chain even when `exp` was
-#' configured with a different `risk_chain`.
+#' Promotion replays the selected candidate's cost model and risk chain even
+#' when `exp` was configured with different `cost_model` or `risk_chain`
+#' values.
 #'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a
@@ -571,6 +572,7 @@ ledgr_promote <- function(exp,
   if (isTRUE(require_same_snapshot)) {
     ledgr_candidate_validate_same_snapshot(exp, candidate)
   }
+  exp <- ledgr_promote_experiment_with_candidate_cost(exp, candidate)
   exp <- ledgr_promote_experiment_with_candidate_risk(exp, candidate)
 
   seed <- candidate$execution_seed
@@ -707,6 +709,76 @@ ledgr_promote_experiment_with_candidate_risk <- function(exp, candidate) {
   exp$risk_chain_hash <- risk_identity$risk_chain_hash
   exp$risk_plan_json <- risk_identity$risk_plan_json
   exp
+}
+
+ledgr_promote_experiment_with_candidate_cost <- function(exp, candidate) {
+  cost_identity <- ledgr_candidate_cost_identity(candidate)
+  exp$cost_model <- cost_identity$cost_model
+  exp$cost_model_hash <- cost_identity$cost_model_hash
+  exp$cost_plan_json <- cost_identity$cost_plan_json
+  exp
+}
+
+ledgr_candidate_cost_identity <- function(candidate) {
+  provenance <- candidate$provenance
+  if (!is.list(provenance)) {
+    provenance <- list()
+  }
+  meta <- candidate$sweep_meta
+  if (!is.list(meta)) {
+    meta <- list()
+  }
+  row <- candidate$row
+  cost_model_hash <- provenance$cost_model_hash %||% meta$cost_model_hash %||% NULL
+  cost_plan_json <- provenance$cost_plan_json %||% meta$cost_plan_json %||% NULL
+  if (is.null(cost_model_hash) && is.data.frame(row) && "cost_model_hash" %in% names(row)) {
+    cost_model_hash <- as.character(row$cost_model_hash[[1]])
+  }
+  if (is.null(cost_model_hash) || is.null(cost_plan_json)) {
+    rlang::abort(
+      "Candidate cost_model_hash and cost_plan_json are required for promotion.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  if (!is.character(cost_model_hash) || length(cost_model_hash) != 1L ||
+      is.na(cost_model_hash) || !grepl("^[0-9a-f]{64}$", cost_model_hash)) {
+    rlang::abort(
+      "Candidate cost_model_hash is missing or invalid.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  if (!is.character(cost_plan_json) || length(cost_plan_json) != 1L ||
+      is.na(cost_plan_json) || !nzchar(cost_plan_json)) {
+    rlang::abort(
+      "Candidate cost_plan_json is missing or invalid.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  cost_model <- tryCatch(
+    ledgr_cost_plan_reconstruct(cost_plan_json),
+    error = function(e) {
+      rlang::abort(
+        "Candidate cost_plan_json cannot be reconstructed.",
+        class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args"),
+        parent = e
+      )
+    }
+  )
+  # The stored cost_plan_json is the durable byte identity. Reconstructing a
+  # singleton cost model can normalize it to a chain-shaped runtime model, so
+  # validate by hashing the canonicalized stored bytes rather than the model.
+  canonical_plan <- as.character(canonical_json(cost_plan_json))
+  if (!identical(digest::digest(canonical_plan, algo = "sha256"), cost_model_hash)) {
+    rlang::abort(
+      "Candidate cost_model_hash does not match cost_plan_json.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  list(
+    cost_model = cost_model,
+    cost_model_hash = cost_model_hash,
+    cost_plan_json = canonical_plan
+  )
 }
 
 ledgr_candidate_risk_identity <- function(candidate) {

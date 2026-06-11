@@ -27,6 +27,11 @@
 \alias{ledgr_walk_forward_no_selection}
 \alias{ledgr_walk_forward_candidate_key_missing}
 \alias{ledgr_walk_forward_test_run_failed}
+\alias{ledgr_walk_forward_session_not_found}
+\alias{ledgr_walk_forward_snapshot_hash_mismatch}
+\alias{ledgr_walk_forward_invalid_session}
+\alias{ledgr_walk_forward_latest_without_rationale}
+\alias{ledgr_walk_forward_candidate_not_found}
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
@@ -120,6 +125,22 @@ column.
 
 \code{ledgr_walk_forward_test_run_failed} is raised when a selected test run
 cannot produce a usable test score row.
+
+\code{ledgr_walk_forward_session_not_found} is raised when walk-forward
+inspection helpers cannot find the requested session.
+
+\code{ledgr_walk_forward_snapshot_hash_mismatch} is raised when the supplied
+snapshot does not match the persisted walk-forward session identity.
+
+\code{ledgr_walk_forward_invalid_session} is raised when persisted walk-forward
+session rows, linked test runs, or identity fields cannot be reopened
+safely.
+
+\code{ledgr_walk_forward_latest_without_rationale} is raised when extracting
+\code{fold_seq = "latest"} without an explicit \code{selection_rationale}.
+
+\code{ledgr_walk_forward_candidate_not_found} is raised when a requested
+walk-forward fold does not contain a completed selected candidate.
 }
 
 \section{Related existing classes}{

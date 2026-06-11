@@ -676,7 +676,7 @@ scope: failures_and_partial_sessions
 Priority: P0
 Effort: M
 Dependencies: LDG-2620
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -685,12 +685,12 @@ sessions.
 
 ### Tasks
 
-- Implement `ledgr_walk_forward_results(session_id)`.
-- Implement `ledgr_walk_forward_scores(session_id)`.
-- Implement `ledgr_walk_forward_folds(session_id)`.
-- Support reopened sessions from the experiment store.
-- Verify matching snapshot and schema identity.
-- Return plain inspectable data frames / lists, not print-only objects.
+- [x] Implement `ledgr_walk_forward_results(session_id)`.
+- [x] Implement `ledgr_walk_forward_scores(session_id)`.
+- [x] Implement `ledgr_walk_forward_folds(session_id)`.
+- [x] Support reopened sessions from the experiment store.
+- [x] Verify matching snapshot and schema identity.
+- [x] Return plain inspectable data frames / lists, not print-only objects.
 
 ### Acceptance Criteria
 
@@ -726,7 +726,7 @@ scope: results_scores_folds
 Priority: P0
 Effort: L
 Dependencies: LDG-2621
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -735,17 +735,17 @@ candidates promotion-ready without adding walk-forward-specific promotion.
 
 ### Tasks
 
-- Implement `ledgr_walk_forward_extract_candidate(session_id, fold_seq,
+- [x] Implement `ledgr_walk_forward_extract_candidate(session_id, fold_seq,
   selection_rationale = NULL)`.
-- Require `fold_seq`; no implicit default.
-- Support integer `fold_seq`.
-- Support explicit `fold_seq = "latest"` sentinel.
-- Require non-empty `selection_rationale` for `"latest"`.
-- Fail with `ledgr_walk_forward_latest_without_rationale` when required
+- [x] Require `fold_seq`; no implicit default.
+- [x] Support integer `fold_seq`.
+- [x] Support explicit `fold_seq = "latest"` sentinel.
+- [x] Require non-empty `selection_rationale` for `"latest"`.
+- [x] Fail with `ledgr_walk_forward_latest_without_rationale` when required
   rationale is missing.
-- Capture session, fold, selected metric, test metric, cost identity, risk
+- [x] Capture session, fold, selected metric, test metric, cost identity, risk
   identity, execution seed, and rationale in candidate provenance.
-- Ensure `ledgr_promote()` respects the extracted candidate's cost and risk
+- [x] Ensure `ledgr_promote()` respects the extracted candidate's cost and risk
   identity.
 
 ### Acceptance Criteria

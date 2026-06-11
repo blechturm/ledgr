@@ -194,7 +194,7 @@ tickets:
 
   - id: "LDG-2621"
     title: "Results, Scores, Folds, And Reopen Helpers"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -213,7 +213,7 @@ tickets:
 
   - id: "LDG-2622"
     title: "Candidate Extraction And Promotion Provenance"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

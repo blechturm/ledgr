@@ -309,7 +309,7 @@ Implementation note:
 ## Batch 6 - Inspection, Reopen, Extraction, And Promotion
 
 Tickets: `LDG-2621`, `LDG-2622`
-Status: Planned
+Status: Review Pending
 
 Goal: expose read-only walk-forward inspection helpers and explicit
 promotion-ready candidate extraction.
@@ -334,6 +334,16 @@ Review focus:
 - Extraction is explicit enough for audit, especially `"latest"`.
 - No `ledgr_promote_walk_forward()`, parameter-path promotion, or
   selection-rule promotion is added.
+
+Implementation note:
+
+- Added read-only persisted-session helpers that require an explicit snapshot
+  locator, verify walk-forward schema plus linked test-run cost/risk/metric
+  identity, and rebuild completed/partial `ledgr_walk_forward_results` from
+  stored rows only. Candidate extraction now returns an ordinary
+  `ledgr_sweep_candidate` from a chosen fold, requires rationale for
+  `"latest"`, carries walk-forward provenance, and `ledgr_promote()` now lets
+  candidate cost identity win alongside risk identity.
 
 ## Batch 7 - Degradation UX And User Documentation
 

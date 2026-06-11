@@ -21,13 +21,16 @@ ledgr_wfo_strategy <- function(ctx, params) {
 }
 
 ledgr_wfo_exp <- function(opening = ledgr_opening(cash = 10000),
-                          strategy = ledgr_wfo_strategy) {
+                          strategy = ledgr_wfo_strategy,
+                          cost_model = ledgr_cost_zero(),
+                          risk_chain = ledgr_risk_none()) {
   snapshot <- ledgr_snapshot_from_df(ledgr_wfo_bars())
   exp <- ledgr_experiment(
     snapshot,
     strategy,
     opening = opening,
-    cost_model = ledgr_cost_zero()
+    cost_model = cost_model,
+    risk_chain = risk_chain
   )
   list(snapshot = snapshot, exp = exp)
 }
@@ -458,4 +461,142 @@ testthat::test_that("walk-forward interrupt after a completed fold persists a pa
   testthat::expect_identical(folds$status[[1]], "DONE")
   testthat::expect_identical(unique(score_windows$fold_seq), 1L)
   testthat::expect_true(all(c("train", "test") %in% score_windows$window))
+})
+
+testthat::test_that("walk-forward inspection helpers reopen completed and partial sessions read-only", {
+  fx <- ledgr_wfo_exp()
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+
+  wf <- ledgr_walk_forward(
+    fx$exp,
+    grid = ledgr_wfo_grid(),
+    folds = ledgr_wfo_folds(),
+    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    seed = 41L
+  )
+  opened <- ledgr:::ledgr_run_store_open(fx$snapshot$db_path)
+  counts_before <- DBI::dbGetQuery(opened$con, "
+    SELECT
+      (SELECT COUNT(*) FROM walk_forward_sessions WHERE session_id = ?) AS sessions,
+      (SELECT COUNT(*) FROM walk_forward_folds WHERE session_id = ?) AS folds,
+      (SELECT COUNT(*) FROM walk_forward_scores WHERE session_id = ?) AS scores",
+    params = list(wf$session_id, wf$session_id, wf$session_id)
+  )
+  ledgr:::ledgr_run_store_close(opened)
+
+  reopened <- ledgr_walk_forward_results(fx$snapshot, wf$session_id)
+  scores <- ledgr_walk_forward_scores(fx$snapshot, wf$session_id)
+  folds <- ledgr_walk_forward_folds(fx$snapshot, wf$session_id)
+
+  testthat::expect_s3_class(reopened, "ledgr_walk_forward_results")
+  testthat::expect_identical(reopened$status, "DONE")
+  testthat::expect_equal(nrow(scores), nrow(wf$scores))
+  testthat::expect_equal(nrow(folds), nrow(wf$folds))
+  testthat::expect_equal(nrow(reopened$selected), nrow(wf$selected))
+  testthat::expect_identical(names(reopened$selected), names(wf$selected))
+  testthat::expect_identical(reopened$selected$test_run_id, wf$selected$test_run_id)
+  testthat::expect_equal(reopened$selected$sharpe_ratio, wf$selected$sharpe_ratio)
+  testthat::expect_identical(unlist(reopened$test_runs, use.names = FALSE), wf$selected$test_run_id)
+
+  opened <- ledgr:::ledgr_run_store_open(fx$snapshot$db_path)
+  counts_after <- DBI::dbGetQuery(opened$con, "
+    SELECT
+      (SELECT COUNT(*) FROM walk_forward_sessions WHERE session_id = ?) AS sessions,
+      (SELECT COUNT(*) FROM walk_forward_folds WHERE session_id = ?) AS folds,
+      (SELECT COUNT(*) FROM walk_forward_scores WHERE session_id = ?) AS scores",
+    params = list(wf$session_id, wf$session_id, wf$session_id)
+  )
+  ledgr:::ledgr_run_store_close(opened)
+  testthat::expect_identical(counts_after, counts_before)
+
+  partial_fx <- ledgr_wfo_exp(strategy = ledgr_wfo_interrupt_strategy)
+  on.exit(ledgr_snapshot_close(partial_fx$snapshot), add = TRUE)
+  err <- tryCatch(
+    ledgr_walk_forward(
+      partial_fx$exp,
+      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      folds = ledgr_wfo_folds(),
+      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      seed = 42L
+    ),
+    interrupt = function(e) e
+  )
+  testthat::expect_s3_class(err, "interrupt")
+  opened <- ledgr:::ledgr_run_store_open(partial_fx$snapshot$db_path)
+  partial_id <- DBI::dbGetQuery(opened$con, "SELECT session_id FROM walk_forward_sessions")$session_id[[1]]
+  ledgr:::ledgr_run_store_close(opened)
+  partial_reopened <- ledgr_walk_forward_results(partial_fx$snapshot, partial_id)
+  testthat::expect_identical(partial_reopened$status, "PARTIAL")
+  testthat::expect_equal(nrow(partial_reopened$folds), 1L)
+
+  testthat::expect_error(
+    ledgr_walk_forward_results(fx$snapshot, "does-not-exist"),
+    class = "ledgr_walk_forward_session_not_found"
+  )
+
+  mismatch_bars <- ledgr_wfo_bars()
+  mismatch_bars$close <- mismatch_bars$close + 1
+  mismatch_snapshot <- ledgr_snapshot_from_df(
+    mismatch_bars,
+    db_path = fx$snapshot$db_path,
+    snapshot_id = "walk-forward-mismatch"
+  )
+  on.exit(ledgr_snapshot_close(mismatch_snapshot), add = TRUE)
+  testthat::expect_error(
+    ledgr_walk_forward_results(mismatch_snapshot, wf$session_id),
+    class = "ledgr_walk_forward_snapshot_hash_mismatch"
+  )
+})
+
+testthat::test_that("walk-forward candidate extraction is explicit and promotion-ready", {
+  candidate_cost <- ledgr_cost_notional_bps_fee(7)
+  candidate_risk <- ledgr_risk_max_weight(0.4)
+  fx <- ledgr_wfo_exp(cost_model = candidate_cost, risk_chain = candidate_risk)
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+
+  wf <- ledgr_walk_forward(
+    fx$exp,
+    grid = ledgr_wfo_grid(),
+    folds = ledgr_wfo_folds(),
+    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    seed = 45L
+  )
+
+  testthat::expect_error(
+    ledgr_walk_forward_extract_candidate(fx$snapshot, wf$session_id),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_error(
+    ledgr_walk_forward_extract_candidate(fx$snapshot, wf$session_id, fold_seq = "latest"),
+    class = "ledgr_walk_forward_latest_without_rationale"
+  )
+
+  candidate <- ledgr_walk_forward_extract_candidate(
+    fx$snapshot,
+    wf$session_id,
+    fold_seq = "latest",
+    selection_rationale = "use latest completed fold"
+  )
+  testthat::expect_s3_class(candidate, "ledgr_sweep_candidate")
+  testthat::expect_identical(candidate$status, "DONE")
+  testthat::expect_identical(candidate$params, list(qty = 1, threshold = 101))
+  testthat::expect_identical(candidate$provenance$cost_model_hash, ledgr:::ledgr_cost_model_hash(candidate_cost))
+  testthat::expect_identical(candidate$provenance$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(candidate_risk))
+  testthat::expect_identical(candidate$provenance$walk_forward$selection_rationale, "use latest completed fold")
+
+  target_exp <- ledgr_experiment(
+    fx$snapshot,
+    ledgr_wfo_strategy,
+    opening = ledgr_opening(cash = 10000),
+    cost_model = ledgr_cost_zero(),
+    risk_chain = ledgr_risk_none()
+  )
+  promoted <- ledgr_promote(
+    target_exp,
+    candidate,
+    run_id = "promoted-wf-candidate"
+  )
+  on.exit(close(promoted), add = TRUE)
+  testthat::expect_identical(promoted$config$cost_model$cost_model_hash, ledgr:::ledgr_cost_model_hash(candidate_cost))
+  testthat::expect_identical(promoted$config$risk_chain$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(candidate_risk))
 })
