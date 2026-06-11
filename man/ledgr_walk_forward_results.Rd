@@ -21,8 +21,9 @@ ledgr_walk_forward_folds(snapshot, session_id)
 \code{ledgr_walk_forward_results()} returns a
 \code{ledgr_walk_forward_results} list. Reopened sessions do not rehydrate live
 backtest objects in \code{test_runs}; that field contains linked test \code{run_id}
-strings. \code{ledgr_walk_forward_scores()} and \code{ledgr_walk_forward_folds()}
-return tibbles.
+strings. The reopened object includes the same programmatic \code{degradation}
+table fields used by print. \code{ledgr_walk_forward_scores()} and
+\code{ledgr_walk_forward_folds()} return tibbles.
 }
 \description{
 These helpers reopen compact walk-forward evidence from the experiment store

@@ -786,7 +786,7 @@ scope: explicit_extraction_and_promotion_provenance
 Priority: P0
 Effort: M
 Dependencies: LDG-2622
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -795,16 +795,16 @@ summary surface.
 
 ### Tasks
 
-- Build the per-fold degradation table.
-- Include `fold_seq`, `train_window`, `test_window`, `selected_candidate`,
+- [x] Build the per-fold degradation table.
+- [x] Include `fold_seq`, `train_window`, `test_window`, `selected_candidate`,
   `selection_metric`, `train_metric_value`, `test_metric_value`,
   `metric_diff_abs`, `metric_diff_pct`, and `warning_flags`.
-- Enforce same-scale train/test metric values.
-- Add `short_test_window` warning flag for test windows shorter than 90
+- [x] Enforce same-scale train/test metric values.
+- [x] Add `short_test_window` warning flag for test windows shorter than 90
   calendar days.
-- Add `cold_start_distorted` warning flag for flat-test opt-in.
-- Render the degradation table before any secondary print surfaces.
-- Provide programmatic access to the degradation table even when print output
+- [x] Add `cold_start_distorted` warning flag for flat-test opt-in.
+- [x] Render the degradation table before any secondary print surfaces.
+- [x] Provide programmatic access to the degradation table even when print output
   is compressed.
 
 ### Acceptance Criteria
@@ -842,7 +842,7 @@ scope: degradation_table_print
 Priority: P1
 Effort: L
 Dependencies: LDG-2619, LDG-2622, LDG-2623
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -851,18 +851,18 @@ compute-scaling, path-dependency, and selection-integrity caveats.
 
 ### Tasks
 
-- Add help pages for fold constructors, selection rules, `ledgr_walk_forward()`,
+- [x] Add help pages for fold constructors, selection rules, `ledgr_walk_forward()`,
   inspection helpers, and extraction helper.
-- Add a walk-forward vignette or article.
-- Include the binding survivorship sentence or maintainer-approved equivalent:
+- [x] Add a walk-forward vignette or article.
+- [x] Include the binding survivorship sentence or maintainer-approved equivalent:
   "Walk-forward evidence is only as survivorship-safe as the sealed snapshot
   and universe semantics it evaluates."
-- Document anchored-fold compute scaling.
-- Document `carry_test_state` path dependency and non-independence of per-fold
+- [x] Document anchored-fold compute scaling.
+- [x] Document `carry_test_state` path dependency and non-independence of per-fold
   test metrics.
-- Document that scalar v1 scores are not PBO/CSCV/CPCV/DSR.
-- Document explicit extraction and promotion workflow.
-- Add NEWS entry naming scope and non-scope.
+- [x] Document that scalar v1 scores are not PBO/CSCV/CPCV/DSR.
+- [x] Document explicit extraction and promotion workflow.
+- [x] Add NEWS entry naming scope and non-scope.
 
 ### Acceptance Criteria
 

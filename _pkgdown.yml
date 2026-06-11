@@ -24,6 +24,7 @@ articles:
       - metrics-and-accounting
       - experiment-store
       - sweeps
+      - walk-forward
   - title: Design / Background
     navbar: Design / Background
     contents:
@@ -55,6 +56,9 @@ reference:
       - ledgr_candidate_reproduction_key
       - print.ledgr_sweep_candidate
       - ledgr_promote
+      - ledgr_walk_forward
+      - ledgr_walk_forward_results
+      - ledgr_walk_forward_extract_candidate
       - ledgr_promotion_context
       - ledgr_run_promotion_context
   - title: Cost And Timing

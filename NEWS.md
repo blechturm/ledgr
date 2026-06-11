@@ -1,3 +1,23 @@
+# ledgr 0.1.9.4
+
+- Added the first walk-forward evaluation surface. `ledgr_walk_forward()` runs
+  fold-local train sweeps, applies scalar selection rules, executes the
+  selected candidate on each test window through `ledgr_run()`, and persists
+  compact session, fold, and score evidence.
+- Walk-forward results now lead with a train-vs-test degradation table. The
+  table records selected train and test metric values, absolute and percentage
+  differences, and warning flags such as `short_test_window` and
+  `cold_start_distorted`.
+- Added read-only walk-forward inspection helpers and explicit candidate
+  extraction. `ledgr_walk_forward_results()`, `ledgr_walk_forward_scores()`,
+  and `ledgr_walk_forward_folds()` reopen stored evidence without recomputing
+  or rerunning. `ledgr_walk_forward_extract_candidate()` returns a normal
+  `ledgr_sweep_candidate` for deliberate `ledgr_promote()` use.
+- This release does not add PBO, CSCV, CPCV, DSR, benchmark diagnostics,
+  selection-integrity correction, cross-snapshot walk-forward, OMS behavior,
+  paper/live behavior, gross-vs-net attribution, signal decay, or
+  implementation/cost decay.
+
 # ledgr 0.1.9.3
 
 - Added the first public target-risk API: classed

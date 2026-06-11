@@ -1,0 +1,85 @@
+# Walk-Forward Evaluation
+
+Walk-forward evaluation asks a narrower question than a sweep:
+
+```text
+for each fold:
+  train snapshot window -> sweep candidates -> scalar selection
+  selected candidate -> test window run -> recorded evidence
+```
+
+The v1 surface is deliberately procedural. It uses the same `ledgr_sweep()`
+and `ledgr_run()` machinery as the rest of ledgr; it does not add a separate
+execution engine.
+
+## Design-only Workflow Sketch
+
+The shape below is design-only. It uses short synthetic windows so the object
+names are visible, not because those windows are statistically meaningful.
+Building a runnable walk-forward example needs a sealed snapshot and multi-fold
+experiment fixture that is too large for this MVP vignette; a later teaching
+release should add an executable compact example.
+
+```r
+folds <- ledgr_folds_rolling(
+  start = "2020-01-01",
+  end = "2022-12-31",
+  train_window = "1 year",
+  test_window = "3 months",
+  step = "3 months"
+)
+
+wf <- ledgr_walk_forward(
+  exp,
+  grid = ledgr_param_grid(fast = c(10, 20), slow = c(50, 100)),
+  folds = folds,
+  selection_rule = ledgr_select_argmax("sharpe_ratio"),
+  seed = 42L
+)
+
+wf$degradation
+scores <- ledgr_walk_forward_scores(snapshot, wf$session_id)
+candidate <- ledgr_walk_forward_extract_candidate(
+  snapshot,
+  wf$session_id,
+  fold_seq = "latest",
+  selection_rationale = "Manual review accepted the latest completed fold."
+)
+promoted <- ledgr_promote(exp, candidate, run_id = "wf-latest-review")
+```
+
+The default print starts with the train-vs-test degradation table. That table is
+the first surface to inspect. It shows the selected train metric beside the
+matching test metric, the absolute and percentage difference, and warning flags
+such as `short_test_window` and `cold_start_distorted`.
+`metric_diff_abs` is `test_metric_value - train_metric_value`, so whether a
+positive value means improvement or degradation depends on the selection rule
+direction.
+
+## Caveats
+
+Walk-forward evidence is only as survivorship-safe as the sealed snapshot and universe semantics it evaluates.
+
+Reproducibility and selection integrity are orthogonal. Walk-forward records
+what was selected and tested; it does not prove that the search space, metric,
+or selection procedure was statistically sound. v1 scalar scores are not PBO,
+CSCV, CPCV, DSR, benchmark diagnostics, or a multiple-testing correction.
+
+The default `opening_state_policy = "carry_test_state"` is path-dependent.
+Each completed selected test run may seed the next test opening state, so
+per-fold test metrics are not independent observations. The explicit
+`opening_state_policy = "flat_test_state"` opt-in starts every test window from
+the original experiment opening state and marks the result as
+`cold_start_distorted`.
+
+Anchored folds grow their train window over time. That is useful for some
+research workflows, but later folds can cost more to compute than early folds,
+especially with large candidate grids and wide feature sets.
+
+## Non-Scope
+
+This MVP does not implement paper/live walk-forward, OMS behavior,
+cross-snapshot walk-forward, benchmark-relative metrics, gross-vs-net
+attribution, signal decay, implementation/cost decay, or selection-integrity
+diagnostics. Those require later surfaces over the stable session and candidate
+identity introduced here.

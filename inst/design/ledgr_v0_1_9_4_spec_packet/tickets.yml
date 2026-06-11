@@ -233,7 +233,7 @@ tickets:
 
   - id: "LDG-2623"
     title: "Degradation Table And Print UX"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -253,7 +253,7 @@ tickets:
 
   - id: "LDG-2624"
     title: "Documentation, Examples, And NEWS"
-    status: "planned"
+    status: "review_pending"
     priority: "P1"
     effort: "L"
     dependencies:

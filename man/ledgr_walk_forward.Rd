@@ -33,10 +33,29 @@ into the next test run. Flat-test state is an explicit cold-start opt-in.}
 \item{...}{Reserved for later walk-forward options.}
 }
 \value{
-A \code{ledgr_walk_forward_results} list.
+A \code{ledgr_walk_forward_results} list with \code{folds}, \code{scores},
+\code{selected}, \code{degradation}, and selected test-run handles.
 }
 \description{
 \code{ledgr_walk_forward()} orchestrates fold-local train sweeps, deterministic
 scalar candidate selection, and selected-candidate test runs over the
 existing \code{ledgr_sweep()} and \code{ledgr_run()} execution machinery.
+The returned object carries a \code{degradation} table that compares the selected
+train score to the selected test score before secondary result surfaces.
+}
+\details{
+v1 walk-forward scores scalar train-window candidates, selects one candidate
+per fold, and runs only that selected candidate on the matching test window.
+It is not PBO, CSCV, CPCV, DSR, benchmark-relative diagnostics, OMS,
+paper/live trading, or a selection-integrity correction. Walk-forward
+evidence is only as survivorship-safe as the sealed snapshot and universe
+semantics it evaluates.
+
+With the default \code{opening_state_policy = "carry_test_state"}, test windows
+are path-dependent: each completed selected test run can seed the next test
+opening state. Per-fold test metrics are therefore not independent. Anchored
+fold definitions intentionally grow the train window over time, so compute
+cost grows with later folds and larger candidate grids. \code{metric_diff_abs} is
+\code{test_metric_value - train_metric_value}; whether a positive value indicates
+improvement or degradation depends on the selection rule direction.
 }

@@ -127,6 +127,21 @@ testthat::test_that("walk-forward orchestrates train sweeps, selected test runs,
   selected <- wf$selected
   testthat::expect_equal(nrow(selected), 2L)
   testthat::expect_true(all(selected$candidate_id == "trade"))
+  testthat::expect_named(
+    wf$degradation,
+    c(
+      "fold_seq", "train_window", "test_window", "selected_candidate",
+      "selection_metric", "train_metric_value", "test_metric_value",
+      "metric_diff_abs", "metric_diff_pct", "warning_flags"
+    )
+  )
+  testthat::expect_equal(nrow(wf$degradation), 2L)
+  testthat::expect_true(all(wf$degradation$selection_metric == "sharpe_ratio"))
+  testthat::expect_true(all(ledgr:::ledgr_walk_forward_has_flag(wf$degradation$warning_flags, "short_test_window")))
+  printed <- utils::capture.output(print(wf))
+  degradation_line <- which(grepl("Train/test degradation", printed, fixed = TRUE))[[1]]
+  session_line <- which(grepl("^Session:", printed))[[1]]
+  testthat::expect_lt(degradation_line, session_line)
 
   opened <- ledgr:::ledgr_run_store_open(fx$exp$snapshot$db_path)
   on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
@@ -318,6 +333,7 @@ testthat::test_that("flat-test state is explicit and marked cold-start distorted
   testthat::expect_identical(wf$opening_state_policy, "flat_test_state")
   on.exit(lapply(wf$test_runs, close), add = TRUE)
   testthat::expect_true(wf$cold_start_distorted)
+  testthat::expect_true(all(ledgr:::ledgr_walk_forward_has_flag(wf$degradation$warning_flags, "cold_start_distorted")))
   opened <- ledgr:::ledgr_run_store_open(fx$exp$snapshot$db_path)
   on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
   session <- DBI::dbGetQuery(
@@ -492,6 +508,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   testthat::expect_identical(reopened$status, "DONE")
   testthat::expect_equal(nrow(scores), nrow(wf$scores))
   testthat::expect_equal(nrow(folds), nrow(wf$folds))
+  testthat::expect_identical(reopened$degradation, wf$degradation)
   testthat::expect_equal(nrow(reopened$selected), nrow(wf$selected))
   testthat::expect_identical(names(reopened$selected), names(wf$selected))
   testthat::expect_identical(reopened$selected$test_run_id, wf$selected$test_run_id)

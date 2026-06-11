@@ -348,7 +348,7 @@ Implementation note:
 ## Batch 7 - Degradation UX And User Documentation
 
 Tickets: `LDG-2623`, `LDG-2624`
-Status: Planned
+Status: Review Pending
 
 Goal: make train-vs-test degradation the primary result surface and document
 walk-forward honestly.
@@ -374,6 +374,14 @@ Review focus:
   benchmark diagnostics, OMS, paper/live behavior, or selection-integrity
   correction.
 - Examples are runnable or explicitly design-only.
+
+Implementation note:
+
+- Added a programmatic `degradation` table to live and reopened
+  walk-forward results, made it the first default print surface, and surfaced
+  `short_test_window` plus `cold_start_distorted` warning flags. Added
+  walk-forward help-page caveats, a design-only workflow vignette, pkgdown
+  discovery, and NEWS scope/non-scope language.
 
 ## Batch 8 - Release Surfaces And Planning Docs
 

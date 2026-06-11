@@ -3,6 +3,8 @@
 #' `ledgr_walk_forward()` orchestrates fold-local train sweeps, deterministic
 #' scalar candidate selection, and selected-candidate test runs over the
 #' existing `ledgr_sweep()` and `ledgr_run()` execution machinery.
+#' The returned object carries a `degradation` table that compares the selected
+#' train score to the selected test score before secondary result surfaces.
 #'
 #' @param exp A `ledgr_experiment`.
 #' @param grid A `ledgr_param_grid`.
@@ -14,7 +16,23 @@
 #'   `"flat_test_state"`. The default carries selected test-run terminal state
 #'   into the next test run. Flat-test state is an explicit cold-start opt-in.
 #' @param ... Reserved for later walk-forward options.
-#' @return A `ledgr_walk_forward_results` list.
+#' @return A `ledgr_walk_forward_results` list with `folds`, `scores`,
+#'   `selected`, `degradation`, and selected test-run handles.
+#' @details
+#' v1 walk-forward scores scalar train-window candidates, selects one candidate
+#' per fold, and runs only that selected candidate on the matching test window.
+#' It is not PBO, CSCV, CPCV, DSR, benchmark-relative diagnostics, OMS,
+#' paper/live trading, or a selection-integrity correction. Walk-forward
+#' evidence is only as survivorship-safe as the sealed snapshot and universe
+#' semantics it evaluates.
+#'
+#' With the default `opening_state_policy = "carry_test_state"`, test windows
+#' are path-dependent: each completed selected test run can seed the next test
+#' opening state. Per-fold test metrics are therefore not independent. Anchored
+#' fold definitions intentionally grow the train window over time, so compute
+#' cost grows with later folds and larger candidate grids. `metric_diff_abs` is
+#' `test_metric_value - train_metric_value`; whether a positive value indicates
+#' improvement or degradation depends on the selection rule direction.
 #' @export
 ledgr_walk_forward <- function(exp,
                                grid,
@@ -126,6 +144,12 @@ ledgr_walk_forward <- function(exp,
       cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
       folds = fold_table,
       scores = score_table,
+      degradation = ledgr_walk_forward_degradation_table(
+        folds = fold_table,
+        scores = score_table,
+        selection_metric = selection_rule$metric,
+        cold_start_distorted = identical(opening_state_policy, "flat_test_state")
+      ),
       selected = ledgr_walk_forward_bind_rows(fold_results),
       test_runs = selected_tests
     ),
@@ -138,6 +162,18 @@ ledgr_walk_forward <- function(exp,
 print.ledgr_walk_forward_results <- function(x, ...) {
   cat("ledgr walk-forward\n")
   cat("==================\n")
+  degradation <- x$degradation %||% tibble::tibble()
+  if (nrow(degradation) > 0L) {
+    if (any(ledgr_walk_forward_has_flag(degradation$warning_flags, "short_test_window"), na.rm = TRUE)) {
+      cat("Health warning: one or more test windows are shorter than 90 calendar days.\n")
+    }
+    if (any(ledgr_walk_forward_has_flag(degradation$warning_flags, "cold_start_distorted"), na.rm = TRUE)) {
+      cat("Health warning: flat test starts distort chained walk-forward evidence.\n")
+    }
+    cat("\nTrain/test degradation:\n")
+    print(degradation, ...)
+    cat("\n")
+  }
   cat("Session: ", x$session_id %||% "<unknown>", "\n", sep = "")
   cat("Status: ", x$status %||% "<unknown>", "\n", sep = "")
   cat("Opening state: ", x$opening_state_policy %||% "<unknown>", "\n", sep = "")

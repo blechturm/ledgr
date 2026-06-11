@@ -8,8 +8,9 @@
 #' @return `ledgr_walk_forward_results()` returns a
 #'   `ledgr_walk_forward_results` list. Reopened sessions do not rehydrate live
 #'   backtest objects in `test_runs`; that field contains linked test `run_id`
-#'   strings. `ledgr_walk_forward_scores()` and `ledgr_walk_forward_folds()`
-#'   return tibbles.
+#'   strings. The reopened object includes the same programmatic `degradation`
+#'   table fields used by print. `ledgr_walk_forward_scores()` and
+#'   `ledgr_walk_forward_folds()` return tibbles.
 #' @export
 ledgr_walk_forward_results <- function(snapshot, session_id) {
   data <- ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)
@@ -22,6 +23,12 @@ ledgr_walk_forward_results <- function(snapshot, session_id) {
       cold_start_distorted = isTRUE(data$meta$cold_start_distorted),
       folds = data$folds,
       scores = data$scores,
+      degradation = ledgr_walk_forward_degradation_table(
+        folds = data$folds,
+        scores = data$scores,
+        selection_metric = data$meta$selection_metric %||% NULL,
+        cold_start_distorted = isTRUE(data$meta$cold_start_distorted)
+      ),
       selected = selected,
       test_runs = as.list(as.character(data$folds$test_run_id[
         !is.na(data$folds$test_run_id) &
@@ -413,6 +420,82 @@ ledgr_walk_forward_selected_from_rows <- function(folds, scores, selection_metri
   tibble::as_tibble(do.call(rbind, rows))
 }
 
+ledgr_walk_forward_degradation_table <- function(folds,
+                                                 scores,
+                                                 selection_metric,
+                                                 cold_start_distorted = FALSE) {
+  folds <- tibble::as_tibble(folds)
+  scores <- tibble::as_tibble(scores)
+  if (nrow(folds) < 1L || nrow(scores) < 1L ||
+      is.null(selection_metric) || ledgr_walk_forward_is_missing_text(selection_metric)) {
+    return(tibble::tibble(
+      fold_seq = integer(),
+      train_window = character(),
+      test_window = character(),
+      selected_candidate = character(),
+      selection_metric = character(),
+      train_metric_value = numeric(),
+      test_metric_value = numeric(),
+      metric_diff_abs = numeric(),
+      metric_diff_pct = numeric(),
+      warning_flags = character()
+    ))
+  }
+  rows <- lapply(seq_len(nrow(folds)), function(i) {
+    fold <- folds[i, , drop = FALSE]
+    selected_key <- as.character(fold$selected_candidate_key[[1]])
+    train_rows <- scores[
+      scores$fold_seq == fold$fold_seq[[1]] &
+        scores$window == "train" &
+        scores$candidate_key == selected_key,
+      ,
+      drop = FALSE
+    ]
+    test_rows <- scores[
+      scores$fold_seq == fold$fold_seq[[1]] &
+        scores$window == "test",
+      ,
+      drop = FALSE
+    ]
+    train_value <- ledgr_walk_forward_metric_value(train_rows, selection_metric)
+    test_value <- ledgr_walk_forward_metric_value(test_rows, selection_metric)
+    diff_abs <- test_value - train_value
+    diff_pct <- if (is.finite(train_value) && abs(train_value) > .Machine$double.eps) {
+      diff_abs / abs(train_value)
+    } else {
+      NA_real_
+    }
+    test_days <- as.numeric(difftime(
+      as.POSIXct(fold$test_end_utc[[1]], tz = "UTC"),
+      as.POSIXct(fold$test_start_utc[[1]], tz = "UTC"),
+      units = "days"
+    ))
+    flags <- character()
+    if (is.finite(test_days) && test_days < 90) {
+      flags <- c(flags, "short_test_window")
+    }
+    if (isTRUE(cold_start_distorted)) {
+      flags <- c(flags, "cold_start_distorted")
+    }
+    candidate <- if (nrow(train_rows) > 0L) as.character(train_rows$candidate_label[[1]]) else NA_character_
+    data.frame(
+      fold_seq = as.integer(fold$fold_seq[[1]]),
+      train_window = sprintf("%s/%s", ledgr_walk_forward_iso(fold$train_start_utc[[1]]), ledgr_walk_forward_iso(fold$train_end_utc[[1]])),
+      test_window = sprintf("%s/%s", ledgr_walk_forward_iso(fold$test_start_utc[[1]]), ledgr_walk_forward_iso(fold$test_end_utc[[1]])),
+      selected_candidate = candidate,
+      selection_metric = as.character(selection_metric),
+      train_metric_value = as.numeric(train_value),
+      test_metric_value = as.numeric(test_value),
+      metric_diff_abs = as.numeric(diff_abs),
+      metric_diff_pct = as.numeric(diff_pct),
+      # Keep storage/export scalar; use ledgr_walk_forward_has_flag() for membership.
+      warning_flags = paste(flags, collapse = ","),
+      stringsAsFactors = FALSE
+    )
+  })
+  tibble::as_tibble(do.call(rbind, rows))
+}
+
 ledgr_walk_forward_selection_rationale <- function(x) {
   if (is.null(x)) return(NULL)
   if (!is.character(x) || length(x) != 1L || is.na(x)) {
@@ -474,6 +557,13 @@ ledgr_walk_forward_first_non_missing_integer <- function(x) {
 
 ledgr_walk_forward_is_missing_text <- function(x) {
   is.null(x) || length(x) != 1L || is.na(x) || !nzchar(as.character(x))
+}
+
+ledgr_walk_forward_has_flag <- function(warning_flags, flag) {
+  vapply(warning_flags, function(x) {
+    if (ledgr_walk_forward_is_missing_text(x)) return(FALSE)
+    flag %in% strsplit(as.character(x), ",", fixed = TRUE)[[1L]]
+  }, logical(1))
 }
 
 ledgr_walk_forward_config_strategy_hash <- function(cfg) {
