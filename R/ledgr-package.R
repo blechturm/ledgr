@@ -45,6 +45,7 @@
 #' positioning detail, see the pkgdown-only "Who ledgr is for" article:
 #' `https://blechturm.github.io/ledgr/articles/who-ledgr-is-for.html`.
 #'
+#' @useDynLib ledgr, .registration = TRUE
 "_PACKAGE"
 
 .onLoad <- function(libname, pkgname) {

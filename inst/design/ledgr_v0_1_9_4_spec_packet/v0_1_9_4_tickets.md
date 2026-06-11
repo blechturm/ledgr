@@ -901,7 +901,7 @@ scope: examples_news_vignette
 Priority: P1
 Effort: M
 Dependencies: LDG-2624
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -910,14 +910,14 @@ hands off to v0.1.9.5 cleanly.
 
 ### Tasks
 
-- Update `DESCRIPTION` version metadata when release gate begins.
-- Update `NEWS.md`.
-- Update `inst/design/README.md`.
-- Update `inst/design/ledgr_roadmap.md`.
-- Update `inst/design/horizon.md` closeout / carry-forward entries.
-- Update `AGENTS.md` active packet context.
-- Update identity/reference docs if walk-forward identity fields are surfaced.
-- Check generated Rd references after roxygen.
+- [x] Update `DESCRIPTION` version metadata when release gate begins.
+- [x] Update `NEWS.md`.
+- [x] Update `inst/design/README.md`.
+- [x] Update `inst/design/ledgr_roadmap.md`.
+- [x] Update `inst/design/horizon.md` closeout / carry-forward entries.
+- [x] Update `AGENTS.md` active packet context.
+- [x] Update identity/reference docs if walk-forward identity fields are surfaced.
+- [x] Check generated Rd references after roxygen.
 
 ### Acceptance Criteria
 

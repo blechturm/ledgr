@@ -16,11 +16,10 @@ ledgr_select_argmin(metric)
 A \code{ledgr_selection_rule} object.
 }
 \description{
-\code{ledgr_select_argmax()} and \code{ledgr_select_argmin()} create
-deterministic scalar selection-rule value objects for walk-forward train-window
-scores. V1 supports one classified scalar metric at a time. Composite,
-override, top-N, stability-region, and arbitrary-function selectors are
-deferred.
+\code{ledgr_select_argmax()} and \code{ledgr_select_argmin()} create deterministic
+scalar selection-rule value objects for walk-forward train-window scores.
+V1 supports one classified scalar metric at a time. Composite, override,
+top-N, stability-region, and arbitrary-function selectors are deferred.
 }
 \examples{
 ledgr_select_argmax("sharpe_ratio")

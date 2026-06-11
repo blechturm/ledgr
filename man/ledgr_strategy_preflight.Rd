@@ -43,16 +43,16 @@ Tier 3 strategies fail before execution with condition classes
 forbidden calls include direct wall-clock/process-environment calls such as
 \code{Sys.time()}, \code{Sys.Date()}, and \code{Sys.getenv()}, visible indirection such as
 \code{do.call("Sys.time", list())}, dynamic lookup/evaluation helpers such as
-\code{get()}, \code{eval()}, and \code{assign()}, global assignment with \code{<<-}, and visible
+\code{get()}, \code{eval()}, and \code{assign()}, global assignment with \verb{<<-}, and visible
 context mutation such as \code{attr(ctx, "secret") <- 1}.
 
 Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
 seed contract for ordinary sequential runs, but they are not certified for
-resume or parallel equivalence. Strategies that need pulse-specific stochastic
-inputs in those paths should derive them from \code{ctx$pulse_seed} without
-reading ambient \code{.Random.seed}. Custom indicator generation has a stricter
-deterministic feature contract; do not infer indicator RNG policy from strategy
-preflight.
+resume or parallel equivalence. Strategies that need pulse-specific
+stochastic inputs in those paths should derive them from \code{ctx$pulse_seed}
+without reading ambient \code{.Random.seed}. Custom indicator generation has a
+stricter deterministic feature contract; do not infer indicator RNG policy
+from strategy preflight.
 }
 \section{Articles}{
 

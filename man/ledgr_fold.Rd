@@ -60,12 +60,12 @@ strategies, select candidates, persist artifacts, or perform statistical
 validation.
 }
 \details{
-\code{ledgr_fold()} creates a single explicit fold. \code{ledgr_folds_rolling()}
-and \code{ledgr_folds_anchored()} create ordered fold lists from calendar
-durations. V1 supports only \code{gap = NULL}; purged and embargoed gap
-semantics are reserved for a later validation-diagnostics layer.
-Duration-based constructors produce inclusive end timestamps one second before
-the next period boundary.
+\code{ledgr_fold()} creates a single explicit fold. \code{ledgr_folds_rolling()} and
+\code{ledgr_folds_anchored()} create ordered fold lists from calendar durations.
+V1 supports only \code{gap = NULL}; purged and embargoed gap semantics are
+reserved for a later validation-diagnostics layer.
+Duration-based constructors produce inclusive end timestamps one second
+before the next period boundary.
 }
 \examples{
 ledgr_fold(

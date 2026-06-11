@@ -1,11 +1,12 @@
 # Identity Contract
 
-**Status:** Maintainer reference for v0.1.9.1 identity surfaces.
+**Status:** Maintainer reference for v0.1.9.4 identity surfaces.
 
 **Audience:** maintainers and coding agents.
 
-**Authority:** Synthesis of `../contracts.md`, the v0.1.9.1 spec packet,
-and implementation traces. Binding decisions remain in those artifacts.
+**Authority:** Synthesis of `../contracts.md`, the v0.1.9.1-v0.1.9.4
+spec packets, and implementation traces. Binding decisions remain in those
+artifacts.
 
 ledgr uses several identity fields because no single hash can answer every
 question. Some fields identify concrete execution inputs. Some identify
@@ -24,6 +25,10 @@ those layers separate.
 | `alias_map_order` | Declaration-order diagnostic. | Original alias declaration order; not part of `config_hash`. |
 | `cost_plan_json` | Canonical cost-model plan. | `ledgr_cost_plan_json()`. |
 | `cost_model_hash` | Cost-model identity. | SHA-256 over `cost_plan_json`. |
+| `risk_plan_json` | Canonical target-risk plan. | `ledgr_risk_plan_json()`. |
+| `risk_chain_hash` | Target-risk chain identity. | SHA-256 over `risk_plan_json`. |
+| `candidate_key` | Walk-forward fold/window candidate identity. | Canonical JSON over strategy/feature/metric/cost/risk identity plus fold/window seed inputs. |
+| `session_id` | Walk-forward session identity. | Canonical JSON over snapshot, experiment, grid, fold-list, selection-rule, metric-context, cost, risk, seed, and opening-state policy identity. |
 
 ## Config Hash
 
@@ -89,9 +94,41 @@ The public cost API stores cost identity as:
 - `cost_plan_json`: canonical serialized cost plan;
 - `cost_model_hash`: SHA-256 over that plan.
 
-These fields are execution identity for runs and sweep candidates. They are
-also forward dependencies for walk-forward candidate identity. They do not
-implement walk-forward or cost-grid selection by themselves.
+These fields are execution identity for runs and sweep candidates. In
+walk-forward they also enter both `candidate_key` and `session_id`, so changing
+the cost model changes the selected-candidate and session identity even when the
+strategy and fold list are unchanged. They do not implement cost-grid selection
+by themselves.
+
+## Risk Identity
+
+The public target-risk API stores risk identity as:
+
+- `risk_plan_json`: canonical serialized risk-chain plan;
+- `risk_chain_hash`: SHA-256 over that plan.
+
+These fields are execution identity for runs, sweep candidates, promoted runs,
+and walk-forward sessions. In walk-forward they enter both `candidate_key` and
+`session_id`, preserving the v0.1.9.3 risk-chain handoff into the v0.1.9.4
+walk-forward evidence model.
+
+## Walk-Forward Identity
+
+Walk-forward adds two identity layers over existing run and sweep identity:
+
+- `candidate_key`: deterministic per fold, per window, and per candidate. It
+  includes strategy parameter identity, feature parameter identity,
+  strategy/feature/alias identity, metric-context identity, `cost_model_hash`,
+  `risk_chain_hash`, the master seed, `fold_seq`, and the window role
+  (`"train"` or `"test"`).
+- `session_id`: deterministic per walk-forward session. It includes snapshot,
+  experiment, parameter-grid, fold-list, selection-rule, metric-context,
+  `cost_model_hash`, `risk_chain_hash`, master seed, and opening-state policy
+  identity.
+
+These fields identify the walk-forward evidence envelope. They do not make
+scalar train-window selection statistically sound; selection-integrity
+diagnostics remain a separate future layer.
 
 ## Implementation Trace
 
@@ -102,3 +139,9 @@ implement walk-forward or cost-grid selection by themselves.
   feature identity.
 - `R/run-store.R`: run list/info projection from stored `config_json`.
 - `R/cost-model.R`: cost plan JSON and cost-model hash.
+- `R/risk-model.R`: risk plan JSON and risk-chain hash.
+- `R/walk-forward-identity.R`: walk-forward `candidate_key` and `session_id`
+  byte assembly, including the two-step unseeded-key -> execution-seed ->
+  final-key candidate recipe.
+- `R/walk-forward.R`: walk-forward orchestrator that consumes the identity
+  helpers.

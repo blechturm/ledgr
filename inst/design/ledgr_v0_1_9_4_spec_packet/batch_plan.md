@@ -386,7 +386,7 @@ Implementation note:
 ## Batch 8 - Release Surfaces And Planning Docs
 
 Ticket: `LDG-2625`
-Status: Planned
+Status: Review Pending
 
 Goal: update version, roadmap, horizon, design index, AGENTS, identity docs,
 and generated documentation surfaces before the release gate.
@@ -408,6 +408,13 @@ Review focus:
 - Roadmap/horizon transitions are clean enough for v0.1.9.5 scoping.
 - Diff size is monitored; stop if release-surface edits become unexpectedly
   broad.
+
+Implementation note:
+
+- Updated package version metadata, identity-reference documentation,
+  v0.1.9.4 horizon dispositions, AGENTS active-packet context, and release
+  ticket status. Roadmap and design index already carried the v0.1.9.3 done /
+  v0.1.9.4 active / v0.1.9.5 planned handoff from Batch 0.
 
 ## Batch 9 - Release Gate
 

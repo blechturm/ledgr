@@ -10,8 +10,8 @@ ledgr_candidate(results, which = 1L, allow_failed = FALSE)
 \item{results}{A \code{ledgr_sweep_results} object or tibble-like object with
 \code{candidate_id}, \code{params}, \code{execution_seed}, and \code{provenance} columns.}
 
-\item{which}{Candidate selector. A character scalar selects by \code{candidate_id}; an
-integer-like scalar selects by row position.}
+\item{which}{Candidate selector. A character scalar selects by
+\code{candidate_id}; an integer-like scalar selects by row position.}
 
 \item{allow_failed}{Logical. Failed candidates error by default.}
 }
@@ -27,8 +27,8 @@ The returned candidate carries \code{selection_view}, the tibble-like
 view passed to \code{ledgr_candidate()}. Promotion-context storage uses that
 view to record the filtered/sorted candidate table the user selected from.
 \code{ledgr_candidate()} is the supported way to extract params, execution seed,
-and row-level provenance for promotion. The selected candidate also carries the
-compact reproduction key exposed by
+and row-level provenance for promotion. The selected candidate also carries
+the compact reproduction key exposed by
 \code{\link[=ledgr_candidate_reproduction_key]{ledgr_candidate_reproduction_key()}}. It avoids making users manually pull
 \code{params[[1]]}, \code{execution_seed}, and provenance fields from a tibble row.
 }

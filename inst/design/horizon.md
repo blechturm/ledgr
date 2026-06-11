@@ -2376,6 +2376,12 @@ parallel small release for target-helper Pass 2 between named ticks).
 
 ### 2026-06-05 [planning] v0.1.9.4 walk-forward Section 17 gate-row obligations from the v0.1.9.x arc
 
+**Status update 2026-06-11:** consumed by the v0.1.9.4 spec packet and
+implementation. The packet names `cost_model_hash` and `risk_chain_hash` in
+both `candidate_key` and `session_id` identity recipes, and the identity tests
+exercise those components. Keep this entry visible until v0.1.9.4 release
+closeout, then sweep it to `## Resolved`.
+
 The v0.1.9.x arc sequencing (see 2026-06-05 sequencing entry above)
 puts walk-forward at v0.1.9.4 as the culmination, consuming forward
 dependencies from each earlier tick. Two identity-surface
@@ -3055,6 +3061,14 @@ should be re-scoped from "selection integrity diagnostics" to
 discipline.
 
 ### 2026-06-07 [planning] Walk-forward fold output -- preserve per-period candidate return vectors for validation-toolkit PBO adapter optionality
+
+**Status update 2026-06-11:** carried forward. The v0.1.9.4 walk-forward
+packet chose the operational scalar-score MVP plus selected-candidate test-run
+evidence; it did not add per-period return vectors for every candidate/fold.
+The substrate question remains parked for the validation-toolkit /
+selection-integrity diagnostics RFC, where native PBO/CSCV-over-scores versus
+adapter-oriented return-panel retention can be decided with the first
+walk-forward session model in hand.
 
 This entry records a substrate observation for the v0.1.9.4 walk-forward
 spec-cut writer, surfaced by the 2026-06-07 validation toolkit entry's

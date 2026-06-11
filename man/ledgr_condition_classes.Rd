@@ -108,20 +108,20 @@ requested for an unknown \code{candidate_id}.
 returns are requested for a failed candidate or for a completed candidate
 whose retained rows are missing.
 }
+
 \section{Walk-forward classes}{
 
-\code{ledgr_walk_forward_metric_missing} is raised when a selection rule
-requests a metric column that is absent from the train-window score rows.
+\code{ledgr_walk_forward_metric_missing} is raised when a selection rule requests
+a metric column that is absent from the train-window score rows.
 
 \code{ledgr_walk_forward_metric_class_invalid} is raised when a selection metric
 is not classified as valid for v1 scalar selection.
 
-\code{ledgr_walk_forward_no_selection} is raised when all candidate values for
-the requested selection metric are missing, \code{NA}, \code{NaN}, or infinite.
+\code{ledgr_walk_forward_no_selection} is raised when all candidate values for the
+requested selection metric are missing, \code{NA}, \code{NaN}, or infinite.
 
 \code{ledgr_walk_forward_candidate_key_missing} is raised when the train-window
-score rows passed to a selection rule do not include a \code{candidate_key}
-column.
+score rows passed to a selection rule do not include a \code{candidate_key} column.
 
 \code{ledgr_walk_forward_test_run_failed} is raised when a selected test run
 cannot produce a usable test score row.

@@ -93,10 +93,10 @@ the final pulse therefore cannot be filled unless another bar exists after
 \code{end}.
 
 Cost models are explicit. Use \code{ledgr_cost_zero()} for no-cost execution.
-\code{ledgr_cost_spread_bps()} treats \code{spread_bps} as a quoted bid/ask
-spread: buys cross half the spread above the reference price and sells cross
-half the spread below it, so a round trip crosses approximately
-\code{spread_bps} basis points before explicit fees.
+\code{ledgr_cost_spread_bps()} treats \code{spread_bps} as a quoted bid/ask spread:
+buys cross half the spread above the reference price and sells cross half the
+spread below it, so a round trip crosses approximately \code{spread_bps} basis
+points before explicit fees.
 
 v0.1.x does not provide a supported broker-style short-selling contract.
 Strategy authors should treat negative target quantities as outside the

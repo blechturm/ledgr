@@ -212,9 +212,17 @@ Current planning context (active v0.1.9.4 walk-forward packet):
   `ledgr_sweep()` and `ledgr_run()`: calendar-time fold definitions, the
   internal window contract, train-window scalar selection, selected-candidate
   test runs, walk-forward session identity, compact persistence, inspection
-  helpers, and promotion-ready candidate extraction. Batch 0 packet alignment
-  is review pending after the roadmap, horizon, design index, and AGENTS
-  active-packet update. Selection-integrity diagnostics, PBO/CSCV/CPCV, DSR,
+  helpers, promotion-ready candidate extraction, and the degradation-first
+  user-facing result surface. Batch 0 packet alignment, Batch 1 fold
+  objects and window parity substrate, Batch 2 feature windows and selection
+  rules, Batch 3 identity and persistence foundation, Batch 4 orchestrator and
+  opening-state work, Batch 5 score rows / failures / partial sessions, Batch
+  6 inspection / reopen / extraction / promotion, and Batch 7 degradation UX
+  and user documentation are complete after Claude review. Batch 8 release
+  surfaces and planning docs are review pending after version,
+  identity-reference, horizon, AGENTS, roxygen-regenerated reference-page, and
+  `@useDynLib` source-migration updates.
+  Selection-integrity diagnostics, PBO/CSCV/CPCV, DSR,
   purging/embargo, randomized or blocked slice protocols, cross-snapshot
   walk-forward, evaluation registry, ML-first tooling, candidate clustering,
   benchmark-relative metrics, top-N/all-candidate test retention,

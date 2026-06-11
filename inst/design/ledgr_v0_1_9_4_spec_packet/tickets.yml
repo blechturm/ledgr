@@ -274,7 +274,7 @@ tickets:
 
   - id: "LDG-2625"
     title: "Release Surfaces And Planning Docs"
-    status: "planned"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:

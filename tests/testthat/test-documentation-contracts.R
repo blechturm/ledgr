@@ -872,9 +872,9 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_no_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
 
   testthat::expect_match(backtest_help, "quoted bid/ask\\s+spread")
-  testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\} basis points before explicit fees")
+  testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\}\\s+basis\\s+points before explicit fees")
   testthat::expect_match(experiment_help, "quoted bid/ask\\s+spread")
-  testthat::expect_match(experiment_help, "crosses approximately \\\\code\\{spread_bps\\} basis points before explicit fees")
+  testthat::expect_match(experiment_help, "crosses approximately\\s+\\\\code\\{spread_bps\\}\\s+basis\\s+points before explicit fees")
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)
@@ -1596,7 +1596,7 @@ testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {
   testthat::expect_match(yahoo_help, "stderr", fixed = TRUE)
   testthat::expect_match(seal_help, "idempotent", fixed = TRUE)
   testthat::expect_match(seal_help, "Already sealed snapshots return their existing hash", fixed = TRUE)
-  testthat::expect_match(seal_help, "returns an invisible list with \\\\code\\{\\$hash\\} and \\\\code\\{\\$snapshot\\}")
+  testthat::expect_match(seal_help, "returns an invisible list with (\\\\code|\\\\verb)\\{\\$hash\\} and (\\\\code|\\\\verb)\\{\\$snapshot\\}")
 })
 
 testthat::test_that("help-page article links target installed vignettes only", {
