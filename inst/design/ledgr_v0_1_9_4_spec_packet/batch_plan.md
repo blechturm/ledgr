@@ -223,7 +223,7 @@ Review focus:
 ## Batch 4 - Walk-Forward Orchestrator And Opening State
 
 Ticket: `LDG-2619`
-Status: Planned
+Status: Review Pending
 
 Goal: implement `ledgr_walk_forward()` as the train-sweep, select, test-run
 orchestrator with explicit opening-state policy.
@@ -253,6 +253,18 @@ Review focus:
 - Carry-test-state path dependency is intentional and visible.
 - Top-N/all-candidate test retention remains deferred.
 
+Implementation note:
+
+- Added `ledgr_walk_forward()` as a fold-local train-sweep, deterministic
+  selection, selected-test-run orchestrator over existing `ledgr_sweep_window()`
+  and `ledgr_run_window()` helpers.
+- Added an internal-only sweep execution-seed resolver so walk-forward can use
+  fold/window/candidate identity seeds without changing public sweep seed
+  semantics.
+- Persisted happy-path `walk_forward_sessions`, `walk_forward_folds`, and
+  `walk_forward_scores` rows; richer failure/partial handling remains in
+  Batch 5.
+
 ## Batch 5 - Score Rows, Failures, And Partial Sessions
 
 Ticket: `LDG-2620`
@@ -269,6 +281,8 @@ Exit criteria:
   failures.
 - Test score rows are written only for the selected candidate in v1.
 - Candidate failure rows preserve `status`, `error_class`, and `error_msg`.
+- Selected test runs that produce no equity row or unusable metrics are marked
+  as `FAILED`, not as `DONE` rows with missing metric values.
 - If no finite eligible candidate remains, the fold fails with
   `ledgr_walk_forward_no_selection`.
 - Test-run failure marks the fold and session failed while preserving train

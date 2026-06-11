@@ -532,7 +532,7 @@ scope: sessions_folds_scores
 Priority: P0
 Effort: XL
 Dependencies: LDG-2614, LDG-2615, LDG-2616, LDG-2617, LDG-2618
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -577,6 +577,13 @@ tests, carry-state tests, flat-state warning tests, cold-start flag tests,
 state-reconstruction tests, deterministic-session-replay tests, and
 no-full-snapshot-selection tests.
 
+Implementation note:
+
+- Implemented the first happy-path orchestrator surface with fold-local train
+  sweeps, scalar selection, selected-candidate test runs, explicit opening-state
+  policy, and persisted DONE score rows. Rich failure, interrupt, and partial
+  session semantics remain delegated to LDG-2620.
+
 ### Source Reference
 
 - `v0_1_9_4_spec.md` Sections 2, 3, 5, 8, 12, and 16
@@ -613,6 +620,9 @@ and partial-session evidence with classed conditions.
 - Capture train candidate failure status, error class, and error message.
 - Capture no-selection fold failure.
 - Capture selected test-run failure.
+- Extend `ledgr_walk_forward_test_score_wide()` so a selected test run that
+  yields no equity row or unusable metrics is surfaced as `FAILED` rather than
+  as a `DONE` score row with only missing values.
 - Implement session/fold statuses `DONE`, `FAILED`, `INTERRUPTED`, and
   `PARTIAL`.
 - Implement interrupt handling with inspectable partial artifacts when at least

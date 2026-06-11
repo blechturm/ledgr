@@ -146,7 +146,7 @@ tickets:
 
   - id: "LDG-2619"
     title: "Walk-Forward Orchestrator And Opening-State Policy"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "XL"
     dependencies:
@@ -186,6 +186,7 @@ tickets:
       - "failure_capture_tests"
       - "no_selection_tests"
       - "test_run_failure_tests"
+      - "test_run_unusable_metrics_tests"
       - "interrupt_tests"
       - "partial_session_tests"
       - "transactionality_tests"

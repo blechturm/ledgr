@@ -110,7 +110,8 @@ ledgr_sweep_window <- function(exp,
                                stop_on_error = FALSE,
                                workers = 1L,
                                worker_packages = NULL,
-                               compiled_accounting_model = NULL) {
+                               compiled_accounting_model = NULL,
+                               execution_seed_resolver = NULL) {
   window <- ledgr_experiment_window_resolve(exp, window)
   ledgr_sweep_impl(
     exp = exp,
@@ -122,7 +123,8 @@ ledgr_sweep_window <- function(exp,
     workers = workers,
     worker_packages = worker_packages,
     compiled_accounting_model = compiled_accounting_model,
-    window = window
+    window = window,
+    execution_seed_resolver = execution_seed_resolver
   )
 }
 
@@ -135,7 +137,8 @@ ledgr_sweep_impl <- function(exp,
                              workers = 1L,
                              worker_packages = NULL,
                              compiled_accounting_model = NULL,
-                             window = NULL) {
+                             window = NULL,
+                             execution_seed_resolver = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -150,6 +153,9 @@ ledgr_sweep_impl <- function(exp,
   workers <- ledgr_parallel_workers_normalize(workers)
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  if (!is.null(execution_seed_resolver) && !is.function(execution_seed_resolver)) {
+    rlang::abort("`execution_seed_resolver` must be NULL or a function.", class = "ledgr_invalid_args")
+  }
 
   preflight <- ledgr_strategy_preflight(exp$strategy)
   if (!isTRUE(preflight$allowed)) {
@@ -243,6 +249,15 @@ ledgr_sweep_impl <- function(exp,
   source_info <- ledgr_strategy_source_info(exp$strategy)
   strategy_hash <- source_info$hash
   strategy_name <- ledgr_sweep_strategy_name(exp$strategy)
+  execution_seed_override <- ledgr_sweep_execution_seed_override(
+    resolver = execution_seed_resolver,
+    param_grid = param_grid,
+    resolved = resolved,
+    strategy_hash = strategy_hash,
+    metric_context_hash = ledgr_metric_context_hash(metric_context),
+    cost_model_hash = exp$cost_model_hash %||% NULL,
+    risk_chain_hash = exp$risk_chain_hash %||% ledgr_risk_chain_hash(exp$risk_chain %||% ledgr_risk_none())
+  )
   tasks <- ledgr_sweep_candidate_tasks(
     exp = exp,
     param_grid = param_grid,
@@ -259,7 +274,8 @@ ledgr_sweep_impl <- function(exp,
     runtime_projection = runtime_projection,
     snapshot_hash = meta$snapshot_hash,
     strategy_hash = strategy_hash,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    execution_seed_override = execution_seed_override
   )
   results <- if (workers <= 1L) {
     lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
@@ -837,9 +853,14 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         runtime_projection,
                                         snapshot_hash,
                                         strategy_hash,
-                                        compiled_accounting_model = NULL) {
+                                        compiled_accounting_model = NULL,
+                                        execution_seed_override = NULL) {
   exp_payload <- ledgr_sweep_exp_payload(exp)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  execution_seed_override <- ledgr_sweep_validate_execution_seed_override(
+    execution_seed_override,
+    length(param_grid$params)
+  )
   tasks <- vector("list", length(param_grid$params))
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]
@@ -853,7 +874,9 @@ ledgr_sweep_candidate_tasks <- function(exp,
       raw_params = raw_params,
       params = ledgr_grid_candidate_strategy_params(raw_params),
       feature_params = ledgr_grid_candidate_feature_params(raw_params),
-      execution_seed = if (is.null(seed)) {
+      execution_seed = if (!is.null(execution_seed_override)) {
+        execution_seed_override[[i]]
+      } else if (is.null(seed)) {
         NA_integer_
       } else {
         ledgr_derive_seed(seed, list(run_id = label, params = raw_params))
@@ -876,6 +899,54 @@ ledgr_sweep_candidate_tasks <- function(exp,
     )
   }
   tasks
+}
+
+ledgr_sweep_execution_seed_override <- function(resolver,
+                                                param_grid,
+                                                resolved,
+                                                strategy_hash,
+                                                metric_context_hash,
+                                                cost_model_hash,
+                                                risk_chain_hash) {
+  if (is.null(resolver)) {
+    return(NULL)
+  }
+  out <- resolver(
+    param_grid = param_grid,
+    resolved = resolved,
+    strategy_hash = strategy_hash,
+    metric_context_hash = metric_context_hash,
+    cost_model_hash = cost_model_hash,
+    risk_chain_hash = risk_chain_hash
+  )
+  ledgr_sweep_validate_execution_seed_override(out, length(param_grid$params))
+}
+
+ledgr_sweep_validate_execution_seed_override <- function(x, n) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+  if (!is.numeric(x) || length(x) != n) {
+    rlang::abort(
+      "`execution_seed_resolver` must return one integer or NA seed per sweep candidate.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  out <- rep(NA_integer_, n)
+  for (i in seq_len(n)) {
+    value <- x[[i]]
+    if (length(value) != 1L || is.na(value)) {
+      out[[i]] <- NA_integer_
+    } else if (!is.finite(value) || value != as.integer(value)) {
+      rlang::abort(
+        "`execution_seed_resolver` must return one integer or NA seed per sweep candidate.",
+        class = "ledgr_invalid_args"
+      )
+    } else {
+      out[[i]] <- as.integer(value)
+    }
+  }
+  out
 }
 
 ledgr_sweep_exp_payload <- function(exp) {
