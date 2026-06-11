@@ -195,6 +195,91 @@ ledgr_validate_schema <- function(con) {
       pk = c("sweep_id", "candidate_row", "pulse_index"),
       not_null = c("sweep_id", "candidate_row", "pulse_index", "ts_utc", "equity")
     ),
+    walk_forward_sessions = list(
+      columns = c(
+        session_id = "TEXT",
+        snapshot_hash = "TEXT",
+        experiment_hash = "TEXT",
+        param_grid_hash = "TEXT",
+        fold_list_hash = "TEXT",
+        selection_rule_hash = "TEXT",
+        metric_context_hash = "TEXT",
+        cost_model_hash = "TEXT",
+        risk_chain_hash = "TEXT",
+        master_seed = "INTEGER",
+        opening_state_policy = "TEXT",
+        created_at_utc = "TIMESTAMP",
+        ledgr_version = "TEXT",
+        meta_json = "TEXT"
+      ),
+      pk = c("session_id"),
+      not_null = c(
+        "session_id", "snapshot_hash", "experiment_hash",
+        "param_grid_hash", "fold_list_hash", "selection_rule_hash",
+        "metric_context_hash", "cost_model_hash", "risk_chain_hash",
+        "opening_state_policy", "created_at_utc", "ledgr_version",
+        "meta_json"
+      )
+    ),
+    walk_forward_folds = list(
+      columns = c(
+        session_id = "TEXT",
+        fold_id = "TEXT",
+        fold_seq = "INTEGER",
+        scheme = "TEXT",
+        train_start_utc = "TIMESTAMP",
+        train_end_utc = "TIMESTAMP",
+        test_start_utc = "TIMESTAMP",
+        test_end_utc = "TIMESTAMP",
+        hydration_start_utc = "TIMESTAMP",
+        train_scoring_start_utc = "TIMESTAMP",
+        test_scoring_start_utc = "TIMESTAMP",
+        opening_state_policy = "TEXT",
+        selected_candidate_key = "TEXT",
+        selected_at_utc = "TIMESTAMP",
+        test_run_id = "TEXT",
+        status = "TEXT"
+      ),
+      pk = c("session_id", "fold_seq"),
+      unique = list(c("session_id", "fold_id")),
+      not_null = c(
+        "session_id", "fold_id", "fold_seq", "scheme",
+        "train_start_utc", "train_end_utc", "test_start_utc",
+        "test_end_utc", "hydration_start_utc", "train_scoring_start_utc",
+        "test_scoring_start_utc", "opening_state_policy", "status"
+      )
+    ),
+    walk_forward_scores = list(
+      columns = c(
+        session_id = "TEXT",
+        fold_id = "TEXT",
+        fold_seq = "INTEGER",
+        candidate_key = "TEXT",
+        candidate_label = "TEXT",
+        params_hash = "TEXT",
+        feature_params_hash = "TEXT",
+        feature_set_hash = "TEXT",
+        alias_map_hash = "TEXT",
+        metric_context_hash = "TEXT",
+        cost_model_hash = "TEXT",
+        risk_chain_hash = "TEXT",
+        window = "TEXT",
+        metric_name = "TEXT",
+        metric_value = "DOUBLE",
+        n_trades = "INTEGER",
+        status = "TEXT",
+        error_class = "TEXT",
+        error_msg = "TEXT",
+        execution_seed = "INTEGER"
+      ),
+      pk = c("session_id", "fold_seq", "window", "candidate_key", "metric_name"),
+      not_null = c(
+        "session_id", "fold_id", "fold_seq", "candidate_key",
+        "params_hash", "feature_params_hash", "feature_set_hash",
+        "alias_map_hash", "metric_context_hash", "cost_model_hash",
+        "risk_chain_hash", "window", "metric_name", "status"
+      )
+    ),
     instruments = list(
       columns = c(
         instrument_id = "TEXT",

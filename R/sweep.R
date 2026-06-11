@@ -87,6 +87,58 @@ ledgr_sweep <- function(exp,
                         workers = 1L,
                         worker_packages = NULL,
                         compiled_accounting_model = NULL) {
+  ledgr_sweep_impl(
+    exp = exp,
+    param_grid = param_grid,
+    precomputed_features = precomputed_features,
+    retain = retain,
+    seed = seed,
+    stop_on_error = stop_on_error,
+    workers = workers,
+    worker_packages = worker_packages,
+    compiled_accounting_model = compiled_accounting_model,
+    window = NULL
+  )
+}
+
+ledgr_sweep_window <- function(exp,
+                               param_grid,
+                               window,
+                               precomputed_features = NULL,
+                               retain = ledgr_sweep_retention(),
+                               seed = NULL,
+                               stop_on_error = FALSE,
+                               workers = 1L,
+                               worker_packages = NULL,
+                               compiled_accounting_model = NULL,
+                               execution_seed_resolver = NULL) {
+  window <- ledgr_experiment_window_resolve(exp, window)
+  ledgr_sweep_impl(
+    exp = exp,
+    param_grid = param_grid,
+    precomputed_features = precomputed_features,
+    retain = retain,
+    seed = seed,
+    stop_on_error = stop_on_error,
+    workers = workers,
+    worker_packages = worker_packages,
+    compiled_accounting_model = compiled_accounting_model,
+    window = window,
+    execution_seed_resolver = execution_seed_resolver
+  )
+}
+
+ledgr_sweep_impl <- function(exp,
+                             param_grid,
+                             precomputed_features = NULL,
+                             retain = ledgr_sweep_retention(),
+                             seed = NULL,
+                             stop_on_error = FALSE,
+                             workers = 1L,
+                             worker_packages = NULL,
+                             compiled_accounting_model = NULL,
+                             window = NULL,
+                             execution_seed_resolver = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
@@ -96,10 +148,14 @@ ledgr_sweep <- function(exp,
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
     rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  window <- ledgr_experiment_window_resolve(exp, window)
   retain <- ledgr_sweep_retention_normalize(retain)
   workers <- ledgr_parallel_workers_normalize(workers)
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  if (!is.null(execution_seed_resolver) && !is.function(execution_seed_resolver)) {
+    rlang::abort("`execution_seed_resolver` must be NULL or a function.", class = "ledgr_invalid_args")
+  }
 
   preflight <- ledgr_strategy_preflight(exp$strategy)
   if (!isTRUE(preflight$allowed)) {
@@ -125,12 +181,21 @@ ledgr_sweep <- function(exp,
       precomputed = precomputed_features,
       exp = exp,
       param_grid = param_grid,
+      window = window,
       resolve_features = FALSE
     )
   }
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
-  range <- ledgr_precompute_scoring_range(meta)
+  range <- if (is.null(window)) {
+    ledgr_precompute_scoring_range(meta)
+  } else {
+    ledgr_precompute_scoring_range(
+      meta,
+      start = window$scoring_start_utc,
+      end = window$scoring_end_utc
+    )
+  }
   bars_by_id <- ledgr_precompute_fetch_bars(
     exp$snapshot,
     exp$universe,
@@ -165,6 +230,9 @@ ledgr_sweep <- function(exp,
   } else {
     resolved <- ledgr_sweep_resolved_from_precomputed(precomputed_features, param_grid)
     runtime_projection <- precomputed_features$projection
+    if (!is.null(runtime_projection)) {
+      runtime_projection <- ledgr_projection_slice(runtime_projection, pulses_posix)
+    }
     if (is.null(runtime_projection)) {
       runtime_projection <- ledgr_projection_from_payload(
         payload = precomputed_features$payload,
@@ -181,6 +249,15 @@ ledgr_sweep <- function(exp,
   source_info <- ledgr_strategy_source_info(exp$strategy)
   strategy_hash <- source_info$hash
   strategy_name <- ledgr_sweep_strategy_name(exp$strategy)
+  execution_seed_override <- ledgr_sweep_execution_seed_override(
+    resolver = execution_seed_resolver,
+    param_grid = param_grid,
+    resolved = resolved,
+    strategy_hash = strategy_hash,
+    metric_context_hash = ledgr_metric_context_hash(metric_context),
+    cost_model_hash = exp$cost_model_hash %||% NULL,
+    risk_chain_hash = exp$risk_chain_hash %||% ledgr_risk_chain_hash(exp$risk_chain %||% ledgr_risk_none())
+  )
   tasks <- ledgr_sweep_candidate_tasks(
     exp = exp,
     param_grid = param_grid,
@@ -197,7 +274,8 @@ ledgr_sweep <- function(exp,
     runtime_projection = runtime_projection,
     snapshot_hash = meta$snapshot_hash,
     strategy_hash = strategy_hash,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    execution_seed_override = execution_seed_override
   )
   results <- if (workers <= 1L) {
     lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
@@ -448,8 +526,9 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' [ledgr_promotion_context()] or [ledgr_run_promotion_context()].
 #' Hash fields carried from the candidate into promotion evidence are
 #' summarized in [ledgr_identity_fields].
-#' Promotion replays the selected candidate's risk chain even when `exp` was
-#' configured with a different `risk_chain`.
+#' Promotion replays the selected candidate's cost model and risk chain even
+#' when `exp` was configured with different `cost_model` or `risk_chain`
+#' values.
 #'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a
@@ -493,6 +572,7 @@ ledgr_promote <- function(exp,
   if (isTRUE(require_same_snapshot)) {
     ledgr_candidate_validate_same_snapshot(exp, candidate)
   }
+  exp <- ledgr_promote_experiment_with_candidate_cost(exp, candidate)
   exp <- ledgr_promote_experiment_with_candidate_risk(exp, candidate)
 
   seed <- candidate$execution_seed
@@ -629,6 +709,76 @@ ledgr_promote_experiment_with_candidate_risk <- function(exp, candidate) {
   exp$risk_chain_hash <- risk_identity$risk_chain_hash
   exp$risk_plan_json <- risk_identity$risk_plan_json
   exp
+}
+
+ledgr_promote_experiment_with_candidate_cost <- function(exp, candidate) {
+  cost_identity <- ledgr_candidate_cost_identity(candidate)
+  exp$cost_model <- cost_identity$cost_model
+  exp$cost_model_hash <- cost_identity$cost_model_hash
+  exp$cost_plan_json <- cost_identity$cost_plan_json
+  exp
+}
+
+ledgr_candidate_cost_identity <- function(candidate) {
+  provenance <- candidate$provenance
+  if (!is.list(provenance)) {
+    provenance <- list()
+  }
+  meta <- candidate$sweep_meta
+  if (!is.list(meta)) {
+    meta <- list()
+  }
+  row <- candidate$row
+  cost_model_hash <- provenance$cost_model_hash %||% meta$cost_model_hash %||% NULL
+  cost_plan_json <- provenance$cost_plan_json %||% meta$cost_plan_json %||% NULL
+  if (is.null(cost_model_hash) && is.data.frame(row) && "cost_model_hash" %in% names(row)) {
+    cost_model_hash <- as.character(row$cost_model_hash[[1]])
+  }
+  if (is.null(cost_model_hash) || is.null(cost_plan_json)) {
+    rlang::abort(
+      "Candidate cost_model_hash and cost_plan_json are required for promotion.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  if (!is.character(cost_model_hash) || length(cost_model_hash) != 1L ||
+      is.na(cost_model_hash) || !grepl("^[0-9a-f]{64}$", cost_model_hash)) {
+    rlang::abort(
+      "Candidate cost_model_hash is missing or invalid.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  if (!is.character(cost_plan_json) || length(cost_plan_json) != 1L ||
+      is.na(cost_plan_json) || !nzchar(cost_plan_json)) {
+    rlang::abort(
+      "Candidate cost_plan_json is missing or invalid.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  cost_model <- tryCatch(
+    ledgr_cost_plan_reconstruct(cost_plan_json),
+    error = function(e) {
+      rlang::abort(
+        "Candidate cost_plan_json cannot be reconstructed.",
+        class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args"),
+        parent = e
+      )
+    }
+  )
+  # The stored cost_plan_json is the durable byte identity. Reconstructing a
+  # singleton cost model can normalize it to a chain-shaped runtime model, so
+  # validate by hashing the canonicalized stored bytes rather than the model.
+  canonical_plan <- as.character(canonical_json(cost_plan_json))
+  if (!identical(digest::digest(canonical_plan, algo = "sha256"), cost_model_hash)) {
+    rlang::abort(
+      "Candidate cost_model_hash does not match cost_plan_json.",
+      class = c("ledgr_candidate_cost_identity_mismatch", "ledgr_invalid_args")
+    )
+  }
+  list(
+    cost_model = cost_model,
+    cost_model_hash = cost_model_hash,
+    cost_plan_json = canonical_plan
+  )
 }
 
 ledgr_candidate_risk_identity <- function(candidate) {
@@ -775,9 +925,14 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         runtime_projection,
                                         snapshot_hash,
                                         strategy_hash,
-                                        compiled_accounting_model = NULL) {
+                                        compiled_accounting_model = NULL,
+                                        execution_seed_override = NULL) {
   exp_payload <- ledgr_sweep_exp_payload(exp)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  execution_seed_override <- ledgr_sweep_validate_execution_seed_override(
+    execution_seed_override,
+    length(param_grid$params)
+  )
   tasks <- vector("list", length(param_grid$params))
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]
@@ -791,7 +946,9 @@ ledgr_sweep_candidate_tasks <- function(exp,
       raw_params = raw_params,
       params = ledgr_grid_candidate_strategy_params(raw_params),
       feature_params = ledgr_grid_candidate_feature_params(raw_params),
-      execution_seed = if (is.null(seed)) {
+      execution_seed = if (!is.null(execution_seed_override)) {
+        execution_seed_override[[i]]
+      } else if (is.null(seed)) {
         NA_integer_
       } else {
         ledgr_derive_seed(seed, list(run_id = label, params = raw_params))
@@ -814,6 +971,54 @@ ledgr_sweep_candidate_tasks <- function(exp,
     )
   }
   tasks
+}
+
+ledgr_sweep_execution_seed_override <- function(resolver,
+                                                param_grid,
+                                                resolved,
+                                                strategy_hash,
+                                                metric_context_hash,
+                                                cost_model_hash,
+                                                risk_chain_hash) {
+  if (is.null(resolver)) {
+    return(NULL)
+  }
+  out <- resolver(
+    param_grid = param_grid,
+    resolved = resolved,
+    strategy_hash = strategy_hash,
+    metric_context_hash = metric_context_hash,
+    cost_model_hash = cost_model_hash,
+    risk_chain_hash = risk_chain_hash
+  )
+  ledgr_sweep_validate_execution_seed_override(out, length(param_grid$params))
+}
+
+ledgr_sweep_validate_execution_seed_override <- function(x, n) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+  if (!is.numeric(x) || length(x) != n) {
+    rlang::abort(
+      "`execution_seed_resolver` must return one integer or NA seed per sweep candidate.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  out <- rep(NA_integer_, n)
+  for (i in seq_len(n)) {
+    value <- x[[i]]
+    if (length(value) != 1L || is.na(value)) {
+      out[[i]] <- NA_integer_
+    } else if (!is.finite(value) || value != as.integer(value)) {
+      rlang::abort(
+        "`execution_seed_resolver` must return one integer or NA seed per sweep candidate.",
+        class = "ledgr_invalid_args"
+      )
+    } else {
+      out[[i]] <- as.integer(value)
+    }
+  }
+  out
 }
 
 ledgr_sweep_exp_payload <- function(exp) {

@@ -142,6 +142,61 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
   testthat::expect_false(precomputed$warmup$warmup_achievable[[1]])
 })
 
+testthat::test_that("windowed sweeps validate precomputed scoring and hydration coverage", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:9)
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  feature <- ledgr_indicator(
+    id = "custom_close",
+    fn = function(window) tail(window$close, 1),
+    requires_bars = 1L,
+    stable_after = 1L
+  )
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (ctx$feature("AAA", "custom_close") > params$threshold) {
+      targets[["AAA"]] <- params$qty
+    }
+    targets
+  }
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    universe = "AAA",
+    features = list(feature),
+    cost_model = ledgr_cost_zero()
+  )
+  grid <- ledgr_param_grid(low = list(qty = 1, threshold = 103), high = list(qty = 2, threshold = 106))
+  window <- ledgr:::ledgr_experiment_window(exp, "2020-01-04", "2020-01-08")
+
+  full_precomputed <- ledgr_precompute_features(exp, grid)
+  exact_precomputed <- ledgr_precompute_features(exp, grid, start = "2020-01-04", end = "2020-01-08")
+  full_window <- ledgr:::ledgr_sweep_window(exp, grid, window = window, precomputed_features = full_precomputed, seed = 101L)
+  exact_window <- ledgr:::ledgr_sweep_window(exp, grid, window = window, precomputed_features = exact_precomputed, seed = 101L)
+  metric_cols <- c("candidate_id", "status", "final_equity", "total_return", "n_trades")
+  testthat::expect_identical(
+    as.data.frame(stats::setNames(lapply(metric_cols, function(col) full_window[[col]]), metric_cols)),
+    as.data.frame(stats::setNames(lapply(metric_cols, function(col) exact_window[[col]]), metric_cols))
+  )
+
+  short_scoring <- ledgr_precompute_features(exp, grid, start = "2020-01-05", end = "2020-01-08")
+  testthat::expect_error(
+    ledgr:::ledgr_validate_precomputed_features(short_scoring, exp, grid, window = window),
+    class = "ledgr_precomputed_range_mismatch"
+  )
+
+  missing_hydration <- full_precomputed
+  missing_hydration$warmup_range$start <- "2020-01-05T00:00:00Z"
+  testthat::expect_error(
+    ledgr:::ledgr_validate_precomputed_features(missing_hydration, exp, grid, window = window),
+    class = "ledgr_precomputed_hydration_mismatch"
+  )
+})
+
 testthat::test_that("runtime projection flattens bundle outputs to concrete feature IDs", {
   testthat::skip_if_not_installed("TTR")
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:30)

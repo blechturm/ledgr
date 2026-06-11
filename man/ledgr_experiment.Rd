@@ -44,8 +44,8 @@ resolve fill prices and explicit fees.}
 \item{cost_model}{Required ledgr cost model object. Use \code{ledgr_cost_zero()}
 for explicit zero-cost execution. \code{ledgr_cost_spread_bps()} treats
 \code{spread_bps} as a quoted bid/ask spread: buys cross half the spread above
-the reference price and sells cross half the spread below it, so a round trip
-crosses approximately \code{spread_bps} basis points before explicit fees.}
+the reference price and sells cross half the spread below it, so a round
+trip crosses approximately \code{spread_bps} basis points before explicit fees.}
 
 \item{risk_chain}{Target-risk chain object. Defaults to
 \code{ledgr_risk_none()} for explicit no-risk execution.}

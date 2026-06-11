@@ -119,6 +119,32 @@ ledgr_projection_from_payload <- function(payload,
   )
 }
 
+ledgr_projection_slice <- function(projection, pulses_posix) {
+  if (!inherits(projection, "ledgr_runtime_projection")) {
+    rlang::abort("`projection` must be a ledgr_runtime_projection object.", class = "ledgr_invalid_runtime_projection")
+  }
+  pulses_posix <- as.POSIXct(pulses_posix, tz = "UTC")
+  pulse_names <- ledgr_projection_pulse_names(pulses_posix)
+  missing <- setdiff(pulse_names, names(projection$pulse_index))
+  if (length(missing) > 0L) {
+    rlang::abort(
+      sprintf("Runtime projection does not cover requested pulse timestamp(s): %s.", paste(missing, collapse = ", ")),
+      class = "ledgr_invalid_runtime_projection"
+    )
+  }
+  idx <- unname(projection$pulse_index[pulse_names])
+  feature_values <- lapply(projection$feature_values, function(mat) {
+    mat[, idx, drop = FALSE]
+  })
+  ledgr_runtime_projection(
+    feature_values = feature_values,
+    universe = names(projection$instrument_index),
+    pulses_posix = pulses_posix,
+    feature_engine_version = projection$feature_engine_version,
+    alias_index = projection$alias_index
+  )
+}
+
 ledgr_projection_feature_ids <- function(projection, feature_ids = NULL) {
   if (is.null(feature_ids)) {
     return(names(projection$feature_values))

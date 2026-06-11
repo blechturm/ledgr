@@ -43,8 +43,9 @@ artifacts. Runs created this way store durable promotion context that can be rea
 \code{\link[=ledgr_promotion_context]{ledgr_promotion_context()}} or \code{\link[=ledgr_run_promotion_context]{ledgr_run_promotion_context()}}.
 Hash fields carried from the candidate into promotion evidence are
 summarized in \link{ledgr_identity_fields}.
-Promotion replays the selected candidate's risk chain even when \code{exp} was
-configured with a different \code{risk_chain}.
+Promotion replays the selected candidate's cost model and risk chain even
+when \code{exp} was configured with different \code{cost_model} or \code{risk_chain}
+values.
 
 The default \code{require_same_snapshot = TRUE} protects same-snapshot replay. For
 train/test evaluation, pass a candidate selected on the train snapshot to a

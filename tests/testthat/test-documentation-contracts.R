@@ -448,20 +448,20 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
-  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_2_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_4_spec_packet/`", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
-  testthat::expect_match(roadmap, "| v0.1.9.3 | Active | Target-risk", fixed = TRUE)
-  testthat::expect_match(roadmap, "v0.1.9.4 | Planned", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.4 | Done | Walk-forward", fixed = TRUE)
 
-  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.2`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** v0.1.9.3 target-risk packet", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.4`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** None; v0.1.9.5 is the next planned packet", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.2 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0_1_9_2_release_closeout.md", fixed = TRUE)
-  testthat::expect_match(design_index, "v0.1.9.3 target-risk packet is active", fixed = TRUE)
+  testthat::expect_match(design_index, "v0.1.9.4 walk-forward packet is complete", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -475,7 +475,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_gt(sweep_pos, 0L)
   testthat::expect_lt(sweep_pos, resolved_pos)
   testthat::expect_gt(wf_pos, 0L)
-  testthat::expect_lt(wf_pos, resolved_pos)
+  testthat::expect_gt(wf_pos, resolved_pos)
 
   testthat::expect_match(batch_plan, "## Batch 7 - Release Surfaces", fixed = TRUE)
   testthat::expect_match(batch_plan, "Status: Completed", fixed = TRUE)
@@ -872,9 +872,9 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_no_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
 
   testthat::expect_match(backtest_help, "quoted bid/ask\\s+spread")
-  testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\} basis points before explicit fees")
+  testthat::expect_match(backtest_help, "crosses approximately\\s+\\\\code\\{spread_bps\\}\\s+basis\\s+points before explicit fees")
   testthat::expect_match(experiment_help, "quoted bid/ask\\s+spread")
-  testthat::expect_match(experiment_help, "crosses approximately \\\\code\\{spread_bps\\} basis points before explicit fees")
+  testthat::expect_match(experiment_help, "crosses approximately\\s+\\\\code\\{spread_bps\\}\\s+basis\\s+points before explicit fees")
 
   testthat::expect_match(summary_help, "total return", fixed = TRUE)
   testthat::expect_match(summary_help, "annualized volatility", fixed = TRUE)
@@ -1596,7 +1596,7 @@ testthat::test_that("snapshot Yahoo and seal docs state lifecycle boundaries", {
   testthat::expect_match(yahoo_help, "stderr", fixed = TRUE)
   testthat::expect_match(seal_help, "idempotent", fixed = TRUE)
   testthat::expect_match(seal_help, "Already sealed snapshots return their existing hash", fixed = TRUE)
-  testthat::expect_match(seal_help, "returns an invisible list with \\\\code\\{\\$hash\\} and \\\\code\\{\\$snapshot\\}")
+  testthat::expect_match(seal_help, "returns an invisible list with (\\\\code|\\\\verb)\\{\\$hash\\} and (\\\\code|\\\\verb)\\{\\$snapshot\\}")
 })
 
 testthat::test_that("help-page article links target installed vignettes only", {
@@ -1714,4 +1714,32 @@ testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API 
     testthat::expect_no_match(doc, "fill_model", fixed = TRUE)
     testthat::expect_no_match(doc, "commission_fixed", fixed = TRUE)
   }
+})
+
+testthat::test_that("walk-forward docs state MVP workflow and caveats", {
+  qmd_path <- ledgr_test_source_vignette("walk-forward.qmd")
+  md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "walk-forward.md")
+  news_path <- file.path(testthat::test_path("..", ".."), "NEWS.md")
+  testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path) && file.exists(news_path), "walk-forward docs not available")
+
+  docs <- vapply(
+    c(qmd = qmd_path, md = md_path),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+  news <- paste(readLines(news_path, warn = FALSE), collapse = "\n")
+
+  for (doc in docs) {
+    testthat::expect_match(doc, "train snapshot window -> sweep candidates -> scalar selection", fixed = TRUE)
+    testthat::expect_match(doc, "Walk-forward evidence is only as survivorship-safe as the sealed snapshot and universe semantics it evaluates.", fixed = TRUE)
+    testthat::expect_match(doc, "Reproducibility and selection integrity are orthogonal.", fixed = TRUE)
+    testthat::expect_match(doc, "not PBO", fixed = TRUE)
+    testthat::expect_match(doc, "not independent observations", fixed = TRUE)
+    testthat::expect_match(doc, "Anchored folds grow their train window over time.", fixed = TRUE)
+    testthat::expect_match(doc, "Design-only Workflow Sketch", fixed = TRUE)
+  }
+
+  testthat::expect_match(news, "# ledgr 0.1.9.4", fixed = TRUE)
+  testthat::expect_match(news, "train-vs-test degradation table", fixed = TRUE)
+  testthat::expect_match(news, "does not add PBO", fixed = TRUE)
 })

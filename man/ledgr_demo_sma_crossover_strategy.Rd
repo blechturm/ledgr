@@ -8,7 +8,7 @@ ledgr_demo_sma_crossover_strategy()
 }
 \value{
 A Tier-1-compatible strategy function with signature
-\code{function(ctx, params)}.
+\verb{function(ctx, params)}.
 }
 \description{
 \code{ledgr_demo_sma_crossover_strategy()} returns a small deterministic strategy

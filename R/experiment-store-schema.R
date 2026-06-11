@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 110L
+ledgr_experiment_store_schema_version <- 111L
 ledgr_saved_sweep_schema_version <- 2L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
@@ -44,6 +44,9 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "sweeps",
     "sweep_candidates",
     "sweep_returns",
+    "walk_forward_sessions",
+    "walk_forward_folds",
+    "walk_forward_scores",
     "ledgr_schema_metadata"
   )
   any(vapply(known_tables, function(table_name) ledgr_experiment_store_table_exists(con, table_name), logical(1)))
@@ -180,6 +183,91 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
   invisible(TRUE)
 }
 
+ledgr_experiment_store_ensure_walk_forward_tables <- function(con) {
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS walk_forward_sessions (
+      session_id TEXT NOT NULL PRIMARY KEY,
+      snapshot_hash TEXT NOT NULL,
+      experiment_hash TEXT NOT NULL,
+      param_grid_hash TEXT NOT NULL,
+      fold_list_hash TEXT NOT NULL,
+      selection_rule_hash TEXT NOT NULL,
+      metric_context_hash TEXT NOT NULL,
+      cost_model_hash TEXT NOT NULL,
+      risk_chain_hash TEXT NOT NULL,
+      master_seed INTEGER,
+      opening_state_policy TEXT NOT NULL CHECK (opening_state_policy IN ('carry_test_state','flat_test_state')),
+      created_at_utc TIMESTAMP NOT NULL,
+      ledgr_version TEXT NOT NULL,
+      meta_json TEXT NOT NULL
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS walk_forward_folds (
+      session_id TEXT NOT NULL,
+      fold_id TEXT NOT NULL,
+      fold_seq INTEGER NOT NULL,
+      scheme TEXT NOT NULL,
+      train_start_utc TIMESTAMP NOT NULL,
+      train_end_utc TIMESTAMP NOT NULL,
+      test_start_utc TIMESTAMP NOT NULL,
+      test_end_utc TIMESTAMP NOT NULL,
+      hydration_start_utc TIMESTAMP NOT NULL,
+      train_scoring_start_utc TIMESTAMP NOT NULL,
+      test_scoring_start_utc TIMESTAMP NOT NULL,
+      opening_state_policy TEXT NOT NULL CHECK (opening_state_policy IN ('carry_test_state','flat_test_state')),
+      selected_candidate_key TEXT,
+      selected_at_utc TIMESTAMP,
+      test_run_id TEXT,
+      status TEXT NOT NULL CHECK (status IN ('DONE','FAILED','INTERRUPTED','PARTIAL')),
+      PRIMARY KEY (session_id, fold_seq),
+      UNIQUE (session_id, fold_id)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS walk_forward_scores (
+      session_id TEXT NOT NULL,
+      fold_id TEXT NOT NULL,
+      fold_seq INTEGER NOT NULL,
+      candidate_key TEXT NOT NULL,
+      candidate_label TEXT,
+      params_hash TEXT NOT NULL,
+      feature_params_hash TEXT NOT NULL,
+      feature_set_hash TEXT NOT NULL,
+      alias_map_hash TEXT NOT NULL,
+      metric_context_hash TEXT NOT NULL,
+      cost_model_hash TEXT NOT NULL,
+      risk_chain_hash TEXT NOT NULL,
+      \"window\" TEXT NOT NULL CHECK (\"window\" IN ('train','test')),
+      metric_name TEXT NOT NULL,
+      metric_value DOUBLE,
+      n_trades INTEGER,
+      status TEXT NOT NULL CHECK (status IN ('DONE','FAILED')),
+      error_class TEXT,
+      error_msg TEXT,
+      execution_seed INTEGER,
+      PRIMARY KEY (session_id, fold_seq, \"window\", candidate_key, metric_name)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE INDEX IF NOT EXISTS idx_walk_forward_scores_fold
+    ON walk_forward_scores (session_id, fold_seq, \"window\", status)
+    "
+  )
+  invisible(TRUE)
+}
+
 ledgr_experiment_store_version <- function(con) {
   if (!ledgr_experiment_store_table_exists(con, "ledgr_schema_metadata")) {
     return(0L)
@@ -233,6 +321,7 @@ ledgr_experiment_store_check_schema <- function(con, write = FALSE, inform = FAL
   }
   ledgr_experiment_store_ensure_run_telemetry_columns(con)
   ledgr_experiment_store_ensure_sweep_tables(con)
+  ledgr_experiment_store_ensure_walk_forward_tables(con)
   invisible(list(schema_version = ledgr_experiment_store_schema_version, is_legacy = FALSE))
 }
 
@@ -349,6 +438,7 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
     )
 
     ledgr_experiment_store_ensure_sweep_tables(con)
+    ledgr_experiment_store_ensure_walk_forward_tables(con)
 
     if (ledgr_experiment_store_table_exists(con, "runs")) {
       DBI::dbExecute(
