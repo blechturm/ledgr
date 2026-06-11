@@ -448,20 +448,20 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
-  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_3_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_4_spec_packet/`", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
-  testthat::expect_match(roadmap, "| v0.1.9.4 | Active | Walk-forward", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.4 | Done | Walk-forward", fixed = TRUE)
 
-  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.3`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** v0.1.9.4 walk-forward packet", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.4`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** None; v0.1.9.5 is the next planned packet", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.2 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0_1_9_2_release_closeout.md", fixed = TRUE)
-  testthat::expect_match(design_index, "v0.1.9.4 walk-forward packet is active", fixed = TRUE)
+  testthat::expect_match(design_index, "v0.1.9.4 walk-forward packet is complete", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -475,7 +475,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_gt(sweep_pos, 0L)
   testthat::expect_lt(sweep_pos, resolved_pos)
   testthat::expect_gt(wf_pos, 0L)
-  testthat::expect_lt(wf_pos, resolved_pos)
+  testthat::expect_gt(wf_pos, resolved_pos)
 
   testthat::expect_match(batch_plan, "## Batch 7 - Release Surfaces", fixed = TRUE)
   testthat::expect_match(batch_plan, "Status: Completed", fixed = TRUE)

@@ -386,7 +386,7 @@ Implementation note:
 ## Batch 8 - Release Surfaces And Planning Docs
 
 Ticket: `LDG-2625`
-Status: Review Pending
+Status: Completed
 
 Goal: update version, roadmap, horizon, design index, AGENTS, identity docs,
 and generated documentation surfaces before the release gate.
@@ -419,7 +419,7 @@ Implementation note:
 ## Batch 9 - Release Gate
 
 Ticket: `LDG-2626`
-Status: Planned
+Status: Completed
 
 Goal: follow the release playbook until v0.1.9.4 is merged and tagged.
 
@@ -441,3 +441,10 @@ Review focus:
 - If large unexpected diffs are needed to pass the gate, stop and ask before
   continuing.
 - Generated local artifacts are not committed.
+
+Implementation note:
+
+- Completed local release gates per `inst/design/release_ci_playbook.md`.
+  Release closeout records targeted tests, full tests, README cold-start,
+  source build, package check, coverage, pkgdown, WSL smoke tests, reruns, and
+  accepted warnings/notes.

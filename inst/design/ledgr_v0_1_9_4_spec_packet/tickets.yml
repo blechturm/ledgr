@@ -274,7 +274,7 @@ tickets:
 
   - id: "LDG-2625"
     title: "Release Surfaces And Planning Docs"
-    status: "review_pending"
+    status: "completed"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -294,7 +294,7 @@ tickets:
 
   - id: "LDG-2626"
     title: "v0.1.9.4 Release Gate"
-    status: "planned"
+    status: "completed"
     priority: "P0"
     effort: "M"
     dependencies:

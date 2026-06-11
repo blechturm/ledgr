@@ -26,10 +26,10 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-06-10):** v0.1.9.4 walk-forward is the active
-packet at `inst/design/ledgr_v0_1_9_4_spec_packet/`. Horizon entries below
-remain non-binding unless the active packet, roadmap, contracts, or an accepted
-RFC promotes them.
+**Current packet note (2026-06-11):** v0.1.9.4 walk-forward has closed.
+v0.1.9.5 is the next planned packet and has not been cut. Horizon entries below
+remain non-binding unless a future active packet, roadmap, contracts, or an
+accepted RFC promotes them.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet
@@ -74,6 +74,52 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-06-11 [audit] Deep code review findings for the next release cycle
+
+A deep code review pass over the engine core, accounting, identity, and
+persistence layers completed at v0.1.9.4 close. Full findings, severities,
+file/line references, and suggested fixes are recorded in
+`inst/design/audits/v0_1_9_4_deep_code_review_audit.md`. None block the
+v0.1.9.4 release gate; all are tracked for the next release cycle
+(v0.1.9.5 is the natural home for most).
+
+Severity summary:
+
+- **Blocker (1).** B-1: unprotected SEXP during string-vector construction
+  in `src/spot_fifo.cpp` output assembly -- GC use-after-free risk under
+  allocation pressure, exactly the large-batch workloads the compiled
+  spot-FIFO accelerator targets. Ten-line fix (anchor vectors in the
+  protected output list before filling). Should land before any benchmark
+  re-record that exercises the compiled path at scale.
+- **High (3).** H-1: single-pulse runs crash with a bare unclassed
+  subscript error in `backtest-runner.R`. H-2: R lot accounting fails
+  silent-open on invalid fill input while the C++ kernel fails closed;
+  align R to fail-closed. H-3: `ledgr_time_elapsed` magnitude heuristic
+  divides by 1e9 for any run longer than ~1000 seconds, corrupting
+  persisted `run_telemetry.elapsed_sec` for multi-hour sweeps.
+- **Medium (7).** Legacy full-spread resolver deletion (M-1), C++ scalar
+  TYPEOF hardening (M-2), `cpp11::stop` instead of `Rf_error` (M-3),
+  fractional-quantity dust lots as a contract decision (M-4, pairs with
+  the whole-second contract precedent), per-fill DB roundtrips in db_live
+  mode (M-5), snapshot-hash timestamp representation pinning (M-6, hash
+  stability across driver upgrades), notional-fee rounding-order binding
+  (M-7).
+- **Nits (6).** Double meta_json parse in replay, O(n^2) lot packing,
+  int32 event_seq bound, absolute delta tolerance, JSON cache eviction
+  accounting, slow-path features_wide loop.
+
+The audit also records do-not-regress positives: four-path accounting
+parity (canonical durable / ephemeral / compiled / replay) with identical
+Kahan summation in R and C++, the validate-then-reorder target contract
+that makes the R and C++ fill loops provably equivalent, chunk-invariant
+streaming snapshot hashing, and the marked no-lookahead boundary in the
+fold engine.
+
+Promotion path: B-1/H-1/H-2/H-3 plus the kernel-hygiene mediums (M-1, M-2,
+M-3) fit a small hardening batch early in v0.1.9.5. M-4 and M-6 are
+contract-binding decisions that belong in the v0.1.9.5 contracts audit
+proper. M-5, M-7, and the nits ride along as entropy items.
 
 ### 2026-06-11 [adapters] Canonical run return stream helper before reporting adapters
 
@@ -2373,86 +2419,6 @@ This entry records the sequencing decision and the cross-cycle
 identity handoffs. Future tickets in v0.1.9.x should respect the arc
 shape; deviations require explicit maintainer override (e.g., a
 parallel small release for target-helper Pass 2 between named ticks).
-
-### 2026-06-05 [planning] v0.1.9.4 walk-forward Section 17 gate-row obligations from the v0.1.9.x arc
-
-**Status update 2026-06-11:** consumed by the v0.1.9.4 spec packet and
-implementation. The packet names `cost_model_hash` and `risk_chain_hash` in
-both `candidate_key` and `session_id` identity recipes, and the identity tests
-exercise those components. Keep this entry visible until v0.1.9.4 release
-closeout, then sweep it to `## Resolved`.
-
-The v0.1.9.x arc sequencing (see 2026-06-05 sequencing entry above)
-puts walk-forward at v0.1.9.4 as the culmination, consuming forward
-dependencies from each earlier tick. Two identity-surface
-dependencies are not yet named in walk-forward's Section 17
-ticket-cut gate matrix. They must be added at v0.1.9.4 ticket-cut
-time, either via amendment to the walk-forward synthesis or via the
-spec-cut writer treating the obligations recorded here as
-authoritative per Section 17.1's two-gate mechanism.
-
-**Gate row 1: cost-identity in walk-forward identity recipes.**
-
-The v0.1.9.1 cost-API binds `cost_model_hash` and `cost_plan_json`
-on run config (cost-API synthesis Section 6.1). Walk-forward must
-include `cost_model_hash` in `walk_forward_candidate_key` and
-`walk_forward_session_id` per cost-API synthesis Section 6.4 and
-the explicit future obligation at Section 14:560:
-
-> "the v0.1.9.x walk-forward spec packet must extend candidate_key
-> to include cost_model_hash"
-
-Section 17 gate row to add at v0.1.9.4 packet-cut:
-
-| Amendment item | Packet-open criterion | Release-gate criterion | Owner |
-| --- | --- | --- | --- |
-| Cost-identity in walk-forward identity recipes (from cost-API synthesis Section 6.4 + 14:560) | Spec packet names `cost_model_hash` as a component of both `walk_forward_candidate_key` and `walk_forward_session_id` identity recipes; identity-stability test exists | Identity-stability test passes; hash composition includes `cost_model_hash`; reconstruction parity passes | maintainer-signed-off |
-
-**Gate row 2: risk-chain identity in walk-forward identity recipes.**
-
-The v0.1.9.3 target-risk packet produces the risk-chain identity
-surface that walk-forward synthesis Section 3 and Amendment 2 bind
-as required for fold / session / candidate provenance. The current
-Section 17 gate matrix does not name risk-chain identity explicitly;
-the obligation lives in the synthesis Section 3 binding text but
-has no enforcement gate.
-
-Section 17 gate row to add at v0.1.9.4 packet-cut:
-
-| Amendment item | Packet-open criterion | Release-gate criterion | Owner |
-| --- | --- | --- | --- |
-| Risk-chain identity in walk-forward identity recipes (from walk-forward synthesis Section 3 + Amendment 2; produced by v0.1.9.3 target-risk) | Spec packet names risk-chain identity component(s) in both `walk_forward_candidate_key` and `walk_forward_session_id` identity recipes; identity-stability test exists | Identity-stability test passes; hash composition includes the risk-chain identity surface delivered by v0.1.9.3; reconstruction parity passes | maintainer-signed-off |
-
-**Mechanism options at v0.1.9.4 packet-cut time:**
-
-(a) Amend walk-forward synthesis with Amendment 3 adding these two
-rows to the Section 17 matrix. Same authority pattern as
-Amendments 1 and 2 (maintainer amendment per Section 13). Cleanest
-audit trail because the matrix is canonical.
-
-(b) Spec-cut writer treats this horizon entry plus cost-API
-synthesis Section 14:560 as authoritative and adds the rows to the
-v0.1.9.4 packet's `tickets.yml` (or equivalent acceptance-criteria
-record) without amending the synthesis. Section 17.1 two-gate
-mechanism applies: packet-open gate fails if rows are absent;
-release-gate fails if criteria are not met or carried forward.
-
-Both mechanisms preserve the Section 17 enforcement discipline. (a)
-is durable in the canonical artifact; (b) is lighter-weight and
-treats this horizon entry as the cross-cycle record. Maintainer
-chooses at v0.1.9.4 spec-cut start.
-
-**Cross-references:**
-
-- cost-API synthesis Sections 6.1, 6.4, 14:560
-- walk-forward synthesis Section 3, Amendment 2 (Section 16.2), and
-  Section 17.1 gate matrix
-- 2026-06-05 v0.1.9.x sequencing entry above
-
-This entry records the cross-cycle gate-row obligations so the
-v0.1.9.4 spec-cut writer has them in hand and the obligations are
-visible from outside the cost-API and walk-forward synthesis
-artifacts.
 
 ### 2026-06-05 [research] v0.1.9.2 sweep artifact persistence RFC cycle accepted
 
@@ -5851,6 +5817,19 @@ This entry records direction, not committed work.
 Entries move here when their idea has shipped or been answered. Each records
 what resolved it. Sweep an idea here when its milestone closes — do not leave
 shipped work in "Open."
+
+### 2026-06-05 [planning] v0.1.9.4 walk-forward Section 17 gate-row obligations from the v0.1.9.x arc -- resolved by v0.1.9.4
+
+Resolved by the v0.1.9.4 walk-forward packet. The packet treated the horizon
+entry as the cross-cycle enforcement record, named both `cost_model_hash` and
+`risk_chain_hash` in `candidate_key` and `session_id`, and shipped identity
+tests exercising those components.
+
+The accepted obligations remain traceable through:
+
+- `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`;
+- `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`;
+- `tests/testthat/test-walk-forward-identity.R`.
 
 ### 2026-06-05 [planning] v0.1.9.1 cost-API spec-cut decisions on synthesis Section 13 open questions -- resolved by v0.1.9.1
 

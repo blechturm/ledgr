@@ -287,6 +287,11 @@ testthat::test_that("windowed execution preserves final-bar no-fill semantics at
 })
 
 testthat::test_that("walk-forward Batch 1 does not add a pulse loop to fold engine", {
-  fold_engine <- readLines(testthat::test_path("..", "..", "R", "fold-engine.R"), warn = FALSE)
+  fold_engine_path <- testthat::test_path("..", "..", "R", "fold-engine.R")
+  testthat::skip_if_not(
+    file.exists(fold_engine_path),
+    "fold-engine source file is unavailable in this test layout"
+  )
+  fold_engine <- readLines(fold_engine_path, warn = FALSE)
   testthat::expect_false(any(grepl("walk_forward|walk-forward", fold_engine)))
 })

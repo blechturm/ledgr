@@ -13,9 +13,10 @@ articles:
   research-workflow: research-workflow.html
   strategy-development: strategy-development.html
   sweeps: sweeps.html
+  walk-forward: walk-forward.html
   articles/who-ledgr-is-for: who-ledgr-is-for.html
   articles/why-r: why-r.html
-last_built: 2026-06-09T19:46Z
+last_built: 2026-06-11T18:42Z
 urls:
   reference: https://blechturm.github.io/ledgr/reference
   article: https://blechturm.github.io/ledgr/articles

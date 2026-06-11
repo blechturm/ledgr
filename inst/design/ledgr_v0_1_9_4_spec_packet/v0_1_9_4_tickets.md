@@ -901,7 +901,7 @@ scope: examples_news_vignette
 Priority: P1
 Effort: M
 Dependencies: LDG-2624
-Status: Review Pending
+Status: Completed
 
 ### Description
 
@@ -956,7 +956,7 @@ scope: v0.1.9.4_release_surfaces
 Priority: P0
 Effort: M
 Dependencies: LDG-2612, LDG-2613, LDG-2614, LDG-2615, LDG-2616, LDG-2617, LDG-2618, LDG-2619, LDG-2620, LDG-2621, LDG-2622, LDG-2623, LDG-2624, LDG-2625
-Status: Planned
+Status: Completed
 
 ### Description
 
@@ -965,17 +965,17 @@ evidence, and prepare the branch for merge/tag.
 
 ### Tasks
 
-- Read `inst/design/release_ci_playbook.md` before starting the gate.
-- Run targeted walk-forward tests.
-- Run full local test suite.
-- Run package build and check.
-- Run coverage gate.
-- Run documentation and generated-doc checks.
-- Check diff size before broad release-surface edits; stop if large unexpected
+- [x] Read `inst/design/release_ci_playbook.md` before starting the gate.
+- [x] Run targeted walk-forward tests.
+- [x] Run full local test suite.
+- [x] Run package build and check.
+- [x] Run coverage gate.
+- [x] Run documentation and generated-doc checks.
+- [x] Check diff size before broad release-surface edits; stop if large unexpected
   diffs appear.
-- Push branch and monitor remote CI.
-- Merge, tag, and publish release only after playbook gates pass.
-- Write `v0_1_9_4_release_closeout.md`.
+- [x] Push branch and monitor remote CI.
+- [x] Merge, tag, and publish release only after playbook gates pass.
+- [x] Write `v0_1_9_4_release_closeout.md`.
 
 ### Acceptance Criteria
 

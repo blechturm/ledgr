@@ -56,6 +56,8 @@ reference:
       - ledgr_candidate_reproduction_key
       - print.ledgr_sweep_candidate
       - ledgr_promote
+      - ledgr_fold
+      - ledgr_select_argmax
       - ledgr_walk_forward
       - ledgr_walk_forward_results
       - ledgr_walk_forward_extract_candidate
