@@ -20,11 +20,12 @@ ledgr_wfo_strategy <- function(ctx, params) {
   target
 }
 
-ledgr_wfo_exp <- function(opening = ledgr_opening(cash = 10000)) {
+ledgr_wfo_exp <- function(opening = ledgr_opening(cash = 10000),
+                          strategy = ledgr_wfo_strategy) {
   snapshot <- ledgr_snapshot_from_df(ledgr_wfo_bars())
   exp <- ledgr_experiment(
     snapshot,
-    ledgr_wfo_strategy,
+    strategy,
     opening = opening,
     cost_model = ledgr_cost_zero()
   )
@@ -46,6 +47,43 @@ ledgr_wfo_grid <- function() {
     trade = list(qty = 1, threshold = 101),
     idle = list(qty = 0, threshold = 999)
   )
+}
+
+ledgr_wfo_candidate_failure_strategy <- function(ctx, params) {
+  if (isTRUE(params$fail)) {
+    rlang::abort("candidate failed", class = "ledgr_test_candidate_failure")
+  }
+  target <- ctx$flat()
+  if (ctx$close("AAA") >= params$threshold) {
+    target["AAA"] <- params$qty
+  }
+  target
+}
+
+ledgr_wfo_test_failure_strategy <- function(ctx, params) {
+  if (as.POSIXct(ctx$ts_utc, tz = "UTC") >= as.POSIXct("2020-01-05", tz = "UTC")) {
+    rlang::abort("selected test run failed", class = "ledgr_test_run_failure")
+  }
+  target <- ctx$flat()
+  if (ctx$close("AAA") >= params$threshold) {
+    target["AAA"] <- params$qty
+  }
+  target
+}
+
+ledgr_wfo_interrupt_strategy <- function(ctx, params) {
+  if (as.POSIXct(ctx$ts_utc, tz = "UTC") >= as.POSIXct("2020-01-08", tz = "UTC")) {
+    cond <- structure(
+      list(message = "simulated interrupt", call = NULL),
+      class = c("interrupt", "condition")
+    )
+    stop(cond)
+  }
+  target <- ctx$flat()
+  if (ctx$close("AAA") >= params$threshold) {
+    target["AAA"] <- params$qty
+  }
+  target
 }
 
 testthat::test_that("walk-forward orchestrates train sweeps, selected test runs, and persisted happy-path rows", {
@@ -286,4 +324,138 @@ testthat::test_that("flat-test state is explicit and marked cold-start distorted
   )
   testthat::expect_identical(session$opening_state_policy[[1]], "flat_test_state")
   testthat::expect_match(session$meta_json[[1]], "cold_start_distorted", fixed = TRUE)
+})
+
+testthat::test_that("walk-forward preserves failed train candidate score rows while selecting survivors", {
+  fx <- ledgr_wfo_exp(strategy = ledgr_wfo_candidate_failure_strategy)
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+
+  wf <- ledgr_walk_forward(
+    fx$exp,
+    grid = ledgr_param_grid(
+      trade = list(qty = 1, threshold = 101, fail = FALSE),
+      broken = list(qty = 1, threshold = 101, fail = TRUE)
+    ),
+    folds = ledgr_fold_list(
+      list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
+      constructor = list(type_id = "explicit")
+    ),
+    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    seed = 505L
+  )
+  on.exit(lapply(wf$test_runs, close), add = TRUE)
+
+  failed_rows <- wf$scores[
+    wf$scores$window == "train" &
+      wf$scores$candidate_label == "broken" &
+      wf$scores$metric_name == "sharpe_ratio",
+    ,
+    drop = FALSE
+  ]
+  testthat::expect_equal(nrow(failed_rows), 1L)
+  testthat::expect_identical(failed_rows$status[[1]], "FAILED")
+  testthat::expect_identical(failed_rows$error_class[[1]], "ledgr_strategy_error")
+  testthat::expect_identical(wf$folds$status[[1]], "DONE")
+  testthat::expect_identical(wf$selected$candidate_id[[1]], "trade")
+})
+
+testthat::test_that("walk-forward persists no-selection failure evidence", {
+  fx <- ledgr_wfo_exp(strategy = ledgr_wfo_candidate_failure_strategy)
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+
+  testthat::expect_error(
+    ledgr_walk_forward(
+      fx$exp,
+      grid = ledgr_param_grid(broken = list(qty = 1, threshold = 101, fail = TRUE)),
+      folds = ledgr_fold_list(
+        list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
+        constructor = list(type_id = "explicit")
+      ),
+      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      seed = 606L
+    ),
+    class = "ledgr_walk_forward_no_selection"
+  )
+
+  opened <- ledgr:::ledgr_run_store_open(fx$exp$snapshot$db_path)
+  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+  session <- DBI::dbGetQuery(opened$con, "SELECT meta_json FROM walk_forward_sessions")
+  folds <- DBI::dbGetQuery(opened$con, "SELECT status, selected_at_utc FROM walk_forward_folds")
+  scores <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT DISTINCT status, error_class FROM walk_forward_scores"
+  )
+
+  testthat::expect_equal(nrow(session), 1L)
+  testthat::expect_match(session$meta_json[[1]], "\"status\":\"FAILED\"", fixed = TRUE)
+  testthat::expect_identical(folds$status[[1]], "FAILED")
+  testthat::expect_true(is.na(folds$selected_at_utc[[1]]))
+  testthat::expect_true(all(scores$status == "FAILED"))
+  testthat::expect_true("ledgr_strategy_error" %in% scores$error_class)
+})
+
+testthat::test_that("walk-forward test-run failure preserves train rows and fails the session", {
+  fx <- ledgr_wfo_exp(strategy = ledgr_wfo_test_failure_strategy)
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+
+  testthat::expect_error(
+    ledgr_walk_forward(
+      fx$exp,
+      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      folds = ledgr_fold_list(
+        list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
+        constructor = list(type_id = "explicit")
+      ),
+      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      seed = 707L
+    ),
+    class = "ledgr_test_run_failure"
+  )
+
+  opened <- ledgr:::ledgr_run_store_open(fx$exp$snapshot$db_path)
+  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+  session <- DBI::dbGetQuery(opened$con, "SELECT meta_json FROM walk_forward_sessions")
+  folds <- DBI::dbGetQuery(opened$con, "SELECT status, test_run_id FROM walk_forward_folds")
+  scores <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT DISTINCT \"window\", status FROM walk_forward_scores"
+  )
+
+  testthat::expect_match(session$meta_json[[1]], "\"status\":\"FAILED\"", fixed = TRUE)
+  testthat::expect_identical(folds$status[[1]], "FAILED")
+  testthat::expect_true(nzchar(folds$test_run_id[[1]]))
+  testthat::expect_identical(unique(scores$window), "train")
+  testthat::expect_true(all(scores$status == "DONE"))
+})
+
+testthat::test_that("walk-forward interrupt after a completed fold persists a partial session", {
+  fx <- ledgr_wfo_exp(strategy = ledgr_wfo_interrupt_strategy)
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+
+  err <- tryCatch(
+    ledgr_walk_forward(
+      fx$exp,
+      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      folds = ledgr_wfo_folds(),
+      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      seed = 808L
+    ),
+    interrupt = function(e) e
+  )
+  testthat::expect_s3_class(err, "interrupt")
+
+  opened <- ledgr:::ledgr_run_store_open(fx$exp$snapshot$db_path)
+  on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+  session <- DBI::dbGetQuery(opened$con, "SELECT meta_json FROM walk_forward_sessions")
+  folds <- DBI::dbGetQuery(opened$con, "SELECT fold_seq, status FROM walk_forward_folds ORDER BY fold_seq")
+  score_windows <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT DISTINCT fold_seq, \"window\" FROM walk_forward_scores ORDER BY fold_seq, \"window\""
+  )
+
+  testthat::expect_match(session$meta_json[[1]], "\"status\":\"PARTIAL\"", fixed = TRUE)
+  testthat::expect_equal(nrow(folds), 1L)
+  testthat::expect_identical(folds$status[[1]], "DONE")
+  testthat::expect_identical(unique(score_windows$fold_seq), 1L)
+  testthat::expect_true(all(c("train", "test") %in% score_windows$window))
 })

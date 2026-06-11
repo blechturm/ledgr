@@ -268,7 +268,7 @@ Implementation note:
 ## Batch 5 - Score Rows, Failures, And Partial Sessions
 
 Ticket: `LDG-2620`
-Status: Planned
+Status: Review Pending
 
 Goal: make fold score rows, candidate failures, no-selection failures, test-run
 failures, interrupts, and partial sessions inspectable.
@@ -297,6 +297,14 @@ Review focus:
   zero/flat results.
 - Partial evidence is inspectable but not represented as a complete session.
 - No per-pulse DB writes are added.
+
+Implementation note:
+
+- Extended the Batch 4 walk-forward writer into fold/session terminal states:
+  `DONE`, `FAILED`, `INTERRUPTED`, and `PARTIAL`. Train candidate failures
+  remain score rows with stored sweep failure classes, no-selection and
+  selected test-run failures preserve train evidence before rethrowing, and
+  user interrupts persist only completed fold evidence.
 
 ## Batch 6 - Inspection, Reopen, Extraction, And Promotion
 

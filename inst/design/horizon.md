@@ -75,6 +75,50 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-06-11 [adapters] Canonical run return stream helper before reporting adapters
+
+The v0.1.9.2 retained-sweep surface gives sweeps a canonical return-series
+projection through `ledgr_sweep_returns()` and `ledgr_sweep_returns_wide()`.
+Single committed runs do not yet have the symmetric helper; users derive
+adjacent returns manually from `ledgr_results(bt, what = "equity")`.
+
+This is an API ergonomics gap, not an execution gap. A future helper such as
+`ledgr_returns(bt)` or `ledgr_run_returns(bt)` could return the canonical
+single-run portfolio stream:
+
+```text
+ts_utc
+equity
+period_return
+```
+
+Design constraints if promoted:
+
+- do not invent a second return formula; consume the same equity / adjacent
+  return semantics used by `ledgr_compute_metrics()` and retained sweep
+  returns;
+- keep metrics out of the result-table surface: `ledgr_results()` remains
+  evidence tables, `ledgr_compute_metrics()` remains metric values, and this
+  helper is only the canonical return stream;
+- use `period_return` to match sweep retention naming;
+- treat the `ledgr_ind_returns()` name collision as acceptable if the run
+  helper is `ledgr_returns()`, or choose `ledgr_run_returns()` if explicitness
+  matters more than elegance;
+- keep this separate from first-class position / exposure time-series helpers,
+  which imply larger semantics around weights, shorts, leverage, margin,
+  missing prices, multi-currency, and later derivatives;
+- keep this out of v0.1.9.4 unless a walk-forward ticket explicitly promotes
+  it. Walk-forward can continue to use internal score rows and retained test
+  run artifacts without adding a new public return API.
+
+Relationship to existing roadmap entries:
+
+- this is a likely predecessor seam for the v0.2.x PerformanceAnalytics /
+  external-package adapter work, where adapters should consume ledgr's own
+  canonical return stream rather than reimplementing return math;
+- this does not commit to a tear sheet, charting API, `what = "metrics"`,
+  `what = "returns"`, position-level result table, or adapter package.
+
 ### 2026-06-09 [research] Selection-session archive / evaluation registry is parked, not committed
 
 Discussion around a snapshot-scoped "candidate graveyard" surfaced a real

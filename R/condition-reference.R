@@ -80,6 +80,9 @@
 #' `ledgr_walk_forward_candidate_key_missing` is raised when the train-window
 #' score rows passed to a selection rule do not include a `candidate_key` column.
 #'
+#' `ledgr_walk_forward_test_run_failed` is raised when a selected test run
+#' cannot produce a usable test score row.
+#'
 #' @section Related existing classes:
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers
@@ -114,6 +117,7 @@
 #' @aliases ledgr_walk_forward_metric_class_invalid
 #' @aliases ledgr_walk_forward_no_selection
 #' @aliases ledgr_walk_forward_candidate_key_missing
+#' @aliases ledgr_walk_forward_test_run_failed
 NULL
 
 #' LEDGR_LAST_BAR_NO_FILL warning code

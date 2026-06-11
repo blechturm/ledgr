@@ -26,6 +26,7 @@
 \alias{ledgr_walk_forward_metric_class_invalid}
 \alias{ledgr_walk_forward_no_selection}
 \alias{ledgr_walk_forward_candidate_key_missing}
+\alias{ledgr_walk_forward_test_run_failed}
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
@@ -116,6 +117,9 @@ the requested selection metric are missing, \code{NA}, \code{NaN}, or infinite.
 \code{ledgr_walk_forward_candidate_key_missing} is raised when the train-window
 score rows passed to a selection rule do not include a \code{candidate_key}
 column.
+
+\code{ledgr_walk_forward_test_run_failed} is raised when a selected test run
+cannot produce a usable test score row.
 }
 
 \section{Related existing classes}{

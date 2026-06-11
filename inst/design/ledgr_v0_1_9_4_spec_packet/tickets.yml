@@ -172,7 +172,7 @@ tickets:
 
   - id: "LDG-2620"
     title: "Score Rows, Failures, And Partial Sessions"
-    status: "planned"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

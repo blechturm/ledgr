@@ -604,7 +604,7 @@ scope: train_select_test_lifecycle
 Priority: P0
 Effort: L
 Dependencies: LDG-2618, LDG-2619
-Status: Planned
+Status: Review Pending
 
 ### Description
 
@@ -646,6 +646,15 @@ and partial-session evidence with classed conditions.
 Failure-capture tests, no-selection tests, test-run-failure tests,
 interrupt tests, partial-session tests, transactionality tests, and status
 transition tests.
+
+Implementation note:
+
+Batch 5 extended the walk-forward orchestrator with a fold evaluator that
+preserves train score rows before selection and test execution. Candidate
+failures remain score rows with `status = "FAILED"`, no-selection and selected
+test-run failures persist fold/session failure evidence before rethrowing their
+classed conditions, and interrupts persist only completed fold evidence with
+`INTERRUPTED` or `PARTIAL` session status metadata.
 
 ### Source Reference
 

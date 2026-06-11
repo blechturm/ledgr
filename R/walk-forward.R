@@ -52,135 +52,80 @@ ledgr_walk_forward <- function(exp,
 
   session_identity <- ledgr_walk_forward_session_identity(exp, grid, folds, selection_rule, seed, opening_state_policy)
   session_id <- session_identity$session_id
-  fold_rows <- vector("list", length(folds))
+  fold_rows <- list()
   score_rows <- list()
-  fold_results <- vector("list", length(folds))
-  selected_tests <- vector("list", length(folds))
+  fold_results <- list()
+  selected_tests <- list()
   carried_opening <- exp$opening
+  terminal_status <- "DONE"
+  terminal_error <- NULL
+  completed_folds <- 0L
 
   for (fold_idx in seq_along(folds)) {
-    fold <- ledgr_validate_fold(folds[[fold_idx]])
-    train_window <- ledgr_experiment_window_from_fold(
-      exp,
-      fold,
-      window = "train",
-      opening_state_policy = opening_state_policy
-    )
-    train_identities <- NULL
-    train_sweep <- ledgr_sweep_window(
-      exp,
-      grid,
-      window = train_window,
-      seed = seed,
-      execution_seed_resolver = function(param_grid,
-                                         resolved,
-                                         strategy_hash,
-                                         metric_context_hash,
-                                         cost_model_hash,
-                                         risk_chain_hash) {
-        train_identities <<- ledgr_walk_forward_candidate_identities(
-          param_grid = param_grid,
-          resolved = resolved,
-          strategy_hash = strategy_hash,
-          metric_context_hash = metric_context_hash,
-          cost_model_hash = cost_model_hash,
-          risk_chain_hash = risk_chain_hash,
-          master_seed = seed,
-          fold_seq = fold$fold_seq,
-          window = "train"
-        )
-        train_identities$execution_seed
+    result <- tryCatch(
+      ledgr_walk_forward_eval_fold(
+        exp = exp,
+        grid = grid,
+        fold = folds[[fold_idx]],
+        selection_rule = selection_rule,
+        seed = seed,
+        opening_state_policy = opening_state_policy,
+        session_id = session_id,
+        carried_opening = carried_opening
+      ),
+      interrupt = function(e) {
+        terminal_status <<- if (completed_folds > 0L) "PARTIAL" else "INTERRUPTED"
+        terminal_error <<- e
+        NULL
       }
     )
-    train_scores <- ledgr_walk_forward_score_wide(train_sweep, train_identities)
-    selected <- ledgr_selection_rule_select(selection_rule, train_scores)
-    selected_idx <- which(train_scores$candidate_key == selected$candidate_key[[1]])[[1]]
-    selected_train_identity <- train_identities[selected_idx, , drop = FALSE]
-    selected_row <- train_sweep[selected_idx, , drop = FALSE]
-
-    test_exp <- if (identical(opening_state_policy, "carry_test_state")) {
-      ledgr_walk_forward_experiment_with_opening(exp, carried_opening)
+    if (is.null(result)) {
+      break
+    }
+    fold_rows[[length(fold_rows) + 1L]] <- result$fold_row
+    if (!is.null(result$score_rows) && nrow(result$score_rows) > 0L) {
+      score_rows[[length(score_rows) + 1L]] <- result$score_rows
+    }
+    if (!is.null(result$selected)) {
+      fold_results[[length(fold_results) + 1L]] <- result$selected
+    }
+    if (!is.null(result$test_run)) {
+      selected_tests[[length(selected_tests) + 1L]] <- result$test_run
+    }
+    if (identical(result$status, "DONE")) {
+      completed_folds <- completed_folds + 1L
+      carried_opening <- result$carried_opening
     } else {
-      exp
+      terminal_status <- "FAILED"
+      terminal_error <- result$error
+      break
     }
-    test_window <- ledgr_experiment_window_from_fold(
-      test_exp,
-      fold,
-      window = "test",
-      opening_state_policy = opening_state_policy
-    )
-    test_identity <- ledgr_walk_forward_test_identity(
-      train_identity = selected_train_identity,
-      master_seed = seed,
-      fold_seq = fold$fold_seq
-    )
-    test_run_id <- ledgr_walk_forward_test_run_id(session_id, fold$fold_seq, test_identity$candidate_key)
-    test_run <- ledgr_walk_forward_run_or_open(
-      test_exp,
-      params = selected_row$params[[1]],
-      feature_params = selected_row$feature_params[[1]],
-      window = test_window,
-      run_id = test_run_id,
-      seed = test_identity$execution_seed
-    )
-    selected_tests[[fold_idx]] <- test_run
-    if (identical(opening_state_policy, "carry_test_state")) {
-      carried_opening <- ledgr_walk_forward_opening_from_run(test_exp, test_run$run_id)
-    }
-
-    selected_at <- ledgr_normalize_ts_utc(Sys.time())
-    train_score_rows <- ledgr_walk_forward_score_rows(
-      session_id = session_id,
-      fold = fold,
-      window = "train",
-      scores = train_sweep,
-      identities = train_identities
-    )
-    test_scores <- ledgr_walk_forward_test_score_wide(test_run)
-    test_score_rows <- ledgr_walk_forward_score_rows(
-      session_id = session_id,
-      fold = fold,
-      window = "test",
-      scores = test_scores,
-      identities = test_identity
-    )
-    score_rows[[length(score_rows) + 1L]] <- train_score_rows
-    score_rows[[length(score_rows) + 1L]] <- test_score_rows
-    fold_rows[[fold_idx]] <- ledgr_walk_forward_fold_row(
-      session_id = session_id,
-      fold = fold,
-      train_window = train_window,
-      test_window = test_window,
-      opening_state_policy = opening_state_policy,
-      selected_candidate_key = selected_train_identity$candidate_key[[1]],
-      selected_at_utc = selected_at,
-      test_run_id = test_run_id,
-      status = "DONE"
-    )
-    fold_results[[fold_idx]] <- tibble::as_tibble(cbind(
-      fold_seq = fold$fold_seq,
-      selected[, c("candidate_key", "candidate_id", selection_rule$metric), drop = FALSE]
-    ))
   }
 
-  fold_table <- tibble::as_tibble(do.call(rbind, fold_rows))
-  score_table <- tibble::as_tibble(do.call(rbind, score_rows))
+  fold_table <- ledgr_walk_forward_bind_rows(fold_rows)
+  score_table <- ledgr_walk_forward_bind_rows(score_rows)
   session_row <- ledgr_walk_forward_session_row(
     identity = session_identity,
     master_seed = seed,
     opening_state_policy = opening_state_policy,
-    cold_start_distorted = identical(opening_state_policy, "flat_test_state")
+    cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
+    status = terminal_status
   )
-  ledgr_walk_forward_write_happy_path(exp, session_row, fold_table, score_table)
+  ledgr_walk_forward_write_session(exp, session_row, fold_table, score_table)
+
+  if (!is.null(terminal_error)) {
+    stop(terminal_error)
+  }
 
   out <- structure(
     list(
       session_id = session_id,
+      status = terminal_status,
       opening_state_policy = opening_state_policy,
       cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
       folds = fold_table,
       scores = score_table,
-      selected = tibble::as_tibble(do.call(rbind, fold_results)),
+      selected = ledgr_walk_forward_bind_rows(fold_results),
       test_runs = selected_tests
     ),
     class = c("ledgr_walk_forward_results", "list")
@@ -356,10 +301,274 @@ ledgr_walk_forward_score_wide <- function(sweep, identities) {
   out
 }
 
+ledgr_walk_forward_eval_fold <- function(exp,
+                                         grid,
+                                         fold,
+                                         selection_rule,
+                                         seed,
+                                         opening_state_policy,
+                                         session_id,
+                                         carried_opening) {
+  fold <- ledgr_validate_fold(fold)
+  train_window <- ledgr_experiment_window_from_fold(
+    exp,
+    fold,
+    window = "train",
+    opening_state_policy = opening_state_policy
+  )
+  base_test_window <- ledgr_experiment_window_from_fold(
+    exp,
+    fold,
+    window = "test",
+    opening_state_policy = opening_state_policy
+  )
+  train_identities <- NULL
+  train_sweep <- tryCatch(
+    ledgr_sweep_window(
+      exp,
+      grid,
+      window = train_window,
+      seed = seed,
+      execution_seed_resolver = function(param_grid,
+                                         resolved,
+                                         strategy_hash,
+                                         metric_context_hash,
+                                         cost_model_hash,
+                                         risk_chain_hash) {
+        train_identities <<- ledgr_walk_forward_candidate_identities(
+          param_grid = param_grid,
+          resolved = resolved,
+          strategy_hash = strategy_hash,
+          metric_context_hash = metric_context_hash,
+          cost_model_hash = cost_model_hash,
+          risk_chain_hash = risk_chain_hash,
+          master_seed = seed,
+          fold_seq = fold$fold_seq,
+          window = "train"
+        )
+        train_identities$execution_seed
+      }
+    ),
+    error = function(e) e
+  )
+  if (inherits(train_sweep, "condition")) {
+    return(ledgr_walk_forward_failed_fold_result(
+      session_id = session_id,
+      fold = fold,
+      train_window = train_window,
+      test_window = base_test_window,
+      opening_state_policy = opening_state_policy,
+      error = train_sweep,
+      score_rows = NULL
+    ))
+  }
+
+  train_scores <- ledgr_walk_forward_score_wide(train_sweep, train_identities)
+  train_score_rows <- ledgr_walk_forward_score_rows(
+    session_id = session_id,
+    fold = fold,
+    window = "train",
+    scores = train_sweep,
+    identities = train_identities
+  )
+  selected <- tryCatch(
+    ledgr_selection_rule_select(selection_rule, train_scores),
+    error = function(e) e
+  )
+  if (inherits(selected, "condition")) {
+    return(ledgr_walk_forward_failed_fold_result(
+      session_id = session_id,
+      fold = fold,
+      train_window = train_window,
+      test_window = base_test_window,
+      opening_state_policy = opening_state_policy,
+      error = selected,
+      score_rows = train_score_rows
+    ))
+  }
+
+  selected_idx <- which(train_scores$candidate_key == selected$candidate_key[[1]])[[1]]
+  selected_train_identity <- train_identities[selected_idx, , drop = FALSE]
+  selected_row <- train_sweep[selected_idx, , drop = FALSE]
+  test_exp <- if (identical(opening_state_policy, "carry_test_state")) {
+    ledgr_walk_forward_experiment_with_opening(exp, carried_opening)
+  } else {
+    exp
+  }
+  test_window <- ledgr_experiment_window_from_fold(
+    test_exp,
+    fold,
+    window = "test",
+    opening_state_policy = opening_state_policy
+  )
+  test_identity <- ledgr_walk_forward_test_identity(
+    train_identity = selected_train_identity,
+    master_seed = seed,
+    fold_seq = fold$fold_seq
+  )
+  test_run_id <- ledgr_walk_forward_test_run_id(session_id, fold$fold_seq, test_identity$candidate_key)
+  test_run <- tryCatch(
+    ledgr_walk_forward_run_or_open(
+      test_exp,
+      params = selected_row$params[[1]],
+      feature_params = selected_row$feature_params[[1]],
+      window = test_window,
+      run_id = test_run_id,
+      seed = test_identity$execution_seed
+    ),
+    error = function(e) e
+  )
+  if (inherits(test_run, "condition")) {
+    return(ledgr_walk_forward_failed_fold_result(
+      session_id = session_id,
+      fold = fold,
+      train_window = train_window,
+      test_window = test_window,
+      opening_state_policy = opening_state_policy,
+      selected_candidate_key = selected_train_identity$candidate_key[[1]],
+      test_run_id = test_run_id,
+      error = test_run,
+      score_rows = train_score_rows
+    ))
+  }
+
+  selected_at <- ledgr_normalize_ts_utc(Sys.time())
+  test_scores <- ledgr_walk_forward_test_score_wide(test_run)
+  test_score_rows <- ledgr_walk_forward_score_rows(
+    session_id = session_id,
+    fold = fold,
+    window = "test",
+    scores = test_scores,
+    identities = test_identity
+  )
+  if (identical(as.character(test_scores$status[[1]]), "FAILED")) {
+    err <- rlang::catch_cnd(
+      rlang::abort(
+        as.character(test_scores$error_msg[[1]]),
+        class = as.character(test_scores$error_class[[1]])
+      )
+    )
+    return(ledgr_walk_forward_failed_fold_result(
+      session_id = session_id,
+      fold = fold,
+      train_window = train_window,
+      test_window = test_window,
+      opening_state_policy = opening_state_policy,
+      selected_candidate_key = selected_train_identity$candidate_key[[1]],
+      selected_at_utc = selected_at,
+      test_run_id = test_run_id,
+      error = err,
+      score_rows = rbind(train_score_rows, test_score_rows)
+    ))
+  }
+
+  next_opening <- carried_opening
+  if (identical(opening_state_policy, "carry_test_state")) {
+    next_opening <- ledgr_walk_forward_opening_from_run(test_exp, test_run$run_id)
+  }
+  list(
+    status = "DONE",
+    error = NULL,
+    fold_row = ledgr_walk_forward_fold_row(
+      session_id = session_id,
+      fold = fold,
+      train_window = train_window,
+      test_window = test_window,
+      opening_state_policy = opening_state_policy,
+      selected_candidate_key = selected_train_identity$candidate_key[[1]],
+      selected_at_utc = selected_at,
+      test_run_id = test_run_id,
+      status = "DONE"
+    ),
+    score_rows = rbind(train_score_rows, test_score_rows),
+    selected = tibble::as_tibble(cbind(
+      fold_seq = fold$fold_seq,
+      selected[, c("candidate_key", "candidate_id", selection_rule$metric), drop = FALSE]
+    )),
+    test_run = test_run,
+    carried_opening = next_opening
+  )
+}
+
+ledgr_walk_forward_failed_fold_result <- function(session_id,
+                                                  fold,
+                                                  train_window,
+                                                  test_window,
+                                                  opening_state_policy,
+                                                  error,
+                                                  score_rows = NULL,
+                                                  selected_candidate_key = NA_character_,
+                                                  selected_at_utc = ledgr_walk_forward_na_time(),
+                                                  test_run_id = NA_character_) {
+  list(
+    status = "FAILED",
+    error = error,
+    fold_row = ledgr_walk_forward_fold_row(
+      session_id = session_id,
+      fold = fold,
+      train_window = train_window,
+      test_window = test_window,
+      opening_state_policy = opening_state_policy,
+      selected_candidate_key = selected_candidate_key,
+      selected_at_utc = selected_at_utc,
+      test_run_id = test_run_id,
+      status = "FAILED"
+    ),
+    score_rows = score_rows,
+    selected = NULL,
+    test_run = NULL,
+    carried_opening = NULL
+  )
+}
+
+ledgr_walk_forward_na_time <- function() {
+  as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+}
+
 ledgr_walk_forward_test_score_wide <- function(test_run) {
-  metrics <- ledgr_compute_metrics(test_run)
-  equity <- ledgr_results(test_run, "equity")
+  metric_result <- tryCatch(
+    list(metrics = ledgr_compute_metrics(test_run), equity = ledgr_results(test_run, "equity")),
+    error = function(e) e
+  )
+  if (inherits(metric_result, "condition")) {
+    return(tibble::tibble(
+      candidate_id = test_run$run_id,
+      status = "FAILED",
+      final_equity = NA_real_,
+      total_return = NA_real_,
+      annualized_return = NA_real_,
+      volatility = NA_real_,
+      sharpe_ratio = NA_real_,
+      max_drawdown = NA_real_,
+      n_trades = NA_integer_,
+      win_rate = NA_real_,
+      avg_trade = NA_real_,
+      time_in_market = NA_real_,
+      error_class = ledgr_condition_class(metric_result),
+      error_msg = conditionMessage(metric_result)
+    ))
+  }
+  metrics <- metric_result$metrics
+  equity <- metric_result$equity
   final_equity <- if (nrow(equity) > 0L) as.numeric(equity$equity[[nrow(equity)]]) else NA_real_
+  if (!is.finite(final_equity)) {
+    return(tibble::tibble(
+      candidate_id = test_run$run_id,
+      status = "FAILED",
+      final_equity = final_equity,
+      total_return = NA_real_,
+      annualized_return = NA_real_,
+      volatility = NA_real_,
+      sharpe_ratio = NA_real_,
+      max_drawdown = NA_real_,
+      n_trades = NA_integer_,
+      win_rate = NA_real_,
+      avg_trade = NA_real_,
+      time_in_market = NA_real_,
+      error_class = "ledgr_walk_forward_test_run_failed",
+      error_msg = "Selected test run produced no usable final equity row."
+    ))
+  }
   tibble::tibble(
     candidate_id = test_run$run_id,
     status = "DONE",
@@ -372,7 +581,9 @@ ledgr_walk_forward_test_score_wide <- function(test_run) {
     n_trades = as.integer(metrics$n_trades %||% NA_integer_),
     win_rate = as.numeric(metrics$win_rate %||% NA_real_),
     avg_trade = as.numeric(metrics$avg_trade %||% NA_real_),
-    time_in_market = as.numeric(metrics$time_in_market %||% NA_real_)
+    time_in_market = as.numeric(metrics$time_in_market %||% NA_real_),
+    error_class = NA_character_,
+    error_msg = NA_character_
   )
 }
 
@@ -387,6 +598,9 @@ ledgr_walk_forward_score_rows <- function(session_id,
   )
   rows <- list()
   scores <- tibble::as_tibble(scores)
+  if (nrow(scores) < 1L) {
+    return(tibble::tibble())
+  }
   for (i in seq_len(nrow(scores))) {
     identity <- identities[min(i, nrow(identities)), , drop = FALSE]
     for (metric in metrics) {
@@ -405,7 +619,7 @@ ledgr_walk_forward_score_rows <- function(session_id,
         risk_chain_hash = identity$risk_chain_hash[[1]],
         window = window,
         metric_name = metric,
-        metric_value = as.numeric(scores[[metric]][[i]]),
+        metric_value = as.numeric(ledgr_walk_forward_score_value(scores, metric, i, NA_real_)),
         n_trades = as.integer(ledgr_walk_forward_score_value(scores, "n_trades", i, NA_integer_)),
         status = as.character(ledgr_walk_forward_score_value(scores, "status", i, "DONE")),
         error_class = as.character(ledgr_walk_forward_score_value(scores, "error_class", i, NA_character_)),
@@ -415,7 +629,7 @@ ledgr_walk_forward_score_rows <- function(session_id,
       )
     }
   }
-  do.call(rbind, rows)
+  ledgr_walk_forward_bind_rows(rows)
 }
 
 ledgr_walk_forward_score_value <- function(scores, column, row, default) {
@@ -462,7 +676,8 @@ ledgr_walk_forward_fold_row <- function(session_id,
 ledgr_walk_forward_session_row <- function(identity,
                                            master_seed,
                                            opening_state_policy,
-                                           cold_start_distorted) {
+                                           cold_start_distorted,
+                                           status = "DONE") {
   data.frame(
     session_id = identity$session_id,
     snapshot_hash = identity$snapshot_hash,
@@ -478,6 +693,7 @@ ledgr_walk_forward_session_row <- function(identity,
     created_at_utc = as.POSIXct(ledgr_normalize_ts_utc(Sys.time()), tz = "UTC"),
     ledgr_version = as.character(utils::packageVersion("ledgr")),
     meta_json = as.character(canonical_json(list(
+      status = status,
       cold_start_distorted = isTRUE(cold_start_distorted),
       walk_forward_schema_version = ledgr_walk_forward_schema_version
     ))),
@@ -485,7 +701,15 @@ ledgr_walk_forward_session_row <- function(identity,
   )
 }
 
-ledgr_walk_forward_write_happy_path <- function(exp, session_row, fold_rows, score_rows) {
+ledgr_walk_forward_bind_rows <- function(rows) {
+  rows <- rows[!vapply(rows, is.null, logical(1))]
+  if (length(rows) < 1L) {
+    return(tibble::tibble())
+  }
+  tibble::as_tibble(do.call(rbind, rows))
+}
+
+ledgr_walk_forward_write_session <- function(exp, session_row, fold_rows, score_rows) {
   opened <- ledgr_run_store_open(exp$snapshot$db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   ledgr_experiment_store_check_schema(opened$con, write = TRUE)
@@ -495,8 +719,12 @@ ledgr_walk_forward_write_happy_path <- function(exp, session_row, fold_rows, sco
     DBI::dbExecute(opened$con, "DELETE FROM walk_forward_folds WHERE session_id = ?", params = list(session_id))
     DBI::dbExecute(opened$con, "DELETE FROM walk_forward_sessions WHERE session_id = ?", params = list(session_id))
     DBI::dbAppendTable(opened$con, "walk_forward_sessions", session_row)
-    DBI::dbAppendTable(opened$con, "walk_forward_folds", as.data.frame(fold_rows))
-    DBI::dbAppendTable(opened$con, "walk_forward_scores", as.data.frame(score_rows))
+    if (nrow(fold_rows) > 0L) {
+      DBI::dbAppendTable(opened$con, "walk_forward_folds", as.data.frame(fold_rows))
+    }
+    if (nrow(score_rows) > 0L) {
+      DBI::dbAppendTable(opened$con, "walk_forward_scores", as.data.frame(score_rows))
+    }
   })
   invisible(TRUE)
 }
