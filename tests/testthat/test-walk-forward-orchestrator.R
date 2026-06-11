@@ -74,21 +74,6 @@ ledgr_wfo_test_failure_strategy <- function(ctx, params) {
   target
 }
 
-ledgr_wfo_interrupt_strategy <- function(ctx, params) {
-  if (as.POSIXct(ctx$ts_utc, tz = "UTC") >= as.POSIXct("2020-01-08", tz = "UTC")) {
-    cond <- structure(
-      list(message = "simulated interrupt", call = NULL),
-      class = c("interrupt", "condition")
-    )
-    stop(cond)
-  }
-  target <- ctx$flat()
-  if (ctx$close("AAA") >= params$threshold) {
-    target["AAA"] <- params$qty
-  }
-  target
-}
-
 testthat::test_that("walk-forward orchestrates train sweeps, selected test runs, and persisted happy-path rows", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -448,8 +433,9 @@ testthat::test_that("walk-forward test-run failure preserves train rows and fail
 })
 
 testthat::test_that("walk-forward interrupt after a completed fold persists a partial session", {
-  fx <- ledgr_wfo_exp(strategy = ledgr_wfo_interrupt_strategy)
+  fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+  withr::local_options(list(ledgr.walk_forward_interrupt_after_completed_folds = 1L))
 
   err <- tryCatch(
     ledgr_walk_forward(
@@ -526,8 +512,9 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   ledgr:::ledgr_run_store_close(opened)
   testthat::expect_identical(counts_after, counts_before)
 
-  partial_fx <- ledgr_wfo_exp(strategy = ledgr_wfo_interrupt_strategy)
+  partial_fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(partial_fx$snapshot), add = TRUE)
+  withr::local_options(list(ledgr.walk_forward_interrupt_after_completed_folds = 1L))
   err <- tryCatch(
     ledgr_walk_forward(
       partial_fx$exp,

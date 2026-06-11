@@ -78,6 +78,7 @@ ledgr_walk_forward <- function(exp,
   terminal_status <- "DONE"
   terminal_error <- NULL
   completed_folds <- 0L
+  interrupt_after_completed_folds <- getOption("ledgr.walk_forward_interrupt_after_completed_folds", NULL)
 
   for (fold_idx in seq_along(folds)) {
     result <- tryCatch(
@@ -113,6 +114,17 @@ ledgr_walk_forward <- function(exp,
     if (identical(result$status, "DONE")) {
       completed_folds <- completed_folds + 1L
       carried_opening <- result$carried_opening
+      if (is.numeric(interrupt_after_completed_folds) &&
+          length(interrupt_after_completed_folds) == 1L &&
+          !is.na(interrupt_after_completed_folds) &&
+          completed_folds >= as.integer(interrupt_after_completed_folds)) {
+        terminal_status <- "PARTIAL"
+        terminal_error <- structure(
+          list(message = "simulated walk-forward interrupt", call = NULL),
+          class = c("interrupt", "condition")
+        )
+        break
+      }
     } else {
       terminal_status <- "FAILED"
       terminal_error <- result$error
