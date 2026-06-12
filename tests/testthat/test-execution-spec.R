@@ -502,6 +502,31 @@ testthat::test_that("compiled spot FIFO batches preserve multi-instrument pulse 
   testthat::expect_identical(compiled_path$fold$next_event_seq, r_path$fold$next_event_seq)
 })
 
+testthat::test_that("compiled spot FIFO pops fractional dust lots", {
+  out <- ledgr:::ledgr_cpp_spot_fifo_batch(
+    "compiled-fractional-dust",
+    as.integer(c(1, 1, 1)),
+    c("AAA", "AAA", "AAA"),
+    c("BUY", "BUY", "SELL"),
+    as.numeric(c(0.1, 0.2, 0.3)),
+    as.numeric(c(10, 10, 10)),
+    as.numeric(c(0, 0, 0)),
+    as.numeric(as.POSIXct("2020-01-02T00:00:00Z", tz = "UTC")) + 0:2,
+    as.integer(1),
+    as.numeric(0),
+    as.numeric(1000),
+    integer(),
+    numeric(),
+    numeric(),
+    as.numeric(0),
+    as.numeric(0),
+    as.numeric(0),
+    as.numeric(0)
+  )
+  testthat::expect_length(out$lot_qty, 0L)
+  testthat::expect_equal(out$total_cost_basis, 0)
+})
+
 testthat::test_that("compiled spot FIFO validates scalar state argument types", {
   call_batch <- function(cash = 1000, event_seq_start = 1L) {
     ledgr:::ledgr_cpp_spot_fifo_batch(

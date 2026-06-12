@@ -30,6 +30,12 @@ ledgr_lot_get <- function(state, instrument_id) {
   if (is.null(lots)) list() else lots
 }
 
+ledgr_lot_dust_tolerance <- function(...) {
+  values <- abs(as.numeric(c(...)))
+  values <- values[is.finite(values)]
+  .Machine$double.eps * max(c(1, values))
+}
+
 ledgr_lot_set <- function(state, instrument_id, lots) {
   if (is.null(state$lots[[instrument_id]])) {
     state$lots[[instrument_id]] <- list()
@@ -173,7 +179,11 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
         realized_close <- realized_close + (lot_price - price) * take
         lot_qty <- lot_qty - take
         remaining_close <- remaining_close - take
-        if (lot_qty <= 0) {
+        tol <- ledgr_lot_dust_tolerance(take, lot_qty, remaining_close)
+        if (abs(remaining_close) <= tol) {
+          remaining_close <- 0
+        }
+        if (lot_qty <= tol) {
           lots <- lots[-1]
         } else {
           lots[[1]]$qty <- -lot_qty
@@ -187,7 +197,11 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
         realized_close <- realized_close + (price - lot_price) * take
         lot_qty <- lot_qty - take
         remaining_close <- remaining_close - take
-        if (lot_qty <= 0) {
+        tol <- ledgr_lot_dust_tolerance(take, lot_qty, remaining_close)
+        if (abs(remaining_close) <= tol) {
+          remaining_close <- 0
+        }
+        if (lot_qty <= tol) {
           lots <- lots[-1]
         } else {
           lots[[1]]$qty <- lot_qty

@@ -14,6 +14,7 @@
 \alias{ledgr_unresolved_feature_id}
 \alias{ledgr_run_window_too_short}
 \alias{ledgr_invalid_lot_fill}
+\alias{ledgr_snapshot_hash_invalid_timestamp}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -89,6 +90,13 @@ later execution pulse.
 \code{ledgr_invalid_lot_fill} is raised when the lot-accounting layer receives an
 invalid fill side, quantity, price, fee, or instrument id. Invalid lot input
 fails closed because the ledger event stream and lot state must not diverge.
+}
+
+\section{Snapshot hash classes}{
+
+\code{ledgr_snapshot_hash_invalid_timestamp} is raised when snapshot hashing sees
+a non-POSIXct \code{ts_utc} representation. Snapshot hashes fail closed on driver
+timestamp representation drift instead of silently re-keying sealed data.
 }
 
 \section{Saved sweep classes}{

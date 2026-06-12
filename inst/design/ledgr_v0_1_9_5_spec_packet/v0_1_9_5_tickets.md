@@ -497,7 +497,7 @@ scope: generic-and-locator
 Priority: P0
 Effort: L
 Dependencies: LDG-2632, LDG-2633
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -527,6 +527,19 @@ and M-6 hardening work as contract-backed fixes.
 - No new identity component is added and no existing durable identity hash
   recipe changes.
 
+### Implementation Notes
+
+- Added a public naming contract section to `contracts.md` that binds R1-R7,
+  including the closed verb-first allowlist and the D2 `ledgr_ind_*` versus
+  `ledgr_indicator_*` distinction.
+- Refreshed cost, risk, sweep, and walk-forward identity contract language
+  without adding identity components or changing hash recipes.
+- Resolved M-4 with the epsilon-pop route in both the canonical R lot replay
+  path and the compiled spot-FIFO path. The tolerance only removes
+  machine-epsilon-scale fractional dust after matched close operations.
+- Resolved M-6 by making snapshot-hash timestamp formatting POSIXct-only with
+  classed failure before canonical hash bytes are produced.
+
 ### Verification
 
 - Contract-review checklist in the ticket closeout.
@@ -552,7 +565,7 @@ scope: naming-and-audit
 Priority: P1
 Effort: M
 Dependencies: LDG-2633, LDG-2634
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -577,6 +590,17 @@ feature arc and the v0.1.9.5 naming/generic changes.
   new API.
 - Cost, sweep, risk, and walk-forward identity language remains mutually
   consistent.
+
+### Implementation Notes
+
+- Updated `ledgr_identity_fields` to cover risk-chain identity, walk-forward
+  `candidate_key` / `session_id`, locator attributes, and the
+  `ledgr_candidate()` generic supersession.
+- Updated `inst/design/manual/identity_contract.qmd` with the same locator and
+  naming language. Locator attributes are described as recovery and
+  resolve-at-call verification metadata, not identity bytes.
+- Kept the Implementation Trace pointer to `R/walk-forward-identity.R` and
+  added the locator-resolution trace in `R/walk-forward-inspection.R`.
 
 ### Verification
 

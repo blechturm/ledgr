@@ -1,10 +1,10 @@
 # Identity Contract
 
-**Status:** Maintainer reference for v0.1.9.4 identity surfaces.
+**Status:** Maintainer reference for v0.1.9.5 identity surfaces.
 
 **Audience:** maintainers and coding agents.
 
-**Authority:** Synthesis of `../contracts.md`, the v0.1.9.1-v0.1.9.4
+**Authority:** Synthesis of `../contracts.md`, the v0.1.9.1-v0.1.9.5
 spec packets, and implementation traces. Binding decisions remain in those
 artifacts.
 
@@ -29,6 +29,7 @@ those layers separate.
 | `risk_chain_hash` | Target-risk chain identity. | SHA-256 over `risk_plan_json`. |
 | `candidate_key` | Walk-forward fold/window candidate identity. | Canonical JSON over strategy/feature/metric/cost/risk identity plus fold/window seed inputs. |
 | `session_id` | Walk-forward session identity. | Canonical JSON over snapshot, experiment, grid, fold-list, selection-rule, metric-context, cost, risk, seed, and opening-state policy identity. |
+| `db_path`, `snapshot_id`, `snapshot_hash` result attributes | Walk-forward recovery and resolve-at-call verification locators. | `ledgr_walk_forward_results` attributes; not identity bytes. |
 
 ## Config Hash
 
@@ -130,6 +131,34 @@ These fields identify the walk-forward evidence envelope. They do not make
 scalar train-window selection statistically sound; selection-integrity
 diagnostics remain a separate future layer.
 
+## Locator Metadata
+
+Walk-forward result objects may carry three string locator attributes:
+
+- `db_path`;
+- `snapshot_id`;
+- `snapshot_hash`.
+
+These attributes let `ledgr_candidate()` resolve a snapshot at call time after a
+session is reopened or moved. They are verification metadata, not evidence
+identity. They do not enter `config_hash`, `candidate_key`, or `session_id`, and
+they must not store live DBI connections, snapshot handles, environments, or
+other process-local objects.
+
+The default resolve path reopens `db_path` and verifies that the reopened
+snapshot still matches `snapshot_hash`. An override snapshot may come from a
+different `db_path`, but its `snapshot_id` and `snapshot_hash` must match the
+stored locator.
+
+## Naming Supersession
+
+v0.1.9.5 consolidates candidate extraction on the `ledgr_candidate()` generic.
+Sweep and walk-forward result objects should teach the same generic surface
+instead of family-specific candidate extraction helpers. Durable reopen helpers
+use `open` (`ledgr_run_open()`, `ledgr_sweep_open()`,
+`ledgr_walk_forward_open()`), preserving the family-first naming grammar while
+keeping durable-evidence lookup distinct from interactive inspection.
+
 ## Implementation Trace
 
 - `R/config-hash.R`: `config_hash()` and `config_hash_payload()`.
@@ -145,3 +174,5 @@ diagnostics remain a separate future layer.
   final-key candidate recipe.
 - `R/walk-forward.R`: walk-forward orchestrator that consumes the identity
   helpers.
+- `R/walk-forward-inspection.R`: walk-forward locator attachment, resolve-at-call
+  verification, and candidate extraction over reopened results.

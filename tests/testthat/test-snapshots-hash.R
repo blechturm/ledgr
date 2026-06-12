@@ -52,6 +52,17 @@ testthat::test_that("snapshot hash is deterministic across repeated calls and ch
   testthat::expect_equal(h1, h3)
 })
 
+testthat::test_that("snapshot hash timestamp formatting fails closed on non-POSIXct input", {
+  testthat::expect_identical(
+    ledgr:::ledgr_snapshot_hash_format_ts_utc(as.POSIXct("2020-01-01", tz = "UTC")),
+    "2020-01-01T00:00:00Z"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_snapshot_hash_format_ts_utc("2020-01-01T00:00:00Z"),
+    class = "ledgr_snapshot_hash_invalid_timestamp"
+  )
+})
+
 testthat::test_that("snapshot hash ignores snapshot_id and metadata", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

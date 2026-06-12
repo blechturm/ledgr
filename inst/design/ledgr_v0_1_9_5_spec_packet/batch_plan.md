@@ -177,6 +177,8 @@ Review focus:
 
 ## Batch 5+6 - Contracts Rework And Identity Reference (one review)
 
+Status: Implementation complete; awaiting Claude review.
+
 Tickets:
 
 - LDG-2634

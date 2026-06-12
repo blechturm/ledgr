@@ -2,9 +2,11 @@
 
 #include <Rinternals.h>
 
+#include <algorithm>
 #include <cmath>
 #include <deque>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -28,6 +30,11 @@ static double ledgr_spot_lot_net(const std::deque<ledgr_spot_lot>& lots) {
     out += lot.qty;
   }
   return out;
+}
+
+static double ledgr_spot_dust_tolerance(double a, double b, double c) {
+  double scale = std::max({1.0, std::abs(a), std::abs(b), std::abs(c)});
+  return std::numeric_limits<double>::epsilon() * scale;
 }
 
 static std::string ledgr_spot_event_id(const std::string& run_id, int event_seq) {
@@ -207,7 +214,11 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           realized_close += (lot_price - price) * take;
           lot_qty -= take;
           remaining_close -= take;
-          if (lot_qty <= 0) {
+          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close);
+          if (std::abs(remaining_close) <= tol) {
+            remaining_close = 0.0;
+          }
+          if (lot_qty <= tol) {
             inst_lots.pop_front();
           } else {
             inst_lots.front().qty = -lot_qty;
@@ -221,7 +232,11 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           realized_close += (price - lot_price) * take;
           lot_qty -= take;
           remaining_close -= take;
-          if (lot_qty <= 0) {
+          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close);
+          if (std::abs(remaining_close) <= tol) {
+            remaining_close = 0.0;
+          }
+          if (lot_qty <= tol) {
             inst_lots.pop_front();
           } else {
             inst_lots.front().qty = lot_qty;

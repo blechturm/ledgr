@@ -4,9 +4,38 @@ This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The active design index
 (`inst/design/README.md`) names the current authoritative spec packet; the
 authoritative narrative remains in the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_9_3_spec_packet/`.
+`inst/design/ledgr_v0_1_9_5_spec_packet/`.
 The strategy preflight boundary originated in
 `inst/design/ledgr_v0_1_8_spec_packet/` and remains binding.
+
+## Public Naming Contract
+
+- Exported user-facing helpers must use `ledgr_` prefixes. No unprefixed public
+  helper exports remain. S3 method registrations such as `print.*`,
+  `summary.*`, `close.*`, and `as_tibble.*` follow dispatch naming and are not
+  user-facing helper exceptions to the prefix rule.
+- Public names are family-first whenever a durable artifact family exists:
+  run helpers use `ledgr_run_*`, snapshot helpers use `ledgr_snapshot_*`, sweep
+  helpers use `ledgr_sweep_*`, and walk-forward helpers use
+  `ledgr_walk_forward_*`.
+- Verb-first exports are allowed only for the closed v0.1.9.5 allowlist:
+  `ledgr_compute_metrics()`, `ledgr_precompute_features()`,
+  `ledgr_validate_schema()`, `ledgr_backtest_bench()`, and
+  `ledgr_promote()`. Execution entry points such as `ledgr_run()`,
+  `ledgr_sweep()`, and `ledgr_walk_forward()` are family roots, not allowlist
+  cases.
+- Reopen surfaces for durable evidence use `open`, for example
+  `ledgr_run_open()`, `ledgr_sweep_open()`, and `ledgr_walk_forward_open()`.
+- Public evidence accessors must not use `extract_`, `get_`, or `fetch_` as
+  their primary naming shape. Promotion-ready candidate extraction uses the
+  `ledgr_candidate()` generic.
+- Public indicator names distinguish constructors from infrastructure:
+  `ledgr_ind_*` names are indicator constructors, constructor bundles, or
+  constructor-family support helpers such as `ledgr_ind_ttr_warmup_rules()`;
+  `ledgr_indicator_*` names are registry, lookup, development, and
+  infrastructure surfaces.
+- Internal helpers may keep implementation-oriented names, but they must not be
+  exported merely to avoid writing a narrow public wrapper.
 
 ## Execution Contract
 
@@ -90,9 +119,9 @@ The strategy preflight boundary originated in
   errors instead of being silently interpreted.
 - Cost-model identity is part of execution identity. `cost_plan_json` is the
   canonical serialized cost plan, and `cost_model_hash` is the SHA-256 hash of
-  that plan. Later sweep persistence and walk-forward candidate identity may
-  consume these fields, but v0.1.9.1 does not implement cost-grid sweep
-  composition or walk-forward.
+  that plan. Sweep persistence and walk-forward candidate/session identity
+  consume these fields. Cost-grid sweep composition remains separate future
+  work.
 - Target risk is a target-vector transformation layer. Strategies still return
   full named numeric target quantities. The fold applies the normalized
   `risk_chain` after strategy target validation and before fill timing, cost
@@ -120,6 +149,16 @@ The strategy preflight boundary originated in
   Promotion must preserve the selected candidate's risk identity and re-execute
   through `ledgr_run()`; retained return rows are not replayed as committed
   evidence.
+- Walk-forward evidence adds two identity layers over existing run and sweep
+  identity. `candidate_key` identifies one fold/window/candidate evaluation and
+  includes strategy, feature, alias, metric-context, cost, risk, seed, fold, and
+  window-role inputs. `session_id` identifies the walk-forward session envelope
+  and includes snapshot, experiment, grid, fold-list, selection-rule,
+  metric-context, cost, risk, seed, and opening-state policy identity.
+  Locator attributes on `ledgr_walk_forward_results` objects (`db_path`,
+  `snapshot_id`, and `snapshot_hash`) are recovery and resolve-at-call
+  verification metadata. They are not identity bytes and must not enter
+  `config_hash`, `candidate_key`, or `session_id`.
 - Config and feature identity fields must keep their layers distinct.
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and
@@ -141,6 +180,12 @@ The strategy preflight boundary originated in
 - The default fill model is `next_open` with zero spread and zero fixed
   commission. A target emitted at pulse `t` is filled at the next available bar;
   a target emitted on the final pulse has no next bar and is not filled.
+- FIFO lot accounting must pop machine-epsilon-scale fractional dust that
+  remains after a close operation in both the canonical R replay path and the
+  compiled spot-FIFO path. This tolerance is only a representation cleanup for
+  arithmetic residue after matched close quantities; it is not a new
+  affordability rule, quantity granularity, liquidity policy, or identity
+  component.
 
 ## Sweep Promotion Contract
 
@@ -173,8 +218,9 @@ The strategy preflight boundary originated in
   must not roll back a successful run.
 - Direct `ledgr_run()` calls have no promotion context. Promotion context is
   distinct from full run provenance and from future full sweep artifact
-  persistence. v0.1.8 does not add `ledgr_save_sweep()`,
-  `ledgr_load_sweep()`, or full sweep replay/verification helpers.
+  persistence. v0.1.8 did not add durable sweep artifact helpers or full sweep
+  replay/verification helpers; v0.1.9.2 later added compact saved-sweep
+  persistence through the family-first sweep surfaces.
 
 ## Config Contract
 
@@ -192,6 +238,9 @@ The strategy preflight boundary originated in
 - Backtests run against sealed snapshots.
 - Snapshot hashes cover normalized bars and instruments only; metadata and
   snapshot IDs do not alter artifact hashes.
+- Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
+  vectors fail closed during hashing rather than being string-formatted through
+  an implicit representation that could silently re-key a snapshot.
 - Sealing validates referential integrity and OHLC consistency before writing a
   snapshot hash or transitioning to `SEALED`.
 - Split snapshot/run DB mode must verify the source snapshot hash from the
