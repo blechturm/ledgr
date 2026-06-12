@@ -1,8 +1,15 @@
 # ledgr v0.1.9.5 Spec
 
-**Status:** Draft packet; spec awaiting review (Codex spec review next, then
-ticket cut). Nothing below authorizes implementation until the spec passes
-review and tickets are cut.
+**Status:** Spec review complete (Codex, 2026-06-12: "revisions required
+before ticket cut"; see `v0_1_9_5_spec_review.md`). The four required
+revisions were applied in place 2026-06-12: (1) Batch 12 now names the
+release-playbook source reference, read task, and explicit local-gate
+checklist per `release_ci_playbook.md:100-123`; (2) Batch 1 split into
+1A/1B/1C reviewable units; (3) the scope note no longer mislabels
+locator attributes as identity bytes; (4) Batch 5 retitled and scoped
+for the M-4/M-6 code/test implications, with the N-4 conditional tie-in
+added to Batch 2. Ready for ticket cut. Nothing below authorizes
+implementation until tickets are cut.
 **Target branch:** `v0.1.9.5`.
 **Scope:** The naming-and-teaching consolidation release after the v0.1.9.x
 feature arc: implementation of the accepted API naming-consistency synthesis
@@ -22,8 +29,10 @@ roadmap's own authoritative-inputs list routes the deep-code-review hardening
 batch here. This spec binds that extension explicitly: the implementation
 surface of this release is EXACTLY the naming-synthesis rename/generic scope
 plus the audit findings routed below -- no other behavior changes are
-authorized. Identity bytes change only where the naming synthesis binds them
-(walk-forward results locator attributes; no hash-recipe changes).
+authorized. Durable identity hash recipes do not change in this packet. The
+candidate-generic work changes walk-forward result OBJECT SHAPE by adding
+locator attributes and resolve-at-call verification; locator attributes are
+durable strings on result objects, not identity bytes (spec-review L-1).
 **Non-scope:** the v0.1.9.6 validation toolkit (accepted synthesis, own
 packet); the strategy schedule decorator (staged seed, cycle not opened);
 crypto-readiness spike; target-construction Pass 2 helpers; all parked
@@ -65,7 +74,7 @@ audit (Section 2) were NOT fixed at the v0.1.9.4 release gate and remain in
 the tree (verified 2026-06-12: `vignettes/execution-semantics.qmd:161`
 actively wrong cost-API callout; `vignettes/research-to-production.qmd:245`
 "v0.1.9.4 plans walk-forward"; `vignettes/sweeps.qmd:620` and
-`vignettes/research-workflow.qmd` "when that layer lands"). They are Batch 1
+`vignettes/research-workflow.qmd` "when that layer lands"). They are Batch 1A
 scope here.
 
 ---
@@ -98,7 +107,7 @@ Sequencing constraints that the ticket cut MUST preserve:
   later one (synthesis Section 5);
 - vignette Split D (experiment-store) lands before or with the Recovery
   docs section so the landing surface is unambiguous (final-review patch F4);
-- stale-item fixes (Batch 1) land before any vignette that links to the
+- stale-item fixes (Batch 1A) land before any vignette that links to the
   affected articles is rewritten.
 
 ### Batch 0 -- Packet alignment
@@ -110,32 +119,45 @@ supersession note (Section "Scope supersession" above) in the packet record.
 DESCRIPTION version bumps at the release-gate batch, not here, per the
 v0.1.9.4 precedent.
 
-### Batch 1 -- Correctness prerequisites and stale-item fixes
+### Batches 1A / 1B / 1C -- Correctness prerequisites and stale-item fixes
 
-Audit findings with release-blocking character plus the carried stale items:
+Split per spec-review M-2: five unrelated runtime subsystems plus doc fixes
+are not one reviewable unit.
+
+**Batch 1A -- release-blocking stale vignette fixes** (documentation only;
+must land before any vignette that links to the affected articles is
+rewritten):
+
+- the three screening-audit Section 2 fixes: cost-API callout in
+  execution-semantics rewritten to describe the shipped API;
+  research-to-production delivered/planned section updated against the
+  v0.1.9.4 closeout; walk-forward pointers in sweeps and research-workflow
+  updated to `vignette("walk-forward")`.
+
+**Batch 1B -- runner/results hardening:**
 
 - **M-8**: `ledgr_results(bt, "fills")` dead-cursor path. Bound contract:
   borrowed connections are never captured into returned cursors;
   `ledgr_results()` is eager. Regression test through the internal impl seam
   with a small `stream_threshold` (audit addendum; naming synthesis gate
   7.4).
-- **B-1**: spot_fifo.cpp PROTECT bug -- anchor freshly allocated string
-  vectors into the protected output list before filling (audit fix sketch;
-  ~10 lines, byte-identical behavior).
 - **H-1**: single-pulse run guard. Contract decision bound HERE per the
-  audit's note: fail closed at the coverage check with a classed
-  "window must contain at least two pulses" error (consistent with the fill
-  model and walk-forward's >= 2 pulse rule), rather than a silent guard.
-- **H-2**: `ledgr_lot_apply_fill()` fails closed on invalid input with a
-  classed error, validity rules aligned to the C++ kernel (side known, qty
-  finite > 0, price finite > 0, fee finite >= 0).
+  audit's note and confirmed by spec review (Section 3.2): fail closed at
+  the coverage check with a classed "window must contain at least two
+  pulses" error, consistent with the fill model's next-bar requirement and
+  walk-forward's existing >= 2 scoring-pulse rule.
 - **H-3**: `ledgr_time_now()` / `ledgr_time_elapsed()` return seconds by
   construction; the magnitude heuristic is deleted; telemetry for runs longer
   than 1000s is correct.
-- **Stale items**: the three screening-audit Section 2 fixes (cost-API
-  callout rewritten to describe the shipped API; research-to-production
-  delivered/planned section updated against the v0.1.9.4 closeout;
-  walk-forward pointers updated to `vignette("walk-forward")`).
+
+**Batch 1C -- kernel/accounting hardening:**
+
+- **B-1**: spot_fifo.cpp PROTECT bug -- anchor freshly allocated string
+  vectors into the protected output list before filling (audit fix sketch;
+  ~10 lines, byte-identical behavior).
+- **H-2**: `ledgr_lot_apply_fill()` fails closed on invalid input with a
+  classed error, validity rules aligned to the C++ kernel (side known, qty
+  finite > 0, price finite > 0, fee finite >= 0).
 
 ### Batch 2 -- Kernel and cost-model hygiene
 
@@ -150,7 +172,11 @@ Audit findings with release-blocking character plus the carried stale items:
   before fee computation, or one binding comment) plus the one-sentence
   fees-on-adjusted-notional doc note.
 - Ride-along nits at implementer discretion: N-1 (replay double-parse), N-2
-  (pack_lots growth). N-3/N-4/N-5/N-6 remain recorded, not scheduled.
+  (pack_lots growth). N-3/N-5/N-6 remain recorded, not scheduled. N-4
+  (actionable-delta absolute tolerance) remains unscheduled by default,
+  CONDITIONAL on the Batch 5 M-4 decision: if M-4 selects the epsilon-pop /
+  fractional-quantity route rather than a whole-ish-quantity contract, the
+  M-4 ticket must re-check N-4 tolerance semantics (spec-review L-3).
 - **M-5** (db_live per-fill COUNT) is deferred -- it is a performance item in
   a mode the teaching surface does not promote; recorded for the next
   perf-attribution pass.
@@ -178,18 +204,26 @@ semantics (`snapshot_id` AND `snapshot_hash` must match, `db_path` free);
 discipline carried; the v0.1.9.4 spec Section 4 supersession note recorded in
 this packet. Gates: synthesis 7.5 test matrix.
 
-### Batch 5 -- contracts.md structural rework (Workstream A + synthesis Section 5)
+### Batch 5 -- contracts.md structural rework plus M-4/M-6 contract-bound hardening (Workstream A + synthesis Section 5)
 
-One ticket, not a find-replace: clause-by-clause re-verification of every
-renamed/unexported/unchanged citation; bind R1-R7 and the D2
-constructor/infrastructure rule into contracts.md; add the target-risk,
-walk-forward identity, sweep-persistence, and cost-API structural language
-the Workstream A entry names; resolve the two audit contract decisions routed
-here -- **M-4** (fractional-quantity dust lots: bind a whole-ish-quantity
-contract or an epsilon-pop in both accounting paths in the same release) and
-**M-6** (snapshot-hash timestamp representation: bind POSIXct-only input with
-a classed failure). Release gate fails if contracts.md teaches an old public
-name outside historical references.
+One ticket family, not a find-replace, and NOT prose-only (spec-review L-2):
+clause-by-clause re-verification of every renamed/unexported/unchanged
+citation; bind R1-R7 and the D2 constructor/infrastructure rule into
+contracts.md; add the target-risk, walk-forward identity, sweep-persistence,
+and cost-API structural language the Workstream A entry names; resolve the
+two audit contract decisions routed here WITH their implementation and test
+consequences:
+
+- **M-4** (fractional-quantity dust lots): bind a whole-ish-quantity
+  contract OR an epsilon-pop. If epsilon-pop is selected, BOTH the R and C++
+  accounting paths change in the same ticket (or a directly adjacent one)
+  with parity tests, and the N-4 tolerance re-check fires (Batch 2 note).
+- **M-6** (snapshot-hash timestamp representation): bind POSIXct-only input
+  with a classed failure, including a source-level test for non-POSIXct
+  input -- not only contracts prose.
+
+Release gate fails if contracts.md teaches an old public name outside
+historical references.
 
 ### Batch 6 -- Identity contract reference v2 (Workstream E)
 
@@ -254,13 +288,33 @@ the post-split article set.
 
 ### Batch 12 -- Release gate
 
-The release_ci_playbook checks plus this packet's bound gates: the naming
-synthesis Section 7 gate set in full (export lock, old-name rg sweep with the
-bound exclusion list, internal-definition collision gate, M-8 regression,
-candidate-generic matrix, streaming-contract preservation, contracts/docs
-gates, NEWS table); the styleguide Section 12 release-gate roadmap checks;
-audit-finding closure verification (B-1, H-1..H-3, M-1..M-4, M-6..M-8 fixed
-or explicitly re-routed with a recorded reason); executing vignettes green;
+Per `release_ci_playbook.md:100-123`, the release-gate ticket MUST name the
+playbook explicitly, not by convention (spec-review M-1). The ticket cut
+binds, verbatim:
+
+- `inst/design/release_ci_playbook.md` in the ticket's source references;
+- a task to read the playbook before running or updating release gates;
+- the explicit local-gate checklist:
+  - full package tests;
+  - `Rscript --vanilla tools/check-readme-example.R` (README cold-start);
+  - `R CMD check --no-manual --no-build-vignettes`;
+  - `tools/check-coverage.R` when coverage behavior changed or coverage is
+    part of release evidence;
+  - pkgdown build (documentation, vignettes, README, and pkgdown references
+    all change in this release, so it is required, not conditional);
+  - the local WSL/Ubuntu gate (executable R code, vignettes, pkgdown, and
+    persistence-adjacent code all change, so it is required);
+  - branch / main / tag CI;
+- a closeout note recording exactly which gates ran, which were skipped, and
+  the accepted reason for every skipped or failed-then-rerun gate.
+
+Plus this packet's bound gates: the naming synthesis Section 7 gate set in
+full (export lock, old-name rg sweep with the bound exclusion list,
+internal-definition collision gate, M-8 regression, candidate-generic
+matrix, streaming-contract preservation, contracts/docs gates, NEWS table);
+the styleguide Section 12 release-gate roadmap checks; audit-finding closure
+verification (B-1, H-1..H-3, M-1..M-4, M-6..M-8 fixed or explicitly
+re-routed with a recorded reason); executing vignettes green;
 `tools::checkRd` over changed man pages.
 
 ---
