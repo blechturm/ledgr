@@ -389,6 +389,23 @@ testthat::test_that("runtime feature typos fail loudly instead of running as no-
   )
 })
 
+testthat::test_that("single-pulse run windows fail before fold entry", {
+  one_pulse <- test_bars[test_bars$ts_utc == min(test_bars$ts_utc), , drop = FALSE]
+  strategy <- function(ctx, params) ctx$flat()
+
+  testthat::expect_error(
+    ledgr_backtest(
+      data = one_pulse,
+      strategy = strategy,
+      start = one_pulse$ts_utc[[1]],
+      end = one_pulse$ts_utc[[1]],
+      cost_model = ledgr_cost_zero(),
+      run_id = "single-pulse-window"
+    ),
+    class = "ledgr_run_window_too_short"
+  )
+})
+
 testthat::test_that("strategy evaluation errors include pulse context and preserve parent", {
   bad_strategy <- function(ctx, params) {
     stop("strategy boom")

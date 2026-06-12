@@ -12,6 +12,7 @@
 \alias{ledgr_invalid_fill_context}
 \alias{ledgr_run_not_found}
 \alias{ledgr_unresolved_feature_id}
+\alias{ledgr_run_window_too_short}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -35,8 +36,9 @@
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
-timing-model, saved-sweep, retained-series, and legacy-shape failures. User
-tests should assert on these classes instead of parsing message text.
+timing-model, execution-window, saved-sweep, retained-series, and
+legacy-shape failures. User tests should assert on these classes instead of
+parsing message text.
 }
 \section{Legacy shape classes}{
 
@@ -71,6 +73,13 @@ malformed ledgr timing-model payloads.
 the internal proposal/resolver seam when a cost resolver receives the wrong
 object shape. They are stable top-level classes for tests that exercise that
 seam directly.
+}
+
+\section{Execution window classes}{
+
+\code{ledgr_run_window_too_short} is raised when a run window contains fewer than
+two executable pulses. Next-bar fill semantics require a decision pulse and a
+later execution pulse.
 }
 
 \section{Saved sweep classes}{

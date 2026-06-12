@@ -175,7 +175,7 @@ scope: stale-fixes
 Priority: P0
 Effort: M
 Dependencies: LDG-2627
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 

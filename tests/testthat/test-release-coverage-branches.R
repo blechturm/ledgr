@@ -1,6 +1,7 @@
 testthat::test_that("timing helpers handle numeric and difftime paths", {
   testthat::expect_true(length(ledgr:::ledgr_time_now()) == 1L)
   testthat::expect_equal(ledgr:::ledgr_time_elapsed(1, 3), 2)
+  testthat::expect_equal(ledgr:::ledgr_time_elapsed(0, 1500), 1500)
   testthat::expect_true(is.na(ledgr:::ledgr_time_elapsed(numeric(), 1)))
 
   start <- as.POSIXct("2020-01-01 00:00:00", tz = "UTC")

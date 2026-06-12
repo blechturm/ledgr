@@ -1201,8 +1201,14 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
   }
   stream_threshold <- as.integer(stream_threshold)
 
+  if (!isTRUE(owns_connection) && isTRUE(lazy)) {
+    lazy <- FALSE
+  }
+
   if (total_rows > stream_threshold) {
-    lazy <- TRUE
+    if (isTRUE(owns_connection)) {
+      lazy <- TRUE
+    }
     if (!requested_lazy && isTRUE(owns_connection)) {
       opened$close()
       return(ledgr_extract_fills(bt, lazy = TRUE, stream_threshold = stream_threshold))
@@ -1412,7 +1418,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
     return(new_ledgr_fills_cursor(fills_res, temp_table, con))
   }
 
-  if (total_rows > stream_threshold) {
+  if (total_rows > stream_threshold && isTRUE(owns_connection)) {
     warning("Large fill set materialized (N > threshold). Consider lazy = TRUE for performance.", call. = FALSE)
   }
 
