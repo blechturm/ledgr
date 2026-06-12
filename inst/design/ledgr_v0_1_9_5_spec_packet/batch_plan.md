@@ -1,7 +1,6 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Ticket cut reviewed (Claude, 2026-06-12); review patches H-1,
-M-1..M-4, L-1..L-3 applied. Ready for Batch 1A.
+Status: Batch 0 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 

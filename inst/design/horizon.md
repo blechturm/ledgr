@@ -27,9 +27,10 @@ an architecture note, or a spec packet.
 ## Open
 
 **Current packet note (2026-06-11):** v0.1.9.4 walk-forward has closed.
-v0.1.9.5 is the next planned packet and has not been cut. Horizon entries below
-remain non-binding unless a future active packet, roadmap, contracts, or an
-accepted RFC promotes them.
+v0.1.9.5 is cut and active at
+`inst/design/ledgr_v0_1_9_5_spec_packet/`. Horizon entries below remain
+non-binding unless a future active packet, roadmap, contracts, or an accepted
+RFC promotes them.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet

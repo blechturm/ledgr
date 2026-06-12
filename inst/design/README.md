@@ -3,9 +3,8 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.1.9.4`.
-**Current active packet:** None; v0.1.9.5 is the next planned packet and has
-not been cut.
-**Current active packet path:** Pending v0.1.9.5 packet cut.
+**Current active packet:** `v0.1.9.5`.
+**Current active packet path:** `inst/design/ledgr_v0_1_9_5_spec_packet/`.
 The completed `inst/design/ledgr_v0_1_9_4_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the
 v0.1.9.4 release gate.
@@ -129,6 +128,26 @@ paper/live walk-forward, and compiled-core architecture work remain non-scope.
 - Primary synthesis:
   `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`.
 
+The v0.1.9.5 packet is active. It is a naming and teaching consolidation
+release after the v0.1.9.x feature arc. It consumes the accepted API
+naming-consistency synthesis, the v0.1.9.4 deep code-review audit, and the
+v0.1.9.4 vignette-screening audit. Scope is public API naming cleanup,
+candidate-generic alignment, contract and identity-reference refresh, scheduled
+audit fixes, vignette splits, new teaching surfaces, and release-surface
+housekeeping. Validation toolkit, strategy-decorator, crypto-readiness,
+target-construction helper expansion, and new v0.2.x feature work remain
+non-scope.
+
+- Spec: `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`.
+- Tickets: `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_1_9_5_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_1_9_5_spec_packet/batch_plan.md`.
+- Primary synthesis:
+  `rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md`.
+- Primary audits:
+  `audits/v0_1_9_4_deep_code_review_audit.md` and
+  `audits/v0_1_9_4_vignette_screening_audit.md`.
+
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
 artifact-topology guidance, Quarto installed-vignette migration, README and
 pkgdown reading-flow alignment, experiment-store and reproducibility guidance,
@@ -157,9 +176,9 @@ deferred to the horizon for a later RFC/spec cycle.
 Public cost/liquidity APIs, OMS work, live data logs, point-in-time
 regressors, public benchmark dashboards, selection-integrity diagnostics, and
 broad collapse adoption remain deferred unless a later active packet explicitly
-scopes a bounded subset. The active v0.1.9.4 packet scopes only the narrow
-walk-forward MVP described above. Auditr-report bugfix intake is also deferred
-until a future packet routes it.
+scopes a bounded subset. The active v0.1.9.5 packet scopes only the naming,
+teaching, contracts, and scheduled audit work described above. Auditr-report
+bugfix intake is also deferred until a future packet routes it.
 
 The v0.1.8.7 packet is complete. It shipped Optimization Round 2 and explicit
 legacy execution cleanup: modern execution is snapshot-backed and
@@ -630,6 +649,7 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
+| active v0.1.9.5 packet | `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`, `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`, `ledgr_v0_1_9_5_spec_packet/tickets.yml`, `ledgr_v0_1_9_5_spec_packet/batch_plan.md`, `rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md`, `audits/v0_1_9_4_deep_code_review_audit.md`, `audits/v0_1_9_4_vignette_screening_audit.md`, `contracts.md`, `ledgr_roadmap.md` |
 | Target risk release record | `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md` |
 | Walk-forward release record | `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `ledgr_v0_1_9_4_spec_packet/tickets.yml`, `ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (with Amendment 1 in Section 14, Amendment 2 in Section 16, ticket-cut gates in Section 17), `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section), `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `contracts.md` |
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |

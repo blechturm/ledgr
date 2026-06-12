@@ -1,6 +1,6 @@
 # ledgr v0.1.9.5 Spec Packet
 
-Status: Ticket cut awaiting review.
+Status: Batch 0 implementation complete; awaiting Claude review.
 
 This packet scopes v0.1.9.5 as a naming and teaching consolidation release
 after the v0.1.9.1-v0.1.9.4 feature arc.
@@ -8,7 +8,6 @@ after the v0.1.9.1-v0.1.9.4 feature arc.
 Authoritative files:
 
 - `v0_1_9_5_spec.md`
-- `v0_1_9_5_spec_review.md`
 - `v0_1_9_5_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`

@@ -4,9 +4,9 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_9_4_spec_packet/`.
-**Next planned packet:** v0.1.9.5 documentation, teaching, contracts audit,
-and entropy management. Packet not yet cut.
-**Active packet path:** Pending v0.1.9.5 packet cut.
+**Active packet:** v0.1.9.5 documentation, teaching, contracts audit, and
+entropy management.
+**Active packet path:** `inst/design/ledgr_v0_1_9_5_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -110,7 +110,7 @@ versioned packet.
 | v0.1.9.2 | Done | Sweep artifact persistence: durable saved-sweep artifacts, optional retained net equity/return series for completed candidates, reopened-sweep candidate compatibility, and compact retention infrastructure for later walk-forward. | `inst/design/ledgr_v0_1_9_2_spec_packet/` |
 | v0.1.9.3 | Done | Target-risk: per-pulse restructure plus chainable risk layer, including risk-chain identity for walk-forward. | `inst/design/ledgr_v0_1_9_3_spec_packet/` |
 | v0.1.9.4 | Done | Walk-forward culmination: consumes cost identity from v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain identity from v0.1.9.3; Section 17 gates fire here. | `inst/design/ledgr_v0_1_9_4_spec_packet/` |
-| v0.1.9.5 | Planned | Documentation, teaching, contracts audit, and entropy management release after the v0.1.9.x feature arc closes; mirrors the v0.1.8.11 pattern; gates remaining v0.1.9.x feature work and v0.2.x. | Future packet; horizon 2026-06-05 v0.1.9.5 entry |
+| v0.1.9.5 | Active | Documentation, teaching, contracts audit, and entropy management release after the v0.1.9.x feature arc closes; mirrors the v0.1.8.11 pattern; gates remaining v0.1.9.x feature work and v0.2.x. | `inst/design/ledgr_v0_1_9_5_spec_packet/` |
 | v0.1.9.6 | Planned | Validation toolkit (rescoped from the prior "selection integrity diagnostics" slot per the accepted 2026-06-12 synthesis): DSR, sweep-level PBO/CSCV over retained return panels with panel-hygiene gates, deterministic candidate clustering, and the Pardo-anchored `ledgr_business_objective()` constructor with all-pass composition, criterion tear-down table, and conditional session-identity participation. Adapter-first (PerformanceAnalytics extension, RPESE; pbo optional). First feature packet after v0.1.9.5. | Future packet; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` (accepted 2026-06-12) |
 | v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
@@ -1425,7 +1425,7 @@ infrastructure that walk-forward consumes when it ticket-cuts at v0.1.9.4:
   (`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
   with Amendments 1 + 2 + Section 17 ticket-cut gate matrix). It gets
   cost identity from v0.1.9.1, sweep retention infrastructure from
-  v0.1.9.2, and risk-chain identity from v0.1.9.3. This is the active packet.
+  v0.1.9.2, and risk-chain identity from v0.1.9.3. Completed packet.
 
 Rationale, cross-cycle identity handoffs, and scope-discipline
 acknowledgment: see the 2026-06-05 horizon entry "v0.1.9.x line
@@ -1638,7 +1638,7 @@ v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain
 identity from v0.1.9.3; Section 17 gate matrix from the synthesis fires
 at this packet.
 
-Active packet:
+Completed packet:
 
 - `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`;
 - `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`;

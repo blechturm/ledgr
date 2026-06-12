@@ -68,9 +68,8 @@ parallel patches.
 Priority: P0
 Effort: S
 Dependencies: None
-Status: In Progress (ticket-cut review complete 2026-06-12, patches H-1,
-M-1..M-4, L-1..L-3 applied; the M-1 pointer-flip tasks remain to be
-executed before this ticket closes)
+Status: Review Pending (ticket-cut review complete 2026-06-12; patches H-1,
+M-1..M-4, L-1..L-3 applied; pointer-flip tasks implemented)
 
 ### Description
 
