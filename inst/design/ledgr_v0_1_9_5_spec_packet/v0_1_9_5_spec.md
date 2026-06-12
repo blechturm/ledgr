@@ -1,15 +1,21 @@
 # ledgr v0.1.9.5 Spec
 
-**Status:** Spec review complete (Codex, 2026-06-12: "revisions required
-before ticket cut"; see `v0_1_9_5_spec_review.md`). The four required
-revisions were applied in place 2026-06-12: (1) Batch 12 now names the
-release-playbook source reference, read task, and explicit local-gate
-checklist per `release_ci_playbook.md:100-123`; (2) Batch 1 split into
-1A/1B/1C reviewable units; (3) the scope note no longer mislabels
-locator attributes as identity bytes; (4) Batch 5 retitled and scoped
-for the M-4/M-6 code/test implications, with the N-4 conditional tie-in
-added to Batch 2. Ready for ticket cut. Nothing below authorizes
-implementation until tickets are cut.
+**Status:** Spec review complete (Codex, 2026-06-12; review verdict
+"revisions required before ticket cut" with no missing RFC/audit gates;
+review delivered conversationally, not retained as a packet artifact).
+The four required revisions were applied in place 2026-06-12: (1) Batch
+12 names the release-playbook source reference, read task, and explicit
+local-gate checklist per `release_ci_playbook.md:100-123` -- the
+playbook forbids implicit referencing; (2) Batch 1 split into 1A/1B/1C
+reviewable units (stale docs / runner-results / kernel-accounting); (3)
+the scope note corrected: locator attributes are result-object shape,
+not identity bytes; (4) Batch 5 retitled and scoped for the M-4/M-6
+code/test implications, with the N-4 conditional tie-in added to Batch
+2. The review also confirmed both spec-level bindings (the scope
+supersession and the H-1 two-pulse fail-closed contract, the latter
+verified against the runner hazard and walk-forward's existing rule).
+Ready for ticket cut. Nothing below authorizes implementation until
+tickets are cut.
 **Target branch:** `v0.1.9.5`.
 **Scope:** The naming-and-teaching consolidation release after the v0.1.9.x
 feature arc: implementation of the accepted API naming-consistency synthesis
