@@ -18,6 +18,42 @@ Do not cite this file as replacement authority for a decision. Use it to find
 the binding artifact, then cite that artifact and any final review, ADR,
 contract, or spec packet listed beside it.
 
+## RFC Pipeline
+
+Forward-looking state of owed and in-flight RFC cycles. The Topic Decision
+Index below records what is bound; this table records what is pending. One
+row per cycle or cluster. `inst/design/horizon.md` remains authoritative for
+full scope, routing, and non-commitments; this table is the thirty-second
+overview.
+
+**States:** `in-flight` (cycle open, next stage named) | `due` (recorded
+trigger has fired, seed unwritten) | `gate without seed` (named as a
+predecessor by other planned work, never scoped -- the dangerous state) |
+`parked` (horizon entry with trigger not yet fired) | `parked (seed
+staged)` (seed pre-written as design preservation; cycle deliberately
+not opened).
+
+| Cycle / cluster | State | Next step / trigger | Staged inputs | Authority |
+| --- | --- | --- | --- | --- |
+| Shorting / leverage contract | **gate without seed** | Write the seed-shape before v0.2.x Palomar constraint scoping opens. Must bind: short-proceeds cash treatment, borrow availability/cost (depends on accrual events row), equity margin vs derivatives arc, `risk_long_only` defaulting. | Gap 4 of the 2026-06-11 strategy-family gaps entry | horizon 2026-06-11 `[strategy]` gaps entry; gate references in the 2026-06-01 strategy-callback and 2026-06-09 Palomar-constraint entries |
+| Ragged universe / asset lifetime | **gate without seed** | v0.2.x-v0.3.0; "direction B; needs a dedicated RFC". The largest research-validity gap vs peer frameworks; blocks broad-equity universes with delistings. | none staged | horizon 2026-05-28 `[data]` live bad-data / sim-to-real entry (direction B) |
+| Accounting-critical event types (now incl. time-accrual costs: interest, borrow, funding) | **gate without seed** | v0.2.x; the crypto-readiness spike and the shorting contract RFC must both name it as a dependency when they open. | Gap 3 routing in the 2026-06-11 gaps entry | horizon 2026-06-11 `[strategy]` gaps entry; v0.2.x roadmap row |
+| Benchmark context | parked (research slot reserved) | v0.2.x; run the deep-research pass at cycle open. | reserved filename `../research/Benchmark-Methodology.md` | horizon 2026-05-24 beta / external-benchmark entries |
+| Multi-asset trade definitions | parked (research slot reserved) | v0.2.x, with non-spot accounting. | reserved filename `../research/Trade-Accounting-Definitions.md` | `../research/README.md` future slots table |
+| Strategy schedule decorator ("hold until the next date") | parked (seed staged, 2026-06-12) | Cycle opens when its proposed window approaches: a small "schedule decorator + Pass 2 helpers" authoring tick after v0.1.9.5 (MD-1). Response stage then verifies the decision-mask mechanism against `R/execution-spec.R` and the resume path. | seed (standalone, incl. ecosystem survey and the Section 5 mechanism options); horizon weight-strategy entry 2026-06-12 status update | `rfc_strategy_schedule_decorator_v0_1_9_x_seed.md` |
+| Portfolio-construction cluster: weight-strategy wrapper -> optimization scaffolding -> Palomar constraint expansion -> adapter family | parked | v0.2.x; scaffolding must be scoped before any adapter is selected; constraint expansion is half-gated on the shorting contract row. | 2026-06-07/09 horizon entries; `../methodology_references.md` Palomar section; adapter candidates incl. 2026-06-11 status update (RiskPortfolios, NMOF, parma, estimator category) | horizon 2026-06-07 `[planning]` scaffolding + 2026-06-09 `[risk]`/`[ux]`/`[adapters]` entries |
+| Execution-policy cluster: order policy (now incl. intra-bar protective exits), liquidity/capacity, OMS implementation, cost-model post-direction (~10 recorded future-RFC obligations) | parked (north star bound) | v0.2.x; concrete RFCs instantiate pipeline stages. | `rfc_execution_policy_pipeline_audit_signal_north_star.md`; `rfc_ledgr_oms_seed_synthesis.md`; cost synthesis deferral lists; Gap 1 routing | north-star RFC + horizon 2026-05-25/27 execution entries + 2026-06-11 gaps entry |
+| Data cluster: PIT regressor snapshots (one unified RFC), corporate actions / instrument master, snapshot administration, snapshot lineage | parked | v0.2.x. | partial seed-shape for snapshot administration recorded in horizon | horizon 2026-05-25/26/27 data + infrastructure entries |
+| ML / cross-sectional cluster: ML-first shape, cross-sectional indicators, multi-strategy allocation | parked | v0.2.x. | 2026-06-09 entries; Peterson multi-strategy entry | horizon 2026-06-09 `[research]` entries |
+| Evaluation cluster remainder: post-sweep clustering, randomized/blocked slice diagnostics, selection-session registry, hypothesis recording, walk-forward post-direction | parked | After the validation-toolkit cycle binds the diagnostics substrate. | 2026-06-07/09 entries; walk-forward synthesis future obligations | horizon entries cited per item |
+| Accounting cluster remainder: non-spot models (futures/margin/options/FX), lot-selection / tax-aware policies | parked | v0.2.x derivatives arc; lot-selection routed 2026-06-11 (Gap 2). | closed `compiled_accounting_model` enum reserves the seam | horizon v0.2.x rows + 2026-06-11 gaps entry |
+
+Maintenance rule: update a row when its cycle opens (state -> in-flight with
+artifact links), when a gate's seed lands (move toward in-flight), or when a
+synthesis is accepted (delete the row; the Topic Decision Index takes over).
+Non-RFC debt (audit findings, vignette work, contracts passes, release
+gates) is tracked in `../horizon.md` and the roadmap, not here.
+
 ## Topic Decision Index
 
 | Topic | Current binding direction | Primary authority | Review / packet / contract links |
@@ -36,6 +72,8 @@ contract, or spec packet listed beside it.
 | Indicator simplification and determinism | Indicator determinism extraction and later file/role cleanup are separate phases. | `rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` | v0.1.8.1 and v0.1.8.2 packet records |
 | Primitive internals and collapse | Prefer primitive internal runtime state with centralized public-boundary conversion; `collapse` is conditional acceleration behind determinism gates. | `rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | `../manual/performance_arc_v0_1_8_x.qmd`, v0.1.8.7+ packet records |
 | B2 compiled hot frame | B2 is a production-parity measurement gate and scoped spot-FIFO accelerator path. Public opt-in is authorized only for memory-backed sweep spot-FIFO; durable compiled integration, non-spot accounting, and default compiled execution remain deferred. | `rfc_compiled_hot_frame_b2_v0_1_9_x_synthesis.md`, `rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing) | `rfc_compiled_hot_frame_b2_v0_1_9_x_final_review.md`, `../horizon.md` (2026-06-02 `[architecture]` scope guard), `../ledgr_v0_1_8_10_spec_packet/`, `../contracts.md` |
+| API naming consistency and surface tightening | v0.1.9.5 is a no-alias hard-rename and surface-tightening release before the teaching-documentation batches. It binds R1-R7, a closed verb-first allowlist, `ledgr_ind_*` constructor vs `ledgr_indicator_*` infrastructure semantics, the final rename/unexport table, walk-forward candidate locator/override rules, a same-release `contracts.md` rework, M-8 as a before-or-with rename prerequisite, and Recovery docs for the low-level recovery pair. | `rfc_api_naming_consistency_v0_1_9_5_synthesis.md` | `rfc_api_naming_consistency_v0_1_9_5_final_review.md`, `tests/testthat/test-api-exports.R`, `../contracts.md`, future v0.1.9.5 packet |
+| Validation toolkit (selection-integrity diagnostics + business-objective constructor) | v0.1.9.6 ships the bundled toolkit, adapter-first: DSR / MinTRL / K-Ratio native from primary literature; sweep-level PBO/CSCV over retained completed-candidate panels (A-prime) with fail-closed panel-hygiene gates; deterministic hierarchical candidate clustering as the effective-trial-count input; `ledgr_business_objective()` with all-pass composition, the required per-criterion tear-down table, and `ledgr_objective_*` steps (criterion 2 = closed-trade realized-P&L concentration; risk = max_drawdown only); the objective enters walk-forward session identity via a conditional payload key (omitted when absent, byte-identity regression gate). Session-object persistence only; PA extends the existing Suggests boundary; MIT core with no GPL/AGPL code transfer. Per-fold train-sweep PBO and `fold_seq` retention stay parked in horizon (2026-06-12 `[evaluation]`). | `rfc_validation_toolkit_v0_1_9_x_synthesis.md` (accepted 2026-06-12) | `rfc_validation_toolkit_v0_1_9_x_final_review.md`, `rfc_validation_toolkit_v0_1_9_x_seed_v2.md` (D1-D4 in-line), `../research/Validation-Toolkit.md`, `../ledgr_roadmap.md` v0.1.9.6 row, future v0.1.9.6 packet |
 | Public transaction-cost model | v0.1.9.1 implements the first public transaction-cost API: classed cost-model constructors, ordered cost chains, explicit timing model, required `cost_model`, cost identity (`cost_model_hash`, `cost_plan_json`), and legacy-shape rejection. Liquidity, quantity mutation, broker templates, and function-valued user models remain downstream. | `rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` | `../ledgr_v0_1_9_1_spec_packet/`, `../contracts.md`, `../manual/identity_contract.qmd`, `../horizon.md` |
 | Metric context and risk-free assumptions | Metric context, calendar, and experiment-level assumptions are explicit model inputs. | `rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` | v0.1.8.2 packet records, `../contracts.md` |
 | Target-risk / OMS policy boundary | v0.1.9 target-risk is a narrow chain; OMS, public cost/liquidity chains, and tiered output retention remain deferred. | `rfc_chainable_risk_oms_policy_boundary_synthesis.md` | `../ledgr_roadmap.md`, `../horizon.md` |

@@ -522,6 +522,7 @@ defaults or named ticket-cut gates or both must land.
 - `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
 - `audits/v0_1_8_spec_deep_review.md` - v0.1.8 spec review and routing.
 - `audits/v0_1_9_4_deep_code_review_audit.md` - v0.1.9.4-close deep code review of engine core, accounting, identity, and persistence; findings tracked for the next release cycle via the 2026-06-11 horizon audit entry.
+- `audits/v0_1_9_4_vignette_screening_audit.md` - v0.1.9.4-close screening of all twelve vignettes: concept/technical split designs, missing-vignette list, release-gate stale items, and R4DS north-star assessment; routed via the 2026-06-11 horizon audit entry and the roadmap v0.1.9.5 authoritative inputs.
 - `spikes/ledgr_parallelism_spike/` - v0.1.8 parallelism spike episode.
 - `spikes/ledgr_tidyfinance_unit_probe/` - pre-RFC empirical probe of `tidyfinance` provider unit semantics for future external reference-data adapter design.
 
