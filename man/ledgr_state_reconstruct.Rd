@@ -20,9 +20,9 @@ the reconstructed state artifacts.
 }
 \details{
 This is the low-level reconstruction API. User-facing helpers such as
-\code{ledgr_compute_equity_curve()} and \code{as_tibble(bt, what = "equity")}
-delegate to the same ledger-derived state model without requiring users to
-manage a raw DBI connection.
+\code{ledgr_results(bt, "equity")} and \code{as_tibble(bt, what = "equity")} delegate
+to the same ledger-derived state model without requiring users to manage a
+raw DBI connection.
 }
 \examples{
 bars <- data.frame(

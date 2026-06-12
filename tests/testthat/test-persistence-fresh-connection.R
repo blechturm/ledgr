@@ -137,7 +137,7 @@ testthat::test_that("low-level CSV snapshot workflow survives close, load, and r
   hash <- ledgr_snapshot_seal(con, snapshot_id)
   DBI::dbDisconnect(con, shutdown = TRUE)
 
-  loaded <- ledgr_snapshot_load(db_path, snapshot_id = snapshot_id, verify = TRUE)
+  loaded <- ledgr_snapshot_open(db_path, snapshot_id = snapshot_id, verify = TRUE)
   on.exit(ledgr_snapshot_close(loaded), add = TRUE)
   loaded_info <- ledgr_snapshot_info(loaded)
 

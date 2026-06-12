@@ -110,7 +110,7 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #' return `NA` for `strategy_source_text`.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param trust Logical scalar. If `FALSE`, return source text and metadata
@@ -162,11 +162,11 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #' }
 #' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
 #' bt <- ledgr_run(exp, params = list(qty = 1), run_id = "qty-1")
-#' ledgr_extract_strategy(snapshot, bt$run_id, trust = FALSE)
+#' ledgr_run_strategy(snapshot, bt$run_id, trust = FALSE)
 #' close(bt)
 #' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_extract_strategy <- function(snapshot, run_id, trust = FALSE) {
+ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
   if (!is.character(run_id) || length(run_id) != 1L || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }

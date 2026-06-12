@@ -111,7 +111,7 @@ testthat::test_that("failed runs persist minimum telemetry diagnostics", {
     "SELECT snapshot_id FROM runs WHERE run_id = 'telemetry-failed'"
   )$snapshot_id[[1]]
   ledgr_test_close_duckdb(opened_snapshot$con, opened_snapshot$drv)
-  snapshot <- ledgr_snapshot_load(db_path, snapshot_id)
+  snapshot <- ledgr_snapshot_open(db_path, snapshot_id)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   info <- ledgr_run_info(snapshot, "telemetry-failed")

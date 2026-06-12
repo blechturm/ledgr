@@ -44,7 +44,7 @@ testthat::test_that("FIFO lot engine handles stress sequences", {
     config = list(data = list(snapshot_id = "snap_fifo"))
   )
 
-  fills <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 100000L)
+  fills <- ledgr:::ledgr_run_fills(bt, stream_threshold = 100000L)
 
   seq_a <- fills[fills$instrument_id == "SEQ_A", , drop = FALSE]
   flip_rows <- seq_a[seq_a$side == "SELL", , drop = FALSE]

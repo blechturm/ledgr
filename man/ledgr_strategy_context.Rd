@@ -88,7 +88,7 @@ strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
     x <- ctx$features(id, features)
-    if (passed_warmup(x) && x[["ret_5"]] > params$min_return) {
+    if (ledgr_passed_warmup(x) && x[["ret_5"]] > params$min_return) {
       targets[id] <- params$qty
     }
   }

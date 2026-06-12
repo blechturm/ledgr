@@ -80,9 +80,9 @@ ledgr_db_init <- function(db_path) {
 #' @return A list with `positions`, `cash`, `pnl`, and `equity_curve`.
 #' @details
 #' This is the low-level reconstruction API. User-facing helpers such as
-#' `ledgr_compute_equity_curve()` and `as_tibble(bt, what = "equity")`
-#' delegate to the same ledger-derived state model without requiring users to
-#' manage a raw DBI connection.
+#' `ledgr_results(bt, "equity")` and `as_tibble(bt, what = "equity")` delegate
+#' to the same ledger-derived state model without requiring users to manage a
+#' raw DBI connection.
 #'
 #' @examples
 #' bars <- data.frame(

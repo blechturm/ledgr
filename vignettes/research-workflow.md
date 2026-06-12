@@ -229,7 +229,7 @@ strategy <- ledgr_demo_sma_crossover_strategy()
 You do not need to write a strategy for this vignette. The following
 miniature example only shows the boundary that the demo strategy
 follows: read pulse-known values from `ctx`, guard warmup with
-`passed_warmup()`, and return a full named numeric target vector.
+`ledgr_passed_warmup()`, and return a full named numeric target vector.
 
 ``` r
 custom_sma_strategy <- function(ctx, params) {
@@ -239,7 +239,7 @@ custom_sma_strategy <- function(ctx, params) {
     values <- ctx$features(instrument_id)
 
     # TRUE once enough bars have passed to calculate the slow SMA.
-    if (passed_warmup(values) &&
+    if (ledgr_passed_warmup(values) &&
         values[["fast"]] / values[["slow"]] - 1 > params$threshold) {
       target[[instrument_id]] <- params$qty
     }
@@ -531,7 +531,7 @@ close(single_run)
 close(promoted)
 ledgr_snapshot_close(snapshot)
 
-snapshot <- ledgr_snapshot_load(
+snapshot <- ledgr_snapshot_open(
   store_path,
   snapshot_id = "demo_2019_h1",
   verify = TRUE
@@ -610,7 +610,7 @@ You can also recover the selection context and strategy provenance
 behind the promoted run. Today that recovery uses two public surfaces:
 
 - `ledgr_run_info()` and `ledgr_run_open()` for the stored run;
-- `ledgr_extract_strategy()` for strategy source and parameter
+- `ledgr_run_strategy()` for strategy source and parameter
   provenance.
 
 <div class="ledgr-callout ledgr-callout-warning">
@@ -655,7 +655,7 @@ list(
     [1] "{\"fast_n\":5,\"slow_n\":20}"
 
 ``` r
-extracted <- ledgr_extract_strategy(
+extracted <- ledgr_run_strategy(
   snapshot,
   "workflow_promoted_candidate",
   trust = FALSE

@@ -1,6 +1,6 @@
 testthat::test_that("session feature cache reuses series by snapshot hash", {
-  ledgr_clear_feature_cache()
-  on.exit(ledgr_clear_feature_cache(), add = TRUE)
+  ledgr_feature_cache_clear()
+  on.exit(ledgr_feature_cache_clear(), add = TRUE)
 
   calls <- new.env(parent = emptyenv())
   calls$n <- 0L
@@ -81,9 +81,9 @@ testthat::test_that("session feature cache reuses series by snapshot hash", {
   testthat::expect_equal(bench$mean[bench$component == "feature_cache_misses"], 0)
 })
 
-testthat::test_that("ledgr_clear_feature_cache removes cached series", {
-  ledgr_clear_feature_cache()
-  on.exit(ledgr_clear_feature_cache(), add = TRUE)
+testthat::test_that("ledgr_feature_cache_clear removes cached series", {
+  ledgr_feature_cache_clear()
+  on.exit(ledgr_feature_cache_clear(), add = TRUE)
 
   bars <- test_bars[test_bars$instrument_id == "TEST_A", , drop = FALSE]
   def <- list(
@@ -104,7 +104,7 @@ testthat::test_that("ledgr_clear_feature_cache removes cached series", {
   ledgr:::ledgr_feature_cache_set(key, seq_len(nrow(bars)))
   testthat::expect_false(is.null(ledgr:::ledgr_feature_cache_get(key, expected_len = nrow(bars))))
 
-  removed <- ledgr_clear_feature_cache()
+  removed <- ledgr_feature_cache_clear()
   testthat::expect_identical(removed, 1L)
   testthat::expect_true(is.null(ledgr:::ledgr_feature_cache_get(key, expected_len = nrow(bars))))
 })

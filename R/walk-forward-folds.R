@@ -256,7 +256,7 @@ ledgr_walk_forward_validate_positive_integer <- function(x, arg) {
 
 ledgr_walk_forward_posix <- function(x, arg) {
   out <- tryCatch(
-    as.POSIXct(iso_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"),
+    as.POSIXct(ledgr_iso_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"),
     error = function(e) {
       rlang::abort(
         sprintf("%s must be a parseable UTC timestamp.", arg),

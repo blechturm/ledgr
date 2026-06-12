@@ -35,8 +35,8 @@ testthat::test_that("comparison tables carry exactly one metric context", {
   bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "compare-context-b")
   on.exit(close(bt_b), add = TRUE)
 
-  default_cmp <- ledgr_compare_runs(snapshot, run_ids = c("compare-context-a", "compare-context-b"))
-  explicit_cmp <- ledgr_compare_runs(
+  default_cmp <- ledgr_run_compare(snapshot, run_ids = c("compare-context-a", "compare-context-b"))
+  explicit_cmp <- ledgr_run_compare(
     snapshot,
     run_ids = c("compare-context-a", "compare-context-b"),
     metric_context = ledgr_metric_context(exp)
@@ -90,7 +90,7 @@ testthat::test_that("comparison tables fail loudly for mixed observed cadences",
   )
 
   testthat::expect_error(
-    ledgr_compare_runs(snapshot, run_ids = c("mixed-daily", "mixed-hourly")),
+    ledgr_run_compare(snapshot, run_ids = c("mixed-daily", "mixed-hourly")),
     "mixed observed bar cadences",
     class = "ledgr_mixed_metric_cadence"
   )

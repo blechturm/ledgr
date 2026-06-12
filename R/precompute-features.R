@@ -219,7 +219,7 @@ ledgr_precompute_validate_window_coverage <- function(precomputed, range, window
 }
 
 ledgr_precompute_posix <- function(x) {
-  as.POSIXct(iso_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  as.POSIXct(ledgr_iso_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
 }
 
 ledgr_warn_large_grid_without_precomputed_features <- function(param_grid, precomputed_features, threshold = 20L) {
@@ -256,8 +256,8 @@ ledgr_precompute_snapshot_meta <- function(snapshot) {
 }
 
 ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {
-  scoring_start <- if (is.null(start)) meta$start else iso_utc(start)
-  scoring_end <- if (is.null(end)) meta$end else iso_utc(end)
+  scoring_start <- if (is.null(start)) meta$start else ledgr_iso_utc(start)
+  scoring_end <- if (is.null(end)) meta$end else ledgr_iso_utc(end)
   start_posix <- as.POSIXct(scoring_start, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
   end_posix <- as.POSIXct(scoring_end, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
   meta_start <- as.POSIXct(meta$start, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")

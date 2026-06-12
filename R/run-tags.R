@@ -36,7 +36,7 @@ ledgr_run_tags_empty <- function() {
 #' strategy provenance. Re-adding an existing tag is idempotent.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param tags Character vector of tags. Tags are trimmed, deduplicated, and
@@ -90,7 +90,7 @@ ledgr_run_tag <- function(snapshot, run_id, tags) {
 #' run are removed. Removing absent tags is idempotent.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param tags Character vector of tags to remove, or `NULL` to remove all tags
@@ -143,7 +143,7 @@ ledgr_run_untag <- function(snapshot, run_id, tags = NULL) {
 #' read-only operation and does not migrate legacy stores.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Optional run identifier. If supplied, list tags for that run
 #'   only.

@@ -11,10 +11,10 @@
 #' @param x A timestamp to normalize.
 #' @return A length-1 character string in ISO 8601 UTC format.
 #' @examples
-#' iso_utc("2020-01-01")
-#' iso_utc(as.POSIXct("2020-01-01 09:30:00", tz = "UTC"))
+#' ledgr_iso_utc("2020-01-01")
+#' ledgr_iso_utc(as.POSIXct("2020-01-01 09:30:00", tz = "UTC"))
 #' @export
-iso_utc <- function(x) {
+ledgr_iso_utc <- function(x) {
   unsupported_msg <- "`x` must be a UTC timestamp such as '2020-01-01T00:00:00Z' with trailing `Z`, a Date, or POSIXct."
   validate_hms <- function(ts_chr) {
     h <- as.integer(substr(ts_chr, 12, 13))
@@ -122,7 +122,7 @@ ledgr_utc <- function(x) {
     if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$", value)) {
       value <- sub(" ", "T", value, fixed = TRUE)
     }
-    as.POSIXct(iso_utc(value), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+    as.POSIXct(ledgr_iso_utc(value), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
   }
 
   out <- unname(vapply(x, parse_one, as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")))

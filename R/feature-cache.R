@@ -37,9 +37,9 @@ ledgr_feature_engine_version <- function() {
 #'
 #' @return The number of cache entries removed, invisibly.
 #' @examples
-#' ledgr_clear_feature_cache()
+#' ledgr_feature_cache_clear()
 #' @export
-ledgr_clear_feature_cache <- function() {
+ledgr_feature_cache_clear <- function() {
   keys <- ls(.ledgr_feature_cache_registry, all.names = TRUE)
   if (length(keys) > 0) {
     rm(list = keys, envir = .ledgr_feature_cache_registry)

@@ -247,7 +247,7 @@ That distinction keeps strategies free from execution-state bookkeeping.
 Raw target vectors are desired holdings. ledgr does not check
 affordability before filling them; if a target requires more cash than
 the simulated portfolio has, the run can fill anyway and cash can go
-negative. Use `target_rebalance(equity_fraction = ...)` or size directly
+negative. Use `ledgr_target_rebalance(equity_fraction = ...)` or size directly
 from `ctx$cash` and `ctx$equity` when you need capital-aware targets. A
 `risk_chain` can transform validated targets before fill timing and cost
 resolution -- for example `ledgr_risk_long_only()` can clip short
@@ -472,7 +472,7 @@ The economic idea:
 > Rank instruments by recent return, keep the top names, split capital
 > equally, and convert those weights into share quantities.
 
-`signal_return()` is a thin helper around the same feature you inspected
+`ledgr_signal_return()` is a thin helper around the same feature you inspected
 above: it reads `return_N` for every instrument in the pulse and returns
 one universe-wide signal object. It uses the vector accessor
 `ctx$vec$feature(feature_id)` when available, then falls back to the
@@ -493,7 +493,7 @@ strategy; `target` is the ordinary full named target vector shape the
 runner validates and executes.
 
 ``` r
-signal <- signal_return(pulse, lookback = 5)
+signal <- ledgr_signal_return(pulse, lookback = 5)
 signal
 #> <ledgr_signal> [2 assets]
 #> origin: return_5
@@ -501,7 +501,7 @@ signal
 #>     DEMO_01     DEMO_02
 #> 0.085318770 0.004018771
 
-selection <- select_top_n(signal, n = 1)
+selection <- ledgr_select_top_n(signal, n = 1)
 selection
 #> <ledgr_selection> [2 assets]
 #> origin: return_5
@@ -509,7 +509,7 @@ selection
 #> DEMO_01 DEMO_02
 #>    TRUE   FALSE
 
-weights <- weight_equal(selection)
+weights <- ledgr_weight_equal(selection)
 weights
 #> <ledgr_weights> [1 asset]
 #> origin: return_5
@@ -517,7 +517,7 @@ weights
 #> DEMO_01
 #>       1
 
-target <- target_rebalance(weights, pulse, equity_fraction = 0.1)
+target <- ledgr_target_rebalance(weights, pulse, equity_fraction = 0.1)
 target
 #> <ledgr_target> [2 assets]
 #> origin: return_5
@@ -526,7 +526,7 @@ target
 #>      93       0
 ```
 
-`target_rebalance()` sizes with current pulse equity and current close
+`ledgr_target_rebalance()` sizes with current pulse equity and current close
 prices, using `ctx$vec$close` when available, then floors to whole
 shares. For the selected `DEMO_01` pulse above, 10% of equity is
 allocated to the one selected instrument:
@@ -562,11 +562,11 @@ The same transformations become an ordinary strategy function.
 
 The full backtest replays every bar, including the earliest warmup
 pulses. During those first pulses, `return_5` is `NA` for every
-instrument because five prior bars do not exist yet. `select_top_n()`
+instrument because five prior bars do not exist yet. `ledgr_select_top_n()`
 treats that all-missing signal as a classed empty selection, not as a
 warning. That object still carries the original universe and signal
-origin. `weight_equal()` turns it into empty weights, and
-`target_rebalance()` turns those weights into a flat full-universe
+origin. `ledgr_weight_equal()` turns it into empty weights, and
+`ledgr_target_rebalance()` turns those weights into a flat full-universe
 target.
 
 No warning suppression is needed for ordinary early warmup. A
@@ -577,20 +577,20 @@ selection was only early warmup.
 
 ``` r
 top_return_strategy <- function(ctx, params) {
-  signal <- signal_return(ctx, lookback = params$lookback)
-  selection <- select_top_n(signal, n = params$n)
+  signal <- ledgr_signal_return(ctx, lookback = params$lookback)
+  selection <- ledgr_select_top_n(signal, n = params$n)
 
-  weights <- weight_equal(selection)
-  target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
+  weights <- ledgr_weight_equal(selection)
+  ledgr_target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
 }
 ```
 
 Read it economically:
 
-1.  `signal_return()` scores each instrument by recent return.
-2.  `select_top_n()` keeps the highest scores and ignores warmup `NA`.
-3.  `weight_equal()` splits the chosen allocation equally.
-4.  `target_rebalance()` converts weights into floored full target
+1.  `ledgr_signal_return()` scores each instrument by recent return.
+2.  `ledgr_select_top_n()` keeps the highest scores and ignores warmup `NA`.
+3.  `ledgr_weight_equal()` splits the chosen allocation equally.
+4.  `ledgr_target_rebalance()` converts weights into floored full target
     quantities.
 
 No helper registers indicators automatically. The experiment must say
@@ -643,7 +643,7 @@ ledgr_feature_id(mapped_features)
 
 The strategy closes over `mapped_features`. Inside the universe loop,
 `ctx$features(id, mapped_features)` returns a named numeric vector keyed
-by the aliases. `passed_warmup()` is a guard for that vector: for values
+by the aliases. `ledgr_passed_warmup()` is a guard for that vector: for values
 returned by `ctx$features()`, it means every requested indicator is
 usable at this pulse. It is not a signal pipeline transformation, and it
 is not a data-quality diagnostic for arbitrary vectors.
@@ -656,7 +656,7 @@ mapped_return_strategy <- function(ctx, params) {
     x <- ctx$features(id, mapped_features)
 
     if (
-      passed_warmup(x) &&
+      ledgr_passed_warmup(x) &&
         x[["ret_5"]] > params$min_return &&
         ctx$close(id) > x[["sma_10"]]
     ) {
@@ -671,7 +671,7 @@ mapped_return_strategy <- function(ctx, params) {
 Read that as one pulse-time decision:
 
 1.  `ctx$features()` reads the mapped feature values for one instrument.
-2.  `passed_warmup()` keeps the rule inactive until the mapped
+2.  `ledgr_passed_warmup()` keeps the rule inactive until the mapped
     indicators are usable.
 3.  The condition states the trading idea.
 4.  The strategy still returns an ordinary target vector.
@@ -911,10 +911,10 @@ pulse <- ledgr_pulse_snapshot(
   features = features
 )
 
-signal <- signal_return(pulse, lookback = 5)
-selection <- select_top_n(signal, n = 1)
-weights <- weight_equal(selection)
-target <- target_rebalance(weights, pulse, equity_fraction = 0.1)
+signal <- ledgr_signal_return(pulse, lookback = 5)
+selection <- ledgr_select_top_n(signal, n = 1)
+weights <- ledgr_weight_equal(selection)
+target <- ledgr_target_rebalance(weights, pulse, equity_fraction = 0.1)
 
 signal
 selection
@@ -985,7 +985,7 @@ misleading. If a strategy returns a vector with the wrong names or
 length, ledgr rejects it instead of silently treating missing
 instruments as zero. If a helper reads an unregistered feature,
 `ctx$feature()` reports the unknown feature ID and lists the available
-IDs. If `target_rebalance()` receives negative or over-allocated
+IDs. If `ledgr_target_rebalance()` receives negative or over-allocated
 weights, it fails before turning them into target quantities.
 
 Those errors are part of the design. They are meant to catch research
@@ -1021,4 +1021,4 @@ ledgr_snapshot_close(snapshot)
 - For durable run inspection and comparison, read
   `vignette("experiment-store", package = "ledgr")`.
 - For function-level context details, see `?ledgr_strategy_context`,
-  `?ledgr_feature_map`, and `?passed_warmup`.
+  `?ledgr_feature_map`, and `?ledgr_passed_warmup`.

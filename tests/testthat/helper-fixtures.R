@@ -191,7 +191,7 @@ ledgr_test_snapshot_for_run <- function(db_path, bt) {
   if (!is.character(snapshot_id) || length(snapshot_id) != 1L || is.na(snapshot_id) || !nzchar(snapshot_id)) {
     rlang::abort("Test backtest config does not contain a snapshot id.", class = "ledgr_test_error")
   }
-  ledgr_snapshot_load(db_path, snapshot_id)
+  ledgr_snapshot_open(db_path, snapshot_id)
 }
 
 ledgr_test_fetch_ledger_core <- function(con, run_id) {

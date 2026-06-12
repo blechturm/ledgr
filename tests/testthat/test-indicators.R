@@ -149,15 +149,15 @@ testthat::test_that("print.ledgr_indicator surfaces the feature ID", {
 
 testthat::test_that("indicator registry supports register/get/list", {
   ind <- ledgr_ind_sma(2)
-  ledgr_register_indicator(ind, "test_sma_2", overwrite = TRUE)
+  ledgr_indicator_register(ind, "test_sma_2", overwrite = TRUE)
 
-  fetched <- ledgr_get_indicator("test_sma_2")
+  fetched <- ledgr_indicator_get("test_sma_2")
   testthat::expect_s3_class(fetched, "ledgr_indicator")
   testthat::expect_identical(fetched$id, "sma_2")
-  testthat::expect_true("test_sma_2" %in% ledgr_list_indicators("^test_"))
+  testthat::expect_true("test_sma_2" %in% ledgr_indicator_list("^test_"))
 
   testthat::expect_error(
-    ledgr_get_indicator("missing_indicator"),
+    ledgr_indicator_get("missing_indicator"),
     class = "ledgr_invalid_args"
   )
 })
@@ -177,23 +177,23 @@ testthat::test_that("indicator registry rejects silent overwrite", {
     params = list(kind = "b")
   )
 
-  ledgr_register_indicator(ind_a, name, overwrite = TRUE)
-  testthat::expect_silent(ledgr_register_indicator(ind_a, name))
+  ledgr_indicator_register(ind_a, name, overwrite = TRUE)
+  testthat::expect_silent(ledgr_indicator_register(ind_a, name))
   err <- testthat::capture_error(
-    ledgr_register_indicator(ind_b, name),
+    ledgr_indicator_register(ind_b, name),
   )
   testthat::expect_s3_class(err, "ledgr_invalid_args")
   testthat::expect_match(conditionMessage(err), "already registered", fixed = TRUE)
   testthat::expect_match(conditionMessage(err), "Existing registration is unchanged", fixed = TRUE)
   testthat::expect_match(conditionMessage(err), "overwrite = TRUE", fixed = TRUE)
   testthat::expect_match(conditionMessage(err), "distinct indicator id/name", fixed = TRUE)
-  testthat::expect_silent(ledgr_register_indicator(ind_b, name, overwrite = TRUE))
+  testthat::expect_silent(ledgr_indicator_register(ind_b, name, overwrite = TRUE))
 })
 
 testthat::test_that("indicator registry supports deregistration", {
   name <- "test_registry_remove"
-  ledgr_deregister_indicator(name, missing_ok = TRUE)
-  on.exit(ledgr_deregister_indicator(name, missing_ok = TRUE), add = TRUE)
+  ledgr_indicator_remove(name, missing_ok = TRUE)
+  on.exit(ledgr_indicator_remove(name, missing_ok = TRUE), add = TRUE)
 
   ind <- ledgr_indicator(
     id = name,
@@ -201,31 +201,31 @@ testthat::test_that("indicator registry supports deregistration", {
     requires_bars = 2L
   )
 
-  ledgr_register_indicator(ind)
-  testthat::expect_true(name %in% ledgr_list_indicators("^test_registry_remove$"))
-  testthat::expect_true(ledgr_deregister_indicator(name))
-  testthat::expect_false(name %in% ledgr_list_indicators("^test_registry_remove$"))
+  ledgr_indicator_register(ind)
+  testthat::expect_true(name %in% ledgr_indicator_list("^test_registry_remove$"))
+  testthat::expect_true(ledgr_indicator_remove(name))
+  testthat::expect_false(name %in% ledgr_indicator_list("^test_registry_remove$"))
   testthat::expect_error(
-    ledgr_get_indicator(name),
+    ledgr_indicator_get(name),
     class = "ledgr_invalid_args"
   )
 })
 
 testthat::test_that("indicator deregistration handles missing and invalid names", {
   name <- "test_registry_missing"
-  ledgr_deregister_indicator(name, missing_ok = TRUE)
+  ledgr_indicator_remove(name, missing_ok = TRUE)
 
-  testthat::expect_false(ledgr_deregister_indicator(name, missing_ok = TRUE))
+  testthat::expect_false(ledgr_indicator_remove(name, missing_ok = TRUE))
   testthat::expect_error(
-    ledgr_deregister_indicator(name, missing_ok = FALSE),
+    ledgr_indicator_remove(name, missing_ok = FALSE),
     class = "ledgr_invalid_args"
   )
   testthat::expect_error(
-    ledgr_deregister_indicator(character()),
+    ledgr_indicator_remove(character()),
     class = "ledgr_invalid_args"
   )
   testthat::expect_error(
-    ledgr_deregister_indicator(name, missing_ok = NA),
+    ledgr_indicator_remove(name, missing_ok = NA),
     class = "ledgr_invalid_args"
   )
 })
@@ -234,7 +234,7 @@ testthat::test_that("indicator deregistration does not mutate persisted feature 
   name <- "test_registry_persisted_artifact"
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  on.exit(ledgr_deregister_indicator(name, missing_ok = TRUE), add = TRUE)
+  on.exit(ledgr_indicator_remove(name, missing_ok = TRUE), add = TRUE)
 
   ind <- ledgr_indicator(
     id = name,
@@ -267,7 +267,7 @@ testthat::test_that("indicator deregistration does not mutate persisted feature 
   )$n[[1]]
 
   testthat::expect_gt(before, 0L)
-  ledgr_deregister_indicator(name)
+  ledgr_indicator_remove(name)
 
   after <- DBI::dbGetQuery(
     con,
@@ -276,7 +276,7 @@ testthat::test_that("indicator deregistration does not mutate persisted feature 
   )$n[[1]]
 
   testthat::expect_identical(after, before)
-  testthat::expect_false(name %in% ledgr_list_indicators("^test_registry_persisted_artifact$"))
+  testthat::expect_false(name %in% ledgr_indicator_list("^test_registry_persisted_artifact$"))
 })
 
 testthat::test_that("built-in indicators are deterministic and silent", {

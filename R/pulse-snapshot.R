@@ -227,7 +227,7 @@ ledgr_fetch_latest_bars <- function(con, snapshot_id, universe, ts_utc) {
         class = "ledgr_invalid_args"
       )
     }
-    df$ts_utc <- vapply(df$ts_utc, iso_utc, character(1))
+    df$ts_utc <- vapply(df$ts_utc, ledgr_iso_utc, character(1))
     df
   })
   out <- do.call(rbind, rows)
@@ -259,7 +259,7 @@ ledgr_compute_pulse_features <- function(con, snapshot_id, universe, ts_utc, fea
     if (nrow(window) == 0) next
 
     window <- window[rev(seq_len(nrow(window))), , drop = FALSE]
-    window$ts_utc <- vapply(window$ts_utc, iso_utc, character(1))
+    window$ts_utc <- vapply(window$ts_utc, ledgr_iso_utc, character(1))
 
     for (ind in features) {
       if (nrow(window) < ind$requires_bars) {

@@ -20,7 +20,7 @@
 #'   # snapshot, builds this config, and calls ledgr_backtest_run() internally.
 #'   result <- ledgr_backtest_run(config, run_id = "manual-run")
 #' }
-#' @export
+#' @noRd
 ledgr_backtest_run <- function(config, run_id = NULL, metric_context = NULL) {
   control <- list()
   if (is.list(config) && is.list(config$engine) && is.list(config$engine$control)) {
@@ -1908,8 +1908,8 @@ ledgr_feature_defs_from_config <- function(cfg) {
       next
     }
 
-    if (exists("ledgr_get_indicator", mode = "function")) {
-      ind <- tryCatch(ledgr_get_indicator(id), error = function(e) NULL)
+    if (exists("ledgr_indicator_get", mode = "function")) {
+      ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
       if (inherits(ind, "ledgr_indicator")) {
         current_fingerprint <- ledgr_indicator_fingerprint(ind)
         if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {

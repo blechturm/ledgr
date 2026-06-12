@@ -36,7 +36,7 @@ ledgr_test_replace_run_provenance <- function(db_path, run_id, values) {
   invisible(TRUE)
 }
 
-testthat::test_that("ledgr_extract_strategy returns Tier 1 source metadata without evaluation", {
+testthat::test_that("ledgr_run_strategy returns Tier 1 source metadata without evaluation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -61,7 +61,7 @@ testthat::test_that("ledgr_extract_strategy returns Tier 1 source metadata witho
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  extracted <- ledgr_extract_strategy(snapshot, "extract-tier-1")
+  extracted <- ledgr_run_strategy(snapshot, "extract-tier-1")
   testthat::expect_s3_class(extracted, "ledgr_extracted_strategy")
   testthat::expect_false("strategy_function" %in% names(extracted))
   testthat::expect_identical(extracted$reproducibility_level, "tier_1")
@@ -75,7 +75,7 @@ testthat::test_that("ledgr_extract_strategy returns Tier 1 source metadata witho
   testthat::expect_false(any(grepl("targets <- ctx", printed, fixed = TRUE)))
 })
 
-testthat::test_that("ledgr_extract_strategy trust TRUE verifies hash and returns a function", {
+testthat::test_that("ledgr_run_strategy trust TRUE verifies hash and returns a function", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -99,14 +99,14 @@ testthat::test_that("ledgr_extract_strategy trust TRUE verifies hash and returns
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  extracted <- ledgr_extract_strategy(snapshot, "extract-trusted", trust = TRUE)
+  extracted <- ledgr_run_strategy(snapshot, "extract-trusted", trust = TRUE)
   testthat::expect_true(extracted$hash_verified)
   testthat::expect_true(extracted$trust)
   testthat::expect_true(is.function(extracted$strategy_function))
   testthat::expect_identical(names(formals(extracted$strategy_function)), c("ctx", "params"))
 })
 
-testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
+testthat::test_that("ledgr_run_strategy detects source hash mismatch", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -141,12 +141,12 @@ testthat::test_that("ledgr_extract_strategy detects source hash mismatch", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   testthat::expect_error(
-    ledgr_extract_strategy(snapshot, "extract-mismatch"),
+    ledgr_run_strategy(snapshot, "extract-mismatch"),
     class = "ledgr_strategy_hash_mismatch"
   )
 })
 
-testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evaluate source", {
+testthat::test_that("ledgr_run_strategy trust FALSE does not parse or evaluate source", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -181,12 +181,12 @@ testthat::test_that("ledgr_extract_strategy trust FALSE does not parse or evalua
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  extracted <- ledgr_extract_strategy(snapshot, "extract-no-eval", trust = FALSE)
+  extracted <- ledgr_run_strategy(snapshot, "extract-no-eval", trust = FALSE)
   testthat::expect_identical(extracted$strategy_source_text, replacement)
   testthat::expect_false("strategy_function" %in% names(extracted))
 })
 
-testthat::test_that("ledgr_extract_strategy trust TRUE reports parse failures", {
+testthat::test_that("ledgr_run_strategy trust TRUE reports parse failures", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -220,12 +220,12 @@ testthat::test_that("ledgr_extract_strategy trust TRUE reports parse failures", 
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   testthat::expect_error(
-    ledgr_extract_strategy(snapshot, "extract-parse-failed", trust = TRUE),
+    ledgr_run_strategy(snapshot, "extract-parse-failed", trust = TRUE),
     class = "ledgr_strategy_parse_failed"
   )
 })
 
-testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
+testthat::test_that("ledgr_run_strategy surfaces Tier 2 warnings", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -261,18 +261,18 @@ testthat::test_that("ledgr_extract_strategy surfaces Tier 2 warnings", {
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  extracted <- ledgr_extract_strategy(snapshot, "extract-tier-2")
+  extracted <- ledgr_run_strategy(snapshot, "extract-tier-2")
   testthat::expect_identical(extracted$reproducibility_level, "tier_2")
   testthat::expect_true(any(grepl("may depend on external state", extracted$warnings, fixed = TRUE)))
   printed <- utils::capture.output(print(extracted))
   testthat::expect_true(any(grepl("Warnings:", printed, fixed = TRUE)))
 
-  trusted <- ledgr_extract_strategy(snapshot, "extract-tier-2", trust = TRUE)
+  trusted <- ledgr_run_strategy(snapshot, "extract-tier-2", trust = TRUE)
   testthat::expect_true(is.function(trusted$strategy_function))
   testthat::expect_true(any(grepl("may depend on external state", trusted$warnings, fixed = TRUE)))
 })
 
-testthat::test_that("ledgr_extract_strategy handles legacy pre-provenance runs without migration", {
+testthat::test_that("ledgr_run_strategy handles legacy pre-provenance runs without migration", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   opened <- ledgr_test_open_duckdb(db_path)
@@ -345,7 +345,7 @@ testthat::test_that("ledgr_extract_strategy handles legacy pre-provenance runs w
   snapshot <- new_ledgr_snapshot(db_path, "snap")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  extracted <- ledgr_extract_strategy(snapshot, "legacy-extract")
+  extracted <- ledgr_run_strategy(snapshot, "legacy-extract")
 
   reopened <- ledgr_test_open_duckdb(db_path)
   after_tables <- DBI::dbGetQuery(reopened$con, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' ORDER BY table_name")
@@ -357,7 +357,7 @@ testthat::test_that("ledgr_extract_strategy handles legacy pre-provenance runs w
   testthat::expect_false(extracted$hash_verified)
   testthat::expect_true(any(grepl("No stored strategy source", extracted$warnings, fixed = TRUE)))
   testthat::expect_error(
-    ledgr_extract_strategy(snapshot, "legacy-extract", trust = TRUE),
+    ledgr_run_strategy(snapshot, "legacy-extract", trust = TRUE),
     class = "ledgr_strategy_source_unavailable"
   )
 })

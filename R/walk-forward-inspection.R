@@ -5,14 +5,14 @@
 #'
 #' @param snapshot A sealed `ledgr_snapshot` locating the experiment store.
 #' @param session_id Walk-forward session identifier.
-#' @return `ledgr_walk_forward_results()` returns a
+#' @return `ledgr_walk_forward_open()` returns a
 #'   `ledgr_walk_forward_results` list. Reopened sessions do not rehydrate live
 #'   backtest objects in `test_runs`; that field contains linked test `run_id`
 #'   strings. The reopened object includes the same programmatic `degradation`
 #'   table fields used by print. `ledgr_walk_forward_scores()` and
 #'   `ledgr_walk_forward_folds()` return tibbles.
 #' @export
-ledgr_walk_forward_results <- function(snapshot, session_id) {
+ledgr_walk_forward_open <- function(snapshot, session_id) {
   data <- ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)
   selected <- ledgr_walk_forward_selected_from_rows(data$folds, data$scores, data$meta$selection_metric %||% NULL)
   structure(
@@ -40,13 +40,13 @@ ledgr_walk_forward_results <- function(snapshot, session_id) {
   )
 }
 
-#' @rdname ledgr_walk_forward_results
+#' @rdname ledgr_walk_forward_open
 #' @export
 ledgr_walk_forward_scores <- function(snapshot, session_id) {
   ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)$scores
 }
 
-#' @rdname ledgr_walk_forward_results
+#' @rdname ledgr_walk_forward_open
 #' @export
 ledgr_walk_forward_folds <- function(snapshot, session_id) {
   ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)$folds

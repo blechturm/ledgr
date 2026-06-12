@@ -8,9 +8,9 @@
 #'   - `id_args`: list column giving deterministic ID argument order.
 #'
 #' @examples
-#' ledgr_ttr_warmup_rules()
+#' ledgr_ind_ttr_warmup_rules()
 #' @export
-ledgr_ttr_warmup_rules <- function() {
+ledgr_ind_ttr_warmup_rules <- function() {
   rules <- tibble::tibble(
     ttr_fn = c(
       "RSI", "SMA", "EMA", "ATR", "MACD",
@@ -497,14 +497,14 @@ ledgr_ttr_normalize_args <- function(args) {
 }
 
 ledgr_ttr_match_rule <- function(ttr_fn, input) {
-  rules <- ledgr_ttr_warmup_rules()
+  rules <- ledgr_ind_ttr_warmup_rules()
   idx <- which(rules$ttr_fn == ttr_fn & rules$input == input)
   if (length(idx) != 1L) return(NULL)
   rules[idx, , drop = FALSE]
 }
 
 ledgr_ttr_inputs_for_known_function <- function(ttr_fn) {
-  rules <- ledgr_ttr_warmup_rules()
+  rules <- ledgr_ind_ttr_warmup_rules()
   unique(rules$input[rules$ttr_fn == ttr_fn])
 }
 

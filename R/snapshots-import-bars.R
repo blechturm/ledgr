@@ -41,7 +41,7 @@
 #'    snapshot hash;
 #' 4. inspect metadata with `ledgr_snapshot_info()` if needed;
 #' 5. disconnect the write connection and reopen with
-#'    `ledgr_snapshot_load(..., verify = TRUE)`;
+#'    `ledgr_snapshot_open(..., verify = TRUE)`;
 #' 6. pass the loaded snapshot to `ledgr_experiment()` and `ledgr_run()`.
 #'
 #' `bar_count` and `instrument_count` are live counts from the sealed snapshot
@@ -77,7 +77,7 @@
 #' snapshot_info <- ledgr_snapshot_info(con, snapshot_id)
 #' DBI::dbDisconnect(con, shutdown = TRUE)
 #'
-#' snapshot <- ledgr_snapshot_load(
+#' snapshot <- ledgr_snapshot_open(
 #'   db_path,
 #'   snapshot_id = snapshot_id,
 #'   verify = TRUE

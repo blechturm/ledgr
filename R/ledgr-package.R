@@ -49,12 +49,12 @@
 "_PACKAGE"
 
 .onLoad <- function(libname, pkgname) {
-  ledgr_register_indicator(ledgr_ind_sma(50), "sma_50")
-  ledgr_register_indicator(ledgr_ind_sma(200), "sma_200")
-  ledgr_register_indicator(ledgr_ind_ema(12), "ema_12")
-  ledgr_register_indicator(ledgr_ind_ema(26), "ema_26")
-  ledgr_register_indicator(ledgr_ind_rsi(14), "rsi_14")
-  ledgr_register_indicator(ledgr_ind_returns(1), "return_1")
+  ledgr_indicator_register(ledgr_ind_sma(50), "sma_50")
+  ledgr_indicator_register(ledgr_ind_sma(200), "sma_200")
+  ledgr_indicator_register(ledgr_ind_ema(12), "ema_12")
+  ledgr_indicator_register(ledgr_ind_ema(26), "ema_26")
+  ledgr_indicator_register(ledgr_ind_rsi(14), "rsi_14")
+  ledgr_indicator_register(ledgr_ind_returns(1), "return_1")
   invisible(NULL)
 }
 

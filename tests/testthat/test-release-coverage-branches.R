@@ -165,7 +165,7 @@ testthat::test_that("fill extraction handles semantic, malformed, and close/open
   bt <- ledgr:::new_ledgr_backtest("run-coverage", db_path, config = list())
   warnings <- character()
   fills <- withCallingHandlers(
-    ledgr_extract_fills(bt),
+    ledgr_run_fills(bt),
     warning = function(w) {
       warnings <<- c(warnings, conditionMessage(w))
       invokeRestart("muffleWarning")
@@ -213,10 +213,10 @@ testthat::test_that("indicator validation and fingerprint helpers fail loud on i
   testthat::expect_error(ledgr:::ledgr_function_fingerprint(function() Sys.time()), class = "ledgr_config_non_deterministic")
   testthat::expect_error(ledgr:::ledgr_indicator_fingerprint(list()), class = "ledgr_invalid_args")
 
-  testthat::expect_error(ledgr_register_indicator(1), class = "ledgr_invalid_args")
-  testthat::expect_error(ledgr_register_indicator(ledgr_ind_sma(2), name = ""), class = "ledgr_invalid_args")
-  testthat::expect_error(ledgr_register_indicator(ledgr_ind_sma(2), name = "coverage_sma_2", overwrite = NA), class = "ledgr_invalid_args")
-  testthat::expect_error(ledgr_get_indicator(""), class = "ledgr_invalid_args")
-  testthat::expect_error(ledgr_get_indicator("missing_coverage_indicator"), class = "ledgr_invalid_args")
-  testthat::expect_error(ledgr_list_indicators(""), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_indicator_register(1), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_indicator_register(ledgr_ind_sma(2), name = ""), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_indicator_register(ledgr_ind_sma(2), name = "coverage_sma_2", overwrite = NA), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_indicator_get(""), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_indicator_get("missing_coverage_indicator"), class = "ledgr_invalid_args")
+  testthat::expect_error(ledgr_indicator_list(""), class = "ledgr_invalid_args")
 })

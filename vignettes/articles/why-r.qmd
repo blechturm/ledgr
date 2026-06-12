@@ -49,10 +49,10 @@ strategy helper layer makes those functions read like their economic logic:
 
 ```r
 ctx |>
-  signal_return(lookback = 20) |>
-  select_top_n(10) |>
-  weight_equal() |>
-  target_rebalance(ctx, equity_fraction = 1)
+  ledgr_signal_return(lookback = 20) |>
+  ledgr_select_top_n(10) |>
+  ledgr_weight_equal() |>
+  ledgr_target_rebalance(ctx, equity_fraction = 1)
 ```
 
 That helper pipeline is not a second execution path. It is authoring structure

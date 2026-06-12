@@ -161,11 +161,11 @@ ledgr_run_info(snapshot, "qty_10")
 
 ## Extract Stored Strategy Source
 
-`ledgr_extract_strategy()` inspects stored strategy provenance for a
+`ledgr_run_strategy()` inspects stored strategy provenance for a
 run. The default is intentionally read-only:
 
 ``` r
-stored <- ledgr_extract_strategy(snapshot, "qty_10", trust = FALSE)
+stored <- ledgr_run_strategy(snapshot, "qty_10", trust = FALSE)
 stored
 ```
 
@@ -205,7 +205,7 @@ and intentionally want ledgr to parse and evaluate the stored text into
 a function object.
 
 ``` r
-trusted <- ledgr_extract_strategy(snapshot, "qty_10", trust = TRUE)
+trusted <- ledgr_run_strategy(snapshot, "qty_10", trust = TRUE)
 trusted$strategy_function
 ```
 

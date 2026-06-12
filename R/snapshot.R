@@ -58,7 +58,7 @@ snapshot_state <- function(snapshot) {
   state
 }
 
-ledgr_snapshot_open <- function(snapshot) {
+ledgr_snapshot_connection <- function(snapshot) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_snapshot")
   }
@@ -79,7 +79,7 @@ ledgr_snapshot_open <- function(snapshot) {
 
 get_connection <- function(x) {
   if (inherits(x, "ledgr_snapshot")) {
-    return(ledgr_snapshot_open(x)$con)
+    return(ledgr_snapshot_connection(x)$con)
   }
   if (inherits(x, "ledgr_backtest")) {
     return(ledgr_backtest_open(x)$con)
@@ -215,7 +215,7 @@ print.ledgr_snapshot <- function(x, ...) {
 #' ledgr_snapshot_close(snapshot)
 #' @export
 summary.ledgr_snapshot <- function(object, ...) {
-  opened <- ledgr_snapshot_open(object)
+  opened <- ledgr_snapshot_connection(object)
   if (isTRUE(opened$opened_new)) {
     on.exit(ledgr_snapshot_close(object), add = TRUE)
   }

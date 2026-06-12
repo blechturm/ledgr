@@ -270,7 +270,7 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   universe <- c("TEST_A", "TEST_B")
-  ts_utc <- iso_utc(test_bars$ts_utc[[10]])
+  ts_utc <- ledgr_iso_utc(test_bars$ts_utc[[10]])
   ctx <- ledgr_pulse_snapshot(snap, universe = universe, ts_utc = ts_utc, features = list(ledgr_ind_sma(2)))
   on.exit(close(ctx), add = TRUE)
   testthat::expect_true(is.data.frame(ctx$bars))

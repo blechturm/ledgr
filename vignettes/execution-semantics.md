@@ -245,21 +245,21 @@ moving average is not usable on the first bar of a snapshot.
 Feature warmup is not an execution rule. The strategy decides whether a
 feature vector is usable. Different strategies may want different warmup
 behavior, so ledgr exposes warmup state instead of silently imposing a
-trading rule. For active aliases, `passed_warmup()` is the standard
+trading rule. For active aliases, `ledgr_passed_warmup()` is the standard
 guard:
 
 ``` r
 values <- ctx$features("DEMO_01")
 targets <- ctx$flat()
 
-if (passed_warmup(values) && values[["fast"]] > values[["slow"]]) {
+if (ledgr_passed_warmup(values) && values[["fast"]] > values[["slow"]]) {
   targets["DEMO_01"] <- params$qty
 }
 
 targets
 ```
 
-`passed_warmup()` keeps the rule inactive while mapped features are
+`ledgr_passed_warmup()` keeps the rule inactive while mapped features are
 still ordinary early `NA`. A typo in an alias or a feature that can
 never become usable is a different problem; ledgr should fail or report
 diagnostics rather than silently treating missing features as no signal.
@@ -296,7 +296,7 @@ filled round trips, not from target changes.
 
 ## Where Next
 
-- For strategy authoring and `passed_warmup()` patterns, read
+- For strategy authoring and `ledgr_passed_warmup()` patterns, read
   `vignette("strategy-development", package = "ledgr")`.
 - For feature maps and warmup diagnostics, read
   `vignette("indicators", package = "ledgr")`.

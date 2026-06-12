@@ -197,7 +197,7 @@ mapped aliases after warmup:
 
 ``` r
 x <- ctx$features(id, crossover_features)
-if (passed_warmup(x) && x[["sma_fast"]] > x[["sma_slow"]]) {
+if (ledgr_passed_warmup(x) && x[["sma_fast"]] > x[["sma_slow"]]) {
   targets[id] <- params$qty
 }
 ```
@@ -303,7 +303,7 @@ x <- pulse$features("DEMO_01", features)
 x
 #>       ret_5      sma_10
 #>  0.08531877 99.79637070
-passed_warmup(x)
+ledgr_passed_warmup(x)
 #> [1] TRUE
 ```
 
@@ -337,7 +337,7 @@ strategy <- function(ctx, params) {
     x <- ctx$features(id, features)
 
     if (
-      passed_warmup(x) &&
+      ledgr_passed_warmup(x) &&
         x[["ret_5"]] > params$min_return &&
         ctx$close(id) > x[["sma_10"]]
     ) {
@@ -353,7 +353,7 @@ That pattern keeps the signal logic readable:
 
 - `features` is where feature identity and aliases live.
 - `ctx$features()` reads the current mapped values for one instrument.
-- `passed_warmup()` is the warmup gate for the mapped feature vector.
+- `ledgr_passed_warmup()` is the warmup gate for the mapped feature vector.
 - The condition after the warmup gate is the economic rule.
 - The strategy still returns ordinary target quantities.
 
@@ -618,7 +618,7 @@ rsi_strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
     x <- ctx$features(id, rsi_features)
-    if (passed_warmup(x) && x[["rsi_14"]] < params$oversold) {
+    if (ledgr_passed_warmup(x) && x[["rsi_14"]] < params$oversold) {
       targets[id] <- params$qty
     }
   }
@@ -774,7 +774,7 @@ paired `signal` output should usually set `percent = FALSE` too.
 TTR warmup inference is inspectable:
 
 ``` r
-ledgr_ttr_warmup_rules() |>
+ledgr_ind_ttr_warmup_rules() |>
   select(ttr_fn, input, formula)
 #> # A tibble: 18 × 3
 #>    ttr_fn          input formula
@@ -901,4 +901,4 @@ deterministic indicator contract.
   `vignette("metrics-and-accounting", package = "ledgr")`.
 - For function-level details, see `?ledgr_feature_contracts`,
   `?ledgr_feature_contract_check`, `?ledgr_pulse_features`,
-  `?ledgr_pulse_wide`, `?ledgr_ind_ttr`, and `?ledgr_ttr_warmup_rules`.
+  `?ledgr_pulse_wide`, `?ledgr_ind_ttr`, and `?ledgr_ind_ttr_warmup_rules`.

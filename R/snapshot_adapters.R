@@ -103,14 +103,14 @@ ledgr_snapshot_from_df <- function(bars_df,
       }
       ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
     } else {
-      ts_utc <- vapply(ts_raw, iso_utc, character(1))
+      ts_utc <- vapply(ts_raw, ledgr_iso_utc, character(1))
       ts_posix <- as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
       if (anyNA(ts_posix)) {
         rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
       }
     }
   } else {
-    ts_utc <- vapply(ts_raw, iso_utc, character(1))
+    ts_utc <- vapply(ts_raw, ledgr_iso_utc, character(1))
     ts_posix <- as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
     if (anyNA(ts_posix)) {
       rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
@@ -503,7 +503,7 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
     rlang::abort("Yahoo data has invalid time index.", class = "ledgr_invalid_args")
   }
 
-  ts_utc <- vapply(idx, iso_utc, character(1))
+  ts_utc <- vapply(idx, ledgr_iso_utc, character(1))
   volume <- if (length(volume_col) == 1) df[[volume_col]] else rep(NA_real_, nrow(df))
 
   data.frame(
@@ -523,7 +523,7 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' Fetches historical data from Yahoo Finance via quantmod and delegates to
 #' `ledgr_snapshot_from_df()`. The returned handle is already sealed; pass it
 #' directly to `ledgr_experiment()` or reopen it later with
-#' `ledgr_snapshot_load()`.
+#' `ledgr_snapshot_open()`.
 #'
 #' quantmod may emit harmless package startup or S3 method-overwrite messages to
 #' stderr while loading its dependencies. Those messages are not ledgr snapshot
@@ -571,8 +571,8 @@ ledgr_snapshot_from_yahoo <- function(symbols,
 
   ledgr_validate_snapshot_id(snapshot_id)
 
-  from_date <- as.Date(iso_utc(from))
-  to_date <- as.Date(iso_utc(to))
+  from_date <- as.Date(ledgr_iso_utc(from))
+  to_date <- as.Date(ledgr_iso_utc(to))
   if (is.na(from_date) || is.na(to_date)) {
     rlang::abort("`from` and `to` must be valid dates or timestamps.", class = "ledgr_invalid_args")
   }

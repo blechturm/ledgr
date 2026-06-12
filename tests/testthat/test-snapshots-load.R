@@ -16,7 +16,7 @@ testthat::test_that("snapshot_load reopens an existing sealed snapshot", {
   snapshot_id <- snapshot$snapshot_id
   ledgr_snapshot_close(snapshot)
 
-  loaded <- ledgr_snapshot_load(db_path, snapshot_id, verify = TRUE)
+  loaded <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
   on.exit(ledgr_snapshot_close(loaded), add = TRUE)
 
   testthat::expect_s3_class(loaded, "ledgr_snapshot")
@@ -44,7 +44,7 @@ testthat::test_that("snapshot_load can resume a single sealed snapshot without a
   snapshot_id <- snapshot$snapshot_id
   ledgr_snapshot_close(snapshot)
 
-  loaded <- ledgr_snapshot_load(db_path)
+  loaded <- ledgr_snapshot_open(db_path)
   on.exit(ledgr_snapshot_close(loaded), add = TRUE)
 
   testthat::expect_identical(loaded$snapshot_id, snapshot_id)
@@ -70,7 +70,7 @@ testthat::test_that("snapshot_load requires an id when a file has multiple seale
   ledgr_snapshot_close(two)
 
   testthat::expect_error(
-    ledgr_snapshot_load(db_path),
+    ledgr_snapshot_open(db_path),
     "ledgr_snapshot_list",
     class = "ledgr_snapshot_id_required"
   )
@@ -86,7 +86,7 @@ testthat::test_that("snapshot_load without id fails clearly when no sealed snaps
   DBI::dbDisconnect(con, shutdown = TRUE)
 
   testthat::expect_error(
-    ledgr_snapshot_load(db_path),
+    ledgr_snapshot_open(db_path),
     "ledgr_snapshot_list",
     class = "ledgr_snapshot_not_found"
   )
@@ -97,7 +97,7 @@ testthat::test_that("snapshot_load refuses missing and unsealed snapshots", {
   on.exit(unlink(db_path), add = TRUE)
 
   testthat::expect_error(
-    ledgr_snapshot_load(db_path, "snapshot_20250101_000000_abcd"),
+    ledgr_snapshot_open(db_path, "snapshot_20250101_000000_abcd"),
     class = "LEDGR_SNAPSHOT_DB_NOT_FOUND"
   )
 
@@ -108,7 +108,7 @@ testthat::test_that("snapshot_load refuses missing and unsealed snapshots", {
   DBI::dbDisconnect(con, shutdown = TRUE)
 
   testthat::expect_error(
-    ledgr_snapshot_load(db_path, snapshot_id),
+    ledgr_snapshot_open(db_path, snapshot_id),
     class = "LEDGR_SNAPSHOT_NOT_SEALED"
   )
 })

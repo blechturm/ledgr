@@ -73,7 +73,7 @@ Use the narrowest inspection surface that answers the question:
 | What executed? | `ledgr_results(bt, what = "fills")` | classed tibble |
 | What closed quantity? | `ledgr_results(bt, what = "trades")` | classed tibble |
 | What did the event ledger record? | `ledgr_results(bt, what = "ledger")` | classed tibble |
-| How do stored runs compare? | `ledgr_compare_runs(snapshot, run_ids = ...)` | classed comparison tibble |
+| How do stored runs compare? | `ledgr_run_compare(snapshot, run_ids = ...)` | classed comparison tibble |
 | What did a sweep candidate summarize? | `ledgr_sweep()` result rows | classed sweep tibble |
 | What context was stored by promotion? | `ledgr_promotion_context(bt)` or `ledgr_run_promotion_context()` | nested list |
 
@@ -504,12 +504,12 @@ The following snippets use objects from the experiment-store and sweeps
 workflows. They show where metric context is carried, not a complete
 runnable example.
 
-`ledgr_compare_runs()` has exactly one comparison context per table. The
+`ledgr_run_compare()` has exactly one comparison context per table. The
 snapshot-first form uses the default context unless you pass one
 explicitly:
 
 ``` r
-comparison <- ledgr_compare_runs(
+comparison <- ledgr_run_compare(
   snapshot,
   run_ids = c("trend_qty_5", "trend_qty_15"),
   metric_context = ledgr_metric_context(exp)
@@ -635,7 +635,7 @@ Those attributes are part of the programmatic object, not the printed
 metric table. Use named fields such as `metrics$sharpe_ratio` or the
 subset above when you need a compact report.
 
-`ledgr_compare_runs()` is also programmatic: it returns a tibble-like
+`ledgr_run_compare()` is also programmatic: it returns a tibble-like
 `ledgr_comparison` object with raw numeric metric columns for filtering
 and ranking. Its print method only curates the displayed columns.
 Comparison metrics are recomputed from stored equity and fill tables and
@@ -776,7 +776,7 @@ Use this checklist before changing the strategy:
     nothing ever executed. Non-empty fills with empty trades mean
     positions opened but did not close.
 3.  Confirm the feature IDs with `ledgr_feature_id(features)`. A helper
-    such as `signal_return(ctx, lookback = 60)` reads `return_60`; that
+    such as `ledgr_signal_return(ctx, lookback = 60)` reads `return_60`; that
     indicator must be registered before the run.
 4.  Compare feature contracts with sample length before assuming the
     strategy is broken. `ledgr_feature_contracts(features)` shows

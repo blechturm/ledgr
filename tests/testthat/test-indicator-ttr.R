@@ -159,7 +159,7 @@ ledgr_test_macd_warmup_cases <- function() {
 }
 
 testthat::test_that("TTR warmup rules table has the documented schema", {
-  rules <- ledgr_ttr_warmup_rules()
+  rules <- ledgr_ind_ttr_warmup_rules()
 
   testthat::expect_s3_class(rules, "tbl_df")
   testthat::expect_true(all(c("ttr_fn", "input", "formula", "required_args", "id_args") %in% names(rules)))
@@ -285,7 +285,7 @@ testthat::test_that("TTR parity matrix covers every supported rule and output", 
 
   bars <- ledgr_test_ttr_bars()
   cases <- ledgr_test_ttr_parity_cases()
-  rules <- ledgr_ttr_warmup_rules()
+  rules <- ledgr_ind_ttr_warmup_rules()
   covered <- unique(vapply(cases, `[[`, character(1), "fn"))
 
   testthat::expect_setequal(covered, rules$ttr_fn)
@@ -630,8 +630,8 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  ledgr_clear_feature_cache()
-  on.exit(ledgr_clear_feature_cache(), add = TRUE)
+  ledgr_feature_cache_clear()
+  on.exit(ledgr_feature_cache_clear(), add = TRUE)
 
   snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)

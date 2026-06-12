@@ -82,7 +82,7 @@ ends.
 This is a concrete user-facing workflow:
 
 ``` r
-snapshot <- ledgr_snapshot_load(db_path, "snapshot_id")
+snapshot <- ledgr_snapshot_open(db_path, "snapshot_id")
 
 runs <- ledgr_run_list(snapshot)
 
@@ -108,8 +108,8 @@ The research workflow before deployment has two phases:
 **Commit**. Full provenance run. Validate named candidates with durable
 artifacts: sealed snapshot hash, strategy source hash, parameter hash,
 config hash, ledgr and R version, dependency versions, compact
-telemetry, and result artifacts. Use `ledgr_compare_runs()` to compare
-named variants and `ledgr_extract_strategy()` to inspect stored strategy
+telemetry, and result artifacts. Use `ledgr_run_compare()` to compare
+named variants and `ledgr_run_strategy()` to inspect stored strategy
 source.
 
 **Explore**. Fast parameter sweep mode builds on the same experiment
@@ -149,7 +149,7 @@ sma_strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
     values <- c(sma = ctx$feature(id, paste0("ttr_sma_", params$window)))
-    if (passed_warmup(values) && ctx$close(id) > values[["sma"]]) {
+    if (ledgr_passed_warmup(values) && ctx$close(id) > values[["sma"]]) {
       targets[id] <- params$quantity
     }
   }

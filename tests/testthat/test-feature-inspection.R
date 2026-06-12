@@ -324,7 +324,7 @@ testthat::test_that("feature inspection views match across execution modes", {
     )
     targets <- ctx$flat()
     x <- ctx$features("AAA", features)
-    if (passed_warmup(x) && x[["ret"]] > 0) {
+    if (ledgr_passed_warmup(x) && x[["ret"]] > 0) {
       targets["AAA"] <- 1
     }
     targets

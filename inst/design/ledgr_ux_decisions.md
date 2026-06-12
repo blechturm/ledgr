@@ -81,11 +81,11 @@ Pure reads from run handles or the store. Return tibbles or info objects.
 Terminal -- not reassigned to `snapshot` or `exp`.
 
 ```r
-runs    |> ledgr_compare_runs()
+runs    |> ledgr_run_compare()
 bt      |> ledgr_results(what = "equity")
 snapshot |> ledgr_run_list()
 snapshot |> ledgr_run_info("my_run")
-snapshot |> ledgr_extract_strategy("my_run")
+snapshot |> ledgr_run_strategy("my_run")
 ```
 
 Lifecycle operations (`close()`, constructors, snapshot import, schema tools,
@@ -104,11 +104,11 @@ plotting) do not follow these patterns and are not research workflow APIs.
 | `ledgr_run_untag()` | `snapshot` | Mutation |
 | `ledgr_run_archive()` | `snapshot` | Mutation |
 | `ledgr_run_list()` | `ledgr_run_list` tibble | Read |
-| `ledgr_compare_runs()` | `ledgr_comparison` tibble | Read |
+| `ledgr_run_compare()` | `ledgr_comparison` tibble | Read |
 | `ledgr_run_info()` | `ledgr_run_info` object | Read |
 | `ledgr_run_open()` | `ledgr_backtest` handle | Read |
 | `ledgr_results()` | tibble | Read |
-| `ledgr_extract_strategy()` | `ledgr_extracted_strategy` | Read |
+| `ledgr_run_strategy()` | `ledgr_extracted_strategy` | Read |
 
 `ledgr_run_list` and `ledgr_comparison` are S3 subclasses of `tbl_df`. They
 are fully composable with dplyr. Their `print()` methods show a curated column
@@ -159,8 +159,8 @@ Example `ledgr_comparison` output:
 3 slow_conservative NA           105420   +5.4%    -8.1%        143     54%
 4 fast_conservative NA           103200   +3.2%    -9.8%        198     50%
 
-# i Identity hashes: ledgr_compare_runs(snapshot, what = "identity")
-# i Telemetry:       ledgr_compare_runs(snapshot, what = "telemetry")
+# i Identity hashes: ledgr_run_compare(snapshot, what = "identity")
+# i Telemetry:       ledgr_run_compare(snapshot, what = "telemetry")
 ```
 
 ---
@@ -350,10 +350,10 @@ by `snapshot`, inherited by `exp`, and further inherited by `bt` and `runs`.
 Users never pass `db_path` to a run, comparison, or metadata function.
 
 The existing `db_path`-first public APIs (`ledgr_run_label(db_path, ...)`,
-`ledgr_run_list(db_path)`, `ledgr_compare_runs(db_path, ...)`, etc.) are
+`ledgr_run_list(db_path)`, `ledgr_run_compare(db_path, ...)`, etc.) are
 hard-removed in v0.1.7. The snapshot-first signatures replace them entirely.
 `db_path` strings remain valid only as an argument to snapshot constructors and
-`ledgr_snapshot_load()`.
+`ledgr_snapshot_open()`.
 
 ---
 
@@ -410,7 +410,7 @@ runs <- exp |>
     )
   )
 
-runs |> ledgr_compare_runs()
+runs |> ledgr_run_compare()
 
 # -- Organise -----------------------------------------------------------------
 
@@ -441,14 +441,14 @@ snapshot <- snapshot |>
 snapshot |> ledgr_run_info("momentum_v1")
 snapshot |> ledgr_run_open("momentum_v1") |> ledgr_results(what = "equity")
 snapshot |> ledgr_run_open("momentum_v1") |> ledgr_results(what = "trades")
-snapshot |> ledgr_extract_strategy("momentum_v1")
+snapshot |> ledgr_run_strategy("momentum_v1")
 
 # -- Next session -------------------------------------------------------------
 
-snapshot <- ledgr_snapshot_load("research/momentum.duckdb", "demo_2015_2021")
+snapshot <- ledgr_snapshot_open("research/momentum.duckdb", "demo_2015_2021")
 
 snapshot |> ledgr_run_list()
-snapshot |> ledgr_compare_runs()
+snapshot |> ledgr_run_compare()
 snapshot |> ledgr_run_open("momentum_v1") |> ledgr_results(what = "equity")
 ```
 

@@ -83,7 +83,7 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   }
 
   window <- window[rev(seq_len(nrow(window))), , drop = FALSE]
-  window$ts_utc <- vapply(window$ts_utc, iso_utc, character(1))
+  window$ts_utc <- vapply(window$ts_utc, ledgr_iso_utc, character(1))
   e$window <- window
 
   e$test <- function(fn) {
@@ -117,7 +117,7 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
       )
       if (nrow(window_i) == 0) return(NA_real_)
       window_i <- window_i[rev(seq_len(nrow(window_i))), , drop = FALSE]
-      window_i$ts_utc <- vapply(window_i$ts_utc, iso_utc, character(1))
+      window_i$ts_utc <- vapply(window_i$ts_utc, ledgr_iso_utc, character(1))
       fn(window_i)
     })
     tibble::tibble(ts_utc = dates_norm, value = ledgr_simplify_indicator_values(values))

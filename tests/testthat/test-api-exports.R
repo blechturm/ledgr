@@ -2,20 +2,18 @@ testthat::test_that("exported API surface is locked", {
   exports <- sort(getNamespaceExports("ledgr"))
 
   expected <- sort(c(
-    "iso_utc",
+    "ledgr_iso_utc",
     "ledgr_adapter_csv",
     "ledgr_adapter_r",
     "ledgr_backtest",
     "ledgr_backtest_bench",
-    "ledgr_backtest_run",
     "ledgr_calendar",
     "ledgr_calendar_crypto",
     "ledgr_calendar_us_equity",
     "ledgr_candidate",
     "ledgr_candidate_reproduction_key",
-    "ledgr_clear_feature_cache",
-    "ledgr_compare_runs",
-    "ledgr_compute_equity_curve",
+    "ledgr_feature_cache_clear",
+    "ledgr_run_compare",
     "ledgr_compute_metrics",
     "ledgr_cost_chain",
     "ledgr_cost_describe",
@@ -24,13 +22,12 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_cost_spread_bps",
     "ledgr_cost_steps",
     "ledgr_cost_zero",
-    "ledgr_create_schema",
     "ledgr_db_init",
-    "ledgr_deregister_indicator",
+    "ledgr_indicator_remove",
     "ledgr_demo_sma_crossover_strategy",
     "ledgr_experiment",
-    "ledgr_extract_strategy",
-    "ledgr_extract_fills",
+    "ledgr_run_strategy",
+    "ledgr_run_fills",
     "ledgr_feature_contract_check",
     "ledgr_feature_contracts",
     "ledgr_feature_grid",
@@ -39,7 +36,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_fold",
     "ledgr_folds_anchored",
     "ledgr_folds_rolling",
-    "ledgr_get_indicator",
+    "ledgr_indicator_get",
     "ledgr_grid_add_baseline",
     "ledgr_grid_cross",
     "ledgr_grid_named",
@@ -51,10 +48,9 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_ind_ttr_outputs",
     "ledgr_indicator",
     "ledgr_indicator_dev",
-    "ledgr_list_indicators",
+    "ledgr_indicator_list",
     "ledgr_metric_context",
     "ledgr_metric_context_hash",
-    "ledgr_metric_context_resolve",
     "ledgr_metric_crypto",
     "ledgr_metric_us_equity",
     "ledgr_opening",
@@ -68,7 +64,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_pulse_features",
     "ledgr_pulse_snapshot",
     "ledgr_pulse_wide",
-    "ledgr_register_indicator",
+    "ledgr_indicator_register",
     "ledgr_results",
     "ledgr_risk_chain",
     "ledgr_risk_free_rate",
@@ -101,7 +97,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_snapshot_import_instruments_csv",
     "ledgr_snapshot_info",
     "ledgr_snapshot_list",
-    "ledgr_snapshot_load",
+    "ledgr_snapshot_open",
     "ledgr_snapshot_seal",
     "ledgr_state_reconstruct",
     "ledgr_strategy_preflight",
@@ -115,20 +111,20 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_sweep_save",
     "ledgr_target",
     "ledgr_timing_next_open",
-    "ledgr_ttr_warmup_rules",
+    "ledgr_ind_ttr_warmup_rules",
     "ledgr_utc",
     "ledgr_validate_schema",
     "ledgr_walk_forward",
     "ledgr_walk_forward_extract_candidate",
     "ledgr_walk_forward_folds",
-    "ledgr_walk_forward_results",
+    "ledgr_walk_forward_open",
     "ledgr_walk_forward_scores",
     "ledgr_weights",
-    "passed_warmup",
-    "select_top_n",
-    "signal_return",
-    "target_rebalance",
-    "weight_equal"
+    "ledgr_passed_warmup",
+    "ledgr_select_top_n",
+    "ledgr_signal_return",
+    "ledgr_target_rebalance",
+    "ledgr_weight_equal"
   ))
 
   testthat::expect_identical(exports, expected)
@@ -140,8 +136,14 @@ testthat::test_that("exported API surface is locked", {
   testthat::expect_false("ledgr_execute_fold" %in% exports)
   testthat::expect_false("ledgr_execution_spec" %in% exports)
   testthat::expect_false("ledgr_memory_output_handler" %in% exports)
+  testthat::expect_false("ledgr_backtest_run" %in% exports)
+  testthat::expect_false("ledgr_compute_equity_curve" %in% exports)
+  testthat::expect_false("ledgr_create_schema" %in% exports)
+  testthat::expect_false("ledgr_metric_context_resolve" %in% exports)
   testthat::expect_true(exists("ledgr_run_fold", envir = asNamespace("ledgr"), inherits = FALSE))
   testthat::expect_true(exists("ledgr_execute_fold", envir = asNamespace("ledgr"), inherits = FALSE))
   testthat::expect_true(exists("ledgr_execution_spec", envir = asNamespace("ledgr"), inherits = FALSE))
+  testthat::expect_true(exists("ledgr_snapshot_connection", envir = asNamespace("ledgr"), inherits = FALSE))
+  testthat::expect_identical(names(formals(get("ledgr_snapshot_open", envir = asNamespace("ledgr")))[1]), "db_path")
 })
 

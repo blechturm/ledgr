@@ -12,7 +12,7 @@
 #' Inside a strategy body, `ctx$features(instrument_id, feature_map)` returns a
 #' named numeric vector keyed by the feature-map aliases. The same helper also
 #' accepts a named character vector such as `c(alias = "feature_id")` for
-#' explicit ad hoc aliasing. Use `passed_warmup()` on the returned vector before
+#' explicit ad hoc aliasing. Use `ledgr_passed_warmup()` on the returned vector before
 #' applying rules that require all mapped values to be finite.
 #'
 #' @param ... For `ledgr_feature_map()`, named `ledgr_indicator` objects or
@@ -42,7 +42,7 @@
 #'   targets <- ctx$flat()
 #'   for (id in ctx$universe) {
 #'     x <- ctx$features(id, features)
-#'     if (passed_warmup(x) && x[["ret_5"]] > params$min_return) {
+#'     if (ledgr_passed_warmup(x) && x[["ret_5"]] > params$min_return) {
 #'       targets[id] <- params$qty
 #'     }
 #'   }
@@ -263,12 +263,12 @@ print.ledgr_feature_map <- function(x, ...) {
 
 #' Check whether mapped feature values have passed warmup
 #'
-#' `passed_warmup()` is a strategy-authoring guard for named numeric vectors
+#' `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
 #' returned by `ctx$features(id, feature_map)`. For those vectors, `TRUE` means
 #' every requested feature is usable at the current pulse. For arbitrary
 #' vectors, it is only an `all(!is.na(x))` predicate.
 #'
-#' `passed_warmup()` is not a signal pipeline transformation. It is a guard for
+#' `ledgr_passed_warmup()` is not a signal pipeline transformation. It is a guard for
 #' strategy conditions after feature values have been read. Zero-length input
 #' aborts with classes `ledgr_empty_warmup_input` and
 #' `ledgr_invalid_warmup_input`; non-numeric input aborts with class
@@ -287,12 +287,12 @@ print.ledgr_feature_map <- function(x, ...) {
 #' `vignette("indicators", package = "ledgr")`
 #' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @examples
-#' passed_warmup(c(ret_5 = NA_real_, sma_10 = 101))
-#' passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
+#' ledgr_passed_warmup(c(ret_5 = NA_real_, sma_10 = 101))
+#' ledgr_passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
 #'
-#' try(passed_warmup(numeric(0)))
+#' try(ledgr_passed_warmup(numeric(0)))
 #' @export
-passed_warmup <- function(x) {
+ledgr_passed_warmup <- function(x) {
   if (!is.numeric(x)) {
     rlang::abort(
       "`x` must be a numeric vector.",

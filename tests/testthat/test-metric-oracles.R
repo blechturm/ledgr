@@ -175,7 +175,7 @@ ledgr_metric_fixture <- function(name) {
       bars = ledgr_metric_bars(c(100, 101, 101, 101, 101)),
       strategy = function(ctx, params) {
         weights <- ledgr_weights(c(AAA = 1))
-        target_rebalance(weights, ctx, equity_fraction = 0.255)
+        ledgr_target_rebalance(weights, ctx, equity_fraction = 0.255)
       },
       initial_cash = 1000
     ),
@@ -257,7 +257,7 @@ testthat::test_that("summary, comparison, and run-list metrics use the same defi
 
   expected <- ledgr_metric_oracle(bt, bars_per_year = 252)
   actual <- ledgr_compute_metrics(bt)
-  cmp <- ledgr_compare_runs(snapshot, run_ids = bt$run_id)
+  cmp <- ledgr_run_compare(snapshot, run_ids = bt$run_id)
   listed <- ledgr_run_list(snapshot)
   listed <- listed[match(bt$run_id, listed$run_id), , drop = FALSE]
 

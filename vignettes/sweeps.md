@@ -149,7 +149,7 @@ sma_crossover_body <- function(ctx, params) {
   for (id in ctx$universe) {
     values <- ctx$features(id)
     if (
-      passed_warmup(values) &&
+      ledgr_passed_warmup(values) &&
         ((values[["fast"]] / values[["slow"]]) - 1) > params$threshold
     ) {
       targets[id] <- params$qty

@@ -8,7 +8,7 @@ ledgr_run_label(snapshot, run_id, label = NULL)
 }
 \arguments{
 \item{snapshot}{A sealed \code{ledgr_snapshot} object. Use
-\code{ledgr_snapshot_load(db_path, snapshot_id)} to resume from a durable
+\code{ledgr_snapshot_open(db_path, snapshot_id)} to resume from a durable
 DuckDB file in a new R session.}
 
 \item{run_id}{Run identifier.}

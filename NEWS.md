@@ -1,3 +1,32 @@
+# ledgr 0.1.9.5
+
+- Renamed and unexported pre-CRAN API names for naming consistency. No
+  compatibility aliases are shipped.
+
+| Old name | New name / disposition |
+| --- | --- |
+| `iso_utc()` | `ledgr_iso_utc()` |
+| `passed_warmup()` | `ledgr_passed_warmup()` |
+| `select_top_n()` | `ledgr_select_top_n()` |
+| `signal_return()` | `ledgr_signal_return()` |
+| `target_rebalance()` | `ledgr_target_rebalance()` |
+| `weight_equal()` | `ledgr_weight_equal()` |
+| `ledgr_clear_feature_cache()` | `ledgr_feature_cache_clear()` |
+| `ledgr_compare_runs()` | `ledgr_run_compare()` |
+| `ledgr_deregister_indicator()` | `ledgr_indicator_remove()` |
+| `ledgr_extract_strategy()` | `ledgr_run_strategy()` |
+| `ledgr_extract_fills()` | `ledgr_run_fills()` |
+| `ledgr_get_indicator()` | `ledgr_indicator_get()` |
+| `ledgr_list_indicators()` | `ledgr_indicator_list()` |
+| `ledgr_register_indicator()` | `ledgr_indicator_register()` |
+| `ledgr_snapshot_load()` | `ledgr_snapshot_open()` |
+| `ledgr_ttr_warmup_rules()` | `ledgr_ind_ttr_warmup_rules()` |
+| `ledgr_walk_forward_results()` | `ledgr_walk_forward_open()` |
+| `ledgr_backtest_run()` | no longer exported |
+| `ledgr_compute_equity_curve()` | no longer exported; use `ledgr_results(bt, "equity")` |
+| `ledgr_create_schema()` | no longer exported |
+| `ledgr_metric_context_resolve()` | no longer exported |
+
 # ledgr 0.1.9.4
 
 - Added the first walk-forward evaluation surface. `ledgr_walk_forward()` runs

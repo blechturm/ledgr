@@ -137,7 +137,7 @@ evaluating the strategy source. Use `trust = FALSE` for source and
 metadata inspection.
 
 ``` r
-stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_crossover", trust = FALSE)
+stored_strategy <- ledgr_run_strategy(snapshot, "readme_sma_crossover", trust = FALSE)
 list(
   reproducibility_level = stored_strategy$reproducibility_level,
   hash_verified = stored_strategy$hash_verified,

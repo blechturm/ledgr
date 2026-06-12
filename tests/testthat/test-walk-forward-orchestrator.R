@@ -486,7 +486,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   )
   ledgr:::ledgr_run_store_close(opened)
 
-  reopened <- ledgr_walk_forward_results(fx$snapshot, wf$session_id)
+  reopened <- ledgr_walk_forward_open(fx$snapshot, wf$session_id)
   scores <- ledgr_walk_forward_scores(fx$snapshot, wf$session_id)
   folds <- ledgr_walk_forward_folds(fx$snapshot, wf$session_id)
 
@@ -529,12 +529,12 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   opened <- ledgr:::ledgr_run_store_open(partial_fx$snapshot$db_path)
   partial_id <- DBI::dbGetQuery(opened$con, "SELECT session_id FROM walk_forward_sessions")$session_id[[1]]
   ledgr:::ledgr_run_store_close(opened)
-  partial_reopened <- ledgr_walk_forward_results(partial_fx$snapshot, partial_id)
+  partial_reopened <- ledgr_walk_forward_open(partial_fx$snapshot, partial_id)
   testthat::expect_identical(partial_reopened$status, "PARTIAL")
   testthat::expect_equal(nrow(partial_reopened$folds), 1L)
 
   testthat::expect_error(
-    ledgr_walk_forward_results(fx$snapshot, "does-not-exist"),
+    ledgr_walk_forward_open(fx$snapshot, "does-not-exist"),
     class = "ledgr_walk_forward_session_not_found"
   )
 
@@ -547,7 +547,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   )
   on.exit(ledgr_snapshot_close(mismatch_snapshot), add = TRUE)
   testthat::expect_error(
-    ledgr_walk_forward_results(mismatch_snapshot, wf$session_id),
+    ledgr_walk_forward_open(mismatch_snapshot, wf$session_id),
     class = "ledgr_walk_forward_snapshot_hash_mismatch"
   )
 })

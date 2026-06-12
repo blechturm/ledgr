@@ -144,7 +144,7 @@ ledgr_snapshot_list <- function(con, status = NULL) {
 #'   compare it with the stored hash before returning.
 #' @return A lazy `ledgr_snapshot` object.
 #' @details
-#' `ledgr_snapshot_load()` never creates or overwrites snapshots. It only returns
+#' `ledgr_snapshot_open()` never creates or overwrites snapshots. It only returns
 #' a handle to an existing sealed snapshot. Closing the returned object releases
 #' its DuckDB connection; it does not delete the database file.
 #'
@@ -168,11 +168,11 @@ ledgr_snapshot_list <- function(con, status = NULL) {
 #' snapshot_id <- snapshot$snapshot_id
 #' ledgr_snapshot_close(snapshot)
 #'
-#' snapshot <- ledgr_snapshot_load(db_path, snapshot_id, verify = TRUE)
+#' snapshot <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
 #' ledgr_snapshot_info(snapshot)
 #' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_snapshot_load <- function(db_path, snapshot_id = NULL, verify = FALSE) {
+ledgr_snapshot_open <- function(db_path, snapshot_id = NULL, verify = FALSE) {
   if (!is.character(db_path) || length(db_path) != 1 || is.na(db_path) || !nzchar(db_path)) {
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }

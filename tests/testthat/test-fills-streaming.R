@@ -1,4 +1,4 @@
-testthat::test_that("ledgr_extract_fills returns handle when above threshold", {
+testthat::test_that("ledgr_run_fills returns handle when above threshold", {
   test_con <- get_test_connection()
   on.exit(close_test_connection(test_con), add = TRUE)
 
@@ -26,7 +26,7 @@ testthat::test_that("ledgr_extract_fills returns handle when above threshold", {
     config = list(data = list(snapshot_id = "snap_streaming"))
   )
 
-  res <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 1L)
+  res <- ledgr:::ledgr_run_fills(bt, stream_threshold = 1L)
   on.exit(ledgr:::ledgr_fills_close(res), add = TRUE)
   testthat::expect_true(inherits(res, "ledgr_fills_cursor"))
 })
@@ -144,8 +144,8 @@ testthat::test_that("materialized and lazy fill extraction return identical rows
     config = list(data = list(snapshot_id = "snap_streaming_parity"))
   )
 
-  materialized <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 100000L)
-  cursor <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 1L)
+  materialized <- ledgr:::ledgr_run_fills(bt, stream_threshold = 100000L)
+  cursor <- ledgr:::ledgr_run_fills(bt, stream_threshold = 1L)
   on.exit(ledgr:::ledgr_fills_close(cursor), add = TRUE)
   lazy <- tibble::as_tibble(DBI::dbFetch(cursor$res))
 
@@ -191,8 +191,8 @@ testthat::test_that("fill extraction stays correct above a non-trivial stream th
     config = list(data = list(snapshot_id = "snap_streaming_threshold"))
   )
 
-  materialized <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 100000L)
-  cursor <- ledgr:::ledgr_extract_fills(bt, stream_threshold = 100L)
+  materialized <- ledgr:::ledgr_run_fills(bt, stream_threshold = 100000L)
+  cursor <- ledgr:::ledgr_run_fills(bt, stream_threshold = 100L)
   on.exit(ledgr:::ledgr_fills_close(cursor), add = TRUE)
   lazy <- tibble::as_tibble(DBI::dbFetch(cursor$res))
 

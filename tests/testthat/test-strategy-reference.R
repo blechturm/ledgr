@@ -1,4 +1,4 @@
-testthat::test_that("signal_return reads registered return features", {
+testthat::test_that("ledgr_signal_return reads registered return features", {
   ts <- ledgr_utc("2020-01-03")
   bars <- data.frame(
     ts_utc = rep(ts, 2),
@@ -25,33 +25,33 @@ testthat::test_that("signal_return reads registered return features", {
     equity = 1000
   )
 
-  signal <- signal_return(ctx, lookback = 2)
+  signal <- ledgr_signal_return(ctx, lookback = 2)
   testthat::expect_s3_class(signal, "ledgr_signal")
   testthat::expect_identical(as.numeric(signal), c(0.02, NA_real_))
   testthat::expect_identical(names(signal), c("AAA", "BBB"))
 
   testthat::expect_error(
-    signal_return(ctx, lookback = 3),
+    ledgr_signal_return(ctx, lookback = 3),
     class = "ledgr_unknown_feature_id"
   )
 })
 
-testthat::test_that("select_top_n handles NA, partial, empty, and ties", {
+testthat::test_that("ledgr_select_top_n handles NA, partial, empty, and ties", {
   signal <- ledgr_signal(c(BBB = 0.3, AAA = 0.3, CCC = NA_real_, DDD = 0.1))
 
-  selected <- select_top_n(signal, 2)
+  selected <- ledgr_select_top_n(signal, 2)
   testthat::expect_s3_class(selected, "ledgr_selection")
   testthat::expect_identical(unclass(selected), c(BBB = TRUE, AAA = TRUE, CCC = FALSE, DDD = FALSE))
 
   testthat::expect_warning(
-    partial <- select_top_n(signal, 4),
+    partial <- ledgr_select_top_n(signal, 4),
     class = "ledgr_partial_selection"
   )
   testthat::expect_identical(unclass(partial), c(BBB = TRUE, AAA = TRUE, CCC = FALSE, DDD = TRUE))
 
   empty_signal <- ledgr_signal(c(AAA = NA_real_, BBB = NA_real_), origin = "return_60")
   testthat::expect_silent(
-    empty <- select_top_n(empty_signal, 1)
+    empty <- ledgr_select_top_n(empty_signal, 1)
   )
   testthat::expect_s3_class(empty, "ledgr_empty_selection")
   testthat::expect_s3_class(empty, "ledgr_selection")
@@ -59,7 +59,7 @@ testthat::test_that("select_top_n handles NA, partial, empty, and ties", {
   testthat::expect_identical(attr(empty, "universe"), c("AAA", "BBB"))
   testthat::expect_identical(attr(empty, "origin"), "return_60")
 
-  weights <- weight_equal(empty)
+  weights <- ledgr_weight_equal(empty)
   testthat::expect_s3_class(weights, "ledgr_weights")
   testthat::expect_identical(length(weights), 0L)
   testthat::expect_identical(attr(weights, "universe"), c("AAA", "BBB"))
@@ -83,27 +83,27 @@ testthat::test_that("select_top_n handles NA, partial, empty, and ties", {
     cash = 1000,
     equity = 1000
   )
-  target <- target_rebalance(weights, ctx, equity_fraction = 0.5)
+  target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
   testthat::expect_s3_class(target, "ledgr_target")
   testthat::expect_identical(as.numeric(target), c(0, 0))
   testthat::expect_identical(names(target), c("AAA", "BBB"))
   testthat::expect_identical(attr(target, "origin"), "return_60")
 })
 
-testthat::test_that("weight_equal creates long-only equal weights", {
+testthat::test_that("ledgr_weight_equal creates long-only equal weights", {
   selection <- ledgr_selection(c(AAA = TRUE, BBB = FALSE, CCC = TRUE))
-  weights <- weight_equal(selection)
+  weights <- ledgr_weight_equal(selection)
 
   testthat::expect_s3_class(weights, "ledgr_weights")
   testthat::expect_identical(unclass(weights), c(AAA = 0.5, CCC = 0.5))
 
-  empty <- weight_equal(ledgr_selection(c(AAA = FALSE, BBB = FALSE)))
+  empty <- ledgr_weight_equal(ledgr_selection(c(AAA = FALSE, BBB = FALSE)))
   testthat::expect_s3_class(empty, "ledgr_weights")
   testthat::expect_identical(length(empty), 0L)
   testthat::expect_identical(attr(empty, "universe"), c("AAA", "BBB"))
 })
 
-testthat::test_that("target_rebalance builds full-universe targets and rejects invalid weights", {
+testthat::test_that("ledgr_target_rebalance builds full-universe targets and rejects invalid weights", {
   ts <- ledgr_utc("2020-01-03")
   bars <- data.frame(
     ts_utc = rep(ts, 3),
@@ -123,29 +123,29 @@ testthat::test_that("target_rebalance builds full-universe targets and rejects i
     equity = 1000
   )
 
-  target <- target_rebalance(ledgr_weights(c(AAA = 0.5, BBB = 0.25)), ctx)
+  target <- ledgr_target_rebalance(ledgr_weights(c(AAA = 0.5, BBB = 0.25)), ctx)
   testthat::expect_s3_class(target, "ledgr_target")
   testthat::expect_identical(unclass(target), c(AAA = 5, BBB = 5, CCC = 0))
 
-  empty <- target_rebalance(ledgr_weights(numeric()), ctx)
+  empty <- ledgr_target_rebalance(ledgr_weights(numeric()), ctx)
   testthat::expect_identical(unclass(empty), c(AAA = 0, BBB = 0, CCC = 0))
 
   testthat::expect_warning(
-    bad_price <- target_rebalance(ledgr_weights(c(CCC = 0.25)), ctx),
+    bad_price <- ledgr_target_rebalance(ledgr_weights(c(CCC = 0.25)), ctx),
     class = "ledgr_invalid_target_price"
   )
   testthat::expect_identical(unclass(bad_price), c(AAA = 0, BBB = 0, CCC = 0))
 
   testthat::expect_error(
-    target_rebalance(ledgr_weights(c(AAA = -0.1)), ctx),
+    ledgr_target_rebalance(ledgr_weights(c(AAA = -0.1)), ctx),
     class = "ledgr_negative_weights"
   )
   testthat::expect_error(
-    target_rebalance(ledgr_weights(c(AAA = 0.8, BBB = 0.3)), ctx),
+    ledgr_target_rebalance(ledgr_weights(c(AAA = 0.8, BBB = 0.3)), ctx),
     class = "ledgr_levered_weights"
   )
   testthat::expect_error(
-    target_rebalance(ledgr_weights(c(ZZZ = 0.1)), ctx),
+    ledgr_target_rebalance(ledgr_weights(c(ZZZ = 0.1)), ctx),
     class = "ledgr_invalid_strategy_helper"
   )
 })
@@ -179,9 +179,9 @@ testthat::test_that("strategy helpers consume ctx vec accessors when available",
   ctx$feature <- function(...) rlang::abort("scalar feature path should not be used")
   ctx$close <- function(...) rlang::abort("scalar close path should not be used")
 
-  signal <- signal_return(ctx, lookback = 2)
-  weights <- weight_equal(select_top_n(signal, 1))
-  target <- target_rebalance(weights, ctx, equity_fraction = 0.5)
+  signal <- ledgr_signal_return(ctx, lookback = 2)
+  weights <- ledgr_weight_equal(ledgr_select_top_n(signal, 1))
+  target <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
 
   testthat::expect_identical(as.numeric(signal), c(0.02, 0.01))
   testthat::expect_identical(as.numeric(target), c(5, 0))
@@ -205,10 +205,10 @@ testthat::test_that("reference helper pipeline runs through ledgr_run", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
-    signal <- signal_return(ctx, lookback = params$lookback)
-    selection <- select_top_n(signal, params$n)
-    weights <- weight_equal(selection)
-    target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
+    signal <- ledgr_signal_return(ctx, lookback = params$lookback)
+    selection <- ledgr_select_top_n(signal, params$n)
+    weights <- ledgr_weight_equal(selection)
+    ledgr_target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
   }
   exp <- ledgr_experiment(
     snapshot = snapshot,

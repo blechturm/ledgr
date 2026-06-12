@@ -7,7 +7,7 @@
 \method{print}{ledgr_comparison}(x, ...)
 }
 \arguments{
-\item{x}{A \code{ledgr_comparison} object returned by \code{\link[=ledgr_compare_runs]{ledgr_compare_runs()}}.}
+\item{x}{A \code{ledgr_comparison} object returned by \code{\link[=ledgr_run_compare]{ledgr_run_compare()}}.}
 
 \item{...}{Passed to the tibble print method for the curated view.}
 }

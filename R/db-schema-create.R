@@ -9,7 +9,7 @@
 #' con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
 #' ledgr_create_schema(con)
 #' DBI::dbDisconnect(con, shutdown = TRUE)
-#' @export
+#' @noRd
 ledgr_create_schema <- function(con) {
   if (!DBI::dbIsValid(con)) {
     stop("`con` must be a valid DBI connection.", call. = FALSE)

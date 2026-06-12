@@ -131,7 +131,7 @@ snapshot <- ledgr_snapshot_from_df(
 ```
 
 After snapshot creation, store operations take `snapshot`, not `db_path`. In a
-new R session, recover the handle with `ledgr_snapshot_load(db_path,
+new R session, recover the handle with `ledgr_snapshot_open(db_path,
 snapshot_id)`.
 
 If your market data starts in CSV, seal the CSV into the same kind of durable
@@ -157,7 +157,7 @@ In any later session, recover the handle without re-sealing the data:
 #| label: csv-snapshot-load
 #| eval: false
 
-snapshot <- ledgr_snapshot_load(
+snapshot <- ledgr_snapshot_open(
   "artifacts/ledgr_store.duckdb",
   snapshot_id = "eod_2019_h1"
 )
@@ -355,7 +355,7 @@ Useful fields include:
 ```{r}
 #| label: compare
 
-comparison <- ledgr_compare_runs(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
+comparison <- ledgr_run_compare(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))
 comparison
 ```
 
@@ -363,7 +363,7 @@ Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have fills but no
 closed trades yet, in which case win rate is not defined.
 
-`ledgr_compare_runs()` starts from the durable snapshot handle because it reads
+`ledgr_run_compare()` starts from the durable snapshot handle because it reads
 stored run artifacts. When you want the comparison to use an experiment's metric
 assumptions, pass that context explicitly:
 
@@ -371,7 +371,7 @@ assumptions, pass that context explicitly:
 #| label: compare-exp-context
 #| eval: false
 
-comparison <- ledgr_compare_runs(
+comparison <- ledgr_run_compare(
   snapshot,
   run_ids = c("trend_qty_5", "trend_qty_15"),
   metric_context = ledgr_metric_context(exp)
@@ -432,7 +432,7 @@ evaluating, or executing the source.
 ```{r}
 #| label: extract-source
 
-stored_strategy <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = FALSE)
+stored_strategy <- ledgr_run_strategy(snapshot, "trend_qty_5", trust = FALSE)
 stored_strategy
 ```
 
@@ -468,7 +468,7 @@ decided that evaluating the stored source is acceptable:
 #| label: trusted-rerun
 #| eval: false
 
-recovered <- ledgr_extract_strategy(snapshot, "trend_qty_5", trust = TRUE)
+recovered <- ledgr_run_strategy(snapshot, "trend_qty_5", trust = TRUE)
 
 rerun_exp <- ledgr_experiment(
   snapshot = snapshot,
@@ -504,7 +504,7 @@ Only completed runs can be reopened. Failed or incomplete runs remain
 inspectable through `ledgr_run_info()`.
 
 Store-level helpers such as `ledgr_run_info()`, `ledgr_run_list()`, and
-`ledgr_compare_runs()` use the snapshot handle and remain available after a
+`ledgr_run_compare()` use the snapshot handle and remain available after a
 completed run handle is closed. Result-table helpers such as `ledgr_results()`
 need a live or reopened backtest handle.
 
@@ -562,9 +562,9 @@ Use this map when you know the task but not the function name:
 | Seal a local CSV | `ledgr_snapshot_from_csv()` |
 | Fetch and seal Yahoo bars | `ledgr_snapshot_from_yahoo()` |
 | Control low-level CSV create/import/seal lifecycle | `?ledgr_snapshot_import_bars_csv` |
-| Reopen an existing store | `ledgr_snapshot_load()` |
+| Reopen an existing store | `ledgr_snapshot_open()` |
 | List stored runs | `ledgr_run_list()` |
-| Compare durable runs | `ledgr_compare_runs()` |
+| Compare durable runs | `ledgr_run_compare()` |
 
 Yahoo data is a convenience source. The sealed snapshot is the ledgr artifact;
 the remote Yahoo endpoint remains outside ledgr's reproducibility boundary.

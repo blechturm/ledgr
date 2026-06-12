@@ -294,7 +294,7 @@ print.ledgr_metric_context <- function(x, ...) {
 #'   a `ledgr_metric_context`.
 #'
 #' @return A validated `ledgr_metric_context` object.
-#' @export
+#' @noRd
 ledgr_metric_context_resolve <- function(x = NULL) {
   if (is.null(x)) {
     return(ledgr_new_metric_context())
@@ -318,7 +318,7 @@ ledgr_metric_context_resolve <- function(x = NULL) {
 #' context. Reserved provider fields that are `NULL` are omitted from the hash
 #' input.
 #'
-#' @param x A metric-context shortcut accepted by `ledgr_metric_context_resolve()`.
+#' @param x A metric-context shortcut accepted by `ledgr_metric_context()`.
 #'
 #' @return A SHA-256 hash string.
 #' @export

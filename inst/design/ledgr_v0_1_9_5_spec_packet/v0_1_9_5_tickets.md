@@ -339,7 +339,7 @@ scope: audit-consumption
 Priority: P0
 Effort: L
 Dependencies: LDG-2629
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -384,6 +384,22 @@ plan as one coherent surface change.
 - `devtools::document()` or equivalent roxygen generation path.
 - `rg` old-name sweep using the synthesis exclusion set.
 - `tools::checkRd()` after generated docs update.
+
+### Implementation Notes
+
+- Implemented the accepted rename and unexport table across R source, tests,
+  examples, README, pkgdown config, generated Rd files, UX decisions, NEWS, and
+  active contract references.
+- Kept `ledgr_walk_forward_extract_candidate()` exported for Batch 4; only the
+  walk-forward result opener moved to `ledgr_walk_forward_open()` in this
+  batch.
+- Renamed the internal snapshot connection helper to
+  `ledgr_snapshot_connection()` in the same change that creates public
+  `ledgr_snapshot_open()`.
+- Unexported Bucket A functions from NAMESPACE and public docs while leaving
+  their internal definitions available to package code.
+- Applied name-only `contracts.md` updates needed to keep active contract text
+  aligned; the full R1-R7 contracts rework remains LDG-2634.
 
 ### Source Reference
 
