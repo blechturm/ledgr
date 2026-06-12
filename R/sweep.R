@@ -338,11 +338,21 @@ ledgr_sweep_impl <- function(exp,
 #' Selects a single row from a sweep result table and packages its params, seed,
 #' and provenance for promotion or inspection.
 #'
-#' @param results A `ledgr_sweep_results` object or tibble-like object with
-#'   `candidate_id`, `params`, `execution_seed`, and `provenance` columns.
+#' @param results A `ledgr_sweep_results` object, a tibble-like object with
+#'   `candidate_id`, `params`, `execution_seed`, and `provenance` columns, or a
+#'   `ledgr_walk_forward_results` object.
 #' @param which Candidate selector. A character scalar selects by
 #'   `candidate_id`; an integer-like scalar selects by row position.
 #' @param allow_failed Logical. Failed candidates error by default.
+#' @param ... Method-specific arguments.
+#' @param fold_seq For walk-forward results, integer fold sequence to extract,
+#'   or `"latest"`.
+#' @param selection_rationale Optional plain-text rationale. Required for
+#'   walk-forward results when `fold_seq = "latest"`.
+#' @param snapshot Optional sealed snapshot override for walk-forward results
+#'   whose experiment store has moved. The override must have the same
+#'   `snapshot_id` and `snapshot_hash` as the result locator; its `db_path` may
+#'   differ.
 #' @return A `ledgr_sweep_candidate` object.
 #' @details The returned candidate carries `selection_view`, the tibble-like
 #'   view passed to `ledgr_candidate()`. Promotion-context storage uses that
@@ -358,7 +368,17 @@ ledgr_sweep_impl <- function(exp,
 #' `vignette("sweeps", package = "ledgr")`
 #' `system.file("doc", "sweeps.html", package = "ledgr")`
 #' @export
-ledgr_candidate <- function(results, which = 1L, allow_failed = FALSE) {
+ledgr_candidate <- function(results, ...) {
+  UseMethod("ledgr_candidate")
+}
+
+#' @rdname ledgr_candidate
+#' @export
+ledgr_candidate.default <- function(results, which = 1L, allow_failed = FALSE, ...) {
+  dots <- list(...)
+  if (length(dots) > 0L) {
+    rlang::abort("Unused argument(s) supplied to `ledgr_candidate()`.", class = "ledgr_invalid_args")
+  }
   if (!is.logical(allow_failed) || length(allow_failed) != 1L || is.na(allow_failed)) {
     rlang::abort("`allow_failed` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }

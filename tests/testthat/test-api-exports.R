@@ -115,7 +115,6 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_utc",
     "ledgr_validate_schema",
     "ledgr_walk_forward",
-    "ledgr_walk_forward_extract_candidate",
     "ledgr_walk_forward_folds",
     "ledgr_walk_forward_open",
     "ledgr_walk_forward_scores",
@@ -140,6 +139,7 @@ testthat::test_that("exported API surface is locked", {
   testthat::expect_false("ledgr_compute_equity_curve" %in% exports)
   testthat::expect_false("ledgr_create_schema" %in% exports)
   testthat::expect_false("ledgr_metric_context_resolve" %in% exports)
+  testthat::expect_false(paste0("ledgr_walk_forward_", "extract_candidate") %in% exports)
   testthat::expect_true(exists("ledgr_run_fold", envir = asNamespace("ledgr"), inherits = FALSE))
   testthat::expect_true(exists("ledgr_execute_fold", envir = asNamespace("ledgr"), inherits = FALSE))
   testthat::expect_true(exists("ledgr_execution_spec", envir = asNamespace("ledgr"), inherits = FALSE))

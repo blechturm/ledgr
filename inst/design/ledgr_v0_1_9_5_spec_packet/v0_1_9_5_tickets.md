@@ -419,7 +419,7 @@ scope: naming-consistency
 Priority: P0
 Effort: L
 Dependencies: LDG-2632
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -455,6 +455,23 @@ walk-forward result objects.
 - Candidate extraction does not store or reuse stale live handles.
 - Tests cover live, reopened, override-success, override-failure, and
   missing-database paths.
+
+### Implementation Notes
+
+- Converted `ledgr_candidate()` into an S3 generic while preserving the sweep
+  extraction behavior in `ledgr_candidate.default()`.
+- Added `ledgr_candidate.ledgr_walk_forward_results()` with resolve-at-call
+  locator verification, `"latest"` rationale discipline, and optional snapshot
+  override support.
+- Added durable string locator attributes (`db_path`, `snapshot_id`,
+  `snapshot_hash`) to live and reopened walk-forward result objects. No live
+  snapshot, DBI connection, cursor, or backtest handle is stored in those
+  attributes.
+- Removed the public `ledgr_walk_forward_extract_candidate()` export and help
+  page; its extraction body is now internal implementation behind the generic.
+- Added `ledgr_walk_forward_snapshot_override_mismatch` for explicit override
+  mismatches and reused `LEDGR_SNAPSHOT_DB_NOT_FOUND` for missing locator
+  database paths.
 
 ### Verification
 

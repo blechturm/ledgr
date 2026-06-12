@@ -89,6 +89,12 @@ testthat::test_that("walk-forward orchestrates train sweeps, selected test runs,
 
   testthat::expect_s3_class(wf, "ledgr_walk_forward_results")
   testthat::expect_match(wf$session_id, "^[0-9a-f]{64}$")
+  testthat::expect_identical(attr(wf, "db_path", exact = TRUE), fx$snapshot$db_path)
+  testthat::expect_identical(attr(wf, "snapshot_id", exact = TRUE), fx$snapshot$snapshot_id)
+  testthat::expect_identical(
+    attr(wf, "snapshot_hash", exact = TRUE),
+    ledgr:::ledgr_precompute_snapshot_meta(fx$snapshot)$snapshot_hash
+  )
   testthat::expect_identical(wf$opening_state_policy, "carry_test_state")
   testthat::expect_false(wf$cold_start_distorted)
   testthat::expect_equal(nrow(wf$folds), 2L)
@@ -491,6 +497,12 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   folds <- ledgr_walk_forward_folds(fx$snapshot, wf$session_id)
 
   testthat::expect_s3_class(reopened, "ledgr_walk_forward_results")
+  testthat::expect_identical(attr(reopened, "db_path", exact = TRUE), fx$snapshot$db_path)
+  testthat::expect_identical(attr(reopened, "snapshot_id", exact = TRUE), fx$snapshot$snapshot_id)
+  testthat::expect_identical(
+    attr(reopened, "snapshot_hash", exact = TRUE),
+    ledgr:::ledgr_precompute_snapshot_meta(fx$snapshot)$snapshot_hash
+  )
   testthat::expect_identical(reopened$status, "DONE")
   testthat::expect_equal(nrow(scores), nrow(wf$scores))
   testthat::expect_equal(nrow(folds), nrow(wf$folds))
@@ -552,7 +564,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   )
 })
 
-testthat::test_that("walk-forward candidate extraction is explicit and promotion-ready", {
+testthat::test_that("ledgr_candidate extracts walk-forward candidates through locators", {
   candidate_cost <- ledgr_cost_notional_bps_fee(7)
   candidate_risk <- ledgr_risk_max_weight(0.4)
   fx <- ledgr_wfo_exp(cost_model = candidate_cost, risk_chain = candidate_risk)
@@ -567,17 +579,16 @@ testthat::test_that("walk-forward candidate extraction is explicit and promotion
   )
 
   testthat::expect_error(
-    ledgr_walk_forward_extract_candidate(fx$snapshot, wf$session_id),
+    ledgr_candidate(wf),
     class = "ledgr_invalid_args"
   )
   testthat::expect_error(
-    ledgr_walk_forward_extract_candidate(fx$snapshot, wf$session_id, fold_seq = "latest"),
+    ledgr_candidate(wf, fold_seq = "latest"),
     class = "ledgr_walk_forward_latest_without_rationale"
   )
 
-  candidate <- ledgr_walk_forward_extract_candidate(
-    fx$snapshot,
-    wf$session_id,
+  candidate <- ledgr_candidate(
+    wf,
     fold_seq = "latest",
     selection_rationale = "use latest completed fold"
   )
@@ -587,6 +598,11 @@ testthat::test_that("walk-forward candidate extraction is explicit and promotion
   testthat::expect_identical(candidate$provenance$cost_model_hash, ledgr:::ledgr_cost_model_hash(candidate_cost))
   testthat::expect_identical(candidate$provenance$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(candidate_risk))
   testthat::expect_identical(candidate$provenance$walk_forward$selection_rationale, "use latest completed fold")
+
+  reopened <- ledgr_walk_forward_open(fx$snapshot, wf$session_id)
+  reopened_candidate <- ledgr_candidate(reopened, fold_seq = 1L)
+  testthat::expect_s3_class(reopened_candidate, "ledgr_sweep_candidate")
+  testthat::expect_identical(reopened_candidate$params, candidate$params)
 
   target_exp <- ledgr_experiment(
     fx$snapshot,
@@ -603,4 +619,53 @@ testthat::test_that("walk-forward candidate extraction is explicit and promotion
   on.exit(close(promoted), add = TRUE)
   testthat::expect_identical(promoted$config$cost_model$cost_model_hash, ledgr:::ledgr_cost_model_hash(candidate_cost))
   testthat::expect_identical(promoted$config$risk_chain$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(candidate_risk))
+})
+
+testthat::test_that("walk-forward candidate locators verify overrides and missing stores", {
+  fx <- ledgr_wfo_exp()
+  fx_closed <- FALSE
+  on.exit(if (!fx_closed) ledgr_snapshot_close(fx$snapshot), add = TRUE)
+
+  wf <- ledgr_walk_forward(
+    fx$exp,
+    grid = ledgr_wfo_grid(),
+    folds = ledgr_wfo_folds(),
+    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    seed = 46L
+  )
+  invisible(lapply(wf$test_runs, close))
+  ledgr_snapshot_close(fx$snapshot)
+  fx_closed <- TRUE
+
+  override_path <- tempfile(fileext = ".duckdb")
+  testthat::expect_true(file.copy(fx$snapshot$db_path, override_path, overwrite = TRUE))
+  override <- ledgr_snapshot_open(override_path, fx$snapshot$snapshot_id, verify = FALSE)
+  on.exit(ledgr_snapshot_close(override), add = TRUE)
+  testthat::expect_false(identical(override$db_path, fx$snapshot$db_path))
+
+  override_candidate <- ledgr_candidate(wf, fold_seq = 1L, snapshot = override)
+  testthat::expect_s3_class(override_candidate, "ledgr_sweep_candidate")
+
+  mismatch_bars <- ledgr_wfo_bars()
+  mismatch_bars$close <- mismatch_bars$close + 1
+  mismatch_snapshot <- ledgr_snapshot_from_df(mismatch_bars)
+  on.exit(ledgr_snapshot_close(mismatch_snapshot), add = TRUE)
+  testthat::expect_error(
+    ledgr_candidate(wf, fold_seq = 1L, snapshot = mismatch_snapshot),
+    class = "ledgr_walk_forward_snapshot_override_mismatch"
+  )
+
+  tampered_wf <- wf
+  attr(tampered_wf, "snapshot_hash") <- paste(rep("0", 64L), collapse = "")
+  testthat::expect_error(
+    ledgr_candidate(tampered_wf, fold_seq = 1L),
+    class = "ledgr_walk_forward_snapshot_hash_mismatch"
+  )
+
+  missing_wf <- wf
+  attr(missing_wf, "db_path") <- tempfile(fileext = ".duckdb")
+  testthat::expect_error(
+    ledgr_candidate(missing_wf, fold_seq = 1L),
+    class = "LEDGR_SNAPSHOT_DB_NOT_FOUND"
+  )
 })

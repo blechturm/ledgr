@@ -15,7 +15,7 @@
 ledgr_walk_forward_open <- function(snapshot, session_id) {
   data <- ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)
   selected <- ledgr_walk_forward_selected_from_rows(data$folds, data$scores, data$meta$selection_metric %||% NULL)
-  structure(
+  out <- structure(
     list(
       session_id = data$session$session_id[[1]],
       status = data$status,
@@ -38,6 +38,7 @@ ledgr_walk_forward_open <- function(snapshot, session_id) {
     ),
     class = c("ledgr_walk_forward_results", "list")
   )
+  ledgr_walk_forward_attach_locator(out, snapshot, data$session$snapshot_hash[[1]])
 }
 
 #' @rdname ledgr_walk_forward_open
@@ -52,22 +53,36 @@ ledgr_walk_forward_folds <- function(snapshot, session_id) {
   ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)$folds
 }
 
-#' Extract a promotion-ready candidate from a walk-forward session
-#'
-#' @param snapshot A sealed `ledgr_snapshot` locating the experiment store.
-#' @param session_id Walk-forward session identifier.
-#' @param fold_seq Integer fold sequence to extract, or `"latest"`.
-#' @param selection_rationale Optional plain-text rationale. Required when
-#'   `fold_seq = "latest"`.
-#' @return A `ledgr_sweep_candidate` object accepted by [ledgr_promote()].
+#' @rdname ledgr_candidate
 #' @export
-ledgr_walk_forward_extract_candidate <- function(snapshot,
-                                                 session_id,
-                                                 fold_seq,
-                                                 selection_rationale = NULL) {
+ledgr_candidate.ledgr_walk_forward_results <- function(results,
+                                                       fold_seq,
+                                                       selection_rationale = NULL,
+                                                       snapshot = NULL,
+                                                       ...) {
+  dots <- list(...)
+  if (length(dots) > 0L) {
+    rlang::abort("Unused argument(s) supplied to `ledgr_candidate()`.", class = "ledgr_invalid_args")
+  }
   if (missing(fold_seq)) {
     rlang::abort("`fold_seq` is required.", class = "ledgr_invalid_args")
   }
+  resolved <- ledgr_walk_forward_resolve_candidate_snapshot(results, snapshot)
+  if (isTRUE(resolved$close)) {
+    on.exit(ledgr_snapshot_close(resolved$snapshot), add = TRUE)
+  }
+  ledgr_walk_forward_candidate_from_snapshot(
+    snapshot = resolved$snapshot,
+    session_id = results$session_id,
+    fold_seq = fold_seq,
+    selection_rationale = selection_rationale
+  )
+}
+
+ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
+                                                       session_id,
+                                                       fold_seq,
+                                                       selection_rationale = NULL) {
   data <- ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)
   rationale <- ledgr_walk_forward_selection_rationale(selection_rationale)
   fold_seq <- ledgr_walk_forward_resolve_extract_fold(data$folds, fold_seq, rationale)
@@ -204,6 +219,63 @@ ledgr_walk_forward_extract_candidate <- function(snapshot,
   class(candidate_row) <- c("ledgr_sweep_results", class(candidate_row))
 
   ledgr_candidate(candidate_row, which = 1L)
+}
+
+ledgr_walk_forward_attach_locator <- function(results, snapshot, snapshot_hash = NULL) {
+  ledgr_walk_forward_validate_snapshot(snapshot)
+  if (is.null(snapshot_hash)) {
+    snapshot_hash <- ledgr_precompute_snapshot_meta(snapshot)$snapshot_hash
+  }
+  attr(results, "db_path") <- as.character(ledgr_run_store_snapshot_path(snapshot))
+  attr(results, "snapshot_id") <- as.character(ledgr_run_store_snapshot_id(snapshot))
+  attr(results, "snapshot_hash") <- as.character(snapshot_hash)
+  results
+}
+
+ledgr_walk_forward_locator <- function(results) {
+  out <- list(
+    db_path = attr(results, "db_path", exact = TRUE),
+    snapshot_id = attr(results, "snapshot_id", exact = TRUE),
+    snapshot_hash = attr(results, "snapshot_hash", exact = TRUE)
+  )
+  bad <- names(out)[!vapply(out, ledgr_walk_forward_is_non_empty_scalar, logical(1))]
+  if (length(bad) > 0L) {
+    rlang::abort(
+      sprintf("Walk-forward result locator is missing required field(s): %s.", paste(bad, collapse = ", ")),
+      class = "ledgr_walk_forward_invalid_session"
+    )
+  }
+  lapply(out, as.character)
+}
+
+ledgr_walk_forward_is_non_empty_scalar <- function(x) {
+  is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
+}
+
+ledgr_walk_forward_resolve_candidate_snapshot <- function(results, snapshot = NULL) {
+  locator <- ledgr_walk_forward_locator(results)
+  if (!is.null(snapshot)) {
+    ledgr_walk_forward_validate_snapshot(snapshot)
+    override_id <- ledgr_run_store_snapshot_id(snapshot)
+    override_hash <- ledgr_precompute_snapshot_meta(snapshot)$snapshot_hash
+    if (!identical(as.character(override_id), locator$snapshot_id) ||
+        !identical(as.character(override_hash), locator$snapshot_hash)) {
+      rlang::abort(
+        "Walk-forward snapshot override does not match the result locator.",
+        class = "ledgr_walk_forward_snapshot_override_mismatch"
+      )
+    }
+    return(list(snapshot = snapshot, close = FALSE))
+  }
+  snapshot <- ledgr_snapshot_open(locator$db_path, locator$snapshot_id, verify = FALSE)
+  tryCatch(
+    ledgr_walk_forward_verify_snapshot_hash(snapshot, locator$snapshot_hash),
+    error = function(cnd) {
+      ledgr_snapshot_close(snapshot)
+      stop(cnd)
+    }
+  )
+  list(snapshot = snapshot, close = TRUE)
 }
 
 ledgr_walk_forward_read_session <- function(snapshot, session_id, verify_runs = TRUE) {

@@ -31,6 +31,7 @@
 \alias{ledgr_walk_forward_test_run_failed}
 \alias{ledgr_walk_forward_session_not_found}
 \alias{ledgr_walk_forward_snapshot_hash_mismatch}
+\alias{ledgr_walk_forward_snapshot_override_mismatch}
 \alias{ledgr_walk_forward_invalid_session}
 \alias{ledgr_walk_forward_latest_without_rationale}
 \alias{ledgr_walk_forward_candidate_not_found}
@@ -148,6 +149,10 @@ inspection helpers cannot find the requested session.
 
 \code{ledgr_walk_forward_snapshot_hash_mismatch} is raised when the supplied
 snapshot does not match the persisted walk-forward session identity.
+
+\code{ledgr_walk_forward_snapshot_override_mismatch} is raised when an explicit
+snapshot override for candidate extraction has a different \code{snapshot_id} or
+\code{snapshot_hash} than the walk-forward result locator.
 
 \code{ledgr_walk_forward_invalid_session} is raised when persisted walk-forward
 session rows, linked test runs, or identity fields cannot be reopened

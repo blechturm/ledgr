@@ -100,6 +100,10 @@
 #' `ledgr_walk_forward_snapshot_hash_mismatch` is raised when the supplied
 #' snapshot does not match the persisted walk-forward session identity.
 #'
+#' `ledgr_walk_forward_snapshot_override_mismatch` is raised when an explicit
+#' snapshot override for candidate extraction has a different `snapshot_id` or
+#' `snapshot_hash` than the walk-forward result locator.
+#'
 #' `ledgr_walk_forward_invalid_session` is raised when persisted walk-forward
 #' session rows, linked test runs, or identity fields cannot be reopened
 #' safely.
@@ -148,6 +152,7 @@
 #' @aliases ledgr_walk_forward_test_run_failed
 #' @aliases ledgr_walk_forward_session_not_found
 #' @aliases ledgr_walk_forward_snapshot_hash_mismatch
+#' @aliases ledgr_walk_forward_snapshot_override_mismatch
 #' @aliases ledgr_walk_forward_invalid_session
 #' @aliases ledgr_walk_forward_latest_without_rationale
 #' @aliases ledgr_walk_forward_candidate_not_found

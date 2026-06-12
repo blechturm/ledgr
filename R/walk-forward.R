@@ -167,7 +167,7 @@ ledgr_walk_forward <- function(exp,
     ),
     class = c("ledgr_walk_forward_results", "list")
   )
-  out
+  ledgr_walk_forward_attach_locator(out, exp$snapshot, session_identity$snapshot_hash)
 }
 
 #' @export

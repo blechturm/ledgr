@@ -39,9 +39,8 @@ wf <- ledgr_walk_forward(
 
 wf$degradation
 scores <- ledgr_walk_forward_scores(snapshot, wf$session_id)
-candidate <- ledgr_walk_forward_extract_candidate(
-  snapshot,
-  wf$session_id,
+candidate <- ledgr_candidate(
+  wf,
   fold_seq = "latest",
   selection_rationale = "Manual review accepted the latest completed fold."
 )
