@@ -147,10 +147,10 @@ feature values as pulse-known information, not as executable prices.
 
 **Public cost API**
 
-The stable public transaction-cost model API is planned for v0.1.9.x /
-v0.2.0. The example below documents fill behavior for readers inspecting
-execution results. Do not treat this list interface as the stable public
-cost API.
+v0.1.9.1 ships the public transaction-cost model API used below. The
+example keeps timing and cost explicit: next-open timing, a quoted-spread
+cost, and a fixed-fee cost. Cost models charge fills; they do not change
+quantities, model liquidity, or implement OMS behavior.
 
 </div>
 

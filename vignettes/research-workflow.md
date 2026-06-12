@@ -788,14 +788,14 @@ does not certify that the selection protocol was statistically sound.
 ## Next Layer: Walk-Forward Evaluation
 
 The workflow above teaches the single-window foundation. Walk-forward
-and out-of-sample evaluation are the planned next conceptual layer for
-separating candidate selection from held-out evidence.
+evaluation is the shipped next conceptual layer for separating candidate
+selection from held-out evidence.
 
 When you ask “is this candidate’s evidence reproducible?”, the workflow
 above is the right starting point. When you ask “does this strategy
 generalize?”, walk-forward is the next question you want. That layer is
-not part of this article; the public roadmap places walk-forward
-evaluation at v0.1.9.x.
+not part of this article; use
+`vignette("walk-forward", package = "ledgr")`.
 
 This article should not imply that promotion alone validates a strategy.
 

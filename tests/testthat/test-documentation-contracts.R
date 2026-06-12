@@ -1168,7 +1168,8 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "Promote One Candidate", fixed = TRUE)
   testthat::expect_match(doc, "Promotion replays one selected candidate", fixed = TRUE)
   testthat::expect_match(doc, "What A Sweep Does Not Prove", fixed = TRUE)
-  testthat::expect_match(doc, "when that layer lands in\\s+v0.1.9.x")
+  testthat::expect_match(doc, "vignette\\(\"walk-forward\", package = \"ledgr\"\\)")
+  testthat::expect_no_match(doc, "when that layer lands in\\s+v0.1.9.x")
   testthat::expect_match(doc, "Design note", fixed = TRUE)
   testthat::expect_match(doc, "v0.1.8.6 cycle", fixed = TRUE)
   testthat::expect_match(doc, "sweep-review helper", fixed = TRUE)
@@ -1310,8 +1311,9 @@ testthat::test_that("research workflow article pins canonical workflow and valid
   testthat::expect_match(doc, "Tier 2\\s+strategies")
   testthat::expect_match(doc, "Promotion records selection; it does not prove generalization.", fixed = TRUE)
   testthat::expect_match(doc, "Naive\\s+sweep-and-pick selection is a selection-bias risk")
-  testthat::expect_match(doc, "walk-forward and\\s+out-of-sample evaluation as the next conceptual layer")
-  testthat::expect_match(doc, "the public roadmap places walk-forward evaluation at v0.1.9.x", fixed = TRUE)
+  testthat::expect_match(doc, "Walk-forward\\s+evaluation is the shipped next conceptual layer")
+  testthat::expect_match(doc, "vignette\\(\"walk-forward\", package = \"ledgr\"\\)")
+  testthat::expect_no_match(doc, "the public roadmap places walk-forward evaluation at v0.1.9.x", fixed = TRUE)
   testthat::expect_match(doc, "When you ask \"does this strategy generalize?\"", fixed = TRUE)
   testthat::expect_match(doc, "Try it", fixed = TRUE)
   testthat::expect_match(doc, "```{mermaid}", fixed = TRUE)
@@ -1694,6 +1696,8 @@ testthat::test_that("LEDGR_LAST_BAR_NO_FILL help topic documents final-bar behav
   testthat::expect_match(warning_doc, "candidate-row warning", fixed = TRUE)
   testthat::expect_match(warning_doc, "execution-semantics", fixed = TRUE)
   testthat::expect_match(execution_doc, "?LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_match(execution_doc, "v0.1.9.1 ships the public transaction-cost model API", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "The stable public transaction-cost model API is planned", fixed = TRUE)
 })
 
 testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API surface", {
@@ -1715,8 +1719,12 @@ testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API 
     testthat::expect_match(doc, "quoted-spread convention", fixed = TRUE)
     testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
     testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
+    testthat::expect_match(doc, "v0.1.9.4 shipped walk-forward evaluation", fixed = TRUE)
+    testthat::expect_match(doc, "next planned validation-toolkit work", fixed = TRUE)
     testthat::expect_no_match(doc, "fill_model", fixed = TRUE)
     testthat::expect_no_match(doc, "commission_fixed", fixed = TRUE)
+    testthat::expect_no_match(doc, "v0.1.9.4 plans walk-forward evaluation", fixed = TRUE)
+    testthat::expect_no_match(doc, "later v0.1.9.x work may add selection-integrity diagnostics", fixed = TRUE)
   }
 })
 

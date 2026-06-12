@@ -759,8 +759,8 @@ whether the selected rule will generalize.
 
 The more candidates you try, the more opportunity you create for
 sample-specific luck to look like skill. If the question is
-generalization rather than artifact reproducibility, use walk-forward
-evaluation when that layer lands in v0.1.9.x.
+generalization rather than artifact reproducibility, use
+`vignette("walk-forward", package = "ledgr")`.
 
 This is the same selection-bias boundary that the v0.1.8.6 cycle
 documented when it separated structured benchmark evidence from future

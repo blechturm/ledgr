@@ -240,13 +240,15 @@ v0.1.x is the correctness-first research layer. It already covers:
   stored strategy source, and a deterministic demo dataset for documentation
   and examples.
 
-The rest of the v0.1.x arc is still research-layer work:
+The current research layer also includes the first walk-forward surface:
 
-- v0.1.9.4 plans walk-forward evaluation over the existing sweep and run
-  surfaces, now consuming cost identity, saved-sweep retention infrastructure,
-  and risk-chain identity;
-- later v0.1.9.x work may add selection-integrity diagnostics,
-  crypto-readiness evidence, and target-construction helper extensions.
+- v0.1.9.4 shipped walk-forward evaluation over the existing sweep and run
+  surfaces, consuming cost identity, saved-sweep retention infrastructure, and
+  risk-chain identity;
+- the next planned validation-toolkit work may add DSR, PBO/CSCV over retained
+  return panels, and deterministic candidate clustering;
+- crypto-readiness evidence and target-construction helper extensions remain
+  separate future packets.
 
 The target-risk layer is intentionally narrow: it transforms target quantities
 before timing and cost. It does not implement affordability enforcement,
