@@ -110,6 +110,54 @@ ledgr_test_make_bars <- function(instrument_ids, ts_utc) {
   out
 }
 
+ledgr_test_next_open_fill <- function(desired_qty_delta,
+                                      next_bar = NULL,
+                                      spread_bps = 0,
+                                      commission_fixed = 0,
+                                      price_round_digits = 8L,
+                                      next_open_price = NULL,
+                                      instrument_id = NULL,
+                                      ts_utc = NULL,
+                                      high = NA_real_,
+                                      low = NA_real_,
+                                      close = NA_real_,
+                                      volume = NA_real_) {
+  proposal <- ledgr:::ledgr_next_open_fill_proposal(
+    desired_qty_delta = desired_qty_delta,
+    next_bar = next_bar,
+    next_open_price = next_open_price,
+    instrument_id = instrument_id,
+    ts_utc = ts_utc,
+    high = high,
+    low = low,
+    close = close,
+    volume = volume
+  )
+  if (inherits(proposal, "ledgr_fill_none")) {
+    return(proposal)
+  }
+  resolver <- ledgr:::ledgr_cost_resolver_from_model(
+    ledgr_cost_chain(
+      ledgr_cost_spread_bps(spread_bps),
+      ledgr_cost_fixed_fee(commission_fixed)
+    ),
+    price_round_digits = price_round_digits
+  )
+  ledgr:::ledgr_resolve_fill_proposal(proposal, resolver)
+}
+
+ledgr_test_cost_resolver <- function(spread_bps = 0,
+                                     commission_fixed = 0,
+                                     price_round_digits = 8L) {
+  ledgr:::ledgr_cost_resolver_from_model(
+    ledgr_cost_chain(
+      ledgr_cost_spread_bps(spread_bps),
+      ledgr_cost_fixed_fee(commission_fixed)
+    ),
+    price_round_digits = price_round_digits
+  )
+}
+
 ledgr_test_snapshot_backed_config <- function(cfg, bars_df, snapshot_id = NULL) {
   if (is.null(snapshot_id)) {
     snapshot_id <- paste0("test_snapshot_", substr(digest::digest(list(cfg$db_path, nrow(bars_df))), 1, 12))

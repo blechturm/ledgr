@@ -39,6 +39,11 @@
 #' two executable pulses. Next-bar fill semantics require a decision pulse and a
 #' later execution pulse.
 #'
+#' @section Accounting classes:
+#' `ledgr_invalid_lot_fill` is raised when the lot-accounting layer receives an
+#' invalid fill side, quantity, price, fee, or instrument id. Invalid lot input
+#' fails closed because the ledger event stream and lot state must not diverge.
+#'
 #' @section Saved sweep classes:
 #' `ledgr_invalid_sweep_id` is raised when a saved sweep id is not a non-empty,
 #' non-whitespace ASCII character scalar of at most 256 bytes.
@@ -128,6 +133,7 @@
 #' @aliases ledgr_invalid_timing_model ledgr_invalid_fill_proposal
 #' @aliases ledgr_invalid_fill_context ledgr_run_not_found
 #' @aliases ledgr_unresolved_feature_id ledgr_run_window_too_short
+#' @aliases ledgr_invalid_lot_fill
 #' @aliases ledgr_invalid_sweep_id ledgr_sweep_id_exists
 #' @aliases ledgr_sweep_not_found
 #' @aliases ledgr_sweep_snapshot_not_found ledgr_sweep_snapshot_hash_mismatch

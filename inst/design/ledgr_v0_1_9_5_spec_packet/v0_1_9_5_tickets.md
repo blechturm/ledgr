@@ -228,7 +228,7 @@ scope: release-blocking
 Priority: P0
 Effort: M
 Dependencies: LDG-2627
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -254,6 +254,10 @@ before later documentation treats the contracts as stable.
 - Targeted compiled-accounting and lot-accounting tests.
 - Relevant existing parity tests.
 
+### Implementation Notes
+
+- Implemented with LDG-2631 in one kernel/accounting/cost review batch.
+
 ### Source Reference
 
 - `inst/design/audits/v0_1_9_4_deep_code_review_audit.md`
@@ -271,7 +275,7 @@ scope: release-blocking
 Priority: P1
 Effort: M
 Dependencies: LDG-2630
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -308,6 +312,14 @@ to land in this consolidation release without reopening execution semantics.
 - Targeted cost-model tests.
 - Targeted compiled-accounting tests.
 - `rg` for removed legacy resolver references outside design history.
+
+### Implementation Notes
+
+- N-2 was applied as a natural ride-along in the compiled spot-FIFO lot-packing
+  bridge.
+- N-1 was not touched.
+- N-3, N-5, and N-6 remain recorded-not-scheduled.
+- N-4 did not apply because this batch did not change the M-4 tolerance route.
 
 ### Source Reference
 

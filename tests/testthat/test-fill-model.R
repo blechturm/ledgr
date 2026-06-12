@@ -5,13 +5,13 @@ testthat::test_that("fill model is deterministic and rounds fill_price", {
     open = 100.123456789
   )
 
-  a <- ledgr:::ledgr_fill_next_open(
+  a <- ledgr_test_next_open_fill(
     desired_qty_delta = 10,
     next_bar = bar,
     spread_bps = 7,
     commission_fixed = 1.25
   )
-  b <- ledgr:::ledgr_fill_next_open(
+  b <- ledgr_test_next_open_fill(
     desired_qty_delta = 10,
     next_bar = bar,
     spread_bps = 7,
@@ -21,7 +21,7 @@ testthat::test_that("fill model is deterministic and rounds fill_price", {
   testthat::expect_identical(a, b)
   testthat::expect_identical(a$side, "BUY")
   testthat::expect_equal(a$qty, 10)
-  testthat::expect_equal(a$fill_price, round(100.123456789 * (1 + 7 / 10000), 8))
+  testthat::expect_equal(a$fill_price, round(100.123456789 * (1 + 7 / 20000), 8))
 })
 
 testthat::test_that("POSIXct next-bar timestamps stay POSIXct in internal fill intents", {
@@ -34,7 +34,7 @@ testthat::test_that("POSIXct next-bar timestamps stay POSIXct in internal fill i
   proposal <- ledgr:::ledgr_next_open_fill_proposal(10, bar)
   fill <- ledgr:::ledgr_resolve_fill_proposal(
     proposal,
-    ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0)
+    ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0)
   )
 
   testthat::expect_s3_class(proposal$ts_exec_utc, "POSIXct")
@@ -56,7 +56,7 @@ testthat::test_that("sub-second fill timestamps fail loud", {
   )
 })
 
-testthat::test_that("next-open proposal and internal cost resolver preserve legacy fill intents", {
+testthat::test_that("next-open proposal and public cost resolver preserve fill intents", {
   bar <- list(
     instrument_id = "AAA",
     ts_utc = "2020-01-02T00:00:00Z",
@@ -78,12 +78,12 @@ testthat::test_that("next-open proposal and internal cost resolver preserve lega
   )
   testthat::expect_equal(proposal$execution_bar$volume, 100000)
 
-  resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+  resolver <- ledgr_test_cost_resolver(
     spread_bps = 7,
     commission_fixed = 1.25
   )
   via_boundary <- ledgr:::ledgr_resolve_fill_proposal(proposal, resolver)
-  legacy <- ledgr:::ledgr_fill_next_open(
+  legacy <- ledgr_test_next_open_fill(
     desired_qty_delta = 10,
     next_bar = bar,
     spread_bps = 7,
@@ -122,29 +122,29 @@ testthat::test_that("BUY/SELL spread adjustment is symmetric and spread=0 yields
     open = 100
   )
 
-  buy <- ledgr:::ledgr_fill_next_open(
+  buy <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = bar,
     spread_bps = 10,
     commission_fixed = 0
   )
-  sell <- ledgr:::ledgr_fill_next_open(
+  sell <- ledgr_test_next_open_fill(
     desired_qty_delta = -1,
     next_bar = bar,
     spread_bps = 10,
     commission_fixed = 0
   )
 
-  testthat::expect_equal(buy$fill_price, 100 * (1 + 10 / 10000))
-  testthat::expect_equal(sell$fill_price, 100 * (1 - 10 / 10000))
+  testthat::expect_equal(buy$fill_price, 100 * (1 + 10 / 20000))
+  testthat::expect_equal(sell$fill_price, 100 * (1 - 10 / 20000))
 
-  buy0 <- ledgr:::ledgr_fill_next_open(
+  buy0 <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = bar,
     spread_bps = 0,
     commission_fixed = 0
   )
-  sell0 <- ledgr:::ledgr_fill_next_open(
+  sell0 <- ledgr_test_next_open_fill(
     desired_qty_delta = -1,
     next_bar = bar,
     spread_bps = 0,
@@ -162,7 +162,7 @@ testthat::test_that("fee is included and must be non-negative", {
     open = 100
   )
 
-  fill <- ledgr:::ledgr_fill_next_open(
+  fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = bar,
     spread_bps = 0,
@@ -171,19 +171,18 @@ testthat::test_that("fee is included and must be non-negative", {
   testthat::expect_equal(fill$fee, 2.5)
 
   testthat::expect_error(
-    ledgr:::ledgr_fill_next_open(
+    ledgr_test_next_open_fill(
       desired_qty_delta = 1,
       next_bar = bar,
       spread_bps = 0,
       commission_fixed = -0.1
     ),
-    "commission_fixed",
-    fixed = TRUE
+    class = "ledgr_invalid_cost_model"
   )
 })
 
 testthat::test_that("last-bar policy returns a structured NO_FILL with WARN code", {
-  out <- ledgr:::ledgr_fill_next_open(
+  out <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = NULL,
     spread_bps = 0,
@@ -199,20 +198,19 @@ testthat::test_that("invalid inputs fail loud", {
   bar <- list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 100)
 
   testthat::expect_error(
-    ledgr:::ledgr_fill_next_open(desired_qty_delta = Inf, next_bar = bar, spread_bps = 0, commission_fixed = 0),
+    ledgr_test_next_open_fill(desired_qty_delta = Inf, next_bar = bar, spread_bps = 0, commission_fixed = 0),
     "desired_qty_delta",
     fixed = TRUE
   )
 
   testthat::expect_error(
-    ledgr:::ledgr_fill_next_open(desired_qty_delta = 1, next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = NaN), spread_bps = 0, commission_fixed = 0),
+    ledgr_test_next_open_fill(desired_qty_delta = 1, next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = NaN), spread_bps = 0, commission_fixed = 0),
     "next_bar$open",
     fixed = TRUE
   )
 
   testthat::expect_error(
-    ledgr:::ledgr_fill_next_open(desired_qty_delta = 1, next_bar = bar, spread_bps = -1, commission_fixed = 0),
-    "spread_bps",
-    fixed = TRUE
+    ledgr_test_next_open_fill(desired_qty_delta = 1, next_bar = bar, spread_bps = -1, commission_fixed = 0),
+    class = "ledgr_invalid_cost_model"
   )
 })

@@ -140,16 +140,12 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
     !is.character(instrument_id) || length(instrument_id) != 1L ||
     is.na(instrument_id) || !nzchar(instrument_id) ||
     length(qty) != 1L || is.na(qty) || !is.finite(qty) || qty <= 0 ||
-    length(price) != 1L || is.na(price) || !is.finite(price) ||
-    length(fee) != 1L || is.na(fee) || !is.finite(fee)) {
-    return(list(
-      state = state,
-      close_qty = NA_real_,
-      open_qty = NA_real_,
-      realized_close = NA_real_,
-      realized_delta = NA_real_,
-      direction = direction
-    ))
+    length(price) != 1L || is.na(price) || !is.finite(price) || price <= 0 ||
+    length(fee) != 1L || is.na(fee) || !is.finite(fee) || fee < 0) {
+    rlang::abort(
+      "Invalid fill input for lot accounting.",
+      class = "ledgr_invalid_lot_fill"
+    )
   }
 
   lots <- ledgr_lot_get(state, instrument_id)

@@ -92,9 +92,13 @@ ledgr_require_compiled_spot_fifo_dispatch <- function(execution, output_handler)
 
 ledgr_compiled_spot_fifo_pack_lots <- function(lot_state, instrument_ids) {
   lots <- lot_state$lots %||% stats::setNames(vector("list", length(instrument_ids)), instrument_ids)
-  lot_inst_idx <- integer()
-  lot_qty <- numeric()
-  lot_price <- numeric()
+  n_lots <- sum(vapply(instrument_ids, function(instrument_id) {
+    length(lots[[instrument_id]])
+  }, integer(1)))
+  lot_inst_idx <- integer(n_lots)
+  lot_qty <- numeric(n_lots)
+  lot_price <- numeric(n_lots)
+  out_idx <- 0L
   for (inst_idx in seq_along(instrument_ids)) {
     instrument_id <- instrument_ids[[inst_idx]]
     inst_lots <- lots[[instrument_id]]
@@ -102,9 +106,10 @@ ledgr_compiled_spot_fifo_pack_lots <- function(lot_state, instrument_ids) {
       next
     }
     for (lot in inst_lots) {
-      lot_inst_idx <- c(lot_inst_idx, as.integer(inst_idx))
-      lot_qty <- c(lot_qty, as.numeric(lot$qty))
-      lot_price <- c(lot_price, as.numeric(lot$price))
+      out_idx <- out_idx + 1L
+      lot_inst_idx[[out_idx]] <- as.integer(inst_idx)
+      lot_qty[[out_idx]] <- as.numeric(lot$qty)
+      lot_price[[out_idx]] <- as.numeric(lot$price)
     }
   }
   list(

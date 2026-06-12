@@ -63,7 +63,7 @@ testthat::test_that("BUY fill writes a correct FILL ledger event", {
   run_id <- "run-ledger-1"
   insert_test_run(con, run_id)
 
-  fill <- ledgr:::ledgr_fill_next_open(
+  fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 2,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 100),
     spread_bps = 10,
@@ -91,7 +91,7 @@ testthat::test_that("BUY fill writes a correct FILL ledger event", {
   testthat::expect_identical(row$instrument_id[[1]], "AAA")
   testthat::expect_identical(row$side[[1]], "BUY")
   testthat::expect_equal(row$qty[[1]], 2)
-  testthat::expect_equal(row$price[[1]], round(100 * (1 + 10 / 10000), 8))
+  testthat::expect_equal(row$price[[1]], round(100 * (1 + 10 / 20000), 8))
   testthat::expect_equal(row$fee[[1]], 1.25)
 
   meta <- parse_meta(row$meta_json[[1]])
@@ -117,7 +117,7 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
   )
   handler$init_buffers(1L)
 
-  fill <- ledgr:::ledgr_fill_next_open(
+  fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 2,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 100),
     spread_bps = 10,
@@ -243,7 +243,7 @@ testthat::test_that("persistent output handler preserves full columns across gro
   n_events <- 1025L
   handler$init_buffers(n_events)
   fills <- lapply(seq_len(n_events), function(i) {
-    ledgr:::ledgr_fill_next_open(
+    ledgr_test_next_open_fill(
       desired_qty_delta = i,
       next_bar = list(
         instrument_id = sprintf("inst-%04d", i),
@@ -335,7 +335,7 @@ testthat::test_that("SELL fill writes correct deltas", {
   run_id <- "run-ledger-2"
   insert_test_run(con, run_id)
 
-  fill <- ledgr:::ledgr_fill_next_open(
+  fill <- ledgr_test_next_open_fill(
     desired_qty_delta = -3,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 100),
     spread_bps = 10,
@@ -363,13 +363,13 @@ testthat::test_that("event_seq increments across multiple writes", {
   run_id <- "run-ledger-3"
   insert_test_run(con, run_id)
 
-  fill1 <- ledgr:::ledgr_fill_next_open(
+  fill1 <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
     spread_bps = 0,
     commission_fixed = 0
   )
-  fill2 <- ledgr:::ledgr_fill_next_open(
+  fill2 <- ledgr_test_next_open_fill(
     desired_qty_delta = -1,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-03T00:00:00Z", open = 12),
     spread_bps = 0,
@@ -411,7 +411,7 @@ testthat::test_that("append-only: duplicate (run_id, event_seq) fails and does n
   run_id <- "run-ledger-5"
   insert_test_run(con, run_id)
 
-  fill <- ledgr:::ledgr_fill_next_open(
+  fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
     spread_bps = 0,
@@ -437,7 +437,7 @@ testthat::test_that("transactionality: failed insert leaves no partial row", {
   run_id <- "run-ledger-6"
   insert_test_run(con, run_id)
 
-  fill <- ledgr:::ledgr_fill_next_open(
+  fill <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 10),
     spread_bps = 0,

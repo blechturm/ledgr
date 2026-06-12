@@ -13,6 +13,7 @@
 \alias{ledgr_run_not_found}
 \alias{ledgr_unresolved_feature_id}
 \alias{ledgr_run_window_too_short}
+\alias{ledgr_invalid_lot_fill}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -80,6 +81,13 @@ seam directly.
 \code{ledgr_run_window_too_short} is raised when a run window contains fewer than
 two executable pulses. Next-bar fill semantics require a decision pulse and a
 later execution pulse.
+}
+
+\section{Accounting classes}{
+
+\code{ledgr_invalid_lot_fill} is raised when the lot-accounting layer receives an
+invalid fill side, quantity, price, fee, or instrument id. Invalid lot input
+fails closed because the ledger event stream and lot state must not diverge.
 }
 
 \section{Saved sweep classes}{

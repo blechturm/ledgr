@@ -419,6 +419,8 @@ ledgr_cost_model_resolve <- function(proposal,
     } else if (identical(step$type_id, "fixed_fee")) {
       fee <- fee + as.numeric(step$args$amount)
     } else if (identical(step$type_id, "notional_bps_fee")) {
+      # Notional fees use the spread-adjusted pre-rounding price. The exposed
+      # fill_price is rounded separately below for ledger cash arithmetic.
       fee <- fee + abs(as.numeric(qty) * as.numeric(price)) * as.numeric(step$args$bps) / 10000
     }
   }
