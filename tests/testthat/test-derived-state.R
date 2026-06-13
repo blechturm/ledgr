@@ -85,13 +85,13 @@ testthat::test_that("derived state reconstructs positions, cash, and equity_curv
   insert_bars_for_ts(con, "AAA", "2020-01-02 00:00:00", close = 101)
   insert_bars_for_ts(con, "AAA", "2020-01-03 00:00:00", close = 102)
 
-  fill_buy <- ledgr:::ledgr_fill_next_open(
+  fill_buy <- ledgr_test_next_open_fill(
     desired_qty_delta = 2,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-02T00:00:00Z", open = 100),
     spread_bps = 0,
     commission_fixed = 1
   )
-  fill_sell <- ledgr:::ledgr_fill_next_open(
+  fill_sell <- ledgr_test_next_open_fill(
     desired_qty_delta = -1,
     next_bar = list(instrument_id = "AAA", ts_utc = "2020-01-03T00:00:00Z", open = 110),
     spread_bps = 0,

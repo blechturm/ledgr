@@ -135,7 +135,7 @@ ledgr_adapter_csv <- function(csv_path,
     )
   }
 
-  ts_norm <- vapply(indicator_data[[date_col]], iso_utc, character(1))
+  ts_norm <- vapply(indicator_data[[date_col]], ledgr_iso_utc, character(1))
   instrument_ids <- as.character(indicator_data[[instrument_col]])
   if (anyNA(instrument_ids) || any(!nzchar(instrument_ids))) {
     rlang::abort("CSV instrument_id values must be non-empty strings.", class = "ledgr_invalid_args")
@@ -153,7 +153,7 @@ ledgr_adapter_csv <- function(csv_path,
   ledgr_indicator(
     id = id,
     fn = function(window) {
-      current_ts <- iso_utc(window$ts_utc[nrow(window)])
+      current_ts <- ledgr_iso_utc(window$ts_utc[nrow(window)])
       current_inst <- as.character(window$instrument_id[nrow(window)])
       key <- paste(current_ts, current_inst, sep = "||")
       if (!key %in% names(values)) {

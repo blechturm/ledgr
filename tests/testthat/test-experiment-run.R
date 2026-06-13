@@ -27,7 +27,7 @@ testthat::test_that("ledgr_run executes an experiment with fixed features", {
 
   testthat::expect_s3_class(bt, "ledgr_backtest")
   testthat::expect_identical(bt$run_id, "experiment-run")
-  fills <- ledgr_extract_fills(bt)
+  fills <- ledgr_run_fills(bt)
   testthat::expect_true(nrow(fills) > 0L)
 })
 
@@ -120,7 +120,7 @@ testthat::test_that("ledgr_run with seed NULL uses ambient strategy RNG without 
   set.seed(9876)
   bt <- ledgr_run(exp, run_id = "null-seed-rng-state", seed = NULL)
   on.exit(close(bt), add = TRUE)
-  fills <- ledgr_extract_fills(bt)
+  fills <- ledgr_run_fills(bt)
   testthat::expect_equal(fills$qty[[1]], expected_qty)
 })
 
@@ -406,7 +406,7 @@ testthat::test_that("opening position cost basis seeds FIFO accounting", {
   testthat::expect_equal(metrics$win_rate, 1)
   testthat::expect_equal(metrics$avg_trade, 10)
 
-  cmp <- ledgr_compare_runs(snapshot, run_ids = run_id)
+  cmp <- ledgr_run_compare(snapshot, run_ids = run_id)
   testthat::expect_identical(cmp$n_trades, 1L)
   testthat::expect_equal(cmp$win_rate, 1)
   testthat::expect_equal(cmp$avg_trade, 10)

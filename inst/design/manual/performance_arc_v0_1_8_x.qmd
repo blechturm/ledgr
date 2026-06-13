@@ -257,6 +257,30 @@ Source:
 - `../../../dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md`
 - `../../../dev/bench/peer_benchmark/notes/backtrader_scale_check.md`
 
+## v0.1.9.x Feature Arc Performance Follow-up
+
+The v0.1.9.1 through v0.1.9.4 feature arc added real execution-adjacent work:
+cost resolver reconstruction, target-risk plan application, saved-sweep return
+retention, and walk-forward orchestration over sweep/run execution. Those
+features are correctness and research-workflow capabilities first. They should
+not be folded into the v0.1.8.x B2 performance story as if they were the same
+measurement question.
+
+Safe internal framing:
+
+- v0.1.9.1 cost models add explicit timing/cost identity and fold-time
+  fill-price/fee resolution; see `cost_resolver.qmd`;
+- v0.1.9.3 target risk adds classed, serialized target transforms before fill
+  proposals; see `target_risk_layer.qmd`;
+- v0.1.9.4 walk-forward adds orchestration, persistence, and inspection over
+  existing sweep/run execution; see `walk_forward_machinery.qmd`;
+- any claim about net performance after these layers needs a fresh same-host
+  record with the cost/risk/walk-forward surface named.
+
+The current horizon carries a v0.1.9.6 measurement-spike candidate to redo the
+peer benchmark with cost and risk chains. That would be measurement work, not an
+optimization commitment and not public marketing language.
+
 ## Safe Internal Language
 
 Safe internal summaries:
@@ -478,6 +502,7 @@ Before using a performance number in docs, tickets, or release text:
 - `../ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`
 - `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard)
+- `../horizon.md` (2026-06-13 `[infrastructure]` peer benchmark redo with cost and risk chains)
 - `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md` (Decision 2 narrowing)
 
 ## Where Next
@@ -486,3 +511,5 @@ Before using a performance number in docs, tickets, or release text:
 - For current peer harness details, see
   `../../../dev/bench/peer_benchmark/peer_benchmark.md`.
 - For binding B2 scope, see `../horizon.md` (2026-06-02 `[architecture]` B2 spot-FIFO accelerator scope guard) and `../contracts.md`.
+- For v0.1.9.x execution-adjacent feature traces, see `cost_resolver.qmd`,
+  `target_risk_layer.qmd`, and `walk_forward_machinery.qmd`.

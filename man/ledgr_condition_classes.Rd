@@ -12,6 +12,9 @@
 \alias{ledgr_invalid_fill_context}
 \alias{ledgr_run_not_found}
 \alias{ledgr_unresolved_feature_id}
+\alias{ledgr_run_window_too_short}
+\alias{ledgr_invalid_lot_fill}
+\alias{ledgr_snapshot_hash_invalid_timestamp}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -29,14 +32,16 @@
 \alias{ledgr_walk_forward_test_run_failed}
 \alias{ledgr_walk_forward_session_not_found}
 \alias{ledgr_walk_forward_snapshot_hash_mismatch}
+\alias{ledgr_walk_forward_snapshot_override_mismatch}
 \alias{ledgr_walk_forward_invalid_session}
 \alias{ledgr_walk_forward_latest_without_rationale}
 \alias{ledgr_walk_forward_candidate_not_found}
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
-timing-model, saved-sweep, retained-series, and legacy-shape failures. User
-tests should assert on these classes instead of parsing message text.
+timing-model, execution-window, saved-sweep, retained-series, and
+legacy-shape failures. User tests should assert on these classes instead of
+parsing message text.
 }
 \section{Legacy shape classes}{
 
@@ -71,6 +76,27 @@ malformed ledgr timing-model payloads.
 the internal proposal/resolver seam when a cost resolver receives the wrong
 object shape. They are stable top-level classes for tests that exercise that
 seam directly.
+}
+
+\section{Execution window classes}{
+
+\code{ledgr_run_window_too_short} is raised when a run window contains fewer than
+two executable pulses. Next-bar fill semantics require a decision pulse and a
+later execution pulse.
+}
+
+\section{Accounting classes}{
+
+\code{ledgr_invalid_lot_fill} is raised when the lot-accounting layer receives an
+invalid fill side, quantity, price, fee, or instrument id. Invalid lot input
+fails closed because the ledger event stream and lot state must not diverge.
+}
+
+\section{Snapshot hash classes}{
+
+\code{ledgr_snapshot_hash_invalid_timestamp} is raised when snapshot hashing sees
+a non-POSIXct \code{ts_utc} representation. Snapshot hashes fail closed on driver
+timestamp representation drift instead of silently re-keying sealed data.
 }
 
 \section{Saved sweep classes}{
@@ -131,6 +157,10 @@ inspection helpers cannot find the requested session.
 
 \code{ledgr_walk_forward_snapshot_hash_mismatch} is raised when the supplied
 snapshot does not match the persisted walk-forward session identity.
+
+\code{ledgr_walk_forward_snapshot_override_mismatch} is raised when an explicit
+snapshot override for candidate extraction has a different \code{snapshot_id} or
+\code{snapshot_hash} than the walk-forward result locator.
 
 \code{ledgr_walk_forward_invalid_session} is raised when persisted walk-forward
 session rows, linked test runs, or identity fields cannot be reopened

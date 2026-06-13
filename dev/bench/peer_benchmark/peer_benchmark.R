@@ -1334,7 +1334,7 @@ peer_main <- function(args = peer_parse_args()) {
       strategy = canonical_strategy,
       seed = args$seed,
       cost_model = realistic_cost,
-      cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 5, commission_fixed = 1),
+      cost_resolver = ledgr:::ledgr_cost_resolver_from_model(realistic_cost),
       legacy_cost = TRUE
     ))
   }

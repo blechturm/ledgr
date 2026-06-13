@@ -224,11 +224,39 @@ print.ledgr_fold_list <- function(x, ...) {
   x <- ledgr_validate_fold_list(x)
   cat("ledgr fold list\n")
   cat("================\n")
-  cat("Folds: ", length(x), "\n", sep = "")
-  cat("Hash:  ", substr(ledgr_fold_list_hash(x), 1L, 12L), "\n", sep = "")
   constructor <- attr(x, "constructor", exact = TRUE)
   if (is.list(constructor) && is.character(constructor$type_id)) {
-    cat("Scheme:", constructor$type_id, "\n")
+    cat("Scheme: ", constructor$type_id, "\n", sep = "")
+  }
+  cat("Folds:  ", length(x), "\n", sep = "")
+  cat("Hash:   ", substr(ledgr_fold_list_hash(x), 1L, 12L), "\n", sep = "")
+  if (length(x) > 0L) {
+    # Show dates only when starts are start-of-day and ends are either
+    # start-of-day or inclusive end-of-day. Rolling/anchored folds use
+    # 23:59:59 ends; explicit date-only folds may use 00:00:00 ends.
+    day_aligned <- all(vapply(x, function(f) {
+      starts_day <- all(grepl("T00:00:00Z$", c(
+        ledgr_walk_forward_iso(f$train_start_utc),
+        ledgr_walk_forward_iso(f$test_start_utc)
+      )))
+      ends_day <- all(grepl("T(00:00:00|23:59:59)Z$", c(
+        ledgr_walk_forward_iso(f$train_end_utc),
+        ledgr_walk_forward_iso(f$test_end_utc)
+      )))
+      starts_day && ends_day
+    }, logical(1)))
+    show_time <- !day_aligned
+    fmt <- function(ts) {
+      iso <- ledgr_walk_forward_iso(ts)
+      if (show_time) iso else substr(iso, 1L, 10L)
+    }
+    windows <- tibble::tibble(
+      fold = vapply(x, function(f) as.integer(f$fold_seq), integer(1)),
+      train = vapply(x, function(f) sprintf("%s -> %s", fmt(f$train_start_utc), fmt(f$train_end_utc)), character(1)),
+      test = vapply(x, function(f) sprintf("%s -> %s", fmt(f$test_start_utc), fmt(f$test_end_utc)), character(1))
+    )
+    cat("\n")
+    print(windows, ...)
   }
   invisible(x)
 }
@@ -256,7 +284,7 @@ ledgr_walk_forward_validate_positive_integer <- function(x, arg) {
 
 ledgr_walk_forward_posix <- function(x, arg) {
   out <- tryCatch(
-    as.POSIXct(iso_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"),
+    as.POSIXct(ledgr_iso_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"),
     error = function(e) {
       rlang::abort(
         sprintf("%s must be a parseable UTC timestamp.", arg),

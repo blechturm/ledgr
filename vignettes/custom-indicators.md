@@ -28,18 +28,10 @@ information.
 
 ## The Indicator Object
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A custom indicator is a declared feature computation with a stable
+A **custom indicator** is a declared feature computation with a stable
 feature ID, deterministic params, warmup rules, and one or two functions
-that produce pulse-known values.
-
-</div>
-
-`ledgr_indicator()` creates a feature definition. The important fields
-are:
+that produce pulse-known values. `ledgr_indicator()` creates a feature
+definition. The important fields are:
 
 | Field | Meaning |
 |----|----|
@@ -351,3 +343,12 @@ pulse engine. Keep the boundary explicit:
 - register every feature before `ledgr_run()`;
 - use `ledgr_feature_id()` to confirm the exact ID a strategy should
   read.
+
+## Where Next
+
+- `vignette("indicators", package = "ledgr")` covers the built-in
+  feature lifecycle and pulse-time accessors.
+- `vignette("ttr-and-adapter-indicators", package = "ledgr")` covers
+  TTR-backed indicators and multi-output bundles.
+- `vignette("leakage", package = "ledgr")` explains why custom feature
+  code is a causal review boundary.

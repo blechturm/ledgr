@@ -1,0 +1,324 @@
+version: "0.1.9.5"
+source: "v0_1_9_5_tickets.md"
+generated_from: "v0_1_9_5_spec.md"
+tickets:
+  - id: "LDG-2627"
+    title: "Packet alignment and ticket cut"
+    status: "review_pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "planning"
+      surface: "design-packet"
+      scope: "packet-alignment"
+    tests:
+      - "Manual packet artifact review"
+      - "Targeted documentation-contract tests after pointer flips"
+      - "rg LDG-2627/LDG-2641 in spec packet"
+
+  - id: "LDG-2628"
+    title: "Batch 1A release-blocking stale vignette fixes"
+    status: "review_pending"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2627"
+    classification:
+      type: "documentation"
+      surface: "vignettes"
+      scope: "stale-fixes"
+    tests:
+      - "Documentation-contract tests"
+      - "rg stale screening-audit phrases"
+      - "Render affected vignettes where local tooling allows"
+
+  - id: "LDG-2629"
+    title: "Batch 1B runner and results hardening"
+    status: "review_pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2627"
+    classification:
+      type: "bugfix"
+      surface: "runner-results"
+      scope: "release-blocking"
+    tests:
+      - "Targeted result-reader tests"
+      - "Targeted single-pulse window guard tests"
+      - "Targeted elapsed-time tests"
+
+  - id: "LDG-2630"
+    title: "Batch 1C kernel and accounting hardening"
+    status: "review_pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2627"
+    classification:
+      type: "bugfix"
+      surface: "accounting-kernel"
+      scope: "release-blocking"
+    tests:
+      - "Targeted compiled-accounting tests"
+      - "Targeted lot-accounting tests"
+      - "Relevant parity tests"
+
+  - id: "LDG-2631"
+    title: "Batch 2 kernel and cost-model hygiene"
+    status: "review_pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2630"
+    classification:
+      type: "cleanup"
+      surface: "cost-and-kernel"
+      scope: "audit-consumption"
+    tests:
+      - "Targeted cost-model tests"
+      - "Targeted compiled-accounting tests"
+      - "rg removed legacy resolver references"
+
+  - id: "LDG-2632"
+    title: "Batch 3 rename and unexport batch"
+    status: "review_pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2629"
+    classification:
+      type: "api-change"
+      surface: "public-exports"
+      scope: "naming-consistency"
+    tests:
+      - "Export-lock tests"
+      - "Documentation-contract tests"
+      - "Old-name rg sweep"
+      - "tools::checkRd()"
+
+  - id: "LDG-2633"
+    title: "Batch 4 candidate generic and walk-forward locator"
+    status: "review_pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2632"
+    classification:
+      type: "api-change"
+      surface: "candidate-extraction"
+      scope: "generic-and-locator"
+    tests:
+      - "Targeted walk-forward candidate tests"
+      - "Reopened-walk-forward locator tests"
+      - "Export-lock tests"
+
+  - id: "LDG-2634"
+    title: "Batch 5 contracts rework and M-4/M-6 hardening"
+    status: "review_pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2632"
+      - "LDG-2633"
+    classification:
+      type: "contract"
+      surface: "contracts-and-hardening"
+      scope: "naming-and-audit"
+    tests:
+      - "Contract-review checklist"
+      - "Targeted M-4 tests"
+      - "Targeted M-6 tests"
+      - "rg old names in contracts.md"
+
+  - id: "LDG-2635"
+    title: "Batch 6 identity contract reference v2"
+    status: "review_pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2633"
+      - "LDG-2634"
+    classification:
+      type: "documentation"
+      surface: "identity-reference"
+      scope: "post-feature-arc-refresh"
+    tests:
+      - "Documentation tests where applicable"
+      - "tools::checkRd()"
+      - "Manual identity-doc review"
+
+  - id: "LDG-2636"
+    title: "Batch 7 vignette splits"
+    status: "review_pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2628"
+      - "LDG-2632"
+    classification:
+      type: "documentation"
+      surface: "vignettes"
+      scope: "split-and-restructure"
+    tests:
+      - "Render affected vignettes"
+      - "Documentation-contract tests"
+      - "pkgdown build by release gate"
+
+  - id: "LDG-2637"
+    title: "Batch 8 new teaching surfaces"
+    status: "review_pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2633"
+      - "LDG-2636"
+    classification:
+      type: "documentation"
+      surface: "teaching"
+      scope: "new-articles"
+    tests:
+      - "Render new articles"
+      - "Run executable chunks where local tooling allows"
+      - "Documentation-contract tests"
+
+  - id: "LDG-2638"
+    title: "Batch 9 maintainer manual articles"
+    status: "review_pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2631"
+      - "LDG-2634"
+      - "LDG-2635"
+    classification:
+      type: "documentation"
+      surface: "maintainer-manual"
+      scope: "implementation-trace"
+    tests:
+      - "Manual link check"
+      - "Manual qmd/md inspection or render"
+
+  - id: "LDG-2639"
+    title: "Batch 10 internal performance and decisions narrative"
+    status: "review_pending"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2638"
+    classification:
+      type: "documentation"
+      surface: "internal-narrative"
+      scope: "decision-discoverability"
+    tests:
+      - "Design-index review"
+      - "RFC-index review"
+      - "rg stale packet-status references"
+
+  - id: "LDG-2640"
+    title: "Batch 11 release surfaces and roadmap audit"
+    status: "review_pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2636"
+      - "LDG-2637"
+      - "LDG-2638"
+      - "LDG-2639"
+      - "LDG-2642"
+      - "LDG-2643"
+      - "LDG-2644"
+    classification:
+      type: "documentation"
+      surface: "release-surfaces"
+      scope: "closeout-prep"
+    tests:
+      - "Naming rg sweep"
+      - "Documentation-contract tests"
+      - "Manual release-surface review"
+
+  - id: "LDG-2641"
+    title: "Batch 12 v0.1.9.5 release gate"
+    status: "local_gate_complete"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2627"
+      - "LDG-2628"
+      - "LDG-2629"
+      - "LDG-2630"
+      - "LDG-2631"
+      - "LDG-2632"
+      - "LDG-2633"
+      - "LDG-2634"
+      - "LDG-2635"
+      - "LDG-2636"
+      - "LDG-2637"
+      - "LDG-2638"
+      - "LDG-2639"
+      - "LDG-2640"
+      - "LDG-2642"
+      - "LDG-2643"
+      - "LDG-2644"
+    classification:
+      type: "release"
+      surface: "release-gate"
+      scope: "v0.1.9.5"
+    tests:
+      - "Full local tests"
+      - "README cold start"
+      - "R CMD build/check"
+      - "Coverage when applicable"
+      - "pkgdown build"
+      - "Local WSL/Ubuntu gate"
+      - "Branch and main CI"
+
+  - id: "LDG-2642"
+    title: "Batch 8A walk-forward, sweep, and store UX helpers"
+    status: "review_pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2632"
+      - "LDG-2633"
+    classification:
+      type: "feature"
+      surface: "public-api"
+      scope: "ux-helpers"
+    tests:
+      - "Targeted helper tests"
+      - "Export-lock test"
+      - "tools::checkRd()"
+
+  - id: "LDG-2643"
+    title: "Batch 8B vignette stale-fact fixes"
+    status: "review_pending"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2627"
+    classification:
+      type: "documentation"
+      surface: "vignettes"
+      scope: "stale-fixes"
+    tests:
+      - "Documentation-contract tests"
+      - "Render affected vignettes"
+
+  - id: "LDG-2644"
+    title: "Batch 8C vignette editorial cleanups and helper adoption"
+    status: "review_pending"
+    priority: "P2"
+    effort: "L"
+    dependencies:
+      - "LDG-2642"
+      - "LDG-2636"
+    classification:
+      type: "documentation"
+      surface: "vignettes"
+      scope: "editorial-and-adoption"
+    tests:
+      - "Documentation-contract tests"
+      - "Render affected vignettes"
+      - "rg removed boilerplate and design notes"

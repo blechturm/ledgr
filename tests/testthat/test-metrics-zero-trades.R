@@ -19,7 +19,7 @@ testthat::test_that("metrics handle zero-trade backtests", {
   cost_model = ledgr_cost_zero()
   )
 
-  fills <- ledgr:::ledgr_extract_fills(bt)
+  fills <- ledgr:::ledgr_run_fills(bt)
   testthat::expect_equal(nrow(fills), 0L)
   testthat::expect_identical(
     names(fills),

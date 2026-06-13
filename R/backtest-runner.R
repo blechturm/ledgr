@@ -20,7 +20,7 @@
 #'   # snapshot, builds this config, and calls ledgr_backtest_run() internally.
 #'   result <- ledgr_backtest_run(config, run_id = "manual-run")
 #' }
-#' @export
+#' @noRd
 ledgr_backtest_run <- function(config, run_id = NULL, metric_context = NULL) {
   control <- list()
   if (is.list(config) && is.list(config$engine) && is.list(config$engine$control)) {
@@ -96,12 +96,6 @@ ledgr_time_now <- function() {
       return(candidate)
     }
   }
-  if (requireNamespace("microbenchmark", quietly = TRUE)) {
-    candidate <- microbenchmark::get_nanotime()
-    if (length(candidate) == 1L && !is.na(candidate)) {
-      return(candidate)
-    }
-  }
   Sys.time()
 }
 
@@ -120,7 +114,6 @@ ledgr_time_elapsed <- function(start, end) {
     return(as.numeric(delta))
   }
   if (is.numeric(delta)) {
-    if (abs(delta) > 1e3) return(as.numeric(delta) / 1e9)
     return(as.numeric(delta))
   }
   as.numeric(difftime(end, start, units = "secs"))
@@ -848,6 +841,12 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   )$ts_utc
   if (length(pulses) == 0) {
     fail_run("LEDGR_SNAPSHOT_COVERAGE_ERROR: no bars found in snapshot for requested universe/time range.", class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
+  }
+  if (length(pulses) < 2L) {
+    fail_run(
+      "Execution window must contain at least two pulses for next-bar fill semantics.",
+      class = "ledgr_run_window_too_short"
+    )
   }
 
   coverage <- DBI::dbGetQuery(
@@ -1909,8 +1908,8 @@ ledgr_feature_defs_from_config <- function(cfg) {
       next
     }
 
-    if (exists("ledgr_get_indicator", mode = "function")) {
-      ind <- tryCatch(ledgr_get_indicator(id), error = function(e) NULL)
+    if (exists("ledgr_indicator_get", mode = "function")) {
+      ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
       if (inherits(ind, "ledgr_indicator")) {
         current_fingerprint <- ledgr_indicator_fingerprint(ind)
         if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {

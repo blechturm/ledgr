@@ -68,7 +68,7 @@ testthat::test_that("experiment-store APIs reject db_path-first calls", {
 
   testthat::expect_error(
     ledgr_run_list(db_path),
-    "ledgr_snapshot_load",
+    "ledgr_snapshot_open",
     class = "ledgr_snapshot_required"
   )
 })

@@ -36,7 +36,7 @@ strategy code clearer. The map is validated at construction time, and
 Inside a strategy body, \code{ctx$features(instrument_id, feature_map)} returns a
 named numeric vector keyed by the feature-map aliases. The same helper also
 accepts a named character vector such as \code{c(alias = "feature_id")} for
-explicit ad hoc aliasing. Use \code{passed_warmup()} on the returned vector before
+explicit ad hoc aliasing. Use \code{ledgr_passed_warmup()} on the returned vector before
 applying rules that require all mapped values to be finite.
 }
 \section{Articles}{
@@ -64,7 +64,7 @@ strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
     x <- ctx$features(id, features)
-    if (passed_warmup(x) && x[["ret_5"]] > params$min_return) {
+    if (ledgr_passed_warmup(x) && x[["ret_5"]] > params$min_return) {
       targets[id] <- params$qty
     }
   }

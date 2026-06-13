@@ -74,7 +74,7 @@ testthat::test_that("memory output handler preserves full event columns across g
   expected_position_delta <- numeric(n_events)
   expected_meta <- vector("list", n_events)
   for (i in seq_len(n_events)) {
-    fill <- ledgr:::ledgr_fill_next_open(
+    fill <- ledgr_test_next_open_fill(
       desired_qty_delta = i,
       next_bar = list(
         instrument_id = sprintf("inst-%04d", i),
@@ -1055,7 +1055,7 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
       },
       feature_defs = feature_defs,
       runtime_projection = runtime_projection,
-      cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0),
+      cost_resolver = ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0),
       event_seq_start = 1L,
       telemetry = ledgr:::ledgr_sweep_telemetry_env(),
       seed = 123L,
@@ -1166,7 +1166,7 @@ testthat::test_that("prebuilt pulse views do not leak mutation across pulses", {
     static_feature_views = static_feature_views,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
-    cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0),
+    cost_resolver = ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0),
     event_seq_start = 1L,
     telemetry = ledgr:::ledgr_sweep_telemetry_env(),
     seed = 123L,
@@ -1225,7 +1225,7 @@ testthat::test_that("prebuilt pulse view mutation does not leak across candidate
       static_feature_views = static_feature_views,
       feature_defs = feature_defs,
       runtime_projection = runtime_projection,
-      cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(spread_bps = 0, commission_fixed = 0),
+      cost_resolver = ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0),
       event_seq_start = 1L,
       telemetry = ledgr:::ledgr_sweep_telemetry_env(),
       seed = 123L,

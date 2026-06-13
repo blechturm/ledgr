@@ -17,10 +17,24 @@ vignette: >
 #| label: setup
 #| include: false
 
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 options(width = 90)
+options(cli.unicode = FALSE)
+pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
+if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(pkg_root, quiet = TRUE)
+}
 ```
 
-Walk-forward evaluation asks a narrower question than a sweep:
+You ran a sweep and picked the best candidate. Was that a real edge, or the
+luckiest parameter on this slice of history? A sweep selects and scores on the
+same data, so its winner is in-sample evidence. It cannot tell you whether the
+rule generalizes.
+
+Walk-forward evaluation answers the generalization question. It splits time into
+folds, and in each one it selects a candidate on a train window, then tests only
+that candidate on the next, untouched window. The test window is held-out
+evidence: the selection never saw it.
 
 ```text
 for each fold:
@@ -28,79 +42,376 @@ for each fold:
   selected candidate -> test window run -> recorded evidence
 ```
 
-The v1 surface is deliberately procedural. It uses the same `ledgr_sweep()`
-and `ledgr_run()` machinery as the rest of ledgr; it does not add a separate
-execution engine.
+Walk-forward uses the same `ledgr_sweep()` and `ledgr_run()` machinery as the
+rest of ledgr; it does not add a separate execution engine. By the end of this
+article you will run a multi-fold evaluation, read its train-versus-test
+degradation table, and extract a candidate for review.
 
-## Design-only Workflow Sketch
-
-The shape below is design-only. It uses short synthetic windows so the object
-names are visible, not because those windows are statistically meaningful.
-Building a runnable walk-forward example needs a sealed snapshot and multi-fold
-experiment fixture that is too large for this MVP vignette; a later teaching
-release should add an executable compact example.
+## Setup
 
 ```{r}
-#| eval: false
-folds <- ledgr_folds_rolling(
-  start = "2020-01-01",
-  end = "2022-12-31",
-  train_window = "1 year",
-  test_window = "3 months",
-  step = "3 months"
+#| label: prerequisites
+#| message: false
+
+library(ledgr)
+library(dplyr)
+
+data("ledgr_demo_bars", package = "ledgr")
+```
+
+::: {.ledgr-callout .ledgr-callout-note}
+**Running this yourself**
+
+The code writes to a temporary DuckDB store, so the article leaves no project
+files behind. The demo-data window and fold sizes are kept small so the vignette
+runs quickly; they are not a statistical recommendation.
+:::
+
+```{r}
+#| label: data
+
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-12-31"))
+  )
+
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  db_path = tempfile(fileext = ".duckdb"),
+  snapshot_id = "walk_forward_demo"
 )
+```
+
+The experiment is the same kind of object used by `ledgr_run()` and
+`ledgr_sweep()`.
+
+```{r}
+#| label: experiment
+
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
+
+exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = ledgr_demo_sma_crossover_strategy(),
+  features = features,
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
+)
+```
+
+## Folds And The Train/Test Boundary
+
+Folds are calendar-time value objects. They describe train and test scoring
+windows; they do not execute anything by themselves.
+
+```{r}
+#| label: folds
+
+folds <- ledgr_folds_rolling(
+  start = "2019-01-01",
+  end = "2019-07-31",
+  train_window = "3 months",
+  test_window = "1 month",
+  step = "2 months"
+)
+
+folds
+```
+
+Plotting the folds makes the core contract easier to see. The blue train
+window sweeps and scores the grid. At the boundary, ledgr locks one selected
+candidate. The green test window then runs only that candidate.
+
+```{r}
+#| label: fold-timeline
+#| echo: false
+#| fig-width: 9.5
+#| fig-height: 4.8
+#| fig-dpi: 180
+
+fold_windows <- do.call(
+  rbind,
+  lapply(folds, function(fold) {
+    data.frame(
+      fold = paste("Fold", fold$fold_seq),
+      y = as.integer(fold$fold_seq),
+      train_start = as.Date(fold$train_start_utc),
+      boundary = as.Date(fold$test_start_utc),
+      test_end = as.Date(fold$test_end_utc),
+      stringsAsFactors = FALSE
+    )
+  })
+)
+fold_windows$y <- max(fold_windows$y) - fold_windows$y + 1L
+
+timeline_rects <- rbind(
+  data.frame(
+    fold = fold_windows$fold,
+    y = fold_windows$y,
+    phase = "train",
+    xmin = fold_windows$train_start,
+    xmax = fold_windows$boundary,
+    label = "train sweep\nscore grid"
+  ),
+  data.frame(
+    fold = fold_windows$fold,
+    y = fold_windows$y,
+    phase = "test",
+    xmin = fold_windows$boundary,
+    xmax = fold_windows$test_end,
+    label = "test run\nselected only"
+  )
+)
+timeline_rects$xmid <- timeline_rects$xmin +
+  (timeline_rects$xmax - timeline_rects$xmin) / 2
+
+selection_boundaries <- data.frame(
+  y = fold_windows$y,
+  x = fold_windows$boundary,
+  label = c("selection\nlocked", rep("", nrow(fold_windows) - 1L))
+)
+
+ggplot2::ggplot() +
+  ggplot2::geom_rect(
+    data = timeline_rects,
+    ggplot2::aes(
+      xmin = xmin,
+      xmax = xmax,
+      ymin = y - 0.28,
+      ymax = y + 0.28,
+      fill = phase
+    ),
+    color = "white",
+    linewidth = 0.55
+  ) +
+  ggplot2::geom_segment(
+    data = selection_boundaries,
+    ggplot2::aes(x = x, xend = x, y = y - 0.36, yend = y + 0.36),
+    linewidth = 0.65,
+    color = "#1F4E79"
+  ) +
+  ggplot2::geom_text(
+    data = timeline_rects,
+    ggplot2::aes(x = xmid, y = y, label = label),
+    color = "white",
+    fontface = "bold",
+    size = 3.8,
+    lineheight = 0.9
+  ) +
+  ggplot2::geom_text(
+    data = selection_boundaries[selection_boundaries$label != "", ],
+    ggplot2::aes(x = x, y = y - 0.50, label = label),
+    size = 3.2,
+    lineheight = 0.9,
+    color = "#1F4E79"
+  ) +
+  ggplot2::scale_fill_manual(
+    values = c(train = "#4F7FC8", test = "#4F9B63")
+  ) +
+  ggplot2::scale_y_continuous(
+    breaks = fold_windows$y,
+    labels = fold_windows$fold,
+    limits = c(0.35, max(fold_windows$y) + 0.65),
+    expand = c(0, 0)
+  ) +
+  ggplot2::scale_x_date(
+    date_breaks = "1 month",
+    date_labels = "%b",
+    expand = ggplot2::expansion(mult = c(0.015, 0.035))
+  ) +
+  ggplot2::labs(
+    title = "Walk-forward evaluation",
+    subtitle = paste(
+      "Each fold selects on the train window, then tests only",
+      "the selected candidate on the next window."
+    ),
+    x = NULL,
+    y = NULL,
+    caption = paste(
+      "The test window is not another sweep. It runs the candidate",
+      "selected from the immediately preceding train window."
+    )
+  ) +
+  ggplot2::theme_minimal(base_size = 13) +
+  ggplot2::theme(
+    legend.position = "none",
+    panel.grid.major.y = ggplot2::element_blank(),
+    panel.grid.minor = ggplot2::element_blank(),
+    plot.title.position = "plot",
+    plot.title = ggplot2::element_text(face = "bold"),
+    axis.text.y = ggplot2::element_text(face = "bold"),
+    plot.caption = ggplot2::element_text(hjust = 0, color = "#555555"),
+    plot.margin = ggplot2::margin(14, 18, 14, 14)
+  )
+```
+
+## Build The Grid And Run It
+
+Build a small grid. Feature parameters vary the concrete SMA windows. Strategy
+parameters vary the target quantity and threshold.
+
+```{r}
+#| label: grid
+
+feature_grid <- ledgr_feature_grid(
+  fast_n = c(5L, 10L),
+  slow_n = 20L,
+  .filter = fast_n < slow_n
+)
+
+strategy_grid <- ledgr_strategy_grid(
+  qty = 5,
+  threshold = 0
+)
+
+grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
+```
+
+The selection rule is explicit and scalar: ledgr selects one candidate per fold
+from the train-window score rows.
+
+```{r}
+#| label: walk-forward
 
 wf <- ledgr_walk_forward(
   exp,
-  grid = ledgr_param_grid(fast = c(10, 20), slow = c(50, 100)),
+  grid = grid,
   folds = folds,
   selection_rule = ledgr_select_argmax("sharpe_ratio"),
-  seed = 42L
+  seed = 2026L
 )
 
-wf$degradation
-scores <- ledgr_walk_forward_scores(snapshot, wf$session_id)
-candidate <- ledgr_walk_forward_extract_candidate(
-  snapshot,
-  wf$session_id,
-  fold_seq = "latest",
-  selection_rationale = "Manual review accepted the latest completed fold."
-)
-promoted <- ledgr_promote(exp, candidate, run_id = "wf-latest-review")
+wf
 ```
 
-The default print starts with the train-vs-test degradation table. That table is
-the first surface to inspect. It shows the selected train metric beside the
-matching test metric, the absolute and percentage difference, and warning flags
-such as `short_test_window` and `cold_start_distorted`.
-`metric_diff_abs` is `test_metric_value - train_metric_value`, so whether a
+## Read The Degradation Table First
+
+The degradation table is the first surface to inspect. Printing it shows the
+core train-versus-test columns; the full table, including the window ranges and
+percentage change, is one `as_tibble()` away.
+
+```{r}
+#| label: degradation
+
+wf$degradation
+```
+
+`metric_diff_abs` is `test_metric_value - train_metric_value`. Whether a
 positive value means improvement or degradation depends on the selection rule
 direction.
 
-## Caveats
+Short test windows may carry warning flags. Those warnings are not failures;
+they are metadata telling you how to interpret the evidence.
 
-Walk-forward evidence is only as survivorship-safe as the sealed snapshot and universe semantics it evaluates.
+## Extract A Candidate With A Rationale
+
+Use `ledgr_candidate()` to extract the selected candidate for a specific fold.
+Using `"latest"` is allowed only with a rationale.
+
+```{r}
+#| label: candidate
+
+candidate <- ledgr_candidate(
+  wf,
+  fold_seq = "latest",
+  selection_rationale = "Documentation example: inspect the latest completed fold."
+)
+
+candidate$candidate_id
+```
+
+Promotion uses the same candidate object as sweep promotion. In a real research
+project, promote only after you have written down why this fold and candidate
+are being reviewed.
+
+```{r}
+#| label: promotion-sketch
+#| eval: false
+
+promoted <- ledgr_promote(
+  exp,
+  candidate,
+  run_id = "wf_latest_review",
+  note = "Manual review accepted the latest completed fold."
+)
+```
+
+## Reading The Evidence Honestly
+
+A degradation table is easy to over-read. Three things bound what it can tell
+you.
+
+Walk-forward evidence is only as survivorship-safe as the sealed snapshot and
+universe semantics it evaluates.
+
+::: {.ledgr-callout .ledgr-callout-warning}
+**Selection integrity is a separate question**
 
 Reproducibility and selection integrity are orthogonal. Walk-forward records
 what was selected and tested; it does not prove that the search space, metric,
-or selection procedure was statistically sound. v1 scalar scores are not PBO,
-CSCV, CPCV, DSR, benchmark diagnostics, or a multiple-testing correction.
+or selection procedure was statistically sound. Scalar scores are not PBO,
+CSCV, CPCV, DSR, benchmark diagnostics, or a multiple-testing correction. For
+what provenance does and does not prove, see
+`vignette("reproducibility", package = "ledgr")`.
+:::
 
-The default `opening_state_policy = "carry_test_state"` is path-dependent.
-Each completed selected test run may seed the next test opening state, so
-per-fold test metrics are not independent observations. The explicit
+::: {.ledgr-callout .ledgr-callout-warning}
+**Test folds are not independent**
+
+The default `opening_state_policy = "carry_test_state"` is path-dependent. Each
+completed selected test run may seed the next test opening state, so per-fold
+test metrics are not independent observations. The explicit
 `opening_state_policy = "flat_test_state"` opt-in starts every test window from
 the original experiment opening state and marks the result as
 `cold_start_distorted`.
+:::
 
 Anchored folds grow their train window over time. That is useful for some
 research workflows, but later folds can cost more to compute than early folds,
 especially with large candidate grids and wide feature sets.
 
-## Non-Scope
+## Try It
 
-This MVP does not implement paper/live walk-forward, OMS behavior,
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
+
+Re-run `ledgr_walk_forward()` with `opening_state_policy = "flat_test_state"`.
+How does the degradation table change, and why does `cold_start_distorted`
+appear? Then widen the `test_window` in `ledgr_folds_rolling()` to `"2 months"`
+and re-run. Do the short-test-window warning flags go away?
+:::
+
+## What This Does Not Do
+
+::: {.ledgr-callout .ledgr-callout-important}
+**Outside this surface**
+
+ledgr does not yet implement paper/live walk-forward, OMS behavior,
 cross-snapshot walk-forward, benchmark-relative metrics, gross-vs-net
 attribution, signal decay, implementation/cost decay, or selection-integrity
 diagnostics. Those require later surfaces over the stable session and candidate
 identity introduced here.
+:::
+
+## Where Next
+
+- For the sweep and selection mechanics this builds on, see
+  `vignette("sweeps", package = "ledgr")`.
+- For the full research arc from idea to reviewed candidate, see
+  `vignette("research-workflow", package = "ledgr")`.
+- For hashes, source capture, and the limits of provenance, see
+  `vignette("reproducibility", package = "ledgr")`.
+- For the Sharpe ratio and annualization conventions behind these scores, see
+  `vignette("metric-contexts-and-conventions", package = "ledgr")`.
+
+```{r}
+#| label: cleanup
+#| include: false
+
+invisible(lapply(wf$test_runs, close))
+ledgr_snapshot_close(snapshot)
+```

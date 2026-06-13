@@ -85,24 +85,14 @@ job.
 
 ## Sweep Is Exploration
 
-::: {.ledgr-callout .ledgr-callout-note}
-**Definition**
+`ledgr_sweep()` evaluates a declared grid against a `ledgr_experiment()`. The
+result is an exploratory candidate table: it records what each candidate did,
+does not choose a winner, and does not write candidate runs to the experiment
+store.
 
-A sweep is an evaluated candidate table over a declared grid. It is
-exploratory: it returns candidate summaries, does not choose a winner, and does
-not write candidate runs to the experiment store.
-:::
-
-`ledgr_sweep()` evaluates a grid against a `ledgr_experiment()`. It tells you
-what each declared candidate did. It does not decide which candidate matters.
-
-::: {.ledgr-callout .ledgr-callout-note}
-**Definition**
-
-A sweep usually contains many candidates. Each candidate is one row of the
-sweep: resolved feature parameters, strategy parameters, execution seed,
-status, metrics, warnings or errors, and provenance.
-:::
+Each **candidate** is one row of that table: resolved feature parameters,
+strategy parameters, execution seed, status, metrics, warnings or errors, and
+provenance.
 
 That separation is the workflow boundary:
 
@@ -172,7 +162,7 @@ sma_crossover_body <- function(ctx, params) {
   for (id in ctx$universe) {
     values <- ctx$features(id)
     if (
-      passed_warmup(values) &&
+      ledgr_passed_warmup(values) &&
         ((values[["fast"]] / values[["slow"]]) - 1) > params$threshold
     ) {
       targets[id] <- params$qty
@@ -188,19 +178,12 @@ resolved for that candidate. `params$threshold` and `params$qty` come from the
 strategy grid. For the full strategy contract, read
 `vignette("strategy-development", package = "ledgr")`.
 
-::: {.ledgr-callout .ledgr-callout-note}
-**Definition**
-
-An active alias is a stable strategy-facing feature name whose concrete
-indicator can vary by candidate. The strategy reads aliases such as `fast` and
-`slow`; ledgr resolves the concrete SMA windows for each candidate before
-execution.
-:::
-
-The strategy can keep reading `values[["fast"]]` and `values[["slow"]]` even
-when one candidate uses SMA(5) and SMA(20) and another candidate uses SMA(10)
-and SMA(40). The alias is the strategy-facing contract. The concrete feature
-IDs and fingerprints are provenance.
+An **active alias** is a stable strategy-facing feature name whose concrete
+indicator can vary by candidate. The strategy can keep reading
+`values[["fast"]]` and `values[["slow"]]` even when one candidate uses SMA(5)
+and SMA(20) and another candidate uses SMA(10) and SMA(40). The alias is the
+strategy-facing contract. The concrete feature IDs and fingerprints are
+provenance.
 
 Feature parameters vary the knobs exposed by a feature constructor. For
 `ledgr_ind_sma()`, the knob is `n`, the moving-average window. For TTR-backed
@@ -236,18 +219,12 @@ and `values[["slow"]]`. The aliases stay stable across candidates.
 
 ## Build The Candidate Grid
 
-::: {.ledgr-callout .ledgr-callout-note}
-**Definition**
-
-Feature parameters materialize indicators before execution. Strategy parameters
-are passed to `strategy(ctx, params)` during execution. Keeping those namespaces
-separate is what lets a strategy read stable aliases while the sweep varies
-indicator windows.
-:::
-
-Use `ledgr_feature_grid()` for the feature knobs you decided to vary and
-`ledgr_strategy_grid()` for the knobs in your own strategy code. Then cross
-them with `ledgr_grid_cross()`.
+**Feature parameters** materialize indicators before execution. **Strategy
+parameters** are passed to `strategy(ctx, params)` during execution. Keeping
+those namespaces separate is what lets a strategy read stable aliases while the
+sweep varies indicator windows. Use `ledgr_feature_grid()` for feature knobs,
+`ledgr_strategy_grid()` for strategy-code knobs, and `ledgr_grid_cross()` to
+combine them.
 
 ```{r}
 #| label: grids
@@ -477,10 +454,9 @@ Retention does not change execution identity. It changes which derived evidence
 is kept after the same candidate execution.
 
 Saved sweeps persist the same risk identity fields on the parent sweep row and
-candidate rows. The first `ledgr_sweep_save()` against a v0.1.9.2 store performs
-an additive saved-sweep schema migration for `risk_chain_hash` and
-`risk_plan_json`; it does not rewrite candidate results or create committed run
-artifacts.
+candidate rows. Opening an older store may perform an additive saved-sweep
+schema migration for `risk_chain_hash` and `risk_plan_json`; it does not rewrite
+candidate results or create committed run artifacts.
 
 ## What Retained Returns Can And Cannot Validate
 
@@ -555,38 +531,16 @@ the selection rule visible.
 ```{r}
 #| label: inspect-candidates
 
-ranked <- reopened_sweep |>
-  filter(status == "DONE") |>
-  arrange(desc(sharpe_ratio))
-
-top_n <- ranked |>
-  slice_head(n = 5) |>
-  select(
-    candidate_id, candidate_row, status, final_equity, total_return, sharpe_ratio,
-    params, feature_params, execution_seed
-  )
-
-glimpse(top_n)
-
-issues <- reopened_sweep |>
-  filter(status != "DONE") |>
-  select(any_of(c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings"))) |>
-  as_tibble()
-
-issues
+review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
+review$top
+review$issues
+ranked <- review$ranked
 ```
 
-Some columns are list columns. `glimpse()` keeps the table readable while still
-showing that params, feature params, warnings, and provenance remain attached to
-the rows.
-
-::: {.ledgr-callout .ledgr-callout-note}
-**Design note**
-
-This explicit table code keeps the selection rule visible. A future
-sweep-review helper may package this review shape, but it should preserve the
-same explicit selection rule instead of making ranking automatic.
-:::
+`ledgr_sweep_review()` packages the inspection shape while keeping the ranking
+rule explicit in the call. `review$top` is for the candidates you want to read
+closely, `review$issues` is for warnings and failures, and `review$ranked`
+retains the full completed-candidate table for deliberate selection.
 
 ## Promote One Candidate
 
@@ -617,12 +571,10 @@ the selected rule will generalize.
 
 The more candidates you try, the more opportunity you create for sample-specific
 luck to look like skill. If the question is generalization rather than artifact
-reproducibility, use walk-forward evaluation when that layer lands in
-v0.1.9.x.
+reproducibility, use `vignette("walk-forward", package = "ledgr")`.
 
-This is the same selection-bias boundary that the v0.1.8.6 cycle documented
-when it separated structured benchmark evidence from future walk-forward
-validation.
+This is the same selection-bias boundary that separates reproducible sweep
+evidence from walk-forward or later validation-toolkit evidence.
 
 ## Failure Rows And Contract Errors
 
@@ -682,8 +634,8 @@ cost assumptions, run separate experiments or separate sweeps with explicit
 `cost_model` values and compare the resulting evidence.
 
 A future `ledgr_cost_grid()` may make cost assumptions participate in candidate
-identity deliberately. That API is not part of the v1 cost surface, so do not
-expect `ledgr_grid_cross()` to accept cost-model dimensions.
+identity deliberately. That API has not shipped, so do not expect
+`ledgr_grid_cross()` to accept cost-model dimensions.
 
 ## Explicit Non-Goals
 

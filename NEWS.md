@@ -1,3 +1,56 @@
+# ledgr 0.1.9.5
+
+- Consolidated the post-v0.1.9.x public surface after the cost, sweep
+  persistence, target-risk, and walk-forward feature arc. This release is a
+  naming, teaching, contract, and audit-hardening release before the
+  validation-toolkit packet.
+- Renamed and unexported pre-CRAN API names for naming consistency. No
+  compatibility aliases are shipped.
+- Fixed scheduled v0.1.9.4 deep-review findings in runner/results behavior,
+  accounting hardening, compiled spot-FIFO validation, timestamp hashing,
+  lot-close dust handling, and contracts.
+- Refreshed the article set: quickstart, risk-and-cost, walk-forward,
+  strategy-authoring, TTR/adapter indicators, metric-context conventions,
+  experiment-store, and execution-semantics now reflect the renamed API and
+  the v0.1.9.x feature arc.
+- Added maintainer-manual articles for the cost resolver, target-risk layer,
+  and walk-forward machinery, plus an internal performance-arc follow-up for
+  cost/risk/walk-forward measurement questions.
+- Made walk-forward inspection easier to read: `wf$degradation` now prints a
+  curated train-versus-test view (the full table is one `as_tibble()` away), and
+  fold lists print their per-fold train and test windows.
+- Added `ledgr_sweep_review()` for explicit sweep review tables and
+  `ledgr_temp_store()` for disposable `.duckdb` paths used in examples and
+  teaching workflows.
+- Deferred out of v0.1.9.5: validation-toolkit statistics, the standalone
+  debugging article, the Split E vignette split, additional sweep/metric-context
+  splits, lower-value vignette-audit helpers, paired entry/exit trade views,
+  and the promotion-recovery summary helper.
+
+| Old name | New name / disposition |
+| --- | --- |
+| `iso_utc()` | `ledgr_iso_utc()` |
+| `passed_warmup()` | `ledgr_passed_warmup()` |
+| `select_top_n()` | `ledgr_select_top_n()` |
+| `signal_return()` | `ledgr_signal_return()` |
+| `target_rebalance()` | `ledgr_target_rebalance()` |
+| `weight_equal()` | `ledgr_weight_equal()` |
+| `ledgr_clear_feature_cache()` | `ledgr_feature_cache_clear()` |
+| `ledgr_compare_runs()` | `ledgr_run_compare()` |
+| `ledgr_deregister_indicator()` | `ledgr_indicator_remove()` |
+| `ledgr_extract_strategy()` | `ledgr_run_strategy()` |
+| `ledgr_extract_fills()` | `ledgr_run_fills()` |
+| `ledgr_get_indicator()` | `ledgr_indicator_get()` |
+| `ledgr_list_indicators()` | `ledgr_indicator_list()` |
+| `ledgr_register_indicator()` | `ledgr_indicator_register()` |
+| `ledgr_snapshot_load()` | `ledgr_snapshot_open()` |
+| `ledgr_ttr_warmup_rules()` | `ledgr_ind_ttr_warmup_rules()` |
+| `ledgr_walk_forward_results()` | `ledgr_walk_forward_open()` |
+| `ledgr_backtest_run()` | no longer exported |
+| `ledgr_compute_equity_curve()` | no longer exported; use `ledgr_results(bt, "equity")` |
+| `ledgr_create_schema()` | no longer exported |
+| `ledgr_metric_context_resolve()` | no longer exported |
+
 # ledgr 0.1.9.4
 
 - Added the first walk-forward evaluation surface. `ledgr_walk_forward()` runs

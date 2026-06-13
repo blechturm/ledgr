@@ -33,7 +33,7 @@ ledgr_opening <- function(cash,
   date_iso <- NULL
   if (!is.null(date)) {
     date_iso <- tryCatch(
-      iso_utc(date),
+      ledgr_iso_utc(date),
       error = function(e) {
         rlang::abort("`date` must be a parseable timestamp.", class = "ledgr_invalid_opening", parent = e)
       }
@@ -297,7 +297,7 @@ ledgr_experiment <- function(snapshot,
 }
 
 ledgr_experiment_validate_snapshot <- function(snapshot) {
-  opened <- ledgr_snapshot_open(snapshot)
+  opened <- ledgr_snapshot_connection(snapshot)
   if (isTRUE(opened$opened_new)) {
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   }
@@ -312,7 +312,7 @@ ledgr_experiment_validate_snapshot <- function(snapshot) {
 }
 
 ledgr_experiment_snapshot_universe <- function(snapshot) {
-  opened <- ledgr_snapshot_open(snapshot)
+  opened <- ledgr_snapshot_connection(snapshot)
   if (isTRUE(opened$opened_new)) {
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   }

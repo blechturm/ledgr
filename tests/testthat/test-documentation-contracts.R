@@ -55,7 +55,7 @@ testthat::test_that("README and package docs use the package-visible logo asset"
 })
 
 testthat::test_that("strategy docs show feature ID discovery before feature lookup", {
-  strategy_doc <- readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE)
+  strategy_doc <- readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE)
   indicators_doc <- readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE)
 
   first_strategy_feature_id <- grep("ledgr_feature_id", strategy_doc)[[1]]
@@ -69,24 +69,26 @@ testthat::test_that("strategy docs show feature ID discovery before feature look
 
 testthat::test_that("indicator docs include compact multi-output ID references", {
   indicators_doc <- paste(readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE), collapse = "\n")
+  ttr_doc <- paste(readLines(ledgr_test_source_vignette("ttr-and-adapter-indicators.qmd"), warn = FALSE), collapse = "\n")
+  indicator_docs <- paste(indicators_doc, ttr_doc, sep = "\n")
   ttr_help <- paste(readLines(testthat::test_path("..", "..", "man", "ledgr_ind_ttr.Rd"), warn = FALSE), collapse = "\n")
 
-  testthat::expect_match(indicators_doc, "ttr_bbands_20_up", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "The MACD ID embeds the explicit arguments", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "built-in ledgr indicators, TTR-backed indicators")
-  testthat::expect_match(indicators_doc, "SMA crossover", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "fast trend above slow trend", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "sma_fast", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "sma_slow", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "RSI is a common mean-reversion input", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "rsi_exp <- ledgr_experiment", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "rsi_bt <- ledgr_run", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "mixed feature map combines a built-in return feature", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "return_5", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Native RSI", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "ledgr_ind_rsi\\(14\\)")
-  testthat::expect_match(indicators_doc, "rsi_14", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "ttr_rsi_14", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "ttr_bbands_20_up", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "The MACD ID embeds the explicit arguments", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "built-in ledgr indicators, TTR-backed indicators")
+  testthat::expect_match(indicator_docs, "SMA crossover", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "fast trend above slow trend", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "sma_fast", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "sma_slow", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "RSI is a common mean-reversion input", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "rsi_exp <- ledgr_experiment", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "rsi_bt <- ledgr_run", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "mixed feature map combines a built-in return feature", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "return_5", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Native RSI", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "ledgr_ind_rsi\\(14\\)")
+  testthat::expect_match(indicator_docs, "rsi_14", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "ttr_rsi_14", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Feature objects appear in three registration and inspection places", fixed = TRUE)
   testthat::expect_match(indicators_doc, "The strategy context then exposes the computed values through accessors", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Feature Lifecycle: From Declaration To Lookup", fixed = TRUE)
@@ -95,25 +97,26 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "declaration. Static lists and feature maps", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Active-alias features are materialized for concrete", fixed = TRUE)
   testthat::expect_match(indicators_doc, "deduplicates shared indicator\\s+fingerprints")
-  testthat::expect_match(indicators_doc, "Feature IDs identify values inside the pulse context", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Fingerprints identify the\\s+feature definition")
+  testthat::expect_match(indicators_doc, "Feature IDs\\s+identify values inside the pulse context")
+  testthat::expect_match(indicators_doc, "A \\*\\*fingerprint\\*\\* identifies the feature definition")
+  testthat::expect_no_match(indicators_doc, "\\*\\*Definition\\*\\*")
   testthat::expect_match(indicators_doc, "output-specific fingerprint", fixed = TRUE)
   testthat::expect_match(indicators_doc, "A feature-map alias never changes\\s+the underlying engine feature ID")
-  testthat::expect_match(indicators_doc, "The multi-output bundle helper follows the same lifecycle", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "A bundle is an authoring convenience", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "ledgr_ind_ttr_outputs", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "bbands_dn", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "bbands_pctb", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "shorter than the hand-written single-output TTR IDs", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "naming = c\\(up = \"ttr_bbands_20_up\"\\)")
-  testthat::expect_match(indicators_doc, "prefix = NULL", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Raw names are short and can collide", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "A single alias on the bundle argument is ignored", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Control the generated feature IDs\\s+with the bundle's `prefix` argument")
-  testthat::expect_match(indicators_doc, "`naming` renames selected outputs; it is not itself an output filter", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "multi-output bundle helper follows the same\\s+lifecycle")
+  testthat::expect_match(indicator_docs, "A \\*\\*bundle\\*\\* is an authoring convenience")
+  testthat::expect_match(indicator_docs, "ledgr_ind_ttr_outputs", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "bbands_dn", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "bbands_pctb", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "shorter than the hand-written single-output TTR IDs", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "naming = c\\(up = \"ttr_bbands_20_up\"\\)")
+  testthat::expect_match(indicator_docs, "prefix = NULL", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Raw names are short and can collide", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "A single alias on the bundle argument is ignored", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Control the generated feature IDs\\s+with the bundle's `prefix` argument")
+  testthat::expect_match(indicator_docs, "`naming` renames selected outputs; it is not itself an output filter", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ctx\\$feature\\(id, feature_id\\)")
   testthat::expect_match(indicators_doc, "ctx\\$features\\(id, feature_map\\)")
-  testthat::expect_match(indicators_doc, "ledgr computes indicators into\\s+pulse-known values")
+  testthat::expect_match(indicators_doc, "ledgr computes indicators\\s+into pulse-known values")
   testthat::expect_match(indicators_doc, "ledgr_feature_contracts", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_contract_check", fixed = TRUE)
   testthat::expect_match(indicators_doc, "warmup_achievable", fixed = TRUE)
@@ -133,19 +136,21 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ledgr_feature_grid", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_strategy_grid", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Bundle entries are intentionally flat", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "TTR bundle section below", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "vignette(\"ttr-and-adapter-indicators\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_no_match(indicators_doc, "feature factories", ignore.case = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__ohlcv_{field}", fixed = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__feature_{feature_id}", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "install.packages\\(\"TTR\"\\)")
-  testthat::expect_match(indicators_doc, "choose a timestamp late enough for the indicator warmup", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "same TTR feature map to `ledgr_pulse_snapshot()`", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Troubleshoot Warmup And Zero Trades", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Warmup is the period before a known feature", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Change the scalar accessor", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "available bars are below the feature contract", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "`summary(bt)` prints `Warmup Diagnostics`", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Impossible warmup is different", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "install.packages\\(\"TTR\"\\)")
+  testthat::expect_match(indicator_docs, "choose a timestamp late enough for the indicator warmup", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "same TTR feature map to `ledgr_pulse_snapshot()`", fixed = TRUE)
+  testthat::expect_no_match(ttr_doc, "dplyr::filter", fixed = TRUE)
+  testthat::expect_no_match(ttr_doc, "dplyr::between", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Troubleshoot Warmup And Zero Trades", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "\\*\\*Warmup\\*\\* is the period before a known feature")
+  testthat::expect_match(indicator_docs, "Change the scalar accessor", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "available bars are below the feature contract", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "`summary(bt)` prints `Warmup Diagnostics`", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Impossible warmup is different", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{BBands} exposes \\code{dn}, \\code{mavg}, \\code{up}, and", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{pctB}", fixed = TRUE)
   testthat::expect_match(ttr_help, "ledgr_ind_ttr_outputs", fixed = TRUE)
@@ -160,13 +165,15 @@ testthat::test_that("indicator docs include compact multi-output ID references",
 })
 
 testthat::test_that("helper docs state composition and whole-share target flooring", {
-  strategy_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE), collapse = "\n")
+  strategy_development_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE), collapse = "\n")
+  strategy_authoring_doc <- paste(readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE), collapse = "\n")
+  strategy_doc <- paste(strategy_development_doc, strategy_authoring_doc, sep = "\n")
   root <- testthat::test_path("..", "..")
-  target_help <- paste(readLines(file.path(root, "man", "target_rebalance.Rd"), warn = FALSE), collapse = "\n")
+  target_help <- paste(readLines(file.path(root, "man", "ledgr_target_rebalance.Rd"), warn = FALSE), collapse = "\n")
   signal_strategy_help <- paste(readLines(file.path(root, "man", "ledgr_signal_strategy.Rd"), warn = FALSE), collapse = "\n")
-  signal_help <- paste(readLines(file.path(root, "man", "signal_return.Rd"), warn = FALSE), collapse = "\n")
-  select_help <- paste(readLines(file.path(root, "man", "select_top_n.Rd"), warn = FALSE), collapse = "\n")
-  target_rebalance_help <- paste(readLines(file.path(root, "man", "target_rebalance.Rd"), warn = FALSE), collapse = "\n")
+  signal_help <- paste(readLines(file.path(root, "man", "ledgr_signal_return.Rd"), warn = FALSE), collapse = "\n")
+  select_help <- paste(readLines(file.path(root, "man", "ledgr_select_top_n.Rd"), warn = FALSE), collapse = "\n")
+  target_rebalance_help <- paste(readLines(file.path(root, "man", "ledgr_target_rebalance.Rd"), warn = FALSE), collapse = "\n")
   selection_type_help <- paste(readLines(file.path(root, "man", "ledgr_selection.Rd"), warn = FALSE), collapse = "\n")
   context_help <- paste(readLines(file.path(root, "man", "ledgr_strategy_context.Rd"), warn = FALSE), collapse = "\n")
 
@@ -181,6 +188,8 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(strategy_doc, "No warning suppression is needed", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Troubleshoot Helper Pipelines", fixed = TRUE)
   testthat::expect_match(strategy_doc, "signal --> selection --> weights --> target_obj --> target_vec", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "vignette\\(\"data-input-and-snapshots\",\\s+package = \"ledgr\"\\)")
+  testthat::expect_no_match(strategy_development_doc, "\\*\\*Definition\\*\\*")
   testthat::expect_match(strategy_doc, "Only the final target vector is executable", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Returning\\s+a `ledgr_signal`, `ledgr_selection`, `ledgr_weights`")
   testthat::expect_match(strategy_doc, "zero fills or zero trades", fixed = TRUE)
@@ -208,7 +217,7 @@ testthat::test_that("helper docs state composition and whole-share target floori
   testthat::expect_match(signal_strategy_help, "\\verb{function(ctx, params)}", fixed = TRUE)
   testthat::expect_match(signal_strategy_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(signal_help, "\\examples{", fixed = TRUE)
-  testthat::expect_match(signal_help, "signal_return(ctx, lookback = 5)", fixed = TRUE)
+  testthat::expect_match(signal_help, "ledgr_signal_return(ctx, lookback = 5)", fixed = TRUE)
   testthat::expect_match(signal_help, "register every concrete \\verb{return_<lookback>} feature before", fixed = TRUE)
   testthat::expect_match(signal_help, "\\code{ledgr_ind_returns(5)}", fixed = TRUE)
   testthat::expect_match(select_help, "\\code{ledgr_empty_selection}", fixed = TRUE)
@@ -229,24 +238,27 @@ testthat::test_that("helper docs state composition and whole-share target floori
 })
 
 testthat::test_that("feature-map docs preserve teaching order and semantic boundaries", {
-  strategy_lines <- readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE)
-  strategy_doc <- paste(strategy_lines, collapse = "\n")
+  strategy_lines <- readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE)
+  strategy_doc <- paste(c(
+    readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE),
+    strategy_lines
+  ), collapse = "\n")
   indicators_doc <- paste(readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
   feature_map_help <- paste(readLines(file.path(root, "man", "ledgr_feature_map.Rd"), warn = FALSE), collapse = "\n")
-  warmup_help <- paste(readLines(file.path(root, "man", "passed_warmup.Rd"), warn = FALSE), collapse = "\n")
+  warmup_help <- paste(readLines(file.path(root, "man", "ledgr_passed_warmup.Rd"), warn = FALSE), collapse = "\n")
 
   first_scalar_lookup <- grep("ctx\\$feature\\(", strategy_lines)[[1]]
   first_feature_map <- grep("ledgr_feature_map", strategy_lines)[[1]]
   testthat::expect_lt(first_scalar_lookup, first_feature_map)
 
   testthat::expect_match(strategy_doc, "Feature Maps For Readable Feature Access", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "A target vector is the strategy's requested holdings", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "`ctx` is the pulse context", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "A \\*\\*target vector\\*\\* is the strategy's requested holdings")
+  testthat::expect_match(strategy_doc, "`ctx` is the \\*\\*pulse context\\*\\*")
   testthat::expect_match(strategy_doc, "pulse t state<br/>bars through t", fixed = TRUE)
   testthat::expect_match(strategy_doc, "strategy\\(ctx, params\\)")
   testthat::expect_match(strategy_doc, "Change `buy_if_up\\(\\)`")
-  testthat::expect_match(strategy_doc, "`params` is the run's strategy configuration", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "`params` is the run's \\*\\*strategy configuration\\*\\*")
   testthat::expect_match(strategy_doc, "Wrong And Right: Leakage", fixed = TRUE)
   testthat::expect_match(strategy_doc, "tomorrow_close = lead\\(close\\)")
   testthat::expect_match(strategy_doc, "market-data table from which it can\\s+casually index tomorrow's bar")
@@ -263,7 +275,7 @@ testthat::test_that("feature-map docs preserve teaching order and semantic bound
   testthat::expect_match(strategy_doc, "recovered strategy source may still\\s+reference the original alias-map object by name")
   testthat::expect_match(strategy_doc, "read\\s+`vignette\\(\"reproducibility\", package = \"ledgr\"\\)`")
   testthat::expect_match(strategy_doc, "?ledgr_feature_map", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "?passed_warmup", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "?ledgr_passed_warmup", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Debug One Pulse Before Running", fixed = TRUE)
   testthat::expect_match(strategy_doc, "ledgr_pulse_wide(pulse)", fixed = TRUE)
   testthat::expect_match(strategy_doc, "glimpse()", fixed = TRUE)
@@ -278,7 +290,7 @@ testthat::test_that("feature-map docs preserve teaching order and semantic bound
   testthat::expect_match(feature_map_help, "Plain lists remain valid", fixed = TRUE)
   testthat::expect_match(feature_map_help, "keyed by alias", fixed = TRUE)
   testthat::expect_match(feature_map_help, "ctx$features", fixed = TRUE)
-  testthat::expect_match(feature_map_help, "passed_warmup", fixed = TRUE)
+  testthat::expect_match(feature_map_help, "ledgr_passed_warmup", fixed = TRUE)
   testthat::expect_match(feature_map_help, "x[[\"ret_5\"]]", fixed = TRUE)
   testthat::expect_match(warmup_help, "not a signal pipeline transformation", fixed = TRUE)
   testthat::expect_match(warmup_help, "ledgr_empty_warmup_input", fixed = TRUE)
@@ -390,7 +402,7 @@ testthat::test_that("pkgdown reference lists v0.1.7.4 helper exports", {
 
   for (fn in c(
     "ledgr_feature_map",
-    "passed_warmup",
+    "ledgr_passed_warmup",
     "ledgr_feature_contracts",
     "ledgr_pulse_features",
     "ledgr_pulse_wide"
@@ -449,19 +461,23 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
   testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_4_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Active packet:** v0.1.9.5 documentation, teaching, contracts audit", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.4 | Done | Walk-forward", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.5 | Active | Documentation", fixed = TRUE)
 
   testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.4`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** None; v0.1.9.5 is the next planned packet", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** `v0.1.9.5`", fixed = TRUE)
+  testthat::expect_match(design_index, "ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.2 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0_1_9_2_release_closeout.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.4 walk-forward packet is complete", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.1.9.5 packet is active", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -638,7 +654,7 @@ testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
   testthat::expect_match(text, "must fail loudly rather than mutate user rows", fixed = TRUE)
   testthat::expect_match(text, "labels, archives, and tags promise\\s+immediate fresh-connection visibility")
   testthat::expect_match(text, "Best-effort checkpointing is reserved for cleanup paths", fixed = TRUE)
-  testthat::expect_match(text, "create/import/seal followed by `ledgr_snapshot_load\\(verify = TRUE\\)`")
+  testthat::expect_match(text, "create/import/seal followed by `ledgr_snapshot_open\\(verify = TRUE\\)`")
 })
 
 testthat::test_that("contracts record v0.1.7.7 risk metric boundary", {
@@ -680,9 +696,9 @@ testthat::test_that("contracts record strategy preflight boundary", {
   testthat::expect_match(text, "Sys.getenv()", fixed = TRUE)
   testthat::expect_match(text, "fail before `ledgr_run()` or `ledgr_sweep()` creates execution artifacts", fixed = TRUE)
   testthat::expect_match(text, "Ledgr's exported public namespace is Tier 1-compatible", fixed = TRUE)
-  testthat::expect_match(text, "signal_return()", fixed = TRUE)
-  testthat::expect_match(text, "select_top_n()", fixed = TRUE)
-  testthat::expect_match(text, "passed_warmup()", fixed = TRUE)
+  testthat::expect_match(text, "ledgr_signal_return()", fixed = TRUE)
+  testthat::expect_match(text, "ledgr_select_top_n()", fixed = TRUE)
+  testthat::expect_match(text, "ledgr_passed_warmup()", fixed = TRUE)
   testthat::expect_match(text, "Static analysis is not a proof of semantic reproducibility", fixed = TRUE)
   testthat::expect_match(text, "codetools::findGlobals()", fixed = TRUE)
   testthat::expect_match(text, "closures that mutate captured", fixed = TRUE)
@@ -777,7 +793,10 @@ testthat::test_that("auditr harness discovery bug is recorded externally", {
 })
 
 testthat::test_that("metrics and accounting docs define public result semantics", {
-  metrics_doc <- paste(readLines(ledgr_test_source_vignette("metrics-and-accounting.qmd"), warn = FALSE), collapse = "\n")
+  metrics_doc <- paste(c(
+    readLines(ledgr_test_source_vignette("metrics-and-accounting.qmd"), warn = FALSE),
+    readLines(ledgr_test_source_vignette("metric-contexts-and-conventions.qmd"), warn = FALSE)
+  ), collapse = "\n")
   root <- testthat::test_path("..", "..")
   backtest_help <- paste(readLines(file.path(root, "man", "ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
   experiment_help <- paste(readLines(file.path(root, "man", "ledgr_experiment.Rd"), warn = FALSE), collapse = "\n")
@@ -814,9 +833,9 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "Inspection Surfaces", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Use the narrowest inspection surface", fixed = TRUE)
   testthat::expect_match(metrics_doc, "append-only accounting record", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "A ledger event is the append-only accounting record", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "A fill is an execution row", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "An equity row values the portfolio", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "A \\*\\*ledger event\\*\\* is the append-only accounting record")
+  testthat::expect_match(metrics_doc, "A \\*\\*fill\\*\\* is an execution row")
+  testthat::expect_match(metrics_doc, "An \\*\\*equity row\\*\\* values the portfolio")
   testthat::expect_match(metrics_doc, "what = \"metrics\"", fixed = TRUE)
   testthat::expect_match(metrics_doc, "There is no `what = \"metrics\"` result table", fixed = TRUE)
   testthat::expect_match(metrics_doc, "There is no committed `ledgr_results(bt, what = \"features\")`", fixed = TRUE)
@@ -890,7 +909,7 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(compute_help, "metric context stored with the run", fixed = TRUE)
   testthat::expect_match(compute_help, "Supply either", fixed = TRUE)
   testthat::expect_match(compute_help, "\\code{metric_context} or \\code{risk_free_rate}, not both.", fixed = TRUE)
-  compare_help <- paste(readLines(file.path(root, "man", "ledgr_compare_runs.Rd"), warn = FALSE), collapse = "\n")
+  compare_help <- paste(readLines(file.path(root, "man", "ledgr_run_compare.Rd"), warn = FALSE), collapse = "\n")
   testthat::expect_match(compare_help, "raw numeric values for ranking", fixed = TRUE)
   testthat::expect_match(compare_help, "formatted percentages are a print-only concern", fixed = TRUE)
   testthat::expect_match(compare_help, "metric_context", fixed = TRUE)
@@ -914,7 +933,7 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "distinguish zero signals from zero sizing", fixed = TRUE)
   testthat::expect_match(metrics_doc, "required fill fields", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Use `ledgr_compute_metrics\\(\\)` for scripted")
-  testthat::expect_match(metrics_doc, "`ledgr_compare_runs()` is also programmatic", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "`ledgr_run_compare()` is also programmatic", fixed = TRUE)
 })
 
 testthat::test_that("cost API help pages contain runnable reference examples", {
@@ -973,25 +992,36 @@ testthat::test_that("public site polish avoids stale public artifacts", {
 
   start_here <- regexpr("  - title: Start Here", pkgdown_text, fixed = TRUE)
   core_workflow <- regexpr("  - title: Core Workflow", pkgdown_text, fixed = TRUE)
+  going_deeper <- regexpr("  - title: Going Deeper", pkgdown_text, fixed = TRUE)
   design <- regexpr("  - title: Design / Background", pkgdown_text, fixed = TRUE)
   testthat::expect_gt(start_here[[1]], 0)
   testthat::expect_gt(core_workflow[[1]], start_here[[1]])
-  testthat::expect_gt(design[[1]], core_workflow[[1]])
+  testthat::expect_gt(going_deeper[[1]], core_workflow[[1]])
+  testthat::expect_gt(design[[1]], going_deeper[[1]])
 
   start_block <- substr(pkgdown_text, start_here[[1]], core_workflow[[1]] - 1L)
   testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
+  testthat::expect_match(start_block, "- quickstart", fixed = TRUE)
   testthat::expect_match(start_block, "- research-workflow", fixed = TRUE)
   testthat::expect_match(start_block, "- leakage", fixed = TRUE)
   testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
 
-  core_block <- substr(pkgdown_text, core_workflow[[1]], design[[1]] - 1L)
+  core_block <- substr(pkgdown_text, core_workflow[[1]], going_deeper[[1]] - 1L)
+  testthat::expect_match(core_block, "- data-input-and-snapshots", fixed = TRUE)
   testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
   testthat::expect_match(core_block, "- indicators", fixed = TRUE)
-  testthat::expect_match(core_block, "- custom-indicators", fixed = TRUE)
-  testthat::expect_match(core_block, "- execution-semantics", fixed = TRUE)
   testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
+  testthat::expect_match(core_block, "- risk-and-cost", fixed = TRUE)
   testthat::expect_match(core_block, "- experiment-store", fixed = TRUE)
   testthat::expect_match(core_block, "- sweeps", fixed = TRUE)
+  testthat::expect_match(core_block, "- walk-forward", fixed = TRUE)
+
+  deeper_block <- substr(pkgdown_text, going_deeper[[1]], design[[1]] - 1L)
+  testthat::expect_match(deeper_block, "- strategy-authoring-tools", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- ttr-and-adapter-indicators", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- custom-indicators", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- metric-contexts-and-conventions", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- execution-semantics", fixed = TRUE)
 
   testthat::expect_no_match(text, "C:\\Users", fixed = TRUE)
   testthat::expect_no_match(text, "custom-indicators.md", fixed = TRUE)
@@ -1013,7 +1043,23 @@ testthat::test_that("package help exposes an installed-documentation spine", {
 
   testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
-  for (article in c("research-workflow", "strategy-development", "metrics-and-accounting", "execution-semantics", "experiment-store", "sweeps", "indicators", "custom-indicators")) {
+  for (article in c(
+    "quickstart",
+    "research-workflow",
+    "data-input-and-snapshots",
+    "strategy-development",
+    "strategy-authoring-tools",
+    "indicators",
+    "ttr-and-adapter-indicators",
+    "custom-indicators",
+    "metrics-and-accounting",
+    "risk-and-cost",
+    "metric-contexts-and-conventions",
+    "execution-semantics",
+    "experiment-store",
+    "sweeps",
+    "walk-forward"
+  )) {
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
@@ -1040,14 +1086,14 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_run_info = "sweeps",
     ledgr_strategy_context = c("strategy-development", "indicators"),
     ledgr_results = "metrics-and-accounting",
-    ledgr_compare_runs = c("experiment-store", "metrics-and-accounting"),
+    ledgr_run_compare = c("experiment-store", "metrics-and-accounting"),
     ledgr_snapshot_from_df = "experiment-store",
     ledgr_snapshot_from_csv = "experiment-store",
     ledgr_snapshot_from_yahoo = "experiment-store",
     ledgr_snapshot_create = "experiment-store",
     ledgr_snapshot_import_bars_csv = "experiment-store",
     ledgr_snapshot_seal = "experiment-store",
-    ledgr_snapshot_load = "experiment-store",
+    ledgr_snapshot_open = "experiment-store",
     ledgr_snapshot_info = "experiment-store",
     ledgr_feature_id = "indicators",
     ledgr_feature_contracts = "indicators",
@@ -1067,12 +1113,12 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_selection = "strategy-development",
     ledgr_weights = "strategy-development",
     ledgr_target = "strategy-development",
-    signal_return = "strategy-development",
-    select_top_n = "strategy-development",
-    weight_equal = "strategy-development",
-    target_rebalance = "strategy-development",
+    ledgr_signal_return = "strategy-development",
+    ledgr_select_top_n = "strategy-development",
+    ledgr_weight_equal = "strategy-development",
+    ledgr_target_rebalance = "strategy-development",
     ledgr_feature_map = c("strategy-development", "indicators"),
-    passed_warmup = c("strategy-development", "indicators"),
+    ledgr_passed_warmup = c("strategy-development", "indicators"),
     ledgr_strategy_preflight = "reproducibility"
   )
   expected$ledgr_calendar <- "metrics-and-accounting"
@@ -1129,10 +1175,10 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
 
   testthat::expect_match(doc, "Sweep Is Exploration", fixed = TRUE)
   testthat::expect_match(doc, "does not choose a winner", fixed = TRUE)
-  testthat::expect_match(doc, "A sweep is an evaluated candidate table over a declared grid", fixed = TRUE)
-  testthat::expect_match(doc, "A sweep usually contains many candidates", fixed = TRUE)
+  testthat::expect_match(doc, "`ledgr_sweep\\(\\)` evaluates a declared grid against a `ledgr_experiment\\(\\)`")
+  testthat::expect_match(doc, "Each \\*\\*candidate\\*\\* is one row of that table")
   testthat::expect_match(doc, "Declare Parameterized Features", fixed = TRUE)
-  testthat::expect_match(doc, "An active alias is a stable strategy-facing feature name", fixed = TRUE)
+  testthat::expect_match(doc, "An \\*\\*active alias\\*\\* is a stable strategy-facing feature name")
   testthat::expect_match(doc, "Feature parameters vary the knobs exposed by a feature constructor", fixed = TRUE)
   testthat::expect_match(doc, "Only knobs declared with `ledgr_param\\(\"name\"\\)` need values in the feature grid")
   testthat::expect_match(doc, "Concrete arguments stay fixed", fixed = TRUE)
@@ -1142,9 +1188,10 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "params\\$threshold")
   testthat::expect_match(doc, "The aliases stay stable across candidates", fixed = TRUE)
   testthat::expect_match(doc, "Build The Candidate Grid", fixed = TRUE)
-  testthat::expect_match(doc, "Feature parameters materialize indicators before execution", fixed = TRUE)
-  testthat::expect_match(doc, "Strategy parameters\\s+are passed to `strategy\\(ctx, params\\)`")
-  testthat::expect_match(doc, "knobs in your own strategy code", fixed = TRUE)
+  testthat::expect_match(doc, "\\*\\*Feature parameters\\*\\* materialize indicators before execution")
+  testthat::expect_match(doc, "\\*\\*Strategy\\s+parameters\\*\\* are passed to `strategy\\(ctx, params\\)`")
+  testthat::expect_match(doc, "Use `ledgr_feature_grid()` for feature knobs", fixed = TRUE)
+  testthat::expect_match(doc, "`ledgr_strategy_grid()` for strategy-code knobs", fixed = TRUE)
   testthat::expect_match(doc, "The `.filter` expression is a structural grid constraint", fixed = TRUE)
   testthat::expect_match(doc, "Mind the combinatorial explosion", fixed = TRUE)
   testthat::expect_match(doc, "more than 20 combinations", fixed = TRUE)
@@ -1164,10 +1211,11 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "Promote One Candidate", fixed = TRUE)
   testthat::expect_match(doc, "Promotion replays one selected candidate", fixed = TRUE)
   testthat::expect_match(doc, "What A Sweep Does Not Prove", fixed = TRUE)
-  testthat::expect_match(doc, "when that layer lands in\\s+v0.1.9.x")
-  testthat::expect_match(doc, "Design note", fixed = TRUE)
-  testthat::expect_match(doc, "v0.1.8.6 cycle", fixed = TRUE)
-  testthat::expect_match(doc, "sweep-review helper", fixed = TRUE)
+  testthat::expect_match(doc, "vignette\\(\"walk-forward\", package = \"ledgr\"\\)")
+  testthat::expect_no_match(doc, "when that layer lands in\\s+v0.1.9.x")
+  testthat::expect_no_match(doc, "Design note", fixed = TRUE)
+  testthat::expect_no_match(doc, "v0.1.8.6 cycle", fixed = TRUE)
+  testthat::expect_no_match(doc, "future sweep-review helper", fixed = TRUE)
   testthat::expect_match(doc, "Try it", fixed = TRUE)
   testthat::expect_match(doc, "This debug example uses no features", fixed = TRUE)
   testthat::expect_match(doc, "```{mermaid}", fixed = TRUE)
@@ -1175,7 +1223,8 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "strategy reads<br/>fast and slow", fixed = TRUE)
   testthat::expect_match(doc, "execution-semantics", fixed = TRUE)
   testthat::expect_match(doc, "candidate summaries", fixed = TRUE)
-  testthat::expect_match(doc, "glimpse(top_n)", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)", fixed = TRUE)
+  testthat::expect_no_match(doc, "glimpse(top_n)", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_tune()", fixed = TRUE)
   testthat::expect_match(doc, "parallel sweep execution", fixed = TRUE)
   testthat::expect_match(doc, "walk-forward, PBO, or CSCV", fixed = TRUE)
@@ -1185,7 +1234,8 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(doc, "Cost Models Are Fixed Inputs", fixed = TRUE)
   testthat::expect_match(doc, "does not\\s+compose cost models as another grid dimension")
   testthat::expect_match(doc, "A future `ledgr_cost_grid()`", fixed = TRUE)
-  testthat::expect_match(doc, "not part of the v1 cost surface", fixed = TRUE)
+  testthat::expect_no_match(doc, "not part of the v1 cost surface", fixed = TRUE)
+  testthat::expect_no_match(doc, "v0.1.9.2 store", fixed = TRUE)
   testthat::expect_match(doc, "cost-grid composition such as `ledgr_cost_grid()`", fixed = TRUE)
   testthat::expect_no_match(doc, "public cost-model factories;", fixed = TRUE)
 
@@ -1230,18 +1280,18 @@ testthat::test_that("execution semantics article pins target and fill timing con
   doc <- paste(readLines(ledgr_test_source_vignette("execution-semantics.qmd"), warn = FALSE), collapse = "\n")
   pkgdown <- paste(readLines(file.path(testthat::test_path("..", ".."), "_pkgdown.yml"), warn = FALSE), collapse = "\n")
 
+  testthat::expect_match(doc, "How Targets Become Fills", fixed = TRUE)
+  testthat::expect_match(doc, "The Lie A Backtest Can Tell You", fixed = TRUE)
+  testthat::expect_match(doc, "signature of\\s+lookahead")
   testthat::expect_match(doc, "Targets Are Holdings", fixed = TRUE)
   testthat::expect_match(doc, "not \"buy 10 units every bar", fixed = TRUE)
-  testthat::expect_match(doc, "Next-Open Fill Timing", fixed = TRUE)
-  testthat::expect_match(doc, "one-bar delay is the no-lookahead boundary", fixed = TRUE)
-  testthat::expect_match(doc, "Costs Are Part Of The Fill", fixed = TRUE)
-  testthat::expect_match(doc, "Public cost API", fixed = TRUE)
-  testthat::expect_match(doc, "Final-Bar Targets Cannot Fill", fixed = TRUE)
+  testthat::expect_match(doc, "one-bar rule is the no-lookahead boundary", fixed = TRUE)
+  testthat::expect_match(doc, "A Target On The Final Bar Cannot Fill", fixed = TRUE)
   testthat::expect_match(doc, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
-  testthat::expect_match(doc, "Warmup Gates Belong In The Strategy", fixed = TRUE)
-  testthat::expect_match(doc, "passed_warmup()", fixed = TRUE)
-  testthat::expect_match(doc, "Zero Fills And Zero Trades Mean Different Things", fixed = TRUE)
-  testthat::expect_match(doc, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_match(doc, "Zero Fills And Zero Trades Are Different", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_passed_warmup()", fixed = TRUE)
+  testthat::expect_match(doc, "vignette(\"leakage\", package = \"ledgr\")", fixed = TRUE)
+  testthat::expect_no_match(doc, "Warmup Gates Belong In The Strategy", fixed = TRUE)
   testthat::expect_match(pkgdown, "- execution-semantics", fixed = TRUE)
 })
 
@@ -1259,6 +1309,7 @@ testthat::test_that("research workflow article pins canonical workflow and valid
     "## Commit The Selection With A Note",
     "## Reopen The Artifact",
     "## What Promotion Does Not Prove",
+    "## Plot The Promoted Evidence",
     "## Write The Human Research Note",
     "## Next Layer: Walk-Forward Evaluation",
     "## Where Next"
@@ -1297,8 +1348,8 @@ testthat::test_that("research workflow article pins canonical workflow and valid
   testthat::expect_match(doc, "ledgr_grid_cross", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_promote", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_run_open", fixed = TRUE)
-  testthat::expect_match(doc, "ledgr_extract_strategy", fixed = TRUE)
-  testthat::expect_match(doc, "passed_warmup()", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_run_strategy", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_passed_warmup()", fixed = TRUE)
   testthat::expect_match(doc, "Reopen and recover", fixed = TRUE)
   testthat::expect_match(doc, "selected candidate", fixed = TRUE)
   testthat::expect_match(doc, "strategy parameters", fixed = TRUE)
@@ -1306,14 +1357,16 @@ testthat::test_that("research workflow article pins canonical workflow and valid
   testthat::expect_match(doc, "Tier 2\\s+strategies")
   testthat::expect_match(doc, "Promotion records selection; it does not prove generalization.", fixed = TRUE)
   testthat::expect_match(doc, "Naive\\s+sweep-and-pick selection is a selection-bias risk")
-  testthat::expect_match(doc, "walk-forward and\\s+out-of-sample evaluation as the next conceptual layer")
-  testthat::expect_match(doc, "the public roadmap places walk-forward evaluation at v0.1.9.x", fixed = TRUE)
+  testthat::expect_match(doc, "Walk-forward\\s+evaluation is the shipped next conceptual layer")
+  testthat::expect_match(doc, "vignette\\(\"walk-forward\", package = \"ledgr\"\\)")
+  testthat::expect_no_match(doc, "the public roadmap places walk-forward evaluation at v0.1.9.x", fixed = TRUE)
   testthat::expect_match(doc, "When you ask \"does this strategy generalize?\"", fixed = TRUE)
   testthat::expect_match(doc, "Try it", fixed = TRUE)
   testthat::expect_match(doc, "```{mermaid}", fixed = TRUE)
-  testthat::expect_match(doc, "API gap", fixed = TRUE)
-  testthat::expect_match(doc, "v0.1.8.6 cycle", fixed = TRUE)
-  testthat::expect_match(doc, "Design note", fixed = TRUE)
+  testthat::expect_match(doc, "promotion-review helper", fixed = TRUE)
+  testthat::expect_no_match(doc, "future sweep-review helper", fixed = TRUE)
+  testthat::expect_no_match(doc, "v0.1.8.6 cycle", fixed = TRUE)
+  testthat::expect_no_match(doc, "Design note", fixed = TRUE)
   testthat::expect_match(doc, "This article is evaluated when it is rendered", fixed = TRUE)
   testthat::expect_match(doc, "file.path(tempdir(), \"ledgr_research_workflow.duckdb\")", fixed = TRUE)
   testthat::expect_match(doc, "head(ledgr_results(single_run, what = \"equity\"), 3)", fixed = TRUE)
@@ -1323,20 +1376,24 @@ testthat::test_that("research workflow article pins canonical workflow and valid
   testthat::expect_match(doc, "::: {.ledgr-callout .ledgr-callout-tip}", fixed = TRUE)
   testthat::expect_no_match(doc, "#| eval: false", fixed = TRUE)
   testthat::expect_match(doc, "custom_sma_strategy <- function(ctx, params)", fixed = TRUE)
-  testthat::expect_match(doc, "glimpse(top_n)", fixed = TRUE)
-  testthat::expect_match(doc, "as_tibble()", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)", fixed = TRUE)
+  testthat::expect_no_match(doc, "glimpse(top_n)", fixed = TRUE)
+  testthat::expect_match(doc, "review$ranked", fixed = TRUE)
   testthat::expect_no_match(doc, "dplyr::filter", fixed = TRUE)
   testthat::expect_match(doc, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_no_match(doc, "not evaluated during\\s+package vignette builds")
 })
 
 testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
-  doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.qmd"), warn = FALSE), collapse = "\n")
+  data_doc <- paste(readLines(ledgr_test_source_vignette("data-input-and-snapshots.qmd"), warn = FALSE), collapse = "\n")
+  store_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.qmd"), warn = FALSE), collapse = "\n")
+  doc <- paste(data_doc, store_doc, sep = "\n")
   root <- testthat::test_path("..", "..")
   info_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_info.Rd"), warn = FALSE), collapse = "\n")
   csv_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_import_bars_csv.Rd"), warn = FALSE), collapse = "\n")
 
   testthat::expect_match(doc, "artifacts/ledgr_store.duckdb", fixed = TRUE)
+  testthat::expect_match(doc, "ledgr_temp_store(file.path(tempdir(), \"ledgr_store_demo.duckdb\"))", fixed = TRUE)
   testthat::expect_match(doc, "Backup Conventions", fixed = TRUE)
   testthat::expect_match(doc, "Back up closed stores", fixed = TRUE)
   testthat::expect_match(doc, "file.copy\\(")
@@ -1372,6 +1429,18 @@ testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
   testthat::expect_match(doc, "best_run_id", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_run_not_found", fixed = TRUE)
   testthat::expect_match(doc, "trend_qty_5_rerun", fixed = TRUE)
+  testthat::expect_match(store_doc, "## Recovery", fixed = TRUE)
+  testthat::expect_match(store_doc, "ledgr_db_init\\(db_path\\)")
+  testthat::expect_match(store_doc, "opens a DBI connection to a ledgr DuckDB store", fixed = TRUE)
+  testthat::expect_match(store_doc, "ordinary users usually\\s+do\\s+not need it")
+  testthat::expect_match(store_doc, "ledgr_state_reconstruct\\(run_id, con\\)")
+  testthat::expect_match(store_doc, "reconstructs ledgr's expected simulated\\s+state")
+  testthat::expect_match(store_doc, "restart boundary", fixed = TRUE)
+  for (term in c("broker reconciliation", "live restart safety", "migrate old schemas", "repair a sealed snapshot")) {
+    testthat::expect_match(store_doc, term, fixed = TRUE)
+  }
+  testthat::expect_match(store_doc, "## Where Next", fixed = TRUE)
+  testthat::expect_no_match(store_doc, "## What's Next?", fixed = TRUE)
   testthat::expect_match(doc, "Current Feature Persistence Boundary", fixed = TRUE)
   testthat::expect_match(doc, "full persisted feature-series retrieval API remains outside", fixed = TRUE)
   testthat::expect_match(doc, "External point-in-time regressors", fixed = TRUE)
@@ -1388,7 +1457,7 @@ testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
   testthat::expect_match(csv_help, "ledgr_snapshot_import_bars_csv", fixed = TRUE)
   testthat::expect_match(csv_help, "ledgr_snapshot_seal", fixed = TRUE)
   testthat::expect_match(csv_help, "ledgr_snapshot_info", fixed = TRUE)
-  testthat::expect_match(csv_help, "ledgr_snapshot_load(..., verify = TRUE)", fixed = TRUE)
+  testthat::expect_match(csv_help, "ledgr_snapshot_open(..., verify = TRUE)", fixed = TRUE)
   testthat::expect_match(csv_help, "ledgr_experiment", fixed = TRUE)
   testthat::expect_match(csv_help, "ledgr_run", fixed = TRUE)
   testthat::expect_match(csv_help, "bar_count", fixed = TRUE)
@@ -1412,7 +1481,7 @@ testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
 testthat::test_that("provenance docs teach safe stored-strategy inspection", {
   root <- testthat::test_path("..", "..")
   readme_path <- file.path(root, "README.Rmd")
-  extract_path <- file.path(root, "man", "ledgr_extract_strategy.Rd")
+  extract_path <- file.path(root, "man", "ledgr_run_strategy.Rd")
   testthat::skip_if_not(
     file.exists(readme_path) && file.exists(extract_path),
     "source README/help files not available during installed-package tests"
@@ -1421,7 +1490,7 @@ testthat::test_that("provenance docs teach safe stored-strategy inspection", {
   exp_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.qmd"), warn = FALSE), collapse = "\n")
   extract_help <- paste(readLines(extract_path, warn = FALSE), collapse = "\n")
 
-  testthat::expect_match(readme, "ledgr_extract_strategy\\(snapshot, \"readme_sma_crossover\", trust = FALSE\\)")
+  testthat::expect_match(readme, "ledgr_run_strategy\\(snapshot, \"readme_sma_crossover\", trust = FALSE\\)")
   testthat::expect_match(readme, "without rerunning or evaluating the\\s+strategy source")
   testthat::expect_match(exp_doc, "Inspect Stored Strategy Source", fixed = TRUE)
   testthat::expect_match(exp_doc, "without parsing,\\s+evaluating, or executing the source")
@@ -1569,7 +1638,9 @@ testthat::test_that("custom indicator article replaces stale placeholders", {
   testthat::expect_match(doc, "Output validation proves shape and value validity", fixed = TRUE)
   testthat::expect_match(doc, "does not prove causal\\s+correctness")
   testthat::expect_match(doc, "ledgr_adapter_r", fixed = TRUE)
+  testthat::expect_no_match(doc, "\\*\\*Definition\\*\\*")
   testthat::expect_match(doc, "ledgr_adapter_csv", fixed = TRUE)
+  testthat::expect_match(doc, "## Where Next", fixed = TRUE)
   testthat::expect_match(doc, "The CSV values must already respect the simulated decision times", fixed = TRUE)
   testthat::expect_match(doc, "Unknown feature IDs fail loudly", fixed = TRUE)
   testthat::expect_match(doc, "summary\\(custom_bt\\)")
@@ -1615,6 +1686,12 @@ testthat::test_that("help-page article links target installed vignettes only", {
   installed_articles <- tools::file_path_sans_ext(basename(list.files(vignettes_dir, pattern = "[.](Rmd|qmd)$", full.names = TRUE)))
   testthat::expect_true(all(linked_articles %in% installed_articles))
   testthat::expect_true("indicators" %in% installed_articles)
+  testthat::expect_true("ttr-and-adapter-indicators" %in% installed_articles)
+  testthat::expect_true("strategy-authoring-tools" %in% installed_articles)
+  testthat::expect_true("metric-contexts-and-conventions" %in% installed_articles)
+  testthat::expect_true("data-input-and-snapshots" %in% installed_articles)
+  testthat::expect_true("quickstart" %in% installed_articles)
+  testthat::expect_true("risk-and-cost" %in% installed_articles)
   testthat::expect_false("ttr-indicators" %in% installed_articles)
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)
@@ -1690,9 +1767,34 @@ testthat::test_that("LEDGR_LAST_BAR_NO_FILL help topic documents final-bar behav
   testthat::expect_match(warning_doc, "candidate-row warning", fixed = TRUE)
   testthat::expect_match(warning_doc, "execution-semantics", fixed = TRUE)
   testthat::expect_match(execution_doc, "?LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "v0.1.9.1 ships the public transaction-cost model API", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "The stable public transaction-cost model API is planned", fixed = TRUE)
 })
 
-testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API surface", {
+testthat::test_that("v0.1.9.5 vignette stale-fact fixes stay fixed", {
+  why_r_path <- file.path(testthat::test_path("..", ".."), "vignettes", "articles", "why-r.qmd")
+  execution_path <- ledgr_test_source_vignette("execution-semantics.qmd")
+  store_path <- ledgr_test_source_vignette("experiment-store.qmd")
+  testthat::skip_if_not(
+    file.exists(why_r_path) && file.exists(execution_path) && file.exists(store_path),
+    "vignette sources not available"
+  )
+
+  why_r_doc <- paste(readLines(why_r_path, warn = FALSE), collapse = "\n")
+  execution_doc <- paste(readLines(execution_path, warn = FALSE), collapse = "\n")
+  store_doc <- paste(readLines(store_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(why_r_doc, "collapse, codetools, DBI, digest, duckdb, rlang, tibble, yyjsonr", fixed = TRUE)
+  testthat::expect_no_match(why_r_doc, "jsonlite", fixed = TRUE)
+  testthat::expect_match(execution_doc, "select(ts_utc, qty, realized_pnl)", fixed = TRUE)
+  testthat::expect_match(execution_doc, "close-action fill row", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "entry_ts_utc", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "any_of(c(\"entry_ts_utc\"", fixed = TRUE)
+  testthat::expect_match(store_doc, "v0.2.x point-in-time data line", fixed = TRUE)
+  testthat::expect_no_match(store_doc, "out of v0.1.8.5", fixed = TRUE)
+})
+
+testthat::test_that("research-to-production vignette reflects current cost API surface", {
   qmd_path <- ledgr_test_source_vignette("research-to-production.qmd")
   md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "research-to-production.md")
   testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "research-to-production docs not available")
@@ -1711,8 +1813,16 @@ testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API 
     testthat::expect_match(doc, "quoted-spread convention", fixed = TRUE)
     testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
     testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
+    testthat::expect_match(doc, "walk-forward evaluation runs over the existing sweep and run surfaces", fixed = TRUE)
+    testthat::expect_match(doc, "next planned validation-toolkit work is scoped for v0.1.9.6", fixed = TRUE)
+    testthat::expect_match(doc, "Paper trading adapters are planned for v0.3.0", fixed = TRUE)
+    testthat::expect_match(doc, "observability tooling for", fixed = TRUE)
+    testthat::expect_match(doc, "small-scale live trading for v1.0.0", fixed = TRUE)
     testthat::expect_no_match(doc, "fill_model", fixed = TRUE)
     testthat::expect_no_match(doc, "commission_fixed", fixed = TRUE)
+    testthat::expect_no_match(doc, "v0.1.9.4 shipped walk-forward evaluation", fixed = TRUE)
+    testthat::expect_no_match(doc, "v0.1.9.4 plans walk-forward evaluation", fixed = TRUE)
+    testthat::expect_no_match(doc, "later v0.1.9.x work may add selection-integrity diagnostics", fixed = TRUE)
   }
 })
 
@@ -1731,15 +1841,71 @@ testthat::test_that("walk-forward docs state MVP workflow and caveats", {
 
   for (doc in docs) {
     testthat::expect_match(doc, "train snapshot window -> sweep candidates -> scalar selection", fixed = TRUE)
-    testthat::expect_match(doc, "Walk-forward evidence is only as survivorship-safe as the sealed snapshot and universe semantics it evaluates.", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_folds_rolling", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_candidate", fixed = TRUE)
+    testthat::expect_no_match(doc, "Design-only Workflow Sketch", fixed = TRUE)
+    testthat::expect_match(doc, "Walk-forward evidence is only as survivorship-safe as the sealed\\s+snapshot and\\s+universe semantics it evaluates\\.")
     testthat::expect_match(doc, "Reproducibility and selection integrity are orthogonal.", fixed = TRUE)
     testthat::expect_match(doc, "not PBO", fixed = TRUE)
-    testthat::expect_match(doc, "not independent observations", fixed = TRUE)
+    testthat::expect_match(doc, "not independent\\s+observations")
     testthat::expect_match(doc, "Anchored folds grow their train window over time.", fixed = TRUE)
-    testthat::expect_match(doc, "Design-only Workflow Sketch", fixed = TRUE)
   }
 
   testthat::expect_match(news, "# ledgr 0.1.9.4", fixed = TRUE)
   testthat::expect_match(news, "train-vs-test degradation table", fixed = TRUE)
   testthat::expect_match(news, "does not add PBO", fixed = TRUE)
+})
+
+testthat::test_that("new teaching surfaces state current public boundaries", {
+  quickstart_qmd <- ledgr_test_source_vignette("quickstart.qmd")
+  quickstart_md <- file.path(testthat::test_path("..", ".."), "vignettes", "quickstart.md")
+  risk_qmd <- ledgr_test_source_vignette("risk-and-cost.qmd")
+  risk_md <- file.path(testthat::test_path("..", ".."), "vignettes", "risk-and-cost.md")
+  testthat::skip_if_not(
+    all(file.exists(c(quickstart_qmd, quickstart_md, risk_qmd, risk_md))),
+    "Batch 8 teaching docs not available"
+  )
+
+  quickstart_docs <- vapply(
+    c(qmd = quickstart_qmd, md = quickstart_md),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+  risk_docs <- vapply(
+    c(qmd = risk_qmd, md = risk_md),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+
+  for (doc in quickstart_docs) {
+    testthat::expect_match(doc, "shortest useful path from\\s+demo data to inspectable evidence")
+    testthat::expect_match(doc, "cost_model = ledgr_cost_zero", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_sweep", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_candidate", fixed = TRUE)
+    testthat::expect_match(doc, "not a\\s+validation protocol")
+  }
+
+  for (doc in risk_docs) {
+    # Mental model: four questions, the layer order, and the policy adjectives.
+    testthat::expect_match(doc, "what do I want to hold?", fixed = TRUE)
+    testthat::expect_match(doc, "next-open timing", fixed = TRUE)
+    testthat::expect_match(doc, "identity-bearing", fixed = TRUE)
+    # Composable menu: step names must stay in sync with the exported surface.
+    testthat::expect_match(doc, "ledgr_cost_spread_bps", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_fixed_fee", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_notional_bps_fee", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_risk_long_only", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_risk_max_weight", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_risk_none", fixed = TRUE)
+    # Cost stage-ordering rule.
+    testthat::expect_match(doc, "price transforms", fixed = TRUE)
+    testthat::expect_match(doc, "before fee steps", fixed = TRUE)
+    # Boundaries.
+    testthat::expect_match(doc, "not portfolio optimization", fixed = TRUE)
+    testthat::expect_match(doc, "not liquidity or capacity", fixed = TRUE)
+    testthat::expect_match(doc, "not a broker", fixed = TRUE)
+    # Roadmap boundary for the future steps.
+    testthat::expect_match(doc, "More steps are planned", fixed = TRUE)
+    testthat::expect_no_match(doc, "production deployment", fixed = TRUE)
+  }
 })

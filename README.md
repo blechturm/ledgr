@@ -137,7 +137,7 @@ evaluating the strategy source. Use `trust = FALSE` for source and
 metadata inspection.
 
 ``` r
-stored_strategy <- ledgr_extract_strategy(snapshot, "readme_sma_crossover", trust = FALSE)
+stored_strategy <- ledgr_run_strategy(snapshot, "readme_sma_crossover", trust = FALSE)
 list(
   reproducibility_level = stored_strategy$reproducibility_level,
   hash_verified = stored_strategy$hash_verified,
@@ -166,9 +166,12 @@ want to recover a function object.
 | Question | Article |
 |----|----|
 | I want the full research loop: snapshot, sweep, promotion, reopen. | [Research Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html) |
+| I want the shortest runnable path through the package. | [Quickstart](https://blechturm.github.io/ledgr/articles/quickstart.html) |
 | I want to write strategies correctly. | [Strategy Development](https://blechturm.github.io/ledgr/articles/strategy-development.html) |
 | I want feature maps, indicators, and active aliases. | [Indicators](https://blechturm.github.io/ledgr/articles/indicators.html) |
 | I want exploratory sweeps and candidate promotion. | [Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) |
+| I want cost and target-risk policy boundaries. | [Risk And Cost](https://blechturm.github.io/ledgr/articles/risk-and-cost.html) |
+| I want walk-forward evaluation. | [Walk-Forward](https://blechturm.github.io/ledgr/articles/walk-forward.html) |
 | I want sealed snapshots, durable stores, backup, and reopen. | [Experiment Store](https://blechturm.github.io/ledgr/articles/experiment-store.html) |
 | I want hashes, provenance tiers, and limits of recovery. | [Reproducibility](https://blechturm.github.io/ledgr/articles/reproducibility.html) |
 | I want fills, trades, equity, metrics, and metric context. | [Metrics And Accounting](https://blechturm.github.io/ledgr/articles/metrics-and-accounting.html) |
@@ -216,9 +219,9 @@ accounting model, and not a general compiled fold core. The target-risk layer
 is a target-vector transformation layer; it is not affordability enforcement,
 portfolio optimization, margin, shorting or borrow policy, liquidity/capacity
 modeling, OMS lifecycle behavior, or broker-grade risk control. ledgr does not
-ship automatic ranking, `ledgr_tune()`, walk-forward/PBO/CSCV helpers, broker
-adapters, paper trading, or live trading. Those are separate roadmap items with
-different state and safety requirements.
+ship `ledgr_tune()`, validation-toolkit statistics such as PBO/CSCV/DSR,
+broker adapters, paper trading, or live trading. Those are separate roadmap
+items with different state and safety requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes

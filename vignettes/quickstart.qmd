@@ -1,0 +1,192 @@
+---
+title: "Quickstart"
+format:
+  html:
+    toc: false
+    theme: cosmo
+    code-copy: true
+execute:
+  echo: true
+vignette: >
+  %\VignetteIndexEntry{Quickstart}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 90)
+options(cli.unicode = FALSE)
+pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
+if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(pkg_root, quiet = TRUE)
+}
+```
+
+You want the smallest useful ledgr loop before reading the tool chapters.
+
+This quickstart creates a sealed snapshot, runs one strategy, sweeps a small
+grid, and extracts one candidate for review. It is not a validation protocol
+and it is not a production deployment path. It is the shortest useful path from
+demo data to inspectable evidence.
+
+## Load A Small Dataset
+
+```{r}
+#| label: prerequisites
+#| message: false
+
+library(ledgr)
+library(dplyr)
+
+data("ledgr_demo_bars", package = "ledgr")
+```
+
+Use two demo instruments over the first half of 2019. The code writes to a
+temporary DuckDB store so the rendered article leaves no project artifacts
+behind.
+
+```{r}
+#| label: data
+
+store_path <- tempfile(fileext = ".duckdb")
+
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+  )
+
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  db_path = store_path,
+  snapshot_id = "quickstart_demo"
+)
+```
+
+## Declare The Experiment
+
+The strategy reads stable aliases named `fast` and `slow`. The concrete SMA
+windows can vary later in the sweep.
+
+```{r}
+#| label: experiment
+
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
+
+strategy <- ledgr_demo_sma_crossover_strategy()
+
+exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = strategy,
+  features = features,
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
+)
+```
+
+`cost_model = ledgr_cost_zero()` is explicit. If you want modeled costs, use a
+cost model such as `ledgr_cost_spread_bps()` or
+`ledgr_cost_notional_bps_fee()` rather than hiding costs inside the strategy.
+
+## Run One Case
+
+Run one ordinary parameter set before sweeping. This catches setup mistakes
+while the result is still easy to inspect.
+
+```{r}
+#| label: one-run
+
+single_run <- ledgr_run(
+  exp,
+  params = list(qty = 5, threshold = 0),
+  feature_params = list(fast_n = 5L, slow_n = 20L),
+  run_id = "quickstart_run",
+  seed = 2026L
+)
+
+summary(single_run)
+head(ledgr_results(single_run, what = "fills"), 3)
+```
+
+If this run has no fills, impossible prices, or surprising exposure, stop here.
+Sweeps amplify a setup; they do not repair it.
+
+## Sweep A Tiny Grid
+
+Build feature parameters and strategy parameters separately, then cross them
+into candidate rows.
+
+```{r}
+#| label: sweep
+
+feature_grid <- ledgr_feature_grid(
+  fast_n = c(5L, 10L),
+  slow_n = c(20L, 40L),
+  .filter = fast_n < slow_n
+)
+
+strategy_grid <- ledgr_strategy_grid(
+  qty = 5,
+  threshold = c(0, 0.01)
+)
+
+grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
+
+sweep <- ledgr_sweep(exp, grid, seed = 2026L)
+
+sweep |>
+  select(candidate_id, status, total_return, sharpe_ratio) |>
+  arrange(desc(sharpe_ratio))
+```
+
+The sweep table is evidence, not an automatic recommendation. If you rank rows,
+make the ranking rule visible at the call site.
+
+```{r}
+#| label: candidate
+
+candidate <- ledgr_candidate(
+  sweep |> arrange(desc(sharpe_ratio)),
+  1L
+)
+
+candidate$candidate_id
+```
+
+Promotion is the step that turns one selected candidate into a durable run. In
+a real project, use a deliberate `run_id` and a note that explains why this row
+was selected.
+
+```{r}
+#| label: promotion-sketch
+#| eval: false
+
+promoted <- ledgr_promote(
+  exp,
+  candidate,
+  run_id = "quickstart_promoted",
+  note = "Highest Sharpe ratio in the tiny demo sweep."
+)
+```
+
+## Where Next
+
+Read `vignette("research-workflow", package = "ledgr")` for the full project
+loop. Read `vignette("sweeps", package = "ledgr")` when the grid itself is the
+thing you need to understand. Read `vignette("walk-forward", package =
+"ledgr")` when you are ready to separate train-window selection from
+test-window evaluation.
+
+```{r}
+#| label: cleanup
+#| include: false
+
+ledgr_snapshot_close(snapshot)
+```

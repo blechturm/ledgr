@@ -71,7 +71,7 @@ create/import/seal lifecycle yourself:
 snapshot hash;
 \item inspect metadata with \code{ledgr_snapshot_info()} if needed;
 \item disconnect the write connection and reopen with
-\code{ledgr_snapshot_load(..., verify = TRUE)};
+\code{ledgr_snapshot_open(..., verify = TRUE)};
 \item pass the loaded snapshot to \code{ledgr_experiment()} and \code{ledgr_run()}.
 }
 
@@ -111,7 +111,7 @@ snapshot_hash <- ledgr_snapshot_seal(con, snapshot_id)
 snapshot_info <- ledgr_snapshot_info(con, snapshot_id)
 DBI::dbDisconnect(con, shutdown = TRUE)
 
-snapshot <- ledgr_snapshot_load(
+snapshot <- ledgr_snapshot_open(
   db_path,
   snapshot_id = snapshot_id,
   verify = TRUE

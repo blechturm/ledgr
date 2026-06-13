@@ -199,7 +199,7 @@ ledgr_features_wide <- function(features) {
 
   out <- data.frame(instrument_id = instruments, stringsAsFactors = FALSE)
   if ("ts_utc" %in% names(features)) {
-    ts_utc <- vapply(features[["ts_utc"]][valid], iso_utc, character(1))
+    ts_utc <- vapply(features[["ts_utc"]][valid], ledgr_iso_utc, character(1))
     out$ts_utc <- vapply(
       instruments,
       function(inst) ts_utc[which(instrument_id == inst)[[1]]],

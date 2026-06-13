@@ -1,8 +1,9 @@
 #' ledgr condition classes
 #'
 #' ledgr uses stable top-level condition classes for public cost-model,
-#' timing-model, saved-sweep, retained-series, and legacy-shape failures. User
-#' tests should assert on these classes instead of parsing message text.
+#' timing-model, execution-window, saved-sweep, retained-series, and
+#' legacy-shape failures. User tests should assert on these classes instead of
+#' parsing message text.
 #'
 #' @section Legacy shape classes:
 #' `ledgr_legacy_fill_model_shape` is raised when callers pass the v0.1.8
@@ -32,6 +33,21 @@
 #' the internal proposal/resolver seam when a cost resolver receives the wrong
 #' object shape. They are stable top-level classes for tests that exercise that
 #' seam directly.
+#'
+#' @section Execution window classes:
+#' `ledgr_run_window_too_short` is raised when a run window contains fewer than
+#' two executable pulses. Next-bar fill semantics require a decision pulse and a
+#' later execution pulse.
+#'
+#' @section Accounting classes:
+#' `ledgr_invalid_lot_fill` is raised when the lot-accounting layer receives an
+#' invalid fill side, quantity, price, fee, or instrument id. Invalid lot input
+#' fails closed because the ledger event stream and lot state must not diverge.
+#'
+#' @section Snapshot hash classes:
+#' `ledgr_snapshot_hash_invalid_timestamp` is raised when snapshot hashing sees
+#' a non-POSIXct `ts_utc` representation. Snapshot hashes fail closed on driver
+#' timestamp representation drift instead of silently re-keying sealed data.
 #'
 #' @section Saved sweep classes:
 #' `ledgr_invalid_sweep_id` is raised when a saved sweep id is not a non-empty,
@@ -89,6 +105,10 @@
 #' `ledgr_walk_forward_snapshot_hash_mismatch` is raised when the supplied
 #' snapshot does not match the persisted walk-forward session identity.
 #'
+#' `ledgr_walk_forward_snapshot_override_mismatch` is raised when an explicit
+#' snapshot override for candidate extraction has a different `snapshot_id` or
+#' `snapshot_hash` than the walk-forward result locator.
+#'
 #' `ledgr_walk_forward_invalid_session` is raised when persisted walk-forward
 #' session rows, linked test runs, or identity fields cannot be reopened
 #' safely.
@@ -121,7 +141,9 @@
 #' @aliases ledgr_invalid_cost_chain_order ledgr_invalid_cost_model
 #' @aliases ledgr_invalid_timing_model ledgr_invalid_fill_proposal
 #' @aliases ledgr_invalid_fill_context ledgr_run_not_found
-#' @aliases ledgr_unresolved_feature_id
+#' @aliases ledgr_unresolved_feature_id ledgr_run_window_too_short
+#' @aliases ledgr_invalid_lot_fill
+#' @aliases ledgr_snapshot_hash_invalid_timestamp
 #' @aliases ledgr_invalid_sweep_id ledgr_sweep_id_exists
 #' @aliases ledgr_sweep_not_found
 #' @aliases ledgr_sweep_snapshot_not_found ledgr_sweep_snapshot_hash_mismatch
@@ -136,6 +158,7 @@
 #' @aliases ledgr_walk_forward_test_run_failed
 #' @aliases ledgr_walk_forward_session_not_found
 #' @aliases ledgr_walk_forward_snapshot_hash_mismatch
+#' @aliases ledgr_walk_forward_snapshot_override_mismatch
 #' @aliases ledgr_walk_forward_invalid_session
 #' @aliases ledgr_walk_forward_latest_without_rationale
 #' @aliases ledgr_walk_forward_candidate_not_found

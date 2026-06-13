@@ -19,7 +19,7 @@ ledgr_run_store_snapshot_path <- function(snapshot, arg = "snapshot") {
     if (is.character(snapshot) && length(snapshot) == 1L && !is.na(snapshot) && nzchar(snapshot)) {
       rlang::abort(
         sprintf(
-          "`%s` must be a ledgr_snapshot object in v0.1.7. Resume from a DuckDB file with ledgr_snapshot_load(db_path, snapshot_id), then call this API with the snapshot.",
+          "`%s` must be a ledgr_snapshot object in v0.1.7. Resume from a DuckDB file with ledgr_snapshot_open(db_path, snapshot_id), then call this API with the snapshot.",
           arg
         ),
         class = "ledgr_snapshot_required"
@@ -630,7 +630,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' is not evaluated, and the database is not mutated.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_ids Optional character vector of run IDs. If supplied, output
 #'   preserves this order, including duplicates, and may include archived
@@ -639,7 +639,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' @param metrics Metrics set. Only `"standard"` is supported.
 #' @param metric_context Optional metric context for this comparison table.
 #'   `NULL` uses the default context. To compare with an experiment's context,
-#'   call `ledgr_compare_runs(snapshot, metric_context = ledgr_metric_context(exp))`.
+#'   call `ledgr_run_compare(snapshot, metric_context = ledgr_metric_context(exp))`.
 #' @return A `ledgr_comparison` object, which is a classed tibble with one row
 #'   per completed run. Metric columns are raw numeric values for ranking and
 #'   filtering; formatted percentages are a print-only concern. `n_trades`
@@ -670,10 +670,10 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #' on.exit(close(bt_a), add = TRUE)
 #' bt_b <- ledgr_run(exp, params = list(qty = 2), run_id = "qty-2")
 #' on.exit(close(bt_b), add = TRUE)
-#' ledgr_compare_runs(snapshot, run_ids = c("qty-1", "qty-2"))
+#' ledgr_run_compare(snapshot, run_ids = c("qty-1", "qty-2"))
 #' ledgr_snapshot_close(snapshot)
 #' @export
-ledgr_compare_runs <- function(snapshot,
+ledgr_run_compare <- function(snapshot,
                                run_ids = NULL,
                                include_archived = FALSE,
                                metrics = c("standard"),
@@ -752,7 +752,7 @@ ledgr_compare_runs <- function(snapshot,
 
 #' Print a run comparison
 #'
-#' @param x A `ledgr_comparison` object returned by [ledgr_compare_runs()].
+#' @param x A `ledgr_comparison` object returned by [ledgr_run_compare()].
 #' @param ... Passed to the tibble print method for the curated view.
 #' @return The input object, invisibly.
 #' @export
@@ -779,7 +779,7 @@ print.ledgr_comparison <- function(x, ...) {
 #' or mutating runs. Archived runs are hidden by default.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param include_archived Logical scalar. If `TRUE`, include archived runs.
 #' @return A `ledgr_run_list` object, which is a classed tibble with run
@@ -841,7 +841,7 @@ print.ledgr_run_list <- function(x, ...) {
 #' reads run metadata and diagnostics only; it does not execute strategy code.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @return A `ledgr_run_info` object. Important fields include `run_id`,
@@ -935,7 +935,7 @@ print.ledgr_run_info <- function(x, ...) {
 #' The run is not recomputed and strategy code is not executed.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier. The run must have status `DONE`.
 #' @return A `ledgr_backtest` object.
@@ -1026,7 +1026,7 @@ ledgr_run_open <- function(snapshot, run_id) {
 #' `run_id` and experiment identity hashes are not changed.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param label Human-readable label. Use `NULL` or `""` to clear the label.
@@ -1070,7 +1070,7 @@ ledgr_run_label <- function(snapshot, run_id, label = NULL) {
 #' idempotent and does not rewrite existing archive metadata.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
-#'   `ledgr_snapshot_load(db_path, snapshot_id)` to resume from a durable
+#'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
 #' @param run_id Run identifier.
 #' @param reason Optional archive reason. Empty strings are stored as `NULL`.

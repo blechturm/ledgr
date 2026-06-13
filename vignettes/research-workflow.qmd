@@ -261,7 +261,7 @@ strategy <- ledgr_demo_sma_crossover_strategy()
 
 You do not need to write a strategy for this vignette. The following miniature
 example only shows the boundary that the demo strategy follows: read
-pulse-known values from `ctx`, guard warmup with `passed_warmup()`, and return
+pulse-known values from `ctx`, guard warmup with `ledgr_passed_warmup()`, and return
 a full named numeric target vector.
 
 ```{r}
@@ -274,7 +274,7 @@ custom_sma_strategy <- function(ctx, params) {
     values <- ctx$features(instrument_id)
 
     # TRUE once enough bars have passed to calculate the slow SMA.
-    if (passed_warmup(values) &&
+    if (ledgr_passed_warmup(values) &&
         values[["fast"]] / values[["slow"]] - 1 > params$threshold) {
       target[[instrument_id]] <- params$qty
     }
@@ -394,44 +394,19 @@ visible before treating the top row as meaningful.
 ```{r}
 #| label: candidate-inspection
 
-ranked <- sweep |>
-  filter(status == "DONE") |>
-  arrange(desc(sharpe_ratio))
-
-candidate_columns <- c(
-  "candidate_id", "candidate_row", "status", "final_equity", "total_return",
-  "sharpe_ratio", "params", "feature_params"
-)
-
-top_n <- ranked |>
-  slice_head(n = 5) |>
-  select(all_of(candidate_columns))
-glimpse(top_n)
-
-issue_columns <- c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings")
-
-issues <- sweep |>
-  filter(status != "DONE") |>
-  select(any_of(issue_columns)) |>
-  as_tibble()
-issues
-
+review <- ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)
+review$top
+review$issues
+ranked <- review$ranked
 candidate <- ledgr_candidate(ranked, 1)
 ```
 
 The output should look like a candidate table rather than a final answer.
 
-The `top_n` table shows which candidates would be selected by this ranking
-choice. The `issues` table tells you whether any candidates failed, warned,
-or produced diagnostics that should change how you read the sweep.
-
-::: {.ledgr-callout .ledgr-callout-note}
-**Design note**
-
-This explicit table code keeps the selection rule visible. A future
-sweep-review helper may package this review shape, but it should preserve the
-same explicit selection rule instead of making ranking automatic.
-:::
+The `review$top` table shows which candidates would be selected by this ranking
+choice. The `review$issues` table tells you whether any candidates failed,
+warned, or produced diagnostics that should change how you read the sweep.
+The full completed-candidate table remains in `review$ranked`.
 
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**
@@ -480,7 +455,7 @@ close(single_run)
 close(promoted)
 ledgr_snapshot_close(snapshot)
 
-snapshot <- ledgr_snapshot_load(
+snapshot <- ledgr_snapshot_open(
   store_path,
   snapshot_id = "demo_2019_h1",
   verify = TRUE
@@ -502,19 +477,15 @@ You can also recover the selection context and strategy provenance behind the
 promoted run. Today that recovery uses two public surfaces:
 
 - `ledgr_run_info()` and `ledgr_run_open()` for the stored run;
-- `ledgr_extract_strategy()` for strategy source and parameter provenance.
+- `ledgr_run_strategy()` for strategy source and parameter provenance.
 
 ::: {.ledgr-callout .ledgr-callout-warning}
 **API gap**
 
 The next few lines are intentionally lower-level. They show what ledgr records
-for a promoted run. A future review helper may summarize this "what caused this
-result?" record without asking users to inspect nested promotion-context fields
-directly.
-
-This API gap was carried forward from the v0.1.8.6 cycle: promotion can recover
-the chosen candidate and provenance today, while higher-level review helpers
-remain future workflow polish.
+for a promoted run. A future promotion-review helper may summarize this "what
+caused this result?" record without asking users to inspect nested
+promotion-context fields directly.
 :::
 
 ```{r}
@@ -529,7 +500,7 @@ list(
   feature_params_json = promotion$selected_candidate$feature_params_json
 )
 
-extracted <- ledgr_extract_strategy(
+extracted <- ledgr_run_strategy(
   snapshot,
   "workflow_promoted_candidate",
   trust = FALSE
@@ -607,6 +578,43 @@ explaining why that promotion is not validation. If the second sentence feels
 hard to write, the selection rule probably needs more work.
 :::
 
+## Plot The Promoted Evidence
+
+A report should show the promoted run's path, not only its scalar metrics.
+The equity table already contains the information needed for a compact equity
+and drawdown view.
+
+```{r}
+#| label: promoted-equity-plot
+#| fig.width: 7
+#| fig.height: 4
+
+promoted_equity <- ledgr_results(promoted, what = "equity") |>
+  mutate(
+    drawdown = equity / cummax(equity) - 1,
+    drawdown_axis = drawdown * equity[[1]] + equity[[1]]
+  )
+
+ggplot2::ggplot(promoted_equity, ggplot2::aes(x = ts_utc)) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = equity),
+    linewidth = 0.8,
+    color = "#1f77b4"
+  ) +
+  ggplot2::geom_area(
+    ggplot2::aes(y = drawdown_axis),
+    fill = "#d55e00",
+    alpha = 0.20
+  ) +
+  ggplot2::labs(
+    title = "Promoted candidate equity path",
+    x = NULL,
+    y = "Equity",
+    caption = "Orange area scales drawdown onto the equity axis for compact review."
+  ) +
+  ggplot2::theme_minimal(base_size = 12)
+```
+
 ## Write The Human Research Note
 
 Do not leave the reasoning only in your head. Write a short report next to the
@@ -646,14 +654,14 @@ that the selection protocol was statistically sound.
 
 ## Next Layer: Walk-Forward Evaluation
 
-The workflow above teaches the single-window foundation. Walk-forward and
-out-of-sample evaluation are the planned next conceptual layer for separating
-candidate selection from held-out evidence.
+The workflow above teaches the single-window foundation. Walk-forward
+evaluation is the shipped next conceptual layer for separating candidate
+selection from held-out evidence.
 
 When you ask "is this candidate's evidence reproducible?", the workflow above
 is the right starting point. When you ask "does this strategy generalize?",
 walk-forward is the next question you want. That layer is not part of this
-article; the public roadmap places walk-forward evaluation at v0.1.9.x.
+article; use `vignette("walk-forward", package = "ledgr")`.
 
 This article should not imply that promotion alone validates a strategy.
 

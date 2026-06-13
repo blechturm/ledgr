@@ -2,9 +2,11 @@
 
 #include <Rinternals.h>
 
+#include <algorithm>
 #include <cmath>
 #include <deque>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -30,6 +32,11 @@ static double ledgr_spot_lot_net(const std::deque<ledgr_spot_lot>& lots) {
   return out;
 }
 
+static double ledgr_spot_dust_tolerance(double a, double b, double c) {
+  double scale = std::max({1.0, std::abs(a), std::abs(b), std::abs(c)});
+  return std::numeric_limits<double>::epsilon() * scale;
+}
+
 static std::string ledgr_spot_event_id(const std::string& run_id, int event_seq) {
   std::ostringstream out;
   out << run_id << "_" << std::setw(8) << std::setfill('0') << event_seq;
@@ -46,7 +53,7 @@ static int ledgr_spot_direction(const char* side) {
 
 static void ledgr_spot_check(bool ok, const char* message) {
   if (!ok) {
-    Rf_error("%s", message);
+    cpp11::stop("%s", message);
   }
 }
 
@@ -90,6 +97,16 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
   ledgr_spot_check(TYPEOF(fill_ts_utc_sxp) == REALSXP && XLENGTH(fill_ts_utc_sxp) == n_fills,
                    "`fill_ts_utc` must align with fills.");
   ledgr_spot_check(TYPEOF(positions_sxp) == REALSXP, "`positions` must be numeric.");
+  ledgr_spot_check(TYPEOF(cash_sxp) == REALSXP && XLENGTH(cash_sxp) == 1,
+                   "`cash` must be a numeric scalar.");
+  ledgr_spot_check(TYPEOF(total_cost_basis_sxp) == REALSXP && XLENGTH(total_cost_basis_sxp) == 1,
+                   "`total_cost_basis` must be a numeric scalar.");
+  ledgr_spot_check(TYPEOF(realized_pnl_sxp) == REALSXP && XLENGTH(realized_pnl_sxp) == 1,
+                   "`realized_pnl` must be a numeric scalar.");
+  ledgr_spot_check(TYPEOF(realized_comp_sxp) == REALSXP && XLENGTH(realized_comp_sxp) == 1,
+                   "`realized_comp` must be a numeric scalar.");
+  ledgr_spot_check(TYPEOF(event_seq_start_sxp) == INTSXP && XLENGTH(event_seq_start_sxp) == 1,
+                   "`event_seq_start` must be an integer scalar.");
   ledgr_spot_check(TYPEOF(cost_basis_by_inst_sxp) == REALSXP &&
                      XLENGTH(cost_basis_by_inst_sxp) == n_inst,
                    "`cost_basis_by_inst` must align with positions.");
@@ -197,7 +214,11 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           realized_close += (lot_price - price) * take;
           lot_qty -= take;
           remaining_close -= take;
-          if (lot_qty <= 0) {
+          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close);
+          if (std::abs(remaining_close) <= tol) {
+            remaining_close = 0.0;
+          }
+          if (lot_qty <= tol) {
             inst_lots.pop_front();
           } else {
             inst_lots.front().qty = -lot_qty;
@@ -211,7 +232,11 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           realized_close += (price - lot_price) * take;
           lot_qty -= take;
           remaining_close -= take;
-          if (lot_qty <= 0) {
+          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close);
+          if (std::abs(remaining_close) <= tol) {
+            remaining_close = 0.0;
+          }
+          if (lot_qty <= tol) {
             inst_lots.pop_front();
           } else {
             inst_lots.front().qty = lot_qty;
@@ -304,10 +329,10 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
   };
   auto set_string_vec = [&](const std::vector<std::string>& values) {
     SEXP x = Rf_allocVector(STRSXP, static_cast<R_xlen_t>(values.size()));
+    SET_VECTOR_ELT(out, k, x);
     for (R_xlen_t i = 0; i < static_cast<R_xlen_t>(values.size()); ++i) {
       SET_STRING_ELT(x, i, Rf_mkChar(values[static_cast<size_t>(i)].c_str()));
     }
-    SET_VECTOR_ELT(out, k, x);
     ++k;
   };
   auto set_double_vec = [&](const std::vector<double>& values) {
@@ -331,20 +356,20 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
   set_name("event_run_id");
   {
     SEXP x = Rf_allocVector(STRSXP, static_cast<R_xlen_t>(event_id.size()));
+    SET_VECTOR_ELT(out, k, x);
     for (R_xlen_t i = 0; i < static_cast<R_xlen_t>(event_id.size()); ++i) {
       SET_STRING_ELT(x, i, Rf_mkChar(run_id.c_str()));
     }
-    SET_VECTOR_ELT(out, k, x);
     ++k;
   }
   set_name("event_ts_utc"); set_double_vec(event_ts_utc);
   set_name("event_type");
   {
     SEXP x = Rf_allocVector(STRSXP, static_cast<R_xlen_t>(event_id.size()));
+    SET_VECTOR_ELT(out, k, x);
     for (R_xlen_t i = 0; i < static_cast<R_xlen_t>(event_id.size()); ++i) {
       SET_STRING_ELT(x, i, Rf_mkChar("FILL"));
     }
-    SET_VECTOR_ELT(out, k, x);
     ++k;
   }
   set_name("event_instrument_id"); set_string_vec(event_instrument_id);

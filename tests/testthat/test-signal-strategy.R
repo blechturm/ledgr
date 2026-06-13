@@ -116,7 +116,7 @@ testthat::test_that("ledgr_signal_strategy runs through the data-first backtest 
   cost_model = ledgr_cost_zero()
   )
 
-  fills <- ledgr_extract_fills(bt)
+  fills <- ledgr_run_fills(bt)
   testthat::expect_s3_class(fills, "tbl_df")
   testthat::expect_true(nrow(fills) > 0)
   testthat::expect_true(all(fills$qty == 1))

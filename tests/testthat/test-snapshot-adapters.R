@@ -131,7 +131,7 @@ test_that("create/import/seal CSV snapshots infer runnable metadata", {
   expect_equal(meta$start_date, "2020-04-01T00:00:00Z")
   expect_equal(meta$end_date, "2020-04-04T00:00:00Z")
 
-  loaded <- ledgr_snapshot_load(snapshot$db_path, snapshot$snapshot_id, verify = TRUE)
+  loaded <- ledgr_snapshot_open(snapshot$db_path, snapshot$snapshot_id, verify = TRUE)
   on.exit(ledgr_snapshot_close(loaded), add = TRUE)
   expect_equal(loaded$metadata$start_date, "2020-04-01T00:00:00Z")
   expect_equal(loaded$metadata$end_date, "2020-04-04T00:00:00Z")

@@ -9,7 +9,7 @@ ledgr_compare_test_table_counts <- function(con) {
   )
 }
 
-testthat::test_that("ledgr_compare_runs compares stored completed runs without recomputation", {
+testthat::test_that("ledgr_run_compare compares stored completed runs without recomputation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
@@ -54,7 +54,7 @@ testthat::test_that("ledgr_compare_runs compares stored completed runs without r
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
   before_counts <- ledgr_compare_test_table_counts(opened$con)
 
-  cmp <- ledgr_compare_runs(snapshot, run_ids = c("compare-qty-2", "compare-qty-1"))
+  cmp <- ledgr_run_compare(snapshot, run_ids = c("compare-qty-2", "compare-qty-1"))
 
   after_counts <- ledgr_compare_test_table_counts(opened$con)
   testthat::expect_identical(calls$n, before_calls)
@@ -79,7 +79,7 @@ testthat::test_that("ledgr_compare_runs compares stored completed runs without r
   testthat::expect_true(all(!is.na(cmp$strategy_params_hash)))
 })
 
-testthat::test_that("ledgr_compare_runs compares different stored strategies", {
+testthat::test_that("ledgr_run_compare compares different stored strategies", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
@@ -116,12 +116,12 @@ testthat::test_that("ledgr_compare_runs compares different stored strategies", {
   cost_model = ledgr_cost_zero()
   )
   on.exit(close(bt_b), add = TRUE)
-  cmp <- ledgr_compare_runs(snapshot, run_ids = c("compare-strategy-a", "compare-strategy-b"))
+  cmp <- ledgr_run_compare(snapshot, run_ids = c("compare-strategy-a", "compare-strategy-b"))
   testthat::expect_identical(nrow(cmp), 2L)
   testthat::expect_false(identical(cmp$strategy_source_hash[[1]], cmp$strategy_source_hash[[2]]))
 })
 
-testthat::test_that("ledgr_compare_runs counts only closing trades for win rate", {
+testthat::test_that("ledgr_run_compare counts only closing trades for win rate", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -155,7 +155,7 @@ testthat::test_that("ledgr_compare_runs counts only closing trades for win rate"
   snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  cmp <- ledgr_compare_runs(snapshot, run_ids = "compare-roundtrip")
+  cmp <- ledgr_run_compare(snapshot, run_ids = "compare-roundtrip")
   testthat::expect_identical(cmp$n_trades, 1L)
   testthat::expect_equal(cmp$win_rate, 1)
 
@@ -207,7 +207,7 @@ testthat::test_that("open-only fills are not counted as closed trades", {
   fills <- ledgr_results(bt, what = "fills")
   trades <- ledgr_results(bt, what = "trades")
   metrics <- ledgr:::ledgr_compute_metrics(bt)
-  cmp <- ledgr_compare_runs(snapshot, run_ids = "compare-open-only")
+  cmp <- ledgr_run_compare(snapshot, run_ids = "compare-open-only")
   listed <- ledgr_run_list(snapshot)
 
   testthat::expect_identical(nrow(fills), 1L)
@@ -260,7 +260,7 @@ testthat::test_that("multi-fill runs count each closing fill as a trade", {
 
   fills <- ledgr_results(bt, what = "fills")
   trades <- ledgr_results(bt, what = "trades")
-  cmp <- ledgr_compare_runs(snapshot, run_ids = "compare-multi-fill")
+  cmp <- ledgr_run_compare(snapshot, run_ids = "compare-multi-fill")
 
   testthat::expect_identical(nrow(fills), 3L)
   testthat::expect_identical(nrow(trades), 2L)
@@ -268,7 +268,7 @@ testthat::test_that("multi-fill runs count each closing fill as a trade", {
   testthat::expect_equal(cmp$win_rate, 1)
 })
 
-testthat::test_that("ledgr_compare_runs respects archive and incomplete-run rules", {
+testthat::test_that("ledgr_run_compare respects archive and incomplete-run rules", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -287,10 +287,10 @@ testthat::test_that("ledgr_compare_runs respects archive and incomplete-run rule
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   ledgr_run_archive(snapshot, "compare-archived", reason = "test")
 
-  testthat::expect_false("compare-archived" %in% ledgr_compare_runs(snapshot)$run_id)
-  testthat::expect_true("compare-archived" %in% ledgr_compare_runs(snapshot, include_archived = TRUE)$run_id)
-  testthat::expect_true("compare-archived" %in% ledgr_compare_runs(snapshot, run_ids = "compare-archived")$run_id)
-  duplicate <- ledgr_compare_runs(snapshot, run_ids = c("compare-archived", "compare-archived"))
+  testthat::expect_false("compare-archived" %in% ledgr_run_compare(snapshot)$run_id)
+  testthat::expect_true("compare-archived" %in% ledgr_run_compare(snapshot, include_archived = TRUE)$run_id)
+  testthat::expect_true("compare-archived" %in% ledgr_run_compare(snapshot, run_ids = "compare-archived")$run_id)
+  duplicate <- ledgr_run_compare(snapshot, run_ids = c("compare-archived", "compare-archived"))
   testthat::expect_identical(duplicate$run_id, c("compare-archived", "compare-archived"))
 
   bad_strategy <- function(ctx, params) stop("compare failure")
@@ -309,21 +309,21 @@ testthat::test_that("ledgr_compare_runs respects archive and incomplete-run rule
   )
 
   testthat::expect_error(
-    ledgr_compare_runs(snapshot, run_ids = "compare-failed"),
+    ledgr_run_compare(snapshot, run_ids = "compare-failed"),
     "Use ledgr_run_info()",
     class = "ledgr_run_not_complete"
   )
   testthat::expect_error(
-    ledgr_compare_runs(snapshot, run_ids = "missing-run"),
+    ledgr_run_compare(snapshot, run_ids = "missing-run"),
     class = "ledgr_run_not_found"
   )
   testthat::expect_error(
-    ledgr_compare_runs(snapshot, metrics = "experimental"),
+    ledgr_run_compare(snapshot, metrics = "experimental"),
     class = "ledgr_invalid_args"
   )
 })
 
-testthat::test_that("ledgr_compare_runs tolerates legacy pre-provenance runs without mutation", {
+testthat::test_that("ledgr_run_compare tolerates legacy pre-provenance runs without mutation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   opened <- ledgr_test_open_duckdb(db_path)
@@ -412,7 +412,7 @@ testthat::test_that("ledgr_compare_runs tolerates legacy pre-provenance runs wit
   snapshot <- new_ledgr_snapshot(db_path, "snap")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  cmp <- ledgr_compare_runs(snapshot, run_ids = "legacy-compare")
+  cmp <- ledgr_run_compare(snapshot, run_ids = "legacy-compare")
 
   reopened <- ledgr_test_open_duckdb(db_path)
   after_tables <- DBI::dbGetQuery(reopened$con, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' ORDER BY table_name")

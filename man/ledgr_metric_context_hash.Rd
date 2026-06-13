@@ -7,7 +7,7 @@
 ledgr_metric_context_hash(x)
 }
 \arguments{
-\item{x}{A metric-context shortcut accepted by \code{ledgr_metric_context_resolve()}.}
+\item{x}{A metric-context shortcut accepted by \code{ledgr_metric_context()}.}
 }
 \value{
 A SHA-256 hash string.

@@ -46,7 +46,7 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 
 #' Build a return signal from registered return features
 #'
-#' `signal_return()` reads the `return_<lookback>` feature for every instrument
+#' `ledgr_signal_return()` reads the `return_<lookback>` feature for every instrument
 #' in `ctx$universe` and returns a `ledgr_signal`. The required indicator must
 #' already be registered on the experiment, for example with
 #' `features = list(ledgr_ind_returns(20))`; this helper never auto-registers
@@ -66,15 +66,15 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #'   universe = c("AAA", "BBB"),
 #'   feature = function(id, feature_id) c(AAA = 0.03, BBB = NA_real_)[[id]]
 #' )
-#' signal_return(ctx, lookback = 5)
+#' ledgr_signal_return(ctx, lookback = 5)
 #'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-signal_return <- function(ctx, lookback = 20L) {
-  universe <- ledgr_validate_strategy_helper_ctx(ctx, "signal_return")
+ledgr_signal_return <- function(ctx, lookback = 20L) {
+  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_return")
   lookback <- ledgr_strategy_helper_validate_lookback(lookback)
   feature_id <- sprintf("return_%d", lookback)
 
@@ -92,12 +92,12 @@ signal_return <- function(ctx, lookback = 20L) {
 
 #' Select the top instruments from a signal
 #'
-#' `select_top_n()` selects the highest finite/non-missing signal values.
+#' `ledgr_select_top_n()` selects the highest finite/non-missing signal values.
 #' Missing values are ignored. Ties are broken deterministically by instrument
 #' ID in alphabetical order. If no values are usable, the function returns a
 #' classed empty selection without warning. The empty selection carries the
-#' original universe and signal origin so it can flow through `weight_equal()`
-#' and `target_rebalance()` to a flat full-universe target.
+#' original universe and signal origin so it can flow through `ledgr_weight_equal()`
+#' and `ledgr_target_rebalance()` to a flat full-universe target.
 #'
 #' Selection and warning classes:
 #' - `ledgr_empty_selection` for the classed object returned when every signal
@@ -111,14 +111,14 @@ signal_return <- function(ctx, lookback = 20L) {
 #'   object also inherits from `ledgr_empty_selection`.
 #' @examples
 #' signal <- ledgr_signal(c(AAA = 0.03, BBB = NA, CCC = 0.01), origin = "return_5")
-#' select_top_n(signal, n = 1)
+#' ledgr_select_top_n(signal, n = 1)
 #'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-select_top_n <- function(signal, n) {
+ledgr_select_top_n <- function(signal, n) {
   if (!inherits(signal, "ledgr_signal")) {
     rlang::abort("`signal` must be a ledgr_signal object.", class = "ledgr_invalid_strategy_helper")
   }
@@ -150,21 +150,21 @@ select_top_n <- function(signal, n) {
 
 #' Convert a selection to equal long-only weights
 #'
-#' `weight_equal()` assigns equal positive weights to selected instruments.
+#' `ledgr_weight_equal()` assigns equal positive weights to selected instruments.
 #' Empty selections produce empty weights.
 #'
 #' @param selection A `ledgr_selection` object.
 #' @return A `ledgr_weights` object.
 #' @examples
 #' selection <- ledgr_selection(c(AAA = TRUE, BBB = TRUE), universe = c("AAA", "BBB"))
-#' weight_equal(selection)
+#' ledgr_weight_equal(selection)
 #'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-weight_equal <- function(selection) {
+ledgr_weight_equal <- function(selection) {
   if (!inherits(selection, "ledgr_selection")) {
     rlang::abort("`selection` must be a ledgr_selection object.", class = "ledgr_invalid_strategy_helper")
   }
@@ -180,7 +180,7 @@ weight_equal <- function(selection) {
 
 #' Construct full target quantities from weights
 #'
-#' `target_rebalance()` converts long-only weights into a full-universe
+#' `ledgr_target_rebalance()` converts long-only weights into a full-universe
 #' `ledgr_target`. It uses current pulse equity and current close prices at
 #' decision time; fills still occur at the next open, so small drift between
 #' decision-time sizing and fill-time value is expected. Share quantities are
@@ -205,18 +205,18 @@ weight_equal <- function(selection) {
 #'   equity = 1000,
 #'   close = function(id) c(AAA = 50, BBB = 100)[[id]]
 #' )
-#' target_rebalance(weights, ctx, equity_fraction = 0.5)
+#' ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
 #'
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
+ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
   if (!inherits(weights, "ledgr_weights")) {
     rlang::abort("`weights` must be a ledgr_weights object.", class = "ledgr_invalid_strategy_helper")
   }
-  universe <- ledgr_validate_strategy_helper_ctx(ctx, "target_rebalance")
+  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_target_rebalance")
   equity <- ledgr_strategy_helper_context_equity(ctx)
   equity_fraction <- ledgr_strategy_helper_validate_equity_fraction(equity_fraction)
 

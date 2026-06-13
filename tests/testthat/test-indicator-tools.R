@@ -5,7 +5,7 @@ testthat::test_that("ledgr_indicator_dev returns a read-only window", {
   snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
-  ts_utc <- iso_utc(test_bars$ts_utc[[10]])
+  ts_utc <- ledgr_iso_utc(test_bars$ts_utc[[10]])
   dev <- ledgr:::ledgr_indicator_dev(snap, "TEST_A", ts_utc, lookback = 5L)
   on.exit(ledgr:::close.ledgr_indicator_dev(dev), add = TRUE)
 
@@ -38,7 +38,7 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
   snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
-  ts_utc <- iso_utc(test_bars$ts_utc[[10]])
+  ts_utc <- ledgr_iso_utc(test_bars$ts_utc[[10]])
   universe <- c("TEST_A", "TEST_B")
   features <- list(ledgr:::ledgr_ind_sma(3))
 

@@ -1,7 +1,7 @@
 #' ledgr identity fields
 #'
 #' ledgr stores several hashes and JSON payloads so runs, sweeps, promotion
-#' records, and later walk-forward artifacts can say what executed without
+#' records, and walk-forward artifacts can say what executed without
 #' confusing runtime lookup details with concrete feature identity.
 #'
 #' @section Run and config identity:
@@ -34,9 +34,8 @@
 #' @section Cost identity:
 #' `cost_plan_json` is the canonical serializable cost-model plan stored in the
 #' execution config. `cost_model_hash` is the SHA-256 hash of that plan. These
-#' fields are execution identity and are forward dependencies for
-#' walk-forward candidate identity; they do not implement walk-forward by
-#' themselves.
+#' fields are execution identity for runs and sweep candidates. Walk-forward
+#' candidate and session identity also include `cost_model_hash`.
 #'
 #' @section Target-risk identity:
 #' `risk_plan_json` is the canonical serializable target-risk plan stored in the
@@ -51,12 +50,39 @@
 #' reopen as the no-op risk plan in memory; stored historical config JSON is not
 #' rewritten by the compatibility normalizer.
 #'
+#' @section Walk-forward identity:
+#' `candidate_key` identifies one walk-forward fold/window/candidate evaluation.
+#' It includes strategy parameter identity, feature parameter identity,
+#' strategy/feature/alias identity, metric-context identity, `cost_model_hash`,
+#' `risk_chain_hash`, the master seed, `fold_seq`, and the window role
+#' (`"train"` or `"test"`).
+#'
+#' `session_id` identifies a walk-forward session envelope. It includes
+#' snapshot, experiment, parameter-grid, fold-list, selection-rule,
+#' metric-context, cost-model, risk-chain, master-seed, and opening-state policy
+#' identity. These fields identify what ledgr evaluated; they do not prove that
+#' the candidate-selection protocol was statistically sound.
+#'
+#' @section Locator metadata:
+#' Walk-forward result objects may carry string locator attributes: `db_path`,
+#' `snapshot_id`, and `snapshot_hash`. These are recovery and resolve-at-call
+#' verification metadata used by helpers such as [ledgr_candidate()]. They are
+#' not live handles, not identity bytes, and not inputs to `config_hash`,
+#' `candidate_key`, or `session_id`.
+#'
+#' @section Naming supersession:
+#' `ledgr_candidate()` is the candidate generic for sweep and walk-forward
+#' result objects. Family-first public names and `open` reopen helpers follow
+#' the v0.1.9.5 naming contract; historical family-specific candidate helpers
+#' should be mapped to the generic in new documentation.
+#'
 #' @section Where to inspect:
 #' In-session runs expose `feature_set_hash` at
 #' `bt$config$features$feature_set_hash`. Durable stores expose it through
 #' [ledgr_run_info()] and [ledgr_run_list()]. Sweep candidates expose
 #' candidate-level feature and risk identity in their row-level provenance and
-#' reproduction keys.
+#' reproduction keys. Walk-forward result objects expose selected-candidate
+#' identity through their session and candidate inspection helpers.
 #'
 #' @name ledgr_identity_fields
 #' @aliases ledgr_identity_fields ledgr_identity

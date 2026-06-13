@@ -17,8 +17,8 @@ v0.1.9.4 packet), risk-model internals (reviewed during v0.1.9.3 batches),
 feature engine, snapshot adapters, run-store projections.
 
 **Disposition:** tracked for the next release cycle. No findings block the
-v0.1.9.4 release gate; B-1 should land before any benchmark re-record that
-exercises the compiled spot-FIFO path at scale.
+v0.1.9.4 release gate. B-1 is a blocker for compiled-kernel trust and for any
+benchmark re-record that exercises the compiled spot-FIFO path at scale.
 
 ---
 
@@ -37,6 +37,7 @@ exercises the compiled spot-FIFO path at scale.
 | M-5 | Medium   | Durable path | db_live mode pays two DB roundtrips per fill (per-fill COUNT query) |
 | M-6 | Medium   | Identity | Snapshot hash tolerates two timestamp representations (driver hazard) |
 | M-7 | Medium   | Cost model | notional_bps_fee computed on pre-rounding, spread-adjusted price |
+| M-8 | Medium   | Results API | ledgr_results(bt, "fills") returns a dead cursor above the streaming threshold (2026-06-12 addendum) |
 | N-1 | Nit      | Replay | derived-state parses each event meta_json twice |
 | N-2 | Nit      | Compiled bridge | pack_lots grows vectors with c() in a loop (O(n^2) on lot count) |
 | N-3 | Nit      | Contract | event_seq is int32; overflow at 2^31 events (unreachable at daily bars) |
@@ -112,11 +113,12 @@ bounds" -- no ledgr_* class, no context. The resume branch at line 944 guards
 `resume_exec_posix` is only used in the resume branch, so the eager
 evaluation is pure hazard.
 
-**Fix options:** guard the subscript with a length check, or (better
-contract) fail closed at the coverage check with a classed
+**Fix options:** guard the subscript with a length check, or make a deliberate
+contract choice to fail closed at the coverage check with a classed
 "window must contain at least two pulses" error -- the fill model needs a
 next bar to fill anything, and walk-forward already enforces >= 2 scoring
-pulses per window.
+pulses per window. The second option changes the public run-window contract and
+should be treated as a v0.1.9.5 contract decision, not only as a bug fix.
 
 ### H-2. R lot accounting fails silent-open on invalid input; C++ fails closed
 
@@ -126,11 +128,13 @@ pulses per window.
 When `ledgr_lot_apply_fill` receives invalid input (NA direction,
 non-positive qty, non-finite price/fee), it returns the state unchanged with
 NA result fields -- and the fold engine then proceeds anyway: it writes the
-fill event, updates positions, and updates cash. If that path were ever hit,
-realized P&L and cost basis would silently diverge from the cash/position
-stream: an event-sourced ledger whose lot state no longer reconciles with its
-own events. The C++ kernel makes the opposite choice and hard-errors on the
-same conditions.
+fill event, updates positions, and updates cash. The R path is also looser
+than the C++ path: it currently accepts finite non-positive prices and
+negative fees, while the C++ kernel rejects price `<= 0` and fee `< 0`. If
+that path were ever hit, realized P&L and cost basis would silently diverge
+from the cash/position stream: an event-sourced ledger whose lot state no
+longer reconciles with its own events. The C++ kernel makes the opposite
+choice and hard-errors on invalid fill input.
 
 Currently unreachable in practice because `ledgr_fold_build_pulse_plan`
 filters non-finite/non-positive fill prices and the proposal constructor
@@ -138,9 +142,10 @@ guarantees qty > 0. But the guard lives two layers away from the invariant it
 protects, and the silent-NA return makes future breakage invisible.
 
 **Fix:** make `ledgr_lot_apply_fill` abort with a classed error on invalid
-input, matching the C++ kernel's fail-closed philosophy. Replay paths in
-`derived-state.R` already validate event rows before calling it, so the
-blast radius is nil.
+input and align the R validity rules with the C++ kernel: known side,
+finite positive quantity, finite positive price, and finite non-negative fee.
+Replay paths in `derived-state.R` already validate event rows before calling
+it, so the blast radius is nil.
 
 ### H-3. ledgr_time_elapsed divides by 1e9 for any run longer than ~1000 seconds
 
@@ -323,4 +328,41 @@ docs do not state.
    commit.
 5. **M-4 and M-6** are contract-binding decisions (fractional quantities,
    driver-representation pinning) that fit the v0.1.9.5 contracts audit.
-   M-5, M-7, and the nits ride along as entropy items.
+   M-5, M-7, M-8, and the nits ride along as entropy items.
+
+---
+
+## Addendum 2026-06-12
+
+### M-8. ledgr_results(bt, "fills") returns a dead cursor above the streaming threshold
+
+**Files:** `R/backtest.R` lines 2306-2315 (`as_tibble.ledgr_backtest`),
+1172-1210 (`ledgr_extract_fills_impl`), 1410-1412 (cursor return).
+
+Found during the API-naming RFC response-stage verification (Codex response
+Q3 evidence chain; confirmed against source). `as_tibble.ledgr_backtest()`
+opens a read connection, schedules `opened$close()` on exit, and routes
+`what = "fills"` through `ledgr_extract_fills_impl(x, con = con)`. Inside
+the impl, a supplied `con` means `owns_connection = FALSE` -- so when
+`total_rows > stream_threshold` (default 100,000 fill rows), the
+force-lazy branch sets `lazy <- TRUE` but the eager re-entry path
+(`opened$close(); return(ledgr_extract_fills(bt, lazy = TRUE, ...))`) is
+gated on `owns_connection` and does not fire. Execution falls through to
+the lazy return: `new_ledgr_fills_cursor(fills_res, temp_table, con)` --
+a cursor wrapping the borrowed connection, which `as_tibble`'s `on.exit`
+then closes. `ledgr_results(bt, what = "fills")` on a run with more than
+`stream_threshold` fills therefore returns a `ledgr_fills_cursor` backed
+by a closed connection, from a surface that has no public cursor
+lifecycle and documents a tibble return.
+
+Unreachable below 100k fill rows, which is why no test trips it. Two
+candidate fixes: (a) in the borrowed-connection path, ignore the
+threshold and always materialize eagerly (the caller owns lifecycle;
+`ledgr_results` is documented as eager); or (b) have
+`as_tibble.ledgr_backtest` pass an explicit `stream_threshold = Inf`.
+Option (a) is the principled fix: a borrowed connection must never be
+captured into a returned cursor.
+
+This finding also cements the naming-RFC Q3 disposition: the streaming
+fills surface and `ledgr_results()` have genuinely different lifecycle
+contracts and should not be folded in a rename pass.

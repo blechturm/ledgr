@@ -167,7 +167,7 @@ ledgr_walk_forward <- function(exp,
     ),
     class = c("ledgr_walk_forward_results", "list")
   )
-  out
+  ledgr_walk_forward_attach_locator(out, exp$snapshot, session_identity$snapshot_hash)
 }
 
 #' @export
@@ -183,7 +183,8 @@ print.ledgr_walk_forward_results <- function(x, ...) {
       cat("Health warning: flat test starts distort chained walk-forward evidence.\n")
     }
     cat("\nTrain/test degradation:\n")
-    print(degradation, ...)
+    core <- ledgr_walk_forward_degradation_core_columns()
+    print(tibble::as_tibble(degradation)[, intersect(core, names(degradation)), drop = FALSE], ...)
     cat("\n")
   }
   cat("Session: ", x$session_id %||% "<unknown>", "\n", sep = "")

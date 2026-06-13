@@ -4,9 +4,9 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_1_9_4_spec_packet/`.
-**Next planned packet:** v0.1.9.5 documentation, teaching, contracts audit,
-and entropy management. Packet not yet cut.
-**Active packet path:** Pending v0.1.9.5 packet cut.
+**Active packet:** v0.1.9.5 documentation, teaching, contracts audit, and
+entropy management.
+**Active packet path:** `inst/design/ledgr_v0_1_9_5_spec_packet/`.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -110,9 +110,9 @@ versioned packet.
 | v0.1.9.2 | Done | Sweep artifact persistence: durable saved-sweep artifacts, optional retained net equity/return series for completed candidates, reopened-sweep candidate compatibility, and compact retention infrastructure for later walk-forward. | `inst/design/ledgr_v0_1_9_2_spec_packet/` |
 | v0.1.9.3 | Done | Target-risk: per-pulse restructure plus chainable risk layer, including risk-chain identity for walk-forward. | `inst/design/ledgr_v0_1_9_3_spec_packet/` |
 | v0.1.9.4 | Done | Walk-forward culmination: consumes cost identity from v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain identity from v0.1.9.3; Section 17 gates fire here. | `inst/design/ledgr_v0_1_9_4_spec_packet/` |
-| v0.1.9.5 | Planned | Documentation, teaching, contracts audit, and entropy management release after the v0.1.9.x feature arc closes; mirrors the v0.1.8.11 pattern; gates remaining v0.1.9.x feature work and v0.2.x. | Future packet; horizon 2026-06-05 v0.1.9.5 entry |
-| v0.1.9.x | Planned | Conditional primitive-internals implementation phases after collapse gates. | Future packet |
-| v0.1.9.x | Planned | Selection integrity diagnostics after the walk-forward window model stabilizes. | Future packet |
+| v0.1.9.5 | Active | Documentation, teaching, contracts audit, and entropy management release after the v0.1.9.x feature arc closes; mirrors the v0.1.8.11 pattern; gates remaining v0.1.9.x feature work and v0.2.x. | `inst/design/ledgr_v0_1_9_5_spec_packet/` |
+| v0.1.9.6 | Planned | Validation toolkit (rescoped from the prior "selection integrity diagnostics" slot per the accepted 2026-06-12 synthesis): DSR, sweep-level PBO/CSCV over retained return panels with panel-hygiene gates, deterministic candidate clustering, and the Pardo-anchored `ledgr_business_objective()` constructor with all-pass composition, criterion tear-down table, and conditional session-identity participation. Adapter-first (PerformanceAnalytics extension, RPESE; pbo optional). Also carries a deep intraday-readiness code audit that checks whether v0.1.x still preserves an EOD-first, intraday-tolerant architecture and estimates any refactor size; no intraday runtime implementation is authorized by the audit. First feature packet after v0.1.9.5. | Future packet; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` (accepted 2026-06-12); `inst/design/horizon.md` 2026-06-13 intraday-readiness audit entry |
+| v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
@@ -1052,7 +1052,24 @@ Authoritative input:
   v0.1.9.4 walk-forward);
 - accepted syntheses for the cost API, walk-forward (with Amendments 1 + 2
   and Section 17 gate matrix), chainable risk, and sweep persistence;
-- accumulated horizon entries from the v0.1.9.x arc.
+- `inst/design/audits/v0_1_9_4_deep_code_review_audit.md` - v0.1.9.4-close
+  deep code review (1 blocker, 3 high, 7 medium, 6 nits); the hardening
+  batch (B-1, H-1/H-2/H-3, kernel hygiene) is an early-v0.1.9.5 candidate
+  and the M-4 / M-6 contract decisions route to Workstream A;
+- `inst/design/audits/v0_1_9_4_vignette_screening_audit.md` -
+  v0.1.9.4-close vignette screening; binds the concept/technical split
+  designs, the missing-vignette list (risk-and-cost, walk-forward arc,
+  quickstart), the naming-RFC-before-vignettes sequencing constraint, and
+  the R4DS north-star assessment for Workstreams B and C;
+- `inst/design/audits/v0_1_9_5_vignette_audit.md` - v0.1.9.5 vignette audit
+  that promoted `ledgr_sweep_review()`, `ledgr_temp_store()`, stale-fact
+  fixes, and editorial cleanup into Batches 8A/8B/8C while deferring the
+  remaining split/helper/trade-view items to horizon;
+- `inst/design/rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md` -
+  accepted API naming-consistency synthesis; the rename batch must land before
+  the Workstream B/C vignette batches;
+- accumulated horizon entries from the v0.1.9.x arc, including the two
+  2026-06-11 `[audit]` entries that route the audits above.
 
 Indicative workstreams (the spec packet binds final shape):
 
@@ -1089,8 +1106,10 @@ Indicative workstreams (the spec packet binds final shape):
   AGENTS planning context, and a full roadmap audit walking every
   "Planned" row in the milestone table against shipped work, moving
   consumed rows to a "Resolved" / "Consumed" section. The conditional
-  primitive-internals row is the first candidate for audit closure given
-  v0.1.8.7 / v0.1.8.9 / v0.1.8.10 likely consumed it.
+  primitive-internals row was pre-closed 2026-06-12 (consumed by
+  v0.1.8.7 / v0.1.8.9 / v0.1.8.10: gates fired, collapse imported,
+  Phases A/B/C.1 shipped, C.2 superseded by B2, D/E dormant in the
+  synthesis), so Workstream G starts with the remaining "Planned" rows.
 
 Sequencing:
 
@@ -1099,9 +1118,11 @@ Sequencing:
   the v0.1.8.10 to v0.1.8.11 transition.
 - Implementation starts after v0.1.9.4 ships.
 - v0.1.9.5 lands before any other v0.1.9.x planned work
-  (crypto-readiness spike, selection-integrity diagnostics,
+  (the v0.1.9.6 validation toolkit, crypto-readiness spike,
   target-construction helper extensions). The entropy gate closes before
-  the next feature surface opens.
+  the next feature surface opens. v0.1.9.6 is the bound next feature
+  packet (accepted validation-toolkit synthesis, 2026-06-12); it
+  consumes the accepted naming rules from day one.
 - Auditr cycle runs against the refreshed v0.1.9.5 surface; findings
   absorb into v0.1.9.6 or v0.2.x feature packets. Same auditr-after pattern
   the v0.1.8.11 to v0.1.9.1 flow established.
@@ -1408,7 +1429,7 @@ infrastructure that walk-forward consumes when it ticket-cuts at v0.1.9.4:
   (`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
   with Amendments 1 + 2 + Section 17 ticket-cut gate matrix). It gets
   cost identity from v0.1.9.1, sweep retention infrastructure from
-  v0.1.9.2, and risk-chain identity from v0.1.9.3. This is the active packet.
+  v0.1.9.2, and risk-chain identity from v0.1.9.3. Completed packet.
 
 Rationale, cross-cycle identity handoffs, and scope-discipline
 acknowledgment: see the 2026-06-05 horizon entry "v0.1.9.x line
@@ -1621,7 +1642,7 @@ v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain
 identity from v0.1.9.3; Section 17 gate matrix from the synthesis fires
 at this packet.
 
-Active packet:
+Completed packet:
 
 - `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`;
 - `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`;

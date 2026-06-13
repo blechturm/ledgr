@@ -4,9 +4,38 @@ This file is a compact index of the contracts that future contributors and
 coding agents must preserve. The active design index
 (`inst/design/README.md`) names the current authoritative spec packet; the
 authoritative narrative remains in the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_9_3_spec_packet/`.
+`inst/design/ledgr_v0_1_9_5_spec_packet/`.
 The strategy preflight boundary originated in
 `inst/design/ledgr_v0_1_8_spec_packet/` and remains binding.
+
+## Public Naming Contract
+
+- Exported user-facing helpers must use `ledgr_` prefixes. No unprefixed public
+  helper exports remain. S3 method registrations such as `print.*`,
+  `summary.*`, `close.*`, and `as_tibble.*` follow dispatch naming and are not
+  user-facing helper exceptions to the prefix rule.
+- Public names are family-first whenever a durable artifact family exists:
+  run helpers use `ledgr_run_*`, snapshot helpers use `ledgr_snapshot_*`, sweep
+  helpers use `ledgr_sweep_*`, and walk-forward helpers use
+  `ledgr_walk_forward_*`.
+- Verb-first exports are allowed only for the closed v0.1.9.5 allowlist:
+  `ledgr_compute_metrics()`, `ledgr_precompute_features()`,
+  `ledgr_validate_schema()`, `ledgr_backtest_bench()`, and
+  `ledgr_promote()`. Execution entry points such as `ledgr_run()`,
+  `ledgr_sweep()`, and `ledgr_walk_forward()` are family roots, not allowlist
+  cases.
+- Reopen surfaces for durable evidence use `open`, for example
+  `ledgr_run_open()`, `ledgr_sweep_open()`, and `ledgr_walk_forward_open()`.
+- Public evidence accessors must not use `extract_`, `get_`, or `fetch_` as
+  their primary naming shape. Promotion-ready candidate extraction uses the
+  `ledgr_candidate()` generic.
+- Public indicator names distinguish constructors from infrastructure:
+  `ledgr_ind_*` names are indicator constructors, constructor bundles, or
+  constructor-family support helpers such as `ledgr_ind_ttr_warmup_rules()`;
+  `ledgr_indicator_*` names are registry, lookup, development, and
+  infrastructure surfaces.
+- Internal helpers may keep implementation-oriented names, but they must not be
+  exported merely to avoid writing a narrow public wrapper.
 
 ## Execution Contract
 
@@ -90,9 +119,9 @@ The strategy preflight boundary originated in
   errors instead of being silently interpreted.
 - Cost-model identity is part of execution identity. `cost_plan_json` is the
   canonical serialized cost plan, and `cost_model_hash` is the SHA-256 hash of
-  that plan. Later sweep persistence and walk-forward candidate identity may
-  consume these fields, but v0.1.9.1 does not implement cost-grid sweep
-  composition or walk-forward.
+  that plan. Sweep persistence and walk-forward candidate/session identity
+  consume these fields. Cost-grid sweep composition remains separate future
+  work.
 - Target risk is a target-vector transformation layer. Strategies still return
   full named numeric target quantities. The fold applies the normalized
   `risk_chain` after strategy target validation and before fill timing, cost
@@ -120,6 +149,16 @@ The strategy preflight boundary originated in
   Promotion must preserve the selected candidate's risk identity and re-execute
   through `ledgr_run()`; retained return rows are not replayed as committed
   evidence.
+- Walk-forward evidence adds two identity layers over existing run and sweep
+  identity. `candidate_key` identifies one fold/window/candidate evaluation and
+  includes strategy, feature, alias, metric-context, cost, risk, seed, fold, and
+  window-role inputs. `session_id` identifies the walk-forward session envelope
+  and includes snapshot, experiment, grid, fold-list, selection-rule,
+  metric-context, cost, risk, seed, and opening-state policy identity.
+  Locator attributes on `ledgr_walk_forward_results` objects (`db_path`,
+  `snapshot_id`, and `snapshot_hash`) are recovery and resolve-at-call
+  verification metadata. They are not identity bytes and must not enter
+  `config_hash`, `candidate_key`, or `session_id`.
 - Config and feature identity fields must keep their layers distinct.
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and
@@ -141,6 +180,12 @@ The strategy preflight boundary originated in
 - The default fill model is `next_open` with zero spread and zero fixed
   commission. A target emitted at pulse `t` is filled at the next available bar;
   a target emitted on the final pulse has no next bar and is not filled.
+- FIFO lot accounting must pop machine-epsilon-scale fractional dust that
+  remains after a close operation in both the canonical R replay path and the
+  compiled spot-FIFO path. This tolerance is only a representation cleanup for
+  arithmetic residue after matched close quantities; it is not a new
+  affordability rule, quantity granularity, liquidity policy, or identity
+  component.
 
 ## Sweep Promotion Contract
 
@@ -173,8 +218,9 @@ The strategy preflight boundary originated in
   must not roll back a successful run.
 - Direct `ledgr_run()` calls have no promotion context. Promotion context is
   distinct from full run provenance and from future full sweep artifact
-  persistence. v0.1.8 does not add `ledgr_save_sweep()`,
-  `ledgr_load_sweep()`, or full sweep replay/verification helpers.
+  persistence. v0.1.8 did not add durable sweep artifact helpers or full sweep
+  replay/verification helpers; v0.1.9.2 later added compact saved-sweep
+  persistence through the family-first sweep surfaces.
 
 ## Config Contract
 
@@ -192,11 +238,14 @@ The strategy preflight boundary originated in
 - Backtests run against sealed snapshots.
 - Snapshot hashes cover normalized bars and instruments only; metadata and
   snapshot IDs do not alter artifact hashes.
+- Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
+  vectors fail closed during hashing rather than being string-formatted through
+  an implicit representation that could silently re-key a snapshot.
 - Sealing validates referential integrity and OHLC consistency before writing a
   snapshot hash or transitioning to `SEALED`.
 - Split snapshot/run DB mode must verify the source snapshot hash from the
   snapshot DB while writing run artifacts to the run DB.
-- `ledgr_snapshot_load(db_path, snapshot_id)` may reopen an existing sealed
+- `ledgr_snapshot_open(db_path, snapshot_id)` may reopen an existing sealed
   snapshot. It must never create, silently overwrite, or silently reseal a
   snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
 - Snapshot sealing, loading, and fold-entry guards form the trust boundary for
@@ -205,7 +254,7 @@ The strategy preflight boundary originated in
   pulses, timestamps, instruments, and universe membership as trusted normalized
   primitives. They should not repeatedly revalidate OHLC shape, POSIXct/UTC
   status, or sealed-snapshot invariants per pulse, feature, or instrument.
-- In the v0.1.7 snapshot-first workflow, `ledgr_snapshot_load()` is the normal
+- In the v0.1.7 snapshot-first workflow, `ledgr_snapshot_open()` is the normal
   new-session resumption path. After loading a snapshot handle, ordinary
   run-management APIs should use the snapshot object rather than a `db_path`
   argument.
@@ -248,7 +297,7 @@ The strategy preflight boundary originated in
   checkpoint error would mask the primary run or cleanup error. It must not be
   used as the only durability mechanism for public mutating APIs.
 - Low-level CSV snapshot workflows must survive close and reopen:
-  create/import/seal followed by `ledgr_snapshot_load(verify = TRUE)` must
+  create/import/seal followed by `ledgr_snapshot_open(verify = TRUE)` must
   preserve hash verification, seal-time metadata, and subsequent `ledgr_run()`
   execution.
 - v0.1.7 public experiment-store APIs are snapshot-first. A `db_path` appears
@@ -311,9 +360,9 @@ The strategy preflight boundary originated in
   the execution contract, and target constructors must reject negative weights
   or leverage until explicit short-selling and leverage semantics are specified.
 - The v0.1.7.2 reference helper pipeline is deliberately small:
-  `signal_return()` reads already-registered `return_<lookback>` features,
-  `select_top_n()` ignores missing signals and breaks ties by instrument ID,
-  `weight_equal()` creates long-only equal weights, and `target_rebalance()`
+  `ledgr_signal_return()` reads already-registered `return_<lookback>` features,
+  `ledgr_select_top_n()` ignores missing signals and breaks ties by instrument ID,
+  `ledgr_weight_equal()` creates long-only equal weights, and `ledgr_target_rebalance()`
   converts weights into full-universe `ledgr_target` quantities using
   decision-time equity and close prices. These helpers must not auto-register
   indicators, silently normalize weights, or add a second execution path.
@@ -322,7 +371,7 @@ The strategy preflight boundary originated in
   path`. Signal, selection, and weight objects are research objects with origin
   metadata; `ledgr_target` is the only helper value type that may unwrap into
   executable target quantities.
-- `target_rebalance()` floors share quantities to whole numbers after sizing
+- `ledgr_target_rebalance()` floors share quantities to whole numbers after sizing
   long-only weights from current pulse equity and current close prices. It must
   not silently create fractional share targets.
 - Feature maps are authoring UX over the existing feature registry and pulse
@@ -335,7 +384,7 @@ The strategy preflight boundary originated in
 - Feature-map aliases are readable names for strategy authors. They are not
   roles, selectors, recipes-style preprocessing groups, or execution
   instructions.
-- `passed_warmup()` is a guard used inside strategy logic after feature values
+- `ledgr_passed_warmup()` is a guard used inside strategy logic after feature values
   have been read. It is not a helper-pipeline transformation and must not imply
   a second signal/selection/weight/target execution path.
 - v0.1.x does not define a supported broker-style short-selling contract.
@@ -384,8 +433,8 @@ The strategy preflight boundary originated in
   fail before `ledgr_run()` or `ledgr_sweep()` creates execution artifacts.
 - Ledgr's exported public namespace is Tier 1-compatible because ledgr itself
   is the required execution environment for ledgr experiments. Documented
-  strategy helpers such as `signal_return()`, `select_top_n()`,
-  `weight_equal()`, `target_rebalance()`, and `passed_warmup()` must not be
+  strategy helpers such as `ledgr_signal_return()`, `ledgr_select_top_n()`,
+  `ledgr_weight_equal()`, `ledgr_target_rebalance()`, and `ledgr_passed_warmup()` must not be
   treated as unresolved Tier 3 symbols merely because examples omit the
   `ledgr::` qualifier.
 - Static analysis is not a proof of semantic reproducibility. The preflight may
@@ -420,7 +469,7 @@ The strategy preflight boundary originated in
   strategies.
 - `strategy_source_hash` is R-version-sensitive and should be compared directly
   only between runs created under the same `R_version`.
-- `ledgr_extract_strategy(trust = FALSE)` is inspection-only: it returns stored
+- `ledgr_run_strategy(trust = FALSE)` is inspection-only: it returns stored
   source text and metadata without parsing, evaluating, or executing source.
   `trust = TRUE` verifies the stored source hash before parsing/evaluating the
   source into a function object. Hash verification proves stored-text identity,
@@ -460,7 +509,7 @@ The strategy preflight boundary originated in
   over `ctx$feature()`. It must preserve no-lookahead semantics, fail loudly
   for unregistered mapped feature IDs, and return warmup `NA` for known
   features that are not usable yet.
-- `passed_warmup()` is a strategy-authoring guard for named numeric vectors
+- `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
   produced by `ctx$features()`. It is not a helper-pipeline transformation and
   zero-length input must fail loudly rather than returning vacuous success.
 - `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
@@ -492,7 +541,7 @@ The strategy preflight boundary originated in
   params. Only `params$args` are forwarded to TTR; metadata fields are identity
   fields for fingerprints and diagnostics.
 - TTR warmup inference is allowed only for functions listed by
-  `ledgr_ttr_warmup_rules()`. Each listed rule must be deterministic from
+  `ledgr_ind_ttr_warmup_rules()`. Each listed rule must be deterministic from
   explicit arguments alone and verified against direct TTR output in tests.
 - TTR adapter parity tests must cover every listed warmup rule and every
   documented multi-output column. Derived outputs such as MACD `histogram` are
@@ -516,7 +565,7 @@ The strategy preflight boundary originated in
 - Feature precomputation may use a session-scoped cache. Cache entries are keyed
   by sealed `snapshot_hash`, instrument ID, indicator fingerprint,
   feature-engine version, and date range. The cache is never persisted to
-  DuckDB and may be cleared with `ledgr_clear_feature_cache()`.
+  DuckDB and may be cleared with `ledgr_feature_cache_clear()`.
 - The session feature cache is a runner precomputation optimization for
   repeated backtests over sealed snapshots. Low-level recovery helpers and
   interactive pulse/indicator tools recompute features because they do not own
@@ -560,10 +609,10 @@ The strategy preflight boundary originated in
 - Timestamp display options are print-only. `options(ledgr.print_ts_utc =
   "auto")` may compact all-midnight UTC timestamps to dates in ledgr-owned
   print paths, but returned and stored `ts_utc` values remain POSIXct UTC.
-- `ledgr_compare_runs()` reads stored completed-run artifacts only. It must not
+- `ledgr_run_compare()` reads stored completed-run artifacts only. It must not
   rerun strategy code, evaluate recovered source, or mutate the experiment
   store while producing comparison tables.
-- `ledgr_compare_runs()` returns raw numeric metric columns for ranking and
+- `ledgr_run_compare()` returns raw numeric metric columns for ranking and
   filtering. Percentage formatting is a print-only concern; users must not need
   to parse display strings such as `"+5.2%"` to rank runs.
 - `ledgr_run_tag()`, `ledgr_run_untag()`, and `ledgr_run_tags()` manage mutable
@@ -574,7 +623,7 @@ The strategy preflight boundary originated in
   run id and DBI connection. It delegates to the shared derived-state rebuild
   path, which verifies snapshot-backed sources before rebuilding derived
   artifacts.
-- `ledgr_extract_fills()` and `ledgr_compute_equity_curve()` are user-facing
+- `ledgr_run_fills()` and `ledgr_results(bt, "equity")` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
 - Public standard metrics use the equity rows returned by
@@ -673,7 +722,7 @@ The strategy preflight boundary originated in
   vignette unless the contract explicitly documents why both are needed.
 - TTR-specific reference facts, including multi-output column names and
   detailed warmup formulas, belong in function help such as `?ledgr_ind_ttr`
-  and `?ledgr_ttr_warmup_rules`.
+  and `?ledgr_ind_ttr_warmup_rules`.
 - Indicator documentation should make the adapter boundary explicit: ledgr owns
   feature contracts and execution semantics, while calculation packages such as
   TTR and future adapters supply indicator computations through normal

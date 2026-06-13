@@ -1,3 +1,13 @@
+ledgr_snapshot_hash_format_ts_utc <- function(x) {
+  if (!inherits(x, "POSIXct")) {
+    rlang::abort(
+      "`ts_utc` must be a POSIXct vector while hashing snapshots.",
+      class = c("ledgr_snapshot_hash_invalid_timestamp", "ledgr_invalid_state")
+    )
+  }
+  format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+}
+
 ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
@@ -21,19 +31,6 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
   )$n[[1]] > 0
   if (!isTRUE(exists)) {
     rlang::abort(sprintf("Snapshot not found: %s", snapshot_id), class = "LEDGR_SNAPSHOT_NOT_FOUND")
-  }
-
-  fmt_ts_utc <- function(x) {
-    if (inherits(x, "POSIXt")) {
-      return(format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
-    }
-    if (is.character(x)) {
-      return(x)
-    }
-    if (is.null(x) || (is.atomic(x) && length(x) == 1 && is.na(x))) {
-      return(NA_character_)
-    }
-    as.character(x)
   }
 
   fmt_num <- function(x) {
@@ -60,19 +57,6 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     if (is.null(x)) return("null")
     if (is.atomic(x) && length(x) == 1 && is.na(x)) return("NA")
     if (is.character(x)) return(x)
-    as.character(x)
-  }
-
-  fmt_ts_utc_vec <- function(x) {
-    if (inherits(x, "POSIXt")) {
-      return(format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
-    }
-    if (is.character(x)) {
-      return(x)
-    }
-    if (is.null(x)) {
-      return(NA_character_)
-    }
     as.character(x)
   }
 
@@ -187,7 +171,7 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     row_to_lines = function(df) {
       lines <- paste(
         token_vec(df$instrument_id),
-        token_vec(fmt_ts_utc_vec(df$ts_utc)),
+        token_vec(ledgr_snapshot_hash_format_ts_utc(df$ts_utc)),
         token_vec(fmt_num_vec(df$open)),
         token_vec(fmt_num_vec(df$high)),
         token_vec(fmt_num_vec(df$low)),

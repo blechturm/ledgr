@@ -118,8 +118,11 @@ run_candidate_with_subphase_telemetry <- function(fixture, n_pulses_used = 1260L
   telemetry$t_results <- NA_real_
   telemetry$t_fills_extract <- NA_real_
 
-  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
-    spread_bps = 0, commission_fixed = 0
+  cost_resolver <- ledgr:::ledgr_cost_resolver_from_model(
+    ledgr_cost_chain(
+      ledgr_cost_spread_bps(0),
+      ledgr_cost_fixed_fee(0)
+    )
   )
 
   execution <- ledgr:::ledgr_execution_spec(

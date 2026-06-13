@@ -413,8 +413,8 @@ testthat::test_that("pulse context feature maps return aliased pulse values", {
   testthat::expect_identical(names(x_aaa), c("trend", "ret"))
   testthat::expect_equal(x_aaa[["trend"]], 10.25)
   testthat::expect_true(is.na(x_aaa[["ret"]]))
-  testthat::expect_false(passed_warmup(x_aaa))
-  testthat::expect_true(passed_warmup(x_bbb))
+  testthat::expect_false(ledgr_passed_warmup(x_aaa))
+  testthat::expect_true(ledgr_passed_warmup(x_bbb))
   testthat::expect_equal(x_bbb[["ret"]], 0.05)
   testthat::expect_equal(ctx$feature("BBB", "return_2"), x_bbb[["ret"]])
 
@@ -469,11 +469,11 @@ testthat::test_that("pulse context feature maps fail loudly for invalid lookup",
   )
 })
 
-testthat::test_that("passed_warmup validates input shape", {
-  testthat::expect_true(passed_warmup(c(a = 1, b = 0)))
-  testthat::expect_false(passed_warmup(c(a = 1, b = NA_real_)))
-  testthat::expect_error(passed_warmup(numeric()), class = "ledgr_empty_warmup_input")
-  testthat::expect_error(passed_warmup("x"), class = "ledgr_invalid_warmup_input")
+testthat::test_that("ledgr_passed_warmup validates input shape", {
+  testthat::expect_true(ledgr_passed_warmup(c(a = 1, b = 0)))
+  testthat::expect_false(ledgr_passed_warmup(c(a = 1, b = NA_real_)))
+  testthat::expect_error(ledgr_passed_warmup(numeric()), class = "ledgr_empty_warmup_input")
+  testthat::expect_error(ledgr_passed_warmup("x"), class = "ledgr_invalid_warmup_input")
 })
 
 testthat::test_that("interactive pulse snapshots expose strategy authoring helpers", {
@@ -484,7 +484,7 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   universe <- c("TEST_A", "TEST_B")
-  ts_utc <- iso_utc(test_bars$ts_utc[[10]])
+  ts_utc <- ledgr_iso_utc(test_bars$ts_utc[[10]])
   ctx <- ledgr_pulse_snapshot(
     snapshot = snap,
     universe = universe,
@@ -578,7 +578,7 @@ testthat::test_that("feature-map strategies match across execution modes", {
       stop("mapped feature value does not match scalar feature accessor")
     }
     targets <- ctx$flat()
-    if (passed_warmup(x) && x[["ret"]] > 0) {
+    if (ledgr_passed_warmup(x) && x[["ret"]] > 0) {
       targets["AAA"] <- 1
     }
     targets

@@ -62,11 +62,11 @@ testthat::test_that("strategy preflight records unqualified package calls for wo
 testthat::test_that("strategy preflight keeps base/recommended and ledgr exported calls Tier 1", {
   strategy <- function(ctx, params) {
     values <- c(1, 2, 3)
-    signal <- signal_return(ctx, lookback = params$lookback)
-    selected <- select_top_n(signal, n = 1)
-    weights <- weight_equal(selected)
-    if (passed_warmup(c(x = stats::sd(values)))) {
-      return(target_rebalance(weights, ctx, equity_fraction = 0.5))
+    signal <- ledgr_signal_return(ctx, lookback = params$lookback)
+    selected <- ledgr_select_top_n(signal, n = 1)
+    weights <- ledgr_weight_equal(selected)
+    if (ledgr_passed_warmup(c(x = stats::sd(values)))) {
+      return(ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5))
     }
     ctx$flat()
   }

@@ -89,7 +89,7 @@ ledgr_demo_sma_crossover_strategy <- function() {
       }
 
       values <- values[required_aliases]
-      if (passed_warmup(values) && ((values[["fast"]] / values[["slow"]]) - 1) > threshold) {
+      if (ledgr_passed_warmup(values) && ((values[["fast"]] / values[["slow"]]) - 1) > threshold) {
         targets[id] <- qty
       }
     }

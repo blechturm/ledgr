@@ -33,7 +33,7 @@ A sealed \code{ledgr_snapshot} object.
 Fetches historical data from Yahoo Finance via quantmod and delegates to
 \code{ledgr_snapshot_from_df()}. The returned handle is already sealed; pass it
 directly to \code{ledgr_experiment()} or reopen it later with
-\code{ledgr_snapshot_load()}.
+\code{ledgr_snapshot_open()}.
 }
 \details{
 quantmod may emit harmless package startup or S3 method-overwrite messages to

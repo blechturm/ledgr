@@ -27,7 +27,10 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 5.  features;
 6.  performance arc;
 7.  benchmark methodology;
-8.  identity contract.
+8.  identity contract;
+9.  cost resolver;
+10. target risk layer;
+11. walk-forward machinery.
 
 ## Articles
 
@@ -41,6 +44,9 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
 | [`benchmark_methodology.md`](benchmark_methodology.md) | `benchmark_methodology.qmd` | Reviewable LDG-2545 batch | Local benchmark record generation, repeatability expectations, release-gate checks, and public-claim boundaries. |
 | [`identity_contract.md`](identity_contract.md) | `identity_contract.qmd` | Reviewable v0.1.9.1 LDG-2563 batch | Config, feature, alias, and cost identity fields after the public cost API and identity hardening work. |
+| [`cost_resolver.md`](cost_resolver.md) | `cost_resolver.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Public cost-model plans, resolver reconstruction, cost identity, and fold integration boundaries. |
+| [`target_risk_layer.md`](target_risk_layer.md) | `target_risk_layer.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Classed risk steps, risk-chain identity, worker-safe plans, and target-risk layer boundaries. |
+| [`walk_forward_machinery.md`](walk_forward_machinery.md) | `walk_forward_machinery.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Walk-forward fold orchestration, scalar selection, locator verification, persistence, and inspection surfaces. |
 
 ## Rendered Output
 
@@ -74,9 +80,19 @@ manual articles:
 - `features.qmd` (`## Implementation Trace`)
 - `sweep.qmd` (`## Implementation Trace`)
 - `benchmark_methodology.qmd` (`## Implementation Trace`)
+- `cost_resolver.qmd` (`## Implementation Trace`)
+- `target_risk_layer.qmd` (`## Implementation Trace`)
+- `walk_forward_machinery.qmd` (`## Implementation Trace`)
 - `../ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`
 - `../ledgr_v0_1_8_8_spec_packet/peer_benchmark_parity_closeout.md`
 - `../ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`
 - `../ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`
 - `../ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`
+- `../ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`
+- `../ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`
+- `../ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`
+- `../rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`
+- `../rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`
+- `../rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+- `../rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`

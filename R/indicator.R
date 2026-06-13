@@ -209,10 +209,10 @@ ledgr_indicator_fingerprint <- function(indicator) {
 #'     fn = function(window) tail(window$close, 1),
 #'     requires_bars = 1
 #'   )
-#'   ledgr_register_indicator(ind)
+#'   ledgr_indicator_register(ind)
 #' })
 #' @export
-ledgr_register_indicator <- function(indicator, name = NULL, overwrite = FALSE) {
+ledgr_indicator_register <- function(indicator, name = NULL, overwrite = FALSE) {
   if (!inherits(indicator, "ledgr_indicator")) {
     rlang::abort("`indicator` must be a ledgr_indicator object.", class = "ledgr_invalid_args")
   }
@@ -263,11 +263,11 @@ ledgr_register_indicator <- function(indicator, name = NULL, overwrite = FALSE) 
 #'     fn = function(window) tail(window$close, 1),
 #'     requires_bars = 1
 #'   )
-#'   ledgr_register_indicator(ind)
-#'   ledgr_deregister_indicator("example_deregister")
+#'   ledgr_indicator_register(ind)
+#'   ledgr_indicator_remove("example_deregister")
 #' })
 #' @export
-ledgr_deregister_indicator <- function(name, missing_ok = TRUE) {
+ledgr_indicator_remove <- function(name, missing_ok = TRUE) {
   if (!is.character(name) || length(name) != 1 || !nzchar(name)) {
     rlang::abort("`name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -308,11 +308,11 @@ ledgr_deregister_indicator <- function(name, missing_ok = TRUE) {
 #'     fn = function(window) tail(window$close, 1),
 #'     requires_bars = 1
 #'   )
-#'   ledgr_register_indicator(ind)
-#'   ledgr_get_indicator("example_lookup")$id
+#'   ledgr_indicator_register(ind)
+#'   ledgr_indicator_get("example_lookup")$id
 #' })
 #' @export
-ledgr_get_indicator <- function(name) {
+ledgr_indicator_get <- function(name) {
   if (!is.character(name) || length(name) != 1 || !nzchar(name)) {
     rlang::abort("`name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
@@ -324,7 +324,7 @@ ledgr_get_indicator <- function(name) {
       msg <- paste0(
         sprintf("Indicator '%s' not found in registry.\n", name),
         "Available indicators: ", paste(available, collapse = ", "), "\n\n",
-        "Register custom indicators with:\n  ledgr_register_indicator(my_indicator)"
+        "Register custom indicators with:\n  ledgr_indicator_register(my_indicator)"
       )
     }
     rlang::abort(msg, class = "ledgr_invalid_args")
@@ -352,11 +352,11 @@ ledgr_get_indicator <- function(name) {
 #'     fn = function(window) tail(window$close, 1),
 #'     requires_bars = 1
 #'   )
-#'   ledgr_register_indicator(ind)
-#'   ledgr_list_indicators("example")
+#'   ledgr_indicator_register(ind)
+#'   ledgr_indicator_list("example")
 #' })
 #' @export
-ledgr_list_indicators <- function(pattern = NULL) {
+ledgr_indicator_list <- function(pattern = NULL) {
   if (!is.null(pattern) && (!is.character(pattern) || length(pattern) != 1 || !nzchar(pattern))) {
     rlang::abort("`pattern` must be NULL or a non-empty character scalar.", class = "ledgr_invalid_args")
   }

@@ -46,8 +46,8 @@ testthat::test_that("audit_log matches db_live results", {
   cost_model = ledgr_cost_zero()
   ))
 
-  fills_a <- ledgr_extract_fills(bt_audit)
-  fills_b <- ledgr_extract_fills(bt_db)
+  fills_a <- ledgr_run_fills(bt_audit)
+  fills_b <- ledgr_run_fills(bt_db)
   fills_a <- fills_a[order(fills_a$event_seq), , drop = FALSE]
   fills_b <- fills_b[order(fills_b$event_seq), , drop = FALSE]
 

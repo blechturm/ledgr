@@ -83,14 +83,10 @@ ledgr_risk_fold_test_execution <- function(strategy,
 testthat::test_that("pulse plan resolves same-pulse fills before emitting events", {
   events_written <- 0L
   resolver_seen_events <- integer()
+  base_resolver <- ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0)
   cost_resolver <- function(proposal, fill_context) {
     resolver_seen_events <<- c(resolver_seen_events, events_written)
-    ledgr:::ledgr_default_cost_resolve(
-      proposal = proposal,
-      fill_context = fill_context,
-      spread_bps = 0,
-      commission_fixed = 0
-    )
+    base_resolver(proposal, fill_context)
   }
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
@@ -123,7 +119,7 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
 })
 
 testthat::test_that("no-op feasibility hook does not sequentially reject same-pulse rebalances", {
-  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+  cost_resolver <- ledgr_test_cost_resolver(
     spread_bps = 0,
     commission_fixed = 0
   )
@@ -165,15 +161,11 @@ testthat::test_that("no-op feasibility hook does not sequentially reject same-pu
 testthat::test_that("compiled risk plan transforms targets before timing cost and event writes", {
   resolver_calls <- 0L
   resolver_qty <- numeric()
+  base_resolver <- ledgr_test_cost_resolver(spread_bps = 0, commission_fixed = 0)
   cost_resolver <- function(proposal, fill_context) {
     resolver_calls <<- resolver_calls + 1L
     resolver_qty <<- c(resolver_qty, proposal$qty)
-    ledgr:::ledgr_default_cost_resolve(
-      proposal = proposal,
-      fill_context = fill_context,
-      spread_bps = 0,
-      commission_fixed = 0
-    )
+    base_resolver(proposal, fill_context)
   }
   strategy <- function(ctx, params) {
     if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
@@ -208,7 +200,7 @@ testthat::test_that("compiled risk plan transforms targets before timing cost an
 })
 
 testthat::test_that("long-only risk step maps negative targets to zero", {
-  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+  cost_resolver <- ledgr_test_cost_resolver(
     spread_bps = 0,
     commission_fixed = 0
   )
@@ -251,7 +243,7 @@ testthat::test_that("long-only risk step leaves compliant targets unchanged", {
 })
 
 testthat::test_that("max-weight risk step caps absolute target exposure", {
-  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+  cost_resolver <- ledgr_test_cost_resolver(
     spread_bps = 0,
     commission_fixed = 0
   )
@@ -308,7 +300,7 @@ testthat::test_that("max-weight zeros nonzero targets when equity is zero", {
 })
 
 testthat::test_that("risk chains apply built-in steps in order", {
-  cost_resolver <- ledgr:::ledgr_cost_spread_commission_internal(
+  cost_resolver <- ledgr_test_cost_resolver(
     spread_bps = 0,
     commission_fixed = 0
   )

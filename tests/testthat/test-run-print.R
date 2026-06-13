@@ -35,7 +35,7 @@ testthat::test_that("ledgr_run_list prints curated view while preserving tibble 
   testthat::expect_s3_class(tibble::as_tibble(runs), "tbl_df")
 })
 
-testthat::test_that("ledgr_compare_runs prints curated view while preserving numeric metrics", {
+testthat::test_that("ledgr_run_compare prints curated view while preserving numeric metrics", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -70,7 +70,7 @@ testthat::test_that("ledgr_compare_runs prints curated view while preserving num
   )
   on.exit(close(bt_b), add = TRUE)
 
-  cmp <- ledgr_compare_runs(snapshot, run_ids = c("print-cmp-a", "print-cmp-b"))
+  cmp <- ledgr_run_compare(snapshot, run_ids = c("print-cmp-a", "print-cmp-b"))
   testthat::expect_s3_class(cmp, "ledgr_comparison")
   testthat::expect_s3_class(cmp, "tbl_df")
   testthat::expect_type(cmp$total_return, "double")

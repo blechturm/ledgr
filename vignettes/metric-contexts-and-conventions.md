@@ -1,0 +1,472 @@
+# Metric Contexts And Conventions
+
+
+<style>
+.ledgr-diagram {
+  margin: 1.25rem auto 1.5rem auto;
+  text-align: center;
+}
+.ledgr-diagram .mermaid {
+  display: inline-block;
+  max-width: 760px;
+  width: 100%;
+}
+.ledgr-diagram .node text,
+.ledgr-diagram .edgeLabel {
+  font-size: 18px !important;
+}
+</style>
+
+Metrics are only useful when their assumptions are visible. This
+companion to The Accounting Model shows where ledgr stores those
+assumptions, how annualization and risk-free-rate choices affect
+metrics, and how to inspect the metric context that travels with runs,
+sweeps, and promotions.
+
+## Prerequisites
+
+``` r
+library(ledgr)
+library(dplyr)
+library(tibble)
+```
+
+## Fixture For Context Examples
+
+This companion article needs a small completed run so metric-context
+examples can inspect stored assumptions. The accounting walkthrough,
+result-table hierarchy, and hand recomputation live in
+`vignette("metrics-and-accounting", package = "ledgr")`.
+
+``` r
+bars <- data.frame(
+  ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+  instrument_id = "AAA",
+  open = c(100, 101, 105, 106, 106),
+  high = c(100, 101, 105, 106, 106),
+  low = c(100, 101, 105, 106, 106),
+  close = c(100, 101, 105, 106, 106),
+  volume = 1
+)
+
+one_day_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2020-01-01")) {
+    targets["AAA"] <- 1
+  }
+  targets
+}
+
+bt <- ledgr_backtest(
+  data = bars,
+  strategy = one_day_strategy,
+  initial_cash = 1000,
+  run_id = "metric_context_example",
+  cost_model = ledgr_cost_zero()
+)
+```
+
+## Metric Context
+
+Metric assumptions now live in a `metric_context`. The default context
+is US equity daily: zero annual risk-free rate and `252 * 1` periods per
+year. Use market templates for common assumptions:
+
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+A metric context is the assumption object behind metrics: risk-free
+rate, calendar, annualization, and reserved provider slots. It makes
+metric assumptions inspectable instead of hidden in summary output.
+
+</div>
+
+### Common Contexts
+
+``` r
+ledgr_metric_us_equity()
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
+ledgr_metric_us_equity(risk_free_rate = 0.04)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 4.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           247dc197ca7e63bd503d5ee7743bb2ff2e2c542ee61a698e94960964ffacffa8
+ledgr_metric_us_equity(
+  bars_per_day = 390L,
+  risk_free_rate = ledgr_risk_free_rate(0.04, label = "policy rate")
+)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 4.0000%
+#> Calendar:       US equity custom bars (252 days/year * 390 bars/day = 98,280 bars/year)
+#> Hash:           51b4f0993533f2d60911b811f47a2862d1aca716d5c394102aa5c86c31a55312
+ledgr_metric_crypto()
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       crypto daily (365 days/year * 1 bars/day = 365 bars/year)
+#> Hash:           3a25682545962e78f29c03313dd4df14d320b0d3d1796cab38e897524506c84a
+```
+
+A scalar shorthand is accepted when only the annual risk-free rate
+changes:
+
+``` r
+ledgr_metric_context(0.04)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 4.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           247dc197ca7e63bd503d5ee7743bb2ff2e2c542ee61a698e94960964ffacffa8
+```
+
+Use an explicit context when the calendar matters:
+
+``` r
+intraday_context <- ledgr_metric_context(
+  calendar = ledgr_calendar_us_equity(bars_per_day = 390L),
+  risk_free_rate = ledgr_risk_free_rate(0.04, label = "manual assumption")
+)
+```
+
+The full constructor fields are `risk_free_rate`, `calendar`,
+`benchmark`, `market_factor`, and `mar`. The provider fields
+`benchmark`, `market_factor`, and `mar` are reserved and must be `NULL`;
+they exist so future benchmark and provider designs have an explicit
+home instead of changing metric semantics later.
+
+Intraday work should set `calendar` explicitly. For example, US equity
+minute bars use `ledgr_calendar_us_equity(bars_per_day = 390L)`. ledgr
+does not infer that policy from ticker symbols, file names, or provider
+names.
+
+### Stored Context vs Sensitivity Overrides
+
+`summary(bt)` and `ledgr_compute_metrics(bt)` use the metric context
+stored with the committed run. Call-time overrides are sensitivity
+checks; they do not mutate the run:
+
+``` r
+stored_run_context <- ledgr_metric_context(bt)
+stored_metrics <- ledgr_compute_metrics(bt)
+zero_rf_metrics <- ledgr_compute_metrics(bt, risk_free_rate = 0)
+
+ledgr_metric_context(stored_metrics)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
+ledgr_metric_context(zero_rf_metrics)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
+identical( # confirm the override did not mutate the stored context on `bt`
+  ledgr_metric_context_hash(stored_run_context),
+  ledgr_metric_context_hash(ledgr_metric_context(bt))
+)
+#> [1] TRUE
+```
+
+Metric-context hashes include the metric-context version, annual
+risk-free rate, risk-free source, risk-free `as_of`, and calendar
+annualization and source fields. Human display labels are stored for
+inspection but do not change the hash. If the print output is too
+compact for a report, inspect the nested object directly:
+
+``` r
+context <- ledgr_metric_context(bt)
+context$risk_free_rate$label
+#> NULL
+context$risk_free_rate$source
+#> [1] "manual"
+context$risk_free_rate$as_of
+#> NULL
+ledgr_metric_context_hash(context)
+#> [1] "794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb"
+```
+
+### Comparison, Sweep, And Promotion Contexts
+
+The following snippets use objects from the experiment-store and sweeps
+workflows. They show where metric context is carried, not a complete
+runnable example.
+
+`ledgr_run_compare()` has exactly one comparison context per table. The
+snapshot-first form uses the default context unless you pass one
+explicitly:
+
+``` r
+comparison <- ledgr_run_compare(
+  snapshot,
+  run_ids = c("trend_qty_5", "trend_qty_15"),
+  metric_context = ledgr_metric_context(exp)
+)
+
+ledgr_metric_context(comparison)
+```
+
+Sweep result tables also have exactly one metric context. Promotion
+context keeps that source sweep context separate from the committed
+run’s own context:
+
+``` r
+results <- ledgr_sweep(train_exp, grid)
+candidate <- ledgr_candidate(results, 1)
+test_run <- ledgr_promote(test_exp, candidate, require_same_snapshot = FALSE)
+
+ledgr_metric_context(results)
+ledgr_metric_context(ledgr_promotion_context(test_run))
+ledgr_metric_context(test_run)
+```
+
+This distinction matters for train/test work: the source sweep context
+explains how a candidate was ranked, while the committed run context
+explains the default analysis assumptions stored with the promoted run.
+
+## Risk Metric Contract
+
+The standard metric contract includes `sharpe_ratio` as ledgr’s first
+risk-adjusted metric. It is computed from the same public equity rows as
+volatility, not from hidden runner state and not from an external
+metrics package.
+
+The return series is still the adjacent public equity-row return:
+
+``` text
+equity_return[t] = equity[t] / equity[t - 1] - 1
+```
+
+Sharpe-style metrics use period excess returns:
+
+``` text
+excess_return[t] = equity_return[t] - rf_period_return[t]
+sharpe_ratio = mean(excess_return) / sd(excess_return) * sqrt(bars_per_year)
+```
+
+The first risk-free-rate provider is a scalar annual rate expressed as a
+decimal, so `0.02` means two percent per year. The default is `0`. ledgr
+converts that scalar annual rate to a per-period return with the same
+`bars_per_year` used for annualized return and volatility:
+
+``` text
+rf_period_return = (1 + rf_annual)^(1 / bars_per_year) - 1
+```
+
+Time-varying risk-free-rate series and real data providers such as FRED,
+Treasury, ECB, or central-bank adapters are deferred to later
+metric-context provider work. Future providers must feed the same
+pulse-aligned `rf_period_return` vector into the formula above; they
+must not create a separate Sharpe formula branch.
+
+Sharpe returns `NA_real_` for short samples, flat equity, or near-zero
+volatility; see `?ledgr_compute_metrics` for the exact edge-case rules.
+
+Other risk-adjusted or benchmark-relative metrics are deferred to v0.2.x
+benchmark context work: Sortino, Calmar, Omega, information ratio,
+alpha/beta, benchmark-relative metrics, VaR, and tail-risk metrics.
+
+``` r
+summary(bt)
+#> ledgr Backtest Summary
+#> ======================
+#>
+#> Performance Metrics:
+#>   Total Return:        0.40%
+#>   Annualized Return:   28.59%
+#>   Max Drawdown:        0.00%
+#>
+#> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
+#>   Volatility (annual): 3.17%
+#>   Sharpe Ratio:        7.937
+#>
+#> Trade Statistics:
+#>   Total Trades:        1
+#>   Win Rate:            100.00%
+#>   Avg Trade:           $4.00
+#>
+#> Exposure:
+#>   Time in Market:      20.00%
+```
+
+`summary(bt)` is a print-oriented view. It returns the backtest handle
+invisibly, not a metrics object. Use `ledgr_compute_metrics()` for
+scripted workflows:
+
+``` r
+metrics <- ledgr_compute_metrics(bt)
+metrics[c("total_return", "sharpe_ratio", "n_trades", "win_rate")]
+#> $total_return
+#> [1] 0.004
+#>
+#> $sharpe_ratio
+#> [1] 7.937254
+#>
+#> $n_trades
+#> [1] 1
+#>
+#> $win_rate
+#> [1] 1
+ledgr_metric_context(metrics)
+#> ledgr_metric_context
+#> ====================
+#> Version:        1
+#> Risk-free rate: 0.0000%
+#> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
+#> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
+```
+
+The raw metrics object keeps metric-kernel attributes for provenance.
+Those attributes are part of the programmatic object, not the printed
+metric table. Use named fields such as `metrics$sharpe_ratio` or the
+subset above when you need a compact report.
+
+`ledgr_run_compare()` is also programmatic: it returns a tibble-like
+`ledgr_comparison` object with raw numeric metric columns for filtering
+and ranking. Its print method only curates the displayed columns.
+Comparison metrics are recomputed from stored equity and fill tables and
+use the same closed-trade semantics as `ledgr_compute_metrics()`.
+
+For reports, convert the comparison object and keep the raw numeric
+columns:
+
+``` r
+comparison |>
+  as.data.frame() |>
+  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown)
+```
+
+## Diagnose A Successful Run With Zero Trades
+
+A completed run with zero trades is not automatically wrong. It means
+ledgr accepted the strategy outputs and the ledger reached the end of
+the sample, but no closed round trips were recorded.
+
+Use this checklist before changing the strategy:
+
+1.  Start with `summary(bt)`. If `Total Trades` is zero, `win_rate` and
+    `avg_trade` should be `NA`, not zero. If a registered feature can
+    never become usable because the sample is too short, `summary(bt)`
+    also prints a `Warmup Diagnostics` note with the feature ID,
+    instrument ID, required bars, and available bars.
+2.  Inspect `ledgr_results(bt, what = "fills")`. Empty fills mean
+    nothing ever executed. Non-empty fills with empty trades mean
+    positions opened but did not close.
+3.  Confirm the feature IDs with `ledgr_feature_id(features)`. A helper
+    such as `ledgr_signal_return(ctx, lookback = 60)` reads `return_60`;
+    that indicator must be registered before the run.
+4.  Compare feature contracts with sample length before assuming the
+    strategy is broken. `ledgr_feature_contracts(features)` shows
+    `requires_bars` and `stable_after`. If an instrument has fewer
+    available bars than a feature’s `requires_bars`, that feature cannot
+    become usable for that instrument.
+5.  Inspect a late pulse with `ledgr_pulse_snapshot()`. If the feature
+    is still `NA` for every instrument near the end of the sample, the
+    issue is no longer ordinary early warmup. Check the lookback length,
+    sample length, universe, and feature registration.
+6.  If the helper pipeline returns a `ledgr_empty_selection` on a late
+    diagnostic pulse, inspect the signal values directly. Ordinary early
+    warmup should have passed by then; a late all-missing signal usually
+    points to sample length, universe, or feature-registration issues.
+
+Timestamp checks should compare normalized UTC values, not local string
+representations:
+
+``` r
+target_ts <- ledgr_utc("2020-01-05T00:00:00Z")
+ledgr_utc(ctx$ts_utc) == target_ts
+
+intraday_time <- format(ledgr_utc(ctx$ts_utc), "%H:%M:%S", tz = "UTC")
+intraday_time >= "14:30:00" && intraday_time <= "21:00:00"
+```
+
+If fills are empty, distinguish zero signals from zero sizing. In your
+own run, use the same snapshot, universe, timestamp, features, strategy,
+and params you are debugging:
+
+``` r
+pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = ...,
+  ts_utc = ...,
+  features = features
+)
+target <- strategy(pulse, params)
+target
+all(target == 0)
+```
+
+Custom fill-model contract errors are different from zero-trade
+outcomes; see the fill-model reference documentation for the required
+fill fields.
+
+### Four Warmup-Adjacent Cases
+
+Warmup is per instrument. One instrument can have a usable value while
+another is still `NA` because it has fewer bars or a different data
+history.
+
+Ordinary feature warmup is local to the beginning of each instrument’s
+usable sample. A known feature is `NA` for early pulses, then becomes
+usable once the feature contract has enough bars.
+
+Impossible warmup is different: every value for an instrument/feature
+remains `NA` because the instrument never reaches the feature contract.
+That is the case reported by the `Warmup Diagnostics` note in
+`summary(bt)`.
+
+Current-bar absence is a third failure mode. If ledgr cannot construct
+the pulse sequence because a current bar is absent for an instrument in
+the requested universe, the run fails before strategy evaluation for
+that incomplete pulse; this is a pulse construction error, not a feature
+warmup value.
+
+A final-bar target is separate from warmup. Under the next-open fill
+model, there is no later bar available to fill a target emitted on the
+last pulse, so ledgr reports `LEDGR_LAST_BAR_NO_FILL` and leaves the
+ledger unchanged for that target change.
+
+### Compiled Accounting Fails Closed
+
+Default execution uses the canonical R accounting path:
+`compiled_accounting_model = NULL`. The scoped `"spot_fifo"` accelerator
+is an ephemeral sweep opt-in for supported spot-FIFO workloads;
+committed durable runs fail closed if you request it there. Unsupported
+model names raise `ledgr_unsupported_accounting_model`. Missing compiled
+support raises `ledgr_compiled_spot_fifo_unavailable`.
+
+Those classes are the stable top-level conditions to assert on in tests.
+The accelerator does not broaden ledgr’s accounting model into futures,
+margin, broker reconciliation, or derivative accounting.
+
+## Cleanup
+
+``` r
+close(bt)
+```
+
+## Where Next
+
+- `vignette("metrics-and-accounting", package = "ledgr")` is the shorter
+  accounting-first tutorial.
+- `vignette("sweeps", package = "ledgr")` shows how metric contexts
+  thread through parameter sweeps.
+- `vignette("walk-forward", package = "ledgr")` shows how
+  selected-candidate test runs retain metric context evidence.

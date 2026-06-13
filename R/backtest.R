@@ -713,7 +713,7 @@ ledgr_fills_close <- function(res, con = NULL) {
     return(ledgr_fills_close(state$res, con = state$con))
   }
   if (!inherits(res, "DBIResult")) {
-    rlang::abort("`res` must be a DBIResult from ledgr_extract_fills(lazy = TRUE).", class = "ledgr_invalid_args")
+    rlang::abort("`res` must be a DBIResult from ledgr_run_fills(lazy = TRUE).", class = "ledgr_invalid_args")
   }
 
   temp_table <- attr(res, "ledgr_temp_table", exact = TRUE)
@@ -752,8 +752,8 @@ new_ledgr_fills_cursor <- function(res, temp_table, con) {
 }
 
 ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
-  start_iso <- iso_utc(start)
-  end_iso <- iso_utc(end)
+  start_iso <- ledgr_iso_utc(start)
+  end_iso <- ledgr_iso_utc(end)
 
   start_ts <- as.POSIXct(start_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
   end_ts <- as.POSIXct(end_iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
@@ -946,7 +946,7 @@ ledgr_config <- function(snapshot,
     features = if (length(features) > 0) {
       defs <- lapply(features, function(feat) {
         if (inherits(feat, "ledgr_indicator")) {
-          ledgr_register_indicator(feat)
+          ledgr_indicator_register(feat)
           return(list(
             id = feat$id,
             params = feat$params,
@@ -1162,10 +1162,10 @@ ledgr_empty_equity_curve <- function() {
 #'   targets
 #' }
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
-#' ledgr_extract_fills(bt)
+#' ledgr_run_fills(bt)
 #' close(bt)
 #' @export
-ledgr_extract_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
+ledgr_run_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
   ledgr_extract_fills_impl(bt, lazy = lazy, stream_threshold = stream_threshold)
 }
 
@@ -1201,11 +1201,17 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
   }
   stream_threshold <- as.integer(stream_threshold)
 
+  if (!isTRUE(owns_connection) && isTRUE(lazy)) {
+    lazy <- FALSE
+  }
+
   if (total_rows > stream_threshold) {
-    lazy <- TRUE
+    if (isTRUE(owns_connection)) {
+      lazy <- TRUE
+    }
     if (!requested_lazy && isTRUE(owns_connection)) {
       opened$close()
-      return(ledgr_extract_fills(bt, lazy = TRUE, stream_threshold = stream_threshold))
+      return(ledgr_run_fills(bt, lazy = TRUE, stream_threshold = stream_threshold))
     }
   }
 
@@ -1412,7 +1418,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
     return(new_ledgr_fills_cursor(fills_res, temp_table, con))
   }
 
-  if (total_rows > stream_threshold) {
+  if (total_rows > stream_threshold && isTRUE(owns_connection)) {
     warning("Large fill set materialized (N > threshold). Consider lazy = TRUE for performance.", call. = FALSE)
   }
 
@@ -1703,7 +1709,7 @@ ledgr_compute_metrics_internal <- function(bt,
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' ledgr_compute_equity_curve(bt)
 #' close(bt)
-#' @export
+#' @noRd
 ledgr_compute_equity_curve <- function(bt) {
   ledgr_compute_equity_curve_impl(bt)
 }

@@ -63,7 +63,7 @@ ledgr_test_execution_spec <- function(...) {
       ),
       active_alias_map = NULL,
       risk_plan = NULL,
-      cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(
+      cost_resolver = ledgr_test_cost_resolver(
         spread_bps = 0,
         commission_fixed = 0
       ),
@@ -170,7 +170,7 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
     ),
     active_alias_map = NULL,
     risk_plan = NULL,
-    cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(
+    cost_resolver = ledgr_test_cost_resolver(
       spread_bps = 0,
       commission_fixed = 0.25
     ),
@@ -298,7 +298,7 @@ ledgr_compiled_spot_fifo_multi_test_run <- function(compiled_accounting_model = 
     ),
     active_alias_map = NULL,
     risk_plan = NULL,
-    cost_resolver = ledgr:::ledgr_cost_spread_commission_internal(
+    cost_resolver = ledgr_test_cost_resolver(
       spread_bps = 0,
       commission_fixed = 0.25
     ),
@@ -500,6 +500,67 @@ testthat::test_that("compiled spot FIFO batches preserve multi-instrument pulse 
   testthat::expect_equal(compiled_path$fold$state$positions, r_path$fold$state$positions)
   testthat::expect_equal(compiled_path$fold$state$lot_state, r_path$fold$state$lot_state)
   testthat::expect_identical(compiled_path$fold$next_event_seq, r_path$fold$next_event_seq)
+})
+
+testthat::test_that("compiled spot FIFO pops fractional dust lots", {
+  out <- ledgr:::ledgr_cpp_spot_fifo_batch(
+    "compiled-fractional-dust",
+    as.integer(c(1, 1, 1)),
+    c("AAA", "AAA", "AAA"),
+    c("BUY", "BUY", "SELL"),
+    as.numeric(c(0.1, 0.2, 0.3)),
+    as.numeric(c(10, 10, 10)),
+    as.numeric(c(0, 0, 0)),
+    as.numeric(as.POSIXct("2020-01-02T00:00:00Z", tz = "UTC")) + 0:2,
+    as.integer(1),
+    as.numeric(0),
+    as.numeric(1000),
+    integer(),
+    numeric(),
+    numeric(),
+    as.numeric(0),
+    as.numeric(0),
+    as.numeric(0),
+    as.numeric(0)
+  )
+  testthat::expect_length(out$lot_qty, 0L)
+  testthat::expect_equal(out$total_cost_basis, 0)
+})
+
+testthat::test_that("compiled spot FIFO validates scalar state argument types", {
+  call_batch <- function(cash = 1000, event_seq_start = 1L) {
+    ledgr:::ledgr_cpp_spot_fifo_batch(
+      "compiled-scalar-check",
+      as.integer(1),
+      "AAA",
+      "BUY",
+      as.numeric(1),
+      as.numeric(100),
+      as.numeric(0),
+      as.numeric(as.POSIXct("2020-01-02T00:00:00Z", tz = "UTC")),
+      event_seq_start,
+      as.numeric(0),
+      cash,
+      integer(),
+      numeric(),
+      numeric(),
+      as.numeric(0),
+      as.numeric(0),
+      as.numeric(0),
+      as.numeric(0)
+    )
+  }
+
+  testthat::expect_error(
+    call_batch(cash = 1000L),
+    "`cash` must be a numeric scalar.",
+    fixed = TRUE
+  )
+  testthat::expect_error(
+    call_batch(event_seq_start = as.numeric(1)),
+    "`event_seq_start` must be an integer scalar.",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("execution specs are serializable worker payloads", {

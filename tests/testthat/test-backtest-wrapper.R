@@ -270,7 +270,7 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   universe <- c("TEST_A", "TEST_B")
-  ts_utc <- iso_utc(test_bars$ts_utc[[10]])
+  ts_utc <- ledgr_iso_utc(test_bars$ts_utc[[10]])
   ctx <- ledgr_pulse_snapshot(snap, universe = universe, ts_utc = ts_utc, features = list(ledgr_ind_sma(2)))
   on.exit(close(ctx), add = TRUE)
   testthat::expect_true(is.data.frame(ctx$bars))
@@ -386,6 +386,23 @@ testthat::test_that("runtime feature typos fail loudly instead of running as no-
       run_id = "feature-typo-run"
     ),
     class = "ledgr_unknown_feature_id"
+  )
+})
+
+testthat::test_that("single-pulse run windows fail before fold entry", {
+  one_pulse <- test_bars[test_bars$ts_utc == min(test_bars$ts_utc), , drop = FALSE]
+  strategy <- function(ctx, params) ctx$flat()
+
+  testthat::expect_error(
+    ledgr_backtest(
+      data = one_pulse,
+      strategy = strategy,
+      start = one_pulse$ts_utc[[1]],
+      end = one_pulse$ts_utc[[1]],
+      cost_model = ledgr_cost_zero(),
+      run_id = "single-pulse-window"
+    ),
+    class = "ledgr_run_window_too_short"
   )
 })
 

@@ -82,7 +82,7 @@ ends.
 This is a concrete user-facing workflow:
 
 ``` r
-snapshot <- ledgr_snapshot_load(db_path, "snapshot_id")
+snapshot <- ledgr_snapshot_open(db_path, "snapshot_id")
 
 runs <- ledgr_run_list(snapshot)
 
@@ -108,8 +108,8 @@ The research workflow before deployment has two phases:
 **Commit**. Full provenance run. Validate named candidates with durable
 artifacts: sealed snapshot hash, strategy source hash, parameter hash,
 config hash, ledgr and R version, dependency versions, compact
-telemetry, and result artifacts. Use `ledgr_compare_runs()` to compare
-named variants and `ledgr_extract_strategy()` to inspect stored strategy
+telemetry, and result artifacts. Use `ledgr_run_compare()` to compare
+named variants and `ledgr_run_strategy()` to inspect stored strategy
 source.
 
 **Explore**. Fast parameter sweep mode builds on the same experiment
@@ -149,7 +149,7 @@ sma_strategy <- function(ctx, params) {
   targets <- ctx$flat()
   for (id in ctx$universe) {
     values <- c(sma = ctx$feature(id, paste0("ttr_sma_", params$window)))
-    if (passed_warmup(values) && ctx$close(id) > values[["sma"]]) {
+    if (ledgr_passed_warmup(values) && ctx$close(id) > values[["sma"]]) {
       targets[id] <- params$quantity
     }
   }
@@ -170,8 +170,8 @@ explicit, not hidden.
 ## Cost And Timing Are Explicit
 
 Production-shaped research needs execution assumptions that are visible
-at the run boundary. In v0.1.9.1, ledgr makes timing and transaction
-costs explicit parts of experiment construction:
+at the run boundary. ledgr makes timing and transaction costs explicit
+parts of experiment construction:
 
 ``` r
 experiment <- ledgr_experiment(
@@ -217,28 +217,45 @@ v0.1.x is the correctness-first research layer. It already covers:
 - feature and strategy grids, sweep execution, candidate rows, compact
   saved sweeps, retained return series, promotion context, and explicit
   selection-is-not-validation framing;
-- public cost-model constructors, classed target-risk transforms,
-  timing-model identity, required explicit costs, reproducibility tiers,
-  strategy preflight, stored strategy source, and a deterministic demo
-  dataset for documentation and examples.
+- public cost-model constructors, timing-model identity, required
+  explicit costs, classed target-risk transforms with risk-chain
+  identity, reproducibility tiers, strategy preflight, stored strategy
+  source, and a deterministic demo dataset for documentation and
+  examples.
 
-The rest of the v0.1.x arc is still research-layer work:
+The current research layer also includes the first walk-forward surface:
 
-- v0.1.9.4 plans walk-forward evaluation over the existing sweep and run
-  surfaces, now consuming cost identity, saved-sweep retention
-  infrastructure, and risk-chain identity;
-- later v0.1.9.x work may add selection-integrity diagnostics,
-  crypto-readiness evidence, and target-construction helper extensions.
+- walk-forward evaluation runs over the existing sweep and run surfaces,
+  consuming cost identity, saved-sweep retention infrastructure, and
+  risk-chain identity;
+- the next planned validation-toolkit work is scoped for v0.1.9.6 and
+  may add DSR, PBO/CSCV over retained return panels, and deterministic
+  candidate clustering;
+- crypto-readiness evidence and target-construction helper extensions
+  remain separate future packets.
 
 The target-risk layer is intentionally narrow: it transforms target
 quantities before timing and cost. It does not implement affordability
 enforcement, liquidity/capacity policy, margin, shorting or borrow
 policy, OMS lifecycle behavior, or broker-grade controls.
 
-Paper and live trading adapters, OMS state machine semantics, and
-observability tooling follow in the v0.2.x and v0.3.x range.
+Paper trading adapters are planned for v0.3.0, observability tooling for
+v0.4.0, and small-scale live trading for v1.0.0. OMS state machine
+semantics remain earlier prerequisite work before paper or live
+adapters.
 
 The path from a validated experiment-store entry to a running edge
 device is shorter than it looks. The research work done in v0.1.x is not
 throwaway scaffolding – it is the foundation the production system
 builds on.
+
+## Where Next
+
+- `vignette("research-workflow", package = "ledgr")` shows the current
+  project-local research loop.
+- `vignette("walk-forward", package = "ledgr")` shows held-out
+  evaluation over sweep and run surfaces.
+- `vignette("risk-and-cost", package = "ledgr")` explains the
+  target-risk, timing, cost, liquidity, and OMS boundaries.
+- `vignette("reproducibility", package = "ledgr")` covers strategy
+  source, tiers, and trust boundaries.

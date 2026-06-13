@@ -229,7 +229,7 @@ strategy <- ledgr_demo_sma_crossover_strategy()
 You do not need to write a strategy for this vignette. The following
 miniature example only shows the boundary that the demo strategy
 follows: read pulse-known values from `ctx`, guard warmup with
-`passed_warmup()`, and return a full named numeric target vector.
+`ledgr_passed_warmup()`, and return a full named numeric target vector.
 
 ``` r
 custom_sma_strategy <- function(ctx, params) {
@@ -239,7 +239,7 @@ custom_sma_strategy <- function(ctx, params) {
     values <- ctx$features(instrument_id)
 
     # TRUE once enough bars have passed to calculate the slow SMA.
-    if (passed_warmup(values) &&
+    if (ledgr_passed_warmup(values) &&
         values[["fast"]] / values[["slow"]] - 1 > params$threshold) {
       target[[instrument_id]] <- params$qty
     }
@@ -401,40 +401,23 @@ completed candidates, sort by Sharpe ratio descending. In real research,
 make that rule visible before treating the top row as meaningful.
 
 ``` r
-ranked <- sweep |>
-  filter(status == "DONE") |>
-  arrange(desc(sharpe_ratio))
-
-candidate_columns <- c(
-  "candidate_id", "candidate_row", "status", "final_equity", "total_return",
-  "sharpe_ratio", "params", "feature_params"
-)
-
-top_n <- ranked |>
-  slice_head(n = 5) |>
-  select(all_of(candidate_columns))
-glimpse(top_n)
+review <- ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)
+review$top
 ```
 
-    Rows: 5
-    Columns: 8
-    $ candidate_id   <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae…
-    $ candidate_row  <int> 4, 2, 12, 10, 8
-    $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
-    $ final_equity   <dbl> 10225.14, 10112.57, 10164.67, 10082.34, 10141.20
-    $ total_return   <dbl> 0.022514428, 0.011257214, 0.016467259, 0.008233629, 0.014119827
-    $ sharpe_ratio   <dbl> 3.084337, 3.079333, 2.131805, 2.127012, 2.058200
-    $ params         <list> [10, 0.01], [5, 0.01], [10, 0.01], [5, 0.01], [10, 0.01]
-    $ feature_params <list> [5, 20], [5, 20], [5, 40], [5, 40], [10, 20]
+    # A tibble: 5 × 12
+       rank candidate_id           candidate_row status final_equity total_return sharpe_ratio
+      <int> <chr>                          <int> <chr>         <dbl>        <dbl>        <dbl>
+    1     1 feature_9a29b31dae19/…             4 DONE         10225.      0.0225          3.08
+    2     2 feature_9a29b31dae19/…             3 DONE         10113.      0.0113          3.08
+    3     3 feature_6ff6fe3a1d38/…            12 DONE         10165.      0.0165          2.13
+    4     4 feature_6ff6fe3a1d38/…            11 DONE         10082.      0.00823         2.13
+    5     5 feature_af0f94c90243/…             8 DONE         10141.      0.0141          2.06
+    # ℹ 5 more variables: max_drawdown <dbl>, n_trades <int>, execution_seed <int>,
+    #   params <list>, feature_params <list>
 
 ``` r
-issue_columns <- c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings")
-
-issues <- sweep |>
-  filter(status != "DONE") |>
-  select(any_of(issue_columns)) |>
-  as_tibble()
-issues
+review$issues
 ```
 
     # A tibble: 0 × 6
@@ -442,27 +425,18 @@ issues
     #   error_class <chr>, error_msg <chr>, warnings <list>
 
 ``` r
+ranked <- review$ranked
 candidate <- ledgr_candidate(ranked, 1)
 ```
 
 The output should look like a candidate table rather than a final
 answer.
 
-The `top_n` table shows which candidates would be selected by this
-ranking choice. The `issues` table tells you whether any candidates
-failed, warned, or produced diagnostics that should change how you read
-the sweep.
-
-<div class="ledgr-callout ledgr-callout-note">
-
-**Design note**
-
-This explicit table code keeps the selection rule visible. A future
-sweep-review helper may package this review shape, but it should
-preserve the same explicit selection rule instead of making ranking
-automatic.
-
-</div>
+The `review$top` table shows which candidates would be selected by this
+ranking choice. The `review$issues` table tells you whether any
+candidates failed, warned, or produced diagnostics that should change
+how you read the sweep. The full completed-candidate table remains in
+`review$ranked`.
 
 <div class="ledgr-callout ledgr-callout-tip">
 
@@ -531,7 +505,7 @@ close(single_run)
 close(promoted)
 ledgr_snapshot_close(snapshot)
 
-snapshot <- ledgr_snapshot_load(
+snapshot <- ledgr_snapshot_open(
   store_path,
   snapshot_id = "demo_2019_h1",
   verify = TRUE
@@ -566,12 +540,12 @@ info
     Snapshot:        demo_2019_h1
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 523c01fdf7e56d6ac24271057fd702deb70c0618d6c1533f97ed6798fe377f31
-    Config Hash:     0e8ae7ef8d422ba7a378c8247da0d24e08f208ed254a6c08a39f234b45aaaf97
-    Strategy Hash:   ca593cc1c3490b0ee6e80ef46b1daa2ebffc75eb73a4cc27c37dd05f9f6c5832
+    Config Hash:     5f94feac98056d84bb9d55053990f945d10373c67702405a7f4b5d8905dd4d67
+    Strategy Hash:   1bf04a8ccca8bbaa85f33b05cf3047a11751467ab7a9ca85d02d243c9487788b
     Params Hash:     dc6315936028dd9d68e2f38075e2fca32b85edfe083b671d9c9feadbd2b0255f
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     0.69
+    Elapsed Sec:     1.19
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    4
@@ -610,21 +584,16 @@ You can also recover the selection context and strategy provenance
 behind the promoted run. Today that recovery uses two public surfaces:
 
 - `ledgr_run_info()` and `ledgr_run_open()` for the stored run;
-- `ledgr_extract_strategy()` for strategy source and parameter
-  provenance.
+- `ledgr_run_strategy()` for strategy source and parameter provenance.
 
 <div class="ledgr-callout ledgr-callout-warning">
 
 **API gap**
 
 The next few lines are intentionally lower-level. They show what ledgr
-records for a promoted run. A future review helper may summarize this
-“what caused this result?” record without asking users to inspect nested
-promotion-context fields directly.
-
-This API gap was carried forward from the v0.1.8.6 cycle: promotion can
-recover the chosen candidate and provenance today, while higher-level
-review helpers remain future workflow polish.
+records for a promoted run. A future promotion-review helper may
+summarize this “what caused this result?” record without asking users to
+inspect nested promotion-context fields directly.
 
 </div>
 
@@ -655,7 +624,7 @@ list(
     [1] "{\"fast_n\":5,\"slow_n\":20}"
 
 ``` r
-extracted <- ledgr_extract_strategy(
+extracted <- ledgr_run_strategy(
   snapshot,
   "workflow_promoted_candidate",
   trust = FALSE
@@ -747,6 +716,41 @@ work.
 
 </div>
 
+## Plot The Promoted Evidence
+
+A report should show the promoted run’s path, not only its scalar
+metrics. The equity table already contains the information needed for a
+compact equity and drawdown view.
+
+``` r
+promoted_equity <- ledgr_results(promoted, what = "equity") |>
+  mutate(
+    drawdown = equity / cummax(equity) - 1,
+    drawdown_axis = drawdown * equity[[1]] + equity[[1]]
+  )
+
+ggplot2::ggplot(promoted_equity, ggplot2::aes(x = ts_utc)) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = equity),
+    linewidth = 0.8,
+    color = "#1f77b4"
+  ) +
+  ggplot2::geom_area(
+    ggplot2::aes(y = drawdown_axis),
+    fill = "#d55e00",
+    alpha = 0.20
+  ) +
+  ggplot2::labs(
+    title = "Promoted candidate equity path",
+    x = NULL,
+    y = "Equity",
+    caption = "Orange area scales drawdown onto the equity axis for compact review."
+  ) +
+  ggplot2::theme_minimal(base_size = 12)
+```
+
+![](research-workflow_files/figure-commonmark/promoted-equity-plot-1.png)
+
 ## Write The Human Research Note
 
 Do not leave the reasoning only in your head. Write a short report next
@@ -788,14 +792,14 @@ does not certify that the selection protocol was statistically sound.
 ## Next Layer: Walk-Forward Evaluation
 
 The workflow above teaches the single-window foundation. Walk-forward
-and out-of-sample evaluation are the planned next conceptual layer for
-separating candidate selection from held-out evidence.
+evaluation is the shipped next conceptual layer for separating candidate
+selection from held-out evidence.
 
 When you ask “is this candidate’s evidence reproducible?”, the workflow
 above is the right starting point. When you ask “does this strategy
 generalize?”, walk-forward is the next question you want. That layer is
-not part of this article; the public roadmap places walk-forward
-evaluation at v0.1.9.x.
+not part of this article; use
+`vignette("walk-forward", package = "ledgr")`.
 
 This article should not imply that promotion alone validates a strategy.
 

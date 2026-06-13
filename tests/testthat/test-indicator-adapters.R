@@ -164,7 +164,7 @@ testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
   on.exit(unlink(csv_path), add = TRUE)
 
   csv_df <- data.frame(
-    ts_utc = vapply(test_bars$ts_utc, iso_utc, character(1)),
+    ts_utc = vapply(test_bars$ts_utc, ledgr_iso_utc, character(1)),
     instrument_id = test_bars$instrument_id,
     signal = seq_len(nrow(test_bars)) / 100,
     stringsAsFactors = FALSE
@@ -201,7 +201,7 @@ testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
     params = list(bt$run_id)
   )
   testthat::expect_gt(nrow(persisted), 0L)
-  first_key <- paste(iso_utc(persisted$ts_utc[[1]]), persisted$instrument_id[[1]], sep = "||")
+  first_key <- paste(ledgr_iso_utc(persisted$ts_utc[[1]]), persisted$instrument_id[[1]], sep = "||")
   expected_key <- paste(csv_df$ts_utc, csv_df$instrument_id, sep = "||")
   testthat::expect_equal(
     as.numeric(persisted$feature_value[[1]]),

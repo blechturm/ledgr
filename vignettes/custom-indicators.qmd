@@ -62,15 +62,10 @@ prove that externally authored feature logic avoided future information.
 
 ## The Indicator Object
 
-::: {.ledgr-callout .ledgr-callout-note}
-**Definition**
-
-A custom indicator is a declared feature computation with a stable feature ID,
-deterministic params, warmup rules, and one or two functions that produce
-pulse-known values.
-:::
-
-`ledgr_indicator()` creates a feature definition. The important fields are:
+A **custom indicator** is a declared feature computation with a stable feature
+ID, deterministic params, warmup rules, and one or two functions that produce
+pulse-known values. `ledgr_indicator()` creates a feature definition. The
+important fields are:
 
 | Field | Meaning |
 | --- | --- |
@@ -231,7 +226,6 @@ bounded window. It is useful for simple package or base R functions:
 
 ```{r}
 #| label: adapter-r
-#| eval: false
 
 median_close <- ledgr_adapter_r(
   stats::median,
@@ -362,3 +356,12 @@ engine. Keep the boundary explicit:
 - keep all intentional configuration in deterministic `params`;
 - register every feature before `ledgr_run()`;
 - use `ledgr_feature_id()` to confirm the exact ID a strategy should read.
+
+## Where Next
+
+- `vignette("indicators", package = "ledgr")` covers the built-in feature
+  lifecycle and pulse-time accessors.
+- `vignette("ttr-and-adapter-indicators", package = "ledgr")` covers TTR-backed
+  indicators and multi-output bundles.
+- `vignette("leakage", package = "ledgr")` explains why custom feature code is
+  a causal review boundary.

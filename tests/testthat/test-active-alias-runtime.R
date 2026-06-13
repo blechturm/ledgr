@@ -10,7 +10,7 @@ testthat::test_that("ledgr_run resolves active aliases from feature_params", {
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
     x <- ctx$features("AAA")
-    if (passed_warmup(x) && x[["fast"]] >= x[["slow"]]) {
+    if (ledgr_passed_warmup(x) && x[["fast"]] >= x[["slow"]]) {
       targets["AAA"] <- params$qty
     }
     targets
@@ -60,7 +60,7 @@ testthat::test_that("sweeps keep feature params separate from strategy params", 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
     x <- ctx$features("AAA")
-    if (passed_warmup(x)) {
+    if (ledgr_passed_warmup(x)) {
       targets["AAA"] <- params$qty
     }
     targets
@@ -102,7 +102,7 @@ testthat::test_that("parameterized active-alias bundle sweeps resolve concrete o
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
     x <- ctx$features("AAA")
-    if (passed_warmup(x) && x[["bbands_up"]] > x[["bbands_dn"]]) {
+    if (ledgr_passed_warmup(x) && x[["bbands_up"]] > x[["bbands_dn"]]) {
       targets["AAA"] <- params$qty
     }
     targets
@@ -160,7 +160,7 @@ testthat::test_that("promotion replays active alias feature params", {
   strategy <- function(ctx, params) {
     x <- ctx$features("AAA")
     targets <- ctx$flat()
-    if (passed_warmup(x)) {
+    if (ledgr_passed_warmup(x)) {
       targets["AAA"] <- params$qty
     }
     targets

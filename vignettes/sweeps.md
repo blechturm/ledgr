@@ -46,29 +46,14 @@ ledgr’s job.
 
 ## Sweep Is Exploration
 
-<div class="ledgr-callout ledgr-callout-note">
+`ledgr_sweep()` evaluates a declared grid against a
+`ledgr_experiment()`. The result is an exploratory candidate table: it
+records what each candidate did, does not choose a winner, and does not
+write candidate runs to the experiment store.
 
-**Definition**
-
-A sweep is an evaluated candidate table over a declared grid. It is
-exploratory: it returns candidate summaries, does not choose a winner,
-and does not write candidate runs to the experiment store.
-
-</div>
-
-`ledgr_sweep()` evaluates a grid against a `ledgr_experiment()`. It
-tells you what each declared candidate did. It does not decide which
-candidate matters.
-
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A sweep usually contains many candidates. Each candidate is one row of
-the sweep: resolved feature parameters, strategy parameters, execution
-seed, status, metrics, warnings or errors, and provenance.
-
-</div>
+Each **candidate** is one row of that table: resolved feature
+parameters, strategy parameters, execution seed, status, metrics,
+warnings or errors, and provenance.
 
 That separation is the workflow boundary:
 
@@ -149,7 +134,7 @@ sma_crossover_body <- function(ctx, params) {
   for (id in ctx$universe) {
     values <- ctx$features(id)
     if (
-      passed_warmup(values) &&
+      ledgr_passed_warmup(values) &&
         ((values[["fast"]] / values[["slow"]]) - 1) > params$threshold
     ) {
       targets[id] <- params$qty
@@ -165,21 +150,12 @@ indicators resolved for that candidate. `params$threshold` and
 `params$qty` come from the strategy grid. For the full strategy
 contract, read `vignette("strategy-development", package = "ledgr")`.
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-An active alias is a stable strategy-facing feature name whose concrete
-indicator can vary by candidate. The strategy reads aliases such as
-`fast` and `slow`; ledgr resolves the concrete SMA windows for each
-candidate before execution.
-
-</div>
-
-The strategy can keep reading `values[["fast"]]` and `values[["slow"]]`
-even when one candidate uses SMA(5) and SMA(20) and another candidate
-uses SMA(10) and SMA(40). The alias is the strategy-facing contract. The
-concrete feature IDs and fingerprints are provenance.
+An **active alias** is a stable strategy-facing feature name whose
+concrete indicator can vary by candidate. The strategy can keep reading
+`values[["fast"]]` and `values[["slow"]]` even when one candidate uses
+SMA(5) and SMA(20) and another candidate uses SMA(10) and SMA(40). The
+alias is the strategy-facing contract. The concrete feature IDs and
+fingerprints are provenance.
 
 Feature parameters vary the knobs exposed by a feature constructor. For
 `ledgr_ind_sma()`, the knob is `n`, the moving-average window. For
@@ -216,20 +192,12 @@ across candidates.
 
 ## Build The Candidate Grid
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-Feature parameters materialize indicators before execution. Strategy
-parameters are passed to `strategy(ctx, params)` during execution.
-Keeping those namespaces separate is what lets a strategy read stable
-aliases while the sweep varies indicator windows.
-
-</div>
-
-Use `ledgr_feature_grid()` for the feature knobs you decided to vary and
-`ledgr_strategy_grid()` for the knobs in your own strategy code. Then
-cross them with `ledgr_grid_cross()`.
+**Feature parameters** materialize indicators before execution.
+**Strategy parameters** are passed to `strategy(ctx, params)` during
+execution. Keeping those namespaces separate is what lets a strategy
+read stable aliases while the sweep varies indicator windows. Use
+`ledgr_feature_grid()` for feature knobs, `ledgr_strategy_grid()` for
+strategy-code knobs, and `ledgr_grid_cross()` to combine them.
 
 ``` r
 feature_grid <- ledgr_feature_grid(
@@ -343,7 +311,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_3f33242668ae4748
+    # ledgr sweep -- sweep_d170b3019d1916c3
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -372,7 +340,7 @@ sweep
     # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
     # i Saved artifact: not saved.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
-    # i Hidden columns (16): final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, provenance, t_engine, t_results, t_fills_extract
+    # i Hidden columns (17): final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
 
 The table contains candidate summaries. It is not a full artifact store
 and it does not write durable candidate ledgers, equity curves, feature
@@ -417,14 +385,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
-    2 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
-    3 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
-    4 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
-    5 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
-    6 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
-    7 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
-    8 sweep_1ce4ce04d65ece51 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
+    1 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
+    2 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
+    3 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
+    4 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
+    5 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
+    6 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
+    7 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
+    8 sweep_92908d04f564ed16 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -508,7 +476,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 7
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-06-07 23:28:57                    1           16          16
+    1 sma_retained_sweep 2026-06-13 18:10:10                    2           16          16
     # i 2 more variables: retention_returns <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -534,9 +502,9 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-06-07 23:28:57.696356
-    Schema Version:    1
-    Engine Version:    0.1.9.2
+    Created At:        2026-06-13 18:10:10.870065
+    Schema Version:    2
+    Engine Version:    0.1.9.4
     Note:              Exploratory SMA sweep with retained return series.
 
 Reopened sweeps behave like sweep result objects for candidate
@@ -577,10 +545,9 @@ Retention does not change execution identity. It changes which derived
 evidence is kept after the same candidate execution.
 
 Saved sweeps persist the same risk identity fields on the parent sweep
-row and candidate rows. The first `ledgr_sweep_save()` against a
-v0.1.9.2 store performs an additive saved-sweep schema migration for
-`risk_chain_hash` and `risk_plan_json`; it does not rewrite candidate
-results or create committed run artifacts.
+row and candidate rows. Opening an older store may perform an additive
+saved-sweep schema migration for `risk_chain_hash` and `risk_plan_json`;
+it does not rewrite candidate results or create committed run artifacts.
 
 ## What Retained Returns Can And Cannot Validate
 
@@ -655,59 +622,38 @@ ledgr does not own objective functions or automatic candidate ranking;
 ordinary R code should make the selection rule visible.
 
 ``` r
-ranked <- reopened_sweep |>
-  filter(status == "DONE") |>
-  arrange(desc(sharpe_ratio))
-
-top_n <- ranked |>
-  slice_head(n = 5) |>
-  select(
-    candidate_id, candidate_row, status, final_equity, total_return, sharpe_ratio,
-    params, feature_params, execution_seed
-  )
-
-glimpse(top_n)
+review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
+review$top
 ```
 
-    Rows: 5
-    Columns: 9
-    $ candidate_id   <chr> "feature_9a29b31dae19/strategy_dc6315936028", "feature_9a29b31dae~
-    $ candidate_row  <int> 4, 2, 12, 10, 8
-    $ status         <chr> "DONE", "DONE", "DONE", "DONE", "DONE"
-    $ final_equity   <dbl> 100225.1, 100112.6, 100164.7, 100082.3, 100141.2
-    $ total_return   <dbl> 0.0022514428, 0.0011257214, 0.0016467258, 0.0008233629, 0.0014119~
-    $ sharpe_ratio   <dbl> 3.075261, 3.074747, 2.123134, 2.122646, 2.053065
-    $ params         <list> [10, 0.01], [5, 0.01], [10, 0.01], [5, 0.01], [10, 0.01]
-    $ feature_params <list> [5, 20], [5, 20], [5, 40], [5, 40], [10, 20]
-    $ execution_seed <int> 576288649, 189084572, 972927993, 1415197276, 319026249
+    # A tibble: 5 x 12
+       rank candidate_id           candidate_row status final_equity total_return sharpe_ratio
+      <int> <chr>                          <int> <chr>         <dbl>        <dbl>        <dbl>
+    1     1 feature_9a29b31dae19/~             4 DONE        100225.     0.00225          3.08
+    2     2 feature_9a29b31dae19/~             2 DONE        100113.     0.00113          3.07
+    3     3 feature_6ff6fe3a1d38/~            12 DONE        100165.     0.00165          2.12
+    4     4 feature_6ff6fe3a1d38/~            10 DONE        100082.     0.000823         2.12
+    5     5 feature_af0f94c90243/~             8 DONE        100141.     0.00141          2.05
+    # i 5 more variables: max_drawdown <dbl>, n_trades <int>, execution_seed <int>,
+    #   params <list>, feature_params <list>
 
 ``` r
-issues <- reopened_sweep |>
-  filter(status != "DONE") |>
-  select(any_of(c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings"))) |>
-  as_tibble()
-
-issues
+review$issues
 ```
 
     # A tibble: 0 x 6
     # i 6 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
     #   error_class <chr>, error_msg <chr>, warnings <list>
 
-Some columns are list columns. `glimpse()` keeps the table readable
-while still showing that params, feature params, warnings, and
-provenance remain attached to the rows.
+``` r
+ranked <- review$ranked
+```
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Design note**
-
-This explicit table code keeps the selection rule visible. A future
-sweep-review helper may package this review shape, but it should
-preserve the same explicit selection rule instead of making ranking
-automatic.
-
-</div>
+`ledgr_sweep_review()` packages the inspection shape while keeping the
+ranking rule explicit in the call. `review$top` is for the candidates
+you want to read closely, `review$issues` is for warnings and failures,
+and `review$ranked` retains the full completed-candidate table for
+deliberate selection.
 
 ## Promote One Candidate
 
@@ -759,12 +705,11 @@ whether the selected rule will generalize.
 
 The more candidates you try, the more opportunity you create for
 sample-specific luck to look like skill. If the question is
-generalization rather than artifact reproducibility, use walk-forward
-evaluation when that layer lands in v0.1.9.x.
+generalization rather than artifact reproducibility, use
+`vignette("walk-forward", package = "ledgr")`.
 
-This is the same selection-bias boundary that the v0.1.8.6 cycle
-documented when it separated structured benchmark evidence from future
-walk-forward validation.
+This is the same selection-bias boundary that separates reproducible
+sweep evidence from walk-forward or later validation-toolkit evidence.
 
 ## Failure Rows And Contract Errors
 
@@ -799,7 +744,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_4334d56264abc036
+    # ledgr sweep -- sweep_9098789d7400ce56
     # A tibble: 2 x 3
       candidate_id          candidate_row status
       <chr>                         <int> <chr>
@@ -841,9 +786,8 @@ separate sweeps with explicit `cost_model` values and compare the
 resulting evidence.
 
 A future `ledgr_cost_grid()` may make cost assumptions participate in
-candidate identity deliberately. That API is not part of the v1 cost
-surface, so do not expect `ledgr_grid_cross()` to accept cost-model
-dimensions.
+candidate identity deliberately. That API has not shipped, so do not
+expect `ledgr_grid_cross()` to accept cost-model dimensions.
 
 ## Explicit Non-Goals
 
