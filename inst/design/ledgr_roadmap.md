@@ -1061,9 +1061,13 @@ Authoritative input:
   designs, the missing-vignette list (risk-and-cost, walk-forward arc,
   quickstart), the naming-RFC-before-vignettes sequencing constraint, and
   the R4DS north-star assessment for Workstreams B and C;
-- `inst/design/rfc/rfc_api_naming_consistency_v0_1_9_5_seed.md` - seed for
-  the API naming-consistency RFC; the rename batch must land before the
-  Workstream B/C vignette batches;
+- `inst/design/audits/v0_1_9_5_vignette_audit.md` - v0.1.9.5 vignette audit
+  that promoted `ledgr_sweep_review()`, `ledgr_temp_store()`, stale-fact
+  fixes, and editorial cleanup into Batches 8A/8B/8C while deferring the
+  remaining split/helper/trade-view items to horizon;
+- `inst/design/rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md` -
+  accepted API naming-consistency synthesis; the rename batch must land before
+  the Workstream B/C vignette batches;
 - accumulated horizon entries from the v0.1.9.x arc, including the two
   2026-06-11 `[audit]` entries that route the audits above.
 

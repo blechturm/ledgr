@@ -131,12 +131,13 @@ paper/live walk-forward, and compiled-core architecture work remain non-scope.
 The v0.1.9.5 packet is active. It is a naming and teaching consolidation
 release after the v0.1.9.x feature arc. It consumes the accepted API
 naming-consistency synthesis, the v0.1.9.4 deep code-review audit, and the
-v0.1.9.4 vignette-screening audit. Scope is public API naming cleanup,
-candidate-generic alignment, contract and identity-reference refresh, scheduled
-audit fixes, vignette splits, new teaching surfaces, and release-surface
-housekeeping. Validation toolkit, strategy-decorator, crypto-readiness,
-target-construction helper expansion, and new v0.2.x feature work remain
-non-scope.
+v0.1.9.4 vignette-screening audit, and the v0.1.9.5 vignette audit. Scope is
+public API naming cleanup, candidate-generic alignment, contract and
+identity-reference refresh, scheduled audit fixes, vignette splits, new
+teaching surfaces, release-surface housekeeping, and the two promoted
+vignette-audit helpers. Validation toolkit, strategy-decorator,
+crypto-readiness, target-construction helper expansion, and new v0.2.x feature
+work remain non-scope.
 
 - Spec: `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`.
 - Tickets: `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`.
@@ -147,6 +148,8 @@ non-scope.
 - Primary audits:
   `audits/v0_1_9_4_deep_code_review_audit.md` and
   `audits/v0_1_9_4_vignette_screening_audit.md`.
+- Rescope audit:
+  `audits/v0_1_9_5_vignette_audit.md`.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
 artifact-topology guidance, Quarto installed-vignette migration, README and
@@ -658,7 +661,7 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
-| active v0.1.9.5 packet | `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`, `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`, `ledgr_v0_1_9_5_spec_packet/tickets.yml`, `ledgr_v0_1_9_5_spec_packet/batch_plan.md`, `rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md`, `audits/v0_1_9_4_deep_code_review_audit.md`, `audits/v0_1_9_4_vignette_screening_audit.md`, `contracts.md`, `ledgr_roadmap.md` |
+| active v0.1.9.5 packet | `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`, `ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`, `ledgr_v0_1_9_5_spec_packet/tickets.yml`, `ledgr_v0_1_9_5_spec_packet/batch_plan.md`, `rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md`, `audits/v0_1_9_4_deep_code_review_audit.md`, `audits/v0_1_9_4_vignette_screening_audit.md`, `audits/v0_1_9_5_vignette_audit.md`, `contracts.md`, `ledgr_roadmap.md` |
 | Target risk release record | `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md` |
 | Walk-forward release record | `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `ledgr_v0_1_9_4_spec_packet/tickets.yml`, `ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (with Amendment 1 in Section 14, Amendment 2 in Section 16, ticket-cut gates in Section 17), `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section), `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `contracts.md` |
 | Execution policy / OMS north-star planning | `rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md`, `rfc/rfc_cost_model_architecture_response.md`, `ledgr_roadmap.md` |

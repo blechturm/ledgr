@@ -1,13 +1,31 @@
 # ledgr 0.1.9.5
 
+- Consolidated the post-v0.1.9.x public surface after the cost, sweep
+  persistence, target-risk, and walk-forward feature arc. This release is a
+  naming, teaching, contract, and audit-hardening release before the
+  validation-toolkit packet.
 - Renamed and unexported pre-CRAN API names for naming consistency. No
   compatibility aliases are shipped.
+- Fixed scheduled v0.1.9.4 deep-review findings in runner/results behavior,
+  accounting hardening, compiled spot-FIFO validation, timestamp hashing,
+  lot-close dust handling, and contracts.
+- Refreshed the article set: quickstart, risk-and-cost, walk-forward,
+  strategy-authoring, TTR/adapter indicators, metric-context conventions,
+  experiment-store, and execution-semantics now reflect the renamed API and
+  the v0.1.9.x feature arc.
+- Added maintainer-manual articles for the cost resolver, target-risk layer,
+  and walk-forward machinery, plus an internal performance-arc follow-up for
+  cost/risk/walk-forward measurement questions.
 - Made walk-forward inspection easier to read: `wf$degradation` now prints a
   curated train-versus-test view (the full table is one `as_tibble()` away), and
   fold lists print their per-fold train and test windows.
 - Added `ledgr_sweep_review()` for explicit sweep review tables and
   `ledgr_temp_store()` for disposable `.duckdb` paths used in examples and
   teaching workflows.
+- Deferred out of v0.1.9.5: validation-toolkit statistics, the standalone
+  debugging article, the Split E vignette split, additional sweep/metric-context
+  splits, lower-value vignette-audit helpers, paired entry/exit trade views,
+  and the promotion-recovery summary helper.
 
 | Old name | New name / disposition |
 | --- | --- |

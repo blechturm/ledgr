@@ -933,6 +933,23 @@ work has landed.
 - Documentation-contract tests.
 - Manual review of README, NEWS, roadmap, horizon, and design index.
 
+### Implementation Notes
+
+- Updated `NEWS.md` with the v0.1.9.5 release summary, scheduled hardening
+  summary, teaching/manual surface summary, helper additions, deferred-audit
+  dispositions, and the consolidated rename table.
+- Updated `README.md` to route readers to quickstart, risk-and-cost, and
+  walk-forward articles and removed stale "no walk-forward helpers" wording.
+- Updated roadmap, horizon, design index, and AGENTS active-packet surfaces for
+  the v0.1.9.5 vignette-audit rescope and the v0.1.9.6 validation-toolkit
+  planning handoff.
+- Narrowed the older research-loop ergonomics horizon entry so
+  `ledgr_sweep_review()` is recorded as shipped and the remaining open item is
+  promotion recovery.
+- Reviewed `_pkgdown.yml`; the new teaching articles and helper reference
+  entries were already present from earlier batches, so no additional pkgdown
+  change was needed.
+
 ### Source Reference
 
 - `inst/design/rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md`

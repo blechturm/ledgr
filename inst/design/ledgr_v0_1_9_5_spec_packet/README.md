@@ -1,7 +1,7 @@
 # ledgr v0.1.9.5 Spec Packet
 
-Status: Batch 9+10 implementation complete; awaiting Claude review. Batch 11
-remains to do.
+Status: Batch 11 implementation complete; awaiting Claude review. Batch 12
+release gate remains to do.
 
 This packet scopes v0.1.9.5 as a naming and teaching consolidation release
 after the v0.1.9.1-v0.1.9.4 feature arc.

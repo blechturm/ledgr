@@ -54,8 +54,8 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   exchange cost templates; crypto-readiness spike; spot-FIFO as default
   for ephemeral spot workloads (candidate; see 2026-06-05 and
   2026-06-13 entries).
-- **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
-  review + promotion recovery); point-in-time data tables / external regressor
+- **v0.2.x** — snapshot administration and research-loop ergonomics
+  (promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
   explicit accounting-critical event types RFC; liquidity and capacity; OMS
   semantics + snapshot lineage + live data logs; external benchmark / beta
@@ -5713,44 +5713,12 @@ This entry supersedes the earlier 2026-05-25 "Sweep candidate ranking views"
 stub (the `ledgr_rank_candidates()` sketch). The sweep-review helper below is
 the same idea, taken further and tied to the vignette gap that motivates it.
 
-#### Gap 1: Sweep review helper (promoted to v0.1.9.5)
+#### Gap 1: Sweep review helper (resolved in v0.1.9.5)
 
-Disposition update (2026-06-13): this helper is promoted into the v0.1.9.5
-packet as LDG-2642. Sweep this subsection to `## Resolved` at v0.1.9.5
-closeout, or leave only any residual follow-up discovered during implementation.
-
-Vignette location: the "Inspect Before You Promote" section and its
-"Design note" callout.
-
-The article currently teaches:
-
-```r
-ranked <- sweep |>
-  filter(status == "DONE") |>
-  arrange(desc(sharpe_ratio))
-
-candidate_columns <- c(
-  "run_id", "status", "final_equity", "total_return",
-  "sharpe_ratio", "params", "feature_params"
-)
-top_n <- ranked |> slice_head(n = 5) |> select(all_of(candidate_columns))
-
-issue_columns <- c("run_id", "status", "error_class", "error_msg", "warnings")
-issues <- sweep |> filter(status != "DONE") |> select(any_of(issue_columns))
-
-candidate <- ledgr_candidate(ranked, 1)
-```
-
-What is missing: a helper that ranks completed candidates by an
-explicit rule, returns a compact review table, separates issue rows
-into their own table, and preserves the visible selection rule.
-
-Critical design constraint: the helper must not hide the ranking
-rule. The vignette's whole teaching arc is that the metric must be a
-deliberate user choice, not a default the helper picks silently. A
-shape such as
-`ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)` keeps
-the rule in the call site.
+Resolved by `ledgr_sweep_review()` in v0.1.9.5 as LDG-2642. The shipped helper
+requires an explicit `rank_by` expression, returns review tables, separates
+issue rows, and does not select or promote a candidate. The old teaching
+boilerplate and design note were removed from the consuming articles.
 
 #### Gap 2: Promotion recovery summary
 
@@ -5777,7 +5745,7 @@ returning a named list or compact tibble would fit.
 
 #### Shared design constraints
 
-- Helpers preserve the styleguide rule that selection or ranking rules
+- Remaining helpers preserve the styleguide rule that selection or ranking rules
   stay visible to the reader. A "show me the best candidate" helper
   that picks Sharpe silently is exactly what the workflow article
   warns against.
@@ -5793,10 +5761,6 @@ returning a named list or compact tibble would fit.
 
 #### Scope risks
 
-- **Selection-rule erasure.** Easiest failure mode for the sweep-review
-  helper is shipping a sensible default ranking metric. The helper
-  should require an explicit rank-by argument or return the chosen
-  rule alongside the rows.
 - **Provenance summary as truth.** Easiest failure mode for the
   recovery helper is collapsing tier-1 and tier-2 strategies into one
   "verified" status. Tier 2 strategies have real recovery limitations
@@ -5818,23 +5782,17 @@ returning a named list or compact tibble would fit.
 
 #### Promoted roadmap hooks
 
-- sweep-review helper: promoted into v0.1.9.5 as LDG-2642. Sweep this bullet to
-  `## Resolved` at closeout if the helper lands.
 - promotion-recovery-summary helper: remains deferred with the snapshot
   administration / research-loop helpers path.
-- when the helpers ship, revise the vignette's "Design note" and
-  "API gap" callouts to reference the new functions, or remove them
-  if the helper makes the lower-level path unnecessary in the
-  teaching arc.
+- the remaining promotion-recovery-summary helper should revise or remove the
+  research-workflow "API gap" callout if it ships.
 
 #### Cross-cycle note
 
-The vignette's "Design note" and "API gap" callouts are the user-
-visible markers for these gaps. When the helpers land, the callouts
-should be revised to reference the new functions, or removed if the
-helper makes the lower-level path unnecessary in the teaching arc.
-Leaving stale callouts in the article is a worse failure than the
-gap itself.
+The remaining research-workflow "API gap" callout is the user-visible marker
+for the promotion-recovery gap. If that helper lands, revise or remove the
+callout in the same packet. Leaving stale callouts in the article is a worse
+failure than the gap itself.
 
 This horizon entry does not authorize any of the above. It records
 the direction so that when a research-loop ergonomics cycle opens,
