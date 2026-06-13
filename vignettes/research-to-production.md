@@ -170,8 +170,8 @@ explicit, not hidden.
 ## Cost And Timing Are Explicit
 
 Production-shaped research needs execution assumptions that are visible
-at the run boundary. In v0.1.9.1, ledgr makes timing and transaction
-costs explicit parts of experiment construction:
+at the run boundary. ledgr makes timing and transaction costs explicit
+parts of experiment construction:
 
 ``` r
 experiment <- ledgr_experiment(
@@ -217,18 +217,20 @@ v0.1.x is the correctness-first research layer. It already covers:
 - feature and strategy grids, sweep execution, candidate rows, compact
   saved sweeps, retained return series, promotion context, and explicit
   selection-is-not-validation framing;
-- public cost-model constructors, classed target-risk transforms,
-  timing-model identity, required explicit costs, reproducibility tiers,
-  strategy preflight, stored strategy source, and a deterministic demo
-  dataset for documentation and examples.
+- public cost-model constructors, timing-model identity, required
+  explicit costs, classed target-risk transforms with risk-chain
+  identity, reproducibility tiers, strategy preflight, stored strategy
+  source, and a deterministic demo dataset for documentation and
+  examples.
 
 The current research layer also includes the first walk-forward surface:
 
-- v0.1.9.4 shipped walk-forward evaluation over the existing sweep and run
-  surfaces, consuming cost identity, saved-sweep retention infrastructure,
-  and risk-chain identity;
-- the next planned validation-toolkit work may add DSR, PBO/CSCV over
-  retained return panels, and deterministic candidate clustering;
+- walk-forward evaluation runs over the existing sweep and run surfaces,
+  consuming cost identity, saved-sweep retention infrastructure, and
+  risk-chain identity;
+- the next planned validation-toolkit work is scoped for v0.1.9.6 and
+  may add DSR, PBO/CSCV over retained return panels, and deterministic
+  candidate clustering;
 - crypto-readiness evidence and target-construction helper extensions
   remain separate future packets.
 
@@ -237,8 +239,9 @@ quantities before timing and cost. It does not implement affordability
 enforcement, liquidity/capacity policy, margin, shorting or borrow
 policy, OMS lifecycle behavior, or broker-grade controls.
 
-Paper and live trading adapters, OMS state machine semantics, and
-observability tooling follow in the v0.2.x and v0.3.x range.
+Paper trading adapters are planned for v0.3.0, observability tooling for
+v0.4.0, and small-scale live trading for v1.0.0. OMS state machine
+semantics remain earlier prerequisite work before paper or live adapters.
 
 The path from a validated experiment-store entry to a running edge
 device is shorter than it looks. The research work done in v0.1.x is not

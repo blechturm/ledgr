@@ -510,10 +510,9 @@ current experiment-store surface; use precompute and sweep provenance
 when you need feature-set identity at sweep scale.
 
 External point-in-time regressors are a separate future data surface.
-The public roadmap keeps that work out of v0.1.8.5 and tracks it for a
-later cycle so vintage semantics, lineage, ASOF lookup, and leakage
-prevention can be designed explicitly rather than smuggled into CSV bars
-or active aliases.
+The public roadmap tracks that work in the v0.2.x point-in-time data line
+so vintage semantics, lineage, ASOF lookup, and leakage prevention can be
+designed explicitly rather than smuggled into CSV bars or active aliases.
 
 ## Resource Cleanup
 

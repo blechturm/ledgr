@@ -293,7 +293,7 @@ tickets:
 
   - id: "LDG-2643"
     title: "Batch 8B vignette stale-fact fixes"
-    status: "todo"
+    status: "review_pending"
     priority: "P1"
     effort: "S"
     dependencies:

@@ -1,7 +1,7 @@
 # ledgr v0.1.9.5 Spec Packet
 
-Status: Batch 8A implementation complete; awaiting Claude review. Batches 8B
-and 8C remain to do.
+Status: Batch 8B implementation complete; awaiting Claude review. Batch 8C
+remains to do.
 
 This packet scopes v0.1.9.5 as a naming and teaching consolidation release
 after the v0.1.9.1-v0.1.9.4 feature arc.

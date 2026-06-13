@@ -75,7 +75,7 @@ hardware you control: a Raspberry Pi, an Intel NUC, a small VPS, or anything
 else that runs R. The current package imports are:
 
 ```text
-codetools, collapse, DBI, digest, duckdb, jsonlite, rlang, tibble
+collapse, codetools, DBI, digest, duckdb, rlang, tibble, yyjsonr
 ```
 
 That is a modest runtime footprint for a research framework. DuckDB is the main

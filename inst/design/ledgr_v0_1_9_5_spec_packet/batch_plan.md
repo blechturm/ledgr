@@ -1,7 +1,7 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Batch 8A implementation complete; awaiting Claude review. Batches 8B
-and 8C remain to do.
+Status: Batch 8B implementation complete; awaiting Claude review. Batch 8C
+remains to do.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 
@@ -306,6 +306,8 @@ Implementation notes:
 
 ## Batch 8B - Vignette Stale-Fact Fixes
 
+Status: Implementation complete; awaiting Claude review.
+
 Tickets:
 
 - LDG-2643
@@ -325,6 +327,22 @@ Review focus:
 - trades example selects only existing columns.
 
 Added by the 2026-06-13 vignette audit (Section 2).
+
+Implementation notes:
+
+- corrected `why-r.qmd` to list the current `DESCRIPTION` Imports, including
+  `yyjsonr` instead of stale `jsonlite`;
+- refreshed `research-to-production` delivered and planned scope language for
+  sweep persistence, target-risk identity, validation-toolkit, paper,
+  observability, and live anchors;
+- updated `execution-semantics` to select the real trades columns
+  (`ts_utc`, `qty`, `realized_pnl`) and explain that trade rows are
+  close-action fill rows;
+- updated `experiment-store` to route external point-in-time regressors to the
+  v0.2.x point-in-time data line;
+- kept affected `.md` mirrors hand-synced. Quarto render was attempted with the
+  RStudio-bundled executable, but local render could not resolve required
+  Imports (`collapse`, `yyjsonr`) from the Quarto subprocess.
 
 ## Batch 8C - Vignette Editorial Cleanups And Helper Adoption
 

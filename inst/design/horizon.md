@@ -52,7 +52,8 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   slice diagnostics; promotion-grade sweep artifacts; target
   construction helper extensions (Pass 2 per-stage helpers); broker /
   exchange cost templates; crypto-readiness spike; spot-FIFO as default
-  for ephemeral spot workloads (candidate; see 2026-06-05 entry).
+  for ephemeral spot workloads (candidate; see 2026-06-05 and
+  2026-06-13 entries).
 - **v0.2.x** — snapshot administration and research-loop ergonomics (sweep
   review + promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
@@ -150,6 +151,39 @@ still honestly say "EOD-first, intraday-tolerant" after the v0.1.9.x arc.
 Related entry: 2026-05-27 [execution] Intraday support arc and pre-v0.2.x
 architectural footguns. This entry schedules the audit promised there; it does
 not authorize the intraday support arc itself.
+
+### 2026-06-13 [execution] Decide whether compiled spot-FIFO should become the default
+
+The compiled spot-FIFO path is currently an explicit opt-in, not default
+execution. That is the right state until a fresh measurement spike and RFC
+cycle decide otherwise. The default path is user-facing semantics, not merely a
+performance toggle: even if the event stream is intended to remain identical,
+changing the default accounting implementation changes the path most users
+exercise, the failures they see, and the platform matrix that must be trusted.
+
+Candidate next-packet shape:
+
+- run a focused measurement spike comparing canonical R accounting versus
+  `compiled_accounting_model = "spot_fifo"` on current v0.1.9.x workloads;
+- include parity checks for fills, ledger events, trades, equity, metrics,
+  sweep summaries, retained return panels, saved/reopened sweeps, walk-forward
+  sessions, and promotion-ready candidates;
+- measure failure and fallback behavior when compiled symbols are unavailable,
+  unsupported accounting shapes appear, or the workload is non-spot;
+- separate three possible defaults: keep opt-in; default only for ephemeral
+  spot sweeps; default for all supported spot execution surfaces;
+- assess Windows/macOS/Linux CI confidence, CRAN/installation consequences,
+  package-size or toolchain risks, and whether the default would still preserve
+  one execution semantics rather than creating a second practical engine;
+- use the RFC synthesis to bind the default, fallback, error-class,
+  documentation, release-gate, and rollback rules before any implementation
+  ticket changes defaults.
+
+The spike should be measurement-first. The RFC may decide that the right answer
+is "do not make it default yet." Default compiled execution, durable compiled
+integration beyond the already scoped surface, non-spot accounting, and a
+general compiled fold core remain unauthorized until that RFC is accepted and a
+versioned packet cuts implementation tickets.
 
 ### 2026-06-13 [risk] User-defined cost and risk steps: extensibility against the identity and bounded-stance constraints
 

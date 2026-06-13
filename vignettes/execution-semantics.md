@@ -147,7 +147,7 @@ feature values as pulse-known information, not as executable prices.
 
 **Public cost API**
 
-v0.1.9.1 ships the public transaction-cost model API used below. The
+ledgr ships the public transaction-cost model API used below. The
 example keeps timing and cost explicit: next-open timing, a quoted-spread
 cost, and a fixed-fee cost. Cost models charge fills; they do not change
 quantities, model liquidity, or implement OMS behavior.
@@ -283,16 +283,18 @@ ledgr_results(bt, what = "fills") |>
 
 ``` r
 ledgr_results(bt, what = "trades") |>
-  select(any_of(c("entry_ts_utc", "exit_ts_utc", "entry_ts", "exit_ts", "qty", "pnl", "realized_pnl")))
+  select(ts_utc, qty, realized_pnl)
 ```
 
-    # A tibble: 1 x 2
-        qty realized_pnl
-      <dbl>        <dbl>
-    1    10        -17.3
+    # A tibble: 1 x 3
+      ts_utc       qty realized_pnl
+      <date>     <dbl>        <dbl>
+    1 2018-01-09    10        -17.3
 
 Start with fills when debugging execution. Trades are derived from
-filled round trips, not from target changes.
+filled round trips, not from target changes. A trade row is the
+close-action fill row that realizes PnL; ledgr does not currently expose
+a paired entry/exit trade table.
 
 ## Where Next
 

@@ -1062,7 +1062,7 @@ scope: ux-helpers
 Priority: P1
 Effort: S
 Dependencies: LDG-2627
-Status: To Do
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -1096,6 +1096,25 @@ Fix the four verified stale facts from the v0.1.9.5 vignette audit Section 2.
 ### Tests
 
 - Documentation-contract tests; render affected vignettes.
+
+### Implementation Notes
+
+- Corrected `vignettes/articles/why-r.qmd` to match the current
+  `DESCRIPTION` Imports list (`collapse`, `codetools`, `DBI`, `digest`,
+  `duckdb`, `rlang`, `tibble`, `yyjsonr`).
+- Updated `research-to-production` so current cost, sweep persistence,
+  target-risk identity, and walk-forward behavior are described as shipped
+  behavior without current-version stamping; planned validation-toolkit,
+  paper, observability, and live work now uses the roadmap anchors
+  v0.1.9.6, v0.3.0, v0.4.0, and v1.0.0.
+- Updated `execution-semantics` to select real trades columns
+  (`ts_utc`, `qty`, `realized_pnl`) and to state that trades are close-action
+  fill rows rather than paired entry/exit rows.
+- Updated `experiment-store` to route external point-in-time regressors to the
+  v0.2.x point-in-time data line instead of a stale v0.1.8.5 boundary.
+- Affected `.md` mirrors were kept hand-synced. Quarto render was attempted
+  with the RStudio-bundled executable but the subprocess could not resolve
+  required Imports (`collapse`, `yyjsonr`) in this local shell.
 
 ### Source Reference
 

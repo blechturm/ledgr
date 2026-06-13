@@ -1752,11 +1752,35 @@ testthat::test_that("LEDGR_LAST_BAR_NO_FILL help topic documents final-bar behav
   testthat::expect_match(warning_doc, "candidate-row warning", fixed = TRUE)
   testthat::expect_match(warning_doc, "execution-semantics", fixed = TRUE)
   testthat::expect_match(execution_doc, "?LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
-  testthat::expect_match(execution_doc, "v0.1.9.1 ships the public transaction-cost model API", fixed = TRUE)
+  testthat::expect_match(execution_doc, "ledgr ships the public transaction-cost model API", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "v0.1.9.1 ships the public transaction-cost model API", fixed = TRUE)
   testthat::expect_no_match(execution_doc, "The stable public transaction-cost model API is planned", fixed = TRUE)
 })
 
-testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API surface", {
+testthat::test_that("v0.1.9.5 vignette stale-fact fixes stay fixed", {
+  why_r_path <- file.path(testthat::test_path("..", ".."), "vignettes", "articles", "why-r.qmd")
+  execution_path <- ledgr_test_source_vignette("execution-semantics.qmd")
+  store_path <- ledgr_test_source_vignette("experiment-store.qmd")
+  testthat::skip_if_not(
+    file.exists(why_r_path) && file.exists(execution_path) && file.exists(store_path),
+    "vignette sources not available"
+  )
+
+  why_r_doc <- paste(readLines(why_r_path, warn = FALSE), collapse = "\n")
+  execution_doc <- paste(readLines(execution_path, warn = FALSE), collapse = "\n")
+  store_doc <- paste(readLines(store_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(why_r_doc, "collapse, codetools, DBI, digest, duckdb, rlang, tibble, yyjsonr", fixed = TRUE)
+  testthat::expect_no_match(why_r_doc, "jsonlite", fixed = TRUE)
+  testthat::expect_match(execution_doc, "select(ts_utc, qty, realized_pnl)", fixed = TRUE)
+  testthat::expect_match(execution_doc, "close-action fill row", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "entry_ts_utc", fixed = TRUE)
+  testthat::expect_no_match(execution_doc, "any_of(c(\"entry_ts_utc\"", fixed = TRUE)
+  testthat::expect_match(store_doc, "v0.2.x point-in-time data line", fixed = TRUE)
+  testthat::expect_no_match(store_doc, "out of v0.1.8.5", fixed = TRUE)
+})
+
+testthat::test_that("research-to-production vignette reflects current cost API surface", {
   qmd_path <- ledgr_test_source_vignette("research-to-production.qmd")
   md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "research-to-production.md")
   testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "research-to-production docs not available")
@@ -1775,10 +1799,14 @@ testthat::test_that("research-to-production vignette reflects v0.1.9.1 cost API 
     testthat::expect_match(doc, "quoted-spread convention", fixed = TRUE)
     testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
     testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
-    testthat::expect_match(doc, "v0.1.9.4 shipped walk-forward evaluation", fixed = TRUE)
-    testthat::expect_match(doc, "next planned validation-toolkit work", fixed = TRUE)
+    testthat::expect_match(doc, "walk-forward evaluation runs over the existing sweep and run surfaces", fixed = TRUE)
+    testthat::expect_match(doc, "next planned validation-toolkit work is scoped for v0.1.9.6", fixed = TRUE)
+    testthat::expect_match(doc, "Paper trading adapters are planned for v0.3.0", fixed = TRUE)
+    testthat::expect_match(doc, "observability tooling for", fixed = TRUE)
+    testthat::expect_match(doc, "small-scale live trading for v1.0.0", fixed = TRUE)
     testthat::expect_no_match(doc, "fill_model", fixed = TRUE)
     testthat::expect_no_match(doc, "commission_fixed", fixed = TRUE)
+    testthat::expect_no_match(doc, "v0.1.9.4 shipped walk-forward evaluation", fixed = TRUE)
     testthat::expect_no_match(doc, "v0.1.9.4 plans walk-forward evaluation", fixed = TRUE)
     testthat::expect_no_match(doc, "later v0.1.9.x work may add selection-integrity diagnostics", fixed = TRUE)
   }
