@@ -805,6 +805,20 @@ walk-forward machinery.
 - Manual link check through `rg` and design-index review.
 - Render or inspect qmd/md outputs according to local manual conventions.
 
+### Implementation Notes
+
+- Added maintainer-manual articles for the cost resolver, target-risk layer,
+  and walk-forward machinery:
+  `inst/design/manual/cost_resolver.qmd`,
+  `inst/design/manual/target_risk_layer.qmd`, and
+  `inst/design/manual/walk_forward_machinery.qmd`.
+- Each article uses the Synthesis plus Implementation Trace shape and points to
+  the relevant R implementation files without adding new architecture scope.
+- Updated the manual index and design index so the new articles are
+  discoverable.
+- Rendered the maintainer manual with `tools/render-maintainer-manual.R`,
+  producing the corresponding `.md` siblings.
+
 ### Source Reference
 
 - `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`
@@ -851,6 +865,17 @@ discoverable after the four-tick v0.1.9.x feature sequence.
 
 - Manual design-index and RFC-index review.
 - `rg` for stale packet-status references introduced by this work.
+
+### Implementation Notes
+
+- Added a bounded v0.1.9.x feature-arc follow-up to
+  `inst/design/manual/performance_arc_v0_1_8_x.qmd`, keeping the v0.1.8.x B2
+  performance arc intact while routing cost, risk, and walk-forward tradeoffs
+  to the new maintainer-manual articles.
+- Kept the narrative internal and measurement-scoped: no public benchmark claim
+  or default-compiled-execution language was added.
+- Reviewed the RFC index; naming-consistency and validation-toolkit acceptance
+  are already visible there, so no additional RFC-index text was needed.
 
 ### Source Reference
 

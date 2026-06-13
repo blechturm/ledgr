@@ -567,6 +567,15 @@ defaults or named ticket-cut gates or both must land.
 - `manual/snapshots_data.qmd` - internal maintainer-manual article for snapshot
   sealing, split stores, fold-entry guards, and the data trust boundary. This
   is synthesis, not a replacement for contracts.
+- `manual/cost_resolver.qmd` - internal maintainer-manual article for the
+  public cost-model plan, resolver reconstruction, identity, and fold
+  integration boundary.
+- `manual/target_risk_layer.qmd` - internal maintainer-manual article for
+  classed target-risk steps, risk-chain identity, worker-safe plans, and the
+  target-risk layer boundary.
+- `manual/walk_forward_machinery.qmd` - internal maintainer-manual article for
+  walk-forward fold orchestration, scalar selection, locator verification,
+  persistence, and inspection.
 
 ## ADRs
 

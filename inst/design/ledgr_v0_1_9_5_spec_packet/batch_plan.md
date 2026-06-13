@@ -1,7 +1,7 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Batch 8C implementation complete; awaiting Claude review. Batch 9+10
-remain to do.
+Status: Batch 9+10 implementation complete; awaiting Claude review. Batch 11
+remains to do.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 

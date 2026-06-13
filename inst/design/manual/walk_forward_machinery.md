@@ -1,0 +1,84 @@
+# Walk-Forward Machinery
+
+
+**Status:** Reviewable maintainer-manual article for v0.1.9.5 LDG-2638.
+
+**Authority:** Synthesis plus implementation trace. Binding scope
+remains in `../contracts.md`, the walk-forward evaluation synthesis, the
+sweep artifact persistence synthesis, and the v0.1.9.4 spec packet.
+
+This article explains the first walk-forward implementation: a wrapper
+over the existing sweep and run surfaces. It is not a validation
+toolkit, not a second engine, and not a production deployment system.
+
+## Synthesis
+
+Walk-forward evaluation has three jobs in the current implementation:
+
+1.  define calendar-time train/test folds;
+2.  run a sweep over each train window and select one candidate by
+    scalar metric;
+3.  run the selected candidate on the matching test window and persist
+    compact inspection evidence.
+
+The implementation deliberately reuses `ledgr_sweep()` and
+`ledgr_run()`. There is no walk-forward fold core. The train window uses
+the same sweep candidate identity machinery as ordinary sweeps. The test
+window uses the same run execution semantics as ordinary backtests.
+
+The v1 surface is scalar-selection only. It does not provide
+PBO/CSCV/CPCV, deflated Sharpe ratio, purging/embargo, randomized folds,
+benchmark-relative diagnostics, candidate clustering, all-candidate test
+retention, or production promotion policy. Those belong to later
+validation-toolkit work.
+
+Candidate extraction is now routed through `ledgr_candidate()`. Live and
+reopened walk-forward result objects carry durable locator attributes:
+`db_path`, `snapshot_id`, and `snapshot_hash`. Extraction resolves the
+snapshot at call time and verifies identity before rebuilding a
+promotion-ready candidate. It does not store live DBI handles on the
+result object.
+
+## Implementation Trace
+
+| Concern | Code |
+|----|----|
+| Orchestrator | `R/walk-forward.R`: `ledgr_walk_forward()` and `ledgr_walk_forward_eval_fold()` |
+| Fold definitions | `R/walk-forward-folds.R`: rolling, anchored, explicit fold helpers, validation, print surface, and fold-list hash |
+| Selection rules | `R/walk-forward-selection.R`: selection constructor, metric validation, and scalar-selection fail-closed checks |
+| Identity | `R/walk-forward-identity.R`: candidate key and session identity helpers |
+| Persistence | `R/walk-forward.R`: session write helpers and compact table writes |
+| Inspection | `R/walk-forward-inspection.R`: reopened results, scores, folds, degradation table, and `ledgr_candidate.ledgr_walk_forward_results()` |
+| Sweep and run execution | `R/sweep.R` and `R/backtest.R` remain the execution surfaces used inside each fold |
+
+The orchestrator creates fold plans, executes a train sweep, records the
+selected candidate, then executes the selected test run. It persists
+enough metadata to inspect scores, selected candidates, test runs, and
+degradation. It does not persist all candidate test runs.
+
+Locator verification is part of the inspection contract. A reopened
+object can extract a candidate only if the stored locator resolves to a
+snapshot whose id and hash match the result evidence. A caller may
+override the path, but the override must carry the same `snapshot_id`
+and `snapshot_hash`; only `db_path` may differ.
+
+## Maintainer Checklist
+
+Before changing this area:
+
+- keep train execution on `ledgr_sweep()` and test execution on
+  `ledgr_run()`;
+- keep fold definitions deterministic and hashable;
+- keep scalar-selection failures classed and early;
+- keep locator attributes as durable strings, never live handles;
+- verify snapshot id and hash at candidate extraction time;
+- do not claim validation-toolkit statistics until that packet
+  implements and tests them.
+
+## Source Links
+
+- `../rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
+- `../rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`
+- `../ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`
+- `sweep.qmd`
+- `identity_contract.qmd`

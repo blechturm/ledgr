@@ -113,6 +113,44 @@ deferred to a later packet:
 Non-commitments: these are recorded direction, not roadmap commitments; helper
 names and the trades-pairing decision are illustrative.
 
+### 2026-06-13 [infrastructure] Peer benchmark redo with the cost and risk chains (v0.1.9.6)
+
+Scheduled for v0.1.9.6. The peer parity/performance benchmark
+(`dev/bench/peer_benchmark/`) was last recorded at v0.1.8.10 (record bundle
+2026-06-02), which predates the public cost chain (v0.1.9.1) and the
+target-risk chain (v0.1.9.3). The current numbers therefore do not include
+per-fill cost-model resolution or per-pulse risk-chain transform overhead. Redo
+the record bundle on the v0.1.9.5 surface to measure whether the v0.1.9.x
+feature arc held the speed line.
+
+Measurement design (so the delta is attributable, not blended into the engine
+phase):
+
+- run a `ledgr_cost_zero()` / `ledgr_risk_none()` row next to a row with a real
+  cost chain and risk chain, on the same fixture and seed;
+- the difference isolates per-fill cost-resolution and per-pulse risk-transform
+  cost from the rest of the engine phase.
+
+Prior to confirm, not assume: the risk chain should be near-free -- `long_only`
+and `max_weight` are vector ops over the target vector, not a per-instrument R
+loop -- while the cost chain resolves per fill, which is exactly where
+universe-scaling cost lives at 500 instruments. The redo tells you which.
+
+Scope: this is a measurement spike, not a performance-optimization commitment.
+If it surfaces a material cost-chain regression, that becomes its own hot-path
+item (the per-pulse / per-fill R-loop frontier is already recorded). After the
+new bundle lands, update the benchmark report headline and the v0.1.8.10
+record-bundle line, keeping the "fastest trustworthy event-driven row" framing
+rather than an unqualified speed claim.
+
+Related: the standing single-core-before-parallel stance; the per-pulse
+`O(n_inst)` hot-path frontier; the 2026-06-13 compiled-spot-FIFO-default
+decision entry below (a default flip would change which row the report leads
+with).
+
+Non-commitments: not a commitment beyond v0.1.9.6 scheduling; the measurement
+design is illustrative.
+
 ### 2026-06-13 [execution] v0.1.9.6 intraday-readiness code audit
 
 Scheduled for the next packet after v0.1.9.5: run a deep code review to check
