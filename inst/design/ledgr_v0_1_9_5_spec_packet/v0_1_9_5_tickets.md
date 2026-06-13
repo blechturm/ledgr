@@ -994,7 +994,7 @@ scope: v0.1.9.5
 Priority: P1
 Effort: M
 Dependencies: LDG-2632, LDG-2633
-Status: To Do (walk-forward print methods already landed 2026-06-13, Codex-reviewed)
+Status: Review Pending (implementation complete; awaiting Claude review; walk-forward print methods already landed 2026-06-13, Codex-reviewed)
 
 ### Description
 
@@ -1026,6 +1026,20 @@ across multiple vignettes and resolve standing in-article design notes.
   performs no store lifecycle.
 - The walk-forward print methods are tested and recorded.
 - Export-lock updated, `tools::checkRd()` clean, NEWS carries the helpers.
+
+### Implementation Notes
+
+- Added `ledgr_sweep_review()` as a no-selection review helper returning
+  `ranked`, `top`, and `issues` tables. Ranking uses an explicit `rank_by`
+  expression so the rule stays visible at the call site.
+- Added `ledgr_temp_store()` as a path-and-clear helper for disposable
+  `.duckdb` files. It does not open, initialize, seal, or manage stores.
+- Exported both helpers, registered `print.ledgr_sweep_review`, updated
+  generated docs, pkgdown references, NEWS, and the export lock.
+- Verification passed:
+  `testthat::test_file('tests/testthat/test-sweep-review.R')`,
+  `testthat::test_file('tests/testthat/test-api-exports.R')`, and
+  `tools::checkRd()` for the two new Rd pages.
 
 ### Tests
 

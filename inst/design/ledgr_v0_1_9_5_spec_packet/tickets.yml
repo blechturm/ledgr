@@ -276,7 +276,7 @@ tickets:
 
   - id: "LDG-2642"
     title: "Batch 8A walk-forward, sweep, and store UX helpers"
-    status: "todo"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:

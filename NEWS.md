@@ -5,6 +5,9 @@
 - Made walk-forward inspection easier to read: `wf$degradation` now prints a
   curated train-versus-test view (the full table is one `as_tibble()` away), and
   fold lists print their per-fold train and test windows.
+- Added `ledgr_sweep_review()` for explicit sweep review tables and
+  `ledgr_temp_store()` for disposable `.duckdb` paths used in examples and
+  teaching workflows.
 
 | Old name | New name / disposition |
 | --- | --- |

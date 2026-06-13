@@ -1,7 +1,7 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Batch 8 implementation complete; Batches 8A/8B/8C added by the
-2026-06-13 vignette audit (to do); awaiting Claude review.
+Status: Batch 8A implementation complete; awaiting Claude review. Batches 8B
+and 8C remain to do.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 
@@ -268,6 +268,8 @@ Implementation notes:
 
 ## Batch 8A - Walk-Forward, Sweep, And Store UX Helpers
 
+Status: Implementation complete; awaiting Claude review.
+
 Tickets:
 
 - LDG-2642
@@ -290,6 +292,17 @@ Review focus:
 
 Added by the 2026-06-13 vignette audit (Section 3). Helpers must exist before
 the Batch 8C vignette edits that consume them.
+
+Implementation notes:
+
+- added `ledgr_sweep_review()` as an explicit-rank sweep review helper returning
+  `ranked`, `top`, and `issues` tables only;
+- added `ledgr_temp_store()` as a path-and-clear helper for disposable
+  `.duckdb` paths, with no store initialization or lifecycle behavior;
+- registered exports, generated Rd pages, pkgdown references, NEWS, and the
+  export lock;
+- verified with the new helper tests, export-lock test, and `tools::checkRd()`
+  on the new Rd pages.
 
 ## Batch 8B - Vignette Stale-Fact Fixes
 

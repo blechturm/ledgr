@@ -59,6 +59,7 @@ reference:
       - ledgr_sweep
       - ledgr_sweep_retention
       - ledgr_sweep_returns
+      - ledgr_sweep_review
       - ledgr_sweep_save
       - print.ledgr_sweep_results
       - ledgr_candidate
@@ -174,6 +175,7 @@ reference:
       - ledgr_iso_utc
       - ledgr_utc
       - ledgr_db_init
+      - ledgr_temp_store
       - ledgr_validate_schema
       - print.ledgr_config
       - ledgr_backtest_bench
