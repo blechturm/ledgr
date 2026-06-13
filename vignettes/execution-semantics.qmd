@@ -1,5 +1,5 @@
 ---
-title: "Execution Semantics"
+title: "How Targets Become Fills"
 format:
   html:
     toc: false
@@ -8,7 +8,7 @@ format:
 execute:
   echo: true
 vignette: >
-  %\VignetteIndexEntry{Execution Semantics}
+  %\VignetteIndexEntry{How Targets Become Fills}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 ---
@@ -50,24 +50,14 @@ if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
 </style>
 ```
 
-This article explains what happens after a strategy returns target holdings.
-It is about fill timing and ledger state, not strategy design or validation.
+You returned a target of 10 units. When does it trade, and at what price? A
+backtest that fills it on the same bar you decided on can quietly overstate your
+results.
 
-## Prerequisites
-
-```{r}
-#| label: prerequisites
-
-library(ledgr)
-library(dplyr)
-data("ledgr_demo_bars", package = "ledgr")
-```
-
-## The Short Version
-
-ledgr strategies emit desired holdings at each pulse. They do not emit orders.
-The fold core compares the desired target to current state, creates the required
-position delta, and fills that delta at the next bar's open.
+This article shows how ledgr turns a target into a fill. You emit holdings, not
+orders, and they fill at the next bar's open, not the bar you decided on. That
+one-bar rule is the no-lookahead boundary: it keeps the simulation from trading
+on information it could not have had at decision time.
 
 ::: {.ledgr-diagram .ledgr-execution-diagram}
 
@@ -87,30 +77,80 @@ flowchart LR
 
 :::
 
-That one-bar delay is the no-lookahead boundary. The strategy can react to the
-current pulse, but it cannot fill at a price from the same pulse.
+```{r}
+#| label: prerequisites
+#| message: false
 
-## Targets Are Holdings
+library(ledgr)
+library(dplyr)
 
-Returning `10` means "I want to hold 10 units", not "buy 10 units every bar."
-If the current position already equals the target, there is no new fill.
+data("ledgr_demo_bars", package = "ledgr")
+```
+
+## The Lie A Backtest Can Tell You
+
+Here is a momentum rule: hold one unit whenever a bar closes above its open.
+The decision uses bar `t`'s close, which ledgr treats as pulse-known
+information. The only open question is *when the resulting position fills*.
+
+Compare two fill rules on the same signal and the same bars. One fills at the
+open of the bar you decided from; the other fills at the next bar's open, the
+way ledgr does.
 
 ```{r}
-#| label: target-holdings
+#| label: lookahead
+
+window <- ledgr_demo_bars |>
+  filter(
+    instrument_id == "DEMO_01",
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+  )
+
+timing <- window |>
+  arrange(ts_utc) |>
+  mutate(
+    closed_up = close > open,
+    fill_same_bar = (close - open) / open,
+    fill_next_open = (lead(close) - lead(open)) / lead(open)
+  ) |>
+  filter(closed_up, !is.na(fill_next_open))
+
+tibble::tibble(
+  fill_rule = c("same bar you decided on", "next open (what ledgr does)"),
+  mean_return = c(mean(timing$fill_same_bar), mean(timing$fill_next_open)),
+  win_rate = c(mean(timing$fill_same_bar > 0), mean(timing$fill_next_open > 0))
+)
+```
+
+Filling at the bar you decided from wins **100 percent** of the time. That is
+not skill -- you only ever bought bars you already knew had closed up, so the
+profit was decided before the trade. A 100 percent win rate is the signature of
+lookahead. The honest rule, next-open, wins about half the time, because the
+next bar does not know what the last one did.
+
+ledgr does not allow this: a target decided on bar `t` always fills at the open
+of bar `t + 1`. The rest of this article shows that rule in the ledger.
+
+## Targets Are Holdings, Not Orders
+
+Returning `10` means "I want to hold 10 units", not "buy 10 units every bar". If
+the current position already equals the target, there is no new fill -- only
+*changes* fill.
+
+```{r}
+#| label: holdings
 
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id == "DEMO_01",
-    between(ts_utc, ledgr_utc("2018-01-01"), ledgr_utc("2018-01-10"))
+    between(ts_utc, ledgr_utc("2019-01-07"), ledgr_utc("2019-01-15"))
   )
-
-demo_qty <- 10
 
 hold_then_flat <- function(ctx, params) {
   targets <- ctx$flat()
   ts <- ledgr_utc(ctx$ts_utc)
-  if (ts >= ledgr_utc("2018-01-03") && ts < ledgr_utc("2018-01-08")) {
-    targets["DEMO_01"] <- demo_qty
+  if (ts >= ledgr_utc("2019-01-08") && ts < ledgr_utc("2019-01-10")) {
+    targets["DEMO_01"] <- 10
   }
   targets
 }
@@ -119,151 +159,65 @@ bt <- ledgr_backtest(
   data = bars,
   strategy = hold_then_flat,
   initial_cash = 10000,
-  run_id = "execution_target_holdings",
+  run_id = "how_targets_holdings",
   cost_model = ledgr_cost_zero()
 )
 
 ledgr_results(bt, what = "fills") |>
-  select(ts_utc, instrument_id, side, qty, price, fee)
-```
-
-The strategy asked for a position across several pulses, but only position
-changes created fills: one opening fill and one closing fill.
-
-## Next-Open Fill Timing
-
-The signal pulse and execution pulse are different. The target changes on one
-bar; the fill uses the next bar's open.
-
-```{r}
-#| label: next-open-evidence
-
-signal_rows <- bars |>
-  filter(ts_utc %in% c(ledgr_utc("2018-01-03"), ledgr_utc("2018-01-04"))) |>
-  select(ts_utc, open, close)
-
-fills <- ledgr_results(bt, what = "fills") |>
   select(ts_utc, side, qty, price)
-
-signal_rows
-fills
 ```
 
-The opening fill occurs at the next available bar after the strategy changed
-target. That is why a strategy should treat `ctx$close(id)` and feature values
-as pulse-known information, not as executable prices.
+The strategy asked to hold the position across two bars, but you see only two
+fills: one to open the position and one to close it. The bars in between asked
+for the same target, so nothing executed.
 
-## Costs Are Part Of The Fill
+## The Fill Is At The Next Open
 
-::: {.ledgr-callout .ledgr-callout-important}
-**Public cost API**
+Look at the dates. The strategy set the target on January 8, using that bar's
+close. ledgr filled the buy at January 9's open (88.4) -- the next bar -- not at
+January 8's close. When the target went flat on January 10, the sell filled at
+January 11's open.
 
-ledgr ships the public transaction-cost model API used below. The example
-keeps timing and cost explicit: next-open timing, a quoted-spread cost, and a
-fixed-fee cost. Cost models charge fills; they do not change quantities, model
-liquidity, or implement OMS behavior.
-:::
+The price you decide on is never the price you get. That is why a strategy
+should read `ctx$close(id)` and feature values as pulse-known *information*, not
+as executable prices. Each fill also carries a fee set by the cost model; this
+article keeps costs at zero to isolate timing (see
+`vignette("risk-and-cost", package = "ledgr")`).
 
-The fill model shown here is the next-open model with spread and fixed
-commission fields.
-
-```{r}
-#| label: fill-costs
-
-cost_bt <- ledgr_backtest(
-  data = bars,
-  strategy = hold_then_flat,
-  initial_cash = 10000,
-  run_id = "execution_cost_example",
-  timing_model = ledgr_timing_next_open(),
-  cost_model = ledgr_cost_chain(
-    ledgr_cost_spread_bps(5),
-    ledgr_cost_fixed_fee(1)
-  )
-)
-
-ledgr_results(cost_bt, what = "fills") |>
-  select(ts_utc, side, qty, price, fee)
-```
-
-## Final-Bar Targets Cannot Fill
+## A Target On The Final Bar Cannot Fill
 
 A target change on the final pulse is valid strategy output, but there is no
 later bar where ledgr can simulate the next-open fill. ledgr warns and leaves
-the ledger unchanged for that final target change. See
-`?LEDGR_LAST_BAR_NO_FILL` for the stable warning-code contract.
+the ledger unchanged for that final target change.
 
 ```{r}
-#| label: final-bar-no-fill
+#| label: final-bar
 
 final_bar_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2018-01-10")) {
-    targets["DEMO_01"] <- demo_qty
+  if (ledgr_utc(ctx$ts_utc) == ledgr_utc("2019-01-15")) {
+    targets["DEMO_01"] <- 10
   }
   targets
 }
 
-last_bar_warning <- FALSE
-final_bar_bt <- withCallingHandlers(
-  ledgr_backtest(
-    data = bars,
-    strategy = final_bar_strategy,
-    initial_cash = 10000,
-    run_id = "execution_final_bar_warning",
-    cost_model = ledgr_cost_zero()
-  ),
-  warning = function(w) {
-    if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
-      last_bar_warning <<- TRUE
-      invokeRestart("muffleWarning")
-    }
-  }
+final_bt <- ledgr_backtest(
+  data = bars,
+  strategy = final_bar_strategy,
+  initial_cash = 10000,
+  run_id = "how_targets_final_bar",
+  cost_model = ledgr_cost_zero()
 )
 
-last_bar_warning
-ledgr_results(final_bar_bt, what = "fills")
+nrow(ledgr_results(final_bt, what = "fills"))
 ```
 
-If that final target matters, extend the snapshot by one executable bar and run
-again. Do not suppress the warning and treat the missing fill as a completed
-trade.
+The warning carries the stable code `LEDGR_LAST_BAR_NO_FILL` (see
+`?LEDGR_LAST_BAR_NO_FILL`). If that final target matters, extend the snapshot by
+one executable bar and run again. Do not suppress the warning and treat the
+missing fill as a completed trade.
 
-## Warmup Gates Belong In The Strategy
-
-::: {.ledgr-callout .ledgr-callout-note}
-**Definition**
-
-Warmup is the early part of a feature series where an indicator has not yet seen
-enough history to produce a usable value. For example, a 20-bar moving average
-is not usable on the first bar of a snapshot.
-:::
-
-Feature warmup is not an execution rule. The strategy decides whether a feature
-vector is usable. Different strategies may want different warmup behavior, so
-ledgr exposes warmup state instead of silently imposing a trading rule. For
-active aliases, `ledgr_passed_warmup()` is the standard guard:
-
-```{r}
-#| label: warmup-guard
-#| eval: false
-
-values <- ctx$features("DEMO_01")
-targets <- ctx$flat()
-
-if (ledgr_passed_warmup(values) && values[["fast"]] > values[["slow"]]) {
-  targets["DEMO_01"] <- params$qty
-}
-
-targets
-```
-
-`ledgr_passed_warmup()` keeps the rule inactive while mapped features are still
-ordinary early `NA`. A typo in an alias or a feature that can never become usable
-is a different problem; ledgr should fail or report diagnostics rather than
-silently treating missing features as no signal.
-
-## Zero Fills And Zero Trades Mean Different Things
+## Zero Fills And Zero Trades Are Different
 
 Zero fills means no execution occurred. Non-empty fills with zero trades means
 the run opened or adjusted a position but did not close a round trip inside the
@@ -272,33 +226,41 @@ sample.
 ```{r}
 #| label: fills-vs-trades
 
-ledgr_results(bt, what = "fills") |>
-  select(ts_utc, side, qty, price)
-
 ledgr_results(bt, what = "trades") |>
   select(ts_utc, qty, realized_pnl)
 ```
 
-Start with fills when debugging execution. Trades are derived from filled round
-trips, not from target changes. A trade row is the close-action fill row that
-realizes PnL; ledgr does not currently expose a paired entry/exit trade table.
+Start with fills when you debug execution. Trades are derived from filled round
+trips, not from target changes: a trade row is the close-action fill row that
+realizes PnL. ledgr does not currently expose a paired entry/exit trade table.
+
+## Try It
+
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
+
+In the momentum comparison above, replace `lead(close)` and `lead(open)` with a
+two-bar lead (`lead(close, 2)`, `lead(open, 2)`). Does the next-open win rate
+stay near a coin flip? Then change the signal to `close < open` (hold on
+down bars). Does the same-bar rule still win 100 percent of the time, and why?
+:::
 
 ## Where Next
 
-- For strategy authoring and `ledgr_passed_warmup()` patterns, read
+- For warmup gating, feature maps, and `ledgr_passed_warmup()`, read
+  `vignette("indicators", package = "ledgr")` and
   `vignette("strategy-development", package = "ledgr")`.
-- For feature maps and warmup diagnostics, read
-  `vignette("indicators", package = "ledgr")`.
+- For the cost and risk policy applied at the fill, read
+  `vignette("risk-and-cost", package = "ledgr")`.
 - For ledger, fills, trades, equity, and metrics, read
   `vignette("metrics-and-accounting", package = "ledgr")`.
-- For candidate sweeps and promotion context, read
-  `vignette("sweeps", package = "ledgr")`.
+- For why same-bar information is unsafe to trade on, read
+  `vignette("leakage", package = "ledgr")`.
 
 ```{r}
 #| label: cleanup
 #| include: false
 
 close(bt)
-close(cost_bt)
-close(final_bar_bt)
+close(final_bt)
 ```
