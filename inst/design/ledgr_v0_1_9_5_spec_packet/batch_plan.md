@@ -1,7 +1,6 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Batch 11 implementation complete; awaiting Claude review. Batch 12
-release gate remains to do.
+Status: Local release gate complete; branch ready for remote CI, merge, and tag.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 
@@ -453,6 +452,15 @@ Review focus:
 - diff-size guard was honored;
 - all local and remote release gates have recorded outcomes;
 - branch is clean before tag.
+
+Implementation notes:
+
+- Local Windows full tests, README cold-start, source build, package check,
+  coverage, pkgdown, and WSL/Ubuntu schema/persistence gates passed.
+- Package-check timeout, pkgdown reference-index rerun, and WSL stale-object
+  rerun are recorded in `v0_1_9_5_release_closeout.md`.
+- Remote branch CI, main CI, tag CI, and GitHub Release remain to be completed
+  by following `inst/design/release_ci_playbook.md`.
 
 ## Release-Blocking Gates
 

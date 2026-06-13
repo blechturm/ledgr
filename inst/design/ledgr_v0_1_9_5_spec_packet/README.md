@@ -1,7 +1,6 @@
 # ledgr v0.1.9.5 Spec Packet
 
-Status: Batch 11 implementation complete; awaiting Claude review. Batch 12
-release gate remains to do.
+Status: Local release gate complete; branch ready for remote CI, merge, and tag.
 
 This packet scopes v0.1.9.5 as a naming and teaching consolidation release
 after the v0.1.9.1-v0.1.9.4 feature arc.
@@ -12,6 +11,7 @@ Authoritative files:
 - `v0_1_9_5_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`
+- `v0_1_9_5_release_closeout.md`
 
 Primary design inputs:
 

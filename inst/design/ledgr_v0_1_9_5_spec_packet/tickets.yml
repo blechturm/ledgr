@@ -240,7 +240,7 @@ tickets:
 
   - id: "LDG-2641"
     title: "Batch 12 v0.1.9.5 release gate"
-    status: "review_pending"
+    status: "local_gate_complete"
     priority: "P0"
     effort: "M"
     dependencies:

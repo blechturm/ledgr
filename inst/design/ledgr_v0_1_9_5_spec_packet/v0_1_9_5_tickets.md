@@ -969,7 +969,7 @@ scope: closeout-prep
 Priority: P0
 Effort: M
 Dependencies: LDG-2627, LDG-2628, LDG-2629, LDG-2630, LDG-2631, LDG-2632, LDG-2633, LDG-2634, LDG-2635, LDG-2636, LDG-2637, LDG-2638, LDG-2639, LDG-2640, LDG-2642, LDG-2643, LDG-2644
-Status: Review Pending
+Status: Local Gate Complete (remote CI, merge, tag, and GitHub Release remain)
 
 ### Description
 
@@ -1017,6 +1017,15 @@ required gate would force broad or unrelated diffs.
 - Commands and outputs recorded in the release closeout.
 - CI checks linked or summarized.
 - `git status --short` clean before tag.
+
+Implementation Notes:
+
+- Local Windows gates passed: full tests, README cold-start, source build,
+  package check, coverage, and pkgdown.
+- Local WSL/Ubuntu schema and persistence smoke gate passed after removing
+  stale Windows-built `src/*.o` objects.
+- Remote branch CI, main CI, tag CI, and GitHub Release remain to be completed
+  per `inst/design/release_ci_playbook.md`.
 
 ### Source Reference
 

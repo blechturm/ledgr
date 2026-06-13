@@ -70,6 +70,7 @@ reference:
       - ledgr_select_argmax
       - ledgr_walk_forward
       - ledgr_walk_forward_open
+      - print.ledgr_walk_forward_degradation
       - ledgr_promotion_context
       - ledgr_run_promotion_context
   - title: Cost And Timing
