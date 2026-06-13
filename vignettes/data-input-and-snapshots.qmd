@@ -88,17 +88,14 @@ Snapshot lifecycle anti-patterns:
 If the evidence changes, create a new snapshot. That is what makes later
 comparison meaningful.
 
-This vignette uses `tempfile()` so it can run without writing into your project
-directory. For real research, use `artifacts/ledgr_store.duckdb` and a snapshot
-ID you will recognize later.
+This vignette uses `ledgr_temp_store()` so it can run without writing into your
+project directory. For real research, use `artifacts/ledgr_store.duckdb` and a
+snapshot ID you will recognize later.
 
 ```{r}
 #| label: snapshot
 
-db_path <- file.path(tempdir(), "ledgr_store_demo.duckdb")
-if (file.exists(db_path)) {
-  unlink(db_path)
-}
+db_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_store_demo.duckdb"))
 
 bars <- ledgr_demo_bars |>
   filter(

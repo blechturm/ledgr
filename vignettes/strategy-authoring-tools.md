@@ -17,52 +17,26 @@
 }
 </style>
 
-This article is the technical companion to Strategy Basics. It focuses
-on feature maps, helper pipelines, preflight tiers, and the debugging
-surfaces that make strategy authoring repeatable.
+After the raw `function(ctx, params) -> target vector` contract is
+clear, strategy work usually shifts to repeatability: readable feature
+aliases, helper-pipeline objects, one-pulse debugging, and
+reproducibility preflight. This companion article focuses on those
+authoring tools. For the first-pass strategy contract and leakage
+boundary, read `vignette("strategy-development", package = "ledgr")`.
 
 ## Prerequisites
 
 The examples use `dplyr` for demo-data preparation. Strategy functions
 use ledgr’s pulse context rather than data-frame operations. The article
 assumes basic familiarity with sealed snapshots
-(`vignette("experiment-store", package = "ledgr")`) and feature IDs
-(`vignette("indicators", package = "ledgr")`).
+(`vignette("data-input-and-snapshots", package = "ledgr")`) and feature
+IDs (`vignette("indicators", package = "ledgr")`).
 
 ``` r
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
-
-This article moves in three steps:
-
-1.  learn the raw strategy contract:
-    `function(ctx, params) -> target vector`;
-2.  inspect pulse-known data and registered features;
-3.  use helper objects to express larger strategies while still
-    returning target holdings.
-
-A backtest in ledgr is a sequence of decision moments. At each pulse,
-ledgr shows the strategy only what could have been known at that time.
-The strategy answers with desired holdings. ledgr records the decision,
-applies the fill model, and moves to the next pulse.
-
-Sweep execution can opt into the scoped spot-FIFO accelerator with
-`ledgr_sweep(..., compiled_accounting_model = "spot_fifo")`. This
-changes the memory-backed accounting hot frame only; the strategy still
-receives the same `ctx`, returns the same full named target vector, and
-`NULL` remains the canonical R default. Committed `ledgr_run()`
-artifacts keep the durable R path until a separate durable
-compiled-integration gate lands.
-
-This matters because leakage is easy. If future information enters a
-historical decision, the backtest can look profitable for the wrong
-reason. ledgr’s strategy interface is built to make one common mistake
-harder: your strategy receives one pulse context, not the whole future.
-For the broader leakage model, including feature-construction leakage
-and remaining user responsibilities, see
-`vignette("leakage", package = "ledgr")`.
 
 ## Prepare A Small Experiment
 
@@ -539,13 +513,37 @@ weights <- ledgr_weight_equal(selection)
 target <- ledgr_target_rebalance(weights, pulse, equity_fraction = 0.1)
 
 signal
+#> <ledgr_signal> [2 assets]
+#> origin: return_5
+#> non-NA: 2/2
+#>     DEMO_01     DEMO_02
+#> 0.085318770 0.004018771
 selection
+#> <ledgr_selection> [2 assets]
+#> origin: return_5
+#> 1 selected
+#> DEMO_01 DEMO_02
+#>    TRUE   FALSE
 weights
+#> <ledgr_weights> [1 asset]
+#> origin: return_5
+#> non-NA: 1/1
+#> DEMO_01
+#>       1
 target
+#> <ledgr_target> [2 assets]
+#> origin: return_5
+#> non-NA: 2/2
+#> DEMO_01 DEMO_02
+#>      93       0
 names(target)
+#> [1] "DEMO_01" "DEMO_02"
 pulse$universe
+#> [1] "DEMO_01" "DEMO_02"
 setdiff(pulse$universe, names(target))
+#> character(0)
 setdiff(names(target), pulse$universe)
+#> character(0)
 ```
 
 If `selection` inherits from `ledgr_empty_selection`, every signal value

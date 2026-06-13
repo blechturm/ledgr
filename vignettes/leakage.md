@@ -29,20 +29,24 @@ reflect a deliberate choice to make common leakage patterns structurally
 difficult – not just documented as bad practice. This article explains
 where that protection applies and where your responsibility begins.
 
-> [!WARNING]
->
-> ### Leakage breaks the question
->
-> A leaky backtest can have correct arithmetic and still answer the
-> wrong research question. ledgr narrows common leakage paths, but it
-> cannot certify your data availability or research process.
+<div class="ledgr-callout ledgr-callout-warning">
 
-> [!NOTE]
->
-> ### Definition
->
-> Leakage is any path by which a decision uses information that was not
-> knowable at the simulated decision time.
+**Leakage breaks the question**
+
+A leaky backtest can have correct arithmetic and still answer the wrong
+research question. ledgr narrows common leakage paths, but it cannot
+certify your data availability or research process.
+
+</div>
+
+<div class="ledgr-callout ledgr-callout-note">
+
+**Definition**
+
+Leakage is any path by which a decision uses information that was not
+knowable at the simulated decision time.
+
+</div>
 
 ## The Obvious Leak
 
@@ -124,6 +128,8 @@ honest threshold do clear the full-sample one. The strategy records more
 generated in real time – and that inflated count flows directly into the
 backtest’s apparent edge.
 
+## The Strategy Boundary
+
 <div class="ledgr-diagram ledgr-leakage-boundary">
 
 ``` mermaid
@@ -139,8 +145,6 @@ flowchart LR
 ```
 
 </div>
-
-## The Strategy Boundary
 
 At execution time, ledgr strategies receive one pulse context. The
 strategy can read current bars, current registered features, current
@@ -230,12 +234,14 @@ causally clean.
 - Did parameter choices survive out-of-sample or regime checks?
 - Can the run be reopened and explained from stored provenance?
 
-> [!TIP]
->
-> ### Try it
->
-> Write down one dataset in your workflow that does not come from price
-> bars. What timestamp says when a strategy was allowed to know it?
+<div class="ledgr-callout ledgr-callout-tip">
+
+**Try it**
+
+Write down one dataset in your workflow that does not come from price
+bars. What timestamp says when a strategy was allowed to know it?
+
+</div>
 
 ## What To Remember
 
@@ -245,3 +251,12 @@ explicit. That is necessary, not sufficient.
 A causally honest backtest still depends on clean data availability,
 honest universe construction, disciplined feature authoring, and a
 research process that does not turn the test sample into training data.
+
+## Where Next
+
+- `vignette("strategy-development", package = "ledgr")` shows the
+  pulse-context strategy boundary in executable form.
+- `vignette("indicators", package = "ledgr")` explains feature IDs,
+  aliases, fingerprints, and warmup.
+- `vignette("walk-forward", package = "ledgr")` shows the first held-out
+  evaluation workflow built on top of sweeps and runs.

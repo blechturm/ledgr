@@ -31,9 +31,9 @@ data("ledgr_demo_bars", package = "ledgr")
 
 ``` r
 bars <- ledgr_demo_bars |>
-  dplyr::filter(
+  filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    dplyr::between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
   )
 ```
 
@@ -91,21 +91,7 @@ ttr_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(ttr_features)
-#> # A tibble: 5 × 5
-#>   alias       feature_id                    source requires_bars stable_after
-#>   <chr>       <chr>                         <chr>          <int>        <int>
-#> 1 ret_5       return_5                      ledgr              6            6
-#> 2 ttr_rsi     ttr_rsi_14                    TTR               15           15
-#> 3 bb_up       ttr_bbands_20_up              TTR               20           20
-#> 4 macd        ttr_macd_12_26_9_false_macd   TTR               34           34
-#> 5 macd_signal ttr_macd_12_26_9_false_signal TTR               34           34
 ledgr_feature_id(ttr_features)
-#>                           ret_5                         ttr_rsi 
-#>                      "return_5"                    "ttr_rsi_14" 
-#>                           bb_up                            macd 
-#>              "ttr_bbands_20_up"   "ttr_macd_12_26_9_false_macd" 
-#>                     macd_signal 
-#> "ttr_macd_12_26_9_false_signal"
 ```
 
 This mixed feature map combines a built-in return feature with
@@ -216,13 +202,6 @@ ledgr_feature_contracts(ledgr_feature_map(
   bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
   bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
 ))
-#> # A tibble: 4 × 5
-#>   alias   feature_id         source requires_bars stable_after
-#>   <chr>   <chr>              <chr>          <int>        <int>
-#> 1 bb_dn   ttr_bbands_20_dn   TTR               20           20
-#> 2 bb_mavg ttr_bbands_20_mavg TTR               20           20
-#> 3 bb_up   ttr_bbands_20_up   TTR               20           20
-#> 4 bb_pctB ttr_bbands_20_pctb TTR               20           20
 ```
 
 ### Bundle Naming Rules
@@ -243,15 +222,7 @@ defaults optimize for readable output names. Use
 ``` r
 bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
 ledgr_feature_id(bbands_bundle)
-#> [1] "bbands_dn"   "bbands_mavg" "bbands_up"   "bbands_pctb"
 ledgr_feature_contracts(bbands_bundle)
-#> # A tibble: 4 × 5
-#>   alias feature_id  source requires_bars stable_after
-#>   <chr> <chr>       <chr>          <int>        <int>
-#> 1 <NA>  bbands_dn   TTR               20           20
-#> 2 <NA>  bbands_mavg TTR               20           20
-#> 3 <NA>  bbands_up   TTR               20           20
-#> 4 <NA>  bbands_pctb TTR               20           20
 ```
 
 When a bundle is placed inside `ledgr_feature_map()`, its entries expand
@@ -272,7 +243,6 @@ bbands_subset <- ledgr_ind_ttr_outputs(
   n = 20
 )
 ledgr_feature_id(bbands_subset)
-#> [1] "bb_dn" "bb_up"
 ```
 
 `naming` renames selected outputs; it is not itself an output filter.
@@ -287,7 +257,6 @@ bbands_named_subset <- ledgr_ind_ttr_outputs(
   n = 20
 )
 ledgr_feature_id(bbands_named_subset)
-#> [1] "lower_band" "upper_band"
 ```
 
 Set `prefix = NULL` only when you explicitly want raw normalized output
@@ -309,27 +278,6 @@ TTR warmup inference is inspectable:
 ``` r
 ledgr_ind_ttr_warmup_rules() |>
   select(ttr_fn, input, formula)
-#> # A tibble: 18 × 3
-#>    ttr_fn          input formula         
-#>    <chr>           <chr> <chr>           
-#>  1 RSI             close n + 1           
-#>  2 SMA             close n               
-#>  3 EMA             close n               
-#>  4 ATR             hlc   n + 1           
-#>  5 MACD            close nSlow + nSig - 1
-#>  6 WMA             close n               
-#>  7 ROC             close n + 1           
-#>  8 momentum        close n + 1           
-#>  9 CCI             hlc   n               
-#> 10 BBands          close n               
-#> 11 aroon           hl    n               
-#> 12 DonchianChannel hl    n               
-#> 13 MFI             hlcv  n + 1           
-#> 14 CMF             hlcv  n               
-#> 15 runMean         close n               
-#> 16 runSD           close n               
-#> 17 runVar          close n               
-#> 18 runMAD          close n
 ```
 
 For MACD, ledgr verifies the supported warmup rules against direct TTR
@@ -366,27 +314,6 @@ the right lookback rule for the wrapped function.
 
 ``` r
 ledgr_ind_ttr_warmup_rules()
-#> # A tibble: 18 × 5
-#>    ttr_fn          input formula          required_args id_args  
-#>    <chr>           <chr> <chr>            <list>        <list>   
-#>  1 RSI             close n + 1            <chr [1]>     <chr [1]>
-#>  2 SMA             close n                <chr [1]>     <chr [1]>
-#>  3 EMA             close n                <chr [1]>     <chr [1]>
-#>  4 ATR             hlc   n + 1            <chr [1]>     <chr [1]>
-#>  5 MACD            close nSlow + nSig - 1 <chr [3]>     <chr [3]>
-#>  6 WMA             close n                <chr [1]>     <chr [1]>
-#>  7 ROC             close n + 1            <chr [1]>     <chr [1]>
-#>  8 momentum        close n + 1            <chr [1]>     <chr [1]>
-#>  9 CCI             hlc   n                <chr [1]>     <chr [1]>
-#> 10 BBands          close n                <chr [1]>     <chr [1]>
-#> 11 aroon           hl    n                <chr [1]>     <chr [1]>
-#> 12 DonchianChannel hl    n                <chr [1]>     <chr [1]>
-#> 13 MFI             hlcv  n + 1            <chr [1]>     <chr [1]>
-#> 14 CMF             hlcv  n                <chr [1]>     <chr [1]>
-#> 15 runMean         close n                <chr [1]>     <chr [1]>
-#> 16 runSD           close n                <chr [1]>     <chr [1]>
-#> 17 runVar          close n                <chr [1]>     <chr [1]>
-#> 18 runMAD          close n                <chr [1]>     <chr [1]>
 ```
 
 When a TTR function is covered by the rule table, ledgr derives the
@@ -407,7 +334,6 @@ ledgr_ind_ttr(
   n = 10,
   requires_bars = 20
 )$id
-#> [1] "ttr_dema_10"
 ```
 
 For non-TTR sources or more specialized logic, use `ledgr_indicator()`

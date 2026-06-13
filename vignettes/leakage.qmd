@@ -275,3 +275,12 @@ That is necessary, not sufficient.
 A causally honest backtest still depends on clean data availability, honest
 universe construction, disciplined feature authoring, and a research process
 that does not turn the test sample into training data.
+
+## Where Next
+
+- `vignette("strategy-development", package = "ledgr")` shows the pulse-context
+  strategy boundary in executable form.
+- `vignette("indicators", package = "ledgr")` explains feature IDs, aliases,
+  fingerprints, and warmup.
+- `vignette("walk-forward", package = "ledgr")` shows the first held-out
+  evaluation workflow built on top of sweeps and runs.

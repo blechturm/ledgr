@@ -308,7 +308,7 @@ tickets:
 
   - id: "LDG-2644"
     title: "Batch 8C vignette editorial cleanups and helper adoption"
-    status: "todo"
+    status: "review_pending"
     priority: "P2"
     effort: "L"
     dependencies:

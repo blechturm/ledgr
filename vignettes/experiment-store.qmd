@@ -79,10 +79,7 @@ self-contained. The full snapshot lifecycle is covered in
 ```{r}
 #| label: snapshot
 
-db_path <- file.path(tempdir(), "ledgr_store_demo.duckdb")
-if (file.exists(db_path)) {
-  unlink(db_path)
-}
+db_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_store_demo.duckdb"))
 
 bars <- ledgr_demo_bars |>
   filter(
@@ -466,8 +463,13 @@ close(bt_large)
 ledgr_snapshot_close(snapshot)
 ```
 
-## What's Next?
+## Where Next
 
-For fills, trades, equity rows, and metric definitions, read
-`vignette("metrics-and-accounting", package = "ledgr")`. For strategy authoring,
-read `vignette("strategy-development", package = "ledgr")`.
+- `vignette("data-input-and-snapshots", package = "ledgr")` covers snapshot
+  creation and sealed-data boundaries.
+- `vignette("metrics-and-accounting", package = "ledgr")` covers fills, trades,
+  equity rows, and metric definitions.
+- `vignette("strategy-development", package = "ledgr")` covers strategy
+  authoring.
+- `vignette("reproducibility", package = "ledgr")` covers strategy source,
+  preflight tiers, and trust boundaries.

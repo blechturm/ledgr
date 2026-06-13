@@ -241,9 +241,21 @@ policy, OMS lifecycle behavior, or broker-grade controls.
 
 Paper trading adapters are planned for v0.3.0, observability tooling for
 v0.4.0, and small-scale live trading for v1.0.0. OMS state machine
-semantics remain earlier prerequisite work before paper or live adapters.
+semantics remain earlier prerequisite work before paper or live
+adapters.
 
 The path from a validated experiment-store entry to a running edge
 device is shorter than it looks. The research work done in v0.1.x is not
 throwaway scaffolding – it is the foundation the production system
 builds on.
+
+## Where Next
+
+- `vignette("research-workflow", package = "ledgr")` shows the current
+  project-local research loop.
+- `vignette("walk-forward", package = "ledgr")` shows held-out
+  evaluation over sweep and run surfaces.
+- `vignette("risk-and-cost", package = "ledgr")` explains the
+  target-risk, timing, cost, liquidity, and OMS boundaries.
+- `vignette("reproducibility", package = "ledgr")` covers strategy
+  source, tiers, and trust boundaries.

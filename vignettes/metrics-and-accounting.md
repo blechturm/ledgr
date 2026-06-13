@@ -201,18 +201,11 @@ behavior in the cost API.
 
 ## Ledger Events
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A ledger event is the append-only accounting record written when
+A **ledger event** is the append-only accounting record written when
 execution changes cash, positions, or run state. Fills, trades, equity,
-and metrics are derived views over ledger-backed evidence.
-
-</div>
-
-The ledger is the most literal view. The friendlier result tables below
-are derived from these events.
+and metrics are derived views over ledger-backed evidence. The ledger is
+the most literal view; the friendlier result tables below are derived
+from these events.
 
 ``` r
 ledger <- ledgr_results(bt, what = "ledger")
@@ -227,18 +220,10 @@ ledger
 
 ## Fills And Trades
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A fill is an execution row: direction, quantity, price, fee, and action.
-A trade is the subset of fill evidence that closes quantity and realizes
-P&L.
-
-</div>
-
-`what = "fills"` returns execution fill rows. Opening and closing fills
-both appear here.
+A **fill** is an execution row: direction, quantity, price, fee, and
+action. A **trade** is the subset of fill evidence that closes quantity
+and realizes P&L. `what = "fills"` returns execution fill rows. Opening
+and closing fills both appear here.
 
 ``` r
 fills <- ledgr_results(bt, what = "fills")
@@ -278,17 +263,9 @@ trades would double-count the round trip.
 
 ## Equity Rows
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-An equity row values the portfolio at one timestamp. It combines cash,
-current position value, and total equity, including open-position
-exposure.
-
-</div>
-
-The equity curve records portfolio state through time.
+An **equity row** values the portfolio at one timestamp. It combines
+cash, current position value, and total equity, including open-position
+exposure. The equity curve records portfolio state through time.
 
 ``` r
 equity <- ledgr_results(bt, what = "equity")
@@ -307,6 +284,19 @@ Open positions affect `positions_value` and therefore equity even before
 any trade closes. Realized P&L belongs to closed quantity; open-position
 gains and losses stay in the equity curve until a closing fill realizes
 them.
+
+``` r
+ggplot2::ggplot(equity, ggplot2::aes(x = ts_utc, y = equity)) +
+  ggplot2::geom_line(linewidth = 0.8, color = "#1f77b4") +
+  ggplot2::labs(
+    title = "Equity curve",
+    x = NULL,
+    y = "Equity"
+  ) +
+  ggplot2::theme_minimal(base_size = 12)
+```
+
+![](metrics-and-accounting_files/figure-commonmark/equity-curve-plot-1.png)
 
 ## Recompute The Metrics
 

@@ -28,8 +28,8 @@ preflight diagnostics, read
 The examples use `dplyr` for demo-data preparation. Strategy functions
 use ledgr’s pulse context rather than data-frame operations. The article
 assumes basic familiarity with sealed snapshots
-(`vignette("experiment-store", package = "ledgr")`) and feature IDs
-(`vignette("indicators", package = "ledgr")`).
+(`vignette("data-input-and-snapshots", package = "ledgr")`) and feature
+IDs (`vignette("indicators", package = "ledgr")`).
 
 ``` r
 library(ledgr)
@@ -115,20 +115,11 @@ With that boundary in mind, start with the simplest possible strategy.
 
 ## What Is `ctx`?
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-`ctx` is the pulse context: the information packet ledgr gives your
-strategy at one decision time. It contains pulse-known bars, features,
-positions, cash, and equity. It is deliberately not the full future
-dataset.
-
-</div>
-
-It contains the current timestamp, current bars, current features,
-current positions, cash, equity, and small helper functions for
-accessing those values. It is deliberately not the full dataset.
+`ctx` is the **pulse context**: the information packet ledgr gives your
+strategy at one decision time. It contains the current timestamp,
+current bars, current features, positions, cash, equity, and small
+helper functions for accessing those values. It is deliberately not the
+full future dataset.
 
 | Expression | Meaning at one pulse |
 |----|----|
@@ -223,16 +214,9 @@ The return value is a named numeric vector. Names are instrument IDs
 from `ctx$universe`, values are desired quantities. `ctx$flat()`
 produces the full-universe shape with every entry at zero.
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A target vector is the strategy’s requested holdings for the full
+A **target vector** is the strategy’s requested holdings for the full
 universe at one pulse. It is named by instrument ID, numeric, and
 complete. It is not an order list, a signal table, or a partial update.
-
-</div>
-
 The deeper mental model is that a strategy is a **policy**, not a
 sequence of orders. At each pulse, it declares a desired state: “I want
 to hold this many shares of each instrument.” The engine compares that
@@ -306,18 +290,11 @@ does that change the economic meaning of the strategy?
 
 ## Why `params` Exists
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-`params` is the run’s strategy configuration. Put research choices you
-want to compare, store, or sweep into `params`; do not hide them in
-globals or inside feature declarations.
-
-</div>
-
-Hard-coded constants make experiments awkward. Parameters let one
-economic idea run under different assumptions.
+`params` is the run’s **strategy configuration**. Put research choices
+you want to compare, store, or sweep into `params`; do not hide them in
+globals or inside feature declarations. Hard-coded constants make
+experiments awkward. Parameters let one economic idea run under
+different assumptions.
 
 ``` r
 buy_if_up_qty <- function(ctx, params) {

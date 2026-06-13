@@ -17,23 +17,17 @@
 }
 </style>
 
-Indicators are how ledgr turns sealed market data into pulse-time
-features. This article teaches the runtime shape first, then the
-accessor APIs.
+Strategies should not compute features by reaching into the full future
+data panel. They should read pulse-known values that ledgr computed from
+registered indicator declarations. This article shows how those
+declarations become stable feature IDs, readable aliases, warmup
+behavior, and pulse-time accessors.
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-An indicator is a declared feature computation. ledgr computes
+An **indicator** is a declared feature computation. ledgr computes
 indicators into pulse-known values; scalar accessors, mapped accessors,
 long tables, and wide tables are different views of that same
-pulse-known data.
-
-</div>
-
-That model is the same for built-in ledgr indicators, TTR-backed
-indicators, and custom indicators.
+pulse-known data. That model is the same for built-in ledgr indicators,
+TTR-backed indicators, and custom indicators.
 
 ## Prerequisites
 
@@ -62,21 +56,12 @@ features <- ledgr_feature_map(
 )
 ```
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A feature ID is ledgr’s engine-facing name for a computed value. An
-alias is the strategy-facing name you choose in a feature map. The alias
-makes strategy code readable; the feature ID remains the durable engine
-identity.
-
-</div>
-
-Use aliases such as `ret_5` or `sma_10` when you write strategy logic
-with `ctx$features()`. Use feature IDs such as `return_5` or `sma_10`
-when you need the explicit engine contract, for example with
-`ctx$feature()` or when inspecting stored feature metadata.
+A **feature ID** is ledgr’s engine-facing name for a computed value. An
+**alias** is the strategy-facing name you choose in a feature map. Use
+aliases such as `ret_5` or `sma_10` when you write strategy logic with
+`ctx$features()`. Use feature IDs such as `return_5` or `sma_10` when
+you need the explicit engine contract, for example with `ctx$feature()`
+or when inspecting stored feature metadata.
 
 Feature objects appear in three registration and inspection places:
 
@@ -135,21 +120,13 @@ flowchart LR
     `ctx$feature()` by engine feature ID, or with `ctx$features()` by
     feature-map alias.
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A fingerprint identifies the feature definition, not just the name. If
-the calculation, parameters, warmup rule, adapter, or selected output
+A **fingerprint** identifies the feature definition, not just the name.
+If the calculation, parameters, warmup rule, adapter, or selected output
 changes, the fingerprint changes even when the feature ID stays
-readable.
-
-</div>
-
-Feature IDs identify values inside the pulse context. Fingerprints
-identify the feature definition used to compute those values. For
-multi-output sources such as TTR `BBands` or `MACD`, each selected
-output is an ordinary indicator with its own feature ID and
+readable. Feature IDs identify values inside the pulse context.
+Fingerprints identify the feature definition used to compute those
+values. For multi-output sources such as TTR `BBands` or `MACD`, each
+selected output is an ordinary indicator with its own feature ID and
 output-specific fingerprint.
 
 If two feature declarations produce the same engine feature ID, ledgr
@@ -159,18 +136,10 @@ feature-map alias never changes the underlying engine feature ID or
 fingerprint; it only gives your strategy a readable name for mapped
 access.
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-A bundle is an authoring convenience for declaring several indicator
+A **bundle** is an authoring convenience for declaring several indicator
 outputs at once. The engine receives ordinary single-output feature
-definitions after the bundle is flattened.
-
-</div>
-
-The multi-output bundle helper follows the same lifecycle. It is not a
-second feature system.
+definitions after the bundle is flattened. The multi-output bundle
+helper follows the same lifecycle. It is not a second feature system.
 
 The same idea works for crossover rules. An SMA crossover registers two
 separate indicators: one short moving average and one long moving
@@ -307,15 +276,9 @@ ledgr_passed_warmup(x)
 #> [1] TRUE
 ```
 
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-Warmup is the period before a known feature has enough prior bars to
+**Warmup** is the period before a known feature has enough prior bars to
 produce a usable value. A warmup `NA` is not an unknown feature; it is a
 known feature that is not ready yet.
-
-</div>
 
 <div class="ledgr-callout ledgr-callout-tip">
 

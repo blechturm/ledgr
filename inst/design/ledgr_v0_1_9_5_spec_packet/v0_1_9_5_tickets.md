@@ -1136,7 +1136,7 @@ Dependencies: LDG-2642, LDG-2636
 
 ### Status
 
-To Do
+Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -1186,6 +1186,19 @@ the two new helpers in the consuming articles.
 
 - Documentation-contract tests; render affected vignettes; `rg` for removed
   boilerplate and design notes.
+
+### Implementation Notes
+
+- Adopted `ledgr_sweep_review()` in `sweeps` and `research-workflow`, and
+  `ledgr_temp_store()` in `data-input-and-snapshots` and `experiment-store`.
+- Converted the targeted decorative Definition callouts to inline prose,
+  refreshed flagged article openings, added "Where Next" closings, and removed
+  standing future-helper design notes.
+- Added equity-curve plots where existing run evidence already exists.
+- Re-rendered affected `.md` mirrors with Quarto after installing the missing
+  render-time R 4.6 dependencies; generated files were not hand-synced.
+- The independently reviewed `execution-semantics` teachability rewrite was
+  handled in a separate commit from LDG-2644.
 
 ### Source Reference
 

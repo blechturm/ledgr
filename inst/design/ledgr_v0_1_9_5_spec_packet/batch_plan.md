@@ -1,7 +1,7 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Batch 8B implementation complete; awaiting Claude review. Batch 8C
-remains to do.
+Status: Batch 8C implementation complete; awaiting Claude review. Batch 9+10
+remain to do.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 
@@ -346,6 +346,8 @@ Implementation notes:
 
 ## Batch 8C - Vignette Editorial Cleanups And Helper Adoption
 
+Status: Implementation complete; awaiting Claude review.
+
 Tickets:
 
 - LDG-2644
@@ -368,6 +370,19 @@ Review focus:
 - callout hierarchy restored; openings name a user outcome;
 - helper adoption removes the duplicated boilerplate and design notes;
 - no behavior or identity change; docs-only.
+
+Implementation notes:
+
+- adopted `ledgr_sweep_review()` in `sweeps` and `research-workflow`, and
+  `ledgr_temp_store()` in `data-input-and-snapshots` and `experiment-store`;
+- converted the targeted decorative Definition callouts to inline prose,
+  refreshed flagged openings, added "Where Next" closings, and removed the
+  standing future-helper design notes;
+- added equity-curve plots where the run evidence already exists;
+- rendered affected `.qmd` files with Quarto after installing the missing
+  render-time R 4.6 dependencies, rather than hand-syncing generated `.md`.
+- the independently reviewed `execution-semantics` teachability rewrite was
+  handled in a separate commit from LDG-2644.
 
 Added by the 2026-06-13 vignette audit (Sections 1 and 5). Depends on Batch 8A
 helpers. The `sweeps` and `metric-contexts-and-conventions` splits plus the

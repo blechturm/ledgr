@@ -17,9 +17,11 @@
 }
 </style>
 
-This article is the technical companion to The Accounting Model. It
-covers metric contexts, annualization conventions, sweep and promotion
-threading, risk metric contracts, and diagnostic edge cases.
+Metrics are only useful when their assumptions are visible. This
+companion to The Accounting Model shows where ledgr stores those
+assumptions, how annualization and risk-free-rate choices affect
+metrics, and how to inspect the metric context that travels with runs,
+sweeps, and promotions.
 
 ## Prerequisites
 
@@ -190,9 +192,13 @@ compact for a report, inspect the nested object directly:
 ``` r
 context <- ledgr_metric_context(bt)
 context$risk_free_rate$label
+#> NULL
 context$risk_free_rate$source
+#> [1] "manual"
 context$risk_free_rate$as_of
+#> NULL
 ledgr_metric_context_hash(context)
+#> [1] "794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb"
 ```
 
 ### Comparison, Sweep, And Promotion Contexts

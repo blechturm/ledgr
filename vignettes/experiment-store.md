@@ -45,10 +45,7 @@ self-contained. The full snapshot lifecycle is covered in
 `vignette("data-input-and-snapshots", package = "ledgr")`.
 
 ``` r
-db_path <- file.path(tempdir(), "ledgr_store_demo.duckdb")
-if (file.exists(db_path)) {
-  unlink(db_path)
-}
+db_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_store_demo.duckdb"))
 
 bars <- ledgr_demo_bars |>
   filter(
@@ -182,7 +179,7 @@ info
     Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1
+    Elapsed Sec:     1.06
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -510,9 +507,10 @@ current experiment-store surface; use precompute and sweep provenance
 when you need feature-set identity at sweep scale.
 
 External point-in-time regressors are a separate future data surface.
-The public roadmap tracks that work in the v0.2.x point-in-time data line
-so vintage semantics, lineage, ASOF lookup, and leakage prevention can be
-designed explicitly rather than smuggled into CSV bars or active aliases.
+The public roadmap tracks that work in the v0.2.x point-in-time data
+line so vintage semantics, lineage, ASOF lookup, and leakage prevention
+can be designed explicitly rather than smuggled into CSV bars or active
+aliases.
 
 ## Resource Cleanup
 
@@ -541,8 +539,13 @@ Yahoo data is a convenience source. The sealed snapshot is the ledgr
 artifact; the remote Yahoo endpoint remains outside ledgr’s
 reproducibility boundary.
 
-## What’s Next?
+## Where Next
 
-For fills, trades, equity rows, and metric definitions, read
-`vignette("metrics-and-accounting", package = "ledgr")`. For strategy
-authoring, read `vignette("strategy-development", package = "ledgr")`.
+- `vignette("data-input-and-snapshots", package = "ledgr")` covers
+  snapshot creation and sealed-data boundaries.
+- `vignette("metrics-and-accounting", package = "ledgr")` covers fills,
+  trades, equity rows, and metric definitions.
+- `vignette("strategy-development", package = "ledgr")` covers strategy
+  authoring.
+- `vignette("reproducibility", package = "ledgr")` covers strategy
+  source, preflight tiers, and trust boundaries.
