@@ -387,12 +387,16 @@ Articles should link forward and sideways intentionally.
 
 Use article links for workflow depth:
 
-- Strategy Development for strategy authoring;
-- Indicators / Feature Maps for feature declarations and alias identity;
+- Data Input And Snapshots for snapshot creation and sealed-data boundaries;
+- Strategy Basics for first-pass strategy authoring;
+- Strategy Authoring Tools for feature maps, helper pipelines, and preflight;
+- Indicators And Features for feature declarations and alias identity;
+- TTR And Adapter Indicators for adapter-backed indicator declarations;
 - Sweeps for candidate grids, failure rows, and promotion mechanics;
-- Experiment Store for durable artifacts and reopen;
+- Experiment Store for durable artifacts, reopen, and recovery evidence;
 - Reproducibility for hashes, source capture, and limits of provenance;
-- Metrics And Accounting for derived fills, trades, equity, and metrics.
+- The Accounting Model for derived fills, trades, equity, and metrics;
+- Metric Contexts And Conventions for annualization and metric assumptions.
 
 Use `?function_name` for function-level details.
 
@@ -461,27 +465,34 @@ did not prove, recorded the decision, and seen where to go next.
 
 ## 12. Reading Flow
 
-The current v0.1.8.5 reading flow is:
+The current v0.1.9.5 reading flow is:
 
 ```text
 README
   -> Research Workflow
-  -> focused articles as needed:
-       Data Input / Snapshot Creation
-       Strategy Development
-       Indicators / Feature Maps
-       Sweeps
+  -> core workflow articles as needed:
+       Data Input And Snapshots
+       Strategy Basics
+       Indicators And Features
+       The Accounting Model
        Experiment Store
+       Sweeps
+       Walk-Forward
        Reproducibility
-       Metrics And Accounting
+  -> technical companions as needed:
+       Strategy Authoring Tools
+       TTR And Adapter Indicators
+       Custom Indicators
+       Metric Contexts And Conventions
+       Execution Semantics
 ```
 
 Each article should know where it sits in that flow. Repeated concepts should
 have one canonical home and short cross-links elsewhere.
 
-This flow is provisional until the v0.1.8.5 release gate. Batch-level
-migration work may split, narrow, or retire articles; update this section when
-the shipped article set changes.
+Concept articles should get the reader through one complete workflow decision.
+Technical companion articles can carry denser API detail, edge cases, and
+diagnostics, but should still link back to their concept article.
 
 ### Release-Gate Roadmap Sections
 

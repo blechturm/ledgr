@@ -17,14 +17,21 @@ articles:
   - title: Core Workflow
     navbar: Core Workflow
     contents:
+      - data-input-and-snapshots
       - strategy-development
       - indicators
-      - custom-indicators
-      - execution-semantics
       - metrics-and-accounting
       - experiment-store
       - sweeps
       - walk-forward
+  - title: Going Deeper
+    navbar: Going Deeper
+    contents:
+      - strategy-authoring-tools
+      - ttr-and-adapter-indicators
+      - custom-indicators
+      - metric-contexts-and-conventions
+      - execution-semantics
   - title: Design / Background
     navbar: Design / Background
     contents:

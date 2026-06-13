@@ -1,5 +1,5 @@
 ---
-title: "Indicators And Feature IDs"
+title: "Indicators And Features"
 format:
   html:
     toc: false
@@ -8,7 +8,7 @@ format:
 execute:
   echo: true
 vignette: >
-  %\VignetteIndexEntry{Indicators And Feature IDs}
+  %\VignetteIndexEntry{Indicators And Features}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 ---
@@ -55,7 +55,6 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 }
 </style>
 ```
-
 Indicators are how ledgr turns sealed market data into pulse-time features.
 This article teaches the runtime shape first, then the accessor APIs.
 
@@ -502,271 +501,9 @@ returned by `ctx$features(id)`. Bundle entries are intentionally flat; see the
 TTR bundle section below for how bundle aliases differ from single-output
 aliases in mapped access.
 
-## TTR-Backed Indicators
 
-`ledgr_ind_ttr()` is the adapter for supported indicators from the suggested
-`TTR` package. TTR stays outside the core engine:
-
-::: {.ledgr-diagram .ledgr-ttr-adapter}
-
-```{mermaid}
-%%| echo: false
-
-flowchart LR
-  ttr["TTR"]
-  adapter["ledgr_ind_ttr()"]
-  indicator["ledgr_indicator"]
-  engine["deterministic<br/>pulse engine"]
-
-  ttr --> adapter --> indicator --> engine
-```
-
-:::
-
-The engine sees a normal `ledgr_indicator`. That means TTR-backed indicators
-follow the same feature-ID, warmup, and pulse-view rules as built-in
-indicators. The TTR-backed examples below are skipped when `TTR` is not
-installed. In your own project, install TTR with `install.packages("TTR")`
-before creating TTR-backed indicators.
-
-### Single-Output TTR Indicators
-
-```{r}
-#| label: ttr-backed-indicators
-#| eval: !expr requireNamespace("TTR", quietly = TRUE)
-
-ttr_features <- ledgr_feature_map(
-  ret_5 = ledgr_ind_returns(5),
-  ttr_rsi = ledgr_ind_ttr("RSI", input = "close", n = 14),
-  bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
-  macd = ledgr_ind_ttr(
-    "MACD",
-    input = "close",
-    output = "macd",
-    nFast = 12,
-    nSlow = 26,
-    nSig = 9,
-    percent = FALSE
-  ),
-  macd_signal = ledgr_ind_ttr(
-    "MACD",
-    input = "close",
-    output = "signal",
-    nFast = 12,
-    nSlow = 26,
-    nSig = 9,
-    percent = FALSE
-  )
-)
-
-ledgr_feature_contracts(ttr_features)
-ledgr_feature_id(ttr_features)
-```
-
-This mixed feature map combines a built-in return feature with TTR-backed RSI,
-BBands, and MACD features. The MACD ID embeds the explicit arguments because
-they are part of the calculation identity.
-
-### Native RSI vs TTR RSI
-
-ledgr also includes a native RSI helper. It does not require TTR and follows the
-same ID and warmup contract as other built-in indicators:
-
-```{r}
-#| label: native-rsi-contract
-
-native_rsi_features <- ledgr_feature_map(
-  rsi_14 = ledgr_ind_rsi(14)
-)
-
-ledgr_feature_contracts(native_rsi_features)
-ledgr_feature_id(native_rsi_features)
-```
-
-The native RSI feature ID is `rsi_14`. The TTR-backed RSI feature ID above is
-`ttr_rsi_14`. Those are different feature definitions and should not be treated
-as interchangeable without checking that their calculation and warmup behavior
-match your research intent.
-
-RSI is a common mean-reversion input. One compact rule is: buy when RSI is below
-30, then return to flat when the condition is no longer true. The experiment
-registers the RSI indicator before the run; the strategy only reads the
-pulse-time value. The example below uses native RSI so it works without TTR.
-Use TTR-backed RSI when you deliberately want adapter behavior.
-
-```{r}
-#| label: rsi-mean-reversion
-
-rsi_features <- native_rsi_features
-
-rsi_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  for (id in ctx$universe) {
-    x <- ctx$features(id, rsi_features)
-    if (ledgr_passed_warmup(x) && x[["rsi_14"]] < params$oversold) {
-      targets[id] <- params$qty
-    }
-  }
-  targets
-}
-
-rsi_snapshot <- ledgr_snapshot_from_df(
-  bars,
-  snapshot_id = paste0("rsi-vignette-", Sys.getpid())
-)
-
-rsi_exp <- ledgr_experiment(
-  snapshot = rsi_snapshot,
-  strategy = rsi_strategy,
-  features = rsi_features,
-  opening = ledgr_opening(cash = 10000),
-  cost_model = ledgr_cost_zero()
-)
-
-rsi_bt <- ledgr_run(
-  rsi_exp,
-  params = list(oversold = 30, qty = 10),
-  run_id = paste0("rsi-demo-", Sys.getpid())
-)
-
-ledgr_results(rsi_bt, what = "fills")
-close(rsi_bt)
-ledgr_snapshot_close(rsi_snapshot)
-```
-
-Some TTR functions return several columns. For those functions, choose one
-column with `output` when you need exactly one output, or use
-`ledgr_ind_ttr_outputs()` to declare several outputs from one shared TTR
-configuration. `BBands` exposes `dn`, `mavg`, `up`, and `pctB`. `MACD` exposes
-`macd` and `signal`; ledgr also supports a derived `histogram`.
-
-### Multi-Output TTR Indicators
-
-```{r}
-#| label: ttr-output-examples
-#| eval: !expr requireNamespace("TTR", quietly = TRUE)
-
-ledgr_feature_contracts(ledgr_feature_map(
-  bb_dn = ledgr_ind_ttr("BBands", input = "close", output = "dn", n = 20),
-  bb_mavg = ledgr_ind_ttr("BBands", input = "close", output = "mavg", n = 20),
-  bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
-  bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
-))
-```
-
-### Bundle Naming Rules
-
-For multi-output authoring, prefer the bundle helper. By default, bundle feature
-IDs use a normalized prefix derived from the TTR function name. For `BBands`,
-that produces `bbands_dn`, `bbands_mavg`, `bbands_up`, and `bbands_pctb`.
-The helper returns a `ledgr_indicator_bundle`, but the experiment sees ordinary
-single-output indicators after feature declaration is materialized.
-
-Those bundle IDs are shorter than the hand-written single-output TTR IDs such
-as `ttr_bbands_20_up`. That asymmetry is intentional: bundle defaults optimize
-for readable output names. Use `naming = c(up = "ttr_bbands_20_up")` or
-hand-written `ledgr_ind_ttr(output = ...)` calls when you need exact legacy IDs.
-
-```{r}
-#| label: ttr-output-bundle
-#| eval: !expr requireNamespace("TTR", quietly = TRUE)
-
-bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
-ledgr_feature_id(bbands_bundle)
-ledgr_feature_contracts(bbands_bundle)
-```
-
-When a bundle is placed inside `ledgr_feature_map()`, its entries expand using
-their feature IDs as aliases. A single alias on the bundle argument is ignored
-because one alias cannot name several outputs. Control the generated feature IDs
-with the bundle's `prefix` argument instead.
-
-Use `outputs` as a filter. The derived or explicit prefix still applies to
-selected outputs, so a subset remains collision-resistant:
-
-```{r}
-#| label: ttr-output-bundle-filter
-#| eval: !expr requireNamespace("TTR", quietly = TRUE)
-
-bbands_subset <- ledgr_ind_ttr_outputs(
-  "BBands",
-  input = "close",
-  outputs = c("dn", "up"),
-  prefix = "bb",
-  n = 20
-)
-ledgr_feature_id(bbands_subset)
-```
-
-`naming` renames selected outputs; it is not itself an output filter. When
-renaming only part of a bundle, make the filter explicit:
-
-```{r}
-#| label: ttr-output-bundle-naming
-#| eval: !expr requireNamespace("TTR", quietly = TRUE)
-
-bbands_named_subset <- ledgr_ind_ttr_outputs(
-  "BBands",
-  input = "close",
-  outputs = c("dn", "up"),
-  naming = c(dn = "lower_band", up = "upper_band"),
-  n = 20
-)
-ledgr_feature_id(bbands_named_subset)
-```
-
-Set `prefix = NULL` only when you explicitly want raw normalized output names
-such as `dn`, `up`, or `pctb`. Raw names are short and can collide when one
-experiment combines several bundles or parameterizations.
-
-### MACD Argument Consistency
-
-The two MACD entries in `ttr_features` both set `percent = FALSE`. Explicit
-arguments become part of the feature ID, so combine MACD outputs in one strategy
-only when their argument sets match the computation you intend. If one MACD
-output uses `percent = FALSE`, the paired `signal` output should usually set
-`percent = FALSE` too.
-
-### TTR Warmup Rules
-
-TTR warmup inference is inspectable:
-
-```{r}
-#| label: ttr-warmup-rules
-#| message: false
-#| eval: !expr requireNamespace("TTR", quietly = TRUE)
-
-ledgr_ind_ttr_warmup_rules() |>
-  select(ttr_fn, input, formula)
-```
-
-For MACD, ledgr verifies the supported warmup rules against direct TTR output.
-TTR computes the signal EMA internally even when you select only the `macd`
-column. In a pulse-by-pulse backtest, all supported MACD outputs are therefore
-first callable at `nSlow + nSig - 1`. The same rule is verified for `macd`,
-`signal`, the derived ledgr `histogram`, and both `percent = TRUE` and
-`percent = FALSE`.
-
-To debug a TTR-backed feature at one decision time, use an active snapshot
-handle, choose a timestamp late enough for the indicator warmup, and pass the
-same TTR feature map to `ledgr_pulse_snapshot()`. A completed backtest proves
-the run succeeded, but it does not replace the snapshot handle needed for
-interactive pulse inspection.
-
-```{r}
-#| label: ttr-pulse-snapshot
-#| eval: false
-
-ttr_pulse <- ledgr_pulse_snapshot(
-  snapshot,
-  universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-06-03"),
-  features = ttr_features
-)
-
-ledgr_pulse_features(ttr_pulse, ttr_features)
-close(ttr_pulse)
-```
+For TTR-backed declarations, multi-output bundles, and adapter warmup rules,
+read `vignette("ttr-and-adapter-indicators", package = "ledgr")`.
 
 ## Troubleshoot Warmup And Zero Trades
 
@@ -808,36 +545,12 @@ run.
 For result-table interpretation after a zero-trade run, read
 `vignette("metrics-and-accounting", package = "ledgr")`.
 
-## Unsupported Or Custom Indicators
-
-When a TTR function is not in the warmup rules table, provide `requires_bars`
-explicitly:
-
-```{r}
-#| label: unsupported-ttr
-#| eval: !expr requireNamespace("TTR", quietly = TRUE)
-
-ledgr_ind_ttr(
-  "DEMA",
-  input = "close",
-  n = 10,
-  requires_bars = 20
-)$id
-```
-
-For non-TTR sources or more specialized logic, use `ledgr_indicator()` directly
-with a `series_fn`. That is the adapter escape hatch: external logic remains at
-the boundary, while the engine keeps the same deterministic indicator contract.
 
 ## Where Next
 
-- For strategy authoring, read
-  `vignette("strategy-development", package = "ledgr")`.
-- For exploratory feature grids and active aliases, read
-  `vignette("sweeps", package = "ledgr")`.
-- For accounting and summary metrics, read
-  `vignette("metrics-and-accounting", package = "ledgr")`.
-- For function-level details, see `?ledgr_feature_contracts`,
-  `?ledgr_feature_contract_check`, `?ledgr_pulse_features`,
-  `?ledgr_pulse_wide`, `?ledgr_ind_ttr`, and `?ledgr_ind_ttr_warmup_rules`.
-
+- `vignette("ttr-and-adapter-indicators", package = "ledgr")` covers TTR
+  adapters and warmup verification.
+- `vignette("custom-indicators", package = "ledgr")` covers package-native
+  custom indicator authoring.
+- `vignette("strategy-development", package = "ledgr")` uses feature values
+  inside complete strategies.

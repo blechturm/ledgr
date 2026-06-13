@@ -25,20 +25,30 @@ Core installed articles:
 \itemize{
 \item \code{vignette("research-workflow", package = "ledgr")}
 \item \code{system.file("doc", "research-workflow.html", package = "ledgr")}
+\item \code{vignette("data-input-and-snapshots", package = "ledgr")}
+\item \code{system.file("doc", "data-input-and-snapshots.html", package = "ledgr")}
 \item \code{vignette("strategy-development", package = "ledgr")}
 \item \code{system.file("doc", "strategy-development.html", package = "ledgr")}
+\item \code{vignette("strategy-authoring-tools", package = "ledgr")}
+\item \code{system.file("doc", "strategy-authoring-tools.html", package = "ledgr")}
+\item \code{vignette("indicators", package = "ledgr")}
+\item \code{system.file("doc", "indicators.html", package = "ledgr")}
+\item \code{vignette("ttr-and-adapter-indicators", package = "ledgr")}
+\item \code{system.file("doc", "ttr-and-adapter-indicators.html", package = "ledgr")}
+\item \code{vignette("custom-indicators", package = "ledgr")}
+\item \code{system.file("doc", "custom-indicators.html", package = "ledgr")}
 \item \code{vignette("metrics-and-accounting", package = "ledgr")}
 \item \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+\item \code{vignette("metric-contexts-and-conventions", package = "ledgr")}
+\item \code{system.file("doc", "metric-contexts-and-conventions.html", package = "ledgr")}
 \item \code{vignette("execution-semantics", package = "ledgr")}
 \item \code{system.file("doc", "execution-semantics.html", package = "ledgr")}
 \item \code{vignette("experiment-store", package = "ledgr")}
 \item \code{system.file("doc", "experiment-store.html", package = "ledgr")}
 \item \code{vignette("sweeps", package = "ledgr")}
 \item \code{system.file("doc", "sweeps.html", package = "ledgr")}
-\item \code{vignette("indicators", package = "ledgr")}
-\item \code{system.file("doc", "indicators.html", package = "ledgr")}
-\item \code{vignette("custom-indicators", package = "ledgr")}
-\item \code{system.file("doc", "custom-indicators.html", package = "ledgr")}
+\item \code{vignette("walk-forward", package = "ledgr")}
+\item \code{system.file("doc", "walk-forward.html", package = "ledgr")}
 }
 }
 

@@ -1,6 +1,6 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Batch 4 implementation complete; awaiting Claude review.
+Status: Batch 7 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 
@@ -208,6 +208,8 @@ contracts and the identity reference in one sitting catches
 cross-inconsistencies a split review would miss.
 
 ## Batch 7 - Vignette Splits
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

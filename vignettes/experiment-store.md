@@ -1,22 +1,10 @@
 # Experiment Store
 
 
-The experiment store is the DuckDB file that keeps sealed market data,
-run artifacts, provenance, labels, tags, archive state, and compact
-telemetry together. In real projects, put that file somewhere boring and
-durable, such as `artifacts/ledgr_store.duckdb`.
-
-``` text
-sealed snapshot -> committed runs -> list / inspect / compare / reopen
-```
-
-`run_id` is immutable. Labels, tags, and archive state are mutable
-metadata. The store is useful because the explanation survives the R
-session: you can reopen a completed run, inspect the source provenance,
-compare stored runs, and write a review from the same evidence file.
-
-This article is about durable storage and later inspection, not strategy
-design or statistical validation.
+The experiment store keeps committed run evidence: run records, labels,
+comparison surfaces, recovery metadata, and reopened results. For
+snapshot creation and data-input boundaries, read
+`vignette("data-input-and-snapshots", package = "ledgr")`.
 
 <div class="ledgr-callout ledgr-callout-note">
 
@@ -50,29 +38,11 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-## Snapshot Lifecycle And Data Input
+## Temporary Snapshot Setup
 
-Market data and derived data have different lifecycle rules in ledgr. A
-sealed snapshot freezes the real market-data input and its hash. If you
-need more instruments, more dates, corrected bars, or tick-derived bars,
-create a new snapshot. Indicators, runs, labels, tags, comparisons, and
-telemetry are derived from sealed market data and can be added later
-without mutating the snapshot.
-
-Snapshot lifecycle anti-patterns:
-
-- appending bars to a sealed snapshot in place;
-- resealing different data under the same snapshot ID;
-- deleting snapshots that stored runs still reference;
-- mixing live ticks into a backtest snapshot;
-- filling data gaps with undocumented synthetic corrections.
-
-If the evidence changes, create a new snapshot. That is what makes later
-comparison meaningful.
-
-This vignette uses `tempfile()` so it can run without writing into your
-project directory. For real research, use `artifacts/ledgr_store.duckdb`
-and a snapshot ID you will recognize later.
+This article uses a small temporary snapshot so the store examples are
+self-contained. The full snapshot lifecycle is covered in
+`vignette("data-input-and-snapshots", package = "ledgr")`.
 
 ``` r
 db_path <- file.path(tempdir(), "ledgr_store_demo.duckdb")
@@ -100,125 +70,6 @@ snapshot <- ledgr_snapshot_from_df(
 After snapshot creation, store operations take `snapshot`, not
 `db_path`. In a new R session, recover the handle with
 `ledgr_snapshot_open(db_path, snapshot_id)`.
-
-If your market data starts in CSV, seal the CSV into the same kind of
-durable store. The CSV must contain `instrument_id`, `ts_utc`, `open`,
-`high`, `low`, and `close`; `volume` is optional. ledgr imports only
-those canonical bar columns. Other CSV columns are ignored and do not
-become part of the sealed snapshot or its hash.
-
-``` r
-snapshot <- ledgr_snapshot_from_csv(
-  "data/daily_bars.csv",
-  db_path = "artifacts/ledgr_store.duckdb",
-  snapshot_id = "eod_2019_h1"
-)
-```
-
-In any later session, recover the handle without re-sealing the data:
-
-``` r
-snapshot <- ledgr_snapshot_open(
-  "artifacts/ledgr_store.duckdb",
-  snapshot_id = "eod_2019_h1"
-)
-```
-
-CSV and local data validation happens while the snapshot is created and
-sealed, before a strategy can run. Missing columns, unparseable
-timestamps, duplicate `instrument_id`/`ts_utc` rows, and OHLC violations
-are snapshot import problems. They are not strategy execution errors.
-
-Yahoo imports follow the same lifecycle, but the adapter downloads bars
-before sealing the snapshot:
-
-``` r
-snapshot <- ledgr_snapshot_from_yahoo(
-  symbols = c("SPY", "QQQ"),
-  from = "2019-01-01",
-  to = "2019-06-30",
-  db_path = "artifacts/ledgr_store.duckdb",
-  snapshot_id = "yahoo_2019_h1"
-)
-```
-
-The returned handle is already sealed. Calling
-`ledgr_snapshot_seal(snapshot)` again is an idempotent verification
-step: on a snapshot handle it returns an invisible structured list with
-`$hash` and `$snapshot`; on a low-level DBI connection plus
-`snapshot_id` it returns the hash string. Use
-`ledgr_snapshot_info(snapshot)` to inspect `status`, `snapshot_hash`,
-`bar_count`, `instrument_count`, `start_date`, `end_date`, and raw
-`meta_json`. The dates are ISO UTC values. `meta_json` is envelope
-metadata; snapshot identity comes from normalized bars and instruments,
-not from human descriptions.
-
-<div class="ledgr-callout ledgr-callout-warning">
-
-**Yahoo data boundary**
-
-Yahoo support is a convenience adapter, not a data-vendor guarantee. It
-uses `quantmod::getSymbols()` and therefore requires the suggested
-`quantmod` package and network access. Package startup or S3
-method-overwrite messages printed while quantmod loads are not ledgr
-snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
-`.Close`, and `.Volume` columns as returned by quantmod; it does not
-rewrite OHLC values from Yahoo’s adjusted-close column. If your research
-requires split/dividend-adjusted OHLC bars, prepare those bars
-explicitly and seal them with `ledgr_snapshot_from_df()` or
-`ledgr_snapshot_from_csv()`.
-
-</div>
-
-``` r
-yahoo_info <- ledgr_snapshot_info(snapshot)
-yahoo_seal <- ledgr_snapshot_seal(snapshot)
-yahoo_hash <- yahoo_seal$hash
-stopifnot(identical(yahoo_info$snapshot_hash[[1]], yahoo_hash))
-```
-
-Snapshot metadata uses these public field names:
-
-| Field | Meaning |
-|----|----|
-| `status` | snapshot lifecycle state, usually `SEALED` after helper creation |
-| `snapshot_hash` | hash of normalized bars and instruments |
-| `bar_count` | current count of rows in `snapshot_bars` |
-| `instrument_count` | current count of rows in `snapshot_instruments` |
-| `start_date`, `end_date` | seal-time date range parsed from metadata |
-| `meta_json` | raw JSON envelope containing user metadata plus seal metadata |
-
-Seal metadata inside `meta_json` may use internal names such as `n_bars`
-and `n_instruments`. The structured columns from `ledgr_snapshot_info()`
-are `bar_count` and `instrument_count`; use those names in programmatic
-code.
-
-## Backup Conventions
-
-The store is an ordinary DuckDB file. Back it up when no ledgr process
-has it open.
-
-<div class="ledgr-callout ledgr-callout-warning">
-
-**Back up closed stores**
-
-Close run and snapshot handles, then copy or sync the closed store file.
-A simple project pattern is:
-
-``` r
-dir.create("backups", showWarnings = FALSE)
-file.copy(
-  "artifacts/ledgr_store.duckdb",
-  file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
-  overwrite = TRUE
-)
-```
-
-For larger projects, use the same closed-file rule with your normal
-backup or sync tool. Do not rely on the phrase “ordinary backup
-discipline” without a specific copy/sync pattern for the store file.
-
-</div>
 
 ## Record Two Variants For Comparison
 
@@ -326,12 +177,12 @@ info
     Snapshot:        store_demo_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
-    Config Hash:     157130fab9526ee87b750b8ac9814afa7da54ede4b86010f61b8d754d4f25972
+    Config Hash:     b190e633e8578f0878db276141700b747fd58e9107d76f9f8f1835377b1f4ca7
     Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
     Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     0.91
+    Elapsed Sec:     1
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -372,8 +223,8 @@ Comparison is read-only and does not rerun strategies. `n_trades` counts
 closed, realised trade observations, not every fill. A run can have
 fills but no closed trades yet, in which case win rate is not defined.
 
-`ledgr_run_compare()` starts from the durable snapshot handle because
-it reads stored run artifacts. When you want the comparison to use an
+`ledgr_run_compare()` starts from the durable snapshot handle because it
+reads stored run artifacts. When you want the comparison to use an
 experiment’s metric assumptions, pass that context explicitly:
 
 ``` r
@@ -577,9 +428,48 @@ Only completed runs can be reopened. Failed or incomplete runs remain
 inspectable through `ledgr_run_info()`.
 
 Store-level helpers such as `ledgr_run_info()`, `ledgr_run_list()`, and
-`ledgr_run_compare()` use the snapshot handle and remain available
-after a completed run handle is closed. Result-table helpers such as
+`ledgr_run_compare()` use the snapshot handle and remain available after
+a completed run handle is closed. Result-table helpers such as
 `ledgr_results()` need a live or reopened backtest handle.
+
+## Recovery
+
+Most ledgr recovery workflows should start with the high-level store
+helpers above:
+
+- use `ledgr_snapshot_open()` to reopen the sealed snapshot store;
+- use `ledgr_run_open()` to reopen a completed run handle;
+- use `ledgr_run_info()` and `ledgr_run_strategy()` to inspect stored
+  metadata and strategy provenance.
+
+The lower-level recovery pair remains public for restart inspection and
+maintainer workflows that need to work directly against the store
+connection.
+
+`ledgr_db_init(db_path)` opens a DBI connection to a ledgr DuckDB store
+and ensures the ledgr schema exists. In normal workflows, ordinary users
+usually do not need it because snapshot and run helpers open, verify,
+and close the required connections for their own operations.
+
+`ledgr_state_reconstruct(run_id, con)` reconstructs ledgr’s expected
+simulated state for one stored run from ledger-backed evidence. It
+returns reconstructed state artifacts such as positions, cash, equity,
+fills, and trades from the stored run records. It is useful when you are
+inspecting a restart boundary, debugging stored evidence, or building a
+low-level tool that already owns a DBI connection.
+
+``` r
+con <- ledgr_db_init(db_path)
+state <- ledgr_state_reconstruct("trend_qty_5", con)
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+This pair is intentionally not a broker or migration layer. It does not
+perform broker reconciliation, prove live restart safety, migrate old
+schemas, repair a sealed snapshot, or recover strategy dependencies that
+were never captured in the run provenance. Treat it as low-level
+inspection over ledgr’s own stored evidence, not as an escape hatch
+around the sealed-data and provenance contracts.
 
 ## Archive Without Deleting
 

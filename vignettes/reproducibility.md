@@ -149,20 +149,20 @@ ledgr_run_info(snapshot, "qty_10")
     Snapshot:        research_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
-    Config Hash:     721bcde02cc7916bb1fd40cb6b136887533332dea1587f4b5b8bfd6817cf5b1d
+    Config Hash:     fb58d65c64da7b3edf848910dcc52d7cb42d03e8516d6d80c5213756b6dea4b1
     Strategy Hash:   f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
     Params Hash:     3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     0.94
+    Elapsed Sec:     1.01
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
 
 ## Extract Stored Strategy Source
 
-`ledgr_run_strategy()` inspects stored strategy provenance for a
-run. The default is intentionally read-only:
+`ledgr_run_strategy()` inspects stored strategy provenance for a run.
+The default is intentionally read-only:
 
 ``` r
 stored <- ledgr_run_strategy(snapshot, "qty_10", trust = FALSE)
@@ -472,6 +472,6 @@ dependency did the preflight reject?
 For the end-to-end research loop and the selection-validation
 distinction, read `vignette("research-workflow", package = "ledgr")`.
 For strategy-authoring patterns that avoid Tier 3 failures, read
-`vignette("strategy-development", package = "ledgr")`. For store-level
-source inspection and reopen workflows, read
+`vignette("strategy-authoring-tools", package = "ledgr")`. For
+store-level source inspection and reopen workflows, read
 `vignette("experiment-store", package = "ledgr")`.

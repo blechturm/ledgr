@@ -55,7 +55,7 @@ testthat::test_that("README and package docs use the package-visible logo asset"
 })
 
 testthat::test_that("strategy docs show feature ID discovery before feature lookup", {
-  strategy_doc <- readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE)
+  strategy_doc <- readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE)
   indicators_doc <- readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE)
 
   first_strategy_feature_id <- grep("ledgr_feature_id", strategy_doc)[[1]]
@@ -69,24 +69,26 @@ testthat::test_that("strategy docs show feature ID discovery before feature look
 
 testthat::test_that("indicator docs include compact multi-output ID references", {
   indicators_doc <- paste(readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE), collapse = "\n")
+  ttr_doc <- paste(readLines(ledgr_test_source_vignette("ttr-and-adapter-indicators.qmd"), warn = FALSE), collapse = "\n")
+  indicator_docs <- paste(indicators_doc, ttr_doc, sep = "\n")
   ttr_help <- paste(readLines(testthat::test_path("..", "..", "man", "ledgr_ind_ttr.Rd"), warn = FALSE), collapse = "\n")
 
-  testthat::expect_match(indicators_doc, "ttr_bbands_20_up", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "The MACD ID embeds the explicit arguments", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "built-in ledgr indicators, TTR-backed indicators")
-  testthat::expect_match(indicators_doc, "SMA crossover", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "fast trend above slow trend", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "sma_fast", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "sma_slow", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "RSI is a common mean-reversion input", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "rsi_exp <- ledgr_experiment", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "rsi_bt <- ledgr_run", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "mixed feature map combines a built-in return feature", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "return_5", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Native RSI", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "ledgr_ind_rsi\\(14\\)")
-  testthat::expect_match(indicators_doc, "rsi_14", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "ttr_rsi_14", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "ttr_bbands_20_up", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "The MACD ID embeds the explicit arguments", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "built-in ledgr indicators, TTR-backed indicators")
+  testthat::expect_match(indicator_docs, "SMA crossover", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "fast trend above slow trend", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "sma_fast", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "sma_slow", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "RSI is a common mean-reversion input", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "rsi_exp <- ledgr_experiment", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "rsi_bt <- ledgr_run", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "mixed feature map combines a built-in return feature", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "return_5", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Native RSI", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "ledgr_ind_rsi\\(14\\)")
+  testthat::expect_match(indicator_docs, "rsi_14", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "ttr_rsi_14", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Feature objects appear in three registration and inspection places", fixed = TRUE)
   testthat::expect_match(indicators_doc, "The strategy context then exposes the computed values through accessors", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Feature Lifecycle: From Declaration To Lookup", fixed = TRUE)
@@ -99,18 +101,18 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "Fingerprints identify the\\s+feature definition")
   testthat::expect_match(indicators_doc, "output-specific fingerprint", fixed = TRUE)
   testthat::expect_match(indicators_doc, "A feature-map alias never changes\\s+the underlying engine feature ID")
-  testthat::expect_match(indicators_doc, "The multi-output bundle helper follows the same lifecycle", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "A bundle is an authoring convenience", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "ledgr_ind_ttr_outputs", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "bbands_dn", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "bbands_pctb", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "shorter than the hand-written single-output TTR IDs", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "naming = c\\(up = \"ttr_bbands_20_up\"\\)")
-  testthat::expect_match(indicators_doc, "prefix = NULL", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Raw names are short and can collide", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "A single alias on the bundle argument is ignored", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Control the generated feature IDs\\s+with the bundle's `prefix` argument")
-  testthat::expect_match(indicators_doc, "`naming` renames selected outputs; it is not itself an output filter", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "The multi-output bundle helper follows the same lifecycle", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "A bundle is an authoring convenience", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "ledgr_ind_ttr_outputs", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "bbands_dn", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "bbands_pctb", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "shorter than the hand-written single-output TTR IDs", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "naming = c\\(up = \"ttr_bbands_20_up\"\\)")
+  testthat::expect_match(indicator_docs, "prefix = NULL", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Raw names are short and can collide", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "A single alias on the bundle argument is ignored", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Control the generated feature IDs\\s+with the bundle's `prefix` argument")
+  testthat::expect_match(indicator_docs, "`naming` renames selected outputs; it is not itself an output filter", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ctx\\$feature\\(id, feature_id\\)")
   testthat::expect_match(indicators_doc, "ctx\\$features\\(id, feature_map\\)")
   testthat::expect_match(indicators_doc, "ledgr computes indicators into\\s+pulse-known values")
@@ -133,19 +135,19 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ledgr_feature_grid", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_strategy_grid", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Bundle entries are intentionally flat", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "TTR bundle section below", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "vignette(\"ttr-and-adapter-indicators\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_no_match(indicators_doc, "feature factories", ignore.case = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__ohlcv_{field}", fixed = TRUE)
   testthat::expect_match(indicators_doc, "{instrument_id}__feature_{feature_id}", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "install.packages\\(\"TTR\"\\)")
-  testthat::expect_match(indicators_doc, "choose a timestamp late enough for the indicator warmup", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "same TTR feature map to `ledgr_pulse_snapshot()`", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Troubleshoot Warmup And Zero Trades", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Warmup is the period before a known feature", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Change the scalar accessor", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "available bars are below the feature contract", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "`summary(bt)` prints `Warmup Diagnostics`", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "Impossible warmup is different", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "install.packages\\(\"TTR\"\\)")
+  testthat::expect_match(indicator_docs, "choose a timestamp late enough for the indicator warmup", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "same TTR feature map to `ledgr_pulse_snapshot()`", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Troubleshoot Warmup And Zero Trades", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Warmup is the period before a known feature", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Change the scalar accessor", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "available bars are below the feature contract", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "`summary(bt)` prints `Warmup Diagnostics`", fixed = TRUE)
+  testthat::expect_match(indicator_docs, "Impossible warmup is different", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{BBands} exposes \\code{dn}, \\code{mavg}, \\code{up}, and", fixed = TRUE)
   testthat::expect_match(ttr_help, "\\code{pctB}", fixed = TRUE)
   testthat::expect_match(ttr_help, "ledgr_ind_ttr_outputs", fixed = TRUE)
@@ -160,7 +162,10 @@ testthat::test_that("indicator docs include compact multi-output ID references",
 })
 
 testthat::test_that("helper docs state composition and whole-share target flooring", {
-  strategy_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE), collapse = "\n")
+  strategy_doc <- paste(c(
+    readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE),
+    readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE)
+  ), collapse = "\n")
   root <- testthat::test_path("..", "..")
   target_help <- paste(readLines(file.path(root, "man", "ledgr_target_rebalance.Rd"), warn = FALSE), collapse = "\n")
   signal_strategy_help <- paste(readLines(file.path(root, "man", "ledgr_signal_strategy.Rd"), warn = FALSE), collapse = "\n")
@@ -229,8 +234,11 @@ testthat::test_that("helper docs state composition and whole-share target floori
 })
 
 testthat::test_that("feature-map docs preserve teaching order and semantic boundaries", {
-  strategy_lines <- readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE)
-  strategy_doc <- paste(strategy_lines, collapse = "\n")
+  strategy_lines <- readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE)
+  strategy_doc <- paste(c(
+    readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE),
+    strategy_lines
+  ), collapse = "\n")
   indicators_doc <- paste(readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
   feature_map_help <- paste(readLines(file.path(root, "man", "ledgr_feature_map.Rd"), warn = FALSE), collapse = "\n")
@@ -781,7 +789,10 @@ testthat::test_that("auditr harness discovery bug is recorded externally", {
 })
 
 testthat::test_that("metrics and accounting docs define public result semantics", {
-  metrics_doc <- paste(readLines(ledgr_test_source_vignette("metrics-and-accounting.qmd"), warn = FALSE), collapse = "\n")
+  metrics_doc <- paste(c(
+    readLines(ledgr_test_source_vignette("metrics-and-accounting.qmd"), warn = FALSE),
+    readLines(ledgr_test_source_vignette("metric-contexts-and-conventions.qmd"), warn = FALSE)
+  ), collapse = "\n")
   root <- testthat::test_path("..", "..")
   backtest_help <- paste(readLines(file.path(root, "man", "ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
   experiment_help <- paste(readLines(file.path(root, "man", "ledgr_experiment.Rd"), warn = FALSE), collapse = "\n")
@@ -977,10 +988,12 @@ testthat::test_that("public site polish avoids stale public artifacts", {
 
   start_here <- regexpr("  - title: Start Here", pkgdown_text, fixed = TRUE)
   core_workflow <- regexpr("  - title: Core Workflow", pkgdown_text, fixed = TRUE)
+  going_deeper <- regexpr("  - title: Going Deeper", pkgdown_text, fixed = TRUE)
   design <- regexpr("  - title: Design / Background", pkgdown_text, fixed = TRUE)
   testthat::expect_gt(start_here[[1]], 0)
   testthat::expect_gt(core_workflow[[1]], start_here[[1]])
-  testthat::expect_gt(design[[1]], core_workflow[[1]])
+  testthat::expect_gt(going_deeper[[1]], core_workflow[[1]])
+  testthat::expect_gt(design[[1]], going_deeper[[1]])
 
   start_block <- substr(pkgdown_text, start_here[[1]], core_workflow[[1]] - 1L)
   testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
@@ -988,14 +1001,21 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_match(start_block, "- leakage", fixed = TRUE)
   testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
 
-  core_block <- substr(pkgdown_text, core_workflow[[1]], design[[1]] - 1L)
+  core_block <- substr(pkgdown_text, core_workflow[[1]], going_deeper[[1]] - 1L)
+  testthat::expect_match(core_block, "- data-input-and-snapshots", fixed = TRUE)
   testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
   testthat::expect_match(core_block, "- indicators", fixed = TRUE)
-  testthat::expect_match(core_block, "- custom-indicators", fixed = TRUE)
-  testthat::expect_match(core_block, "- execution-semantics", fixed = TRUE)
   testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
   testthat::expect_match(core_block, "- experiment-store", fixed = TRUE)
   testthat::expect_match(core_block, "- sweeps", fixed = TRUE)
+  testthat::expect_match(core_block, "- walk-forward", fixed = TRUE)
+
+  deeper_block <- substr(pkgdown_text, going_deeper[[1]], design[[1]] - 1L)
+  testthat::expect_match(deeper_block, "- strategy-authoring-tools", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- ttr-and-adapter-indicators", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- custom-indicators", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- metric-contexts-and-conventions", fixed = TRUE)
+  testthat::expect_match(deeper_block, "- execution-semantics", fixed = TRUE)
 
   testthat::expect_no_match(text, "C:\\Users", fixed = TRUE)
   testthat::expect_no_match(text, "custom-indicators.md", fixed = TRUE)
@@ -1017,7 +1037,21 @@ testthat::test_that("package help exposes an installed-documentation spine", {
 
   testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
-  for (article in c("research-workflow", "strategy-development", "metrics-and-accounting", "execution-semantics", "experiment-store", "sweeps", "indicators", "custom-indicators")) {
+  for (article in c(
+    "research-workflow",
+    "data-input-and-snapshots",
+    "strategy-development",
+    "strategy-authoring-tools",
+    "indicators",
+    "ttr-and-adapter-indicators",
+    "custom-indicators",
+    "metrics-and-accounting",
+    "metric-contexts-and-conventions",
+    "execution-semantics",
+    "experiment-store",
+    "sweeps",
+    "walk-forward"
+  )) {
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
@@ -1337,7 +1371,9 @@ testthat::test_that("research workflow article pins canonical workflow and valid
 })
 
 testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
-  doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.qmd"), warn = FALSE), collapse = "\n")
+  data_doc <- paste(readLines(ledgr_test_source_vignette("data-input-and-snapshots.qmd"), warn = FALSE), collapse = "\n")
+  store_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.qmd"), warn = FALSE), collapse = "\n")
+  doc <- paste(data_doc, store_doc, sep = "\n")
   root <- testthat::test_path("..", "..")
   info_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_info.Rd"), warn = FALSE), collapse = "\n")
   csv_help <- paste(readLines(file.path(root, "man", "ledgr_snapshot_import_bars_csv.Rd"), warn = FALSE), collapse = "\n")
@@ -1378,6 +1414,16 @@ testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
   testthat::expect_match(doc, "best_run_id", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_run_not_found", fixed = TRUE)
   testthat::expect_match(doc, "trend_qty_5_rerun", fixed = TRUE)
+  testthat::expect_match(store_doc, "## Recovery", fixed = TRUE)
+  testthat::expect_match(store_doc, "ledgr_db_init\\(db_path\\)")
+  testthat::expect_match(store_doc, "opens a DBI connection to a ledgr DuckDB store", fixed = TRUE)
+  testthat::expect_match(store_doc, "ordinary users usually\\s+do\\s+not need it")
+  testthat::expect_match(store_doc, "ledgr_state_reconstruct\\(run_id, con\\)")
+  testthat::expect_match(store_doc, "reconstructs ledgr's expected simulated\\s+state")
+  testthat::expect_match(store_doc, "restart boundary", fixed = TRUE)
+  for (term in c("broker reconciliation", "live restart safety", "migrate old schemas", "repair a sealed snapshot")) {
+    testthat::expect_match(store_doc, term, fixed = TRUE)
+  }
   testthat::expect_match(doc, "Current Feature Persistence Boundary", fixed = TRUE)
   testthat::expect_match(doc, "full persisted feature-series retrieval API remains outside", fixed = TRUE)
   testthat::expect_match(doc, "External point-in-time regressors", fixed = TRUE)
@@ -1621,6 +1667,10 @@ testthat::test_that("help-page article links target installed vignettes only", {
   installed_articles <- tools::file_path_sans_ext(basename(list.files(vignettes_dir, pattern = "[.](Rmd|qmd)$", full.names = TRUE)))
   testthat::expect_true(all(linked_articles %in% installed_articles))
   testthat::expect_true("indicators" %in% installed_articles)
+  testthat::expect_true("ttr-and-adapter-indicators" %in% installed_articles)
+  testthat::expect_true("strategy-authoring-tools" %in% installed_articles)
+  testthat::expect_true("metric-contexts-and-conventions" %in% installed_articles)
+  testthat::expect_true("data-input-and-snapshots" %in% installed_articles)
   testthat::expect_false("ttr-indicators" %in% installed_articles)
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)

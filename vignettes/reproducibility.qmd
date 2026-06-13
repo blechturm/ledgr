@@ -436,9 +436,9 @@ What tier does ledgr assign, and what dependency did the preflight reject?
 For the end-to-end research loop and the selection-validation distinction, read
 `vignette("research-workflow", package = "ledgr")`. For strategy-authoring
 patterns that avoid Tier 3 failures, read
-`vignette("strategy-development", package = "ledgr")`. For store-level source
-inspection and reopen workflows, read `vignette("experiment-store", package =
-"ledgr")`.
+`vignette("strategy-authoring-tools", package = "ledgr")`. For store-level
+source inspection and reopen workflows, read
+`vignette("experiment-store", package = "ledgr")`.
 
 ```{r}
 #| label: cleanup

@@ -627,7 +627,7 @@ scope: post-feature-arc-refresh
 Priority: P1
 Effort: L
 Dependencies: LDG-2628, LDG-2632
-Status: Review Pending
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -670,6 +670,22 @@ structure around the split articles.
 - Documentation-contract tests.
 - `pkgdown::build_site()` during the release-gate window or earlier if local
   dependencies are available.
+
+### Implementation Notes
+
+- Split A-D landed as:
+  `strategy-development` / `strategy-authoring-tools`,
+  `indicators` / `ttr-and-adapter-indicators`,
+  `metrics-and-accounting` / `metric-contexts-and-conventions`, and
+  `data-input-and-snapshots` / `experiment-store`.
+- Split E remains deferred; `sweeps` was not split.
+- `_pkgdown.yml` now keeps the shorter workflow articles under `Core Workflow`
+  and moves companion articles under `Going Deeper`.
+- `inst/design/vignette_styleguide.md`, package help, generated Rd, and
+  documentation-contract tests were updated for the split article set.
+- Affected `.qmd` files were rendered to tracked `.md` mirrors with
+  `knitr::knit()`. The render completed with existing mermaid engine warnings
+  from knitr, and documentation-contract tests passed afterward.
 
 ### Source Reference
 

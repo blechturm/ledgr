@@ -17,20 +17,30 @@
 #' Core installed articles:
 #' - `vignette("research-workflow", package = "ledgr")`
 #' - `system.file("doc", "research-workflow.html", package = "ledgr")`
+#' - `vignette("data-input-and-snapshots", package = "ledgr")`
+#' - `system.file("doc", "data-input-and-snapshots.html", package = "ledgr")`
 #' - `vignette("strategy-development", package = "ledgr")`
 #' - `system.file("doc", "strategy-development.html", package = "ledgr")`
+#' - `vignette("strategy-authoring-tools", package = "ledgr")`
+#' - `system.file("doc", "strategy-authoring-tools.html", package = "ledgr")`
+#' - `vignette("indicators", package = "ledgr")`
+#' - `system.file("doc", "indicators.html", package = "ledgr")`
+#' - `vignette("ttr-and-adapter-indicators", package = "ledgr")`
+#' - `system.file("doc", "ttr-and-adapter-indicators.html", package = "ledgr")`
+#' - `vignette("custom-indicators", package = "ledgr")`
+#' - `system.file("doc", "custom-indicators.html", package = "ledgr")`
 #' - `vignette("metrics-and-accounting", package = "ledgr")`
 #' - `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#' - `vignette("metric-contexts-and-conventions", package = "ledgr")`
+#' - `system.file("doc", "metric-contexts-and-conventions.html", package = "ledgr")`
 #' - `vignette("execution-semantics", package = "ledgr")`
 #' - `system.file("doc", "execution-semantics.html", package = "ledgr")`
 #' - `vignette("experiment-store", package = "ledgr")`
 #' - `system.file("doc", "experiment-store.html", package = "ledgr")`
 #' - `vignette("sweeps", package = "ledgr")`
 #' - `system.file("doc", "sweeps.html", package = "ledgr")`
-#' - `vignette("indicators", package = "ledgr")`
-#' - `system.file("doc", "indicators.html", package = "ledgr")`
-#' - `vignette("custom-indicators", package = "ledgr")`
-#' - `system.file("doc", "custom-indicators.html", package = "ledgr")`
+#' - `vignette("walk-forward", package = "ledgr")`
+#' - `system.file("doc", "walk-forward.html", package = "ledgr")`
 #'
 #' @section Ecosystem:
 #' ledgr connects to the R finance ecosystem through adapters. The core owns
