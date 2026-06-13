@@ -23,6 +23,8 @@ files with:
 
 Core installed articles:
 \itemize{
+\item \code{vignette("quickstart", package = "ledgr")}
+\item \code{system.file("doc", "quickstart.html", package = "ledgr")}
 \item \code{vignette("research-workflow", package = "ledgr")}
 \item \code{system.file("doc", "research-workflow.html", package = "ledgr")}
 \item \code{vignette("data-input-and-snapshots", package = "ledgr")}
@@ -39,6 +41,8 @@ Core installed articles:
 \item \code{system.file("doc", "custom-indicators.html", package = "ledgr")}
 \item \code{vignette("metrics-and-accounting", package = "ledgr")}
 \item \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+\item \code{vignette("risk-and-cost", package = "ledgr")}
+\item \code{system.file("doc", "risk-and-cost.html", package = "ledgr")}
 \item \code{vignette("metric-contexts-and-conventions", package = "ledgr")}
 \item \code{system.file("doc", "metric-contexts-and-conventions.html", package = "ledgr")}
 \item \code{vignette("execution-semantics", package = "ledgr")}

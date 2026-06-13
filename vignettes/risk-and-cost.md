@@ -1,0 +1,357 @@
+# Risk And Cost Execution Policy
+
+
+You could bury transaction costs and position limits inside your
+strategy function: compute a spread, deduct a fee, clamp a position size.
+ledgr does not make that the supported path, and that refusal is the
+point.
+
+Two things go wrong when execution policy hides inside signal code.
+First, you stop being able to trust your own numbers: a return that
+quietly nets out a guessed fee reads as gross when you compare it later,
+and you will not notice. Second, your strategy stops being about the
+signal. Position caps, fee arithmetic, and exposure limits turn a few
+lines of signal logic into a monolith that is hard to read and harder to
+change. In ledgr, a strategy should answer one question: what do I want
+to hold?
+
+So ledgr splits the execution decision into four questions, each owned
+by a different layer:
+
+| Layer    | Question it answers                     |
+|----------|-----------------------------------------|
+| strategy | what do I want to hold? (intent)        |
+| risk     | what am I allowed to hold? (constraint) |
+| timing   | when does it execute? (mechanics)       |
+| cost     | what did it cost? (friction)            |
+
+``` text
+strategy targets
+  -> risk chain        (reshape quantities)
+  -> next-open timing  (choose the execution bar)
+  -> cost model        (adjust fill price and fee)
+  -> fill and ledger event
+```
+
+That order is the execution contract. A strategy returns complete target
+quantities. A risk chain may reshape those quantities before any fill
+exists. The timing model chooses the execution bar. The cost model then
+adjusts fill price and fee. Read as a policy, ledgr execution is four
+things, and the rest of this article makes each one visible:
+
+- **explicit**: cost and risk are declared objects, never hidden in the
+  strategy;
+- **ordered**: each layer runs in a fixed place, and within cost, price
+  transforms run before fees;
+- **identity-bearing**: the cost and risk you chose are part of the
+  run’s identity;
+- **bounded**: risk is not portfolio optimization, and cost is not a
+  trading venue.
+
+In the public API, the target-risk chain is the `risk_chain` argument
+and the transaction-cost model is the `cost_model` argument. They are
+separate on purpose: risk changes target quantities before fills exist;
+cost changes fill price and fee after timing has selected an execution
+bar.
+
+## Declare The Layers
+
+``` r
+library(ledgr)
+library(dplyr)
+
+data("ledgr_demo_bars", package = "ledgr")
+```
+
+A cost model and a risk chain are values you build and pass to the
+experiment. You assemble each one from small steps.
+
+``` r
+cost <- ledgr_cost_chain(
+  ledgr_cost_spread_bps(10),
+  ledgr_cost_notional_bps_fee(2)
+)
+
+risk <- ledgr_risk_chain(
+  ledgr_risk_long_only(),
+  ledgr_risk_max_weight(0.5)
+)
+```
+
+`ledgr_cost_describe()` prints the resolved chain, including the stage
+of each step.
+
+``` r
+cat(ledgr_cost_describe(cost))
+#> ledgr cost model: 2 step(s), hash 8731d5b56bee
+#> 1. spread_bps [price_transform] bps=10
+#> 2. notional_bps_fee [fee_adder] bps=2
+```
+
+## The Composable Pieces
+
+You build any policy from the same small set of steps. Cost steps chain
+with `ledgr_cost_chain()`:
+
+| Step | Stage | Effect |
+|----|----|----|
+| `ledgr_cost_spread_bps(bps)` | price transform | crosses half the quoted spread |
+| `ledgr_cost_fixed_fee(amount)` | fee | flat charge per fill |
+| `ledgr_cost_notional_bps_fee(bps)` | fee | charge proportional to fill notional |
+| `ledgr_cost_zero()` | none | explicit no-cost policy |
+
+Cost has two stages, and the order is enforced: price transforms always
+run before fee steps, so a chain that puts a fee before a price
+transform fails with a classed error. That is why a notional fee is
+charged on the spread-adjusted price, not the raw open.
+
+Risk steps chain with `ledgr_risk_chain()`:
+
+| Step                       | Effect                                     |
+|----------------------------|--------------------------------------------|
+| `ledgr_risk_long_only()`   | drops short (negative) targets to zero     |
+| `ledgr_risk_max_weight(w)` | caps absolute per-instrument weight at `w` |
+| `ledgr_risk_none()`        | explicit no-op                             |
+
+`ledgr_cost_zero()` and `ledgr_risk_none()` are real choices, not
+absence. They say “no cost” and “no constraint” on the record, where a
+later reader can see them.
+
+<div class="ledgr-callout ledgr-callout-important">
+
+**More steps are planned**
+
+Later releases add more cost and risk steps, including richer fee and
+exposure models. The chain interface does not change: you compose new
+steps the same way you compose these.
+
+</div>
+
+## What Risk Does
+
+The cleanest way to see a layer is to swap it and hold everything else
+fixed. The strategy below is deliberately aggressive, written to give the
+risk chain something to correct.
+
+``` r
+greedy <- function(ctx, params) {
+  long_id  <- ctx$universe[[1]]
+  short_id <- ctx$universe[[2]]
+
+  target <- ctx$flat()
+  # Size each position as a fraction of equity, converted to whole shares
+  # at the current price.
+  target[[long_id]]  <-  floor(0.90 * ctx$equity / ctx$close(long_id))
+  target[[short_id]] <- -floor(0.20 * ctx$equity / ctx$close(short_id))
+  target
+}
+```
+
+Each target line turns a fraction of current equity into a whole-share
+count at the instrument's price: the first is about 90 percent of equity
+held long, the second about 20 percent held short. Together that is
+roughly 110 percent gross exposure -- a concentrated, slightly levered
+long-short bet. Both sides are past the limits declared above. The 90
+percent long exceeds the 50 percent cap, and a short is not long-only, so
+the risk chain has two separate things to fix.
+
+``` r
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-03-31"))
+  )
+
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  db_path = tempfile(fileext = ".duckdb"),
+  snapshot_id = "risk_cost_demo"
+)
+```
+
+One helper runs the same strategy under whatever policy you pass, so the
+only thing that changes between runs is the layer under test.
+
+``` r
+run_policy <- function(cost, risk, run_id) {
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = greedy,
+    opening = ledgr_opening(cash = 10000),
+    timing_model = ledgr_timing_next_open(),
+    cost_model = cost,
+    risk_chain = risk
+  )
+  ledgr_run(exp, params = list(), run_id = run_id, seed = 2026L)
+}
+```
+
+<div class="ledgr-callout ledgr-callout-note">
+
+**Running this yourself**
+
+The runs below write to a temporary DuckDB store, so the article leaves
+no project files behind. The greedy strategy re-targets on every bar, so
+the final bar logs a `LEDGR_LAST_BAR_NO_FILL` notice. That is expected
+next-open behavior; see
+`vignette("execution-semantics", package = "ledgr")`.
+
+</div>
+
+Run the strategy with no risk chain, then with the chain from above, and
+compare the opening-day fills.
+
+``` r
+uncapped <- run_policy(ledgr_cost_zero(), ledgr_risk_none(), "uncapped")
+capped   <- run_policy(ledgr_cost_zero(), risk, "capped")
+
+opening_fills <- function(bt) {
+  ledgr_results(bt, what = "fills") |>
+    filter(ts_utc == min(ts_utc)) |>
+    select(instrument_id, side, qty, price)
+}
+
+opening_fills(uncapped)
+#> # A tibble: 2 x 4
+#>   instrument_id side    qty  price
+#>   <chr>         <chr> <dbl>  <dbl>
+#> 1 DEMO_01       BUY      98 91.478
+#> 2 DEMO_02       SELL     27 73.908
+opening_fills(capped)
+#> # A tibble: 1 x 4
+#>   instrument_id side     qty  price
+#>   <chr>         <chr>  <dbl>  <dbl>
+#> 1 DEMO_01       BUY   54.632 91.478
+```
+
+Without a risk chain, ledgr fills exactly what the strategy asked for: a
+long in the first instrument and a short in the second. With `long_only`
+and `max_weight(0.5)`, the short is gone and the long is clamped to half
+of equity. The strategy code did not change. The policy did.
+
+The clamped quantity is fractional -- 54.632 shares -- because
+`max_weight` scales the target to hit exactly 50 percent of equity at the
+decision price, rather than flooring to a whole share. ledgr target
+quantities are continuous at this layer; if your venue trades whole lots,
+add a lot-size or rounding policy rather than hiding rounding inside the
+strategy.
+
+## What Cost Does
+
+Now hold the risk chain fixed and swap the cost model. The `capped` run
+above already used `ledgr_cost_zero()`, so it is the no-cost baseline.
+Run the same policy with the spread-and-fee chain and compare the
+opening fill.
+
+``` r
+with_cost <- run_policy(cost, risk, "with_cost")
+
+first_fill <- function(bt) {
+  ledgr_results(bt, what = "fills") |>
+    filter(ts_utc == min(ts_utc), instrument_id == "DEMO_01") |>
+    transmute(qty, price = round(price, 3), fee = round(fee, 3))
+}
+
+bind_rows(
+  "no cost"      = first_fill(capped),
+  "spread + fee" = first_fill(with_cost),
+  .id = "policy"
+)
+#> # A tibble: 2 x 4
+#>   policy          qty  price   fee
+#>   <chr>         <dbl>  <dbl> <dbl>
+#> 1 no cost      54.632 91.478     0
+#> 2 spread + fee 54.632 91.524     1
+```
+
+Same quantity, two different fills. The spread step lifts the buy price
+by half the quoted spread, and the notional fee adds a charge
+proportional to the fill value. Costs do not change what you decided to
+hold; they change what holding it was worth. Cost models do not change
+quantities, refuse fills, model liquidity, manage orders, reconcile
+brokers, or act as an OMS.
+
+## Identity
+
+The cost model and risk chain you chose are part of the run’s identity.
+ledgr hashes them, so two runs are only like-for-like comparable when their
+policy matches. You can still compare different policies deliberately, as
+the no-cost versus cost contrast above does; you just should not read
+them as sharing the same execution assumptions.
+
+``` r
+with_cost$config$cost_model$cost_model_hash
+#> [1] "8731d5b56beed9cd8380bfbd7ddf3f19f90842aa3747b74613ddb36e7bab9098"
+with_cost$config$risk_chain$risk_chain_hash
+#> [1] "cec3d627a47a758f79c260d732128f301863da228799ac8831b84db37b2e7a92"
+```
+
+Change the cost model or the risk chain and these hashes change with it.
+How much result evidence you retain, or how you rank candidates later,
+does not rewrite them. For the full identity model, see
+`vignette("reproducibility", package = "ledgr")`.
+
+## Boundaries
+
+The four layers are deliberately narrow. Each refuses work that belongs
+to a different kind of system.
+
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Risk is not portfolio optimization**
+
+`ledgr_risk_max_weight()` is a small deterministic target transform, not
+a solver. It clamps quantities you already chose; it does not search for
+an allocation.
+
+</div>
+
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Cost is not liquidity or capacity**
+
+A cost model adds spread and fees. It does not decide whether volume is
+sufficient, whether an order should be refused, or how a large order
+moves the market.
+
+</div>
+
+<div class="ledgr-callout ledgr-callout-important">
+
+**The research engine is not a broker**
+
+Paper trading, order lifecycle, partial fills, cancellation, broker
+reconciliation, financing, taxes, and live restart safety are separate
+future layers. ledgr answers what a sealed snapshot and your declared
+policy can determine; it does not stand in for a live venue.
+
+</div>
+
+These are not gaps to patch inside a strategy. They are questions a
+sealed backtest cannot answer, kept outside the execution contract on
+purpose.
+
+## Try It
+
+<div class="ledgr-callout ledgr-callout-tip">
+
+**Try it**
+
+Lower the cap to `ledgr_risk_max_weight(0.3)` and rerun the risk
+comparison. Which opening fill changes, and by how much? Then add a
+`ledgr_cost_fixed_fee()` step to the cost chain and watch the fee column
+in the opening fill.
+
+</div>
+
+## Where Next
+
+- For fill timing, next-open semantics, and the final-bar rule, see
+  `vignette("execution-semantics", package = "ledgr")`.
+- For how fills become trades, equity, and metrics, see
+  `vignette("metrics-and-accounting", package = "ledgr")`.
+- For annualization and the risk-metric conventions behind the Sharpe
+  ratio, see
+  `vignette("metric-contexts-and-conventions", package = "ledgr")`.
+- For cost and risk identity in the full provenance model, see
+  `vignette("reproducibility", package = "ledgr")`.

@@ -48,9 +48,13 @@ LDG-2627
   -> LDG-2632
        -> LDG-2633
             -> LDG-2634 -> LDG-2635
-       -> LDG-2636 -> LDG-2637
+            -> LDG-2642
+       -> LDG-2636
+            -> LDG-2637
+            -> LDG-2644 (also depends on LDG-2642)
   -> LDG-2638 -> LDG-2639
-  -> LDG-2640
+  -> LDG-2643
+  -> LDG-2640 (also depends on LDG-2642, LDG-2643, LDG-2644)
   -> LDG-2641
 ```
 
@@ -627,7 +631,7 @@ scope: post-feature-arc-refresh
 Priority: P1
 Effort: L
 Dependencies: LDG-2628, LDG-2632
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -707,6 +711,9 @@ Effort: L
 Dependencies: LDG-2633, LDG-2636
 Status: Review Pending
 
+Implementation status: Review Pending. Batch 8 articles are implemented and
+rendered; awaiting Claude review.
+
 ### Description
 
 Add the new teaching surfaces needed for the post-walk-forward public workflow
@@ -736,6 +743,19 @@ without implementing validation-toolkit features.
 - Render new articles.
 - Run executable chunks where local dependencies allow.
 - Documentation-contract tests for stable teaching pointers.
+
+Implementation notes:
+
+- Added `vignettes/quickstart.qmd` / `.md` for the short demo-data ->
+  snapshot -> run -> sweep -> candidate path.
+- Added `vignettes/risk-and-cost.qmd` / `.md` for target-risk, timing, cost,
+  liquidity, and OMS boundaries.
+- Replaced the design-only `walk-forward.qmd` sketch with an executable
+  demo-data walk-forward example using compact rolling folds.
+- Demo-data span was verified locally as 2018-01-01 through 2022-10-28, with
+  10 instruments and 1260 bars per instrument.
+- The standalone debugging article remains deferred out of v0.1.9.5.
+- Rendered the new/changed articles and ran the documentation-contract tests.
 
 ### Source Reference
 
@@ -850,7 +870,7 @@ scope: decision-discoverability
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2636, LDG-2637, LDG-2638, LDG-2639
+Dependencies: LDG-2636, LDG-2637, LDG-2638, LDG-2639, LDG-2642, LDG-2643, LDG-2644
 Status: Review Pending
 
 ### Description
@@ -860,12 +880,16 @@ work has landed.
 
 ### Tasks
 
-- Update NEWS.md with the final rename table and release summary.
+- Update NEWS.md with the final rename table, the
+  `ledgr_sweep_review()` / `ledgr_temp_store()` helpers, the walk-forward
+  inspection print methods, and the release summary.
 - Update README and pkgdown entry points for renamed functions and new teaching
   surfaces.
 - Update roadmap, horizon, design index, RFC index, and AGENTS active-packet
   references as appropriate.
-- Record deferred Split E, deferred debugging article, and N-item dispositions.
+- Record deferred Split E, deferred debugging article, N-item dispositions, and
+  deferred vignette-audit items (Section 6 splits, lower-value helpers, trades
+  entry/exit pairing, and any residual strategy-development trim).
 - Audit public docs for old names using the synthesis exclusion rules.
 
 ### Acceptance Criteria
@@ -874,6 +898,8 @@ work has landed.
 - NEWS carries the consolidated rename table required by the synthesis.
 - Roadmap/horizon/design-index state is coherent with v0.1.9.5 completion and
   v0.1.9.6 validation-toolkit planning.
+- Horizon no longer frames `ledgr_sweep_review()` as deferred future work; that
+  entry is resolved or narrowed to the still-deferred promotion-recovery summary.
 - No stale old-name references remain outside NEWS and design history.
 
 ### Verification
@@ -900,7 +926,7 @@ scope: closeout-prep
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2627, LDG-2628, LDG-2629, LDG-2630, LDG-2631, LDG-2632, LDG-2633, LDG-2634, LDG-2635, LDG-2636, LDG-2637, LDG-2638, LDG-2639, LDG-2640
+Dependencies: LDG-2627, LDG-2628, LDG-2629, LDG-2630, LDG-2631, LDG-2632, LDG-2633, LDG-2634, LDG-2635, LDG-2636, LDG-2637, LDG-2638, LDG-2639, LDG-2640, LDG-2642, LDG-2643, LDG-2644
 Status: Review Pending
 
 ### Description
@@ -936,6 +962,11 @@ required gate would force broad or unrelated diffs.
   collision check, NEWS table, and M-8 completion.
 - Vignette-screening audit scheduled items are closed or explicitly deferred
   with rationale.
+- Vignette audit (2026-06-13) scheduled items are closed or explicitly deferred
+  with rationale: the four stale facts and the two helpers are in scope; the
+  `sweeps` / `metric-contexts` splits, lower-value helpers, trades entry/exit
+  pairing, and residual strategy-development trim are deferred to horizon if not
+  fixed.
 - Branch CI, main CI, merge, and tag are completed before closeout is marked
   done.
 
@@ -956,4 +987,181 @@ required gate would force broad or unrelated diffs.
 type: release
 surface: release-gate
 scope: v0.1.9.5
+```
+
+## LDG-2642 - Batch 8A Walk-Forward, Sweep, And Store UX Helpers
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2632, LDG-2633
+Status: To Do (walk-forward print methods already landed 2026-06-13, Codex-reviewed)
+
+### Description
+
+Implement the additive, identity-neutral UX-gap helpers from the v0.1.9.5
+vignette audit Section 3, and record the walk-forward inspection print methods
+already implemented this cycle. These helpers retire boilerplate duplicated
+across multiple vignettes and resolve standing in-article design notes.
+
+### Tasks
+
+- Record (done 2026-06-13, Codex-reviewed): `print.ledgr_walk_forward_degradation`
+  curated print and `print.ledgr_fold_list` per-fold window print.
+- Implement `ledgr_sweep_review()`: returns review tables (rank, top-N,
+  issue/flag columns) for a sweep result. Scope boundary: returns tables only;
+  it must NOT choose or promote a winner (selection/promotion stay with
+  `ledgr_candidate()` / `ledgr_promote()`).
+- Implement `ledgr_temp_store()`: returns a disposable `.duckdb` path and removes
+  any stale file already at that path. Scope boundary: path plus stale-file
+  removal only; no store init/open/seal/lifecycle. Confirm the name against the
+  naming synthesis utility-helper convention.
+- Add targeted tests for each helper.
+- Update NAMESPACE, generated docs, and NEWS.
+
+### Acceptance Criteria
+
+- `ledgr_sweep_review()` returns a review table and performs no selection or
+  promotion.
+- `ledgr_temp_store()` returns a fresh disposable path and clears any stale file;
+  performs no store lifecycle.
+- The walk-forward print methods are tested and recorded.
+- Export-lock updated, `tools::checkRd()` clean, NEWS carries the helpers.
+
+### Tests
+
+- Targeted helper tests, export-lock test, `tools::checkRd()`.
+
+### Source Reference
+
+- `inst/design/audits/v0_1_9_5_vignette_audit.md` Section 3.
+
+### Classification
+
+```yaml
+type: feature
+surface: public-api
+scope: ux-helpers
+```
+
+## LDG-2643 - Batch 8B Vignette Stale-Fact Fixes
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2627
+Status: To Do
+
+### Description
+
+Fix the four verified stale facts from the v0.1.9.5 vignette audit Section 2.
+
+### Tasks
+
+- `why-r.qmd`: correct the Imports list (`jsonlite` -> `yyjsonr`) and reconcile
+  the full list against `DESCRIPTION`.
+- `research-to-production.qmd`: add sweep persistence (v0.1.9.2) and the public
+  target-risk API (v0.1.9.3) to the delivered list; re-anchor the validation
+  toolkit to v0.1.9.6 and paper/observability/live to v0.3.0/v0.4.0/v1.0.0;
+  de-version delivered behavior (e.g. "In v0.1.9.1...").
+- `execution-semantics.qmd`: replace the trades `any_of()` nonexistent-column
+  list with the real schema (`ts_utc`, `qty`, `realized_pnl`); note that trades
+  are close-action fill rows.
+- `experiment-store.qmd`: replace the stale "out of v0.1.8.5" boundary with the
+  current planned cycle.
+- Re-render affected `.md`.
+
+### Acceptance Criteria
+
+- `why-r` Imports list matches `DESCRIPTION`.
+- `research-to-production` delivered/planned sections match the roadmap and NEWS;
+  the styleguide Section 12 release-gate roadmap check passes.
+- `execution-semantics` trades example selects only existing columns.
+- No current/past-version stamping of shipped behavior remains in these four
+  articles.
+- Documentation-contract tests pass; rendered `.md` regenerated.
+
+### Tests
+
+- Documentation-contract tests; render affected vignettes.
+
+### Source Reference
+
+- `inst/design/audits/v0_1_9_5_vignette_audit.md` Section 2.
+
+### Classification
+
+```yaml
+type: documentation
+surface: vignettes
+scope: stale-fixes
+```
+
+## LDG-2644 - Batch 8C Vignette Editorial Cleanups And Helper Adoption
+
+Priority: P2
+Effort: L
+Dependencies: LDG-2642, LDG-2636
+
+### Status
+
+To Do
+
+### Description
+
+Apply the cross-cutting editorial fixes from the v0.1.9.5 vignette audit
+Section 1, the Section 5 visualization gap where data already exists, and adopt
+the two new helpers in the consuming articles.
+
+### Tasks
+
+- Convert decorative "Definition" note callouts to inline prose in `indicators`
+  (5), `sweeps` (4), `strategy-development` (3), `metrics-and-accounting` (3),
+  and `custom-indicators` (1); reserve callouts for scan-critical guidance.
+- Rewrite topic-list openings to user-outcome inverted-pyramid in
+  `strategy-authoring-tools`, `indicators`, `metric-contexts-and-conventions`,
+  and `sweeps`.
+- Add "Where Next" closings to `custom-indicators`, `leakage`, and
+  `research-to-production`; rename `experiment-store` "What's Next?" to
+  "Where Next" and add the reproducibility link.
+- De-duplicate the `strategy-development` / `strategy-authoring-tools` shared
+  boilerplate opening and snapshot setup (one canonical home plus cross-link);
+  fix the snapshot cross-link to `data-input-and-snapshots` in both.
+- Fix the `eval: false`-hides-the-lesson chunks (`metric-contexts`
+  `metric-context-provenance` executes; review `strategy-authoring-tools`
+  debug-checklist, `custom-indicators` `adapter-r`, `ttr` `ttr-pulse-snapshot`).
+- Drop `dplyr::` qualifiers in the `ttr-and-adapter-indicators` attached-package
+  chunk.
+- Adopt `ledgr_sweep_review()` in `sweeps` and `research-workflow`; adopt
+  `ledgr_temp_store()` in `data-input-and-snapshots` and `experiment-store`;
+  remove the standing future-helper design notes.
+- Add the missing equity-curve plot where the data already exists
+  (`metrics-and-accounting`; the `research-workflow` report outline).
+- Re-render all affected `.md`.
+
+### Acceptance Criteria
+
+- Decorative Definition callouts removed; callout hierarchy restored.
+- Named openings replace topic lists in the four flagged articles.
+- All core vignettes have a "Where Next" closing.
+- Strategy-article duplication removed; snapshot cross-link points to
+  `data-input-and-snapshots`.
+- Flagged `eval: false` chunks execute or carry a justified label.
+- `sweeps`/`research-workflow` use `ledgr_sweep_review()`;
+  `data-input`/`experiment-store` use `ledgr_temp_store()`; design notes removed.
+- Documentation-contract tests updated and passing; rendered `.md` regenerated.
+
+### Tests
+
+- Documentation-contract tests; render affected vignettes; `rg` for removed
+  boilerplate and design notes.
+
+### Source Reference
+
+- `inst/design/audits/v0_1_9_5_vignette_audit.md` Sections 1 and 5.
+
+### Classification
+
+```yaml
+type: documentation
+surface: vignettes
+scope: editorial-and-adoption
 ```

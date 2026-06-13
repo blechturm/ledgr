@@ -47,7 +47,8 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.1.9.x** -- walk-forward (RFC accepted 2026-06-04 with Amendment 1 +
   Amendment 2 + Section 17 ticket-cut gates); validation toolkit
   (formerly "selection-integrity diagnostics"; RFC accepted 2026-06-12,
-  scheduled v0.1.9.6); cost-model post-direction; randomized / blocked
+  scheduled v0.1.9.6); intraday-readiness code audit (scheduled
+  v0.1.9.6, audit only); cost-model post-direction; randomized / blocked
   slice diagnostics; promotion-grade sweep artifacts; target
   construction helper extensions (Pass 2 per-stage helpers); broker /
   exchange cost templates; crypto-readiness spike; spot-FIFO as default
@@ -76,6 +77,250 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-06-13 [docs] Deferred v0.1.9.5 vignette-audit items
+
+The 2026-06-13 vignette audit
+(`inst/design/audits/v0_1_9_5_vignette_audit.md`) pulled its stale-fact fixes,
+the two highest-value helpers (`ledgr_sweep_review()`, `ledgr_temp_store()`),
+and the editorial cleanups into v0.1.9.5 (Batches 8A/8B/8C). The following are
+deferred to a later packet:
+
+- **Vignette splits (audit Section 6).** `sweeps.qmd` (717 lines) should split
+  off its retention / save-reopen / external-metrics cluster into a companion;
+  `metric-contexts-and-conventions.qmd` should split off its diagnostic
+  playbook. Both are pinned in `_pkgdown.yml` navigation and
+  `tests/testthat/test-documentation-contracts.R`, so a split must update those
+  pins -- real work, not a drive-by patch.
+- **Residual strategy-development trim (audit Section 6).** If the
+  post-v0.1.9.5 "Strategy Basics" article still carries helper-pipeline
+  strategy material after the Batch 8C de-duplication pass, move that material
+  to the companion strategy-authoring article and leave a pointer. The v0.1.9.5
+  in-scope fix is only the duplicated opening/setup and cross-link cleanup.
+- **Lower-value helpers (audit Sections 3.4-3.6).** A `ledgr_target` value
+  accessor (to retire `unclass(target)[["id"]]`); a `ledgr_annualization(bt)`
+  accessor so hand-recomputes provably match `ledgr_compute_metrics()`; a
+  vectorized feature-read / set-targets-where helper to shorten the
+  `for (id in ctx$universe)` strategy loop. Take these only when the relevant
+  surface is naturally touched.
+- **Trades entry/exit pairing (audit Section 3.3).** A "trade" is currently a
+  single close-action fill row with no paired entry/exit timestamp. Decide
+  between documenting that shape clearly or adding an entry/exit-paired trades
+  view. The v0.1.9.5 fix is only to correct the `execution-semantics` example
+  to the real columns.
+
+Non-commitments: these are recorded direction, not roadmap commitments; helper
+names and the trades-pairing decision are illustrative.
+
+### 2026-06-13 [execution] v0.1.9.6 intraday-readiness code audit
+
+Scheduled for the next packet after v0.1.9.5: run a deep code review to check
+whether the v0.1.x architecture is still EOD-first but intraday-tolerant, or
+whether recent work introduced architectural footguns that would make future
+intraday support expensive.
+
+Scope:
+
+- code and contract audit only; no intraday runtime implementation;
+- inspect snapshot sealing, timestamp precision, pulse calendars, fold
+  windows, metric annualization, feature warmup/hydration, timing/cost
+  contexts, target-risk boundaries, retained return panels, sweep/walk-forward
+  identity, and generated documentation examples;
+- identify assumptions that are merely EOD teaching choices versus assumptions
+  that have become runtime invariants;
+- check whether validation-toolkit work over retained panels introduces
+  cadence-specific shapes that would block later intraday windows or
+  session-aware folds;
+- assess the refactor size for each footgun: documentation-only, small local
+  patch, packet-sized refactor, or architecture/RFC-sized refactor;
+- name contract tests or audits that would prevent the same footgun from
+  reappearing.
+
+Audit output should be a versioned audit document, not a feature patch:
+
+```text
+finding -> affected surface -> why it matters for intraday ->
+current severity -> refactor size -> recommended disposition
+```
+
+The expected outcome is a footgun register and refactor-size estimate that can
+inform v0.1.9.x/v0.2.x scheduling. It should explicitly answer whether ledgr can
+still honestly say "EOD-first, intraday-tolerant" after the v0.1.9.x arc.
+
+Related entry: 2026-05-27 [execution] Intraday support arc and pre-v0.2.x
+architectural footguns. This entry schedules the audit promised there; it does
+not authorize the intraday support arc itself.
+
+### 2026-06-13 [risk] User-defined cost and risk steps: extensibility against the identity and bounded-stance constraints
+
+Raised during the v0.1.9.5 risk-and-cost vignette work: should ledgr give
+users tooling to build their own cost and risk steps, beyond composing the
+built-in allowlist?
+
+First, a distinction the "More steps are planned" vignette callout blurs.
+Shipping more **built-in** steps (the closed allowlist grows, ledgr owns and
+serializes each step) is different from **user-defined** steps (the user
+supplies the function). The callout promises the former; this entry is about
+the latter.
+
+The precedent exists. Indicators are already user-extensible via
+`ledgr_indicator()` + the `series_fn` contract + `ledgr_indicator_register()`
+/ `ledgr_indicator_dev()` + the custom-indicators vignette, with feature
+fingerprints preserving identity. Custom cost/risk steps would reuse that
+machinery, not invent it.
+
+The crux is identity. Cost and risk are hash-bearing: `cost_plan_json`,
+`cost_model_hash`, and `risk_chain_hash` are consumed downstream by sweep
+persistence and walk-forward candidate/session identity. A built-in step
+serializes to canonical `{type_id, args}`; a user closure needs
+source-capture plus fingerprinting (as strategy source already does) and its
+tunables forced through `ledgr_param()` so they land in the plan JSON. This is
+the hard 80 percent of the work. Cost is heavier than risk because its
+identity surface fans out across more consumers.
+
+The bounded-stance tension is the deeper issue. The v0.1.9.5 risk-and-cost
+vignette now teaches a sharp boundary -- risk is not portfolio optimization,
+cost is not liquidity or capacity. An open function interface is the backdoor
+through which a "risk step" becomes a solver and a "cost step" becomes a
+market-impact model, making the deliberately bounded layers unbounded.
+Indicators do not have this problem (any feature is fair game); cost and risk
+are narrow on purpose. Any extensibility RFC must answer this with a
+constrained contract (pure `targets -> targets` for risk; pure
+`(proposal, fill_context) -> price/fee` for cost) plus preflight-style tiering
+to fail closed on non-deterministic or lookahead-violating steps.
+
+Recommended sequencing (a recommendation, not a decision):
+
+- **Risk-step extensibility is the more natural first member.** A custom risk
+  step is a strategy-shaped pure transform with `ctx` access, and the real
+  long tail (sector caps, turnover, vol-targeting, gross/net exposure) is
+  legitimately target transforms.
+- **Cost-step extensibility is heavier; expand the built-in vocabulary
+  first.** Tiered/maker-taker fees, borrow cost on shorts, and simple slippage
+  are a finite set that may cover most demand without source-capture. A
+  user-defined-cost API only if built-ins prove insufficient.
+
+Related horizon entries: 2026-06-09 [risk] Palomar risk-chain constraint
+expansion (the built-in convex-constraint track); 2026-06-07 portfolio
+optimization scaffolding (solver dispatch); 2026-06-09 [ux] weight-strategy
+wrapper (authoring surface).
+
+Non-commitments:
+
+- not a roadmap commitment; no public API is bound;
+- the constrained-contract and preflight-tiering sketches are illustrative;
+- the risk-first / cost-built-ins-first sequencing is a recommendation, not a
+  resolved fork.
+
+### 2026-06-13 [risk] Portfolio optimization placement: optimizers emit intent, but optimization is risk-flavored
+
+Maintainer note (2026-06-13) while reviewing the risk-and-cost vignette.
+Portfolio optimization is planned as a first-class capability (see the
+2026-06-09 Palomar adapter family and 2026-06-07 portfolio optimization
+scaffolding entries). The maintainer leans toward placing a full optimizer in
+the **strategy** layer rather than the risk step, because an optimizer outputs
+an intent -- target weights or holdings -- which is the strategy's job. But
+many portfolio-optimization algorithms (mean-variance, minimum-variance,
+risk-parity) are inherently about risk, which muddies the sharp
+strategy-is-intent / risk-is-constraint distinction the vignette now teaches.
+
+The resolution is to notice that the word "risk" is doing double duty:
+risk-as-constraint-layer versus risk-as-optimization-objective. Those are
+different things. A coherent architecture keeps them separate:
+
+- the risk **chain** stays a post-intent constraint transform (what am I
+  allowed to hold?), and the "risk is not portfolio optimization" boundary in
+  the vignette holds verbatim;
+- an **optimizer is a strategy** that produces intent, even when its objective
+  is risk-derived. Its natural authoring home is the weight-strategy surface
+  (2026-06-09 [ux] entry), which already outputs weights as strategy intent.
+
+That preserves the four-layer model instead of breaking it: optimization is
+intent generation that happens to use risk math, not a new optimization layer
+bolted onto the risk chain.
+
+What still needs design before the v0.2.x optimization arc:
+
+- **Where do convex constraints live when an optimizer is the strategy?**
+  Inside the optimizer's objective (the strategy), still as a post-hoc risk
+  chain, or both. This interacts directly with the Palomar entry's
+  convex-as-risk-step versus solver-dispatch fork.
+- **Doc reconciliation.** The vignette's "risk is not portfolio optimization"
+  line likely needs a companion sentence clarifying that an optimizer is a
+  strategy whose intent is risk-derived, so readers do not conclude
+  optimization is unsupported.
+- **Vocabulary.** Avoid letting "risk step" and "risk objective" collide in
+  the public API surface.
+
+Recommendation: do not flip the risk chain into an optimization layer; place
+optimizers as intent-producing strategies via the weight-strategy authoring
+surface; reserve the risk chain for post-intent constraints; reconcile the
+vignette framing when the optimization capability is scoped. This is the key
+placement/vocabulary fork for the v0.2.x portfolio-optimization arc, named here
+but not resolved.
+
+Related horizon entries: 2026-06-09 [risk] Palomar risk-chain constraint
+expansion; 2026-06-07 portfolio optimization scaffolding; 2026-06-09 [ux]
+weight-strategy wrapper; and the v0.1.9.5 risk-and-cost vignette as the
+bounded-layer framing to reconcile.
+
+Non-commitments:
+
+- not a roadmap commitment; no public API is bound;
+- the optimizer-is-a-strategy placement is a recommendation, not a resolved
+  decision;
+- the constraint-placement and doc-reconciliation items are open design forks.
+
+### 2026-06-13 [ux] Walk-forward degradation table curated print (shipped v0.1.9.5)
+
+Shipped as a maintainer-directed UX fix following the vignette styleguide
+Section 5 "clutter signals a missing helper" note. `wf$degradation` is now
+classed `ledgr_walk_forward_degradation` with a `print` method that shows the
+core train-versus-test columns -- fold, selection metric, train/test value,
+absolute diff, warning flags, selected candidate -- while the object stays a
+full tibble so `as_tibble()` and dplyr verbs still see every column. The
+v0.1.9.5 walk-forward vignette dropped its manual `select()` boilerplate, and
+`ledgr_fold_list` gained a per-fold train/test window print in the same change.
+
+Sweep this entry to `## Resolved` at the v0.1.9.5 closeout.
+
+### 2026-06-13 [ux] Walk-forward fold visualization helper and plotting dependency posture
+
+The v0.1.9.5 walk-forward article added an article-local ggplot timeline that
+made the train/test window contract much easier to inspect: blue train sweep
+window, green selected-candidate test run, and a thin selection-boundary line.
+That is a real UX signal, not just decoration. Users need a fast way to see
+whether fold windows, step sizes, anchored/rolling behavior, gaps, and overlap
+match what they intended before they trust walk-forward output.
+
+Potential future surface:
+
+```r
+ledgr_plot_folds(folds)
+ledgr_plot_folds(walk_forward_result)
+```
+
+This should stay non-binding until a visualization / reporting surface is
+scoped. Open design choices:
+
+- whether ledgr exports plotting helpers at all, or keeps returning plain data
+  frames and teaches plots in articles;
+- whether `ggplot2` stays in `Suggests` with `rlang::check_installed()` at
+  plotting entry points, or becomes a core dependency because plotting and
+  tables are part of the expected research workflow;
+- whether interactive output such as `plotly` belongs only in optional adapter
+  surfaces rather than core;
+- whether the first plotting family is folds only, or includes equity curves,
+  drawdowns, sweep heatmaps, degradation tables, retained-return panels, and
+  run-inspection tear sheets;
+- whether plotting helpers return ordinary `ggplot` objects so users can add
+  themes, scales, and labels without ledgr owning a closed charting system.
+
+Current bias: native ggplot helpers are likely the right R-native default once
+visualization is scoped, with optional adapters for richer or interactive
+surfaces. That does not imply promoting `ggplot2` to `Imports` yet. Treat the
+dependency posture as part of the future visualization/reporting RFC, alongside
+table output and the existing external-package adapter plan.
 
 ### 2026-06-12 [evaluation] Per-fold train-sweep PBO column in the walk-forward degradation table
 
@@ -5396,7 +5641,11 @@ This entry supersedes the earlier 2026-05-25 "Sweep candidate ranking views"
 stub (the `ledgr_rank_candidates()` sketch). The sweep-review helper below is
 the same idea, taken further and tied to the vignette gap that motivates it.
 
-#### Gap 1: Sweep review helper
+#### Gap 1: Sweep review helper (promoted to v0.1.9.5)
+
+Disposition update (2026-06-13): this helper is promoted into the v0.1.9.5
+packet as LDG-2642. Sweep this subsection to `## Resolved` at v0.1.9.5
+closeout, or leave only any residual follow-up discovered during implementation.
 
 Vignette location: the "Inspect Before You Promote" section and its
 "Design note" callout.
@@ -5497,12 +5746,10 @@ returning a named list or compact tibble would fit.
 
 #### Promoted roadmap hooks
 
-- sweep-review helper: originally scoped into v0.1.8.6 Workstream C but
-  deferred together with the snapshot administration RFC (see the
-  2026-05-29 deferral entry). Revisit as part of the v0.2.0-class
-  snapshot administration / research-loop helpers cycle since both
-  touch "what does it mean to reopen this run?".
-- promotion-recovery-summary helper: same path.
+- sweep-review helper: promoted into v0.1.9.5 as LDG-2642. Sweep this bullet to
+  `## Resolved` at closeout if the helper lands.
+- promotion-recovery-summary helper: remains deferred with the snapshot
+  administration / research-loop helpers path.
 - when the helpers ship, revise the vignette's "Design note" and
   "API gap" callouts to reference the new functions, or remove them
   if the helper makes the lower-level path unnecessary in the

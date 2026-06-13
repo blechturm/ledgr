@@ -2,6 +2,9 @@
 
 - Renamed and unexported pre-CRAN API names for naming consistency. No
   compatibility aliases are shipped.
+- Made walk-forward inspection easier to read: `wf$degradation` now prints a
+  curated train-versus-test view (the full table is one `as_tibble()` away), and
+  fold lists print their per-fold train and test windows.
 
 | Old name | New name / disposition |
 | --- | --- |

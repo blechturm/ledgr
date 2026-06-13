@@ -1,6 +1,7 @@
 # ledgr v0.1.9.5 Spec Packet
 
-Status: Batch 7 implementation complete; awaiting Claude review.
+Status: Batch 8 implementation complete; Batches 8A/8B/8C added by the
+2026-06-13 vignette audit (to do); awaiting Claude review.
 
 This packet scopes v0.1.9.5 as a naming and teaching consolidation release
 after the v0.1.9.1-v0.1.9.4 feature arc.
@@ -17,6 +18,7 @@ Primary design inputs:
 - `inst/design/rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md`
 - `inst/design/audits/v0_1_9_4_deep_code_review_audit.md`
 - `inst/design/audits/v0_1_9_4_vignette_screening_audit.md`
+- `inst/design/audits/v0_1_9_5_vignette_audit.md` (drives Batches 8A/8B/8C)
 - `inst/design/ledgr_roadmap.md`
 
 Scope:

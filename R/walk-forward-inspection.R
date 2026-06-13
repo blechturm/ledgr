@@ -492,6 +492,42 @@ ledgr_walk_forward_selected_from_rows <- function(folds, scores, selection_metri
   tibble::as_tibble(do.call(rbind, rows))
 }
 
+ledgr_walk_forward_degradation_core_columns <- function() {
+  c(
+    "fold_seq", "selection_metric", "train_metric_value", "test_metric_value",
+    "metric_diff_abs", "warning_flags", "selected_candidate"
+  )
+}
+
+ledgr_new_walk_forward_degradation <- function(x) {
+  x <- tibble::as_tibble(x)
+  class(x) <- union("ledgr_walk_forward_degradation", class(x))
+  x
+}
+
+#' Print a walk-forward degradation table
+#'
+#' Shows the core train-versus-test columns and notes which columns are hidden.
+#' The object remains a full tibble; use [tibble::as_tibble()] for every column.
+#'
+#' @param x A `ledgr_walk_forward_degradation` table.
+#' @param ... Passed to the tibble print method.
+#' @return `x`, invisibly.
+#' @export
+print.ledgr_walk_forward_degradation <- function(x, ...) {
+  core <- ledgr_walk_forward_degradation_core_columns()
+  hidden <- setdiff(names(x), core)
+  footer <- if (length(hidden) > 0L) {
+    sprintf(
+      "Hidden columns: %s. Use as_tibble() for the full table.",
+      paste(hidden, collapse = ", ")
+    )
+  } else {
+    character()
+  }
+  ledgr_print_curated_tibble("# ledgr walk-forward degradation", x, cols = core, footer = footer, ...)
+}
+
 ledgr_walk_forward_degradation_table <- function(folds,
                                                  scores,
                                                  selection_metric,
@@ -500,7 +536,7 @@ ledgr_walk_forward_degradation_table <- function(folds,
   scores <- tibble::as_tibble(scores)
   if (nrow(folds) < 1L || nrow(scores) < 1L ||
       is.null(selection_metric) || ledgr_walk_forward_is_missing_text(selection_metric)) {
-    return(tibble::tibble(
+    return(ledgr_new_walk_forward_degradation(tibble::tibble(
       fold_seq = integer(),
       train_window = character(),
       test_window = character(),
@@ -511,7 +547,7 @@ ledgr_walk_forward_degradation_table <- function(folds,
       metric_diff_abs = numeric(),
       metric_diff_pct = numeric(),
       warning_flags = character()
-    ))
+    )))
   }
   rows <- lapply(seq_len(nrow(folds)), function(i) {
     fold <- folds[i, , drop = FALSE]
@@ -565,7 +601,7 @@ ledgr_walk_forward_degradation_table <- function(folds,
       stringsAsFactors = FALSE
     )
   })
-  tibble::as_tibble(do.call(rbind, rows))
+  ledgr_new_walk_forward_degradation(do.call(rbind, rows))
 }
 
 ledgr_walk_forward_selection_rationale <- function(x) {

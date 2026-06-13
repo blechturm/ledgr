@@ -15,6 +15,8 @@
 #' `system.file("doc", package = "ledgr")`
 #'
 #' Core installed articles:
+#' - `vignette("quickstart", package = "ledgr")`
+#' - `system.file("doc", "quickstart.html", package = "ledgr")`
 #' - `vignette("research-workflow", package = "ledgr")`
 #' - `system.file("doc", "research-workflow.html", package = "ledgr")`
 #' - `vignette("data-input-and-snapshots", package = "ledgr")`
@@ -31,6 +33,8 @@
 #' - `system.file("doc", "custom-indicators.html", package = "ledgr")`
 #' - `vignette("metrics-and-accounting", package = "ledgr")`
 #' - `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#' - `vignette("risk-and-cost", package = "ledgr")`
+#' - `system.file("doc", "risk-and-cost.html", package = "ledgr")`
 #' - `vignette("metric-contexts-and-conventions", package = "ledgr")`
 #' - `system.file("doc", "metric-contexts-and-conventions.html", package = "ledgr")`
 #' - `vignette("execution-semantics", package = "ledgr")`

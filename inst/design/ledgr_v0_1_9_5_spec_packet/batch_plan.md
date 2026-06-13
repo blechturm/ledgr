@@ -1,6 +1,7 @@
 # ledgr v0.1.9.5 Batch Plan
 
-Status: Batch 7 implementation complete; awaiting Claude review.
+Status: Batch 8 implementation complete; Batches 8A/8B/8C added by the
+2026-06-13 vignette audit (to do); awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`
 
@@ -209,7 +210,7 @@ cross-inconsistencies a split review would miss.
 
 ## Batch 7 - Vignette Splits
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -235,6 +236,8 @@ full sitting on its own. Batch 8 stays separate for the same reason.
 
 ## Batch 8 - New Teaching Surfaces
 
+Status: Implementation complete; awaiting Claude review.
+
 Tickets:
 
 - LDG-2637
@@ -251,6 +254,94 @@ Review focus:
 - articles teach existing shipped behavior only;
 - examples are runnable against demo data;
 - no validation-toolkit or production claims slip in.
+
+Implementation notes:
+
+- added `quickstart.qmd` as the short whole-workflow on-ramp;
+- added `risk-and-cost.qmd` for the risk, timing, cost, liquidity, and OMS
+  boundaries;
+- replaced the design-only walk-forward stub with an executable demo-data
+  research-arc article;
+- verified the demo data spans 2018-01-01 through 2022-10-28 and supports the
+  compact two-fold example;
+- kept the standalone debugging article deferred out of v0.1.9.5.
+
+## Batch 8A - Walk-Forward, Sweep, And Store UX Helpers
+
+Tickets:
+
+- LDG-2642
+
+Scope:
+
+- record the walk-forward degradation and fold-list print methods already
+  landed this cycle (Codex-reviewed);
+- implement `ledgr_sweep_review()` (returns review tables only; no
+  selection/promotion);
+- implement `ledgr_temp_store()` (disposable `.duckdb` path plus stale-file
+  removal; no store lifecycle);
+- tests, NAMESPACE, generated docs, NEWS.
+
+Review focus:
+
+- both helpers are additive and identity-neutral;
+- scope boundaries hold (review tables only; path-and-clear only);
+- `ledgr_temp_store()` name is consistent with the naming synthesis.
+
+Added by the 2026-06-13 vignette audit (Section 3). Helpers must exist before
+the Batch 8C vignette edits that consume them.
+
+## Batch 8B - Vignette Stale-Fact Fixes
+
+Tickets:
+
+- LDG-2643
+
+Scope:
+
+- fix the four verified stale facts from the vignette audit Section 2:
+  `why-r` dependency list, `research-to-production` delivered-list and roadmap
+  anchors, `execution-semantics` trades columns, `experiment-store` v0.1.8.5;
+- re-render affected `.md`.
+
+Review focus:
+
+- `research-to-production` delivered/planned sections match roadmap and NEWS
+  (styleguide Section 12 release-gate check);
+- no current/past-version stamping of shipped behavior remains;
+- trades example selects only existing columns.
+
+Added by the 2026-06-13 vignette audit (Section 2).
+
+## Batch 8C - Vignette Editorial Cleanups And Helper Adoption
+
+Tickets:
+
+- LDG-2644
+
+Scope:
+
+- de-duplicate decorative Definition callouts; rewrite topic-list openings;
+  add missing "Where Next" sections; de-duplicate the strategy-article opening
+  and snapshot setup; fix the snapshot cross-link to `data-input-and-snapshots`;
+  fix the `eval: false`-hides-the-lesson chunks; drop `dplyr::` qualifiers in
+  TTR;
+- adopt `ledgr_sweep_review()` (sweeps, research-workflow) and
+  `ledgr_temp_store()` (data-input, experiment-store), removing the standing
+  design notes;
+- add the missing equity-curve plot where the data already exists;
+- re-render affected `.md`.
+
+Review focus:
+
+- callout hierarchy restored; openings name a user outcome;
+- helper adoption removes the duplicated boilerplate and design notes;
+- no behavior or identity change; docs-only.
+
+Added by the 2026-06-13 vignette audit (Sections 1 and 5). Depends on Batch 8A
+helpers. The `sweeps` and `metric-contexts-and-conventions` splits plus the
+residual `strategy-development` trim (audit Section 6) are deferred to a later
+packet and recorded in horizon.
 
 ## Batch 9+10 - Maintainer Manual And Internal Narrative (one review)
 
@@ -286,7 +377,10 @@ Scope:
 
 - update NEWS, README, pkgdown entry points, roadmap, horizon, design index,
   RFC index, and AGENTS active-packet references;
-- record deferred cut-line items and N-item dispositions.
+- NEWS carries the new `ledgr_sweep_review()` / `ledgr_temp_store()` helpers and
+  the walk-forward inspection print methods;
+- record deferred cut-line items, N-item dispositions, and the deferred vignette
+  audit items (Section 6 splits, lower-value helpers, trades entry/exit pairing).
 
 Review focus:
 
@@ -325,5 +419,10 @@ Review focus:
   rename batch.
 - Vignette screening scheduled items must be fixed or explicitly deferred with
   rationale.
+- Vignette audit (2026-06-13) scheduled items must be fixed or explicitly
+  deferred with rationale: the four stale facts and the two helpers are in
+  scope; the `sweeps` / `metric-contexts` splits, residual
+  `strategy-development` trim, lower-value helpers, and trades entry/exit
+  pairing are deferred to horizon.
 - The release gate must include pkgdown and local Ubuntu/WSL verification per
   the release playbook.

@@ -270,6 +270,32 @@ so the two-tier architecture is visible.
 - The consolidated debugging article remains a cut-line candidate (audit
   item 6); ticket cut decides.
 
+### Batches 8A / 8B / 8C -- Vignette audit rescope (2026-06-13)
+
+Added after Batch 8 by the v0.1.9.5 vignette audit
+(`inst/design/audits/v0_1_9_5_vignette_audit.md`, Codex-reviewed). Pulled into
+this release per maintainer direction rather than deferred.
+
+- **Batch 8A -- UX helpers (audit Section 3).** Record the walk-forward
+  degradation and fold-list print methods already landed this cycle; implement
+  `ledgr_sweep_review()` (review tables only; no selection/promotion) and
+  `ledgr_temp_store()` (disposable `.duckdb` path plus stale-file removal; no
+  store lifecycle). Both additive and identity-neutral.
+- **Batch 8B -- stale-fact fixes (audit Section 2).** Four verified facts:
+  `why-r` dependency list (`jsonlite` -> `yyjsonr`), `research-to-production`
+  delivered-list and roadmap anchors, `execution-semantics` trades columns,
+  `experiment-store` v0.1.8.5.
+- **Batch 8C -- editorial cleanups and helper adoption (audit Sections 1 and
+  5).** Callout de-duplication, weak-opening rewrites, missing "Where Next"
+  sections, the strategy-article duplication and snapshot cross-link, the
+  `eval: false`-hides-the-lesson chunks, TTR `dplyr::` qualifiers, adoption of
+  the two new helpers in their consuming articles, and the equity-curve plot
+  gap where the data already exists. Depends on 8A.
+
+The `sweeps` and `metric-contexts-and-conventions` splits (audit Section 6) and
+the lower-value helpers and trades-pairing decision (audit Sections 3.3-3.6)
+are deferred to a later packet and recorded in horizon.
+
 ### Batch 9 -- Maintainer manual (Workstream D)
 
 Cost resolver, target-risk layer, and walk-forward fold machinery articles,

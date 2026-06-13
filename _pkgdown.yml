@@ -11,6 +11,7 @@ articles:
     navbar: Start Here
     contents:
       - articles/who-ledgr-is-for
+      - quickstart
       - research-workflow
       - leakage
       - reproducibility
@@ -21,6 +22,7 @@ articles:
       - strategy-development
       - indicators
       - metrics-and-accounting
+      - risk-and-cost
       - experiment-store
       - sweeps
       - walk-forward

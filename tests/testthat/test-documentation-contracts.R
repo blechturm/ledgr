@@ -997,6 +997,7 @@ testthat::test_that("public site polish avoids stale public artifacts", {
 
   start_block <- substr(pkgdown_text, start_here[[1]], core_workflow[[1]] - 1L)
   testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
+  testthat::expect_match(start_block, "- quickstart", fixed = TRUE)
   testthat::expect_match(start_block, "- research-workflow", fixed = TRUE)
   testthat::expect_match(start_block, "- leakage", fixed = TRUE)
   testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
@@ -1006,6 +1007,7 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
   testthat::expect_match(core_block, "- indicators", fixed = TRUE)
   testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
+  testthat::expect_match(core_block, "- risk-and-cost", fixed = TRUE)
   testthat::expect_match(core_block, "- experiment-store", fixed = TRUE)
   testthat::expect_match(core_block, "- sweeps", fixed = TRUE)
   testthat::expect_match(core_block, "- walk-forward", fixed = TRUE)
@@ -1038,6 +1040,7 @@ testthat::test_that("package help exposes an installed-documentation spine", {
   testthat::expect_match(text, "vignette(package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
   for (article in c(
+    "quickstart",
     "research-workflow",
     "data-input-and-snapshots",
     "strategy-development",
@@ -1046,6 +1049,7 @@ testthat::test_that("package help exposes an installed-documentation spine", {
     "ttr-and-adapter-indicators",
     "custom-indicators",
     "metrics-and-accounting",
+    "risk-and-cost",
     "metric-contexts-and-conventions",
     "execution-semantics",
     "experiment-store",
@@ -1671,6 +1675,8 @@ testthat::test_that("help-page article links target installed vignettes only", {
   testthat::expect_true("strategy-authoring-tools" %in% installed_articles)
   testthat::expect_true("metric-contexts-and-conventions" %in% installed_articles)
   testthat::expect_true("data-input-and-snapshots" %in% installed_articles)
+  testthat::expect_true("quickstart" %in% installed_articles)
+  testthat::expect_true("risk-and-cost" %in% installed_articles)
   testthat::expect_false("ttr-indicators" %in% installed_articles)
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)
@@ -1793,15 +1799,71 @@ testthat::test_that("walk-forward docs state MVP workflow and caveats", {
 
   for (doc in docs) {
     testthat::expect_match(doc, "train snapshot window -> sweep candidates -> scalar selection", fixed = TRUE)
-    testthat::expect_match(doc, "Walk-forward evidence is only as survivorship-safe as the sealed snapshot and universe semantics it evaluates.", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_folds_rolling", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_candidate", fixed = TRUE)
+    testthat::expect_no_match(doc, "Design-only Workflow Sketch", fixed = TRUE)
+    testthat::expect_match(doc, "Walk-forward evidence is only as survivorship-safe as the sealed\\s+snapshot and\\s+universe semantics it evaluates\\.")
     testthat::expect_match(doc, "Reproducibility and selection integrity are orthogonal.", fixed = TRUE)
     testthat::expect_match(doc, "not PBO", fixed = TRUE)
-    testthat::expect_match(doc, "not independent observations", fixed = TRUE)
+    testthat::expect_match(doc, "not independent\\s+observations")
     testthat::expect_match(doc, "Anchored folds grow their train window over time.", fixed = TRUE)
-    testthat::expect_match(doc, "Design-only Workflow Sketch", fixed = TRUE)
   }
 
   testthat::expect_match(news, "# ledgr 0.1.9.4", fixed = TRUE)
   testthat::expect_match(news, "train-vs-test degradation table", fixed = TRUE)
   testthat::expect_match(news, "does not add PBO", fixed = TRUE)
+})
+
+testthat::test_that("new teaching surfaces state current public boundaries", {
+  quickstart_qmd <- ledgr_test_source_vignette("quickstart.qmd")
+  quickstart_md <- file.path(testthat::test_path("..", ".."), "vignettes", "quickstart.md")
+  risk_qmd <- ledgr_test_source_vignette("risk-and-cost.qmd")
+  risk_md <- file.path(testthat::test_path("..", ".."), "vignettes", "risk-and-cost.md")
+  testthat::skip_if_not(
+    all(file.exists(c(quickstart_qmd, quickstart_md, risk_qmd, risk_md))),
+    "Batch 8 teaching docs not available"
+  )
+
+  quickstart_docs <- vapply(
+    c(qmd = quickstart_qmd, md = quickstart_md),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+  risk_docs <- vapply(
+    c(qmd = risk_qmd, md = risk_md),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+
+  for (doc in quickstart_docs) {
+    testthat::expect_match(doc, "shortest useful path from\\s+demo data to inspectable evidence")
+    testthat::expect_match(doc, "cost_model = ledgr_cost_zero", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_sweep", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_candidate", fixed = TRUE)
+    testthat::expect_match(doc, "not a\\s+validation protocol")
+  }
+
+  for (doc in risk_docs) {
+    # Mental model: four questions, the layer order, and the policy adjectives.
+    testthat::expect_match(doc, "what do I want to hold?", fixed = TRUE)
+    testthat::expect_match(doc, "next-open timing", fixed = TRUE)
+    testthat::expect_match(doc, "identity-bearing", fixed = TRUE)
+    # Composable menu: step names must stay in sync with the exported surface.
+    testthat::expect_match(doc, "ledgr_cost_spread_bps", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_fixed_fee", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_cost_notional_bps_fee", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_risk_long_only", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_risk_max_weight", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_risk_none", fixed = TRUE)
+    # Cost stage-ordering rule.
+    testthat::expect_match(doc, "price transforms", fixed = TRUE)
+    testthat::expect_match(doc, "before fee steps", fixed = TRUE)
+    # Boundaries.
+    testthat::expect_match(doc, "not portfolio optimization", fixed = TRUE)
+    testthat::expect_match(doc, "not liquidity or capacity", fixed = TRUE)
+    testthat::expect_match(doc, "not a broker", fixed = TRUE)
+    # Roadmap boundary for the future steps.
+    testthat::expect_match(doc, "More steps are planned", fixed = TRUE)
+    testthat::expect_no_match(doc, "production deployment", fixed = TRUE)
+  }
 })

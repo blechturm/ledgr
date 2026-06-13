@@ -669,3 +669,61 @@ testthat::test_that("walk-forward candidate locators verify overrides and missin
     class = "LEDGR_SNAPSHOT_DB_NOT_FOUND"
   )
 })
+
+testthat::test_that("fold-list print shows per-fold train and test windows", {
+  folds <- ledgr_wfo_folds()
+  out <- utils::capture.output(print(folds))
+  blob <- paste(out, collapse = "\n")
+  testthat::expect_match(blob, "ledgr fold list", fixed = TRUE)
+  testthat::expect_match(blob, "Scheme:", fixed = TRUE)
+  testthat::expect_match(blob, "train", fixed = TRUE)
+  testthat::expect_match(blob, "test", fixed = TRUE)
+  # at least one fold window range with a date arrow is shown
+  testthat::expect_match(blob, "[0-9]{4}-[0-9]{2}-[0-9]{2} -> [0-9]{4}-[0-9]{2}-[0-9]{2}")
+
+  # intraday explicit folds keep their full ISO timestamps, not date-only
+  intraday <- ledgr:::ledgr_fold_list(list(ledgr:::ledgr_fold(
+    train_start = as.POSIXct("2019-01-01 09:30:00", tz = "UTC"),
+    train_end = as.POSIXct("2019-01-01 12:00:00", tz = "UTC"),
+    test_start = as.POSIXct("2019-01-01 12:00:01", tz = "UTC"),
+    test_end = as.POSIXct("2019-01-01 15:00:00", tz = "UTC"),
+    fold_seq = 1L
+  )))
+  intraday_blob <- paste(utils::capture.output(print(intraday)), collapse = "\n")
+  testthat::expect_match(intraday_blob, "T09:30:00Z", fixed = TRUE)
+
+  late_start <- ledgr:::ledgr_fold_list(list(ledgr:::ledgr_fold(
+    train_start = as.POSIXct("2019-01-01 23:59:59", tz = "UTC"),
+    train_end = as.POSIXct("2019-01-02 23:59:59", tz = "UTC"),
+    test_start = as.POSIXct("2019-01-03 23:59:59", tz = "UTC"),
+    test_end = as.POSIXct("2019-01-04 23:59:59", tz = "UTC"),
+    fold_seq = 1L
+  )))
+  late_start_blob <- paste(utils::capture.output(print(late_start)), collapse = "\n")
+  testthat::expect_match(late_start_blob, "2019-01-01T23:59:59Z", fixed = TRUE)
+})
+
+testthat::test_that("degradation table is classed and prints a curated core view", {
+  fx <- ledgr_wfo_exp()
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+  wf <- ledgr_walk_forward(
+    fx$exp,
+    grid = ledgr_wfo_grid(),
+    folds = ledgr_wfo_folds(),
+    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    seed = 41L
+  )
+  on.exit(invisible(lapply(wf$test_runs, close)), add = TRUE)
+
+  testthat::expect_s3_class(wf$degradation, "ledgr_walk_forward_degradation")
+  # full table is still available through as_tibble()
+  full <- tibble::as_tibble(wf$degradation)
+  testthat::expect_true(all(c("train_window", "test_window", "metric_diff_pct") %in% names(full)))
+
+  out <- utils::capture.output(print(wf$degradation))
+  blob <- paste(out, collapse = "\n")
+  testthat::expect_match(blob, "# ledgr walk-forward degradation", fixed = TRUE)
+  testthat::expect_match(blob, "Hidden columns:", fixed = TRUE)
+  testthat::expect_match(blob, "metric_diff_pct", fixed = TRUE)
+  testthat::expect_match(blob, "as_tibble()", fixed = TRUE)
+})
