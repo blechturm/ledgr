@@ -151,6 +151,38 @@ with).
 Non-commitments: not a commitment beyond v0.1.9.6 scheduling; the measurement
 design is illustrative.
 
+### 2026-06-13 [architecture] Async I/O belongs at the live edge, not the kernel
+
+Live and paper execution introduce concurrent external I/O for the first time:
+market data, order acknowledgements, fills, rejects, and heartbeats all arrive
+asynchronously and interleaved. The backtest kernel must stay synchronous,
+deterministic, and replayable. The live adapter's job is to serialize the async
+event stream back into the same ordered, whole-second-stamped event log the
+backtest already consumes. If async ordering reaches the kernel, replay and
+backtest/live parity are lost. This is a boundary commitment, not a feature.
+
+Dependency posture: `mirai` is already a direct Import for parallel sweeps, and
+`nanonext` (the NNG socket binding) is already transitive underneath it.
+Promoting `nanonext` to a direct edge dependency when live arrives is not a new
+dependency family. Candidate edge stack to evaluate at adoption time, all
+non-binding: `nanonext` for persistent broker/data sockets, `promises`/`later`
+for the event loop, `websocket` for live feeds, `httr2` async for REST broker
+APIs.
+
+Scope: this is I/O concurrency at the adapter edge, a distinct axis from
+backtest compute parallelism, which remains single-core-first. No engine async
+is authorized before the v0.2.x OMS and v0.3.0 paper packets. The prep work that
+is in scope now is free: keep the kernel synchronous and serializable so the
+live adapter can bolt onto the event log without reaching into the loop.
+
+Related: the roadmap OMS prerequisite (v0.2.x) and paper adapter (v0.3.0); the
+targets-not-orders boundary and OMS-at-the-edge discipline; the standing
+single-core-before-parallel stance, which this entry does not revisit.
+
+Non-commitments: no package selection is fixed; no live or paper work is
+authorized; the candidate stack is an evaluation list for the v0.2.x/v0.3.0
+window, not a dependency decision.
+
 ### 2026-06-13 [execution] v0.1.9.6 intraday-readiness code audit
 
 Scheduled for the next packet after v0.1.9.5: run a deep code review to check
