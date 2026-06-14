@@ -1,0 +1,226 @@
+version: "0.1.9.6"
+source: "v0_1_9_6_tickets.md"
+generated_from: "v0_1_9_6_spec.md"
+tickets:
+  - id: "LDG-2645"
+    title: "Packet alignment and ticket cut"
+    status: "complete"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "planning"
+      surface: "design-packet"
+      scope: "packet-alignment"
+    tests:
+      - "Manual packet-artifact review"
+      - "rg LDG-2645/LDG-2657 in spec packet"
+      - "ASCII scan of spec packet"
+
+  - id: "LDG-2646"
+    title: "Packet-open verification and method teaching gate"
+    status: "not_started"
+    priority: "P0"
+    effort: "S"
+    dependencies:
+      - "LDG-2645"
+    classification:
+      type: "planning"
+      surface: "validation-gates"
+      scope: "packet-open-verification"
+    tests:
+      - "Targeted documentation-contract test for styleguide lock"
+      - "Manual external package verification notes"
+      - "rg Methodological Diagnostics in styleguide and tests"
+
+  - id: "LDG-2647"
+    title: "Canonical single-run returns result view"
+    status: "not_started"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2646"
+    classification:
+      type: "feature"
+      surface: "results"
+      scope: "canonical-return-stream"
+    tests:
+      - "Targeted as_tibble/ledgr_results returns tests"
+      - "Return-formula parity against retained sweep returns"
+      - "contracts.md result-set enumeration check"
+
+  - id: "LDG-2648"
+    title: "Retained-sweep return panel hygiene"
+    status: "not_started"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2647"
+    classification:
+      type: "feature"
+      surface: "sweep-returns"
+      scope: "panel-hygiene"
+    tests:
+      - "Targeted retained-sweep return tests"
+      - "Equal-grid/ragged-grid/unretained fixtures"
+      - "Reopened-sweep parity tests"
+
+  - id: "LDG-2649"
+    title: "Adapter-shaped return projections"
+    status: "not_started"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2648"
+    classification:
+      type: "feature"
+      surface: "adapters"
+      scope: "return-projections"
+    tests:
+      - "Targeted panel-projection tests"
+      - "Optional-package skip tests"
+      - "NAMESPACE/DESCRIPTION review"
+
+  - id: "LDG-2650"
+    title: "PBO spike and decision synthesis"
+    status: "not_started"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2648"
+    classification:
+      type: "spike"
+      surface: "validation-methods"
+      scope: "pbo-decision-gate"
+    tests:
+      - "Manual spike synthesis review"
+      - "Known-answer or known-direction scripts where available"
+      - "Optional-package verification recorded"
+
+  - id: "LDG-2651"
+    title: "Minimum track record length diagnostic"
+    status: "not_started"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2648"
+    classification:
+      type: "feature"
+      surface: "validation-diagnostics"
+      scope: "min-track-record-length"
+    tests:
+      - "Targeted diagnostic tests"
+      - "Documentation-contract tests for method section"
+      - "tools::checkRd()"
+
+  - id: "LDG-2652"
+    title: "DSR and effective-trial clustering diagnostic"
+    status: "not_started"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2648"
+      - "LDG-2649"
+    classification:
+      type: "feature"
+      surface: "validation-diagnostics"
+      scope: "dsr-effective-trials"
+    tests:
+      - "Targeted DSR tests"
+      - "Clustering/effective-trial determinism tests"
+      - "Documentation-contract tests if shipped"
+
+  - id: "LDG-2653"
+    title: "Selection Integrity teaching surface"
+    status: "not_started"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2651"
+      - "LDG-2652"
+    classification:
+      type: "documentation"
+      surface: "validation-teaching"
+      scope: "selection-integrity"
+    tests:
+      - "Render affected vignettes/articles where local tooling allows"
+      - "Documentation-contract tests"
+      - "rg forbidden overclaims"
+
+  - id: "LDG-2654"
+    title: "Intraday-readiness audit"
+    status: "not_started"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2648"
+    classification:
+      type: "audit"
+      surface: "intraday-readiness"
+      scope: "architecture-footguns"
+    tests:
+      - "Manual audit artifact review"
+      - "Source spot-checks for high/medium findings"
+
+  - id: "LDG-2655"
+    title: "Current-surface peer benchmark redo"
+    status: "not_started"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2648"
+    classification:
+      type: "measurement"
+      surface: "peer-benchmark"
+      scope: "current-surface-redo"
+    tests:
+      - "Benchmark smoke run where local tooling allows"
+      - "Record-run artifact review where available"
+      - "Manual benchmark-language review"
+
+  - id: "LDG-2656"
+    title: "Release surfaces and deferral ledger"
+    status: "not_started"
+    priority: "P2"
+    effort: "S"
+    dependencies:
+      - "LDG-2650"
+      - "LDG-2653"
+      - "LDG-2654"
+      - "LDG-2655"
+    classification:
+      type: "documentation"
+      surface: "release-surfaces"
+      scope: "closeout-ledger"
+    tests:
+      - "Documentation-contract tests where pointer strings changed"
+      - "rg stale PBO/business-objective/benchmark overclaims"
+      - "Manual release-surface review"
+
+  - id: "LDG-2657"
+    title: "v0.1.9.6 release gate"
+    status: "not_started"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2645"
+      - "LDG-2646"
+      - "LDG-2647"
+      - "LDG-2648"
+      - "LDG-2649"
+      - "LDG-2650"
+      - "LDG-2651"
+      - "LDG-2652"
+      - "LDG-2653"
+      - "LDG-2654"
+      - "LDG-2655"
+      - "LDG-2656"
+    classification:
+      type: "release"
+      surface: "release-gate"
+      scope: "v0.1.9.6-closeout"
+    tests:
+      - "Release playbook"
+      - "Full local test suite"
+      - "R CMD build/check per playbook"
+      - "pkgdown/documentation gate where changed"

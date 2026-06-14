@@ -1909,3 +1909,23 @@ testthat::test_that("new teaching surfaces state current public boundaries", {
     testthat::expect_no_match(doc, "production deployment", fixed = TRUE)
   }
 })
+
+testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {
+  styleguide_path <- file.path(testthat::test_path("..", ".."), "inst", "design", "vignette_styleguide.md")
+  testthat::skip_if_not(file.exists(styleguide_path), "vignette styleguide not available")
+
+  doc <- paste(readLines(styleguide_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(doc, "## Methodological Diagnostics", fixed = TRUE)
+  testthat::expect_match(doc, "must teach the method as ledgr ships it", fixed = TRUE)
+  testthat::expect_match(doc, "Question:", fixed = TRUE)
+  testthat::expect_match(doc, "Evidence:", fixed = TRUE)
+  testthat::expect_match(doc, "Method shape:", fixed = TRUE)
+  testthat::expect_match(doc, "Interpretation:", fixed = TRUE)
+  testthat::expect_match(doc, "Limits:", fixed = TRUE)
+  testthat::expect_match(doc, "Failure modes:", fixed = TRUE)
+  testthat::expect_match(doc, "References:", fixed = TRUE)
+  testthat::expect_match(doc, "Worked example:", fixed = TRUE)
+  testthat::expect_match(doc, "must execute", fixed = TRUE)
+  testthat::expect_match(doc, "Do not add\\s+vacuous tests")
+})

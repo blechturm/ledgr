@@ -47,8 +47,9 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.1.9.x** -- walk-forward (RFC accepted 2026-06-04 with Amendment 1 +
   Amendment 2 + Section 17 ticket-cut gates); validation toolkit
   (formerly "selection-integrity diagnostics"; RFC accepted 2026-06-12,
-  scheduled v0.1.9.6); intraday-readiness code audit (scheduled
-  v0.1.9.6, audit only); cost-model post-direction; randomized / blocked
+  amended 2026-06-14 with a v0.1.9.6 PBO spike gate); intraday-readiness
+  code audit (scheduled v0.1.9.6, audit only); cost-model post-direction;
+  randomized / blocked
   slice diagnostics; promotion-grade sweep artifacts; target
   construction helper extensions (Pass 2 per-stage helpers); broker /
   exchange cost templates; crypto-readiness spike; spot-FIFO as default
@@ -656,16 +657,22 @@ the Gap 3 dependency explicitly in that seed.
 - "not scheduled" claims are as of 2026-06-11; sweep this entry against
   the corpus before citing it in a future packet.
 
-### 2026-06-11 [adapters] Canonical run return stream helper before reporting adapters
+### 2026-06-11 [adapters] Canonical run return stream before reporting adapters
 
 The v0.1.9.2 retained-sweep surface gives sweeps a canonical return-series
 projection through `ledgr_sweep_returns()` and `ledgr_sweep_returns_wide()`.
-Single committed runs do not yet have the symmetric helper; users derive
+Single committed runs do not yet have the symmetric result view; users derive
 adjacent returns manually from `ledgr_results(bt, what = "equity")`.
 
-This is an API ergonomics gap, not an execution gap. A future helper such as
-`ledgr_returns(bt)` or `ledgr_run_returns(bt)` could return the canonical
-single-run portfolio stream:
+This is an API ergonomics gap, not an execution gap. Preferred shape as of
+2026-06-14 is a `ledgr_results()` result-table extension, not a standalone
+helper:
+
+```r
+ledgr_results(bt, what = "returns")
+```
+
+It should return the canonical single-run portfolio stream:
 
 ```text
 ts_utc
@@ -680,11 +687,11 @@ Design constraints if promoted:
   returns;
 - keep metrics out of the result-table surface: `ledgr_results()` remains
   evidence tables, `ledgr_compute_metrics()` remains metric values, and this
-  helper is only the canonical return stream;
+  view is only the canonical return stream;
 - use `period_return` to match sweep retention naming;
-- treat the `ledgr_ind_returns()` name collision as acceptable if the run
-  helper is `ledgr_returns()`, or choose `ledgr_run_returns()` if explicitness
-  matters more than elegance;
+- keep standalone helpers such as `ledgr_returns(bt)` or
+  `ledgr_run_returns(bt)` deferred unless a later UX review finds a stronger
+  reason than result-table symmetry;
 - keep this separate from first-class position / exposure time-series helpers,
   which imply larger semantics around weights, shorts, leverage, margin,
   missing prices, multi-currency, and later derivatives;
@@ -698,7 +705,7 @@ Relationship to existing roadmap entries:
   external-package adapter work, where adapters should consume ledgr's own
   canonical return stream rather than reimplementing return math;
 - this does not commit to a tear sheet, charting API, `what = "metrics"`,
-  `what = "returns"`, position-level result table, or adapter package.
+  position-level result table, standalone returns helper, or adapter package.
 
 ### 2026-06-09 [research] Selection-session archive / evaluation registry is parked, not committed
 
@@ -3472,6 +3479,19 @@ architectural footguns visible now so they do not surface as last-minute
 surprises once the product arc completes.
 
 ### 2026-06-07 [planning] Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture
+
+**Status update 2026-06-14: maintainer-amended with a PBO spike gate.**
+The accepted synthesis remains binding, but v0.1.9.6 no longer treats
+PBO/CSCV implementation as unconditional. The packet first ships the return
+substrate and runs a PBO spike that verifies the `pbo` package/API,
+determinism, known-answer/reference-value behavior, ledgr panel contract, and
+adapter-vs-native verdict. Public PBO/CSCV implementation may proceed in
+v0.1.9.6 only if the spike synthesis passes maintainer review. Otherwise
+PBO/CSCV and the dependent business-objective / objective-filtered
+walk-forward identity work defer to v0.1.9.7 or later. The same amendment
+requires the methodological-diagnostics styleguide rule before validation
+method tickets open: ledgr teaches the method, evidence, interpretation,
+limits, failure modes, and references, not only the function call.
 
 **Status update 2026-06-12: consumed by the accepted validation-toolkit
 synthesis.** The RFC cycle this entry anticipated ran to completion on

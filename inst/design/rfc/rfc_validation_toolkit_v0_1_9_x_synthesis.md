@@ -15,6 +15,14 @@ saved-diagnostics storage table moves to Section 12 future obligations.
 `ledgr_sweep_returns_unretained` class (`R/sweep-retention.R:188-194`)
 instead of minting a duplicate; the two genuinely new condition classes
 stand.
+**Maintainer amendment (2026-06-14, PBO decision gate):** v0.1.9.6 owns
+the validation substrate and PBO spike, but public PBO/CSCV
+implementation is conditional on the in-packet PBO spike passing the
+gate in Section 10.7. Until that gate passes, implementation tickets stop
+at the return substrate, panel-hygiene bridge, adapter-shaped projection,
+and spike artifacts. If the spike does not pass green, PBO/CSCV and the
+dependent business-objective implementation defer to v0.1.9.7 or later
+with the spike synthesis as binding input.
 **Date:** 2026-06-12
 **Author:** Codex (synthesis author)
 **Window:** v0.1.9.x, first feature packet after v0.1.9.5 (resolved in
@@ -45,7 +53,9 @@ public name in this synthesis.
 
 ## 1. Bound Scope
 
-The validation toolkit ships as two public pillars plus one shared bridge:
+The validation toolkit plans two public pillars plus one shared bridge. The
+PBO/CSCV implementation and dependent business-objective implementation are
+conditional per the 2026-06-14 maintainer amendment and Section 10.7 gate.
 
 1. **Selection-integrity diagnostics.** Deflated Sharpe Ratio (DSR),
    sweep-level PBO/CSCV over retained completed-candidate return panels,
@@ -62,6 +72,35 @@ The toolkit is read-only over experiment stores. It inspects saved sweeps,
 walk-forward sessions, retained return series, and promoted-run evidence. It
 does not mutate fold execution, replay, target construction, target risk, cost
 application, liquidity, OMS behavior, or broker reconciliation.
+
+### 1.1 PBO Decision Gate
+
+PBO/CSCV implementation is not pre-committed by this synthesis. The v0.1.9.6
+packet first ships the low-risk return substrate and runs a PBO spike. The
+spike must produce a maintainer-accepted synthesis before any public PBO/CSCV
+implementation ticket may proceed.
+
+The spike verifies:
+
+- current `pbo` package version, license, activity, transitive dependencies,
+  input API, output API, and known issues;
+- deterministic behavior with `allow_parallel = FALSE`;
+- a known-answer or reference-value check against published or package-vetted
+  data;
+- ledgr's retained-return panel contract: first-row `NA` handling,
+  complete-grid requirements, completed-candidate universe reporting, and
+  adapter-ready `T x N` shape;
+- adapter-vs-native verdict, including fallback conditions if `pbo` is stale,
+  incorrect, non-deterministic, or API-incompatible;
+- the "what these statistics cannot prove" teaching surface required before a
+  user-facing PBO result ships.
+
+If the spike passes green, v0.1.9.6 may implement PBO/CSCV behind the panel
+hygiene gates. If the spike returns yellow/red or lacks a maintainer
+acceptance decision, PBO/CSCV implementation defers to v0.1.9.7 or later. In
+that case, `ledgr_business_objective()` and walk-forward identity integration
+for objective-filtered selection defer with PBO unless the v0.1.9.6 spec
+records an explicit narrowed objective-only override.
 
 ### Forbidden List For This Packet
 
@@ -322,17 +361,22 @@ day one. A spec packet should cut tickets in this order:
 1. Packet-open verification: external adapter status/API/license checks,
    Triple Penance source verification, stable-region method decision, result
    print-contract decision.
-2. External-evidence bridge and panel hygiene tests over
+2. Canonical single-run return stream via
+   `ledgr_results(bt, what = "returns")`.
+3. External-evidence bridge and panel hygiene tests over
    `ledgr_sweep_returns()` / `ledgr_sweep_returns_wide()`.
-3. PerformanceAnalytics adapter extension over retained returns.
-4. RPESE optional adapter, if packet-open verification passes.
-5. Optional pbo adapter or native-CSCV fallback, depending on packet-open
-   verification.
-6. Native DSR / minimum track-record / K-Ratio helpers.
-7. `ledgr_sweep_cluster()` deterministic hierarchical helper.
-8. `ledgr_business_objective()` and `ledgr_objective_*` criterion steps.
-9. Walk-forward identity integration for objective-filtered selection.
-10. Documentation, NEWS, examples, condition-class docs, and release gates.
+4. PBO spike and maintainer-accepted spike synthesis.
+5. PerformanceAnalytics adapter extension over retained returns.
+6. RPESE optional adapter, if packet-open verification passes.
+7. Optional pbo adapter or native-CSCV fallback only if the Section 10.7 gate
+   passes; otherwise defer.
+8. Native DSR / minimum track-record / K-Ratio helpers, each with
+   reference-value verification.
+9. `ledgr_sweep_cluster()` deterministic hierarchical helper.
+10. `ledgr_business_objective()` and `ledgr_objective_*` criterion steps only
+    after the PBO gate passes, unless spec-cut records a narrowed override.
+11. Walk-forward identity integration for objective-filtered selection.
+12. Documentation, NEWS, examples, condition-class docs, and release gates.
 
 Implementation must not add a second execution engine or mutate fold-core
 semantics.
@@ -408,12 +452,26 @@ The release gates below are mechanically checkable.
 
 ### 10.6 Documentation Gates
 
+- Packet-open verifies `inst/design/vignette_styleguide.md` has a
+  Methodological Diagnostics section before any validation-method
+  implementation ticket opens.
+- Each article or method section that ships a validation diagnostic lands with
+  documentation-contract assertions for its required structure; no test may
+  pass vacuously for planned articles that do not exist yet.
 - The validation-toolkit article demonstrates:
   sweep -> retained returns -> objective filter -> selection -> walk-forward
   context -> DSR/PBO interpretation.
 - Documentation states what the toolkit does not prove: it does not prove a
   strategy will work live, does not automate promotion, does not replace
   out-of-sample judgment, and does not provide broker/OMS validation.
+- Method documentation identifies the question answered, ledgr evidence
+  consumed, method shape, interpretation, limits, failure modes, and
+  references. Worked examples execute except for standard styleguide
+  exceptions and include cautionary/disconfirming cases for high-risk
+  diagnostics.
+- Selection-integrity methods are organized by family: MinTRL, DSR,
+  effective-trial clustering, and later PBO/CSCV belong in one coherent
+  article path rather than one article per function.
 - NEWS names new adapters and marks them optional.
 - Condition classes introduced by this packet are listed in the condition
   reference.
@@ -421,6 +479,26 @@ The release gates below are mechanically checkable.
   export complies with the accepted API naming synthesis (R1-R7;
   coverage by the lock alone is not compliance -- final-review patch
   F1).
+
+### 10.7 PBO Spike Gate
+
+- No public PBO/CSCV implementation ships unless a spike synthesis is accepted
+  by the maintainer during the packet.
+- The spike records current `pbo` package status, license, dependency shape,
+  input/output API, determinism with `allow_parallel = FALSE`, and known
+  issues.
+- The spike includes a known-answer or reference-value check and stores enough
+  fixture detail for later regression tests.
+- The spike validates ledgr's retained-return panel contract against the
+  external API shape: `T x N` returns, first structural `NA` removed or
+  explicitly accounted for, complete timestamp grid, and completed-candidate
+  universe reporting.
+- The spike binds adapter-vs-native implementation choice and the fallback
+  conditions that force deferral or native implementation.
+- If the gate does not pass, PBO/CSCV, `ledgr_business_objective()`, and
+  objective-filtered walk-forward identity integration remain unimplemented in
+  v0.1.9.6 unless a spec-cut override narrows the objective layer to proven
+  non-PBO criteria.
 
 ---
 

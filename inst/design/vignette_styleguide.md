@@ -290,6 +290,55 @@ when the article's own teaching depends on the code actually working.
 
 ---
 
+## Methodological Diagnostics
+
+Methodological diagnostics must teach the method as ledgr ships it, not only
+the function call. This applies to statistical, validation, selection-integrity,
+business-objective, benchmark, risk, and similar diagnostics where a user can
+misread a computed number as stronger evidence than it is.
+
+Required coverage, scaled to interpretation risk:
+
+- **Question:** the research doubt or decision the method addresses.
+- **Evidence:** the ledgr artifacts consumed, such as retained returns,
+  equity curves, closed trades, metric rows, sweep candidates, or
+  walk-forward sessions.
+- **Method shape:** enough of the computation to audit the shape and intuition.
+  Defer full derivations to cited references.
+- **Interpretation:** what high, low, pass, fail, or threshold-crossing values
+  mean in ledgr's evidence chain.
+- **Limits:** what the method does not prove.
+- **Failure modes:** when ledgr refuses to compute, warns, or marks evidence
+  incomplete.
+- **References:** primary papers, package documentation, or implementation
+  notes that justify the method.
+- **Worked example:** a small executed example whose output teaches the
+  interpretation.
+
+Worked examples for methodological diagnostics must execute, subject only to
+the standard `eval: false` exceptions in Section 5: artifact-writing,
+external-data, conceptual, or labeled-fragment cases. For high-risk diagnostics,
+at least one worked example should be disconfirming or cautionary: it should
+show a case where the diagnostic prevents over-trust in an apparently
+attractive result.
+
+Organize diagnostics by method family rather than one article per function.
+For example, Selection Integrity can teach minimum track-record length, DSR,
+effective-trial clustering, and later PBO/CSCV as one story. Clustering belongs
+with the DSR/effective-trials evidence path unless a future packet gives it a
+larger independent role.
+
+Do not turn method sections into a statistics textbook. Teach the method as
+ledgr feeds it and labels it, anchored to ledgr's evidence tables and failure
+classes.
+
+Each article or section that ships a methodological diagnostic must add
+documentation-contract assertions for the relevant coverage. Do not add
+vacuous tests for planned articles that do not exist yet; the assertions land
+with the article or method section they cover.
+
+---
+
 ## 6. Output
 
 Show output when it teaches the reader what to expect. Prefer real rendered
