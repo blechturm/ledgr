@@ -281,7 +281,7 @@ scope: canonical-return-stream
 Priority: P0
 Effort: M
 Dependencies: LDG-2647
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -351,7 +351,7 @@ scope: panel-hygiene
 Priority: P1
 Effort: M
 Dependencies: LDG-2648
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -419,7 +419,7 @@ scope: return-projections
 Priority: P0
 Effort: M
 Dependencies: LDG-2648
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -456,6 +456,23 @@ implementation is considered.
 - Manual review of the spike synthesis.
 - Reproducible known-answer or known-direction scripts where available.
 - Optional-package installation status recorded but not assumed.
+
+### Implementation Notes
+
+- Added `pbo_spike_synthesis.md` with a green/yellow/red decision: green for a
+  native v0.1.9.6 PBO/CSCV implementation ticket after review and maintainer
+  acceptance; yellow for using CRAN `pbo` as the public runtime foundation.
+- Verified CRAN `pbo` 1.3.5 package facts from the official manual and local
+  package metadata: MIT, no compilation, imports `utils`, `lattice`,
+  `latticeExtra`, and `foreach`, published 2022-05-26.
+- Installed `pbo` locally for spike verification only; no package dependency or
+  NAMESPACE import was added to ledgr.
+- Added `pbo_spike_reference.R`, a fixed `12 x 4` return-panel reference check
+  that compares `pbo::pbo(..., allow_parallel = FALSE)` against an independent
+  manual CSCV calculation and verifies deterministic repeated output.
+- Bound the ledgr panel contract, native-vs-adapter decision, fallback
+  conditions, and "what PBO cannot prove" teaching surface. No public PBO/CSCV
+  implementation landed in this ticket.
 
 ### Source Reference
 

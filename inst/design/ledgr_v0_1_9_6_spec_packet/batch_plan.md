@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 3 implementation complete; awaiting Claude review.
+Status: Batch 4 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -110,7 +110,7 @@ Review focus:
 
 ## Batch 3 - Retained-Return Panel And Projections
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -134,6 +134,8 @@ Grouping note: these two tickets share the return-panel substrate and should be
 reviewed together so projection behavior cannot drift from panel hygiene.
 
 ## Batch 4 - PBO Spike
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

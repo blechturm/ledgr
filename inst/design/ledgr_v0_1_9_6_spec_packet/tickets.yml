@@ -51,7 +51,7 @@ tickets:
 
   - id: "LDG-2648"
     title: "Retained-sweep return panel hygiene"
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -67,7 +67,7 @@ tickets:
 
   - id: "LDG-2649"
     title: "Adapter-shaped return projections"
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -83,7 +83,7 @@ tickets:
 
   - id: "LDG-2650"
     title: "PBO spike and decision synthesis"
-    status: "not_started"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
