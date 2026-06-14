@@ -68,7 +68,7 @@
 #' result is returned. Partial-result recovery is intentionally deferred.
 #'
 #' Current sweep mode intentionally does not ship automatic ranking,
-#' `ledgr_tune()`, walk-forward/PBO/CSCV helpers, risk-layer insertion,
+#' `ledgr_tune()`, per-fold walk-forward PBO, CPCV, DSR, risk-layer insertion,
 #' cost-grid composition, paper/live adapters, intraday-specific support, or
 #' full per-candidate committed-run artifacts. Saved sweeps are compact
 #' candidate evidence, not batches of committed runs.
@@ -77,6 +77,9 @@
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
 #' `system.file("doc", "sweeps.html", package = "ledgr")`
+#' Selection-integrity diagnostics:
+#' `vignette("selection-integrity", package = "ledgr")`
+#' `system.file("doc", "selection-integrity.html", package = "ledgr")`
 #' @export
 ledgr_sweep <- function(exp,
                         param_grid,

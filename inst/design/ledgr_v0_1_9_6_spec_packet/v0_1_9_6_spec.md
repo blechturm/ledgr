@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Spec
 
-**Status:** Batch 4 complete after Claude review; native PBO ticket added by maintainer amendment.
+**Status:** Batch 5 implementation complete; awaiting Claude review.
 **Target branch:** `v0.1.9.6`.
 **Scope:** Validation substrate and gated diagnostics after v0.1.9.5:
 canonical single-run returns, retained-return panel hygiene,

@@ -43,6 +43,8 @@
 #' - `system.file("doc", "experiment-store.html", package = "ledgr")`
 #' - `vignette("sweeps", package = "ledgr")`
 #' - `system.file("doc", "sweeps.html", package = "ledgr")`
+#' - `vignette("selection-integrity", package = "ledgr")`
+#' - `system.file("doc", "selection-integrity.html", package = "ledgr")`
 #' - `vignette("walk-forward", package = "ledgr")`
 #' - `system.file("doc", "walk-forward.html", package = "ledgr")`
 #'

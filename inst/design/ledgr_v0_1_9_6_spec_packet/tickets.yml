@@ -99,7 +99,7 @@ tickets:
 
   - id: "LDG-2658"
     title: "Native PBO/CSCV diagnostic"
-    status: "not_started"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:

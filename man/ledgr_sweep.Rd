@@ -94,7 +94,7 @@ throws \code{ledgr_parallel_sweep_interrupted}; no partially promotable sweep
 result is returned. Partial-result recovery is intentionally deferred.
 
 Current sweep mode intentionally does not ship automatic ranking,
-\code{ledgr_tune()}, walk-forward/PBO/CSCV helpers, risk-layer insertion,
+\code{ledgr_tune()}, per-fold walk-forward PBO, CPCV, DSR, risk-layer insertion,
 cost-grid composition, paper/live adapters, intraday-specific support, or
 full per-candidate committed-run artifacts. Saved sweeps are compact
 candidate evidence, not batches of committed runs.
@@ -104,4 +104,7 @@ candidate evidence, not batches of committed runs.
 Exploratory sweeps and promotion:
 \code{vignette("sweeps", package = "ledgr")}
 \code{system.file("doc", "sweeps.html", package = "ledgr")}
+Selection-integrity diagnostics:
+\code{vignette("selection-integrity", package = "ledgr")}
+\code{system.file("doc", "selection-integrity.html", package = "ledgr")}
 }

@@ -668,6 +668,9 @@ testthat::test_that("contracts record retained-return panel gates", {
   testthat::expect_match(text, "explicit structural first-row\\s+handling for `period_return`")
   testthat::expect_match(text, "common timestamp grid after first-row handling", fixed = TRUE)
   testthat::expect_match(text, "`Suggests`-only with no `NAMESPACE` imports", fixed = TRUE)
+  testthat::expect_match(text, "`ledgr_sweep_pbo()` is a native sweep-level PBO/CSCV diagnostic", fixed = TRUE)
+  testthat::expect_match(text, "evidence only: it must not\\s+select, promote, filter candidates")
+  testthat::expect_match(text, "CRAN `pbo` may be used only as\\s+optional reference evidence")
 })
 
 testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
@@ -1043,6 +1046,7 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_match(core_block, "- risk-and-cost", fixed = TRUE)
   testthat::expect_match(core_block, "- experiment-store", fixed = TRUE)
   testthat::expect_match(core_block, "- sweeps", fixed = TRUE)
+  testthat::expect_match(core_block, "- selection-integrity", fixed = TRUE)
   testthat::expect_match(core_block, "- walk-forward", fixed = TRUE)
 
   deeper_block <- substr(pkgdown_text, going_deeper[[1]], design[[1]] - 1L)
@@ -1087,6 +1091,7 @@ testthat::test_that("package help exposes an installed-documentation spine", {
     "execution-semantics",
     "experiment-store",
     "sweeps",
+    "selection-integrity",
     "walk-forward"
   )) {
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
@@ -1107,6 +1112,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_param_grid = "sweeps",
     ledgr_precompute_features = "sweeps",
     ledgr_sweep = "sweeps",
+    ledgr_sweep_pbo = "selection-integrity",
     ledgr_candidate = "sweeps",
     ledgr_candidate_reproduction_key = "sweeps",
     ledgr_promote = "sweeps",
@@ -1256,7 +1262,7 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_no_match(doc, "glimpse(top_n)", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_tune()", fixed = TRUE)
   testthat::expect_match(doc, "parallel sweep execution", fixed = TRUE)
-  testthat::expect_match(doc, "walk-forward, PBO, or CSCV", fixed = TRUE)
+  testthat::expect_match(doc, "per-fold walk-forward PBO, CPCV, DSR, or benchmark diagnostics", fixed = TRUE)
   testthat::expect_match(doc, "Save And Reopen Sweep Artifacts", fixed = TRUE)
   testthat::expect_no_match(doc, "ledgr_snapshot_split\\(")
   testthat::expect_match(doc, "ledgr_sweep_save(", fixed = TRUE)
@@ -1883,6 +1889,36 @@ testthat::test_that("walk-forward docs state MVP workflow and caveats", {
   testthat::expect_match(news, "# ledgr 0.1.9.4", fixed = TRUE)
   testthat::expect_match(news, "train-vs-test degradation table", fixed = TRUE)
   testthat::expect_match(news, "does not add PBO", fixed = TRUE)
+})
+
+testthat::test_that("selection integrity article teaches native PBO method shape", {
+  qmd_path <- ledgr_test_source_vignette("selection-integrity.qmd")
+  md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "selection-integrity.md")
+  testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "selection integrity docs not available")
+
+  docs <- vapply(
+    c(qmd = qmd_path, md = md_path),
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+
+  for (doc in docs) {
+    testthat::expect_match(doc, "## Question", fixed = TRUE)
+    testthat::expect_match(doc, "## Evidence", fixed = TRUE)
+    testthat::expect_match(doc, "## Method Shape", fixed = TRUE)
+    testthat::expect_match(doc, "## Interpretation", fixed = TRUE)
+    testthat::expect_match(doc, "## Limits", fixed = TRUE)
+    testthat::expect_match(doc, "## Failure Modes", fixed = TRUE)
+    testthat::expect_match(doc, "## References", fixed = TRUE)
+    testthat::expect_match(doc, "## Worked Example", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_sweep_pbo", fixed = TRUE)
+    testthat::expect_match(doc, "retained sweep returns", fixed = TRUE)
+    testthat::expect_match(doc, "Probability of Backtest Overfitting", fixed = TRUE)
+    testthat::expect_match(doc, "Combinatorially Symmetric Cross Validation", fixed = TRUE)
+    testthat::expect_match(doc, "not proof that a\\s+strategy will make money")
+    testthat::expect_match(doc, "does not select or promote a candidate", fixed = TRUE)
+  }
+  testthat::expect_match(docs[["md"]], "#> 1 pbo_cscv", fixed = TRUE)
 })
 
 testthat::test_that("new teaching surfaces state current public boundaries", {

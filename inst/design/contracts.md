@@ -686,6 +686,13 @@ The strategy preflight boundary originated in
   do not share a common timestamp grid after first-row handling. Optional
   package projections such as `xts` are external evidence only and must remain
   `Suggests`-only with no `NAMESPACE` imports.
+- `ledgr_sweep_pbo()` is a native sweep-level PBO/CSCV diagnostic over retained
+  completed-candidate return panels. It uses the same panel gates, reports
+  completed/used/excluded candidate ids, prevalidates even `S` partitions, and
+  carries native diagnostic schema metadata. It is evidence only: it must not
+  select, promote, filter candidates through a business objective, mutate sweep
+  artifacts, or change walk-forward identity. CRAN `pbo` may be used only as
+  optional reference evidence, never as a required runtime dependency.
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.

@@ -28,6 +28,12 @@
 \alias{ledgr_sweep_returns_first_row_invalid}
 \alias{ledgr_sweep_returns_incomplete_panel}
 \alias{ledgr_validation_pbo_incomplete_panel}
+\alias{ledgr_validation_pbo_invalid_s}
+\alias{ledgr_validation_pbo_too_few_candidates}
+\alias{ledgr_validation_pbo_too_few_observations}
+\alias{ledgr_validation_pbo_invalid_metric}
+\alias{ledgr_validation_pbo_invalid_panel}
+\alias{ledgr_validation_pbo_invalid_threshold}
 \alias{ledgr_missing_package}
 \alias{ledgr_walk_forward_metric_missing}
 \alias{ledgr_walk_forward_metric_class_invalid}
@@ -146,6 +152,24 @@ complete retained-return panel but selected completed candidates do not share
 one common timestamp grid after first-row handling.
 \code{ledgr_validation_pbo_incomplete_panel} is a compatibility alias on the same
 condition for future PBO/CSCV adapters.
+
+\code{ledgr_validation_pbo_invalid_s} is raised when a PBO/CSCV request supplies
+an invalid \code{S} subset count.
+
+\code{ledgr_validation_pbo_too_few_candidates} is raised when PBO/CSCV has fewer
+than two completed candidates.
+
+\code{ledgr_validation_pbo_too_few_observations} is raised when PBO/CSCV has too
+few post-first-row observations for the requested partitioning.
+
+\code{ledgr_validation_pbo_invalid_metric} is raised when a PBO/CSCV metric is not
+callable or does not return one finite numeric score per candidate.
+
+\code{ledgr_validation_pbo_invalid_panel} is raised when PBO/CSCV receives a
+non-finite retained-return panel after the structural first-row handling.
+
+\code{ledgr_validation_pbo_invalid_threshold} is raised when a PBO/CSCV threshold
+is not a finite numeric scalar.
 
 \code{ledgr_missing_package} is raised when a public optional-package adapter is
 requested but the package is not installed.

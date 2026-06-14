@@ -496,7 +496,7 @@ scope: pbo-decision-gate
 Priority: P0
 Effort: M
 Dependencies: LDG-2648, LDG-2649, LDG-2650
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -550,6 +550,32 @@ foundation.
 - `tools::checkRd()` for new reference pages.
 - `rg` sweep confirming no runtime dependency import and no business-objective
   or promotion scope.
+
+### Implementation Notes
+
+- Added `ledgr_sweep_pbo()` as a native CSCV/PBO diagnostic over
+  `ledgr_sweep_returns_panel(value = "returns", complete = TRUE)`.
+- The result carries stable `summary`, `cases`, `degradation`, and `metadata`
+  fields, plus `as_tibble()` views for the shipped tables and a compact print
+  method.
+- Runtime CRAN `pbo` dependency was not added; the optional `pbo` package is
+  used only as a skipped-if-missing reference cross-check in tests.
+- Input gates prevalidate `S`, candidate count, observation count, complete
+  finite panels, finite metric output, and finite threshold; ragged or
+  unretained evidence continues through the retained-panel failure classes and
+  PBO alias.
+- Tests cover the spike reference fixture, optional CRAN `pbo` parity,
+  known-direction overfit and robust families, invalid gates, export locks, and
+  no runtime dependency import.
+- Added the `selection-integrity` article under the Methodological Diagnostics
+  rule, including an executed cautionary example and explicit "what PBO cannot
+  prove" teaching.
+- Updated stale sweep non-goal language from no PBO/CSCV helpers to no
+  per-fold walk-forward PBO, CPCV, DSR, or benchmark diagnostics.
+- Verification passed:
+  `test-validation-pbo.R`, `test-api-exports.R`,
+  `test-documentation-contracts.R`, and `tools::checkRd()` for
+  `ledgr_sweep_pbo.Rd`, `ledgr_condition_classes.Rd`, and `ledgr_sweep.Rd`.
 
 ### Source Reference
 

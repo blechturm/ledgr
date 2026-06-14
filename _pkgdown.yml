@@ -44,6 +44,7 @@ articles:
       - risk-and-cost
       - experiment-store
       - sweeps
+      - selection-integrity
       - walk-forward
   - title: Going Deeper
     navbar: Going Deeper
@@ -86,6 +87,7 @@ reference:
       - ledgr_sweep_retention
       - ledgr_sweep_returns
       - ledgr_sweep_review
+      - ledgr_sweep_pbo
       - ledgr_sweep_save
       - print.ledgr_sweep_results
       - ledgr_candidate

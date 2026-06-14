@@ -643,7 +643,7 @@ Sweep mode intentionally leaves some decisions outside the API. It does not
 ship:
 
 - automatic ranking, objective functions, or `ledgr_tune()`;
-- walk-forward, PBO, or CSCV helpers;
+- per-fold walk-forward PBO, CPCV, DSR, or benchmark diagnostics;
 - risk-layer insertion;
 - cost-grid composition such as `ledgr_cost_grid()`;
 - paper/live trading adapters;

@@ -51,6 +51,8 @@ Core installed articles:
 \item \code{system.file("doc", "experiment-store.html", package = "ledgr")}
 \item \code{vignette("sweeps", package = "ledgr")}
 \item \code{system.file("doc", "sweeps.html", package = "ledgr")}
+\item \code{vignette("selection-integrity", package = "ledgr")}
+\item \code{system.file("doc", "selection-integrity.html", package = "ledgr")}
 \item \code{vignette("walk-forward", package = "ledgr")}
 \item \code{system.file("doc", "walk-forward.html", package = "ledgr")}
 }

@@ -1,0 +1,204 @@
+---
+title: "Selection Integrity"
+format:
+  html:
+    toc: false
+    theme: cosmo
+    code-copy: true
+execute:
+  echo: true
+vignette: >
+  %\VignetteIndexEntry{Selection Integrity}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 90)
+options(cli.unicode = FALSE)
+options(pillar.sigfig = 5)
+pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
+if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(pkg_root, quiet = TRUE)
+}
+```
+
+Sweeps let you compare many candidate parameterizations. That is useful, and it
+is dangerous. The more candidates you inspect, the easier it is to mistake a
+lucky in-sample winner for a robust strategy. Selection-integrity diagnostics
+make that risk visible; they do not choose the winner for you.
+
+## Question
+
+`ledgr_sweep_pbo()` asks one question: when the retained candidate return panel
+is recombined into symmetric in-sample and out-of-sample splits, how often does
+the in-sample winner rank poorly out of sample?
+
+The answer is the Probability of Backtest Overfitting (PBO). Higher values are
+warning signs about the candidate family and the selection process. They are not
+proof that a strategy will lose money, and low values are not proof that a
+strategy will make money.
+
+## Evidence
+
+The diagnostic consumes retained sweep returns:
+
+```r
+sweep <- ledgr_sweep(
+  experiment,
+  grid,
+  retain = ledgr_sweep_retention("completed")
+)
+
+pbo <- ledgr_sweep_pbo(sweep, S = 4)
+```
+
+The input is the same retained completed-candidate evidence exposed by
+`ledgr_sweep_returns_panel()`: one UTC-ordered return column per completed
+candidate, with the structural first `NA_real_` row verified and dropped before
+the CSCV matrix is formed. It does not inspect fills, positions, promotion
+records, or walk-forward folds.
+
+## Method Shape
+
+PBO uses Combinatorially Symmetric Cross Validation (CSCV):
+
+1. Split the return panel into `S` contiguous subsets.
+2. Choose half the subsets as in sample and the other half as out of sample.
+3. Score every candidate in sample.
+4. Take the in-sample winner and rank that same candidate out of sample.
+5. Convert the out-of-sample rank to `lambda`.
+6. Report PBO as the share of cases where `lambda <= threshold`.
+
+The default score is mean period return. A custom metric can be supplied, but it
+must return one finite numeric value per candidate column, and larger values are
+treated as better.
+
+## Interpretation
+
+Read PBO as selection-process evidence. A high value says the candidate that
+looks best in sample often fails to hold its rank out of sample under CSCV
+recombination. That is a reason to distrust the apparent sweep winner, reduce
+the candidate search space, gather more evidence, or add a separate
+walk-forward evaluation.
+
+The result object keeps three public tables:
+
+- `as_tibble(pbo)` gives the one-row summary.
+- `as_tibble(pbo, what = "cases")` gives each CSCV split and logit.
+- `as_tibble(pbo, what = "degradation")` gives the winner in-sample versus
+  out-of-sample score by split.
+
+## Limits
+
+PBO is not a profitability proof. It does not fix bad data, survivorship bias,
+point-in-time universe mistakes, revised-data leakage, or preprocessing that
+used future information before ledgr saw the inputs. It also depends on a
+meaningful candidate family. If the sweep has too few candidates, too few
+observations, or candidates that were already mined before the declared sweep,
+interpretation weakens.
+
+PBO is sweep-level in this release. It does not add per-fold train-sweep PBO to
+walk-forward degradation tables.
+
+## Failure Modes
+
+The function fails closed when the evidence is not suitable:
+
+- retained returns were not requested;
+- a selected candidate failed or has no retained return rows;
+- the completed candidates do not form one complete timestamp grid;
+- the structural first return row is not `NA_real_`;
+- `S` is odd, too large, or does not divide the post-first-row return count;
+- the metric does not return one finite numeric score per candidate.
+
+These are setup or evidence problems, not weak strategy results. Fix the panel
+before interpreting the diagnostic.
+
+## References
+
+The method follows the CSCV/PBO shape described by Bailey, Borwein,
+Lopez de Prado, and Zhu. ledgr implements the diagnostic natively over retained
+return panels; the CRAN `pbo` package remains optional reference evidence, not a
+runtime dependency.
+
+## Worked Example
+
+The synthetic retained sweep below is intentionally cautionary. Each candidate
+looks good in one segment and weak elsewhere. That creates an attractive-looking
+search space, but PBO flags that the in-sample winner does not usually remain
+strong out of sample.
+
+```{r}
+#| label: synthetic-sweep
+#| include: false
+
+make_retained_sweep <- function(returns) {
+  returns <- as.matrix(returns)
+  candidate_ids <- colnames(returns)
+  ts_utc <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * seq_len(nrow(returns) + 1L)
+  rows <- lapply(seq_along(candidate_ids), function(j) {
+    period_return <- c(NA_real_, as.numeric(returns[, j]))
+    tibble::tibble(
+      sweep_id = "selection-integrity-example",
+      candidate_id = candidate_ids[[j]],
+      ts_utc = ts_utc,
+      equity = 100 * cumprod(c(1, 1 + as.numeric(returns[, j]))),
+      period_return = period_return
+    )
+  })
+  out <- tibble::tibble(
+    candidate_id = candidate_ids,
+    candidate_row = seq_along(candidate_ids),
+    status = "DONE"
+  )
+  class(out) <- c("ledgr_sweep_results", class(out))
+  attr(out, "sweep_id") <- "selection-integrity-example"
+  attr(out, "sweep_retention") <- ledgr_sweep_retention("completed")
+  attr(out, "sweep_returns") <- tibble::as_tibble(do.call(rbind, rows))
+  out
+}
+
+overfit_returns <- matrix(
+  -0.01,
+  nrow = 12,
+  ncol = 4,
+  dimnames = list(NULL, paste0("candidate_", 1:4))
+)
+subset_id <- rep(1:4, each = 3)
+for (j in 1:4) {
+  overfit_returns[subset_id == j, j] <- 0.05
+}
+example_sweep <- make_retained_sweep(overfit_returns)
+```
+
+```{r}
+#| label: pbo-summary
+
+pbo <- ledgr_sweep_pbo(example_sweep, S = 4)
+tibble::as_tibble(pbo)
+```
+
+The case table shows why the summary is high: the in-sample winner is often not
+the out-of-sample winner.
+
+```{r}
+#| label: pbo-cases
+
+tibble::as_tibble(pbo, what = "degradation")
+```
+
+`ledgr_sweep_pbo()` does not select or promote a candidate. Treat it as one
+piece of evidence beside the sweep table, the walk-forward degradation table,
+and the research judgment that decides what to test next.
+
+## Where Next
+
+- For retained sweep return panels, read `vignette("sweeps", package = "ledgr")`.
+- For walk-forward train/test evidence, read
+  `vignette("walk-forward", package = "ledgr")`.
+- For lookahead leakage examples, read `vignette("leakage", package = "ledgr")`.

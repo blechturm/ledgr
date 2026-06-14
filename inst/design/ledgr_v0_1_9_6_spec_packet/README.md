@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Spec Packet
 
-Status: Batch 4 complete after Claude review; native PBO ticket added by maintainer amendment.
+Status: Batch 5 implementation complete; awaiting Claude review.
 
 This packet scopes v0.1.9.6 as the validation-substrate and gated-diagnostics
 packet after the v0.1.9.5 naming and teaching consolidation release.

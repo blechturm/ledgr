@@ -92,6 +92,24 @@
 #' `ledgr_validation_pbo_incomplete_panel` is a compatibility alias on the same
 #' condition for future PBO/CSCV adapters.
 #'
+#' `ledgr_validation_pbo_invalid_s` is raised when a PBO/CSCV request supplies
+#' an invalid `S` subset count.
+#'
+#' `ledgr_validation_pbo_too_few_candidates` is raised when PBO/CSCV has fewer
+#' than two completed candidates.
+#'
+#' `ledgr_validation_pbo_too_few_observations` is raised when PBO/CSCV has too
+#' few post-first-row observations for the requested partitioning.
+#'
+#' `ledgr_validation_pbo_invalid_metric` is raised when a PBO/CSCV metric is not
+#' callable or does not return one finite numeric score per candidate.
+#'
+#' `ledgr_validation_pbo_invalid_panel` is raised when PBO/CSCV receives a
+#' non-finite retained-return panel after the structural first-row handling.
+#'
+#' `ledgr_validation_pbo_invalid_threshold` is raised when a PBO/CSCV threshold
+#' is not a finite numeric scalar.
+#'
 #' `ledgr_missing_package` is raised when a public optional-package adapter is
 #' requested but the package is not installed.
 #'
@@ -166,6 +184,12 @@
 #' @aliases ledgr_sweep_returns_first_row_invalid
 #' @aliases ledgr_sweep_returns_incomplete_panel
 #' @aliases ledgr_validation_pbo_incomplete_panel ledgr_missing_package
+#' @aliases ledgr_validation_pbo_invalid_s
+#' @aliases ledgr_validation_pbo_too_few_candidates
+#' @aliases ledgr_validation_pbo_too_few_observations
+#' @aliases ledgr_validation_pbo_invalid_metric
+#' @aliases ledgr_validation_pbo_invalid_panel
+#' @aliases ledgr_validation_pbo_invalid_threshold
 #' @aliases ledgr_walk_forward_metric_missing
 #' @aliases ledgr_walk_forward_metric_class_invalid
 #' @aliases ledgr_walk_forward_no_selection

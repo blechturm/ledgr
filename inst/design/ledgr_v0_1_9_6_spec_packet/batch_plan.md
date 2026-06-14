@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 4 complete after Claude review; native PBO ticket added by maintainer amendment.
+Status: Batch 5 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -155,6 +155,8 @@ Review focus:
 - "what PBO cannot prove" is taught explicitly.
 
 ## Batch 5 - Native PBO/CSCV
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 
