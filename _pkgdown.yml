@@ -6,9 +6,24 @@ template:
 development:
   mode: release
 
+home:
+  sidebar:
+    structure: [starthere, links, license, authors, dev]
+    components:
+      starthere:
+        title: New to ledgr?
+        text: >
+          Start with [Quickstart](articles/quickstart.html) for the shortest
+          runnable path, then [Research Workflow](articles/research-workflow.html)
+          for the full loop. ledgr is pre-CRAN, so APIs and schemas can change
+          without a deprecation cycle.
+
 articles:
   - title: Start Here
     navbar: Start Here
+    desc: >
+      What ledgr is, the shortest runnable path, and the two ideas it is
+      built on: no lookahead, and a backtest as reproducible evidence.
     contents:
       - articles/who-ledgr-is-for
       - quickstart
@@ -17,6 +32,10 @@ articles:
       - reproducibility
   - title: Core Workflow
     navbar: Core Workflow
+    desc: >
+      The end-to-end loop -- seal data, write a strategy, run it, read
+      fills/trades/equity/metrics, apply cost and risk policy, then sweep
+      and walk-forward over candidates.
     contents:
       - data-input-and-snapshots
       - strategy-development
@@ -28,6 +47,10 @@ articles:
       - walk-forward
   - title: Going Deeper
     navbar: Going Deeper
+    desc: >
+      Companion deep-dives the core articles hand off to: authoring helpers,
+      TTR and custom indicators, metric-context conventions, and how a target
+      becomes a fill.
     contents:
       - strategy-authoring-tools
       - ttr-and-adapter-indicators
@@ -36,6 +59,9 @@ articles:
       - execution-semantics
   - title: Design / Background
     navbar: Design / Background
+    desc: >
+      Why ledgr is built the way it is -- the research-to-production design
+      philosophy, and the case for an R-native systematic-trading stack.
     contents:
       - research-to-production
       - articles/why-r
