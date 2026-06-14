@@ -1112,6 +1112,24 @@ ledgr_backtest_equity <- function(con, run_id) {
   )
 }
 
+ledgr_backtest_returns <- function(con, run_id) {
+  equity <- ledgr_backtest_equity(con, run_id)
+  if (!is.data.frame(equity) || nrow(equity) == 0L) {
+    return(tibble::tibble(
+      ts_utc = as.POSIXct(character(), tz = "UTC"),
+      equity = numeric(),
+      period_return = numeric()
+    ))
+  }
+
+  equity_values <- as.numeric(equity$equity)
+  tibble::tibble(
+    ts_utc = as.POSIXct(equity$ts_utc, tz = "UTC"),
+    equity = equity_values,
+    period_return = c(NA_real_, compute_period_returns(equity_values))
+  )
+}
+
 ledgr_empty_fills_table <- function() {
   tibble::tibble(
     event_seq = integer(),
@@ -2251,8 +2269,8 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' Extract tidy backtest tables
 #'
 #' @param x A `ledgr_backtest` object.
-#' @param what Result table to extract: `"equity"`, `"trades"`, `"fills"`, or
-#'   `"ledger"`.
+#' @param what Result table to extract: `"equity"`, `"returns"`, `"fills"`,
+#'   `"trades"`, or `"ledger"`.
 #' @param ... Unused.
 #' @param type Deprecated alias for `what`.
 #' @return A tibble with the requested result table.
@@ -2270,6 +2288,11 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' drawdown, volatility, and exposure metrics. Open positions can affect equity
 #' through `positions_value` even when there are zero closed trade rows. The
 #' final equity used by prints and comparisons is the last row of this table.
+#'
+#' `what = "returns"` returns the public equity curve as return evidence with
+#' columns `ts_utc`, `equity`, and `period_return`. The first period return is
+#' `NA_real_`; later rows use the same adjacent-equity return formula as
+#' ledgr-owned metrics and retained sweep returns.
 #'
 #' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
 #' from the public result tables; use `summary(bt)` for printed interpretation
@@ -2299,6 +2322,7 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' }
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' tibble::as_tibble(bt, what = "trades")
+#' tibble::as_tibble(bt, what = "returns")
 #' tibble::as_tibble(bt, what = "equity")
 #' close(bt)
 #' @export
@@ -2318,6 +2342,7 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
     equity = {
       ledgr_compute_equity_curve_impl(x, con = con)
     },
+    returns = ledgr_backtest_returns(con, x$run_id),
     fills = ledgr_extract_fills_impl(x, con = con),
     trades = ledgr_extract_trades(x, con = con),
     ledger = tibble::as_tibble(
@@ -2359,6 +2384,11 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' through `positions_value` even when there are zero closed trade rows. The
 #' final equity used by prints and comparisons is the last row of this table.
 #'
+#' `what = "returns"` returns the public equity curve as return evidence with
+#' columns `ts_utc`, `equity`, and `period_return`. The first period return is
+#' `NA_real_`; later rows use the same adjacent-equity return formula as
+#' ledgr-owned metrics and retained sweep returns.
+#'
 #' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
@@ -2372,8 +2402,8 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #' 
 #' @param bt A `ledgr_backtest` object.
-#' @param what Result table to extract: `"equity"`, `"fills"`, `"trades"`, or
-#'   `"ledger"`.
+#' @param what Result table to extract: `"equity"`, `"returns"`, `"fills"`,
+#'   `"trades"`, or `"ledger"`.
 #' @return A ledgr result table, which is a classed tibble with the requested
 #'   result columns.
 #' @examples
@@ -2393,20 +2423,21 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' }
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 #' ledgr_results(bt, what = "trades")
+#' ledgr_results(bt, what = "returns")
 #' close(bt)
 #' @export
-ledgr_results <- function(bt, what = c("equity", "fills", "trades", "ledger")) {
+ledgr_results <- function(bt, what = c("equity", "returns", "fills", "trades", "ledger")) {
   what <- ledgr_match_result_table(what)
   ledgr_result_table(tibble::as_tibble(bt, what = what), what = what)
 }
 
 ledgr_match_result_table <- function(what) {
-  choices <- c("equity", "fills", "trades", "ledger")
+  choices <- c("equity", "returns", "fills", "trades", "ledger")
   if (length(what) > 1L) {
     return(match.arg(what, choices))
   }
   if (!is.character(what) || length(what) != 1L || is.na(what) || !nzchar(what)) {
-    rlang::abort("`what` must be one of: equity, fills, trades, ledger.", class = "ledgr_invalid_result_table")
+    rlang::abort("`what` must be one of: equity, returns, fills, trades, ledger.", class = "ledgr_invalid_result_table")
   }
   if (identical(what, "metrics")) {
     rlang::abort(

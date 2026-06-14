@@ -1,7 +1,6 @@
 # ledgr v0.1.9.6 Spec
 
-**Status:** Draft spec; ticket cut complete after Claude review; Batch 1 is
-next.
+**Status:** Batch 2 implementation complete; awaiting Claude review.
 **Target branch:** `v0.1.9.6`.
 **Scope:** Validation substrate and gated diagnostics after v0.1.9.5:
 canonical single-run returns, retained-return panel hygiene,

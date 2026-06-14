@@ -1,7 +1,6 @@
 # ledgr v0.1.9.6 Spec Packet
 
-Status: Draft spec and ticket cut complete after Claude review; Batch 1 is
-next.
+Status: Batch 2 implementation complete; awaiting Claude review.
 
 This packet scopes v0.1.9.6 as the validation-substrate and gated-diagnostics
 packet after the v0.1.9.5 naming and teaching consolidation release.

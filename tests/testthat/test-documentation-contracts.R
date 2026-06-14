@@ -641,6 +641,23 @@ testthat::test_that("contracts record v0.1.7.5 TTR warmup and adapter boundaries
   testthat::expect_no_match(tolower(text), "talib", fixed = TRUE)
 })
 
+testthat::test_that("contracts record the closed backtest result set", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(
+    text,
+    "`equity`, `returns`, `fills`, `trades`, and `ledger`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    text,
+    "It must delegate to `tibble::as_tibble\\(\\)` and must not\\s+duplicate reconstruction logic."
+  )
+})
+
 testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
   root <- testthat::test_path("..", "..")
   contracts <- file.path(root, "inst", "design", "contracts.md")

@@ -137,7 +137,7 @@ scope: packet-alignment
 Priority: P0
 Effort: S
 Dependencies: LDG-2645
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -206,7 +206,7 @@ scope: packet-open-verification
 Priority: P0
 Effort: M
 Dependencies: LDG-2646
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -245,6 +245,22 @@ result-table contract.
   small equivalent fixture.
 - Documentation-contract or contract-text checks for the closed enumeration.
 - `pkgload::load_all('.', quiet = TRUE)` before targeted tests.
+
+### Implementation Notes
+
+- Added `as_tibble(bt, what = "returns")` through the existing backtest
+  result-table switch, returning exactly `ts_utc`, `equity`, and
+  `period_return`.
+- Added `ledgr_results(bt, what = "returns")` by extending the closed result
+  matcher; the wrapper still delegates to `tibble::as_tibble()`.
+- Reused `compute_period_returns()` so single-run returns match ledgr-owned
+  metric computation and retained sweep returns, with the first row set to
+  `NA_real_`.
+- Updated `contracts.md`, the result-table Rd pages, and targeted tests for the
+  new closed result-set member. No persisted schema or identity fields changed.
+- Verification passed:
+  `pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-backtest-s3.R', reporter='summary'); testthat::test_file('tests/testthat/test-documentation-contracts.R', reporter='summary')`
+  and `tools::checkRd()` on the two touched Rd pages.
 
 ### Source Reference
 

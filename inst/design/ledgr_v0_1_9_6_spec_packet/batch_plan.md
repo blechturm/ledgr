@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 0 ticket cut complete after Claude review; Batch 1 is next.
+Status: Batch 2 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -69,7 +69,7 @@ Exit criteria:
 
 ## Batch 1 - Packet-Open Gates
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -89,6 +89,8 @@ Review focus:
 - styleguide test is non-vacuous and does not assert on future articles.
 
 ## Batch 2 - Canonical Run Returns
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

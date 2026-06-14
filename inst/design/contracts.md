@@ -593,8 +593,8 @@ The strategy preflight boundary originated in
 - Ordinary result-access APIs over durable `ledgr_backtest` handles should use
   per-operation read connections where practical so inspecting results does not
   leave a DuckDB connection open and block a later write in the same session.
-- `tibble::as_tibble(bt, what = ...)` supports the v0.1.5 result set:
-  `equity`, `fills`, `trades`, and `ledger`.
+- `tibble::as_tibble(bt, what = ...)` supports the closed result set:
+  `equity`, `returns`, `fills`, `trades`, and `ledger`.
 - `ledgr_results(bt, what = ...)` is the package-prefixed wrapper over that
   same result path. It must delegate to `tibble::as_tibble()` and must not
   duplicate reconstruction logic.

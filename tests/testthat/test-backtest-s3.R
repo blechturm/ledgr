@@ -29,6 +29,28 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   testthat::expect_s3_class(eq, "tbl_df")
   testthat::expect_true(all(c("running_max", "drawdown") %in% names(eq)))
 
+  returns <- as_tibble(bt, "returns")
+  testthat::expect_s3_class(returns, "tbl_df")
+  testthat::expect_identical(names(returns), c("ts_utc", "equity", "period_return"))
+  testthat::expect_s3_class(returns$ts_utc, "POSIXct")
+  testthat::expect_equal(returns$equity, eq$equity)
+  testthat::expect_true(is.na(returns$period_return[[1L]]))
+  testthat::expect_equal(returns$period_return[-1L], ledgr:::compute_period_returns(eq$equity))
+
+  retained_returns <- ledgr:::ledgr_sweep_retained_returns_from_equity(
+    eq[, c("ts_utc", "equity")],
+    candidate_id = "candidate-1",
+    candidate_row = 1L
+  )
+  testthat::expect_equal(returns$ts_utc, retained_returns$ts_utc)
+  testthat::expect_equal(returns$equity, retained_returns$equity)
+  testthat::expect_equal(returns$period_return, retained_returns$period_return)
+
+  returns_result <- ledgr_results(bt, what = "returns")
+  testthat::expect_s3_class(returns_result, "ledgr_result_returns")
+  testthat::expect_s3_class(returns_result, "ledgr_result_table")
+  testthat::expect_identical(tibble::as_tibble(returns_result), returns)
+
   fills <- as_tibble(bt, "fills")
   testthat::expect_s3_class(fills, "tbl_df")
   testthat::expect_true("realized_pnl" %in% names(fills))
@@ -67,6 +89,9 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
     class = "ledgr_invalid_args"
   )
   testthat::expect_error(as_tibble(bt, "unknown"))
+  metrics_err <- rlang::catch_cnd(ledgr_results(bt, what = "metrics"))
+  testthat::expect_s3_class(metrics_err, "ledgr_invalid_result_table")
+  testthat::expect_match(conditionMessage(metrics_err), "ledgr_compute_metrics", fixed = TRUE)
   feature_err <- rlang::catch_cnd(ledgr_results(bt, what = "features"))
   testthat::expect_s3_class(feature_err, "ledgr_invalid_result_table")
   testthat::expect_match(conditionMessage(feature_err), "ledgr_pulse_snapshot", fixed = TRUE)

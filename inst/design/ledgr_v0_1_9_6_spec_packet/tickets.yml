@@ -19,7 +19,7 @@ tickets:
 
   - id: "LDG-2646"
     title: "Packet-open verification and method teaching gate"
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies:
@@ -35,7 +35,7 @@ tickets:
 
   - id: "LDG-2647"
     title: "Canonical single-run returns result view"
-    status: "not_started"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:

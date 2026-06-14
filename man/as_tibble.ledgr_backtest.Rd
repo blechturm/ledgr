@@ -9,8 +9,8 @@
 \arguments{
 \item{x}{A \code{ledgr_backtest} object.}
 
-\item{what}{Result table to extract: \code{"equity"}, \code{"trades"}, \code{"fills"}, or
-\code{"ledger"}.}
+\item{what}{Result table to extract: \code{"equity"}, \code{"returns"}, \code{"fills"},
+\code{"trades"}, or \code{"ledger"}.}
 
 \item{...}{Unused.}
 
@@ -36,6 +36,11 @@ It is the source for \code{n_trades}, \code{win_rate}, and \code{avg_trade}.
 drawdown, volatility, and exposure metrics. Open positions can affect equity
 through \code{positions_value} even when there are zero closed trade rows. The
 final equity used by prints and comparisons is the last row of this table.
+
+\code{what = "returns"} returns the public equity curve as return evidence with
+columns \code{ts_utc}, \code{equity}, and \code{period_return}. The first period return is
+\code{NA_real_}; later rows use the same adjacent-equity return formula as
+ledgr-owned metrics and retained sweep returns.
 
 \code{ledgr_results()} does not support \code{what = "metrics"}. Metrics are derived
 from the public result tables; use \code{summary(bt)} for printed interpretation
@@ -68,6 +73,7 @@ strategy <- function(ctx, params) {
 }
 bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
 tibble::as_tibble(bt, what = "trades")
+tibble::as_tibble(bt, what = "returns")
 tibble::as_tibble(bt, what = "equity")
 close(bt)
 }
