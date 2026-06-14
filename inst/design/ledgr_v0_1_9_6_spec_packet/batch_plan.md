@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 2 implementation complete; awaiting Claude review.
+Status: Batch 3 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -90,7 +90,7 @@ Review focus:
 
 ## Batch 2 - Canonical Run Returns
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -109,6 +109,8 @@ Review focus:
 - identity bytes and persisted evidence remain unchanged.
 
 ## Batch 3 - Retained-Return Panel And Projections
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

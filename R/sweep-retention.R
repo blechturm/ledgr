@@ -118,7 +118,12 @@ ledgr_sweep_collect_retained_returns <- function(results, sweep_id) {
 #' @return `ledgr_sweep_returns()` returns a tibble with `sweep_id`,
 #'   `candidate_id`, `ts_utc`, `equity`, and `period_return`.
 #'   `ledgr_sweep_returns_wide()` returns a tibble with `ts_utc` followed by
-#'   one column per candidate.
+#'   one column per candidate. `ledgr_sweep_returns_panel()` returns a classed
+#'   list with normalized long evidence, a numeric matrix, UTC timestamps, the
+#'   candidate ids used, completed candidate ids, excluded candidate ids, and
+#'   first-row handling metadata. `ledgr_sweep_returns_matrix()`,
+#'   `ledgr_sweep_returns_data_frame()`, and `ledgr_sweep_returns_xts()` return
+#'   adapter-shaped projections over that normalized panel.
 #' @examples
 #' bars <- data.frame(
 #'   instrument_id = "AAA",
@@ -179,6 +184,115 @@ ledgr_sweep_returns_wide <- function(x,
   out
 }
 
+#' @describeIn ledgr_sweep_returns Return a normalized retained-return panel.
+#'   For `value = "returns"`, the structural first timestamp is dropped after
+#'   verifying each candidate's first `period_return` is `NA_real_`.
+#' @param complete Logical scalar. If `TRUE`, require every selected completed
+#'   candidate to share the same timestamp grid after first-row handling.
+#' @export
+ledgr_sweep_returns_panel <- function(x,
+                                      candidates = NULL,
+                                      value = c("returns", "equity"),
+                                      complete = TRUE) {
+  value <- match.arg(value)
+  ledgr_sweep_returns_validate_complete(complete)
+  requested <- ledgr_sweep_returns_requested_candidates(x, candidates)
+  long <- ledgr_sweep_returns_resolve(x, candidates = candidates)
+  completed <- ledgr_sweep_returns_completed_candidates(x)
+  used <- requested[requested %in% unique(as.character(long$candidate_id))]
+  excluded <- setdiff(as.character(x$candidate_id), used)
+  drop_first <- identical(value, "returns")
+  value_col <- if (identical(value, "returns")) "period_return" else "equity"
+
+  rows_by_candidate <- lapply(used, function(candidate_id) {
+    ledgr_sweep_returns_panel_rows(long, candidate_id, drop_first = drop_first)
+  })
+  names(rows_by_candidate) <- used
+
+  if (isTRUE(complete)) {
+    ledgr_sweep_returns_assert_complete(rows_by_candidate)
+  }
+  ts_utc <- ledgr_sweep_returns_panel_timestamps(rows_by_candidate)
+  mat <- ledgr_sweep_returns_panel_matrix(rows_by_candidate, ts_utc, used, value_col)
+
+  structure(
+    list(
+      long = ledgr_sweep_returns_panel_long(rows_by_candidate),
+      matrix = mat,
+      ts_utc = ts_utc,
+      candidate_ids = used,
+      completed_candidate_ids = completed,
+      excluded_candidate_ids = excluded,
+      value = value,
+      first_row_dropped = drop_first,
+      complete = isTRUE(complete)
+    ),
+    class = c("ledgr_sweep_returns_panel", "list")
+  )
+}
+
+#' @describeIn ledgr_sweep_returns Return a numeric `T x N` matrix over a
+#'   normalized retained-return panel.
+#' @export
+ledgr_sweep_returns_matrix <- function(x,
+                                       candidates = NULL,
+                                       value = c("returns", "equity"),
+                                       complete = TRUE) {
+  panel <- ledgr_sweep_returns_panel(
+    x,
+    candidates = candidates,
+    value = value,
+    complete = complete
+  )
+  ledgr_sweep_returns_attach_projection_attrs(panel$matrix, panel)
+}
+
+#' @describeIn ledgr_sweep_returns Return a base data frame over a normalized
+#'   retained-return panel.
+#' @export
+ledgr_sweep_returns_data_frame <- function(x,
+                                           candidates = NULL,
+                                           value = c("returns", "equity"),
+                                           complete = TRUE) {
+  panel <- ledgr_sweep_returns_panel(
+    x,
+    candidates = candidates,
+    value = value,
+    complete = complete
+  )
+  out <- as.data.frame(panel$matrix, check.names = FALSE, stringsAsFactors = FALSE)
+  ledgr_sweep_returns_attach_projection_attrs(out, panel)
+}
+
+#' @describeIn ledgr_sweep_returns Return an optional `xts` projection over a
+#'   normalized retained-return panel. The `xts` package remains optional and is
+#'   not imported by ledgr.
+#' @export
+ledgr_sweep_returns_xts <- function(x,
+                                    candidates = NULL,
+                                    value = c("returns", "equity"),
+                                    complete = TRUE) {
+  if (!requireNamespace("xts", quietly = TRUE)) {
+    rlang::abort(
+      "ledgr_sweep_returns_xts() requires the optional package 'xts'. Install it with install.packages('xts').",
+      class = c("ledgr_missing_package", "ledgr_invalid_args")
+    )
+  }
+  panel <- ledgr_sweep_returns_panel(
+    x,
+    candidates = candidates,
+    value = value,
+    complete = complete
+  )
+  out <- xts::xts(panel$matrix, order.by = panel$ts_utc)
+  attr(out, "ledgr_external_evidence") <- list(
+    source = "retained_sweep_returns",
+    package = "xts",
+    package_version = as.character(utils::packageVersion("xts"))
+  )
+  ledgr_sweep_returns_attach_projection_attrs(out, panel)
+}
+
 ledgr_sweep_returns_resolve <- function(x, candidates = NULL) {
   if (!inherits(x, "ledgr_sweep_results")) {
     rlang::abort("`x` must be a ledgr_sweep_results object.", class = "ledgr_invalid_args")
@@ -220,6 +334,147 @@ ledgr_sweep_returns_public_columns <- function(returns) {
   out$ts_utc <- as.POSIXct(out$ts_utc, tz = "UTC")
   out$equity <- as.numeric(out$equity)
   out$period_return <- as.numeric(out$period_return)
+  out
+}
+
+ledgr_sweep_returns_validate_complete <- function(complete) {
+  if (!is.logical(complete) || length(complete) != 1L || is.na(complete)) {
+    rlang::abort("`complete` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  invisible(TRUE)
+}
+
+ledgr_sweep_returns_requested_candidates <- function(x, candidates) {
+  if (!inherits(x, "ledgr_sweep_results")) {
+    rlang::abort("`x` must be a ledgr_sweep_results object.", class = "ledgr_invalid_args")
+  }
+  if (is.null(candidates)) {
+    return(unique(as.character(x$candidate_id)))
+  }
+  ledgr_sweep_returns_normalize_candidates(candidates)
+}
+
+ledgr_sweep_returns_completed_candidates <- function(x) {
+  ids <- as.character(x$candidate_id)
+  if (!"status" %in% names(x)) {
+    return(character())
+  }
+  ids[as.character(x$status) == "DONE"]
+}
+
+ledgr_sweep_returns_panel_rows <- function(long, candidate_id, drop_first) {
+  rows <- long[as.character(long$candidate_id) == candidate_id, , drop = FALSE]
+  rows <- rows[order(as.POSIXct(rows$ts_utc, tz = "UTC")), , drop = FALSE]
+  rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
+  rows$equity <- as.numeric(rows$equity)
+  rows$period_return <- as.numeric(rows$period_return)
+  if (isTRUE(drop_first) && nrow(rows) > 0L) {
+    if (!is.na(rows$period_return[[1L]])) {
+      rlang::abort(
+        sprintf("Retained returns for candidate `%s` do not have a structural first-row NA.", candidate_id),
+        class = c("ledgr_sweep_returns_first_row_invalid", "ledgr_invalid_args"),
+        candidate_id = candidate_id
+      )
+    }
+    rows <- rows[-1L, , drop = FALSE]
+  }
+  rows
+}
+
+ledgr_sweep_returns_assert_complete <- function(rows_by_candidate) {
+  if (length(rows_by_candidate) <= 1L) {
+    return(invisible(TRUE))
+  }
+  reference_idx <- which.max(vapply(rows_by_candidate, nrow, integer(1)))
+  reference <- as.POSIXct(rows_by_candidate[[reference_idx]]$ts_utc, tz = "UTC")
+  reference_iso <- ledgr_sweep_returns_ts_labels(reference)
+  offending <- character()
+  missing <- list()
+  extra <- list()
+
+  for (candidate_id in names(rows_by_candidate)) {
+    ts_utc <- as.POSIXct(rows_by_candidate[[candidate_id]]$ts_utc, tz = "UTC")
+    same <- length(ts_utc) == length(reference) &&
+      identical(as.numeric(ts_utc), as.numeric(reference))
+    if (!same) {
+      offending <- c(offending, candidate_id)
+      ts_iso <- ledgr_sweep_returns_ts_labels(ts_utc)
+      missing[[candidate_id]] <- setdiff(reference_iso, ts_iso)
+      extra[[candidate_id]] <- setdiff(ts_iso, reference_iso)
+    }
+  }
+  if (length(offending) > 0L) {
+    rlang::abort(
+      sprintf(
+        "Retained sweep returns do not form a complete common timestamp panel for candidate_id: %s.",
+        paste(offending, collapse = ", ")
+      ),
+      class = c("ledgr_sweep_returns_incomplete_panel", "ledgr_validation_pbo_incomplete_panel", "ledgr_invalid_args"),
+      candidate_ids = offending,
+      missing_timestamps = missing,
+      extra_timestamps = extra
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_sweep_returns_panel_timestamps <- function(rows_by_candidate) {
+  if (length(rows_by_candidate) == 0L) {
+    return(as.POSIXct(character(), tz = "UTC"))
+  }
+  ts_num <- sort(unique(unlist(lapply(rows_by_candidate, function(rows) {
+    as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC"))
+  }), use.names = FALSE)))
+  as.POSIXct(ts_num, origin = "1970-01-01", tz = "UTC")
+}
+
+ledgr_sweep_returns_panel_matrix <- function(rows_by_candidate,
+                                             ts_utc,
+                                             candidate_ids,
+                                             value_col) {
+  out <- matrix(
+    NA_real_,
+    nrow = length(ts_utc),
+    ncol = length(candidate_ids),
+    dimnames = list(ledgr_sweep_returns_ts_labels(ts_utc), candidate_ids)
+  )
+  if (length(candidate_ids) == 0L || length(ts_utc) == 0L) {
+    return(out)
+  }
+  ts_num <- as.numeric(ts_utc)
+  for (candidate_id in candidate_ids) {
+    rows <- rows_by_candidate[[candidate_id]]
+    idx <- match(as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC")), ts_num)
+    out[idx, candidate_id] <- as.numeric(rows[[value_col]])
+  }
+  out
+}
+
+ledgr_sweep_returns_panel_long <- function(rows_by_candidate) {
+  rows_by_candidate <- rows_by_candidate[vapply(rows_by_candidate, nrow, integer(1)) > 0L]
+  if (length(rows_by_candidate) == 0L) {
+    return(ledgr_sweep_empty_returns(include_sweep_id = TRUE))
+  }
+  tibble::as_tibble(do.call(rbind, unname(rows_by_candidate)))
+}
+
+ledgr_sweep_returns_ts_labels <- function(ts_utc) {
+  if (length(ts_utc) == 0L) {
+    return(character())
+  }
+  format(as.POSIXct(ts_utc, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+}
+
+ledgr_sweep_returns_attach_projection_attrs <- function(out, panel) {
+  attr(out, "ledgr_return_panel") <- list(
+    source = "retained_sweep_returns",
+    value = panel$value,
+    candidate_ids = panel$candidate_ids,
+    completed_candidate_ids = panel$completed_candidate_ids,
+    excluded_candidate_ids = panel$excluded_candidate_ids,
+    first_row_dropped = panel$first_row_dropped,
+    complete = panel$complete
+  )
   out
 }
 

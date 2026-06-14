@@ -83,6 +83,18 @@
 #' returns are requested for a failed candidate or for a completed candidate
 #' whose retained rows are missing.
 #'
+#' `ledgr_sweep_returns_first_row_invalid` is raised when retained return rows
+#' do not carry the required structural first-row `NA_real_` period return.
+#'
+#' `ledgr_sweep_returns_incomplete_panel` is raised when callers request a
+#' complete retained-return panel but selected completed candidates do not share
+#' one common timestamp grid after first-row handling.
+#' `ledgr_validation_pbo_incomplete_panel` is a compatibility alias on the same
+#' condition for future PBO/CSCV adapters.
+#'
+#' `ledgr_missing_package` is raised when a public optional-package adapter is
+#' requested but the package is not installed.
+#'
 #' @section Walk-forward classes:
 #' `ledgr_walk_forward_metric_missing` is raised when a selection rule requests
 #' a metric column that is absent from the train-window score rows.
@@ -151,6 +163,9 @@
 #' @aliases ledgr_invalid_sweep_retention ledgr_sweep_returns_unretained
 #' @aliases ledgr_sweep_returns_candidate_not_found
 #' @aliases ledgr_sweep_returns_candidate_not_completed
+#' @aliases ledgr_sweep_returns_first_row_invalid
+#' @aliases ledgr_sweep_returns_incomplete_panel
+#' @aliases ledgr_validation_pbo_incomplete_panel ledgr_missing_package
 #' @aliases ledgr_walk_forward_metric_missing
 #' @aliases ledgr_walk_forward_metric_class_invalid
 #' @aliases ledgr_walk_forward_no_selection

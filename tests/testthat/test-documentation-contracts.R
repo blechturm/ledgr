@@ -658,6 +658,18 @@ testthat::test_that("contracts record the closed backtest result set", {
   )
 })
 
+testthat::test_that("contracts record retained-return panel gates", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "Retained sweep return panels are derived only from `ledgr_sweep_returns()`.", fixed = TRUE)
+  testthat::expect_match(text, "explicit structural first-row\\s+handling for `period_return`")
+  testthat::expect_match(text, "common timestamp grid after first-row handling", fixed = TRUE)
+  testthat::expect_match(text, "`Suggests`-only with no `NAMESPACE` imports", fixed = TRUE)
+})
+
 testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
   root <- testthat::test_path("..", "..")
   contracts <- file.path(root, "inst", "design", "contracts.md")

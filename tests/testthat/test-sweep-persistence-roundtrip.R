@@ -114,6 +114,16 @@ testthat::test_that("reopened sweeps round-trip scalar rows, identity, and retai
     ledgr_sweep_returns_wide(structure(sweep, sweep_id = "roundtrip_saved"), value = "equity"),
     tolerance = 1e-12
   )
+  testthat::expect_equal(
+    ledgr_sweep_returns_matrix(reopened),
+    ledgr_sweep_returns_matrix(sweep),
+    tolerance = 1e-12
+  )
+  testthat::expect_equal(
+    ledgr_sweep_returns_data_frame(reopened, value = "equity"),
+    ledgr_sweep_returns_data_frame(sweep, value = "equity"),
+    tolerance = 1e-12
+  )
 })
 
 testthat::test_that("schema-1 saved sweeps reopen with no-op risk identity", {

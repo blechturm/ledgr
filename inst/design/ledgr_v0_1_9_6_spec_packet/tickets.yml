@@ -35,7 +35,7 @@ tickets:
 
   - id: "LDG-2647"
     title: "Canonical single-run returns result view"
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -51,7 +51,7 @@ tickets:
 
   - id: "LDG-2648"
     title: "Retained-sweep return panel hygiene"
-    status: "not_started"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -67,7 +67,7 @@ tickets:
 
   - id: "LDG-2649"
     title: "Adapter-shaped return projections"
-    status: "not_started"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:

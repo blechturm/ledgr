@@ -206,7 +206,7 @@ scope: packet-open-verification
 Priority: P0
 Effort: M
 Dependencies: LDG-2646
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -281,7 +281,7 @@ scope: canonical-return-stream
 Priority: P0
 Effort: M
 Dependencies: LDG-2647
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -316,6 +316,22 @@ evidence from fills or positions.
   fixtures.
 - Reopened-sweep parity test where retained returns are available.
 
+### Implementation Notes
+
+- Added `ledgr_sweep_returns_panel()` as the normalized retained-return panel
+  substrate over `ledgr_sweep_returns()`.
+- The panel records normalized long evidence, a deterministic `T x N` matrix,
+  UTC timestamps, used candidate ids, completed candidate ids, excluded
+  candidate ids, and structural first-row handling metadata.
+- For `value = "returns"`, the structural first timestamp is dropped after
+  verifying each candidate's first `period_return` is `NA_real_`.
+- Complete panels fail closed with `ledgr_sweep_returns_incomplete_panel` and
+  the future PBO-compatible alias `ledgr_validation_pbo_incomplete_panel`; the
+  condition carries offending candidate ids plus missing/extra timestamp data.
+- Missing retained evidence still routes through the existing
+  `ledgr_sweep_returns_unretained` class. No fills or positions are
+  reconstructed and no identity or retained-return bytes change.
+
 ### Source Reference
 
 - `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md` Sections 2.2 and
@@ -335,7 +351,7 @@ scope: panel-hygiene
 Priority: P1
 Effort: M
 Dependencies: LDG-2648
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -367,6 +383,23 @@ keeping optional packages optional and ledgr metrics authoritative.
 - Optional-package skip tests.
 - `NAMESPACE` review for accidental optional-package imports.
 - `DESCRIPTION` review if `Suggests` changes.
+
+### Implementation Notes
+
+- Added deterministic projection helpers over the normalized panel:
+  `ledgr_sweep_returns_matrix()`, `ledgr_sweep_returns_data_frame()`, and
+  `ledgr_sweep_returns_xts()`.
+- Matrix and data-frame projections use candidate ids as columns and UTC ISO
+  row names. Projection metadata records retained-return source, value,
+  candidate ids, completed/excluded candidates, first-row handling, and the
+  complete-panel flag.
+- `ledgr_sweep_returns_xts()` is optional-package backed, fails with
+  `ledgr_missing_package` when `xts` is absent, and labels the output as
+  external evidence with package/version metadata when present.
+- `xts` remains in `Suggests`, not `Imports`; no `NAMESPACE` import was added.
+- Verification passed:
+  `pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-sweep-retention.R', reporter='summary'); testthat::test_file('tests/testthat/test-sweep-persistence-roundtrip.R', reporter='summary'); testthat::test_file('tests/testthat/test-api-exports.R', reporter='summary'); testthat::test_file('tests/testthat/test-documentation-contracts.R', reporter='summary')`
+  and `tools::checkRd()` on the touched Rd pages.
 
 ### Source Reference
 

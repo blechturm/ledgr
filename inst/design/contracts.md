@@ -678,6 +678,14 @@ The strategy preflight boundary originated in
   must name the exact PerformanceAnalytics functions, annualization scale, and
   risk-free-rate units used for comparison, and they must not redefine ledgr's
   owned metric formulas or become a runtime dependency.
+- Retained sweep return panels are derived only from `ledgr_sweep_returns()`.
+  Diagnostic panel projections must preserve deterministic UTC row ordering,
+  deterministic candidate-column ordering, explicit structural first-row
+  handling for `period_return`, and completed/excluded candidate reporting.
+  Complete-panel consumers must fail closed when selected completed candidates
+  do not share a common timestamp grid after first-row handling. Optional
+  package projections such as `xts` are external evidence only and must remain
+  `Suggests`-only with no `NAMESPACE` imports.
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.

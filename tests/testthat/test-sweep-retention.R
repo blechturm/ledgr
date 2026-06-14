@@ -179,6 +179,34 @@ testthat::test_that("completed retention exposes long and wide return series", {
   testthat::expect_identical(names(wide_equity), c("ts_utc", "b", "a"))
   testthat::expect_equal(wide_equity$b, only_b$equity, tolerance = 1e-12)
 
+  panel <- ledgr_sweep_returns_panel(out, candidates = c("b", "a"))
+  testthat::expect_s3_class(panel, "ledgr_sweep_returns_panel")
+  testthat::expect_identical(panel$candidate_ids, c("b", "a"))
+  testthat::expect_identical(panel$completed_candidate_ids, c("a", "b"))
+  testthat::expect_identical(panel$excluded_candidate_ids, character())
+  testthat::expect_true(panel$first_row_dropped)
+  testthat::expect_identical(colnames(panel$matrix), c("b", "a"))
+  testthat::expect_identical(nrow(panel$matrix), length(unique(long$ts_utc)) - 1L)
+  testthat::expect_equal(unname(panel$matrix[, "b"]), only_b$period_return[-1L], tolerance = 1e-12)
+  testthat::expect_identical(
+    rownames(panel$matrix),
+    format(as.POSIXct(only_b$ts_utc[-1L], tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  )
+
+  projected_matrix <- ledgr_sweep_returns_matrix(out, candidates = c("b", "a"))
+  testthat::expect_identical(dimnames(projected_matrix), dimnames(panel$matrix))
+  projected_matrix_values <- projected_matrix
+  attr(projected_matrix_values, "ledgr_return_panel") <- NULL
+  testthat::expect_equal(projected_matrix_values, panel$matrix, tolerance = 1e-12)
+  testthat::expect_identical(attr(projected_matrix, "ledgr_return_panel")$candidate_ids, c("b", "a"))
+  testthat::expect_identical(attr(projected_matrix, "ledgr_return_panel")$value, "returns")
+
+  projected_frame <- ledgr_sweep_returns_data_frame(out, candidates = c("b", "a"))
+  testthat::expect_true(is.data.frame(projected_frame))
+  testthat::expect_false(inherits(projected_frame, "tbl_df"))
+  testthat::expect_identical(names(projected_frame), c("b", "a"))
+  testthat::expect_equal(projected_frame$b, only_b$period_return[-1L], tolerance = 1e-12)
+
   compiled <- ledgr_sweep(
     exp,
     grid,
@@ -217,6 +245,10 @@ testthat::test_that("retained return accessors fail loudly for unretained, missi
     class = "ledgr_sweep_returns_unretained"
   )
   testthat::expect_error(
+    ledgr_sweep_returns_panel(unretained),
+    class = "ledgr_sweep_returns_unretained"
+  )
+  testthat::expect_error(
     ledgr_sweep_returns(retained, candidates = "missing"),
     class = "ledgr_sweep_returns_candidate_not_found"
   )
@@ -228,6 +260,84 @@ testthat::test_that("retained return accessors fail loudly for unretained, missi
   long <- ledgr_sweep_returns(retained)
   testthat::expect_identical(unique(long$candidate_id), "good")
   testthat::expect_false("bad" %in% long$candidate_id)
+
+  panel <- ledgr_sweep_returns_panel(retained)
+  testthat::expect_identical(panel$candidate_ids, "good")
+  testthat::expect_identical(panel$completed_candidate_ids, "good")
+  testthat::expect_identical(panel$excluded_candidate_ids, "bad")
+})
+
+testthat::test_that("retained-return panels fail closed for ragged complete grids", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+
+  out <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
+  ragged <- out
+  retained <- attr(ragged, "sweep_returns", exact = TRUE)
+  last_b <- max(retained$ts_utc[retained$candidate_id == "b"])
+  retained <- retained[!(retained$candidate_id == "b" & retained$ts_utc == last_b), , drop = FALSE]
+  attr(ragged, "sweep_returns") <- retained
+
+  err <- rlang::catch_cnd(ledgr_sweep_returns_panel(ragged, candidates = c("a", "b")))
+  testthat::expect_s3_class(err, "ledgr_sweep_returns_incomplete_panel")
+  testthat::expect_s3_class(err, "ledgr_validation_pbo_incomplete_panel")
+  testthat::expect_true("b" %in% err$candidate_ids)
+  testthat::expect_true(length(err$missing_timestamps$b) > 0L)
+
+  permissive <- ledgr_sweep_returns_matrix(ragged, candidates = c("a", "b"), complete = FALSE)
+  testthat::expect_identical(colnames(permissive), c("a", "b"))
+  testthat::expect_true(is.na(permissive[nrow(permissive), "b"]))
+})
+
+testthat::test_that("xts retained-return projection labels external evidence when available", {
+  testthat::skip_if_not_installed("xts")
+
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+
+  out <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
+  only_b <- ledgr_sweep_returns(out, candidates = "b")
+  projected_xts <- ledgr_sweep_returns_xts(out, candidates = c("b", "a"))
+
+  testthat::expect_s3_class(projected_xts, "xts")
+  testthat::expect_equal(as.numeric(projected_xts[, "b"]), only_b$period_return[-1L], tolerance = 1e-12)
+  testthat::expect_identical(attr(projected_xts, "ledgr_external_evidence")$package, "xts")
+  testthat::expect_identical(attr(projected_xts, "ledgr_return_panel")$candidate_ids, c("b", "a"))
+})
+
+testthat::test_that("return projection adapters remain optional and out of imports", {
+  root <- testthat::test_path("..", "..")
+  description_path <- file.path(root, "DESCRIPTION")
+  namespace_path <- file.path(root, "NAMESPACE")
+  testthat::skip_if_not(
+    file.exists(description_path) && file.exists(namespace_path),
+    "source package metadata not available during installed-package tests"
+  )
+  description <- read.dcf(description_path)
+  imports <- trimws(unlist(strsplit(description[, "Imports"], "[,\n]")))
+  suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
+  namespace <- paste(readLines(namespace_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_true("xts" %in% suggests)
+  testthat::expect_false("xts" %in% imports)
+  testthat::expect_no_match(namespace, "import\\(xts\\)")
+  testthat::expect_no_match(namespace, "importFrom(xts", fixed = TRUE)
 })
 
 testthat::test_that("retained returns keep final equity row with final-bar no-fill warning", {

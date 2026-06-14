@@ -3,11 +3,43 @@
 \name{ledgr_sweep_returns}
 \alias{ledgr_sweep_returns}
 \alias{ledgr_sweep_returns_wide}
+\alias{ledgr_sweep_returns_panel}
+\alias{ledgr_sweep_returns_matrix}
+\alias{ledgr_sweep_returns_data_frame}
+\alias{ledgr_sweep_returns_xts}
 \title{Retained sweep return series}
 \usage{
 ledgr_sweep_returns(x, candidates = NULL)
 
 ledgr_sweep_returns_wide(x, candidates = NULL, value = c("returns", "equity"))
+
+ledgr_sweep_returns_panel(
+  x,
+  candidates = NULL,
+  value = c("returns", "equity"),
+  complete = TRUE
+)
+
+ledgr_sweep_returns_matrix(
+  x,
+  candidates = NULL,
+  value = c("returns", "equity"),
+  complete = TRUE
+)
+
+ledgr_sweep_returns_data_frame(
+  x,
+  candidates = NULL,
+  value = c("returns", "equity"),
+  complete = TRUE
+)
+
+ledgr_sweep_returns_xts(
+  x,
+  candidates = NULL,
+  value = c("returns", "equity"),
+  complete = TRUE
+)
 }
 \arguments{
 \item{x}{A \code{ledgr_sweep_results} object.}
@@ -16,12 +48,20 @@ ledgr_sweep_returns_wide(x, candidates = NULL, value = c("returns", "equity"))
 
 \item{value}{Value to widen. \code{"returns"} uses \code{period_return}; \code{"equity"}
 uses \code{equity}.}
+
+\item{complete}{Logical scalar. If \code{TRUE}, require every selected completed
+candidate to share the same timestamp grid after first-row handling.}
 }
 \value{
 \code{ledgr_sweep_returns()} returns a tibble with \code{sweep_id},
 \code{candidate_id}, \code{ts_utc}, \code{equity}, and \code{period_return}.
 \code{ledgr_sweep_returns_wide()} returns a tibble with \code{ts_utc} followed by
-one column per candidate.
+one column per candidate. \code{ledgr_sweep_returns_panel()} returns a classed
+list with normalized long evidence, a numeric matrix, UTC timestamps, the
+candidate ids used, completed candidate ids, excluded candidate ids, and
+first-row handling metadata. \code{ledgr_sweep_returns_matrix()},
+\code{ledgr_sweep_returns_data_frame()}, and \code{ledgr_sweep_returns_xts()} return
+adapter-shaped projections over that normalized panel.
 }
 \description{
 \code{ledgr_sweep_returns()} returns the retained long net portfolio equity and
@@ -35,6 +75,20 @@ returns and they do not include gross-vs-net attribution.
 series in wide form. Use the long form when you want candidate metadata
 beside each row; use the wide form when an external metric package expects
 one return/equity column per candidate.
+
+\item \code{ledgr_sweep_returns_panel()}: Return a normalized retained-return panel.
+For \code{value = "returns"}, the structural first timestamp is dropped after
+verifying each candidate's first \code{period_return} is \code{NA_real_}.
+
+\item \code{ledgr_sweep_returns_matrix()}: Return a numeric \code{T x N} matrix over a
+normalized retained-return panel.
+
+\item \code{ledgr_sweep_returns_data_frame()}: Return a base data frame over a normalized
+retained-return panel.
+
+\item \code{ledgr_sweep_returns_xts()}: Return an optional \code{xts} projection over a
+normalized retained-return panel. The \code{xts} package remains optional and is
+not imported by ledgr.
 
 }}
 \examples{
