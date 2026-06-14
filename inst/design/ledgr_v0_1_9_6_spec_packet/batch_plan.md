@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 4 implementation complete; awaiting Claude review.
+Status: Batch 4 complete after Claude review; native PBO ticket added by maintainer amendment.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -28,10 +28,10 @@ The release gate must begin by reading
 
 ## Ticket-Cut Decisions
 
-- PBO/CSCV implementation is not cut. LDG-2650 is a spike and decision gate;
-  implementation may be added only after maintainer-accepted green synthesis.
-- Business objective and objective-filtered walk-forward identity defer with
-  PBO. No narrowed non-PBO override is cut.
+- PBO/CSCV implementation is cut only as LDG-2658 after LDG-2650 returned a
+  maintainer-accepted green synthesis for a native implementation ticket.
+- Business objective and objective-filtered walk-forward identity remain
+  deferred. No narrowed objective override is cut.
 - MinTRL is in scope as the first self-contained diagnostic.
 - DSR/effective-trial clustering is in scope only if reference verification is
   green; it is independent of PBO.
@@ -135,7 +135,7 @@ reviewed together so projection behavior cannot drift from panel hygiene.
 
 ## Batch 4 - PBO Spike
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -154,7 +154,29 @@ Review focus:
 - adapter-vs-native verdict is concrete;
 - "what PBO cannot prove" is taught explicitly.
 
-## Batch 5 - Minimum Track Record Length
+## Batch 5 - Native PBO/CSCV
+
+Tickets:
+
+- LDG-2658
+
+Scope:
+
+- implement native PBO/CSCV over retained-return panels after the green spike;
+- keep CRAN `pbo` optional as reference evidence only;
+- add reference-value and known-direction tests;
+- teach PBO interpretation and limits without selection, promotion, or
+  business-objective filtering.
+
+Review focus:
+
+- native calculation matches the spike reference fixture;
+- known-direction overfit/non-overfit examples are meaningful;
+- input gates and failure classes are precise;
+- result shape carries evidence metadata and is stable;
+- no runtime dependency or winner-picking scope is introduced.
+
+## Batch 6 - Minimum Track Record Length
 
 Tickets:
 
@@ -172,7 +194,7 @@ Review focus:
 - method output is stable and documented;
 - article section satisfies the Methodological Diagnostics rule.
 
-## Batch 6 - DSR And Effective-Trial Clustering
+## Batch 7 - DSR And Effective-Trial Clustering
 
 Tickets:
 
@@ -190,7 +212,7 @@ Review focus:
 - clustering/effective-trial behavior is deterministic;
 - weak or unverifiable methodology defers rather than ships.
 
-## Batch 7 - Selection Integrity Teaching Surface
+## Batch 8 - Selection Integrity Teaching Surface
 
 Tickets:
 
@@ -210,7 +232,7 @@ Review focus:
   business-objective filtering;
 - examples execute unless a standard exception is recorded.
 
-## Batch 8 - Intraday-Readiness Audit
+## Batch 9 - Intraday-Readiness Audit
 
 Tickets:
 
@@ -228,7 +250,7 @@ Review focus:
 - every high/medium finding has source evidence;
 - no intraday runtime implementation slips in.
 
-## Batch 9 - Peer Benchmark Redo
+## Batch 10 - Peer Benchmark Redo
 
 Tickets:
 
@@ -247,7 +269,7 @@ Review focus:
 - parity is interpreted before timing;
 - no runtime optimization or compiled-default flip is mixed in.
 
-## Batch 10 - Release Surfaces
+## Batch 11 - Release Surfaces
 
 Tickets:
 
@@ -257,7 +279,7 @@ Scope:
 
 - update NEWS, README/pkgdown surfaces, roadmap, horizon, AGENTS, and design
   indexes as appropriate;
-- record PBO spike verdict and deferrals;
+- record PBO spike verdict, native PBO shipped/deferred state, and deferrals;
 - ensure public surfaces match actual shipped scope.
 
 Review focus:
@@ -266,7 +288,7 @@ Review focus:
 - shipped diagnostics and substrate are described accurately;
 - deferrals are captured with reasons.
 
-## Batch 11 - Release Gate
+## Batch 12 - Release Gate
 
 Tickets:
 

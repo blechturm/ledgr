@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Spec Packet
 
-Status: Batch 4 implementation complete; awaiting Claude review.
+Status: Batch 4 complete after Claude review; native PBO ticket added by maintainer amendment.
 
 This packet scopes v0.1.9.6 as the validation-substrate and gated-diagnostics
 packet after the v0.1.9.5 naming and teaching consolidation release.
@@ -31,6 +31,7 @@ Scope:
 - build the retained-return panel bridge and adapter-shaped projection
   substrate;
 - run the PBO spike before any public PBO/CSCV implementation;
+- implement native PBO/CSCV only through the post-spike LDG-2658 ticket;
 - implement only reference-verified, self-contained diagnostics retained at
   ticket cut;
 - keep method teachability as a packet-open gate;
@@ -38,8 +39,8 @@ Scope:
 
 Non-scope:
 
-- no unconditional PBO/CSCV implementation;
-- no business-objective implementation unless the PBO gate passes or spec-cut
+- no unconditional or adapter-runtime PBO/CSCV implementation;
+- no business-objective implementation unless a later maintainer amendment
   records a narrowed override;
 - no purged k-fold, embargo, CPCV, benchmark-relative diagnostics, or portfolio
   optimization;

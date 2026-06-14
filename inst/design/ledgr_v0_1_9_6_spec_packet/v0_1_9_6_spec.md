@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Spec
 
-**Status:** Batch 4 implementation complete; awaiting Claude review.
+**Status:** Batch 4 complete after Claude review; native PBO ticket added by maintainer amendment.
 **Target branch:** `v0.1.9.6`.
 **Scope:** Validation substrate and gated diagnostics after v0.1.9.5:
 canonical single-run returns, retained-return panel hygiene,
@@ -10,11 +10,11 @@ methodological-diagnostics documentation gate, intraday-readiness audit, and a
 current-surface peer benchmark redo.
 **Maintainer rescope:** The accepted validation-toolkit synthesis remains
 binding, but the 2026-06-14 maintainer amendment changes PBO/CSCV from
-unconditional implementation to an in-packet spike-gated candidate. Until the
-PBO spike passes maintainer review, implementation tickets stop at substrate,
-panel hygiene, projection, and spike artifacts. If the spike does not pass
-green, PBO/CSCV and the dependent business-objective / objective-filtered
-walk-forward identity work defer to v0.1.9.7 or later.
+unconditional implementation to an in-packet spike-gated candidate. LDG-2650
+returned green for a native implementation ticket and yellow for CRAN `pbo` as a
+runtime foundation. LDG-2658 is therefore added to v0.1.9.6 for native PBO/CSCV.
+The dependent business-objective / objective-filtered walk-forward identity
+work remains deferred.
 **Non-scope:** no second execution engine; no fold-core semantic change; no
 unconditional PBO/CSCV implementation; no purged k-fold, embargo, CPCV, HRP,
 portfolio optimization, benchmark-relative diagnostics, regime adapters,
@@ -209,6 +209,18 @@ Gate:
 - If the spike returns yellow/red, lacks known-answer verification, or does not
   get maintainer acceptance, PBO/CSCV defers to v0.1.9.7 or later.
 
+Post-spike amendment:
+
+- LDG-2650 returned green for a native implementation ticket and yellow for
+  CRAN `pbo` as the public runtime foundation.
+- LDG-2658 is added to this packet for a native PBO/CSCV diagnostic over the
+  retained-return panel.
+- CRAN `pbo` remains optional reference/cross-check evidence only.
+- The native ticket must include a hard known-direction example; matching the
+  spike reference fixture alone is not sufficient.
+- Business-objective filtering, promotion, walk-forward identity changes, and
+  per-fold train-sweep PBO remain non-scope.
+
 ### 2.6 Business Objective Layer
 
 `ledgr_business_objective()` and `ledgr_sweep_filter()` remain planned by the
@@ -216,9 +228,10 @@ accepted synthesis but are conditional in this packet.
 
 Default rule:
 
-- if the PBO gate does not pass, the business-objective layer defers with PBO;
-- the v0.1.9.6 spec-cut may record a narrowed override only if it can compose
-  proven non-PBO criteria without implying automatic promotion, winner
+- the PBO spike gate has passed for native PBO/CSCV, but the business-objective
+  layer remains deferred for v0.1.9.6;
+- a later maintainer amendment may record a narrowed objective override only if
+  it can compose proven criteria without implying automatic promotion, winner
   selection, or premature objective-filtered walk-forward identity;
 - no implementation may hide selection or promotion inside the objective
   surface.
@@ -322,17 +335,19 @@ Tickets will bind final batch shape later. The spec-level order is:
 4. Return-panel hygiene and adapter-shaped projections.
 5. PBO spike and spike synthesis.
 6. Conditional branch:
-   - if PBO spike passes green: PBO/CSCV implementation may be ticketed;
-   - otherwise: record deferral and continue with substrate/self-contained
-     diagnostics only.
-7. Reference-verified self-contained diagnostics retained at ticket cut.
-8. Deterministic clustering / effective-trial-count support if required by
+   - LDG-2650 passed green for native implementation and LDG-2658 is now
+     ticketed;
+   - if LDG-2658 fails verification, record deferral and continue with
+     substrate/self-contained diagnostics only.
+7. Native PBO/CSCV implementation, bounded by LDG-2658.
+8. Reference-verified self-contained diagnostics retained at ticket cut.
+9. Deterministic clustering / effective-trial-count support if required by
    retained diagnostics.
-9. Optional adapter extensions that pass packet-open verification.
-10. Conditional business-objective layer only if the gate conditions allow it.
-11. Intraday-readiness audit.
-12. Peer benchmark redo.
-13. Documentation, NEWS, reference pages, and release gate.
+10. Optional adapter extensions that pass packet-open verification.
+11. Business-objective layer remains deferred unless separately amended.
+12. Intraday-readiness audit.
+13. Peer benchmark redo.
+14. Documentation, NEWS, reference pages, and release gate.
 
 The sequence intentionally puts substrate and spike work before any method
 whose correctness depends on them.
@@ -374,11 +389,15 @@ whose correctness depends on them.
 - The spike includes known-answer or reference-value verification.
 - The spike binds adapter-vs-native verdict and fallback conditions.
 - The spike includes the "what PBO cannot prove" teaching surface.
-- Deferral is recorded explicitly when the gate does not pass.
+- LDG-2650 passed green for native implementation and LDG-2658 records the
+  bounded native ticket. Deferral is recorded explicitly if LDG-2658 fails its
+  reference or known-direction gates.
 
 ### 6.4 Diagnostics
 
 - Every diagnostic has reference-value or known-direction tests.
+- Native PBO/CSCV must include a known-direction overfit/non-overfit fixture;
+  agreement with CRAN `pbo` alone is not enough.
 - Every diagnostic carries input identity and schema/version metadata.
 - Missing or invalid evidence fails closed with classed conditions.
 - Adapter-derived diagnostics are labeled external evidence.
@@ -406,34 +425,33 @@ whose correctness depends on them.
 
 ## 7. Open Questions For Spec Review / Ticket Cut
 
-These are not tickets yet.
+Resolved at ticket cut and post-spike amendment:
 
-1. Which self-contained diagnostics are in v0.1.9.6 after reference
-   verification: MinTRL only; MinTRL + DSR; K-Ratio; any others?
-2. Is DSR allowed to ship without PBO if effective-trial clustering is
-   verified, or should DSR defer with PBO when the spike is not green?
-   Technical steer for ticket cut: DSR's deflation depends on the
-   effective-trial clustering path, not on PBO itself, so DSR can remain
-   independently eligible if clustering is reference-verified.
-3. Does the business-objective layer defer by default with PBO, or does the
-   ticket cut record a narrowed non-PBO objective-only override?
-4. What exact public names satisfy the v0.1.9.5 naming synthesis for the
-   bridge and diagnostics surfaces?
-5. Does the packet add RPESE or pbo to `Suggests`, or only record spike
-   findings?
-6. Does the peer benchmark redo land in the main packet or a separate
-   measurement-only commit after feature work?
-7. Does the intraday-readiness audit run before return-panel implementation
-   (to catch panel cadence footguns early) or after substrate implementation
-   (to audit the final v0.1.9.6 shape)?
+1. MinTRL and DSR/effective-trial clustering are in scope; K-Ratio and Triple
+   Penance are deferred.
+2. DSR may ship independently of PBO because its deflation depends on
+   effective-trial clustering, not on the PBO algorithm. It remains gated by
+   reference verification and deterministic clustering evidence.
+3. The PBO spike returned green for a native implementation ticket, now cut as
+   LDG-2658. The business-objective layer remains deferred unless separately
+   amended.
+4. Public names are bound by the ticket cut and must satisfy the v0.1.9.5
+   naming synthesis.
+5. RPESE and `pbo` are not added to `Suggests`; CRAN `pbo` remains optional
+   reference evidence only.
+6. The peer benchmark redo lands in the main packet as internal
+   measurement-only work.
+7. The intraday-readiness audit runs after retained-return panel implementation
+   so it audits the actual v0.1.9.6 validation evidence path.
 
 ---
 
 ## 8. Explicit Deferrals
 
-- Public PBO/CSCV if the spike gate does not pass.
+- CRAN `pbo` as a required runtime foundation.
+- PBO/CSCV if LDG-2658 fails its implementation gates.
 - Business-objective implementation and objective-filtered walk-forward
-  identity if PBO defers, unless a narrowed override is explicitly accepted.
+  identity, unless a narrowed override is explicitly accepted.
 - Per-fold train-sweep PBO / `fold_seq` retention.
 - Purged k-fold, embargo, CPCV.
 - Benchmark-relative metrics.

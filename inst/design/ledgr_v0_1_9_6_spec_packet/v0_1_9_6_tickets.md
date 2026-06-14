@@ -2,7 +2,7 @@
 
 Version: v0.1.9.6
 Date: 2026-06-14
-Total Tickets: 13
+Total Tickets: 14
 
 ## Ticket Organization
 
@@ -22,6 +22,7 @@ packet alignment
   -> canonical run returns
   -> retained-return panel and projection substrate
   -> PBO spike decision gate
+  -> native PBO/CSCV diagnostic
   -> self-contained diagnostics and selection-integrity docs
   -> audit / measurement closeout
   -> release surfaces
@@ -30,11 +31,13 @@ packet alignment
 
 Ticket-cut decisions from the spec open questions:
 
-- PBO/CSCV implementation is not cut as a v0.1.9.6 ticket. It may only be
-  added by a later maintainer amendment after LDG-2650 returns green and is
-  accepted.
-- `ledgr_business_objective()` and `ledgr_sweep_filter()` are deferred with
-  PBO. No narrowed non-PBO override is cut for v0.1.9.6.
+- PBO/CSCV implementation is now cut as LDG-2658 by maintainer amendment after
+  LDG-2650 returned green for a native implementation ticket and was accepted.
+  The public runtime route is native; CRAN `pbo` remains an optional reference
+  and cross-check only.
+- `ledgr_business_objective()` and `ledgr_sweep_filter()` remain deferred even
+  though native PBO/CSCV is now ticketed. No narrowed objective override is cut
+  for v0.1.9.6.
 - MinTRL is the first self-contained diagnostic in scope.
 - DSR may ship independently of PBO because its deflation depends on
   effective-trial clustering, not on the PBO algorithm. It remains gated by
@@ -57,19 +60,19 @@ LDG-2645
        -> LDG-2647
             -> LDG-2648
                  -> LDG-2649
-                 -> LDG-2650
-                 -> LDG-2651
-                 -> LDG-2652
-                 -> LDG-2654
-                 -> LDG-2655
-LDG-2651 + LDG-2652 -> LDG-2653
-LDG-2650 + LDG-2653 + LDG-2654 + LDG-2655 -> LDG-2656
-LDG-2645..LDG-2656 -> LDG-2657
+                 -> LDG-2650 -> LDG-2658
+                  -> LDG-2651
+                  -> LDG-2652
+                  -> LDG-2654
+                  -> LDG-2655
+LDG-2651 + LDG-2652 + LDG-2658 -> LDG-2653
+LDG-2650 + LDG-2653 + LDG-2654 + LDG-2655 + LDG-2658 -> LDG-2656
+LDG-2645..LDG-2656 + LDG-2658 -> LDG-2657
 ```
 
-LDG-2650 may add a later conditional PBO/CSCV implementation ticket only by
-explicit maintainer amendment after spike acceptance. No such ticket is cut in
-this file.
+LDG-2658 was added by explicit maintainer amendment after LDG-2650 spike
+acceptance. It does not authorize business-objective filtering, promotion,
+walk-forward identity changes, or per-fold train-sweep PBO.
 
 Batch order is authoritative even where tickets could be implemented in
 smaller parallel patches.
@@ -419,7 +422,7 @@ scope: return-projections
 Priority: P0
 Effort: M
 Dependencies: LDG-2648
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -486,6 +489,82 @@ implementation is considered.
 type: spike
 surface: validation-methods
 scope: pbo-decision-gate
+```
+
+## LDG-2658 - Native PBO/CSCV Diagnostic
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2648, LDG-2649, LDG-2650
+Status: Not Started
+
+### Description
+
+Implement the public ledgr PBO/CSCV diagnostic natively over retained-return
+panels after the LDG-2650 spike returned green for a native implementation
+ticket. CRAN `pbo` remains optional reference evidence only, not a runtime
+foundation.
+
+### Tasks
+
+- Define the public function name, output shape, condition classes, and
+  `as_tibble()` / print behavior under the v0.1.9.5 naming synthesis.
+- Implement native CSCV/PBO over the LDG-2648 retained-return panel and
+  LDG-2649 projection shape.
+- Prevalidate `S`: even, positive, and dividing the post-first-row return count.
+- Drop the structural first `NA` return row only after verifying it is
+  structurally `NA_real_` for every selected candidate.
+- Require complete grids and completed-candidate retained return evidence;
+  reuse the panel failure classes and PBO alias.
+- Carry evidence metadata: used candidate ids, completed candidate ids,
+  excluded candidate ids, value, first-row handling, complete-panel proof,
+  `S`, metric identity, schema/version, and optional reference-check metadata.
+- Add reference-value tests from `pbo_spike_reference.R`.
+- Add a hard known-direction fixture: an obviously overfit candidate family must
+  produce high PBO, and a robust/less-overfit family must produce lower PBO.
+- Add Methodological Diagnostics documentation under the Selection Integrity
+  family surface.
+
+### Acceptance Criteria
+
+- No dependency on CRAN `pbo` is added to `Imports` or required for runtime.
+- The public result has stable named fields for PBO, CSCV cases, rank/logit
+  evidence, degradation/probability surfaces where shipped, and input metadata.
+- Invalid `S`, too few candidates, too few observations, non-finite metric
+  output, ragged panels, and missing retained returns fail closed with classed
+  conditions.
+- Reference-value tests compare the native calculation to the spike fixture.
+- Known-direction tests exercise at least one overfit and one less-overfit
+  candidate family and lock the expected direction.
+- The method docs teach what PBO asks, what evidence it consumes, how to
+  interpret it, and what it cannot prove.
+- The implementation performs no selection, promotion, business-objective
+  filtering, walk-forward identity changes, or per-fold train-sweep PBO.
+
+### Verification
+
+- Targeted native PBO/CSCV tests.
+- Optional `pbo` cross-check only when `pbo` is installed; tests must remain
+  green without `pbo`.
+- Documentation-contract tests for the Selection Integrity method surface.
+- `tools::checkRd()` for new reference pages.
+- `rg` sweep confirming no runtime dependency import and no business-objective
+  or promotion scope.
+
+### Source Reference
+
+- `inst/design/ledgr_v0_1_9_6_spec_packet/pbo_spike_synthesis.md`
+- `inst/design/ledgr_v0_1_9_6_spec_packet/pbo_spike_reference.R`
+- `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md` Sections 2.5,
+  3, 6.3, and 6.4
+- `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`
+
+### Classification
+
+```yaml
+type: feature
+surface: validation-diagnostics
+scope: native-pbo-cscv
 ```
 
 ## LDG-2651 - Minimum Track Record Length Diagnostic
@@ -596,7 +675,7 @@ scope: dsr-effective-trials
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2651, LDG-2652
+Dependencies: LDG-2651, LDG-2652, LDG-2658
 Status: Not Started
 
 ### Description
@@ -748,7 +827,7 @@ scope: current-surface-redo
 
 Priority: P2
 Effort: S
-Dependencies: LDG-2650, LDG-2653, LDG-2654, LDG-2655
+Dependencies: LDG-2650, LDG-2653, LDG-2654, LDG-2655, LDG-2658
 Status: Not Started
 
 ### Description
@@ -760,7 +839,8 @@ what shipped, what the PBO spike decided, and what remains deferred.
 
 - Update `NEWS.md`, README/pkgdown surfaces, roadmap, horizon, AGENTS.md, and
   design indexes as appropriate.
-- Record PBO spike verdict and any v0.1.9.7 deferrals.
+- Record PBO spike verdict, native PBO shipped/deferred state, and any v0.1.9.7
+  deferrals.
 - Record business-objective deferral unless a later accepted amendment changes
   the cut.
 - Record K-Ratio, Triple Penance, purging/embargo/CPCV, intraday runtime, and
@@ -772,8 +852,7 @@ what shipped, what the PBO spike decided, and what remains deferred.
 - Release surfaces mention canonical returns, panel substrate, shipped
   diagnostics, PBO spike result, audits, and benchmark redo accurately.
 - Deferred items appear in horizon or roadmap with a concrete reason.
-- No release surface says PBO/CSCV shipped unless the conditional
-  implementation was later added and completed.
+- No release surface says PBO/CSCV shipped unless LDG-2658 is completed.
 - No public benchmark ranking claim is introduced.
 
 ### Verification
@@ -800,7 +879,7 @@ scope: closeout-ledger
 Priority: P0
 Effort: M
 Dependencies: LDG-2645, LDG-2646, LDG-2647, LDG-2648, LDG-2649, LDG-2650,
-  LDG-2651, LDG-2652, LDG-2653, LDG-2654, LDG-2655, LDG-2656
+  LDG-2651, LDG-2652, LDG-2653, LDG-2654, LDG-2655, LDG-2656, LDG-2658
 Status: Not Started
 
 ### Description
@@ -814,7 +893,7 @@ are complete.
 - Run targeted verification for changed surfaces.
 - Run full local tests and package checks required by the playbook.
 - Run documentation/pkgdown checks required by the packet.
-- Confirm PBO implementation was not silently added without the spike gate.
+- Confirm native PBO/CSCV was added only through LDG-2658 after the spike gate.
 - Confirm release surfaces and deferrals are current.
 - Prepare branch for remote CI, merge, and tag only after local gates pass.
 

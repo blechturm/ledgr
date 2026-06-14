@@ -83,7 +83,7 @@ tickets:
 
   - id: "LDG-2650"
     title: "PBO spike and decision synthesis"
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -96,6 +96,26 @@ tickets:
       - "Manual spike synthesis review"
       - "Known-answer or known-direction scripts where available"
       - "Optional-package verification recorded"
+
+  - id: "LDG-2658"
+    title: "Native PBO/CSCV diagnostic"
+    status: "not_started"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2648"
+      - "LDG-2649"
+      - "LDG-2650"
+    classification:
+      type: "feature"
+      surface: "validation-diagnostics"
+      scope: "native-pbo-cscv"
+    tests:
+      - "Targeted native PBO/CSCV tests"
+      - "Known-direction overfit/non-overfit fixtures"
+      - "Optional pbo cross-check when installed"
+      - "Documentation-contract tests for method section"
+      - "tools::checkRd()"
 
   - id: "LDG-2651"
     title: "Minimum track record length diagnostic"
@@ -138,6 +158,7 @@ tickets:
     dependencies:
       - "LDG-2651"
       - "LDG-2652"
+      - "LDG-2658"
     classification:
       type: "documentation"
       surface: "validation-teaching"
@@ -188,6 +209,7 @@ tickets:
       - "LDG-2653"
       - "LDG-2654"
       - "LDG-2655"
+      - "LDG-2658"
     classification:
       type: "documentation"
       surface: "release-surfaces"
@@ -215,6 +237,7 @@ tickets:
       - "LDG-2654"
       - "LDG-2655"
       - "LDG-2656"
+      - "LDG-2658"
     classification:
       type: "release"
       surface: "release-gate"
