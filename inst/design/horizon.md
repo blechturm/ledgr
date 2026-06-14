@@ -64,7 +64,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   divergence; reference strategy templates / baseline strategies; external
   package adapters (PerformanceAnalytics first); non-spot accounting
   models (futures / margin / options / FX) once derivatives architecture
-  work begins.
+  work begins; general ML-strategy preparedness (leakage-safe training
+  substrate, model-as-artifact identity, in-loop refit) gated on the
+  temporal-CV / embargo machinery and needing a dedicated RFC (see the
+  2026-06-14 entry).
 - **v0.2.x to v0.3.0** -- live bad-data resilience, ragged-universe
   (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
   needs a dedicated RFC).
@@ -79,6 +82,179 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-06-14 [architecture] General ML-strategy preparedness (QRF ranking as the motivating spike)
+
+Goal: a general architectural substrate for supervised-ML trading strategies,
+not a single model. The motivating case is a cross-sectional
+quantile-regression-forest (QRF) ranking strategy -- target is the within-date
+percentile rank of forward N-day return, the model is a QRF over today-known
+features, the score is predicted median rank or `P(rank >= 0.8)`, and the
+portfolio is long-top / short-bottom -- but this entry scopes the capability,
+with QRF as the first spike that stress-tests it.
+
+The part that makes ML ledgr-shaped is not the model (ranger / glmnet / xgboost
+do that, and Python does it better) but the discipline around it: leakage-safe
+training data and reproducible model artifacts. "ML without fooling yourself" is
+the brand applied to ML, and it is exactly what most ML-backtesting tutorials
+get wrong. That framing also fixes the boundary: ledgr owns the substrate and
+the temporal discipline; the model library stays in the user / adapter layer.
+
+Architectural requirements (the RFC surface):
+
+- Leakage-safe training-panel export: materialize the historical
+  `(instrument x ts) x features [+ label]` panel as a training matrix with
+  strict as-of cutoffs. Today features are per-instrument series accessed at
+  pulse time; training needs the flat labeled panel.
+- Forward-looking label construction with horizon embargo: supervised targets
+  are built from future data (forward return, future rank, future volatility,
+  class labels) and are training-only. The label-availability lag is
+  load-bearing: a model deployed at t may train only on labels whose realized
+  outcome is fully earlier than t. An N-day horizon means the most recent usable
+  label is from t-N; training to t leaks N days of future. This embargo must be
+  enforced structurally, not left to user discipline. A cross-sectional rank
+  label is additionally relative to the date-t ELIGIBLE UNIVERSE as it existed at
+  t (not today's survivors): point-in-time universe / eligibility membership is
+  part of the label/panel contract, because anachronistic universe construction
+  is the biggest rank-target leakage in practice.
+- Sample uniqueness / overlap weighting: overlapping forward labels make training
+  rows non-independent. The engine can export optional overlap / concurrency
+  weights derived from the label intervals, but whether to export them or leave
+  weighting policy entirely to the adapter is an open RFC decision; default to
+  adapter-side policy until a concrete use case justifies engine standardization.
+- Model-as-artifact identity: fitted models become version-addressed, hashed,
+  auditable artifacts -- hash the training recipe (data window + feature set +
+  hyperparameters + seed + environment lock), store the blob, and replay from the
+  stored artifact (recipe rebuild is exact only in a frozen environment; see the
+  determinism note). Extends the snapshot / cost-plan / risk-plan identity
+  pattern to models.
+- In-loop / walk-forward refit semantics: refit at intervals on pulse-known
+  history and deploy forward until the next refit. This is distinct from the
+  v0.1.9.4 walk-forward, which selects candidates by metric; model retraining
+  inside the loop is a different mechanism and the RFC must keep the line clean.
+- External-model adapter boundary plus a prediction hook: ledgr hands the model
+  leakage-safe pulse features and consumes predictions to form targets; it never
+  reimplements a model library. Same posture as the PerformanceAnalytics / pbo
+  adapters.
+- Cross-sectional feature support: ranking / normalization across the universe
+  at a pulse. Mostly expressible today via the pulse context; confirm rather
+  than build.
+
+Tooling for the artifact / serving contract -- vetiver + pins. Do not
+reimplement an MLOps registry. The Posit stack (`pins` for versioned artifact
+storage; `vetiver` for model packaging, plumber serving, and drift monitoring on
+top of pins) is the R-native storage / versioning / serving layer for the model
+artifact. It is not a full experiment/dataset-lineage registry by itself -- it
+does not own the training-panel manifest, label recipe, or experiment lineage;
+that lineage is ledgr's job. Boundary: ledgr's content-addressed recipe hash is
+the identity of record (it captures the snapshot hash, feature manifest, label
+recipe, purge/embargo policy, hyperparameters, seed, and environment lock);
+`pins` is the versioned storage backend. A refit is recorded as an event in a
+new typed model-artifact stream -- NOT in the accounting `ledger_events` table,
+which stays scoped to FILL / FEE / CASHFLOW execution evidence -- and that event
+references the pin version and carries the recipe hash. Write the recipe hash
+into the vetiver/pins metadata so the artifact carries ledgr identity -- do not
+let the pin version become the model identity, since it does not see the
+training-panel / label / snapshot lineage. Two same-contract payoffs: the model
+pinned during backtest is the same artifact vetiver serves in paper / live (no
+reimplementation on the deployment side), and vetiver's input prototype
+(`ptype`) doubles as the pulse-feature schema contract (requirement 5). Posture:
+`Suggests`, not `Imports`; keep the core artifact contract storage-agnostic (a
+pin board is one backend, a plain file another); verify maintenance / license at
+packet-open (vetiver MIT, pins Apache-2, both permissive and actively
+maintained).
+
+Determinism -- replay from the stored artifact, not reconstruction from the
+recipe. Event-sourced replay implies determinism, but learners are stochastic
+(seeds, thread counts, platform, CPU vs GPU), so re-running a recipe does not
+guarantee the same fitted model. Separate three guarantees: (1) replay is exact
+from the stored, version-addressed model artifact -- the bytes are kept, so the
+deployed model is always recoverable; (2) the recipe hash + lineage is always
+auditable -- you know exactly how the model was made; (3) reconstruction from
+the recipe to byte-identical weights is best-effort, achievable only under a
+frozen environment (pinned `renv` lockfile, fixed adapter code, seed, thread
+count, deterministic algorithm/backend). ledgr's strong ML guarantee is
+therefore stored-artifact replay plus recipe-level audit; bitwise rebuild is
+reserved for pinned environments. This is the one place the same-contract /
+deterministic-replay premise must explicitly weaken for ML: "same model" means
+the same stored artifact, not a guaranteed identical retrain.
+
+Open design question -- the feature-engineering boundary. Where each feature
+transform lives (ledgr indicators, tidymodels recipe steps, or user code) is
+open and the RFC must resolve it. Organizing principle: train/predict parity --
+a feature must have the same value in the training panel and at the live pulse,
+or you get training-serving skew. The boundary is the FITTING REGIME, not the
+transform type:
+
+- Causally re-estimated: parameters recomputed from a trailing or expanding
+  window at every point, never frozen across a train/test split (rolling
+  z-score, rolling volatility, causal expanding-window PCA). These produce the
+  same value in training and at the pulse by construction. -> ledgr indicators /
+  the engine, computed once and shared between the training-panel export and the
+  pulse payload. Leakage-safe and parity-correct for free.
+- Frozen-on-train: parameters estimated once on the training set and applied
+  unchanged to all future rows (`step_normalize` mean/sd, a PCA basis fit once,
+  target encoding). The frozen state is part of the model recipe, and the
+  prep-on-admissible-history / bake-on-pulse split is the leakage control. ->
+  tidymodels recipe in the adapter. ledgr supplies admissible history for
+  `prep()` and the pulse payload for `bake()`; it does not own the fitted state.
+- Forward-looking targets belong to the label-availability export, never the
+  feature path.
+
+The same math can live in either place: a z-score frozen on the training window
+is a recipe step (and a leakage risk if mis-windowed); the same z-score over a
+causal rolling window is an indicator. So a user does not declare a feature
+"type" -- the user declares its fitting regime, and that declaration both routes
+the feature and determines which identity hash it flows through. The model
+recipe hash composes ledgr's feature-manifest hash (causally-re-estimated
+indicators) with the adapter's fitted-recipe hash (frozen-on-train steps).
+
+Two sub-questions stay genuinely open. First, cross-sectional support is the
+real gap: ledgr indicators are per-instrument time series today, but a
+within-date rank or cross-sectional z-score is computed across the universe at a
+date. Parity says it should be engine-computed (so train and pulse agree), but
+it does not fit the per-instrument `series_fn` shape -- so does the indicator
+system grow a first-class cross-sectional feature kind, or do within-date
+transforms live in the adapter as stateless-per-date steps. The QRF ranking
+spike presses on exactly this. Second, out-of-band enforcement: how ledgr keeps
+users from computing leaky features in raw code outside both systems (the "give
+me a tibble and trust the user" anti-pattern the research flags) by making the
+leakage-safe path the path of least resistance -- a UX/contract problem more
+than a data-model one.
+
+Dependency gates (why this is not a v0.1.9.x item):
+
+- The temporal-CV / embargo / purging machinery is the prerequisite. It is
+  explicitly deferred out of v0.1.9.6 (non-scope) and is a later
+  validation-toolkit increment. ML leakage discipline reuses it directly; ledgr
+  must not ship ML training that cannot express it.
+- Feature-store maturity: the training-panel export depends on the DuckDB
+  feature store, which is not yet feature-complete.
+- Model-artifact identity design: extends the existing identity surface and
+  needs its own contract.
+
+Sequencing:
+
+- Now: this seed.
+- Spike first, no architecture change: prototype the QRF ranking strategy as
+  user-layer code on current ledgr -- train ranger outside, inject the frozen
+  model as a `param`, predict per pulse on pulse-known features, enforce the
+  train/test split by hand. Like the PBO spike, it surfaces the real ergonomic
+  and leakage pain and feeds the RFC concrete requirements instead of
+  speculation. It doubles as a dogfood of feature-access ergonomics.
+- RFC after the embargo machinery lands; v0.2.x earliest; likely its own design
+  arc given the size.
+
+Scope guard: this entry authorizes no implementation. ledgr stays
+model-agnostic -- no bundled model library, no reimplemented learners. The
+capability's value is the leakage-safe substrate and reproducible artifacts, and
+it is gated on prerequisites that do not yet exist.
+
+Related: the validation-toolkit temporal-CV / embargo increment (deferred from
+v0.1.9.6); feature-store / DuckDB maturity; the snapshot / cost-plan / risk-plan
+identity pattern; the walk-forward machinery (v0.1.9.4, candidate selection --
+not model refit); the standing leakage discipline and the "research-loop
+leakage" non-guarantee in the leakage vignette.
 
 ### 2026-06-13 [docs] Deferred v0.1.9.5 vignette-audit items
 

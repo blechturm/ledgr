@@ -32,6 +32,9 @@ For any claim that becomes load-bearing in a synthesis, look up the primary sour
 | `Walk-Forward.md` | `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` |
 | `Transaction-Cost-Models.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
 | `Validation-Toolkit.md` | `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_seed.md` (seed v1 authored 2026-06-11; cycle opened on the recorded trigger after v0.1.9.4 closed; bundling rationale in the 2026-06-07 horizon entry "Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture"). | Pending (synthesis not yet written; response stage next). |
+| `Reproducible-Leakage-Safe-ML.md` | Informs the 2026-06-14 horizon entry "General ML-strategy preparedness (QRF ranking as the motivating spike)"; the dedicated ML-architecture RFC is parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycle to seed the architectural requirements; synthesis deferred to v0.2.x). |
+
+`Reproducible-Leakage-Safe-ML.md` was conducted ahead of its RFC cycle to inform the parked horizon seed rather than at stage 1 of an open cycle; when the v0.2.x ML-architecture RFC opens, its seed should cite this file by path per the normal convention.
 
 When the next deep-research-informed RFC cycle opens, add a new file here and a new row to the table.
 
