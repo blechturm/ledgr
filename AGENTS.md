@@ -295,6 +295,20 @@ Windows R path used in this workspace:
 Targeted checks are preferred while editing, followed by full tests and package
 check before committing release-ticket work.
 
+Building the pkgdown site locally is wrapped in `dev/build-site.R`. A bare
+`Rscript` does not inherit RStudio's Quarto/Pandoc environment and trips on
+stale `src/` artifacts; the wrapper sets `QUARTO_PATH`/`RSTUDIO_PANDOC`, adds
+the user library fallback, cleans compiled `src/` artifacts (the 0-byte DLL
+that breaks `load_all` in vignette setup), then runs `pkgdown::build_site()`.
+
+```powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/build-site.R --check  # verify toolchain only
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/build-site.R          # full build into docs/
+```
+
+The live site otherwise redeploys from the `pkgdown` GitHub Actions workflow on
+push to `main`; the wrapper is for local preview before pushing.
+
 ## Ticket Workflow
 
 1. Read the ticket, its dependencies, and the relevant contract section.
