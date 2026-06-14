@@ -19,7 +19,7 @@ tickets:
 
   - id: "LDG-2646"
     title: "Packet-open verification and method teaching gate"
-    status: "not_started"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies:

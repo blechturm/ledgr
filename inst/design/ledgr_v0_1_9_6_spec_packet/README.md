@@ -12,6 +12,7 @@ Authoritative files:
 - `v0_1_9_6_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`
+- `packet_open_verification.md`
 
 Primary design inputs:
 

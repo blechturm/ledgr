@@ -137,7 +137,7 @@ scope: packet-alignment
 Priority: P0
 Effort: S
 Dependencies: LDG-2645
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -173,6 +173,19 @@ external package facts and lock the Methodological Diagnostics teaching rule.
 - Targeted documentation-contract test for the styleguide lock.
 - Manual verification notes for external packages.
 - `rg "Methodological Diagnostics" inst/design/vignette_styleguide.md tests/testthat/test-documentation-contracts.R`
+
+### Implementation Notes
+
+- Added `packet_open_verification.md` with CRAN-verified package facts for
+  PerformanceAnalytics, xts, RPESE, and `pbo` as of 2026-06-14.
+- Confirmed current ledgr dependency posture: PerformanceAnalytics and xts are
+  already in `Suggests`; RPESE and `pbo` are not; no optional adapter package
+  is imported in `NAMESPACE`.
+- Recorded the Batch 1 decision that no optional package moves to `Imports`,
+  no optional `NAMESPACE` import is added, and RPESE/`pbo` remain unlisted
+  until a later adapter or spike ticket justifies them.
+- Confirmed the Methodological Diagnostics styleguide rule and non-vacuous
+  documentation-contract lock are already present from Batch 0.
 
 ### Source Reference
 
