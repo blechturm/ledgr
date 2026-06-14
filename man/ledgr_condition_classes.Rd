@@ -34,6 +34,11 @@
 \alias{ledgr_validation_pbo_invalid_metric}
 \alias{ledgr_validation_pbo_invalid_panel}
 \alias{ledgr_validation_pbo_invalid_threshold}
+\alias{ledgr_validation_min_trl_invalid_reference}
+\alias{ledgr_validation_min_trl_invalid_confidence}
+\alias{ledgr_validation_min_trl_invalid_risk_free}
+\alias{ledgr_validation_min_trl_too_few_observations}
+\alias{ledgr_validation_min_trl_invalid_returns}
 \alias{ledgr_missing_package}
 \alias{ledgr_walk_forward_metric_missing}
 \alias{ledgr_walk_forward_metric_class_invalid}
@@ -170,6 +175,21 @@ non-finite retained-return panel after the structural first-row handling.
 
 \code{ledgr_validation_pbo_invalid_threshold} is raised when a PBO/CSCV threshold
 is not a finite numeric scalar.
+
+\code{ledgr_validation_min_trl_invalid_reference} is raised when a minimum track
+record length request supplies an invalid reference Sharpe ratio.
+
+\code{ledgr_validation_min_trl_invalid_confidence} is raised when a minimum track
+record length request supplies a confidence level outside \code{(0, 1)}.
+
+\code{ledgr_validation_min_trl_invalid_risk_free} is raised when a minimum track
+record length request supplies an invalid per-period risk-free return.
+
+\code{ledgr_validation_min_trl_too_few_observations} is raised when minimum track
+record length has too few post-first-row observations.
+
+\code{ledgr_validation_min_trl_invalid_returns} is raised when minimum track
+record length receives non-finite or constant retained returns.
 
 \code{ledgr_missing_package} is raised when a public optional-package adapter is
 requested but the package is not installed.

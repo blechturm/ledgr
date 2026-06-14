@@ -496,7 +496,7 @@ scope: pbo-decision-gate
 Priority: P0
 Effort: M
 Dependencies: LDG-2648, LDG-2649, LDG-2650
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -598,7 +598,7 @@ scope: native-pbo-cscv
 Priority: P1
 Effort: M
 Dependencies: LDG-2648
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -630,6 +630,34 @@ record length, with reference verification and teachable interpretation.
 - Targeted diagnostic tests.
 - Documentation-contract tests for the method section.
 - `tools::checkRd()` for new reference pages.
+
+### Implementation Notes
+
+- Added `ledgr_sweep_min_track_record()` as a native sweep-level MinTRL
+  diagnostic over `ledgr_sweep_returns_panel(value = "returns",
+  complete = TRUE)`.
+- The result carries a stable per-candidate `summary` table and `metadata`
+  with `schema_version = 1L`, `native_version = "ledgr_min_track_record_v1"`,
+  retained-panel provenance, and the reference/confidence inputs.
+- The implementation reports observed per-period Sharpe, skewness, kurtosis,
+  minimum required return observations, significance, extra observations
+  needed, and status. Candidates whose observed Sharpe is not above the
+  reference threshold remain visible with infinite required length instead of
+  being dropped.
+- Input gates validate finite retained panels, at least four post-first-row
+  observations, non-constant return series, finite `reference_sharpe`,
+  `confidence` in `(0, 1)`, and finite per-period `risk_free_return > -1`.
+  Ragged or unretained evidence continues through the retained-panel failure
+  classes.
+- Tests cover a native formula reference, optional PerformanceAnalytics
+  `MinTrackRecord()` parity, weak-candidate preservation, invalid gates,
+  retained-panel failures, export locks, and documentation locks.
+- Extended the `selection-integrity` article with a MinTRL section satisfying
+  the Methodological Diagnostics rule and an executed worked example.
+- Verification passed: `test-validation-min-track-record.R`,
+  `test-api-exports.R`, `test-documentation-contracts.R`, and
+  `tools::checkRd()` for `ledgr_sweep_min_track_record.Rd` and
+  `ledgr_condition_classes.Rd`.
 
 ### Source Reference
 

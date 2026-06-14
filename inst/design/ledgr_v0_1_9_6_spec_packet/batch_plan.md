@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 5 implementation complete; awaiting Claude review.
+Status: Batch 6 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -156,7 +156,7 @@ Review focus:
 
 ## Batch 5 - Native PBO/CSCV
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -179,6 +179,8 @@ Review focus:
 - no runtime dependency or winner-picking scope is introduced.
 
 ## Batch 6 - Minimum Track Record Length
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

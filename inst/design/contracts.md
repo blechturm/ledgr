@@ -693,6 +693,14 @@ The strategy preflight boundary originated in
   select, promote, filter candidates through a business objective, mutate sweep
   artifacts, or change walk-forward identity. CRAN `pbo` may be used only as
   optional reference evidence, never as a required runtime dependency.
+- `ledgr_sweep_min_track_record()` is a native sweep-level minimum track record
+  length diagnostic over retained completed-candidate return panels. It reports
+  per-candidate observed Sharpe, skewness, kurtosis, minimum required return
+  observations, significance, and extra observations needed. It uses the same
+  retained-panel gates and is evidence only: it must not select, promote,
+  filter candidates through a business objective, mutate sweep artifacts, or
+  change walk-forward identity. PerformanceAnalytics may be used only as
+  optional reference evidence, never as a required runtime dependency.
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.

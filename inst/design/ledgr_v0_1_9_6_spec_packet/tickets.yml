@@ -99,7 +99,7 @@ tickets:
 
   - id: "LDG-2658"
     title: "Native PBO/CSCV diagnostic"
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -119,7 +119,7 @@ tickets:
 
   - id: "LDG-2651"
     title: "Minimum track record length diagnostic"
-    status: "not_started"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:

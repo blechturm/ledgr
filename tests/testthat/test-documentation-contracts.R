@@ -671,6 +671,9 @@ testthat::test_that("contracts record retained-return panel gates", {
   testthat::expect_match(text, "`ledgr_sweep_pbo()` is a native sweep-level PBO/CSCV diagnostic", fixed = TRUE)
   testthat::expect_match(text, "evidence only: it must not\\s+select, promote, filter candidates")
   testthat::expect_match(text, "CRAN `pbo` may be used only as\\s+optional reference evidence")
+  testthat::expect_match(text, "`ledgr_sweep_min_track_record()` is a native sweep-level minimum track record", fixed = TRUE)
+  testthat::expect_match(text, "observed Sharpe, skewness, kurtosis", fixed = TRUE)
+  testthat::expect_match(text, "PerformanceAnalytics may be used only as\\s+optional reference evidence")
 })
 
 testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
@@ -1113,6 +1116,7 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_precompute_features = "sweeps",
     ledgr_sweep = "sweeps",
     ledgr_sweep_pbo = "selection-integrity",
+    ledgr_sweep_min_track_record = "selection-integrity",
     ledgr_candidate = "sweeps",
     ledgr_candidate_reproduction_key = "sweeps",
     ledgr_promote = "sweeps",
@@ -1891,7 +1895,7 @@ testthat::test_that("walk-forward docs state MVP workflow and caveats", {
   testthat::expect_match(news, "does not add PBO", fixed = TRUE)
 })
 
-testthat::test_that("selection integrity article teaches native PBO method shape", {
+testthat::test_that("selection integrity article teaches native PBO and MinTRL method shape", {
   qmd_path <- ledgr_test_source_vignette("selection-integrity.qmd")
   md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "selection-integrity.md")
   testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "selection integrity docs not available")
@@ -1917,8 +1921,15 @@ testthat::test_that("selection integrity article teaches native PBO method shape
     testthat::expect_match(doc, "Combinatorially Symmetric Cross Validation", fixed = TRUE)
     testthat::expect_match(doc, "not proof that a\\s+strategy will make money")
     testthat::expect_match(doc, "does not select or promote a candidate", fixed = TRUE)
+    testthat::expect_match(doc, "Minimum Track Record Length", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_sweep_min_track_record", fixed = TRUE)
+    testthat::expect_match(doc, "observed Sharpe", fixed = TRUE)
+    testthat::expect_match(doc, "skewness and kurtosis", fixed = TRUE)
+    testthat::expect_match(doc, "PerformanceAnalytics remains\\s+optional reference evidence")
+    testthat::expect_match(doc, "does not select\\s+the\\s+candidate with the shorter required track record")
   }
   testthat::expect_match(docs[["md"]], "#> 1 pbo_cscv", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "ledgr sweep minimum track record length", fixed = TRUE)
 })
 
 testthat::test_that("new teaching surfaces state current public boundaries", {

@@ -110,6 +110,21 @@
 #' `ledgr_validation_pbo_invalid_threshold` is raised when a PBO/CSCV threshold
 #' is not a finite numeric scalar.
 #'
+#' `ledgr_validation_min_trl_invalid_reference` is raised when a minimum track
+#' record length request supplies an invalid reference Sharpe ratio.
+#'
+#' `ledgr_validation_min_trl_invalid_confidence` is raised when a minimum track
+#' record length request supplies a confidence level outside `(0, 1)`.
+#'
+#' `ledgr_validation_min_trl_invalid_risk_free` is raised when a minimum track
+#' record length request supplies an invalid per-period risk-free return.
+#'
+#' `ledgr_validation_min_trl_too_few_observations` is raised when minimum track
+#' record length has too few post-first-row observations.
+#'
+#' `ledgr_validation_min_trl_invalid_returns` is raised when minimum track
+#' record length receives non-finite or constant retained returns.
+#'
 #' `ledgr_missing_package` is raised when a public optional-package adapter is
 #' requested but the package is not installed.
 #'
@@ -190,6 +205,11 @@
 #' @aliases ledgr_validation_pbo_invalid_metric
 #' @aliases ledgr_validation_pbo_invalid_panel
 #' @aliases ledgr_validation_pbo_invalid_threshold
+#' @aliases ledgr_validation_min_trl_invalid_reference
+#' @aliases ledgr_validation_min_trl_invalid_confidence
+#' @aliases ledgr_validation_min_trl_invalid_risk_free
+#' @aliases ledgr_validation_min_trl_too_few_observations
+#' @aliases ledgr_validation_min_trl_invalid_returns
 #' @aliases ledgr_walk_forward_metric_missing
 #' @aliases ledgr_walk_forward_metric_class_invalid
 #' @aliases ledgr_walk_forward_no_selection

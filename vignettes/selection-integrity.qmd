@@ -196,6 +196,107 @@ tibble::as_tibble(pbo, what = "degradation")
 piece of evidence beside the sweep table, the walk-forward degradation table,
 and the research judgment that decides what to test next.
 
+## Minimum Track Record Length
+
+### Question
+
+`ledgr_sweep_min_track_record()` asks a narrower single-series question for
+each retained candidate: how many return observations would this observed
+Sharpe ratio need before it is statistically distinguishable from a reference
+Sharpe threshold at the requested confidence level?
+
+The answer is MinTRL. A candidate can have a positive observed Sharpe and still
+need more observations before the track record clears the reference threshold.
+
+### Evidence
+
+The diagnostic consumes the same retained sweep return panel as PBO:
+
+```r
+min_trl <- ledgr_sweep_min_track_record(
+  sweep,
+  reference_sharpe = 0,
+  confidence = 0.95
+)
+```
+
+The retained `period_return` columns are the evidence. The structural first
+`NA_real_` row is verified and dropped by the panel layer before the per-series
+Sharpe, skewness, and kurtosis are computed.
+
+### Method Shape
+
+For each candidate, ledgr computes:
+
+1. per-period excess returns, using `risk_free_return` when supplied;
+2. observed per-period Sharpe ratio;
+3. return skewness and kurtosis;
+4. the Bailey/Lopez de Prado minimum track record length formula against
+   `reference_sharpe` and `confidence`.
+
+The output is measured in return observations, not calendar years. If the
+observed Sharpe is not above the reference Sharpe, ledgr keeps the candidate in
+the table and marks the required length as infinite instead of silently
+dropping it.
+
+### Interpretation
+
+Read MinTRL as sample-size evidence. It answers whether the observed track
+record is long enough for the selected reference Sharpe threshold. It does not
+say the strategy is robust, causal, or deployable.
+
+Use it when a candidate looks promising but short-lived. A large extra
+observation count says the apparent Sharpe may mostly be a short-sample story.
+
+### Limits
+
+MinTRL inherits the quality of the retained return series. It does not fix
+candidate mining, leakage, non-stationarity, changing market regimes, or
+survivorship-biased universes. It also does not compare many candidates at once;
+that broader selection-process question belongs to PBO and later DSR/effective
+trial diagnostics.
+
+### Failure Modes
+
+The function fails closed when:
+
+- retained returns were not requested;
+- the completed candidates do not form one complete timestamp grid;
+- there are fewer than four post-first-row observations;
+- a return series is constant or non-finite;
+- `reference_sharpe`, `confidence`, or `risk_free_return` is invalid.
+
+These failures mean the evidence cannot support the diagnostic. They are not
+strategy judgments.
+
+### References
+
+The MinTRL formula follows the Sharpe-ratio track-record-length expression used
+by Bailey and Lopez de Prado and exposed by PerformanceAnalytics as
+`MinTrackRecord()`. ledgr implements it natively; PerformanceAnalytics remains
+optional reference evidence, not a runtime dependency.
+
+### Worked Example
+
+The first candidate below has smoother positive returns than the second. The
+second candidate's Sharpe is positive, but the required track record length
+shows that the evidence is still much too short at 95 percent confidence.
+
+```{r}
+#| label: min-trl-example
+
+min_trl_returns <- cbind(
+  promising = c(0.012, 0.016, 0.010, 0.018, 0.013, 0.017, 0.011, 0.015),
+  noisy = c(0.040, -0.030, 0.035, -0.025, 0.030, -0.020, 0.025, -0.015)
+)
+min_trl_sweep <- make_retained_sweep(min_trl_returns)
+min_trl <- ledgr_sweep_min_track_record(min_trl_sweep, reference_sharpe = 0)
+min_trl
+```
+
+The diagnostic keeps both candidates in the table. It does not select the
+candidate with the shorter required track record.
+
 ## Where Next
 
 - For retained sweep return panels, read `vignette("sweeps", package = "ledgr")`.
