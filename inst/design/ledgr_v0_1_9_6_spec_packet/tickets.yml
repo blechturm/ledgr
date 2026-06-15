@@ -154,7 +154,7 @@ tickets:
 
   - id: "LDG-2653"
     title: "Selection Integrity teaching surface"
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -172,7 +172,7 @@ tickets:
 
   - id: "LDG-2654"
     title: "Intraday-readiness audit"
-    status: "not_started"
+    status: "review_pending"
     priority: "P2"
     effort: "M"
     dependencies:

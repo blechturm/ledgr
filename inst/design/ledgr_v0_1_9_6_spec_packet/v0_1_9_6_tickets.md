@@ -767,7 +767,7 @@ scope: dsr-effective-trials
 Priority: P1
 Effort: M
 Dependencies: LDG-2651, LDG-2652, LDG-2658
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -836,7 +836,7 @@ scope: selection-integrity
 Priority: P2
 Effort: M
 Dependencies: LDG-2648
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -867,6 +867,22 @@ v0.1.9.x feature arc, and estimate refactor size for any footguns found.
 
 - Manual review of audit artifact.
 - Spot-check `rg` / source references for every high or medium finding.
+
+### Implementation Notes
+
+- Wrote the versioned audit artifact at
+  `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`.
+- Preserved the audit-only boundary: no `R/`, test, vignette, or runtime
+  behavior files changed in this batch.
+- Recorded three Medium findings with source evidence and refactor sizing:
+  metric-context/calendar mismatch guardrails, walk-forward short-window
+  warning semantics, and the current next-open-only timing/cost boundary for
+  first-class intraday execution.
+- Recorded two Low findings: daily-midnight example dominance and the
+  whole-second-only timestamp boundary.
+- Confirmed as-is the cadence-neutral surfaces for snapshot sealing, pulse
+  grids, feature warmup, target-risk boundaries, retained panels/projections,
+  identity, and fold display.
 
 ### Source Reference
 
