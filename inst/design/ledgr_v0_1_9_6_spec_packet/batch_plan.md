@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 9 implementation complete; awaiting Claude review.
+Status: Batch 10 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -242,7 +242,7 @@ Review focus:
 
 ## Batch 9 - Intraday-Readiness Audit
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -261,6 +261,8 @@ Review focus:
 - no intraday runtime implementation slips in.
 
 ## Batch 10 - Peer Benchmark Redo
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

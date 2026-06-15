@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Spec Packet
 
-Status: Batch 9 implementation complete; awaiting Claude review.
+Status: Batch 10 implementation complete; awaiting Claude review.
 
 This packet scopes v0.1.9.6 as the validation-substrate and gated-diagnostics
 packet after the v0.1.9.5 naming and teaching consolidation release.
@@ -15,6 +15,7 @@ Authoritative files:
 - `pbo_spike_synthesis.md`
 - `pbo_spike_reference.R`
 - `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`
+- `peer_benchmark_redo_preflight.md`
 
 Primary design inputs:
 

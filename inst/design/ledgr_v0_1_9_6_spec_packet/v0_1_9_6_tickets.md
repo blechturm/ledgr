@@ -836,7 +836,7 @@ scope: selection-integrity
 Priority: P2
 Effort: M
 Dependencies: LDG-2648
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -903,7 +903,7 @@ scope: architecture-footguns
 Priority: P2
 Effort: M
 Dependencies: LDG-2648
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -934,6 +934,36 @@ surface with cost and risk chains represented explicitly.
 - Benchmark smoke run where local tooling allows.
 - Record-run artifact review when the full peer environment is available.
 - Manual report review for public-claim guardrails.
+
+### Implementation Notes
+
+- Added public risk-chain labeling and execution to the repo-local peer
+  benchmark harness, alongside the existing public cost-chain labeling.
+- Added the current-surface ledgr-cost row:
+  `ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))`
+  plus `ledgr_risk_chain(ledgr_risk_long_only(), ledgr_risk_max_weight(0.20))`
+  on the same fixture and seed as the zero-cost/no-risk rows.
+- Extended performance outputs and generated summaries with `cost_model`,
+  `risk_chain`, and `compiled_accounting_model` labels so the benchmark states
+  the relevant boundary explicitly.
+- Updated and re-rendered `dev/bench/peer_benchmark/peer_benchmark.md` from
+  its `.qmd` source. The rendered report documents the current-surface
+  cost/risk command and boundary row without changing historical record-bundle
+  numbers.
+- Wrote `peer_benchmark_redo_preflight.md` with smoke-run evidence, current-
+  surface record-run evidence, warning attribution, and record bundle
+  disposition.
+- Ran the smoke command:
+  `Rscript dev/bench/peer_benchmark/peer_benchmark.R --preset smoke --engine-set ledgr-cost --release v0.1.9.6`.
+  All five ledgr rows completed and the canonical ephemeral row passed Tier 1
+  parity against durable canonical.
+- Ran the record command:
+  `Rscript dev/bench/peer_benchmark/peer_benchmark.R --preset record --engine-set ledgr-cost --release v0.1.9.6`.
+  All five ledgr rows completed. The repeated warnings were verified as
+  `LEDGR_LAST_BAR_NO_FILL`, expected for this next-open benchmark fixture when
+  target changes occur on the final available bar.
+- Preserved the internal-measurement boundary: no package runtime behavior,
+  optimization, public benchmark claim, or compiled-default flip was added.
 
 ### Source Reference
 

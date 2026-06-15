@@ -1,6 +1,6 @@
 # peer_benchmark.R
 #
-# Repo-local peer benchmark and parity harness for v0.1.8.8 / LDG-2476.
+# Repo-local peer benchmark and parity harness for ledgr release work.
 # This is an internal same-host sanity check, not package documentation and not
 # a public performance ranking.
 #
@@ -13,7 +13,7 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
   out <- list(
     preset = "smoke",
     out_dir = file.path("dev", "bench", "results"),
-    release = "v0.1.8.8",
+    release = "v0.1.9.6",
     n_inst = NULL,
     n_days = NULL,
     fast = 5L,
@@ -250,6 +250,14 @@ peer_cost_realistic_model <- function() {
   ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1))
 }
 
+peer_risk_none_model <- function() {
+  ledgr_risk_none()
+}
+
+peer_risk_realistic_model <- function() {
+  ledgr_risk_chain(ledgr_risk_long_only(), ledgr_risk_max_weight(0.20))
+}
+
 peer_cost_label <- function(cost_model, legacy = FALSE) {
   if (isTRUE(legacy)) {
     return("legacy_fill_model_spread_5_fixed_1")
@@ -261,8 +269,17 @@ peer_cost_label <- function(cost_model, legacy = FALSE) {
   paste(vapply(steps, `[[`, character(1L), "type_id"), collapse = "+")
 }
 
+peer_risk_label <- function(risk_chain) {
+  steps <- ledgr:::ledgr_risk_flat_steps(risk_chain)
+  if (!length(steps)) {
+    return("risk_none")
+  }
+  paste(vapply(steps, `[[`, character(1L), "type_id"), collapse = "+")
+}
+
 peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
-                           cost_model = peer_cost_zero_model()) {
+                           cost_model = peer_cost_zero_model(),
+                           risk_chain = peer_risk_none_model()) {
   t0 <- proc.time()[["elapsed"]]
   bars <- utils::read.csv(bars_path, stringsAsFactors = FALSE)
   bars$ts_utc <- as.POSIXct(bars$ts_utc, tz = "UTC")
@@ -278,6 +295,7 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
     features = features,
     opening = ledgr_opening(cash = 1e7),
     cost_model = cost_model,
+    risk_chain = risk_chain,
     persist_features = FALSE
   )
   run_id <- paste0("peer_", engine, "_", paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
@@ -306,6 +324,7 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
       wall_sec = as.numeric(elapsed),
       phase_sec = phase_sec,
       cost_model = peer_cost_label(cost_model),
+      risk_chain = peer_risk_label(risk_chain),
       boundary_check = c("bars_csv_read", "snapshot_create", "engine_run", "canonical_equity_write", "fills_write")
     ),
     reason = NA_character_
@@ -362,6 +381,7 @@ peer_ledgr_ephemeral_prepare <- function(bars_path, features) {
 peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed,
                                      compiled_accounting_model = NULL,
                                      cost_model = peer_cost_zero_model(),
+                                     risk_chain = peer_risk_none_model(),
                                      cost_resolver = NULL,
                                      legacy_cost = FALSE) {
   t0 <- proc.time()[["elapsed"]]
@@ -374,6 +394,7 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
   if (is.null(cost_resolver)) {
     cost_resolver <- ledgr:::ledgr_cost_resolver_from_model(cost_model)
   }
+  risk_plan <- ledgr:::ledgr_risk_plan_compile(risk_chain, params = list())
   execution <- ledgr:::ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = prep$universe,
@@ -396,6 +417,7 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
     feature_defs = prep$feature_defs,
     runtime_projection = prep$runtime_projection,
     active_alias_map = prep$active_alias_map,
+    risk_plan = risk_plan,
     cost_resolver = cost_resolver,
     event_seq_start = 1L,
     telemetry = telemetry,
@@ -435,6 +457,7 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
       wall_sec = as.numeric(elapsed),
       phase_sec = phase_sec,
       cost_model = peer_cost_label(cost_model, legacy = legacy_cost),
+      risk_chain = peer_risk_label(risk_chain),
       compiled_accounting_model = compiled_accounting_model,
       boundary_check = c("bars_csv_read", "in_memory_projection", "engine_run", "canonical_equity_write", "fills_write")
     ),
@@ -822,6 +845,7 @@ peer_performance_boundary <- function(engine) {
     ledgr_ttr_canonical = "durable ledgr: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
     ledgr_ttr_canonical_ephemeral = "ephemeral ledgr: ingestion=bars CSV read plus in-memory bars/features/projection; engine=ledgr_execute_fold with memory output handler; results=event-stream equity/fills reconstruction plus canonical materialization",
     ledgr_ttr_canonical_ephemeral_with_costs = "ephemeral ledgr with realistic public cost chain: same bars/projection/strategy surface as canonical ephemeral; engine uses ledgr_cost_chain(spread_bps=5, fixed_fee=1)",
+    ledgr_ttr_canonical_ephemeral_with_cost_risk = "ephemeral ledgr with realistic public cost and risk chains: same bars/projection/strategy surface as canonical ephemeral; engine uses ledgr_cost_chain(spread_bps=5, fixed_fee=1) plus ledgr_risk_chain(long_only, max_weight=0.20)",
     ledgr_ttr_canonical_ephemeral_legacy_costs = "ephemeral ledgr with legacy internal fill-model resolver: same bars/projection/strategy surface as canonical ephemeral; engine uses spread_bps=5 and commission_fixed=1 baseline resolver",
     ledgr_ttr_compiled_spot_fifo_ephemeral = "ephemeral ledgr with compiled_accounting_model=spot_fifo: same bars/projection/strategy surface as ledgr_ttr_canonical_ephemeral; engine uses compiled spot-FIFO fill/accounting batch; results=event-stream equity/fills canonical materialization",
     ledgr_builtin_sma = "durable ledgr built-in SMA: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
@@ -856,6 +880,9 @@ peer_performance_rows <- function(results, args) {
       core_bars_per_sec = if (is.finite(core) && core > 0) n_bars / core else NA_real_,
       full_row_bars_per_sec = if (is.finite(row) && row > 0) n_bars / row else NA_real_,
       boundary = peer_performance_boundary(res$engine),
+      cost_model = res$metadata$cost_model %||% NA_character_,
+      risk_chain = res$metadata$risk_chain %||% NA_character_,
+      compiled_accounting_model = res$metadata$compiled_accounting_model %||% NA_character_,
       reason = res$reason,
       stringsAsFactors = FALSE
     )
@@ -1243,11 +1270,15 @@ peer_write_markdown <- function(parity, raw, status, performance, env, bars_path
       parity$tier1_daily_return_cor[[i]], parity$attribution[[i]]
     ), con)
   }
-  writeLines(c("", "## Performance", "", "| Engine | Full row s | Ingestion s | Engine s | Results s | Total s | Core bars/sec | Boundary |", "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |"), con)
+  writeLines(c("", "## Performance", "", "| Engine | Cost | Risk | Compiled | Full row s | Ingestion s | Engine s | Results s | Total s | Core bars/sec | Boundary |", "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |"), con)
   for (i in seq_len(nrow(performance))) {
     writeLines(sprintf(
-      "| `%s` | %.4f | %.4f | %.4f | %.4f | %.4f | %.1f | %s |",
-      performance$engine[[i]], performance$full_row_sec[[i]],
+      "| `%s` | `%s` | `%s` | `%s` | %.4f | %.4f | %.4f | %.4f | %.4f | %.1f | %s |",
+      performance$engine[[i]],
+      performance$cost_model[[i]] %||% "",
+      performance$risk_chain[[i]] %||% "",
+      performance$compiled_accounting_model[[i]] %||% "",
+      performance$full_row_sec[[i]],
       performance$ingestion_sec[[i]], performance$engine_sec[[i]],
       performance$results_sec[[i]], performance$reported_core_sec[[i]],
       performance$core_bars_per_sec[[i]],
@@ -1299,13 +1330,16 @@ peer_main <- function(args = peer_parse_args()) {
   canonical_strategy <- peer_strategy("fast", "slow")
   zero_cost <- peer_cost_zero_model()
   realistic_cost <- peer_cost_realistic_model()
+  no_risk <- peer_risk_none_model()
+  realistic_risk <- peer_risk_realistic_model()
   canonical <- peer_timed(peer_run_ledgr(
     engine = "ledgr_ttr_canonical",
     bars_path = bars_path,
     features = canonical_features,
     strategy = canonical_strategy,
     seed = args$seed,
-    cost_model = zero_cost
+    cost_model = zero_cost,
+    risk_chain = no_risk
   ))
   canonical_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
     engine = "ledgr_ttr_canonical_ephemeral",
@@ -1313,10 +1347,12 @@ peer_main <- function(args = peer_parse_args()) {
     features = canonical_features,
     strategy = canonical_strategy,
     seed = args$seed,
-    cost_model = zero_cost
+    cost_model = zero_cost,
+    risk_chain = no_risk
   ))
   peer_compare_ledgr_surfaces(canonical, canonical_ephemeral)
   with_costs_ephemeral <- NULL
+  with_cost_risk_ephemeral <- NULL
   legacy_costs_ephemeral <- NULL
   if (identical(args$engine_set, "ledgr-cost")) {
     with_costs_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
@@ -1325,7 +1361,17 @@ peer_main <- function(args = peer_parse_args()) {
       features = canonical_features,
       strategy = canonical_strategy,
       seed = args$seed,
-      cost_model = realistic_cost
+      cost_model = realistic_cost,
+      risk_chain = no_risk
+    ))
+    with_cost_risk_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
+      engine = "ledgr_ttr_canonical_ephemeral_with_cost_risk",
+      bars_path = bars_path,
+      features = canonical_features,
+      strategy = canonical_strategy,
+      seed = args$seed,
+      cost_model = realistic_cost,
+      risk_chain = realistic_risk
     ))
     legacy_costs_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
       engine = "ledgr_ttr_canonical_ephemeral_legacy_costs",
@@ -1334,6 +1380,7 @@ peer_main <- function(args = peer_parse_args()) {
       strategy = canonical_strategy,
       seed = args$seed,
       cost_model = realistic_cost,
+      risk_chain = no_risk,
       cost_resolver = ledgr:::ledgr_cost_resolver_from_model(realistic_cost),
       legacy_cost = TRUE
     ))
@@ -1347,13 +1394,14 @@ peer_main <- function(args = peer_parse_args()) {
       strategy = canonical_strategy,
       seed = args$seed,
       cost_model = zero_cost,
+      risk_chain = no_risk,
       compiled_accounting_model = args$compiled_accounting_model
     ))
     peer_compare_ledgr_surfaces(canonical, compiled_ephemeral)
   }
   results <- list(canonical, canonical_ephemeral)
   if (!is.null(with_costs_ephemeral)) {
-    results <- c(results, list(with_costs_ephemeral, legacy_costs_ephemeral))
+    results <- c(results, list(with_costs_ephemeral, with_cost_risk_ephemeral, legacy_costs_ephemeral))
   }
   if (!is.null(compiled_ephemeral)) {
     results <- c(results, list(compiled_ephemeral))
@@ -1365,7 +1413,8 @@ peer_main <- function(args = peer_parse_args()) {
       features = ledgr_feature_map(fast = ledgr_ind_sma(args$fast), slow = ledgr_ind_sma(args$slow)),
       strategy = peer_strategy(sprintf("sma_%d", args$fast), sprintf("sma_%d", args$slow)),
       seed = args$seed,
-      cost_model = zero_cost
+      cost_model = zero_cost,
+      risk_chain = no_risk
     ))
     quantstrat <- peer_timed(peer_run_quantstrat(bars_path, args$fast, args$slow))
     backtrader <- peer_timed(peer_run_backtrader(bars_path, args$fast, args$slow))

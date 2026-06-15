@@ -208,6 +208,12 @@ Record command with the opt-in B2 row:
 & "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
 ```
 
+Current-surface cost/risk-chain command:
+
+``` powershell
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --engine-set ledgr-cost --release v0.1.9.6
+```
+
 The harness writes ignored local artifacts under `dev/bench/results/`:
 one shared bars CSV with input hash, per-engine canonical equity curves
 where available, fills and trade summary tables where available, engine
@@ -221,6 +227,7 @@ parity history JSON under `dev/bench/results/parity_history/`.
 |----|----|
 | ledgr canonical TTR | Required; errors if `TTR` is missing. |
 | ledgr canonical TTR ephemeral | Required; runs the same fold core through an in-memory output handler and must match durable ledgr equity/fills before the run is accepted. |
+| ledgr current-surface cost/risk ephemeral | Optional internal measurement row; enabled with `--engine-set ledgr-cost`; runs zero-cost/no-risk and public cost/risk-chain rows on the same fixture and seed. |
 | ledgr B2 spot-FIFO ephemeral | Optional; enabled with `--compiled-accounting-model spot_fifo`; uses the same bars/features/strategy surface as ledgr canonical TTR ephemeral, uses the same closed enum and memory-handler dispatch as the public `compiled_accounting_model = "spot_fifo"` sweep opt-in, and must match canonical ledgr outputs before being interpreted as a peer-comparison row. |
 | ledgr built-in SMA diagnostic | Required; runs through ledgr built-ins. |
 | quantstrat | Runs when local R packages are installed; otherwise explicit unavailable row. |
@@ -252,6 +259,7 @@ ingestion, run, and extraction are not separable from outside the CLI.
 |----|----|----|----|
 | `ledgr_ttr_canonical` | `read.csv`, timestamp normalization, DuckDB snapshot creation, experiment construction | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
 | `ledgr_ttr_canonical_ephemeral` | `read.csv`, timestamp normalization, in-memory bars/features/projection construction | `ledgr_execute_fold()` with `ledgr_memory_output_handler()` | event-stream equity/fills reconstruction plus canonical materialization |
+| `ledgr_ttr_canonical_ephemeral_with_cost_risk` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | fold execution with `ledgr_cost_chain(spread_bps=5, fixed_fee=1)` and `ledgr_risk_chain(long_only, max_weight=0.20)` | event-stream equity/fills canonical materialization |
 | `ledgr_ttr_compiled_spot_fifo_ephemeral` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | fold execution with `compiled_accounting_model = "spot_fifo"` on the memory handler | event-stream equity/fills canonical materialization |
 | `ledgr_builtin_sma` | Same durable ledgr boundary with built-in SMA features | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
 | `quantstrat` | `read.csv`, xts/globalenv construction, portfolio/account/orders/strategy setup | `applyStrategy()` plus account updates | account/transaction extraction plus canonical materialization |
