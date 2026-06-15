@@ -701,6 +701,23 @@ The strategy preflight boundary originated in
   filter candidates through a business objective, mutate sweep artifacts, or
   change walk-forward identity. PerformanceAnalytics may be used only as
   optional reference evidence, never as a required runtime dependency.
+- `ledgr_sweep_cluster()` is a native deterministic effective-trial-count
+  diagnostic over retained completed-candidate return panels. V1 uses exactly
+  one method: hierarchical complete-linkage clustering over `1 - correlation`
+  distance. It has no RNG, no seed argument, and no method menu. The output
+  reports cluster membership, effective independent trial count, method
+  parameters, retained-panel metadata, and input identity. It is evidence only:
+  it must not select, promote, filter candidates through a business objective,
+  mutate sweep artifacts, or change walk-forward identity.
+- `ledgr_sweep_dsr()` is a native sweep-level Deflated Sharpe Ratio diagnostic
+  over retained completed-candidate return panels. It uses observed per-period
+  Sharpe, skewness, kurtosis, candidate-Sharpe variance, sample length, and an
+  effective independent trial count. When `effective_trials` is omitted, the
+  count comes from `ledgr_sweep_cluster()`. DSR is independent of PBO/CSCV and
+  remains evidence only: it must not select, promote, filter candidates through
+  a business objective, mutate sweep artifacts, or change walk-forward
+  identity. quantstrat may be used only as optional reference evidence, never
+  as a required runtime dependency.
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.

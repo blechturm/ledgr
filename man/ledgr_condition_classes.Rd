@@ -191,6 +191,36 @@ record length has too few post-first-row observations.
 \code{ledgr_validation_min_trl_invalid_returns} is raised when minimum track
 record length receives non-finite or constant retained returns.
 
+\code{ledgr_validation_cluster_invalid_threshold} is raised when retained-return
+clustering receives an invalid correlation-distance threshold.
+
+\code{ledgr_validation_cluster_too_few_candidates} is raised when retained-return
+clustering has fewer than two completed candidates.
+
+\code{ledgr_validation_cluster_too_few_observations} is raised when retained-return
+clustering has too few post-first-row observations.
+
+\code{ledgr_validation_cluster_invalid_returns} is raised when retained-return
+clustering receives non-finite or constant retained returns.
+
+\code{ledgr_validation_dsr_invalid_effective_trials} is raised when DSR receives
+an invalid effective independent trial count.
+
+\code{ledgr_validation_dsr_too_few_candidates} is raised when DSR has fewer than
+two completed candidates.
+
+\code{ledgr_validation_dsr_invalid_confidence} is raised when DSR receives a
+confidence level outside \code{(0, 1)}.
+
+\code{ledgr_validation_dsr_invalid_risk_free} is raised when DSR receives an
+invalid per-period risk-free return.
+
+\code{ledgr_validation_dsr_too_few_observations} is raised when DSR has too few
+post-first-row observations.
+
+\code{ledgr_validation_dsr_invalid_returns} is raised when DSR receives
+non-finite, constant, or otherwise unsupported retained returns.
+
 \code{ledgr_missing_package} is raised when a public optional-package adapter is
 requested but the package is not installed.
 }

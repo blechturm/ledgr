@@ -674,6 +674,12 @@ testthat::test_that("contracts record retained-return panel gates", {
   testthat::expect_match(text, "`ledgr_sweep_min_track_record()` is a native sweep-level minimum track record", fixed = TRUE)
   testthat::expect_match(text, "observed Sharpe, skewness, kurtosis", fixed = TRUE)
   testthat::expect_match(text, "PerformanceAnalytics may be used only as\\s+optional reference evidence")
+  testthat::expect_match(text, "`ledgr_sweep_cluster()` is a native deterministic effective-trial-count", fixed = TRUE)
+  testthat::expect_match(text, "hierarchical complete-linkage clustering over `1 - correlation`", fixed = TRUE)
+  testthat::expect_match(text, "no RNG, no seed argument, and no method menu", fixed = TRUE)
+  testthat::expect_match(text, "`ledgr_sweep_dsr()` is a native sweep-level Deflated Sharpe Ratio", fixed = TRUE)
+  testthat::expect_match(text, "DSR is independent of PBO/CSCV", fixed = TRUE)
+  testthat::expect_match(text, "quantstrat may be used only as optional reference evidence", fixed = TRUE)
 })
 
 testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
@@ -1927,9 +1933,16 @@ testthat::test_that("selection integrity article teaches native PBO and MinTRL m
     testthat::expect_match(doc, "skewness and kurtosis", fixed = TRUE)
     testthat::expect_match(doc, "PerformanceAnalytics remains\\s+optional reference evidence")
     testthat::expect_match(doc, "does not select\\s+the\\s+candidate with the shorter required track record")
+    testthat::expect_match(doc, "Deflated Sharpe Ratio And Effective Trials", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_sweep_dsr", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_sweep_cluster", fixed = TRUE)
+    testthat::expect_match(doc, "one[[:space:]]+deterministic[[:space:]]+hierarchical method")
+    testthat::expect_match(doc, "not a\\s+promotion rule")
+    testthat::expect_match(doc, "quantstrat is\\s+used only as optional reference evidence")
   }
   testthat::expect_match(docs[["md"]], "#> 1 pbo_cscv", fixed = TRUE)
   testthat::expect_match(docs[["md"]], "ledgr sweep minimum track record length", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "ledgr sweep deflated Sharpe ratio", fixed = TRUE)
 })
 
 testthat::test_that("new teaching surfaces state current public boundaries", {

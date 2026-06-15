@@ -598,7 +598,7 @@ scope: native-pbo-cscv
 Priority: P1
 Effort: M
 Dependencies: LDG-2648
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -677,7 +677,7 @@ scope: min-track-record-length
 Priority: P1
 Effort: L
 Dependencies: LDG-2648, LDG-2649
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -711,6 +711,43 @@ same return-panel substrate.
 - Determinism tests for clustering/effective-trial behavior.
 - Documentation-contract tests for the DSR section if shipped.
 - Deferral note if the verification gate does not pass.
+
+### Implementation Notes
+
+- Verification gate passed. The DSR formula was implemented natively from the
+  Bailey/Lopez de Prado shape and cross-checked against quantstrat's internal
+  `.deflatedSharpe()` helper as optional reference evidence with
+  `periodsInYear = 1`; quantstrat is not imported or required at runtime.
+- Added `ledgr_sweep_cluster()` as the deterministic effective-trial-count
+  helper over `ledgr_sweep_returns_panel(value = "returns", complete = TRUE)`.
+  V1 uses one method only: complete-linkage hierarchical clustering over
+  `1 - correlation` distance, no RNG, no seed argument, and no method menu.
+- Added `ledgr_sweep_dsr()` as a native sweep-level DSR diagnostic over the
+  retained return panel. When `effective_trials` is omitted, it derives the
+  count from `ledgr_sweep_cluster()`; explicit effective-trial counts are also
+  accepted when they are whole numbers between two and the raw completed
+  candidate count.
+- Both outputs carry stable schema/native-version metadata, retained-panel
+  provenance, candidate/effective-trial details, and sweep/cost/risk/metric
+  identity attributes when present. They are read-only evidence surfaces and
+  do not select, promote, filter candidates, persist diagnostics, or change
+  walk-forward identity.
+- Added named classes for clustering threshold, candidate-count, observation,
+  and return failures, plus DSR effective-trial, confidence, risk-free,
+  candidate-count, observation, and return failures. Ragged and unretained
+  evidence continues through the
+  retained-panel failure classes.
+- Extended `selection-integrity` with a DSR/effective-trials section satisfying
+  the Methodological Diagnostics rule and an executed cautionary worked
+  example. The rendered `.md` mirror was regenerated with Quarto.
+- Tests cover deterministic clustering, DSR formula parity, optional quantstrat
+  reference parity, monotonic DSR tightening as effective trials increase,
+  invalid gates, retained-panel failures, export locks, contract locks, and
+  documentation locks.
+- Verification passed: `test-validation-dsr.R`, `test-api-exports.R`,
+  `test-documentation-contracts.R`, and `tools::checkRd()` for
+  `ledgr_sweep_cluster.Rd`, `ledgr_sweep_dsr.Rd`, and
+  `ledgr_condition_classes.Rd`.
 
 ### Source Reference
 

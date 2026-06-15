@@ -125,6 +125,36 @@
 #' `ledgr_validation_min_trl_invalid_returns` is raised when minimum track
 #' record length receives non-finite or constant retained returns.
 #'
+#' `ledgr_validation_cluster_invalid_threshold` is raised when retained-return
+#' clustering receives an invalid correlation-distance threshold.
+#'
+#' `ledgr_validation_cluster_too_few_candidates` is raised when retained-return
+#' clustering has fewer than two completed candidates.
+#'
+#' `ledgr_validation_cluster_too_few_observations` is raised when retained-return
+#' clustering has too few post-first-row observations.
+#'
+#' `ledgr_validation_cluster_invalid_returns` is raised when retained-return
+#' clustering receives non-finite or constant retained returns.
+#'
+#' `ledgr_validation_dsr_invalid_effective_trials` is raised when DSR receives
+#' an invalid effective independent trial count.
+#'
+#' `ledgr_validation_dsr_too_few_candidates` is raised when DSR has fewer than
+#' two completed candidates.
+#'
+#' `ledgr_validation_dsr_invalid_confidence` is raised when DSR receives a
+#' confidence level outside `(0, 1)`.
+#'
+#' `ledgr_validation_dsr_invalid_risk_free` is raised when DSR receives an
+#' invalid per-period risk-free return.
+#'
+#' `ledgr_validation_dsr_too_few_observations` is raised when DSR has too few
+#' post-first-row observations.
+#'
+#' `ledgr_validation_dsr_invalid_returns` is raised when DSR receives
+#' non-finite, constant, or otherwise unsupported retained returns.
+#'
 #' `ledgr_missing_package` is raised when a public optional-package adapter is
 #' requested but the package is not installed.
 #'

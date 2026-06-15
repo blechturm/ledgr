@@ -1,6 +1,6 @@
 # ledgr v0.1.9.6 Batch Plan
 
-Status: Batch 6 implementation complete; awaiting Claude review.
+Status: Batch 7 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`
 
@@ -180,7 +180,7 @@ Review focus:
 
 ## Batch 6 - Minimum Track Record Length
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -199,6 +199,8 @@ Review focus:
 - article section satisfies the Methodological Diagnostics rule.
 
 ## Batch 7 - DSR And Effective-Trial Clustering
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

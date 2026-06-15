@@ -119,7 +119,7 @@ tickets:
 
   - id: "LDG-2651"
     title: "Minimum track record length diagnostic"
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -135,7 +135,7 @@ tickets:
 
   - id: "LDG-2652"
     title: "DSR and effective-trial clustering diagnostic"
-    status: "not_started"
+    status: "review_pending"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -148,7 +148,9 @@ tickets:
     tests:
       - "Targeted DSR tests"
       - "Clustering/effective-trial determinism tests"
+      - "Optional quantstrat reference cross-check when installed"
       - "Documentation-contract tests if shipped"
+      - "tools::checkRd()"
 
   - id: "LDG-2653"
     title: "Selection Integrity teaching surface"
