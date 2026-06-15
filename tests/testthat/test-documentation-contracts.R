@@ -1901,10 +1901,37 @@ testthat::test_that("walk-forward docs state MVP workflow and caveats", {
   testthat::expect_match(news, "does not add PBO", fixed = TRUE)
 })
 
-testthat::test_that("selection integrity article teaches native PBO and MinTRL method shape", {
+testthat::test_that("selection integrity article teaches shipped diagnostics as one method family", {
   qmd_path <- ledgr_test_source_vignette("selection-integrity.qmd")
   md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "selection-integrity.md")
   testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "selection integrity docs not available")
+
+  section_after <- function(doc, heading) {
+    start <- regexpr(heading, doc, fixed = TRUE)[[1]]
+    testthat::expect_gt(start, 0)
+    section <- substring(doc, start)
+    rest <- substring(section, nchar(heading) + 1L)
+    next_heading <- regexpr("\n## ", rest, fixed = TRUE)[[1]]
+    if (next_heading > 0) {
+      section <- substring(section, 1L, nchar(heading) + next_heading - 1L)
+    }
+    section
+  }
+
+  expect_subsections <- function(section) {
+    for (heading in c(
+      "### Question",
+      "### Evidence",
+      "### Method Shape",
+      "### Interpretation",
+      "### Limits",
+      "### Failure Modes",
+      "### References",
+      "### Worked Example"
+    )) {
+      testthat::expect_match(section, heading, fixed = TRUE)
+    }
+  }
 
   docs <- vapply(
     c(qmd = qmd_path, md = md_path),
@@ -1927,18 +1954,23 @@ testthat::test_that("selection integrity article teaches native PBO and MinTRL m
     testthat::expect_match(doc, "Combinatorially Symmetric Cross Validation", fixed = TRUE)
     testthat::expect_match(doc, "not proof that a\\s+strategy will make money")
     testthat::expect_match(doc, "does not select or promote a candidate", fixed = TRUE)
+    testthat::expect_no_match(doc, "guarantees future profitability", fixed = TRUE)
+    testthat::expect_no_match(doc, "automatically promote", fixed = TRUE)
+    testthat::expect_no_match(doc, "business-objective filtering", fixed = TRUE)
     testthat::expect_match(doc, "Minimum Track Record Length", fixed = TRUE)
     testthat::expect_match(doc, "ledgr_sweep_min_track_record", fixed = TRUE)
     testthat::expect_match(doc, "observed Sharpe", fixed = TRUE)
     testthat::expect_match(doc, "skewness and kurtosis", fixed = TRUE)
     testthat::expect_match(doc, "PerformanceAnalytics remains\\s+optional reference evidence")
     testthat::expect_match(doc, "does not select\\s+the\\s+candidate with the shorter required track record")
+    expect_subsections(section_after(doc, "## Minimum Track Record Length"))
     testthat::expect_match(doc, "Deflated Sharpe Ratio And Effective Trials", fixed = TRUE)
     testthat::expect_match(doc, "ledgr_sweep_dsr", fixed = TRUE)
     testthat::expect_match(doc, "ledgr_sweep_cluster", fixed = TRUE)
     testthat::expect_match(doc, "one[[:space:]]+deterministic[[:space:]]+hierarchical method")
     testthat::expect_match(doc, "not a\\s+promotion rule")
     testthat::expect_match(doc, "quantstrat is\\s+used only as optional reference evidence")
+    expect_subsections(section_after(doc, "## Deflated Sharpe Ratio And Effective Trials"))
   }
   testthat::expect_match(docs[["md"]], "#> 1 pbo_cscv", fixed = TRUE)
   testthat::expect_match(docs[["md"]], "ledgr sweep minimum track record length", fixed = TRUE)

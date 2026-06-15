@@ -200,7 +200,7 @@ Review focus:
 
 ## Batch 7 - DSR And Effective-Trial Clustering
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -219,6 +219,8 @@ Review focus:
 - weak or unverifiable methodology defers rather than ships.
 
 ## Batch 8 - Selection Integrity Teaching Surface
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

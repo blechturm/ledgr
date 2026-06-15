@@ -7,6 +7,10 @@ to mistake a lucky in-sample winner for a robust strategy.
 Selection-integrity diagnostics make that risk visible; they do not
 choose the winner for you.
 
+This article groups the shipped v0.1.9.6 diagnostics as one method
+family: PBO/CSCV, minimum track record length, and DSR with
+effective-trial clustering.
+
 ## Question
 
 `ledgr_sweep_pbo()` asks one question: when the retained candidate

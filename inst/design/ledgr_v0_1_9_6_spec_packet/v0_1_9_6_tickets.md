@@ -677,7 +677,7 @@ scope: min-track-record-length
 Priority: P1
 Effort: L
 Dependencies: LDG-2648, LDG-2649
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -767,7 +767,7 @@ scope: dsr-effective-trials
 Priority: P1
 Effort: M
 Dependencies: LDG-2651, LDG-2652, LDG-2658
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -797,6 +797,25 @@ that actually ship in v0.1.9.6.
 - Render affected vignettes/articles where local tooling allows.
 - Documentation-contract tests.
 - `rg` checks for forbidden overclaims named in the ticket review.
+
+### Implementation Notes
+
+- Consolidated the shipped v0.1.9.6 diagnostics into the single
+  `selection-integrity` article family: PBO/CSCV, minimum track record length,
+  and DSR with effective-trial clustering.
+- Confirmed each shipped diagnostic section carries the Methodological
+  Diagnostics coverage required by the styleguide: question, evidence, method
+  shape, interpretation, limits, failure modes, references, and an executed
+  worked example.
+- Strengthened the documentation-contract test so it locks the shipped
+  Selection Integrity article as a real method-family surface rather than a set
+  of loose strings; the test now checks MinTRL and DSR section structure in
+  both `.qmd` and rendered `.md` forms.
+- Added negative documentation guards for automatic promotion,
+  business-objective filtering, and guaranteed-future-profitability language.
+- Confirmed `_pkgdown.yml` already lists `selection-integrity` in the Core
+  Workflow article group and the reference index already lists the shipped
+  diagnostics.
 
 ### Source Reference
 

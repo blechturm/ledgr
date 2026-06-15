@@ -135,7 +135,7 @@ tickets:
 
   - id: "LDG-2652"
     title: "DSR and effective-trial clustering diagnostic"
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -154,7 +154,7 @@ tickets:
 
   - id: "LDG-2653"
     title: "Selection Integrity teaching surface"
-    status: "not_started"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:
