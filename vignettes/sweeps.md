@@ -63,15 +63,14 @@ ledgr_candidate()             select one row deliberately
 ledgr_promote() / ledgr_run() commit an auditable run
 ```
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Selection is not validation
+>
+> A sweep table records what was run. It does not prove that the selected
+> parameters were evaluated on held-out data. Promotion records a choice;
+> it does not make that choice out-of-sample.
 
-**Selection is not validation**
-
-A sweep table records what was run. It does not prove that the selected
-parameters were evaluated on held-out data. Promotion records a choice;
-it does not make that choice out-of-sample.
-
-</div>
 
 ## Declare Parameterized Features
 
@@ -172,7 +171,7 @@ for each candidate.
 
 <div class="ledgr-diagram ledgr-alias-diagram">
 
-``` mermaid
+```mermaid
 
 flowchart TB
   params["feature params<br/>fast_n = 5<br/>slow_n = 20"]
@@ -228,22 +227,21 @@ the fast moving average must be shorter than the slow moving average.
 Filter expressions are evaluated against grid columns; they do not read
 run state, feature data, or caller globals.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Mind the combinatorial explosion
+>
+> `ledgr_grid_cross()` multiplies grid dimensions. Four parameters with
+> five values each produce 625 candidates before you add another axis.
+> Keep early sweeps deliberately small, then expand only after the
+> candidate table is readable and the feature payload cost is understood.
 
-**Mind the combinatorial explosion**
-
-`ledgr_grid_cross()` multiplies grid dimensions. Four parameters with
-five values each produce 625 candidates before you add another axis.
-Keep early sweeps deliberately small, then expand only after the
-candidate table is readable and the feature payload cost is understood.
-
-</div>
 
 The cross product is explicit:
 
 <div class="ledgr-diagram ledgr-grid-diagram">
 
-``` mermaid
+```mermaid
 
 flowchart TB
   fg["feature_grid<br/>fast_n, slow_n"]
@@ -258,15 +256,14 @@ flowchart TB
 
 </div>
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The strategy
+> code does not change. How many candidates appear after `.filter`, and
+> which candidate rows still use the same `fast` and `slow` aliases?
 
-**Try it**
-
-Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The strategy
-code does not change. How many candidates appear after `.filter`, and
-which candidate rows still use the same `fast` and `slow` aliases?
-
-</div>
 
 ## Precompute Shared Features
 
@@ -311,7 +308,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_101ad24f1593c5b2
+    # ledgr sweep -- sweep_2d7523b3f06815ec
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -385,14 +382,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
-    2 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
-    3 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
-    4 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
-    5 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
-    6 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
-    7 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
-    8 sweep_16f4e2ab4ed4d8f6 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
+    1 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
+    2 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
+    3 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
+    4 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
+    5 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
+    6 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
+    7 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
+    8 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -476,7 +473,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 7
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-06-14 15:43:17                    2           16          16
+    1 sma_retained_sweep 2026-06-16 12:56:59                    2           16          16
     # i 2 more variables: retention_returns <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -502,9 +499,9 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-06-14 15:43:17.60336
+    Created At:        2026-06-16 12:56:59.798034
     Schema Version:    2
-    Engine Version:    0.1.9.5
+    Engine Version:    0.1.9.6
     Note:              Exploratory SMA sweep with retained return series.
 
 Reopened sweeps behave like sweep result objects for candidate
@@ -561,14 +558,13 @@ candidate from the same sample, the retained path is still in-sample
 evidence. Generalized validation belongs to a held-out evaluation,
 walk-forward analysis, or later selection-integrity diagnostics.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Return paths are not validation by themselves
+>
+> Retained series preserve more evidence from a sweep. They do not prove
+> that the candidate-selection process was sound.
 
-**Return paths are not validation by themselves**
-
-Retained series preserve more evidence from a sweep. They do not prove
-that the candidate-selection process was sound.
-
-</div>
 
 ## Why ledgr And PerformanceAnalytics Metrics May Differ
 
@@ -744,7 +740,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_2762c209cb58534b
+    # ledgr sweep -- sweep_af448ff31887e498
     # A tibble: 2 x 3
       candidate_id          candidate_row status
       <chr>                         <int> <chr>

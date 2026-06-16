@@ -203,7 +203,7 @@ tickets:
 
   - id: "LDG-2656"
     title: "Release surfaces and deferral ledger"
-    status: "review_pending"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies:
@@ -223,7 +223,7 @@ tickets:
 
   - id: "LDG-2657"
     title: "v0.1.9.6 release gate"
-    status: "not_started"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies:

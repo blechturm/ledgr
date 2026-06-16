@@ -283,7 +283,7 @@ Review focus:
 
 ## Batch 11 - Release Surfaces
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -303,6 +303,8 @@ Review focus:
 - deferrals are captured with reasons.
 
 ## Batch 12 - Release Gate
+
+Status: Local release gate complete; branch ready for remote CI, merge, and tag.
 
 Tickets:
 

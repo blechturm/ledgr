@@ -24,6 +24,8 @@ options(pillar.sigfig = 5)
 pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
 if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
   pkgload::load_all(pkg_root, quiet = TRUE)
+} else {
+  library(ledgr)
 }
 ```
 

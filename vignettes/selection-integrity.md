@@ -252,7 +252,7 @@ min_trl
 #> # i candidates: 2
 #> # i confidence: 0.950
 #> # i reference Sharpe: 0.0000
-#> 
+#>
 #> # A tibble: 2 x 7
 #>   candidate_id observed_sharpe reference_sharpe min_track_record_length observations
 #>   <chr>                  <dbl>            <dbl>                   <dbl>        <int>
@@ -385,10 +385,10 @@ ledgr_sweep_cluster(dsr_sweep)
 #> # i effective trials: 2
 #> # i raw trials: 4
 #> # i distance threshold: 0.5000
-#> 
+#>
 #> # A tibble: 4 x 3
-#>   candidate_id    cluster_index cluster_id 
-#>   <chr>                   <int> <chr>      
+#>   candidate_id    cluster_index cluster_id
+#>   <chr>                   <int> <chr>
 #> 1 shape_a                     1 cluster_001
 #> 2 shape_a_variant             1 cluster_001
 #> 3 shape_b                     2 cluster_002
@@ -402,13 +402,13 @@ dsr
 #> # i candidates: 4
 #> # i effective trials: 2
 #> # i confidence: 0.950
-#> 
+#>
 #> # A tibble: 4 x 6
 #>   candidate_id    observed_sharpe expected_max_sharpe dsr_probability p_value significant
-#>   <chr>                     <dbl>               <dbl>           <dbl>   <dbl> <lgl>      
-#> 1 shape_a                 0.25924           0.0040269         0.79599 0.20401 FALSE      
-#> 2 shape_a_variant         0.25869           0.0040269         0.79408 0.20592 FALSE      
-#> 3 shape_b                 0.25924           0.0040269         0.80398 0.19602 FALSE      
+#>   <chr>                     <dbl>               <dbl>           <dbl>   <dbl> <lgl>
+#> 1 shape_a                 0.25924           0.0040269         0.79599 0.20401 FALSE
+#> 2 shape_a_variant         0.25869           0.0040269         0.79408 0.20592 FALSE
+#> 3 shape_b                 0.25924           0.0040269         0.80398 0.19602 FALSE
 #> 4 shape_b_variant         0.27454           0.0040269         0.81816 0.18184 FALSE
 ```
 

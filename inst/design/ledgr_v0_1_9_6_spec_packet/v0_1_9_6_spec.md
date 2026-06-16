@@ -1,6 +1,7 @@
 # ledgr v0.1.9.6 Spec
 
-**Status:** Batch 11 implementation complete; awaiting Claude review.
+**Status:** Batch 12 local release gate complete; branch ready for remote CI,
+merge, and tag.
 **Target branch:** `v0.1.9.6`.
 **Scope:** Validation substrate and gated diagnostics after v0.1.9.5:
 canonical single-run returns, retained-return panel hygiene,

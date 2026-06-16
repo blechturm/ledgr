@@ -984,7 +984,7 @@ scope: current-surface-redo
 Priority: P2
 Effort: S
 Dependencies: LDG-2650, LDG-2653, LDG-2654, LDG-2655, LDG-2658
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -1059,7 +1059,7 @@ Priority: P0
 Effort: M
 Dependencies: LDG-2645, LDG-2646, LDG-2647, LDG-2648, LDG-2649, LDG-2650,
   LDG-2651, LDG-2652, LDG-2653, LDG-2654, LDG-2655, LDG-2656, LDG-2658
-Status: Not Started
+Status: Complete after local release gate
 
 ### Description
 
@@ -1091,6 +1091,20 @@ are complete.
 - R CMD build/check per playbook.
 - Coverage gate per current CI policy when applicable.
 - pkgdown/documentation gate where changed.
+
+### Implementation Notes
+
+- Read `inst/design/release_ci_playbook.md` before running release gates.
+- Bumped DESCRIPTION to `0.1.9.6`.
+- Re-rendered `vignettes/sweeps.md` after the version bump and
+  `vignettes/selection-integrity.md` after adding the installed-package
+  `library(ledgr)` fallback in the setup chunk.
+- Ran full local tests, README cold-start, source build, R CMD check,
+  coverage, pkgdown, and documentation-contract gates. Results and accepted
+  warnings/NOTE are recorded in `v0_1_9_6_release_closeout.md`.
+- WSL/Ubuntu local gate was unavailable because no WSL distribution is
+  installed; remote Ubuntu CI remains the Linux gate.
+- Removed generated local artifacts before committing the release gate.
 
 ### Source Reference
 
