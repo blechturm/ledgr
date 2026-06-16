@@ -89,6 +89,8 @@ reference:
       - ledgr_sweep_review
       - ledgr_sweep_pbo
       - ledgr_sweep_min_track_record
+      - ledgr_sweep_cluster
+      - ledgr_sweep_dsr
       - ledgr_sweep_save
       - print.ledgr_sweep_results
       - ledgr_candidate

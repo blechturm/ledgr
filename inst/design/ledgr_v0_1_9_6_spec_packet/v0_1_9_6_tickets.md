@@ -903,7 +903,7 @@ scope: architecture-footguns
 Priority: P2
 Effort: M
 Dependencies: LDG-2648
-Status: Review Pending (implementation complete; awaiting Claude review)
+Status: Complete after Claude review
 
 ### Description
 
@@ -984,7 +984,7 @@ scope: current-surface-redo
 Priority: P2
 Effort: S
 Dependencies: LDG-2650, LDG-2653, LDG-2654, LDG-2655, LDG-2658
-Status: Not Started
+Status: Review Pending (implementation complete; awaiting Claude review)
 
 ### Description
 
@@ -1016,6 +1016,29 @@ what shipped, what the PBO spike decided, and what remains deferred.
 - Documentation-contract tests where pointer strings changed.
 - `rg` sweep for stale PBO/business-objective/benchmark overclaims.
 - Manual release-surface review.
+
+### Implementation Notes
+
+- Added the v0.1.9.6 NEWS entry covering canonical returns, retained-return
+  panels/projections, native PBO/CSCV after the green spike, native MinTRL,
+  native DSR/effective-trial clustering, the Selection Integrity article, the
+  intraday-readiness audit, the internal peer-benchmark redo, and explicit
+  deferrals.
+- Updated README scope and navigation to describe
+  `ledgr_results(bt, what = "returns")`, the evidence-only
+  selection-integrity diagnostics, and the continuing non-scope for
+  business-objective filtering, purging/embargo/CPCV, benchmark-relative
+  diagnostics, broker adapters, paper, and live trading.
+- Added `ledgr_sweep_cluster()` and `ledgr_sweep_dsr()` to the pkgdown
+  reference index alongside the other sweep diagnostics.
+- Updated the roadmap, design index, AGENTS.md, and horizon entries so the
+  active packet is v0.1.9.6, the v0.1.9.5 packet is archival, and the PBO spike
+  verdict, native diagnostic scope, intraday-audit findings, peer-benchmark
+  measurement caveat, compiled-default deferral, and business-objective
+  deferral are recorded.
+- Added release-surface documentation-contract checks for the README, NEWS,
+  roadmap, design index, pkgdown reference index, and horizon deferral ledger.
+  No public benchmark ranking claim or compiled-default flip was added.
 
 ### Source Reference
 

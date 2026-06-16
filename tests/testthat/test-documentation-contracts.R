@@ -460,24 +460,26 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
-  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_4_spec_packet/`", fixed = TRUE)
-  testthat::expect_match(roadmap, "**Active packet:** v0.1.9.5 documentation, teaching, contracts audit", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_5_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Active packet:** v0.1.9.6 validation substrate and selection-integrity", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.4 | Done | Walk-forward", fixed = TRUE)
-  testthat::expect_match(roadmap, "| v0.1.9.5 | Active | Documentation", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.5 | Done | Documentation", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.6 | Active | Validation toolkit substrate", fixed = TRUE)
 
-  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.4`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** `v0.1.9.5`", fixed = TRUE)
-  testthat::expect_match(design_index, "ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.5`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** `v0.1.9.6`", fixed = TRUE)
+  testthat::expect_match(design_index, "ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.1 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.2 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "v0_1_9_2_release_closeout.md", fixed = TRUE)
   testthat::expect_match(design_index, "v0.1.9.4 walk-forward packet is complete", fixed = TRUE)
-  testthat::expect_match(design_index, "The v0.1.9.5 packet is active", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.1.9.5 packet is complete", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.1.9.6 packet is active", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -2029,6 +2031,49 @@ testthat::test_that("new teaching surfaces state current public boundaries", {
     testthat::expect_match(doc, "More steps are planned", fixed = TRUE)
     testthat::expect_no_match(doc, "production deployment", fixed = TRUE)
   }
+})
+
+testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferrals", {
+  root <- testthat::test_path("..", "..")
+  paths <- list(
+    news = file.path(root, "NEWS.md"),
+    readme = file.path(root, "README.md"),
+    pkgdown = file.path(root, "_pkgdown.yml"),
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md")
+  )
+  testthat::skip_if_not(all(file.exists(unlist(paths))), "release-surface docs not available")
+
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+
+  for (term in c(
+    "# ledgr 0.1.9.6",
+    "ledgr_results(bt, what = \"returns\")",
+    "ledgr_sweep_pbo()",
+    "ledgr_sweep_min_track_record()",
+    "ledgr_sweep_dsr()",
+    "ledgr_sweep_cluster()",
+    "Selection Integrity",
+    "no public benchmark ranking claim"
+  )) {
+    testthat::expect_match(docs$news, term, fixed = TRUE)
+  }
+
+  testthat::expect_match(docs$readme, "ledgr_results(bt, what = \"returns\")", fixed = TRUE)
+  testthat::expect_match(docs$readme, "Selection Integrity", fixed = TRUE)
+  testthat::expect_match(docs$readme, "business-objective filtering", fixed = TRUE)
+  testthat::expect_no_match(docs$readme, "validation-toolkit statistics such as PBO/CSCV/DSR", fixed = TRUE)
+
+  for (fn in c("ledgr_sweep_pbo", "ledgr_sweep_min_track_record", "ledgr_sweep_cluster", "ledgr_sweep_dsr")) {
+    testthat::expect_match(docs$pkgdown, fn, fixed = TRUE)
+  }
+
+  testthat::expect_match(docs$roadmap, "| v0.1.9.6 | Active | Validation toolkit substrate", fixed = TRUE)
+  testthat::expect_match(docs$design_index, "Current active packet:** `v0.1.9.6`", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "PBO spike reversed the default", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "not a public speed claim", fixed = TRUE)
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {

@@ -26,9 +26,8 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-06-11):** v0.1.9.4 walk-forward has closed.
-v0.1.9.5 is cut and active at
-`inst/design/ledgr_v0_1_9_5_spec_packet/`. Horizon entries below remain
+**Current packet note (2026-06-15):** v0.1.9.5 has closed. v0.1.9.6 is active
+at `inst/design/ledgr_v0_1_9_6_spec_packet/`. Horizon entries below remain
 non-binding unless a future active packet, roadmap, contracts, or an accepted
 RFC promotes them.
 
@@ -47,8 +46,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.1.9.x** -- walk-forward (RFC accepted 2026-06-04 with Amendment 1 +
   Amendment 2 + Section 17 ticket-cut gates); validation toolkit
   (formerly "selection-integrity diagnostics"; RFC accepted 2026-06-12,
-  amended 2026-06-14 with a v0.1.9.6 PBO spike gate); intraday-readiness
-  code audit (scheduled v0.1.9.6, audit only); cost-model post-direction;
+  amended 2026-06-14 with a v0.1.9.6 PBO spike gate, then implemented as
+  substrate plus native PBO/CSCV, MinTRL, DSR, and effective-trial clustering);
+  intraday-readiness code audit (completed in v0.1.9.6, audit only);
+  cost-model post-direction;
   randomized / blocked
   slice diagnostics; promotion-grade sweep artifacts; target
   construction helper extensions (Pass 2 per-stage helpers); broker /
@@ -292,13 +293,29 @@ names and the trades-pairing decision are illustrative.
 
 ### 2026-06-13 [infrastructure] Peer benchmark redo with the cost and risk chains (v0.1.9.6)
 
-Scheduled for v0.1.9.6. The peer parity/performance benchmark
+**Status update 2026-06-15: implemented as internal v0.1.9.6 measurement.**
+LDG-2655 added current-surface benchmark rows for
+`ledgr_cost_zero()` / `ledgr_risk_none()` and for a representative public
+cost/risk chain on the same fixture and seed. The smoke and record commands
+completed all five ledgr rows, the repeated warnings were attributed to the
+documented `LEDGR_LAST_BAR_NO_FILL` next-open final-bar behavior, and the
+record bundle remains an ignored local artifact under `dev/bench/results/`.
+The checked-in report records the methodology and commands without replacing
+the all-peer historical comparison with a cost-only slice.
+
+Interpretation guardrail: the single-process record bundle is not a clean
+cost/risk overhead isolation because row-order warm-up dominates the observed
+timing deltas. Treat it as current-surface parity and boundary evidence, not a
+public speed claim and not proof that cost/risk held a performance line. Sweep
+this entry to `## Resolved` at the v0.1.9.6 closeout.
+
+Original scheduling note: the peer parity/performance benchmark
 (`dev/bench/peer_benchmark/`) was last recorded at v0.1.8.10 (record bundle
 2026-06-02), which predates the public cost chain (v0.1.9.1) and the
 target-risk chain (v0.1.9.3). The current numbers therefore do not include
 per-fill cost-model resolution or per-pulse risk-chain transform overhead. Redo
-the record bundle on the v0.1.9.5 surface to measure whether the v0.1.9.x
-feature arc held the speed line.
+the record bundle on the v0.1.9.5 surface to record the current cost/risk
+boundary and expose any obvious overhead signal.
 
 Measurement design (so the delta is attributable, not blended into the engine
 phase):
@@ -316,9 +333,8 @@ universe-scaling cost lives at 500 instruments. The redo tells you which.
 Scope: this is a measurement spike, not a performance-optimization commitment.
 If it surfaces a material cost-chain regression, that becomes its own hot-path
 item (the per-pulse / per-fill R-loop frontier is already recorded). After the
-new bundle lands, update the benchmark report headline and the v0.1.8.10
-record-bundle line, keeping the "fastest trustworthy event-driven row" framing
-rather than an unqualified speed claim.
+new bundle lands, update the benchmark report methodology and the v0.1.8.10
+record-bundle line without adding a public ranking claim.
 
 Related: the standing single-core-before-parallel stance; the per-pulse
 `O(n_inst)` hot-path frontier; the 2026-06-13 compiled-spot-FIFO-default
@@ -362,10 +378,22 @@ window, not a dependency decision.
 
 ### 2026-06-13 [execution] v0.1.9.6 intraday-readiness code audit
 
-Scheduled for the next packet after v0.1.9.5: run a deep code review to check
-whether the v0.1.x architecture is still EOD-first but intraday-tolerant, or
-whether recent work introduced architectural footguns that would make future
-intraday support expensive.
+**Status update 2026-06-15: audit completed, no runtime change.** LDG-2654
+produced `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`. The audit
+found no High blockers and confirmed the execution, snapshot, feature,
+retained-return, and identity paths are timestamp-grid or row-count based
+rather than day-only. It routed three Medium findings forward: metric-context
+calendar mismatch guardrails are not wired into the metric path, walk-forward
+short-window warnings are cadence-blind, and the execution/cost policy is
+cadence-neutral next-pulse execution but not a full intraday microstructure
+model. No intraday runtime implementation was authorized or made in v0.1.9.6.
+Sweep this entry to `## Resolved` at the v0.1.9.6 closeout after the findings
+are copied into the next planning cycle.
+
+Original scheduling note: run a deep code review to check whether the v0.1.x
+architecture is still EOD-first but intraday-tolerant, or whether recent work
+introduced architectural footguns that would make future intraday support
+expensive.
 
 Scope:
 
@@ -400,6 +428,11 @@ architectural footguns. This entry schedules the audit promised there; it does
 not authorize the intraday support arc itself.
 
 ### 2026-06-13 [execution] Decide whether compiled spot-FIFO should become the default
+
+**Status update 2026-06-15:** v0.1.9.6 did not flip the default and the
+current-surface peer benchmark redo did not authorize a default change. The
+compiled spot-FIFO path remains an explicit opt-in pending a separate spike and
+RFC cycle.
 
 The compiled spot-FIFO path is currently an explicit opt-in, not default
 execution. That is the right state until a fresh measurement spike and RFC
@@ -1278,6 +1311,14 @@ Non-commitments:
   horizon commitment.
 
 ### 2026-06-09 [research] Business-objective constructor RFC (Pardo-anchored)
+
+**Status update 2026-06-15: explicitly deferred out of v0.1.9.6.** The
+validation-substrate packet shipped evidence-only diagnostics first. A business
+objective filters candidate eligibility and composes with selection identity,
+so it is intentionally held until the diagnostic surfaces, interpretation
+rules, and walk-forward identity consequences have at least one stable packet
+behind them. No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface
+is authorized by v0.1.9.6.
 
 Paired with the 2026-06-09 Palomar constraint expansion family entry above:
 Pardo (2008) Chapter 11's nine-criterion robust-strategy checklist deserves
@@ -3655,6 +3696,19 @@ architectural footguns visible now so they do not surface as last-minute
 surprises once the product arc completes.
 
 ### 2026-06-07 [planning] Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture
+
+**Status update 2026-06-15: v0.1.9.6 substrate and diagnostics implemented.**
+The packet shipped the canonical return stream, retained-return panel bridge,
+adapter-shaped projections, native PBO/CSCV after the green spike,
+minimum-track-record length, DSR, deterministic effective-trial clustering, and
+the Selection Integrity teaching surface. The PBO spike reversed the default
+adapter-runtime prior for PBO specifically: `pbo` remains an optional reference
+cross-check, while ledgr ships a native implementation over its retained-return
+panel contract. Business-objective filtering, K-Ratio, Triple Penance,
+purging/embargo/CPCV, benchmark-relative diagnostics, portfolio optimization,
+and walk-forward objective-filtered identity remain deferred. Sweep this entry
+to `## Resolved` at the v0.1.9.6 closeout after those deferrals are copied into
+the next planning packet.
 
 **Status update 2026-06-14: maintainer-amended with a PBO spike gate.**
 The accepted synthesis remains binding, but v0.1.9.6 no longer treats

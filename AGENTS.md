@@ -30,7 +30,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (active v0.1.9.5 packet):
+Current planning context (active v0.1.9.6 packet):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -233,20 +233,35 @@ Current planning context (active v0.1.9.5 packet):
   liquidity/capacity policy, OMS behavior, paper/live walk-forward,
   target-construction helper expansion, risk-chain constraint expansion, and
   compiled-core architecture work remain non-scope.
-- The active v0.1.9.5 packet is a naming and teaching consolidation release:
+- The completed v0.1.9.5 packet is an archival release record:
   `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`,
   `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`,
   `inst/design/ledgr_v0_1_9_5_spec_packet/tickets.yml`,
   `inst/design/ledgr_v0_1_9_5_spec_packet/batch_plan.md`, and
   `inst/design/ledgr_v0_1_9_5_spec_packet/README.md`.
-  It consumes the accepted API naming-consistency synthesis, the v0.1.9.4
+  It consumed the accepted API naming-consistency synthesis, the v0.1.9.4
   deep code-review audit, the v0.1.9.4 vignette-screening audit, and the
-  v0.1.9.5 vignette audit. Scope is public API naming cleanup,
+  v0.1.9.5 vignette audit. It shipped public API naming cleanup,
   candidate-generic alignment, contract and identity-reference refresh,
   scheduled audit fixes, vignette splits, new teaching surfaces,
   release-surface housekeeping, and the two promoted vignette-audit helpers.
-  Validation toolkit, strategy-decorator, crypto-readiness, target-construction
-  helper expansion, and new v0.2.x feature work remain non-scope.
+- The active v0.1.9.6 packet is a validation-substrate and
+  selection-integrity diagnostics release:
+  `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`,
+  `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`,
+  `inst/design/ledgr_v0_1_9_6_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_9_6_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_9_6_spec_packet/README.md`.
+  It consumes the accepted validation-toolkit synthesis as maintainer-amended
+  on 2026-06-14, the Methodological Diagnostics styleguide gate, the PBO
+  spike, the intraday-readiness audit, and the current-surface peer benchmark
+  redo. Scope is canonical single-run returns, retained-return panels and
+  projections, native PBO/CSCV, native MinTRL, native DSR with deterministic
+  effective-trial clustering, the Selection Integrity teaching surface,
+  audit-only intraday-readiness findings, and internal benchmark measurement.
+  Business-objective filtering, purging/embargo/CPCV, K-Ratio, Triple Penance,
+  intraday runtime support, public benchmark claims, and compiled spot-FIFO
+  default changes remain non-scope.
 
 ## Active Design Entry Points
 
@@ -256,7 +271,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| active v0.1.9.5 packet | `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`, `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`, `inst/design/ledgr_v0_1_9_5_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_5_spec_packet/batch_plan.md`, `inst/design/rfc/rfc_api_naming_consistency_v0_1_9_5_synthesis.md`, `inst/design/audits/v0_1_9_4_deep_code_review_audit.md`, `inst/design/audits/v0_1_9_4_vignette_screening_audit.md`, `inst/design/audits/v0_1_9_5_vignette_audit.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md` |
+| active v0.1.9.6 packet | `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_6_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/pbo_spike_synthesis.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/peer_benchmark_redo_preflight.md`, `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`, `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`, `inst/design/vignette_styleguide.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md` |
 | v0.1.9.4 release record | `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
 | v0.1.9.3 release record | `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_release_closeout.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` |
 | v0.1.9.2 release record | `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` |

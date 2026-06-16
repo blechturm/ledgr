@@ -1,3 +1,35 @@
+# ledgr 0.1.9.6
+
+- Added canonical single-run returns as
+  `ledgr_results(bt, what = "returns")` and
+  `as_tibble(bt, what = "returns")`, using the same adjacent-equity return
+  formula as ledgr-owned metrics and retained sweep returns.
+- Added retained-sweep return panels and adapter-shaped projections for
+  validation consumers. `ledgr_sweep_returns_panel()` fails closed on ragged
+  completed-candidate grids, while matrix, data-frame, and optional xts
+  projections keep candidate ordering deterministic.
+- Ran the PBO/CSCV spike and accepted a native implementation path. ledgr now
+  ships native evidence-only selection-integrity diagnostics:
+  `ledgr_sweep_pbo()`, `ledgr_sweep_min_track_record()`,
+  `ledgr_sweep_dsr()`, and `ledgr_sweep_cluster()`. The CRAN `pbo`,
+  PerformanceAnalytics, and quantstrat packages remain optional reference
+  checks, not runtime dependencies.
+- Added the Selection Integrity article. It teaches PBO/CSCV, minimum track
+  record length, Deflated Sharpe Ratio, and deterministic effective-trial
+  clustering as one method family: what evidence they consume, how to
+  interpret them, what they cannot prove, and why they do not select or promote
+  candidates.
+- Completed the intraday-readiness audit and recorded the future guardrails it
+  found. v0.1.9.6 makes no intraday runtime change.
+- Redid the internal peer-benchmark preflight on the current cost/risk surface
+  and recorded the current-surface row boundary. This is internal measurement
+  evidence only; the release adds no public benchmark ranking claim and does
+  not flip the compiled spot-FIFO default.
+- Deferred out of v0.1.9.6: business-objective filtering, objective-filtered
+  walk-forward identity, K-Ratio, Triple Penance, purging, embargo, CPCV,
+  benchmark-relative diagnostics, portfolio optimization, intraday runtime
+  support, and a compiled spot-FIFO default decision.
+
 # ledgr 0.1.9.5
 
 - Consolidated the post-v0.1.9.x public surface after the cost, sweep

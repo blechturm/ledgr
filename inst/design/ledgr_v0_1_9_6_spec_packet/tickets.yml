@@ -187,7 +187,7 @@ tickets:
 
   - id: "LDG-2655"
     title: "Current-surface peer benchmark redo"
-    status: "review_pending"
+    status: "complete"
     priority: "P2"
     effort: "M"
     dependencies:
@@ -203,7 +203,7 @@ tickets:
 
   - id: "LDG-2656"
     title: "Release surfaces and deferral ledger"
-    status: "not_started"
+    status: "review_pending"
     priority: "P2"
     effort: "S"
     dependencies:

@@ -262,7 +262,7 @@ Review focus:
 
 ## Batch 10 - Peer Benchmark Redo
 
-Status: Implementation complete; awaiting Claude review.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -282,6 +282,8 @@ Review focus:
 - no runtime optimization or compiled-default flip is mixed in.
 
 ## Batch 11 - Release Surfaces
+
+Status: Implementation complete; awaiting Claude review.
 
 Tickets:
 

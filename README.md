@@ -130,6 +130,13 @@ head(ledgr_results(bt, what = "equity"), 3)
 #> 1 2019-01-01  10000 10000               0       10000        0
 #> 2 2019-01-02  10000 10000               0       10000        0
 #> 3 2019-01-03  10000 10000               0       10000        0
+head(ledgr_results(bt, what = "returns"), 3)
+#> # A tibble: 3 x 3
+#>   ts_utc     equity period_return
+#>   <date>      <dbl>         <dbl>
+#> 1 2019-01-01  10000            NA
+#> 2 2019-01-02  10000             0
+#> 3 2019-01-03  10000             0
 ```
 
 Stored strategy provenance is inspectable without rerunning or
@@ -170,6 +177,7 @@ want to recover a function object.
 | I want to write strategies correctly. | [Strategy Development](https://blechturm.github.io/ledgr/articles/strategy-development.html) |
 | I want feature maps, indicators, and active aliases. | [Indicators](https://blechturm.github.io/ledgr/articles/indicators.html) |
 | I want exploratory sweeps and candidate promotion. | [Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) |
+| I want PBO/CSCV, MinTRL, DSR, and effective-trial diagnostics. | [Selection Integrity](https://blechturm.github.io/ledgr/articles/selection-integrity.html) |
 | I want cost and target-risk policy boundaries. | [Risk And Cost](https://blechturm.github.io/ledgr/articles/risk-and-cost.html) |
 | I want walk-forward evaluation. | [Walk-Forward](https://blechturm.github.io/ledgr/articles/walk-forward.html) |
 | I want sealed snapshots, durable stores, backup, and reopen. | [Experiment Store](https://blechturm.github.io/ledgr/articles/experiment-store.html) |
@@ -211,17 +219,21 @@ ledgr when you want the audit trail and adapter boundary to be explicit.
 The current ledgr research API is experiment-first. It includes memory-backed
 exploratory sweep support, compact saved sweeps with optional retained return
 series, classed target-risk transforms, optional parallel candidate dispatch,
-and a scoped `compiled_accounting_model = "spot_fifo"` opt-in for memory-backed
-spot-asset FIFO sweeps. Canonical R execution remains the default.
+canonical single-run returns, retained-return panel projections, evidence-only
+selection-integrity diagnostics, and a scoped
+`compiled_accounting_model = "spot_fifo"` opt-in for memory-backed spot-asset
+FIFO sweeps. Canonical R execution remains the default.
 
 The compiled opt-in is not durable `ledgr_run()` integration, not a non-spot
 accounting model, and not a general compiled fold core. The target-risk layer
 is a target-vector transformation layer; it is not affordability enforcement,
 portfolio optimization, margin, shorting or borrow policy, liquidity/capacity
-modeling, OMS lifecycle behavior, or broker-grade risk control. ledgr does not
-ship `ledgr_tune()`, validation-toolkit statistics such as PBO/CSCV/DSR,
-broker adapters, paper trading, or live trading. Those are separate roadmap
-items with different state and safety requirements.
+modeling, OMS lifecycle behavior, or broker-grade risk control. The
+selection-integrity diagnostics do not choose or promote candidates and do not
+prove future profitability. ledgr does not ship `ledgr_tune()`,
+business-objective filtering, purging/embargo/CPCV, benchmark-relative
+diagnostics, broker adapters, paper trading, or live trading. Those are
+separate roadmap items with different state and safety requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes
