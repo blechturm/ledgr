@@ -1,0 +1,203 @@
+version: "0.1.9.7"
+source: "v0_1_9_7_tickets.md"
+generated_from: "v0_1_9_7_spec.md"
+tickets:
+  - id: "LDG-2659"
+    title: "Packet alignment and ticket cut"
+    status: "review_pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    classification:
+      type: "planning"
+      surface: "design-packet"
+      scope: "packet-alignment"
+    tests:
+      - "Manual packet-artifact review"
+      - "rg ticket IDs in spec packet"
+      - "ASCII scan of spec packet"
+
+  - id: "LDG-2660"
+    title: "stable_region detector spike"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2659"
+    classification:
+      type: "spike"
+      surface: "validation-methods"
+      scope: "stable-region-detector"
+    tests:
+      - "Manual spike synthesis review"
+      - "Known-direction fixture script or documented calculations"
+      - "Source spot-checks against research input"
+
+  - id: "LDG-2661"
+    title: "Closed-trade retention extension"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2659"
+    classification:
+      type: "feature"
+      surface: "sweep-retention"
+      scope: "closed-trade-evidence"
+    tests:
+      - "Targeted retention and sweep-persistence tests"
+      - "Schema compatibility tests"
+      - "Storage smoke ratio check"
+      - "Byte-identical no-trade-retention fixture"
+      - "tools::checkRd()"
+
+  - id: "LDG-2662"
+    title: "Selection Integrity teaching refit"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2659"
+    classification:
+      type: "documentation"
+      surface: "validation-teaching"
+      scope: "selection-integrity-refit"
+    tests:
+      - "Quarto render of selection-integrity"
+      - "Targeted documentation-contract tests"
+      - "rg forbidden overclaims"
+
+  - id: "LDG-2663"
+    title: "Intraday metric-context guardrail"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2659"
+    classification:
+      type: "feature"
+      surface: "metric-context"
+      scope: "intraday-honesty-guardrail"
+    tests:
+      - "Targeted metric-context tests"
+      - "Targeted sweep and walk-forward degradation tests"
+      - "Documentation-contract checks for deferred M-2/L-1"
+
+  - id: "LDG-2664"
+    title: "Native K-Ratio diagnostic"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2659"
+    classification:
+      type: "feature"
+      surface: "validation-diagnostics"
+      scope: "k-ratio"
+    tests:
+      - "Targeted K-Ratio tests or deferral artifact review"
+      - "Optional reference-package cross-check where available"
+      - "tools::checkRd() if docs are generated"
+      - "NAMESPACE/DESCRIPTION import review"
+
+  - id: "LDG-2665"
+    title: "Business-objective internal contract"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2659"
+    classification:
+      type: "feature"
+      surface: "business-objective"
+      scope: "internal-step-contract"
+    tests:
+      - "Targeted constructor/hash tests"
+      - "Serialization round-trip tests"
+      - "Documentation-contract tests for no public extension contract"
+      - "tools::checkRd()"
+
+  - id: "LDG-2666"
+    title: "Business-objective criteria"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2660"
+      - "LDG-2661"
+      - "LDG-2665"
+    classification:
+      type: "feature"
+      surface: "business-objective"
+      scope: "objective-criteria"
+    tests:
+      - "Targeted criterion tests"
+      - "Missing/non-finite evidence tests"
+      - "Known-direction tests"
+      - "Documentation-contract tests for evidence-only language"
+
+  - id: "LDG-2667"
+    title: "Sweep eligibility filter"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2665"
+      - "LDG-2666"
+    classification:
+      type: "feature"
+      surface: "business-objective"
+      scope: "sweep-filter"
+    tests:
+      - "Targeted sweep-filter tests"
+      - "Anti-selection rejection tests"
+      - "Reopened-sweep evidence tests"
+      - "Documentation-contract tests"
+      - "tools::checkRd()"
+
+  - id: "LDG-2668"
+    title: "Release surfaces and deferral ledger"
+    status: "pending"
+    priority: "P2"
+    effort: "M"
+    dependencies:
+      - "LDG-2660"
+      - "LDG-2661"
+      - "LDG-2662"
+      - "LDG-2663"
+      - "LDG-2664"
+      - "LDG-2667"
+    classification:
+      type: "documentation"
+      surface: "release-surfaces"
+      scope: "release-ledger"
+    tests:
+      - "Documentation-contract tests"
+      - "rg stale overclaims and old version status"
+      - "Manual release-surface review"
+
+  - id: "LDG-2669"
+    title: "v0.1.9.7 release gate"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2659"
+      - "LDG-2660"
+      - "LDG-2661"
+      - "LDG-2662"
+      - "LDG-2663"
+      - "LDG-2664"
+      - "LDG-2665"
+      - "LDG-2666"
+      - "LDG-2667"
+      - "LDG-2668"
+    classification:
+      type: "release"
+      surface: "release-gate"
+      scope: "v0.1.9.7-closeout"
+    tests:
+      - "Release playbook"
+      - "Full local test suite"
+      - "R CMD build/check per playbook"
+      - "pkgdown/documentation gate where changed"

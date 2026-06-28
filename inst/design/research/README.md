@@ -21,7 +21,12 @@ These artifacts informed the seed RFC. The seed cites the file by path. The synt
 
 ## Citation format limitation
 
-The `citeturnXsearchY` references in these files are ChatGPT Deep Research's internal turn-based source markers. They do not resolve to URLs and cannot be clicked through. They tie to real sources the model retrieved, but verification requires either querying the same session or independently finding the cited work.
+The `citeturnXsearchY` references and rendered `turnXsearchY` /
+`turnXviewY` citation markers in these files are ChatGPT Deep Research's
+internal turn-based source markers. They do not resolve to URLs and cannot be
+clicked through. They tie to real sources the model retrieved, but verification
+requires either querying the same session or independently finding the cited
+work.
 
 For any claim that becomes load-bearing in a synthesis, look up the primary source yourself. Do not treat the deep-research model as a quote-precise oracle.
 
@@ -33,8 +38,20 @@ For any claim that becomes load-bearing in a synthesis, look up the primary sour
 | `Transaction-Cost-Models.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_seed.md` | `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
 | `Validation-Toolkit.md` | `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_seed.md` (seed v1 authored 2026-06-11; cycle opened on the recorded trigger after v0.1.9.4 closed; bundling rationale in the 2026-06-07 horizon entry "Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture"). | Pending (synthesis not yet written; response stage next). |
 | `Reproducible-Leakage-Safe-ML.md` | Informs the 2026-06-14 horizon entry "General ML-strategy preparedness (QRF ranking as the motivating spike)"; the dedicated ML-architecture RFC is parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycle to seed the architectural requirements; synthesis deferred to v0.2.x). |
+| `Stable-Parameter-Region-Detection.md` | Ad-hoc input resolving the `ledgr_objective_stable_region()` detector methodology that `rfc_validation_toolkit_v0_1_9_x_synthesis.md` section 4.1 left as a spec-cut open question (not a new RFC cycle). | Pending (the v0.1.9.7 spec packet's `stable_region` detector spike). |
+| `Cross-Asset-Accounting-Critical-Events.md` | Informs the 2026-06-28 horizon entry "Cross-asset accounting-critical economic events"; the corporate-actions / instrument-master and explicit accounting-critical event-types RFCs are parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycles after vendor-ingestion work surfaced LFB-001; synthesis deferred to v0.2.x). |
 
 `Reproducible-Leakage-Safe-ML.md` was conducted ahead of its RFC cycle to inform the parked horizon seed rather than at stage 1 of an open cycle; when the v0.2.x ML-architecture RFC opens, its seed should cite this file by path per the normal convention.
+
+`Stable-Parameter-Region-Detection.md` was conducted ad hoc to resolve a spec-cut open question inside the already-accepted validation-toolkit synthesis (section 4.1), not at stage 1 of a new cycle. It feeds the v0.1.9.7 `stable_region` detector spike; the binding artifact is that spike's accepted design, not this file. Per this directory's policy the file is preserved indefinitely and is not promoted to a user-facing surface.
+
+`Cross-Asset-Accounting-Critical-Events.md` was conducted ahead of the
+v0.2.x data/accounting RFC cycles after vendor-ingestion feedback identified
+the missing dividend/distribution cashflow event. It feeds the parked
+corporate-actions / instrument-master and explicit accounting-critical
+event-types work; the binding artifact will be the future accepted synthesis,
+not this file. Per this directory's policy the file is preserved indefinitely
+and is not promoted to a user-facing surface.
 
 When the next deep-research-informed RFC cycle opens, add a new file here and a new row to the table.
 

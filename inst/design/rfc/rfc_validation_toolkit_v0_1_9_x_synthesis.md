@@ -23,6 +23,15 @@ at the return substrate, panel-hygiene bridge, adapter-shaped projection,
 and spike artifacts. If the spike does not pass green, PBO/CSCV and the
 dependent business-objective implementation defer to v0.1.9.7 or later
 with the spike synthesis as binding input.
+**Maintainer amendment (2026-06-26, business-objective promotion + D4 deferral):**
+v0.1.9.7 is the separate amendment the v0.1.9.6 spec section 2.6 anticipated. It
+promotes the full v1 business-objective eligibility layer (all seven D2 criterion
+steps, evidence-only) and additionally admits diagnostic-threshold criteria over
+named v0.1.9.6 diagnostic outputs. It defers only D4 objective-filtered walk-forward
+identity participation, the broader robustness-criterion family beyond the
+strict-lattice `stable_region` detector, scored composition, and a public
+criterion-extension contract, to a later business-objective completion arc. See
+Section 14.
 **Date:** 2026-06-12
 **Author:** Codex (synthesis author)
 **Window:** v0.1.9.x, first feature packet after v0.1.9.5 (resolved in
@@ -225,8 +234,9 @@ The `ledgr_pardo_*` prefix is withdrawn. Pardo's vocabulary binds the criterion
 semantics and documentation attribution, not the public prefix. Criterion help
 pages cite Pardo 2008 Chapter 11 where applicable.
 
-`ledgr_sweep_filter()` returns objective evidence and eligible rows. It is not
-a dplyr replacement, and its help page must say so.
+`ledgr_sweep_filter()` returns objective evidence for all evaluated candidates,
+including eligibility flags. It is not a dplyr replacement, and its help page
+must say so.
 
 ### 4.1 Criterion Steps
 
@@ -557,3 +567,47 @@ Claude final review should verify:
 - public names comply with the accepted API naming synthesis;
 - adapter/native split respects MIT + Suggests-only boundaries;
 - future obligations and spec-cut open questions are separated correctly.
+
+---
+
+## 14. Amendment 2026-06-26 (maintainer): v0.1.9.7 business-objective promotion
+
+Authorized by v0.1.9.6 spec section 2.6 (a later maintainer amendment may promote a
+narrowed objective override that composes proven criteria without automatic promotion,
+winner selection, or premature objective-filtered walk-forward identity). v0.1.9.7 is
+that amendment. After review it promotes the **full** v1 criterion set rather than a
+narrowed subset.
+
+**Promoted into v0.1.9.7 (evidence-only):**
+
+- the business-objective constructor and the all-candidates, evidence-only sweep filter;
+- all seven D2 criterion steps (Section 4.1): `even_trades`, `even_profit`,
+  `stable_region`, `max_drawdown`, `stable_runs`, `min_trades`, `positive_trajectory`.
+  The three closed-trade-distribution criteria (`even_trades`, `even_profit`,
+  `stable_runs`) are fed by a sweep closed-trade-evidence retention extension shipped in
+  the same packet; `stable_region` ships with a strict-lattice detector resolved by an
+  in-packet spike (research input:
+  `inst/design/research/Stable-Parameter-Region-Detection.md`);
+- diagnostic-threshold criteria: thresholds over named v0.1.9.6 diagnostic outputs (DSR,
+  MinTRL), bound as evidence thresholds that record the source diagnostic's metadata and
+  hash, with no recomputation and no implication that the diagnostic proves
+  profitability. This extends, rather than narrows, the D2 criterion surface.
+
+**Deferred to a later business-objective completion / robustness arc (candidate RFC):**
+
+- D4 objective-filtered walk-forward identity participation -- in v0.1.9.7 the objective
+  is evidence-only and `business_objective_hash` is provenance, not part of any run,
+  sweep, or session identity;
+- the broader robustness-criterion family beyond the strict lattice detector
+  (non-factorial / sparse / unordered-categorical grids via kNN, normalized-radius,
+  Gower, or density modes), as separate criteria, never a silent broadening of
+  `stable_region()`;
+- scored / weighted objective composition (Section 4 names it a future additive);
+- a public third-party criterion-extension contract.
+
+All other D2/D4 contracts -- all-pass composition, classed/hashed/serializable criterion
+steps, the per-candidate x per-criterion tear-down table, fail-closed evidence handling,
+and the D4 rule that an objective which participates in walk-forward must enter
+`session_id` -- are unchanged. This amendment promotes and phases the layer; it does not
+alter the accepted contracts. The deferred arc is parked in the 2026-06-26 horizon
+entry.

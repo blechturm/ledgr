@@ -1849,6 +1849,12 @@ Constraints:
 - adapters may provide data, but ledgr must define the interpretation contract
   before using it in committed experiments.
 
+Source material:
+
+- `inst/design/research/Cross-Asset-Accounting-Critical-Events.md`
+  records the cross-asset prior-art and design-space pass after LFB-001; the
+  RFC must re-verify load-bearing primary-source claims before binding policy.
+
 ### v0.2.x Explicit Accounting Event Types RFC
 
 Intent:
@@ -1868,6 +1874,12 @@ Constraints:
   parity or accepted intentional parity change, reproduction keys, and docs;
 - coordinate with point-in-time data tables and corporate-action interpretation
   policy before committed experiments depend on these event types.
+
+Source material:
+
+- `inst/design/research/Cross-Asset-Accounting-Critical-Events.md`
+  frames the source-event versus interpreted-ledger-event split and the
+  cross-asset event families to evaluate.
 
 ### v0.2.x Benchmark Context And Active Metrics
 

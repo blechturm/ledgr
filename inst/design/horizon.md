@@ -84,6 +84,37 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-06-26 [evaluation] Business-objective completion and robustness arc (deferred from v0.1.9.7)
+
+v0.1.9.7 ships the business-objective eligibility layer (`ledgr_business_objective()`
+plus the evidence-only, all-candidates `ledgr_sweep_filter()`) with the seven Pardo
+criteria, the diagnostic-threshold criteria, and a strict-lattice `stable_region`
+detector. Four threads were held back; they cluster into one future
+"business-objective completion / robustness" RFC candidate:
+
+- Objective-filtered walk-forward identity (synthesis D4): letting the objective drive
+  walk-forward selection and enter `session_id`. In v0.1.9.7 the objective is
+  evidence-only and `business_objective_hash` stays provenance, not identity. Refreshes
+  the v0.1.9.6-era objective-filtered deferral notes recorded further below.
+- Broader robustness-criterion family: the v0.1.9.7 `stable_region` detector is a strict
+  lattice over ordered, full-factorial grids (level-index adjacency, `is.ordered()`
+  gate) and fails closed otherwise. Hold-fixed handling of nominal axes, and non-factorial /
+  sparse / unordered-categorical grids, would need separate criteria (kNN, normalized-radius,
+  Gower, or density / dbscan modes), never a silent broadening of `stable_region()`.
+- Public third-party criterion-extension contract: v0.1.9.7 criteria implement an
+  internal classed / serializable / hashable step contract; exposing it so users can
+  define their own criteria needs a deterministic-hash rule for user logic (stable
+  criterion id plus serializable params plus a pure evaluate function), function / S3
+  based, not R6.
+- Scored / weighted objective composition: v1 is all-pass (AND); a scored composite is
+  the synthesis's named future additive.
+
+The trade-distribution criteria (`even_trades`, `even_profit`, `stable_runs`) and their
+closed-trade retention extension were pulled into v0.1.9.7, so they are no longer
+deferred. Routing: a dedicated RFC when this arc opens, after the v0.1.9.8 talib
+adapter; it extends the accepted D2 / D4 contracts in the validation-toolkit synthesis.
+This entry authorizes nothing.
+
 ### 2026-06-14 [architecture] General ML-strategy preparedness (QRF ranking as the motivating spike)
 
 Goal: a general architectural substrate for supervised-ML trading strategies,
@@ -5022,6 +5053,77 @@ needs explicit handling for:
 This should coordinate with point-in-time data tables and benchmark/reference
 data design. Promoted roadmap hook:
 `v0.2.x Corporate Actions And Instrument Master`.
+
+### 2026-06-28 [data] Cross-asset accounting-critical economic events
+
+Vendor-ingestion work in the separate `ledgr-research` monorepo surfaced a
+specific upstream feedback item:
+
+```text
+C:\Users\maxth\ledgr-research\docs\governance\ledgr-feedback.md
+LFB-001 No dividend cashflow event in ledger accounting
+```
+
+Completed deep-research input:
+`inst/design/research/Cross-Asset-Accounting-Critical-Events.md`.
+Treat it as non-binding RFC source material: it records the prior-art and
+cross-asset design-space pass, but any load-bearing claim still needs
+primary-source verification when the RFC opens.
+
+The concrete gap is equities: ledgr can execute fills, fees, cash deltas, and
+mark-to-market positions, but it has no first-class dividend/distribution event.
+That means ledgr must not claim accounting-faithful dividend-inclusive total
+return for dividend-paying instruments. Split-adjusted bars are
+accounting-like but dividend-incomplete; total-return-adjusted prices are
+return-complete but accounting-fictional because fills, fees, and notional
+exposure occur on counterfactual prices.
+
+Do not scope this as just `DIVIDEND`. The broader planning object is
+cross-asset accounting-critical economic events: non-trade events that change
+cash, quantity, cost basis, margin, collateral, instrument identity, or
+eligibility.
+
+Examples to audit before the RFC:
+
+- equities / funds: dividends, special dividends, return of capital, capital
+  gains distributions, splits, spin-offs, mergers, delistings, withholding tax;
+- crypto spot: airdrops, forks, staking rewards, token migrations, burns,
+  rebates or fees paid in asset units;
+- crypto perps: funding payments, margin, liquidation, collateral-currency
+  effects;
+- futures: variation margin, expiry, rolls, multipliers, delivery or cash
+  settlement;
+- options: exercise, assignment, expiry, adjusted deliverables after corporate
+  actions;
+- FX: rollover / swap interest, multi-currency cash balances and conversion;
+- fixed income: coupons, accrued interest, amortization, calls, maturity
+  repayment.
+
+Architecture split to preserve:
+
+1. source event records from vendors with PIT/provenance metadata;
+2. explicit interpretation policy (raw prices plus economic events versus
+   adjusted-price shortcuts);
+3. ledger economic events emitted into ledgr's event stream;
+4. replay/accounting semantics over cash, positions, cost basis, realized /
+   unrealized PnL, and equity;
+5. research-claim boundary: until an event family is implemented and tested,
+   ledgr reports are price-return or method-validation evidence only for
+   strategies where that event matters.
+
+The completed research pass covers QuantConnect LEAN, Zipline /
+zipline-reloaded, quantstrat / blotter, Backtrader, vectorbt, PMwR,
+Freqtrade, and Norgate. The eventual RFC should re-check the load-bearing
+primary sources and compare adjustment policy, dividend/distribution
+treatment, corporate actions, instrument identity, multi-currency cash,
+margin/funding, expiry/exercise/assignment, and replay semantics.
+
+Routing: v0.2.x corporate-actions / instrument-master plus explicit
+accounting-critical event-types RFC. An accepted RFC synthesis should precede
+implementation. Likely implementation starts with equities (cash distributions
++ splits) after the interpretation contract is accepted;
+crypto/futures/options/FX/fixed-income families follow only after their
+accounting assumptions are separately scoped. This entry authorizes nothing.
 
 ### 2026-05-24 [adapters] External reference-data adapter provenance pattern
 
