@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Ticket cut complete; awaiting Claude review before Batch 1
+**Status:** Batch 1 implementation complete; awaiting Claude review
 implementation.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after

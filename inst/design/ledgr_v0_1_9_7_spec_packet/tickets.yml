@@ -4,7 +4,7 @@ generated_from: "v0_1_9_7_spec.md"
 tickets:
   - id: "LDG-2659"
     title: "Packet alignment and ticket cut"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -19,7 +19,7 @@ tickets:
 
   - id: "LDG-2660"
     title: "stable_region detector spike"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:

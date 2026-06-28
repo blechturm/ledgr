@@ -83,7 +83,7 @@ parallel.
 Priority: P0
 Effort: S
 Dependencies: None
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -140,7 +140,7 @@ scope: packet-alignment
 Priority: P0
 Effort: M
 Dependencies: LDG-2659
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -174,6 +174,17 @@ clean deferral.
 - Manual spike-synthesis review.
 - Known-direction fixture script or documented calculations.
 - Source spot-checks against the research input.
+
+### Implementation Notes
+
+- Added `stable_region_spike_synthesis.md` with a green, narrow verdict for
+  the strict ordered-only lattice detector, pending Claude review and
+  maintainer acceptance.
+- Added and ran `stable_region_spike_reference.R`.
+- The reference fixture verifies broad plateau pass, isolated spike fail, and
+  sparse / unordered / duplicate / collapsed grid fail-closed behavior.
+- The spike authorizes no public API, package dependency, criterion
+  implementation, or selection behavior by itself.
 
 ### Source Reference
 

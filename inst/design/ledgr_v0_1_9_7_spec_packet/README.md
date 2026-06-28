@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec Packet
 
-Status: Ticket cut complete; awaiting Claude review.
+Status: Batch 1 implementation complete; awaiting Claude review.
 
 This packet scopes v0.1.9.7 as the business-objective eligibility and
 validation-polish release after v0.1.9.6 shipped the validation substrate and
@@ -12,6 +12,8 @@ Authoritative files:
 - `v0_1_9_7_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`
+- `stable_region_spike_synthesis.md`
+- `stable_region_spike_reference.R`
 
 Primary design inputs:
 

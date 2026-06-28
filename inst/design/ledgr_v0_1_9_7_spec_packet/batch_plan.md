@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batch 0 implementation complete; awaiting Claude review.
+Status: Batch 1 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -43,7 +43,7 @@ The release gate must begin by reading
 
 ## Batch 0 - Packet Alignment And Ticket Cut
 
-Status: Review Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -69,7 +69,7 @@ Exit criteria:
 
 ## Batch 1 - stable_region Spike
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -86,6 +86,16 @@ Review focus:
 - the spike authorizes no API by itself;
 - strict-lattice design matches the research input;
 - nominal/mixed topology remains deferred.
+
+Implementation notes:
+
+- `stable_region_spike_synthesis.md` records a green, narrow verdict for the
+  strict ordered-only lattice detector, pending Claude review and maintainer
+  acceptance.
+- `stable_region_spike_reference.R` verifies the known-direction fixture:
+  broad plateau passes, isolated spike fails, and sparse / unordered /
+  duplicate / collapsed grids fail closed.
+- No package API or runtime implementation was added in this batch.
 
 ## Batch 2 - Closed-Trade Retention
 
