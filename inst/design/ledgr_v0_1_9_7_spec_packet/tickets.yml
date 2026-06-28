@@ -19,7 +19,7 @@ tickets:
 
   - id: "LDG-2660"
     title: "stable_region detector spike"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -35,7 +35,7 @@ tickets:
 
   - id: "LDG-2661"
     title: "Closed-trade retention extension"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:

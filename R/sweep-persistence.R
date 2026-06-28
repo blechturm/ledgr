@@ -3,7 +3,8 @@
 #' `ledgr_sweep_save()` persists a compact saved-sweep artifact in the
 #' snapshot's experiment store. Saved sweeps are candidate evidence, not
 #' committed runs: they store scalar candidate rows and retained return rows
-#' when present, but not ledgers, fills, trades, or per-instrument artifacts.
+#' and retained closed-trade rows when present, but not ledgers, fills, or
+#' per-instrument artifacts.
 #' Promotion from a reopened saved sweep re-executes the selected candidate from
 #' its reproduction key against the sealed snapshot.
 #'
@@ -57,12 +58,16 @@ ledgr_sweep_save <- function(sweep, snapshot, sweep_id = NULL, note = NULL) {
   parent <- ledgr_sweep_storage_parent_row(sweep, sweep_id = sweep_id, note = note)
   candidates <- ledgr_sweep_storage_candidate_rows(sweep, sweep_id = sweep_id)
   returns <- ledgr_sweep_storage_return_rows(sweep, sweep_id = sweep_id)
+  trades <- ledgr_sweep_storage_trade_rows(sweep, sweep_id = sweep_id)
 
   DBI::dbWithTransaction(opened$con, {
     DBI::dbAppendTable(opened$con, "sweeps", parent)
     DBI::dbAppendTable(opened$con, "sweep_candidates", candidates)
     if (nrow(returns) > 0L) {
       DBI::dbAppendTable(opened$con, "sweep_returns", returns)
+    }
+    if (nrow(trades) > 0L) {
+      DBI::dbAppendTable(opened$con, "sweep_trades", trades)
     }
   })
   ledgr_checkpoint_duckdb(opened$con, strict = TRUE)
@@ -89,8 +94,9 @@ ledgr_sweep_open <- function(snapshot, sweep_id) {
 
   candidates <- ledgr_sweep_fetch_candidates(opened$con, sweep_id)
   returns <- ledgr_sweep_fetch_returns(opened$con, sweep_id, candidates)
+  trades <- ledgr_sweep_fetch_trades(opened$con, sweep_id, candidates)
   universe <- ledgr_sweep_fetch_universe(opened$con, as.character(parent$snapshot_id[[1]]))
-  out <- ledgr_sweep_reconstruct(parent, candidates, returns, universe = universe)
+  out <- ledgr_sweep_reconstruct(parent, candidates, returns, trades, universe = universe)
   out
 }
 
@@ -137,6 +143,7 @@ ledgr_sweep_list <- function(snapshot) {
       n_candidates = integer(),
       n_completed = integer(),
       retention_returns = character(),
+      retention_trades = character(),
       note = character()
     ), class = c("ledgr_sweep_list", "tbl_df", "tbl", "data.frame")))
   }
@@ -145,10 +152,11 @@ ledgr_sweep_list <- function(snapshot) {
   rows$n_candidates <- as.integer(rows$n_candidates)
   rows$n_completed <- as.integer(rows$n_completed)
   rows$retention_returns <- vapply(rows$retention_json, ledgr_sweep_retention_returns_from_json, character(1))
+  rows$retention_trades <- vapply(rows$retention_json, ledgr_sweep_retention_trades_from_json, character(1))
   rows$retention_json <- NULL
   rows <- rows[, c(
     "sweep_id", "created_at_utc", "engine_version", "sweep_schema_version",
-    "n_candidates", "n_completed", "retention_returns", "note"
+    "n_candidates", "n_completed", "retention_returns", "retention_trades", "note"
   ), drop = FALSE]
   structure(tibble::as_tibble(rows), class = c("ledgr_sweep_list", class(tibble::as_tibble(rows))))
 }
@@ -176,6 +184,7 @@ ledgr_sweep_info <- function(x) {
     n_failed = sum(status == "FAILED", na.rm = TRUE),
     retention = retention,
     retention_returns = if (inherits(retention, "ledgr_sweep_retention")) retention$returns else NA_character_,
+    retention_trades = if (inherits(retention, "ledgr_sweep_retention")) retention$trades else NA_character_,
     cost_model_hash = attr(x, "cost_model_hash", exact = TRUE),
     cost_plan_json = attr(x, "cost_plan_json", exact = TRUE),
     risk_chain_hash = attr(x, "risk_chain_hash", exact = TRUE),
@@ -216,6 +225,7 @@ print.ledgr_sweep_info <- function(x, ...) {
   cat("Completed:         ", value("n_completed", "0"), "\n", sep = "")
   cat("Failed:            ", value("n_failed", "0"), "\n", sep = "")
   cat("Retention returns: ", value("retention_returns"), "\n", sep = "")
+  cat("Retention trades:  ", value("retention_trades"), "\n", sep = "")
   cat("Cost Model Hash:   ", value("cost_model_hash"), "\n", sep = "")
   cat("Metric Hash:       ", value("metric_context_hash"), "\n", sep = "")
   cat("Feature Union:     ", value("feature_union_hash"), "\n", sep = "")
@@ -236,7 +246,7 @@ print.ledgr_sweep_list <- function(x, ...) {
     x,
     cols = c(
       "sweep_id", "created_at_utc", "sweep_schema_version",
-      "n_candidates", "n_completed", "retention_returns", "note"
+      "n_candidates", "n_completed", "retention_returns", "retention_trades", "note"
     ),
     footer = "Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).",
     ...
@@ -315,6 +325,10 @@ ledgr_sweep_assert_schema_compatible <- function(con, write = FALSE) {
   if (isTRUE(write)) {
     required$sweeps <- c(required$sweeps, "risk_chain_hash", "risk_plan_json")
     required$sweep_candidates <- c(required$sweep_candidates, "risk_chain_hash", "risk_plan_json")
+    required$sweep_trades <- c(
+      "sweep_id", "candidate_row", "trade_seq", "close_ts_utc",
+      "realized_pnl", "win_loss"
+    )
   }
   for (table in names(required)) {
     if (!ledgr_experiment_store_table_exists(con, table)) {
@@ -449,6 +463,37 @@ ledgr_sweep_fetch_returns <- function(con, sweep_id, candidates) {
   )
 }
 
+ledgr_sweep_fetch_trades <- function(con, sweep_id, candidates) {
+  if (!ledgr_experiment_store_table_exists(con, "sweep_trades")) {
+    return(ledgr_sweep_empty_trades(include_sweep_id = TRUE))
+  }
+  trades <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT t.*, c.candidate_id
+    FROM sweep_trades t
+    INNER JOIN sweep_candidates c
+      ON t.sweep_id = c.sweep_id
+     AND t.candidate_row = c.candidate_row
+    WHERE t.sweep_id = ?
+    ORDER BY t.candidate_row, t.trade_seq
+    ",
+    params = list(sweep_id)
+  )
+  if (nrow(trades) == 0L) {
+    return(ledgr_sweep_empty_trades(include_sweep_id = TRUE))
+  }
+  tibble::tibble(
+    sweep_id = as.character(trades$sweep_id),
+    candidate_id = as.character(trades$candidate_id),
+    candidate_row = as.integer(trades$candidate_row),
+    trade_seq = as.integer(trades$trade_seq),
+    close_ts_utc = as.POSIXct(trades$close_ts_utc, tz = "UTC"),
+    realized_pnl = as.numeric(trades$realized_pnl),
+    win_loss = as.character(trades$win_loss)
+  )
+}
+
 ledgr_sweep_fetch_universe <- function(con, snapshot_id) {
   rows <- DBI::dbGetQuery(
     con,
@@ -458,7 +503,7 @@ ledgr_sweep_fetch_universe <- function(con, snapshot_id) {
   as.character(rows$instrument_id)
 }
 
-ledgr_sweep_reconstruct <- function(parent, candidates, returns, universe = character()) {
+ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, universe = character()) {
   parent <- parent[1, , drop = FALSE]
   risk_identity <- ledgr_sweep_reconstruct_risk_identity(parent, candidates)
   provenance <- Map(
@@ -519,6 +564,7 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, universe = char
   attr(out, "execution_assumptions") <- ledgr_json_read_nested(parent$execution_assumptions_json[[1]])
   attr(out, "evaluation_scope") <- "exploratory"
   attr(out, "sweep_returns") <- returns
+  attr(out, "sweep_trades") <- trades
   attr(out, "saved_sweep") <- list(
     saved = TRUE,
     created_at_utc = as.POSIXct(parent$created_at_utc[[1]], tz = "UTC"),
@@ -723,7 +769,7 @@ ledgr_sweep_validate_reconstructed_identity <- function(parent, candidates, out)
 ledgr_sweep_retention_from_json <- function(json) {
   record <- ledgr_json_read_nested(json)
   if (is.list(record) && is.character(record$returns) && length(record$returns) == 1L) {
-    return(ledgr_sweep_retention(record$returns))
+    return(ledgr_sweep_retention(record$returns, trades = record$trades %||% "none"))
   }
   rlang::abort("Saved sweep retention_json is incompatible.", class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store"))
 }
@@ -770,6 +816,13 @@ ledgr_sweep_records_tibble <- function(records) {
 ledgr_sweep_retention_returns_from_json <- function(json) {
   tryCatch(
     ledgr_sweep_retention_from_json(json)$returns,
+    error = function(e) NA_character_
+  )
+}
+
+ledgr_sweep_retention_trades_from_json <- function(json) {
+  tryCatch(
+    ledgr_sweep_retention_from_json(json)$trades,
     error = function(e) NA_character_
   )
 }

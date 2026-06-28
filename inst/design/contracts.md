@@ -686,6 +686,17 @@ The strategy preflight boundary originated in
   do not share a common timestamp grid after first-row handling. Optional
   package projections such as `xts` are external evidence only and must remain
   `Suggests`-only with no `NAMESPACE` imports.
+- Retained sweep closed-trade evidence is derived at sweep time from
+  `ledgr_closed_trade_rows()` / `ledgr_results(bt, what = "trades")` and is
+  exposed through `ledgr_sweep_trades()`. It is opt-in via
+  `ledgr_sweep_retention(trades = "closed")`, defaults to unretained, and
+  persists only the minimal evidence columns `candidate_row`, `trade_seq`,
+  `close_ts_utc`, `realized_pnl`, and `win_loss` plus stable candidate/sweep
+  identifiers. Saved-sweep reopen must never reconstruct retained trade
+  evidence from fills; consumers that require trade evidence must fail closed
+  with retained-trade condition classes when the evidence is unretained or
+  missing. Retained trade evidence is not execution, candidate, run, config, or
+  walk-forward identity.
 - `ledgr_sweep_pbo()` is a native sweep-level PBO/CSCV diagnostic over retained
   completed-candidate return panels. It uses the same panel gates, reports
   completed/used/excluded candidate ids, prevalidates even `S` partitions, and

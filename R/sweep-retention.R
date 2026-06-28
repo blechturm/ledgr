@@ -1,4 +1,4 @@
-ledgr_sweep_retention_schema_version <- 1L
+ledgr_sweep_retention_schema_version <- 2L
 
 #' Sweep retention policy
 #'
@@ -9,14 +9,21 @@ ledgr_sweep_retention_schema_version <- 1L
 #' @param returns Character scalar. `"none"` keeps the current scalar-only sweep
 #'   output. `"completed"` requests retained net equity/return series for
 #'   completed candidates.
+#' @param trades Character scalar. `"none"` keeps no trade evidence. `"closed"`
+#'   requests retained closed-trade evidence for completed candidates.
 #' @return A `ledgr_sweep_retention` object.
 #' @examples
 #' ledgr_sweep_retention()
 #' ledgr_sweep_retention("completed")
+#' ledgr_sweep_retention(returns = "completed", trades = "closed")
 #' @export
-ledgr_sweep_retention <- function(returns = c("none", "completed")) {
+ledgr_sweep_retention <- function(returns = c("none", "completed"),
+                                  trades = c("none", "closed")) {
   if (missing(returns)) {
     returns <- "none"
+  }
+  if (missing(trades)) {
+    trades <- "none"
   }
   if (!is.character(returns) ||
       length(returns) != 1L ||
@@ -27,10 +34,20 @@ ledgr_sweep_retention <- function(returns = c("none", "completed")) {
       class = c("ledgr_invalid_sweep_retention", "ledgr_invalid_args")
     )
   }
+  if (!is.character(trades) ||
+      length(trades) != 1L ||
+      is.na(trades) ||
+      !trades %in% c("none", "closed")) {
+    rlang::abort(
+      "`trades` must be one of \"none\" or \"closed\".",
+      class = c("ledgr_invalid_sweep_retention", "ledgr_invalid_args")
+    )
+  }
   structure(
     list(
       retention_schema_version = ledgr_sweep_retention_schema_version,
-      returns = unname(returns)
+      returns = unname(returns),
+      trades = unname(trades)
     ),
     class = c("ledgr_sweep_retention", "list")
   )
@@ -43,18 +60,25 @@ ledgr_sweep_retention_normalize <- function(retain) {
       class = c("ledgr_invalid_sweep_retention", "ledgr_invalid_args")
     )
   }
+  legacy_version <- identical(retain$retention_schema_version, 1L)
+  current_version <- identical(retain$retention_schema_version, ledgr_sweep_retention_schema_version)
+  trades <- retain$trades %||% "none"
   if (!is.list(retain) ||
-      !identical(retain$retention_schema_version, ledgr_sweep_retention_schema_version) ||
+      (!legacy_version && !current_version) ||
       !is.character(retain$returns) ||
       length(retain$returns) != 1L ||
       is.na(retain$returns) ||
-      !retain$returns %in% c("none", "completed")) {
+      !retain$returns %in% c("none", "completed") ||
+      !is.character(trades) ||
+      length(trades) != 1L ||
+      is.na(trades) ||
+      !trades %in% c("none", "closed")) {
     rlang::abort(
       "`retain` has an invalid ledgr sweep retention shape.",
       class = c("ledgr_invalid_sweep_retention", "ledgr_invalid_args")
     )
   }
-  ledgr_sweep_retention(retain$returns)
+  ledgr_sweep_retention(retain$returns, trades = trades)
 }
 
 ledgr_sweep_empty_returns <- function(include_sweep_id = TRUE) {
@@ -106,6 +130,72 @@ ledgr_sweep_collect_retained_returns <- function(results, sweep_id) {
   )
 }
 
+ledgr_sweep_empty_trades <- function(include_sweep_id = TRUE) {
+  out <- tibble::tibble(
+    candidate_id = character(),
+    candidate_row = integer(),
+    trade_seq = integer(),
+    close_ts_utc = as.POSIXct(character(), tz = "UTC"),
+    realized_pnl = numeric(),
+    win_loss = character()
+  )
+  if (isTRUE(include_sweep_id)) {
+    out <- tibble::tibble(sweep_id = character(), out)
+  }
+  out
+}
+
+ledgr_sweep_retained_trades_from_fills <- function(fills,
+                                                   candidate_id,
+                                                   candidate_row) {
+  if (!is.data.frame(fills) || nrow(fills) == 0L) {
+    return(ledgr_sweep_empty_trades(include_sweep_id = FALSE))
+  }
+  trades <- ledgr_closed_trade_rows(fills)
+  if (!is.data.frame(trades) || nrow(trades) == 0L) {
+    return(ledgr_sweep_empty_trades(include_sweep_id = FALSE))
+  }
+  order_cols <- list(as.POSIXct(trades$ts_utc, tz = "UTC"))
+  if ("event_seq" %in% names(trades)) {
+    order_cols <- c(order_cols, list(as.integer(trades$event_seq)))
+  }
+  ord <- do.call(order, order_cols)
+  trades <- trades[ord, , drop = FALSE]
+  pnl <- as.numeric(trades$realized_pnl)
+  win_loss <- ifelse(
+    is.na(pnl),
+    NA_character_,
+    ifelse(pnl > 0, "WIN", ifelse(pnl < 0, "LOSS", "BREAKEVEN"))
+  )
+  tibble::tibble(
+    candidate_id = rep(as.character(candidate_id), nrow(trades)),
+    candidate_row = rep(as.integer(candidate_row), nrow(trades)),
+    trade_seq = seq_len(nrow(trades)),
+    close_ts_utc = as.POSIXct(trades$ts_utc, tz = "UTC"),
+    realized_pnl = pnl,
+    win_loss = win_loss
+  )
+}
+
+ledgr_sweep_collect_retained_trades <- function(results, sweep_id) {
+  retained <- lapply(results, `[[`, "retained_trades")
+  retained <- retained[!vapply(retained, is.null, logical(1))]
+  retained <- retained[vapply(retained, nrow, integer(1)) > 0L]
+  if (length(retained) == 0L) {
+    return(ledgr_sweep_empty_trades(include_sweep_id = TRUE))
+  }
+  out <- tibble::as_tibble(do.call(rbind, retained))
+  tibble::tibble(
+    sweep_id = rep(as.character(sweep_id), nrow(out)),
+    candidate_id = as.character(out$candidate_id),
+    candidate_row = as.integer(out$candidate_row),
+    trade_seq = as.integer(out$trade_seq),
+    close_ts_utc = as.POSIXct(out$close_ts_utc, tz = "UTC"),
+    realized_pnl = as.numeric(out$realized_pnl),
+    win_loss = as.character(out$win_loss)
+  )
+}
+
 #' Retained sweep return series
 #'
 #' `ledgr_sweep_returns()` returns the retained long net portfolio equity and
@@ -152,6 +242,14 @@ ledgr_sweep_collect_retained_returns <- function(results, sweep_id) {
 #' @export
 ledgr_sweep_returns <- function(x, candidates = NULL) {
   ledgr_sweep_returns_resolve(x, candidates = candidates)
+}
+
+#' @describeIn ledgr_sweep_returns Return retained closed-trade evidence for
+#'   completed sweep candidates. This evidence is captured at sweep time from
+#'   closed trade rows and is not reconstructed from saved fills.
+#' @export
+ledgr_sweep_trades <- function(x, candidates = NULL) {
+  ledgr_sweep_trades_resolve(x, candidates = candidates)
 }
 
 #' @describeIn ledgr_sweep_returns Return retained sweep return or equity
@@ -337,6 +435,56 @@ ledgr_sweep_returns_public_columns <- function(returns) {
   out
 }
 
+ledgr_sweep_trades_resolve <- function(x, candidates = NULL) {
+  if (!inherits(x, "ledgr_sweep_results")) {
+    rlang::abort("`x` must be a ledgr_sweep_results object.", class = "ledgr_invalid_args")
+  }
+  retain <- attr(x, "sweep_retention", exact = TRUE)
+  trades <- attr(x, "sweep_trades", exact = TRUE)
+  if (!inherits(retain, "ledgr_sweep_retention") ||
+      !identical(retain$trades, "closed") ||
+      is.null(trades)) {
+    rlang::abort(
+      "Sweep closed trades were not retained. Run ledgr_sweep(..., retain = ledgr_sweep_retention(trades = \"closed\")) first.",
+      class = c("ledgr_sweep_trades_unretained", "ledgr_invalid_args")
+    )
+  }
+  candidates <- ledgr_sweep_returns_normalize_candidates(candidates)
+  if (is.null(candidates)) {
+    candidates_scope <- unique(as.character(x$candidate_id))
+    ledgr_sweep_trades_validate_retained_completeness(x, trades, candidates_scope)
+    trades <- ledgr_sweep_trades_filter_and_order(trades, candidates_scope)
+  } else {
+    ledgr_sweep_trades_validate_candidates(x, trades, candidates)
+    trades <- ledgr_sweep_trades_filter_and_order(trades, candidates)
+  }
+  ledgr_sweep_trades_public_columns(trades)
+}
+
+ledgr_sweep_trades_filter_and_order <- function(trades, candidates) {
+  if (length(candidates) == 0L) {
+    return(trades[FALSE, , drop = FALSE])
+  }
+  trades <- trades[as.character(trades$candidate_id) %in% candidates, , drop = FALSE]
+  id_order <- match(as.character(trades$candidate_id), candidates)
+  trades_order <- order(id_order, as.integer(trades$trade_seq))
+  trades[trades_order, , drop = FALSE]
+}
+
+ledgr_sweep_trades_public_columns <- function(trades) {
+  out <- tibble::as_tibble(trades)
+  out <- out[, c(
+    "sweep_id", "candidate_id", "candidate_row", "trade_seq",
+    "close_ts_utc", "realized_pnl", "win_loss"
+  ), drop = FALSE]
+  out$candidate_row <- as.integer(out$candidate_row)
+  out$trade_seq <- as.integer(out$trade_seq)
+  out$close_ts_utc <- as.POSIXct(out$close_ts_utc, tz = "UTC")
+  out$realized_pnl <- as.numeric(out$realized_pnl)
+  out$win_loss <- as.character(out$win_loss)
+  out
+}
+
 ledgr_sweep_returns_validate_complete <- function(complete) {
   if (!is.logical(complete) || length(complete) != 1L || is.na(complete)) {
     rlang::abort("`complete` must be TRUE or FALSE.", class = "ledgr_invalid_args")
@@ -519,6 +667,57 @@ ledgr_sweep_returns_validate_candidates <- function(x, returns, candidates) {
   invisible(TRUE)
 }
 
+ledgr_sweep_trades_validate_candidates <- function(x, trades, candidates) {
+  known <- as.character(x$candidate_id)
+  missing <- setdiff(candidates, known)
+  if (length(missing) > 0L) {
+    rlang::abort(
+      sprintf("Unknown sweep candidate_id: %s.", paste(missing, collapse = ", ")),
+      class = c("ledgr_sweep_trades_candidate_not_found", "ledgr_invalid_args")
+    )
+  }
+  status <- stats::setNames(as.character(x$status), known)
+  not_completed <- candidates[status[candidates] != "DONE"]
+  if (length(not_completed) > 0L) {
+    rlang::abort(
+      sprintf("Retained trades are available only for completed candidates: %s.", paste(not_completed, collapse = ", ")),
+      class = c("ledgr_sweep_trades_candidate_not_completed", "ledgr_invalid_args")
+    )
+  }
+  n_trades <- if ("n_trades" %in% names(x)) stats::setNames(as.integer(x$n_trades), known) else stats::setNames(rep(NA_integer_, length(known)), known)
+  required <- candidates[!is.na(n_trades[candidates]) & n_trades[candidates] > 0L]
+  retained_ids <- unique(as.character(trades$candidate_id))
+  missing_retained <- setdiff(required, retained_ids)
+  if (length(missing_retained) > 0L) {
+    rlang::abort(
+      sprintf("Retained trades are missing for completed candidate_id: %s.", paste(missing_retained, collapse = ", ")),
+      class = c("ledgr_sweep_trades_candidate_not_retained", "ledgr_invalid_args")
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_sweep_trades_validate_retained_completeness <- function(x, trades, candidates) {
+  known <- as.character(x$candidate_id)
+  status <- stats::setNames(as.character(x$status), known)
+  n_trades <- if ("n_trades" %in% names(x)) {
+    stats::setNames(as.integer(x$n_trades), known)
+  } else {
+    stats::setNames(rep(NA_integer_, length(known)), known)
+  }
+  completed <- candidates[status[candidates] == "DONE"]
+  required <- completed[!is.na(n_trades[completed]) & n_trades[completed] > 0L]
+  retained_ids <- unique(as.character(trades$candidate_id))
+  missing_retained <- setdiff(required, retained_ids)
+  if (length(missing_retained) > 0L) {
+    rlang::abort(
+      sprintf("Retained trades are missing for completed candidate_id: %s.", paste(missing_retained, collapse = ", ")),
+      class = c("ledgr_sweep_trades_candidate_not_retained", "ledgr_invalid_args")
+    )
+  }
+  invisible(TRUE)
+}
+
 #' @export
 `[.ledgr_sweep_results` <- function(x, i, j, drop = FALSE) {
   out <- NextMethod("[")
@@ -545,6 +744,10 @@ ledgr_sweep_results_restore <- function(out, template) {
     attr(template, "sweep_returns", exact = TRUE),
     out
   )
+  attr(out, "sweep_trades") <- ledgr_sweep_trades_filter_to_result(
+    attr(template, "sweep_trades", exact = TRUE),
+    out
+  )
   class(out) <- unique(c(
     intersect(c("ledgr_saved_sweep_results", "ledgr_sweep_results"), class(template)),
     class(out)
@@ -557,4 +760,11 @@ ledgr_sweep_returns_filter_to_result <- function(returns, out) {
     return(returns)
   }
   ledgr_sweep_returns_filter_and_order(returns, unique(as.character(out$candidate_id)))
+}
+
+ledgr_sweep_trades_filter_to_result <- function(trades, out) {
+  if (!is.data.frame(trades) || !"candidate_id" %in% names(out)) {
+    return(trades)
+  }
+  ledgr_sweep_trades_filter_and_order(trades, unique(as.character(out$candidate_id)))
 }

@@ -61,13 +61,14 @@ testthat::test_that("saved sweeps save, list, open, and inspect compact artifact
     names(saved),
     c(
       "sweep_id", "created_at_utc", "engine_version", "sweep_schema_version",
-      "n_candidates", "n_completed", "retention_returns", "note"
+      "n_candidates", "n_completed", "retention_returns", "retention_trades", "note"
     )
   )
   testthat::expect_identical(saved$sweep_id, c(original_sweep_id, "saved_api"))
   testthat::expect_identical(saved$n_candidates, c(2L, 2L))
   testthat::expect_identical(saved$n_completed, c(2L, 2L))
   testthat::expect_identical(saved$retention_returns, c("completed", "completed"))
+  testthat::expect_identical(saved$retention_trades, c("none", "none"))
   testthat::expect_identical(saved$note, c(NA_character_, "reviewed"))
 
   reopened <- ledgr_sweep_open(snapshot, "saved_api")
@@ -97,6 +98,7 @@ testthat::test_that("saved sweeps save, list, open, and inspect compact artifact
   testthat::expect_identical(info$n_candidates, 2L)
   testthat::expect_identical(info$n_completed, 2L)
   testthat::expect_identical(info$retention_returns, "completed")
+  testthat::expect_identical(info$retention_trades, "none")
   testthat::expect_true(isTRUE(info$saved_artifact$saved))
   testthat::expect_error(ledgr_sweep_info("saved_api"), class = "ledgr_invalid_args")
 })
@@ -202,11 +204,13 @@ testthat::test_that("saved sweep print methods expose retention and identity sum
 
   printed <- utils::capture.output(print(reopened))
   testthat::expect_true(any(grepl("Retention returns: completed", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Retention trades: none", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("Snapshot hash:", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("Cost model hash:", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("Saved artifact: schema", printed, fixed = TRUE)))
 
   info_print <- utils::capture.output(print(ledgr_sweep_info(reopened)))
   testthat::expect_true(any(grepl("ledgr Sweep Info", info_print, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Retention trades:  none", info_print, fixed = TRUE)))
   testthat::expect_true(any(grepl("Saved artifact", info_print, fixed = TRUE)))
 })

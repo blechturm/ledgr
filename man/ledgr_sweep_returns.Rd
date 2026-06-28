@@ -7,9 +7,12 @@
 \alias{ledgr_sweep_returns_matrix}
 \alias{ledgr_sweep_returns_data_frame}
 \alias{ledgr_sweep_returns_xts}
+\alias{ledgr_sweep_trades}
 \title{Retained sweep return series}
 \usage{
 ledgr_sweep_returns(x, candidates = NULL)
+
+ledgr_sweep_trades(x, candidates = NULL)
 
 ledgr_sweep_returns_wide(x, candidates = NULL, value = c("returns", "equity"))
 
@@ -55,6 +58,9 @@ candidate to share the same timestamp grid after first-row handling.}
 \value{
 \code{ledgr_sweep_returns()} returns a tibble with \code{sweep_id},
 \code{candidate_id}, \code{ts_utc}, \code{equity}, and \code{period_return}.
+\code{ledgr_sweep_trades()} returns retained closed-trade evidence with
+\code{sweep_id}, \code{candidate_id}, \code{candidate_row}, \code{trade_seq},
+\code{close_ts_utc}, \code{realized_pnl}, and \code{win_loss}.
 \code{ledgr_sweep_returns_wide()} returns a tibble with \code{ts_utc} followed by
 one column per candidate. \code{ledgr_sweep_returns_panel()} returns a classed
 list with normalized long evidence, a numeric matrix, UTC timestamps, the
@@ -71,6 +77,10 @@ returns and they do not include gross-vs-net attribution.
 }
 \section{Functions}{
 \itemize{
+\item \code{ledgr_sweep_trades()}: Return retained closed-trade evidence for
+completed sweep candidates. This evidence is captured at sweep time from
+closed trade rows and is not reconstructed from saved fills.
+
 \item \code{ledgr_sweep_returns_wide()}: Return retained sweep return or equity
 series in wide form. Use the long form when you want candidate metadata
 beside each row; use the wide form when an external metric package expects

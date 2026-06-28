@@ -27,6 +27,10 @@
 \alias{ledgr_sweep_returns_candidate_not_completed}
 \alias{ledgr_sweep_returns_first_row_invalid}
 \alias{ledgr_sweep_returns_incomplete_panel}
+\alias{ledgr_sweep_trades_unretained}
+\alias{ledgr_sweep_trades_candidate_not_found}
+\alias{ledgr_sweep_trades_candidate_not_completed}
+\alias{ledgr_sweep_trades_candidate_not_retained}
 \alias{ledgr_validation_pbo_incomplete_panel}
 \alias{ledgr_validation_pbo_invalid_s}
 \alias{ledgr_validation_pbo_too_few_candidates}
@@ -157,6 +161,18 @@ complete retained-return panel but selected completed candidates do not share
 one common timestamp grid after first-row handling.
 \code{ledgr_validation_pbo_incomplete_panel} is a compatibility alias on the same
 condition for future PBO/CSCV adapters.
+
+\code{ledgr_sweep_trades_unretained} is raised when callers ask for retained
+closed-trade evidence from a sweep that did not opt into trade retention.
+
+\code{ledgr_sweep_trades_candidate_not_found} is raised when retained trades are
+requested for an unknown \code{candidate_id}.
+
+\code{ledgr_sweep_trades_candidate_not_completed} is raised when retained trades
+are requested for a failed candidate.
+
+\code{ledgr_sweep_trades_candidate_not_retained} is raised when retained trades
+are missing for a completed candidate that reports closed trades.
 
 \code{ledgr_validation_pbo_invalid_s} is raised when a PBO/CSCV request supplies
 an invalid \code{S} subset count.

@@ -140,7 +140,7 @@ scope: packet-alignment
 Priority: P0
 Effort: M
 Dependencies: LDG-2659
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -205,7 +205,7 @@ scope: stable-region-detector
 Priority: P0
 Effort: L
 Dependencies: LDG-2659
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -244,6 +244,22 @@ compatibility.
 - Storage smoke ratio check.
 - Byte-identical no-trade-retention fixture.
 - `tools::checkRd()` for touched retained-evidence docs.
+
+### Implementation Notes
+
+- Extended `ledgr_sweep_retention()` with `trades = c("none", "closed")`;
+  default retention remains scalar-only / no-trade-evidence.
+- Added `ledgr_sweep_trades()` as a read-only retained-evidence accessor over
+  `sweep_trades`, with unretained / unknown / failed / missing-retained
+  condition classes.
+- Retained closed-trade rows are captured at sweep time from closed trade rows
+  and persist only `candidate_row`, `trade_seq`, `close_ts_utc`,
+  `realized_pnl`, and `win_loss` plus sweep/candidate identifiers.
+- Saved-sweep schema v3 adds `sweep_trades`; write-time schema validation
+  requires the table and read-time compatibility accepts pre-extension stores
+  without it.
+- `closed_trade_retention_storage_smoke.md` records the deterministic storage
+  smoke ratio (`4 / 12 = 0.3334`, threshold `0.50`).
 
 ### Source Reference
 

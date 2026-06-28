@@ -46,7 +46,7 @@ testthat::test_that("saved sweep schema is created and validated", {
     WHERE table_schema = 'main'
     "
   )$table_name
-  testthat::expect_true(all(c("sweeps", "sweep_candidates", "sweep_returns") %in% tables))
+  testthat::expect_true(all(c("sweeps", "sweep_candidates", "sweep_returns", "sweep_trades") %in% tables))
 
   indexes <- DBI::dbGetQuery(
     con,
@@ -62,6 +62,17 @@ testthat::test_that("saved sweep schema is created and validated", {
   testthat::expect_match(sweep_return_index$expressions[[1]], "sweep_id", fixed = TRUE)
   testthat::expect_match(sweep_return_index$expressions[[1]], "candidate_row", fixed = TRUE)
   testthat::expect_match(sweep_return_index$expressions[[1]], "ts_utc", fixed = TRUE)
+
+  sweep_trade_index <- indexes[
+    indexes$index_name == "idx_sweep_trades_close_ts",
+    ,
+    drop = FALSE
+  ]
+  testthat::expect_identical(nrow(sweep_trade_index), 1L)
+  testthat::expect_identical(sweep_trade_index$table_name[[1]], "sweep_trades")
+  testthat::expect_match(sweep_trade_index$expressions[[1]], "sweep_id", fixed = TRUE)
+  testthat::expect_match(sweep_trade_index$expressions[[1]], "candidate_row", fixed = TRUE)
+  testthat::expect_match(sweep_trade_index$expressions[[1]], "close_ts_utc", fixed = TRUE)
 
   sweep_candidate_cols <- DBI::dbGetQuery(
     con,

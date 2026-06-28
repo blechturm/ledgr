@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec Packet
 
-Status: Batch 1 implementation complete; awaiting Claude review.
+Status: Batch 2 implementation complete; awaiting Claude review.
 
 This packet scopes v0.1.9.7 as the business-objective eligibility and
 validation-polish release after v0.1.9.6 shipped the validation substrate and
@@ -14,6 +14,7 @@ Authoritative files:
 - `batch_plan.md`
 - `stable_region_spike_synthesis.md`
 - `stable_region_spike_reference.R`
+- `closed_trade_retention_storage_smoke.md`
 
 Primary design inputs:
 

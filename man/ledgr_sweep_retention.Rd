@@ -4,12 +4,18 @@
 \alias{ledgr_sweep_retention}
 \title{Sweep retention policy}
 \usage{
-ledgr_sweep_retention(returns = c("none", "completed"))
+ledgr_sweep_retention(
+  returns = c("none", "completed"),
+  trades = c("none", "closed")
+)
 }
 \arguments{
 \item{returns}{Character scalar. \code{"none"} keeps the current scalar-only sweep
 output. \code{"completed"} requests retained net equity/return series for
 completed candidates.}
+
+\item{trades}{Character scalar. \code{"none"} keeps no trade evidence. \code{"closed"}
+requests retained closed-trade evidence for completed candidates.}
 }
 \value{
 A \code{ledgr_sweep_retention} object.
@@ -22,4 +28,5 @@ memory or later persisted. It is not part of execution identity.
 \examples{
 ledgr_sweep_retention()
 ledgr_sweep_retention("completed")
+ledgr_sweep_retention(returns = "completed", trades = "closed")
 }

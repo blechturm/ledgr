@@ -195,6 +195,18 @@ ledgr_validate_schema <- function(con) {
       pk = c("sweep_id", "candidate_row", "pulse_index"),
       not_null = c("sweep_id", "candidate_row", "pulse_index", "ts_utc", "equity")
     ),
+    sweep_trades = list(
+      columns = c(
+        sweep_id = "TEXT",
+        candidate_row = "INTEGER",
+        trade_seq = "INTEGER",
+        close_ts_utc = "TIMESTAMP",
+        realized_pnl = "DOUBLE",
+        win_loss = "TEXT"
+      ),
+      pk = c("sweep_id", "candidate_row", "trade_seq"),
+      not_null = c("sweep_id", "candidate_row", "trade_seq", "close_ts_utc")
+    ),
     walk_forward_sessions = list(
       columns = c(
         session_id = "TEXT",

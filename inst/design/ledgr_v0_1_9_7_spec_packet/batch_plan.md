@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batch 1 implementation complete; awaiting Claude review.
+Status: Batch 2 implementation complete; awaiting Claude review.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -69,7 +69,7 @@ Exit criteria:
 
 ## Batch 1 - stable_region Spike
 
-Status: Review Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -99,7 +99,7 @@ Implementation notes:
 
 ## Batch 2 - Closed-Trade Retention
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -116,6 +116,20 @@ Review focus:
 - storage schema changes are additive and validated;
 - retained evidence has deterministic trade ordering;
 - no non-opt-in identity or artifact drift.
+
+Implementation notes:
+
+- `ledgr_sweep_retention()` now supports `trades = "closed"` while retaining
+  the default `trades = "none"` behavior.
+- `ledgr_sweep_trades()` exposes retained closed-trade evidence with
+  `candidate_row`, deterministic `trade_seq`, `close_ts_utc`, `realized_pnl`,
+  and `win_loss`.
+- Saved-sweep schema v3 adds `sweep_trades`; write-time schema compatibility
+  requires it, while pre-extension stores without the table still reopen as
+  trade-unretained.
+- `closed_trade_retention_storage_smoke.md` records the retained-trade row
+  ratio gate (`4 / 12 = 0.3334`, threshold `0.50`) on the deterministic smoke
+  fixture.
 
 ## Batch 3 - Selection Integrity Teaching Refit
 

@@ -22,6 +22,7 @@ ledgr_sweep_retention_comparable_rows <- function(x) {
   attr(out, "sweep_id") <- NULL
   attr(out, "sweep_retention") <- NULL
   attr(out, "sweep_returns") <- NULL
+  attr(out, "sweep_trades") <- NULL
   out
 }
 
@@ -34,12 +35,15 @@ testthat::test_that("ledgr_sweep_retention constructs stable retention objects",
   default <- ledgr_sweep_retention()
   explicit_none <- ledgr_sweep_retention("none")
   completed <- ledgr_sweep_retention("completed")
+  trade_retention <- ledgr_sweep_retention(returns = "completed", trades = "closed")
 
   testthat::expect_s3_class(default, "ledgr_sweep_retention")
   testthat::expect_identical(default, explicit_none)
-  testthat::expect_identical(default$retention_schema_version, 1L)
+  testthat::expect_identical(default$retention_schema_version, 2L)
   testthat::expect_identical(default$returns, "none")
+  testthat::expect_identical(default$trades, "none")
   testthat::expect_identical(completed$returns, "completed")
+  testthat::expect_identical(trade_retention$trades, "closed")
   testthat::expect_identical(
     ledgr:::canonical_json(completed),
     ledgr:::canonical_json(ledgr_sweep_retention("completed"))
@@ -61,6 +65,10 @@ testthat::test_that("ledgr_sweep_retention fails loudly on invalid values", {
   )
   testthat::expect_error(
     ledgr_sweep_retention(1),
+    class = "ledgr_invalid_sweep_retention"
+  )
+  testthat::expect_error(
+    ledgr_sweep_retention(trades = "bad"),
     class = "ledgr_invalid_sweep_retention"
   )
 })
@@ -219,6 +227,76 @@ testthat::test_that("completed retention exposes long and wide return series", {
   testthat::expect_equal(compiled_long$period_return, long$period_return, tolerance = 1e-12)
 })
 
+testthat::test_that("closed-trade retention exposes deterministic minimal trade evidence", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (identical(ctx$ts_utc, "2020-01-01T00:00:00Z")) {
+      targets["AAA"] <- params$qty
+    } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
+      targets["AAA"] <- 0
+    } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
+      targets["AAA"] <- -params$qty
+    } else if (identical(ctx$ts_utc, "2020-01-05T00:00:00Z")) {
+      targets["AAA"] <- 0
+    }
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+
+  none <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
+  retained <- ledgr_sweep(
+    exp,
+    grid,
+    seed = 123L,
+    retain = ledgr_sweep_retention(returns = "completed", trades = "closed")
+  )
+  trades <- ledgr_sweep_trades(retained)
+
+  testthat::expect_error(
+    ledgr_sweep_trades(none),
+    class = "ledgr_sweep_trades_unretained"
+  )
+  testthat::expect_identical(
+    names(trades),
+    c(
+      "sweep_id", "candidate_id", "candidate_row", "trade_seq",
+      "close_ts_utc", "realized_pnl", "win_loss"
+    )
+  )
+  testthat::expect_identical(unique(trades$sweep_id), attr(retained, "sweep_id"))
+  testthat::expect_identical(unique(trades$candidate_id), c("a", "b"))
+  testthat::expect_identical(trades$trade_seq[trades$candidate_id == "a"], c(1L, 2L))
+  testthat::expect_identical(trades$trade_seq[trades$candidate_id == "b"], c(1L, 2L))
+  testthat::expect_equal(
+    trades$realized_pnl[trades$candidate_id == "a"],
+    c(1, -1),
+    tolerance = 1e-12
+  )
+  testthat::expect_identical(trades$win_loss[trades$candidate_id == "a"], c("WIN", "LOSS"))
+
+  only_b <- ledgr_sweep_trades(retained, candidates = "b")
+  testthat::expect_identical(unique(only_b$candidate_id), "b")
+  testthat::expect_identical(only_b$trade_seq, c(1L, 2L))
+
+  corrupted <- retained
+  retained_trades <- attr(corrupted, "sweep_trades", exact = TRUE)
+  retained_trades <- retained_trades[retained_trades$candidate_id != "b", , drop = FALSE]
+  attr(corrupted, "sweep_trades") <- retained_trades
+  testthat::expect_error(
+    ledgr_sweep_trades(corrupted),
+    class = "ledgr_sweep_trades_candidate_not_retained"
+  )
+
+  testthat::expect_equal(
+    ledgr_sweep_retention_comparable_rows(retained),
+    ledgr_sweep_retention_comparable_rows(none)
+  )
+})
+
 testthat::test_that("retained return accessors fail loudly for unretained, missing, and failed candidates", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -255,6 +333,19 @@ testthat::test_that("retained return accessors fail loudly for unretained, missi
   testthat::expect_error(
     ledgr_sweep_returns(retained, candidates = "bad"),
     class = "ledgr_sweep_returns_candidate_not_completed"
+  )
+  retained_trades <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention(trades = "closed"))
+  testthat::expect_error(
+    ledgr_sweep_trades(unretained),
+    class = "ledgr_sweep_trades_unretained"
+  )
+  testthat::expect_error(
+    ledgr_sweep_trades(retained_trades, candidates = "missing"),
+    class = "ledgr_sweep_trades_candidate_not_found"
+  )
+  testthat::expect_error(
+    ledgr_sweep_trades(retained_trades, candidates = "bad"),
+    class = "ledgr_sweep_trades_candidate_not_completed"
   )
 
   long <- ledgr_sweep_returns(retained)

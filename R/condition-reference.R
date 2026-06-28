@@ -92,6 +92,18 @@
 #' `ledgr_validation_pbo_incomplete_panel` is a compatibility alias on the same
 #' condition for future PBO/CSCV adapters.
 #'
+#' `ledgr_sweep_trades_unretained` is raised when callers ask for retained
+#' closed-trade evidence from a sweep that did not opt into trade retention.
+#'
+#' `ledgr_sweep_trades_candidate_not_found` is raised when retained trades are
+#' requested for an unknown `candidate_id`.
+#'
+#' `ledgr_sweep_trades_candidate_not_completed` is raised when retained trades
+#' are requested for a failed candidate.
+#'
+#' `ledgr_sweep_trades_candidate_not_retained` is raised when retained trades
+#' are missing for a completed candidate that reports closed trades.
+#'
 #' `ledgr_validation_pbo_invalid_s` is raised when a PBO/CSCV request supplies
 #' an invalid `S` subset count.
 #'
@@ -228,6 +240,10 @@
 #' @aliases ledgr_sweep_returns_candidate_not_completed
 #' @aliases ledgr_sweep_returns_first_row_invalid
 #' @aliases ledgr_sweep_returns_incomplete_panel
+#' @aliases ledgr_sweep_trades_unretained
+#' @aliases ledgr_sweep_trades_candidate_not_found
+#' @aliases ledgr_sweep_trades_candidate_not_completed
+#' @aliases ledgr_sweep_trades_candidate_not_retained
 #' @aliases ledgr_validation_pbo_incomplete_panel ledgr_missing_package
 #' @aliases ledgr_validation_pbo_invalid_s
 #' @aliases ledgr_validation_pbo_too_few_candidates

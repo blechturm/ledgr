@@ -86,6 +86,7 @@ reference:
       - ledgr_sweep
       - ledgr_sweep_retention
       - ledgr_sweep_returns
+      - ledgr_sweep_trades
       - ledgr_sweep_review
       - ledgr_sweep_pbo
       - ledgr_sweep_min_track_record

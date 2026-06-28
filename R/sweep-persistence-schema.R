@@ -166,6 +166,32 @@ ledgr_sweep_storage_return_rows <- function(sweep,
   tibble::as_tibble(do.call(rbind, out))
 }
 
+ledgr_sweep_storage_trade_rows <- function(sweep,
+                                           sweep_id = attr(sweep, "sweep_id", exact = TRUE)) {
+  ledgr_sweep_storage_assert_sweep(sweep)
+  trades <- attr(sweep, "sweep_trades", exact = TRUE)
+  if (is.null(trades) || nrow(trades) == 0L) {
+    return(tibble::tibble(
+      sweep_id = character(),
+      candidate_row = integer(),
+      trade_seq = integer(),
+      close_ts_utc = as.POSIXct(character(), tz = "UTC"),
+      realized_pnl = numeric(),
+      win_loss = character()
+    ))
+  }
+  trades <- tibble::as_tibble(trades)
+  trades <- trades[order(as.integer(trades$candidate_row), as.integer(trades$trade_seq)), , drop = FALSE]
+  tibble::tibble(
+    sweep_id = rep(as.character(sweep_id), nrow(trades)),
+    candidate_row = as.integer(trades$candidate_row),
+    trade_seq = as.integer(trades$trade_seq),
+    close_ts_utc = as.POSIXct(trades$close_ts_utc, tz = "UTC"),
+    realized_pnl = as.numeric(trades$realized_pnl),
+    win_loss = as.character(trades$win_loss)
+  )
+}
+
 ledgr_sweep_storage_assert_sweep <- function(sweep) {
   if (!inherits(sweep, "ledgr_sweep_results")) {
     rlang::abort("`sweep` must be a ledgr_sweep_results object.", class = "ledgr_invalid_args")

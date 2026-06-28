@@ -1,5 +1,5 @@
-ledgr_experiment_store_schema_version <- 111L
-ledgr_saved_sweep_schema_version <- 2L
+ledgr_experiment_store_schema_version <- 112L
+ledgr_saved_sweep_schema_version <- 3L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -44,6 +44,7 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "sweeps",
     "sweep_candidates",
     "sweep_returns",
+    "sweep_trades",
     "walk_forward_sessions",
     "walk_forward_folds",
     "walk_forward_scores",
@@ -169,6 +170,20 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
     )
     "
   )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS sweep_trades (
+      sweep_id TEXT NOT NULL,
+      candidate_row INTEGER NOT NULL,
+      trade_seq INTEGER NOT NULL,
+      close_ts_utc TIMESTAMP NOT NULL,
+      realized_pnl DOUBLE,
+      win_loss TEXT,
+      PRIMARY KEY (sweep_id, candidate_row, trade_seq)
+    )
+    "
+  )
   ledgr_experiment_store_add_column(con, "sweeps", "risk_chain_hash", "TEXT")
   ledgr_experiment_store_add_column(con, "sweeps", "risk_plan_json", "TEXT")
   ledgr_experiment_store_add_column(con, "sweep_candidates", "risk_chain_hash", "TEXT")
@@ -178,6 +193,13 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
     "
     CREATE INDEX IF NOT EXISTS idx_sweep_returns_timestamp
     ON sweep_returns (sweep_id, candidate_row, ts_utc)
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE INDEX IF NOT EXISTS idx_sweep_trades_close_ts
+    ON sweep_trades (sweep_id, candidate_row, close_ts_utc)
     "
   )
   invisible(TRUE)

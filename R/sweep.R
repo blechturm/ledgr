@@ -323,6 +323,9 @@ ledgr_sweep_impl <- function(exp,
   if (identical(retain$returns, "completed")) {
     attr(out, "sweep_returns") <- ledgr_sweep_collect_retained_returns(results, sweep_id)
   }
+  if (identical(retain$trades, "closed")) {
+    attr(out, "sweep_trades") <- ledgr_sweep_collect_retained_trades(results, sweep_id)
+  }
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
@@ -656,6 +659,7 @@ print.ledgr_sweep_results <- function(x, ...) {
   n_failed <- sum(status == "FAILED", na.rm = TRUE)
   retention <- attr(x, "sweep_retention", exact = TRUE)
   retention_returns <- if (inherits(retention, "ledgr_sweep_retention")) retention$returns else "unknown"
+  retention_trades <- if (inherits(retention, "ledgr_sweep_retention")) retention$trades else "unknown"
   saved <- attr(x, "saved_sweep", exact = TRUE)
   saved_line <- if (is.list(saved) && isTRUE(saved$saved)) {
     sprintf(
@@ -678,6 +682,7 @@ print.ledgr_sweep_results <- function(x, ...) {
     footer = c(
       sprintf("%d combinations: %d done, %d failed.", nrow(x), n_done, n_failed),
       sprintf("Retention returns: %s.", retention_returns),
+      sprintf("Retention trades: %s.", retention_trades),
       sprintf("Snapshot hash: %s.", attr(x, "snapshot_hash") %||% "<unknown>"),
       sprintf("Cost model hash: %s.", attr(x, "cost_model_hash") %||% "<unknown>"),
       sprintf("Metric context hash: %s.", attr(x, "metric_context_hash") %||% "<unknown>"),
@@ -1090,7 +1095,13 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
       ),
       warnings = list()
     )
-    return(list(row = row, warnings = list(), error = task$candidate$error, retained_returns = NULL))
+    return(list(
+      row = row,
+      warnings = list(),
+      error = task$candidate$error,
+      retained_returns = NULL,
+      retained_trades = NULL
+    ))
   }
 
   warnings <- list()
@@ -1156,13 +1167,20 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
           ),
           warnings = warnings
         ),
-        retained_returns = NULL
+        retained_returns = NULL,
+        retained_trades = NULL
       )
     }
   )
   row <- candidate_result$row
   row$warnings[[1]] <- warnings
-  list(row = row, warnings = warnings, error = err, retained_returns = candidate_result$retained_returns)
+  list(
+    row = row,
+    warnings = warnings,
+    error = err,
+    retained_returns = candidate_result$retained_returns,
+    retained_trades = candidate_result$retained_trades
+  )
 }
 
 ledgr_sweep_eval_candidate_tasks_parallel <- function(tasks,
@@ -1380,7 +1398,16 @@ ledgr_sweep_run_candidate <- function(exp,
   } else {
     NULL
   }
-  list(row = row, retained_returns = retained_returns)
+  retained_trades <- if (identical(retain$trades, "closed")) {
+    ledgr_sweep_retained_trades_from_fills(
+      summary$fills,
+      candidate_id = candidate_id,
+      candidate_row = candidate_row
+    )
+  } else {
+    NULL
+  }
+  list(row = row, retained_returns = retained_returns, retained_trades = retained_trades)
 }
 
 ledgr_memory_output_handler <- function(run_id) {

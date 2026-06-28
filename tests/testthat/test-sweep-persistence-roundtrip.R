@@ -126,6 +126,85 @@ testthat::test_that("reopened sweeps round-trip scalar rows, identity, and retai
   )
 })
 
+testthat::test_that("reopened sweeps round-trip retained closed-trade evidence", {
+  snapshot <- ledgr_snapshot_from_df(
+    ledgr_sweep_roundtrip_bars(),
+    db_path = tempfile(fileext = ".duckdb"),
+    snapshot_id = "trade_roundtrip_snapshot"
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (identical(ctx$ts_utc, "2020-01-01T00:00:00Z")) {
+      targets["AAA"] <- params$qty
+    } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
+      targets["AAA"] <- 0
+    } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
+      targets["AAA"] <- -params$qty
+    } else if (identical(ctx$ts_utc, "2020-01-05T00:00:00Z")) {
+      targets["AAA"] <- 0
+    }
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  sweep <- ledgr_sweep(
+    exp,
+    ledgr_param_grid(a = list(qty = 1), b = list(qty = 2)),
+    seed = 123L,
+    retain = ledgr_sweep_retention(returns = "completed", trades = "closed")
+  )
+
+  ledgr_sweep_save(sweep, snapshot, sweep_id = "trade_roundtrip_saved")
+  reopened <- ledgr_sweep_open(snapshot, "trade_roundtrip_saved")
+
+  original_trades <- ledgr_sweep_trades(sweep)
+  original_trades$sweep_id <- "trade_roundtrip_saved"
+  reopened_trades <- ledgr_sweep_trades(reopened)
+  testthat::expect_equal(reopened_trades, original_trades, tolerance = 1e-12)
+  testthat::expect_identical(attr(reopened, "sweep_retention", exact = TRUE)$trades, "closed")
+  testthat::expect_identical(reopened_trades$trade_seq[reopened_trades$candidate_id == "a"], c(1L, 2L))
+
+  filtered <- reopened[reopened$candidate_id == "b", ]
+  testthat::expect_identical(unique(ledgr_sweep_trades(filtered)$candidate_id), "b")
+})
+
+testthat::test_that("pre-trade-retention saved sweeps reopen without sweep_trades table", {
+  snapshot <- ledgr_snapshot_from_df(
+    ledgr_sweep_roundtrip_bars(),
+    db_path = tempfile(fileext = ".duckdb"),
+    snapshot_id = "legacy_trade_retention_snapshot"
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- ledgr_sweep_roundtrip_experiment(snapshot)
+  sweep <- ledgr_sweep_roundtrip_sweep(exp)
+  ledgr_sweep_save(sweep, snapshot, sweep_id = "legacy_trade_retention")
+
+  con <- ledgr:::get_connection(snapshot)
+  DBI::dbExecute(con, "DROP TABLE sweep_trades")
+  legacy_retention <- as.character(ledgr:::canonical_json(list(
+    retention_schema_version = 1L,
+    returns = "completed"
+  )))
+  DBI::dbExecute(
+    con,
+    "
+    UPDATE sweeps
+    SET sweep_schema_version = 2, retention_json = ?
+    WHERE sweep_id = 'legacy_trade_retention'
+    ",
+    params = list(legacy_retention)
+  )
+
+  reopened <- ledgr_sweep_open(snapshot, "legacy_trade_retention")
+  testthat::expect_identical(attr(reopened, "sweep_retention", exact = TRUE)$returns, "completed")
+  testthat::expect_identical(attr(reopened, "sweep_retention", exact = TRUE)$trades, "none")
+  testthat::expect_gt(nrow(ledgr_sweep_returns(reopened)), 0L)
+  testthat::expect_error(
+    ledgr_sweep_trades(reopened),
+    class = "ledgr_sweep_trades_unretained"
+  )
+})
+
 testthat::test_that("schema-1 saved sweeps reopen with no-op risk identity", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),

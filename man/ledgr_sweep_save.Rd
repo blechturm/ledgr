@@ -41,7 +41,8 @@ tibble.
 \code{ledgr_sweep_save()} persists a compact saved-sweep artifact in the
 snapshot's experiment store. Saved sweeps are candidate evidence, not
 committed runs: they store scalar candidate rows and retained return rows
-when present, but not ledgers, fills, trades, or per-instrument artifacts.
+and retained closed-trade rows when present, but not ledgers, fills, or
+per-instrument artifacts.
 Promotion from a reopened saved sweep re-executes the selected candidate from
 its reproduction key against the sealed snapshot.
 }
