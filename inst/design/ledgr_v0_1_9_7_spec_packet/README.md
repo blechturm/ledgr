@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec Packet
 
-Status: Batch 2 implementation complete; awaiting Claude review.
+Status: Batch 8 complete after Claude review; Batch 9 pending.
 
 This packet scopes v0.1.9.7 as the business-objective eligibility and
 validation-polish release after v0.1.9.6 shipped the validation substrate and
@@ -33,8 +33,10 @@ Scope:
 - run the `stable_region` detector spike and ship the strict-lattice detector
   only if the spike is accepted;
 - add opt-in retained closed-trade evidence for completed sweep candidates;
-- refit the Selection Integrity article's worked examples and doc-contract
-  tests;
+- add a public return-panel entry point so the selection-integrity diagnostics
+  accept a return table directly (no sweep-object boilerplate);
+- add the worked-example craft clause and rebuild the Selection Integrity article
+  from scratch on that entry point;
 - add the intraday metric-context M-1 guardrail as warning-only honesty
   protection;
 - conditionally add native K-Ratio if a named variant is reference-verified;

@@ -85,13 +85,14 @@ reference:
       - print.ledgr_precomputed_features
       - ledgr_sweep
       - ledgr_sweep_retention
+      - ledgr_return_panel
       - ledgr_sweep_returns
       - ledgr_sweep_trades
       - ledgr_sweep_review
-      - ledgr_sweep_pbo
-      - ledgr_sweep_min_track_record
-      - ledgr_sweep_cluster
-      - ledgr_sweep_dsr
+      - ledgr_pbo
+      - ledgr_min_track_record
+      - ledgr_effective_trials
+      - ledgr_dsr
       - ledgr_sweep_save
       - print.ledgr_sweep_results
       - ledgr_candidate

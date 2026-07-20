@@ -1,37 +1,33 @@
-#' Sweep candidate clustering diagnostic
+#' Effective-trial diagnostic
 #'
-#' `ledgr_sweep_cluster()` clusters retained completed-candidate return series
+#' `ledgr_effective_trials()` clusters retained completed-candidate return series
 #' with one deterministic hierarchical method. The effective independent trial
 #' count is the number of clusters at `distance_threshold`; it is evidence for
 #' selection-integrity diagnostics, not a selection rule.
 #'
-#' @param sweep A `ledgr_sweep_results` object with retained completed returns.
+#' @param x A `ledgr_return_panel` object or a `ledgr_sweep_results` object with
+#'   retained completed returns.
 #' @param candidates Optional character vector of candidate ids to include.
 #' @param distance_threshold Numeric scalar in `[0, 2]`. Distances are
 #'   `1 - correlation` over retained return columns.
-#' @return A `ledgr_sweep_cluster` object with `summary`, `membership`,
+#' @return A `ledgr_effective_trials` object with `summary`, `membership`,
 #'   `distances`, and `metadata`.
 #' @examples
 #' \dontrun{
-#' clusters <- ledgr_sweep_cluster(sweep)
+#' clusters <- ledgr_effective_trials(sweep)
 #' as_tibble(clusters)
 #' as_tibble(clusters, what = "membership")
 #' }
 #' @seealso `vignette("selection-integrity", package = "ledgr")` or
 #'   `system.file("doc", "selection-integrity.html", package = "ledgr")`.
 #' @export
-ledgr_sweep_cluster <- function(sweep,
+ledgr_effective_trials <- function(x,
                                 candidates = NULL,
                                 distance_threshold = 0.5) {
-  panel <- ledgr_sweep_returns_panel(
-    sweep,
-    candidates = candidates,
-    value = "returns",
-    complete = TRUE
-  )
+  panel <- ledgr_return_panel_resolve(x, candidates = candidates)
   m <- panel$matrix
-  ledgr_sweep_cluster_validate_matrix(m)
-  distance_threshold <- ledgr_sweep_cluster_validate_threshold(distance_threshold)
+  ledgr_effective_trials_validate_matrix(m)
+  distance_threshold <- ledgr_effective_trials_validate_threshold(distance_threshold)
 
   correlation <- stats::cor(m)
   if (anyNA(correlation) || any(!is.finite(correlation))) {
@@ -53,11 +49,12 @@ ledgr_sweep_cluster <- function(sweep,
     cluster_id = sprintf("cluster_%03d", as.integer(cluster_index))
   )
   effective_trials <- length(unique(cluster_index))
-  identity <- ledgr_validation_sweep_identity(sweep)
   summary <- tibble::tibble(
     diagnostic = "effective_trial_clustering",
     schema_version = 1L,
-    sweep_id = identity$sweep_id,
+    source = panel$source,
+    panel_hash = panel$panel_hash,
+    sweep_id = panel$sweep_id,
     effective_trials = as.integer(effective_trials),
     raw_trials = ncol(m),
     method = "hierarchical_correlation_complete",
@@ -70,17 +67,17 @@ ledgr_sweep_cluster <- function(sweep,
     candidate_ids = list(panel$candidate_ids),
     completed_candidate_ids = list(panel$completed_candidate_ids),
     excluded_candidate_ids = list(panel$excluded_candidate_ids),
-    metric_context_hash = identity$metric_context_hash,
-    cost_model_hash = identity$cost_model_hash,
-    risk_chain_hash = identity$risk_chain_hash
+    metric_context_hash = panel$metric_context_hash,
+    cost_model_hash = panel$cost_model_hash,
+    risk_chain_hash = panel$risk_chain_hash
   )
 
   out <- list(
     summary = summary,
     membership = membership,
-    distances = ledgr_sweep_cluster_distances(correlation, distance_matrix),
+    distances = ledgr_effective_trials_distances(correlation, distance_matrix),
     metadata = list(
-      source = "retained_sweep_returns",
+      source = panel$source,
       diagnostic = "effective_trial_clustering",
       schema_version = 1L,
       native_version = "ledgr_effective_trial_cluster_v1",
@@ -90,23 +87,25 @@ ledgr_sweep_cluster <- function(sweep,
         linkage = "complete",
         distance_threshold = distance_threshold
       ),
-      input_identity = identity,
+      input_identity = panel$input_identity,
       panel = list(
+        panel_hash = panel$panel_hash,
         value = panel$value,
         candidate_ids = panel$candidate_ids,
         completed_candidate_ids = panel$completed_candidate_ids,
         excluded_candidate_ids = panel$excluded_candidate_ids,
+        labels = panel$labels,
         first_row_dropped = isTRUE(panel$first_row_dropped),
         complete = isTRUE(panel$complete)
       )
     )
   )
-  class(out) <- c("ledgr_sweep_cluster", "list")
+  class(out) <- c("ledgr_effective_trials", "list")
   out
 }
 
 #' @export
-as_tibble.ledgr_sweep_cluster <- function(x,
+as_tibble.ledgr_effective_trials <- function(x,
                                           what = c("summary", "membership", "distances"),
                                           ...) {
   what <- match.arg(what)
@@ -114,12 +113,12 @@ as_tibble.ledgr_sweep_cluster <- function(x,
 }
 
 #' @export
-print.ledgr_sweep_cluster <- function(x, ...) {
-  if (!inherits(x, "ledgr_sweep_cluster")) {
-    rlang::abort("`x` must be a ledgr_sweep_cluster object.", class = "ledgr_invalid_args")
+print.ledgr_effective_trials <- function(x, ...) {
+  if (!inherits(x, "ledgr_effective_trials")) {
+    rlang::abort("`x` must be a ledgr_effective_trials object.", class = "ledgr_invalid_args")
   }
   summary <- tibble::as_tibble(x$summary)
-  cat("# ledgr sweep effective-trial clustering\n", sep = "")
+  cat("# ledgr effective-trial clustering\n", sep = "")
   cat(sprintf("# i effective trials: %d\n", summary$effective_trials[[1L]]), sep = "")
   cat(sprintf("# i raw trials: %d\n", summary$raw_trials[[1L]]), sep = "")
   cat(sprintf("# i distance threshold: %.4f\n\n", summary$distance_threshold[[1L]]), sep = "")
@@ -127,67 +126,62 @@ print.ledgr_sweep_cluster <- function(x, ...) {
   invisible(x)
 }
 
-#' Sweep-level deflated Sharpe ratio diagnostic
+#' Deflated Sharpe ratio diagnostic
 #'
-#' `ledgr_sweep_dsr()` computes a native Deflated Sharpe Ratio (DSR)
-#' diagnostic over retained completed-candidate return panels. It is an
-#' evidence surface only: it does not select, promote, filter, or change
-#' walk-forward identity.
+#' `ledgr_dsr()` computes a native Deflated Sharpe Ratio (DSR)
+#' diagnostic over a return panel. It is an evidence surface only: it does not
+#' select, promote, filter, or change walk-forward identity.
 #'
-#' @param sweep A `ledgr_sweep_results` object with retained completed returns.
+#' @param x A `ledgr_return_panel` object or a `ledgr_sweep_results` object with
+#'   retained completed returns.
 #' @param candidates Optional character vector of candidate ids to include.
 #' @param effective_trials Optional whole-number effective independent trial
-#'   count. When `NULL`, ledgr derives it from [ledgr_sweep_cluster()].
+#'   count. When `NULL`, ledgr derives it from [ledgr_effective_trials()].
 #' @param distance_threshold Numeric scalar in `[0, 2]` passed to
-#'   [ledgr_sweep_cluster()] when `effective_trials` is `NULL`.
+#'   [ledgr_effective_trials()] when `effective_trials` is `NULL`.
 #' @param confidence Numeric scalar in `(0, 1)` used for the `significant`
 #'   status flag.
 #' @param risk_free_return Numeric scalar per-period risk-free return to
 #'   subtract before computing Sharpe.
-#' @return A `ledgr_sweep_dsr` object with `summary` and `metadata`.
+#' @return A `ledgr_dsr` object with `summary` and `metadata`.
 #' @examples
 #' \dontrun{
-#' dsr <- ledgr_sweep_dsr(sweep)
+#' dsr <- ledgr_dsr(sweep)
 #' as_tibble(dsr)
 #' }
 #' @seealso `vignette("selection-integrity", package = "ledgr")` or
 #'   `system.file("doc", "selection-integrity.html", package = "ledgr")`.
 #' @export
-ledgr_sweep_dsr <- function(sweep,
+ledgr_dsr <- function(x,
                             candidates = NULL,
                             effective_trials = NULL,
                             distance_threshold = 0.5,
                             confidence = 0.95,
                             risk_free_return = 0) {
-  panel <- ledgr_sweep_returns_panel(
-    sweep,
-    candidates = candidates,
-    value = "returns",
-    complete = TRUE
-  )
+  panel <- ledgr_return_panel_resolve(x, candidates = candidates)
   m <- panel$matrix
-  ledgr_sweep_dsr_validate_matrix(m)
-  confidence <- ledgr_sweep_dsr_validate_confidence(confidence)
-  risk_free_return <- ledgr_sweep_dsr_validate_risk_free(risk_free_return)
+  ledgr_dsr_validate_matrix(m)
+  confidence <- ledgr_dsr_validate_confidence(confidence)
+  risk_free_return <- ledgr_dsr_validate_risk_free(risk_free_return)
 
   cluster <- NULL
   effective_trials_source <- "explicit"
   if (is.null(effective_trials)) {
-    cluster <- ledgr_sweep_cluster(
-      sweep,
-      candidates = candidates,
+    cluster <- ledgr_effective_trials(
+      panel,
+      candidates = NULL,
       distance_threshold = distance_threshold
     )
     effective_trials <- tibble::as_tibble(cluster)$effective_trials[[1L]]
     effective_trials_source <- "clustered"
   }
-  effective_trials <- ledgr_sweep_dsr_validate_effective_trials(
+  effective_trials <- ledgr_dsr_validate_effective_trials(
     effective_trials,
     raw_trials = ncol(m)
   )
 
   candidate_sharpes <- vapply(seq_len(ncol(m)), function(k) {
-    ledgr_sweep_dsr_sharpe(m[, k], risk_free_return = risk_free_return)
+    ledgr_dsr_sharpe(m[, k], risk_free_return = risk_free_return)
   }, numeric(1))
   if (anyNA(candidate_sharpes) || any(!is.finite(candidate_sharpes))) {
     rlang::abort(
@@ -198,7 +192,7 @@ ledgr_sweep_dsr <- function(sweep,
   variance_sharpe <- stats::var(candidate_sharpes)
 
   rows <- lapply(seq_len(ncol(m)), function(j) {
-    ledgr_sweep_dsr_candidate_row(
+    ledgr_dsr_candidate_row(
       returns = m[, j],
       candidate_id = colnames(m)[[j]],
       effective_trials = effective_trials,
@@ -209,12 +203,13 @@ ledgr_sweep_dsr <- function(sweep,
     )
   })
   summary <- tibble::as_tibble(do.call(rbind, rows))
-  identity <- ledgr_validation_sweep_identity(sweep)
   summary <- cbind(
     tibble::tibble(
       diagnostic = "deflated_sharpe_ratio",
       schema_version = 1L,
-      sweep_id = identity$sweep_id
+      source = panel$source,
+      panel_hash = panel$panel_hash,
+      sweep_id = panel$sweep_id
     ),
     summary,
     tibble::tibble(
@@ -222,16 +217,16 @@ ledgr_sweep_dsr <- function(sweep,
       value = panel$value,
       first_row_dropped = isTRUE(panel$first_row_dropped),
       complete_panel = isTRUE(panel$complete),
-      metric_context_hash = identity$metric_context_hash,
-      cost_model_hash = identity$cost_model_hash,
-      risk_chain_hash = identity$risk_chain_hash
+      metric_context_hash = panel$metric_context_hash,
+      cost_model_hash = panel$cost_model_hash,
+      risk_chain_hash = panel$risk_chain_hash
     )
   )
 
   out <- list(
     summary = summary,
     metadata = list(
-      source = "retained_sweep_returns",
+      source = panel$source,
       diagnostic = "deflated_sharpe_ratio",
       schema_version = 1L,
       native_version = "ledgr_dsr_v1",
@@ -243,33 +238,35 @@ ledgr_sweep_dsr <- function(sweep,
         summary = cluster$summary,
         membership = cluster$membership
       ),
-      input_identity = identity,
+      input_identity = panel$input_identity,
       panel = list(
+        panel_hash = panel$panel_hash,
         value = panel$value,
         candidate_ids = panel$candidate_ids,
         completed_candidate_ids = panel$completed_candidate_ids,
         excluded_candidate_ids = panel$excluded_candidate_ids,
+        labels = panel$labels,
         first_row_dropped = isTRUE(panel$first_row_dropped),
         complete = isTRUE(panel$complete)
       )
     )
   )
-  class(out) <- c("ledgr_sweep_dsr", "list")
+  class(out) <- c("ledgr_dsr", "list")
   out
 }
 
 #' @export
-as_tibble.ledgr_sweep_dsr <- function(x, ...) {
+as_tibble.ledgr_dsr <- function(x, ...) {
   tibble::as_tibble(x$summary)
 }
 
 #' @export
-print.ledgr_sweep_dsr <- function(x, ...) {
-  if (!inherits(x, "ledgr_sweep_dsr")) {
-    rlang::abort("`x` must be a ledgr_sweep_dsr object.", class = "ledgr_invalid_args")
+print.ledgr_dsr <- function(x, ...) {
+  if (!inherits(x, "ledgr_dsr")) {
+    rlang::abort("`x` must be a ledgr_dsr object.", class = "ledgr_invalid_args")
   }
   summary <- tibble::as_tibble(x$summary)
-  cat("# ledgr sweep deflated Sharpe ratio\n", sep = "")
+  cat("# ledgr deflated Sharpe ratio\n", sep = "")
   cat(sprintf("# i candidates: %d\n", nrow(summary)), sep = "")
   cat(sprintf("# i effective trials: %d\n", summary$effective_trials[[1L]]), sep = "")
   cat(sprintf("# i confidence: %.3f\n\n", summary$confidence[[1L]]), sep = "")
@@ -280,7 +277,7 @@ print.ledgr_sweep_dsr <- function(x, ...) {
   invisible(x)
 }
 
-ledgr_sweep_cluster_validate_matrix <- function(m) {
+ledgr_effective_trials_validate_matrix <- function(m) {
   if (!is.matrix(m) || !is.numeric(m)) {
     rlang::abort(
       "Clustering requires a numeric retained-return matrix.",
@@ -320,7 +317,7 @@ ledgr_sweep_cluster_validate_matrix <- function(m) {
   invisible(TRUE)
 }
 
-ledgr_sweep_cluster_validate_threshold <- function(distance_threshold) {
+ledgr_effective_trials_validate_threshold <- function(distance_threshold) {
   if (!is.numeric(distance_threshold) ||
       length(distance_threshold) != 1L ||
       is.na(distance_threshold) ||
@@ -335,7 +332,7 @@ ledgr_sweep_cluster_validate_threshold <- function(distance_threshold) {
   as.numeric(distance_threshold)
 }
 
-ledgr_sweep_cluster_distances <- function(correlation, distance_matrix) {
+ledgr_effective_trials_distances <- function(correlation, distance_matrix) {
   ids <- colnames(correlation)
   pairs <- utils::combn(ids, 2L)
   rows <- lapply(seq_len(ncol(pairs)), function(i) {
@@ -351,7 +348,7 @@ ledgr_sweep_cluster_distances <- function(correlation, distance_matrix) {
   tibble::as_tibble(do.call(rbind, rows))
 }
 
-ledgr_sweep_dsr_validate_matrix <- function(m) {
+ledgr_dsr_validate_matrix <- function(m) {
   if (!is.matrix(m) || !is.numeric(m)) {
     rlang::abort(
       "DSR requires a numeric retained-return matrix.",
@@ -391,7 +388,7 @@ ledgr_sweep_dsr_validate_matrix <- function(m) {
   invisible(TRUE)
 }
 
-ledgr_sweep_dsr_validate_confidence <- function(confidence) {
+ledgr_dsr_validate_confidence <- function(confidence) {
   if (!is.numeric(confidence) ||
       length(confidence) != 1L ||
       is.na(confidence) ||
@@ -406,7 +403,7 @@ ledgr_sweep_dsr_validate_confidence <- function(confidence) {
   as.numeric(confidence)
 }
 
-ledgr_sweep_dsr_validate_risk_free <- function(risk_free_return) {
+ledgr_dsr_validate_risk_free <- function(risk_free_return) {
   if (!is.numeric(risk_free_return) ||
       length(risk_free_return) != 1L ||
       is.na(risk_free_return) ||
@@ -420,7 +417,7 @@ ledgr_sweep_dsr_validate_risk_free <- function(risk_free_return) {
   as.numeric(risk_free_return)
 }
 
-ledgr_sweep_dsr_validate_effective_trials <- function(effective_trials, raw_trials) {
+ledgr_dsr_validate_effective_trials <- function(effective_trials, raw_trials) {
   if (!is.numeric(effective_trials) ||
       length(effective_trials) != 1L ||
       is.na(effective_trials) ||
@@ -443,7 +440,7 @@ ledgr_sweep_dsr_validate_effective_trials <- function(effective_trials, raw_tria
   effective_trials
 }
 
-ledgr_sweep_dsr_sharpe <- function(returns, risk_free_return) {
+ledgr_dsr_sharpe <- function(returns, risk_free_return) {
   excess <- as.numeric(returns) - risk_free_return
   sd_excess <- stats::sd(excess)
   if (!is.finite(sd_excess) || sd_excess <= .Machine$double.eps) {
@@ -452,7 +449,7 @@ ledgr_sweep_dsr_sharpe <- function(returns, risk_free_return) {
   mean(excess) / sd_excess
 }
 
-ledgr_sweep_dsr_candidate_row <- function(returns,
+ledgr_dsr_candidate_row <- function(returns,
                                           candidate_id,
                                           effective_trials,
                                           raw_trials,
@@ -531,21 +528,4 @@ ledgr_sweep_dsr_candidate_row <- function(returns,
     significant = isTRUE(significant),
     status = if (isTRUE(significant)) "significant" else "not_significant"
   )
-}
-
-ledgr_validation_sweep_identity <- function(sweep) {
-  list(
-    sweep_id = ledgr_validation_scalar_attr(sweep, "sweep_id"),
-    metric_context_hash = ledgr_validation_scalar_attr(sweep, "metric_context_hash"),
-    cost_model_hash = ledgr_validation_scalar_attr(sweep, "cost_model_hash"),
-    risk_chain_hash = ledgr_validation_scalar_attr(sweep, "risk_chain_hash")
-  )
-}
-
-ledgr_validation_scalar_attr <- function(x, name) {
-  value <- attr(x, name, exact = TRUE)
-  if (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(value)) {
-    return(as.character(value))
-  }
-  NA_character_
 }

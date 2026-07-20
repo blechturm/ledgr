@@ -80,25 +80,28 @@ testthat::test_that("effective-trial clustering is deterministic and reports mem
   panel <- ledgr_dsr_reference_panel()
   sweep <- ledgr_dsr_test_sweep(panel)
 
-  cluster_a <- ledgr_sweep_cluster(sweep)
-  cluster_b <- ledgr_sweep_cluster(sweep)
+  cluster_a <- ledgr_effective_trials(sweep)
+  cluster_b <- ledgr_effective_trials(sweep)
   summary <- tibble::as_tibble(cluster_a)
   membership <- tibble::as_tibble(cluster_a, what = "membership")
   distances <- tibble::as_tibble(cluster_a, what = "distances")
 
-  testthat::expect_s3_class(cluster_a, "ledgr_sweep_cluster")
+  testthat::expect_s3_class(cluster_a, "ledgr_effective_trials")
   testthat::expect_identical(cluster_a$summary, cluster_b$summary)
   testthat::expect_identical(cluster_a$membership, cluster_b$membership)
   testthat::expect_identical(
     names(summary),
     c(
-      "diagnostic", "schema_version", "sweep_id", "effective_trials",
-      "raw_trials", "method", "distance", "distance_threshold",
-      "n_observations", "value", "first_row_dropped", "complete_panel",
-      "candidate_ids", "completed_candidate_ids", "excluded_candidate_ids",
-      "metric_context_hash", "cost_model_hash", "risk_chain_hash"
+      "diagnostic", "schema_version", "source", "panel_hash", "sweep_id",
+      "effective_trials", "raw_trials", "method", "distance",
+      "distance_threshold", "n_observations", "value", "first_row_dropped",
+      "complete_panel", "candidate_ids", "completed_candidate_ids",
+      "excluded_candidate_ids", "metric_context_hash", "cost_model_hash",
+      "risk_chain_hash"
     )
   )
+  testthat::expect_identical(summary$source[[1]], "retained_sweep_returns")
+  testthat::expect_match(summary$panel_hash[[1]], "^[0-9a-f]{64}$")
   testthat::expect_identical(summary$effective_trials[[1]], 2L)
   testthat::expect_identical(membership$cluster_index, c(1L, 1L, 2L, 2L))
   testthat::expect_identical(membership$candidate_id, colnames(panel))
@@ -107,8 +110,8 @@ testthat::test_that("effective-trial clustering is deterministic and reports mem
     1 - stats::cor(panel[, "a"], panel[, "b"]),
     tolerance = 1e-12
   )
-  testthat::expect_false("seed" %in% names(formals(ledgr_sweep_cluster)))
-  testthat::expect_false("method" %in% names(formals(ledgr_sweep_cluster)))
+  testthat::expect_false("seed" %in% names(formals(ledgr_effective_trials)))
+  testthat::expect_false("method" %in% names(formals(ledgr_effective_trials)))
   testthat::expect_identical(cluster_a$metadata$native_version, "ledgr_effective_trial_cluster_v1")
 
   printed <- utils::capture.output(print(cluster_a, n = 2))
@@ -119,7 +122,7 @@ testthat::test_that("native DSR matches the reference formula", {
   panel <- ledgr_dsr_reference_panel()
   sweep <- ledgr_dsr_test_sweep(panel)
 
-  dsr <- ledgr_sweep_dsr(sweep)
+  dsr <- ledgr_dsr(sweep)
   summary <- tibble::as_tibble(dsr)
   sharpes <- apply(panel, 2, function(x) mean(x) / stats::sd(x))
   variance_sharpe <- stats::var(sharpes)
@@ -131,20 +134,23 @@ testthat::test_that("native DSR matches the reference formula", {
   )
   row_a <- summary[summary$candidate_id == "a", , drop = FALSE]
 
-  testthat::expect_s3_class(dsr, "ledgr_sweep_dsr")
+  testthat::expect_s3_class(dsr, "ledgr_dsr")
   testthat::expect_identical(
     names(summary),
     c(
-      "diagnostic", "schema_version", "sweep_id", "candidate_id",
-      "observations", "observed_sharpe", "skewness", "kurtosis",
-      "variance_sharpe", "expected_max_z", "expected_max_sharpe",
-      "effective_trials", "raw_trials", "confidence", "risk_free_return",
-      "dsr_z", "dsr_probability", "p_value", "deflated_sharpe",
-      "significant", "status", "effective_trials_source", "value",
-      "first_row_dropped", "complete_panel", "metric_context_hash",
-      "cost_model_hash", "risk_chain_hash"
+      "diagnostic", "schema_version", "source", "panel_hash", "sweep_id",
+      "candidate_id", "observations", "observed_sharpe", "skewness",
+      "kurtosis", "variance_sharpe", "expected_max_z",
+      "expected_max_sharpe", "effective_trials", "raw_trials",
+      "confidence", "risk_free_return", "dsr_z", "dsr_probability",
+      "p_value", "deflated_sharpe", "significant", "status",
+      "effective_trials_source", "value", "first_row_dropped",
+      "complete_panel", "metric_context_hash", "cost_model_hash",
+      "risk_chain_hash"
     )
   )
+  testthat::expect_identical(summary$source, rep("retained_sweep_returns", 4L))
+  testthat::expect_true(all(grepl("^[0-9a-f]{64}$", summary$panel_hash)))
   testthat::expect_identical(summary$effective_trials, rep(2L, 4L))
   testthat::expect_identical(summary$raw_trials, rep(4L, 4L))
   testthat::expect_identical(summary$effective_trials_source, rep("clustered", 4L))
@@ -163,12 +169,53 @@ testthat::test_that("native DSR matches the reference formula", {
   testthat::expect_true(any(grepl("effective trials", printed, fixed = TRUE)))
 })
 
+testthat::test_that("DSR and effective trials accept user return panels", {
+  returns <- ledgr_dsr_reference_panel()
+  sweep <- ledgr_dsr_test_sweep(returns)
+  sweep_panel <- ledgr_sweep_returns_panel(sweep)
+  panel <- ledgr_return_panel(returns, ts = sweep_panel$ts_utc)
+
+  testthat::expect_identical(panel$panel_hash, sweep_panel$panel_hash)
+
+  sweep_clusters <- ledgr_effective_trials(sweep)
+  panel_clusters <- ledgr_effective_trials(panel)
+  sweep_cluster_summary <- tibble::as_tibble(sweep_clusters)
+  panel_cluster_summary <- tibble::as_tibble(panel_clusters)
+  testthat::expect_identical(panel_cluster_summary$source[[1]], "user_return_panel")
+  testthat::expect_true(is.na(panel_cluster_summary$sweep_id[[1]]))
+  testthat::expect_identical(sweep_cluster_summary$panel_hash[[1]], panel_cluster_summary$panel_hash[[1]])
+  comparable_cluster <- setdiff(
+    names(sweep_cluster_summary),
+    c("source", "sweep_id", "first_row_dropped", "metric_context_hash", "cost_model_hash", "risk_chain_hash")
+  )
+  testthat::expect_equal(panel_cluster_summary[, comparable_cluster], sweep_cluster_summary[, comparable_cluster], tolerance = 1e-12)
+  testthat::expect_equal(
+    tibble::as_tibble(panel_clusters, what = "membership"),
+    tibble::as_tibble(sweep_clusters, what = "membership"),
+    tolerance = 1e-12
+  )
+
+  sweep_dsr <- ledgr_dsr(sweep)
+  panel_dsr <- ledgr_dsr(panel)
+  sweep_dsr_summary <- tibble::as_tibble(sweep_dsr)
+  panel_dsr_summary <- tibble::as_tibble(panel_dsr)
+  testthat::expect_identical(panel_dsr_summary$source, rep("user_return_panel", ncol(returns)))
+  testthat::expect_true(all(is.na(panel_dsr_summary$sweep_id)))
+  testthat::expect_identical(unique(sweep_dsr_summary$panel_hash), unique(panel_dsr_summary$panel_hash))
+  comparable_dsr <- setdiff(
+    names(sweep_dsr_summary),
+    c("source", "sweep_id", "first_row_dropped", "metric_context_hash", "cost_model_hash", "risk_chain_hash")
+  )
+  testthat::expect_equal(panel_dsr_summary[, comparable_dsr], sweep_dsr_summary[, comparable_dsr], tolerance = 1e-12)
+  testthat::expect_null(panel_dsr$metadata$input_identity)
+})
+
 testthat::test_that("native DSR can cross-check against quantstrat when it is installed", {
   testthat::skip_if_not_installed("quantstrat")
 
   panel <- ledgr_dsr_reference_panel()
   sweep <- ledgr_dsr_test_sweep(panel)
-  dsr <- ledgr_sweep_dsr(sweep, effective_trials = 2L)
+  dsr <- ledgr_dsr(sweep, effective_trials = 2L)
   summary <- tibble::as_tibble(dsr)
   row_a <- summary[summary$candidate_id == "a", , drop = FALSE]
   helper <- getFromNamespace(".deflatedSharpe", "quantstrat")
@@ -190,8 +237,8 @@ testthat::test_that("DSR decreases as effective trial count increases", {
   panel <- ledgr_dsr_reference_panel()
   sweep <- ledgr_dsr_test_sweep(panel)
 
-  dsr_two <- tibble::as_tibble(ledgr_sweep_dsr(sweep, effective_trials = 2L))
-  dsr_four <- tibble::as_tibble(ledgr_sweep_dsr(sweep, effective_trials = 4L))
+  dsr_two <- tibble::as_tibble(ledgr_dsr(sweep, effective_trials = 2L))
+  dsr_four <- tibble::as_tibble(ledgr_dsr(sweep, effective_trials = 4L))
 
   testthat::expect_true(all(dsr_four$dsr_probability < dsr_two$dsr_probability))
   testthat::expect_true(all(dsr_four$p_value > dsr_two$p_value))
@@ -202,23 +249,23 @@ testthat::test_that("DSR and clustering fail closed on invalid evidence and argu
   sweep <- ledgr_dsr_test_sweep(panel)
 
   testthat::expect_error(
-    ledgr_sweep_cluster(sweep, distance_threshold = NA_real_),
+    ledgr_effective_trials(sweep, distance_threshold = NA_real_),
     class = "ledgr_validation_cluster_invalid_threshold"
   )
   testthat::expect_error(
-    ledgr_sweep_cluster(ledgr_dsr_test_sweep(panel[, "a", drop = FALSE])),
+    ledgr_effective_trials(ledgr_dsr_test_sweep(panel[, "a", drop = FALSE])),
     class = "ledgr_validation_cluster_too_few_candidates"
   )
   testthat::expect_error(
-    ledgr_sweep_cluster(ledgr_dsr_test_sweep(matrix(0.01, nrow = 4, ncol = 2))),
+    ledgr_effective_trials(ledgr_dsr_test_sweep(matrix(0.01, nrow = 4, ncol = 2))),
     class = "ledgr_validation_cluster_invalid_returns"
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(sweep, effective_trials = 1L),
+    ledgr_dsr(sweep, effective_trials = 1L),
     class = "ledgr_validation_dsr_invalid_effective_trials"
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(sweep, effective_trials = 5L),
+    ledgr_dsr(sweep, effective_trials = 5L),
     class = "ledgr_validation_dsr_invalid_effective_trials"
   )
   one_cluster <- cbind(
@@ -227,27 +274,27 @@ testthat::test_that("DSR and clustering fail closed on invalid evidence and argu
     c = panel[, "a"] - 0.0001
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(ledgr_dsr_test_sweep(one_cluster)),
+    ledgr_dsr(ledgr_dsr_test_sweep(one_cluster)),
     class = "ledgr_validation_dsr_invalid_effective_trials"
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(sweep, confidence = 1),
+    ledgr_dsr(sweep, confidence = 1),
     class = "ledgr_validation_dsr_invalid_confidence"
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(sweep, risk_free_return = -1),
+    ledgr_dsr(sweep, risk_free_return = -1),
     class = "ledgr_validation_dsr_invalid_risk_free"
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(ledgr_dsr_test_sweep(matrix(c(0.01, 0.02, 0.03), ncol = 1))),
+    ledgr_dsr(ledgr_dsr_test_sweep(matrix(c(0.01, 0.02, 0.03), ncol = 1))),
     class = "ledgr_validation_dsr_too_few_candidates"
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(ledgr_dsr_test_sweep(cbind(a = c(0.01, 0.02, 0.03), b = c(0.03, 0.02, 0.01))), effective_trials = 2L),
+    ledgr_dsr(ledgr_dsr_test_sweep(cbind(a = c(0.01, 0.02, 0.03), b = c(0.03, 0.02, 0.01))), effective_trials = 2L),
     class = "ledgr_validation_dsr_too_few_observations"
   )
   testthat::expect_error(
-    ledgr_sweep_dsr(ledgr_dsr_test_sweep(matrix(rep(0.01, 8), nrow = 4, ncol = 2)), effective_trials = 2L),
+    ledgr_dsr(ledgr_dsr_test_sweep(matrix(rep(0.01, 8), nrow = 4, ncol = 2)), effective_trials = 2L),
     class = "ledgr_validation_dsr_invalid_returns"
   )
 
@@ -256,7 +303,7 @@ testthat::test_that("DSR and clustering fail closed on invalid evidence and argu
   retained <- retained[!(retained$candidate_id == "a" & retained$ts_utc == max(retained$ts_utc)), , drop = FALSE]
   attr(ragged, "sweep_returns") <- retained
   testthat::expect_error(
-    ledgr_sweep_dsr(ragged),
+    ledgr_dsr(ragged),
     class = "ledgr_sweep_returns_incomplete_panel"
   )
 
@@ -264,7 +311,7 @@ testthat::test_that("DSR and clustering fail closed on invalid evidence and argu
   attr(unretained, "sweep_retention") <- ledgr_sweep_retention("none")
   attr(unretained, "sweep_returns") <- NULL
   testthat::expect_error(
-    ledgr_sweep_dsr(unretained),
+    ledgr_dsr(unretained),
     class = "ledgr_sweep_returns_unretained"
   )
 })

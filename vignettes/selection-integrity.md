@@ -13,7 +13,7 @@ effective-trial clustering.
 
 ## Question
 
-`ledgr_sweep_pbo()` asks one question: when the retained candidate
+`ledgr_pbo()` asks one question: when the retained candidate
 return panel is recombined into symmetric in-sample and out-of-sample
 splits, how often does the in-sample winner rank poorly out of sample?
 
@@ -33,7 +33,7 @@ sweep <- ledgr_sweep(
   retain = ledgr_sweep_retention("completed")
 )
 
-pbo <- ledgr_sweep_pbo(sweep, S = 4)
+pbo <- ledgr_pbo(sweep, S = 4)
 ```
 
 The input is the same retained completed-candidate evidence exposed by
@@ -110,29 +110,87 @@ reference evidence, not a runtime dependency.
 
 ## Worked Example
 
-The synthetic retained sweep below is intentionally cautionary. Each
-candidate looks good in one segment and weak elsewhere. That creates an
-attractive-looking search space, but PBO flags that the in-sample winner
-does not usually remain strong out of sample.
+The retained sweeps below are intentionally small, but the contrast is a
+real research situation: a parameter search where each setting wins in a
+different market segment versus a search where the candidate ranking is
+stable across segments. The first can look attractive if you inspect
+only the best in-sample candidate; PBO flags the rotation.
 
 ``` r
-pbo <- ledgr_sweep_pbo(example_sweep, S = 4)
-tibble::as_tibble(pbo)
-#> # A tibble: 1 x 17
-#>   diagnostic schema_version sweep_id    pbo probability_not_over~1 threshold     S n_cases
-#>   <chr>               <int> <chr>     <dbl>                  <dbl>     <dbl> <int>   <int>
-#> 1 pbo_cscv                1 selectio~     1                      0         0     4       6
-#> # i abbreviated name: 1: probability_not_overfit
-#> # i 9 more variables: n_observations <int>, n_candidates <int>, metric_name <chr>,
-#> #   value <chr>, first_row_dropped <lgl>, complete_panel <lgl>, candidate_ids <list>,
-#> #   completed_candidate_ids <list>, excluded_candidate_ids <list>
+pbo_segment_means <- do.call(
+  rbind,
+  lapply(
+    list("rotating winner" = overfit_returns, "stable ranking" = stable_returns),
+    function(returns) {
+      out <- expand.grid(
+        segment = seq_len(4),
+        candidate = colnames(returns),
+        KEEP.OUT.ATTRS = FALSE,
+        stringsAsFactors = FALSE
+      )
+      out$mean_return <- mapply(
+        function(segment, candidate) {
+          mean(returns[subset_id == segment, candidate])
+        },
+        out$segment,
+        out$candidate
+      )
+      out
+    }
+  )
+)
+pbo_segment_means$scenario <- rep(
+  names(list("rotating winner" = overfit_returns, "stable ranking" = stable_returns)),
+  each = 16
+)
+pbo_segment_means$candidate <- factor(
+  pbo_segment_means$candidate,
+  levels = rev(colnames(overfit_returns))
+)
+
+ggplot2::ggplot(
+  pbo_segment_means,
+  ggplot2::aes(x = factor(segment), y = candidate, fill = mean_return)
+) +
+  ggplot2::geom_tile(color = "white", linewidth = 0.6) +
+  ggplot2::facet_wrap(~ scenario) +
+  ggplot2::scale_fill_viridis_c(option = "C") +
+  ggplot2::labs(
+    x = "Segment",
+    y = "Candidate",
+    fill = "Mean return"
+  ) +
+  ggplot2::theme_minimal(base_size = 13)
 ```
 
-The case table shows why the summary is high: the in-sample winner is
-often not the out-of-sample winner.
+<img
+src="selection-integrity_files/figure-commonmark/pbo-segment-heatmap-1.png"
+data-fig-alt="Heatmap with a bright diagonal for the rotating-winner scenario and horizontal bands for the stable-ranking scenario."
+alt="Rotating winner rotates out of sample (high PBO) vs one candidate leads every segment (low PBO)." />
 
 ``` r
-tibble::as_tibble(pbo, what = "degradation")
+pbo_overfit <- ledgr_pbo(overfit_sweep, S = 4)
+pbo_stable <- ledgr_pbo(stable_sweep, S = 4)
+tibble::tibble(
+  scenario = c("rotating winner", "stable ranking"),
+  pbo = c(
+    tibble::as_tibble(pbo_overfit)$pbo,
+    tibble::as_tibble(pbo_stable)$pbo
+  )
+)
+#> # A tibble: 2 x 2
+#>   scenario          pbo
+#>   <chr>           <dbl>
+#> 1 rotating winner     1
+#> 2 stable ranking      0
+```
+
+The degradation table for the rotating-winner sweep shows why the PBO
+summary is high: the in-sample winner is often not the out-of-sample
+winner.
+
+``` r
+tibble::as_tibble(pbo_overfit, what = "degradation")
 #> # A tibble: 6 x 8
 #>    case winner_candidate_id oos_best_candidate_id in_sample_metric out_of_sample_metric
 #>   <int> <chr>               <chr>                            <dbl>                <dbl>
@@ -145,7 +203,7 @@ tibble::as_tibble(pbo, what = "degradation")
 #> # i 3 more variables: metric_degradation <dbl>, lambda <dbl>, below_threshold <lgl>
 ```
 
-`ledgr_sweep_pbo()` does not select or promote a candidate. Treat it as
+`ledgr_pbo()` does not select or promote a candidate. Treat it as
 one piece of evidence beside the sweep table, the walk-forward
 degradation table, and the research judgment that decides what to test
 next.
@@ -154,7 +212,7 @@ next.
 
 ### Question
 
-`ledgr_sweep_min_track_record()` asks a narrower single-series question
+`ledgr_min_track_record()` asks a narrower single-series question
 for each retained candidate: how many return observations would this
 observed Sharpe ratio need before it is statistically distinguishable
 from a reference Sharpe threshold at the requested confidence level?
@@ -168,7 +226,7 @@ reference threshold.
 The diagnostic consumes the same retained sweep return panel as PBO:
 
 ``` r
-min_trl <- ledgr_sweep_min_track_record(
+min_trl <- ledgr_min_track_record(
   sweep,
   reference_sharpe = 0,
   confidence = 0.95
@@ -235,40 +293,103 @@ a runtime dependency.
 
 ### Worked Example
 
-The first candidate below has smoother positive returns than the second.
-The second candidate’s Sharpe is positive, but the required track record
-length shows that the evidence is still much too short at 95 percent
-confidence.
+The contrast below uses the same choppy positive return pattern twice:
+once as a short sample and once as a longer sample. The average return
+story is similar, but MinTRL changes the interpretation because the
+longer track record carries more evidence.
 
 ``` r
-min_trl_returns <- cbind(
-  promising = c(0.012, 0.016, 0.010, 0.018, 0.013, 0.017, 0.011, 0.015),
-  noisy = c(0.040, -0.030, 0.035, -0.025, 0.030, -0.020, 0.025, -0.015)
+short_pattern <- c(0.015, -0.010, 0.012, -0.006, 0.014, -0.008, 0.011, -0.004)
+short_sample <- cbind(
+  candidate = short_pattern,
+  peer = rev(short_pattern)
 )
-min_trl_sweep <- make_retained_sweep(min_trl_returns)
-min_trl <- ledgr_sweep_min_track_record(min_trl_sweep, reference_sharpe = 0)
-min_trl
-#> # ledgr sweep minimum track record length
-#> # i candidates: 2
-#> # i confidence: 0.950
-#> # i reference Sharpe: 0.0000
-#>
-#> # A tibble: 2 x 7
-#>   candidate_id observed_sharpe reference_sharpe min_track_record_length observations
-#>   <chr>                  <dbl>            <dbl>                   <dbl>        <int>
-#> 1 promising            4.7819                 0                  1.5061            8
-#> 2 noisy                0.16667                0                 98.503             8
-#> # i 2 more variables: extra_observations_needed <dbl>, track_record_significant <lgl>
+longer_sample <- do.call(rbind, rep(list(short_sample), 8))
+
+min_trl_short <- ledgr_min_track_record(
+  make_retained_sweep(short_sample),
+  reference_sharpe = 0
+)
+min_trl_longer <- ledgr_min_track_record(
+  make_retained_sweep(longer_sample),
+  reference_sharpe = 0
+)
+
+short_row <- tibble::as_tibble(min_trl_short)[1, ]
+longer_row <- tibble::as_tibble(min_trl_longer)[1, ]
+tibble::tibble(
+  scenario = c("short sample", "longer same pattern"),
+  observations = c(short_row$observations, longer_row$observations),
+  observed_sharpe = round(c(short_row$observed_sharpe, longer_row$observed_sharpe), 3),
+  min_track_record_length = round(
+    c(short_row$min_track_record_length, longer_row$min_track_record_length),
+    1
+  ),
+  extra_observations_needed = c(
+    short_row$extra_observations_needed,
+    longer_row$extra_observations_needed
+  ),
+  status = c(short_row$status, longer_row$status)
+)
+#> # A tibble: 2 x 6
+#>   scenario      observations observed_sharpe min_track_record_len~1 extra_observations_n~2
+#>   <chr>                <int>           <dbl>                  <dbl>                  <dbl>
+#> 1 short sample             8           0.276                   37.1                     30
+#> 2 longer same ~           64           0.292                   33.1                      0
+#> # i abbreviated names: 1: min_track_record_length, 2: extra_observations_needed
+#> # i 1 more variable: status <chr>
 ```
 
-The diagnostic keeps both candidates in the table. It does not select
-the candidate with the shorter required track record.
+``` r
+min_trl_gap <- tibble::tibble(
+  scenario = c("short sample", "longer same pattern"),
+  observations = c(short_row$observations, longer_row$observations),
+  required = c(short_row$min_track_record_length, longer_row$min_track_record_length)
+)
+
+ggplot2::ggplot(min_trl_gap, ggplot2::aes(x = scenario)) +
+  ggplot2::geom_col(
+    ggplot2::aes(y = observations),
+    fill = "#4F7FC8",
+    width = 0.62
+  ) +
+  ggplot2::geom_point(
+    ggplot2::aes(y = required),
+    color = "#B2182B",
+    size = 3.5
+  ) +
+  ggplot2::geom_text(
+    ggplot2::aes(y = observations, label = paste0("available: ", observations)),
+    vjust = -0.55,
+    size = 3.5
+  ) +
+  ggplot2::geom_text(
+    ggplot2::aes(y = required, label = paste0("required: ", round(required, 1))),
+    vjust = 1.6,
+    color = "#B2182B",
+    size = 3.5
+  ) +
+  ggplot2::labs(
+    x = NULL,
+    y = "Return observations"
+  ) +
+  ggplot2::theme_minimal(base_size = 13)
+```
+
+<img
+src="selection-integrity_files/figure-commonmark/min-trl-gap-plot-1.png"
+data-fig-alt="Bar chart comparing available observations with required MinTRL for the short and longer samples."
+alt="The short sample has less evidence than its required MinTRL; the longer same-pattern sample clears it." />
+
+The diagnostic keeps both candidates in the underlying table. It does
+not select the candidate or convert a longer sample into a deployment
+decision.
 
 ## Deflated Sharpe Ratio And Effective Trials
 
 ### Question
 
-`ledgr_sweep_dsr()` asks whether an observed Sharpe ratio still looks
+`ledgr_dsr()` asks whether an observed Sharpe ratio still looks
 statistically meaningful after accounting for non-normal returns and the
 number of effectively independent candidates tried in the sweep.
 
@@ -282,11 +403,11 @@ live-performance guarantee.
 DSR consumes the same retained sweep return panel as PBO and MinTRL:
 
 ``` r
-dsr <- ledgr_sweep_dsr(sweep)
+dsr <- ledgr_dsr(sweep)
 ```
 
 When `effective_trials` is not supplied, ledgr derives it with
-`ledgr_sweep_cluster()`: deterministic hierarchical clustering over
+`ledgr_effective_trials()`: deterministic hierarchical clustering over
 `1 - correlation` distance on the retained return columns. The
 clustering output reports membership and the effective independent trial
 count. It does not inspect fills, positions, promotion records, or
@@ -315,11 +436,11 @@ stricter than looking at the best observed Sharpe in the sweep because
 it asks how many effectively independent attempts contributed to that
 best result.
 
-Use `ledgr_sweep_cluster()` when you want to inspect the effective-trial
+Use `ledgr_effective_trials()` when you want to inspect the effective-trial
 count directly:
 
 ``` r
-clusters <- ledgr_sweep_cluster(sweep)
+clusters <- ledgr_effective_trials(sweep)
 as_tibble(clusters, what = "membership")
 ```
 
@@ -364,53 +485,175 @@ tests, not as a runtime dependency.
 
 ### Worked Example
 
-The synthetic sweep below has four candidates but only two effective
-clusters: two candidates are near-duplicates of one return shape, and
-two are near-duplicates of another. DSR uses that effective-trial count
-instead of treating all four columns as independent discoveries.
+The sweep below has eight candidates but only two effective clusters:
+four parameter settings are near-duplicates of one return shape, and
+four are near-duplicates of another. The contrast shows why DSR cares
+about effective trials rather than raw column count.
 
 ``` r
 shape_a <- c(-0.020, -0.010, 0.000, 0.010, 0.020, 0.030, 0.010, -0.020, 0.000, 0.020, 0.015, -0.005)
 shape_b <- c(0.030, -0.020, 0.025, -0.015, 0.020, -0.010, 0.015, -0.005, 0.010, 0.000, 0.005, -0.005)
-dsr_returns <- cbind(
-  shape_a = shape_a,
-  shape_a_variant = shape_a + c(0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001),
-  shape_b = shape_b,
-  shape_b_variant = shape_b + c(-0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001, -0.001, 0.001)
+dsr_returns <- do.call(
+  cbind,
+  c(
+    lapply(1:4, function(i) shape_a + rep(c(0.001 * i, -0.001 * i), 6)),
+    lapply(1:4, function(i) shape_b + rep(c(-0.001 * i, 0.001 * i), 6))
+  )
 )
+colnames(dsr_returns) <- c(paste0("shape_a_", 1:4), paste0("shape_b_", 1:4))
 dsr_sweep <- make_retained_sweep(dsr_returns)
 
-ledgr_sweep_cluster(dsr_sweep)
-#> # ledgr sweep effective-trial clustering
+ledgr_effective_trials(dsr_sweep)
+#> # ledgr effective-trial clustering
 #> # i effective trials: 2
-#> # i raw trials: 4
+#> # i raw trials: 8
 #> # i distance threshold: 0.5000
 #>
-#> # A tibble: 4 x 3
-#>   candidate_id    cluster_index cluster_id
-#>   <chr>                   <int> <chr>
-#> 1 shape_a                     1 cluster_001
-#> 2 shape_a_variant             1 cluster_001
-#> 3 shape_b                     2 cluster_002
-#> 4 shape_b_variant             2 cluster_002
+#> # A tibble: 8 x 3
+#>   candidate_id cluster_index cluster_id
+#>   <chr>                <int> <chr>
+#> 1 shape_a_1                1 cluster_001
+#> 2 shape_a_2                1 cluster_001
+#> 3 shape_a_3                1 cluster_001
+#> 4 shape_a_4                1 cluster_001
+#> 5 shape_b_1                2 cluster_002
+#> 6 shape_b_2                2 cluster_002
+#> 7 shape_b_3                2 cluster_002
+#> 8 shape_b_4                2 cluster_002
 ```
 
 ``` r
-dsr <- ledgr_sweep_dsr(dsr_sweep)
+dsr_correlation <- cor(dsr_returns)
+candidate_order <- colnames(dsr_correlation)
+dsr_correlation_long <- expand.grid(
+  candidate_x = candidate_order,
+  candidate_y = candidate_order,
+  KEEP.OUT.ATTRS = FALSE,
+  stringsAsFactors = FALSE
+)
+dsr_correlation_long$correlation <- as.vector(dsr_correlation)
+dsr_correlation_long$candidate_x <- factor(
+  dsr_correlation_long$candidate_x,
+  levels = candidate_order
+)
+dsr_correlation_long$candidate_y <- factor(
+  dsr_correlation_long$candidate_y,
+  levels = rev(candidate_order)
+)
+
+ggplot2::ggplot(
+  dsr_correlation_long,
+  ggplot2::aes(x = candidate_x, y = candidate_y, fill = correlation)
+) +
+  ggplot2::geom_tile(color = "white", linewidth = 0.35) +
+  ggplot2::scale_fill_gradient2(
+    low = "#B2182B",
+    mid = "#F7F7F7",
+    high = "#2166AC",
+    midpoint = 0,
+    limits = c(-1, 1)
+  ) +
+  ggplot2::labs(
+    x = NULL,
+    y = NULL,
+    fill = "Correlation"
+  ) +
+  ggplot2::theme_minimal(base_size = 13) +
+  ggplot2::theme(
+    axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+  )
+```
+
+<img
+src="selection-integrity_files/figure-commonmark/dsr-correlation-heatmap-1.png"
+data-fig-alt="Correlation heatmap with two bright square blocks for shape_a and shape_b candidates."
+alt="The return-correlation matrix shows two high-correlation blocks, so the sweep has two effective trial families rather than eight independent trials." />
+
+``` r
+dsr <- ledgr_dsr(dsr_sweep)
 dsr
-#> # ledgr sweep deflated Sharpe ratio
-#> # i candidates: 4
+#> # ledgr deflated Sharpe ratio
+#> # i candidates: 8
 #> # i effective trials: 2
 #> # i confidence: 0.950
 #>
-#> # A tibble: 4 x 6
-#>   candidate_id    observed_sharpe expected_max_sharpe dsr_probability p_value significant
-#>   <chr>                     <dbl>               <dbl>           <dbl>   <dbl> <lgl>
-#> 1 shape_a                 0.25924           0.0040269         0.79599 0.20401 FALSE
-#> 2 shape_a_variant         0.25869           0.0040269         0.79408 0.20592 FALSE
-#> 3 shape_b                 0.25924           0.0040269         0.80398 0.19602 FALSE
-#> 4 shape_b_variant         0.27454           0.0040269         0.81816 0.18184 FALSE
+#> # A tibble: 8 x 6
+#>   candidate_id observed_sharpe expected_max_sharpe dsr_probability p_value significant
+#>   <chr>                  <dbl>               <dbl>           <dbl>   <dbl> <lgl>
+#> 1 shape_a_1            0.25869            0.015223         0.78365 0.21635 FALSE
+#> 2 shape_a_2            0.25708            0.015223         0.78086 0.21914 FALSE
+#> 3 shape_a_3            0.25445            0.015223         0.77728 0.22272 FALSE
+#> 4 shape_a_4            0.25090            0.015223         0.77303 0.22697 FALSE
+#> 5 shape_b_1            0.27454            0.015223         0.80806 0.19194 FALSE
+#> 6 shape_b_2            0.29136            0.015223         0.82341 0.17659 FALSE
+#> 7 shape_b_3            0.30981            0.015223         0.83934 0.16066 FALSE
+#> 8 shape_b_4            0.33000            0.015223         0.85565 0.14435 FALSE
 ```
+
+``` r
+two_effective_trials <- tibble::as_tibble(
+  ledgr_dsr(dsr_sweep, effective_trials = 2)
+)
+eight_effective_trials <- tibble::as_tibble(
+  ledgr_dsr(dsr_sweep, effective_trials = 8)
+)
+tibble::tibble(
+  assumption = c("clustered candidates", "treat all columns as independent"),
+  effective_trials = c(2L, 8L),
+  first_candidate_dsr = round(
+    c(
+      two_effective_trials$dsr_probability[1],
+      eight_effective_trials$dsr_probability[1]
+    ),
+    3
+  )
+)
+#> # A tibble: 2 x 3
+#>   assumption                       effective_trials first_candidate_dsr
+#>   <chr>                                       <int>               <dbl>
+#> 1 clustered candidates                            2               0.784
+#> 2 treat all columns as independent                8               0.757
+```
+
+``` r
+dsr_trial_curve <- tibble::tibble(
+  effective_trials = 2:8,
+  first_candidate_dsr = vapply(
+    2:8,
+    function(k) {
+      tibble::as_tibble(ledgr_dsr(dsr_sweep, effective_trials = k))$dsr_probability[[1]]
+    },
+    numeric(1)
+  )
+)
+dsr_trial_labels <- dsr_trial_curve[
+  dsr_trial_curve$effective_trials %in% c(2L, 8L),
+]
+
+ggplot2::ggplot(
+  dsr_trial_curve,
+  ggplot2::aes(x = effective_trials, y = first_candidate_dsr)
+) +
+  ggplot2::geom_line(color = "#4F7FC8", linewidth = 0.8) +
+  ggplot2::geom_point(color = "#4F7FC8", size = 2.6) +
+  ggplot2::geom_text(
+    data = dsr_trial_labels,
+    ggplot2::aes(label = round(first_candidate_dsr, 3)),
+    vjust = -0.8,
+    size = 3.6
+  ) +
+  ggplot2::scale_x_continuous(breaks = 2:8) +
+  ggplot2::labs(
+    x = "Assumed effective trials",
+    y = "First-candidate DSR"
+  ) +
+  ggplot2::theme_minimal(base_size = 13)
+```
+
+<img
+src="selection-integrity_files/figure-commonmark/dsr-effective-trials-curve-1.png"
+data-fig-alt="Line chart of first-candidate DSR decreasing from effective trials 2 through 8."
+alt="The first-candidate DSR falls as the assumed number of independent trials rises." />
 
 The table is deliberately not a winner picker. It shows how much Sharpe
 evidence survives after the effective-trial adjustment, then leaves

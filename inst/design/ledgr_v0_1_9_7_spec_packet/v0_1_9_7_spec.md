@@ -1,7 +1,6 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Batch 1 implementation complete; awaiting Claude review
-implementation.
+**Status:** Batch 8 complete after Claude review; Batch 9 pending.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after
 v0.1.9.6: a serializable, hashed business-objective criterion chain
@@ -301,24 +300,30 @@ Binding:
   an open ticket-cut question (Section 7). M-2 and L-1 stay deferred per the audit's own
   ordering.
 
-### 2.7 Selection Integrity Teaching And Doc-Contract Refit
+### 2.7 Selection Integrity Teaching And Doc-Contract Rebuild
 
-Polish of an already-shipped surface, not a new article. v0.1.9.6 shipped the Selection
-Integrity article; its worked examples satisfy the section template but not the repo's
-worked-example teaching standard.
+v0.1.9.6 shipped the Selection Integrity article. A first refit (LDG-2662) added the
+worked-example craft clause and relaxed the brittle doc-contract headers, but the article
+still failed the maintainer's bar: it hid a fake-sweep helper, opened sections
+function-name-first, and carried plots that did not explain the method. The article is
+rebuilt from scratch on the Section 2.9 return-panel entry point.
 
 Binding:
 
-- rewrite the PBO/CSCV, MinTRL, and DSR worked examples to the worked-example standard: a
-  recognizable, executed scenario plus a calibrating high/low contrast, not a fixture rigged
-  to its own answer. Chunks execute and their pinned numbers match the rendered output.
-- add a worked-example craft clause to the Methodological Diagnostics styleguide rule: the
-  worked example must use a recognizable executed scenario and a calibrating contrast, not a
-  fixture constructed to produce the stated number.
-- relax the doc-contract test's rigid sub-section-header assertions so a narrative structure
-  is allowed, while keeping the non-vacuous content checks and the anti-overclaim guards (no
-  profitability claim, no promotion, no candidate selection or ranking).
-- no diagnostic behavior, API, or identity change; the vignette renders deterministically.
+- the worked-example craft clause is added to the Methodological Diagnostics styleguide rule
+  (a recognizable executed scenario plus a calibrating contrast, not a fixture built to
+  produce a number), and the doc-contract test drops its rigid sub-section-header assertions
+  while keeping the non-vacuous content and anti-overclaim guards (no profitability claim, no
+  promotion, no candidate selection or ranking). Done under LDG-2662.
+- the article is rebuilt (LDG-2671): no hidden sweep-construction boilerplate; the input is a
+  visible candidate-return table via the Section 2.9 entry point. Each section motivates the
+  concept in plain language before any mechanism or function name, and makes explicit what
+  data goes into each diagnostic and why.
+- the calibrating contrasts (rotating vs stable, short vs longer sample, clustered vs
+  independent) are kept, rebuilt on the clean API; a plot is added only where it genuinely
+  reveals the geometry.
+- no diagnostic behavior or identity change; the vignette renders deterministically and the
+  doc-contract test stays non-vacuous and green.
 
 ### 2.8 Release Surfaces And Deferral-Ledger Closeout
 
@@ -331,6 +336,33 @@ Binding:
   this packet's own deferrals with concrete reasons.
 - update NEWS, the pkgdown reference index, and the design index for the new surfaces.
 - the release gate runs full tests and package check before tag.
+
+### 2.9 Public Return-Panel Entry Point
+
+The shipped selection-integrity diagnostics accept only a `ledgr_sweep_results` object, so a
+user with their own candidate returns -- or a vignette teaching the methods -- must
+hand-build a sweep object. That boilerplate is a UX gap this section closes.
+
+Binding:
+
+- add a public return-panel constructor (working name `ledgr_return_panel()`, bound at ticket
+  cut under the v0.1.9.5 naming synthesis) over a candidate-return matrix or a tidy long
+  return tibble.
+- the diagnostics accept the panel in addition to a sweep, over one shared internal panel
+  contract; the existing sweep-input path is unchanged. Per the 2026-06-28 synthesis
+  amendment (Section 15) they are renamed off the `sweep_` prefix to
+  `ledgr_{pbo,dsr,min_track_record,effective_trials}` (was
+  `ledgr_sweep_{pbo,dsr,min_track_record,cluster}`); `ledgr_sweep_returns_panel()` stays a
+  sweep accessor.
+- the surface is identity-neutral: for the same underlying panel, a diagnostic returns
+  identical output whether the panel came from a sweep or the constructor.
+- malformed panels fail closed reusing the existing panel-hygiene conditions.
+
+This is the foundation the Section 2.7 vignette rebuild is written on: the teaching input
+becomes a visible return table, not hidden sweep-construction boilerplate. The full
+maintainer-approved design (panel object, source-neutral `panel_hash`, input contract, and
+the rename) is bound in
+`inst/design/ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`.
 
 ---
 

@@ -66,22 +66,25 @@ testthat::test_that("minimum track record length matches the reference formula",
   panel <- ledgr_min_trl_reference_panel()
   sweep <- ledgr_min_trl_test_sweep(panel)
 
-  min_trl <- ledgr_sweep_min_track_record(sweep, reference_sharpe = 0, confidence = 0.95)
+  min_trl <- ledgr_min_track_record(sweep, reference_sharpe = 0, confidence = 0.95)
   summary <- tibble::as_tibble(min_trl)
 
-  testthat::expect_s3_class(min_trl, "ledgr_sweep_min_track_record")
+  testthat::expect_s3_class(min_trl, "ledgr_min_track_record")
   testthat::expect_identical(
     names(summary),
     c(
-      "diagnostic", "schema_version", "sweep_id", "candidate_id",
-      "observations", "observed_sharpe", "reference_sharpe", "confidence",
-      "risk_free_return", "skewness", "kurtosis", "min_track_record_length",
-      "track_record_significant", "extra_observations_needed", "status",
-      "value", "first_row_dropped", "complete_panel"
+      "diagnostic", "schema_version", "source", "panel_hash", "sweep_id",
+      "candidate_id", "observations", "observed_sharpe", "reference_sharpe",
+      "confidence", "risk_free_return", "skewness", "kurtosis",
+      "min_track_record_length", "track_record_significant",
+      "extra_observations_needed", "status", "value", "first_row_dropped",
+      "complete_panel"
     )
   )
   testthat::expect_identical(summary$diagnostic, rep("minimum_track_record_length", 3L))
   testthat::expect_identical(summary$schema_version, rep(1L, 3L))
+  testthat::expect_identical(summary$source, rep("retained_sweep_returns", 3L))
+  testthat::expect_true(all(grepl("^[0-9a-f]{64}$", summary$panel_hash)))
   testthat::expect_identical(summary$candidate_id, colnames(panel))
   testthat::expect_identical(summary$observations, rep(nrow(panel), 3L))
   testthat::expect_true(all(summary$first_row_dropped))
@@ -108,6 +111,27 @@ testthat::test_that("minimum track record length matches the reference formula",
   testthat::expect_true(any(grepl("reference Sharpe", printed, fixed = TRUE)))
 })
 
+testthat::test_that("minimum track record length accepts user return panels", {
+  returns <- ledgr_min_trl_reference_panel()
+  sweep <- ledgr_min_trl_test_sweep(returns)
+  sweep_panel <- ledgr_sweep_returns_panel(sweep)
+  panel <- ledgr_return_panel(returns, ts = sweep_panel$ts_utc)
+
+  testthat::expect_identical(panel$panel_hash, sweep_panel$panel_hash)
+
+  from_sweep <- ledgr_min_track_record(sweep, reference_sharpe = 0, confidence = 0.95)
+  from_panel <- ledgr_min_track_record(panel, reference_sharpe = 0, confidence = 0.95)
+  sweep_summary <- tibble::as_tibble(from_sweep)
+  panel_summary <- tibble::as_tibble(from_panel)
+
+  testthat::expect_identical(panel_summary$source, rep("user_return_panel", ncol(returns)))
+  testthat::expect_true(all(is.na(panel_summary$sweep_id)))
+  testthat::expect_identical(unique(sweep_summary$panel_hash), unique(panel_summary$panel_hash))
+  comparable <- setdiff(names(sweep_summary), c("source", "sweep_id", "first_row_dropped"))
+  testthat::expect_equal(panel_summary[, comparable], sweep_summary[, comparable], tolerance = 1e-12)
+  testthat::expect_null(from_panel$metadata$input_identity)
+})
+
 testthat::test_that("minimum track record length cross-checks against PerformanceAnalytics", {
   testthat::skip_if_not_installed("PerformanceAnalytics")
   testthat::skip_if_not_installed("xts")
@@ -115,7 +139,7 @@ testthat::test_that("minimum track record length cross-checks against Performanc
 
   panel <- ledgr_min_trl_reference_panel()
   sweep <- ledgr_min_trl_test_sweep(panel[, "strong", drop = FALSE])
-  min_trl <- ledgr_sweep_min_track_record(sweep, reference_sharpe = 0, confidence = 0.95)
+  min_trl <- ledgr_min_track_record(sweep, reference_sharpe = 0, confidence = 0.95)
   summary <- tibble::as_tibble(min_trl)
   xts_returns <- xts::xts(
     panel[, "strong", drop = FALSE],
@@ -149,7 +173,7 @@ testthat::test_that("minimum track record length preserves weak candidates as ev
   panel <- ledgr_min_trl_reference_panel()
   sweep <- ledgr_min_trl_test_sweep(panel)
 
-  min_trl <- ledgr_sweep_min_track_record(sweep, reference_sharpe = 0.20)
+  min_trl <- ledgr_min_track_record(sweep, reference_sharpe = 0.20)
   summary <- tibble::as_tibble(min_trl)
 
   strong <- summary[summary$candidate_id == "strong", , drop = FALSE]
@@ -166,23 +190,23 @@ testthat::test_that("minimum track record length fails closed on invalid evidenc
   sweep <- ledgr_min_trl_test_sweep(panel)
 
   testthat::expect_error(
-    ledgr_sweep_min_track_record(sweep, reference_sharpe = NA_real_),
+    ledgr_min_track_record(sweep, reference_sharpe = NA_real_),
     class = "ledgr_validation_min_trl_invalid_reference"
   )
   testthat::expect_error(
-    ledgr_sweep_min_track_record(sweep, confidence = 1),
+    ledgr_min_track_record(sweep, confidence = 1),
     class = "ledgr_validation_min_trl_invalid_confidence"
   )
   testthat::expect_error(
-    ledgr_sweep_min_track_record(sweep, risk_free_return = -1),
+    ledgr_min_track_record(sweep, risk_free_return = -1),
     class = "ledgr_validation_min_trl_invalid_risk_free"
   )
   testthat::expect_error(
-    ledgr_sweep_min_track_record(ledgr_min_trl_test_sweep(matrix(c(0.01, 0.02, 0.03), ncol = 1))),
+    ledgr_min_track_record(ledgr_min_trl_test_sweep(matrix(c(0.01, 0.02, 0.03), ncol = 1))),
     class = "ledgr_validation_min_trl_too_few_observations"
   )
   testthat::expect_error(
-    ledgr_sweep_min_track_record(ledgr_min_trl_test_sweep(matrix(rep(0.01, 6), ncol = 1))),
+    ledgr_min_track_record(ledgr_min_trl_test_sweep(matrix(rep(0.01, 6), ncol = 1))),
     class = "ledgr_validation_min_trl_invalid_returns"
   )
 
@@ -191,7 +215,7 @@ testthat::test_that("minimum track record length fails closed on invalid evidenc
   retained <- retained[!(retained$candidate_id == "strong" & retained$ts_utc == max(retained$ts_utc)), , drop = FALSE]
   attr(ragged, "sweep_returns") <- retained
   testthat::expect_error(
-    ledgr_sweep_min_track_record(ragged),
+    ledgr_min_track_record(ragged),
     class = "ledgr_sweep_returns_incomplete_panel"
   )
 
@@ -199,7 +223,7 @@ testthat::test_that("minimum track record length fails closed on invalid evidenc
   attr(unretained, "sweep_retention") <- ledgr_sweep_retention("none")
   attr(unretained, "sweep_returns") <- NULL
   testthat::expect_error(
-    ledgr_sweep_min_track_record(unretained),
+    ledgr_min_track_record(unretained),
     class = "ledgr_sweep_returns_unretained"
   )
 })

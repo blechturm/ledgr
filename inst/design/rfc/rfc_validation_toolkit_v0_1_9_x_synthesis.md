@@ -32,6 +32,11 @@ identity participation, the broader robustness-criterion family beyond the
 strict-lattice `stable_region` detector, scored composition, and a public
 criterion-extension contract, to a later business-objective completion arc. See
 Section 14.
+**Maintainer amendment (2026-06-28, selection-integrity diagnostic rename):** with
+LDG-2670 making the evidence container a return panel (sweep as one source), the
+recorded-not-bound sweep-family naming lean no longer holds; the diagnostics rename
+`ledgr_sweep_{pbo,dsr,min_track_record,cluster}` ->
+`ledgr_{pbo,dsr,min_track_record,effective_trials}`. See Section 15.
 **Date:** 2026-06-12
 **Author:** Codex (synthesis author)
 **Window:** v0.1.9.x, first feature packet after v0.1.9.5 (resolved in
@@ -324,7 +329,7 @@ different session id.
 
 ## 7. Clustering Contract
 
-`ledgr_sweep_cluster()` ships in packet as the effective-trial-count input for
+`ledgr_effective_trials()` ships in packet as the effective-trial-count input for
 DSR/PBO. V1 binds one deterministic method:
 
 - hierarchical clustering over return-correlation distance;
@@ -382,7 +387,7 @@ day one. A spec packet should cut tickets in this order:
    passes; otherwise defer.
 8. Native DSR / minimum track-record / K-Ratio helpers, each with
    reference-value verification.
-9. `ledgr_sweep_cluster()` deterministic hierarchical helper.
+9. `ledgr_effective_trials()` deterministic hierarchical helper.
 10. `ledgr_business_objective()` and `ledgr_objective_*` criterion steps only
     after the PBO gate passes, unless spec-cut records a narrowed override.
 11. Walk-forward identity integration for objective-filtered selection.
@@ -453,7 +458,7 @@ The release gates below are mechanically checkable.
 
 ### 10.5 Clustering Gates
 
-- `ledgr_sweep_cluster()` is deterministic across repeated calls with identical
+- `ledgr_effective_trials()` is deterministic across repeated calls with identical
   inputs.
 - V1 has no RNG or seed argument.
 - Output includes cluster membership, effective independent trial count,
@@ -526,9 +531,9 @@ These are packet-open decisions, not new RFC work:
   decisions, AND bind the diagnostics entry-point names -- the
   DSR/PBO-CSCV/minimum-track-record/K-Ratio public surfaces and the
   external-evidence bridge -- under the accepted API naming synthesis
-  (final-review patch F1). Lean recorded, not bound: sweep-family
-  diagnostics (`ledgr_sweep_pbo()`-shaped), since their evidence
-  container is the retained sweep.
+  (final-review patch F1). The originally recorded, non-binding
+  sweep-family lean was superseded by the 2026-06-28 amendment in
+  Section 15 once LDG-2670 made the evidence container a return panel.
 
 ---
 
@@ -611,3 +616,28 @@ and the D4 rule that an objective which participates in walk-forward must enter
 `session_id` -- are unchanged. This amendment promotes and phases the layer; it does not
 alter the accepted contracts. The deferred arc is parked in the 2026-06-26 horizon
 entry.
+
+---
+
+## 15. Amendment 2026-06-28 (maintainer): selection-integrity diagnostic rename
+
+The final-review F1 patch recorded a sweep-family naming lean for the DSR/PBO/MinTRL
+surfaces (`ledgr_sweep_*`) -- recorded, not bound -- conditioned on the retained sweep
+being the evidence container. v0.1.9.7 LDG-2670 makes the evidence container a return
+panel (`ledgr_return_panel()`), with the retained sweep as only one source. The
+condition no longer holds, and the `sweep_` prefix would assert a sweep the diagnostics
+no longer require.
+
+Bound rename (no deprecated aliases; pre-release, zero consumers):
+
+- `ledgr_sweep_pbo()` -> `ledgr_pbo()`;
+- `ledgr_sweep_dsr()` -> `ledgr_dsr()`;
+- `ledgr_sweep_min_track_record()` -> `ledgr_min_track_record()`;
+- `ledgr_sweep_cluster()` -> `ledgr_effective_trials()` (the helper is a deterministic
+  effective-trial estimator, not a general clustering API).
+
+`ledgr_sweep_returns_panel()` keeps its prefix as a genuinely sweep-specific accessor. A
+future K-Ratio diagnostic follows the same unprefixed convention (`ledgr_k_ratio()`). The
+v0.1.9.5 naming synthesis's family-first rule is unchanged; this amendment only retires
+the sweep-family lean recorded here. Design detail:
+`inst/design/ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`.

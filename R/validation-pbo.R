@@ -1,11 +1,12 @@
-#' Sweep-level PBO/CSCV diagnostic
+#' PBO/CSCV diagnostic
 #'
-#' `ledgr_sweep_pbo()` computes a native Probability of Backtest Overfitting
+#' `ledgr_pbo()` computes a native Probability of Backtest Overfitting
 #' (PBO) diagnostic using Combinatorially Symmetric Cross Validation (CSCV) over
-#' retained completed-candidate return panels. It is an evidence surface only:
-#' it does not select, promote, filter, or change walk-forward identity.
+#' a return panel. It is an evidence surface only: it does not select, promote,
+#' filter, or change walk-forward identity.
 #'
-#' @param sweep A `ledgr_sweep_results` object with retained completed returns.
+#' @param x A `ledgr_return_panel` object or a `ledgr_sweep_results` object with
+#'   retained completed returns.
 #' @param candidates Optional character vector of candidate ids to include.
 #' @param S Even positive number of contiguous CSCV subsets. `S` must divide the
 #'   post-first-row return count.
@@ -16,38 +17,33 @@
 #'   metadata.
 #' @param threshold Numeric logit threshold. PBO is the fraction of CSCV cases
 #'   with `lambda <= threshold`.
-#' @return A `ledgr_sweep_pbo` object with `summary`, `cases`, `degradation`,
+#' @return A `ledgr_pbo` object with `summary`, `cases`, `degradation`,
 #'   and `metadata` tables/lists. Use `as_tibble(x)`,
 #'   `as_tibble(x, what = "cases")`, or
 #'   `as_tibble(x, what = "degradation")` for programmatic access.
 #' @examples
 #' \dontrun{
-#' pbo <- ledgr_sweep_pbo(sweep, S = 4)
+#' pbo <- ledgr_pbo(sweep, S = 4)
 #' as_tibble(pbo)
 #' as_tibble(pbo, what = "cases")
 #' }
 #' @seealso `vignette("selection-integrity", package = "ledgr")` or
 #'   `system.file("doc", "selection-integrity.html", package = "ledgr")`.
 #' @export
-ledgr_sweep_pbo <- function(sweep,
+ledgr_pbo <- function(x,
                             candidates = NULL,
                             S = 4L,
                             metric = NULL,
                             metric_name = NULL,
                             threshold = 0) {
-  panel <- ledgr_sweep_returns_panel(
-    sweep,
-    candidates = candidates,
-    value = "returns",
-    complete = TRUE
-  )
+  panel <- ledgr_return_panel_resolve(x, candidates = candidates)
   m <- panel$matrix
-  ledgr_sweep_pbo_validate_matrix(m)
-  S <- ledgr_sweep_pbo_validate_s(S, nrow(m))
-  threshold <- ledgr_sweep_pbo_validate_threshold(threshold)
-  metric_info <- ledgr_sweep_pbo_metric(metric, substitute(metric), metric_name)
+  ledgr_pbo_validate_matrix(m)
+  S <- ledgr_pbo_validate_s(S, nrow(m))
+  threshold <- ledgr_pbo_validate_threshold(threshold)
+  metric_info <- ledgr_pbo_metric(metric, substitute(metric), metric_name)
 
-  cases <- ledgr_sweep_pbo_cases(
+  cases <- ledgr_pbo_cases(
     m = m,
     S = S,
     metric = metric_info$fn,
@@ -58,7 +54,9 @@ ledgr_sweep_pbo <- function(sweep,
   summary <- tibble::tibble(
     diagnostic = "pbo_cscv",
     schema_version = 1L,
-    sweep_id = ledgr_sweep_pbo_sweep_id(sweep),
+    source = panel$source,
+    panel_hash = panel$panel_hash,
+    sweep_id = panel$sweep_id,
     pbo = as.numeric(pbo),
     probability_not_overfit = as.numeric(probability_not_overfit),
     threshold = threshold,
@@ -85,29 +83,32 @@ ledgr_sweep_pbo <- function(sweep,
     cases = cases,
     degradation = degradation,
     metadata = list(
-      source = "retained_sweep_returns",
+      source = panel$source,
       diagnostic = "pbo_cscv",
       schema_version = 1L,
       native_version = "ledgr_pbo_cscv_v1",
       metric_name = metric_info$name,
       threshold = threshold,
       S = S,
+      input_identity = panel$input_identity,
       panel = list(
+        panel_hash = panel$panel_hash,
         value = panel$value,
         candidate_ids = panel$candidate_ids,
         completed_candidate_ids = panel$completed_candidate_ids,
         excluded_candidate_ids = panel$excluded_candidate_ids,
+        labels = panel$labels,
         first_row_dropped = isTRUE(panel$first_row_dropped),
         complete = isTRUE(panel$complete)
       )
     )
   )
-  class(out) <- c("ledgr_sweep_pbo", "list")
+  class(out) <- c("ledgr_pbo", "list")
   out
 }
 
 #' @export
-as_tibble.ledgr_sweep_pbo <- function(x,
+as_tibble.ledgr_pbo <- function(x,
                                       what = c("summary", "cases", "degradation"),
                                       ...) {
   what <- match.arg(what)
@@ -115,12 +116,12 @@ as_tibble.ledgr_sweep_pbo <- function(x,
 }
 
 #' @export
-print.ledgr_sweep_pbo <- function(x, ...) {
-  if (!inherits(x, "ledgr_sweep_pbo")) {
-    rlang::abort("`x` must be a ledgr_sweep_pbo object.", class = "ledgr_invalid_args")
+print.ledgr_pbo <- function(x, ...) {
+  if (!inherits(x, "ledgr_pbo")) {
+    rlang::abort("`x` must be a ledgr_pbo object.", class = "ledgr_invalid_args")
   }
   summary <- tibble::as_tibble(x$summary)
-  cat("# ledgr sweep PBO/CSCV\n", sep = "")
+  cat("# ledgr PBO/CSCV\n", sep = "")
   cat(sprintf("# i pbo: %.4f\n", summary$pbo[[1L]]), sep = "")
   cat(sprintf("# i cases: %d\n", summary$n_cases[[1L]]), sep = "")
   cat(sprintf("# i candidates: %d\n", summary$n_candidates[[1L]]), sep = "")
@@ -133,7 +134,7 @@ print.ledgr_sweep_pbo <- function(x, ...) {
   invisible(x)
 }
 
-ledgr_sweep_pbo_validate_matrix <- function(m) {
+ledgr_pbo_validate_matrix <- function(m) {
   if (!is.matrix(m) || !is.numeric(m)) {
     rlang::abort(
       "PBO requires a numeric retained-return matrix.",
@@ -163,7 +164,7 @@ ledgr_sweep_pbo_validate_matrix <- function(m) {
   invisible(TRUE)
 }
 
-ledgr_sweep_pbo_validate_s <- function(S, n_observations) {
+ledgr_pbo_validate_s <- function(S, n_observations) {
   if (!is.numeric(S) ||
       length(S) != 1L ||
       is.na(S) ||
@@ -201,7 +202,7 @@ ledgr_sweep_pbo_validate_s <- function(S, n_observations) {
   S
 }
 
-ledgr_sweep_pbo_validate_threshold <- function(threshold) {
+ledgr_pbo_validate_threshold <- function(threshold) {
   if (!is.numeric(threshold) ||
       length(threshold) != 1L ||
       is.na(threshold) ||
@@ -214,7 +215,7 @@ ledgr_sweep_pbo_validate_threshold <- function(threshold) {
   as.numeric(threshold)
 }
 
-ledgr_sweep_pbo_metric <- function(metric, metric_expr, metric_name) {
+ledgr_pbo_metric <- function(metric, metric_expr, metric_name) {
   if (is.null(metric)) {
     fn <- function(x) colMeans(x, na.rm = FALSE)
     name <- "mean_return"
@@ -243,7 +244,7 @@ ledgr_sweep_pbo_metric <- function(metric, metric_expr, metric_name) {
   list(fn = fn, name = name)
 }
 
-ledgr_sweep_pbo_cases <- function(m, S, metric, threshold) {
+ledgr_pbo_cases <- function(m, S, metric, threshold) {
   n_observations <- nrow(m)
   n_candidates <- ncol(m)
   subset_n <- n_observations / S
@@ -253,10 +254,10 @@ ledgr_sweep_pbo_cases <- function(m, S, metric, threshold) {
   for (case_idx in seq_len(ncol(combos))) {
     in_subsets <- combos[, case_idx]
     out_subsets <- setdiff(seq_len(S), in_subsets)
-    in_rows <- ledgr_sweep_pbo_subset_rows(in_subsets, subset_n)
-    out_rows <- ledgr_sweep_pbo_subset_rows(out_subsets, subset_n)
-    in_metric <- ledgr_sweep_pbo_eval_metric(metric, m[in_rows, , drop = FALSE])
-    out_metric <- ledgr_sweep_pbo_eval_metric(metric, m[out_rows, , drop = FALSE])
+    in_rows <- ledgr_pbo_subset_rows(in_subsets, subset_n)
+    out_rows <- ledgr_pbo_subset_rows(out_subsets, subset_n)
+    in_metric <- ledgr_pbo_eval_metric(metric, m[in_rows, , drop = FALSE])
+    out_metric <- ledgr_pbo_eval_metric(metric, m[out_rows, , drop = FALSE])
     winner <- which.max(in_metric)
     oos_best <- which.max(out_metric)
     oos_rank <- rank(out_metric)[[winner]]
@@ -285,7 +286,7 @@ ledgr_sweep_pbo_cases <- function(m, S, metric, threshold) {
   do.call(rbind, out)
 }
 
-ledgr_sweep_pbo_subset_rows <- function(subsets, subset_n) {
+ledgr_pbo_subset_rows <- function(subsets, subset_n) {
   unlist(lapply(subsets, function(i) {
     start <- subset_n * i - subset_n + 1L
     end <- start + subset_n - 1L
@@ -293,7 +294,7 @@ ledgr_sweep_pbo_subset_rows <- function(subsets, subset_n) {
   }), use.names = FALSE)
 }
 
-ledgr_sweep_pbo_eval_metric <- function(metric, m) {
+ledgr_pbo_eval_metric <- function(metric, m) {
   values <- tryCatch(
     metric(m),
     error = function(e) {
@@ -315,12 +316,4 @@ ledgr_sweep_pbo_eval_metric <- function(metric, m) {
     )
   }
   as.numeric(values)
-}
-
-ledgr_sweep_pbo_sweep_id <- function(sweep) {
-  sweep_id <- attr(sweep, "sweep_id", exact = TRUE)
-  if (is.character(sweep_id) && length(sweep_id) == 1L && !is.na(sweep_id)) {
-    return(sweep_id)
-  }
-  NA_character_
 }

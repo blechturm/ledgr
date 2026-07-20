@@ -2,7 +2,7 @@
 
 Version: v0.1.9.7
 Date: 2026-06-26
-Total Tickets: 11
+Total Tickets: 13
 
 ## Ticket Organization
 
@@ -62,10 +62,12 @@ LDG-2659
   -> LDG-2663
   -> LDG-2664
   -> LDG-2665
+  -> LDG-2670
 LDG-2660 + LDG-2661 + LDG-2665 -> LDG-2666
 LDG-2665 + LDG-2666 -> LDG-2667
-LDG-2660 + LDG-2661 + LDG-2662 + LDG-2663 + LDG-2664 + LDG-2667 -> LDG-2668
-LDG-2659..LDG-2668 -> LDG-2669
+LDG-2670 + LDG-2662 -> LDG-2671
+LDG-2660 + LDG-2661 + LDG-2662 + LDG-2663 + LDG-2664 + LDG-2667 + LDG-2670 + LDG-2671 -> LDG-2668
+LDG-2659..LDG-2671 -> LDG-2669
 ```
 
 Batch order is authoritative even where tickets could be implemented in
@@ -205,7 +207,7 @@ scope: stable-region-detector
 Priority: P0
 Effort: L
 Dependencies: LDG-2659
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -280,7 +282,7 @@ scope: closed-trade-evidence
 Priority: P1
 Effort: M
 Dependencies: LDG-2659
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -312,6 +314,19 @@ coverage.
 - Targeted documentation-contract tests.
 - `rg` sweep for forbidden overclaims.
 
+### Implementation Notes
+
+- Added the Methodological Diagnostics craft clause requiring recognizable
+  worked examples with calibrating contrasts.
+- Reworked Selection Integrity examples without adding a new article:
+  PBO contrasts rotating-winner and stable-ranking sweeps, MinTRL contrasts a
+  short sample with a longer same-pattern sample, and DSR contrasts clustered
+  versus raw independent-trial assumptions.
+- Re-rendered `vignettes/selection-integrity.md` from Quarto.
+- Relaxed the doc-contract test away from rigid heading assertions while
+  preserving non-vacuous content checks, rendered-output pins, and
+  anti-overclaim guards.
+
 ### Source Reference
 
 - `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md` Sections 2.7
@@ -324,6 +339,166 @@ coverage.
 type: documentation
 surface: validation-teaching
 scope: selection-integrity-refit
+```
+
+## LDG-2670 - Public Return-Panel Entry Point
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2659
+Status: Review Pending
+
+### Description
+
+Add a clean public path from a candidate-return table to the shipped
+selection-integrity diagnostics, removing the need to hand-build a
+`ledgr_sweep_results` object. The diagnostics (PBO/CSCV, MinTRL, DSR, and
+effective-trial clustering) accept a return panel directly; a sweep becomes one
+source of a panel, not the only input. This resolves the hidden
+`make_retained_sweep()` boilerplate the current Selection Integrity vignette
+relies on -- the same wall a real user hits when running a diagnostic on their
+own candidate returns.
+
+### Tasks
+
+- Add a public return-panel constructor (working name `ledgr_return_panel()`)
+  over a candidate-return matrix (rows = periods, columns = candidates) or a tidy
+  long return tibble (`candidate_id`, `ts_utc`, `period_return`). Bind the final
+  name at ticket cut under the v0.1.9.5 naming synthesis.
+- Make `ledgr_pbo()`, `ledgr_min_track_record()`, `ledgr_dsr()`,
+  and `ledgr_effective_trials()` accept the panel in addition to a
+  `ledgr_sweep_results` object, over one shared internal panel contract.
+- Preserve the existing sweep-input path; the business-objective criteria and
+  current callers are unaffected.
+- Reuse the existing panel-hygiene fail-closed conditions for malformed panels
+  (ragged grid, non-finite values, fewer than two candidates, bad first row).
+- Export, document (reference pages), update contracts, add NEWS, and add tests.
+
+### Acceptance Criteria
+
+- Every shipped selection-integrity diagnostic runs on a plain return table in
+  one call, with no sweep-object construction.
+- For the same underlying panel, the diagnostic output is identical whether the
+  panel came from a sweep or from the direct constructor (parity test).
+- The sweep-input path is unchanged; no business-objective, criteria, run, sweep,
+  or walk-forward identity behavior changes.
+- Malformed panels fail closed with the existing classed panel conditions.
+- The new surface is named under the v0.1.9.5 naming synthesis.
+
+### Verification
+
+- Targeted return-panel constructor tests.
+- Sweep-vs-direct-panel diagnostic parity tests.
+- Fail-closed malformed-panel tests.
+- `tools::checkRd()` for new docs.
+- `NAMESPACE`/`DESCRIPTION` export review.
+
+### Implementation Notes
+
+- Added `ledgr_return_panel()` for wide and tidy-long clean period-return
+  inputs, with deterministic undated labels, Date/POSIXct label handling,
+  fail-loud candidate ids, strict shape detection, and `panel_hash` over
+  normalized evidence only.
+- `ledgr_sweep_returns_panel()` now returns the same `ledgr_return_panel` type
+  while retaining its sweep-specific secondary class and provenance.
+- Added internal `ledgr_return_panel_resolve()` so PBO/CSCV, MinTRL, DSR, and
+  effective-trial diagnostics normalize panel-or-sweep inputs through one
+  contract and reject raw matrices/data frames.
+- Renamed diagnostics per the Section 15 amendment with no aliases:
+  `ledgr_pbo()`, `ledgr_min_track_record()`, `ledgr_dsr()`, and
+  `ledgr_effective_trials()`.
+- Diagnostic results now carry `source` and `panel_hash` uniformly. Sweep
+  provenance columns remain present and are `NA` for user panels; user-panel
+  metadata has `input_identity = NULL`.
+- Updated exports, Rd, pkgdown index, NEWS, contracts, doc-contract tests, API
+  export tests, and active v0.1.9.7 packet references. Archival v0.1.9.6 packet
+  records were not churned.
+- Claude review re-affirmed the implementation is ready to commit. The only
+  note was the intentional fail-loud ascending/unique timestamp contract.
+
+### Source Reference
+
+- `inst/design/ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md` (binding design)
+- `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md` Section 2.9
+- `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` Section 15 (rename amendment)
+- `inst/design/contracts.md`
+- `R/validation-pbo.R`, `R/validation-min-track-record.R`, `R/validation-dsr.R`
+
+### Classification
+
+```yaml
+type: feature
+surface: validation-diagnostics
+scope: return-panel-entry-point
+```
+
+## LDG-2671 - Selection Integrity Vignette Rebuild
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2670, LDG-2662
+Status: Pending
+
+### Description
+
+Rebuild the Selection Integrity article from scratch on the LDG-2670 return-panel
+entry point. The current article is rejected by the maintainer: it hides a
+34-line fake-sweep helper (a UX smell), opens sections with function-name-first,
+jargon-first sentences, and carries plots that do not explain the method. The
+rebuild teaches concept-first and shows the data plainly.
+
+### Tasks
+
+- Remove the hidden `make_retained_sweep()` boilerplate. The input is a small,
+  visible candidate-return table fed through the public return-panel entry point.
+- Rewrite each diagnostic section concept-first: motivate the selection-overfitting
+  trap in plain language before any mechanism or function name; show what data goes
+  into the diagnostic and why; then the method intuition; then a clean executed
+  example.
+- Keep the calibrating contrasts (rotating vs stable, short vs longer sample,
+  clustered vs independent), rebuilt on the clean API.
+- Drop the current plots. Add a plot only where it genuinely reveals the geometry,
+  done cleanly; otherwise none.
+- Rewrite the doc-contract test to match the rebuilt article: non-vacuous content,
+  rendered-value, and anti-overclaim checks, without brittle section headers.
+- Render the qmd/md pair, build the pkgdown site locally, and report the rendered
+  article link for maintainer review against the R for Data Science / Tidy Modeling
+  with R teachability standard.
+
+### Acceptance Criteria
+
+- No hidden sweep-construction boilerplate; the input is a visible return table via
+  the public entry point.
+- No function-name-first or jargon-first opening sentences; each section motivates
+  before mechanism and makes the data flow explicit.
+- The calibrating contrasts execute; anti-overclaim language is intact.
+- The doc-contract test is non-vacuous and green.
+- The maintainer accepts the rendered article.
+
+### Verification
+
+- Quarto render of `vignettes/selection-integrity.qmd`.
+- Targeted documentation-contract tests.
+- Local pkgdown build via `dev/build-site.R` with the article link.
+- `rg` sweep for forbidden overclaims.
+- ASCII scan of the qmd/md pair.
+
+### Implementation Notes
+
+- Supersedes the LDG-2662 vignette refit content and the withdrawn LDG-2670 plots
+  ticket. The LDG-2662 styleguide craft clause and doc-contract relaxation stand.
+
+### Source Reference
+
+- `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md` Sections 2.7 and 2.9
+- `inst/design/vignette_styleguide.md`
+
+### Classification
+
+```yaml
+type: documentation
+surface: validation-teaching
+scope: selection-integrity-rebuild
 ```
 
 ## LDG-2663 - Intraday Metric-Context Guardrail
@@ -592,7 +767,7 @@ scope: sweep-filter
 
 Priority: P2
 Effort: M
-Dependencies: LDG-2660, LDG-2661, LDG-2662, LDG-2663, LDG-2664, LDG-2667
+Dependencies: LDG-2660, LDG-2661, LDG-2662, LDG-2663, LDG-2664, LDG-2667, LDG-2670, LDG-2671
 Status: Pending
 
 ### Description
@@ -644,7 +819,7 @@ scope: release-ledger
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2659, LDG-2660, LDG-2661, LDG-2662, LDG-2663, LDG-2664, LDG-2665, LDG-2666, LDG-2667, LDG-2668
+Dependencies: LDG-2659, LDG-2660, LDG-2661, LDG-2662, LDG-2663, LDG-2664, LDG-2665, LDG-2666, LDG-2667, LDG-2668, LDG-2670, LDG-2671
 Status: Pending
 
 ### Description

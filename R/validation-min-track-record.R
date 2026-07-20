@@ -1,11 +1,11 @@
-#' Sweep-level minimum track record length diagnostic
+#' Minimum track record length diagnostic
 #'
-#' `ledgr_sweep_min_track_record()` computes the minimum track record length
-#' (MinTRL) diagnostic over retained completed-candidate return panels. It is an
-#' evidence surface only: it does not select, promote, filter, or change
-#' walk-forward identity.
+#' `ledgr_min_track_record()` computes the minimum track record length
+#' (MinTRL) diagnostic over a return panel. It is an evidence surface only: it
+#' does not select, promote, filter, or change walk-forward identity.
 #'
-#' @param sweep A `ledgr_sweep_results` object with retained completed returns.
+#' @param x A `ledgr_return_panel` object or a `ledgr_sweep_results` object with
+#'   retained completed returns.
 #' @param candidates Optional character vector of candidate ids to include.
 #' @param reference_sharpe Numeric scalar reference Sharpe ratio in the same
 #'   per-period units as the retained return series. The default asks whether
@@ -13,27 +13,22 @@
 #' @param confidence Numeric scalar confidence level in `(0, 1)`.
 #' @param risk_free_return Numeric scalar per-period risk-free return to
 #'   subtract before computing Sharpe. The default is zero.
-#' @return A `ledgr_sweep_min_track_record` object with `summary` and
+#' @return A `ledgr_min_track_record` object with `summary` and
 #'   `metadata`. Use `as_tibble(x)` for programmatic access.
 #' @examples
 #' \dontrun{
-#' min_trl <- ledgr_sweep_min_track_record(sweep, reference_sharpe = 0)
+#' min_trl <- ledgr_min_track_record(sweep, reference_sharpe = 0)
 #' as_tibble(min_trl)
 #' }
 #' @seealso `vignette("selection-integrity", package = "ledgr")` or
 #'   `system.file("doc", "selection-integrity.html", package = "ledgr")`.
 #' @export
-ledgr_sweep_min_track_record <- function(sweep,
+ledgr_min_track_record <- function(x,
                                          candidates = NULL,
                                          reference_sharpe = 0,
                                          confidence = 0.95,
                                          risk_free_return = 0) {
-  panel <- ledgr_sweep_returns_panel(
-    sweep,
-    candidates = candidates,
-    value = "returns",
-    complete = TRUE
-  )
+  panel <- ledgr_return_panel_resolve(x, candidates = candidates)
   m <- panel$matrix
   ledgr_min_track_record_validate_matrix(m)
   reference_sharpe <- ledgr_min_track_record_validate_reference(reference_sharpe)
@@ -54,7 +49,9 @@ ledgr_sweep_min_track_record <- function(sweep,
     tibble::tibble(
       diagnostic = "minimum_track_record_length",
       schema_version = 1L,
-      sweep_id = ledgr_min_track_record_sweep_id(sweep)
+      source = panel$source,
+      panel_hash = panel$panel_hash,
+      sweep_id = panel$sweep_id
     ),
     summary,
     tibble::tibble(
@@ -67,42 +64,45 @@ ledgr_sweep_min_track_record <- function(sweep,
   out <- list(
     summary = summary,
     metadata = list(
-      source = "retained_sweep_returns",
+      source = panel$source,
       diagnostic = "minimum_track_record_length",
       schema_version = 1L,
       native_version = "ledgr_min_track_record_v1",
       reference_sharpe = reference_sharpe,
       confidence = confidence,
       risk_free_return = risk_free_return,
+      input_identity = panel$input_identity,
       panel = list(
+        panel_hash = panel$panel_hash,
         value = panel$value,
         candidate_ids = panel$candidate_ids,
         completed_candidate_ids = panel$completed_candidate_ids,
         excluded_candidate_ids = panel$excluded_candidate_ids,
+        labels = panel$labels,
         first_row_dropped = isTRUE(panel$first_row_dropped),
         complete = isTRUE(panel$complete)
       )
     )
   )
-  class(out) <- c("ledgr_sweep_min_track_record", "list")
+  class(out) <- c("ledgr_min_track_record", "list")
   out
 }
 
 #' @export
-as_tibble.ledgr_sweep_min_track_record <- function(x, ...) {
+as_tibble.ledgr_min_track_record <- function(x, ...) {
   tibble::as_tibble(x$summary)
 }
 
 #' @export
-print.ledgr_sweep_min_track_record <- function(x, ...) {
-  if (!inherits(x, "ledgr_sweep_min_track_record")) {
+print.ledgr_min_track_record <- function(x, ...) {
+  if (!inherits(x, "ledgr_min_track_record")) {
     rlang::abort(
-      "`x` must be a ledgr_sweep_min_track_record object.",
+      "`x` must be a ledgr_min_track_record object.",
       class = "ledgr_invalid_args"
     )
   }
   summary <- tibble::as_tibble(x$summary)
-  cat("# ledgr sweep minimum track record length\n", sep = "")
+  cat("# ledgr minimum track record length\n", sep = "")
   cat(sprintf("# i candidates: %d\n", nrow(summary)), sep = "")
   cat(sprintf("# i confidence: %.3f\n", summary$confidence[[1L]]), sep = "")
   cat(sprintf("# i reference Sharpe: %.4f\n\n", summary$reference_sharpe[[1L]]), sep = "")
@@ -254,12 +254,4 @@ ledgr_min_track_record_candidate_row <- function(returns,
     extra_observations_needed = as.numeric(extra_observations_needed),
     status = status
   )
-}
-
-ledgr_min_track_record_sweep_id <- function(sweep) {
-  sweep_id <- attr(sweep, "sweep_id", exact = TRUE)
-  if (is.character(sweep_id) && length(sweep_id) == 1L && !is.na(sweep_id)) {
-    return(sweep_id)
-  }
-  NA_character_
 }

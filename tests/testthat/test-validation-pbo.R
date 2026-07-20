@@ -47,22 +47,24 @@ ledgr_pbo_reference_panel <- function() {
 testthat::test_that("native PBO matches the spike reference fixture", {
   sweep <- ledgr_pbo_test_sweep(ledgr_pbo_reference_panel())
 
-  pbo <- ledgr_sweep_pbo(sweep, S = 4L)
+  pbo <- ledgr_pbo(sweep, S = 4L)
   summary <- tibble::as_tibble(pbo)
   cases <- tibble::as_tibble(pbo, what = "cases")
   degradation <- tibble::as_tibble(pbo, what = "degradation")
 
-  testthat::expect_s3_class(pbo, "ledgr_sweep_pbo")
+  testthat::expect_s3_class(pbo, "ledgr_pbo")
   testthat::expect_identical(
     names(summary),
     c(
-      "diagnostic", "schema_version", "sweep_id", "pbo",
-      "probability_not_overfit", "threshold", "S", "n_cases",
+      "diagnostic", "schema_version", "source", "panel_hash", "sweep_id",
+      "pbo", "probability_not_overfit", "threshold", "S", "n_cases",
       "n_observations", "n_candidates", "metric_name", "value",
       "first_row_dropped", "complete_panel", "candidate_ids",
       "completed_candidate_ids", "excluded_candidate_ids"
     )
   )
+  testthat::expect_identical(summary$source[[1]], "retained_sweep_returns")
+  testthat::expect_match(summary$panel_hash[[1]], "^[0-9a-f]{64}$")
   testthat::expect_equal(summary$pbo[[1]], 2 / 3, tolerance = 1e-12)
   testthat::expect_equal(summary$probability_not_overfit[[1]], 1 / 3, tolerance = 1e-12)
   testthat::expect_identical(summary$S[[1]], 4L)
@@ -85,10 +87,65 @@ testthat::test_that("native PBO matches the spike reference fixture", {
   )
   testthat::expect_identical(nrow(degradation), nrow(cases))
   testthat::expect_identical(pbo$metadata$native_version, "ledgr_pbo_cscv_v1")
+  testthat::expect_identical(pbo$metadata$panel$panel_hash, summary$panel_hash[[1]])
 
   printed <- utils::capture.output(print(pbo, n = 1))
-  testthat::expect_true(any(grepl("ledgr sweep PBO/CSCV", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("ledgr PBO/CSCV", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("as_tibble(x, what = \"cases\")", printed, fixed = TRUE)))
+})
+
+testthat::test_that("PBO accepts return panels and preserves evidence parity", {
+  returns <- ledgr_pbo_reference_panel()
+  sweep <- ledgr_pbo_test_sweep(returns)
+  sweep_panel <- ledgr_sweep_returns_panel(sweep)
+  direct_panel <- ledgr_return_panel(returns, ts = sweep_panel$ts_utc)
+
+  testthat::expect_s3_class(direct_panel, "ledgr_return_panel")
+  testthat::expect_identical(direct_panel$source, "user_return_panel")
+  testthat::expect_identical(sweep_panel$panel_hash, direct_panel$panel_hash)
+
+  from_sweep <- ledgr_pbo(sweep, S = 4L)
+  from_panel <- ledgr_pbo(direct_panel, S = 4L)
+  sweep_summary <- tibble::as_tibble(from_sweep)
+  panel_summary <- tibble::as_tibble(from_panel)
+
+  testthat::expect_identical(panel_summary$source[[1]], "user_return_panel")
+  testthat::expect_true(is.na(panel_summary$sweep_id[[1]]))
+  testthat::expect_identical(sweep_summary$panel_hash[[1]], panel_summary$panel_hash[[1]])
+  comparable <- setdiff(names(sweep_summary), c("source", "sweep_id", "first_row_dropped", "completed_candidate_ids", "excluded_candidate_ids"))
+  testthat::expect_equal(panel_summary[, comparable], sweep_summary[, comparable], tolerance = 1e-12)
+  testthat::expect_equal(tibble::as_tibble(from_panel, what = "cases"), tibble::as_tibble(from_sweep, what = "cases"), tolerance = 1e-12)
+  testthat::expect_equal(
+    tibble::as_tibble(from_panel, what = "degradation"),
+    tibble::as_tibble(from_sweep, what = "degradation"),
+    tolerance = 1e-12
+  )
+})
+
+testthat::test_that("return-panel constructor and resolver fail closed", {
+  returns <- ledgr_pbo_reference_panel()
+  unnamed <- returns
+  colnames(unnamed) <- NULL
+
+  testthat::expect_error(
+    ledgr_return_panel(unnamed),
+    class = "ledgr_return_panel_missing_candidate_ids"
+  )
+  testthat::expect_error(
+    ledgr_return_panel(data.frame(candidate_id = "a", x = 1)),
+    class = "ledgr_return_panel_ambiguous_shape"
+  )
+  testthat::expect_error(
+    ledgr_pbo(returns, S = 4L),
+    class = "ledgr_invalid_return_panel_input"
+  )
+
+  panel <- ledgr_return_panel(returns)
+  panel$panel_hash <- paste(rep("0", 64), collapse = "")
+  testthat::expect_error(
+    ledgr_pbo(panel, S = 4L),
+    class = "ledgr_invalid_return_panel"
+  )
 })
 
 testthat::test_that("native PBO can cross-check against pbo when it is installed", {
@@ -96,7 +153,7 @@ testthat::test_that("native PBO can cross-check against pbo when it is installed
 
   panel <- ledgr_pbo_reference_panel()
   sweep <- ledgr_pbo_test_sweep(panel)
-  pbo <- ledgr_sweep_pbo(sweep, S = 4L)
+  pbo <- ledgr_pbo(sweep, S = 4L)
   reference <- pbo::pbo(
     as.data.frame(panel, check.names = FALSE),
     s = 4L,
@@ -121,8 +178,8 @@ testthat::test_that("native PBO known-direction fixture distinguishes overfit fa
     drag = rep(-0.005, 12)
   )
 
-  overfit_pbo <- ledgr_sweep_pbo(ledgr_pbo_test_sweep(overfit), S = 4L)
-  robust_pbo <- ledgr_sweep_pbo(ledgr_pbo_test_sweep(robust), S = 4L)
+  overfit_pbo <- ledgr_pbo(ledgr_pbo_test_sweep(overfit), S = 4L)
+  robust_pbo <- ledgr_pbo(ledgr_pbo_test_sweep(robust), S = 4L)
 
   testthat::expect_gte(tibble::as_tibble(overfit_pbo)$pbo[[1]], 0.99)
   testthat::expect_lte(tibble::as_tibble(robust_pbo)$pbo[[1]], 0.01)
@@ -136,27 +193,27 @@ testthat::test_that("native PBO fails closed on invalid evidence and arguments",
   sweep <- ledgr_pbo_test_sweep(ledgr_pbo_reference_panel())
 
   testthat::expect_error(
-    ledgr_sweep_pbo(sweep, S = 3L),
+    ledgr_pbo(sweep, S = 3L),
     class = "ledgr_validation_pbo_invalid_s"
   )
   testthat::expect_error(
-    ledgr_sweep_pbo(sweep, S = 5L),
+    ledgr_pbo(sweep, S = 5L),
     class = "ledgr_validation_pbo_invalid_s"
   )
   testthat::expect_error(
-    ledgr_sweep_pbo(ledgr_pbo_test_sweep(ledgr_pbo_reference_panel()[, 1, drop = FALSE]), S = 4L),
+    ledgr_pbo(ledgr_pbo_test_sweep(ledgr_pbo_reference_panel()[, 1, drop = FALSE]), S = 4L),
     class = "ledgr_validation_pbo_too_few_candidates"
   )
   testthat::expect_error(
-    ledgr_sweep_pbo(ledgr_pbo_test_sweep(matrix(0.01, nrow = 2, ncol = 2)), S = 2L),
+    ledgr_pbo(ledgr_pbo_test_sweep(matrix(0.01, nrow = 2, ncol = 2)), S = 2L),
     class = "ledgr_validation_pbo_too_few_observations"
   )
   testthat::expect_error(
-    ledgr_sweep_pbo(sweep, metric = function(x) rep(Inf, ncol(x))),
+    ledgr_pbo(sweep, metric = function(x) rep(Inf, ncol(x))),
     class = "ledgr_validation_pbo_invalid_metric"
   )
   testthat::expect_error(
-    ledgr_sweep_pbo(sweep, threshold = NA_real_),
+    ledgr_pbo(sweep, threshold = NA_real_),
     class = "ledgr_validation_pbo_invalid_threshold"
   )
 
@@ -165,7 +222,7 @@ testthat::test_that("native PBO fails closed on invalid evidence and arguments",
   retained <- retained[!(retained$candidate_id == "c2" & retained$ts_utc == max(retained$ts_utc)), , drop = FALSE]
   attr(ragged, "sweep_returns") <- retained
   testthat::expect_error(
-    ledgr_sweep_pbo(ragged, S = 4L),
+    ledgr_pbo(ragged, S = 4L),
     class = "ledgr_validation_pbo_incomplete_panel"
   )
 
@@ -173,7 +230,7 @@ testthat::test_that("native PBO fails closed on invalid evidence and arguments",
   attr(unretained, "sweep_retention") <- ledgr_sweep_retention("none")
   attr(unretained, "sweep_returns") <- NULL
   testthat::expect_error(
-    ledgr_sweep_pbo(unretained),
+    ledgr_pbo(unretained),
     class = "ledgr_sweep_returns_unretained"
   )
 })

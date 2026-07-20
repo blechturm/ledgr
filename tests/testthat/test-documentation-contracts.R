@@ -666,25 +666,31 @@ testthat::test_that("contracts record retained-return panel gates", {
   testthat::skip_if_not(file.exists(contracts), "contracts source unavailable")
   text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
 
-  testthat::expect_match(text, "Retained sweep return panels are derived only from `ledgr_sweep_returns()`.", fixed = TRUE)
-  testthat::expect_match(text, "explicit structural first-row\\s+handling for `period_return`")
-  testthat::expect_match(text, "common timestamp grid after first-row handling", fixed = TRUE)
-  testthat::expect_match(text, "`Suggests`-only with no `NAMESPACE` imports", fixed = TRUE)
+  testthat::expect_match(text, "`ledgr_return_panel()` constructs source-neutral return evidence", fixed = TRUE)
+  testthat::expect_match(text, "sweep-sourced\\s+accessor into the same `ledgr_return_panel` contract")
+  testthat::expect_match(text, "explicit structural first-row handling for retained\\s+`period_return`")
+  testthat::expect_match(text, "common timestamp grid after first-row\\s+handling")
+  testthat::expect_match(text, "Every panel carries a source-neutral `panel_hash`", fixed = TRUE)
+  testthat::expect_match(text, "`panel_hash` is evidence provenance only", fixed = TRUE)
+  testthat::expect_match(text, "must not\\s+participate in execution, sweep, candidate, promotion, run, config, or\\s+walk-forward identity")
+  testthat::expect_match(text, "`Suggests`-only with no `NAMESPACE`\\s+imports")
   testthat::expect_match(text, "Retained sweep closed-trade evidence is derived at sweep time", fixed = TRUE)
   testthat::expect_match(text, "`ledgr_sweep_retention(trades = \"closed\")`", fixed = TRUE)
   testthat::expect_match(text, "`close_ts_utc`, `realized_pnl`, and `win_loss`", fixed = TRUE)
   testthat::expect_match(text, "Saved-sweep reopen must never reconstruct retained trade", fixed = TRUE)
   testthat::expect_match(text, "Retained trade evidence is not execution, candidate, run, config", fixed = TRUE)
-  testthat::expect_match(text, "`ledgr_sweep_pbo()` is a native sweep-level PBO/CSCV diagnostic", fixed = TRUE)
+  testthat::expect_match(text, "`ledgr_pbo\\(\\)` is a native PBO/CSCV diagnostic over a `ledgr_return_panel`")
+  testthat::expect_match(text, "carries `panel_hash`", fixed = TRUE)
   testthat::expect_match(text, "evidence only: it must not\\s+select, promote, filter candidates")
   testthat::expect_match(text, "CRAN `pbo` may be used only as\\s+optional reference evidence")
-  testthat::expect_match(text, "`ledgr_sweep_min_track_record()` is a native sweep-level minimum track record", fixed = TRUE)
+  testthat::expect_match(text, "`ledgr_min_track_record\\(\\)` is a native minimum track record length diagnostic")
   testthat::expect_match(text, "observed Sharpe, skewness, kurtosis", fixed = TRUE)
-  testthat::expect_match(text, "PerformanceAnalytics may be used only as\\s+optional reference evidence")
-  testthat::expect_match(text, "`ledgr_sweep_cluster()` is a native deterministic effective-trial-count", fixed = TRUE)
-  testthat::expect_match(text, "hierarchical complete-linkage clustering over `1 - correlation`", fixed = TRUE)
+  testthat::expect_match(text, "PerformanceAnalytics may be used only as optional\\s+reference evidence")
+  testthat::expect_match(text, "`ledgr_effective_trials\\(\\)` is a native deterministic effective-trial-count")
+  testthat::expect_match(text, "hierarchical complete-linkage clustering over `1 -\\s+correlation`")
   testthat::expect_match(text, "no RNG, no seed argument, and no method menu", fixed = TRUE)
-  testthat::expect_match(text, "`ledgr_sweep_dsr()` is a native sweep-level Deflated Sharpe Ratio", fixed = TRUE)
+  testthat::expect_match(text, "nullable sweep provenance", fixed = TRUE)
+  testthat::expect_match(text, "`ledgr_dsr\\(\\)` is a native Deflated Sharpe Ratio diagnostic")
   testthat::expect_match(text, "DSR is independent of PBO/CSCV", fixed = TRUE)
   testthat::expect_match(text, "quantstrat may be used only as optional reference evidence", fixed = TRUE)
 })
@@ -1128,8 +1134,8 @@ testthat::test_that("core help pages point to installed articles with browser-fr
     ledgr_param_grid = "sweeps",
     ledgr_precompute_features = "sweeps",
     ledgr_sweep = "sweeps",
-    ledgr_sweep_pbo = "selection-integrity",
-    ledgr_sweep_min_track_record = "selection-integrity",
+    ledgr_pbo = "selection-integrity",
+    ledgr_min_track_record = "selection-integrity",
     ledgr_candidate = "sweeps",
     ledgr_candidate_reproduction_key = "sweeps",
     ledgr_promote = "sweeps",
@@ -1913,33 +1919,6 @@ testthat::test_that("selection integrity article teaches shipped diagnostics as 
   md_path <- file.path(testthat::test_path("..", ".."), "vignettes", "selection-integrity.md")
   testthat::skip_if_not(file.exists(qmd_path) && file.exists(md_path), "selection integrity docs not available")
 
-  section_after <- function(doc, heading) {
-    start <- regexpr(heading, doc, fixed = TRUE)[[1]]
-    testthat::expect_gt(start, 0)
-    section <- substring(doc, start)
-    rest <- substring(section, nchar(heading) + 1L)
-    next_heading <- regexpr("\n## ", rest, fixed = TRUE)[[1]]
-    if (next_heading > 0) {
-      section <- substring(section, 1L, nchar(heading) + next_heading - 1L)
-    }
-    section
-  }
-
-  expect_subsections <- function(section) {
-    for (heading in c(
-      "### Question",
-      "### Evidence",
-      "### Method Shape",
-      "### Interpretation",
-      "### Limits",
-      "### Failure Modes",
-      "### References",
-      "### Worked Example"
-    )) {
-      testthat::expect_match(section, heading, fixed = TRUE)
-    }
-  }
-
   docs <- vapply(
     c(qmd = qmd_path, md = md_path),
     function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
@@ -1947,41 +1926,45 @@ testthat::test_that("selection integrity article teaches shipped diagnostics as 
   )
 
   for (doc in docs) {
-    testthat::expect_match(doc, "## Question", fixed = TRUE)
-    testthat::expect_match(doc, "## Evidence", fixed = TRUE)
-    testthat::expect_match(doc, "## Method Shape", fixed = TRUE)
-    testthat::expect_match(doc, "## Interpretation", fixed = TRUE)
-    testthat::expect_match(doc, "## Limits", fixed = TRUE)
-    testthat::expect_match(doc, "## Failure Modes", fixed = TRUE)
-    testthat::expect_match(doc, "## References", fixed = TRUE)
-    testthat::expect_match(doc, "## Worked Example", fixed = TRUE)
-    testthat::expect_match(doc, "ledgr_sweep_pbo", fixed = TRUE)
+    testthat::expect_match(doc, "one\\s+method\\s+family")
+    testthat::expect_match(doc, "ledgr_pbo", fixed = TRUE)
     testthat::expect_match(doc, "retained sweep returns", fixed = TRUE)
     testthat::expect_match(doc, "Probability of Backtest Overfitting", fixed = TRUE)
     testthat::expect_match(doc, "Combinatorially Symmetric Cross Validation", fixed = TRUE)
+    testthat::expect_match(doc, "rotating winner", fixed = TRUE)
+    testthat::expect_match(doc, "stable ranking", fixed = TRUE)
     testthat::expect_match(doc, "not proof that a\\s+strategy will make money")
     testthat::expect_match(doc, "does not select or promote a candidate", fixed = TRUE)
     testthat::expect_no_match(doc, "guarantees future profitability", fixed = TRUE)
     testthat::expect_no_match(doc, "automatically promote", fixed = TRUE)
     testthat::expect_no_match(doc, "business-objective filtering", fixed = TRUE)
     testthat::expect_match(doc, "Minimum Track Record Length", fixed = TRUE)
-    testthat::expect_match(doc, "ledgr_sweep_min_track_record", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_min_track_record", fixed = TRUE)
     testthat::expect_match(doc, "observed Sharpe", fixed = TRUE)
     testthat::expect_match(doc, "skewness and kurtosis", fixed = TRUE)
     testthat::expect_match(doc, "PerformanceAnalytics remains\\s+optional reference evidence")
-    testthat::expect_match(doc, "does not select\\s+the\\s+candidate with the shorter required track record")
-    expect_subsections(section_after(doc, "## Minimum Track Record Length"))
+    testthat::expect_match(doc, "short sample", fixed = TRUE)
+    testthat::expect_match(doc, "longer same pattern", fixed = TRUE)
+    testthat::expect_match(doc, "does\\s+not\\s+say\\s+the\\s+strategy\\s+is\\s+robust,\\s+causal,\\s+or\\s+deployable")
     testthat::expect_match(doc, "Deflated Sharpe Ratio And Effective Trials", fixed = TRUE)
-    testthat::expect_match(doc, "ledgr_sweep_dsr", fixed = TRUE)
-    testthat::expect_match(doc, "ledgr_sweep_cluster", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_dsr", fixed = TRUE)
+    testthat::expect_match(doc, "ledgr_effective_trials", fixed = TRUE)
     testthat::expect_match(doc, "one[[:space:]]+deterministic[[:space:]]+hierarchical method")
     testthat::expect_match(doc, "not a\\s+promotion rule")
+    testthat::expect_match(doc, "not a winner picker", fixed = TRUE)
+    testthat::expect_match(doc, "clustered candidates", fixed = TRUE)
+    testthat::expect_match(doc, "treat all columns as independent", fixed = TRUE)
     testthat::expect_match(doc, "quantstrat is\\s+used only as optional reference evidence")
-    expect_subsections(section_after(doc, "## Deflated Sharpe Ratio And Effective Trials"))
   }
-  testthat::expect_match(docs[["md"]], "#> 1 pbo_cscv", fixed = TRUE)
-  testthat::expect_match(docs[["md"]], "ledgr sweep minimum track record length", fixed = TRUE)
-  testthat::expect_match(docs[["md"]], "ledgr sweep deflated Sharpe ratio", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "#> 1 rotating winner     1", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "#> 2 stable ranking      0", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "#> 1 short sample", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "extra_observations_n", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "#> 2 longer same", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "#> # i effective trials: 2", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "ledgr deflated Sharpe ratio", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "#> 1 clustered candidates", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "#> 2 treat all columns as independent", fixed = TRUE)
 })
 
 testthat::test_that("new teaching surfaces state current public boundaries", {
@@ -2055,10 +2038,10 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
   for (term in c(
     "# ledgr 0.1.9.6",
     "ledgr_results(bt, what = \"returns\")",
-    "ledgr_sweep_pbo()",
-    "ledgr_sweep_min_track_record()",
-    "ledgr_sweep_dsr()",
-    "ledgr_sweep_cluster()",
+    "ledgr_pbo()",
+    "ledgr_min_track_record()",
+    "ledgr_dsr()",
+    "ledgr_effective_trials()",
     "Selection Integrity",
     "no public benchmark ranking claim"
   )) {
@@ -2070,7 +2053,7 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
   testthat::expect_match(docs$readme, "business-objective filtering", fixed = TRUE)
   testthat::expect_no_match(docs$readme, "validation-toolkit statistics such as PBO/CSCV/DSR", fixed = TRUE)
 
-  for (fn in c("ledgr_sweep_pbo", "ledgr_sweep_min_track_record", "ledgr_sweep_cluster", "ledgr_sweep_dsr")) {
+  for (fn in c("ledgr_pbo", "ledgr_min_track_record", "ledgr_effective_trials", "ledgr_dsr")) {
     testthat::expect_match(docs$pkgdown, fn, fixed = TRUE)
   }
 

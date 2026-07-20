@@ -227,6 +227,91 @@ testthat::test_that("completed retention exposes long and wide return series", {
   testthat::expect_equal(compiled_long$period_return, long$period_return, tolerance = 1e-12)
 })
 
+testthat::test_that("ledgr_return_panel constructs source-neutral return evidence", {
+  returns <- cbind(
+    a = c(0.01, -0.02, 0.03, 0.00),
+    b = c(0.02, -0.01, 0.01, 0.02)
+  )
+  panel <- ledgr_return_panel(returns)
+
+  testthat::expect_s3_class(panel, "ledgr_return_panel")
+  testthat::expect_identical(panel$source, "user_return_panel")
+  testthat::expect_identical(panel$value, "returns")
+  testthat::expect_identical(panel$labels, sprintf("period_%06d", 1:4))
+  testthat::expect_identical(rownames(panel$matrix), panel$labels)
+  testthat::expect_identical(panel$candidate_ids, c("a", "b"))
+  testthat::expect_match(panel$panel_hash, "^[0-9a-f]{64}$")
+  testthat::expect_true(all(is.na(panel$sweep_id)))
+  testthat::expect_null(panel$input_identity)
+
+  dates <- as.Date("2020-01-01") + 0:3
+  dated <- ledgr_return_panel(as.data.frame(returns), ts = dates)
+  testthat::expect_identical(
+    dated$labels,
+    format(as.POSIXct(dates, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  )
+  testthat::expect_false(identical(panel$panel_hash, dated$panel_hash))
+
+  long <- tibble::tibble(
+    candidate_id = rep(c("a", "b"), each = 4L),
+    period_label = rep(panel$labels, 2L),
+    period_return = c(returns[, "a"], returns[, "b"])
+  )
+  long_panel <- ledgr_return_panel(long)
+  testthat::expect_identical(long_panel$panel_hash, panel$panel_hash)
+  testthat::expect_equal(long_panel$matrix, panel$matrix, tolerance = 1e-12)
+})
+
+testthat::test_that("sweep return panels use the same class and hash payload", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  grid <- ledgr_param_grid(a = list(qty = 1), b = list(qty = 2))
+  sweep <- ledgr_sweep(exp, grid, seed = 123L, retain = ledgr_sweep_retention("completed"))
+  panel <- ledgr_sweep_returns_panel(sweep)
+  direct <- ledgr_return_panel(panel$matrix, ts = panel$ts_utc)
+
+  testthat::expect_s3_class(panel, "ledgr_return_panel")
+  testthat::expect_s3_class(panel, "ledgr_sweep_returns_panel")
+  testthat::expect_identical(panel$source, "retained_sweep_returns")
+  testthat::expect_identical(panel$sweep_id, attr(sweep, "sweep_id"))
+  testthat::expect_identical(panel$input_identity$sweep_id, attr(sweep, "sweep_id"))
+  testthat::expect_identical(panel$panel_hash, direct$panel_hash)
+})
+
+testthat::test_that("ledgr_return_panel fails loudly on malformed input", {
+  returns <- matrix(c(0.01, 0.02, 0.03, 0.04), ncol = 2)
+
+  testthat::expect_error(
+    ledgr_return_panel(returns),
+    class = "ledgr_return_panel_missing_candidate_ids"
+  )
+  colnames(returns) <- c("a", "a")
+  testthat::expect_error(
+    ledgr_return_panel(returns),
+    class = "ledgr_return_panel_missing_candidate_ids"
+  )
+  colnames(returns) <- c("a", "b")
+  testthat::expect_error(
+    ledgr_return_panel(returns, ts = c("x", "y")),
+    class = "ledgr_return_panel_invalid_ts"
+  )
+  testthat::expect_error(
+    ledgr_return_panel(data.frame(candidate_id = "a", period_return = 0.01, extra = 1)),
+    class = "ledgr_return_panel_ambiguous_shape"
+  )
+  testthat::expect_error(
+    ledgr_return_panel(data.frame(candidate_id = c("a", "a"), period_return = c(0.01, 0.02), period_label = "p1")),
+    class = "ledgr_invalid_return_panel"
+  )
+})
+
 testthat::test_that("closed-trade retention exposes deterministic minimal trade evidence", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

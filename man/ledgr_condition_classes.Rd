@@ -32,6 +32,7 @@
 \alias{ledgr_sweep_trades_candidate_not_completed}
 \alias{ledgr_sweep_trades_candidate_not_retained}
 \alias{ledgr_validation_pbo_incomplete_panel}
+\alias{ledgr_missing_package}
 \alias{ledgr_validation_pbo_invalid_s}
 \alias{ledgr_validation_pbo_too_few_candidates}
 \alias{ledgr_validation_pbo_too_few_observations}
@@ -43,7 +44,6 @@
 \alias{ledgr_validation_min_trl_invalid_risk_free}
 \alias{ledgr_validation_min_trl_too_few_observations}
 \alias{ledgr_validation_min_trl_invalid_returns}
-\alias{ledgr_missing_package}
 \alias{ledgr_walk_forward_metric_missing}
 \alias{ledgr_walk_forward_metric_class_invalid}
 \alias{ledgr_walk_forward_no_selection}
@@ -196,7 +196,7 @@ is not a finite numeric scalar.
 record length request supplies an invalid reference Sharpe ratio.
 
 \code{ledgr_validation_min_trl_invalid_confidence} is raised when a minimum track
-record length request supplies a confidence level outside \code{(0, 1)}.
+record length request supplies a confidence level outside \verb{(0, 1)}.
 
 \code{ledgr_validation_min_trl_invalid_risk_free} is raised when a minimum track
 record length request supplies an invalid per-period risk-free return.
@@ -226,7 +226,7 @@ an invalid effective independent trial count.
 two completed candidates.
 
 \code{ledgr_validation_dsr_invalid_confidence} is raised when DSR receives a
-confidence level outside \code{(0, 1)}.
+confidence level outside \verb{(0, 1)}.
 
 \code{ledgr_validation_dsr_invalid_risk_free} is raised when DSR receives an
 invalid per-period risk-free return.

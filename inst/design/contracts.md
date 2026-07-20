@@ -678,14 +678,21 @@ The strategy preflight boundary originated in
   must name the exact PerformanceAnalytics functions, annualization scale, and
   risk-free-rate units used for comparison, and they must not redefine ledgr's
   owned metric formulas or become a runtime dependency.
-- Retained sweep return panels are derived only from `ledgr_sweep_returns()`.
-  Diagnostic panel projections must preserve deterministic UTC row ordering,
-  deterministic candidate-column ordering, explicit structural first-row
-  handling for `period_return`, and completed/excluded candidate reporting.
-  Complete-panel consumers must fail closed when selected completed candidates
-  do not share a common timestamp grid after first-row handling. Optional
-  package projections such as `xts` are external evidence only and must remain
-  `Suggests`-only with no `NAMESPACE` imports.
+- `ledgr_return_panel()` constructs source-neutral return evidence from clean
+  candidate period returns. `ledgr_sweep_returns_panel()` is the sweep-sourced
+  accessor into the same `ledgr_return_panel` contract. Diagnostic panels must
+  preserve deterministic row-label ordering, deterministic candidate-column
+  ordering, explicit structural first-row handling for retained
+  `period_return`, and completed/excluded candidate reporting when sourced
+  from a sweep. Complete-panel consumers must fail closed when selected
+  completed candidates do not share a common timestamp grid after first-row
+  handling. Every panel carries a source-neutral `panel_hash` over normalized
+  evidence only: schema tag, value, ordered candidate ids, ordered labels, and
+  the return matrix. `panel_hash` is evidence provenance only and must not
+  participate in execution, sweep, candidate, promotion, run, config, or
+  walk-forward identity. Optional package projections such as `xts` are
+  external evidence only and must remain `Suggests`-only with no `NAMESPACE`
+  imports.
 - Retained sweep closed-trade evidence is derived at sweep time from
   `ledgr_closed_trade_rows()` / `ledgr_results(bt, what = "trades")` and is
   exposed through `ledgr_sweep_trades()`. It is opt-in via
@@ -697,36 +704,38 @@ The strategy preflight boundary originated in
   with retained-trade condition classes when the evidence is unretained or
   missing. Retained trade evidence is not execution, candidate, run, config, or
   walk-forward identity.
-- `ledgr_sweep_pbo()` is a native sweep-level PBO/CSCV diagnostic over retained
-  completed-candidate return panels. It uses the same panel gates, reports
-  completed/used/excluded candidate ids, prevalidates even `S` partitions, and
-  carries native diagnostic schema metadata. It is evidence only: it must not
-  select, promote, filter candidates through a business objective, mutate sweep
-  artifacts, or change walk-forward identity. CRAN `pbo` may be used only as
-  optional reference evidence, never as a required runtime dependency.
-- `ledgr_sweep_min_track_record()` is a native sweep-level minimum track record
-  length diagnostic over retained completed-candidate return panels. It reports
+- `ledgr_pbo()` is a native PBO/CSCV diagnostic over a `ledgr_return_panel` or
+  retained sweep returns. It uses the same panel gates, reports
+  completed/used/excluded candidate ids where available, prevalidates even `S`
+  partitions, carries `panel_hash`, and carries native diagnostic schema
+  metadata. It is evidence only: it must not select, promote, filter candidates
+  through a business objective, mutate sweep artifacts, or change walk-forward
+  identity. CRAN `pbo` may be used only as optional reference evidence, never
+  as a required runtime dependency.
+- `ledgr_min_track_record()` is a native minimum track record length diagnostic
+  over a `ledgr_return_panel` or retained sweep returns. It reports
   per-candidate observed Sharpe, skewness, kurtosis, minimum required return
   observations, significance, and extra observations needed. It uses the same
-  retained-panel gates and is evidence only: it must not select, promote,
-  filter candidates through a business objective, mutate sweep artifacts, or
-  change walk-forward identity. PerformanceAnalytics may be used only as
-  optional reference evidence, never as a required runtime dependency.
-- `ledgr_sweep_cluster()` is a native deterministic effective-trial-count
-  diagnostic over retained completed-candidate return panels. V1 uses exactly
-  one method: hierarchical complete-linkage clustering over `1 - correlation`
-  distance. It has no RNG, no seed argument, and no method menu. The output
-  reports cluster membership, effective independent trial count, method
-  parameters, retained-panel metadata, and input identity. It is evidence only:
-  it must not select, promote, filter candidates through a business objective,
-  mutate sweep artifacts, or change walk-forward identity.
-- `ledgr_sweep_dsr()` is a native sweep-level Deflated Sharpe Ratio diagnostic
-  over retained completed-candidate return panels. It uses observed per-period
+  panel gates and is evidence only: it must not select, promote, filter
+  candidates through a business objective, mutate sweep artifacts, or change
+  walk-forward identity. PerformanceAnalytics may be used only as optional
+  reference evidence, never as a required runtime dependency.
+- `ledgr_effective_trials()` is a native deterministic effective-trial-count
+  diagnostic over a `ledgr_return_panel` or retained sweep returns. V1 uses
+  exactly one method: hierarchical complete-linkage clustering over `1 -
+  correlation` distance. It has no RNG, no seed argument, and no method menu.
+  The output reports cluster membership, effective independent trial count,
+  method parameters, `panel_hash`, nullable sweep provenance, and input
+  identity when sweep-sourced. It is evidence only: it must not select,
+  promote, filter candidates through a business objective, mutate sweep
+  artifacts, or change walk-forward identity.
+- `ledgr_dsr()` is a native Deflated Sharpe Ratio diagnostic over a
+  `ledgr_return_panel` or retained sweep returns. It uses observed per-period
   Sharpe, skewness, kurtosis, candidate-Sharpe variance, sample length, and an
   effective independent trial count. When `effective_trials` is omitted, the
-  count comes from `ledgr_sweep_cluster()`. DSR is independent of PBO/CSCV and
-  remains evidence only: it must not select, promote, filter candidates through
-  a business objective, mutate sweep artifacts, or change walk-forward
+  count comes from `ledgr_effective_trials()`. DSR is independent of PBO/CSCV
+  and remains evidence only: it must not select, promote, filter candidates
+  through a business objective, mutate sweep artifacts, or change walk-forward
   identity. quantstrat may be used only as optional reference evidence, never
   as a required runtime dependency.
 - `n_trades` is the number of closed trade rows. It is not the number of fill

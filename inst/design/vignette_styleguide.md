@@ -322,6 +322,12 @@ at least one worked example should be disconfirming or cautionary: it should
 show a case where the diagnostic prevents over-trust in an apparently
 attractive result.
 
+Worked examples must also be recognizable as research situations, not fixtures
+constructed only to make a number appear. Prefer small scenarios with a
+calibrating contrast -- for example high-risk versus low-risk evidence, short
+sample versus longer sample, or clustered versus independent candidates -- so
+the reader can see how interpretation changes.
+
 Organize diagnostics by method family rather than one article per function.
 For example, Selection Integrity can teach minimum track-record length, DSR,
 effective-trial clustering, and later PBO/CSCV as one story. Clustering belongs

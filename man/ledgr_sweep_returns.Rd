@@ -2,12 +2,12 @@
 % Please edit documentation in R/sweep-retention.R
 \name{ledgr_sweep_returns}
 \alias{ledgr_sweep_returns}
+\alias{ledgr_sweep_trades}
 \alias{ledgr_sweep_returns_wide}
 \alias{ledgr_sweep_returns_panel}
 \alias{ledgr_sweep_returns_matrix}
 \alias{ledgr_sweep_returns_data_frame}
 \alias{ledgr_sweep_returns_xts}
-\alias{ledgr_sweep_trades}
 \title{Retained sweep return series}
 \usage{
 ledgr_sweep_returns(x, candidates = NULL)
@@ -59,8 +59,8 @@ candidate to share the same timestamp grid after first-row handling.}
 \code{ledgr_sweep_returns()} returns a tibble with \code{sweep_id},
 \code{candidate_id}, \code{ts_utc}, \code{equity}, and \code{period_return}.
 \code{ledgr_sweep_trades()} returns retained closed-trade evidence with
-\code{sweep_id}, \code{candidate_id}, \code{candidate_row}, \code{trade_seq},
-\code{close_ts_utc}, \code{realized_pnl}, and \code{win_loss}.
+\code{sweep_id}, \code{candidate_id}, \code{candidate_row}, \code{trade_seq}, \code{close_ts_utc},
+\code{realized_pnl}, and \code{win_loss}.
 \code{ledgr_sweep_returns_wide()} returns a tibble with \code{ts_utc} followed by
 one column per candidate. \code{ledgr_sweep_returns_panel()} returns a classed
 list with normalized long evidence, a numeric matrix, UTC timestamps, the
@@ -90,7 +90,7 @@ one return/equity column per candidate.
 For \code{value = "returns"}, the structural first timestamp is dropped after
 verifying each candidate's first \code{period_return} is \code{NA_real_}.
 
-\item \code{ledgr_sweep_returns_matrix()}: Return a numeric \code{T x N} matrix over a
+\item \code{ledgr_sweep_returns_matrix()}: Return a numeric \verb{T x N} matrix over a
 normalized retained-return panel.
 
 \item \code{ledgr_sweep_returns_data_frame()}: Return a base data frame over a normalized

@@ -207,6 +207,9 @@ ledgr_sweep_collect_retained_trades <- function(results, sweep_id) {
 #' @param candidates Optional character vector of `candidate_id` values.
 #' @return `ledgr_sweep_returns()` returns a tibble with `sweep_id`,
 #'   `candidate_id`, `ts_utc`, `equity`, and `period_return`.
+#'   `ledgr_sweep_trades()` returns retained closed-trade evidence with
+#'   `sweep_id`, `candidate_id`, `candidate_row`, `trade_seq`, `close_ts_utc`,
+#'   `realized_pnl`, and `win_loss`.
 #'   `ledgr_sweep_returns_wide()` returns a tibble with `ts_utc` followed by
 #'   one column per candidate. `ledgr_sweep_returns_panel()` returns a classed
 #'   list with normalized long evidence, a numeric matrix, UTC timestamps, the
@@ -282,6 +285,65 @@ ledgr_sweep_returns_wide <- function(x,
   out
 }
 
+#' Return panel evidence
+#'
+#' `ledgr_return_panel()` constructs the classed return-panel evidence object
+#' consumed by ledgr's selection-integrity diagnostics. The input is clean
+#' period returns: do not include the structural first-row `NA` used by retained
+#' sweep returns. Use [ledgr_sweep_returns_panel()] for the sweep-sourced
+#' accessor.
+#'
+#' @param returns A wide numeric matrix/data frame with one candidate per
+#'   column, or a tidy long data frame with `candidate_id` and `period_return`
+#'   columns plus at most one ordering column (`ts_utc`, `ts`, `period_label`,
+#'   or `period`).
+#' @param ts Optional `Date` or `POSIXct` ordering labels for wide inputs. When
+#'   `NULL`, deterministic labels `period_000001`, `period_000002`, ... are
+#'   used.
+#' @param value Character scalar. Only `"returns"` is supported in v1.
+#' @return A `ledgr_return_panel` object.
+#' @examples
+#' returns <- data.frame(
+#'   conservative = c(0.004, -0.011, 0.006, 0.002),
+#'   balanced = c(0.009, -0.004, 0.012, -0.001)
+#' )
+#' panel <- ledgr_return_panel(returns)
+#' panel$panel_hash
+#' @export
+ledgr_return_panel <- function(returns,
+                               ts = NULL,
+                               value = c("returns")) {
+  value <- match.arg(value)
+  if (inherits(returns, "ledgr_return_panel")) {
+    rlang::abort(
+      "`returns` is already a ledgr_return_panel object.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  shape <- ledgr_return_panel_detect_shape(returns)
+  if (identical(shape, "wide")) {
+    m <- ledgr_return_panel_wide_matrix(returns)
+    labels <- ledgr_return_panel_labels(ts, nrow(m))
+    return(ledgr_return_panel_build(
+      matrix = m,
+      labels = labels$labels,
+      ts_utc = labels$ts_utc,
+      value = value,
+      source = "user_return_panel",
+      first_row_dropped = FALSE,
+      completed_candidate_ids = colnames(m),
+      excluded_candidate_ids = character(),
+      sweep_id = NA_character_,
+      metric_context_hash = NA_character_,
+      cost_model_hash = NA_character_,
+      risk_chain_hash = NA_character_,
+      input_identity = NULL
+    ))
+  }
+
+  ledgr_return_panel_from_long(returns, value = value)
+}
+
 #' @describeIn ledgr_sweep_returns Return a normalized retained-return panel.
 #'   For `value = "returns"`, the structural first timestamp is dropped after
 #'   verifying each candidate's first `period_return` is `NA_real_`.
@@ -312,20 +374,27 @@ ledgr_sweep_returns_panel <- function(x,
   }
   ts_utc <- ledgr_sweep_returns_panel_timestamps(rows_by_candidate)
   mat <- ledgr_sweep_returns_panel_matrix(rows_by_candidate, ts_utc, used, value_col)
+  labels <- ledgr_sweep_returns_ts_labels(ts_utc)
+  identity <- ledgr_return_panel_sweep_identity(x)
 
-  structure(
-    list(
-      long = ledgr_sweep_returns_panel_long(rows_by_candidate),
-      matrix = mat,
-      ts_utc = ts_utc,
-      candidate_ids = used,
-      completed_candidate_ids = completed,
-      excluded_candidate_ids = excluded,
-      value = value,
-      first_row_dropped = drop_first,
-      complete = isTRUE(complete)
-    ),
-    class = c("ledgr_sweep_returns_panel", "list")
+  ledgr_return_panel_build(
+    matrix = mat,
+    labels = labels,
+    ts_utc = ts_utc,
+    value = value,
+    source = "retained_sweep_returns",
+    first_row_dropped = drop_first,
+    completed_candidate_ids = completed,
+    excluded_candidate_ids = excluded,
+    sweep_id = identity$sweep_id,
+    snapshot_hash = identity$snapshot_hash,
+    metric_context_hash = identity$metric_context_hash,
+    cost_model_hash = identity$cost_model_hash,
+    risk_chain_hash = identity$risk_chain_hash,
+    input_identity = identity,
+    long = ledgr_sweep_returns_panel_long(rows_by_candidate),
+    complete = isTRUE(complete),
+    extra_class = "ledgr_sweep_returns_panel"
   )
 }
 
@@ -389,6 +458,452 @@ ledgr_sweep_returns_xts <- function(x,
     package_version = as.character(utils::packageVersion("xts"))
   )
   ledgr_sweep_returns_attach_projection_attrs(out, panel)
+}
+
+ledgr_return_panel_resolve <- function(x,
+                                       candidates = NULL,
+                                       value = c("returns"),
+                                       complete = TRUE) {
+  value <- match.arg(value)
+  if (inherits(x, "ledgr_return_panel")) {
+    ledgr_return_panel_validate(x)
+    if (!identical(x$value, value)) {
+      rlang::abort(
+        sprintf("Return panel value `%s` is not supported for `%s` diagnostics.", x$value, value),
+        class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+      )
+    }
+    candidates <- ledgr_sweep_returns_normalize_candidates(candidates)
+    if (is.null(candidates)) {
+      return(x)
+    }
+    return(ledgr_return_panel_subset(x, candidates))
+  }
+  if (inherits(x, "ledgr_sweep_results")) {
+    return(ledgr_sweep_returns_panel(
+      x,
+      candidates = candidates,
+      value = value,
+      complete = complete
+    ))
+  }
+  rlang::abort(
+    "`x` must be a ledgr_return_panel or ledgr_sweep_results object. Raw matrices and data frames must be wrapped with ledgr_return_panel() first.",
+    class = c("ledgr_invalid_return_panel_input", "ledgr_invalid_args")
+  )
+}
+
+ledgr_return_panel_detect_shape <- function(returns) {
+  if (is.matrix(returns)) {
+    return("wide")
+  }
+  if (!is.data.frame(returns)) {
+    rlang::abort(
+      "`returns` must be a numeric matrix, wide data frame, or tidy long data frame.",
+      class = c("ledgr_invalid_return_panel_input", "ledgr_invalid_args")
+    )
+  }
+  has_candidate <- "candidate_id" %in% names(returns)
+  has_return <- "period_return" %in% names(returns)
+  if (xor(has_candidate, has_return)) {
+    rlang::abort(
+      "Return-panel data frames with `candidate_id` or `period_return` must include both columns for tidy-long input.",
+      class = c("ledgr_return_panel_ambiguous_shape", "ledgr_invalid_args")
+    )
+  }
+  if (has_candidate && has_return) {
+    allowed <- c("candidate_id", "period_return", "ts_utc", "ts", "period_label", "period")
+    extra <- setdiff(names(returns), allowed)
+    if (length(extra) > 0L) {
+      rlang::abort(
+        sprintf(
+          "Return-panel tidy-long input has unsupported columns: %s. Use only candidate_id, period_return, and one ordering column.",
+          paste(extra, collapse = ", ")
+        ),
+        class = c("ledgr_return_panel_ambiguous_shape", "ledgr_invalid_args"),
+        columns = extra
+      )
+    }
+    return("long")
+  }
+  "wide"
+}
+
+ledgr_return_panel_wide_matrix <- function(returns) {
+  m <- as.matrix(returns)
+  storage.mode(m) <- "double"
+  ledgr_return_panel_validate_matrix(m)
+  m
+}
+
+ledgr_return_panel_validate_matrix <- function(m, allow_missing = FALSE) {
+  if (!is.matrix(m) || !is.numeric(m)) {
+    rlang::abort(
+      "Return panels require a numeric return matrix.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  if (nrow(m) < 1L || ncol(m) < 1L) {
+    rlang::abort(
+      "Return panels require at least one period and one candidate.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  non_finite <- !is.finite(m)
+  if (any(non_finite & !is.na(m))) {
+    rlang::abort(
+      "Return panels require finite period returns.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  if (anyNA(m) && !isTRUE(allow_missing)) {
+    rlang::abort(
+      "Return panels require finite period returns with no missing values.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  ids <- colnames(m)
+  if (is.null(ids) ||
+      length(ids) != ncol(m) ||
+      anyNA(ids) ||
+      any(!nzchar(ids)) ||
+      anyDuplicated(ids)) {
+    rlang::abort(
+      "Return panels require non-empty unique candidate ids in column names.",
+      class = c("ledgr_return_panel_missing_candidate_ids", "ledgr_invalid_args")
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_return_panel_labels <- function(ts, n) {
+  if (is.null(ts)) {
+    labels <- sprintf("period_%06d", seq_len(n))
+    return(list(labels = labels, ts_utc = labels))
+  }
+  if (inherits(ts, "Date")) {
+    ts <- as.POSIXct(ts, tz = "UTC")
+  } else if (inherits(ts, "POSIXt")) {
+    ts <- as.POSIXct(ts, tz = "UTC")
+  } else {
+    rlang::abort(
+      "`ts` must be NULL, Date, or POSIXct.",
+      class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
+    )
+  }
+  if (length(ts) != n || anyNA(ts)) {
+    rlang::abort(
+      "`ts` must have one non-missing value per return row.",
+      class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
+    )
+  }
+  if (anyDuplicated(as.numeric(ts))) {
+    rlang::abort(
+      "`ts` values must be unique.",
+      class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
+    )
+  }
+  ord <- order(as.numeric(ts))
+  if (!identical(ord, seq_along(ts))) {
+    rlang::abort(
+      "`ts` must be in ascending order.",
+      class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
+    )
+  }
+  list(labels = ledgr_sweep_returns_ts_labels(ts), ts_utc = ts)
+}
+
+ledgr_return_panel_from_long <- function(returns, value) {
+  label_columns <- intersect(c("ts_utc", "ts", "period_label", "period"), names(returns))
+  if (length(label_columns) > 1L) {
+    rlang::abort(
+      sprintf("Tidy return-panel input must use at most one ordering column; found %s.", paste(label_columns, collapse = ", ")),
+      class = c("ledgr_return_panel_ambiguous_shape", "ledgr_invalid_args"),
+      columns = label_columns
+    )
+  }
+  if (nrow(returns) < 1L) {
+    rlang::abort(
+      "Return panels require at least one row.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  ids <- as.character(returns$candidate_id)
+  if (anyNA(ids) || any(!nzchar(ids))) {
+    rlang::abort(
+      "Tidy return-panel input requires non-empty candidate_id values.",
+      class = c("ledgr_return_panel_missing_candidate_ids", "ledgr_invalid_args")
+    )
+  }
+  returns$.__candidate_id <- ids
+  returns$.__return <- as.numeric(returns$period_return)
+  if (anyNA(returns$.__return) || any(!is.finite(returns$.__return))) {
+    rlang::abort(
+      "Return panels require finite period returns with no missing values.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+
+  candidate_ids <- unique(ids)
+  label_info <- ledgr_return_panel_long_labels(returns, label_columns)
+  labels <- label_info$labels
+  m <- matrix(
+    NA_real_,
+    nrow = length(labels),
+    ncol = length(candidate_ids),
+    dimnames = list(labels, candidate_ids)
+  )
+  label_index <- match(label_info$row_labels, labels)
+  candidate_index <- match(ids, candidate_ids)
+  key <- paste(candidate_index, label_index, sep = "\r")
+  if (anyDuplicated(key)) {
+    rlang::abort(
+      "Tidy return-panel input has duplicate candidate_id/order-label rows.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  m[cbind(label_index, candidate_index)] <- returns$.__return
+  if (anyNA(m)) {
+    rlang::abort(
+      "Tidy return-panel input must contain a complete candidate x period grid.",
+      class = c("ledgr_sweep_returns_incomplete_panel", "ledgr_validation_pbo_incomplete_panel", "ledgr_invalid_args"),
+      candidate_ids = candidate_ids
+    )
+  }
+
+  ledgr_return_panel_build(
+    matrix = m,
+    labels = labels,
+    ts_utc = label_info$ts_utc,
+    value = value,
+    source = "user_return_panel",
+    first_row_dropped = FALSE,
+    completed_candidate_ids = candidate_ids,
+    excluded_candidate_ids = character(),
+    sweep_id = NA_character_,
+    metric_context_hash = NA_character_,
+    cost_model_hash = NA_character_,
+    risk_chain_hash = NA_character_,
+    input_identity = NULL
+  )
+}
+
+ledgr_return_panel_long_labels <- function(returns, label_columns) {
+  if (length(label_columns) == 0L) {
+    counts <- ave(seq_len(nrow(returns)), returns$.__candidate_id, FUN = seq_along)
+    labels <- sprintf("period_%06d", as.integer(counts))
+    n_periods <- max(as.integer(counts))
+    panel_labels <- sprintf("period_%06d", seq_len(n_periods))
+    return(list(
+      labels = panel_labels,
+      row_labels = labels,
+      ts_utc = panel_labels
+    ))
+  }
+  label_col <- label_columns[[1L]]
+  values <- returns[[label_col]]
+  if (inherits(values, "Date")) {
+    values <- as.POSIXct(values, tz = "UTC")
+  }
+  if (inherits(values, "POSIXt")) {
+    if (anyNA(values)) {
+      rlang::abort(
+        "Return-panel ordering labels must not be missing.",
+        class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
+      )
+    }
+    values <- as.POSIXct(values, tz = "UTC")
+    labels <- ledgr_sweep_returns_ts_labels(values)
+    all_ts <- sort(unique(as.numeric(values)))
+    return(list(
+      labels = ledgr_sweep_returns_ts_labels(as.POSIXct(all_ts, origin = "1970-01-01", tz = "UTC")),
+      row_labels = labels,
+      ts_utc = as.POSIXct(all_ts, origin = "1970-01-01", tz = "UTC")
+    ))
+  }
+  labels <- as.character(values)
+  if (anyNA(labels) || any(!nzchar(labels))) {
+    rlang::abort(
+      "Return-panel ordering labels must not be missing or empty.",
+      class = c("ledgr_return_panel_invalid_ts", "ledgr_invalid_args")
+    )
+  }
+  unique_labels <- sort(unique(labels))
+  list(labels = unique_labels, row_labels = labels, ts_utc = unique_labels)
+}
+
+ledgr_return_panel_build <- function(matrix,
+                                     labels,
+                                     ts_utc,
+                                     value,
+                                     source,
+                                     first_row_dropped,
+                                     completed_candidate_ids,
+                                     excluded_candidate_ids,
+                                     sweep_id,
+                                     snapshot_hash = NA_character_,
+                                     metric_context_hash,
+                                     cost_model_hash,
+                                     risk_chain_hash,
+                                     input_identity,
+                                     long = NULL,
+                                     complete = TRUE,
+                                     extra_class = NULL) {
+  ledgr_return_panel_validate_matrix(matrix, allow_missing = !isTRUE(complete))
+  labels <- as.character(labels)
+  if (length(labels) != nrow(matrix) ||
+      anyNA(labels) ||
+      any(!nzchar(labels)) ||
+      anyDuplicated(labels)) {
+    rlang::abort(
+      "Return-panel labels must be non-empty unique values with one label per row.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  rownames(matrix) <- labels
+  candidate_ids <- colnames(matrix)
+  if (is.null(long)) {
+    long <- ledgr_return_panel_long_from_matrix(
+      matrix = matrix,
+      labels = labels,
+      ts_utc = ts_utc,
+      sweep_id = sweep_id
+    )
+  }
+  out <- list(
+    long = long,
+    matrix = matrix,
+    ts_utc = ts_utc,
+    labels = labels,
+    candidate_ids = candidate_ids,
+    completed_candidate_ids = as.character(completed_candidate_ids),
+    excluded_candidate_ids = as.character(excluded_candidate_ids),
+    value = value,
+    source = source,
+    panel_hash = ledgr_return_panel_hash(matrix, labels, value),
+    first_row_dropped = isTRUE(first_row_dropped),
+    complete = isTRUE(complete),
+    sweep_id = as.character(sweep_id %||% NA_character_),
+    snapshot_hash = as.character(snapshot_hash %||% NA_character_),
+    metric_context_hash = as.character(metric_context_hash %||% NA_character_),
+    cost_model_hash = as.character(cost_model_hash %||% NA_character_),
+    risk_chain_hash = as.character(risk_chain_hash %||% NA_character_),
+    input_identity = input_identity
+  )
+  class(out) <- c("ledgr_return_panel", extra_class, "list")
+  out
+}
+
+ledgr_return_panel_long_from_matrix <- function(matrix, labels, ts_utc, sweep_id) {
+  rows <- lapply(seq_len(ncol(matrix)), function(j) {
+    tibble::tibble(
+      sweep_id = rep(as.character(sweep_id %||% NA_character_), nrow(matrix)),
+      candidate_id = rep(colnames(matrix)[[j]], nrow(matrix)),
+      ts_utc = ts_utc,
+      equity = rep(NA_real_, nrow(matrix)),
+      period_return = as.numeric(matrix[, j])
+    )
+  })
+  tibble::as_tibble(do.call(rbind, rows))
+}
+
+ledgr_return_panel_hash <- function(matrix, labels, value) {
+  payload <- list(
+    schema = "ledgr_return_panel_v1",
+    value = value,
+    candidate_ids = unname(colnames(matrix)),
+    labels = unname(as.character(labels)),
+    returns = unname(lapply(seq_len(nrow(matrix)), function(i) {
+      unname(lapply(as.numeric(matrix[i, ]), function(x) {
+        if (is.na(x)) {
+          return("NA_REAL")
+        }
+        x
+      }))
+    }))
+  )
+  digest::digest(canonical_json(payload), algo = "sha256")
+}
+
+ledgr_return_panel_validate <- function(x) {
+  if (!inherits(x, "ledgr_return_panel") || !is.list(x)) {
+    rlang::abort(
+      "`x` must be a ledgr_return_panel object.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  required <- c(
+    "matrix", "labels", "candidate_ids", "value", "source", "panel_hash",
+    "first_row_dropped", "complete"
+  )
+  missing <- setdiff(required, names(x))
+  if (length(missing) > 0L) {
+    rlang::abort(
+      sprintf("Malformed return panel is missing fields: %s.", paste(missing, collapse = ", ")),
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args"),
+      missing_fields = missing
+    )
+  }
+  ledgr_return_panel_validate_matrix(x$matrix, allow_missing = !isTRUE(x$complete))
+  expected <- ledgr_return_panel_hash(x$matrix, x$labels, x$value)
+  if (!identical(x$panel_hash, expected)) {
+    rlang::abort(
+      "Return-panel hash does not match its normalized evidence.",
+      class = c("ledgr_invalid_return_panel", "ledgr_invalid_args")
+    )
+  }
+  invisible(TRUE)
+}
+
+ledgr_return_panel_subset <- function(panel, candidates) {
+  missing <- setdiff(candidates, panel$candidate_ids)
+  if (length(missing) > 0L) {
+    rlang::abort(
+      sprintf("Unknown return-panel candidate_id: %s.", paste(missing, collapse = ", ")),
+      class = c("ledgr_sweep_returns_candidate_not_found", "ledgr_invalid_args"),
+      candidate_ids = missing
+    )
+  }
+  m <- panel$matrix[, candidates, drop = FALSE]
+  long <- panel$long[as.character(panel$long$candidate_id) %in% candidates, , drop = FALSE]
+  excluded <- union(panel$excluded_candidate_ids, setdiff(panel$candidate_ids, candidates))
+  ledgr_return_panel_build(
+    matrix = m,
+    labels = panel$labels,
+    ts_utc = panel$ts_utc,
+    value = panel$value,
+    source = panel$source,
+    first_row_dropped = isTRUE(panel$first_row_dropped),
+    completed_candidate_ids = panel$completed_candidate_ids,
+    excluded_candidate_ids = excluded,
+    sweep_id = panel$sweep_id,
+    snapshot_hash = panel$snapshot_hash,
+    metric_context_hash = panel$metric_context_hash,
+    cost_model_hash = panel$cost_model_hash,
+    risk_chain_hash = panel$risk_chain_hash,
+    input_identity = panel$input_identity,
+    long = tibble::as_tibble(long),
+    complete = isTRUE(panel$complete),
+    extra_class = setdiff(class(panel), c("ledgr_return_panel", "list"))
+  )
+}
+
+ledgr_return_panel_sweep_identity <- function(sweep) {
+  list(
+    sweep_id = ledgr_return_panel_scalar_attr(sweep, "sweep_id"),
+    snapshot_hash = ledgr_return_panel_scalar_attr(sweep, "snapshot_hash"),
+    metric_context_hash = ledgr_return_panel_scalar_attr(sweep, "metric_context_hash"),
+    cost_model_hash = ledgr_return_panel_scalar_attr(sweep, "cost_model_hash"),
+    risk_chain_hash = ledgr_return_panel_scalar_attr(sweep, "risk_chain_hash")
+  )
+}
+
+ledgr_return_panel_scalar_attr <- function(x, name) {
+  value <- attr(x, name, exact = TRUE)
+  if (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(value)) {
+    return(as.character(value))
+  }
+  NA_character_
 }
 
 ledgr_sweep_returns_resolve <- function(x, candidates = NULL) {

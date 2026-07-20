@@ -35,7 +35,7 @@ tickets:
 
   - id: "LDG-2661"
     title: "Closed-trade retention extension"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -53,7 +53,7 @@ tickets:
 
   - id: "LDG-2662"
     title: "Selection Integrity teaching refit"
-    status: "pending"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -66,6 +66,44 @@ tickets:
       - "Quarto render of selection-integrity"
       - "Targeted documentation-contract tests"
       - "rg forbidden overclaims"
+
+  - id: "LDG-2670"
+    title: "Public return-panel entry point"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2659"
+    classification:
+      type: "feature"
+      surface: "validation-diagnostics"
+      scope: "return-panel-entry-point"
+    tests:
+      - "Targeted return-panel constructor tests"
+      - "Sweep-vs-direct-panel diagnostic parity tests"
+      - "Fail-closed malformed-panel tests"
+      - "tools::checkRd()"
+      - "NAMESPACE/export review"
+
+  - id: "LDG-2671"
+    title: "Selection Integrity vignette rebuild"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2670"
+      - "LDG-2662"
+    classification:
+      type: "documentation"
+      surface: "validation-teaching"
+      scope: "selection-integrity-rebuild"
+    tests:
+      - "Quarto render of selection-integrity"
+      - "Targeted documentation-contract tests"
+      - "Local pkgdown build and maintainer review link"
+      - "rg forbidden overclaims"
+      - "ASCII scan"
+      - "No runtime/package metadata file changes"
 
   - id: "LDG-2663"
     title: "Intraday metric-context guardrail"
@@ -167,6 +205,8 @@ tickets:
       - "LDG-2663"
       - "LDG-2664"
       - "LDG-2667"
+      - "LDG-2670"
+      - "LDG-2671"
     classification:
       type: "documentation"
       surface: "release-surfaces"
@@ -192,6 +232,8 @@ tickets:
       - "LDG-2666"
       - "LDG-2667"
       - "LDG-2668"
+      - "LDG-2670"
+      - "LDG-2671"
     classification:
       type: "release"
       surface: "release-gate"

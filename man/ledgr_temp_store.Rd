@@ -7,8 +7,8 @@
 ledgr_temp_store(path = NULL, pattern = "ledgr_store_", tmpdir = tempdir())
 }
 \arguments{
-\item{path}{Optional \code{.duckdb} path to clear and return. When \code{NULL},
-a fresh temporary path is generated.}
+\item{path}{Optional \code{.duckdb} path to clear and return. When \code{NULL}, a fresh
+temporary path is generated.}
 
 \item{pattern}{Prefix used when \code{path = NULL}.}
 
@@ -18,9 +18,9 @@ a fresh temporary path is generated.}
 A character scalar path ending in \code{.duckdb}.
 }
 \description{
-\code{ledgr_temp_store()} returns a path for a temporary \code{.duckdb} store and
-clears any stale file already at that exact path. It does not initialize, open,
-seal, or manage a ledgr store.
+\code{ledgr_temp_store()} returns a path for a temporary \code{.duckdb} store and clears
+any stale file already at that exact path. It does not initialize, open, seal,
+or manage a ledgr store.
 }
 \examples{
 db_path <- ledgr_temp_store()

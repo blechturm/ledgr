@@ -2,12 +2,9 @@
 % Please edit documentation in R/sweep-review.R
 \name{ledgr_sweep_review}
 \alias{ledgr_sweep_review}
-\alias{print.ledgr_sweep_review}
 \title{Review sweep candidates without selecting one}
 \usage{
 ledgr_sweep_review(sweep, rank_by, n = 5L)
-
-\method{print}{ledgr_sweep_review}(x, ...)
 }
 \arguments{
 \item{sweep}{A \code{ledgr_sweep_results} object, reopened sweep, or compatible
@@ -17,10 +14,6 @@ tibble-like candidate table.}
 Use \code{desc(metric)} or \code{-metric} for descending numeric rankings.}
 
 \item{n}{Number of top completed candidates to keep in \code{top}.}
-
-\item{x}{A \code{ledgr_sweep_review} object.}
-
-\item{...}{Passed to the tibble print methods for the review tables.}
 }
 \value{
 A \code{ledgr_sweep_review} list with \code{ranked}, \code{top}, \code{issues},

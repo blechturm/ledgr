@@ -1,3 +1,12 @@
+# ledgr 0.1.9.7
+
+- Added `ledgr_return_panel()` as the public return-panel entry point for
+  selection-integrity diagnostics. The diagnostics now accept either a
+  source-neutral return panel or a retained sweep, carry a uniform evidence-only
+  `panel_hash`, and are renamed to `ledgr_pbo()`,
+  `ledgr_min_track_record()`, `ledgr_dsr()`, and
+  `ledgr_effective_trials()` with no deprecated aliases.
+
 # ledgr 0.1.9.6
 
 - Added canonical single-run returns as

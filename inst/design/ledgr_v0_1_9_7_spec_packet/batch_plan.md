@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batch 2 implementation complete; awaiting Claude review.
+Status: Batch 8 complete after Claude review; Batch 9 pending.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -99,7 +99,7 @@ Implementation notes:
 
 ## Batch 2 - Closed-Trade Retention
 
-Status: Review Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -133,7 +133,7 @@ Implementation notes:
 
 ## Batch 3 - Selection Integrity Teaching Refit
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -141,15 +141,26 @@ Tickets:
 
 Scope:
 
-- add the worked-example craft clause;
-- refit Selection Integrity worked examples;
+- add the worked-example craft clause to the styleguide;
 - relax brittle doc-contract header checks without losing anti-overclaim guards.
 
 Review focus:
 
-- examples execute and teach by contrast;
+- the craft clause states the worked-example standard;
 - doc-contract tests remain non-vacuous;
 - no diagnostic API or behavior changes.
+
+Implementation notes:
+
+- `vignette_styleguide.md` now requires recognizable worked examples with
+  calibrating contrasts, not number-only fixtures.
+- The documentation-contract test pins content, rendered outputs, and
+  anti-overclaim guardrails without rigid section-header assertions.
+- SUPERSEDED: the maintainer rejected the rebuilt article (hidden fake-sweep
+  boilerplate, function-name-first prose, plots that did not explain). The first
+  worked-example refit and the four plots are dropped; the article is rebuilt from
+  scratch in Batch 9 (LDG-2671) on the return-panel entry point (Batch 8 /
+  LDG-2670). The craft clause and the doc-contract relaxation here stand.
 
 ## Batch 4 - Intraday Metric-Context Guardrail
 
@@ -236,7 +247,49 @@ Review focus:
 - candidate extraction, promotion, and walk-forward selection reject the result;
 - no identity mutation or persisted artifact writes.
 
-## Batch 8 - Release Surfaces And Deferral Ledger
+## Batch 8 - Public Return-Panel Entry Point
+
+Status: Complete after review.
+
+Tickets:
+
+- LDG-2670
+
+Scope:
+
+- add a public return-panel constructor so the selection-integrity diagnostics
+  accept a return table directly;
+- make PBO/MinTRL/DSR/cluster accept a panel or a sweep over one shared contract;
+- preserve the sweep path and identity behavior.
+
+Review focus:
+
+- a diagnostic runs on a plain return table with no sweep-object construction;
+- sweep-vs-direct-panel diagnostic parity holds;
+- malformed panels fail closed; no identity or criteria behavior change.
+
+## Batch 9 - Selection Integrity Vignette Rebuild
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2671
+
+Scope:
+
+- rebuild the article from scratch on the return-panel entry point;
+- concept-first teaching, visible input data, contrasts on the clean API;
+- drop the rejected plots; add a plot only where it reveals the geometry.
+
+Review focus:
+
+- no hidden sweep-construction boilerplate; input is a visible return table;
+- no function-name-first or jargon-first openings; data flow is explicit;
+- doc-contract test non-vacuous and green; anti-overclaim intact;
+- maintainer accepts the rendered pkgdown article.
+
+## Batch 10 - Release Surfaces And Deferral Ledger
 
 Status: Pending.
 
@@ -255,7 +308,7 @@ Review focus:
 - no selection/promotion/profitability/identity overclaims;
 - deferral ledger is complete and synchronized.
 
-## Batch 9 - Release Gate
+## Batch 11 - Release Gate
 
 Status: Pending.
 
