@@ -133,7 +133,7 @@ Implementation notes:
 
 ## Batch 3 - Selection Integrity Teaching Refit
 
-Status: Review Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -156,6 +156,9 @@ Implementation notes:
   calibrating contrasts, not number-only fixtures.
 - The documentation-contract test pins content, rendered outputs, and
   anti-overclaim guardrails without rigid section-header assertions.
+- LDG-2668 release-surface pointer updates partially landed early in the
+  governance follow-up after the post-v0.1.9.6 API-footprint review. The
+  release-surface closeout ticket remains open for final v0.1.9.7 closeout.
 - SUPERSEDED: the maintainer rejected the rebuilt article (hidden fake-sweep
   boilerplate, function-name-first prose, plots that did not explain). The first
   worked-example refit and the four plots are dropped; the article is rebuilt from

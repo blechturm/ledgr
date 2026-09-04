@@ -119,10 +119,10 @@ and targeted unexport pass, not a full namespace-minimization pass. It moved the
 export count from 127 in v0.1.9.4 to 124 in v0.1.9.5 while adding canonical
 family-first names and removing obsolete / duplicate public doors. The footprint
 then grew because later packets intentionally added feature-family surfaces:
-public cost models, saved-sweep retention, risk chains, walk-forward, validation
-diagnostics, retained-return projections, closed-trade retention, and the public
-return-panel entry point. Current concern is therefore surface flatness and
-representation-boundary synchronization, not stale compatibility aliases.
+validation diagnostics, retained-return projections, closed-trade retention, and
+the public return-panel entry point. Current concern is therefore surface
+flatness and representation-boundary synchronization, not stale compatibility
+aliases.
 
 Small, local fixes for the five items above do not require an RFC by themselves.
 An RFC is recommended if this becomes a broader hardening cycle that also

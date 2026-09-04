@@ -346,7 +346,7 @@ scope: selection-integrity-refit
 Priority: P1
 Effort: M
 Dependencies: LDG-2659
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 

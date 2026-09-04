@@ -30,7 +30,7 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (active v0.1.9.6 packet):
+Current planning context (active v0.1.9.7 packet):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -245,23 +245,39 @@ Current planning context (active v0.1.9.6 packet):
   candidate-generic alignment, contract and identity-reference refresh,
   scheduled audit fixes, vignette splits, new teaching surfaces,
   release-surface housekeeping, and the two promoted vignette-audit helpers.
-- The active v0.1.9.6 packet is a validation-substrate and
-  selection-integrity diagnostics release:
+- The completed v0.1.9.6 packet is an archival release record for the
+  validation-substrate and selection-integrity diagnostics release:
   `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`,
   `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`,
   `inst/design/ledgr_v0_1_9_6_spec_packet/tickets.yml`,
   `inst/design/ledgr_v0_1_9_6_spec_packet/batch_plan.md`, and
   `inst/design/ledgr_v0_1_9_6_spec_packet/README.md`.
-  It consumes the accepted validation-toolkit synthesis as maintainer-amended
+  It consumed the accepted validation-toolkit synthesis as maintainer-amended
   on 2026-06-14, the Methodological Diagnostics styleguide gate, the PBO
   spike, the intraday-readiness audit, and the current-surface peer benchmark
-  redo. Scope is canonical single-run returns, retained-return panels and
+  redo. Scope was canonical single-run returns, retained-return panels and
   projections, native PBO/CSCV, native MinTRL, native DSR with deterministic
   effective-trial clustering, the Selection Integrity teaching surface,
   audit-only intraday-readiness findings, and internal benchmark measurement.
-  Business-objective filtering, purging/embargo/CPCV, K-Ratio, Triple Penance,
-  intraday runtime support, public benchmark claims, and compiled spot-FIFO
-  default changes remain non-scope.
+  Business-objective filtering, purging/embargo/CPCV, K-Ratio, Triple
+  Penance, intraday runtime support, public benchmark claims, and compiled
+  spot-FIFO default changes remained non-scope at closeout.
+- The active v0.1.9.7 packet is a business-objective eligibility and
+  validation-polish release:
+  `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`,
+  `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`,
+  `inst/design/ledgr_v0_1_9_7_spec_packet/tickets.yml`,
+  `inst/design/ledgr_v0_1_9_7_spec_packet/batch_plan.md`, and
+  `inst/design/ledgr_v0_1_9_7_spec_packet/README.md`.
+  It consumes the validation-toolkit synthesis as maintainer-amended on
+  2026-06-26, the stable-region research input and spike, the v0.1.9.6
+  intraday-readiness audit M-1 finding, and the public return-panel design.
+  Scope is closed-trade retention, strict-lattice stable-region work, the
+  public return-panel entry point, the Selection Integrity vignette rebuild,
+  the intraday metric-context guardrail, conditional K-Ratio, business-objective
+  criteria, and the evidence-only sweep filter. Automatic promotion,
+  objective-filtered walk-forward identity, first-class intraday runtime,
+  paper/live work, OMS, and liquidity/capacity work remain non-scope.
 
 ## Active Design Entry Points
 
@@ -271,7 +287,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| active v0.1.9.6 packet | `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_6_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/pbo_spike_synthesis.md`, `inst/design/ledgr_v0_1_9_6_spec_packet/peer_benchmark_redo_preflight.md`, `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`, `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`, `inst/design/vignette_styleguide.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md` |
+| active v0.1.9.7 packet | `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`, `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`, `inst/design/vignette_styleguide.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
 | v0.1.9.4 release record | `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
 | v0.1.9.3 release record | `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_release_closeout.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` |
 | v0.1.9.2 release record | `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` |

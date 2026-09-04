@@ -53,7 +53,7 @@ tickets:
 
   - id: "LDG-2662"
     title: "Selection Integrity teaching refit"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:

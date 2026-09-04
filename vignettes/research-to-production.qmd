@@ -245,9 +245,9 @@ The current research layer also includes the first walk-forward surface:
 - walk-forward evaluation runs over the existing sweep and run surfaces,
   consuming cost identity, saved-sweep retention infrastructure, and risk-chain
   identity;
-- the next planned validation-toolkit work is scoped for v0.1.9.6 and may add
-  DSR, PBO/CSCV over retained return panels, and deterministic candidate
-  clustering;
+- v0.1.9.6 shipped DSR, PBO/CSCV, MinTRL, and deterministic effective-trial
+  clustering over retained return panels; v0.1.9.7 extends that evidence into
+  business-objective eligibility and a public return-panel entry point;
 - crypto-readiness evidence and target-construction helper extensions remain
   separate future packets.
 
