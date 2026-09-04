@@ -26,8 +26,8 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-06-15):** v0.1.9.5 has closed. v0.1.9.6 is active
-at `inst/design/ledgr_v0_1_9_6_spec_packet/`. Horizon entries below remain
+**Current packet note (2026-09-04):** v0.1.9.6 has closed. v0.1.9.7 is active
+at `inst/design/ledgr_v0_1_9_7_spec_packet/`. Horizon entries below remain
 non-binding unless a future active packet, roadmap, contracts, or an accepted
 RFC promotes them.
 
@@ -49,7 +49,9 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   amended 2026-06-14 with a v0.1.9.6 PBO spike gate, then implemented as
   substrate plus native PBO/CSCV, MinTRL, DSR, and effective-trial clustering);
   intraday-readiness code audit (completed in v0.1.9.6, audit only);
-  cost-model post-direction;
+  API and representation-boundary hardening RFC candidate (2026-09-04 entry;
+  after the active v0.1.9.7 cycle, before another large validation or execution
+  surface); cost-model post-direction;
   randomized / blocked
   slice diagnostics; promotion-grade sweep artifacts; target
   construction helper extensions (Pass 2 per-stage helpers); broker /
@@ -83,6 +85,57 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-04 [infrastructure] Post-v0.1.9.6 review findings and invariant-hardening RFC candidate
+
+A post-release review of main at `3518b18` / tag `v0.1.9.6` found five concrete
+hardening items. They are not treated as evidence that the snapshot, fold,
+ledger, no-lookahead, or promotion contracts are broken; they sit at
+representation, provenance-restoration, RNG-hygiene, and argument-validation
+boundaries.
+
+Findings to route when a maintenance or hardening packet opens:
+
+- Reversal fill projection duplicates an execution fee across derived `CLOSE`
+  and `OPEN` rows. Cash and equity deduct the event fee once, but fill-table
+  fee totals by `event_seq` can exceed the ledger event fee. This needs an
+  explicit derived-fill fee ownership rule before fills are used for
+  transaction-cost analysis.
+- Sweep-result subsetting restores cost provenance but not risk provenance
+  (`risk_chain_hash`, `risk_plan_json`), so subsetted sweep results can lose
+  risk identity consumed by inspection and validation surfaces.
+- Infrastructure temporary identifiers use R's statistical RNG in snapshot
+  ingestion and fill extraction. This is caller RNG hygiene debt, distinct from
+  the older stochastic-resume gap below.
+- Wide retained-return projection can collide with a candidate id named
+  `ts_utc`, because the timestamp column and candidate columns share one tibble
+  namespace.
+- `stream_threshold` validation does not fully enforce the documented finite
+  numeric-scalar contract.
+
+API-footprint context: this entry does not mean the v0.1.9.5 API naming and
+surface-tightening cycle failed. That cycle was scoped as a no-alias hard-rename
+and targeted unexport pass, not a full namespace-minimization pass. It moved the
+export count from 127 in v0.1.9.4 to 124 in v0.1.9.5 while adding canonical
+family-first names and removing obsolete / duplicate public doors. The footprint
+then grew because later packets intentionally added feature-family surfaces:
+public cost models, saved-sweep retention, risk chains, walk-forward, validation
+diagnostics, retained-return projections, closed-trade retention, and the public
+return-panel entry point. Current concern is therefore surface flatness and
+representation-boundary synchronization, not stale compatibility aliases.
+
+Small, local fixes for the five items above do not require an RFC by themselves.
+An RFC is recommended if this becomes a broader hardening cycle that also
+classifies the public API surface into workflow / construction / advanced
+inspection / infrastructure tiers, makes representation-boundary invariants
+declarative, and assigns ownership for accounting/provenance invariants across
+run results, sweep retention, reopened artifacts, and compiled/R parity.
+
+Routing recommendation: keep the active v0.1.9.7 business-objective /
+return-panel cycle focused unless one of these findings blocks its work. After
+that cycle, consider a dedicated "API and representation-boundary hardening"
+RFC before adding another large validation or execution surface. This entry
+authorizes no code changes and no API reshaping.
 
 ### 2026-06-26 [evaluation] Business-objective completion and robustness arc (deferred from v0.1.9.7)
 
