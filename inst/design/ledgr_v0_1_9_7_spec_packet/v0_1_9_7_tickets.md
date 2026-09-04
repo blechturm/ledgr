@@ -780,6 +780,9 @@ NEWS for the implemented v0.1.9.7 scope.
 - Bump `DESCRIPTION` to `0.1.9.7`.
 - Update NEWS, README/pkgdown references, design index, roadmap, AGENTS, and
   horizon current-packet notes.
+- Account for release-surface pointer updates that landed early in the
+  governance follow-up after the post-v0.1.9.6 API-footprint review; verify those
+  surfaces at closeout instead of duplicating them.
 - Record any conditional deferrals from `stable_region` or K-Ratio.
 - Preserve explicit deferrals for D4 walk-forward identity, broader robustness,
   scored composition, public extension contract, Triple Penance, M-2/L-1, and

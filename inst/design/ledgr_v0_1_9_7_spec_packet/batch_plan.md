@@ -156,9 +156,6 @@ Implementation notes:
   calibrating contrasts, not number-only fixtures.
 - The documentation-contract test pins content, rendered outputs, and
   anti-overclaim guardrails without rigid section-header assertions.
-- LDG-2668 release-surface pointer updates partially landed early in the
-  governance follow-up after the post-v0.1.9.6 API-footprint review. The
-  release-surface closeout ticket remains open for final v0.1.9.7 closeout.
 - SUPERSEDED: the maintainer rejected the rebuilt article (hidden fake-sweep
   boilerplate, function-name-first prose, plots that did not explain). The first
   worked-example refit and the four plots are dropped; the article is rebuilt from
@@ -310,6 +307,13 @@ Review focus:
 - shipped surfaces are accurately described;
 - no selection/promotion/profitability/identity overclaims;
 - deferral ledger is complete and synchronized.
+
+Planning note:
+
+- LDG-2668 release-surface pointer updates partially landed early in the
+  governance follow-up after the post-v0.1.9.6 API-footprint review. Verify the
+  already-updated AGENTS, design-index, roadmap, horizon, and doc-contract pins
+  at closeout, and complete the remaining release-surface updates in this batch.
 
 ## Batch 11 - Release Gate
 

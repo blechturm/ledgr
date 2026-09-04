@@ -1874,7 +1874,7 @@ testthat::test_that("research-to-production vignette reflects current cost API s
     testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
     testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
     testthat::expect_match(doc, "walk-forward evaluation runs over the existing sweep and run surfaces", fixed = TRUE)
-    testthat::expect_match(doc, "v0.1.9.6 shipped DSR, PBO/CSCV, MinTRL", fixed = TRUE)
+    testthat::expect_match(doc, "v0\\.1\\.9\\.6[[:space:]]+shipped DSR, PBO/CSCV, MinTRL")
     testthat::expect_match(doc, "v0\\.1\\.9\\.7[[:space:]]+extends that evidence into[[:space:]]+business-objective eligibility")
     testthat::expect_match(doc, "Paper trading adapters are planned for v0.3.0", fixed = TRUE)
     testthat::expect_match(doc, "observability tooling for", fixed = TRUE)
