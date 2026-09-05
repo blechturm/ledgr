@@ -1,6 +1,7 @@
 # ledgr v0.1.9.7 Spec Packet
 
-Status: Batches 0-10 complete after review; Batch 11 pending.
+Status: All batches complete after review. Local release gates passed; the
+branch is ready for remote CI.
 
 This packet scopes v0.1.9.7 as the business-objective eligibility and
 validation-polish release after v0.1.9.6 shipped the validation substrate and
@@ -15,6 +16,7 @@ Authoritative files:
 - `stable_region_spike_synthesis.md`
 - `stable_region_spike_reference.R`
 - `closed_trade_retention_storage_smoke.md`
+- `v0_1_9_7_release_closeout.md`
 
 Primary design inputs:
 

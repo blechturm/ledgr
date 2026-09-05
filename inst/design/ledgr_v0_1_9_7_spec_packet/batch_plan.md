@@ -1,6 +1,7 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batches 0-10 complete after review; Batch 11 pending.
+Status: All batches complete after review. Local release gates passed; the
+branch is ready for remote CI.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -481,7 +482,7 @@ Implementation notes:
 
 ## Batch 11 - Release Gate
 
-Status: Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -498,3 +499,26 @@ Review focus:
 - playbook followed;
 - full verification recorded;
 - no generated local artifacts committed.
+
+Implementation notes:
+
+- ran the release playbook on Windows: the full suite, installed-package
+  README check, source build, package check, coverage, and full pkgdown build
+  passed;
+- accepted the existing package-check status of two missing-`inst/doc`
+  vignette warnings and one long archival-path NOTE; coverage was 85.49%;
+- ran the local Ubuntu gate on the playbook-minimum persistence tests plus the
+  changed retention, objective, filter, and metric-context surfaces, then
+  executed the Selection Integrity chunks through `knitr`; all passed;
+- recorded and resolved a sandbox-only pkgdown `EPERM` rerun and a first WSL
+  attempt contaminated by Windows object files; neither required source edits;
+- removed this gate's generated v0.1.9.7 tarball, check directory, coverage
+  report, test plot, and compiled `src/` artifacts. Only intended
+  release-closeout records and tracked pkgdown site metadata remain in the
+  working tree;
+- recorded the review-confirmed local developer consequence of compiled
+  artifact cleanup: source-tree `pkgload::load_all()` must rebuild and currently
+  needs the locally absent `decor` helper, while standard build, check, install,
+  and remote-CI compilation remain unaffected;
+- Claude review found no blocking issue and accepted the release gate for
+  commit and remote branch CI.

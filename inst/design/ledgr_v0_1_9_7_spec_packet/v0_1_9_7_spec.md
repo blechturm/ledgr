@@ -1,6 +1,7 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Batches 0-10 complete after review; Batch 11 pending.
+**Status:** All batches complete after review. Local release gates passed; the
+branch is ready for remote CI.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after
 v0.1.9.6: a serializable, hashed business-objective criterion chain

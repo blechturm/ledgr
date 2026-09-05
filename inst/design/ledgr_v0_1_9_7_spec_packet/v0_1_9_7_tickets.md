@@ -1011,7 +1011,7 @@ scope: release-ledger
 Priority: P0
 Effort: M
 Dependencies: LDG-2659, LDG-2660, LDG-2661, LDG-2662, LDG-2663, LDG-2664, LDG-2665, LDG-2666, LDG-2667, LDG-2668, LDG-2670, LDG-2671
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1047,6 +1047,29 @@ CI, merge, and tag.
 
 - `inst/design/release_ci_playbook.md`
 - `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
+
+### Implementation Notes
+
+- Completed the Windows release playbook: full tests, installed-package README
+  check, source build, package check, coverage, and pkgdown all passed.
+- Package check completed with the existing two missing-`inst/doc` vignette
+  warnings and one long archival-path NOTE. Coverage was 85.49%, above the 80%
+  gate.
+- The cleaned WSL/Ubuntu rerun passed the four playbook-minimum persistence
+  tests plus sweep retention/roundtrip, business-objective plan/criteria,
+  sweep-filter, and metric-context tests. Selection Integrity R chunks also
+  passed through `knitr`; WSL Quarto was unavailable.
+- The first pkgdown attempt failed on sandbox `EPERM` and passed unchanged with
+  approved user-library access. The first WSL attempt linked against Windows
+  object files and passed unchanged after generated `src/` cleanup.
+- Added `v0_1_9_7_release_closeout.md`, retained only intended closeout records
+  and tracked pkgdown metadata, and removed this gate's generated v0.1.9.7
+  tarball, check, coverage, plot, and compiled artifacts.
+- Recorded that compiled-artifact cleanup makes source-tree
+  `pkgload::load_all()` rebuild and expose the locally absent `decor` helper;
+  standard build, check, install, and remote-CI compilation remain unaffected.
+- Claude review found no blocking issue and accepted the release gate for
+  commit and remote branch CI.
 
 ### Classification
 

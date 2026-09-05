@@ -27,10 +27,10 @@ an architecture note, or a spec packet.
 ## Open
 
 **Current packet note (2026-09-05):** v0.1.9.6 has closed. v0.1.9.7 is active
-at `inst/design/ledgr_v0_1_9_7_spec_packet/`; its implementation scope has
-landed and the release gate remains. Horizon entries below remain non-binding
-unless a future active packet, roadmap, contracts, or an accepted RFC promotes
-them.
+at `inst/design/ledgr_v0_1_9_7_spec_packet/`; its implementation scope and
+local release gate are complete after review, with remote CI still pending.
+Horizon entries below remain non-binding unless a future active packet,
+roadmap, contracts, or an accepted RFC promotes them.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet

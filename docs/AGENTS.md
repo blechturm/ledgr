@@ -273,14 +273,14 @@ Current planning context (active v0.1.9.7 packet):
   accepted validation-toolkit synthesis as maintainer-amended on
   2026-06-14, the Methodological Diagnostics styleguide gate, the PBO
   spike, the intraday-readiness audit, and the current-surface peer
-  benchmark redo. Scope was canonical single-run returns, retained-return
-  panels and projections, native PBO/CSCV, native MinTRL, native DSR
-  with deterministic effective-trial clustering, the Selection Integrity
-  teaching surface, audit-only intraday-readiness findings, and internal
-  benchmark measurement. Business-objective filtering,
-  purging/embargo/CPCV, K-Ratio, Triple Penance, intraday runtime
-  support, public benchmark claims, and compiled spot-FIFO default
-  changes remained non-scope at closeout.
+  benchmark redo. Scope was canonical single-run returns,
+  retained-return panels and projections, native PBO/CSCV, native
+  MinTRL, native DSR with deterministic effective-trial clustering, the
+  Selection Integrity teaching surface, audit-only intraday-readiness
+  findings, and internal benchmark measurement. Business-objective
+  filtering, purging/embargo/CPCV, K-Ratio, Triple Penance, intraday
+  runtime support, public benchmark claims, and compiled spot-FIFO
+  default changes remained non-scope at closeout.
 - The active v0.1.9.7 packet is a business-objective eligibility and
   validation-polish release:
   `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`,
@@ -291,13 +291,18 @@ Current planning context (active v0.1.9.7 packet):
   validation-toolkit synthesis as maintainer-amended on 2026-06-26, the
   stable-region research input and spike, the v0.1.9.6
   intraday-readiness audit M-1 finding, and the public return-panel
-  design. Scope is closed-trade retention, strict-lattice stable-region
-  work, the public return-panel entry point, the Selection Integrity
-  vignette rebuild, the intraday metric-context guardrail, conditional
-  K-Ratio, business-objective criteria, and the evidence-only sweep
-  filter. Automatic promotion, objective-filtered walk-forward identity,
-  first-class intraday runtime, paper/live work, OMS, and
-  liquidity/capacity work remain non-scope.
+  design. Implemented scope is closed-trade retention, a strict-lattice
+  stable-region criterion, the public return-panel entry point, the
+  Selection Integrity vignette rebuild, the intraday metric-context
+  guardrail, native K-Ratio, all seven business-objective criteria plus
+  diagnostic thresholds, and the evidence-only all-candidates sweep
+  filter. Automatic selection or promotion, objective-filtered
+  walk-forward identity, scored objective composition, broader
+  non-lattice robustness criteria, first-class intraday runtime,
+  paper/live work, OMS, and liquidity/capacity work remain non-scope.
+  The 2026-09-04 all-vignette review is parked in
+  `inst/design/horizon.md`; this packet consumes only its Selection
+  Integrity-specific findings through LDG-2671.
 
 ## Active Design Entry Points
 

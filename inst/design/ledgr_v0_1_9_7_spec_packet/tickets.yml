@@ -219,7 +219,7 @@ tickets:
 
   - id: "LDG-2669"
     title: "v0.1.9.7 release gate"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies:
