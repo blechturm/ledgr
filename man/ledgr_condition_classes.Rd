@@ -44,6 +44,28 @@
 \alias{ledgr_validation_min_trl_invalid_risk_free}
 \alias{ledgr_validation_min_trl_too_few_observations}
 \alias{ledgr_validation_min_trl_invalid_returns}
+\alias{ledgr_invalid_business_objective}
+\alias{ledgr_duplicate_objective_criterion}
+\alias{ledgr_business_objective_hash_mismatch}
+\alias{ledgr_invalid_objective_criterion}
+\alias{ledgr_unknown_objective_criterion}
+\alias{ledgr_objective_non_serializable_params}
+\alias{ledgr_objective_criterion_hash_mismatch}
+\alias{ledgr_invalid_objective_verdict}
+\alias{ledgr_objective_missing_evidence}
+\alias{ledgr_objective_non_finite_evidence}
+\alias{ledgr_objective_invalid_evidence}
+\alias{ledgr_invalid_diagnostic_threshold}
+\alias{ledgr_diagnostic_source_hash_mismatch}
+\alias{ledgr_stable_region_invalid_min_neighbors}
+\alias{ledgr_stable_region_invalid_grid}
+\alias{ledgr_stable_region_invalid_metric}
+\alias{ledgr_stable_region_unordered_axis}
+\alias{ledgr_stable_region_unsupported_axis}
+\alias{ledgr_stable_region_collapsed_axis}
+\alias{ledgr_stable_region_duplicate_tuple}
+\alias{ledgr_stable_region_incomplete_grid}
+\alias{ledgr_stable_region_no_adjacent_pairs}
 \alias{ledgr_metric_context_cadence_mismatch}
 \alias{ledgr_walk_forward_metric_missing}
 \alias{ledgr_walk_forward_metric_class_invalid}
@@ -250,6 +272,46 @@ post-first-row observations.
 
 \code{ledgr_validation_dsr_invalid_returns} is raised when DSR receives
 non-finite, constant, or otherwise unsupported retained returns.
+}
+
+\section{Business-objective classes}{
+
+\code{ledgr_invalid_business_objective} is raised when an objective is empty or
+does not have the required classed, serialized, all-pass shape.
+
+\code{ledgr_duplicate_objective_criterion} is raised when an objective contains
+duplicate criterion ids.
+
+\code{ledgr_business_objective_hash_mismatch} is raised when an objective's
+canonical plan JSON or hash does not match its criterion steps.
+
+\code{ledgr_invalid_objective_criterion} is raised when a criterion is unclassed,
+malformed, or has invalid parameters. \code{ledgr_unknown_objective_criterion}
+is raised for criterion ids that ledgr does not own in v1.
+
+\code{ledgr_objective_non_serializable_params} is raised when criterion
+parameters cannot be represented by the canonical objective plan.
+\code{ledgr_objective_criterion_hash_mismatch} is raised when a criterion hash
+does not match its serialized payload.
+
+\code{ledgr_invalid_objective_verdict} is raised when an internal criterion
+evaluator returns a malformed verdict. \code{ledgr_objective_missing_evidence},
+\code{ledgr_objective_non_finite_evidence}, and
+\code{ledgr_objective_invalid_evidence} fail closed on unusable criterion input.
+
+\code{ledgr_invalid_diagnostic_threshold} is raised for unsupported diagnostic
+result classes, columns, comparisons, or malformed embedded evidence.
+\code{ledgr_diagnostic_source_hash_mismatch} is raised when an embedded
+diagnostic snapshot does not match its source hash.
+
+\code{ledgr_stable_region_invalid_min_neighbors} is raised for an invalid
+support-neighbor threshold. \code{ledgr_stable_region_invalid_grid} and
+\code{ledgr_stable_region_invalid_metric} cover malformed lattice or score input.
+More specific lattice classes are \code{ledgr_stable_region_unordered_axis},
+\code{ledgr_stable_region_unsupported_axis}, \code{ledgr_stable_region_collapsed_axis},
+\code{ledgr_stable_region_duplicate_tuple},
+\code{ledgr_stable_region_incomplete_grid}, and
+\code{ledgr_stable_region_no_adjacent_pairs}.
 
 \code{ledgr_missing_package} is raised when a public optional-package adapter is
 requested but the package is not installed.

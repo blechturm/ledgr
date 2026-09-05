@@ -697,6 +697,44 @@ testthat::test_that("contracts record retained-return panel gates", {
   testthat::expect_match(text, "quantstrat may be used only as optional reference evidence", fixed = TRUE)
 })
 
+testthat::test_that("contracts bind evidence-only business objectives and criteria", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  tickets <- file.path(
+    root,
+    "inst",
+    "design",
+    "ledgr_v0_1_9_7_spec_packet",
+    "v0_1_9_7_tickets.md"
+  )
+  testthat::skip_if_not(file.exists(contracts) && file.exists(tickets), "objective contracts unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+  ticket_text <- paste(readLines(tickets, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(text, "one v1 rule: all\\s+criteria must pass")
+  testthat::expect_match(text, "a stored\\s+replacement closure is never trusted as criterion authority")
+  testthat::expect_match(text, "not a public third-party extension contract", fixed = TRUE)
+  testthat::expect_match(text, "a deterministic\\s+`business_objective_hash` over its ordered criterion-step payloads")
+  testthat::expect_match(text, "The hash is objective provenance only", fixed = TRUE)
+  testthat::expect_match(text, "must\\s+not alter run, config, snapshot, sweep, candidate, promotion, session, or\\s+walk-forward identity")
+  testthat::expect_match(text, "do not evaluate a sweep, rank\\s+candidates, select a winner, promote a candidate, or persist evidence")
+  testthat::expect_match(text, "Positive trajectory regresses cumulative log equity on the\\s+zero-based retained-row index")
+  testthat::expect_match(text, "four equal-duration bins of the\\s+sweep scoring interval")
+  testthat::expect_match(text, "largest absolute\\s+`realized_pnl` share of total absolute closed-trade realized P&L")
+  testthat::expect_match(text, "deterministic `trade_seq`\\s+order")
+  testthat::expect_match(text, "strict-lattice operationalization of Pardo's broad\\s+parameter-plateau idea")
+  testthat::expect_match(text, "Adjacency is Manhattan\\s+distance one in level-index space")
+  testthat::expect_match(text, "`min_neighbors` is the only eligibility control", fixed = TRUE)
+  testthat::expect_match(text, "Boundary candidates have\\s+fewer available neighbors")
+  testthat::expect_match(text, "`ledgr_objective_diagnostic_threshold\\(\\)` embeds a hashed, serializable")
+  testthat::expect_match(text, "`min_track_record_length` / `status`", fixed = TRUE)
+  testthat::expect_match(text, "recomputes no diagnostic, and makes no\\s+profitability endorsement")
+  testthat::expect_match(text, "preserve `Inf` and\\s+`-Inf` as determinate boundary evidence")
+  testthat::expect_match(text, "PBO/CSCV is sweep-level evidence", fixed = TRUE)
+  testthat::expect_match(ticket_text, "`min_track_record_length` / `status`", fixed = TRUE)
+  testthat::expect_no_match(ticket_text, "`min_TRL`", fixed = TRUE)
+})
+
 testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {
   root <- testthat::test_path("..", "..")
   contracts <- file.path(root, "inst", "design", "contracts.md")

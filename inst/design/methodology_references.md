@@ -365,8 +365,9 @@ Three load-bearing contributions:
    parameter sets exhibit small-change-in-parameter -> small-change-in-
    P&L behavior, and that contiguous regions of profitable parameter
    choices in the optimization plot are stronger evidence of skill than
-   isolated peaks. This is the substrate prior for any future
-   stable-region detection helper in ledgr's sweep tooling.
+   isolated peaks. This is the substrate prior for ledgr's v0.1.9.7
+   strict-lattice stable-region criterion. Its adjacency and tolerance rules
+   are ledgr's operationalization, not a Pardo-authored formula.
 3. **The "robust trading strategy" checklist (Chapter 11, pp. 202-209).**
    Pardo lists nine characteristics of a robust strategy:
 
@@ -380,20 +381,21 @@ Three load-bearing contributions:
    - a large and statistically valid number of trades,
    - a positive performance trajectory.
 
-   This checklist is the cleanest existing specification of what a
-   `ledgr_business_objective()` constructor should be able to express.
-   When the structured-business-objective RFC opens (deferred per the
-   2026-06-07 portfolio optimization scaffolding horizon entry), Pardo's
-   nine characteristics are the obvious starting list of named
-   constraints.
+   This checklist is the citation anchor for the v0.1.9.7
+   `ledgr_business_objective()` criterion taxonomy. V1 implements the seven
+   criteria for which ledgr has current evidence: trade timing, profit
+   distribution, stable parameter region, acceptable drawdown, stable
+   win/loss runs, minimum trade count, and positive trajectory. Long/short
+   balance and cross-market robustness remain deferred until their evidence
+   contracts exist.
 
 ### Framework mapped to ledgr surfaces
 
 | Pardo contribution | ledgr surface |
 | --- | --- |
 | Walk-forward anchored vs rolling | v0.1.9.4 walk-forward synthesis Section 3 |
-| Stable-region parameter analysis | Future sweep helper (not on roadmap); v0.1.9.x selection-integrity diagnostics adjacent |
-| Robust-strategy nine-characteristic checklist | Future business-objective constructor (portfolio optimization scaffolding prerequisite) |
+| Stable-region parameter analysis | v0.1.9.7 strict-lattice `stable_region` business-objective criterion |
+| Robust-strategy nine-characteristic checklist | v0.1.9.7 `ledgr_business_objective()` seven-criterion evidence-only subset; long/short and cross-market criteria deferred |
 | K-Ratio (Kestner via Pardo) | Active v0.1.9.7 native `ledgr_k_ratio()` diagnostic |
 | "Net profit as a sole evaluation method ignores many of the characteristics important to this decision" | v0.1.9.2 sweep persistence synthesis Section 4 three-tier framing -- the lineage of the scalar-vs-series-vs-promoted hierarchy |
 
@@ -403,18 +405,18 @@ Three load-bearing contributions:
   (`carry_test_state`, fail-closed selection-rule behavior, no-default
   extraction with rationale) are a stricter version of the parameter-
   stability discipline Pardo advocates.
-- The v0.1.9.2 retained net returns + planned selection-integrity
-  diagnostics surface Pardo's "large group of contiguous, profitable
-  parameters" criterion as a computable check.
+- The v0.1.9.2 retained net returns, v0.1.9.6 selection-integrity
+  diagnostics, and v0.1.9.7 retained closed trades provide the evidence
+  substrate for the v0.1.9.7 all-pass business-objective criteria.
 
 ### Citation anchors future RFCs should use
 
-- **Business-objective constructor (deferred to v0.2.x):** Pardo's nine
-  characteristics list as the citation anchor for the named-constraint
-  taxonomy.
-- **Stable-region parameter analysis helper (not yet roadmapped):**
-  Pardo Chapter 12 on parameter stability and Chapter 13 on Multi-Market
-  Robustness.
+- **Business-objective criteria:** Pardo's nine characteristics list is the
+  citation anchor for the named-constraint taxonomy. The v0.1.9.7 subset is
+  evidence-only and does not claim to reproduce a Pardo formula.
+- **Broader stable-region and cross-market robustness:** Pardo Chapter 12 on
+  parameter stability and Chapter 13 on Multi-Market Robustness remain inputs
+  to the deferred non-lattice robustness family.
 - **Walk-forward Amendment 3 (if opened):** Pardo's anchored vs rolling
   framing remains foundational; supplement rather than replace.
 - **K-Ratio diagnostic:** Pardo cites Kestner (2003); ledgr pins the later

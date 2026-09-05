@@ -1,7 +1,7 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batches 0-5 and 8-9 complete after review; Batches 6-7 pending;
-Batches 10-11 blocked.
+Status: Batches 0-6 and 8-9 complete after review;
+Batch 7 pending; Batches 10-11 blocked.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -255,7 +255,7 @@ Implementation notes:
 
 ## Batch 6 - Business-Objective Core And Criteria
 
-Status: Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -278,6 +278,44 @@ Review focus:
 Grouping note: the criterion implementation depends on the internal step
 contract. Reviewing them together keeps hash, serialization, and evidence
 contracts aligned.
+
+Implementation notes:
+
+- added the classed internal criterion-step contract and public
+  `ledgr_business_objective()` all-pass constructor, with canonical plan JSON,
+  deterministic ordered-step hashing, reconstruction from the canonical plan,
+  curated printing, and tamper validation;
+- added the seven ledgr-owned v1 criterion constructors. The trade-distribution
+  operationalizations are explicit: `even_trades` uses four equal-duration
+  scoring-window bins, `even_profit` uses absolute realized-P&L concentration,
+  and `stable_runs` uses deterministic `trade_seq` ordering;
+- implemented the accepted strict-lattice stable-region detector with
+  Manhattan-1 level-index adjacency, data-derived median adjacent-difference
+  tolerance, one `min_neighbors` decision control, audit-only support fields,
+  and classed fail-closed topology checks;
+- added DSR and MinTRL diagnostic-threshold criteria as embedded, hashed
+  snapshots of already-computed candidate evidence. The admissible MinTRL value
+  column is the shipped `min_track_record_length`; PBO remains ineligible
+  because it is sweep-level evidence;
+- added objective/criterion condition documentation, Rd pages, pkgdown and API
+  export registration, Pardo methodology-reference updates, identity exclusion
+  checks, serialization/tamper tests, and known-direction criterion fixtures;
+- focused objective/API/documentation tests and the full local suite pass. The
+  no-vignette source build passes; installed examples and static analysis pass
+  under `R CMD check --no-tests --no-manual --no-build-vignettes`. Existing
+  long-path and missing-`inst/doc` check findings remain;
+- package checking also exposed and fixed two previously landed hygiene issues:
+  the K-Ratio example now qualifies `tibble::as_tibble()`, and return-panel
+  long-label generation qualifies `stats::ave()`. Neither changes behavior
+  or the Batch 6 contract.
+- review follow-up makes MinTRL `Inf` values determinate threshold evidence,
+  gates stable-region verdicts on the criterion's own `min_neighbors`, pins the
+  reconstructed v1 trade-bin count to four, treats all-BREAKEVEN streak length
+  as zero, documents lattice-boundary effects, and removes per-trade vector
+  growth from stable-run evaluation.
+- Claude follow-up review verified all six fixes against the working tree and
+  returned ready to commit. A final regression test also locks that encoded
+  diagnostic `NA` and `NaN` values still fail closed.
 
 ## Batch 7 - Sweep Eligibility Filter
 

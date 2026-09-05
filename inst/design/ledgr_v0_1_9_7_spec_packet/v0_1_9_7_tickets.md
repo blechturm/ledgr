@@ -49,7 +49,7 @@ Ticket-cut decisions from spec review:
   records a clean deferral.
 - Diagnostic-threshold criteria v1 are candidate-level evidence thresholds over
   named v0.1.9.6 diagnostic columns. Initial admissible columns are MinTRL
-  `min_TRL` / `status` and DSR `dsr_probability` / `status`. PBO/CSCV is not a
+  `min_track_record_length` / `status` and DSR `dsr_probability` / `status`. PBO/CSCV is not a
   v1 per-candidate threshold criterion.
 
 ## Dependency DAG
@@ -690,7 +690,7 @@ scope: k-ratio
 Priority: P0
 Effort: M
 Dependencies: LDG-2659
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -728,6 +728,22 @@ and `ledgr_business_objective()` constructor without evaluation/filtering.
   3, and 6.1
 - `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`
 
+### Implementation Notes
+
+- Added one internal `ledgr_objective_criterion` step shape with a stable id,
+  declared evidence key, normalized serializable parameters, optional
+  diagnostic snapshot, deterministic criterion hash, and pure evaluation
+  closure.
+- Added `ledgr_business_objective()` with ordered all-pass composition,
+  canonical `plan_json`, deterministic `business_objective_hash`, canonical
+  reconstruction, validation, and curated printing.
+- Bare functions, arbitrary lists, unknown or duplicate criteria,
+  non-serializable parameters, and criterion/objective hash tampering fail
+  closed with documented classes.
+- No public third-party step constructor or evaluator was exported. Static
+  identity checks confirm objective names and hashes do not enter config,
+  sweep, candidate, run, promotion, session, or walk-forward identity code.
+
 ### Classification
 
 ```yaml
@@ -741,7 +757,7 @@ scope: internal-step-contract
 Priority: P0
 Effort: L
 Dependencies: LDG-2660, LDG-2661, LDG-2665
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -758,7 +774,8 @@ already-computed ledgr-owned evidence.
   clean deferral.
 - Implement diagnostic-threshold criteria for candidate-level MinTRL and DSR
   outputs.
-- Add classed fail-closed missing/non-finite evidence conditions.
+- Add classed fail-closed missing, invalid, and indeterminate-evidence
+  conditions; preserve determinate diagnostic infinities for thresholding.
 - Update contracts, docs, examples, and tests.
 
 ### Acceptance Criteria
@@ -776,7 +793,8 @@ already-computed ledgr-owned evidence.
 ### Verification
 
 - Targeted criterion tests.
-- Missing-evidence and non-finite-evidence tests.
+- Missing-, invalid-, and indeterminate-evidence tests, plus determinate
+  diagnostic-infinity threshold tests.
 - Known-direction tests for `positive_trajectory`, trade distribution, and
   diagnostic thresholds.
 - Documentation-contract tests for evidence-only language.
@@ -785,6 +803,38 @@ already-computed ledgr-owned evidence.
 
 - `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md` Sections 2.1,
   2.3, 2.4, and 6.1
+
+### Implementation Notes
+
+- Added all seven v1 constructors over already-computed evidence:
+  `max_drawdown`, `min_trades`, `positive_trajectory`, `even_trades`,
+  `even_profit`, `stable_runs`, and `stable_region`.
+- `positive_trajectory` uses the bound zero-based retained-row regression.
+  Trade timing uses four equal-duration scoring-window bins, profit distribution
+  uses absolute realized-P&L concentration, and run stability orders by
+  `trade_seq` with breakeven rows resetting a run.
+- The accepted stable-region spike is implemented natively with strict
+  full-factorial ordered axes, Manhattan-1 level-index neighbors, the median
+  adjacent-score-difference tolerance, and `min_neighbors` as the sole
+  decision control. Known-direction plateau/spike and topology-failure tests
+  are included.
+- Diagnostic-threshold criteria snapshot named DSR
+  (`dsr_probability` / `status`) and MinTRL
+  (`min_track_record_length` / `status`) candidate evidence with source
+  metadata and hash. They do not recompute diagnostics; PBO is rejected as a
+  candidate-level threshold source.
+- Missing, invalid, indeterminate, malformed, and tampered evidence fails closed
+  with documented classes. Numeric diagnostic thresholds preserve `Inf` and
+  `-Inf` as ordered evidence so MinTRL weak-candidate rows can fail a threshold
+  without aborting an all-candidates evaluation. Focused tests, the full local suite,
+  `tools::checkRd()`, and installed-package examples/static analysis pass.
+- Review follow-up pins the v1 four-bin constant during plan reconstruction,
+  evaluates stable-region support against the criterion's own `min_neighbors`,
+  reports all-BREAKEVEN stable-run evidence as zero, documents lattice-boundary
+  effects, and keeps stable-run accumulation constant-space.
+- Claude follow-up review verified the six production/documentation fixes and
+  returned ready to commit. Encoded diagnostic `NA` and `NaN` values now also
+  have a direct fail-closed regression test.
 
 ### Classification
 

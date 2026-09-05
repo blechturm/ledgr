@@ -690,7 +690,7 @@ ledgr_return_panel_from_long <- function(returns, value) {
 
 ledgr_return_panel_long_labels <- function(returns, label_columns) {
   if (length(label_columns) == 0L) {
-    counts <- ave(seq_len(nrow(returns)), returns$.__candidate_id, FUN = seq_along)
+    counts <- stats::ave(seq_len(nrow(returns)), returns$.__candidate_id, FUN = seq_along)
     labels <- sprintf("period_%06d", as.integer(counts))
     n_periods <- max(as.integer(counts))
     panel_labels <- sprintf("period_%06d", seq_len(n_periods))

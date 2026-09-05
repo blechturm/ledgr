@@ -94,6 +94,8 @@ reference:
       - ledgr_k_ratio
       - ledgr_effective_trials
       - ledgr_dsr
+      - ledgr_business_objective
+      - ledgr_objective_criteria
       - ledgr_sweep_save
       - print.ledgr_sweep_results
       - ledgr_candidate

@@ -1,7 +1,7 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Batches 0-5 and 8-9 complete after review; Batches 6-7 pending;
-Batches 10-11 blocked.
+**Status:** Batches 0-6 and 8-9 complete after review;
+Batch 7 pending; Batches 10-11 blocked.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after
 v0.1.9.6: a serializable, hashed business-objective criterion chain
@@ -21,6 +21,12 @@ objective-filtered walk-forward identity participation, the broader robustness-c
 family beyond the strict-lattice detector, scored composition, and a public
 criterion-extension contract, to a later business-objective completion arc (2026-06-26
 horizon entry).
+**Batch 6 review clarification (2026-09-05):** Numeric diagnostic thresholds preserve
+`Inf` and `-Inf` as determinate ordered evidence because MinTRL emits `Inf` for an
+observed Sharpe that does not clear its reference. Missing values and `NaN` remain
+indeterminate and fail closed. This replaces the earlier over-broad wording that all
+non-finite criterion evidence must abort; it does not widen any execution or identity
+surface.
 **Non-scope:** no automatic promotion or winner selection; no objective-filtered
 walk-forward identity and no `business_objective_hash` participation in walk-forward session
 identity; no broader (non-lattice) robustness criteria; no scored/weighted composition; no
@@ -144,8 +150,10 @@ Binding:
   over already-computed ledgr-owned evidence.
 - each criterion has a sensible default threshold where one is meaningful, always
   overridable; nothing is forced and no objective is constructed by default.
-- missing or non-finite evidence for a referenced criterion fails closed with a classed
-  condition, never a silent pass or fail.
+- missing, invalid, or indeterminate evidence for a referenced criterion fails closed
+  with a classed condition, never a silent pass or fail. Numeric diagnostic thresholds
+  preserve `Inf` and `-Inf` emitted by a source diagnostic as determinate boundary
+  evidence; `NA` and `NaN` remain indeterminate and fail closed.
 
 The v1 criterion set is the full synthesis Section 4.1 set, each over its named evidence:
 
@@ -458,7 +466,9 @@ surface evidence-only -- identity integration stays out of the packet entirely.
   that contract.
 - criteria are classed and hashed; the objective serializes and round-trips.
 - `business_objective_hash` is deterministic over the ordered criterion steps.
-- missing or non-finite criterion evidence fails closed with a classed condition.
+- missing, invalid, or indeterminate criterion evidence fails closed with a classed
+  condition; numeric diagnostic thresholds may compare source-owned `Inf` and `-Inf`,
+  while `NA` and `NaN` fail closed.
 - constructing an objective changes no run / sweep / session / walk-forward identity.
 
 ### 6.2 Sweep Filter

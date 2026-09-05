@@ -41,7 +41,7 @@ returns <- data.frame(
   uneven = c(0.040, -0.030, 0.020, -0.015)
 )
 result <- ledgr_k_ratio(ledgr_return_panel(returns), periods_per_year = 12)
-as_tibble(result)
+tibble::as_tibble(result)
 }
 \seealso{
 \code{vignette("selection-integrity", package = "ledgr")} or

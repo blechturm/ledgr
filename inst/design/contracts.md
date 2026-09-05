@@ -757,6 +757,58 @@ The strategy preflight boundary originated in
   through a business objective, mutate sweep artifacts, or change walk-forward
   identity. quantstrat may be used only as optional reference evidence, never
   as a required runtime dependency.
+- `ledgr_business_objective()` composes an ordered, non-empty set of
+  ledgr-owned `ledgr_objective_*()` criterion steps with one v1 rule: all
+  criteria must pass. Criterion steps are classed, hashed, canonically
+  serializable objects with a stable criterion id, declared evidence key,
+  normalized parameters, and one internal evaluation closure. Bare functions,
+  arbitrary lists, unclassed or unknown criteria, duplicate criterion ids, and
+  non-serializable parameters fail closed. Validation reconstructs the
+  evaluator from the ledgr-owned criterion id and normalized payload; a stored
+  replacement closure is never trusted as criterion authority. The internal
+  criterion-step shape is not a public third-party extension contract.
+- Every business objective carries canonical `plan_json` and a deterministic
+  `business_objective_hash` over its ordered criterion-step payloads. Changing
+  a threshold, embedded diagnostic source, or criterion order changes the
+  hash. The hash is objective provenance only: constructing an objective must
+  not alter run, config, snapshot, sweep, candidate, promotion, session, or
+  walk-forward identity. V1 objectives do not evaluate a sweep, rank
+  candidates, select a winner, promote a candidate, or persist evidence.
+- The v1 ledgr-owned criteria threshold already-computed evidence. Maximum
+  drawdown and minimum trades consume sweep-summary `max_drawdown` and
+  `n_trades`. Positive trajectory regresses cumulative log equity on the
+  zero-based retained-row index; `slope_min` is measured in log-equity units
+  per retained observation and is independent of K-Ratio. Even trades uses the
+  largest closed-trade count share across four equal-duration bins of the
+  sweep scoring interval. Even profit uses the largest absolute
+  `realized_pnl` share of total absolute closed-trade realized P&L. Stable runs
+  uses the longest consecutive WIN or LOSS run in deterministic `trade_seq`
+  order, with BREAKEVEN resetting a run and an all-BREAKEVEN history reporting
+  a longest run of zero. Missing, invalid, or indeterminate evidence fails
+  closed with classed objective conditions; no criterion reconstructs evidence
+  from fills or positions.
+- Stable region is ledgr's strict-lattice operationalization of Pardo's broad
+  parameter-plateau idea, not a transcription of a Pardo formula. It requires
+  a complete factorial grid whose axes are numeric, logical, Date/POSIXct, or
+  explicitly ordered factors. Plain factors, unsupported or collapsed axes,
+  duplicate tuples, and sparse grids fail closed. Adjacency is Manhattan
+  distance one in level-index space. The tolerance is the median absolute
+  score difference over adjacent unordered pairs; a neighbor supports a
+  candidate when its normalized score is at least the candidate score minus
+  that tolerance. `min_neighbors` is the only eligibility control; support
+  ratio and local smoothness are audit evidence only. Boundary candidates have
+  fewer available neighbors and cannot pass when `min_neighbors` exceeds that
+  available count; `available_neighbors` remains visible as audit evidence.
+- `ledgr_objective_diagnostic_threshold()` embeds a hashed, serializable
+  snapshot of a named candidate-level output from an already-computed
+  `ledgr_dsr()` or `ledgr_min_track_record()` result. Admissible v1 fields are
+  DSR `dsr_probability` / `status` and MinTRL
+  `min_track_record_length` / `status`. The criterion records the source
+  diagnostic metadata and source hash, recomputes no diagnostic, and makes no
+  profitability endorsement. Numeric diagnostic thresholds preserve `Inf` and
+  `-Inf` as determinate boundary evidence, while `NA` and `NaN` fail closed.
+  PBO/CSCV is sweep-level evidence and is not an admissible candidate-level
+  threshold criterion.
 - `n_trades` is the number of closed trade rows. It is not the number of fill
   rows.
 - `win_rate` is the share of closed trade rows with strict `realized_pnl > 0`.

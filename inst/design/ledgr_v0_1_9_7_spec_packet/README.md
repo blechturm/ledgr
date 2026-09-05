@@ -1,7 +1,7 @@
 # ledgr v0.1.9.7 Spec Packet
 
-Status: Batches 0-5 and 8-9 complete after review; Batches 6-7 pending;
-Batches 10-11 blocked.
+Status: Batches 0-6 and 8-9 complete after review;
+Batch 7 pending; Batches 10-11 blocked.
 
 This packet scopes v0.1.9.7 as the business-objective eligibility and
 validation-polish release after v0.1.9.6 shipped the validation substrate and

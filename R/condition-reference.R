@@ -180,6 +180,44 @@
 #' `ledgr_validation_dsr_invalid_returns` is raised when DSR receives
 #' non-finite, constant, or otherwise unsupported retained returns.
 #'
+#' @section Business-objective classes:
+#' `ledgr_invalid_business_objective` is raised when an objective is empty or
+#' does not have the required classed, serialized, all-pass shape.
+#'
+#' `ledgr_duplicate_objective_criterion` is raised when an objective contains
+#' duplicate criterion ids.
+#'
+#' `ledgr_business_objective_hash_mismatch` is raised when an objective's
+#' canonical plan JSON or hash does not match its criterion steps.
+#'
+#' `ledgr_invalid_objective_criterion` is raised when a criterion is unclassed,
+#' malformed, or has invalid parameters. `ledgr_unknown_objective_criterion`
+#' is raised for criterion ids that ledgr does not own in v1.
+#'
+#' `ledgr_objective_non_serializable_params` is raised when criterion
+#' parameters cannot be represented by the canonical objective plan.
+#' `ledgr_objective_criterion_hash_mismatch` is raised when a criterion hash
+#' does not match its serialized payload.
+#'
+#' `ledgr_invalid_objective_verdict` is raised when an internal criterion
+#' evaluator returns a malformed verdict. `ledgr_objective_missing_evidence`,
+#' `ledgr_objective_non_finite_evidence`, and
+#' `ledgr_objective_invalid_evidence` fail closed on unusable criterion input.
+#'
+#' `ledgr_invalid_diagnostic_threshold` is raised for unsupported diagnostic
+#' result classes, columns, comparisons, or malformed embedded evidence.
+#' `ledgr_diagnostic_source_hash_mismatch` is raised when an embedded
+#' diagnostic snapshot does not match its source hash.
+#'
+#' `ledgr_stable_region_invalid_min_neighbors` is raised for an invalid
+#' support-neighbor threshold. `ledgr_stable_region_invalid_grid` and
+#' `ledgr_stable_region_invalid_metric` cover malformed lattice or score input.
+#' More specific lattice classes are `ledgr_stable_region_unordered_axis`,
+#' `ledgr_stable_region_unsupported_axis`, `ledgr_stable_region_collapsed_axis`,
+#' `ledgr_stable_region_duplicate_tuple`,
+#' `ledgr_stable_region_incomplete_grid`, and
+#' `ledgr_stable_region_no_adjacent_pairs`.
+#'
 #' `ledgr_missing_package` is raised when a public optional-package adapter is
 #' requested but the package is not installed.
 #'
@@ -275,6 +313,28 @@
 #' @aliases ledgr_validation_min_trl_invalid_risk_free
 #' @aliases ledgr_validation_min_trl_too_few_observations
 #' @aliases ledgr_validation_min_trl_invalid_returns
+#' @aliases ledgr_invalid_business_objective
+#' @aliases ledgr_duplicate_objective_criterion
+#' @aliases ledgr_business_objective_hash_mismatch
+#' @aliases ledgr_invalid_objective_criterion
+#' @aliases ledgr_unknown_objective_criterion
+#' @aliases ledgr_objective_non_serializable_params
+#' @aliases ledgr_objective_criterion_hash_mismatch
+#' @aliases ledgr_invalid_objective_verdict
+#' @aliases ledgr_objective_missing_evidence
+#' @aliases ledgr_objective_non_finite_evidence
+#' @aliases ledgr_objective_invalid_evidence
+#' @aliases ledgr_invalid_diagnostic_threshold
+#' @aliases ledgr_diagnostic_source_hash_mismatch
+#' @aliases ledgr_stable_region_invalid_min_neighbors
+#' @aliases ledgr_stable_region_invalid_grid
+#' @aliases ledgr_stable_region_invalid_metric
+#' @aliases ledgr_stable_region_unordered_axis
+#' @aliases ledgr_stable_region_unsupported_axis
+#' @aliases ledgr_stable_region_collapsed_axis
+#' @aliases ledgr_stable_region_duplicate_tuple
+#' @aliases ledgr_stable_region_incomplete_grid
+#' @aliases ledgr_stable_region_no_adjacent_pairs
 #' @aliases ledgr_metric_context_cadence_mismatch
 #' @aliases ledgr_walk_forward_metric_missing
 #' @aliases ledgr_walk_forward_metric_class_invalid
