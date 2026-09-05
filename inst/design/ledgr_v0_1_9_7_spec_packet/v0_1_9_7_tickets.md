@@ -849,7 +849,7 @@ scope: objective-criteria
 Priority: P0
 Effort: M
 Dependencies: LDG-2665, LDG-2666
-Status: Pending
+Status: Complete after review
 
 ### Description
 
@@ -896,6 +896,37 @@ type: feature
 surface: business-objective
 scope: sweep-filter
 ```
+
+### Implementation Notes
+
+- Added `ledgr_sweep_filter()` as a classed, all-candidates evidence surface.
+  Its candidate-major tear-down preserves sweep order and every criterion row,
+  repeats the all-pass `eligible` result without dropping failures, and carries
+  objective plus available sweep identity provenance.
+- Added evidence adapters for summary metrics, structurally handled retained
+  equity, retained closed trades, strict-lattice parameter grids, and embedded
+  DSR/MinTRL snapshots. Diagnostic snapshots must match the sweep's
+  source-neutral return-panel hash.
+- Added explicit classed rejections at `ledgr_candidate()`, `ledgr_promote()`,
+  and walk-forward selection. No selected-candidate, rank, promotion,
+  eligible-only default, persistence, or identity participation was added.
+- Normalized the canonical signed `max_drawdown` summary metric to the
+  criterion's positive loss-magnitude contract, with the source convention
+  retained in verdict details and covered by a regression test.
+- Added public docs, condition aliases, pkgdown and export registration,
+  contract text, non-vacuous doc-contract coverage, all-evidence and
+  anti-selection tests, and a real saved/reopened-sweep test.
+- Verification: targeted tests passed; every full-suite test file completed
+  green across the long source run and a separate final walk-forward shard;
+  all 142 Rd files passed `tools::checkRd()`; a no-vignette source package
+  built; packaged installation, S3/namespace, code/Rd, examples, and tests
+  passed before the check reached known vignette-only warnings and timed out
+  during vignette execution.
+- Review follow-up: reordered stable-region axis validation so an
+  auto-detected empty axis set raises `ledgr_stable_region_invalid_grid` rather
+  than the explicit-argument condition, and added regression coverage. The
+  filter fixture now also verifies canonical signed-drawdown normalization
+  end to end.
 
 ## LDG-2668 - Release Surfaces And Deferral Ledger
 

@@ -25,6 +25,10 @@ testthat::test_that("summary and trajectory criteria have known directions", {
   max_drawdown <- ledgr_objective_max_drawdown(0.20)
   testthat::expect_true(ledgr:::ledgr_objective_step_evaluate(max_drawdown, 0.10)$passed)
   testthat::expect_false(ledgr:::ledgr_objective_step_evaluate(max_drawdown, 0.30)$passed)
+  signed_drawdown <- ledgr:::ledgr_objective_step_evaluate(max_drawdown, -0.10)
+  testthat::expect_identical(signed_drawdown$value, 0.10)
+  testthat::expect_true(signed_drawdown$passed)
+  testthat::expect_identical(signed_drawdown$details$source_sign, "signed_drawdown")
 
   min_trades <- ledgr_objective_min_trades(30)
   testthat::expect_true(ledgr:::ledgr_objective_step_evaluate(min_trades, 30)$passed)

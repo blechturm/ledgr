@@ -66,6 +66,16 @@
 \alias{ledgr_stable_region_duplicate_tuple}
 \alias{ledgr_stable_region_incomplete_grid}
 \alias{ledgr_stable_region_no_adjacent_pairs}
+\alias{ledgr_invalid_sweep_filter_input}
+\alias{ledgr_sweep_filter_no_completed_candidates}
+\alias{ledgr_sweep_filter_diagnostic_source_mismatch}
+\alias{ledgr_sweep_filter_parameter_missing}
+\alias{ledgr_sweep_filter_ambiguous_parameter}
+\alias{ledgr_invalid_sweep_filter_result}
+\alias{ledgr_sweep_filter_evidence_only}
+\alias{ledgr_sweep_filter_not_candidate}
+\alias{ledgr_sweep_filter_promotion_forbidden}
+\alias{ledgr_sweep_filter_walk_forward_forbidden}
 \alias{ledgr_metric_context_cadence_mismatch}
 \alias{ledgr_walk_forward_metric_missing}
 \alias{ledgr_walk_forward_metric_class_invalid}
@@ -312,6 +322,19 @@ More specific lattice classes are \code{ledgr_stable_region_unordered_axis},
 \code{ledgr_stable_region_duplicate_tuple},
 \code{ledgr_stable_region_incomplete_grid}, and
 \code{ledgr_stable_region_no_adjacent_pairs}.
+
+\code{ledgr_invalid_sweep_filter_input} and
+\code{ledgr_sweep_filter_no_completed_candidates} cover malformed or empty
+sweep-filter inputs. \code{ledgr_sweep_filter_diagnostic_source_mismatch} is
+raised when embedded diagnostic evidence came from a different return
+panel. \code{ledgr_sweep_filter_parameter_missing} and
+\code{ledgr_sweep_filter_ambiguous_parameter} cover strict-lattice parameter
+extraction failures. \code{ledgr_invalid_sweep_filter_result} covers malformed
+filter evidence. \code{ledgr_sweep_filter_not_candidate},
+\code{ledgr_sweep_filter_promotion_forbidden}, and
+\code{ledgr_sweep_filter_walk_forward_forbidden} explicitly prevent the
+all-candidates evidence result from entering selection surfaces; all three
+inherit from \code{ledgr_sweep_filter_evidence_only}.
 
 \code{ledgr_missing_package} is raised when a public optional-package adapter is
 requested but the package is not installed.

@@ -218,6 +218,19 @@
 #' `ledgr_stable_region_incomplete_grid`, and
 #' `ledgr_stable_region_no_adjacent_pairs`.
 #'
+#' `ledgr_invalid_sweep_filter_input` and
+#' `ledgr_sweep_filter_no_completed_candidates` cover malformed or empty
+#' sweep-filter inputs. `ledgr_sweep_filter_diagnostic_source_mismatch` is
+#' raised when embedded diagnostic evidence came from a different return
+#' panel. `ledgr_sweep_filter_parameter_missing` and
+#' `ledgr_sweep_filter_ambiguous_parameter` cover strict-lattice parameter
+#' extraction failures. `ledgr_invalid_sweep_filter_result` covers malformed
+#' filter evidence. `ledgr_sweep_filter_not_candidate`,
+#' `ledgr_sweep_filter_promotion_forbidden`, and
+#' `ledgr_sweep_filter_walk_forward_forbidden` explicitly prevent the
+#' all-candidates evidence result from entering selection surfaces; all three
+#' inherit from `ledgr_sweep_filter_evidence_only`.
+#'
 #' `ledgr_missing_package` is raised when a public optional-package adapter is
 #' requested but the package is not installed.
 #'
@@ -335,6 +348,16 @@
 #' @aliases ledgr_stable_region_duplicate_tuple
 #' @aliases ledgr_stable_region_incomplete_grid
 #' @aliases ledgr_stable_region_no_adjacent_pairs
+#' @aliases ledgr_invalid_sweep_filter_input
+#' @aliases ledgr_sweep_filter_no_completed_candidates
+#' @aliases ledgr_sweep_filter_diagnostic_source_mismatch
+#' @aliases ledgr_sweep_filter_parameter_missing
+#' @aliases ledgr_sweep_filter_ambiguous_parameter
+#' @aliases ledgr_invalid_sweep_filter_result
+#' @aliases ledgr_sweep_filter_evidence_only
+#' @aliases ledgr_sweep_filter_not_candidate
+#' @aliases ledgr_sweep_filter_promotion_forbidden
+#' @aliases ledgr_sweep_filter_walk_forward_forbidden
 #' @aliases ledgr_metric_context_cadence_mismatch
 #' @aliases ledgr_walk_forward_metric_missing
 #' @aliases ledgr_walk_forward_metric_class_invalid

@@ -718,7 +718,11 @@ testthat::test_that("contracts bind evidence-only business objectives and criter
   testthat::expect_match(text, "The hash is objective provenance only", fixed = TRUE)
   testthat::expect_match(text, "must\\s+not alter run, config, snapshot, sweep, candidate, promotion, session, or\\s+walk-forward identity")
   testthat::expect_match(text, "do not evaluate a sweep, rank\\s+candidates, select a winner, promote a candidate, or persist evidence")
-  testthat::expect_match(text, "Positive trajectory regresses cumulative log equity on the\\s+zero-based retained-row index")
+  testthat::expect_match(text, "Positive trajectory\\s+regresses cumulative log equity on the\\s+zero-based retained-row index")
+  testthat::expect_match(
+    text,
+    "canonical signed drawdown metric is exposed by the criterion\\s+as a positive loss magnitude"
+  )
   testthat::expect_match(text, "four equal-duration bins of the\\s+sweep scoring interval")
   testthat::expect_match(text, "largest absolute\\s+`realized_pnl` share of total absolute closed-trade realized P&L")
   testthat::expect_match(text, "deterministic `trade_seq`\\s+order")
@@ -733,6 +737,32 @@ testthat::test_that("contracts bind evidence-only business objectives and criter
   testthat::expect_match(text, "PBO/CSCV is sweep-level evidence", fixed = TRUE)
   testthat::expect_match(ticket_text, "`min_track_record_length` / `status`", fixed = TRUE)
   testthat::expect_no_match(ticket_text, "`min_TRL`", fixed = TRUE)
+})
+
+testthat::test_that("contracts bind sweep filtering as all-candidates evidence", {
+  root <- testthat::test_path("..", "..")
+  contracts <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contracts), "objective contracts unavailable")
+  text <- paste(readLines(contracts, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(
+    text,
+    "`ledgr_sweep_filter\\(\\)` evaluates a business objective over completed\\s+candidates"
+  )
+  testthat::expect_match(
+    text,
+    "preserve every\\s+evaluated candidate and criterion row, including failed criteria and\\s+ineligible candidates"
+  )
+  testthat::expect_match(text, "not a rank or pick", fixed = TRUE)
+  testthat::expect_match(
+    text,
+    "rejected explicitly by `ledgr_candidate\\(\\)`, `ledgr_promote\\(\\)`, and\\s+walk-forward selection"
+  )
+  testthat::expect_match(text, "The filter is not a dplyr replacement", fixed = TRUE)
+  testthat::expect_match(
+    text,
+    "writes no\\s+persisted artifact, and changes no execution, sweep, candidate, promotion"
+  )
 })
 
 testthat::test_that("contracts record v0.1.7.6 persistence boundaries", {

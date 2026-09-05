@@ -774,9 +774,24 @@ The strategy preflight boundary originated in
   not alter run, config, snapshot, sweep, candidate, promotion, session, or
   walk-forward identity. V1 objectives do not evaluate a sweep, rank
   candidates, select a winner, promote a candidate, or persist evidence.
+- `ledgr_sweep_filter()` evaluates a business objective over completed
+  candidates and returns an all-candidates, candidate-by-criterion tear-down
+  table. The default `as_tibble()` and `print()` surfaces preserve every
+  evaluated candidate and criterion row, including failed criteria and
+  ineligible candidates, in sweep order. Rows report the measured value,
+  threshold, pass/fail, reason, evidence source, criterion parameters,
+  `business_objective_hash`, `sweep_id`, and available metric, cost, risk, and
+  snapshot provenance. The candidate-level `eligible` flag is an all-pass
+  summary, not a rank or pick. The result contains no chosen candidate and is
+  rejected explicitly by `ledgr_candidate()`, `ledgr_promote()`, and
+  walk-forward selection. The filter is not a dplyr replacement, writes no
+  persisted artifact, and changes no execution, sweep, candidate, promotion,
+  run, session, config, snapshot, or walk-forward identity.
 - The v1 ledgr-owned criteria threshold already-computed evidence. Maximum
   drawdown and minimum trades consume sweep-summary `max_drawdown` and
-  `n_trades`. Positive trajectory regresses cumulative log equity on the
+  `n_trades`; the canonical signed drawdown metric is exposed by the criterion
+  as a positive loss magnitude before thresholding. Positive trajectory
+  regresses cumulative log equity on the
   zero-based retained-row index; `slope_min` is measured in log-equity units
   per retained observation and is independent of K-Ratio. Even trades uses the
   largest closed-trade count share across four equal-duration bins of the

@@ -127,6 +127,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_sweep_returns_panel",
     "ledgr_sweep_returns_wide",
     "ledgr_sweep_returns_xts",
+    "ledgr_sweep_filter",
     "ledgr_sweep_review",
     "ledgr_sweep_save",
     "ledgr_sweep_trades",

@@ -177,7 +177,7 @@ tickets:
 
   - id: "LDG-2667"
     title: "Sweep eligibility filter"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies:

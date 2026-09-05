@@ -96,6 +96,10 @@ Lattice-boundary candidates have fewer available neighbors and cannot pass
 when \code{min_neighbors} exceeds that available count; the detector retains the
 available-neighbor count as audit evidence.
 
+\code{ledgr_objective_max_drawdown()} accepts ledgr's canonical signed drawdown
+metric and exposes its positive loss magnitude as the measured criterion
+value before applying \code{max_drawdown}.
+
 \code{ledgr_objective_diagnostic_threshold()} embeds a hashed snapshot of one
 already-computed \code{\link[=ledgr_dsr]{ledgr_dsr()}} or \code{\link[=ledgr_min_track_record]{ledgr_min_track_record()}} result. It never
 recomputes the diagnostic. Admissible columns are \code{dsr_probability} and

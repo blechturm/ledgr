@@ -130,6 +130,9 @@ ledgr_metric_class_is_selectable <- function(class) {
 }
 
 ledgr_selection_rule_select <- function(rule, scores) {
+  if (inherits(scores, "ledgr_sweep_filter_result")) {
+    ledgr_sweep_filter_abort_selection("walk_forward")
+  }
   rule <- ledgr_validate_selection_rule(rule)
   if (!is.data.frame(scores)) {
     rlang::abort("`scores` must be a data frame.", class = "ledgr_invalid_args")

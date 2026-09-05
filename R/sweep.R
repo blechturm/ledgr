@@ -570,6 +570,9 @@ ledgr_promote <- function(exp,
                           run_id,
                           note = NULL,
                           require_same_snapshot = TRUE) {
+  if (inherits(candidate, "ledgr_sweep_filter_result")) {
+    ledgr_sweep_filter_abort_selection("promote")
+  }
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }

@@ -1,7 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batches 0-6 and 8-9 complete after review;
-Batch 7 pending; Batches 10-11 blocked.
+Status: Batches 0-9 complete after review; Batch 10 pending; Batch 11 blocked.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -319,7 +318,7 @@ Implementation notes:
 
 ## Batch 7 - Sweep Eligibility Filter
 
-Status: Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -336,6 +335,36 @@ Review focus:
 - ineligible candidates are preserved;
 - candidate extraction, promotion, and walk-forward selection reject the result;
 - no identity mutation or persisted artifact writes.
+
+Implementation notes:
+
+- Added `ledgr_sweep_filter()` with a classed candidate-by-criterion result,
+  sweep-order preservation, all-pass `eligible` flags, full-table
+  `as_tibble()` / print defaults, objective and sweep provenance, and adapters
+  for summary, retained-return, retained-trade, strict-lattice, and embedded
+  diagnostic evidence.
+- Added source-panel verification for embedded diagnostic thresholds and kept
+  missing, unretained, mismatched, or malformed evidence fail-closed.
+- Added explicit rejection classes for `ledgr_candidate()`, `ledgr_promote()`,
+  and walk-forward selection; no eligible-only shortcut was added.
+- Integration against a reopened real sweep exposed that canonical
+  `max_drawdown` is signed. The criterion now reports its positive loss
+  magnitude before thresholding and records the source-sign convention.
+- Targeted tests cover all seven owned criterion evidence adapters, diagnostic
+  thresholds, ineligible-candidate retention, ordering, tamper detection,
+  missing evidence, source mismatch, all three anti-selection paths, and
+  saved-sweep reopen. All source test files completed green across the full
+  run plus the separately completed final walk-forward group.
+- `tools::checkRd()` passed for all 142 Rd files. The no-vignette package
+  tarball built successfully; packaged installation, namespace/S3 checks,
+  code/Rd checks, examples, and tests passed. The longer `R CMD check` then
+  reached only the repository's known missing-`inst/doc` vignette warnings and
+  timed out while executing vignette code.
+- Claude review found that an auto-detected empty stable-region axis set reached
+  the generic explicit-argument validator before its intended grid condition.
+  The check now fails with `ledgr_stable_region_invalid_grid`, with a regression
+  test; the main filter fixture also uses canonical signed drawdown values and
+  verifies their end-to-end normalization.
 
 ## Batch 8 - Public Return-Panel Entry Point
 

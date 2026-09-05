@@ -88,6 +88,10 @@ print.ledgr_business_objective <- function(x, ...) {
 #' when `min_neighbors` exceeds that available count; the detector retains the
 #' available-neighbor count as audit evidence.
 #'
+#' `ledgr_objective_max_drawdown()` accepts ledgr's canonical signed drawdown
+#' metric and exposes its positive loss magnitude as the measured criterion
+#' value before applying `max_drawdown`.
+#'
 #' `ledgr_objective_diagnostic_threshold()` embeds a hashed snapshot of one
 #' already-computed [ledgr_dsr()] or [ledgr_min_track_record()] result. It never
 #' recomputes the diagnostic. Admissible columns are `dsr_probability` and
@@ -890,12 +894,14 @@ ledgr_objective_diagnostic_numeric <- function(evidence,
 
 ledgr_objective_eval_max_drawdown <- function(evidence, params, candidate_id) {
   value <- ledgr_objective_evidence_numeric(evidence, "max_drawdown", "summary.max_drawdown", candidate_id)
-  if (value < 0) ledgr_objective_abort_invalid("max_drawdown", "summary.max_drawdown", candidate_id)
-  passed <- value <= params$max_drawdown
+  if (abs(value) > 1) ledgr_objective_abort_invalid("max_drawdown", "summary.max_drawdown", candidate_id)
+  magnitude <- abs(value)
+  passed <- magnitude <= params$max_drawdown
   ledgr_objective_verdict(
-    value, params$max_drawdown, passed,
+    magnitude, params$max_drawdown, passed,
     if (passed) "criterion_passed" else "max_drawdown_exceeded",
-    "summary.max_drawdown"
+    "summary.max_drawdown",
+    details = list(source_sign = if (value < 0) "signed_drawdown" else "loss_magnitude")
   )
 }
 
