@@ -108,7 +108,7 @@ tickets:
 
   - id: "LDG-2663"
     title: "Intraday metric-context guardrail"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:

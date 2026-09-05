@@ -540,7 +540,7 @@ scope: selection-integrity-rebuild
 Priority: P1
 Effort: M
 Dependencies: LDG-2659
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -569,6 +569,30 @@ applied to observed sub-daily evidence cadence.
 - Targeted metric-context tests.
 - Targeted sweep and walk-forward degradation tests where applicable.
 - Documentation-contract checks for deferred M-2/L-1 language.
+
+### Implementation Notes
+
+- Replaced the count-based audit helper with a timestamp-cadence check over
+  distinct ordered observations. Daily contexts over clearly subdaily evidence
+  emit `ledgr_metric_context_cadence_mismatch` with the metric surface,
+  annualization scale, and observed median interval attached.
+- Wired the guardrail into the existing sweep metric kernel, single-run metric,
+  and stored-run comparison boundaries. Walk-forward receives the warning
+  through its existing train-sweep and test-run metric calls.
+- Metric formulas, returned values, metric-context hashes, stored evidence, and
+  execution/run/sweep/candidate/session/promotion/walk-forward identity remain
+  unchanged. An explicit intraday calendar and daily evidence remain quiet.
+- Timestamp coercion supplies an explicit Unix origin for R 4.2.0 compatibility
+  and fails open on malformed cadence evidence. Tests also pin the exact
+  tolerance boundary and invalid `context` handling.
+- Updated the metric-context vignette and condition-class reference. The
+  2026-09-05 horizon status keeps audit findings M-2 and L-1 explicitly deferred
+  and authorizes no first-class intraday runtime behavior.
+- Targeted helper, kernel, run, comparison, walk-forward, documentation-contract,
+  and Rd checks pass. The full local suite passed in 586.6 seconds with one
+  expected optional-package-path skip and no failures.
+- Claude review found no blocking issues. The R 4.2.0 coercion and test-coverage
+  suggestions were folded in before commit.
 
 ### Source Reference
 

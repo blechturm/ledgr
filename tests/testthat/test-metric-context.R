@@ -26,21 +26,88 @@ testthat::test_that("calendar constructors validate annualization policy", {
 })
 
 testthat::test_that("calendar mismatch warning explains intraday fix", {
-  testthat::expect_warning(
+  hourly <- as.POSIXct("2020-01-02 09:00:00", tz = "UTC") + 3600 * 0:5
+  daily <- as.POSIXct("2020-01-02", tz = "UTC") + 86400 * 0:5
+  captured <- NULL
+  withCallingHandlers(
     ledgr:::ledgr_calendar_warn_if_inconsistent(
       ledgr_calendar_us_equity(),
-      observed_bars = 1000,
+      observed_ts_utc = hourly,
       context = "run"
     ),
+    ledgr_metric_context_cadence_mismatch = function(w) {
+      captured <<- w
+      invokeRestart("muffleWarning")
+    }
+  )
+  testthat::expect_s3_class(captured, "ledgr_metric_context_cadence_mismatch")
+  testthat::expect_identical(captured$context, "run")
+  testthat::expect_equal(captured$calendar_bars_per_year, 252)
+  testthat::expect_equal(captured$observed_median_seconds, 3600)
+  testthat::expect_match(
+    conditionMessage(captured),
     "ledgr_calendar_us_equity\\(bars_per_day = \\.\\.\\.\\)"
   )
 
   testthat::expect_no_warning(
     ledgr:::ledgr_calendar_warn_if_inconsistent(
       ledgr_calendar_us_equity(bars_per_day = 390L),
-      observed_bars = 1000,
+      observed_ts_utc = hourly,
       context = "run"
     )
+  )
+  testthat::expect_no_warning(
+    ledgr:::ledgr_calendar_warn_if_inconsistent(
+      ledgr_calendar_us_equity(),
+      observed_ts_utc = daily,
+      context = "run"
+    )
+  )
+  testthat::expect_no_warning(
+    ledgr:::ledgr_calendar_warn_if_inconsistent(
+      ledgr_calendar_us_equity(),
+      observed_ts_utc = hourly[[1]],
+      context = "run"
+    )
+  )
+  testthat::expect_warning(
+    ledgr:::ledgr_calendar_warn_if_inconsistent(
+      ledgr_calendar_us_equity(),
+      observed_ts_utc = as.numeric(hourly),
+      context = "run"
+    ),
+    class = "ledgr_metric_context_cadence_mismatch"
+  )
+  testthat::expect_no_warning(
+    ledgr:::ledgr_calendar_warn_if_inconsistent(
+      ledgr_calendar_us_equity(),
+      observed_ts_utc = list(not = "timestamps"),
+      context = "run"
+    )
+  )
+  threshold_seconds <- 86400 / 1.2
+  testthat::expect_no_warning(
+    ledgr:::ledgr_calendar_warn_if_inconsistent(
+      ledgr_calendar_us_equity(),
+      observed_ts_utc = hourly[[1]] + threshold_seconds * 0:2,
+      context = "run"
+    )
+  )
+  testthat::expect_warning(
+    ledgr:::ledgr_calendar_warn_if_inconsistent(
+      ledgr_calendar_us_equity(),
+      observed_ts_utc = hourly[[1]] + (threshold_seconds - 1) * 0:2,
+      context = "run"
+    ),
+    class = "ledgr_metric_context_cadence_mismatch"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_calendar_warn_if_inconsistent(
+      ledgr_calendar_us_equity(),
+      observed_ts_utc = hourly,
+      context = ""
+    ),
+    class = "ledgr_invalid_args"
   )
 })
 

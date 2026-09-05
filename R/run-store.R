@@ -486,6 +486,13 @@ ledgr_compare_runs_metric_stats <- function(con, run_ids, metric_kernel) {
     )
   }
 
+  comparison_context <- ledgr_metric_context_from_kernel(metric_kernel)
+  ledgr_calendar_warn_if_inconsistent(
+    comparison_context$calendar,
+    observed_ts_utc = rows$ts_utc,
+    context = "run comparison metrics"
+  )
+
   stats <- lapply(run_ids, function(run_id) {
     run_rows <- rows[as.character(rows$run_id) == run_id, , drop = FALSE]
     if (nrow(run_rows) == 0L) {

@@ -554,6 +554,16 @@ model. No intraday runtime implementation was authorized or made in v0.1.9.6.
 Sweep this entry to `## Resolved` at the v0.1.9.6 closeout after the findings
 are copied into the next planning cycle.
 
+**Status update 2026-09-05: M-1 closed in active v0.1.9.7.** LDG-2663
+closes the metric-context honesty gap with a warning-only, classed cadence
+guardrail at the existing run, sweep, comparison, and walk-forward metric
+boundaries. It does not alter metric values, metric-context hashes, or any
+execution, sweep, candidate, run, session, promotion, or walk-forward identity.
+M-2 (cadence-blind walk-forward short-window warnings) and L-1 (a bounded
+intraday example plus the whole-second tolerance record) remain explicitly
+deferred to the later intraday RFC. No first-class intraday runtime behavior is
+authorized by this closeout.
+
 Original scheduling note: run a deep code review to check whether the v0.1.x
 architecture is still EOD-first but intraday-tolerant, or whether recent work
 introduced architectural footguns that would make future intraday support

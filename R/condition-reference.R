@@ -170,6 +170,12 @@
 #' `ledgr_missing_package` is raised when a public optional-package adapter is
 #' requested but the package is not installed.
 #'
+#' @section Metric-context warning classes:
+#' `ledgr_metric_context_cadence_mismatch` is emitted when a daily metric
+#' context is applied to evidence whose observed median interval is clearly
+#' subdaily. The warning identifies a possible annualization mismatch; it does
+#' not change metric values, metric recipes, stored evidence, or identity.
+#'
 #' @section Walk-forward classes:
 #' `ledgr_walk_forward_metric_missing` is raised when a selection rule requests
 #' a metric column that is absent from the train-window score rows.
@@ -256,6 +262,7 @@
 #' @aliases ledgr_validation_min_trl_invalid_risk_free
 #' @aliases ledgr_validation_min_trl_too_few_observations
 #' @aliases ledgr_validation_min_trl_invalid_returns
+#' @aliases ledgr_metric_context_cadence_mismatch
 #' @aliases ledgr_walk_forward_metric_missing
 #' @aliases ledgr_walk_forward_metric_class_invalid
 #' @aliases ledgr_walk_forward_no_selection

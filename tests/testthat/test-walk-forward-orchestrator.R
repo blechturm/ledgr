@@ -160,6 +160,57 @@ testthat::test_that("walk-forward orchestrates train sweeps, selected test runs,
   testthat::expect_true(all(score_rows$status == "DONE"))
 })
 
+testthat::test_that("walk-forward exposes cadence warnings through existing metric boundaries", {
+  timestamps <- as.POSIXct("2020-01-02 09:00:00", tz = "UTC") + 3600 * 0:11
+  bars <- ledgr_wfo_bars()
+  bars$ts_utc <- timestamps
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- ledgr_experiment(
+    snapshot,
+    ledgr_wfo_strategy,
+    opening = ledgr_opening(cash = 10000),
+    metric_context = ledgr_metric_us_equity(),
+    cost_model = ledgr_cost_zero(),
+    risk_chain = ledgr_risk_none()
+  )
+  folds <- ledgr:::ledgr_fold_list(
+    list(
+      ledgr_fold(
+        timestamps[[1]],
+        timestamps[[6]],
+        timestamps[[7]],
+        timestamps[[10]],
+        fold_seq = 1L
+      )
+    ),
+    constructor = list(type_id = "explicit")
+  )
+  warning_contexts <- character()
+
+  wf <- withCallingHandlers(
+    ledgr_walk_forward(
+      exp,
+      grid = ledgr_wfo_grid(),
+      folds = folds,
+      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      seed = 909L
+    ),
+    warning = function(w) {
+      if (inherits(w, "ledgr_metric_context_cadence_mismatch")) {
+        warning_contexts <<- c(warning_contexts, w$context)
+      }
+      invokeRestart("muffleWarning")
+    }
+  )
+  on.exit(lapply(wf$test_runs, close), add = TRUE)
+
+  testthat::expect_s3_class(wf, "ledgr_walk_forward_results")
+  testthat::expect_true("sweep metrics" %in% warning_contexts)
+  testthat::expect_true("run metrics" %in% warning_contexts)
+  testthat::expect_true(nrow(wf$degradation) > 0L)
+})
+
 testthat::test_that("walk-forward derives fold/window candidate seeds and preserves deterministic session identity", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)

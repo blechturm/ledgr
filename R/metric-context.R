@@ -363,7 +363,9 @@ ledgr_metric_kernel <- function(context = NULL,
       )
     )
   } else if (is.null(context) && !is.null(pulses)) {
-    inferred <- ledgr_bars_per_year_from_pulses(as.POSIXct(pulses, tz = "UTC"))
+    inferred <- ledgr_bars_per_year_from_pulses(
+      as.POSIXct(pulses, tz = "UTC", origin = "1970-01-01")
+    )
     # Legacy fallback preserves the annualization product only; the
     # trading_days_per_year/bars_per_day decomposition is synthetic.
     context <- ledgr_new_metric_context(
@@ -376,6 +378,14 @@ ledgr_metric_kernel <- function(context = NULL,
     )
   } else {
     context <- ledgr_metric_context_resolve(context)
+  }
+
+  if (!is.null(pulses)) {
+    ledgr_calendar_warn_if_inconsistent(
+      context$calendar,
+      observed_ts_utc = pulses,
+      context = "sweep metrics"
+    )
   }
 
   bars_per_year <- ledgr_metric_context_bars_per_year(context)
@@ -704,21 +714,52 @@ ledgr_run_metric_context_from_db <- function(con, run_id) {
 }
 
 ledgr_calendar_warn_if_inconsistent <- function(calendar,
-                                                observed_bars,
+                                                observed_ts_utc,
                                                 context = "metric context",
                                                 tolerance = 1.2) {
   ledgr_validate_calendar_object(calendar)
-  observed_bars <- ledgr_validate_positive_scalar(observed_bars, "observed_bars")
   tolerance <- ledgr_validate_positive_scalar(tolerance, "tolerance")
-  if (observed_bars > calendar$bars_per_year * tolerance) {
-    warning(
-      sprintf(
-        "The supplied %s calendar has bars_per_year=%s, but the observed data has %s bars. The calendar may not match the data frequency; for intraday US equity data use ledgr_calendar_us_equity(bars_per_day = ...).",
-        context,
-        ledgr_format_number(calendar$bars_per_year),
-        ledgr_format_number(observed_bars)
+  if (!is.character(context) || length(context) != 1L || is.na(context) || !nzchar(context)) {
+    rlang::abort("`context` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+  }
+
+  observed_ts_utc <- tryCatch(
+    suppressWarnings(
+      as.POSIXct(observed_ts_utc, tz = "UTC", origin = "1970-01-01")
+    ),
+    error = function(e) as.POSIXct(character(), tz = "UTC")
+  )
+  observed_seconds <- sort(unique(as.numeric(observed_ts_utc)))
+  observed_seconds <- observed_seconds[is.finite(observed_seconds)]
+  if (length(observed_seconds) < 2L) {
+    return(invisible(calendar))
+  }
+
+  intervals <- diff(observed_seconds)
+  intervals <- intervals[is.finite(intervals) & intervals > 0]
+  if (length(intervals) == 0L) {
+    return(invisible(calendar))
+  }
+
+  observed_median_seconds <- stats::median(intervals)
+  daily_annualization <- calendar$bars_per_day <= 1 && calendar$bars_per_year <= 366
+  clearly_subdaily <- observed_median_seconds < (86400 / tolerance)
+  if (daily_annualization && clearly_subdaily) {
+    rlang::warn(
+      paste(
+        sprintf(
+          "The supplied %s calendar annualizes at %s periods/year, but the observed median interval is %s seconds.",
+          context,
+          ledgr_format_number(calendar$bars_per_year),
+          ledgr_format_number(observed_median_seconds)
+        ),
+        "Annualized return, volatility, and Sharpe ratio may therefore be misstated.",
+        "For intraday US equity data, rerun with ledgr_calendar_us_equity(bars_per_day = ...)."
       ),
-      call. = FALSE
+      class = "ledgr_metric_context_cadence_mismatch",
+      context = context,
+      calendar_bars_per_year = as.numeric(calendar$bars_per_year),
+      observed_median_seconds = as.numeric(observed_median_seconds)
     )
   }
   invisible(calendar)

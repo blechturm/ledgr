@@ -1674,6 +1674,11 @@ ledgr_compute_metrics_internal <- function(bt,
   equity <- ledgr_backtest_equity(con, bt$run_id)
   equity$equity <- as.numeric(equity$equity)
   equity$positions_value <- as.numeric(equity$positions_value)
+  ledgr_calendar_warn_if_inconsistent(
+    metric_context$calendar,
+    observed_ts_utc = equity$ts_utc,
+    context = "run metrics"
+  )
 
   fills <- ledgr_extract_fills_impl(bt, con = con)
   trades <- ledgr_closed_trade_rows(fills)

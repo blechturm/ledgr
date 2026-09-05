@@ -909,6 +909,9 @@ testthat::test_that("metrics and accounting docs define public result semantics"
   testthat::expect_match(metrics_doc, "The full constructor fields are `risk_free_rate`, `calendar`, `benchmark`,", fixed = TRUE)
   testthat::expect_match(metrics_doc, "provider fields `benchmark`,", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Intraday work should set `calendar` explicitly", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "ledgr_metric_context_cadence_mismatch", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "warning does not change metric", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "not first-class intraday execution", fixed = TRUE)
   testthat::expect_match(metrics_doc, "display labels are stored for inspection", fixed = TRUE)
   testthat::expect_match(metrics_doc, "do not change the", fixed = TRUE)
   testthat::expect_match(metrics_doc, "calendar annualization and source\\s+fields")
@@ -1797,7 +1800,8 @@ testthat::test_that("v0.1.9.1 condition classes have discoverable help aliases",
     "ledgr_invalid_fill_proposal",
     "ledgr_invalid_fill_context",
     "ledgr_run_not_found",
-    "ledgr_unresolved_feature_id"
+    "ledgr_unresolved_feature_id",
+    "ledgr_metric_context_cadence_mismatch"
   )
   for (class in classes) {
     testthat::expect_match(doc, paste0("\\alias{", class, "}"), fixed = TRUE)
@@ -2109,6 +2113,10 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
   testthat::expect_match(docs$horizon, "PBO spike reversed the default", fixed = TRUE)
   testthat::expect_match(docs$horizon, "No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface", fixed = TRUE)
   testthat::expect_match(docs$horizon, "not a public speed claim", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "M-1 closed in active v0.1.9.7", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "M-2 \\(cadence-blind walk-forward short-window warnings\\)")
+  testthat::expect_match(docs$horizon, "L-1 \\(a bounded\\s+intraday example plus the whole-second tolerance record\\)")
+  testthat::expect_match(docs$horizon, "No first-class intraday runtime behavior is\\s+authorized")
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {

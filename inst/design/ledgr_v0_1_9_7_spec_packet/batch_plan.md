@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batches 0-3 and 8-9 complete after review; Batches 4-7 pending;
+Status: Batches 0-4 and 8-9 complete after review; Batches 5-7 pending;
 Batches 10-11 blocked.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
@@ -170,7 +170,7 @@ Implementation notes:
 
 ## Batch 4 - Intraday Metric-Context Guardrail
 
-Status: Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -186,6 +186,28 @@ Review focus:
 - warning fires for sub-daily evidence with daily defaults;
 - daily evidence remains quiet;
 - no intraday runtime or identity behavior is introduced.
+
+Implementation notes:
+
+- replaced the count-based audit helper with a timestamp-cadence check over
+  distinct ordered observations, using a classed
+  `ledgr_metric_context_cadence_mismatch` warning for daily contexts over
+  clearly subdaily evidence;
+- wired the guardrail into the existing sweep metric kernel, single-run metric,
+  and stored-run comparison boundaries; walk-forward receives it through its
+  existing train-sweep and test-run metric paths;
+- kept metric formulas, metric-context hashing, execution, persistence, and all
+  run/sweep/candidate/session/promotion/walk-forward identity paths unchanged;
+- made timestamp coercion compatible with the declared R 4.2.0 minimum and
+  fail-open for malformed cadence evidence so the honesty guard cannot abort a
+  metric read;
+- updated the metric-context vignette and condition reference, and recorded M-2
+  and L-1 as still deferred in `horizon.md`;
+- targeted helper, run, comparison, walk-forward, documentation-contract, and
+  Rd checks pass; the full local suite passed with one expected optional-package
+  path skip;
+- Claude review found no blocking issues; its R 4.2.0 coercion and boundary-test
+  suggestions were folded in before commit.
 
 ## Batch 5 - K-Ratio Diagnostic
 

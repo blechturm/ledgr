@@ -43,6 +43,72 @@ testthat::test_that("metric kernel is a serialization-safe plain list", {
   testthat::expect_type(ledgr:::ledgr_json_read_nested(json), "list")
 })
 
+testthat::test_that("metric kernel warns only for daily contexts over subdaily pulses", {
+  hourly <- as.POSIXct("2020-01-02 09:00:00", tz = "UTC") + 3600 * 0:5
+
+  testthat::expect_warning(
+    daily_kernel <- ledgr:::ledgr_metric_kernel(
+      context = ledgr_metric_us_equity(),
+      pulses = hourly
+    ),
+    class = "ledgr_metric_context_cadence_mismatch"
+  )
+  testthat::expect_no_warning(
+    intraday_kernel <- ledgr:::ledgr_metric_kernel(
+      context = ledgr_metric_us_equity(bars_per_day = 390L),
+      pulses = hourly
+    )
+  )
+  testthat::expect_equal(daily_kernel$bars_per_year, 252)
+  testthat::expect_equal(intraday_kernel$bars_per_year, 252 * 390)
+})
+
+testthat::test_that("single-run cadence warning is honesty-only and identity-neutral", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  timestamps <- as.POSIXct("2020-01-02 09:00:00", tz = "UTC") + 3600 * 0:5
+  bars <- data.frame(
+    ts_utc = timestamps,
+    instrument_id = "AAA",
+    open = 100 + seq_along(timestamps),
+    high = 101 + seq_along(timestamps),
+    low = 99 + seq_along(timestamps),
+    close = 100 + seq_along(timestamps),
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) ctx$flat()
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    metric_context = ledgr_metric_us_equity(),
+    cost_model = ledgr_cost_zero()
+  )
+  bt <- ledgr_run(exp, run_id = "intraday-metric-context-warning")
+  on.exit(close(bt), add = TRUE)
+
+  context_hash_before <- ledgr_metric_context_hash(ledgr_metric_context(bt))
+  testthat::expect_warning(
+    warned <- ledgr_compute_metrics(bt),
+    class = "ledgr_metric_context_cadence_mismatch"
+  )
+  quiet_same_context <- suppressWarnings(ledgr_compute_metrics(bt))
+  testthat::expect_identical(warned, quiet_same_context)
+  testthat::expect_identical(
+    ledgr_metric_context_hash(ledgr_metric_context(bt)),
+    context_hash_before
+  )
+  testthat::expect_no_warning(
+    ledgr_compute_metrics(
+      bt,
+      metric_context = ledgr_metric_us_equity(bars_per_day = 390L)
+    )
+  )
+})
+
 testthat::test_that("single-run metrics use stored context by default and support ephemeral overrides", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

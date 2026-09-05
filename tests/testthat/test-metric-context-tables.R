@@ -89,6 +89,12 @@ testthat::test_that("comparison tables fail loudly for mixed observed cadences",
     "
   )
 
+  testthat::expect_warning(
+    hourly_cmp <- ledgr_run_compare(snapshot, run_ids = "mixed-hourly"),
+    class = "ledgr_metric_context_cadence_mismatch"
+  )
+  testthat::expect_equal(nrow(hourly_cmp), 1L)
+
   testthat::expect_error(
     ledgr_run_compare(snapshot, run_ids = c("mixed-daily", "mixed-hourly")),
     "mixed observed bar cadences",

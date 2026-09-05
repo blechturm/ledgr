@@ -666,6 +666,14 @@ The strategy preflight boundary originated in
   documented `bars_per_year` cadence contract and must either snap known
   cadences, accept an explicit provider value, or fail/defer loudly when
   cadence is unknown.
+- Run, sweep, comparison, and walk-forward metric surfaces emit the classed
+  `ledgr_metric_context_cadence_mismatch` warning when a daily calendar is
+  applied to evidence whose observed median interval is clearly subdaily. An
+  explicit intraday calendar stays quiet. This is an honesty guardrail only:
+  it must not change metric values, metric recipes, stored evidence,
+  metric-context hashes, or run, sweep, candidate, session, promotion, or
+  walk-forward identity, and it does not authorize first-class intraday
+  execution behavior.
 - Sharpe-style metrics return `NA_real_` for short samples, all-missing return
   inputs, invalid adjacent equity returns, flat equity, and constant-return
   cases. Near-zero excess-return volatility is defined as

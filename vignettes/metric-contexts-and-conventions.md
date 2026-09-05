@@ -151,6 +151,13 @@ minute bars use `ledgr_calendar_us_equity(bars_per_day = 390L)`. ledgr
 does not infer that policy from ticker symbols, file names, or provider
 names.
 
+When run, sweep, comparison, or walk-forward metrics see clearly
+subdaily timestamps under a daily annualization context, ledgr emits the
+classed warning `ledgr_metric_context_cadence_mismatch`. The warning
+does not change metric values, metric recipes, stored evidence, or
+identity. It is a prompt to rerun the analysis with an explicit cadence,
+not first-class intraday execution support.
+
 ### Stored Context vs Sensitivity Overrides
 
 `summary(bt)` and `ledgr_compute_metrics(bt)` use the metric context
