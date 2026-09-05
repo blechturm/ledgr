@@ -36,8 +36,9 @@ trap visible from candidate return evidence; they do not choose the winner,
 promote a candidate, or prove future profitability.
 
 This article teaches the shipped diagnostics as one method family: Probability
-of Backtest Overfitting (PBO/CSCV), Minimum Track Record Length (MinTRL), and
-Deflated Sharpe Ratio (DSR) with deterministic effective-trial clustering.
+of Backtest Overfitting (PBO/CSCV), Minimum Track Record Length (MinTRL),
+K-Ratio path consistency, and Deflated Sharpe Ratio (DSR) with deterministic
+effective-trial clustering.
 
 ## Candidate Returns Are The Evidence
 
@@ -315,6 +316,105 @@ knitr::kable(min_trl_table)
 
 The longer sample clears the required track length; the short sample does not.
 That is evidence about track-record sufficiency, not a deployment decision.
+
+## K-Ratio Path Consistency
+
+Two strategies can finish with similar returns while taking very different
+paths. K-Ratio asks whether cumulative performance advances along a stable
+trend or arrives through an erratic sequence that makes the fitted trend
+uncertain.
+
+### Question
+
+How strong is the fitted growth trend relative to the uncertainty in its slope,
+after adjusting for sample length and observation frequency?
+
+### Evidence
+
+K-Ratio consumes each candidate's ordered period returns. ledgr compounds
+per-period excess returns into cumulative log wealth before fitting the trend.
+The caller supplies `periods_per_year` explicitly; ledgr does not infer it from
+timestamps or undated period labels.
+
+### Method Shape
+
+`ledgr_k_ratio()` implements the compounded-return Kestner 2013 variant:
+
+1. Subtract the per-period risk-free return.
+2. Compound the excess returns and express the path as cumulative log wealth.
+3. Fit an ordinary least-squares trend over the retained observation index.
+4. Divide the slope by its standard error to obtain the raw K-Ratio.
+5. Scale by the square root of `periods_per_year` and divide by the number of
+   observations.
+
+The 1996, 2003, and Zephyr variants use different scaling and are not computed
+by this function.
+
+### Interpretation
+
+Larger positive values indicate a more consistently rising path under this
+specific convention. Negative values indicate a declining fitted path. Compare
+values only when the evidence uses compatible frequencies and the same
+`periods_per_year` convention.
+
+### Limits
+
+K-Ratio penalizes deviations on both sides of the fitted trend. It does not
+separate welcome upside variation from drawdowns, establish causality, correct
+selection bias, or prove that a strategy is robust or will remain profitable.
+It is independent of the future `positive_trajectory` criterion, which is a
+separate eligibility test rather than this diagnostic.
+
+### Failure Modes
+
+The diagnostic fails closed when fewer than three observations are available,
+returns or arguments are non-finite, an excess return is at or below `-1`, or
+the cumulative log-wealth path has a zero or non-finite slope standard error.
+
+### References
+
+The implementation follows Lars Kestner's 2013 paper, *(Re)Introducing the
+K-Ratio*, DOI 10.2139/ssrn.2230949. That paper names the sample-length and
+periodicity adjustments explicitly. ledgr fixes the compounded-return variant
+and leaves other published K-Ratio variants outside this function.
+
+### Worked Example
+
+The first path grows with moderate variation. The second alternates large gains
+and losses and ends slightly down:
+
+```{r}
+#| label: k-ratio-input
+
+k_ratio_returns <- data.frame(
+  smooth_growth = c(
+    0.015, -0.002, 0.012, 0.004, 0.011, 0.003,
+    0.013, 0.005, 0.010, 0.004, 0.012, 0.006
+  ),
+  noisy_flat = c(
+    0.080, -0.075, 0.060, -0.065, 0.050, -0.055,
+    0.040, -0.045, 0.030, -0.035, 0.020, -0.025
+  )
+)
+
+k_ratio_result <- ledgr_k_ratio(
+  ledgr_return_panel(k_ratio_returns),
+  periods_per_year = 252
+)
+k_ratio_rows <- tibble::as_tibble(k_ratio_result)
+
+k_ratio_table <- tibble::tibble(
+  scenario = c("smooth growth", "noisy flat"),
+  observations = k_ratio_rows$observations,
+  cumulative_log_return = round(k_ratio_rows$cumulative_log_return, 3),
+  k_ratio = round(k_ratio_rows$k_ratio, 3)
+)
+
+knitr::kable(k_ratio_table)
+```
+
+The smoother rising path has the larger K-Ratio. That contrast is path-quality
+evidence under one pinned definition, not a ranking or promotion instruction.
 
 ## Deflated Sharpe Ratio And Effective Trials
 

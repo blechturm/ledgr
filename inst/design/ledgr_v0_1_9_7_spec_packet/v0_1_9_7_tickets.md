@@ -613,7 +613,7 @@ scope: intraday-honesty-guardrail
 Priority: P1
 Effort: M
 Dependencies: LDG-2659
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -645,6 +645,32 @@ be pinned and verified with a reference value or known-direction fixture.
 - Optional reference-package cross-check where available.
 - `tools::checkRd()` if docs are generated.
 - `NAMESPACE`/`DESCRIPTION` import review.
+
+### Implementation Notes
+
+- Pinned the compounded-return Kestner (2013) variant from
+  *(Re)Introducing the K-Ratio*, DOI `10.2139/ssrn.2230949`; the 1996,
+  2003, Zephyr, and additive-return variants remain non-scope.
+- Added `ledgr_k_ratio()` over a `ledgr_return_panel` or retained sweep. The
+  caller supplies `periods_per_year` explicitly; panel labels never silently
+  determine annualization.
+- Added a stable `ledgr_k_ratio` result with `as_tibble()` and print methods,
+  source-neutral `panel_hash`, nullable sweep provenance, input identity when
+  sweep-sourced, and schema/native-version metadata.
+- Added classed invalid-periodicity, risk-free, sample-size, and return-path
+  failures. Degenerate zero-standard-error paths fail closed rather than
+  emitting an infinite diagnostic.
+- The native arithmetic matches an independent `stats::lm()` reconstruction;
+  a known-direction fixture places smooth growth above a noisy flat path, and
+  direct-panel and sweep inputs produce identical evidence values and
+  `panel_hash`.
+- Added a compact Methodological Diagnostics section and executed contrast to
+  the existing Selection Integrity article. No optional dependency, execution
+  path, persistence schema, or identity path changed.
+- Review follow-up changed the teaching fixture to
+  `periods_per_year = 252`, so its rendered values distinguish the pinned 2013
+  adjustment from the excluded 1996 scaling; it also removed the always-`ok`
+  result column and tightened endpoint access and introductory prose.
 
 ### Source Reference
 

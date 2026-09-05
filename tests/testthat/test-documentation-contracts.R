@@ -1971,6 +1971,13 @@ testthat::test_that("selection integrity article teaches shipped diagnostics as 
     testthat::expect_match(doc, "short sample", fixed = TRUE)
     testthat::expect_match(doc, "longer same pattern", fixed = TRUE)
     testthat::expect_match(doc, "does\\s+not\\s+say\\s+the\\s+strategy\\s+is\\s+robust,\\s+causal,\\s+or\\s+deployable")
+    testthat::expect_match(doc, "## K-Ratio Path Consistency\\s+Two strategies")
+    testthat::expect_match(doc, "ledgr_k_ratio", fixed = TRUE)
+    testthat::expect_match(doc, "Kestner 2013", fixed = TRUE)
+    testthat::expect_match(doc, "periods_per_year", fixed = TRUE)
+    testthat::expect_match(doc, "does not infer it from", fixed = TRUE)
+    testthat::expect_match(doc, "does\\s+not\\s+separate welcome upside variation from drawdowns")
+    testthat::expect_match(doc, "independent of the future\\s+`positive_trajectory` criterion")
     testthat::expect_match(doc, "## Deflated Sharpe Ratio And Effective Trials\\s+A high Sharpe is less surprising")
     testthat::expect_match(doc, "Deflated Sharpe Ratio And Effective Trials", fixed = TRUE)
     testthat::expect_match(doc, "ledgr_dsr", fixed = TRUE)
@@ -2015,6 +2022,8 @@ testthat::test_that("selection integrity article teaches shipped diagnostics as 
     "\\|\\s+treat all columns as independent\\s+\\|\\s+8\\s+\\|\\s+0\\.757\\s+\\|"
   )
   testthat::expect_match(docs[["md"]], "first_candidate_dsr", fixed = TRUE)
+  testthat::expect_match(docs[["md"]], "\\|\\s+smooth growth\\s+\\|\\s+12\\s+\\|\\s+0\\.092\\s+\\|\\s+40\\.272\\s+\\|")
+  testthat::expect_match(docs[["md"]], "\\|\\s+noisy flat\\s+\\|\\s+12\\s+\\|\\s+-0\\.036\\s+\\|\\s+-4\\.224\\s+\\|")
 })
 
 testthat::test_that("new teaching surfaces state current public boundaries", {

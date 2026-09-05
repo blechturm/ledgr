@@ -40,6 +40,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_grid_add_baseline",
     "ledgr_grid_cross",
     "ledgr_grid_named",
+    "ledgr_k_ratio",
     "ledgr_ind_ema",
     "ledgr_ind_returns",
     "ledgr_ind_rsi",

@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batches 0-4 and 8-9 complete after review; Batches 5-7 pending;
+Status: Batches 0-5 and 8-9 complete after review; Batches 6-7 pending;
 Batches 10-11 blocked.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
@@ -211,7 +211,7 @@ Implementation notes:
 
 ## Batch 5 - K-Ratio Diagnostic
 
-Status: Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -228,6 +228,30 @@ Review focus:
 - named variant and reference evidence are sufficient;
 - K-Ratio remains independent of `positive_trajectory`;
 - optional packages remain optional or test-only.
+
+Implementation notes:
+
+- pinned the compounded-return Kestner (2013) variant from
+  *(Re)Introducing the K-Ratio*, DOI `10.2139/ssrn.2230949`; the 1996,
+  2003, Zephyr, and additive-return variants remain non-scope;
+- added `ledgr_k_ratio()` over a `ledgr_return_panel` or retained sweep,
+  requiring explicit `periods_per_year` rather than inferring annualization
+  from optional panel labels;
+- added a stable result class, tibble and print methods, source-neutral
+  `panel_hash`, nullable sweep provenance, schema/native-version metadata,
+  and classed invalid-periodicity, risk-free, sample-size, and return-path
+  failures;
+- verified the native arithmetic against an independent `stats::lm()`
+  reconstruction and a known-direction smooth-growth versus noisy-flat
+  fixture, including direct-panel versus sweep parity;
+- added the K-Ratio Methodological Diagnostics section to the existing
+  Selection Integrity article and pinned its executed contrast in the
+  documentation contract;
+- review follow-up made the worked example discriminate the 2013 adjustment
+  from the excluded 1996 scaling, removed an always-`ok` result column, and
+  tightened the endpoint access and introductory prose;
+- no optional dependency, execution path, persistence schema, or identity
+  path changed.
 
 ## Batch 6 - Business-Objective Core And Criteria
 

@@ -208,6 +208,19 @@ record length has too few post-first-row observations.
 \code{ledgr_validation_min_trl_invalid_returns} is raised when minimum track
 record length receives non-finite or constant retained returns.
 
+\code{ledgr_validation_k_ratio_invalid_periods_per_year} is raised when a K-Ratio
+request omits or supplies an invalid expected observations-per-year value.
+
+\code{ledgr_validation_k_ratio_invalid_risk_free} is raised when K-Ratio receives
+an invalid per-period risk-free return.
+
+\code{ledgr_validation_k_ratio_too_few_observations} is raised when K-Ratio has
+fewer than three return observations.
+
+\code{ledgr_validation_k_ratio_invalid_returns} is raised when K-Ratio receives
+non-finite returns, an excess return at or below \code{-1}, or a cumulative
+log-wealth path whose slope standard error is zero or non-finite.
+
 \code{ledgr_validation_cluster_invalid_threshold} is raised when retained-return
 clustering receives an invalid correlation-distance threshold.
 

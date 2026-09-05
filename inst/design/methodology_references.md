@@ -283,6 +283,57 @@ inadvertently publishing pseudo-mathematics.
 
 ---
 
+## Kestner (2013) -- (Re)Introducing the K-Ratio
+
+**Author:** Lars N. Kestner.
+
+**Title:** *(Re)Introducing the K-Ratio*.
+
+**Date:** 2013-03-03.
+
+**Where to find it:** SSRN 2230949; DOI `10.2139/ssrn.2230949`.
+
+### Why ledgr cites Kestner
+
+K-Ratio has several materially different published variants. Kestner's 2013
+paper resolves the adjustment used by `ledgr_k_ratio()`: the raw ordinary
+least-squares slope t-statistic is divided by the number of return observations
+and multiplied by the square root of expected observations per calendar year.
+
+The paper permits additive cumulative returns or compounded cumulative returns
+transformed back into linear space with the logarithm. ledgr pins one exact
+variant: compounded per-period excess returns, cumulative log wealth, and the
+2013 observation-count and periodicity adjustment. The 1996, 2003, Zephyr, and
+additive-return variants are non-scope.
+
+### Framework mapped to ledgr surfaces
+
+| Kestner contribution | ledgr surface |
+| --- | --- |
+| Ordered cumulative-return path | `ledgr_return_panel()` candidate columns |
+| OLS slope and slope uncertainty | `ledgr_k_ratio()` per-candidate evidence |
+| Observation-count adjustment | explicit diagnostic output and metadata |
+| Periodicity adjustment | required caller-supplied `periods_per_year` |
+
+### Strong alignments
+
+- The return-panel order and `panel_hash` make the exact path being assessed
+  explicit and reproducible.
+- Requiring `periods_per_year` avoids inferring annualization from optional
+  timestamp labels and preserves the metric-context honesty discipline.
+- The result remains evidence only; a higher K-Ratio is not a selection,
+  promotion, or profitability guarantee.
+
+### Citation boundary
+
+`ledgr_k_ratio()` claims conformance only to the Kestner 2013 compounded-return
+variant described above. Its tests independently reconstruct the OLS
+coefficient and standard error and include a known-direction comparison between
+a smoothly rising path and a noisy flat path. No external R package defines the
+runtime contract.
+
+---
+
 ## Pardo (2008) -- The Evaluation and Optimization of Trading Strategies
 
 **Author:** Robert Pardo (Pardo Capital Limited).
@@ -343,7 +394,7 @@ Three load-bearing contributions:
 | Walk-forward anchored vs rolling | v0.1.9.4 walk-forward synthesis Section 3 |
 | Stable-region parameter analysis | Future sweep helper (not on roadmap); v0.1.9.x selection-integrity diagnostics adjacent |
 | Robust-strategy nine-characteristic checklist | Future business-objective constructor (portfolio optimization scaffolding prerequisite) |
-| K-Ratio (Kestner via Pardo) | Future metric extension or PA adapter |
+| K-Ratio (Kestner via Pardo) | Active v0.1.9.7 native `ledgr_k_ratio()` diagnostic |
 | "Net profit as a sole evaluation method ignores many of the characteristics important to this decision" | v0.1.9.2 sweep persistence synthesis Section 4 three-tier framing -- the lineage of the scalar-vs-series-vs-promoted hierarchy |
 
 ### Strong alignments
@@ -366,9 +417,9 @@ Three load-bearing contributions:
   Robustness.
 - **Walk-forward Amendment 3 (if opened):** Pardo's anchored vs rolling
   framing remains foundational; supplement rather than replace.
-- **K-Ratio in the metric kernel:** Pardo cites Kestner (2003); the
-  t-statistic on the linear fit of the equity curve is a candidate
-  metric extension. Could land as a small parallel release.
+- **K-Ratio diagnostic:** Pardo cites Kestner (2003); ledgr pins the later
+  Kestner (2013) compounded-return variant and its periodicity adjustment in
+  the dedicated reference entry above.
 
 ### One specific lesson worth surfacing now
 

@@ -124,7 +124,7 @@ tickets:
 
   - id: "LDG-2664"
     title: "Native K-Ratio diagnostic"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:

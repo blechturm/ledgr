@@ -91,6 +91,7 @@ reference:
       - ledgr_sweep_review
       - ledgr_pbo
       - ledgr_min_track_record
+      - ledgr_k_ratio
       - ledgr_effective_trials
       - ledgr_dsr
       - ledgr_sweep_save

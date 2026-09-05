@@ -728,6 +728,17 @@ The strategy preflight boundary originated in
   candidates through a business objective, mutate sweep artifacts, or change
   walk-forward identity. PerformanceAnalytics may be used only as optional
   reference evidence, never as a required runtime dependency.
+- `ledgr_k_ratio()` is a native Kestner (2013) compounded-return K-Ratio
+  diagnostic over a `ledgr_return_panel` or retained sweep returns. It fits an
+  ordinary least-squares trend to cumulative log wealth and applies the
+  published observation-count and periodicity adjustment. Callers must supply
+  `periods_per_year` explicitly; panel labels do not silently determine
+  annualization. The result reports the fitted slope, slope standard error,
+  raw ratio, adjusted K-Ratio, `panel_hash`, nullable sweep provenance, and
+  input identity when sweep-sourced. Other K-Ratio variants are non-scope.
+  K-Ratio is evidence only and independent of the `positive_trajectory`
+  business-objective criterion: it must not select, promote, filter candidates,
+  mutate sweep artifacts, or change execution or walk-forward identity.
 - `ledgr_effective_trials()` is a native deterministic effective-trial-count
   diagnostic over a `ledgr_return_panel` or retained sweep returns. V1 uses
   exactly one method: hierarchical complete-linkage clustering over `1 -

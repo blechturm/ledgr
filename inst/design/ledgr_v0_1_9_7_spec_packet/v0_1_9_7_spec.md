@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Batches 0-4 and 8-9 complete after review; Batches 5-7 pending;
+**Status:** Batches 0-5 and 8-9 complete after review; Batches 6-7 pending;
 Batches 10-11 blocked.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after
