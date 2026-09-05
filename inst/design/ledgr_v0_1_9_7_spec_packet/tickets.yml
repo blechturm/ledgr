@@ -87,7 +87,7 @@ tickets:
 
   - id: "LDG-2671"
     title: "Selection Integrity vignette rebuild"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -101,6 +101,7 @@ tickets:
       - "Quarto render of selection-integrity"
       - "Targeted documentation-contract tests"
       - "Local pkgdown build and maintainer review link"
+      - "Selection Integrity-specific all-vignette review findings"
       - "rg forbidden overclaims"
       - "ASCII scan"
       - "No runtime/package metadata file changes"

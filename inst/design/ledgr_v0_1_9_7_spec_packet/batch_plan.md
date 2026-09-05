@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batch 8 complete after Claude review; Batch 9 pending.
+Status: Batch 9 complete after Claude review; Batch 10 pending.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -270,7 +270,7 @@ Review focus:
 
 ## Batch 9 - Selection Integrity Vignette Rebuild
 
-Status: Pending.
+Status: Complete after Claude review.
 
 Tickets:
 
@@ -280,14 +280,35 @@ Scope:
 
 - rebuild the article from scratch on the return-panel entry point;
 - concept-first teaching, visible input data, contrasts on the clean API;
-- drop the rejected plots; add a plot only where it reveals the geometry.
+- drop the rejected plots; add a plot only where it reveals the geometry;
+- consume the Selection Integrity-specific findings from the 2026-09-04
+  all-vignette review while leaving the broader all-vignette cleanup parked.
 
 Review focus:
 
 - no hidden sweep-construction boilerplate; input is a visible return table;
 - no function-name-first or jargon-first openings; data flow is explicit;
+- references and convention attribution are stronger without over-teaching;
 - doc-contract test non-vacuous and green; anti-overclaim intact;
 - maintainer accepts the rendered pkgdown article.
+
+Implementation notes:
+
+- rebuilt `vignettes/selection-integrity.qmd` from scratch around
+  `ledgr_return_panel()` and visible candidate-return tables;
+- removed the hidden fake-sweep helper and dropped the rejected plots;
+- kept the rotating/stable, short/longer, and clustered/independent contrasts
+  as executed examples through the public diagnostics;
+- rendered `vignettes/selection-integrity.md` and rebuilt the local pkgdown
+  site; review article: `docs/articles/selection-integrity.html`;
+- targeted doc-contract, forbidden-overclaim, ASCII, and whitespace checks are
+  green, with only expected LF-to-CRLF notices from `git diff --check`.
+- follow-up review fixes pinned MinTRL and DSR rendered outcome values, added
+  the retained-sweep cross-link beside the shape-only block, removed the stray
+  DSR console label, split effective-trials output into clean chunks, and
+  explained the `steady` PBO contrast.
+- the broader all-vignette governance parking was committed separately as
+  `2742f9d` before the Batch 9 commit.
 
 ## Batch 10 - Release Surfaces And Deferral Ledger
 

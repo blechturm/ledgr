@@ -1,30 +1,59 @@
 # Selection Integrity
 
 
-Sweeps let you compare many candidate parameterizations. That is useful,
-and it is dangerous. The more candidates you inspect, the easier it is
-to mistake a lucky in-sample winner for a robust strategy.
-Selection-integrity diagnostics make that risk visible; they do not
-choose the winner for you.
+Comparing many strategy variants is useful, and it is a trap. A sweep
+can produce a convincing winner because one candidate happened to fit
+the slices of history you inspected. The selection-integrity diagnostics
+in ledgr make that trap visible from candidate return evidence; they do
+not choose the winner, promote a candidate, or prove future
+profitability.
 
-This article groups the shipped v0.1.9.6 diagnostics as one method
-family: PBO/CSCV, minimum track record length, and DSR with
+This article teaches the shipped diagnostics as one method family:
+Probability of Backtest Overfitting (PBO/CSCV), Minimum Track Record
+Length (MinTRL), and Deflated Sharpe Ratio (DSR) with deterministic
 effective-trial clustering.
 
-## Question
+## Candidate Returns Are The Evidence
 
-`ledgr_pbo()` asks one question: when the retained candidate
-return panel is recombined into symmetric in-sample and out-of-sample
-splits, how often does the in-sample winner rank poorly out of sample?
+Each diagnostic starts from the same object: a candidate return panel.
+The direct path is a small return table with one row per period and one
+column per candidate:
 
-The answer is the Probability of Backtest Overfitting (PBO). Higher
-values are warning signs about the candidate family and the selection
-process. They are not proof that a strategy will lose money, and low
-values are not proof that a strategy will make money.
+``` r
+rotating_returns <- data.frame(
+  early = c(0.05, 0.05, 0.05, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01),
+  middle = c(-0.01, -0.01, -0.01, 0.05, 0.05, 0.05, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01),
+  late = c(-0.01, -0.01, -0.01, -0.01, -0.01, -0.01, 0.05, 0.05, 0.05, -0.01, -0.01, -0.01),
+  steady = rep(0.012, 12)
+)
+rotating_returns
+#>    early middle  late steady
+#> 1   0.05  -0.01 -0.01  0.012
+#> 2   0.05  -0.01 -0.01  0.012
+#> 3   0.05  -0.01 -0.01  0.012
+#> 4  -0.01   0.05 -0.01  0.012
+#> 5  -0.01   0.05 -0.01  0.012
+#> 6  -0.01   0.05 -0.01  0.012
+#> 7  -0.01  -0.01  0.05  0.012
+#> 8  -0.01  -0.01  0.05  0.012
+#> 9  -0.01  -0.01  0.05  0.012
+#> 10 -0.01  -0.01 -0.01  0.012
+#> 11 -0.01  -0.01 -0.01  0.012
+#> 12 -0.01  -0.01 -0.01  0.012
+```
 
-## Evidence
+Wrap that evidence once, then reuse the panel across diagnostics:
 
-The diagnostic consumes retained sweep returns:
+``` r
+rotating_panel <- ledgr_return_panel(rotating_returns)
+```
+
+The values are clean period returns. There is no leading structural `NA`
+row in user input. If you omit timestamps, ledgr assigns deterministic
+ordering labels such as `period_000001`; if your returns are dated, pass
+`Date` or `POSIXct` labels through `ts`.
+
+A retained sweep can produce the same evidence object:
 
 ``` r
 sweep <- ledgr_sweep(
@@ -33,291 +62,261 @@ sweep <- ledgr_sweep(
   retain = ledgr_sweep_retention("completed")
 )
 
-pbo <- ledgr_pbo(sweep, S = 4)
+panel <- ledgr_sweep_returns_panel(sweep)
 ```
 
-The input is the same retained completed-candidate evidence exposed by
-`ledgr_sweep_returns_panel()`: one UTC-ordered return column per
-completed candidate, with the structural first `NA_real_` row verified
-and dropped before the CSCV matrix is formed. It does not inspect fills,
-positions, promotion records, or walk-forward folds.
+For the full retained-sweep contract, see
+`vignette("sweeps", package = "ledgr")`.
 
-## Method Shape
+The diagnostic contract is intentionally narrow: pass a return panel or
+a retained sweep. Raw matrices and data frames are wrapped with
+`ledgr_return_panel()` first, so validation happens once and the same
+`panel_hash` follows the evidence.
 
-PBO uses Combinatorially Symmetric Cross Validation (CSCV):
+## Probability Of Backtest Overfitting
 
-1.  Split the return panel into `S` contiguous subsets.
-2.  Choose half the subsets as in sample and the other half as out of
-    sample.
-3.  Score every candidate in sample.
-4.  Take the in-sample winner and rank that same candidate out of
-    sample.
-5.  Convert the out-of-sample rank to `lambda`.
-6.  Report PBO as the share of cases where `lambda <= threshold`.
-
-The default score is mean period return. A custom metric can be
-supplied, but it must return one finite numeric value per candidate
-column, and larger values are treated as better.
-
-## Interpretation
-
-Read PBO as selection-process evidence. A high value says the candidate
-that looks best in sample often fails to hold its rank out of sample
-under CSCV recombination. That is a reason to distrust the apparent
-sweep winner, reduce the candidate search space, gather more evidence,
-or add a separate walk-forward evaluation.
-
-The result object keeps three public tables:
-
-- `as_tibble(pbo)` gives the one-row summary.
-- `as_tibble(pbo, what = "cases")` gives each CSCV split and logit.
-- `as_tibble(pbo, what = "degradation")` gives the winner in-sample
-  versus out-of-sample score by split.
-
-## Limits
-
-PBO is not a profitability proof. It does not fix bad data, survivorship
-bias, point-in-time universe mistakes, revised-data leakage, or
-preprocessing that used future information before ledgr saw the inputs.
-It also depends on a meaningful candidate family. If the sweep has too
-few candidates, too few observations, or candidates that were already
-mined before the declared sweep, interpretation weakens.
-
-PBO is sweep-level in this release. It does not add per-fold train-sweep
-PBO to walk-forward degradation tables.
-
-## Failure Modes
-
-The function fails closed when the evidence is not suitable:
-
-- retained returns were not requested;
-- a selected candidate failed or has no retained return rows;
-- the completed candidates do not form one complete timestamp grid;
-- the structural first return row is not `NA_real_`;
-- `S` is odd, too large, or does not divide the post-first-row return
-  count;
-- the metric does not return one finite numeric score per candidate.
-
-These are setup or evidence problems, not weak strategy results. Fix the
-panel before interpreting the diagnostic.
-
-## References
-
-The method follows the CSCV/PBO shape described by Bailey, Borwein,
-Lopez de Prado, and Zhu. ledgr implements the diagnostic natively over
-retained return panels; the CRAN `pbo` package remains optional
-reference evidence, not a runtime dependency.
-
-## Worked Example
-
-The retained sweeps below are intentionally small, but the contrast is a
-real research situation: a parameter search where each setting wins in a
-different market segment versus a search where the candidate ranking is
-stable across segments. The first can look attractive if you inspect
-only the best in-sample candidate; PBO flags the rotation.
-
-``` r
-pbo_segment_means <- do.call(
-  rbind,
-  lapply(
-    list("rotating winner" = overfit_returns, "stable ranking" = stable_returns),
-    function(returns) {
-      out <- expand.grid(
-        segment = seq_len(4),
-        candidate = colnames(returns),
-        KEEP.OUT.ATTRS = FALSE,
-        stringsAsFactors = FALSE
-      )
-      out$mean_return <- mapply(
-        function(segment, candidate) {
-          mean(returns[subset_id == segment, candidate])
-        },
-        out$segment,
-        out$candidate
-      )
-      out
-    }
-  )
-)
-pbo_segment_means$scenario <- rep(
-  names(list("rotating winner" = overfit_returns, "stable ranking" = stable_returns)),
-  each = 16
-)
-pbo_segment_means$candidate <- factor(
-  pbo_segment_means$candidate,
-  levels = rev(colnames(overfit_returns))
-)
-
-ggplot2::ggplot(
-  pbo_segment_means,
-  ggplot2::aes(x = factor(segment), y = candidate, fill = mean_return)
-) +
-  ggplot2::geom_tile(color = "white", linewidth = 0.6) +
-  ggplot2::facet_wrap(~ scenario) +
-  ggplot2::scale_fill_viridis_c(option = "C") +
-  ggplot2::labs(
-    x = "Segment",
-    y = "Candidate",
-    fill = "Mean return"
-  ) +
-  ggplot2::theme_minimal(base_size = 13)
-```
-
-<img
-src="selection-integrity_files/figure-commonmark/pbo-segment-heatmap-1.png"
-data-fig-alt="Heatmap with a bright diagonal for the rotating-winner scenario and horizontal bands for the stable-ranking scenario."
-alt="Rotating winner rotates out of sample (high PBO) vs one candidate leads every segment (low PBO)." />
-
-``` r
-pbo_overfit <- ledgr_pbo(overfit_sweep, S = 4)
-pbo_stable <- ledgr_pbo(stable_sweep, S = 4)
-tibble::tibble(
-  scenario = c("rotating winner", "stable ranking"),
-  pbo = c(
-    tibble::as_tibble(pbo_overfit)$pbo,
-    tibble::as_tibble(pbo_stable)$pbo
-  )
-)
-#> # A tibble: 2 x 2
-#>   scenario          pbo
-#>   <chr>           <dbl>
-#> 1 rotating winner     1
-#> 2 stable ranking      0
-```
-
-The degradation table for the rotating-winner sweep shows why the PBO
-summary is high: the in-sample winner is often not the out-of-sample
-winner.
-
-``` r
-tibble::as_tibble(pbo_overfit, what = "degradation")
-#> # A tibble: 6 x 8
-#>    case winner_candidate_id oos_best_candidate_id in_sample_metric out_of_sample_metric
-#>   <int> <chr>               <chr>                            <dbl>                <dbl>
-#> 1     1 candidate_1         candidate_3                       0.02                -0.01
-#> 2     2 candidate_1         candidate_2                       0.02                -0.01
-#> 3     3 candidate_1         candidate_2                       0.02                -0.01
-#> 4     4 candidate_2         candidate_1                       0.02                -0.01
-#> 5     5 candidate_2         candidate_1                       0.02                -0.01
-#> 6     6 candidate_3         candidate_1                       0.02                -0.01
-#> # i 3 more variables: metric_degradation <dbl>, lambda <dbl>, below_threshold <lgl>
-```
-
-`ledgr_pbo()` does not select or promote a candidate. Treat it as
-one piece of evidence beside the sweep table, the walk-forward
-degradation table, and the research judgment that decides what to test
-next.
-
-## Minimum Track Record Length
+A parameter search can look persuasive when every time segment has a
+different winner. If the chosen in-sample winner repeatedly disappoints
+out of sample, the search process is telling you more about overfitting
+than about a durable edge.
 
 ### Question
 
-`ledgr_min_track_record()` asks a narrower single-series question
-for each retained candidate: how many return observations would this
-observed Sharpe ratio need before it is statistically distinguishable
-from a reference Sharpe threshold at the requested confidence level?
+How often does the in-sample winner rank poorly out of sample when the
+same candidate-return panel is recombined into symmetric train/test
+splits?
 
-The answer is MinTRL. A candidate can have a positive observed Sharpe
-and still need more observations before the track record clears the
-reference threshold.
+`ledgr_pbo()` reports that frequency as PBO. Larger values are warnings
+about the candidate family and the selection process. Smaller values are
+reassuring only about this evidence and this recombination scheme.
 
 ### Evidence
 
-The diagnostic consumes the same retained sweep return panel as PBO:
+PBO consumes the validated period-return matrix in the return panel. It
+does not inspect fills, positions, promotion records, walk-forward
+folds, or strategy source code.
+
+The example compares the rotating panel above with a stable-ranking
+panel where the same candidate leads every segment:
 
 ``` r
-min_trl <- ledgr_min_track_record(
-  sweep,
-  reference_sharpe = 0,
-  confidence = 0.95
+stable_returns <- data.frame(
+  candidate_1 = rep(0.012, 12),
+  candidate_2 = rep(0.009, 12),
+  candidate_3 = rep(0.006, 12),
+  candidate_4 = rep(0.003, 12)
 )
+stable_returns
+#>    candidate_1 candidate_2 candidate_3 candidate_4
+#> 1        0.012       0.009       0.006       0.003
+#> 2        0.012       0.009       0.006       0.003
+#> 3        0.012       0.009       0.006       0.003
+#> 4        0.012       0.009       0.006       0.003
+#> 5        0.012       0.009       0.006       0.003
+#> 6        0.012       0.009       0.006       0.003
+#> 7        0.012       0.009       0.006       0.003
+#> 8        0.012       0.009       0.006       0.003
+#> 9        0.012       0.009       0.006       0.003
+#> 10       0.012       0.009       0.006       0.003
+#> 11       0.012       0.009       0.006       0.003
+#> 12       0.012       0.009       0.006       0.003
 ```
-
-The retained `period_return` columns are the evidence. The structural
-first `NA_real_` row is verified and dropped by the panel layer before
-the per-series Sharpe, skewness, and kurtosis are computed.
 
 ### Method Shape
 
-For each candidate, ledgr computes:
+Combinatorially Symmetric Cross Validation (CSCV) gives PBO its shape:
 
-1.  per-period excess returns, using `risk_free_return` when supplied;
-2.  observed per-period Sharpe ratio;
-3.  return skewness and kurtosis;
-4.  the Bailey/Lopez de Prado minimum track record length formula
-    against `reference_sharpe` and `confidence`.
+1.  Split the return panel into `S` contiguous subsets.
+2.  Treat half the subsets as in sample and the rest as out of sample.
+3.  Score every candidate in sample.
+4.  Carry the in-sample winner into the out-of-sample side.
+5.  Rank that same candidate out of sample.
+6.  Count how often the out-of-sample rank implies
+    `lambda <= threshold`.
 
-The output is measured in return observations, not calendar years. If
-the observed Sharpe is not above the reference Sharpe, ledgr keeps the
-candidate in the table and marks the required length as infinite instead
-of silently dropping it.
+ledgr uses mean period return as the default score. A custom metric can
+be supplied, but it must return one finite numeric value per candidate
+column, with larger values treated as better.
 
 ### Interpretation
 
-Read MinTRL as sample-size evidence. It answers whether the observed
-track record is long enough for the selected reference Sharpe threshold.
-It does not say the strategy is robust, causal, or deployable.
+Read PBO as a diagnostic of the search, not as a verdict on one
+candidate. A high value is a reason to distrust the apparent sweep
+winner, narrow the search space, add walk-forward evidence, or demand a
+stronger economic explanation.
 
-Use it when a candidate looks promising but short-lived. A large extra
-observation count says the apparent Sharpe may mostly be a short-sample
-story.
+The result keeps a summary table, a case table, and a degradation table.
+The degradation table is often the most useful teaching surface because
+it shows which in-sample winner lost rank out of sample.
 
 ### Limits
 
-MinTRL inherits the quality of the retained return series. It does not
-fix candidate mining, leakage, non-stationarity, changing market
-regimes, or survivorship-biased universes. It also does not compare many
-candidates at once; that broader selection-process question belongs to
-PBO and later DSR/effective trial diagnostics.
+PBO does not fix bad data, survivorship bias, point-in-time universe
+mistakes, revised-data leakage, or preprocessing that used future
+information before ledgr saw the inputs. It also depends on a meaningful
+candidate family. A panel of already-mined finalists understates the
+search that actually happened.
 
 ### Failure Modes
 
-The function fails closed when:
-
-- retained returns were not requested;
-- the completed candidates do not form one complete timestamp grid;
-- there are fewer than four post-first-row observations;
-- a return series is constant or non-finite;
-- `reference_sharpe`, `confidence`, or `risk_free_return` is invalid.
-
-These failures mean the evidence cannot support the diagnostic. They are
-not strategy judgments.
+The diagnostic fails closed when the panel has too few candidates, too
+few observations, non-finite returns, an invalid `S`, or a metric that
+does not return one finite score per candidate.
 
 ### References
 
-The MinTRL formula follows the Sharpe-ratio track-record-length
-expression used by Bailey and Lopez de Prado and exposed by
-PerformanceAnalytics as `MinTrackRecord()`. ledgr implements it
-natively; PerformanceAnalytics remains optional reference evidence, not
-a runtime dependency.
+This diagnostic follows the CSCV/PBO convention described by Bailey,
+Borwein, Lopez de Prado, and Zhu in their Probability of Backtest
+Overfitting paper. ledgr implements the diagnostic natively; the CRAN
+`pbo` package is used only as optional reference evidence in tests, not
+as a runtime dependency.
 
 ### Worked Example
 
-The contrast below uses the same choppy positive return pattern twice:
-once as a short sample and once as a longer sample. The average return
-story is similar, but MinTRL changes the interpretation because the
-longer track record carries more evidence.
+``` r
+stable_panel <- ledgr_return_panel(stable_returns)
+
+pbo_rotating <- ledgr_pbo(rotating_panel, S = 4)
+pbo_stable <- ledgr_pbo(stable_panel, S = 4)
+
+pbo_summary <- tibble::tibble(
+  scenario = c("rotating winner", "stable ranking"),
+  pbo = c(
+    tibble::as_tibble(pbo_rotating)$pbo,
+    tibble::as_tibble(pbo_stable)$pbo
+  )
+)
+
+knitr::kable(pbo_summary)
+```
+
+| scenario        | pbo |
+|:----------------|----:|
+| rotating winner |   1 |
+| stable ranking  |   0 |
+
+``` r
+tibble::as_tibble(pbo_rotating, what = "degradation")[
+  ,
+  c("case", "winner_candidate_id", "oos_best_candidate_id", "lambda", "below_threshold")
+] |>
+  transform(lambda = round(lambda, 3)) |>
+  knitr::kable()
+```
+
+| case | winner_candidate_id | oos_best_candidate_id | lambda | below_threshold |
+|-----:|:--------------------|:----------------------|-------:|:----------------|
+|    1 | early               | late                  | -0.511 | TRUE            |
+|    2 | early               | middle                | -0.511 | TRUE            |
+|    3 | early               | middle                | -1.099 | TRUE            |
+|    4 | middle              | early                 | -0.511 | TRUE            |
+|    5 | middle              | early                 | -1.099 | TRUE            |
+|    6 | late                | early                 | -1.099 | TRUE            |
+
+The rotating panel produces a high PBO because the in-sample winner is
+usually not the out-of-sample winner. The stable panel produces a low
+PBO because the candidate order survives the recombination. The `steady`
+column is a useful warning: it has the highest full-sample mean in the
+rotating panel, but it never wins the symmetric in-sample contests shown
+above.
+
+## Minimum Track Record Length
+
+A positive Sharpe ratio can still be too short to trust. MinTRL asks how
+much return history would be needed before an observed Sharpe clears a
+reference Sharpe threshold at the requested confidence level.
+
+### Question
+
+For each candidate, how many period-return observations are needed
+before the observed Sharpe is statistically distinguishable from the
+reference Sharpe?
+
+### Evidence
+
+MinTRL consumes each candidate column in the same return panel contract.
+The reference Sharpe and risk-free return are in the same per-period
+units as the input returns; passing an annualized threshold against
+period returns will make the evidence look weaker than intended.
+
+### Method Shape
+
+For each candidate, ledgr computes per-period excess returns, observed
+Sharpe, skewness and kurtosis, and the Bailey/Lopez de Prado minimum
+track record length convention. The output is measured in return
+observations, not calendar years.
+
+When an observed Sharpe is not above the reference, ledgr keeps the
+candidate in the table with an infinite required length and a status
+explaining the result.
+
+### Interpretation
+
+Read MinTRL as sample-size evidence. A short track record can have
+attractive returns and still need many more observations before it
+clears the threshold. The diagnostic does not say the strategy is
+robust, causal, or deployable.
+
+### Limits
+
+MinTRL is a single-series diagnostic. It does not adjust for how many
+candidates were tried, and it does not discover leakage, regime changes,
+or a flawed candidate-generation process.
+
+### Failure Modes
+
+The diagnostic fails closed when the panel has too few observations,
+constant or non-finite returns, or invalid `reference_sharpe`,
+`confidence`, or `risk_free_return` values.
+
+### References
+
+The computation follows the Sharpe-ratio track-record-length expression
+used by Bailey and Lopez de Prado and the
+`PerformanceAnalytics::MinTrackRecord()` convention. ledgr implements it
+natively; PerformanceAnalytics remains optional reference evidence.
+
+### Worked Example
+
+The same choppy return pattern can tell two different stories depending
+on how long it has persisted:
 
 ``` r
 short_pattern <- c(0.015, -0.010, 0.012, -0.006, 0.014, -0.008, 0.011, -0.004)
-short_sample <- cbind(
+short_returns <- data.frame(
   candidate = short_pattern,
-  peer = rev(short_pattern)
+  comparison = rev(short_pattern)
 )
-longer_sample <- do.call(rbind, rep(list(short_sample), 8))
+longer_returns <- do.call(rbind, rep(list(short_returns), 8))
 
+head(short_returns, 4)
+#>   candidate comparison
+#> 1     0.015     -0.004
+#> 2    -0.010      0.011
+#> 3     0.012     -0.008
+#> 4    -0.006      0.014
+head(longer_returns, 4)
+#>   candidate comparison
+#> 1     0.015     -0.004
+#> 2    -0.010      0.011
+#> 3     0.012     -0.008
+#> 4    -0.006      0.014
+```
+
+``` r
 min_trl_short <- ledgr_min_track_record(
-  make_retained_sweep(short_sample),
+  ledgr_return_panel(short_returns),
   reference_sharpe = 0
 )
 min_trl_longer <- ledgr_min_track_record(
-  make_retained_sweep(longer_sample),
+  ledgr_return_panel(longer_returns),
   reference_sharpe = 0
 )
 
 short_row <- tibble::as_tibble(min_trl_short)[1, ]
 longer_row <- tibble::as_tibble(min_trl_longer)[1, ]
-tibble::tibble(
+
+min_trl_table <- tibble::tibble(
   scenario = c("short sample", "longer same pattern"),
   observations = c(short_row$observations, longer_row$observations),
   observed_sharpe = round(c(short_row$observed_sharpe, longer_row$observed_sharpe), 3),
@@ -325,170 +324,88 @@ tibble::tibble(
     c(short_row$min_track_record_length, longer_row$min_track_record_length),
     1
   ),
-  extra_observations_needed = c(
+  extra_needed = c(
     short_row$extra_observations_needed,
     longer_row$extra_observations_needed
   ),
   status = c(short_row$status, longer_row$status)
 )
-#> # A tibble: 2 x 6
-#>   scenario      observations observed_sharpe min_track_record_len~1 extra_observations_n~2
-#>   <chr>                <int>           <dbl>                  <dbl>                  <dbl>
-#> 1 short sample             8           0.276                   37.1                     30
-#> 2 longer same ~           64           0.292                   33.1                      0
-#> # i abbreviated names: 1: min_track_record_length, 2: extra_observations_needed
-#> # i 1 more variable: status <chr>
+
+knitr::kable(min_trl_table)
 ```
 
-``` r
-min_trl_gap <- tibble::tibble(
-  scenario = c("short sample", "longer same pattern"),
-  observations = c(short_row$observations, longer_row$observations),
-  required = c(short_row$min_track_record_length, longer_row$min_track_record_length)
-)
+| scenario | observations | observed_sharpe | min_track_record_length | extra_needed | status |
+|:---|---:|---:|---:|---:|:---|
+| short sample | 8 | 0.276 | 37.1 | 30 | needs_more_observations |
+| longer same pattern | 64 | 0.292 | 33.1 | 0 | significant |
 
-ggplot2::ggplot(min_trl_gap, ggplot2::aes(x = scenario)) +
-  ggplot2::geom_col(
-    ggplot2::aes(y = observations),
-    fill = "#4F7FC8",
-    width = 0.62
-  ) +
-  ggplot2::geom_point(
-    ggplot2::aes(y = required),
-    color = "#B2182B",
-    size = 3.5
-  ) +
-  ggplot2::geom_text(
-    ggplot2::aes(y = observations, label = paste0("available: ", observations)),
-    vjust = -0.55,
-    size = 3.5
-  ) +
-  ggplot2::geom_text(
-    ggplot2::aes(y = required, label = paste0("required: ", round(required, 1))),
-    vjust = 1.6,
-    color = "#B2182B",
-    size = 3.5
-  ) +
-  ggplot2::labs(
-    x = NULL,
-    y = "Return observations"
-  ) +
-  ggplot2::theme_minimal(base_size = 13)
-```
-
-<img
-src="selection-integrity_files/figure-commonmark/min-trl-gap-plot-1.png"
-data-fig-alt="Bar chart comparing available observations with required MinTRL for the short and longer samples."
-alt="The short sample has less evidence than its required MinTRL; the longer same-pattern sample clears it." />
-
-The diagnostic keeps both candidates in the underlying table. It does
-not select the candidate or convert a longer sample into a deployment
-decision.
+The longer sample clears the required track length; the short sample
+does not. That is evidence about track-record sufficiency, not a
+deployment decision.
 
 ## Deflated Sharpe Ratio And Effective Trials
 
+A high Sharpe is less surprising after a large search. DSR asks whether
+the observed Sharpe still clears a multiple-testing adjustment after
+accounting for non-normal returns and the number of effectively
+independent candidates.
+
 ### Question
 
-`ledgr_dsr()` asks whether an observed Sharpe ratio still looks
-statistically meaningful after accounting for non-normal returns and the
-number of effectively independent candidates tried in the sweep.
+For each candidate, how much Sharpe evidence remains after ledgr
+accounts for the effective number of independent trials in the candidate
+family?
 
-The answer is the Deflated Sharpe Ratio (DSR) probability. A high
-probability says the candidate Sharpe clears the sweep-level
-multiple-testing adjustment under the supplied evidence. It is not a
-live-performance guarantee.
+The answer is the DSR probability. The related effective-trial count is
+estimated from return similarity when you do not supply it explicitly.
 
 ### Evidence
 
-DSR consumes the same retained sweep return panel as PBO and MinTRL:
-
-``` r
-dsr <- ledgr_dsr(sweep)
-```
-
-When `effective_trials` is not supplied, ledgr derives it with
-`ledgr_effective_trials()`: deterministic hierarchical clustering over
-`1 - correlation` distance on the retained return columns. The
-clustering output reports membership and the effective independent trial
-count. It does not inspect fills, positions, promotion records, or
-walk-forward folds.
+DSR consumes the same return panel as PBO and MinTRL. The
+effective-trial helper uses deterministic hierarchical clustering over
+`1 - correlation` distance on the candidate return columns. It does not
+use random starts, a seed argument, or a method menu.
 
 ### Method Shape
 
-For each candidate, ledgr computes:
-
-1.  per-period excess returns, using `risk_free_return` when supplied;
-2.  observed per-period Sharpe ratio;
-3.  return skewness and kurtosis;
-4.  variance of observed Sharpe ratios across the candidate family;
-5.  an expected maximum Sharpe from the effective independent trial
-    count;
-6.  the Bailey/Lopez de Prado DSR probability.
-
-The effective-trial helper is intentionally narrow in v1: one
-deterministic hierarchical method, no RNG, no seed argument, and no
-method menu. The method parameters are stored on the result.
+For each candidate, ledgr computes per-period excess returns, observed
+Sharpe, skewness and kurtosis, a family-level expected maximum Sharpe,
+and the DSR probability. If `effective_trials` is omitted,
+`ledgr_effective_trials()` derives a deterministic count from the return
+panel.
 
 ### Interpretation
 
 Read DSR as a multiple-testing adjustment for Sharpe evidence. It is
-stricter than looking at the best observed Sharpe in the sweep because
-it asks how many effectively independent attempts contributed to that
-best result.
-
-Use `ledgr_effective_trials()` when you want to inspect the effective-trial
-count directly:
-
-``` r
-clusters <- ledgr_effective_trials(sweep)
-as_tibble(clusters, what = "membership")
-```
-
-Use `as_tibble(dsr)` for the candidate-level DSR table. The
-`significant` column is a reporting flag at the requested confidence
-level; it is not a promotion rule.
+stricter than looking at the best Sharpe in the table because it asks
+how many effectively independent attempts contributed to that result.
+The `significant` column is a reporting flag at the requested confidence
+level, not a promotion rule.
 
 ### Limits
 
-DSR depends on the declared candidate family and the retained return
-panel. It does not fix leakage in upstream features, data revisions,
-survivorship bias, poor candidate design, non-stationarity, or too-short
-samples. The clustering count is an effective-trial estimate from return
-similarity, not proof of the true research path that produced the
-candidates.
-
-DSR is sweep-level in this release. It does not add per-fold train-sweep
-DSR to walk-forward degradation tables, and it does not replace PBO or
-MinTRL.
+DSR does not replace PBO or MinTRL. It does not prove a strategy will
+make money, and the clustering estimate is not proof of the true
+research path that created the candidates.
 
 ### Failure Modes
 
-The functions fail closed when:
-
-- retained returns were not requested;
-- the completed candidates do not form one complete timestamp grid;
-- there are fewer than two candidates or too few observations;
-- a return series is constant or non-finite;
-- clustering collapses to fewer than two effective trials for DSR;
-- `effective_trials`, `distance_threshold`, `confidence`, or
-  `risk_free_return` is invalid.
-
-These failures mean the evidence cannot support the diagnostic. They are
-not strategy judgments.
+The DSR family fails closed when the panel has too few candidates, too
+few observations, constant or non-finite returns, an invalid
+effective-trial count, or a clustering result that collapses to fewer
+than two effective trials.
 
 ### References
 
-The DSR formula follows the Deflated Sharpe Ratio shape described by
-Bailey and Lopez de Prado. ledgr implements it natively over retained
-return panels; quantstrat is used only as optional reference evidence in
-tests, not as a runtime dependency.
+The DSR follows the Deflated Sharpe Ratio convention in Bailey and Lopez
+de Prado, with clustering used only to estimate the effective number of
+trials. The optional quantstrat cross-check is test evidence, not a
+runtime dependency.
 
 ### Worked Example
 
-The sweep below has eight candidates but only two effective clusters:
-four parameter settings are near-duplicates of one return shape, and
-four are near-duplicates of another. The contrast shows why DSR cares
-about effective trials rather than raw column count.
+This panel has eight candidates, but they fall into two highly similar
+return families:
 
 ``` r
 shape_a <- c(-0.020, -0.010, 0.000, 0.010, 0.020, 0.030, 0.010, -0.020, 0.000, 0.020, 0.015, -0.005)
@@ -501,103 +418,78 @@ dsr_returns <- do.call(
   )
 )
 colnames(dsr_returns) <- c(paste0("shape_a_", 1:4), paste0("shape_b_", 1:4))
-dsr_sweep <- make_retained_sweep(dsr_returns)
+dsr_panel <- ledgr_return_panel(dsr_returns)
 
-ledgr_effective_trials(dsr_sweep)
-#> # ledgr effective-trial clustering
-#> # i effective trials: 2
-#> # i raw trials: 8
-#> # i distance threshold: 0.5000
-#>
-#> # A tibble: 8 x 3
-#>   candidate_id cluster_index cluster_id
-#>   <chr>                <int> <chr>
-#> 1 shape_a_1                1 cluster_001
-#> 2 shape_a_2                1 cluster_001
-#> 3 shape_a_3                1 cluster_001
-#> 4 shape_a_4                1 cluster_001
-#> 5 shape_b_1                2 cluster_002
-#> 6 shape_b_2                2 cluster_002
-#> 7 shape_b_3                2 cluster_002
-#> 8 shape_b_4                2 cluster_002
+head(as.data.frame(dsr_returns), 4)
+#>   shape_a_1 shape_a_2 shape_a_3 shape_a_4 shape_b_1 shape_b_2 shape_b_3 shape_b_4
+#> 1    -0.019    -0.018    -0.017    -0.016     0.029     0.028     0.027     0.026
+#> 2    -0.011    -0.012    -0.013    -0.014    -0.019    -0.018    -0.017    -0.016
+#> 3     0.001     0.002     0.003     0.004     0.024     0.023     0.022     0.021
+#> 4     0.009     0.008     0.007     0.006    -0.014    -0.013    -0.012    -0.011
 ```
 
 ``` r
-dsr_correlation <- cor(dsr_returns)
-candidate_order <- colnames(dsr_correlation)
-dsr_correlation_long <- expand.grid(
-  candidate_x = candidate_order,
-  candidate_y = candidate_order,
-  KEEP.OUT.ATTRS = FALSE,
-  stringsAsFactors = FALSE
-)
-dsr_correlation_long$correlation <- as.vector(dsr_correlation)
-dsr_correlation_long$candidate_x <- factor(
-  dsr_correlation_long$candidate_x,
-  levels = candidate_order
-)
-dsr_correlation_long$candidate_y <- factor(
-  dsr_correlation_long$candidate_y,
-  levels = rev(candidate_order)
-)
+effective <- ledgr_effective_trials(dsr_panel, distance_threshold = 0.15)
+effective_summary <- tibble::as_tibble(effective)
 
-ggplot2::ggplot(
-  dsr_correlation_long,
-  ggplot2::aes(x = candidate_x, y = candidate_y, fill = correlation)
-) +
-  ggplot2::geom_tile(color = "white", linewidth = 0.35) +
-  ggplot2::scale_fill_gradient2(
-    low = "#B2182B",
-    mid = "#F7F7F7",
-    high = "#2166AC",
-    midpoint = 0,
-    limits = c(-1, 1)
-  ) +
-  ggplot2::labs(
-    x = NULL,
-    y = NULL,
-    fill = "Correlation"
-  ) +
-  ggplot2::theme_minimal(base_size = 13) +
-  ggplot2::theme(
-    axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
-  )
+knitr::kable(tibble::tibble(
+  statistic = c("effective trials", "raw trials"),
+  value = c(effective_summary$effective_trials, effective_summary$raw_trials)
+))
 ```
 
-<img
-src="selection-integrity_files/figure-commonmark/dsr-correlation-heatmap-1.png"
-data-fig-alt="Correlation heatmap with two bright square blocks for shape_a and shape_b candidates."
-alt="The return-correlation matrix shows two high-correlation blocks, so the sweep has two effective trial families rather than eight independent trials." />
+| statistic        | value |
+|:-----------------|------:|
+| effective trials |     2 |
+| raw trials       |     8 |
 
 ``` r
-dsr <- ledgr_dsr(dsr_sweep)
-dsr
-#> # ledgr deflated Sharpe ratio
-#> # i candidates: 8
-#> # i effective trials: 2
-#> # i confidence: 0.950
-#>
-#> # A tibble: 8 x 6
-#>   candidate_id observed_sharpe expected_max_sharpe dsr_probability p_value significant
-#>   <chr>                  <dbl>               <dbl>           <dbl>   <dbl> <lgl>
-#> 1 shape_a_1            0.25869            0.015223         0.78365 0.21635 FALSE
-#> 2 shape_a_2            0.25708            0.015223         0.78086 0.21914 FALSE
-#> 3 shape_a_3            0.25445            0.015223         0.77728 0.22272 FALSE
-#> 4 shape_a_4            0.25090            0.015223         0.77303 0.22697 FALSE
-#> 5 shape_b_1            0.27454            0.015223         0.80806 0.19194 FALSE
-#> 6 shape_b_2            0.29136            0.015223         0.82341 0.17659 FALSE
-#> 7 shape_b_3            0.30981            0.015223         0.83934 0.16066 FALSE
-#> 8 shape_b_4            0.33000            0.015223         0.85565 0.14435 FALSE
+knitr::kable(effective$membership)
 ```
+
+| candidate_id | cluster_index | cluster_id  |
+|:-------------|--------------:|:------------|
+| shape_a_1    |             1 | cluster_001 |
+| shape_a_2    |             1 | cluster_001 |
+| shape_a_3    |             1 | cluster_001 |
+| shape_a_4    |             1 | cluster_001 |
+| shape_b_1    |             2 | cluster_002 |
+| shape_b_2    |             2 | cluster_002 |
+| shape_b_3    |             2 | cluster_002 |
+| shape_b_4    |             2 | cluster_002 |
+
+``` r
+dsr <- ledgr_dsr(dsr_panel, distance_threshold = 0.15)
+dsr_table <- tibble::as_tibble(dsr)[
+  ,
+  c("candidate_id", "observed_sharpe", "dsr_probability", "significant")
+]
+dsr_table$observed_sharpe <- round(dsr_table$observed_sharpe, 3)
+dsr_table$dsr_probability <- round(dsr_table$dsr_probability, 3)
+
+knitr::kable(dsr_table)
+```
+
+| candidate_id | observed_sharpe | dsr_probability | significant |
+|:-------------|----------------:|----------------:|:------------|
+| shape_a_1    |           0.259 |           0.784 | FALSE       |
+| shape_a_2    |           0.257 |           0.781 | FALSE       |
+| shape_a_3    |           0.254 |           0.777 | FALSE       |
+| shape_a_4    |           0.251 |           0.773 | FALSE       |
+| shape_b_1    |           0.275 |           0.808 | FALSE       |
+| shape_b_2    |           0.291 |           0.823 | FALSE       |
+| shape_b_3    |           0.310 |           0.839 | FALSE       |
+| shape_b_4    |           0.330 |           0.856 | FALSE       |
 
 ``` r
 two_effective_trials <- tibble::as_tibble(
-  ledgr_dsr(dsr_sweep, effective_trials = 2)
+  ledgr_dsr(dsr_panel, effective_trials = 2)
 )
 eight_effective_trials <- tibble::as_tibble(
-  ledgr_dsr(dsr_sweep, effective_trials = 8)
+  ledgr_dsr(dsr_panel, effective_trials = 8)
 )
-tibble::tibble(
+
+dsr_contrast <- tibble::tibble(
   assumption = c("clustered candidates", "treat all columns as independent"),
   effective_trials = c(2L, 8L),
   first_candidate_dsr = round(
@@ -608,56 +500,18 @@ tibble::tibble(
     3
   )
 )
-#> # A tibble: 2 x 3
-#>   assumption                       effective_trials first_candidate_dsr
-#>   <chr>                                       <int>               <dbl>
-#> 1 clustered candidates                            2               0.784
-#> 2 treat all columns as independent                8               0.757
+
+knitr::kable(dsr_contrast)
 ```
 
-``` r
-dsr_trial_curve <- tibble::tibble(
-  effective_trials = 2:8,
-  first_candidate_dsr = vapply(
-    2:8,
-    function(k) {
-      tibble::as_tibble(ledgr_dsr(dsr_sweep, effective_trials = k))$dsr_probability[[1]]
-    },
-    numeric(1)
-  )
-)
-dsr_trial_labels <- dsr_trial_curve[
-  dsr_trial_curve$effective_trials %in% c(2L, 8L),
-]
+| assumption                       | effective_trials | first_candidate_dsr |
+|:---------------------------------|-----------------:|--------------------:|
+| clustered candidates             |                2 |               0.784 |
+| treat all columns as independent |                8 |               0.757 |
 
-ggplot2::ggplot(
-  dsr_trial_curve,
-  ggplot2::aes(x = effective_trials, y = first_candidate_dsr)
-) +
-  ggplot2::geom_line(color = "#4F7FC8", linewidth = 0.8) +
-  ggplot2::geom_point(color = "#4F7FC8", size = 2.6) +
-  ggplot2::geom_text(
-    data = dsr_trial_labels,
-    ggplot2::aes(label = round(first_candidate_dsr, 3)),
-    vjust = -0.8,
-    size = 3.6
-  ) +
-  ggplot2::scale_x_continuous(breaks = 2:8) +
-  ggplot2::labs(
-    x = "Assumed effective trials",
-    y = "First-candidate DSR"
-  ) +
-  ggplot2::theme_minimal(base_size = 13)
-```
-
-<img
-src="selection-integrity_files/figure-commonmark/dsr-effective-trials-curve-1.png"
-data-fig-alt="Line chart of first-candidate DSR decreasing from effective trials 2 through 8."
-alt="The first-candidate DSR falls as the assumed number of independent trials rises." />
-
-The table is deliberately not a winner picker. It shows how much Sharpe
-evidence survives after the effective-trial adjustment, then leaves
-selection and promotion outside the diagnostic.
+The DSR value drops as the effective-trial assumption gets larger. That
+is the point of the diagnostic: it makes the cost of searching visible
+without turning the table into a winner picker.
 
 ## Where Next
 

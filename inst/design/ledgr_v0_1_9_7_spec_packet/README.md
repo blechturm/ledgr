@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec Packet
 
-Status: Batch 8 complete after Claude review; Batch 9 pending.
+Status: Batch 9 complete after Claude review; Batch 10 pending.
 
 This packet scopes v0.1.9.7 as the business-objective eligibility and
 validation-polish release after v0.1.9.6 shipped the validation substrate and
@@ -36,7 +36,8 @@ Scope:
 - add a public return-panel entry point so the selection-integrity diagnostics
   accept a return table directly (no sweep-object boilerplate);
 - add the worked-example craft clause and rebuild the Selection Integrity article
-  from scratch on that entry point;
+  from scratch on that entry point, consuming only the Selection Integrity
+  findings from the 2026-09-04 all-vignette review;
 - add the intraday metric-context M-1 guardrail as warning-only honesty
   protection;
 - conditionally add native K-Ratio if a named variant is reference-verified;
@@ -58,6 +59,8 @@ Non-scope:
 - no Triple Penance;
 - no walk-forward short-window cadence rework or intraday example;
 - no first-class intraday runtime;
+- no broad all-vignette freshness pass; the remaining 2026-09-04 review
+  findings are parked in `inst/design/horizon.md`;
 - no talib adapter, crypto-readiness spike, target-helper Pass 2, strategy
   schedule decorator, purging/embargo/CPCV, portfolio optimization,
   point-in-time data tables, paper/live, OMS, or liquidity/capacity work.

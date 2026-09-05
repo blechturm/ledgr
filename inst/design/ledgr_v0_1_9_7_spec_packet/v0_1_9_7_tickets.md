@@ -437,7 +437,7 @@ scope: return-panel-entry-point
 Priority: P1
 Effort: L
 Dependencies: LDG-2670, LDG-2662
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -459,6 +459,10 @@ rebuild teaches concept-first and shows the data plainly.
   clustered vs independent), rebuilt on the clean API.
 - Drop the current plots. Add a plot only where it genuinely reveals the geometry,
   done cleanly; otherwise none.
+- Consume the Selection Integrity-specific findings from the 2026-09-04
+  all-vignette review: use stronger method references / convention attribution,
+  keep the evidence-not-selection framing, and do not widen the batch into the
+  broader all-vignette cleanup.
 - Rewrite the doc-contract test to match the rebuilt article: non-vacuous content,
   rendered-value, and anti-overclaim checks, without brittle section headers.
 - Render the qmd/md pair, build the pkgdown site locally, and report the rendered
@@ -471,6 +475,8 @@ rebuild teaches concept-first and shows the data plainly.
   the public entry point.
 - No function-name-first or jargon-first opening sentences; each section motivates
   before mechanism and makes the data flow explicit.
+- References and convention attribution are precise enough for the shipped
+  methods without turning the article into a statistics derivation.
 - The calibrating contrasts execute; anti-overclaim language is intact.
 - The doc-contract test is non-vacuous and green.
 - The maintainer accepts the rendered article.
@@ -487,11 +493,37 @@ rebuild teaches concept-first and shows the data plainly.
 
 - Supersedes the LDG-2662 vignette refit content and the withdrawn LDG-2670 plots
   ticket. The LDG-2662 styleguide craft clause and doc-contract relaxation stand.
+- Rebuilt `vignettes/selection-integrity.qmd` around visible return tables and
+  `ledgr_return_panel()` input; no hidden sweep-construction helper remains.
+- The cautionary PBO, MinTRL, and DSR/effective-trial examples execute through
+  `ledgr_pbo()`, `ledgr_min_track_record()`, `ledgr_effective_trials()`, and
+  `ledgr_dsr()` on public return panels.
+- Dropped the previous plots and used compact rendered tables for the method
+  contrasts; no new plotting dependency or visual surface was added.
+- Updated the doc-contract test to lock panel-first input, rendered example
+  values, convention attribution, and anti-overclaim language without brittle
+  section-header assertions.
+- Rendered `vignettes/selection-integrity.md`; built the local pkgdown site via
+  `dev/build-site.R`, with the review article at
+  `docs/articles/selection-integrity.html`.
+- Verification run: Quarto render, targeted documentation-contract test,
+  pkgdown build, forbidden-overclaim `rg` sweep, ASCII scan, and
+  `git diff --check` all passed. `git diff --check` reported only expected
+  LF-to-CRLF notices.
+- Follow-up review fixes: pinned the rendered MinTRL and DSR outcome values,
+  removed the stray DSR `cat()` label and test assertion, added the
+  retained-sweep contract cross-link beside the shape-only sweep block, split
+  the effective-trials rendered output into separate chunks, and documented the
+  `steady` PBO teaching beat.
+- The broader all-vignette governance parking was split out before this batch
+  in commit `2742f9d`.
+- Awaiting Claude review.
 
 ### Source Reference
 
 - `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md` Sections 2.7 and 2.9
 - `inst/design/vignette_styleguide.md`
+- `inst/design/horizon.md` 2026-09-04 `[docs]` all-vignette review entry
 
 ### Classification
 

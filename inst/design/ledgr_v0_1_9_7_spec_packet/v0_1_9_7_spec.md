@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Batch 8 complete after Claude review; Batch 9 pending.
+**Status:** Batch 9 complete after Claude review; Batch 10 pending.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after
 v0.1.9.6: a serializable, hashed business-objective criterion chain
@@ -56,7 +56,9 @@ Binding artifacts:
   evidence-only diagnostics contracts; the closed-trade retention extension updates the
   sweep retention/identity surface recorded here.
 - `inst/design/ledgr_roadmap.md` -- the v0.1.9.6 row to flip Active -> Done.
-- `inst/design/horizon.md` -- the 2026-06-26 deferral-ledger entry to keep in sync.
+- `inst/design/horizon.md` -- the 2026-06-26 deferral-ledger entry to keep in sync,
+  plus the 2026-09-04 `[docs]` all-vignette review entry that feeds only the LDG-2671
+  Selection Integrity rebuild in this packet.
 
 Planning and contract inputs:
 
@@ -307,6 +309,13 @@ worked-example craft clause and relaxed the brittle doc-contract headers, but th
 still failed the maintainer's bar: it hid a fake-sweep helper, opened sections
 function-name-first, and carried plots that did not explain the method. The article is
 rebuilt from scratch on the Section 2.9 return-panel entry point.
+
+The 2026-09-04 all-vignette review of `3518b188` adds one more constraint for
+this section: consume only the Selection Integrity-specific findings here
+(visible return-panel input, concept-first flow, stronger references and
+convention attribution, executed contrasts, anti-overclaim guards). The rest of
+that review is parked in `inst/design/horizon.md` for a later documentation
+freshness pass and must not widen this packet.
 
 Binding:
 
