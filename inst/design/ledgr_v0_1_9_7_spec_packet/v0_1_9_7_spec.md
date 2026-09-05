@@ -1,6 +1,7 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Batch 9 complete after Claude review; Batch 10 pending.
+**Status:** Batches 0-3 and 8-9 complete after review; Batches 4-7 pending;
+Batches 10-11 blocked.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after
 v0.1.9.6: a serializable, hashed business-objective criterion chain

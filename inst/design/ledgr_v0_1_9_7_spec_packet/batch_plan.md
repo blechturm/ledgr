@@ -1,6 +1,7 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batch 9 complete after Claude review; Batch 10 pending.
+Status: Batches 0-3 and 8-9 complete after review; Batches 4-7 pending;
+Batches 10-11 blocked.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -10,6 +11,11 @@ A batch is the unit of Claude review. Batches group atomic tickets that can be
 implemented and reviewed together without mixing unrelated subsystems.
 
 Work one review batch at a time.
+
+Ticket dependencies are the hard readiness gate. Numeric batch order is the
+default review sequence; when an independent batch is completed out of order,
+the packet status must list the completed and blocked batches explicitly rather
+than treating the highest completed batch number as linear progress.
 
 For implementation batches:
 

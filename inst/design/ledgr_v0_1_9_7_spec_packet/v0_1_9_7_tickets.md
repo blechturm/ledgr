@@ -56,13 +56,13 @@ Ticket-cut decisions from spec review:
 
 ```text
 LDG-2659
-  -> LDG-2660
-  -> LDG-2661
-  -> LDG-2662
-  -> LDG-2663
-  -> LDG-2664
-  -> LDG-2665
-  -> LDG-2670
+  +-> LDG-2660
+  +-> LDG-2661
+  +-> LDG-2662
+  +-> LDG-2663
+  +-> LDG-2664
+  +-> LDG-2665
+  +-> LDG-2670
 LDG-2660 + LDG-2661 + LDG-2665 -> LDG-2666
 LDG-2665 + LDG-2666 -> LDG-2667
 LDG-2670 + LDG-2662 -> LDG-2671
@@ -70,8 +70,10 @@ LDG-2660 + LDG-2661 + LDG-2662 + LDG-2663 + LDG-2664 + LDG-2667 + LDG-2670 + LDG
 LDG-2659..LDG-2671 -> LDG-2669
 ```
 
-Batch order is authoritative even where tickets could be implemented in
-parallel.
+Ticket dependencies are the hard readiness gate. Numeric batch order is the
+default review sequence. If an independent batch is completed out of order,
+packet status must list completed and blocked batches explicitly rather than
+implying contiguous progress.
 
 ## Priority Levels
 
