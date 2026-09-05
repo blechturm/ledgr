@@ -190,11 +190,18 @@ paper/live work remain non-scope.
 
 The API and representation-boundary hardening cycle is scheduled as a future
 v0.1.9.x RFC candidate after the active v0.1.9.7 packet. Read the 2026-09-04
-`[infrastructure]` entry in `horizon.md`, the planned roadmap row, and the RFC
-pipeline row before opening that cycle. The local post-v0.1.9.6 findings can be
-fixed independently if they block active work, but namespace tiering,
-representation-boundary invariant ownership, behavior-neutral file moves, and
-`ledgr_run_fold()` phase extraction should be designed together.
+`[infrastructure]` and `[docs]` entries in `horizon.md`, the planned roadmap
+row, and the RFC pipeline row before opening that cycle. The local
+post-v0.1.9.6 code-review and all-vignette-review findings can be fixed
+independently if they block active work, but namespace tiering,
+representation-boundary invariant ownership, behavior-neutral file moves,
+`ledgr_run_fold()` phase extraction, API golden-path work, and public accessor
+gaps should be designed together.
+
+The verified all-vignette review findings are parked in `horizon.md` rather
+than folded wholesale into v0.1.9.7. The active packet consumes only the
+Selection Integrity-specific portion through LDG-2671; broader stale-fact and
+navigation cleanup waits for a later documentation freshness pass.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
 artifact-topology guidance, Quarto installed-vignette migration, README and

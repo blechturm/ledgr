@@ -278,6 +278,9 @@ Current planning context (active v0.1.9.7 packet):
   criteria, and the evidence-only sweep filter. Automatic promotion,
   objective-filtered walk-forward identity, first-class intraday runtime,
   paper/live work, OMS, and liquidity/capacity work remain non-scope.
+  The 2026-09-04 all-vignette review is parked in `inst/design/horizon.md`;
+  this packet consumes only its Selection Integrity-specific findings through
+  LDG-2671.
 
 ## Active Design Entry Points
 

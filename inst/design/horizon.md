@@ -137,6 +137,86 @@ that cycle, consider a dedicated "API and representation-boundary hardening"
 RFC before adding another large validation or execution surface. This entry
 authorizes no code changes and no API reshaping.
 
+### 2026-09-04 [docs] Post-v0.1.9.6 all-vignette review findings
+
+An external all-vignette review of main at `3518b188` / tag `v0.1.9.6`
+was spot-checked against the current branch. Most factual claims were real
+and should be treated as documentation drift / teaching debt, not as evidence
+that the execution, snapshot, identity, or validation diagnostics are broken.
+The reviewed baseline had 21 vignette sources, 231 R chunks, 30 non-executed
+chunks, and 132 exports. Current branch counts differ because v0.1.9.7 has
+already added the public return-panel entry point and renamed the validation
+diagnostics.
+
+Immediate active-packet routing:
+
+- The Selection Integrity-specific findings are already in the v0.1.9.7
+  path. LDG-2671 should consume them directly: no hidden fake-sweep helper,
+  concept-first openings, visible return-panel input, stronger method
+  citations / precise convention attribution, executed contrasts, and
+  anti-overclaim guards.
+- The broader all-vignette cleanup is not part of Batch 9. It should wait
+  until after v0.1.9.7 unless a stale claim blocks an active ticket or release
+  surface.
+
+Verified factual-drift items to route into the next documentation freshness
+pass:
+
+- `vignettes/articles/who-ledgr-is-for.qmd` says the first backtest takes
+  minutes and labels `bt` as R; the `bt` label is wrong, and the speed
+  statement should be recalibrated against the current internal benchmark
+  posture.
+- `vignettes/quickstart.qmd` sketches promotion with `eval: false` and does
+  not close the `single_run` handle in the cleanup path.
+- `vignettes/research-workflow.qmd` closes `promoted` before later using it,
+  which is technically possible for durable handles but teaches lifecycle
+  order poorly.
+- `vignettes/reproducibility.qmd` still says "future sweep mode."
+- `vignettes/data-input-and-snapshots.qmd` mentions
+  `ledgr_snapshot_info()` but should foreground the dense per-instrument /
+  pulse-panel requirement and show snapshot inspection earlier in the first
+  seal path.
+- `vignettes/indicators.qmd` teaches the compatibility
+  `ledgr_param_grid()` path before the preferred split-grid / active-alias
+  path.
+- `vignettes/metrics-and-accounting.qmd` omits
+  `ledgr_results(bt, what = "returns")` from the result-table surface.
+- `vignettes/sweeps.qmd` and `vignettes/walk-forward.qmd` still speak as if
+  selection-integrity diagnostics are unshipped; the walk-forward wording
+  should narrow to per-fold diagnostics where appropriate.
+- `vignettes/research-to-production.qmd` uses
+  `ledgr_experiment(..., params = ...)`, which is not a current
+  `ledgr_experiment()` argument.
+- `vignettes/ttr-and-adapter-indicators.qmd` has an `eval: false`
+  `ledgr_pulse_snapshot(snapshot, ...)` fragment whose `snapshot` object is
+  not created in the article.
+- `vignettes/strategy-authoring-tools.qmd` uses
+  `unclass(target)[["DEMO_01"]]`; the target-value accessor gap is already
+  parked in the strategy-helper / API-hardening stream.
+- `vignettes/metric-contexts-and-conventions.qmd` has become a catch-all for
+  zero-trade troubleshooting and compiled-accounting failure examples; decide
+  whether those belong in a troubleshooting or diagnostics surface.
+
+Broader findings to coordinate with the API and representation-boundary
+hardening RFC candidate:
+
+- Define a public golden path and classify exports by workflow,
+  construction, advanced inspection, and infrastructure tier. The concern is
+  current namespace flatness and documentation discoverability, not stale
+  compatibility aliases.
+- Add or route small public accessors where documentation currently exposes
+  internals, especially target-value reads and promotion / context inspection.
+- Review very large R files / functions as part of behavior-neutral boundary
+  extraction. The file-size concern is maintainability and invariant
+  synchronization, not immediate functional breakage.
+- Revisit public performance language after a reproducible benchmark article
+  can separate default R execution, opt-in compiled paths, and peer parity
+  without making public ranking claims.
+
+This entry authorizes no vignette rewrite, API change, or performance claim by
+itself. It is source memory for a later documentation freshness packet and for
+the scheduled API hardening RFC.
+
 ### 2026-06-26 [evaluation] Business-objective completion and robustness arc (deferred from v0.1.9.7)
 
 v0.1.9.7 ships the business-objective eligibility layer (`ledgr_business_objective()`
