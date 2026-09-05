@@ -1374,9 +1374,9 @@ testthat::test_that("sweep docs teach exploratory discipline and non-goals", {
   testthat::expect_match(readme, "Research Workflow", fixed = TRUE)
   testthat::expect_match(readme, "exploratory sweeps and candidate promotion", fixed = TRUE)
   testthat::expect_match(readme, "Sweeps", fixed = TRUE)
-  testthat::expect_match(readme, "does not ship automatic ranking", fixed = TRUE)
+  testthat::expect_match(readme, "automatic objective-based selection", fixed = TRUE)
   testthat::expect_match(readme, "The current ledgr research API is experiment-first", fixed = TRUE)
-  testthat::expect_match(readme, "includes sequential\\s+exploratory sweep support")
+  testthat::expect_match(readme, "includes memory-backed\\s+exploratory sweep support")
 
   for (help in list(sweep_help, candidate_help, key_help, promote_help, precompute_help, promotion_help)) {
     testthat::expect_match(help, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
@@ -2177,7 +2177,11 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
 
   testthat::expect_match(docs$readme, "ledgr_results(bt, what = \"returns\")", fixed = TRUE)
   testthat::expect_match(docs$readme, "Selection Integrity", fixed = TRUE)
-  testthat::expect_match(docs$readme, "business-objective filtering", fixed = TRUE)
+  testthat::expect_match(
+    docs$news,
+    "Deferred out of v0.1.9.6: business-objective filtering",
+    fixed = TRUE
+  )
   testthat::expect_no_match(docs$readme, "validation-toolkit statistics such as PBO/CSCV/DSR", fixed = TRUE)
 
   for (fn in c("ledgr_pbo", "ledgr_min_track_record", "ledgr_effective_trials", "ledgr_dsr")) {
@@ -2194,6 +2198,113 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
   testthat::expect_match(docs$horizon, "M-2 \\(cadence-blind walk-forward short-window warnings\\)")
   testthat::expect_match(docs$horizon, "L-1 \\(a bounded\\s+intraday example plus the whole-second tolerance record\\)")
   testthat::expect_match(docs$horizon, "No first-class intraday runtime behavior is\\s+authorized")
+})
+
+testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferrals", {
+  root <- testthat::test_path("..", "..")
+  paths <- list(
+    description = file.path(root, "DESCRIPTION"),
+    news = file.path(root, "NEWS.md"),
+    readme = file.path(root, "README.md"),
+    readme_source = file.path(root, "README.Rmd"),
+    pkgdown = file.path(root, "_pkgdown.yml"),
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    rfc_index = file.path(root, "inst", "design", "rfc", "README.md"),
+    agents = file.path(root, "AGENTS.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md"),
+    spec = file.path(
+      root, "inst", "design", "ledgr_v0_1_9_7_spec_packet",
+      "v0_1_9_7_spec.md"
+    )
+  )
+  testthat::skip_if_not(all(file.exists(unlist(paths))), "release-surface docs not available")
+
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+
+  testthat::expect_match(docs$description, "Version: 0.1.9.7", fixed = TRUE)
+  for (term in c(
+    "# ledgr 0.1.9.7",
+    "ledgr_return_panel()",
+    "ledgr_sweep_trades()",
+    "ledgr_business_objective()",
+    "ledgr_sweep_filter()",
+    "ledgr_k_ratio()",
+    "all-candidates\\s+objective\\s+evaluation",
+    "Objective hashes are provenance only",
+    "not first-class intraday runtime\\s+support",
+    "objective-filtered walk-forward identity",
+    "Triple\\s+Penance remains paper-verification gated"
+  )) {
+    testthat::expect_match(docs$news, term)
+  }
+
+  stale_objective_claim <- "does not ship[\\s\\S]+business-objective filtering"
+  testthat::expect_match(
+    "ledgr does not ship `ledgr_tune()`,\nbusiness-objective filtering",
+    stale_objective_claim,
+    perl = TRUE
+  )
+
+  for (doc in docs[c("readme", "readme_source")]) {
+    testthat::expect_match(doc, "public return panels", fixed = TRUE)
+    testthat::expect_match(doc, "business-objective eligibility results", fixed = TRUE)
+    testthat::expect_match(doc, "do\\s+not choose or promote candidates")
+    testthat::expect_match(doc, "do not\\s+prove future profitability")
+    testthat::expect_match(doc, "automatic objective-based selection", fixed = TRUE)
+    testthat::expect_match(doc, "objective-filtered\\s+walk-forward identity")
+    testthat::expect_no_match(doc, stale_objective_claim, perl = TRUE)
+  }
+
+  for (fn in c(
+    "ledgr_return_panel", "ledgr_sweep_trades", "ledgr_k_ratio",
+    "ledgr_business_objective", "ledgr_objective_criteria",
+    "ledgr_sweep_filter"
+  )) {
+    testthat::expect_match(docs$pkgdown, fn, fixed = TRUE)
+  }
+
+  testthat::expect_match(
+    docs$roadmap,
+    "| v0.1.9.7 | Active | Business-objective eligibility",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$roadmap, "native K-Ratio", fixed = TRUE)
+  testthat::expect_match(docs$roadmap, "Automatic selection or promotion", fixed = TRUE)
+  testthat::expect_match(
+    docs$design_index,
+    "seven classed/hashable\\s+business-objective criteria plus diagnostic thresholds"
+  )
+  testthat::expect_match(
+    docs$design_index,
+    "closed_trade_retention_storage_smoke.md",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$agents, "evidence-only all-candidates sweep filter", fixed = TRUE)
+  testthat::expect_match(
+    docs$rfc_index,
+    "business_objective_hash` and `panel_hash` remain evidence provenance",
+    fixed = TRUE
+  )
+
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-05)", fixed = TRUE)
+  testthat::expect_match(
+    docs$horizon,
+    "Objective-filtered walk-forward identity (synthesis D4)",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$horizon, "Triple Penance stays gated", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "M-1 closed in active v0.1.9.7", fixed = TRUE)
+  testthat::expect_match(
+    docs$spec,
+    "M-1 is closed\\s+in this packet, but the example remains grouped with the later intraday RFC"
+  )
+
+  public_release <- paste(docs$news, docs$readme, docs$readme_source, sep = "\n")
+  testthat::expect_no_match(public_release, "selects the best candidate", fixed = TRUE)
+  testthat::expect_no_match(public_release, "guarantees future profitability", fixed = TRUE)
+  testthat::expect_no_match(public_release, "automatically promotes", fixed = TRUE)
+  testthat::expect_no_match(public_release, "teaching\\s+plots")
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {

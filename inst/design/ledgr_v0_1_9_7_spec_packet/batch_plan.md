@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Batch Plan
 
-Status: Batches 0-9 complete after review; Batch 10 pending; Batch 11 blocked.
+Status: Batches 0-10 complete after review; Batch 11 pending.
 Spec: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`
 Tickets: `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`
 
@@ -431,7 +431,7 @@ Implementation notes:
 
 ## Batch 10 - Release Surfaces And Deferral Ledger
 
-Status: Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -454,6 +454,30 @@ Planning note:
   governance follow-up after the post-v0.1.9.6 API-footprint review. Verify the
   already-updated AGENTS, design-index, roadmap, horizon, and doc-contract pins
   at closeout, and complete the remaining release-surface updates in this batch.
+
+Implementation notes:
+
+- bumped `DESCRIPTION` to `0.1.9.7` and updated NEWS, README source/mirror,
+  roadmap, design index, RFC index, AGENTS, horizon, and the packet deferral
+  wording to describe the implemented release surface;
+- recorded the evidence-only boundary for business objectives and filtering,
+  the intraday M-1 warning-only guardrail, and the remaining D4, scored
+  composition, broader robustness, public-extension, Triple Penance, M-2/L-1,
+  and v0.2.x deferrals without selection, promotion, profitability, or
+  execution-identity claims;
+- verified `_pkgdown.yml` already indexes every new public v0.1.9.7 surface, so
+  no reference-index edit was required;
+- added non-vacuous release-surface and anti-overclaim documentation contracts.
+  The documentation-contract target passed with 1,755 expectations,
+  `tools::checkRd()` passed for all 142 Rd files, and release-surface, ASCII,
+  diff-hygiene, and no-runtime-change checks passed.
+- Review follow-up removed the inaccurate NEWS claim that the rebuilt Selection
+  Integrity article contains plots, made the stale business-objective claim
+  guard span wrapped lines under the Perl regex engine, added a synthetic
+  positive control against vacuity, and added a negative guard against
+  restoring the rejected teaching-plot language.
+- Claude re-review verified all follow-up guards and release claims and returned
+  the batch ready to commit.
 
 ## Batch 11 - Release Gate
 

@@ -1,6 +1,6 @@
 # ledgr v0.1.9.7 Spec
 
-**Status:** Batches 0-9 complete after review; Batch 10 pending; Batch 11 blocked.
+**Status:** Batches 0-10 complete after review; Batch 11 pending.
 **Target branch:** `v0.1.9.7`.
 **Scope:** The full business-objective eligibility layer plus validation polish after
 v0.1.9.6: a serializable, hashed business-objective criterion chain
@@ -567,7 +567,8 @@ Also deferred:
 
 - Triple Penance (original-paper verification unresolved).
 - walk-forward short-window cadence awareness (audit M-2).
-- intraday worked example and subsecond-tolerance documentation (audit L-1), pending M-1.
+- intraday worked example and subsecond-tolerance documentation (audit L-1); M-1 is closed
+  in this packet, but the example remains grouped with the later intraday RFC.
 - first-class intraday runtime implementation.
 - the talib indicator adapter (separate packet, v0.1.9.8).
 - crypto-readiness spike, target-helper Pass 2, and the strategy schedule decorator.

@@ -177,7 +177,7 @@ want to recover a function object.
 | I want to write strategies correctly. | [Strategy Development](https://blechturm.github.io/ledgr/articles/strategy-development.html) |
 | I want feature maps, indicators, and active aliases. | [Indicators](https://blechturm.github.io/ledgr/articles/indicators.html) |
 | I want exploratory sweeps and candidate promotion. | [Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) |
-| I want PBO/CSCV, MinTRL, DSR, and effective-trial diagnostics. | [Selection Integrity](https://blechturm.github.io/ledgr/articles/selection-integrity.html) |
+| I want return-panel evidence, PBO/CSCV, MinTRL, K-Ratio, DSR, and effective-trial diagnostics. | [Selection Integrity](https://blechturm.github.io/ledgr/articles/selection-integrity.html) |
 | I want cost and target-risk policy boundaries. | [Risk And Cost](https://blechturm.github.io/ledgr/articles/risk-and-cost.html) |
 | I want walk-forward evaluation. | [Walk-Forward](https://blechturm.github.io/ledgr/articles/walk-forward.html) |
 | I want sealed snapshots, durable stores, backup, and reopen. | [Experiment Store](https://blechturm.github.io/ledgr/articles/experiment-store.html) |
@@ -218,9 +218,10 @@ ledgr when you want the audit trail and adapter boundary to be explicit.
 
 The current ledgr research API is experiment-first. It includes memory-backed
 exploratory sweep support, compact saved sweeps with optional retained return
-series, classed target-risk transforms, optional parallel candidate dispatch,
-canonical single-run returns, retained-return panel projections, evidence-only
-selection-integrity diagnostics, and a scoped
+and closed-trade evidence, classed target-risk transforms, optional parallel
+candidate dispatch, canonical single-run returns, public return panels,
+evidence-only selection-integrity diagnostics, classed/hashable business
+objectives, and all-candidates eligibility tear-downs. It also includes a scoped
 `compiled_accounting_model = "spot_fifo"` opt-in for memory-backed spot-asset
 FIFO sweeps. Canonical R execution remains the default.
 
@@ -229,11 +230,15 @@ accounting model, and not a general compiled fold core. The target-risk layer
 is a target-vector transformation layer; it is not affordability enforcement,
 portfolio optimization, margin, shorting or borrow policy, liquidity/capacity
 modeling, OMS lifecycle behavior, or broker-grade risk control. The
-selection-integrity diagnostics do not choose or promote candidates and do not
-prove future profitability. ledgr does not ship `ledgr_tune()`,
-business-objective filtering, purging/embargo/CPCV, benchmark-relative
-diagnostics, broker adapters, paper trading, or live trading. Those are
-separate roadmap items with different state and safety requirements.
+selection-integrity diagnostics and business-objective eligibility results do
+not choose or promote candidates and do not prove future profitability.
+`business_objective_hash` is evidence provenance in this release, not run,
+sweep, candidate, promotion, session, or walk-forward identity. ledgr does not
+ship `ledgr_tune()`, automatic objective-based selection, objective-filtered
+walk-forward identity, scored objective composition, purging/embargo/CPCV,
+benchmark-relative diagnostics, broker adapters, paper trading, or live
+trading. Those are separate roadmap items with different state and safety
+requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes

@@ -196,7 +196,7 @@ tickets:
 
   - id: "LDG-2668"
     title: "Release surfaces and deferral ledger"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P2"
     effort: "M"
     dependencies:

@@ -6,6 +6,41 @@
   `panel_hash`, and are renamed to `ledgr_pbo()`,
   `ledgr_min_track_record()`, `ledgr_dsr()`, and
   `ledgr_effective_trials()` with no deprecated aliases.
+- Extended opt-in sweep retention with closed-trade evidence and added
+  `ledgr_sweep_trades()`. The compact retained table records deterministic
+  trade order, close time, realized P&L, and win/loss outcome; it is captured
+  during the sweep and is never reconstructed from fills.
+- Added `ledgr_business_objective()` and seven classed, serializable,
+  hashable eligibility criteria covering trade distribution, profit
+  distribution, strict-lattice stable regions, drawdown, run stability,
+  minimum trade count, and positive equity trajectory. Named DSR and MinTRL
+  diagnostic outputs can also be thresholded as evidence without being
+  recomputed. Objective hashes are provenance only and do not enter run,
+  sweep, candidate, promotion, session, or walk-forward identity.
+- Added `ledgr_sweep_filter()` as an evidence-only, all-candidates objective
+  evaluation. Its default table retains every completed candidate and every
+  criterion outcome, including failures. It does not rank, choose, or promote
+  a candidate, and candidate extraction, promotion, and walk-forward selection
+  reject the result explicitly.
+- Added native `ledgr_k_ratio()` using the pinned Kestner (2013) compounded-
+  return definition. Like the other Selection Integrity diagnostics, it is
+  evidence only and makes no future-profitability claim.
+- Closed the v0.1.9.6 intraday-audit M-1 honesty gap with a warning-only,
+  classed metric-context cadence guardrail. It detects intraday observations
+  paired with daily annualization assumptions without changing metric values,
+  execution behavior, or identity. This is not first-class intraday runtime
+  support.
+- Rebuilt the Selection Integrity article around visible return-panel inputs,
+  concept-first explanations, and executed cautionary contrasts for PBO/CSCV,
+  MinTRL, K-Ratio, DSR, and effective trials.
+- Deferred objective-filtered walk-forward identity, broader non-lattice
+  robustness criteria, scored/weighted objective composition, and a public
+  third-party criterion contract to a later business-objective RFC. Triple
+  Penance remains paper-verification gated; cadence-aware walk-forward window
+  warnings and the bounded intraday example remain with the later intraday
+  cycle. Purging/embargo/CPCV, portfolio optimization, point-in-time data,
+  benchmark-relative metrics, OMS, broker reconciliation, paper/live trading,
+  and liquidity/capacity remain separate future work.
 
 # ledgr 0.1.9.6
 

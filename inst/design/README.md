@@ -172,14 +172,15 @@ default changes remain non-scope.
   `audits/v0_1_9_6_intraday_readiness_audit.md`, and
   `ledgr_v0_1_9_6_spec_packet/peer_benchmark_redo_preflight.md`.
 
-The v0.1.9.7 packet is active. It extends the validation arc into
-business-objective eligibility and validation polish: classed/hashable
-business-objective criteria, evidence-only all-candidates filtering,
-closed-trade retention, strict-lattice stable-region work, conditional K-Ratio,
-the intraday metric-context guardrail, the public return-panel entry point, and
-the Selection Integrity vignette rebuild. Automatic promotion,
-objective-filtered walk-forward identity, first-class intraday runtime, and
-paper/live work remain non-scope.
+The v0.1.9.7 packet is active. Its implemented validation-arc scope is
+business-objective eligibility and validation polish: seven classed/hashable
+business-objective criteria plus diagnostic thresholds, evidence-only
+all-candidates filtering, closed-trade retention, a strict-lattice
+stable-region criterion, native K-Ratio, the intraday metric-context guardrail,
+the public return-panel entry point, and the Selection Integrity vignette
+rebuild. Automatic selection or promotion, objective-filtered walk-forward
+identity, scored objective composition, broader non-lattice robustness
+criteria, first-class intraday runtime, and paper/live work remain non-scope.
 
 - Spec: `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`.
 - Tickets: `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`.
@@ -187,6 +188,9 @@ paper/live work remain non-scope.
 - Batch plan: `ledgr_v0_1_9_7_spec_packet/batch_plan.md`.
 - Return-panel entry point design:
   `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`.
+- Spike and storage evidence:
+  `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md` and
+  `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`.
 
 The API and representation-boundary hardening cycle is scheduled as a future
 v0.1.9.x RFC candidate after the active v0.1.9.7 packet. Read the 2026-09-04
@@ -714,7 +718,7 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
-| active v0.1.9.7 packet | `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `ledgr_v0_1_9_7_spec_packet/tickets.yml`, `ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`, `audits/v0_1_9_6_intraday_readiness_audit.md`, `vignette_styleguide.md`, `contracts.md`, `ledgr_roadmap.md` |
+| active v0.1.9.7 packet | `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `ledgr_v0_1_9_7_spec_packet/tickets.yml`, `ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`, `audits/v0_1_9_6_intraday_readiness_audit.md`, `vignette_styleguide.md`, `contracts.md`, `ledgr_roadmap.md` |
 | Future API / representation-boundary hardening RFC | `horizon.md` 2026-09-04 `[infrastructure]` entry, `ledgr_roadmap.md` planned v0.1.9.x hardening row, `rfc/README.md` pipeline row, `contracts.md`, `tests/testthat/test-api-exports.R`, `R/backtest-runner.R`, `R/backtest.R`, `R/sweep.R` |
 | Target risk release record | `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md` |
 | Walk-forward release record | `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `ledgr_v0_1_9_4_spec_packet/tickets.yml`, `ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (with Amendment 1 in Section 14, Amendment 2 in Section 16, ticket-cut gates in Section 17), `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section), `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `contracts.md` |

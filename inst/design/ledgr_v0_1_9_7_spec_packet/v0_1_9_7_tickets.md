@@ -933,7 +933,7 @@ scope: sweep-filter
 Priority: P2
 Effort: M
 Dependencies: LDG-2660, LDG-2661, LDG-2662, LDG-2663, LDG-2664, LDG-2667, LDG-2670, LDG-2671
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -974,6 +974,29 @@ NEWS for the implemented v0.1.9.7 scope.
   and 8
 - `inst/design/horizon.md`
 - `inst/design/ledgr_roadmap.md`
+
+### Implementation Notes
+
+- Bumped `DESCRIPTION` to `0.1.9.7` and updated NEWS, README source/mirror,
+  roadmap, design index, RFC index, AGENTS, horizon, and packet wording for the
+  implemented v0.1.9.7 scope.
+- Kept business-objective and filter outputs evidence-only, recorded the M-1
+  warning-only intraday guardrail, and preserved the D4, scored-composition,
+  broader-robustness, public-extension, Triple Penance, M-2/L-1, and v0.2.x
+  deferrals with their reasons.
+- Verified `_pkgdown.yml` already contains the return-panel, closed-trade,
+  K-Ratio, business-objective, criterion, and sweep-filter reference entries;
+  no generated reference-index change was necessary.
+- Added release-surface and anti-overclaim documentation contracts. The target
+  passed with 1,755 expectations; `tools::checkRd()` passed all 142 Rd files;
+  release-surface integrity, ASCII, diff-hygiene, and no-runtime-change checks
+  also passed.
+- Review follow-up removed the inaccurate NEWS teaching-plot claim, hardened
+  the stale business-objective claim guard across wrapped lines under the Perl
+  regex engine, added a synthetic positive control against vacuity, and added
+  a negative contract against restoring the rejected plot language.
+- Claude re-review verified the corrected guards and release surfaces and
+  returned the ticket ready to commit.
 
 ### Classification
 

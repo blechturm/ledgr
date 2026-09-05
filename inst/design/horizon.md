@@ -26,10 +26,11 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-04):** v0.1.9.6 has closed. v0.1.9.7 is active
-at `inst/design/ledgr_v0_1_9_7_spec_packet/`. Horizon entries below remain
-non-binding unless a future active packet, roadmap, contracts, or an accepted
-RFC promotes them.
+**Current packet note (2026-09-05):** v0.1.9.6 has closed. v0.1.9.7 is active
+at `inst/design/ledgr_v0_1_9_7_spec_packet/`; its implementation scope has
+landed and the release gate remains. Horizon entries below remain non-binding
+unless a future active packet, roadmap, contracts, or an accepted RFC promotes
+them.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet
@@ -247,6 +248,16 @@ closed-trade retention extension were pulled into v0.1.9.7, so they are no longe
 deferred. Routing: a dedicated RFC when this arc opens, after the v0.1.9.8 talib
 adapter; it extends the accepted D2 / D4 contracts in the validation-toolkit synthesis.
 This entry authorizes nothing.
+
+Related v0.1.9.7 closeout deferrals remain separate from that four-part RFC:
+Triple Penance stays gated on original-paper verification; cadence-aware
+walk-forward short-window warnings and the bounded intraday example stay with
+the later intraday RFC; purging/embargo/CPCV, portfolio optimization,
+point-in-time data, and benchmark-relative metrics need their own substrate;
+and OMS, broker reconciliation, paper/live trading, and liquidity/capacity
+remain later execution-policy work. The talib adapter, crypto-readiness spike,
+target-helper Pass 2, and strategy schedule decorator retain their separately
+planned homes rather than entering this release.
 
 ### 2026-06-14 [architecture] General ML-strategy preparedness (QRF ranking as the motivating spike)
 
@@ -551,8 +562,9 @@ calendar mismatch guardrails are not wired into the metric path, walk-forward
 short-window warnings are cadence-blind, and the execution/cost policy is
 cadence-neutral next-pulse execution but not a full intraday microstructure
 model. No intraday runtime implementation was authorized or made in v0.1.9.6.
-Sweep this entry to `## Resolved` at the v0.1.9.6 closeout after the findings
-are copied into the next planning cycle.
+The entry remains open after the v0.1.9.6 closeout because M-1, M-2, and L-1
+were routed forward. The status update below records the completed M-1 work and
+keeps the remaining intraday items explicit.
 
 **Status update 2026-09-05: M-1 closed in active v0.1.9.7.** LDG-2663
 closes the metric-context honesty gap with a warning-only, classed cadence
@@ -3871,6 +3883,15 @@ surprises once the product arc completes.
 
 ### 2026-06-07 [planning] Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture
 
+**Status update 2026-09-05: v0.1.9.7 continuation implemented.**
+Business-objective eligibility and native K-Ratio are no longer deferred.
+v0.1.9.7 adds the seven-criterion all-pass objective, diagnostic thresholds,
+closed-trade evidence, a strict-lattice stable-region criterion, and the
+all-candidates `ledgr_sweep_filter()` evidence surface. Objective-filtered
+walk-forward identity, Triple Penance, purging/embargo/CPCV,
+benchmark-relative diagnostics, and portfolio optimization remain deferred;
+the 2026-06-26 entry above is the current business-objective completion ledger.
+
 **Status update 2026-06-15: v0.1.9.6 substrate and diagnostics implemented.**
 The packet shipped the canonical return stream, retained-return panel bridge,
 adapter-shaped projections, native PBO/CSCV after the green spike,
@@ -3880,9 +3901,9 @@ adapter-runtime prior for PBO specifically: `pbo` remains an optional reference
 cross-check, while ledgr ships a native implementation over its retained-return
 panel contract. Business-objective filtering, K-Ratio, Triple Penance,
 purging/embargo/CPCV, benchmark-relative diagnostics, portfolio optimization,
-and walk-forward objective-filtered identity remain deferred. Sweep this entry
-to `## Resolved` at the v0.1.9.6 closeout after those deferrals are copied into
-the next planning packet.
+and walk-forward objective-filtered identity remain deferred. Those deferrals
+were carried forward through the v0.1.9.6 closeout; the later status update
+records which items v0.1.9.7 consumed.
 
 **Status update 2026-06-14: maintainer-amended with a PBO spike gate.**
 The accepted synthesis remains binding, but v0.1.9.6 no longer treats

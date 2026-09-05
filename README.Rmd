@@ -114,6 +114,7 @@ truth; trades, equity, and metrics are views over that evidence.
 ```{r inspect}
 ledgr_results(bt, what = "trades")
 head(ledgr_results(bt, what = "equity"), 3)
+head(ledgr_results(bt, what = "returns"), 3)
 ```
 
 Stored strategy provenance is inspectable without rerunning or evaluating the
@@ -137,9 +138,13 @@ recover a function object.
 | Question | Article |
 | --- | --- |
 | I want the full research loop: snapshot, sweep, promotion, reopen. | [Research Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html) |
+| I want the shortest runnable path through the package. | [Quickstart](https://blechturm.github.io/ledgr/articles/quickstart.html) |
 | I want to write strategies correctly. | [Strategy Development](https://blechturm.github.io/ledgr/articles/strategy-development.html) |
 | I want feature maps, indicators, and active aliases. | [Indicators](https://blechturm.github.io/ledgr/articles/indicators.html) |
 | I want exploratory sweeps and candidate promotion. | [Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) |
+| I want return-panel evidence, PBO/CSCV, MinTRL, K-Ratio, DSR, and effective-trial diagnostics. | [Selection Integrity](https://blechturm.github.io/ledgr/articles/selection-integrity.html) |
+| I want cost and target-risk policy boundaries. | [Risk And Cost](https://blechturm.github.io/ledgr/articles/risk-and-cost.html) |
+| I want walk-forward evaluation. | [Walk-Forward](https://blechturm.github.io/ledgr/articles/walk-forward.html) |
 | I want sealed snapshots, durable stores, backup, and reopen. | [Experiment Store](https://blechturm.github.io/ledgr/articles/experiment-store.html) |
 | I want hashes, provenance tiers, and limits of recovery. | [Reproducibility](https://blechturm.github.io/ledgr/articles/reproducibility.html) |
 | I want fills, trades, equity, metrics, and metric context. | [Metrics And Accounting](https://blechturm.github.io/ledgr/articles/metrics-and-accounting.html) |
@@ -166,7 +171,7 @@ things well.
 |---|---|
 | sealed snapshots and hashes | market-data acquisition |
 | pulse construction and no-lookahead contexts | indicator calculations through adapters |
-| target validation, fills, and ledger events | charting and visualization |
+| target validation, target-risk transforms, fills, and ledger events | charting and visualization |
 | run identity, provenance, and result reconstruction | downstream analytics and reporting |
 
 This posture is deliberate. If you want an all-in-one charting or
@@ -175,11 +180,29 @@ when you want the audit trail and adapter boundary to be explicit.
 
 ## Scope
 
-The current ledgr research API is experiment-first and includes sequential
-exploratory sweep support. It does not ship automatic ranking, `ledgr_tune()`,
-parallel sweep, walk-forward/PBO/CSCV helpers, full sweep artifact persistence,
-broker adapters, paper trading, live trading, or short-selling semantics. Those
-are separate roadmap items with different state and safety requirements.
+The current ledgr research API is experiment-first. It includes memory-backed
+exploratory sweep support, compact saved sweeps with optional retained return
+and closed-trade evidence, classed target-risk transforms, optional parallel
+candidate dispatch, canonical single-run returns, public return panels,
+evidence-only selection-integrity diagnostics, classed/hashable business
+objectives, and all-candidates eligibility tear-downs. It also includes a scoped
+`compiled_accounting_model = "spot_fifo"` opt-in for memory-backed spot-asset
+FIFO sweeps. Canonical R execution remains the default.
+
+The compiled opt-in is not durable `ledgr_run()` integration, not a non-spot
+accounting model, and not a general compiled fold core. The target-risk layer
+is a target-vector transformation layer; it is not affordability enforcement,
+portfolio optimization, margin, shorting or borrow policy, liquidity/capacity
+modeling, OMS lifecycle behavior, or broker-grade risk control. The
+selection-integrity diagnostics and business-objective eligibility results do
+not choose or promote candidates and do not prove future profitability.
+`business_objective_hash` is evidence provenance in this release, not run,
+sweep, candidate, promotion, session, or walk-forward identity. ledgr does not
+ship `ledgr_tune()`, automatic objective-based selection, objective-filtered
+walk-forward identity, scored objective composition, purging/embargo/CPCV,
+benchmark-relative diagnostics, broker adapters, paper trading, or live
+trading. Those are separate roadmap items with different state and safety
+requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already durable when
 the run finishes. Most result inspection opens and closes its own read
