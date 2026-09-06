@@ -2001,97 +2001,168 @@ testthat::test_that("selection integrity article teaches shipped diagnostics as 
   )
 
   for (doc in docs) {
-    testthat::expect_match(doc, "one\\s+method\\s+family")
-    testthat::expect_match(doc, "candidate return panel", fixed = TRUE)
-    testthat::expect_match(doc, "one row per period", fixed = TRUE)
-    testthat::expect_match(doc, "column[[:space:]]+per[[:space:]]+candidate")
-    testthat::expect_match(doc, "ledgr_return_panel", fixed = TRUE)
-    testthat::expect_match(doc, "Raw matrices and data frames are wrapped", fixed = TRUE)
-    testthat::expect_match(doc, "same\\s+`panel_hash`\\s+follows the evidence")
+    for (heading in c(
+      "## Start With The Evidence",
+      "## Four Questions, Not Four Scores",
+      "## When The Winner Keeps Changing: PBO/CSCV",
+      "## When The Track Record Is Too Short: MinTRL",
+      "## When The Endpoint Hides The Path: K-Ratio",
+      "## When Many Candidates Are Variations Of The Same Idea: DSR",
+      "## Turn Diagnostics Into Eligibility, Not A Pick",
+      "## Primary References",
+      "## Where Next"
+    )) {
+      testthat::expect_match(doc, heading, fixed = TRUE)
+    }
+
+    for (surface in c(
+      "ledgr_return_panel", "ledgr_sweep_returns_panel", "ledgr_pbo",
+      "ledgr_min_track_record", "ledgr_k_ratio", "ledgr_dsr",
+      "ledgr_effective_trials", "ledgr_business_objective", "ledgr_sweep_filter"
+    )) {
+      testthat::expect_match(doc, surface, fixed = TRUE)
+    }
+
+    testthat::expect_match(doc, "Evidence is not selection", fixed = TRUE)
+    testthat::expect_match(doc, "one candidate-return panel", fixed = TRUE)
+    testthat::expect_match(doc, "four\\s+kinds\\s+of\\s+evidence")
+    testthat::expect_match(doc, "Backtest\\s+overfitting\\s+is\\s+this\\s+adaptation")
+    testthat::expect_match(doc, "where\\s+the\\s+evidence\\s+lives,\\s+and\\s+what\\s+kind\\s+of\\s+doubt\\s+it\\s+tests")
+    testthat::expect_match(doc, "same object through", fixed = TRUE)
     testthat::expect_match(doc, "For the full retained-sweep contract", fixed = TRUE)
+    testthat::expect_match(doc, "four\\s+contiguous\\s+three-period\\s+subsets")
+    testthat::expect_match(doc, "choose\\s+the\\s+temporal\\s+granularity\\s+before\\s+reading\\s+the\\s+result")
+    testthat::expect_match(doc, "out-of-sample\\s+segments\\s+that\\s+were\\s+held\\s+back\\s+from\\s+the\\s+choice")
+    testthat::expect_match(doc, "`lambda`\\s+is\\s+its\\s+log-odds")
+    testthat::expect_match(doc, "`lambda <= 0`\\s+means\\s+the\\s+winner\\s+landed\\s+in\\s+the\\s+bottom\\s+half")
+    testthat::expect_match(doc, "highest\\s+full-sample\\s+mean\\s+return")
+    testthat::expect_match(doc, "never\\s+wins\\s+one\\s+of\\s+the\\s+six\\s+in-sample\\s+contests")
+    testthat::expect_match(doc, "first 12 observations", fixed = TRUE)
+    testthat::expect_match(doc, "full 80 observations", fixed = TRUE)
+    testthat::expect_match(doc, "not\\s+a\\s+smaller\\s+sample\\s+copied\\s+repeatedly")
+    testthat::expect_match(doc, "Sharpe\\s+means\\s+mean\\s+excess\\s+return\\s+divided\\s+by\\s+its\\s+standard\\s+deviation")
+    testthat::expect_match(doc, "return\\s+asymmetry\\s+and\\s+tail\\s+weight")
+    testthat::expect_match(doc, "confidence\\s+level\\s+sets\\s+the\\s+one-sided\\s+evidence\\s+threshold")
+    testthat::expect_match(doc, "explicitly monthly", fixed = TRUE)
+    testthat::expect_match(doc, "periods_per_year = 12", fixed = TRUE)
+    testthat::expect_match(doc, "running\\s+sum\\s+of\\s+log\\s+returns")
+    testthat::expect_match(doc, "standard\\s+error\\s+measures\\s+how\\s+precisely\\s+that\\s+slope\\s+is\\s+estimated")
+    testthat::expect_match(doc, "positive_trajectory", fixed = TRUE)
+    testthat::expect_match(doc, "at least 0.85", fixed = TRUE)
+    testthat::expect_match(doc, "analyst\\s+policy,\\s+not\\s+a\\s+discovered\\s+truth")
+    testthat::expect_match(doc, "ledgr\\s+operationalization")
+    testthat::expect_match(doc, "do\\s+not\\s+prescribe\\s+this\\s+exact\\s+estimator")
+    testthat::expect_match(doc, "multiple\\s+testing\\s+creates\\s+more\\s+opportunities")
+    testthat::expect_match(doc, "every\\s+required\\s+pairwise\\s+distance\\s+stays\\s+within\\s+the\\s+threshold")
+    testthat::expect_match(doc, "exact\\s+membership\\s+remains\\s+available")
+    testthat::expect_match(doc, "`expected_max_sharpe`\\s+is\\s+the\\s+reference\\s+level")
+    testthat::expect_match(doc, "returns every completed", fixed = TRUE)
+    testthat::expect_match(doc, "candidate\\s+with\\s+retained\\s+returns", perl = TRUE)
+    testthat::expect_match(doc, "evidence\\s+provenance,\\s+not\\s+execution\\s+or\\s+selection\\s+identity")
+    testthat::expect_match(doc, "four candidates are evaluated against", fixed = TRUE)
+    testthat::expect_match(doc, "Read each column as follows", fixed = TRUE)
+    testthat::expect_match(doc, "These\\s+are\\s+example\\s+policies", perl = TRUE)
+    testthat::expect_match(doc, "universal\\s+research\\s+thresholds", perl = TRUE)
+    testthat::expect_match(doc, "candidate-level all-pass result", fixed = TRUE)
+    testthat::expect_match(doc, "One failed row is enough to", fixed = TRUE)
+    testthat::expect_match(
+      doc,
+      "candidate ineligible because the objective uses all-pass",
+      fixed = TRUE
+    )
+    testthat::expect_match(doc, "`fast10_slow20` clears all four requirements", fixed = TRUE)
+    testthat::expect_match(doc, "That final `TRUE` is still", fixed = TRUE)
+    testthat::expect_match(doc, "selection or profitability claim", fixed = TRUE)
+
+    for (column in c(
+      "candidate_id", "criterion_id", "observed_value", "threshold",
+      "passed", "evidence_source", "eligible"
+    )) {
+      testthat::expect_match(doc, paste0("- `", column, "`"), fixed = TRUE)
+    }
+
+    for (doi in c(
+      "10.21314/JCF.2016.322",
+      "10.21314/JOR.2012.255",
+      "10.3905/jpm.2014.40.5.094",
+      "10.2139/ssrn.2230949"
+    )) {
+      testthat::expect_match(doc, doi, fixed = TRUE)
+    }
+
     testthat::expect_no_match(doc, "make_retained_sweep", fixed = TRUE)
-    testthat::expect_no_match(doc, "ggplot2::", fixed = TRUE)
-    testthat::expect_match(doc, "## Probability Of Backtest Overfitting\\s+A parameter search")
-    testthat::expect_match(doc, "ledgr_pbo", fixed = TRUE)
-    testthat::expect_match(doc, "retained sweep", fixed = TRUE)
-    testthat::expect_match(doc, "Probability of Backtest Overfitting", fixed = TRUE)
-    testthat::expect_match(doc, "Combinatorially Symmetric Cross Validation", fixed = TRUE)
-    testthat::expect_match(doc, "rotating winner", fixed = TRUE)
-    testthat::expect_match(doc, "stable ranking", fixed = TRUE)
-    testthat::expect_match(doc, "highest\\s+full-sample\\s+mean")
-    testthat::expect_match(doc, "never\\s+wins\\s+the\\s+symmetric\\s+in-sample\\s+contests")
-    testthat::expect_match(doc, "not as a verdict on one\\s+candidate")
-    testthat::expect_match(doc, "choose the winner", fixed = TRUE)
-    testthat::expect_match(doc, "promote a candidate", fixed = TRUE)
-    testthat::expect_match(doc, "prove\\s+future\\s+profitability")
+    testthat::expect_no_match(doc, "rep(list(short_returns", fixed = TRUE)
     testthat::expect_no_match(doc, "guarantees future profitability", fixed = TRUE)
     testthat::expect_no_match(doc, "automatically promote", fixed = TRUE)
-    testthat::expect_no_match(doc, "business-objective filtering", fixed = TRUE)
     testthat::expect_no_match(doc, "selects the best", fixed = TRUE)
-    testthat::expect_match(doc, "## Minimum Track Record Length\\s+A positive Sharpe ratio")
-    testthat::expect_match(doc, "Minimum Track Record Length", fixed = TRUE)
-    testthat::expect_match(doc, "ledgr_min_track_record", fixed = TRUE)
-    testthat::expect_match(doc, "observed Sharpe", fixed = TRUE)
-    testthat::expect_match(doc, "skewness and kurtosis", fixed = TRUE)
-    testthat::expect_match(doc, "same\\s+per-period\\s+units")
-    testthat::expect_match(doc, "PerformanceAnalytics", fixed = TRUE)
-    testthat::expect_match(doc, "optional reference evidence", fixed = TRUE)
-    testthat::expect_match(doc, "short sample", fixed = TRUE)
-    testthat::expect_match(doc, "longer same pattern", fixed = TRUE)
-    testthat::expect_match(doc, "does\\s+not\\s+say\\s+the\\s+strategy\\s+is\\s+robust,\\s+causal,\\s+or\\s+deployable")
-    testthat::expect_match(doc, "## K-Ratio Path Consistency\\s+Two strategies")
-    testthat::expect_match(doc, "ledgr_k_ratio", fixed = TRUE)
-    testthat::expect_match(doc, "Kestner 2013", fixed = TRUE)
-    testthat::expect_match(doc, "periods_per_year", fixed = TRUE)
-    testthat::expect_match(doc, "does not infer it from", fixed = TRUE)
-    testthat::expect_match(doc, "does\\s+not\\s+separate welcome upside variation from drawdowns")
-    testthat::expect_match(doc, "independent of the future\\s+`positive_trajectory` criterion")
-    testthat::expect_match(doc, "## Deflated Sharpe Ratio And Effective Trials\\s+A high Sharpe is less surprising")
-    testthat::expect_match(doc, "Deflated Sharpe Ratio And Effective Trials", fixed = TRUE)
-    testthat::expect_match(doc, "ledgr_dsr", fixed = TRUE)
-    testthat::expect_match(doc, "ledgr_effective_trials", fixed = TRUE)
-    testthat::expect_match(doc, "deterministic hierarchical clustering")
-    testthat::expect_match(doc, "random starts", fixed = TRUE)
-    testthat::expect_match(doc, "seed argument", fixed = TRUE)
-    testthat::expect_match(doc, "method menu", fixed = TRUE)
-    testthat::expect_match(doc, "not a[[:space:]]+promotion[[:space:]]+rule")
-    testthat::expect_match(doc, "without turning\\s+the table into a winner picker")
-    testthat::expect_match(doc, "clustered candidates", fixed = TRUE)
-    testthat::expect_match(doc, "treat all columns as independent", fixed = TRUE)
-    testthat::expect_match(doc, "optional quantstrat cross-check")
-    testthat::expect_match(doc, "Bailey", fixed = TRUE)
-    testthat::expect_match(doc, "Borwein", fixed = TRUE)
-    testthat::expect_match(doc, "Lopez de Prado", fixed = TRUE)
-    testthat::expect_match(doc, "Deflated Sharpe Ratio convention")
+    testthat::expect_no_match(doc, "future `positive_trajectory`", fixed = TRUE)
   }
+
   testthat::expect_match(docs[["md"]], "\\|\\s+rotating winner\\s+\\|\\s+1\\s+\\|")
   testthat::expect_match(docs[["md"]], "\\|\\s+stable ranking\\s+\\|\\s+0\\s+\\|")
   testthat::expect_match(docs[["md"]], "winner_candidate_id", fixed = TRUE)
   testthat::expect_match(docs[["md"]], "below_threshold", fixed = TRUE)
-  testthat::expect_match(docs[["md"]], "\\|\\s+short sample\\s+\\|\\s+8\\s+\\|")
   testthat::expect_match(
     docs[["md"]],
-    "\\|\\s+short sample\\s+\\|\\s+8\\s+\\|\\s+0\\.276\\s+\\|\\s+37\\.1\\s+\\|\\s+30\\s+\\|\\s+needs_more_observations\\s+\\|"
+    "\\|\\s+1\\s+\\|\\s+\\{1, 2\\}\\s+\\|\\s+\\{3, 4\\}\\s+\\|\\s+early\\s+\\|\\s+1\\.5\\s+\\|\\s+0\\.375\\s+\\|\\s+-0\\.511\\s+\\|\\s+TRUE\\s+\\|"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "\\|\\s+first 12 observations\\s+\\|\\s+12\\s+\\|\\s+0\\.226\\s+\\|\\s+46\\.1\\s+\\|\\s+35\\s+\\|\\s+needs_more_observations\\s+\\|"
   )
   testthat::expect_match(docs[["md"]], "min_track_record_length", fixed = TRUE)
   testthat::expect_match(docs[["md"]], "extra_needed", fixed = TRUE)
-  testthat::expect_match(docs[["md"]], "\\|\\s+longer same pattern\\s+\\|\\s+64\\s+\\|")
   testthat::expect_match(
     docs[["md"]],
-    "\\|\\s+longer same pattern\\s+\\|\\s+64\\s+\\|\\s+0\\.292\\s+\\|\\s+33\\.1\\s+\\|\\s+0\\s+\\|\\s+significant\\s+\\|"
+    "\\|\\s+full 80 observations\\s+\\|\\s+80\\s+\\|\\s+0\\.269\\s+\\|\\s+38\\.6\\s+\\|\\s+0\\s+\\|\\s+significant\\s+\\|"
   )
-  testthat::expect_match(docs[["md"]], "\\|\\s+effective trials\\s+\\|\\s+2\\s+\\|")
-  testthat::expect_match(docs[["md"]], "\\|\\s+raw trials\\s+\\|\\s+8\\s+\\|")
-  testthat::expect_match(docs[["md"]], "\\|\\s+clustered candidates\\s+\\|\\s+2\\s+\\|")
-  testthat::expect_match(docs[["md"]], "\\|\\s+clustered candidates\\s+\\|\\s+2\\s+\\|\\s+0\\.784\\s+\\|")
-  testthat::expect_match(docs[["md"]], "\\|\\s+treat all columns as independent\\s+\\|\\s+8\\s+\\|")
   testthat::expect_match(
     docs[["md"]],
-    "\\|\\s+treat all columns as independent\\s+\\|\\s+8\\s+\\|\\s+0\\.757\\s+\\|"
+    "\\|\\s+smooth growth\\s+\\|\\s+0\\.092\\s+\\|\\s+0\\.00752\\s+\\|\\s+0\\.000247\\s+\\|\\s+8\\.788\\s+\\|"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "\\|\\s+same endpoint, noisy path\\s+\\|\\s+0\\.092\\s+\\|\\s+0\\.00273\\s+\\|\\s+0\\.002344\\s+\\|\\s+0\\.337\\s+\\|"
+  )
+  testthat::expect_match(docs[["md"]], "\\|\\s+distance threshold 0\\.01\\s+\\|\\s+3\\s+\\|\\s+8\\s+\\|")
+  testthat::expect_match(docs[["md"]], "\\|\\s+distance threshold 0\\.15\\s+\\|\\s+2\\s+\\|\\s+8\\s+\\|")
+  testthat::expect_match(docs[["md"]], "\\|\\s+trend_1\\s+\\|\\s+1\\s+\\|\\s+cluster_001\\s+\\|")
+  testthat::expect_match(docs[["md"]], "\\|\\s+reversal_4\\s+\\|\\s+2\\s+\\|\\s+cluster_002\\s+\\|")
+  testthat::expect_match(
+    docs[["md"]],
+    "\\|\\s+two effective families\\s+\\|\\s+2\\s+\\|\\s+0\\.259\\s+\\|\\s+0\\.015\\s+\\|\\s+0\\.784\\s+\\|\\s+FALSE\\s+\\|"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "\\|\\s+all columns independent\\s+\\|\\s+8\\s+\\|\\s+0\\.259\\s+\\|\\s+0\\.043\\s+\\|\\s+0\\.757\\s+\\|\\s+FALSE\\s+\\|"
   )
   testthat::expect_match(docs[["md"]], "first_candidate_dsr", fixed = TRUE)
-  testthat::expect_match(docs[["md"]], "\\|\\s+smooth growth\\s+\\|\\s+12\\s+\\|\\s+0\\.092\\s+\\|\\s+40\\.272\\s+\\|")
-  testthat::expect_match(docs[["md"]], "\\|\\s+noisy flat\\s+\\|\\s+12\\s+\\|\\s+-0\\.036\\s+\\|\\s+-4\\.224\\s+\\|")
+  testthat::expect_match(docs[["md"]], "# A tibble: 16 x 7", fixed = TRUE)
+  testthat::expect_match(
+    docs[["md"]],
+    "fast5_slow20\\s+diagnostic_dsr_dsr_probability\\s+0\\.4979\\s+0\\.5\\s+FALSE"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "fast5_slow40\\s+min_trades\\s+3\\s+5\\s+FALSE"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "fast10_slow20\\s+min_trades\\s+5\\s+5\\s+TRUE"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "fast10_slow40\\s+min_trades\\s+2\\s+5\\s+FALSE"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "diagnostic\\.dsr\\.dsr_probability\\s+TRUE"
+  )
+  testthat::expect_match(
+    docs[["md"]],
+    "selection-integrity_files/figure-commonmark/dsr-correlation-map-1.png",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("new teaching surfaces state current public boundaries", {

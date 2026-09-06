@@ -81,12 +81,39 @@ identity.
   without modifying the checked-in Markdown mirror. The full Quarto/pkgdown
   render passed on Windows.
 
+## Post-Gate Editorial Verification
+
+On 2026-09-06 the Selection Integrity article received a final editorial pass.
+The executed sweep setup is now hidden as prerequisite context, while the DSR,
+business-objective, and sweep-filter calls remain visible and the complete
+`16 x 7` eligibility tibble remains rendered and explained. No package runtime,
+public API, identity, README, or coverage behavior changed.
+
+- The documentation-contract test and full local suite passed; the full suite
+  completed in 618.1 seconds with the same expected Yahoo missing-package-path
+  skip.
+- The GFM render and full pkgdown build passed; pkgdown completed in 418
+  seconds.
+- `R CMD build --no-build-vignettes .` and
+  `R CMD check --no-manual --no-build-vignettes ledgr_0.1.9.7.tar.gz` passed.
+  Package check retained the same accepted two vignette warnings and one long
+  archival-path NOTE, and executed all 19 vignette sources successfully.
+- WSL installed the release tarball into a temporary library and knitted all
+  31 Selection Integrity chunks successfully. README cold-start and coverage
+  were not repeated because this final delta changed neither surface; their
+  reviewed release-gate evidence above remains applicable.
+
 ## Reruns And Dispositions
 
 - The first pkgdown build reached site initialization and failed with sandbox
   `EPERM` while statting `C:/Users/maxth`. The same repository wrapper was
   rerun with approved access to the user library and Quarto/Pandoc paths and
   passed in 391.6 seconds.
+- The first post-gate full-suite rerun caught a corrupted generated Markdown
+  mirror after a local whitespace-cleanup expression stripped terminal `t`
+  characters. The authoritative QMD was re-rendered, cleanup was corrected to
+  use the portable `[[:blank:]]` class, and the targeted documentation contract
+  plus the full suite then passed.
 - The first WSL test command failed before test execution because Windows
   `src/*.o` artifacts were visible to the Linux linker. Only generated
   `src/cpp11.o`, `src/spot_fifo.o`, and the compiled library were removed. The
