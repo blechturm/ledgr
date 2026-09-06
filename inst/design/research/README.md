@@ -1,10 +1,25 @@
 # Research inputs to RFC seeds
 
-This directory holds deep-research LLM outputs that were fed to RFC seeds as design-space context. Each file corresponds to one RFC cycle.
+This directory holds non-binding research inputs that are fed to RFC seeds as
+design-space or empirical context. Most files are deep-research LLM outputs.
+Project-authored empirical syntheses may also be preserved here when a private
+or licensed evidence cycle needs a durable, non-reconstructive input to an
+upstream RFC.
 
-**Status:** non-binding inputs. Preserve indefinitely as audit trail. Do not promote to a user-facing docs surface.
+**Status:** non-binding inputs. Preserve indefinitely as audit trail. Do not
+promote to a user-facing docs surface.
 
 ---
+
+## Empirical evidence inputs
+
+| File | Evidence source | Intended RFC use |
+|---|---|---|
+| `Sharadar-Empirical-Evidence.md` | Sharadar Data MVP and Evidence Promotion v0.1.0, private authoritative source commit `e53bda3b108e51ad44720b9812c8072624b8820e` | Asset availability, point-in-time universe, missing-data, valuation, execution, and preprocessing RFC seed |
+
+The Sharadar synthesis contains only non-reconstructive aggregates and
+conclusions. It is not vendor data, a canonical schema, or a binding ledgr
+decision. The private evidence artifacts remain authoritative for exact audit.
 
 ## What these files are
 
