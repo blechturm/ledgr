@@ -21,13 +21,13 @@ The Sharadar synthesis contains only non-reconstructive aggregates and
 conclusions. It is not vendor data, a canonical schema, or a binding ledgr
 decision. The private evidence artifacts remain authoritative for exact audit.
 
-## What these files are
+## What the deep-research files are
 
 For each RFC cycle that needed broad prior-art coverage, the maintainer prompted a deep-research LLM (typically ChatGPT Deep Research) with a structured request: literature foundations, competitor implementations, design-pattern survey, ledgr-specific design questions, plus a "strongest single influence" verdict. The model produced a single dense markdown document. That document is what lives here.
 
 These artifacts informed the seed RFC. The seed cites the file by path. The synthesis lifts whichever framings and references it found load-bearing.
 
-## What these files are NOT
+## What the deep-research files are NOT
 
 - **Not canonical literature reviews.** One model's pass through the literature, with citation precision that varies. Some treatments are cursory; some are misattributed in subtle ways; cross-check against primary sources before quoting in a binding artifact.
 - **Not authoritative.** A different deep-research run (different model, different prompt, different day) would produce overlapping but not identical output.
