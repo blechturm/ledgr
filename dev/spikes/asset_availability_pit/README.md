@@ -1,8 +1,8 @@
 # Asset Availability And PIT Universe Spike
 
-**Status:** Stage 2 witness evidence is maintainer approved and independently
-reviewed; immutable freeze recording is in progress. Prototype implementation
-must not start until the gate-record commit exists.
+**Status:** Stage 2 witness evidence is maintainer approved, independently
+reviewed, and frozen at `56ef24bb3f80d06ba616a8501dd61ee4ba2e70f6`.
+Prototype implementation must not start until the gate-record commit exists.
 
 **Branch:** `spike/asset-availability-pit-universes`.
 

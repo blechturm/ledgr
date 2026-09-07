@@ -1,13 +1,13 @@
 # Spike Evidence Manifest
 
-**Status:** Setup initialized; Stage 2 evidence not frozen.
+**Status:** Stage 2 frozen.
 
 ## Repository
 
 - Package base commit: `1f42cf7`.
 - Evidence branch: `spike/asset-availability-pit-universes`.
 - Frozen charter commit: `1f42cf7`.
-- Stage 2 evidence commit: pending.
+- Stage 2 evidence commit: `56ef24bb3f80d06ba616a8501dd61ee4ba2e70f6`.
 - Stage 2 gate-record commit: pending until committed after a passing gate.
 - Final immutable spike commit or archive reference: pending.
 - Prototype change inventory: pending.
