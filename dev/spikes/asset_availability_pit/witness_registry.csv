@@ -1,0 +1,32 @@
+witness_id,witness_class,title,fixture_manifest,expected_table,status,maintainer_approved,independent_reviewed
+W01,semantic_oracle,Retained holding and full member allocation,fixtures/W01/manifest.md,expected/W01.csv,pending,FALSE,FALSE
+W02,semantic_oracle,Failed sale and successful replacement purchase,fixtures/W02/manifest.md,expected/W02.csv,pending,FALSE,FALSE
+W03,semantic_oracle,One exit target followed by a no-fill,fixtures/W03/manifest.md,expected/W03.csv,pending,FALSE,FALSE
+W04,semantic_oracle,Reissued exit target,fixtures/W04/manifest.md,expected/W04.csv,pending,FALSE,FALSE
+W05,semantic_oracle,Unknown lifetime with a valid observation,fixtures/W05/manifest.md,expected/W05.csv,pending,FALSE,FALSE
+W06,semantic_oracle,Valuation horizon exhausted,fixtures/W06/manifest.md,expected/W06.csv,pending,FALSE,FALSE
+W07,semantic_oracle,Accepted terminal event without settlement support,fixtures/W07/manifest.md,expected/W07.csv,pending,FALSE,FALSE
+W08,semantic_oracle,Halted member with a usable feature,fixtures/W08/manifest.md,expected/W08.csv,pending,FALSE,FALSE
+W09,semantic_oracle,Quotation-only and resumption states,fixtures/W09/manifest.md,expected/W09.csv,pending,FALSE,FALSE
+W10,semantic_oracle,Fixed basket with an isolated gap,fixtures/W10/manifest.md,expected/W10.csv,pending,FALSE,FALSE
+W11,semantic_oracle,Dynamic membership with complete observations,fixtures/W11/manifest.md,expected/W11.csv,pending,FALSE,FALSE
+W12,semantic_oracle,Historically knowable broader estimation population,fixtures/W12/manifest.md,expected/W12.csv,pending,FALSE,FALSE
+W13,semantic_oracle,Future-selected estimation population,fixtures/W13/manifest.md,expected/W13.csv,pending,FALSE,FALSE
+W14,semantic_oracle,Full-train fit used in an early training replay,fixtures/W14/manifest.md,expected/W14.csv,pending,FALSE,FALSE
+W15,semantic_oracle,Delayed label and later revision,fixtures/W15/manifest.md,expected/W15.csv,pending,FALSE,FALSE
+W16,semantic_oracle,Effective-dated revision,fixtures/W16/manifest.md,expected/W16.csv,pending,FALSE,FALSE
+W17,representation_discriminating,Future-fact perturbation,fixtures/W17/manifest.md,expected/W17.csv,pending,FALSE,FALSE
+W18,representation_discriminating,Cached positional state across membership change,fixtures/W18/manifest.md,expected/W18.csv,pending,FALSE,FALSE
+W19,semantic_oracle,Incomplete candidate in selection,fixtures/W19/manifest.md,expected/W19.csv,pending,FALSE,FALSE
+W20,representation_discriminating,Prototype reconstruction cache and parallel parity,fixtures/W20/manifest.md,expected/W20.csv,pending,FALSE,FALSE
+W21,representation_discriminating,Dense reconstruction parity,fixtures/W21/manifest.md,expected/W21.csv,pending,FALSE,FALSE
+W22,semantic_oracle,Unpriced holding through max-weight risk,fixtures/W22/manifest.md,expected/W22.csv,pending,FALSE,FALSE
+W23,semantic_oracle,Post-risk closure on restricted holdings,fixtures/W23/manifest.md,expected/W23.csv,pending,FALSE,FALSE
+W24,semantic_oracle,Held state across a fold boundary,fixtures/W24/manifest.md,expected/W24.csv,pending,FALSE,FALSE
+W25,representation_discriminating,Transform graph and cache invalidation,fixtures/W25/manifest.md,expected/W25.csv,pending,FALSE,FALSE
+W26,semantic_oracle,Empty public domain and first entry,fixtures/W26/manifest.md,expected/W26.csv,pending,FALSE,FALSE
+W27,semantic_oracle,History across exit and re-entry,fixtures/W27/manifest.md,expected/W27.csv,pending,FALSE,FALSE
+W28,semantic_oracle,Calendar and age semantics,fixtures/W28/manifest.md,expected/W28.csv,pending,FALSE,FALSE
+W29,semantic_oracle,Stable asset and alias continuity,fixtures/W29/manifest.md,expected/W29.csv,pending,FALSE,FALSE
+W30,semantic_oracle,Consumer-specific missingness,fixtures/W30/manifest.md,expected/W30.csv,pending,FALSE,FALSE
+W31,semantic_oracle,Combined lifecycle and exposure stress,fixtures/W31/manifest.md,expected/W31.csv,pending,FALSE,FALSE
