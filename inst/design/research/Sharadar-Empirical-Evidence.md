@@ -82,13 +82,14 @@ population honestly.
 | 1 | Can a bounded export reuse qualified canonical identity without full-history R materialization or routine rehashing? | Passed |
 | 2 | Can one frozen real dense/static case seal, reopen, run, and reconcile? | Passed narrowly |
 | 3 | Can bounded adversarial cases preserve absence and lifecycle uncertainty without repair? | Measured; no evidence grade |
-| 4 | Can the complete supported reference population enter ledgr without static-universe distortion? | Blocked on real data |
+| 4 | Can the complete supported reference population enter ledgr without static-universe distortion? | Completed negative result: ledgr sealed the available bars, but the pressure artifact was rejected for static-universe distortion |
 | 5 | Can quality and unsupported-action counts be reconciled without a new full scan or reconstructive output? | Measured |
 | 6 | Does independent review permit any research scope? | Accepted only for `dense_static_method_validation_v001` |
 
-A failed or blocked gate could not be repaired by a later gate. Earlier
-attempts and failed private runs were retained as superseded evidence rather
-than overwritten.
+No failed evidence gate was repaired by a later gate. Gate 4 completed
+successfully as an evidence exercise even though its tested pressure artifact
+remained `blocked / false / none`. Earlier attempts and failed private runs
+were retained as superseded evidence rather than overwritten.
 
 ## Canonical data and bounded export
 
@@ -111,10 +112,11 @@ The pre-seal payload fingerprint and the ledgr snapshot hash describe different
 boundaries and are not expected to be equal. Query-plan hashes remain private
 performance diagnostics and do not enter data identity.
 
-For one measured 378,000-row bounded payload, set-wise hashing took 0.28
-seconds. The previous row-wise R approach took roughly 80 seconds on the same
-class of work. This supports the scalability of the revised export seam; it is
-not a general vendor or backtesting benchmark.
+In a synthetic implementation benchmark, set-wise hashing of 378,000 rows took
+0.28 seconds. The prior row-wise implementation measured about 4,800 rows per
+second on smaller payloads, implying roughly 80 seconds at that scale. This
+supports the scalability of the revised export seam; it is not a real-data
+evidence-path timing or a general vendor or backtesting benchmark.
 
 ## Dense/static seam
 
@@ -270,10 +272,18 @@ The negative outcome is an accepted empirical result, not an execution failure.
 
 ### Critical interpretation
 
-The tracked evidence does not disclose predicate-specific qualifying counts.
-Because changing membership alone satisfies the gate, Gate 4 conclusively
-demonstrates a real dynamic-membership problem but does not independently prove
-that an expected in-lifetime market bar was absent.
+Predicate-specific qualifying counts remain private. Nevertheless, the
+aggregate cardinalities independently establish membership variation: a
+constant set containing all 563 distinct instruments across all 757 sessions
+would produce 426,191 member/session rows, not the observed 382,288. Gate 4
+therefore demonstrates changing point-in-time membership, but it does not
+establish whether the missing-bar predicate also fired or independently prove
+an expected in-lifetime bar gap.
+
+On this pressure path, the capsule's existing `membership_hash` was retained
+as lineage and was not recomputed over the 382,288-row stream. Correctness was
+instead checked through a separate set-wise comparison of the independently
+enumerated and persisted membership streams.
 
 Accordingly, this evidence supports the need to represent point-in-time
 membership and unresolved availability explicitly. It does not establish the
@@ -427,8 +437,8 @@ reviewed commit, review digest, limitations, and qualified full-history run.
 | Point-in-time membership changes occur in the complete supported reference population. | Supported | Gate 4 |
 | ledgr's current static instrument input preserves that membership stream. | Contradicted | Gate 4 static-universe distortion |
 | Confirmed expected-session bar gaps occur in the tested population. | Not established by tracked evidence | Gate 3 observed zero; Gate 4 predicate counts are not separated |
-| Common price or membership bounds always establish a reliable security lifetime. | Contradicted in the adversarial casebook | Five of seven lifecycle cases remained uncertain under the accepted policy |
-| All unavailable cells have the same economic meaning. | Contradicted | Gate 3 taxonomy and lifecycle adjudication |
+| Price or membership bounds alone establish a reliable security lifetime. | Not established; prohibited as an inference under the accepted lifecycle policy | Five of seven lifecycle cases remained uncertain under the accepted policy |
+| All unavailable cells have the same evidence state. | Contradicted | Gate 3 taxonomy and lifecycle adjudication; downstream economic treatment remains an RFC question |
 | Missing or stale data may safely become an executable price. | Not tested and not authorized | Gate 3 performed no imputation and invented no execution price |
 | A particular masks, intervals, or event-stream architecture follows from the evidence. | Not established | Deferred to the RFC |
 | A global post-snapshot imputation step is valid for walk-forward evaluation. | Not established | No imputation experiment was performed |
