@@ -1,0 +1,6 @@
+"mutation_id","witness_id","rejected","expected_finding","findings"
+"M1","W22",TRUE,"stale_execution_price","value_mismatch:execution_bar_available;value_mismatch:fill_price;stale_execution_price"
+"M2","W09",TRUE,"value_mismatch:resolved_status","value_mismatch:resolved_status;reason_code_mismatch:fill_status;value_mismatch:fill_status"
+"M3","W24",TRUE,"value_mismatch:opening_axis","value_mismatch:opening_axis;value_mismatch:held_qty;value_mismatch:held_nonmember_count"
+"M4","W25",TRUE,"identity_relation_mismatch:fit_identity","identity_relation_mismatch:fit_identity"
+"M5","W02",TRUE,"affordability_reconciliation_failed","reason_code_mismatch:fill_status;value_mismatch:fill_status;value_mismatch:event_cash_after;value_mismatch:cash_after;value_mismatch:completed_pulse_valid;value_mismatch:position_after;affordability_reconciliation_failed"

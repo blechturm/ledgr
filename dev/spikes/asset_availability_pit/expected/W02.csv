@@ -1,6 +1,6 @@
 witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
 W02,c0a,1,2024-01-02T21:00:00Z,,interface,character,production_ledgr_run,,not_applicable,exact,,genuine missing execution bar through the package,,
-W02,c0a,2,2024-01-02T21:00:00Z,,stop_reason,character,ledgr_missing_bars,ledgr_missing_bars,not_applicable,exact,,coverage gate rejects the dense config,,
+W02,c0a,2,2024-01-02T21:00:00Z,,stop_reason,character,LEDGR_SNAPSHOT_COVERAGE_ERROR,LEDGR_SNAPSHOT_COVERAGE_ERROR,not_applicable,exact,,coverage gate rejects the dense config,,
 W02,c0a,3,2024-01-02T21:00:00Z,,pulses_executed,integer,0,,not_applicable,exact,,rejection precedes execution,,
 W02,c0a,4,2024-01-02T21:00:00Z,,fill_count,integer,0,,not_applicable,exact,,no fills,,
 W02,c0a,5,2024-01-02T21:00:00Z,,cash_after,double,10000.00,,not_applicable,abs_tol,1e-8,unchanged,,

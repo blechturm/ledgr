@@ -1,9 +1,9 @@
 # Asset Availability And PIT Universe Spike
 
-**Status:** Stage 2 witness evidence is maintainer approved, independently
-reviewed, and frozen at `b818d761891516cea5c1afd2a4b05724cca84fd6`.
-The Stage 2 gate passed at `9d957a30d13f2fd42b6a09bbad1b1d65ddb528b5`;
-the shared fold-fork implementation may begin in Stage 3.
+**Status:** Witness v3 and the repaired Stage 3 implementation are maintainer-
+approved and independently reviewed. The active-evidence and first-appearance
+commit gates remain. The prior v2 evidence remains at
+`b818d761891516cea5c1afd2a4b05724cca84fd6`.
 
 **Branch:** `spike/asset-availability-pit-universes`.
 
@@ -25,40 +25,42 @@ back through a separate commit.
 
 - The repository maintainer approves the initial policy configuration and each
   exact expected witness outcome.
-- Claude is the charter's default spike executor unless the maintainer records
-  a substitution.
-- Codex, or another author who did not execute the spike, reviews conformance
-  before Seed v2 consumes the result.
+- The maintainer substituted Codex as the Stage 3 spike executor.
+- Claude, or another author who did not execute Stage 3, reviews conformance
+  before the implementation is committed and before Seed v2 consumes it.
 
 The executor and reviewer identities must be recorded in the final evidence
 manifest. One person or model must not approve, execute, and certify the same
 result.
 
-## Current Gate
+## Stage 3 Gate
 
-Charter clarification and freeze completed at package base commit `1f42cf7`.
-The v4 comparison policy and W01-W31 packet are maintainer approved and
-independently reviewed. The Stage 2 gate remains closed until:
+Charter clarification, evidence freeze, and the Stage 2 gate are complete.
+Stage 3 rechecks ancestry from `c82c485` and every frozen input hash without
+rerunning the pre-prototype gate, which must reject code after Stage 2.
 
-1. `check_stage2.R --mode=review` passes on the approved packet.
-2. Every frozen input matches `evidence/frozen_hashes.csv`.
-3. The approved freeze commit is recorded in the evidence manifest.
-4. `check_stage2.R --mode=gate` exits successfully before prototype code exists.
+Stage 3 closes only after:
 
-Run the checks from the repository root:
+1. Witness v3 is committed and recorded as the active evidence.
+2. W21 passes direct package/fork dense parity and its frozen expected table.
+3. Five hand-calculated checker baselines match their frozen tables; they are
+   not representation-conformance results.
+4. M1-M5 are each rejected with the required finding.
+5. Independent review accepts the implementation and change inventory.
+6. The committed code's first-appearance hashes are recorded in
+   `evidence/stage3_code.csv`, then `check_stage3.R --mode=gate` passes.
 
-```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=setup
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=review
-```
-
-Setup validates every drafted or approved packet that is present. Review
-additionally requires all 31 packets. The gate command is intentionally
-expected to fail until Stage 2 is complete:
+The Stage 2 commands remain available only for inspecting the frozen packet
+before prototype work. Run the Stage 3 review check from the repository root:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=gate
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/run_stage3.R
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage3.R --mode=review
 ```
+
+The Stage 3 gate command is intentionally expected to fail until witness v3
+and the reviewed code are committed and the first-appearance registry is
+added.
 
 ## Workspace
 
@@ -66,7 +68,7 @@ expected to fail until Stage 2 is complete:
 | --- | --- |
 | `witness_spec.md` | Exact input/output schema and freeze protocol |
 | `witness_registry.csv` | Machine-readable W01-W31 status and artifact paths |
-| `initial_policy_config.md` | Maintainer-approved v3 comparison policy |
+| `initial_policy_config.md` | Maintainer-approved v4 comparison policy |
 | `fixtures/` | Self-contained fixture manifests with embedded source tables |
 | `expected/` | Independently calculated expected-output tables |
 | `references/` | Registered independent reference calculations |

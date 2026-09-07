@@ -9,7 +9,7 @@ after the gate-record commit, and the later-stage checker verifies that each
 first-appearance commit descends from that gate-record commit and that the
 registered executables implement exactly `M1` to `M5` as frozen here.
 
-## Mutation Definitions (approved 2026-09-07)
+## Mutation Definitions (v3 correction approved 2026-09-07)
 
 Each mutation is applied to prototype output after the shared fork runs the
 named witness. The checker must reject the mutated output against the frozen
@@ -17,7 +17,7 @@ expected table with the named finding.
 
 | id | mutation | witness | expected checker finding |
 | --- | --- | --- | --- |
-| M1 | replace the S3 open fill price of `A02` with its stale valuation mark and report the fill as executed at that mark on a session without an execution bar | W22 `c1` (bar removed at S3) | `fill_price` and `fill_status` rows fail: stale mark passed as an execution price |
+| M1 | change the existing S3 execution evidence to `execution_bar_available = false` and replace the observed fill price 52 with stale valuation mark 50 while leaving `fill_status = filled` | W22 `c1` | `execution_bar_available` and `fill_price` mismatch, and semantic finding `stale_execution_price` fires without adding rows |
 | M2 | keep the halt effective at the S5 open after the resumption assertion supersedes it | W09 `c4` | `resolved_status` and `fill_status` rows fail: superseded halt left active |
 | M3 | omit the carried holding `A01` from the fold-2 opening axis and state | W24 `c1` | `opening_axis`, `held_qty`, and `held_nonmember_count` rows fail: carried holding omitted |
 | M4 | drop the estimation-population dependency from the `fit` node identity so `m_pop` reports `fit_identity` equal | W25 `m_pop` | `fit_identity` row fails: required dependency removed |

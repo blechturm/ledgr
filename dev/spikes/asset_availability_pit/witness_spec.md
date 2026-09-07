@@ -1,8 +1,9 @@
 # Stage 2 Witness Evidence Contract
 
-**Status:** Frozen and maintainer approved.
+**Status:** Witness v3 correction maintainer-approved and independently
+reviewed on 2026-09-07.
 
-**Witness schema:** `asset_availability_witness_v2`.
+**Witness schema:** `asset_availability_witness_v3`.
 
 **Revision history:** `asset_availability_witness_v1` was approved on
 2026-09-07. Version 2 was approved before prototype work after the first
@@ -10,6 +11,23 @@ freeze-gate run exposed that the checker restored R's original `HOME` before
 its late Git ancestry checks. Version 2 keeps the approved witnesses and
 expected answers unchanged and extends the existing safe-directory environment
 through every Git check.
+
+Version 3 is the maintainer-approved and independently reviewed correction
+after Stage 3 review. It changes two affected witnesses without changing
+policy v4:
+
+- W02 `c0a` records the real package coverage-error class,
+  `LEDGR_SNAPSHOT_COVERAGE_ERROR`, instead of the incorrect
+  `ledgr_missing_bars` label. W02 `c0b` must be observed through the real
+  package fold rather than accepted from arithmetic alone.
+- W22 records execution-bar availability, fill price, and fill status in the
+  unmutated `c0` and `c1` cases. Its S3 execution open is 52 while the stale
+  valuation mark is 50, making M1 an in-schema mutation that the checker can
+  distinguish from valid execution.
+
+The prior approved v2 evidence remains available at commit `b818d76`. The
+v3 correction must be committed and recorded as the active Stage 2 evidence
+commit before the Stage 3 gate can close.
 
 **Charter base:** package commit `1f42cf7`.
 
@@ -248,8 +266,8 @@ charter.
    `artifact_not_available_at_decision`, `estimation_population_non_causal`,
    `stale_axis_token`, `missing_value_scalar_guard`,
    `model_native_missing_handling`, `incomplete_evidence`,
-   `ledgr_missing_bars`, and `LEDGR_LAST_BAR_NO_FILL`. Codes the policy does
-   not define are proposals for the Seed v2 vocabulary.
+   `LEDGR_SNAPSHOT_COVERAGE_ERROR`, and `LEDGR_LAST_BAR_NO_FILL`. Codes the
+   policy does not define are proposals for the Seed v2 vocabulary.
 9. Observation-state values used: `accepted`, `expected_session_absence`,
    `scheduled_closure`, `observed_row_outside_expectation`,
    `instrument_not_yet_knowable`, and `observation_invalid`.

@@ -58,7 +58,7 @@ The `c0` and `c1` fills at the S3 open rely on the `A02` row.
 | A01 | S1, S2, S3 | 100.00 | 100.00 | all |
 | A02 | S1 | 50.00 | 50.00 | all |
 | A02 | S2 | 50.00 | 50.00 | `c0` only (absent in `c1`, `c2`, `c3`) |
-| A02 | S3 | 50.00 | 50.00 | all |
+| A02 | S3 | 52.00 | 50.00 | all |
 | A03 | none | | | no observation at any session |
 
 ## Opening State
@@ -91,16 +91,20 @@ Zero cost; valuation v3 (stale horizon two expected sessions).
 
 - `c0`: A02 fresh close 50.00 (age 0); cap `0.05 * 100000 / 50 = 100`;
   post-risk 100 with `max_weight_reduction`; closure accepts (same sign,
-  smaller); intent sell 100 at the S3 open at 50.00; cash 95000. Its
+  smaller); intent sell 100 at the S3 open at 52.00; cash 95200. Its
   `risk_chain_hash` and valuation-evidence identity are captured as the
   baselines for `c1` and `c2`.
 - `c1`: A02 S2 row missing; stale mark 50.00 age 1; `max_weight` uses the
   mark; cap 100; post-risk 100 with `stale_mark_reduction`; fill at the S3
-  open (bar present, active); cash 95000. `risk_chain_hash` equal to `c0`
+  open at 52.00 (bar present, active); cash 95200. `risk_chain_hash` equal to `c0`
   (same chain and arguments); valuation evidence identity differs.
 - `c2`: cap `0.5 * 100000 / 50 = 1000`; post-risk 200 with
   `stale_mark_pass_through`; no intent. `risk_chain_hash` differs from `c0`
   because the argument differs.
+- The unmutated `c0` and `c1` evidence records an available S3 execution bar,
+  fill price 52.00, and filled status. M1 changes those existing evidence
+  rows to an unavailable execution bar and stale-mark price 50.00 while
+  leaving the fill reported as executed.
 - `c3`: A03 is unheld with a new positive target 100 and no permissible mark
   of any kind; `max_weight` requires a mark; the candidate stops before fill
   proposal or state mutation with `risk_mark_unavailable`, recording asset

@@ -88,7 +88,8 @@ risk chain; `cash_tolerance` 1e-8.
 
 - `c0a`: the dense configuration requires every configured instrument to
   observe every pulse. The A01 S2 row is missing, so `ledgr_run()` rejects
-  before any pulse with class `ledgr_missing_bars`. No fill, no cash change.
+  before any pulse with class `LEDGR_SNAPSHOT_COVERAGE_ERROR`. No fill, no
+  cash change.
   This records the production rejection; it is not a budget-policy outcome.
 - `c0b`: both bars exist. The current fold has no affordability rule. Events
   in declared order: sell A01 300 at 100.00 (`+30000`, cash 40000), buy A02

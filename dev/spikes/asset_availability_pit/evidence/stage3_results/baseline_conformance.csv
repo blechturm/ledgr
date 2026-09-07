@@ -1,0 +1,7 @@
+"witness_id","evidence_role","source","pass","findings"
+"W02","checker_baseline","package_controls+hand_calculated_reference",TRUE,""
+"W09","checker_baseline","hand_calculated_reference",TRUE,""
+"W21","dense_representation_control","dense_state_planes_reference+package_fold",TRUE,""
+"W22","checker_baseline","hand_calculated_reference",TRUE,""
+"W24","checker_baseline","hand_calculated_reference",TRUE,""
+"W25","checker_baseline","hand_calculated_reference",TRUE,""
